@@ -95,7 +95,10 @@
             "PROG-R10",
             "LIVE-263",
             "PROG-R11",
-            "LIVE-306"
+            "LIVE-306",
+            "LIVE-347",
+            "LIVE-346",
+            "LIVE-348"
           ]
         },
         {
@@ -219,7 +222,9 @@
             "OWN-070",
             "OWN-072",
             "OWN-073",
-            "OWN-074"
+            "OWN-074",
+            "OWN-076",
+            "OWN-075"
           ]
         }
       ],
@@ -13007,6 +13012,134 @@
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const strip=(s)=>s.replace(/\\u002f\\u002a[\\s\\S]*?\\u002a\\u002f/g,\" \").replace(/^\\s*\\u002f\\u002f.*$/gm,\" \");const read=(p)=>{if(!fs.existsSync(p))fail(\"missing \"+p);return strip(fs.readFileSync(p,\"utf8\"))};if(!fs.existsSync(\"lib/billing/tips-notify.ts\"))fail(\"the tip-recipient notifier is gone, so the precedent this row is modelled on no longer exists and this probe is measuring nothing\");const t=read(\"lib/billing/tickets.ts\");const i=t.indexOf(\"recordTicketFromSession\");if(i<0)fail(\"recordTicketFromSession is gone\");const settle=t.slice(i);const m=settle.match(/notify[A-Za-z]*(Ticket|Sale|Sold|Host|Seller)[A-Za-z]*/);if(!m)fail(\"the ticket settle path calls no seller-side notifier, so a host is still never told they sold a ticket (the tip path calls notifyTipReceived from the same kind of recorder)\");process.exit(0)'",
         "note": "Passes when the ticket settle path CALLS a seller-side notifier, matching the shape lib/billing/tips-notify.ts already has for a tip recipient. Comments are stripped first, because this file explains at length what it does not do. Carries a positive control: if the tip notifier it is modelled on disappears, the probe fails loudly rather than quietly measuring nothing."
+      }
+    },
+    {
+      "id": "LIVE-350",
+      "title": "The enforced CSP carried zero Stripe hosts, so no on-page checkout could load a single line",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "next.config.ts",
+        "ref": "the enforced CSP (ADR-170)"
+      },
+      "detail": "DONE 2026-09-15, ADR-1369. Phase 1 of the on-page checkout program (LIVE-347), shipped alone and ahead of any billing change on purpose: its failure mode is silent and its verification is free, so it is exactly the kind of change that should not ride along with something else.\n\nFive hosts added across three directives: js.stripe.com to script-src and frame-src, hooks.stripe.com to frame-src (the 3DS and redirect-method frame), api.stripe.com and merchant-ui-api.stripe.com to connect-src. img-src needed NOTHING — its blanket https: already covers the wallet marks and card-brand art — and that was checked rather than assumed, which is the half of an audit that usually goes unrecorded.\n\n⚠️ merchant-ui-api.stripe.com is the one host carried on judgement rather than proof. It appears in Stripe CONNECT EMBEDDED COMPONENTS guidance, not in the Elements guidance, and could not be confirmed for this mode. It is inside the same trust boundary as api.stripe.com, which already sees the card, so the marginal exposure is nil while being wrong the other way breaks checkout. The comment beside it says to DELETE it if the integration lands and it is never contacted, rather than let it calcify into folklore.\n\nDELIBERATELY EXCLUDED: the fail-soft beacons (q, r, errors, m.stripe.com / m.stripe.network). A blocked beacon costs a Radar signal and a console line, never a payment, and report-uri /api/csp-report is the gate that will name the host and directive if one fires — which is the evidence to add it on. The test pins their ABSENCE, so adding one requires updating the audit paragraph in the same change.\n\n⚠️ STATED LIMIT, recorded because a gate that overstates itself is worse than none: the test reads SOURCE, not a served response. Nothing in CI issues a request and reads the Content-Security-Policy header back, so a change that detached securityHeaders from headers() would leave it green. And the host set is a claim about Stripe current behaviour verified against published guidance, not against a browser running this checkout. The first real integration run plus /api/csp-report is what confirms it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const c=fs.readFileSync(\"next.config.ts\",\"utf8\");for(const h of [\"https://js.stripe.com\",\"https://hooks.stripe.com\",\"https://api.stripe.com\"]){if(c.indexOf(h)<0)fail(\"the enforced CSP no longer carries \"+h+\", so on-page Stripe cannot load\")}if(c.indexOf(\"report-uri /api/csp-report\")<0)fail(\"report-uri was dropped, so a missed host would now fail silently instead of naming itself\");const t=\"test/contract/csp-stripe-hosts.test.ts\";if(!fs.existsSync(t))fail(\"the CSP contract test is gone, so nothing pins the host set\");process.exit(0)'",
+        "note": "Passes while the three load-bearing Stripe hosts are in the enforced CSP, report-uri is still on (so a miss names itself rather than failing silently), and the contract test that pins the whole host set still exists. Measures the consequence — on-page Stripe can load and a regression is caught — not the row title."
+      }
+    },
+    {
+      "id": "OWN-076",
+      "title": "Apple Pay and Google Pay stop working the moment checkout moves onto Frequency, until the domain is registered",
+      "status": "open",
+      "priority": "P1",
+      "lane": "owner",
+      "size": "XS",
+      "ownerAction": "account",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1369, and LIVE-347 which it blocks"
+      },
+      "detail": "FILED 2026-09-15 beside the CSP change. Apple Pay and Google Pay work TODAY only because Stripe owns checkout.stripe.com and pre-registers it. An on-page Elements flow serves the button from frequencylocal.com, and Apple will not show a payment sheet on a domain it has not verified. So the wallets go dark at exactly the moment LIVE-347 ships, unless this lands first.\n\nIT MATTERS MORE THAN IT SOUNDS. The research behind the on-page decision reads 4 or more express payment options at 67% conversion against 52% without. Moving checkout on-page WITHOUT the wallets would make it measurably worse, not better — the opposite of the reason for doing it.\n\nNO AGENT CAN DO THIS. The association file bytes are issued by Stripe per domain, so nothing in this repository can generate a valid one, and no placeholder was committed on purpose: a wrong file is indistinguishable from a right one until Apple rejects it.\n\nOWNER STEPS:\n  1. Stripe Dashboard, Settings, Payment method domains: add frequencylocal.com, then www.frequencylocal.com. Apple verifies apex and subdomain separately, and test and live separately.\n  2. Download the association file offered for each domain.\n  3. Hand it to engineering to commit at public/.well-known/apple-developer-merchantid-domain-association, no extension. 🔴 IF THE TWO DOMAINS ARE HANDED DIFFERENT BYTES, SAY SO: that turns a static file into a host-aware route handler, which is a design change rather than a paste.\n  4. Deploy, confirm curl -I on the path returns 200, then press Verify in the Dashboard.\n  5. Card payments never depend on any of this. Only the wallets do.\n\nPath viability already checked: proxy.ts neither excludes nor redirects /.well-known, and the universal-links file is already served from public/ there, which proves the plain 200 Apple needs.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Closes when frequencylocal.com reads Verified under Payment method domains in the Stripe Dashboard and the association file answers 200 from the apex. No probe in this repository can close it: the file bytes are issued by Stripe per domain and verification state lives in the Dashboard.",
+        "checked": "2026-09-15"
+      }
+    },
+    {
+      "id": "LIVE-347",
+      "title": "Checkout redirects to Stripe instead of taking the card on the page",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "owner decision 2026-09-15"
+      },
+      "detail": "OWNER DECISION 2026-09-15: checkout becomes a one-page, on-Frequency flow. Clicking buy opens the card form in place, under the button. The mode chosen is ui_mode custom (Checkout Sessions driven by initCheckout with Stripe Elements), over embedded and over a raw PaymentIntent.\n\n🔴 WHY NOT A RAW PAYMENTINTENT, recorded here because it is the choice a later reader will be tempted by: there would be no Checkout Session, so checkout.session.completed never fires, recordPaidCheckout is never called, and the webhook has no payment_intent.succeeded case — it would ack 200 and silently drop. The buyer is charged and nothing is recorded. It would also invalidate stripe_checkout_session_id as a join key in five tables and both ticket RPCs, and it cannot do the four subscription paths at all. Custom mode keeps the Checkout Session, so all nine recorders keep working untouched, which is the whole reason it was chosen.\n\nSEQUENCE: the CSP must open first (it is enforced and carries zero Stripe hosts). Then tickets alone as the proving path — it has the guest door, the richest recorder to prove the contract against, and it is payment mode so subscriptions are not also in flight. Then the remaining eight creators, one at a time, subscriptions last because subscription_data.metadata must survive each edit and the member-entitlement allowlist is the line SCAN-541 was written for.\n\nWHAT BREAKS AND MUST BE CARRIED: success_url and cancel_url are rejected in non-hosted modes; return_url replaces them and must keep session_id={CHECKOUT_SESSION_ID}, because the success-page reconcile is the webhook-INDEPENDENT fallback and lib/founding/business-checkout.ts writes a founder grant there. LIVE-322 ownership rules still apply: a session id in a URL is a claim, never registration, so purchaseConfirmed and ownsTicket stay separate.\n\nEXPRESS WALLETS ARE NOT OPTIONAL HERE. Apple and Google Pay work today only because Stripe owns checkout.stripe.com. On Frequency they stop until the payment method domain is registered. Research says four or more express options is 67% conversion against 52% without, so shipping this without the wallets would make checkout WORSE, not better.\n\n🔴 THE ENUM WAS RENAMED AND THE OLD SPELLING FAILS. Stripe changelog 2026-03-25 (dahlia) renamed the ui_mode values: hosted became hosted_page, embedded became embedded_page, and custom became ELEMENTS. So the mode chosen here is written ui_mode: elements on a current API version, and setting the old value errors rather than degrading. lib/billing/stripe.ts constructs the client as new Stripe(SECRET) with NO pinned apiVersion, so every call inherits whatever the ACCOUNT default is — which means the correct spelling is a property of the Stripe account, not of this repository, and cannot be settled by reading the code.\n\nFIRST STEP OF THE IMPLEMENTATION, before any session-create line is written: read the account default API version and confirm which spelling it takes. The repo rule that the code wins over prose applies with a twist here — the code cannot answer it either, so verify against the live API. Consider pinning apiVersion explicitly in the same change: an unpinned client means a Stripe-side default bump can silently change the contract under a money path, which is exactly the class of failure the deploy-safety rules exist for.\n\nAlso confirmed in the same research: success_url is REJECTED under embedded_page and elements. return_url replaces it and still interpolates {CHECKOUT_SESSION_ID}, which is what keeps the webhook-independent reconcile alive.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const strip=(s)=>s.replace(/\\u002f\\u002a[\\s\\S]*?\\u002a\\u002f/g,\" \").replace(/^\\s*\\u002f\\u002f.*$/gm,\" \");const read=(p)=>{if(!fs.existsSync(p))fail(\"missing \"+p);return strip(fs.readFileSync(p,\"utf8\"))};const s=read(\"lib/billing/tickets.ts\");if(s.indexOf(\"ui_mode\")<0)fail(\"the ticket creator still opens a Stripe-hosted redirect: no ui_mode, so checkout is not on Frequency\");if(s.indexOf(\"client_secret\")<0)fail(\"the ticket creator returns no client_secret, so nothing on Frequency can mount the payment form\");process.exit(0)'",
+        "note": "Passes when the ticket creator opens a non-hosted session and hands back a client_secret, i.e. the payment form can mount on Frequency. Comments stripped first. Scoped to tickets deliberately: it is the proving path, and the remaining creators get their own rows as they convert."
+      }
+    },
+    {
+      "id": "LIVE-346",
+      "title": "The physical-goods checkout never collects or validates a shipping address",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/commerce/checkout.ts",
+        "ref": "the commerce_order creator"
+      },
+      "detail": "FOUND 2026-09-15. The commerce creator sells physical goods and sets no shipping_address_collection. The shipping address comes from an in-app value (input.shipping) that Stripe never sees, never validates and never normalises. If that in-app value is thin or malformed there is no address to hand a carrier, and the failure surfaces after the money has moved.\n\nWORTH DECIDING RATHER THAN DEFAULTING: collecting the address at Stripe gets validation, normalisation and autofill for free, and is one line. Keeping it in-app keeps the checkout shorter, which is the thing the on-page checkout program is trying to optimise for. The honest answer probably depends on whether the in-app address is already required and validated at the point the cart is built — check that before choosing, because if it is, this is a smaller problem than it looks.\n\nRELATED: billing_address_collection is unset on all nine creators, which OWN-075 needs for tax if that ruling lands on collecting it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const strip=(s)=>s.replace(/\\u002f\\u002a[\\s\\S]*?\\u002a\\u002f/g,\" \").replace(/^\\s*\\u002f\\u002f.*$/gm,\" \");const read=(p)=>{if(!fs.existsSync(p))fail(\"missing \"+p);return strip(fs.readFileSync(p,\"utf8\"))};const s=read(\"lib/commerce/checkout.ts\");if(s.indexOf(\"shipping_address_collection\")<0&&s.indexOf(\"shipping_details\")<0)fail(\"the physical-goods checkout still collects no shipping address through Stripe, so nothing validates the address a carrier is handed\");process.exit(0)'",
+        "note": "Passes when the commerce checkout either collects a shipping address through Stripe or explicitly handles shipping details from the session, with comments stripped first. Measures the consequence — an address exists that something validated — not the row title."
+      }
+    },
+    {
+      "id": "LIVE-348",
+      "title": "Not one purchase-conversion event fires anywhere, and one could not fire if it were called",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/analytics/events.ts",
+        "ref": "ANALYTICS_EVENTS"
+      },
+      "detail": "FOUND 2026-09-15. ANALYTICS_EVENTS has 16 entries and NOT ONE is commercial: no purchase, no checkout_started, no order, no ticket, no revenue. track() opens with a check that silently DROPS an unregistered name, which is not hypothetical — that file already records qr.referral_activated being swallowed exactly that way until 2026-09-05. Grepping for any track / gtag / sendGa4Event call across lib/billing, lib/commerce, app/api/webhooks and the buy controls returns zero hits. The funnel is: page view, then a cliff.\n\nA DEAD READER MAKES IT WORSE: lib/verticals/shop.ts declares engagement eventTypes shop.order.completed — a funnel reader whose event has NO writer anywhere in the repo. A definition that reads as coverage and measures nothing.\n\nTHE SEAM IS ALREADY THERE. recordPaidCheckout runs for both checkout.session.completed and async_payment_succeeded, is idempotent per session id, and holds the Session with amount, currency and metadata.kind. Register the names with clientEmittable false and emit from that one place and every one of the nine creators is covered, delayed settlement included. Server-side is correct by force as well as by preference: checkout happens on Stripe domain today and nothing reads the return markers, so a client-side purchase event is genuinely impossible.\n\n🔴 ONE TRAP THAT WOULD MAKE THE DATA USELESS WHILE LOOKING FINE. sendGa4Event sets client_id from the actor profile id. A profile id is NOT a GA client id, so a server-side purchase will not join the browser session that produced it: GA4 attributes every sale to a brand-new user with no source or medium, destroying exactly the attribution this is for. The fix is to read the _ga cookie when checkout starts and carry it through Stripe metadata into the webhook. sendGa4Event also has no value/currency plumbing and GA4 purchase requires both. Guest ticket buyers have no profile id at all, and mirrorToGa skips the consent check entirely when the actor id is null, so a guest purchase would mirror with no consent check — OWN-061 is the row that closes that.\n\nTHE ONE STEP THAT MUST BE CLIENT-SIDE is the buy click itself (the BuyButton and the ticket controls fire nothing today; the observe provider does rage-click detection only). It is also the most valuable single step, because it is what tells you whether the problem is intent or checkout friction — precisely the question the on-page checkout is meant to answer.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const strip=(s)=>s.replace(/\\u002f\\u002a[\\s\\S]*?\\u002a\\u002f/g,\" \").replace(/^\\s*\\u002f\\u002f.*$/gm,\" \");const read=(p)=>{if(!fs.existsSync(p))fail(\"missing \"+p);return strip(fs.readFileSync(p,\"utf8\"))};const ev=read(\"lib/analytics/events.ts\");if(!/purchase|checkout_|order_|revenue/i.test(ev))fail(\"ANALYTICS_EVENTS registers no commercial event, and track() silently drops an unregistered name\");const w=read(\"app/api/webhooks/stripe/route.ts\");if(w.indexOf(\"track(\")<0)fail(\"the webhook emits no analytics event, so a completed purchase is still invisible\");process.exit(0)'",
+        "note": "Passes when a commercial event is REGISTERED (an unregistered name is silently dropped by track()) and the webhook actually emits one. Both arms are required: a registry entry nothing fires is the dead-reader failure this row is partly about. Comments stripped first."
+      }
+    },
+    {
+      "id": "OWN-075",
+      "title": "No sales tax is calculated on anything this platform sells",
+      "status": "open",
+      "priority": "P2",
+      "lane": "owner",
+      "size": "S",
+      "ownerAction": "ruling",
+      "source": {
+        "file": "lib/billing/checkout.ts",
+        "ref": "automatic_tax, unset on all nine creators"
+      },
+      "detail": "FOUND 2026-09-15 auditing the money path. automatic_tax is set on NONE of the nine Checkout Session creators, and neither is tax_id_collection. No sales tax is calculated on any ticket, product, membership, donation or contribution. The same audit found billing_address_collection unset everywhere too, and an address is what a tax calculation needs.\n\nRULING ASKED AND DEFERRED 2026-09-15: the owner chose to file this rather than have an agent wire it. That is the right call and worth recording as the reason. Enabling Stripe Tax without registered tax settings does not fail loudly — it under-collects or errors at checkout, and both are worse than knowingly collecting nothing. Nexus and registration are a business fact about where this entity owes tax, not something the repository can derive.\n\nWHAT THE CODE CHANGE WOULD BE, once the ruling exists, so it is not re-researched: automatic_tax: { enabled: true } on each creator, billing_address_collection set where the calculation needs an address, tax_id_collection where a business buyer needs to supply one, and a decision per creator about whether the price is tax-inclusive or exclusive. It is a small change gated on a decision that is not small.\n\nNOT URGENT AT TODAY VOLUME and that is the honest framing: nothing has ever been charged, so nothing has been under-collected. It becomes urgent on volume, and it is cheaper to answer before there is a back-tax question than after.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Closes when the owner records a ruling as an ADR: either tax settings are registered and automatic_tax is wired on the nine creators, or collecting no sales tax is a recorded decision with its reasoning. 2026-09-15: asked, deferred to an accountant.",
+        "checked": "2026-09-15"
+      }
+    },
+    {
+      "id": "LIVE-351",
+      "title": "Three live tables were created straight in production, so two security guards could not see them",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270345004800_space_member_benefits.sql",
+        "ref": "the recovered space_member_benefits migration"
+      },
+      "detail": "FOUND 2026-09-15 20:29Z by check:migrations, which is the only gate that could have found it. A migration named space_member_benefits was applied to production at 20:27:10Z with NO file on any branch, no PR, and no session running. The ledger read 699 rows against 698 repo files, so the REQUIRED `checks` context failed on every open PR and on main itself. Measured, not inferred: at 20:05Z both sides were 698 with MATCHING sha256, so the drift was 22 minutes old when it was caught.\n\nTHE SECOND-ORDER DEFECT IS THE REAL ONE, and the drift is what exposed it. Because the three tables (space_member_benefits, space_tier_benefits, space_benefit_redemptions) existed in no migration file, check:rls and check:grants COULD NOT SEE THEM: both scope to tables created in migrations. That CI run reported \"276 live public table(s) ... all revoked\" and PASSED while three real production tables sat outside its scope carrying Supabase default ALL grants to anon and authenticated. Safe only because RLS was on with zero policies, and deny-all beats a grant. Fragile the moment anyone writes the first policy: a policy written for READS is governed by an ALL grant, so it would open INSERT/UPDATE/DELETE with it, and neither guard would fire. This is ADR-959 arriving through a door ADR-959 did not cover.\n\nRECOVERED 2026-09-15. The SQL came from supabase_migrations.schema_migrations.statements and was never retyped: 1 statement, 4615 bytes, md5 c8fd8886ae466cf8c7bf8311d2d1ffc7, reproduced byte-for-byte before it was committed, at the path the SQL own header comment named. The ledger row carried the APPLY time (20260915202710) rather than the filename version, which is the two-step apply in supabase/migrations/README.md with step two skipped, so it was restamped to 20270345004800. Committing the file alone would have left a file with no row AND a row with no file: two drifts instead of one. Both sides now read 699 and digest c813e2e9d6f4fb29df90e9fc86be1ddedf574abadc5ed93c41a086d43d96d473.\n\nThe three tables are declared internal in scripts/table-grants.txt and listed in scripts/rls-deny-all.txt, the verdict the contract defines for service-role-only tables and the only one that fails closed; the table comments say so themselves. The revokes that verdict REQUIRES were not in the applied SQL, so they were added to the migration and applied to production in the same pass. The live ACL now reads postgres and service_role only, and check:grants reads 279 live tables, 84 internal, all revoked.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const T=[\"space_member_benefits\",\"space_tier_benefits\",\"space_benefit_redemptions\"];const g=\"scripts/table-grants.txt\",d=\"scripts/rls-deny-all.txt\",p=\"supabase/migrations/20270345004800_space_member_benefits.sql\";for(const f of [g,d,p]) if(!fs.existsSync(f)) fail(f+\" is missing, so this probe cannot be evaluated\");const G=fs.readFileSync(g,\"utf8\"),D=fs.readFileSync(d,\"utf8\"),P=fs.readFileSync(p,\"utf8\");for(const t of T){if(!new RegExp(\"^\"+t+\"\\\\s+internal\\\\s*$\",\"m\").test(G)) fail(t+\" has no internal verdict in scripts/table-grants.txt, so check:grants cannot hold it to a revoke\");if(!new RegExp(\"^\"+t+\"\\\\s*$\",\"m\").test(D)) fail(t+\" is not on the RLS deny-all list, so a table with zero policies reads as unguarded\");if(!new RegExp(\"revoke\\\\s+all\\\\s+on\\\\s+table\\\\s+public\\\\.\"+t+\"\\\\s+from\\\\s+anon,\\\\s*authenticated\",\"i\").test(P)) fail(t+\" has no revoke from anon, authenticated in its migration, so Supabase default ALL grants stand and only RLS holds the door\");}process.exit(0)'",
+        "note": "Measures the CONSEQUENCE on all three tables at once: an internal verdict, a deny-all listing, and the revoke that verdict requires actually present in the migration. Never the row title. Carries its own floor: a missing file fails rather than passing silently."
       }
     },
     {
