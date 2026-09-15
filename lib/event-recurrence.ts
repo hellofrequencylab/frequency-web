@@ -232,7 +232,7 @@ export function propagationPatch(anchor: Anchor): Record<string, unknown> {
 //                     the only sales counter on this table: a pending reservation is counted from
 //                     `event_tickets` inside `reserve_ticket_atomic`, never stored here.
 //   • `created_at`  — when THIS row was made, which is now, not when the anchor's tier was made.
-// Each of the four is reset by OMISSION (bar `event_id`): the column defaults do the work
+// Each of these is reset by OMISSION (bar `event_id`): the column defaults do the work
 // (`gen_random_uuid()`, `0`, `now()`), so a payload that forgets one cannot smuggle the anchor's
 // value through.
 //
@@ -256,6 +256,19 @@ const TIER_CATALOG_COLUMNS = [
   // Presentation + lifecycle.
   'sort_order',
   'active',
+  // WHEN it may be bought (ADR-1373). ONLY the relative rule travels, and that is the whole point
+  // of it: `sales_starts_days_before` is the SERIES rule, resolved against each occurrence's own
+  // start, so a fourteen-day cadence gets the same members-first notice on every date without
+  // anyone re-entering anything.
+  //
+  // 🔴 `sales_start_at` and `sales_end_at` are ABSENT ON PURPOSE, and they are the fifth and sixth
+  // reset-by-omission columns. They are ABSOLUTE instants an operator typed for the ANCHOR'S date.
+  // Copied onto the ninth occurrence they would name a moment that has already passed, so the
+  // window would read as open from the moment the row was minted: a members-first promise that is
+  // silently public on every date but the first. That is precisely the failure ADR-1373 exists to
+  // remove, so the copy must not reintroduce it. An operator who wants one occurrence to open early
+  // sets the override on THAT occurrence, which is what an override means.
+  'sales_starts_days_before',
 ] as const
 
 type TierCatalogColumn = (typeof TIER_CATALOG_COLUMNS)[number]
