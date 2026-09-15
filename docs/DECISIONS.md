@@ -43076,3 +43076,65 @@ answer is a canon check over every string a reader can see, which is `HYG-091`-a
 decision than this row.
 
 **Rows.** `LIVE-255` (done, this ADR), `LIVE-253` (probe widened again).
+
+## ADR-1365: getting paid had five names in the product and none in the canon (2026-09-15)
+
+**Status.** Accepted. Closes `HYG-091`, which [ADR-1315](DECISIONS.md)'s row `LIVE-305` (#2598)
+named and deliberately left alone rather than amend the canon mid-change.
+
+**Context.** `docs/NAMING.md` is the terminology canon and always wins on names. It carries **nine**
+occurrences of *payout* and every one of them is either the rewards economy — the large payout at
+completion, the per-log Zap fallback, the Spark bonus layer — or a parenthetical inside the Events
+role section (*"Only a Space has a Connect payout account"*, `:391`). **The word appears and is
+nowhere defined.**
+
+Meanwhile the Stripe Connect side, which a Space host reads on
+`/spaces/[slug]/settings/payments`, `/settings/billing` and `content/help/spaces/get-paid.md`, runs
+on five names the canon had never heard of: **Get paid**, **money paths**, **payout account**,
+**Receive payments**, **Manage payouts**. The last is wider than the row said — *payout account*
+alone appears across at least eight non-test modules.
+
+**🔴 And the Collision guards section, which exists for exactly this, had no entry.** It guards
+*current*, *quest*, *field*, *agent*, *initiate/adept/master*, *luminary*, *channels*, *tune*,
+*co-op*, *task* and *live/static* — eleven words with two meanings each, spelled out. Two meanings
+of *payout* shared a word with no line saying which is which: one is a game reward, the other is
+real money to a bank.
+
+**Decision.**
+
+1. **A `§Money in` section names the money-in vocabulary**, each entry attributed to the surface it
+   comes from rather than invented: the surface (**Get paid**), the account (**payout account**,
+   with *Stripe Connect* kept for the one sentence that names the processor), the closed five-member
+   set (**money path**: memberships, bookings, orders, donations, tickets), and the **fixed verb
+   pair** — you *receive payments* on Frequency and you *manage payouts* in Stripe, never swapped.
+2. **The canon records that a payout account is a SETUP STEP, never a gate.** Stripe will not move
+   money to an unverified account at any price, which is a banking fact and not a tier, so the copy
+   reads *"two minutes and you can"* and never *"you cannot"* or *"upgrade"*. That ruling already
+   governs the code (`lib/billing/payout-prompt.ts`, stated at length in
+   `lib/events/ticket-eligibility.ts`); it was not in the canon a copywriter reads.
+3. **A `"payout"` collision guard** assigns each meaning its side: the rewards payout is member game
+   copy, the payout account is operator money copy, and operator copy says *payout account*,
+   *Receive payments* or *Manage payouts* rather than a bare *payout*.
+
+**The probe is the interesting part.** `HYG-091` shipped with `grep-present` for the words *"Get
+paid"* in `NAMING.md` — the shape-not-truth failure named in four ADRs, since writing the phrase
+anywhere in the file would have closed the row. It is re-pointed to a `cmd` probe whose load-bearing
+arm **reads the channel set out of `lib/billing/payout-prompt.ts`** and fails if the canon's
+money-path bullet does not list every one. A sixth money path shipped without a canon line now turns
+this row red. Five further arms check that each surface the canon quotes still says what it is
+quoted as saying, so the entry cannot quietly drift from the product it describes.
+
+**Consequences.** ✅ Proven **three** ways on real trees: exit **0** on the lane (18 assertions);
+exit **1** against `origin/main`'s `NAMING.md` with **8** arms firing independently; and exit **1**
+on a tree carrying the new canon plus a synthetic sixth channel, where the only failure is *"the
+money path bullet does not list the subscriptions path"* — the consequence arm doing its job.
+⚠️ **One arm was dropped rather than special-cased.** A first draft also forbade the phrase *"revenue
+stream"* in the money-path bullet, and failed on its own tree: the bullet is precisely where the
+canon says `Never "revenue stream"`. **A negative pin cannot live in the same text as the
+prohibition it enforces** — the same shape as needing `strip()` before an idiom pass reads a file
+whose comment states the rule. ⚠️ **Stated limit:** nothing checks the reverse direction, that no
+member-facing string uses a money-in word the canon does not carry. `check:canon` reads the retired
+list, not this section, and widening it to a positive vocabulary check over money copy is a larger
+decision than this row.
+
+**Rows.** `HYG-091` (done, this ADR).
