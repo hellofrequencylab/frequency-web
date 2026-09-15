@@ -35,8 +35,8 @@ We do **not** build a new substrate. `posts` is the unified activity table:
   topic). `event_topics` / `post_topics` to follow.
 
 **Naming:** **Pillar** = a `pillars` row (the Mind/Body/Spirit/Expression top level) · **Channel /
-Interest / Topic** = a `topical_channel` (the topical forum) · **legacy `channels` table** =
-hub/nexus/outpost focus groups (near-dead for content; do not conflate).
+Interest / Topic** = a `topical_channel` (the topical forum), and since 2026-09-15 the ONLY
+"channel" table — the hierarchy-v2 `channels` pair was dropped, empty ([ADR-NNNN](DECISIONS.md)).
 
 ## 3. Ranking: "an algorithm you get to choose"
 

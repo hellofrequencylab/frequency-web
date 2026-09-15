@@ -179,7 +179,9 @@ select bag_eq(
   $$ values ('posts'), ('post_reactions'), ('dispatches'), ('dispatch_comments'), ('dispatch_likes'),
             ('dispatch_poll_votes'), ('messages'), ('room_messages'), ('rooms'), ('friendships'),
             ('events'), ('event_posts'), ('event_media'), ('event_rsvps'), ('event_post_reactions'),
-            ('event_question_answers'), ('event_dispatches'), ('circles'), ('channels'), ('listings'),
+            -- `channels` left this list on 2026-09-15 (LIVE-334, ADR-NNNN): the retired
+            -- hierarchy-v2 table was dropped, empty, and its BEFORE INSERT trigger went with it.
+            ('event_question_answers'), ('event_dispatches'), ('circles'), ('listings'),
             ('market_listings'), ('listing_comments'), ('listing_offers'), ('commerce_products'),
             ('space_reviews'), ('commerce_reviews'), ('recording_reviews'), ('content_ratings'),
             ('space_updates'), ('spotlight_guestbook'), ('journey_plans'), ('practices') $$,

@@ -41239,3 +41239,113 @@ their own rows: `lib/pricing/feature-tiers.ts:248` (in-app ladder copy still pro
 outlive the tier silently) and `content/help/spaces/billing.md:45` (lists revenue splits).
 
 **Rows.** LIVE-232 (done, this ADR).
+
+## ADR-NNNN: there is one Channel table, and the hierarchy-v2 pair is dropped rather than described (2026-09-15)
+
+**Status:** Accepted · `supabase/migrations/20270345004500_drop_retired_channels.sql` (the drop),
+`components/widgets/community/manage.tsx` + `components/widgets/community/structure.tsx` (the two
+count tiles), `lib/feed/post-origin.ts` + `lib/feed/post-origin.test.ts` (the origin chip),
+`scripts/table-grants.txt` (the grant verdicts), `lib/database.types.ts` (the generated contract),
+`lib/moderation/suspension-coverage.ts` + `lib/moderation/suspension-coverage.test.ts` (the
+suspension ledger and its SQL comparison),
+`supabase/tests/suspension_reaches_every_member_write.test.sql` (the live-catalog bag),
+`docs/GLOSSARY.md`, `docs/DATABASE.md`, `docs/CONTENT-ARCHITECTURE.md`, `docs/IA-STRATEGY.md`,
+`docs/ROLES.md`. Closes `LIVE-334`. Completes what ADR-1244 and L9-01 left standing.
+
+**Context.** `20240102000000_hierarchy_v2.sql` created `channels` (hub/nexus/outpost-scoped "focus
+groups") and `channel_memberships`. `20240201000000_hierarchy_v3_topical_channels.sql` replaced the
+concept a month later with `topical_channels` + `topical_channel_memberships`, and every Channel
+surface a member or an operator can reach reads those. The v2 pair was never migrated and never
+deleted, so for two years the repo carried two tables called "channels" and a paragraph in
+`GLOSSARY.md` whose job was to stop a reader confusing them. L9-01 (2026-09-05) cut the last
+WRITER: the operator "New Channel" flow called a legacy `createChannel` that inserted into the v2
+tables and redirected to `/channels/<uuid>`, which the Channel page turned into a 404.
+
+What was left was measured against production on 2026-09-15 before any of this was written, and the
+measurement is why the change is a drop and not a deprecation note. `channels` 0 rows,
+`channel_memberships` 0 rows, `topical_channels` 9 rows (9 active), one inbound FK
+(`channel_memberships.channel_id`), no view, matview or function depending on either table. Three
+things the row that filed this did not know:
+
+- **The origin chip was not dead code, it was wrong code.** `lib/feed/post-origin.ts` looked up a
+  post's Channel scope in the retired table. `/channels/[id]` renders a feed on
+  `posts.scope_id = <topical channel id>` and the Channel manage hub counts the same rows, so a
+  Channel forum post resolved to `undefined` and rendered no origin at all. The read was filed as
+  "a lookup for a post origin no post carries"; it is a lookup for a post origin pointed at the
+  wrong table.
+- **Both count tiles said 0 about a thing there are nine of.** The Community "Manage" tile read the
+  retired table and linked to `/admin/channels`, which lists every live one.
+- **`channels` carried a suspension trigger.** `trg_channels_block_suspended` was live in
+  `pg_trigger`, `lib/moderation/suspension-coverage.ts` listed the table, and
+  `supabase/tests/suspension_reaches_every_member_write.test.sql` pinned the LIVE trigger catalog
+  to a hand-written bag that named it. A drop with none of that touched is a red `db-tests` run on
+  the next deploy, which is the shape of failure `AGENTS.md` names: the gate that notices measures
+  something the change did not think about.
+
+**Decision.**
+
+1. **Drop the tables, and the two enums that existed only to type their columns.**
+   `20270345004500_drop_retired_channels.sql` drops `channel_memberships` first (it owns the only FK
+   into `channels`, so no `cascade` is needed and nothing else can be reached by one), then
+   `channels`, then `channel_content_type` and `channel_scope_type` — measured as used by
+   `channels.scope` / `channels.type` and by nothing else in the schema or the tree. The policies go
+   with the tables, including `"channel_memberships: crew+ join own"` as re-emitted by
+   `20260612060000_retire_crew_role_value.sql`, and so does the suspension trigger. Every statement
+   is `if exists`, and a closing `do` block raises unless both tables are gone AND both `topical_`
+   tables survived, so a half-applied or misread run fails loudly instead of green.
+
+2. **A count tile counts the table its link opens.** `manage.tsx` counts `topical_channels`
+   unfiltered, because its tile opens `/admin/channels`, which lists shown and hidden rows.
+   `structure.tsx` counts `is_active` rows, matching the sibling Circles read in the same batch
+   ("what the community can browse") and the count the `/channels` hero already prints. Removing
+   both tiles was the other legitimate answer and was rejected: the operator dashboard's job is to
+   say how many Channels exist, and there is a true answer.
+
+3. **The origin chip reads `topical_channels`, by slug.** `/channels/[id]` resolves a uuid or a
+   slug, and the slug is what every other link into a Channel uses; the uuid stays as the fallback
+   for a row without one. Pinned by two tests beside the fixtures: a source-shape guard that the
+   module reads the live table and neither retired one, and the slug-less fallback.
+
+4. **The repo-side bookkeeping moves in the same change, because four separate gates count these
+   tables.** `scripts/table-grants.txt` loses both verdicts (`check:grants` enforces a bijection
+   between the ledger and the tables it parses out of the migrations, so a verdict for a dropped
+   table fails). `lib/database.types.ts` loses both table blocks and both enums — hand-trimmed, and
+   the file's table set was first verified identical to production's 280, so it now equals what a
+   regenerate produces once the drop lands rather than guessing at one. The suspension ledger loses
+   its `channels` row; `topical_channels` does not take its place, because it has no actor column
+   and is janitor-managed platform curation rather than a member write. The pgTAP bag drops
+   `('channels')`.
+
+5. **The suspension test's SQL comparison becomes cumulative instead of the migration being
+   rewritten.** `lib/moderation/suspension-coverage.test.ts` asserts that the tables
+   `20270344000000` attaches the trigger to ARE the ledger's covered set, both ways. A dropped table
+   breaks that in a way with only two fixes: edit the applied migration so it no longer describes
+   what ran, or teach the comparison that a later migration can retire a table. The second, for the
+   same reason `scripts/check-rls.mjs` replays statements in order rather than subtracting sets over
+   the whole history: a migration file is a record, not a description of the schema today. The
+   subtraction reads `drop table` out of every migration sorting after the suspension one, with
+   comments stripped so a DOWN script in a block comment cannot retire a live table, and it carries
+   a non-vacuity arm — a parser that matches nothing would make the stray check pass on an
+   unfiltered list.
+
+6. **`GLOSSARY.md` states one Channel and stops warning about two.** The blockquote that existed to
+   keep the two apart is replaced by a definition of the one, and the doc no longer enumerates the
+   topics: it listed seven, there are nine, and a restated count in prose is the thing `AGENTS.md`
+   says has already been wrong twice. `DATABASE.md`, `CONTENT-ARCHITECTURE.md`, `IA-STRATEGY.md` §6
+   and the `ROLES.md` overlays row lose their references in the same pass, so no live doc names a
+   table that does not exist.
+
+**Consequences.** Nothing a member or an operator can see changes except two numbers that were
+wrong and one chip that never rendered. The schema loses two tables, two enums, seven policies,
+nine indexes and one trigger, and with them the `anon` / `authenticated` grants that
+`ALTER DEFAULT PRIVILEGES` had put on both tables since creation (ADR-959). The migration is NOT
+applied by the change that adds it: the coordinator applies it through the ledger immediately before
+merge, because `check:migrations` compares repo files to `supabase_migrations.schema_migrations` and
+an early apply reddens every sibling PR. `db-tests` must be run after the apply, not before — it
+reads the live catalog, and that is the one gate here whose verdict changes at apply time rather
+than at merge time. The row's probe measures five consequences (no non-test file reads either table,
+a migration carries both drops outside a comment, no grant verdict survives, the generated contract
+declares neither table, the suspension ledger does not cover `channels`), fires on `origin/main`
+naming the three reads, and fired on all 18 arms of its mutation harness.
+
+**Rows.** LIVE-334 (done, this ADR).

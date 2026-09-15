@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import {
   ACTOR_COLUMNS,
@@ -34,7 +34,38 @@ import {
 
 const read = (p: string) => readFileSync(path.join(process.cwd(), p), 'utf8')
 const TYPES = read('lib/database.types.ts')
-const SQL = read('supabase/migrations/20270344000000_suspension_reaches_every_member_write.sql')
+const MIGRATIONS = 'supabase/migrations'
+const SQL_REL = `${MIGRATIONS}/20270344000000_suspension_reaches_every_member_write.sql`
+const SQL = read(SQL_REL)
+
+/** Tables dropped by a migration that sorts AFTER the suspension migration (LIVE-334, ADR-NNNN).
+ *
+ *  WHY THIS EXISTS. A migration file is a record of what ran, not a description of the schema
+ *  today, so the SQL⇄ledger comparison below has to be cumulative for the same reason
+ *  scripts/check-rls.mjs replays statements in order rather than set-subtracting the whole history:
+ *  `channels` was dropped, empty, on 2026-09-15 and the trigger went with the table. Without this
+ *  subtraction the only way to keep the comparison green would be to edit an applied migration,
+ *  which makes the file lie about what ran. It cannot be abused to hide a live table — the only
+ *  way onto this list is an actual `drop table`. Comments are stripped first so a DOWN script in a
+ *  block comment cannot retire a table that is still live (the trap check-grants.mjs documents). */
+function droppedAfterSuspensionMigration(): Set<string> {
+  const base = path.basename(SQL_REL)
+  const out = new Set<string>()
+  for (const f of readdirSync(path.join(process.cwd(), MIGRATIONS)).sort()) {
+    if (!f.endsWith('.sql') || f <= base) continue
+    const sql = read(`${MIGRATIONS}/${f}`)
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/--[^\n]*/g, '')
+    for (const m of sql.matchAll(
+      /drop\s+table\s+(?:if\s+exists\s+)?(?:public\.)?"?([a-z0-9_]+)"?/gi,
+    )) {
+      out.add(m[1].toLowerCase())
+    }
+  }
+  return out
+}
+
+const DROPPED_AFTER = droppedAfterSuspensionMigration()
 
 /** Table → { columns, profileFkColumns } parsed from the generated Database type. */
 function schemaTables(): Map<string, { columns: Set<string>; profileFks: Set<string> }> {
@@ -178,10 +209,20 @@ describe('3. the migration matches the ledger, both ways', () => {
         (m) => m[1],
       ),
     )
-    const stray = [...attached].filter((t) => !(t in COVERED))
+    // A table a LATER migration dropped is not a stray attachment — the trigger went with the
+    // table. Everything else that is attached must be on the ledger.
+    const live = [...attached].filter((t) => !DROPPED_AFTER.has(t))
+    const stray = live.filter((t) => !(t in COVERED))
     expect(stray).toEqual([])
-    // And the set of attached tables IS the covered set, not merely a subset of it.
-    expect([...attached].sort()).toEqual(Object.keys(COVERED).sort())
+    // And the set of attached, still-live tables IS the covered set, not merely a subset of it.
+    expect(live.sort()).toEqual(Object.keys(COVERED).sort())
+  })
+
+  it('the drop subtraction is not vacuous (a parser that matches nothing would pass the test above)', () => {
+    // `live` above is only a real filter if the scan actually finds drops. It found `channels`
+    // (LIVE-334, ADR-NNNN); an empty set here means the migration walk or the regex has stopped
+    // working and the stray check is passing on an unfiltered list.
+    expect(DROPPED_AFTER.size).toBeGreaterThan(0)
   })
 })
 
