@@ -123,7 +123,7 @@ async function SubscribersTab() {
     <>
       <p className="mb-4 text-body-sm text-muted">
         {subs.length} confirmed email {subs.length === 1 ? 'subscriber' : 'subscribers'}.
-        Manage campaigns in <StudioLink href="/admin/marketing/contacts">Marketing</StudioLink>.
+        Manage campaigns in <StudioLink href="/admin/crm/marketing">Marketing</StudioLink>.
       </p>
       <SubscribersTable rows={subs} />
     </>

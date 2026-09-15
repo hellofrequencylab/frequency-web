@@ -462,6 +462,19 @@ const nextConfig: NextConfig = {
       //   /manage/settings: a second frame over the same card index, with zero inbound links.
       { source: '/spaces/:slug/settings/basics', destination: '/spaces/:slug/manage?section=settings', permanent: true },
       { source: '/spaces/:slug/manage/settings', destination: '/spaces/:slug/manage?section=settings', permanent: true },
+      // LIVE-239 (ADR-1347): one contacts roster. /admin/marketing/contacts was a SECOND roster over the
+      // same cohort (both read searchContacts) that lost its menu leaf in 2026-07 and lived on widget
+      // deep links for two months. It is deleted, not parked, and lands on the Resonance CRM's Contacts
+      // leaf, which now carries the per-row consent control, the bulk consent power action (ADR-379) and
+      // the scan-intro switch that were the only things the retired page had and it did not.
+      // Permanent (308) for the reason the rows above are: the survivor is a registered catalog
+      // destination, so a cached answer stays right.
+      // 🔴 The :id rule is EXACT and its own line, NOT folded into a :path* over the parent. `:id` is a
+      // CONTACT id and /admin/crm wants a PROFILE id, so the forwarding page moved with the retirement
+      // (app/(main)/admin/crm/contacts/[id]/page.tsx resolves one to the other) and this rule only has
+      // to reach it. A :path* here would answer for paths nothing serves.
+      { source: '/admin/marketing/contacts', destination: '/admin/crm/contacts', permanent: true },
+      { source: '/admin/marketing/contacts/:id', destination: '/admin/crm/contacts/:id', permanent: true },
       // crm/ keeps its directory: actions.ts is imported by ../manage/circle-member-viewer.tsx.
       { source: '/circles/:slug/crm', destination: '/circles/:slug/manage', permanent: false },
       // Same shape: crm/actions.ts is imported by ../event-member-viewer.tsx.

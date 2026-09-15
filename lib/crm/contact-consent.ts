@@ -100,6 +100,36 @@ export async function canEmailContact(
   return evaluateContactConsent({ purpose, suppressed, consentState })
 }
 
+// ── The OPERATOR write: set consent on named contact rows ────────────────────────────────────────
+// authz-delegated: the caller gates. This is the write behind the CRM roster's consent control and its
+// bulk action, which moved here with LIVE-239 when /admin/marketing/contacts retired: the roster's own
+// copy opened the service-role client inside a page directory, and this module is already "the one place
+// that answers may we contact this person", so the write belongs beside the read rather than beside a
+// route. SCOPED BY CONSTRUCTION: one `.in('id', ids)` update over the ids the caller named, never a
+// filterless write. Idempotent (re-setting the same state is a no-op on state).
+
+/**
+ * Set `consent_state` on the named contact rows, returning how many ids were written. De-duplicates and
+ * drops blanks; a selection that reduces to nothing writes nothing and returns 0. FAIL-SAFE by
+ * REPORTING: a failed write returns 0 rather than throwing, so a caller never shows a false success.
+ */
+export async function setContactsConsent(
+  ids: string[],
+  state: 'subscribed' | 'unsubscribed',
+): Promise<number> {
+  const unique = [...new Set(ids.filter((v) => typeof v === 'string' && v.length > 0))]
+  if (unique.length === 0) return 0
+  try {
+    const { error } = await createAdminClient()
+      .from('contacts')
+      .update({ consent_state: state, updated_at: new Date().toISOString() })
+      .in('id', unique)
+    return error ? 0 : unique.length
+  } catch {
+    return 0
+  }
+}
+
 // ── GLOBAL STOP — propagate one opt-out across every channel at once ──────────────────────────────
 
 export interface GlobalStopInput {

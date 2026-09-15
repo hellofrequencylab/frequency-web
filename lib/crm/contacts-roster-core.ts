@@ -24,6 +24,7 @@
 // docs/CONTENT-VOICE.md).
 
 import type { ContactStatus } from '@/lib/crm/classification'
+import type { ContactConsentState } from '@/lib/crm/contact-consent'
 import type { RelationshipKind } from '@/lib/crm/relationship-kinds'
 import type { Facet } from '@/lib/people/member-viewer'
 
@@ -46,6 +47,14 @@ export interface ContactRosterRow {
   avatarUrl: string | null
   /** The primary derived status: member > subscriber > lead. */
   status: ContactStatus
+  /** Address-level marketing consent on the `contacts` hub ('unknown' when never set). The status
+   *  above COLLAPSES this (an unsubscribed non-member reads as a lead), so consent is carried
+   *  separately: it is what the roster's consent control writes and the `consent:` facet filters on.
+   *  Retired with /admin/marketing/contacts (LIVE-239) and landed here, where the roster already is. */
+  consentState: ContactConsentState
+  /** Where the contact came in from (`beta_waitlist`, an import label, a scan): the `source` column,
+   *  null when unrecorded. Drives the data-driven Source facet. */
+  source: string | null
   /** The community trust rung (member/host/guide/mentor/…), null for a non-member. */
   communityRole: string | null
   isBusiness: boolean
@@ -60,7 +69,8 @@ export interface ContactRosterRow {
   createdAt: string | null
   // ── Facet + sort fuel (the pure core reads ONLY these two) ──
   /** Facet-matchable tokens (namespaced so they never collide): `status:` / `role:` / `active:` /
-   *  `business:` / `space:` / `kind:` / `upgrade:`. The facet filter tests membership here. */
+   *  `business:` / `space:` / `kind:` / `upgrade:` / `consent:` / `source:`. The facet filter tests
+   *  membership here. */
   badges: string[]
   /** Pre-computed sort signals: `joined` epoch, `statusRank`, `active`, `spaces`, `upgrade`. */
   sortValues: Record<string, number | string>
@@ -180,4 +190,14 @@ export function applyContactQuery(
   const safePage = Math.max(1, Math.floor(page) || 1)
   const visible = filtered.slice(0, safePage * size)
   return { visible, total: filtered.length, hasMore: filtered.length > visible.length }
+}
+
+/** A stored contact `source` as a plain sentence-case label (`beta_waitlist` -> `Beta waitlist`). Pure,
+ *  and deliberately NOT a per-value dictionary: an import label nobody has seen yet reads sensibly
+ *  instead of disappearing from the Source facet. Lives here because the roster island renders it and
+ *  lib/crm/contacts-roster.ts is `server-only` (LIVE-037's rule: the client imports from the core). */
+export function sourceLabel(source: string): string {
+  const words = source.replace(/[_-]+/g, ' ').trim()
+  if (!words) return source
+  return words.charAt(0).toUpperCase() + words.slice(1)
 }
