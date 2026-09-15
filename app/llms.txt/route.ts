@@ -8,10 +8,11 @@ import {
 import { createAdminClient } from '@/lib/supabase/admin'
 import { funnelSlugs, getFunnelConfig } from '@/lib/marketing/funnel-config'
 import { COMPARISONS, comparisonCopy, comparisonPath } from '@/lib/marketing/comparisons'
-import { pricingLadderSummary, offeringLadderLabel } from '@/lib/pricing/pricing-page'
+import { pricingLadderSummary, offeringLadderLabel, paidWallsPhrase } from '@/lib/pricing/pricing-page'
 import { getPricingValues } from '@/lib/pricing/settings'
 import { catalogConfigByKey, loadCatalogConfig } from '@/lib/pricing/catalog-config'
 import { isBetaPricingActive } from '@/lib/pricing/beta'
+import { loadFeatureGateOverrides } from '@/lib/pricing/gates'
 import { formatBps } from '@/lib/pricing/display'
 import { allOfferings, type Offering, type PricingGridInput } from '@/lib/pricing/pricing-grid'
 import { countUpcomingPublicSeries } from '@/lib/events/series-seo'
@@ -26,15 +27,21 @@ import { countUpcomingPublicSeries } from '@/lib/events/series-seo'
 /** Resolve the pricing model exactly as /pricing does: the operator's config over the code defaults.
  *  This route already reads the DB for its live stats and is daily-ISR, so it can afford the same reads. */
 async function pricingInput(): Promise<PricingGridInput> {
-  const [values, catalog] = await Promise.all([getPricingValues(), loadCatalogConfig()])
-  return { values, catalog: catalogConfigByKey(catalog), betaActive: isBetaPricingActive() }
+  const [values, catalog, gateOverrides] = await Promise.all([
+    getPricingValues(),
+    loadCatalogConfig(),
+    loadFeatureGateOverrides(),
+  ])
+  return { values, catalog: catalogConfigByKey(catalog), betaActive: isBetaPricingActive(), gateOverrides }
 }
 
 /** The whole money model in one citable sentence pair (ADR-913 / ADR-914), with the rate for EVERY rung
- *  read off the offerings, so a rung cannot be omitted and a number cannot go stale. */
-function takeRateStory(offerings: Offering[]): string {
+ *  read off the offerings, so a rung cannot be omitted and a number cannot go stale. The capabilities
+ *  that need a paid plan, and the plan each opens at, are read off the gate map the same way
+ *  (paidWallsPhrase), so this sentence can never name a plan for a wall the product does not enforce. */
+function takeRateStory(input: PricingGridInput, offerings: Offering[]): string {
   const rates = offerings.map((o) => `${offeringLadderLabel(o)} ${formatBps(o.networkRateBps)}`).join(', ')
-  return `People join free, businesses host free, and you pay when you start charging. Selling is NOT gated on any tier: every rung, including a free Member and a free Space, can sell tickets and take payments and donations from day one, and what a paid rung buys is a lower rate plus the tools that build the list which takes that rate to zero. The take-rate applies ONLY to a sale the network introduced: ${rates}. It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free. Tips are always 0%. Three capabilities do need a paid plan and nothing else does: selling memberships (Business), campaigns and funnels (Business), and revenue splits (Collective).`
+  return `People join free, businesses host free, and you pay when you start charging. Selling is NOT gated on any tier: every rung, including a free Member and a free Space, can sell tickets and take payments and donations from day one, and what a paid rung buys is a lower rate plus the tools that build the list which takes that rate to zero. The take-rate applies ONLY to a sale the network introduced: ${rates}. It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free. Tips are always 0%. What does need a paid plan, and nothing else does: ${paidWallsPhrase(input.gateOverrides)}.`
 }
 
 /** The plain "the ladder is X, then Y" sentence, priced from the same offerings. */
@@ -58,13 +65,13 @@ export const revalidate = 86400
 const abs = (path: string) => `${SITE_URL}${path}`
 
 // The key public pages, each with a one-line description in the locked voice.
-const pages = (offerings: Offering[]): { path: string; label: string; desc: string }[] => [
+const pages = (input: PricingGridInput, offerings: Offering[]): { path: string; label: string; desc: string }[] => [
   { path: '/', label: 'Home', desc: `${SITE_NAME}, the Community Collective. The short version of who it is for and how it works.` },
   { path: '/start', label: 'Start here', desc: 'Choose how you want to get involved, then take your first move.' },
   { path: '/the-community', label: 'The Community', desc: 'How you find your people, through Pillars, Channels, and Circles. For builders: host one Circle and we hand you the format and the first-night script.' },
   { path: '/the-quest', label: 'The Quest', desc: 'The light, in-person game: Zaps, Gems, season ranks, and Journeys.' },
   { path: '/the-lab', label: 'The Lab', desc: 'The physical third space, and why a community needs a room.' },
-  { path: '/pricing', label: 'Pricing', desc: `Pricing for Spaces and members: people join free, businesses host free, and you pay when you start charging. You keep 100% of your own bookings. ${takeRateStory(offerings)} The whole ladder: ${ladderSentence(offerings)}.` },
+  { path: '/pricing', label: 'Pricing', desc: `Pricing for Spaces and members: people join free, businesses host free, and you pay when you start charging. You keep 100% of your own bookings. ${takeRateStory(input, offerings)} The whole ladder: ${ladderSentence(offerings)}.` },
   { path: '/what-is-frequency', label: 'What is Frequency', desc: `The answer-first explainer of the movement: what ${SITE_NAME} is, how it works (Circles, Events, The Lab), and why it exists.` },
   { path: '/about', label: 'About', desc: 'The mission and the people building it.' },
   { path: '/discover', label: 'Discover', desc: 'Live Circles and Events near you, sorted by Channel.' },
@@ -201,7 +208,7 @@ export async function GET() {
     '',
     ...stats,
     '## Key pages',
-    ...pages(offerings).map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
+    ...pages(input, offerings).map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
     '',
     '## Live directories',
     ...DIRECTORIES.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
@@ -215,7 +222,7 @@ export async function GET() {
     '## Pricing for Spaces (a Community Collective, not a tax on your work)',
     `The core promise: people join free, businesses host free, and you pay when you start charging. Your own people are always free, on every tier, forever, and a business never pays for access to people. You keep 100% of the bookings and sales you bring in yourself. Frequency earns a share ONLY of the business the network sends you (a referral or a discovery inside the collective), and that rate drops as your plan rises. The whole ladder: ${ladderSentence(offerings)}. Monthly or yearly, two months free.`,
     ...pricingLadderSummary(input),
-    takeRateStory(offerings),
+    takeRateStory(input, offerings),
     '',
     '## Frequency by who you are (operator funnel doors)',
     ...funnelSlugs().map((slug) => {

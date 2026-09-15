@@ -40807,3 +40807,76 @@ the moment the edge answers. The six reads outside the `sectionRead` chain (`get
 named here rather than fixed; they are outside the row's eight files.
 
 **Rows.** LIVE-331 closed.
+
+## ADR-1337: every marketing figure AND every tier name is read from the catalog, and the guard covers the CMS templates and the help center (2026-09-14)
+
+**Status.** Accepted. Closes `LIVE-232`. Extends [ADR-916](DECISIONS.md) (the single-source
+assertion and `marketing-figures.test.ts`), [ADR-918](DECISIONS.md) (a published page must not
+freeze a price) and [ADR-914](DECISIONS.md) (the three walls); amends the last of those, below.
+
+**Context.** `docs/CORE-MODEL.md` §5 phase 4 row 3.5 says the pricing page, grid, FAQ, JSON-LD and
+`llms.txt` all derive from the catalog, verified by `marketing-figures.test.ts`. Measured before any
+change, that was already true of every route surface: `/pricing`, `/llms.txt`, `/llms-full.txt`,
+`/for/[niche]`, `/vs/[slug]` and `/upgrade` read every price and rate off `lib/pricing/pricing-grid.ts`
+and the catalog. Four things were not in the sentence.
+
+1. The guard's roots stopped at `app/(marketing)`, the two llms routes, `lib/marketing` and
+   `components/marketing`. `lib/page-editor/templates/pricing.ts`, the document the editor seeds
+   `/edit/pricing` from, sat outside it and typed `'from $9'` for operator seats and `'For example,
+   $25 to $100 a month'` for owner-set memberships. The seat amount lives in the `operator_seat`
+   catalog row beside a `placeholder` flag; the template read neither.
+2. The help center sat outside it too, and has no interpolation of any kind
+   (`lib/help/content-core.ts` parses front-matter and Markdown, nothing else), so
+   `content/help/spaces/plans-and-pricing.md` typed the entire ladder: four monthly prices, four
+   yearly, five network rates, both member rates, the Crew floor and the trial length. `DECISIONS.md`
+   records that article being corrected by hand twice before. `the-vault.md` typed the Crew floor;
+   `marketplace.md` typed a `$20` example.
+3. Tier NAMES were typed where figures were not. The template hand-wrote four Space cards and named
+   their rates by key (`RATE.collective`); the page looked its paid band up by id and would have
+   crashed the day a plan left the ladder; and four surfaces (the `/pricing` FAQ, both llms routes
+   and the help article) said "revenue splits (Collective)". `space_revenue_splits` was deleted by
+   `HYG-079` because the feature is not built, so that sentence named a plan for a wall the product
+   does not enforce, on the surface eighteen AI crawlers are opted into by name.
+4. The row's probe measures `LIVE-228`'s consequence (the word "Collective" absent from three files),
+   and `LIVE-228` is open. The tier is still sold and still on the ladder.
+
+**Decision.**
+
+1. **A Space plan's name is read the same way its price is.** `lib/page-editor/templates/pricing.ts`
+   maps `pricingTiers()` for every Space card, every FAQ answer that walks the ladder and the kicker
+   that lists the rates; the only thing it says per plan is its feature bullets, keyed by plan id so a
+   retired id fails to typecheck rather than surviving as a card. A ladder of more than three rungs
+   renders a second `Tiers` block; three or fewer render one. The seat card reads the `operator_seat`
+   row through `planExtras` and its placeholder flag, so `LIVE-229` goes live there with no edit. The
+   page maps its paid offerings instead of looking three up by id.
+2. **What needs a paid plan is read off the gate map.** `paidWalls(overrides)` in
+   `lib/pricing/pricing-page.ts` carries the two walls' copy (`space_memberships`,
+   `space_campaigns`) and reads each plan label off `mergeGate`, through the operator's overrides,
+   the same merge the grid does; `paidWallsPhrase` is the one-line form. `/pricing`, `/llms.txt` and
+   `/llms-full.txt` all read it. A wall whose gate is gone drops out rather than naming a plan for
+   nothing, which is how the revenue-splits claim left all four surfaces at once. This amends
+   ADR-914's "three walls" to the two the product enforces; a third returns by declaring its gate in
+   the same change as the code that enforces it (HYG-079's rule), and this list in the same change.
+3. **The help center states no figure.** Its three articles drop the digits for phrases that do not
+   age and link to `/pricing`, which reads the catalog. No templating mechanism was invented for
+   Markdown: a `{{price}}` seam with nothing behind it would be a third copy of the numbers wearing
+   a derived costume.
+4. **The guard widens and gets a mutation check.** `marketing-figures.test.ts` walks `app/for`,
+   `app/(main)/upgrade`, `lib/page-editor/templates`, the pricing copy spine (`pricing-page`,
+   `pricing-grid`, `display`), `lib/jsonld.ts`, `lib/ai/voice.ts` and every `content/help/**/*.md`
+   beside its original roots. The allow-list is exactly `{0%, 100%}`, the two halves of the promise,
+   and does not grow: a year, a count or a date never matches either pattern, so it needs no waiver.
+   A planted `$29`, `5%`, a Markdown price cell and `8%` are each asserted caught by line, so the
+   scanner cannot rot into a pass the way ADR-914 found three canon rules had.
+
+**Consequences.** No price and no rate changed; every figure a visitor sees today is the figure they
+saw yesterday, now read where it was typed. When `LIVE-228` takes `collective` off
+`ADVERTISED_SPACE_PLANS`, the template, the page band, both FAQ ladders, the kicker and the llms
+corpus drop it with no edit; the only follow-up is deleting one feature-bullet entry the type system
+will point at. The row's probe passes on this tree because no surface types the name, not because the
+tier is retired; the probe stays as written and will keep passing through the retirement. Named for
+their own rows: `lib/pricing/feature-tiers.ts:248` (in-app ladder copy still promises revenue splits),
+`lib/marketing/funnel-config.ts:556` (types the tier name, pinned to `P.collectiveList` so it cannot
+outlive the tier silently) and `content/help/spaces/billing.md:45` (lists revenue splits).
+
+**Rows.** LIVE-232 (done, this ADR).

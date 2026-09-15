@@ -4,7 +4,7 @@ description: Swap and share with neighbors, plus housing, the community Market, 
 category: connecting
 order: 5
 published: 2026-06-06
-updated: 2026-07-27
+updated: 2026-09-14
 audience: member
 featureKeys: [marketplace]
 status: published
@@ -25,7 +25,7 @@ reach the person and arrange the rest offline.
 - Filter by type: **Offering**, **Free**, **To lend**, or **Looking for**.
 - Tap **Near me** to sort by distance using your device location. The closest show first.
 - **Post a listing** with a title, a type, and a few details. Add a price in plain words
-  ("$20", "a trade", "free"). There's no checkout. Edit it anytime, or mark it claimed or
+  ("twenty dollars", "a trade", "free"). There's no checkout. Edit it anytime, or mark it claimed or
   closed when it's done.
 
 ## Housing

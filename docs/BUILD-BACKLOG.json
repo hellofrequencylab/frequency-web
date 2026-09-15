@@ -84,7 +84,6 @@
             "PROG-R4",
             "LIVE-228",
             "LIVE-229",
-            "LIVE-232",
             "PROG-R5",
             "LIVE-234",
             "LIVE-235",
@@ -10812,7 +10811,7 @@
     {
       "id": "LIVE-232",
       "title": "Every marketing figure derives from the catalog, none is typed",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
@@ -10820,11 +10819,12 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "Prices and rates appear across /pricing (859 lines), lib/page-editor/templates/pricing.ts (402 lines, currently unreachable), the comparison grid, 12 FAQ answers, a Product/Offer JSON-LD block, llms.txt and llms-full.txt. They already derive from CATALOG in most places; the guard is that no literal survives. llms.txt matters more than it looks: app/robots.ts opts in 18 AI crawlers by name, and neither llms file is human-reviewed, so a stale figure there gets quoted back at prospects.",
+      "detail": "Prices and rates appear across /pricing (859 lines), lib/page-editor/templates/pricing.ts (402 lines, currently unreachable), the comparison grid, 12 FAQ answers, a Product/Offer JSON-LD block, llms.txt and llms-full.txt. They already derive from CATALOG in most places; the guard is that no literal survives. llms.txt matters more than it looks: app/robots.ts opts in 18 AI crawlers by name, and neither llms file is human-reviewed, so a stale figure there gets quoted back at prospects.\n\n── CLOSED 2026-09-14 (Lane U). MEASURED FIRST, and the premise was mostly already true: /pricing (the cards, the comparison grid, every FAQ answer, the Product/Offer JSON-LD, the meta description), /llms.txt, /llms-full.txt, /for/[niche], /vs/[slug] and /upgrade already read every price and rate off the pricing grid and the catalog, and lib/marketing/marketing-figures.test.ts already banned a $-digit or N% literal across app/page.tsx, app/(marketing), the two llms routes, lib/marketing and components/marketing. WHAT WAS TYPED: lib/page-editor/templates/pricing.ts carried 'from $9' for operator seats (the operator_seat catalog row holds the amount and a placeholder flag) and 'For example, $25 to $100 a month' for owner-set memberships; content/help/spaces/plans-and-pricing.md typed the whole ladder ($0/$29/$79/$39 monthly, $0/$290/$790/$390 yearly, 10%/5%/3%/0%/0% network rates, Member 10%, Crew 8%, from $4.99, a 14 day trial); content/help/membership/the-vault.md typed $4.99; content/help/connecting/marketplace.md typed a $20 example. And the tier NAMES were typed where the figures were not: the template hand-wrote four Space cards and listed their rates by name (RATE.collective), the page looked its paid band up by id (business, collective, nonprofit) and would have crashed on a retired id, and four surfaces (the /pricing FAQ, /llms.txt, /llms-full.txt, the help article) typed 'revenue splits (Collective)' for a gate HYG-079 had deleted because the feature is not built. NOW: the template maps pricingTiers() for every Space card, FAQ answer and rate list, and reads the seat card off the operator_seat row through planExtras and its placeholder flag (LIVE-229 flips it with no edit here); the page maps the paid offerings; what needs a paid plan, and which plan, is read off FEATURE_GATES through the operator overrides by paidWalls() / paidWallsPhrase() in lib/pricing/pricing-page.ts and shared by /pricing, /llms.txt and /llms-full.txt, so the revenue-splits claim is gone from all four. The help center has NO interpolation mechanism (lib/help/content-core.ts parses front-matter and markdown, nothing else), so the three articles drop the digits for phrases that do not age and link to /pricing, which reads the catalog. THE GUARD: marketing-figures.test.ts now also walks app/for, app/(main)/upgrade, lib/page-editor/templates, the pricing copy spine (pricing-page, pricing-grid, display), lib/jsonld.ts, lib/ai/voice.ts and every content/help/**/*.md; the allow-list is exactly {0%, 100%}, the two promise halves; a mutation check plants $29, 5%, a markdown price table cell and 8% and asserts each is reported by line. NOT AS THE ROW SAID: the probe measures LIVE-228's consequence (the word Collective in three files) and LIVE-228 is still open, so the tier is still on the ladder and still renders on every surface, derived. The probe passes because no surface TYPES the name any more; the day LIVE-228 takes it off ADVERTISED_SPACE_PLANS, every one of these surfaces drops it with no edit. The probe stays as written. No price and no rate was changed. Left for their own rows: lib/pricing/feature-tiers.ts:248 (in-app ladder copy still says Collective adds revenue splits), lib/marketing/funnel-config.ts:556 (types the tier name, pinned to P.collectiveList so it cannot outlive the tier silently), content/help/spaces/billing.md:45 (lists revenue splits).",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const files=[\"app/(marketing)/pricing/page.tsx\",\"lib/pricing/pricing-page.ts\",\"lib/page-editor/templates/pricing.ts\"];const bad=files.filter(f=>fs.existsSync(f)&&/Collective/.test(fs.readFileSync(f,\"utf8\")));if(bad.length)console.error(\"retired tier still named in: \"+bad.join(\", \"));process.exit(bad.length?1:0)'"
-      }
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-233",
