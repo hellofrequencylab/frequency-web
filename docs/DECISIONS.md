@@ -42421,7 +42421,47 @@ blind to it.
 
 **Rows.** HYG-094 (filed, this ADR).
 
----
+## ADR-1356: an owner ask filed outside the owner lane escapes the ownerAction requirement, and that class gets a convention rather than a gate (2026-09-15)
+
+**Status.** Accepted, 2026-09-15. Two rows edited (`LIVE-234`, `OWN-061`); no code, no gate, no
+schema. Deliberately files NO new row, and the reason is the substance of this ADR.
+
+**Context.** `pnpm backlog` printed `LIVE-234` ("prove each money loop once in production") as an
+agent-workable P0 in every scan of the board, and it was picked up as one repeatedly. It is not
+workable by any agent: its probe is five non-zero row counts produced by five REAL Stripe charges,
+which needs a human with a payment method. `OWN-061` is the same shape — its own text says *"the ask
+is the ruling"* — and it too carried no `ownerAction`.
+
+**Why the guard did not catch it.** `scripts/check-backlog.mjs` demands an `ownerAction` only on an
+open row whose **lane** is `owner`. Both of these sit in the `live` lane with a `manual` probe, so the
+requirement never applied. AGENTS.md already names the consequence in the sentence that introduces
+the field — the ask *"is printed beside the OWNER section instead of hiding in a live row's detail"* —
+and hiding in a live row's detail is precisely what happened. Both rows now carry one: `OWN-061`
+`ruling`, which its own text dictates, and `LIVE-234` `account`.
+
+**`account` is an imperfect fit and is recorded as such.** The five keys are
+`account | config | content | ruling | waiting`, and none of them names *"perform a real end-to-end
+transaction"*. `account` ("a console action on a third-party account") is the nearest. A sixth key
+was NOT added, because one row's evidence is a bad reason to widen a taxonomy that is doing its job
+on twenty-six others; if a second row of this shape appears, that is the moment to revisit it.
+
+**🔴 The finding gets a CONVENTION, not a gate, and this is the decision.** The tempting fix is to
+require `ownerAction` on every open row whose probe is `manual`. That rule is wrong: AGENTS.md defines
+`manual` as *"rows a repo cannot probe"*, which is a strictly larger set than "rows waiting on the
+owner" — a row can be honestly unprobeable and still be nobody's ask. There is no machine-readable
+property that separates "an owner must act" from "the repo cannot measure this", because the
+distinction lives in what the row MEANS. Under [ADR-970](DECISIONS.md) a gate that cannot fire
+honestly gets routed around and then reads as coverage, which is worse than no gate. So the rule is
+stated for humans and agents instead: **a row whose ask lands on a person carries an `ownerAction`
+whatever lane it sits in**, and the board's OWNER section is the check that it did. Filing an
+unprobeable row to track an unprobeable rule would have been the same mistake one level up.
+
+**What is genuinely agent-workable here.** `PROG-R5`, whose own detail says surfacing Stripe Connect
+onboarding at the first sell attempt unblocks all five money loops with one push. `LIVE-234` is the
+downstream verification of that work, not a competing task — which is why it reads as P0 and is still
+correctly P0: it is costing something today, it is simply costing it to the owner.
+
+**Rows.** LIVE-234 and OWN-061 (both still open; only their `ownerAction` and detail changed).
 
 ## ADR-1358: the front door states the model, and it is written as a MIGRATION because the front door is a database row (2026-09-15)
 
