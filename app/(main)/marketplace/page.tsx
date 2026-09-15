@@ -4,9 +4,10 @@ import { COMMERCE_LAST_COOKIE, commerceSurfaceHref, parseCommerceSurface } from 
 
 // /marketplace — the member commerce umbrella's landing door (ADR-868). The left rail's
 // single "Marketplace" row points here; this server page reads the `commerce_last` cookie
-// (written client-side by CommerceLastVisited on the Classifieds and Market surfaces),
-// validates it against the whitelist, and redirects to the member's last commerce surface,
-// defaulting to Classifieds for a first visit or an unknown value.
+// (written client-side by CommerceLastVisited on all four umbrella surfaces — Classifieds,
+// Housing, Market and Events, each from its own subtree layout), validates it against the
+// whitelist, and redirects to the member's last commerce surface, defaulting to Classifieds for
+// a first visit or an unknown value. Events resolves to its COMMERCE face, /events?price=paid.
 //
 // This is deliberately a temporary (307) redirect: the destination changes per member and
 // per visit, so it must never be cached as permanent. The PERMANENT (308) redirects for the

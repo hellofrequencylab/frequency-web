@@ -13,12 +13,22 @@ import { browsableAreas, type MarketArea } from '@/lib/marketplace/visibility'
 // assumed already existed: "flipping it the day real merch exists is a one-row change" is only
 // true if the entry is still here and a flag gates it, so deleting the Frequency Store row
 // would break the promise rather than keep it.
+//
+// THE EVENTS ENTRY POINTS AT THE COMMERCE FACE, not the full member index (LIVE-243). Events is
+// the one area that is also a member noun with its own left-rail row, so it appears twice; the
+// tab has to read as the PAID AND TICKETED face of Events or it is just a second Events index.
+// `price=paid` is the real facet the index already declares (PRICE_OPTIONS in
+// app/(main)/events/index-data.ts), and EventsSurface was already parameterised for this tab —
+// its own doc comment omits the host actions slot "on the commerce tab". The shape was
+// anticipated in the component and had never been wired. The umbrella's return href agrees:
+// commerceSurfaceHref('events') in lib/marketplace/last-visited.ts is the same URL, and a test
+// pins the two together.
 
 const AREAS = [
   { key: 'all', area: 'market', href: '/classifieds', label: 'Classifieds' },
   { key: 'housing', area: 'housing', href: '/housing', label: 'Housing' },
   { key: 'makers', area: 'makers', href: '/market', label: 'Market' },
-  { key: 'events', area: null, href: '/events', label: 'Events' },
+  { key: 'events', area: null, href: '/events?price=paid', label: 'Events' },
   { key: 'shop', area: 'shop', href: '/store', label: 'Frequency Store' },
 ] as const satisfies readonly {
   key: string

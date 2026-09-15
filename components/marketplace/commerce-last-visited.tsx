@@ -7,9 +7,11 @@ import {
   type CommerceSurface,
 } from '@/lib/marketplace/last-visited'
 
-// Writes the Marketplace umbrella's last-visited cookie on mount (ADR-868). Mounted once
-// in the Classifieds and Market layouts — the ONE shared component both surfaces use —
-// so /marketplace can land the member back on whichever they browsed last. Renders
+// Writes the Marketplace umbrella's last-visited cookie on mount (ADR-868). Mounted once in each
+// of the four umbrella subtree layouts (Classifieds, Housing, Market, Events) — the ONE shared
+// component every surface uses — so /marketplace can land the member back on whichever they
+// browsed last. Housing and Events joined on 2026-09-15 (LIVE-243); before that they had no
+// layout, so two of the four areas never taught the umbrella anything. Renders
 // nothing; a plain document.cookie write (the value is a whitelisted token, and the
 // server side re-validates through parseCommerceSurface before redirecting).
 export function CommerceLastVisited({ surface }: { surface: CommerceSurface }) {
