@@ -1,5 +1,13 @@
-import { describe, it, expect } from 'vitest'
-import { isTransientDiscoverError, isTransientDiscoverStatus, __retryForTest } from './discover'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import {
+  isTransientDiscoverError,
+  isTransientDiscoverStatus,
+  isTransientReadFailure,
+  listReadFailClosed,
+  emptyUnlessTransient,
+  TransientReadError,
+  __retryForTest,
+} from './discover'
 
 // LIVE-039: one dropped TCP connection during prerender killed a whole deploy, because the
 // discover readers never retried. These tests prove the retry FIRES on the exact failure shape
@@ -265,5 +273,132 @@ describe('the REST edge 503 that killed every preview build on 2026-09-14 (LIVE-
     expect(__retryForTest.RETRY_DELAYS_MS).toEqual([250, 1000, 3000])
     expect(calls).toBe(4)
     expect(out.error).toBeTruthy()
+  })
+})
+
+// ── listReadFailClosed (LIVE-331) ─────────────────────────────────────────────────────────────────
+//
+// The section readers behind app/sitemap.ts and the /discover pages used to resolve a transport
+// failure into `[]` inside themselves, so the sitemap's transient-or-deterministic seam (LIVE-329)
+// could never fire. `listReadFailClosed` is what they read through now: a database answer stays
+// soft (`[]`, one log line), transport outlasting the ladder THROWS a typed error the seam can
+// classify off `cause` and `status`. The ladder's own sleeps are real setTimeouts, so these run
+// under fake timers and advance them; a test that waited the 4.25 s ladder out would be a test
+// nobody runs.
+describe('listReadFailClosed (LIVE-331): a failed read is reported as failed', () => {
+  const PERMISSION_DENIED = { code: '42501', message: 'permission denied for table partners', details: '', hint: '' }
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  it('a transport failure that outlasts the ladder THROWS TransientReadError carrying the cause and the status', async () => {
+    vi.useFakeTimers()
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    let calls = 0
+    const query = () => {
+      calls++
+      return Promise.resolve({ data: null, error: REST_EDGE_503, status: 503 })
+    }
+    const pending = expect(listReadFailClosed('partners', query)).rejects.toMatchObject({
+      name: 'TransientReadError',
+      message: 'read failed on transport: partners',
+      status: 503,
+      cause: REST_EDGE_503,
+    })
+    await vi.runAllTimersAsync()
+    await pending
+    // Four tries: the ladder ran to its end before the reader gave up.
+    expect(calls).toBe(__retryForTest.RETRY_DELAYS_MS.length + 1)
+    const retrying = error.mock.calls.filter((c) => String(c[0]).includes('partners transient failure, retrying'))
+    expect(retrying).toHaveLength(3)
+  })
+
+  it('classifies off the body alone when the resolved result carries no status', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const fetchFailed = { message: 'TypeError: fetch failed', details: 'Caused by: Error: read ECONNRESET', hint: '', code: '' }
+    const pending = expect(listReadFailClosed('practices_ranked', () => Promise.resolve({ data: null, error: fetchFailed }))).rejects.toMatchObject({
+      name: 'TransientReadError',
+      status: undefined,
+      cause: fetchFailed,
+    })
+    await vi.runAllTimersAsync()
+    await pending
+  })
+
+  it('a DETERMINISTIC failure logs one line and resolves [], on the first answer', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    let calls = 0
+    const rows = await listReadFailClosed('partners', () => {
+      calls++
+      return Promise.resolve({ data: null, error: PERMISSION_DENIED, status: 403 })
+    })
+    expect(rows).toEqual([])
+    expect(calls).toBe(1)
+    expect(error).toHaveBeenCalledTimes(1)
+    expect(String(error.mock.calls[0][0])).toBe('[discover] partners failed')
+    expect(error.mock.calls[0][1]).toBe(PERMISSION_DENIED)
+  })
+
+  it('a 5xx that CARRIES a PostgREST code is a database answer: [] and a log line, never a throw', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const rows = await listReadFailClosed('partners', () =>
+      Promise.resolve({ data: null, error: { message: 'statement timeout', code: '57014', details: '', hint: '' }, status: 503 }),
+    )
+    expect(rows).toEqual([])
+    expect(error).toHaveBeenCalledTimes(1)
+  })
+
+  it('a thrown bug in the query is the deterministic class too: [] with a log line, no page down', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const rows = await listReadFailClosed('partners', () => {
+      throw new TypeError("Cannot read properties of undefined (reading 'from')")
+    })
+    expect(rows).toEqual([])
+    expect(error).toHaveBeenCalledTimes(1)
+  })
+
+  it('an EMPTY result is [] and logs nothing, whether the data is [] or null', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(await listReadFailClosed('partners', () => Promise.resolve({ data: [], error: null, status: 200 }))).toEqual([])
+    expect(await listReadFailClosed('partners', () => Promise.resolve({ data: null, error: null, status: 200 }))).toEqual([])
+    expect(error).not.toHaveBeenCalled()
+  })
+
+  it('a healthy read resolves the rows untouched', async () => {
+    const rows = [{ slug: 'meld-royal-temple' }]
+    expect(await listReadFailClosed('partners', () => Promise.resolve({ data: rows, error: null, status: 200 }))).toBe(rows)
+  })
+})
+
+describe('isTransientReadFailure and emptyUnlessTransient (LIVE-331)', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('reads a status-only verdict off the TransientReadError itself, not just its cause', () => {
+    const unfamiliar = { message: 'some sentence this file has never seen', details: '', hint: '', code: '' }
+    // Neither the body nor the wrapper's message matches TRANSIENT_RE; the status is the verdict.
+    expect(isTransientDiscoverError(unfamiliar)).toBe(false)
+    expect(isTransientReadFailure(new TransientReadError('partners', unfamiliar, 503))).toBe(true)
+  })
+
+  it('walks the cause chain, and refuses a database answer at every depth', () => {
+    const wrapped = new Error('outer', { cause: new Error('middle', { cause: REST_EDGE_503 }) })
+    expect(isTransientReadFailure(wrapped)).toBe(true)
+    const answer = new Error('outer', { cause: { code: '42501', message: 'permission denied' } })
+    expect(isTransientReadFailure(answer)).toBe(false)
+    expect(isTransientReadFailure(null)).toBe(false)
+  })
+
+  it('emptyUnlessTransient rethrows transport and softens everything else with a log line', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const handler = emptyUnlessTransient('partners page')
+    const transient = new TransientReadError('partners', REST_EDGE_503, 503)
+    expect(() => handler(transient)).toThrow(transient)
+    expect(error).not.toHaveBeenCalled()
+    expect(handler(new TypeError('a bug'))).toEqual([])
+    expect(error).toHaveBeenCalledTimes(1)
+    expect(String(error.mock.calls[0][0])).toBe('[discover] partners page failed')
   })
 })

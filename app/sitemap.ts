@@ -151,13 +151,16 @@ function atCap<T>(rows: T[], cap: number, section: string, reader: string): T[] 
 //   · DETERMINISTIC (a real PostgREST/Postgres code, a thrown bug) logs one line naming the
 //     section and the error, and fails safe to [] for THAT section only, exactly as before.
 //
-// ⚠️ Measured while closing the row: the classifier can only see what is THROWN. Every one of the
-// ten readers resolves a supabase-js transport error into `[]` inside itself (`const { data } =
+// The classifier can only see what is THROWN. When this seam shipped (LIVE-329) every one of the
+// ten readers resolved a supabase-js transport error into `[]` inside itself (`const { data } =
 // await q; return data ?? []`, or an internal try/catch), so under the ADR-1328 window none of
-// the ten catches ever fired; the section came back empty one level below this file's sight.
-// This seam is honest about what reaches it; making the readers report a failed read as failed
-// rather than as empty is a reader change, not a sitemap one, and LIVE-329's CLOSED note names
-// it as the follow-up.
+// the ten catches could fire. LIVE-331 closed that one level down: each section reader now goes
+// through `listReadFailClosed` (lib/discover.ts), which retries transport through the discover
+// ladder and then THROWS `TransientReadError` with the supabase error on `cause` and the edge's
+// status on `status`, exactly the shape `isTransientRead` below walks. A database answer still
+// resolves `[]` inside the reader with its own log line, so this seam sees it as a healthy empty
+// section, which is what it is. app/sitemap.test.ts drives one real reader through the mocked
+// client to prove the throw arrives here.
 //
 // The TRANSIENT class throws this, so the outer catch around the dynamic block can rethrow it
 // rather than degrade the whole sitemap to its static routes.
@@ -414,10 +417,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // measured, they do not throw, so nothing about them keeps anything, and wrapping them would
       // be a no-op that reads as coverage. What a genuine THROW from one of them does (a bug, a
       // client that cannot be constructed) is reach the catch at the bottom of this block, which
-      // now logs and applies the same transient-or-deterministic rule.
+      // now logs and applies the same transient-or-deterministic rule. LIVE-331 changed the TEN
+      // readers below, not these six; they are the same shape one level down and are named in
+      // its CLOSED note as what is still swallowed.
       //
       // Every read below goes through `sectionRead`, which logs a failure by section and lets a
-      // transport failure abandon the regeneration (see the note above the helper).
+      // transport failure abandon the regeneration (see the note above the helper). Since LIVE-331
+      // every reader in this chain reports a transport failure by THROWING, so the seam fires.
       //
       // City × category hubs — only pairs that actually have upcoming public
       // events (empty/low-value facets never get a URL, so they stay out of crawl).

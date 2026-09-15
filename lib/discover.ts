@@ -226,7 +226,9 @@ export function isTransientDiscoverError(err: unknown): boolean {
 // build that waits 4.25 s on one read still finishes; a build that ships a hole does not.
 const RETRY_DELAYS_MS = [250, 1000, 3000]
 
-type QueryResult = { data: unknown; error: unknown; status?: number }
+/** What one supabase-js read resolves to: the builder's own `{ data, error, status }`. Exported so
+ *  a reader outside this module can hand `listReadFailClosed` a thunk that builds its query. */
+export type QueryResult = { data: unknown; error: unknown; status?: number }
 
 async function attempt(
   source: string,
@@ -273,6 +275,79 @@ async function detailRead<T>(
   const { data, error } = await attempt(source, query)
   if (error) throw new DiscoverReadError(source, error)
   return (data ?? []) as T[]
+}
+
+// ── The section readers' read (LIVE-331) ─────────────────────────────────────
+//
+// app/sitemap.ts sorts a THROWN failure into two classes (LIVE-329): transport rethrows so a
+// regeneration inside a database window fails and the last good copy keeps serving; a database
+// answer logs and empties that section. Measured while building it: none of its catches could
+// fire, because every section reader (partners, practices, networked Spaces, the four commerce
+// verticals, density, the event hubs) resolved a supabase-js transport error into `[]` INSIDE
+// itself, with `const { data } = await query` or a bare `catch { return [] }`. The hole formed
+// one level below the sitemap's sight, and the same readers feed the /discover pages, whose ISR
+// copies cached the same hollow list for an hour.
+//
+// `listReadFailClosed` is the one read those readers make now. It is `listRead` with the verdict
+// turned into a SHAPE the caller cannot ignore:
+//   · a healthy read resolves the rows (`[]` when there are genuinely none);
+//   · a DETERMINISTIC failure (a real PostgREST/Postgres code, a thrown bug) logs one line naming
+//     the source and resolves `[]`, exactly as before, so no page goes down on a database answer;
+//   · a TRANSPORT failure (the classifier above: fetch failed / ECONNRESET / the REST edge's own
+//     5xx with no PostgREST code) is retried through the same ladder as every other discover read
+//     and, if it outlasts the ladder, THROWS `TransientReadError` with the supabase error on
+//     `cause` and the HTTP status on `status`, so app/sitemap.ts's cause-walk reads it as
+//     transport and abandons the regeneration, and an ISR discover page keeps its last good copy.
+// A caller that wants `[]` for its empty state still gets `[]` for an EMPTY result; what it can
+// no longer get is `[]` for a FAILED one.
+export class TransientReadError extends Error {
+  /** The HTTP status the edge answered with, when the verdict came from the status alone. */
+  readonly status: number | undefined
+  constructor(source: string, cause: unknown, status?: number) {
+    super(`read failed on transport: ${source}`)
+    this.name = 'TransientReadError'
+    this.cause = cause
+    this.status = status
+  }
+}
+
+export async function listReadFailClosed<T>(
+  source: string,
+  query: () => PromiseLike<QueryResult>,
+): Promise<T[]> {
+  const { data, error, status } = await attempt(source, query)
+  if (!error) return (data ?? []) as T[]
+  if (isTransientDiscoverError(error) || isTransientDiscoverStatus(status, error)) {
+    throw new TransientReadError(source, error, typeof status === 'number' ? status : undefined)
+  }
+  console.error(`[discover] ${source} failed`, error)
+  return []
+}
+
+/** The classifier walked down the `cause` chain, so a `TransientReadError` (or any wrapper that
+ *  keeps the supabase error on `cause`) reads as transport when the wrapped error does. */
+export function isTransientReadFailure(err: unknown): boolean {
+  let cur: unknown = err
+  for (let depth = 0; cur && typeof cur === 'object' && depth < 5; depth++) {
+    const e = cur as { status?: unknown; cause?: unknown }
+    if (isTransientDiscoverError(cur) || isTransientDiscoverStatus(e.status, cur)) return true
+    cur = e.cause
+  }
+  return false
+}
+
+/** A `.catch` handler for an index page that used to write `.catch(() => [])` around one of the
+ *  section readers. The reader already resolves `[]` on a database answer, so what still reaches
+ *  this handler is a transport failure that outlasted the ladder, or a thrown bug. The first is
+ *  rethrown so the page fails closed (an ISR page whose regeneration throws keeps its last good
+ *  copy rather than caching a hollow one, LIVE-329); the second logs and empties, as before. */
+export function emptyUnlessTransient(source: string): (err: unknown) => never[] {
+  // `never[]` so `.catch()` narrows to the reader's own row type without a type argument.
+  return (err) => {
+    if (isTransientReadFailure(err)) throw err
+    console.error(`[discover] ${source} failed`, err)
+    return []
+  }
 }
 
 // ── Events ────────────────────────────────────────────────────────────────────

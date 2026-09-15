@@ -11,6 +11,7 @@
 // directive makes that a BUILD FAILURE that names the importer.
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { listReadFailClosed } from '@/lib/discover'
 import { resolveSeedOwnerProfileId } from '@/lib/listing-seeder/seed-owner'
 import type { ListingDetail, ListingPickupPrecision } from '@/lib/listing-seeder/types'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -88,23 +89,32 @@ export interface ListOpts {
   limit?: number
 }
 
-/** Active listings, newest first, with author. Optional kind + text filter. */
+/** Active listings, newest first, with author. Optional kind + text filter. A failed read is
+ *  REPORTED as failed (LIVE-331): a database answer logs and resolves `[]`, a transport failure
+ *  throws `TransientReadError` after the retry ladder, so app/sitemap.ts abandons that
+ *  regeneration rather than emptying the classifieds for an hour. The thunk builds a fresh query
+ *  per attempt. */
 export async function listListings(opts: ListOpts = {}): Promise<MarketListingWithAuthor[]> {
-  let query = db()
-    .from('market_listings')
-    .select(`${COLS}, ${AUTHOR}`)
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(opts.limit ?? 60)
-  if (opts.kind) query = query.eq('kind', opts.kind)
-  if (opts.hideDemo) query = query.eq('is_demo', false)
-  if (opts.q && opts.q.trim()) {
-    const needle = opts.q.trim().replace(/[%,()]/g, ' ').slice(0, 80)
-    if (needle.trim()) query = query.or(`title.ilike.%${needle}%,description.ilike.%${needle}%,category.ilike.%${needle}%`)
+  const build = () => {
+    let query = db()
+      .from('market_listings')
+      .select(`${COLS}, ${AUTHOR}`)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(opts.limit ?? 60)
+    if (opts.kind) query = query.eq('kind', opts.kind)
+    if (opts.hideDemo) query = query.eq('is_demo', false)
+    if (opts.q && opts.q.trim()) {
+      const needle = opts.q.trim().replace(/[%,()]/g, ' ').slice(0, 80)
+      if (needle.trim()) query = query.or(`title.ilike.%${needle}%,description.ilike.%${needle}%,category.ilike.%${needle}%`)
+    }
+    return query
   }
   // Resolve the seed owner once per query (process-memoized) so each row can carry seededUnclaimed.
-  const [{ data }, seedOwnerId] = await Promise.all([query, resolveSeedOwnerProfileId()])
-  const rows = (data as Record<string, unknown>[] | null) ?? []
+  const [rows, seedOwnerId] = await Promise.all([
+    listReadFailClosed<Record<string, unknown>>('classified_listings', build),
+    resolveSeedOwnerProfileId(),
+  ])
   return rows.map((r) => ({ ...(r as unknown as MarketListingWithAuthor), seededUnclaimed: computeSeededUnclaimed(r, seedOwnerId) }))
 }
 

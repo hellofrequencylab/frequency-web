@@ -7,6 +7,7 @@
 // (20240218000000) is applied + regenerated; untyped client view for now.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { listReadFailClosed } from '@/lib/discover'
 import { isOfferLive } from './offers'
 
 export interface PartnerSummary {
@@ -36,19 +37,27 @@ function db() {
   return createAdminClient()
 }
 
+/** Active partners for the directory, the public index and app/sitemap.ts. A failed read is
+ *  REPORTED as failed (LIVE-331): a database answer logs and resolves `[]`, a transport failure
+ *  throws `TransientReadError` after the retry ladder, so the sitemap abandons that regeneration
+ *  and an ISR page keeps its last good copy instead of caching an empty directory. The thunk
+ *  builds a fresh query per attempt, which is what makes the retry a retry. */
 export async function listActivePartners(
   opts?: { category?: string; limit?: number },
 ): Promise<PartnerSummary[]> {
-  let q = db()
-    .from('partners')
-    .select('id, slug, name, category, city, description')
-    .eq('status', 'active')
-    .order('name', { ascending: true })
-  if (opts?.category) q = q.eq('category', opts.category)
-  if (opts?.limit) q = q.limit(opts.limit)
+  const build = () => {
+    let q = db()
+      .from('partners')
+      .select('id, slug, name, category, city, description')
+      .eq('status', 'active')
+      .order('name', { ascending: true })
+    if (opts?.category) q = q.eq('category', opts.category)
+    if (opts?.limit) q = q.limit(opts.limit)
+    return q
+  }
 
-  const { data } = await q
-  return (data ?? []).map((p: PartnerSummary) => ({
+  const data = await listReadFailClosed<PartnerSummary>('partners', build)
+  return data.map((p: PartnerSummary) => ({
     id: p.id,
     slug: p.slug,
     name: p.name,

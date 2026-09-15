@@ -125,10 +125,17 @@ vi.mock('@/lib/events/series-config', () => ({ getSeriesDisplayConfig: async () 
 // beforeEach), so every other test sees the empty sections it always did.
 const readers = vi.hoisted(() => ({
   journeys: (async () => []) as () => Promise<unknown[]>,
-  partners: (async () => []) as () => Promise<unknown[]>,
+  partners: (async (_opts?: { limit?: number }) => []) as (opts?: { limit?: number }) => Promise<unknown[]>,
+  // The REAL listActivePartners, captured by the factory below so the LIVE-331 tests can route the
+  // sitemap's partners read through the production reader and the scripted admin client.
+  real: null as null | ((opts?: { limit?: number }) => Promise<unknown[]>),
 }))
 vi.mock('@/lib/journey-plans', () => ({ listPublicJourneys: () => readers.journeys() }))
-vi.mock('@/lib/partners/read', () => ({ listActivePartners: () => readers.partners() }))
+vi.mock('@/lib/partners/read', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@/lib/partners/read')>()
+  readers.real = real.listActivePartners
+  return { listActivePartners: (opts?: { limit?: number }) => readers.partners(opts) }
+})
 // Two practices, one WITH a slug and one without, because the sitemap's job here is to prefer the
 // slug and fall back to the uuid — and for a while it could only ever do the second (see the
 // canonical-key test below).
@@ -168,17 +175,29 @@ vi.mock('@/app/discover/events/_data', () => ({ getCityCategoryHubs: async () =>
 vi.mock('@/app/discover/places/_data', () => ({ listDiscoverCities: async () => [] }))
 vi.mock('@/app/discover/cities/_data', () => ({ listDensityCities: async () => [] }))
 vi.mock('@/lib/supabase/public', () => ({ createPublicClient: () => ({ rpc: async () => ({ data: [] }) }) }))
+// The admin client answers per TABLE, so a LIVE-331 test can hand the real partners reader the
+// exact resolved shape supabase-js produces under a database window, while every other read this
+// route makes through the admin client keeps resolving the healthy empty it always did.
+const admin = vi.hoisted(() => ({
+  answers: {} as Record<string, { data: unknown; error: unknown; status?: number }>,
+  reads: [] as string[],
+}))
 vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: () => {
-    const api = {
-      from: () => api,
-      select: () => api,
-      eq: () => api,
-      filter: () => api,
-      limit: async () => ({ data: [] }),
-    }
-    return api
-  },
+  createAdminClient: () => ({
+    from: (table: string) => {
+      const api = {
+        select: () => api,
+        eq: () => api,
+        filter: () => api,
+        order: () => api,
+        limit: async () => {
+          admin.reads.push(table)
+          return admin.answers[table] ?? { data: [] }
+        },
+      }
+      return api
+    },
+  }),
 }))
 
 import sitemap from './sitemap'
@@ -188,6 +207,8 @@ beforeEach(() => {
   profileTabs.rows = []
   readers.journeys = async () => []
   readers.partners = async () => []
+  admin.answers = {}
+  admin.reads = []
   commerce.shop = []
   commerce.market = []
   commerce.housing = []
@@ -492,6 +513,14 @@ const PERMISSION_DENIED = { code: '42501', message: 'permission denied for table
 // The exact shape supabase-js resolves when the request never reaches PostgREST (LIVE-084): an
 // EMPTY code, and the transport error in message + details.
 const FETCH_FAILED = { message: 'TypeError: fetch failed', details: 'Caused by: Error: read ECONNRESET', hint: '', code: '' }
+// The REST edge's own 503 (LIVE-327; the fixture is REST_EDGE_503 in lib/discover.test.ts): what
+// supabase-js resolves when PostgREST does not accept the connection. Empty code, the body as message.
+const REST_EDGE_503 = {
+  message: 'upstream connect error or disconnect/reset before headers. reset reason: connection timeout',
+  details: '',
+  hint: '',
+  code: '',
+}
 
 function sitemapLines(spy: { mock: { calls: unknown[][] } }) {
   return spy.mock.calls.map((c) => String(c[0])).filter((l) => l.startsWith('sitemap:'))
@@ -591,6 +620,53 @@ describe('app/sitemap section read failures', () => {
 
     // The positive controls above prove this silence means "nothing failed", not "never logs".
     expect(sitemapLines(error)).toEqual([])
+    error.mockRestore()
+  })
+
+  // ── LIVE-331: the failure now ORIGINATES inside a real reader ──────────────────────────────
+  // Every test above hands the sitemap a reader that THROWS. When LIVE-329 shipped that was a
+  // shape no production reader could produce: each resolved its transport error into [] inside
+  // itself, so this seam was honest and unreachable. These two run the REAL listActivePartners
+  // against the scripted admin client, so the throw the seam catches is the one the reader makes.
+  it('LIVE-331: a transport failure INSIDE a reader reaches sectionRead through the real classifier', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.useFakeTimers()
+    try {
+      readers.partners = (opts) => readers.real!(opts)
+      admin.answers.partners = { data: null, error: REST_EDGE_503, status: 503 }
+
+      const pending = expect(sitemap()).rejects.toMatchObject({ name: 'SitemapTransientReadError' })
+      await vi.runAllTimersAsync()
+      await pending
+
+      // The reader ran the discover ladder to its end (one try plus three retries), THEN threw.
+      expect(admin.reads.filter((t) => t === 'partners')).toHaveLength(4)
+      const all = error.mock.calls.map((c) => String(c[0]))
+      expect(all.filter((l) => l.includes('[discover] partners transient failure, retrying'))).toHaveLength(3)
+      // What arrived here is the reader's typed error, sorted as TRANSPORT and rethrown.
+      const lines = sitemapLines(error)
+      expect(lines.some((l) => l.includes('partners read failed on TRANSPORT') && l.includes('TransientReadError: read failed on transport: partners'))).toBe(true)
+      expect(lines.filter((l) => l.includes('dynamic block'))).toHaveLength(0)
+    } finally {
+      vi.useRealTimers()
+      error.mockRestore()
+    }
+  })
+
+  it('LIVE-331: a database answer INSIDE a reader is a healthy empty section here, and the reader says why', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    readers.partners = (opts) => readers.real!(opts)
+    admin.answers.partners = { data: null, error: PERMISSION_DENIED, status: 403 }
+
+    const urls = (await sitemap()).map((e) => e.url)
+
+    expect(urls.filter((u) => u.includes('/discover/partners/'))).toEqual([])
+    expect(urls).toContain(`${SITE}/spaces/alpha`)
+    // Answered on the first try: a PostgREST code is never retried.
+    expect(admin.reads.filter((t) => t === 'partners')).toHaveLength(1)
+    // The seam saw [] and logged nothing; the reader's own line is the one that names the failure.
+    expect(sitemapLines(error)).toEqual([])
+    expect(error.mock.calls.some((c) => String(c[0]) === '[discover] partners failed' && c[1] === PERMISSION_DENIED)).toBe(true)
     error.mockRestore()
   })
 

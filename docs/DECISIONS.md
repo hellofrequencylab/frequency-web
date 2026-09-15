@@ -40745,3 +40745,65 @@ place whole-tree `tsc` reports this change until that lane lands. `docs/VALUE-LA
 record they defer to.
 
 **Rows.** LIVE-230 (done, this ADR). LIVE-232 picks up the template read named above.
+
+## ADR-1339: a list reader on a crawlable surface reports a transport failure by throwing, and softens a database answer to an empty list with a log line (2026-09-15)
+
+**Context.** LIVE-329 gave `app/sitemap.ts` one seam, `sectionRead`, that sorts a THROWN failure
+into two classes: transport rethrows so a regeneration inside a database window fails and Next
+keeps serving the last good copy; a database answer logs and empties that section. Measured while
+building it, the seam could not fire. Every one of the ten section readers it chains resolved a
+supabase-js transport error into `[]` inside itself, in one of two shapes: the
+`const { data } = await q; return data ?? []` destructure, or a bare `catch { return [] }` around
+the whole read. Under the ADR-1328 window the section came back empty one level below the
+sitemap's sight, the sitemap cached the hollow copy for an hour, and the same readers fed the
+/discover index pages, whose ISR copies did the same. Nothing distinguished "empty because it
+failed" from "empty because there are none", for any caller (LIVE-331).
+
+**Decision.**
+
+- **One read for every section reader: `listReadFailClosed(source, thunk)` in `lib/discover.ts`,
+  beside `listRead` and `detailRead`.** It runs the same retry ladder every other discover read
+  runs (250, 1000, 3000 ms) against a FRESH builder per attempt, then turns the verdict into a
+  shape the caller cannot ignore. A healthy read resolves the rows. A DETERMINISTIC failure (a
+  real PostgREST/Postgres code, a thrown bug) logs one `[discover] <source> failed` line and
+  resolves `[]`: no page goes down on a database answer. A TRANSPORT failure that outlasts the
+  ladder THROWS `TransientReadError`, with the supabase error on `cause` and the edge's HTTP
+  status on `status`, which is exactly what `isTransientRead` in `app/sitemap.ts` walks. The
+  status rides on the wrapper because a status-only verdict (an unfamiliar 503 body with no
+  PostgREST code) lives on the resolved result, not on the error object; without it the sitemap
+  would have read the wrapper as deterministic.
+- **The `{ rows, ok }` shape was weighed per caller and threaded nowhere.** A caller that renders
+  an empty state has no honest render for `ok: false` short of new copy, and the sitemap
+  classifies by the thrown error. A typed throw on transport alone reaches both with the smallest
+  change, and it keeps the row's one rule: only transport changes behaviour.
+- **The eight files the row named, and what changed in each.** `listActivePartners`;
+  `listPublicPractices` and `slugsForPractices` (the slug is the canonical public key the sitemap
+  links on; a swallowed failure there re-keyed the library to uuids, an empty section in other
+  clothes); `listNetworkedSpaces`, `listNetworkedSpaceProfileTabs` and `presenceIds` (the outer
+  catches now rethrow transport and log the rest; `SpacesQuery` and `PresenceQuery` became real
+  `PromiseLike`s so a thunk typechecks); `listShopProducts` and `listMarketListings`;
+  `listHousingListings`; `listListings`; `getDensitySignal` (so `listDensityCities` and
+  `getDensityCity` inherit it); `getUpcomingSafeEvents` under `getCityCategoryHubs`.
+- **Callers.** `/discover/partners` and `/discover/practices` swap `.catch(() => [])` for
+  `emptyUnlessTransient(source)`, so an ISR index fails closed on a transport window and still
+  renders empty on a bug. Every `generateStaticParams` keeps its `.catch(() => [])`: LIVE-011 chose
+  on-demand rendering over ending the export, and a transport throw there is the opposite trade.
+  Member pages under `app/(main)` are not wrapped: a transport failure now reaches their error
+  boundary instead of rendering an empty store, market, housing, classifieds or partners page.
+- **Proof.** `lib/section-readers.test.ts` runs the ten real readers against a scripted client
+  (only the two Supabase clients mocked): the LIVE-327 fixture is retried four times then thrown
+  with status 503, a 42501 answers once and resolves `[]` with one line, an empty read logs
+  nothing, and a source-shape pin per function requires the helper and refuses both swallow forms.
+  `app/sitemap.test.ts` drives the sitemap's partners read through the REAL reader and proves the
+  throw arrives at `sectionRead` as TRANSPORT.
+
+**Consequences.** The LIVE-329 seam fires. A regeneration of the sitemap inside a window now
+fails as a whole rather than shipping a hollow copy; the /discover indexes keep their last good
+copy; a member page shows its error boundary for the length of the window and renders as before
+the moment the edge answers. The six reads outside the `sectionRead` chain (`getTopicalChannels`,
+`getPublicCircles`, `listSitemapEventEntries`, `listPublicJourneys`, `getOrganizerRoutes`,
+`getSpotlightRoutes`) and `app/discover/places/_data.ts` (which composes `getPublicCircles` and
+`getPublicEvents`, both discarding `listRead`'s `ok`) are the same shape one level down and are
+named here rather than fixed; they are outside the row's eight files.
+
+**Rows.** LIVE-331 closed.

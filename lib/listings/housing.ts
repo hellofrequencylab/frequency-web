@@ -4,6 +4,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { listReadFailClosed } from '@/lib/discover'
 import { resolveSeedOwnerProfileId } from '@/lib/listing-seeder/seed-owner'
 import { rowToListing } from './index'
 import { ACCESSIBILITY_TAGS, AMENITIES, LAUNDRY_OPTIONS, PARKING_OPTIONS, PROPERTY_TYPES } from './types'
@@ -404,25 +405,35 @@ export interface HousingFacets {
  *  the facet predicates are applied on the embedded table. Fail-safe to []. */
 export async function listHousingListings(facets: HousingFacets = {}): Promise<Listing[]> {
   const limit = Math.min(Math.max(facets.limit ?? 40, 1), 100)
-  let query = db()
-    .from('listings')
-    .select(
-      'id, vertical, owner_profile_id, entity_id, title, description, status, images, price_note, category, neighborhood, city, latitude, longitude, circle_id, is_demo, claim_token, claimed_at, created_at, updated_at, housing:housing_listings!inner(property_type, rent_cents, amenities)',
-    )
-    .eq('vertical', 'housing')
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(limit)
-
-  if (facets.propertyType) query = query.eq('housing.property_type', facets.propertyType)
-  if (facets.minPriceCents != null) query = query.gte('housing.rent_cents', facets.minPriceCents)
-  if (facets.maxPriceCents != null) query = query.lte('housing.rent_cents', facets.maxPriceCents)
+  // A failed read is REPORTED as failed (LIVE-331): a database answer logs and resolves `[]`, a
+  // transport failure throws `TransientReadError` after the retry ladder, so app/sitemap.ts
+  // abandons that regeneration rather than emptying the housing vertical for an hour. The thunk
+  // builds a fresh query per attempt.
   const wanted = toAmenities(facets.amenities ?? [])
-  if (wanted.length) query = query.contains('housing.amenities', wanted)
+  const build = () => {
+    let query = db()
+      .from('listings')
+      .select(
+        'id, vertical, owner_profile_id, entity_id, title, description, status, images, price_note, category, neighborhood, city, latitude, longitude, circle_id, is_demo, claim_token, claimed_at, created_at, updated_at, housing:housing_listings!inner(property_type, rent_cents, amenities)',
+      )
+      .eq('vertical', 'housing')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (facets.propertyType) query = query.eq('housing.property_type', facets.propertyType)
+    if (facets.minPriceCents != null) query = query.gte('housing.rent_cents', facets.minPriceCents)
+    if (facets.maxPriceCents != null) query = query.lte('housing.rent_cents', facets.maxPriceCents)
+    if (wanted.length) query = query.contains('housing.amenities', wanted)
+    return query
+  }
 
   // Resolve the seed owner once per query (process-memoized) so each row can carry seededUnclaimed.
-  const [{ data }, seedOwnerId] = await Promise.all([query, resolveSeedOwnerProfileId()])
-  return ((data ?? []) as Record<string, unknown>[]).map((r) => rowToListing(r, seedOwnerId))
+  const [data, seedOwnerId] = await Promise.all([
+    listReadFailClosed<Record<string, unknown>>('housing_listings', build),
+    resolveSeedOwnerProfileId(),
+  ])
+  return data.map((r) => rowToListing(r, seedOwnerId))
 }
 
 // ── Seeker lifestyle preferences (Phase 3) ───────────────────────────────────
