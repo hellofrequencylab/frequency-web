@@ -23,7 +23,9 @@
 # `public` table with an anon-readable stripe_customer_id column). `internal` is the load-bearing
 # one, and it is the only verdict that fails closed. If you are unsure, write `internal`.
 #
-# 39 public · 156 authenticated · 81 internal · 276 total (recounted 2026-09-15 with LIVE-334,
+# 39 public · 156 authenticated · 84 internal · 279 total (recounted 2026-09-15 with the
+# space_member_benefits recovery, which added three service-role-only tables; before it the line
+# read 81 internal / 276 total, itself recounted 2026-09-15 with LIVE-334,
 # which dropped the retired `channels` + `channel_memberships` rows; the line read 272 and had been
 # stale since before that change).
 
@@ -241,6 +243,7 @@ space_automation_rules               authenticated
 space_availability                   authenticated
 space_availability_overrides         internal
 space_availability_schedules         authenticated
+space_benefit_redemptions            internal
 space_billing_agreements             authenticated
 space_bookings                       authenticated
 space_collaborations                 internal
@@ -257,6 +260,7 @@ space_follower_event_reminders_sent  internal
 space_follows                        authenticated
 space_function_type_defaults         internal
 space_invites                        authenticated
+space_member_benefits                internal
 space_members                        authenticated
 space_membership_tiers               authenticated
 space_memberships                    authenticated
@@ -269,6 +273,7 @@ space_standing                       internal
 space_subscription_items             authenticated
 space_ticket_rsvps                   authenticated
 space_ticket_tiers                   authenticated
+space_tier_benefits                  internal
 space_updates                        authenticated
 space_venue_holds                    internal
 spaces                               authenticated
