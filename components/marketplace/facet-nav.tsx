@@ -1,25 +1,40 @@
 import Link from 'next/link'
+import { browsableAreas, type MarketArea } from '@/lib/marketplace/visibility'
 
 // The one faceted nav across every commerce surface (Classifieds · Housing · Market ·
 // Events · Frequency Store), so the areas read as one hub no matter which page you land
 // on (ADR-596). The `key` values are stable internal ids kept from the old taxonomy
 // (all=Classifieds, makers=Market, shop=Frequency Store) so callers do not churn;
 // only labels + hrefs carry the new naming. `active` highlights the current area.
+//
+// EVERY ENTRY STAYS DECLARED AND THE FLAG DECIDES WHICH RENDER (LIVE-245). `area` is the
+// lib/marketplace/visibility key each entry answers to, or null for Events, which is a member
+// noun rather than a market area and is never switchable here. That is what the owner ruling
+// assumed already existed: "flipping it the day real merch exists is a one-row change" is only
+// true if the entry is still here and a flag gates it, so deleting the Frequency Store row
+// would break the promise rather than keep it.
 
 const AREAS = [
-  { key: 'all', href: '/classifieds', label: 'Classifieds' },
-  { key: 'housing', href: '/housing', label: 'Housing' },
-  { key: 'makers', href: '/market', label: 'Market' },
-  { key: 'events', href: '/events', label: 'Events' },
-  { key: 'shop', href: '/store', label: 'Frequency Store' },
-] as const
+  { key: 'all', area: 'market', href: '/classifieds', label: 'Classifieds' },
+  { key: 'housing', area: 'housing', href: '/housing', label: 'Housing' },
+  { key: 'makers', area: 'makers', href: '/market', label: 'Market' },
+  { key: 'events', area: null, href: '/events', label: 'Events' },
+  { key: 'shop', area: 'shop', href: '/store', label: 'Frequency Store' },
+] as const satisfies readonly {
+  key: string
+  area: MarketArea | null
+  href: string
+  label: string
+}[]
 
 export type MarketplaceArea = (typeof AREAS)[number]['key']
 
-export function MarketplaceFacets({ active }: { active: MarketplaceArea }) {
+export async function MarketplaceFacets({ active }: { active: MarketplaceArea }) {
+  const open = new Set(await browsableAreas())
+  const areas = AREAS.filter((a) => a.area === null || open.has(a.area))
   return (
     <nav className="flex flex-wrap gap-2" aria-label="Browse areas">
-      {AREAS.map((a) => {
+      {areas.map((a) => {
         const on = a.key === active
         return (
           <Link

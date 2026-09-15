@@ -89,3 +89,30 @@ export const isMarketplaceOperator = cache(async (): Promise<boolean> => {
     return false
   }
 })
+
+// ── What a commerce NAV may show (LIVE-245) ──────────────────────────────────────────────
+// The block above is the operator switch; these two are the half that was missing. The switch
+// reached app/(main)/layout.tsx, which drops a hidden area from the member nav (navAccess ->
+// 'none') and redirects a member off its route, and components/marketplace/hidden-banner.tsx.
+// It never reached the MARKETPLACE AREA NAV, because MarketplaceFacets and MarketplaceGuide
+// typed all five areas with no visibility input at all. So with marketplace_shop_published
+// false in production since 2026-07-11, both still rendered a Frequency Store entry on every
+// commerce surface, and a member who clicked it was bounced to /feed.
+
+/** The market areas a viewer may browse. An operator sees every area, so a hidden one stays
+ *  reachable while it is being stocked; everyone else sees only the published ones. PURE, so a
+ *  nav's own test can drive every case without a database. */
+export function visibleAreas(
+  vis: Record<MarketArea, boolean>,
+  operator: boolean,
+): readonly MarketArea[] {
+  return operator ? MARKET_AREAS : MARKET_AREAS.filter((a) => vis[a])
+}
+
+/** The one read both commerce navs share: which areas to render for THIS viewer. Both halves are
+ *  React-cached and app/(main)/layout.tsx already takes them on every request in this segment, so
+ *  a commerce surface pays nothing extra for asking. */
+export const browsableAreas = cache(async (): Promise<readonly MarketArea[]> => {
+  const [vis, operator] = await Promise.all([marketplaceVisibility(), isMarketplaceOperator()])
+  return visibleAreas(vis, operator)
+})
