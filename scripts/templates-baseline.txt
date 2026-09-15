@@ -29,12 +29,12 @@ app/(main)/@wizard/(.)practices/new/page.tsx
 app/(main)/admin/appearance/[id]/page.tsx
 app/(main)/admin/appearance/new/page.tsx
 app/(main)/admin/content/practices/health/page.tsx
+app/(main)/admin/crm/contacts/[id]/page.tsx
 app/(main)/admin/crm/contacts/page.tsx
 app/(main)/admin/crm/intelligence/page.tsx
 app/(main)/admin/crm/page.tsx
 app/(main)/admin/crm/pipeline/[id]/page.tsx
 app/(main)/admin/events/[id]/page.tsx
-app/(main)/admin/marketing/contacts/[id]/page.tsx
 app/(main)/admin/spaces/[id]/page.tsx
 app/(main)/admin/walkthroughs/[id]/page.tsx
 app/(main)/channels/page.tsx

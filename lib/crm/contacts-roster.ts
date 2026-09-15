@@ -27,10 +27,12 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { searchContacts } from '@/lib/crm/person'
 import { classifyContacts, type ContactStatus } from '@/lib/crm/classification'
+import type { ContactConsentState } from '@/lib/crm/contact-consent'
 import { RELATIONSHIP_KINDS, relationshipLabel } from '@/lib/crm/relationship-kinds'
 import { scoreUpgradeCandidates } from '@/lib/crm/upgrade-signal'
 import { ROLE_LABEL } from '@/lib/community-roles'
 import type { Facet } from '@/lib/people/member-viewer'
+import { sourceLabel } from '@/lib/crm/contacts-roster-core'
 import type { ContactRosterRow, ContactsRoster, RosterSpace } from '@/lib/crm/contacts-roster-core'
 
 // The row model + the pure core, re-exported so no existing importer changes (ADR-1074's rule:
@@ -41,6 +43,7 @@ export {
   contactMatchesFacets,
   sortContacts,
   applyContactQuery,
+  sourceLabel,
 } from '@/lib/crm/contacts-roster-core'
 export type {
   RosterSpace,
@@ -113,12 +116,21 @@ export async function loadContactsRoster(opts: { limit?: number } = {}): Promise
     const upgradeCandidate = upgrade?.isCandidate ?? false
     const joined = c.createdAt ? Date.parse(c.createdAt) : NaN
 
+    // CONSENT is carried beside the status, not folded into it: `status` collapses an unsubscribed
+    // non-member into 'lead', so without this the roster could not see (or fix) an opt-out at all.
+    // This is the read the retired /admin/marketing/contacts table owned (LIVE-239).
+    const consentState: ContactConsentState =
+      c.consentState === 'subscribed' || c.consentState === 'unsubscribed' ? c.consentState : 'unknown'
+    const source = c.source?.trim() || null
+
     // Facet tokens: namespaced so a status value can never match a role or a Space value.
     const badges: string[] = [
       `status:${status}`,
       isBusiness ? 'business:yes' : 'business:no',
       activeThisWeek ? 'active:yes' : 'active:no',
+      `consent:${consentState}`,
     ]
+    if (source) badges.push(`source:${source}`)
     if (communityRole && (ROLE_FACET_KEYS as readonly string[]).includes(communityRole)) {
       badges.push(`role:${communityRole}`)
     }
@@ -134,6 +146,8 @@ export async function loadContactsRoster(opts: { limit?: number } = {}): Promise
       profileId: c.profileId,
       avatarUrl: profile?.avatarUrl ?? null,
       status,
+      consentState,
+      source,
       communityRole,
       isBusiness,
       activeThisWeek,
@@ -293,10 +307,29 @@ export function buildContactFacets(rows: ContactRosterRow[]): Facet[] {
   )
   if (kindOptions.length > 0) facets.push({ key: 'kind', label: 'Relationship', options: kindOptions })
 
+  // Consent — the address-level marketing state (LIVE-239). It is NOT the status facet: a lead who
+  // unsubscribed reads as 'lead' there, so this is the only control that can find, or clear, an
+  // opt-out. Pruned like the rest, so a roster with no recorded consent never offers the filter.
+  const consentOptions = keep([
+    { value: 'consent:subscribed', label: 'Subscribed' },
+    { value: 'consent:unsubscribed', label: 'Unsubscribed' },
+    { value: 'consent:unknown', label: 'Never asked' },
+  ])
+  if (consentOptions.length > 0) facets.push({ key: 'consent', label: 'Consent', options: consentOptions })
+
+  // Source — DATA-DRIVEN, the same seam as Space: one option per distinct `source` in the set, so the
+  // beta-waitlist cohort the retired table hand-listed as a segment is a filter here with no per-value
+  // code, and so is the next import label nobody has thought of yet.
+  const sourceByToken = new Map<string, string>()
+  for (const r of rows) if (r.source) sourceByToken.set(`source:${r.source}`, sourceLabel(r.source))
+  const sourceOptions = [...sourceByToken.entries()]
+    .map(([value, label]) => ({ value, label }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+  if (sourceOptions.length > 0) facets.push({ key: 'source', label: 'Source', options: sourceOptions })
+
   // Upgrade — the R5 segment (members ready for a Business Space). Only offered when some row qualifies.
   const upgradeOptions = keep([{ value: 'upgrade:yes', label: 'Ready for Business' }])
   if (upgradeOptions.length > 0) facets.push({ key: 'upgrade', label: 'Upgrade', options: upgradeOptions })
 
   return facets
 }
-

@@ -286,7 +286,7 @@ export async function commitAction(id: string): Promise<ActionResult<CommitResul
   }
   const res = await commitImport(id, profileId)
   revalidatePath('/network/contacts')
-  revalidatePath('/admin/marketing/contacts')
+  revalidatePath('/admin/crm/contacts')
   revalidatePath('/admin/crm')
   return res
 }
@@ -302,7 +302,7 @@ export async function rollbackAction(id: string): Promise<ActionResult<RollbackR
   }
   const res = await rollbackImport(id, profileId)
   revalidatePath('/network/contacts')
-  revalidatePath('/admin/marketing/contacts')
+  revalidatePath('/admin/crm/contacts')
   revalidatePath('/admin/crm')
   return res
 }

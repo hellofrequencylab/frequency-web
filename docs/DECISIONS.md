@@ -41475,3 +41475,92 @@ names that run as `capturing`. LIVE-332's CLOSED paragraph says both are outstan
 **Rows.** LIVE-332 (done, this ADR; its probe was a `grep-present` with an empty pattern and is
 now a `cmd` probe that reads the two mechanisms). LIVE-326 and LIVE-330 (done, unchanged; their
 probes read the PR half of the turnstile and still pass).
+
+## ADR-1347: the nine duplicate consoles, counted: one was a duplicate, seven were scopes (2026-09-15)
+
+**Status.** Accepted. Closes `LIVE-239`, the third and last of the duplicate-operator-door rows,
+after `LIVE-237` ([ADR-1333](DECISIONS.md)) and `LIVE-238` ([ADR-1336](DECISIONS.md)). Applies
+their method and keeps their ordering: re-measure the premise door by door BEFORE deleting
+anything, retire a loser with an exact permanent redirect, and move what only the loser carried
+into the survivor rather than dropping it.
+
+**Context.** The row named "nine duplicate operator consoles" from the 2026-09-08 route survey:
+four Circle consoles, three Event consoles, four CRMs at four scopes, three funnel builders, two
+contact rosters, plus `manage/settings` vs `settings/basics` and `manage/modules` vs `manage/mode`.
+Re-measured on disk on 2026-09-15, the premise had moved twice over. Five of the named doors were
+already gone (the two sibling rows retired them the day before), and of the doors that remained,
+**exactly one pair was two consoles doing one job at one scope.** The rest were not duplicates at
+all, and the row's own acceptance test is what says so: its evidence line asks for "one console per
+job per scope … each resolved or deliberately kept with a reason", not for a smaller number of
+routes.
+
+**The count, door by door.** Measured 2026-09-15 on `ed8c8a57a`.
+
+| Pair the row named | Measured | Ruling |
+|---|---|---|
+| Circle consoles (4) | 4 live, 1 already gone | **Kept, three scopes + a builder.** `circles/[slug]/manage` is ONE circle's hub; `spaces/[slug]/manage/circles` is the roster of the Circles a Space runs, with the Journey each is moving through (ADR-842); `admin/circles` is the platform staff table (`resonance_public`, `featured_at`, hub assignment, the circle-text default); `circles/[slug]/edit` is the Stage 4 Starter Circle builder seven creation flows commit into, kept deliberately by ADR-1333. `circles/[slug]/settings` was the duplicate and ADR-1333 retired it. |
+| Event consoles (3) | 3 live, 2 already gone | **Kept, three scopes.** `events/[slug]/manage` is ONE event's hub; `spaces/[slug]/settings/calendar` is the Space's calendar console (month grid, drafts, co-host approvals) over MANY events; `admin/events` is platform staff (posted-event claim links, host handover, poster quality, series display, listing horizon). ADR-1333 retired the two that WERE duplicates of the hub, `events/[slug]/{edit,settings}`. |
+| CRMs at four scopes (4) | 4 live | **Kept, and two are not CRMs.** `spaces/[slug]/crm` is the paid per-Space pipeline (deals, stages, entitlement-gated); `admin/crm` is the platform member master-detail. The hub and nexus routes are `LeaderCrmViewer` message rosters titled "Message Members" (ADR-827) with no pipeline, so the row's premise that they duplicate the Space CRM is wrong on the code; they leave with the noun under `LIVE-242`, as the row already said. |
+| Funnel builders (3) | **4** live | **Kept, three different objects and one deliberate second view.** `admin/growth/funnels` builds the funnel OBJECT (`lib/funnels/store`, entry → wedge → capture → convert); `admin/marketing/funnels` is titled "Campaigns" and groups ENTRY POINTS (`lib/entry-points/campaigns`, flyers and QR scans); `pages/sequences` is the sign-up INDUCTION library (`sequence_overrides`, ADR-1090). The fourth the row missed, `admin/marketing/messaging/funnels/[id]`, is a second VIEW of the first object and says so in its own header. Nothing here can be retired without deleting a distinct object's only console. **This is a NAMING collision, not a duplicate door** (three surfaces read "Funnels" to an operator), and it is recorded as a finding rather than renamed here: `docs/NAMING.md` rules names, and a rename is that canon's change, not this row's. |
+| Contact rosters (2) | 2 live | **RESOLVED.** The one true duplicate. See below. |
+| `manage/settings` vs `settings/basics` | both gone | **Already resolved** by `LIVE-238` / ADR-1336. |
+| `manage/modules` vs `manage/mode` | 2 live | **Kept, two jobs, split on purpose.** `/manage/modules` is the Module Manager (feature on/off, menu order, hidden, per-module min role); `/manage/mode` is the Mode + Focus preset (pipeline, lexicon, nav emphasis, label overrides). `mode/page.tsx` carries the line that settles it: "menu visibility lives in the Module Manager since ADR-552 Phase 4". |
+
+**Decision: retire `/admin/marketing/contacts`, the second contacts roster.** Both rosters read the
+SAME cohort through the SAME reader (`searchContacts`; the survivor's `loadContactsRoster` calls it),
+at the same scope, for the same operator. The survivor is `/admin/crm/contacts` on the evidence: it
+is the registered catalog destination (`crm-contacts` in `STUDIO_LEAVES`), it is the classifier-backed
+roster (ADR-625) with facets, sorting and the R5 upgrade segment, and the retired page had had NO
+menu leaf since 2026-07, when the catalog comment declared the Resonance CRM its replacement and left
+the page reachable "on deep links only". Two months of that is how one cohort came to have two
+rosters. Retired with an exact 308 to the survivor, plus a second exact 308 for `:id`.
+
+**What moved, because the survivor did not have it.** Three things, and nothing else:
+
+1. **Per-row consent**, as `ConsentEditor` in the roster island (optimistic like its
+   `RelationshipEditor` sibling, rolling back on a write that matched no row). This is the part that
+   was a real capability gap, not a cosmetic one: `status` COLLAPSES consent, so an unsubscribed
+   non-member reads as a plain `lead` and, before this change, no control on the surviving roster
+   could find or clear an opt-out.
+2. **Bulk consent** (the staff power action, ADR-379), as a selection plus a bulk bar. Scoped to the
+   rows the CURRENT QUERY SHOWS, not to every loaded row: the retired table had no filters, this
+   roster has seven facets, and "select all" quietly writing 500 rows behind a facet would be the
+   power action's worst possible reading.
+3. **The scan-intro switch** (`scan_invite_email_enabled`), read through the existing fail-safe
+   `scanInviteEnabled()` rather than a second hand-rolled `platform_flags` query.
+
+The `[id]` route MOVED rather than being redirected away: `:id` is a CONTACT id and its destination
+needs a PROFILE id, so a `next.config` rule cannot do the resolution, and the CRM graph's `PartyLink`
+deep link needs something to land on. It is the same 24-line forwarder (ADR-459), at
+`app/(main)/admin/crm/contacts/[id]/page.tsx`.
+
+**Where the writes live, and why not beside the route.** The consent write is `setContactsConsent`
+in `lib/crm/contact-consent.ts`, the module whose own header calls itself "the one place that answers
+may we contact this person" (ADR-372), scoped by construction to one `.in('id', ids)`. The flag write
+stays in `lib/platform-flags.ts`. So the new `app/(main)/admin/crm/contacts/actions.ts` is a thin
+`requireStaffCap('marketing')` adapter that opens no service-role client, and the admin-client
+ratchet (ADR-923) **shrank by two** instead of trading one page's entries for another's.
+
+**No menu change.** `check:menu`'s contract is that what is IN a menu is a catalog row, and the
+surviving door already had one. `STUDIO_LEAVES` gained and lost nothing; only the stale comment above
+`crm-marketing` was corrected, because it claimed the retired page "stays reachable".
+
+**Proof.** `actions.test.ts` pins the moved actions network-free: the capability gate runs before every
+write, a denied gate writes and revalidates nothing, the selection reaches `setContactsConsent`
+unchanged, a write that touched no row reports 0 and revalidates NOTHING (so the optimistic chip rolls
+back rather than painting a false success), and the flag flip carries the acting staffer's id.
+`contacts-roster.test.ts` pins the read with the case that motivated it: two rows that are
+indistinguishable to the status facet and separated by the consent facet, the consent facet pruned to
+the states present and dropped when absent, and the Source facet derived from the data (so the
+`beta_waitlist` segment the retired table hand-listed is a filter with no per-value code).
+`redirect-shadow.test.ts` lists both retired sources under "the retired stubs really are gone, not
+merely redirected past", which fails if a route file ever answers there again.
+
+**Consequences.** One contacts roster, and the only one that could ever see an opt-out now can. Six
+of the nine pairs are recorded as deliberately kept with the reason on the row, which is what the
+row asked for and is cheaper to re-read than to re-measure. `docs/CORE-MODEL.md` §5 row 6.3's "Today"
+cell is corrected in the same pass: it named four funnel builders as three and four CRM scopes as
+duplicates, and the code wins. Two findings are left for other rows, not done here: the three-way
+"Funnels" naming collision (a `NAMING.md` change), and `spaces/[slug]/settings/calendar` living under
+`/settings` while every other Space console door moved to the Manage hub (ADR-1336's shape, a
+follow-up for whoever finishes that migration). No schema change; no data change.
