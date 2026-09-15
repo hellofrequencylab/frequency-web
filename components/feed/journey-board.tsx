@@ -12,11 +12,11 @@ import type { PillarCount } from '@/lib/pillars'
 import { ProgressTrack } from '@/components/ui/progress-track'
 import { RankBadge } from '@/components/ui/rank-badge'
 
-// The graduated practice board. Once a member finishes activation, the streak box
-// "levels up" into this: a multi-purpose journey guide + resource center. It used to take the
-// top of /feed; it is a RIGHT-RAIL panel now (components/sidebar/practice-panel.tsx, ADR-1294),
-// which is why the root sets no bottom margin of its own — the rail spaces its panels with
-// `space-y-6`, and the rail is the one host. It's meant to be inspirational and useful, NOT a wall of
+// The graduated home surface. Once a member finishes activation, the streak box
+// "levels up" into this: a multi-purpose journey guide + resource center that takes
+// the top of the feed — on every viewport (ADR-1362; LIVE-248 moved it to the desktop-only
+// rail for a day, which took it off phones entirely). The root owns its own `mb-6` again,
+// because the page, not the rail's `space-y-6`, is the host. It's meant to be inspirational and useful, NOT a wall of
 // meters — three calm blocks: where your streak stands, the one move for today, and
 // a few warm doors back into the place. (Pillar balance + your active Journey plan
 // land here once the Journey-plan library ships — see docs/BACKLOG.md §Q.)
@@ -112,7 +112,7 @@ export function JourneyBoard({
   // behind the chevron.
   if (collapsed) {
     return (
-      <div className="overflow-hidden rounded-card border border-border bg-surface-elevated">
+      <div className="mb-6 overflow-hidden rounded-card border border-border bg-surface-elevated">
         <div className="flex items-center gap-2.5 px-3 py-2">
           <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-surface text-primary-strong lift-1">
             <Flame className="h-3 w-3" />
@@ -151,7 +151,7 @@ export function JourneyBoard({
     // used to be a second amber block sitting under the page's amber eyebrow, which warmed
     // the whole top of the feed. Amber now survives only on the Zap/flame glyph, the
     // milestone dots, and the rank badge.
-    <div className="overflow-hidden rounded-card border border-border bg-surface-elevated">
+    <div className="mb-6 overflow-hidden rounded-card border border-border bg-surface-elevated">
       {/* Hero band: streak + a warm, un-gamified line. */}
       <div className="relative px-4 pt-4">
         <div className="relative flex items-start justify-between gap-3">

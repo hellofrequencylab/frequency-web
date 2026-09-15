@@ -42862,7 +42862,82 @@ job. What the arm does is stop a stale reading passing quietly as a fresh one.
 
 **Rows.** `HYG-096` (done, this ADR).
 
-## ADR-1362: a block DEFAULT is live copy the moment anyone inserts the block (2026-09-15)
+---
+
+## ADR-1362: a demotion into the right rail is a deletion on a phone, and the owner reversed both of 2026-09-14's (2026-09-15)
+
+**Status.** Accepted, by owner ruling. Reverses the placement halves of
+[ADR-1341](DECISIONS.md) (LIVE-247, the mobile centre button) and [ADR-1294](DECISIONS.md)
+(LIVE-248 / CORE-MODEL §5 Phase 7.5.3, the feed hero). Restores [ADR-230](DECISIONS.md).
+Neither reverted change was a bug — both shipped green, both were reasoned, and both were
+wrong about the same thing.
+
+**Context.** Two PRs merged within six minutes of each other on the evening of 2026-09-14,
+and the owner opened the app the next morning to find the Zap button and the timer gone. The
+report was "something got fucked in the cleanup sweeps". Nothing had broken: every provider
+was still mounted, `/on-air` was intact, `CaptureLauncher` was still in the layout tree. Both
+features had been *deliberately moved*, and on a phone both moves landed as removals.
+
+| | shipped | what a phone got |
+|---|---|---|
+| #2604 LIVE-247 | the raised centre button became Create; the Zap menu became its **Post** row | Zapping went from one tap to two |
+| #2607 LIVE-248 | the practice board moved from the top of `/feed` to the right rail | the board, and its **Start Practice** button, rendered **nowhere** |
+
+**The finding that matters is the second row.** The right rail is `hidden lg:flex` in
+`app-shell.tsx`. A module whose only host is a rail panel does not exist below `lg` — which
+is most members, most of the time. The practice board carries `LogPracticeButton`, the
+one-tap **Start Practice / Continue Practice** control that is the timer's entry point, so
+"the board moved to the rail" and "the timer is gone from every phone" were the same
+sentence, and nothing in the repo could tell them apart.
+
+LIVE-248 knew the rail was desktop-only — `practice-panel.tsx` said so in its own header —
+and named three fallbacks. All three were measured here and none held:
+
+| claimed fallback | measured |
+|---|---|
+| the left drawer's `MobileGameStats` "carries today's move" | no timer; a `href="/practices"` link reading *Log today's practice* |
+| the header lotus (`MindlessLaunch`) | `hidden md:inline-flex` — desktop only |
+| "the timer is the whole point of The Quest tab" (`app-shell.tsx`) | The Quest tab → `/crew`, which has **zero** timer launchers |
+
+So the real mobile path to a timer was four taps (Quest → Practices → pick one → Start),
+down from one. **A fallback that has not been walked is not a fallback**, and all three of
+these were asserted in a comment rather than measured — the same failure mode
+[AGENTS.md](../AGENTS.md) names for build gates, in a layout decision.
+
+**Decision.**
+1. **The raised centre button is the Zap bolt again**, dispatching `open-capture` directly
+   (ADR-230 restored). `create-button.tsx` and its test are deleted.
+2. **The practice board is the first module on `/feed`, on every viewport.** `PracticePrompt`
+   / `JourneyBoard` own their `mb-6` again, because the page is the host.
+3. **The community board keeps its code and takes the rail slot.** It was never the problem
+   and it is a good panel; `components/sidebar/community-panel.tsx` hosts it under the
+   `community` key, and `pageRailPanels('/feed')` leads with it. Its bespoke skeleton is gone
+   (the rail supplies `PanelSkeleton`) and its `mb-6` with it.
+4. **Two things LIVE-247 was right about are kept.** `CREATE_ITEMS` still grants New Event
+   and New Circle to every member — that was a real gate/capability mismatch (`canCreate`
+   already allowed both) and it had nothing to do with the button. And nothing the Create
+   sheet hosted is stranded: `/events` and `/circles` carry `EventCompose` and
+   `NewCircleCompose` on every viewport, `/messages` and `/nearby` host the host-only two,
+   and the desktop feed's `CreateMenu` still renders the whole list.
+
+**The guard.** `community-board.test.tsx` used to assert the exact opposite of every line
+above, and it passed — because it measured the **placement** rather than its
+**consequence**. That is the shape-not-truth failure this repo keeps re-learning: a test that
+pins "the board is registered under the `practice` rail key" is satisfied by the regression.
+The suite now carries one that is not — *no practice board may be rail-only, because the rail
+does not exist on a phone* — which fails if `JourneyBoard`, `PracticePrompt` or a
+`practice-panel` import ever reappears in the rail registry, and re-asserts the
+`hidden lg:flex` breakpoint that is the whole reason for the rule.
+
+**The rule worth carrying past this change:** **the right rail is a desktop surface, so
+moving something into it is a decision about whether that thing should exist on a phone.**
+For a pulse panel the answer is usually yes, move it. For anything carrying the primary
+action of a daily habit, it is no. `page-chrome.ts` already encodes that the rail is chrome;
+what was missing is that the rail is *optional* chrome, and the page is not.
+
+**Rows.** `LIVE-247` and `LIVE-248` reopened as `reverted`; this ADR is the ruling.
+
+## ADR-1363: a block DEFAULT is live copy the moment anyone inserts the block (2026-09-15)
 
 **Status.** Accepted. Closes `LIVE-341`. Extends [ADR-1350](DECISIONS.md), which retired the fee
 ladder as the sales pitch, to the page-editor **block defaults** — the one class of copy that ADR's

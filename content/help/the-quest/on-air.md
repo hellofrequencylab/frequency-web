@@ -24,7 +24,7 @@ practice and Mindless opens in the mode that fits it, and you can switch.
 
 Open it from the **Mindless button in the header** (it opens fullscreen, taking
 over the screen wherever you are on the site), from the **Start Practice** button on a
-timer practice in a Journey, from the Zap menu (Create, then Post; the **Mindless** row), from your
+timer practice in a Journey, from the Zap button (the **Mindless** row), from your
 home screen (the little lotus next to any practice), or from a practice page.
 Mindless opens already set to the right practice and its length, and it remembers
 your choices for next time. There is nothing to pick: it lands on today's practice
@@ -74,7 +74,7 @@ collect.
 Stop early and it still counts, as long as you got at least **halfway**: the day
 is logged, your streak holds, and you bank **one Zap** right then. The practice
 then reads **Continue Practice** wherever you'd log it (your home screen, a
-Journey, the Zap menu), so you can pick up where you left off and collect the
+Journey, the Zap button), so you can pick up where you left off and collect the
 rest of the Zaps. Continue Practice picks it up at the time you had left, not from
 zero. Stop before halfway and nothing logs yet, so come back to it when you can.
 The practice is the point, not the clock.

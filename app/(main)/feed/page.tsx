@@ -10,15 +10,18 @@ import { RomanceStrip } from '@/components/feed/romance-strip'
 import { getLocalActivity } from '@/lib/feed/density'
 import { StreamTemplate } from '@/components/templates/stream-template'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
-import { CommunityBoard, CommunityBoardSkeleton } from '@/components/feed/community-board'
+import { PracticePrompt } from '@/components/practice/practice-prompt'
 import { FeedOnboardingGuide } from '@/components/feed/feed-onboarding-guide'
 import { AvatarNudge } from '@/components/feed/avatar-nudge'
 import { FeedWalkthrough } from '@/components/walkthroughs/feed-walkthrough'
 import { FeedRolePromotion } from '@/components/walkthroughs/feed-role-promotion'
+import { JourneyBoard } from '@/components/feed/journey-board'
 import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
 import { buildVeraOpening, buildWelcomeSlides } from '@/lib/onboarding/vera-welcome'
 import { track } from '@/lib/analytics/track'
+import { getPracticesToLogToday, getPartialPracticesToday } from '@/lib/practices'
 import { getCachedMemberProgress } from '@/lib/member-progress'
+import { getMemberPillarBalance } from '@/lib/pillars'
 import { StageCelebration } from '@/components/progress/stage-celebration'
 import { AmplitudeCelebration } from '@/components/progress/amplitude-celebration'
 import { getAmplitudeCelebration } from '@/lib/amplitude-celebration'
@@ -54,6 +57,7 @@ export default async function FeedPage({
   let primaryCircleId: string | null = null
   let canAnnounce = false
   let firstName: string | null = null
+  let streak = 0
   let homeLat: number | null = null
   let homeLng: number | null = null
   let feedRadiusM = 25000
@@ -65,6 +69,7 @@ export default async function FeedPage({
     myProfileId = profile.id
     myRole = (profile.community_role ?? 'member') as CommunityRole
     firstName = (profile.display_name ?? '').trim().split(/\s+/)[0] || null
+    streak = (profile.current_streak as number | null) ?? 0
     hasAvatar = !!profile.avatar_url
 
     // Member geo (ADR-088) rides on the shared viewer row above; the primary circle is a
@@ -138,18 +143,20 @@ export default async function FeedPage({
             : 'Most recent'
 
   // The feed's independent reads, fetched together (they were serial — a visible slice of the
-  // page's latency, site audit 2026-06-18): the member-progress spine (one read folding
-  // activation, the daily practice streak, Journeys and rank into a stage, ADR-146 — it drives the
-  // activation guide and the stage celebration here, and the rail's practice board shares the same
-  // cached read); the exactly-once Amplitude level-up banner (Rewards v2); and local-activity
-  // state + adaptive radius (Resonance Feed Phase 2, ADR-416), which drives the
-  // founder-vs-location-nudge card AND widens the 'nearby' radius when the area is sparse.
-  // Cached, fail-safe.
+  // page's latency, site audit 2026-06-18): the adopted-practices "log today" nudge (WAM); the
+  // member-progress spine (one read folding activation, the daily practice streak, Journeys and
+  // rank into a stage — it drives the hero and is read once for all of them, ADR-146); the
+  // exactly-once Amplitude level-up banner (Rewards v2); and local-activity state + adaptive
+  // radius (Resonance Feed Phase 2, ADR-416), which drives the founder-vs-location-nudge card AND
+  // widens the 'nearby' radius when the area is sparse. Cached, fail-safe.
   //
-  // The practices-to-log and pillar-balance reads left this page with the boards they fed
-  // (ADR-1294): the practice board is a rail panel now and reads its own data behind the rail's
-  // <Suspense>, so the page no longer pays for them before painting.
-  const [progress, amplitudeMoment, localActivity] = await Promise.all([
+  // The practice reads are BACK ON THIS PAGE's critical path (ADR-1362), because the board they
+  // feed is back at the top of it. LIVE-248 moved them behind the rail's <Suspense>, which did
+  // buy the page a little latency — and cost every phone the board entirely, since the rail is
+  // `hidden lg:flex`. The board is what the member opens the app for; the two reads are the price.
+  const [practicesToLog, partialPractices, progress, amplitudeMoment, localActivity] = await Promise.all([
+    myProfileId ? getPracticesToLogToday(myProfileId) : Promise.resolve([]),
+    myProfileId ? getPartialPracticesToday(myProfileId) : Promise.resolve([]),
     myProfileId ? getCachedMemberProgress(myProfileId) : Promise.resolve(null),
     myProfileId ? getAmplitudeCelebration(myProfileId) : Promise.resolve(null),
     myProfileId ? getLocalActivity(myProfileId) : Promise.resolve(null),
@@ -157,6 +164,26 @@ export default async function FeedPage({
   const effectiveRadiusM = localActivity?.effectiveRadiusM ?? feedRadiusM
 
   const onboarding = progress?.onboarding ?? null
+  const practiceStreak = progress?.streakState ?? null
+  const stageIndex = progress?.stage.index ?? 0
+
+  // Pillar balance for the graduated board — only surfaced once the member is
+  // Established (stage 3), so fetch it only then.
+  const pillarBalance = myProfileId && stageIndex >= 3
+    ? await getMemberPillarBalance(myProfileId)
+    : undefined
+
+  // Top enrolled journey → a slim "current step" line on the graduated board (v2; ADR-253).
+  const journeyProgress = progress?.journeys ?? []
+  const activeJourney = journeyProgress[0]
+    ? {
+        title: journeyProgress[0].title,
+        href: '/crew',
+        done: journeyProgress[0].phasesComplete,
+        total: journeyProgress[0].phasesTotal,
+        nextStepTitle: journeyProgress[0].nextLesson?.title ?? null,
+      }
+    : undefined
 
   // Warm, time-aware greeting headline (the feed is "home", so it greets you).
   // Greet in the community's timezone (the beta is North County San Diego) so the
@@ -196,21 +223,19 @@ export default async function FeedPage({
         visualMask="feed-greeting"
       >
 
-      {/* Hero slot. Onboarding incomplete → the persistent teal guide sits up top; complete →
-          the guide is gone and the community board leads. The practice board that used to
-          graduate into this slot is a right-rail panel now (CORE-MODEL §5 Phase 7.5.3,
-          ADR-1294): the first module above the composer is the member's people, not the game. */}
-      {onboarding && !onboarding.complete && <FeedOnboardingGuide status={onboarding} />}
+      {/* Hero slot. Onboarding incomplete → the persistent teal guide sits up top and
+          the streak box (if any) rides below it. Complete → the guide is gone and the
+          streak box graduates into the JourneyBoard, which takes the top spot, fronted
+          by the stage strip (and a one-time celebration when the stage advances).
 
-      {/* THE COMMUNITY BOARD — the first module above the composer (ADR-1294). Your Circles'
-          next gathering and what your Spaces have been saying, both read from the two nouns the
-          member already belongs to. Streamed behind its own <Suspense> so neither read can hold
-          the greeting, the guide or the composer (PAGE-FRAMEWORK §5). */}
-      {myProfileId && (
-        <Suspense fallback={<CommunityBoardSkeleton />}>
-          <CommunityBoard profileId={myProfileId} />
-        </Suspense>
-      )}
+          🔴 THIS SLOT IS THE PRACTICE BOARD ON EVERY VIEWPORT, AND THAT IS THE POINT (ADR-1362).
+          LIVE-248 moved it to the right rail and led this page with the community board instead.
+          The rail is `hidden lg:flex`, so the move did not demote the board on a phone — it
+          deleted it, and with it the one-tap Start Practice / Continue Practice button that is
+          the whole timer entry point. The community board is good and it kept its code; it is a
+          rail panel now (`community`, components/sidebar/community-panel.tsx), which is the
+          column that can afford to be desktop-only. */}
+      {onboarding && !onboarding.complete && <FeedOnboardingGuide status={onboarding} />}
 
       {/* Walkthroughs (Phase B): a gentle, dismissible in-feed card — pull-based, so the
           right member sees the right card next load. Never blocks the shell. */}
@@ -245,6 +270,30 @@ export default async function FeedPage({
           milestoneLabel={amplitudeMoment.milestoneLabel}
         />
       )}
+
+      {onboarding?.complete
+        ? <JourneyBoard
+            practices={practicesToLog}
+            partials={partialPractices}
+            streak={practiceStreak?.current ?? streak}
+            zaps={progress?.standing.seasonZaps ?? 0}
+            gems={progress?.standing.lifetimeGems ?? 0}
+            rank={progress?.rank.rank}
+            atRisk={practiceStreak?.atRisk ?? false}
+            loggedToday={practiceStreak?.loggedToday ?? false}
+            freezeTokens={practiceStreak?.freezeTokens ?? 0}
+            willFreezeProtect={practiceStreak?.willFreezeProtect ?? false}
+            stageIndex={stageIndex}
+            pillarBalance={pillarBalance}
+            activeJourney={activeJourney}
+          />
+        : <PracticePrompt
+            practices={practicesToLog}
+            partials={partialPractices}
+            streak={practiceStreak?.current ?? streak}
+            atRisk={practiceStreak?.atRisk ?? false}
+            loggedToday={practiceStreak?.loggedToday ?? false}
+          />}
 
       {/* "Add a photo" nudge (ADR-421): a safety net for anyone who landed without an
           avatar (the localStorage-quota loss, a cross-browser magic-link, or any upload

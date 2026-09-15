@@ -402,7 +402,7 @@ export function appSurfaces(
   const { roomPath, spaceSlug } = env
   const surfaces: Surface[] = [
     // The home feed. `viewportOnly` for the reason on the flag, and since LIVE-308 the first
-    // screen also carries three `data-visual-mask` sites (`feed-*` in VISUAL_MASK_SITES below).
+    // screen also carries two `data-visual-mask` sites (`feed-*` in VISUAL_MASK_SITES below).
     // Read the committed PNG before reasoning about this row: at 1280x800 and 390x844 the first
     // screen of the e2e account is the date eyebrow, the time-of-day greeting, the onboarding
     // guide and the top of the Capture box. POSTS ARE NOT ON IT. What moves every hour up there
@@ -413,14 +413,13 @@ export function appSurfaces(
     // picture is the design surface: the shell, the Settings divider row, the onboarding guide
     // (account state, which moves only when the account acts), the Capture box, and the
     // empty pane if the stream is empty.
-    // ⚠️ Heights this cannot hold, so the next size mismatch is read correctly: the community
-    // board (ADR-1294) is one module, two modules or an EmptyState depending on what the
-    // member's Circles and Spaces did this week, and the guide simply disappears when
-    // onboarding completes (the practice board it used to graduate into is a rail panel now);
-    // the walkthrough, role-promotion, Your corner, host-prompt and romance cards each mount or
-    // not per account and per day; and at 390 wide the afternoon greeting is a few pixels wider
-    // than the title block, so the h1 may take a third line between 12:00 and 18:00 Pacific.
-    // None of those is a mask's to fix.
+    // ⚠️ Heights this cannot hold, so the next size mismatch is read correctly: the guide gives
+    // way to the JourneyBoard when onboarding completes (ADR-1362 put that board back at the top
+    // of this page on every viewport, so it is in the 390-wide capture too, where LIVE-248 had
+    // briefly left nothing); the walkthrough, role-promotion, Your corner, host-prompt and
+    // romance cards each mount or not per account and per day; and at 390 wide the afternoon
+    // greeting is a few pixels wider than the title block, so the h1 may take a third line
+    // between 12:00 and 18:00 Pacific. None of those is a mask's to fix.
     { path: '/feed', slug: 'app-feed', audience: 'member', viewportOnly: true },
     { path: '/settings', slug: 'app-settings', audience: 'member' },
     // Around You. Listed KNOWING it will SKIP until the seeded member account and its three repo
@@ -882,9 +881,9 @@ export const VISUAL_MASK_SITES: readonly {
   },
   {
     value: 'rail-panel',
-    file: 'components/sidebar/practice-panel.tsx',
+    file: 'components/sidebar/community-panel.tsx',
     kind: 'live',
-    why: 'The practice board the /feed hero gave up (ADR-1294): streak, Zaps, Gems, rank, the milestone pips and today’s practices are every one of them a reading, and the board it renders swaps at activation.',
+    why: 'The community board, which took the rail slot when the practice board went back to the top of /feed (ADR-1362): the next gathering in the member’s Circles with its date chip and location, and the newest posts in their Spaces with authors and relative times, are every one of them a reading.',
   },
   // ── /nearby, the Dispatches page (LIVE-301) ─────────────────────────────────────────────
   // Five boxes on ONE page, and the count is the finding rather than a smell: `/nearby` is the
@@ -989,7 +988,7 @@ export const VISUAL_MASK_SITES: readonly {
     value: 'feed-community-board',
     file: 'components/feed/community-board.tsx',
     kind: 'live',
-    why: 'The first module above the composer (ADR-1294) and every pixel of it is a reading: the next gathering in the member’s Circles with its date chip and location, and the newest posts in their Spaces with authors and relative times. The skeleton carries it too, so a capture that lands mid-stream paints the same box. The EMPTY state is deliberately unmasked, the same rule the feed stream’s empty pane follows.',
+    why: 'The board’s body, wherever it is hosted — the right rail since ADR-1362. Every pixel is a reading: the next gathering in the member’s Circles with its date chip and location, and the newest posts in their Spaces with authors and relative times. The rail’s own PanelSkeleton covers a capture that lands mid-stream, so the board no longer ships one of its own. The EMPTY state is deliberately unmasked, the same rule the feed stream’s empty pane follows.',
   },
 ]
 

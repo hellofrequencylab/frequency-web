@@ -661,9 +661,9 @@ export function paletteDestinations(viewer: NavViewer, query = ''): PaletteDesti
 
 // ── Calm mobile spine (§5a: the five thumb-zone worlds + Zap center) ─────────────────
 // The mobile tab bar is the five TOP-LEVEL calm worlds (Feed · Community · Events · The
-// Quest · Marketplace), flanking the raised Create center button (an ACTION, declared in the
-// shell, not a registry node). The bar reads Menu · Feed · Community · [Create] · Events · The
-// Quest · Marketplace (slots 1-2 sit left of Create, slots 3-5 right of it). Each spine slot is
+// Quest · Marketplace), flanking the raised Zap center button (an ACTION, declared in the
+// shell, not a registry node). The bar reads Menu · Feed · Community · [Zap] · Events · The
+// Quest · Marketplace (slots 1-2 sit left of Zap, slots 3-5 right of it). Each spine slot is
 // an EXISTING calm registry node — its href, gate, and icon key carry over verbatim (moving
 // where the tab is declared, never what it permits); only the rendered TAB label is the
 // canon world name, distinct from the node's rail label where §5a shortens it (e.g. the

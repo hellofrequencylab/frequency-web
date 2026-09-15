@@ -61,7 +61,6 @@ import { Wordmark } from '@/components/layout/wordmark'
 import { MemberFooter } from '@/components/layout/member-footer'
 import { AREA_ICONS, railIconFor } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
-import { CreateButton } from '@/components/layout/create-button'
 import { DemoToggle } from '@/components/layout/demo-toggle'
 import { railFor, leftRailFor, mergeChrome, railStartsCollapsed, isFullViewportEditor, isFullWidthEditor, type ChromeOverrides , ownsBreadcrumb } from '@/lib/layout/page-chrome'
 import {
@@ -632,7 +631,7 @@ function AccountDropdown({
         // This header is `sticky … z-30`, and a positioned element with a z-index CREATES A STACKING
         // CONTEXT — so this panel's `z-50` only orders it against its siblings inside the header. The
         // mobile tab bar is `z-40` in the ROOT context (see MobileTabBar), which puts the whole bar,
-        // and the raised Create catch that stands 22px proud of it, on top of this menu.
+        // and the raised Zap catch that stands 22px proud of it, on top of this menu.
         //
         // Measured at the 17px root: the panel opens at 68px (`--app-header-h` + `mt-2`), so on a
         // 320x568 iPhone SE its bottom lands at 522 against a catch that starts at 486 — 36px of menu
@@ -1459,10 +1458,10 @@ function MobileLeftDrawer({
 
 // The five calm spine worlds (§5a: Feed · Community · Events · The Quest · Marketplace),
 // derived from the ONE registry (lib/nav/registry.ts::calmSpine) — no parallel hardcoded
-// list. They flank the raised Create center button (the action, below). Each tab carries its
+// list. They flank the raised Zap center button (the action, below). Each tab carries its
 // backing calm NavNode (href · gate · icon key); icons still come from AREA_ICONS so the
 // bar stays in lockstep with the rail/drawer, and each tab gate-filters through canSee —
-// the same resolver every surface uses. Order here IS bar order (Menu · slots 1-2 · Create ·
+// the same resolver every surface uses. Order here IS bar order (Menu · slots 1-2 · Zap ·
 // slots 3-5). Stats moved to the left drawer; Messages moved to the header.
 
 function MobileTabBar({
@@ -1482,7 +1481,7 @@ function MobileTabBar({
 }) {
   // The five calm spine worlds from the registry (§5a), gate-filtered through canSee — the
   // same resolver every surface uses (so a visitor never sees a member-gated tab). Split
-  // around the Create center button below (slots 1-2 left of Create · Create · slots 3-5 right).
+  // around the Zap center button below (slots 1-2 left of Zap · Zap · slots 3-5 right).
   const tabs = calmSpine().filter((t) => canSee(t.node, viewer))
 
   // Every item — the two edge buttons AND the destination tabs — is flex-1 with the same
@@ -1546,12 +1545,54 @@ function MobileTabBar({
 
       {!hideAppNav && tabs.slice(0, 2).map(renderTab)}
 
-      {/* The centre button: Create (LIVE-247). The raised disc opens the Create sheet (Post, then
-          the structured creates: Event, Circle, and what the viewer's role adds). It used to fire
-          'open-capture' straight into the Zap menu (ADR-230); that menu is now the sheet's Post
-          row. The button and its sheet live in create-button.tsx so a test can press the real
-          thing; the disc's geometry there is slot 0a of the mobile stacking contract. */}
-      {!hideAppNav && <CreateButton role={viewer.role} />}
+      {/* Zap — the action button (ADR-230, restored 2026-09-15 by owner ruling; see ADR-1362).
+          Member-facing it's Zap; the backend stays Capture (the 'open-capture' event, the
+          captures machinery): Zap is the function that captures. The bolt is a LIGHT glyph on
+          the orange button in light mode and a DARK glyph on the gold button at night, with a
+          soft catch behind it that flips to match (all tokens).
+
+          LIVE-247 briefly made this disc a Create button whose sheet carried the Zap menu as a
+          Post row. The structured creates it hosted are NOT stranded by this revert: /events and
+          /circles each carry their own compose button (EventCompose, NewCircleCompose) on every
+          viewport, and the desktop feed's CreateMenu still renders the whole CREATE_ITEMS list —
+          which keeps the role widening that change was also right about. What the sheet cost was
+          the one thing this button is for: Zapping in one tap. */}
+      {!hideAppNav && (
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('open-capture', { detail: { mode: 'post' } }))}
+          aria-label="Zap, capture a moment"
+          className="relative flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-semibold text-primary-strong"
+        >
+          {/* The circle sits a touch lower than dead-center on the bar's top edge so
+              it reads balanced against the flat tabs (its center is 6px below the
+              line); the arch above drops to match, keeping the even 12px margin. */}
+          <span aria-hidden className="h-[26px] w-[22px]" />
+          {/* The fully-rounded white catch the bolt sits in — a floating disc, not a bar bump.
+              The lift is `--tab-bar-lift`, not a 22px literal: this disc is slot 0a of the
+              mobile stacking contract (components/sidebar/game-stats-dock.tsx), and the same
+              number decides how far the content column has to pad to clear it
+              (`--tab-bar-clearance`). Two literals that happened to agree is how the teaser
+              pill and the RSVP bar each got painted over. */}
+          <span aria-hidden className="absolute left-1/2 top-0 h-14 w-14 -translate-x-1/2 -translate-y-[var(--tab-bar-lift)] rounded-pill border border-border bg-surface" />
+          <span className="absolute left-1/2 top-0 flex h-12 w-12 -translate-x-1/2 -translate-y-[18px] items-center justify-center rounded-pill bg-primary shadow-pop">
+            {/* the catch behind the glyph — a soft shadow under the bolt (flips with
+                the glyph so the carve always reads) */}
+            <Zap
+              aria-hidden
+              className="absolute h-[24px] w-[24px] translate-y-[1.5px] text-primary-strong/40 fill-primary-strong/20 dark:text-on-primary/45 dark:fill-on-primary/25"
+              strokeWidth={2}
+            />
+            {/* the glyph: LIGHT on the orange button in light mode, DARK on the gold
+                button in night mode */}
+            <Zap
+              className="relative h-[24px] w-[24px] text-on-primary fill-on-primary/35 dark:text-ink dark:fill-ink/35"
+              strokeWidth={2}
+            />
+          </span>
+          <span className="w-full truncate text-center leading-none">Zap</span>
+        </button>
+      )}
 
       {!hideAppNav && tabs.slice(2).map(renderTab)}
     </nav>
@@ -2524,7 +2565,7 @@ export default function AppShell({
 
       {/* ── Mobile bottom tab bar ─────────────────────────── */}
       {/* The five calm spine worlds (§5a: Feed · Community · Events · The Quest · Marketplace)
-          from the registry, flanking the raised Create center action, with the Menu edge arrow.
+          from the registry, flanking the raised Zap center action, with the Menu edge arrow.
           Profile ("You") stays the top-right account avatar in the header (not a tab); stats
           moved into the left drawer; Messages moved to the header. Hidden on a full-viewport
           editor takeover so it never sits over the editor's control dock. */}
