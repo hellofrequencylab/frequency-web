@@ -16,7 +16,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { RULES } from '../check-canon.mjs'
-import { query, proseStrings, isCopy, findings, report, SLUG } from './home-copy-canon.mjs'
+import { query, proseStrings, isCopy, findings, report, SLUG, MODEL_CLAIMS, modelGaps } from './home-copy-canon.mjs'
 
 /** A miniature of the live home document: same keys, same nesting depths. */
 const CLEAN_DOC = {
@@ -137,6 +137,95 @@ describe('home-copy-canon — the rules actually fire', () => {
   it('reports the path so an operator can find the block', () => {
     const { out } = findings(withCopy('We are on the same wavelength'))
     expect(out[0]?.path).toContain('content[0].props.body')
+  })
+})
+
+// ── the model arm (LIVE-252) ──────────────────────────────────────────────────────────────
+//
+// 🔴 THE CASE THIS ARM EXISTS FOR IS CLEAN_DOC ITSELF. It is a faithful miniature of the
+// document that was live from 2026-07-13 to 2026-09-15, and the canon arm above scores it
+// ZERO findings — correctly, because nothing in it is off voice. It also never mentions a
+// Space, an Event, or what anything costs, so a visitor could read the whole front door and
+// learn none of the commercial model. A guard that reported "clean" on that page was
+// measuring the copy and not the page.
+const MODEL_DOC = {
+  root: { props: {} },
+  content: [
+    {
+      type: 'Hero',
+      props: {
+        id: 'home-hero',
+        title: 'Frequency is where your local community happens',
+        subtitle:
+          'Start a Circle where you live, host Events your neighbors can find, and open a Space that stays free. ' +
+          'People join free. Businesses host free. You pay when you start charging, and never for access to people.',
+      },
+    },
+    {
+      type: 'ValueBand',
+      props: {
+        id: 'home-model',
+        title: "Four nouns, and that's the whole product.",
+        items: [
+          { icon: 'Users', title: 'Member', body: 'A person. Free forever.' },
+          { icon: 'Home', title: 'Space', body: "A business's home on Frequency. Opening one is free." },
+        ],
+      },
+    },
+  ],
+}
+
+describe('home-copy-canon — the model arm', () => {
+  it('POSITIVE CONTROL: the document as rewritten by 20270345004600 states every claim', () => {
+    expect(modelGaps(MODEL_DOC)).toEqual([])
+  })
+
+  it('NEGATIVE CONTROL: the pre-2026-09-15 front door is on voice and states almost none of it', () => {
+    // The exact pairing that made this arm necessary: 0 voice findings, most of the model missing.
+    expect(findings(CLEAN_DOC).out).toEqual([])
+    const missing = modelGaps(CLEAN_DOC).map((c) => c.name)
+    expect(missing).toContain('people join free')
+    expect(missing).toContain('businesses host free')
+    expect(missing).toContain('you pay when you start charging')
+    expect(missing).toContain('the Space noun')
+  })
+
+  it.each(MODEL_CLAIMS.map((c) => [c.name, c] as const))('each claim is detected on its own: %s', (_n, claim) => {
+    // Drop this one claim from an otherwise complete document and assert it, and only it, is
+    // reported. A claim whose regex matched something incidental would fail here.
+    const stripped = JSON.parse(JSON.stringify(MODEL_DOC))
+    const scrub = (node: unknown): unknown => {
+      if (typeof node === 'string') {
+        // Every occurrence, and every ALTERNATIVE of the claim's regex: a claim like
+        // "businesses host free" matches more than one phrasing, and this document deliberately
+        // carries two of them. Replacing only the first left the claim satisfied and the
+        // detector unproven, which is how this loop earned its while.
+        let s = node
+        for (let i = 0; i < 12 && claim.re.test(s); i++) s = s.replace(claim.re, 'REDACTED')
+        return s
+      }
+      if (Array.isArray(node)) return node.map(scrub)
+      if (node && typeof node === 'object') {
+        return Object.fromEntries(Object.entries(node as Record<string, unknown>).map(([k, v]) => [k, scrub(v)]))
+      }
+      return node
+    }
+    const gaps = modelGaps(scrub(stripped)).map((c) => c.name)
+    expect(gaps, `removing "${claim.name}" must report it missing`).toContain(claim.name)
+  })
+
+  it('does NOT ask the front door for a promise the product cannot keep', () => {
+    // "Placement is earned, never sold" is CORE-MODEL §1's second mechanic and PROG-R10 is open.
+    // A claim for it would report a gap nobody may honestly close. See ADR-1358.
+    const names = MODEL_CLAIMS.map((c) => c.name).join(' ')
+    expect(names).not.toMatch(/placement/i)
+  })
+
+  it('every claim carries the reason it is on the front door', () => {
+    for (const c of MODEL_CLAIMS) {
+      expect(c.why, `claim "${c.name}" has no reason`).toBeTruthy()
+      expect(c.why.length).toBeGreaterThan(40)
+    }
   })
 })
 

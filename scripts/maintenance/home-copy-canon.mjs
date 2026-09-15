@@ -37,6 +37,11 @@
 // publish at any moment and a maintenance run that goes red for a word choice would train
 // everyone to ignore it. The finding lands in the step summary where a human reads it.
 //
+// TWO ARMS SINCE 2026-09-15 (LIVE-252, ADR-1358). The canon arm asks whether the copy is on
+// voice. The MODEL arm (`MODEL_CLAIMS` / `modelGaps` below) asks whether it still says what
+// Frequency IS, because the first arm scored a clean zero on a front door that mentioned neither
+// a Space nor a price. Both report; neither fails.
+//
 // USAGE
 //   node scripts/maintenance/home-copy-canon.mjs --print-query   # emit the SQL
 //   node scripts/maintenance/home-copy-canon.mjs home.json       # read the API result
@@ -122,6 +127,61 @@ export function isCopy(value, path = '$') {
   return true
 }
 
+// ── THE MODEL ARM (LIVE-252, ADR-1358) ───────────────────────────────────────────────────────
+//
+// The canon rules above answer "is this copy ON VOICE?". They cannot answer the other question,
+// which is the one the front door exists to answer: "does it say what Frequency IS?". On
+// 2026-09-15 the published document scored ZERO canon findings while never once mentioning a
+// Space or a price, so the whole commercial model was absent from the site's front door and every
+// rule was green. 20270345004600 put the model in the document; this arm is what notices if it
+// leaves again — an editor session, a republish from the template, or a well-meant trim.
+//
+// WHY IT IS A CLAIM LIST AND NOT A STRING MATCH. Each entry names the CONSEQUENCE (a reader can
+// learn this fact from the front door) and matches it loosely enough that an operator may rewrite
+// the sentence. A claim that demanded one exact sentence would turn an advisory reading into a
+// copy freeze, which is the opposite of the editor's point.
+//
+// The source of the claims is docs/CORE-MODEL.md §1 (ADR-1294). "Placement is earned, never sold"
+// is deliberately NOT here: PROG-R10 is open, so the front door does not yet make that promise and
+// a gate asking for it would report a gap the product cannot honestly close.
+export const MODEL_CLAIMS = [
+  {
+    name: 'people join free',
+    re: /\b(people join free|joining is free|free forever)\b/i,
+    why: 'CORE-MODEL §1 line one. A visitor must not have to reach /pricing to learn that being here costs nothing.',
+  },
+  {
+    name: 'businesses host free',
+    re: /\b(businesses host free|hosting on it is free|opening (a|one) Space is free|open a Space that stays free)\b/i,
+    why: 'CORE-MODEL §1 line two, and the only line addressed to the reader who brings other people with them.',
+  },
+  {
+    name: 'you pay when you start charging',
+    re: /\byou pay when you (start charging|charge)\b/i,
+    why: 'CORE-MODEL §1 line three. Without it the two free lines read as a trial.',
+  },
+  {
+    name: 'the Space noun',
+    re: /\bSpace\b/,
+    why: 'One of the four nouns (CORE-MODEL §"The whole product"). The 2026-07-13 document named three of the four and this was the missing one.',
+  },
+  {
+    name: 'the Event noun',
+    re: /\bEvents?\b/,
+    why: 'One of the four nouns. A Circle with no Event is a roster nobody meets.',
+  },
+]
+
+/** Which model claims the document does NOT make. Separate from `findings()` on purpose: a canon
+ *  violation is copy that is WRONG, a model gap is copy that is MISSING, and conflating them would
+ *  make the clean-voice positive control in the test suite unable to stay clean. */
+export function modelGaps(doc) {
+  const text = proseStrings(doc)
+    .map((s) => s.text)
+    .join('\n')
+  return MODEL_CLAIMS.filter((c) => !c.re.test(text))
+}
+
 /** Apply every canon rule to the extracted copy. Returns findings, newest rule order. */
 export function findings(doc) {
   const strings = proseStrings(doc)
@@ -152,6 +212,7 @@ export function report(rows) {
 
   let scanned = 0
   let count = 0
+  let gaps = 0
   for (const row of rows) {
     let doc
     try {
@@ -161,9 +222,14 @@ export function report(rows) {
       continue
     }
     const { strings, out } = findings(doc)
+    const missing = modelGaps(doc)
     scanned += strings.length
     count += out.length
-    lines.push(`**\`${row.slug}\`** — ${strings.length} copy string(s) scanned, ${out.length} finding(s).`)
+    gaps += missing.length
+    lines.push(
+      `**\`${row.slug}\`** — ${strings.length} copy string(s) scanned, ${out.length} voice finding(s), ` +
+        `${MODEL_CLAIMS.length - missing.length}/${MODEL_CLAIMS.length} model claim(s) present.`,
+    )
     if (out.length) {
       lines.push('')
       for (const f of out) {
@@ -173,13 +239,23 @@ export function report(rows) {
       lines.push('')
       lines.push('Fix these in the page editor at `/pages/home` and republish; the copy is not in this repo.')
     }
+    if (missing.length) {
+      lines.push('')
+      lines.push(`⚠️ The front door no longer states ${missing.length} of the core model's claims:`)
+      for (const c of missing) lines.push(`- **${c.name}** — ${c.why}`)
+      lines.push('')
+      lines.push('This is what `/` is for (docs/CORE-MODEL.md §1). Put it back at `/pages/home`.')
+    }
   }
 
   if (!count) {
     lines.push('')
     lines.push('✅ The published front-door copy satisfies the naming and voice canons.')
   }
-  return { text: lines.join('\n'), count, scanned }
+  if (rows.length && !gaps) {
+    lines.push('✅ It also states every claim of the core model.')
+  }
+  return { text: lines.join('\n'), count, scanned, gaps }
 }
 
 const argv = process.argv.slice(2)
@@ -193,8 +269,11 @@ if (argv[0] === '--print-query') {
     console.log(`🔴 The query did not return rows: ${raw?.message ?? JSON.stringify(raw).slice(0, 300)}`)
     process.exit(0)
   }
-  const { text, count, scanned } = report(raw)
+  const { text, count, scanned, gaps } = report(raw)
   console.log(text)
   console.log('')
-  console.log(`(${scanned} string(s) scanned against ${RULES.length} canon rules, ${count} finding(s). Advisory.)`)
+  console.log(
+    `(${scanned} string(s) scanned against ${RULES.length} canon rules and ${MODEL_CLAIMS.length} model claims, ` +
+      `${count} voice finding(s), ${gaps} model gap(s). Advisory.)`,
+  )
 }
