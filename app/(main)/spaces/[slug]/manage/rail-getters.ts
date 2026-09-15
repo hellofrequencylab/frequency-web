@@ -59,7 +59,20 @@ import type { HeroEditorValues } from '@/lib/spaces/hero-config'
 import { readProfileData, isServiceListed, type SpaceProfileData } from '@/lib/spaces/profile-data'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import { parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
-import type { SpaceSettingsValues } from '../settings/settings-form'
+
+/** The identity values the Info & Connect slice carries beside its business blob. This was the DTO of
+ *  the retired /settings/basics form (ADR-1336); the rail module reads `about` from it, and the rest
+ *  rides along so the bundle shape is unchanged. */
+interface SpaceSettingsValues {
+  brandName: string
+  brandAccent: string
+  brandLogoUrl: string
+  coverImageUrl: string
+  about: string
+  tagline: string
+  visibility: 'network' | 'private'
+  theme: SpaceThemeId
+}
 
 /** The upper bound on the upcoming-events read behind the Calendar box's stat. The Calendar console itself
  *  reads at most 200 events, so the rail's count uses the SAME ceiling rather than a second, unbounded
@@ -67,8 +80,9 @@ import type { SpaceSettingsValues } from '../settings/settings-form'
 const EVENT_COUNT_LIMIT = 200
 
 // ── Basics (space.basics) ──────────────────────────────────────────────────────────────────────────
-// The SpaceSettingsForm prop bundle the /settings/basics page assembles (basics/page.tsx). Read-gated on
-// manage access; the form's own updateSpaceProfile re-checks canEditProfile, so readOnly is UX.
+// The Info & Connect prop bundle, read by the rail module AND the Manage hub's identity editor
+// (manage/identity-editor.tsx, the one settings door since ADR-1336). Read-gated on manage access; the
+// form's own updateSpaceProfile re-checks canEditProfile, so readOnly is UX.
 
 interface SpaceBasicsData {
   spaceId: string
@@ -137,7 +151,7 @@ function buildBasicsData(
 }
 
 /** The Basics editor's data, or null when the viewer cannot manage this Space (fail-safe → the wrapper
- *  renders nothing). Re-gates exactly like basics/page.tsx: resolveSpaceManageAccess + the `profile`
+ *  renders nothing). Re-gates exactly like the hub page: resolveSpaceManageAccess + the `profile`
  *  per-Space function (read-only when the viewer lacks it or is a staff previewer). */
 export async function getSpaceBasicsData(slug: string): Promise<SpaceBasicsData | null> {
   const caller = await getCallerProfile()

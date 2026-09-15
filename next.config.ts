@@ -451,6 +451,17 @@ const nextConfig: NextConfig = {
       { source: '/events/:slug/edit', destination: '/events/:slug/manage?section=settings', permanent: true },
       { source: '/events/:slug/settings', destination: '/events/:slug/manage?section=settings', permanent: true },
       { source: '/practices/:id/manage', destination: '/practices/:id/edit', permanent: true },
+      // LIVE-238 (ADR-1336): one Space-settings door. The Manage hub's Profile & Settings tab now
+      // renders the identity editor beneath its cards, so the two other doors are deleted, not
+      // parked, and land there. Permanent (308) for the same reason as the rows above: the tab is
+      // not going anywhere. Sources are EXACT: /settings/basics had no children, and the shadow test
+      // pins that no `/spaces/:slug/settings/:` rule exists because sixteen live sub-pages share
+      // that prefix; /manage/settings had none either.
+      //   /settings/basics: the page carried its own copy of the identity form beside Info & Connect,
+      //   the location form and the FAQ editor; the tab renders the rail's forms plus those three.
+      //   /manage/settings: a second frame over the same card index, with zero inbound links.
+      { source: '/spaces/:slug/settings/basics', destination: '/spaces/:slug/manage?section=settings', permanent: true },
+      { source: '/spaces/:slug/manage/settings', destination: '/spaces/:slug/manage?section=settings', permanent: true },
       // crm/ keeps its directory: actions.ts is imported by ../manage/circle-member-viewer.tsx.
       { source: '/circles/:slug/crm', destination: '/circles/:slug/manage', permanent: false },
       // Same shape: crm/actions.ts is imported by ../event-member-viewer.tsx.

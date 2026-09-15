@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -14,6 +15,7 @@ import { SpaceMarketing } from '@/components/spaces/marketing/space-marketing'
 import { betaWindow } from '@/lib/pricing/beta-state'
 import { betaStartLabel } from '@/lib/pricing/beta-notice'
 import { SpaceManageConsole } from './console'
+import { SpaceIdentityEditor } from './identity-editor'
 
 // The Space owner console BOARD (ADR-441 EM1-3): the reusable render boundary that resolves the Space,
 // gates on manage access, computes the gated surface spine + Mode emphasis, and renders the console.
@@ -116,6 +118,17 @@ export async function SpaceManageBoard({
       />
     ) : undefined
 
+  // The Profile & Settings tab carries the Space identity editor beneath its cards (ADR-1336): the one
+  // door to a Space's identity, story, location, FAQ and visibility. Its reads (the rail core, reviews,
+  // FAQ rows, the location columns) sit behind Suspense so the tab's cards never wait on them
+  // (PAGE-FRAMEWORK §5). The editor self-gates and renders nothing for a viewer who cannot manage.
+  const identityEditor =
+    section === 'settings' ? (
+      <Suspense fallback={<div aria-hidden className="h-40 animate-pulse rounded-card bg-surface-elevated" />}>
+        <SpaceIdentityEditor slug={space.slug} />
+      </Suspense>
+    ) : undefined
+
   // Deleting a Space is OWNER-grade (or platform staff): the Profile & Settings tab's Danger zone renders
   // its delete control only when true; otherwise header-only.
   const canDelete = caps.isOwner || isStaff(caller?.webRole)
@@ -139,6 +152,7 @@ export async function SpaceManageBoard({
       canDelete={canDelete}
       spaceId={space.id}
       sectionHref={sectionHref}
+      identityEditor={identityEditor}
       graceEndsLabel={graceEndsLabel}
     />
   )

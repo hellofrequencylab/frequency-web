@@ -41,9 +41,9 @@ export { hrefForSurface }
 
 // ── Grouping (pure metadata) ─────────────────────────────────────────────────────────────────────────
 //
-// The hub renders the module manifest into the FOUR browse categories (lib/admin/modules/space-hub.ts):
-// Resonance · Marketing · Offerings & Money · Content & Programs, plus the header-level Profile & Settings
-// surface. `groupForModule` below is the LEGACY 7-slot console grouping, retained only for the drift-guard
+// The hub renders the module manifest into the browse categories (lib/admin/modules/space-hub.ts):
+// Resonance · Marketing · Offerings & Money · Content & Programs, plus the Profile & Settings tab, which
+// is the one door to a Space's settings. `groupForModule` below is the LEGACY 7-slot console grouping, retained only for the drift-guard
 // tests + any caller that still reads the coarse spine slot; the live hub uses `sectionForModule`.
 
 /**
@@ -264,9 +264,9 @@ function DangerRow({
   )
 }
 
-/** The category nav for the hub — the four browse sections as underline tabs (the Classifieds category-menu
- *  pattern), `?section=` in the URL so it is server-rendered + shareable. Profile & Settings is a header
- *  affordance, not a tab. */
+/** The category nav for the hub: the browse sections as tabs (the Classifieds category-menu pattern),
+ *  `?section=` in the URL so it is server-rendered + shareable. Profile & Settings trails them as a real
+ *  tab (ADR-788), and since ADR-1336 it is the only door to a Space's settings. */
 function HubNav({
   slug,
   section,
@@ -394,6 +394,7 @@ export function SpaceManageConsole({
   canDelete,
   spaceId,
   sectionHref,
+  identityEditor,
   graceEndsLabel = null,
 }: {
   slug: string
@@ -418,6 +419,10 @@ export function SpaceManageConsole({
   /** Whether the Profile & Settings tab's Danger zone renders its delete control (owner / staff). */
   canDelete: boolean
   spaceId: string
+  /** The Space identity editor, built server-side by the board and shown on the Profile & Settings tab
+   *  beneath its cards (ADR-1336): the one door to a Space's identity, story, location, FAQ and
+   *  visibility. */
+  identityEditor?: React.ReactNode
   /** The beta grace window's end, already formatted ("October 1"), or null when the window is shut or
    *  unreadable. Resolved server-side in manage-board.tsx from the operator's own `beta_grace` setting:
    *  the SAME value featureGatesLive() reads, so the notice and the caps can never disagree. Null means
@@ -458,7 +463,13 @@ export function SpaceManageConsole({
         ) : section === 'marketing' ? (
           marketingEmbed
         ) : section === 'settings' ? (
-          <SpaceSettingsSurface slug={slug} modules={modules} canDelete={canDelete} spaceId={spaceId} />
+          <SpaceSettingsSurface
+            slug={slug}
+            modules={modules}
+            canDelete={canDelete}
+            spaceId={spaceId}
+            identityEditor={identityEditor}
+          />
         ) : inSection.length > 0 ? (
           <FeatureGrid modules={inSection} slug={slug} emphasis={emphasis} section={section} />
         ) : (
@@ -479,23 +490,32 @@ export function SpaceManageConsole({
   )
 }
 
-/** The PROFILE & SETTINGS surface: the space's identity/brand/visibility shell plus Team, Reviews,
- *  Plan & usage, and the Danger zone — everything that is configuration rather than daily operation.
- *  Rendered by BOTH the standalone /manage/settings route and the hub's own settings tab (ADR-788
- *  reversed ADR-785's header-only placement), which is why it lives here rather than in either. */
+/** The PROFILE & SETTINGS surface: Team, Reviews, Plan & usage, the space's identity editor, and the
+  *  Danger zone: everything that is configuration rather than daily operation. This tab is the ONE door
+ *  to a Space's settings (ADR-1336, LIVE-238): ADR-785 put it in the hub header, ADR-788 made it a tab,
+ *  and the standalone /manage/settings frame and the /settings/basics editor both retired into it.
+ *  The cards keep their one-tap reach (ADR-788's reason for the tab); the identity editor sits beneath
+ *  them, and Danger stays last. */
 export function SpaceSettingsSurface({
   slug,
   modules,
   canDelete,
   spaceId,
+  identityEditor,
 }: {
   slug: string
   modules: SpaceModule[]
   canDelete: boolean
   spaceId: string
+  /** The identity editor (SpaceIdentityEditor, built server-side by the board): the same forms the rail
+   *  stacks inline for `space.basics`, plus the completeness meter, location and FAQ editors. */
+  identityEditor?: React.ReactNode
 }) {
   const settingsModules = modules.filter((m) => sectionForModule(m) === 'settings')
-  const cards = settingsModules.filter((m) => m.id !== 'space.danger')
+  // `space.basics` IS this surface now (the identity editor below), so it draws no card here: a card
+  // linking to the tab you are standing on is a circular row (space-hub.ts). It keeps its catalog row
+  // for the rail's inline body, the hub search, and the FAQ block's CTA.
+  const cards = settingsModules.filter((m) => m.id !== 'space.danger' && m.id !== 'space.basics')
   const danger = settingsModules.find((m) => m.id === 'space.danger')
   return (
     <div className="space-y-6">
@@ -546,6 +566,7 @@ export function SpaceSettingsSurface({
           return <SectionRow key={module.id} module={module} href={href} suggested={false} />
         })}
       </ul>
+      {identityEditor}
       {danger && (
         <section>
           <SectionHeader title="Danger zone" />

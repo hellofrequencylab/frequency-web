@@ -320,12 +320,12 @@ app/(main)/spaces/[slug]/collaborations-actions.ts
 app/(main)/spaces/[slug]/crm/actions.ts
 app/(main)/spaces/[slug]/crm/conversations-actions.ts
 app/(main)/spaces/[slug]/edit-page/actions.ts
+app/(main)/spaces/[slug]/manage/identity-editor.tsx
 app/(main)/spaces/[slug]/manage/layout/actions.ts
 app/(main)/spaces/[slug]/manage/mode/actions.ts
 app/(main)/spaces/[slug]/manage/modules/actions.ts
 app/(main)/spaces/[slug]/manage/rail-getters.ts
 app/(main)/spaces/[slug]/practices/actions.ts
-app/(main)/spaces/[slug]/settings/basics/page.tsx
 app/(main)/spaces/[slug]/settings/billing/billing-body.tsx
 app/(main)/spaces/[slug]/settings/members/members-body.tsx
 app/(main)/spaces/[slug]/settings/memberships/section.tsx

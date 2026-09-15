@@ -14,7 +14,7 @@ import nextConfig from '../../next.config'
 // moved 41 redirect-only route files into next.config and two of the new rules sit directly above
 // live subtrees:
 //
-//   /spaces/:slug/settings           — 19 live sub-pages beneath it (basics, billing, members,
+//   /spaces/:slug/settings           — a run of live sub-pages beneath it (billing, members,
 //                                      offerings, qr, email, shop, …). As `:path*` this rule would
 //                                      take out an operator's entire settings console.
 //   /spaces/:slug/settings/services  — a live `services/new/page.tsx` sibling.
@@ -150,6 +150,9 @@ describe('the retired stubs really are gone, not merely redirected past', () => 
     '/connections/import',
     '/settings/account',
     '/spaces/:slug/settings/enroll',
+    // LIVE-238 (ADR-1336): the two losing Space-settings doors retire into the Manage hub's tab.
+    '/spaces/:slug/settings/basics',
+    '/spaces/:slug/manage/settings',
   ]
 
   it('each retired path is served by a config rule', async () => {

@@ -40575,3 +40575,76 @@ a debt against the inline plane; it is named here so the next count of editors s
 right number, three surviving routes plus two creation builders.
 
 **Rows.** LIVE-237 (done, this ADR).
+
+## ADR-1336: one Space-settings door, and the two routes that were not it (2026-09-14)
+
+**Status.** Accepted. Closes `LIVE-238`. Applies [ADR-1333](DECISIONS.md)'s method (re-test the
+premise route by route, retire the losers with exact permanent redirects, move what only a loser
+could do into the survivor by the STUDIO rules) to the Space. Supersedes the placement half of
+[ADR-785](DECISIONS.md) §4 and [ADR-788](DECISIONS.md) in one sentence: the Profile & Settings tab of
+the Space Manage hub is the one door to a Space's settings. Amends the row's own premise, below.
+
+**Context.** `docs/CORE-MODEL.md` §5 row 6.2 counted three doors over two implementations. The
+detail said `/spaces/[slug]/settings/basics` carried "its own copy of the form", that
+`/spaces/[slug]/manage/settings` rendered the shared `SpaceSettingsSurface`, that the hub carried a
+tab for it, and to keep the shared surface. Measured before anything was deleted:
+
+| Door | Renders | Manifest-derived? | Only it could | Inbound links |
+|---|---|---|---|---|
+| `settings/basics` | `FocusTemplate` over five pieces: a private `SpaceSettingsForm` (`settings/settings-form.tsx`: name, tagline with Suggest with Vera, header and logo uploads, accent, page theme, visibility, one batched Save), `SpaceInfoConnectForm`, `SpaceLocationForm` (ADR-1026), `SpaceFaqEditor`, `ProfileCompletenessCard` | No: hand-written forms over `spaces` columns and `preferences`; the Space has no rail plan (ADR-1281 wired four entities; the Space rail predates it) | The completeness meter, the location form, the FAQ editor, and the Vera tagline suggest | 8: the `space.basics` catalog row's `deepLink`, `hrefForSurface`, the profile hero's "Add a tagline" prompt, three `SPACE_BLOCK_ADMIN_PATH` rows (about, contact, reviews), the FAQ block's CTA through `block-data-sources.ts`, two `revalidatePath` calls |
+| `manage/settings` | `FocusTemplate` with a "Back to hub" over `SpaceSettingsSurface` | Same as the tab | Nothing | **0** in code (comments and two ADRs only) |
+| The hub's `?section=settings` tab (also the profile page's in-place `?panel=manage&area=settings`) | `SpaceSettingsSurface`: Menu and features, Mode and focus, the settings-hub module cards (Profile and Settings, People, Reviews, Collaborators, Plan and billing), Danger | Cards come from `SPACE_MODULES`; **no field at all** | Team, Reviews, Plan and billing, Danger, in one tap (ADR-788's reason) | The hub nav, the rail's Manage row, `hubSearchItems`, the Space calendar and CRM back links |
+
+Two things in the premise were not as the row said. First, `SpaceSettingsSurface` is not a form: it is
+a card index, and its Profile and Settings card linked TO `settings/basics`. Deleting basics without
+moving its body would have deleted the only full-page identity editor. Second, the "two
+implementations" were not basics versus the shared surface; they were basics' private form versus
+the admin rail's inline stack for the same `space.basics` module (`SpaceBrandingForm`,
+`SpaceInfoConnectForm`, the visibility `SpaceSettingsForm` in `components/spaces/`), which writes
+the same columns through the same actions and carries more (hero look, cover focus, logo backdrop,
+scrim, header CTA). No visual baseline or e2e surface named either losing door; `app-space-console`
+captures `/spaces/<slug>/manage` viewport-only, which is the survivor's default tab.
+
+**Decision.**
+
+1. **The hub's Profile & Settings tab is the survivor.** It is where ADR-788 already put the reach,
+   it is the same board the profile page renders in place, and it had no field to lose. Both other
+   doors are deleted and their URLs redirect for good: `/spaces/:slug/settings/basics` and
+   `/spaces/:slug/manage/settings` go to `/spaces/:slug/manage?section=settings`, `next.config.ts`
+   rules, `permanent: true`, exact sources with nothing beneath either
+   (`lib/marketing/redirect-shadow.test.ts` lists both as retired and still pins that no
+   `/spaces/:slug/settings/:` rule exists). `manage/settings` was ADR-1333's `events/[slug]/settings`
+   shape, a second frame over the same surface with zero inbound links, so the tab IS the survivor
+   and the frame is not parked.
+2. **The tab renders the identity editor beneath its cards, with one implementation.**
+   `app/(main)/spaces/[slug]/manage/identity-editor.tsx` is a server component the board builds for
+   the settings section behind `Suspense`; it calls `getSpaceRailCore` (the rail's own gated read)
+   and renders the rail's three forms, then the three pieces only basics had (completeness meter,
+   location form, FAQ editor) beside them. `settings/settings-form.tsx`, the private copy, is
+   deleted; its DTO type lives beside the rail getter that still carries it. The cards keep their
+   place above the editor so Plan and billing stays one tap away, and Danger stays last. The tab
+   draws no `space.basics` card any more: a card to the tab you are standing on is a circular row
+   (space-hub.ts), and the catalog row stays for the rail's inline body, the hub search and the FAQ
+   block's CTA, all of which now resolve to the tab.
+3. **The one control only the losing form had moves by the STUDIO rules.** Suggest with Vera for the
+   tagline: the Space manifest already declares `tagline` with `veraDrafts: true`, so the control
+   belongs on every editor of that field and now sits on `SpaceBrandingForm`, which the rail and the
+   tab both render. It fills and focuses the field; the existing blur handler saves it. The location
+   form, the FAQ editor and the completeness meter are not manifest fields (a composite over eight
+   columns with a map pin, a table of its own, a read) and go beside the forms, as ADR-1333 did for
+   the event danger zone. No field was added to `SPACE_MANIFEST` because none was missing from it.
+4. **Every inbound link follows.** `space.basics.deepLink`, `hrefForSurface('space.basics')`, the
+   profile hero's tagline prompt, the three `SPACE_BLOCK_ADMIN_PATH` rows and both `revalidatePath`
+   calls point at the tab. `ADMIN_MODULES`, `LAYOUT_MODULES` and `STUDIO_LEAVES` never named either
+   door; `pnpm check:menu` reads the same 21 frozen rows. The ADR-785 to ADR-788 narration in
+   `console.tsx`, `space-hub.ts` and the deleted page folds into the one sentence above.
+
+**Consequences.** Nothing about a Space's data changes: no migration, no column, no row.
+`scripts/admin-client-baseline.txt` swaps one path for another (the location read moved with its
+🔴 true-coordinate note), so the ratchet neither grows nor shrinks. The FAQ wiring test
+(`lib/spaces/content-actions.test.ts`) now reads the identity editor. The Space rail is still not
+manifest-derived; that is the debt ADR-1281 left open and this row did not claim. The
+`check:notfound-routes` gate reads the route table in `postbuild` and cannot run on source; the exact
+sources are what the shadow test guards on every PR.
+
+**Rows.** LIVE-238 (done, this ADR).

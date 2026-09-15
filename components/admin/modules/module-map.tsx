@@ -70,7 +70,8 @@ function CircleEngageAndPracticeModule() {
 
 // The collapsed "Profile and Settings" inline body (ADR-782): the three former shell section editors
 // (Identity & Branding · Info & Connect · Settings) stacked, so the single `space.basics` module renders
-// the full config inline on the rail — matching what the /manage console's card opens (/settings/basics).
+// the full config inline on the rail. The SAME three forms render in a page on the Manage hub's Profile &
+// Settings tab (manage/identity-editor.tsx), the one settings door since ADR-1336.
 function SpaceProfileSettingsModule() {
   return (
     <>

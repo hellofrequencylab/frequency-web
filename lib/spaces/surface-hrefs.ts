@@ -15,16 +15,17 @@ import { spaceModuleById, type SpaceModule } from '@/lib/admin/modules/space-mod
  *
  *  EVERY href here must target a NON-redirecting sub-page. The /settings INDEX redirects every console
  *  type back to /manage (isConsoleSpaceType), so a section pointed at the bare index would loop
- *  /settings -> /manage -> the console. Basics therefore opens its own /settings/basics editor (the
- *  profile form), not the index. PURE, so the no-loop guarantee is unit-tested (console.test.ts). */
+ *  /settings -> /manage -> the console. Basics therefore opens the hub's Profile & Settings tab, which
+ *  renders the identity editor itself. PURE, so the no-loop guarantee is unit-tested (console.test.ts). */
 export function hrefForSurface(id: string, slug: string): string | null {
   const base = `/spaces/${slug}`
   switch (id) {
     case 'space.basics':
-      // "Profile and Settings" — the dedicated basics editor (name, brand, page theme, info, visibility),
-      // NOT the /settings index (which redirects console types to /manage, looping straight back here). The
-      // former separate Identity/Branding + Settings cards collapsed into this one (ADR-782).
-      return `${base}/settings/basics`
+      // "Profile and Settings" — the Manage hub's Settings tab, the ONE door to a Space's identity, story,
+      // location, FAQ and visibility (ADR-1336, LIVE-238). It replaced the /settings/basics editor the
+      // three former Identity/Branding + Settings cards collapsed into (ADR-782); that URL now redirects
+      // here, and the tab draws no card for this id (a card to the tab you stand on is a circular row).
+      return `${base}/manage?section=settings`
     case 'space.layout':
       return `${base}/manage/layout`
     case 'space.offerings':

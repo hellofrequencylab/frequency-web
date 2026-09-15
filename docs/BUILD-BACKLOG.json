@@ -87,7 +87,6 @@
             "LIVE-235",
             "LIVE-236",
             "PROG-R6",
-            "LIVE-238",
             "LIVE-239",
             "PROG-R7",
             "LIVE-241",
@@ -10919,7 +10918,7 @@
     {
       "id": "LIVE-238",
       "title": "Collapse Space settings to one door",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
@@ -10927,11 +10926,12 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "Three doors over two implementations: /spaces/[slug]/settings/basics has its own copy of the form (a \"hotfix\" sub-page), /spaces/[slug]/manage/settings renders the shared SpaceSettingsSurface, and the /manage hub carries a tab for it. The file comments narrate an ADR-785 -> ADR-788 flip-flop. Keep the shared surface.",
+      "detail": "Three doors over two implementations: /spaces/[slug]/settings/basics has its own copy of the form (a \"hotfix\" sub-page), /spaces/[slug]/manage/settings renders the shared SpaceSettingsSurface, and the /manage hub carries a tab for it. The file comments narrate an ADR-785 -> ADR-788 flip-flop. Keep the shared surface.\n\nCLOSED 2026-09-14 (ADR-1336): the premise was re-tested door by door before anything was deleted, and two things were not as the row said. SpaceSettingsSurface is not a form: it is a card index (Menu and features, Mode and focus, People, Reviews, Collaborators, Plan and billing, Danger) whose Profile and Settings card linked TO /settings/basics, so deleting basics without moving its body would have removed the only full-page identity editor. And the two implementations were not basics versus the shared surface; they were basics' private settings-form.tsx (name, tagline with Suggest with Vera, uploads, accent, theme, visibility, batched Save) versus the admin rail's inline stack for the same space.basics module (components/spaces/space-branding-form.tsx, space-business-info-form.tsx, space-settings-form.tsx), which writes the same columns through the same actions and carries more. Survivor on the evidence: the Manage hub's Profile & Settings tab (/spaces/:slug/manage?section=settings, also the profile page's in-place ?panel=manage&area=settings), which had the reach ADR-788 gave it and no field to lose. /manage/settings was a second frame over the same surface with zero code inbound links (the events/[slug]/settings shape of ADR-1333), so the tab IS the survivor. Retired and redirected for good in next.config.ts (308, exact sources, redirect-shadow.test.ts lists both): /spaces/:slug/settings/basics and /spaces/:slug/manage/settings to /spaces/:slug/manage?section=settings. The tab now renders app/(main)/spaces/[slug]/manage/identity-editor.tsx beneath its cards, behind Suspense: the rail's three forms fed by getSpaceRailCore (one implementation), then the three pieces only basics had (ProfileCompletenessCard, SpaceLocationForm, SpaceFaqEditor) beside them; settings/settings-form.tsx is deleted and the space.basics card is dropped from the tab (a circular row). Moved through the manifest: nothing needed adding, the Space manifest already declares tagline with veraDrafts, so Suggest with Vera (the one control only the losing form had) now sits on SpaceBrandingForm for rail and tab alike; location, FAQ and the meter are composites, not fields, and sit beside the forms as ADR-1333 did for the event danger zone. Every inbound link follows: space.basics.deepLink, hrefForSurface, the profile hero tagline prompt, three SPACE_BLOCK_ADMIN_PATH rows, two revalidatePath calls. The other three catalogs never named either door. admin-client-baseline swaps one path (the location read moved with its true-coordinate note). Nothing about a Space's data changed. Left open, not this row: the Space rail is still not manifest-derived (ADR-1281 wired four entities; the Space was not one).",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const p=[\"app/(main)/spaces/[slug]/settings/basics\"];const left=p.filter(x=>fs.existsSync(x));if(left.length)console.error(\"still present: \"+left.join(\", \"));process.exit(left.length?1:0)'"
-      }
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-239",

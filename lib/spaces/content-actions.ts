@@ -54,7 +54,7 @@ function revalidateLanding(slug: string) {
   revalidatePath(`/spaces/${slug}/edit-page`)
   // The operator's OWN editor surface. Omitting it meant a write revalidated every public
   // surface except the page the operator was standing on.
-  revalidatePath(`/spaces/${slug}/settings/basics`)
+  revalidatePath(`/spaces/${slug}/manage`)
 }
 
 // ── FAQ (operator-gated) ─────────────────────────────────────────────────────────────────────────
