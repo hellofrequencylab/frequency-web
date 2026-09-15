@@ -97,7 +97,9 @@
             "PROG-R11",
             "LIVE-306",
             "LIVE-342",
-            "LIVE-343"
+            "LIVE-343",
+            "LIVE-344",
+            "LIVE-345"
           ]
         },
         {
@@ -13007,6 +13009,42 @@
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const dir=\"supabase/migrations\";if(!fs.existsSync(dir))fail(\"no migrations directory\");const files=fs.readdirSync(dir).filter(f=>f.endsWith(\".sql\")).sort();let def=null;for(const f of files){const s=fs.readFileSync(dir+\"/\"+f,\"utf8\");const i=s.toLowerCase().lastIndexOf(\"function public.settle_ticket_atomic\");if(i>=0)def={f:f,s:s.slice(i)};}if(!def)fail(\"settle_ticket_atomic is not defined in any migration\");const d=def.s.toLowerCase();const locks=d.indexOf(\"for update\")>=0||d.indexOf(\"advisory\")>=0;const rechecks=d.indexOf(\"quantity\")>=0;if(!locks)fail(\"settle_ticket_atomic takes no lock in \"+def.f+\", so a delayed settlement cannot be serialised against a concurrent reservation\");if(!rechecks)fail(\"settle_ticket_atomic never reads the tier quantity in \"+def.f+\", so it flips pending to succeeded without re-checking capacity (oversell)\");process.exit(0)'",
         "note": "Passes when settle_ticket_atomic both takes a lock and reads the tier quantity, i.e. re-checks capacity at settlement the way decrement_commerce_stock_atomic does. Reads the LAST migration that redefines the function, so a later redefinition is what gets measured. Measures the consequence (a capacity re-check exists in the settle path), never the row title."
+      }
+    },
+    {
+      "id": "LIVE-344",
+      "title": "Four of the five money loops tell nobody anything, and no Stripe receipt backstop exists",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "app/api/webhooks/stripe/route.ts",
+        "ref": "the recorders reached by recordPaidCheckout"
+      },
+      "detail": "FOUND 2026-09-15 auditing transactional mail before the first payment. THE EMAIL SYSTEM ITSELF IS HEALTHY and that is what makes this a gap rather than an outage: 409 sent / 404 delivered in production, the outbox drains every 2 minutes on a proven-running cron, the sending domain is verified, and the transactional lane runs first in every batch so a campaign cannot starve a receipt.\n\nWHAT IS MISSING IS THE CALL, not the machinery. Tickets are the ONLY money loop with a first-party buyer receipt, and that code is days old (LIVE-316, 2026-09-14; before it a paying member got nothing at all). Measured across the rest:\n  - commerce order: recordCommerceOrderFromSession flips the order, decrements stock, records the ledger row, confirms a booking. Zero email references in the whole lib/commerce tree. Buyer gets nothing, seller gets nothing.\n  - space donation: zero email references. Donor gets nothing, Space gets nothing.\n  - supporter contribution: zero email references.\n  - space membership / plan subscription and the member Crew subscription: zero notification references. Somebody starts paying monthly and is told nothing.\n  - tip: the RECIPIENT gets a bell and an email; the TIPPER gets no receipt.\n\n🔴 AND STRIPE WILL NOT COVER FOR IT. receipt_email is set NOWHERE in the codebase — verified by grep across app, lib and components. customer_email is set only for a guest ticket and on the subscription creators. A signed-in member buying anything has neither field on the session, so a Stripe-native receipt is not guaranteed by anything in this repository; it would depend entirely on a dashboard setting. Somebody can be charged real money by this platform and receive no acknowledgement from anyone.\n\nTHE SEAM IS ALREADY THERE AND IS THE SAME ONE LIVE-345 AND THE ANALYTICS ROW WANT: recordPaidCheckout runs for both checkout.session.completed and async_payment_succeeded, is idempotent per session id, and holds the Session with amount, currency and metadata.kind. One receipt per kind hangs off the recorder that already flipped the row.\n\nSETTING receipt_email ON THE SESSION IS THE CHEAP HALF and worth doing regardless, because it covers the delayed-settlement window and any path a first-party receipt is later added to. It is not a substitute for the first-party receipt: a Stripe receipt names Frequency and an amount, not the ticket, the Circle or the calendar link.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const strip=(s)=>s.replace(/\\u002f\\u002a[\\s\\S]*?\\u002a\\u002f/g,\" \").replace(/^\\s*\\u002f\\u002f.*$/gm,\" \");const read=(p)=>{if(!fs.existsSync(p))fail(\"missing \"+p);return strip(fs.readFileSync(p,\"utf8\"))};const sends=(s)=>s.indexOf(\"enqueueEmail\")>=0||s.indexOf(\"Receipt\")>=0||s.indexOf(\"receipt_email\")>=0;const paths=[\"lib/commerce/checkout.ts\",\"lib/billing/space-donation-checkout.ts\",\"lib/billing/supporter.ts\"];const silent=paths.filter(p=>!sends(read(p)));if(silent.length)fail(\"these money recorders still tell nobody anything: \"+silent.join(\", \"));process.exit(0)'",
+        "note": "Passes when the commerce, donation and supporter recorders each reference a receipt send (or receipt_email) with comments stripped first, so a comment about receipts cannot satisfy it. Measures the consequence — the recorder can tell somebody — never the row title. The subscription loops are tracked in the row detail rather than the probe because their recorder lives behind routeSpaceSubscription and is a separate seam."
+      }
+    },
+    {
+      "id": "LIVE-345",
+      "title": "A host is never told they sold a ticket, by any channel",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/billing/tickets.ts",
+        "ref": "recordTicketFromSession"
+      },
+      "detail": "FOUND 2026-09-15. There is no ticket-sold notification of any kind: no email, no bell, no notification type. Verified by grep — the only ticket_sold matches in the repo are adjust_ticket_sold, the RPC that maintains the sold counter, which notifies nobody. A host learns they sold a ticket from Stripe, or from the CRM roster if they think to look.\n\nWHY IT IS P1 RATHER THAN A NICETY: this is the first thing that will happen on this platform. The owner is buying a $44 ticket to another member Event to prove the loop (LIVE-234). The seller is a real person who has completed Connect onboarding and is waiting to find out whether selling here works. She will be told nothing by Frequency. The loop can be technically green and still read as broken to the one person it most needs to convince.\n\nTHE ASYMMETRY IS ALREADY VISIBLE IN THE CODEBASE AND POINTS AT THE FIX: the tip path notifies its recipient with both a bell and an email (lib/billing/tips-notify.ts), on the same transactional gate, from inside the same kind of recorder. A ticket sale is the same shape and simply never got one. Follow tips-notify rather than inventing a second pattern.\n\nSCOPE NOTE: the same silence covers every other seller — a commerce order seller, a Space receiving a donation, a Space gaining a paying member — but those sit in LIVE-344 with their buyer halves. This row is the ticket seller specifically, because it is the one that is about to happen.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const strip=(s)=>s.replace(/\\u002f\\u002a[\\s\\S]*?\\u002a\\u002f/g,\" \").replace(/^\\s*\\u002f\\u002f.*$/gm,\" \");const read=(p)=>{if(!fs.existsSync(p))fail(\"missing \"+p);return strip(fs.readFileSync(p,\"utf8\"))};if(!fs.existsSync(\"lib/billing/tips-notify.ts\"))fail(\"the tip-recipient notifier is gone, so the precedent this row is modelled on no longer exists and this probe is measuring nothing\");const t=read(\"lib/billing/tickets.ts\");const i=t.indexOf(\"recordTicketFromSession\");if(i<0)fail(\"recordTicketFromSession is gone\");const settle=t.slice(i);const m=settle.match(/notify[A-Za-z]*(Ticket|Sale|Sold|Host|Seller)[A-Za-z]*/);if(!m)fail(\"the ticket settle path calls no seller-side notifier, so a host is still never told they sold a ticket (the tip path calls notifyTipReceived from the same kind of recorder)\");process.exit(0)'",
+        "note": "Passes when the ticket settle path CALLS a seller-side notifier, matching the shape lib/billing/tips-notify.ts already has for a tip recipient. Comments are stripped first, because this file explains at length what it does not do. Carries a positive control: if the tip notifier it is modelled on disappears, the probe fails loudly rather than quietly measuring nothing."
       }
     }
   ]
