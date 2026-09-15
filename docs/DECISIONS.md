@@ -43216,3 +43216,70 @@ layouts would need the full `(main)` segment; each guard names the file and the 
 it must carry, so a fifth area added without a writer fails the row.
 
 **Rows.** `LIVE-243` (done, this ADR).
+
+## ADR-1368: the gap between built and working is not code, so W0 is not a code wave (2026-09-15)
+
+**Status.** Accepted. Owner aim, 2026-09-15: *get the site to a stable and semi-functional space,
+then re-plan.* This ADR condenses that aim into the one list rather than into a document — there is
+exactly one backlog ([ADR-1043](DECISIONS.md)) — by repopulating wave **W0**, correcting two wave
+charters that had gone stale, and re-pricing two rows. No new planning doc; `pnpm backlog` is the
+handoff.
+
+**Context — and the finding is not a scheduling opinion.** `PROG-R5` is the **P0** phase whose whole
+job was *"surface Stripe Connect onboarding at the first sell attempt and unblock all five money
+loops with one push."* Re-measured against production the same day, per the standing rule that a
+row's premise expires ([ADR-1082](DECISIONS.md)), **and it split:**
+
+| measured in production | when the row was written | 2026-09-15 |
+| :--- | :--- | :--- |
+| `host_payouts_enabled` · `billing_live` | off | ✅ **both true** |
+| profiles with a Stripe account / fully onboarded | 1 / 0 | ✅ **2 / 2** |
+| a Space with paid tiers behind a payout-ready owner | none | ✅ **one, $10 and $5** |
+| `commerce_orders` · `event_tickets` · `space_subscription_items` · `financial_transactions` | 0 | 🔴 **0** |
+| `stripe_webhook_events` | 1 | 🔴 **1** |
+
+**The symptom held exactly; the diagnosis had expired.** The membership loop is unblocked **end to
+end** in production and has still never completed once. `PROG-R5`'s own row now says *"do not pick
+it up expecting to build something."* Three of its four children are closed; the one left is
+`LIVE-234`, which needs a purchase and cannot be satisfied by this repository at all.
+
+So the thing standing between this platform being *built* and being *working* is **not a commit**,
+and a slate that sequenced it as code would have kept spending rounds on the wrong side of it.
+
+**Decision, four parts.**
+
+1. **W0 is repopulated, in order: `OWN-073` → `OWN-074` → `LIVE-234` → `OWN-072` → `LIVE-260`.**
+   Four are the owner's and three are minutes rather than days. W0's charter is *"P0 — costing
+   something today: an incident, a wrong money/consent/permission answer"*, and all five qualify;
+   they were simply scattered, three in `owner-timed` and two in `WR`.
+2. **W0's name is corrected.** It claimed *"It is not empty: LIVE-290 is a live money defect …
+   OWN-050 is the other P0"*. **Both are done**, and the wave had been empty while five rows that
+   cost something today sat elsewhere. A wave whose name argues against its own contents is the same
+   class of defect as a plan doc recording status.
+3. **`OWN-074` is raised P1 → P0.** Ten upcoming events, all priced; hosts able to take money **1 of
+   3**. *Returning Home* ($55, 23 Oct) is unsellable to anyone signed in or out. That is precisely
+   *a wrong money answer costing something today*; it was P1 only because it is owner work rather
+   than code, and W0 is explicitly not a code wave.
+4. **`LIVE-273` moves W0d → W0c.** W0d is the P3 set, *"priced against a 12-visitor funnel rather
+   than against merit"* — and `LIVE-273` was its **only P2**, with a hard expiry of **2026-12-09**.
+   A dated item parked in the wave that is deliberately de-prioritised is how a deadline gets missed.
+   W0c's name loses its stale clause in the same pass: it pointed at a sequenced repair whose head
+   was higher up the slate, and that whole chain (`LIVE-290` → `LIVE-294`) is closed.
+
+**🔴 What this ADR deliberately does NOT do.** It does not re-sequence `W4` (the Editor, `E0`–`E10`,
+14 rows, mostly L/XL) and it does not park it. It is the largest remaining block and **none of it
+makes the site functional**, so it stays where [ADR-1325](DECISIONS.md) put it and the owner starts
+it explicitly or not at all.
+
+**Consequences.** ✅ Every claim this change rests on is asserted in the edit itself rather than
+trusted: that all five W0 rows are `open`, that `LIVE-290`, `OWN-050`, `LIVE-293` and `LIVE-294` are
+all `done` (so the two charters really were stale), that W0 was empty before repopulating, that
+`LIVE-273` is W0d's only non-P3, and that each moved row was in exactly one wave. ✅ `HYG-047`'s
+contract is re-checked in the same script — no duplicate placement, no unplaced open row, no `done`
+row left in the slate — so the gate confirms rather than discovers. ⚠️ **Stated limit:** nothing
+measures whether W0 is in the *right* order, only that its rows are placed. The order is an argument
+(tell the locked-out members first, make the unsellable events sellable, then buy something, then
+rule on the funnel that turned eight of nine returning members away), and an argument is not a probe.
+
+**Rows.** `OWN-074` (re-priced), `LIVE-273` (re-placed), `PROG-R5` (diagnosis recorded as expired),
+and the W0/W0c charters.
