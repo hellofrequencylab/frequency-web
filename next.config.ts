@@ -462,7 +462,7 @@ const nextConfig: NextConfig = {
       //   /manage/settings: a second frame over the same card index, with zero inbound links.
       { source: '/spaces/:slug/settings/basics', destination: '/spaces/:slug/manage?section=settings', permanent: true },
       { source: '/spaces/:slug/manage/settings', destination: '/spaces/:slug/manage?section=settings', permanent: true },
-      // LIVE-239 (ADR-NNNN): one contacts roster. /admin/marketing/contacts was a SECOND roster over the
+      // LIVE-239 (ADR-1347): one contacts roster. /admin/marketing/contacts was a SECOND roster over the
       // same cohort (both read searchContacts) that lost its menu leaf in 2026-07 and lived on widget
       // deep links for two months. It is deleted, not parked, and lands on the Resonance CRM's Contacts
       // leaf, which now carries the per-row consent control, the bulk consent power action (ADR-379) and

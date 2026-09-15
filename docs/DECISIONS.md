@@ -41169,7 +41169,7 @@ button is history; its account of the menu still holds.
 
 ---
 
-## ADR-NNNN: the nine duplicate consoles, counted: one was a duplicate, seven were scopes (2026-09-15)
+## ADR-1347: the nine duplicate consoles, counted: one was a duplicate, seven were scopes (2026-09-15)
 
 **Status.** Accepted. Closes `LIVE-239`, the third and last of the duplicate-operator-door rows,
 after `LIVE-237` ([ADR-1333](DECISIONS.md)) and `LIVE-238` ([ADR-1336](DECISIONS.md)). Applies
