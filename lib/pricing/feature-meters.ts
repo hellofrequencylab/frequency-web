@@ -135,6 +135,34 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   // compares keys, so a rename defeats it. Above the wall the tier COUNT is a real dial, so the meter
   // stays; its floor just has to agree with the wall.
   space_membership_tiers: { free: 0, business: 3, collective: null },
+  // Member benefits a Space may DEFINE (ADR-1372): a priced modifier (percent off, amount off, fixed
+  // price, included) assigned to any number of membership tiers. The quantity metered is how many
+  // distinct benefits exist in the Space, not how many tiers carry each one, because a benefit is
+  // written once and assigned across tiers (space_tier_benefits).
+  //   · FREE 0 for the same reason the tier meter is 0: selling a recurring membership is a WALL at
+  //     Business (FEATURE_GATES.space_memberships), so a free Space has no tier to assign a benefit
+  //     to. A floor above zero here would be the ADR-914 mistake again, a meter promising what the
+  //     wall above it refuses. What a free Space keeps is unchanged by this row: the ADR-823
+  //     members-only ticket flag decides ADMISSION and is not a benefit.
+  //   · BUSINESS 6 is two per tier against the 3 tiers space_membership_tiers carries at Business,
+  //     which covers the shape a Business Space actually runs (a standing members rate plus one
+  //     capped guest pass per tier) without reaching the full program.
+  //   · COLLECTIVE unlimited, matching its tier row: designing the benefit program is the Collective
+  //     offer, so the dial it pays for is the one that stops counting.
+  // 🔴 ON THE KEY vs THE TABLE. The note above records that `space_memberships` (gate) and
+  // `space_membership_tiers` (meter) differ by name, which is what let a gate/meter collision slip
+  // past a guard that compares keys. This row keeps the convention coherent the other way: the meter
+  // key IS the table name (public.space_member_benefits), and it is deliberately NOT a gate key, so
+  // there is no second opinion hiding behind a rename. The only wall in play stays space_memberships.
+  //
+  // FREE IS 1, NOT 0, and the reason is LIVE-225: "a cap of zero is a wall wearing a meter's clothes".
+  // The first draft of this row set 0 on the argument that a free Space has no tier to assign a
+  // benefit to. True, and it is precisely why 0 buys nothing: the WALL is space_memberships, and a
+  // zero here would state it a second time, in the one place that is supposed to meter rather than
+  // refuse. LIVE-225 grandfathers exactly one zero (space_membership_tiers, which IS the paid line);
+  // a second one would re-open the pattern that row closed. At 1 the meter is simply unreachable for
+  // a free Space, which is the honest shape: nothing promised, nothing refused twice.
+  space_member_benefits: { free: 1, business: 6, collective: null },
   vera_unlimited: { free: 10, crew: null },
   // FIRST ONE FREE — the personal leadership allowances. A free Member leads at one of each; Crew leads
   // at scale. Nothing here is a wall: a free Member still hosts a real Circle and is still made a Host
@@ -320,6 +348,17 @@ const RAW_METERS: Record<string, RawMeter> = {
     // Free: 1 tier (§2 "10 active, 1 tier"). Business: a small ladder. Collective: unlimited, which is
     // what a membership program actually needs.
     allowances: PLACEHOLDER_METER_LIMITS.space_membership_tiers!,
+  },
+  space_member_benefits: {
+    axis: 'plan',
+    title: 'Member benefits',
+    dimension: 'Member benefits',
+    unit: 'benefits',
+    period: null,
+    // Free: one, and unreachable in practice (no tier below the Business wall to assign it to).
+    // Deliberately not zero: see the allowance map above and LIVE-225.
+    // Business: 6, two per tier against the 3 tiers that plan carries. Collective: unlimited.
+    allowances: PLACEHOLDER_METER_LIMITS.space_member_benefits!,
   },
   // ── Space AI depth (plan axis; the Resonance Engine metered usage · ADR-387) ─────────────────────
   space_vera: {

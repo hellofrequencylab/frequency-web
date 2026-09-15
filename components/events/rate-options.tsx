@@ -24,6 +24,10 @@ export interface FlowRate {
   tag: 'member' | 'membership' | null
   /** Nothing left to sell. The row stays visible and unselectable rather than disappearing. */
   soldOut?: boolean
+  /** ADR-1373: this rate's sales window hasn't opened yet, or has closed. Same treatment as
+   *  soldOut (visible, unselectable) because the answer is the same: you cannot take this one now.
+   *  `priceLabel` already carries the when-line, so the row says WHY without a second slot. */
+  offSale?: boolean
   /** The tier's own line of explanation, when it has one. */
   description?: string | null
 }
@@ -46,7 +50,7 @@ export function RateOptions({
           key={r.id}
           type="button"
           onClick={() => onSelect(r)}
-          disabled={r.soldOut}
+          disabled={r.soldOut || r.offSale}
           aria-pressed={r.id === selectedId}
           className={`flex w-full items-start justify-between gap-3 rounded-card border px-3.5 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-55 ${
             r.id === selectedId
@@ -72,7 +76,9 @@ export function RateOptions({
             )}
             {r.description && <p className="mt-0.5 text-meta text-muted">{r.description}</p>}
           </div>
-          <span className="shrink-0 text-body-sm font-semibold text-text">
+          <span
+            className={`shrink-0 text-body-sm font-semibold ${r.offSale ? 'text-subtle' : 'text-text'}`}
+          >
             {r.soldOut ? <span className="text-subtle">Sold out</span> : r.priceLabel}
           </span>
         </button>

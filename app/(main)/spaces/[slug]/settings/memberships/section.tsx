@@ -14,8 +14,10 @@ import { MembershipTierForm } from '@/components/spaces/membership-tier-form'
 import { MembershipOwnerList } from '@/components/spaces/membership-owner-list'
 import { MembershipEventAccess } from '@/components/spaces/membership-event-access'
 import { MembershipCircleAccess } from '@/components/spaces/membership-circle-access'
+import { MembershipBenefitsForm } from '@/components/spaces/membership-benefits-form'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listCirclesForSpace } from '@/lib/circles/store'
+import { listSpaceBenefits } from '@/lib/spaces/benefits-store'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { MeterUpsell } from '@/components/pricing/meter-upsell'
 import { GateNotice } from '@/components/ui/gate-notice'
@@ -135,6 +137,20 @@ export async function MembershipsSection({
         <MembershipTierForm spaceId={space.id} slug={space.slug} initialTiers={tiers} />
       </fieldset>
 
+      {/* MEMBER BENEFITS (ADR-1372, LIVE-093): what a tier is WORTH at a checkout, as opposed to
+          what it lets you through. It lives here rather than behind its own route so a tier and its
+          price modifiers are edited on one surface. The write is gated server-side in
+          setSpaceBenefits (canEditProfile + the memberships function gate). */}
+      <section>
+        <SectionHeader title="Member benefits" />
+        <p className="mb-3 text-body-sm text-muted">
+          Set what a membership takes off the price, and pick the tiers each one belongs to.
+        </p>
+        <Suspense fallback={<BenefitsSkeleton />}>
+          <BenefitsLoader space={space} tiers={tiers} staffViewing={staffViewing} />
+        </Suspense>
+      </section>
+
       {/* CIRCLE ACCESS (ADR-859): the circle each tier includes. The circle is the tier's
           communications hub: its gatherings and its Message center audience. Linking sweeps the
           tier's current members in; the membership lifecycle keeps it in sync from then on. */}
@@ -244,6 +260,41 @@ async function EventAccessLoader({
         allowed={allowed}
       />
     </fieldset>
+  )
+}
+
+// Self-fetching loader for the Member benefits panel (ADR-1372). The read is public-readable the way
+// the active tier list is, so it needs no gate of its own; the WRITE behind the form is the gate.
+// Only tiers that have been saved can be assigned, since an unsaved tier has no id to point at.
+async function BenefitsLoader({
+  space,
+  tiers,
+  staffViewing,
+}: {
+  space: Space
+  tiers: { id?: string; name: string }[]
+  staffViewing: boolean
+}) {
+  const benefits = await listSpaceBenefits(space.id)
+  return (
+    <fieldset disabled={staffViewing} className="contents">
+      <MembershipBenefitsForm
+        spaceId={space.id}
+        tiers={tiers.filter((t) => t.id).map((t) => ({ id: t.id!, name: t.name }))}
+        initialBenefits={benefits}
+      />
+    </fieldset>
+  )
+}
+
+// Dimension-matched skeleton for the streamed benefits editor (no CLS, PAGE-FRAMEWORK §5.4): one
+// row card at the height a single benefit occupies, plus the add affordance beneath it.
+function BenefitsSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="h-96 animate-pulse rounded-card border border-border bg-surface lift-1" />
+      <div className="h-5 w-28 animate-pulse rounded-control bg-surface-elevated/50" />
+    </div>
   )
 }
 

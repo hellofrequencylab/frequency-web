@@ -23,6 +23,18 @@
 // an event with a flat `events.price_cents` and NO tiers keeps working as an
 // implicit single fixed tier (omit `ticketTypeId`).
 //
+// MEMBER BENEFITS (ADR-1372): a membership tier can carry a priced modifier (15% off, a fixed member
+// price, included). The ADR-823 gate still decides ADMISSION; a benefit only decides PRICE. 🔴 It is
+// applied to the unit price BEFORE the gross, and therefore before the platform take-rate: computing
+// the application fee on the list price bills the Space a percentage of money nobody paid. Locked by
+// lib/billing/benefit-fee-order.test.ts.
+//
+// SALES WINDOW (ADR-1373): a tier may carry an open time (absolute, or a day count before the event
+// starts) and a close time. Outside it the checkout refuses and NAMES the moment it opens. This is
+// what turns "members get first RSVP" from an operator remembering to flip a row active into a rule
+// a recurring series keeps by itself. Admission (ADR-823) is checked FIRST, so a buyer who can never
+// hold the ticket is never told to come back on a date.
+//
 // REFUNDS (EVENTS-SYSTEM §7): a host can refund a succeeded ticket. The refund is
 // created on the destination charge with the transfer reversed and the application
 // fee returned, then the webhook/charge.refunded handler flips the ticket to
@@ -59,6 +71,9 @@ import { sendGuestTicketReceipt } from '@/lib/events/guest-ticket-email'
 import { sendMemberTicketReceipt } from '@/lib/events/member-ticket-email'
 import { notifyTicketSaleHost } from './ticket-sale-notify'
 import { profileAccountEmail } from '@/lib/profiles/account-email'
+import { payableCents, type MemberBenefit, type AppliedBenefit } from '@/lib/spaces/benefits'
+import { ticketSalesWindowError } from '@/lib/events/sales-window'
+import { eventInstant, resolveZone } from '@/lib/time/zone'
 
 export const TICKET_MAX_QTY = 10
 
@@ -186,6 +201,10 @@ interface EventRow {
   ends_at: string | null
   starts_at: string
   host_id: string | null
+  /** IANA zone the stored wall-clock parts are read in (lib/time/zone.ts). Needed to resolve the
+   *  TRUE start instant a relative sales window counts back from, and to name the open time in the
+   *  event's own city rather than in UTC. */
+  time_zone: string | null
   space_id: string | null
   /** The explicit HOSTING entity (ADR-819): when set, ticket money routes through this space
    *  (its owner's Connect account) and the take-rate keys on its plan. */
@@ -207,11 +226,17 @@ interface TicketTypeRow {
   space_members_only: boolean
   /** ADR-823: narrows the gate to one space_membership_tiers row; null = any active membership. */
   space_tier_id: string | null
+  /** ADR-1373: absolute open time; wins over the relative day count when both are set. */
+  sales_start_at: string | null
+  /** ADR-1373: opens this many days before the event starts. The shape a recurring series survives. */
+  sales_starts_days_before: number | null
+  /** ADR-1373: absolute close time; null = sells until the event ends. */
+  sales_end_at: string | null
   active: boolean
 }
 
 const TICKET_TYPE_COLS =
-  'id, event_id, name, pricing_mode, price_cents, min_cents, suggested_cents, quantity, sold, member_only, space_members_only, space_tier_id, active'
+  'id, event_id, name, pricing_mode, price_cents, min_cents, suggested_cents, quantity, sold, member_only, space_members_only, space_tier_id, sales_start_at, sales_starts_days_before, sales_end_at, active'
 
 /** PURE (tested): does a buyer's membership state clear a tier's space-membership gate (ADR-823)?
  *  `membership` is the buyer's ACTIVE space_memberships row in the event's hosting Space (or null).
@@ -228,6 +253,151 @@ export function spaceMembershipGateError(
     return `This ticket is for a different ${spaceName} membership tier.`
   }
   return null
+}
+
+/** The buyer's ACTIVE `space_memberships` row in a Space, or null when they hold none.
+ *  `space_memberships` isn't in the generated types yet (ADR-246) — narrow untyped read.
+ *
+ *  ONE read, TWO questions (ADR-1372). The ADR-823 gate asks whether this membership ADMITS the
+ *  buyer; a benefit asks what it is WORTH. They were never allowed to disagree about which row they
+ *  are reading, so they read it once, here. */
+async function loadActiveMembership(
+  spaceId: string,
+  profileId: string | null,
+): Promise<{ tier_id: string } | null> {
+  // 🔴 A GUEST HOLDS NO SPACE MEMBERSHIP, BY DEFINITION, so no read is attempted for one:
+  // `member_profile_id = null` is not a query that could ever match, and issuing it would let a
+  // future reader believe the refusal was measured. Answering with a literal `null` is the truth,
+  // and the SAME pure gate turns it into the SAME space-named refusal a signed-in non-member gets.
+  if (!profileId) return null
+  const mdb = db() as unknown as {
+    from: (t: string) => {
+      select: (c: string) => {
+        eq: (col: string, val: string) => {
+          eq: (col: string, val: string) => {
+            eq: (col: string, val: string) => {
+              maybeSingle: () => Promise<{ data: { tier_id: string } | null }>
+            }
+          }
+        }
+      }
+    }
+  }
+  const { data } = await mdb
+    .from('space_memberships')
+    .select('tier_id')
+    .eq('space_id', spaceId)
+    .eq('member_profile_id', profileId)
+    .eq('status', 'active')
+    .maybeSingle()
+  return data ?? null
+}
+
+/** The member benefits assigned to the buyer's membership tier in the hosting Space (ADR-1372).
+ *
+ *  FAIL-SAFE TO NONE, and in the only safe direction: a benefit we cannot read becomes a ticket sold
+ *  at the LIST price. The opposite fail-safe would hand out a discount nobody configured, and a
+ *  discount is money out of the Space's payout.
+ *
+ *  The store (`lib/spaces/benefits-store.ts`) is imported dynamically, the same shape `fees.ts` uses
+ *  for its settings reads: it keeps the service-role read off the module graph of every caller that
+ *  only wants `ticketTotalCents`, and it means a throw here is caught rather than fatal. */
+async function loadTicketBenefits(
+  spaceId: string | null,
+  tierId: string | null,
+): Promise<MemberBenefit[]> {
+  if (!spaceId || !tierId) return []
+  try {
+    const { listBenefitsForTier } = await import('@/lib/spaces/benefits-store')
+    return await listBenefitsForTier(spaceId, tierId)
+  } catch (err) {
+    console.error('[tickets] member benefit lookup failed; charging the list price', err)
+    return []
+  }
+}
+
+/** The redemption counts a `max_uses` cap is resolved against, per benefit, in that benefit's own
+ *  period bucket (a monthly pass and a yearly pass are different windows).
+ *
+ *  FAIL-CLOSED, matching `countRedemptions`: an unreadable ledger reads as EXHAUSTED, never as
+ *  unused. Erring the other way hands out an uncapped free redemption every time the database
+ *  hiccups and nothing downstream ever notices. The worst case here is a member asking why their
+ *  guest pass did not apply, which is a support message rather than a hole in the revenue. */
+async function loadBenefitUses(
+  benefits: readonly MemberBenefit[],
+  memberProfileId: string | null,
+  nowIso: string,
+): Promise<Record<string, number>> {
+  const capped = benefits.filter((b) => b.id && b.maxUses != null)
+  if (capped.length === 0) return {}
+  // A GUEST has no ledger to read (the guest door, #2556): no account, so no redemption has ever
+  // been stamped to them. Empty is the truth here and costs nothing, because a guest also holds no
+  // membership, so `tierId` is null and no benefit resolves for them in the first place. This is the
+  // one place the fail-CLOSED posture above does not apply: there is no read to fail.
+  if (!memberProfileId) return {}
+  try {
+    const { usesForMember } = await import('@/lib/spaces/benefits-store')
+    return await usesForMember(capped, memberProfileId, nowIso)
+  } catch (err) {
+    console.error('[tickets] benefit redemption ledger unreadable; capped benefits will not apply', err)
+    return Object.fromEntries(capped.map((b) => [b.id as string, Number.MAX_SAFE_INTEGER]))
+  }
+}
+
+/** PURE (tested): the per-ticket charge after any member benefit (ADR-1372).
+ *
+ *  🔴 THE ORDER THAT COSTS REAL MONEY (ADR-1372 §2). This returns the DISCOUNTED unit, and the gross
+ *  the platform take-rate is computed from is derived from it and from nothing else. Computing the
+ *  application fee on the list price bills the Space a percentage of money nobody paid, and it is
+ *  invisible in every test that only checks the buyer's total. `lib/billing/benefit-fee-order.test.ts`
+ *  is the test that fails if the two are ever reordered.
+ *
+ *  🔴 A BENEFIT PRICES A `fixed` TICKET ONLY, never a buyer-chosen one (pwyc / sliding_scale /
+ *  donation). Those modes have no list price to take a percentage OF: the buyer names the amount and
+ *  `min_cents` is the Space's stated floor under it. A benefit applied there either breaks that floor
+ *  or is silently clamped back up to it and reads as broken, and "15% off" a donation is a discount on
+ *  a gift. What a member's benefit is worth on those tiers is that they may pay the floor, which they
+ *  already may. `free` never reaches here at all (it returns the claim path upstream).
+ *
+ *  🔴 AN UNRESOLVED CAP NEVER APPLIES. `benefitApplies` counts a MISSING `usesByBenefitId` entry as
+ *  zero uses, so a `max_uses` benefit handed no counts would apply EVERY time — "one guest pass a
+ *  month" silently becomes an unlimited one, and the only evidence is a payout that is quietly
+ *  smaller than it should be. A capped benefit with no count in the map is therefore dropped here
+ *  rather than resolved optimistically: the caller must have READ the ledger (loadBenefitUses, which
+ *  fails closed on its own) for a cap to be spendable at all. */
+export function benefitAdjustedUnitCents(args: {
+  mode: PricingMode
+  /** The per-ticket price before any benefit. */
+  listUnitCents: number
+  benefits: readonly MemberBenefit[]
+  /** The buyer's ACTIVE membership tier in the hosting Space, or null when they hold none. */
+  tierId: string | null
+  /** Redemptions already spent, by benefit id, in each benefit's own period. A capped benefit
+   *  missing from this map is an UNRESOLVED cap and does not apply. */
+  usesByBenefitId?: Record<string, number>
+  /** Injected so the benefit's date window is testable without faking a clock. */
+  now?: string
+}): { unitCents: number; applied: AppliedBenefit | null } {
+  const list = Math.max(0, Math.round(args.listUnitCents))
+  if (args.mode !== 'fixed' || !args.tierId) return { unitCents: list, applied: null }
+
+  const uses = args.usesByBenefitId ?? {}
+  const { amountCents, applied } = payableCents(
+    args.benefits.filter((b) => b.maxUses == null || (!!b.id && b.id in uses)),
+    {
+      listCents: list,
+      // Only the hosting Space's OWN event is priced here. `guest_events` needs a VENUE axis the
+      // ticket path does not have: on a guest-hosted event the money routes to the GUEST, so a
+      // discount granted by the venue's membership would come out of a third party's payout. Until
+      // that axis exists a venue benefit must be scoped 'all' to reach a ticket, which is a
+      // deliberate choice by whoever writes the row rather than an accident of resolution.
+      scope: 'space_events',
+      tierId: args.tierId,
+      usesByBenefitId: uses,
+      now: args.now ?? new Date().toISOString(),
+    },
+  )
+  return { unitCents: amountCents, applied }
 }
 
 /** Validate, record a pending ticket, and return the hosted Checkout URL.
@@ -274,7 +444,9 @@ export async function createTicketCheckout(opts: {
 
   const { data } = await db()
     .from('events')
-    .select('id, title, slug, price_cents, is_cancelled, ends_at, starts_at, host_id, space_id, host_space_id')
+    .select(
+      'id, title, slug, price_cents, is_cancelled, ends_at, starts_at, host_id, time_zone, space_id, host_space_id',
+    )
     .eq('id', opts.eventId)
     .maybeSingle()
   const event = data as EventRow | null
@@ -346,53 +518,39 @@ export async function createTicketCheckout(opts: {
     if (t === 'free') return { error: 'This ticket is for members only.' }
   }
 
+  // ── THE BUYER'S MEMBERSHIP IN THE HOSTING SPACE ───────────────────────────────────────────────
+  // Resolved ONCE for both halves of the membership (ADR-1372): the ADR-823 gate below asks whether
+  // it ADMITS the buyer, and the benefit further down asks what it is WORTH. Two reads could answer
+  // the same question two ways after a mid-checkout change; one cannot.
+  //
+  // Root EXCLUDED (resolveHostingSpaceId): every event inherits the root tenant, so the raw
+  // placement fallback resolved this to "must hold a membership in Frequency", which nobody does —
+  // an unbuyable ticket, refused for a reason no one could act on. Keys on the same space resolution
+  // attribution + fees use (host_space_id, else the placement space, ADR-819).
+  const membershipSpaceId = await resolveHostingSpaceId({
+    spaceId: event.space_id,
+    hostSpaceId: event.host_space_id,
+  })
+  const tierIsGated = !!(tier && (tier.space_members_only || tier.space_tier_id))
+  // Skip the read when nothing downstream could use it: an ungated FREE tier has no gate to clear
+  // and no price for a benefit to modify, so the query would only cost the buyer latency.
+  const membership =
+    membershipSpaceId && (tierIsGated || mode !== 'free')
+      ? await loadActiveMembership(membershipSpaceId, buyerProfileId)
+      : null
+
   // SPACE-MEMBERSHIP gate (ADR-823): a tier restricted to the hosting Space's own members
   // requires an ACTIVE space_memberships row for the buyer in that Space — the specific
   // membership tier when the ticket names one. Runs BEFORE the free-claim return so a
-  // members-included free ticket is gated exactly like a paid one. Keys on the same space
-  // resolution attribution + fees use (host_space_id, else the placement space, ADR-819).
-  if (tier && (tier.space_members_only || tier.space_tier_id)) {
-    // Root EXCLUDED (resolveHostingSpaceId): every event inherits the root tenant, so the raw
-    // placement fallback resolved this gate to "must hold a membership in Frequency",
-    // which nobody does — an unbuyable ticket, refused for a reason no one could act on.
-    const membershipSpaceId = await resolveHostingSpaceId({
-      spaceId: event.space_id,
-      hostSpaceId: event.host_space_id,
-    })
+  // members-included free ticket is gated exactly like a paid one. A BENEFIT NEVER TOUCHES THIS:
+  // admission is still the gate's decision alone, and a benefit only prices what it lets through.
+  if (tier && tierIsGated) {
     if (!membershipSpaceId) return { error: 'That ticket type isn’t available.' }
-    // space_memberships isn't in the generated types yet (ADR-246) — narrow untyped read.
-    const mdb = db() as unknown as {
-      from: (t: string) => {
-        select: (c: string) => {
-          eq: (col: string, val: string) => {
-            eq: (col: string, val: string) => {
-              eq: (col: string, val: string) => {
-                maybeSingle: () => Promise<{ data: { tier_id: string } | null }>
-              }
-            }
-          }
-        }
-      }
-    }
-    // 🔴 A GUEST HOLDS NO SPACE MEMBERSHIP, BY DEFINITION, so no membership read is attempted for
-    // one: `member_profile_id = null` is not a query that could ever match, and issuing it would
-    // let a future reader believe the refusal was measured. The gate is answered with a literal
-    // `null` membership, which is the truth, and the SAME pure function turns it into the SAME
-    // space-named refusal a signed-in non-member gets. The space-name read still happens, so the
-    // copy names the Space either way.
-    const membershipRead = buyerProfileId
-      ? mdb
-          .from('space_memberships')
-          .select('tier_id')
-          .eq('space_id', membershipSpaceId)
-          .eq('member_profile_id', buyerProfileId)
-          .eq('status', 'active')
-          .maybeSingle()
-      : Promise.resolve({ data: null as { tier_id: string } | null })
-    const [{ data: membership }, { data: hsName }] = await Promise.all([
-      membershipRead,
-      db().from('spaces').select('name, brand_name').eq('id', membershipSpaceId).maybeSingle(),
-    ])
+    const { data: hsName } = await db()
+      .from('spaces')
+      .select('name, brand_name')
+      .eq('id', membershipSpaceId)
+      .maybeSingle()
     const hs = hsName as { name: string | null; brand_name: string | null } | null
     const gateError = spaceMembershipGateError(
       tier,
@@ -400,6 +558,31 @@ export async function createTicketCheckout(opts: {
       hs?.brand_name ?? hs?.name ?? 'the hosting space',
     )
     if (gateError) return { error: gateError }
+  }
+
+  // ── SALES WINDOW (ADR-1373): may this ticket be bought YET? ───────────────────────────────────
+  // The third question at one checkout, and the only one about time. ADR-823 above decided WHO
+  // (admission) and the benefit below decides WHAT THEY PAY (price); this decides WHEN. It composes
+  // with both rather than replacing either: a members tier can be gated, discounted AND early.
+  //
+  // ORDER MATTERS, and it is admission first. A buyer who can never hold this ticket must not be
+  // told to come back on a date, because the date is not what is stopping them and they would come
+  // back to the same refusal. Only someone the gate lets through is told when the doors open.
+  //
+  // The relative rule counts back from the event's TRUE start instant, so the stored wall-clock
+  // parts go through `eventInstant` first (lib/time/zone.ts) rather than being read as UTC. Skipped
+  // outright for the legacy flat-price path, which has no tier row and therefore no window.
+  if (tier) {
+    // resolveZone, not the raw column: the instant and the printed abbreviation have to be read in
+    // the SAME zone, or a refusal names a time that does not match the moment it was computed from.
+    const eventTz = resolveZone(event.time_zone)
+    const windowError = ticketSalesWindowError(
+      tier,
+      eventInstant(event.starts_at, eventTz),
+      new Date(),
+      eventTz,
+    )
+    if (windowError) return { error: windowError }
   }
 
   // ── Inventory: never oversell. quantity NULL = unlimited. Sold-out routes the
@@ -426,11 +609,47 @@ export async function createTicketCheckout(opts: {
     amountCents: opts.amountCents,
   })
   if ('error' in unit) return unit
-  const unitCents = unit.unitCents
-  if (unitCents <= 0) {
+  const listUnitCents = unit.unitCents
+  if (listUnitCents <= 0) {
     // A flat event with no price and no tier = free; nothing to charge.
     return { error: 'This event is free. No ticket needed.' }
   }
+
+  // ── MEMBER BENEFIT (ADR-1372): what the buyer's membership tier is WORTH here ─────────────────
+  // 🔴 APPLIED HERE, BEFORE THE GROSS, AND THEREFORE BEFORE THE TAKE-RATE. Every line below derives
+  // from `unitCents`; the list price does not survive into the fee math at all, which is the one
+  // property this whole feature has to keep. There is deliberately no list-price gross variable in
+  // scope for anyone to hand to `spaceTakeRateCents` by mistake.
+  //
+  // No read at all for a mode a benefit cannot price (see benefitAdjustedUnitCents) or for a buyer
+  // holding no membership: the resolver would refuse them anyway, so this is the same answer
+  // without the query.
+  const benefitNow = new Date().toISOString()
+  const benefits =
+    mode === 'fixed' && membership
+      ? await loadTicketBenefits(membershipSpaceId, membership.tier_id)
+      : []
+  const { unitCents, applied: benefit } = benefitAdjustedUnitCents({
+    mode,
+    listUnitCents,
+    benefits,
+    tierId: membership?.tier_id ?? null,
+    // The cap ledger, in each benefit's own period bucket. Read from the SAME instant the window
+    // rules are evaluated against, so a checkout crossing midnight on the first of the month cannot
+    // count against one bucket and be priced in another.
+    usesByBenefitId: await loadBenefitUses(benefits, buyerProfileId, benefitNow),
+    now: benefitNow,
+  })
+
+  // A benefit that covers the ticket entirely takes the SAME claim path a free tier takes: no
+  // zero-amount Stripe session, no destination charge for nothing, no payouts-ready host required for
+  // money that never moves. Today's free members ticket IS this case (a 100% benefit scoped to the
+  // Space's own events), so the two have to land on one path or they will drift apart.
+  //
+  // Inventory nuance, inherited from that path and unchanged here: the claim is recorded as an RSVP
+  // and does NOT bump the tier's `sold`, so event capacity governs a fully-covered claim rather than
+  // the tier's own `quantity`. The sold-out check above still refuses a sold-out tier.
+  if (unitCents <= 0) return { free: true }
 
   // ── MAY THIS EVENT SELL AT ALL? (ADR-914, reversing ADR-913) ─────────────────────────────
   // ONE condition, on every tier: the payee (the hosting space's owner, else the personal host) can
@@ -546,6 +765,20 @@ export async function createTicketCheckout(opts: {
     rateBps = source === 'self' ? 0 : memberNetworkTakeRateBps(payeeTier, await resolvedNetworkRate())
   }
   const tierLabel = tier ? ` (${tier.name})` : ''
+  // The BUYER's own words for why this line costs less than the posted price. `label` is written for
+  // them ("Temple Member, 15% off"), never the internal kind, so a lower number on the Stripe page is
+  // explained where they are looking rather than discovered on a receipt.
+  const benefitLabel = benefit ? ` (${benefit.label})` : ''
+  // The stamp the success paths redeem against. A redemption is NOT recorded here on purpose: this
+  // is a pending session a buyer can abandon, and burning a once-a-month guest pass on a checkout
+  // nobody completed spends the benefit without selling the ticket. The id travels on the session so
+  // the completion path can record it against a payment that actually happened.
+  const benefitMeta: Record<string, string> = benefit
+    ? {
+        benefit_id: benefit.benefitId,
+        benefit_discount_cents: String(benefit.discountCents * qty),
+      }
+    : {}
 
   // ── WHO THIS TICKET BELONGS TO, CARRIED ACROSS THE STRIPE BOUNDARY ──────────────────────────
   // EXACTLY ONE key, mirroring the identity invariant above and the one `event_tickets` holds:
@@ -585,7 +818,7 @@ export async function createTicketCheckout(opts: {
         price_data: {
           currency: 'usd',
           unit_amount: unitCents,
-          product_data: { name: `Ticket: ${event.title}${tierLabel}` },
+          product_data: { name: `Ticket: ${event.title}${tierLabel}${benefitLabel}` },
         },
       },
     ],
@@ -601,6 +834,7 @@ export async function createTicketCheckout(opts: {
         event_id: event.id,
         ...identityMeta,
         ...(tier ? { ticket_type_id: tier.id } : {}),
+        ...benefitMeta,
       },
     },
     metadata: {
@@ -608,6 +842,7 @@ export async function createTicketCheckout(opts: {
       event_id: event.id,
       ...identityMeta,
       ...(tier ? { ticket_type_id: tier.id } : {}),
+      ...benefitMeta,
     },
     // Prefills Checkout for the guest and, because Stripe echoes it back on the session, gives the
     // webhook a second reading of the address it is settling against. Absent for a member: their

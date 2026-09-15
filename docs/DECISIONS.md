@@ -43557,3 +43557,142 @@ files, and it is why admission and inline collection are one ruling rather than 
 A kill switch that silently re-marches seven people is the failure this ADR exists to end, and
 [LIVE-240](BUILD-BACKLOG.json) is the precedent for deleting a flag with the engine it gated rather
 than leaving it to be flipped back by accident.
+
+---
+
+## ADR-1372: A membership tier's WORTH is a modifier assignable to tiers, not another per-object gate (2026-09-15)
+
+**Status:** Accepted · **Extends** [ADR-823](DECISIONS.md) (membership-linked ticket gate) and
+[ADR-824](DECISIONS.md) (capacity + waitlist) · corroborated by
+`supabase/migrations/20270345004800_space_member_benefits.sql`, `lib/spaces/benefits.ts`,
+rows `LIVE-353`…`LIVE-358` in `docs/BUILD-BACKLOG.json`
+
+**Context.** An operator asked for "advanced tiers with assignable discounts". The repo had exactly
+one mechanism adjacent to this and it answers a different question. `event_ticket_types.space_tier_id`
+(ADR-823) is a binary **admission** gate: a ticket row names one tier, members of that tier may buy
+it, everyone else is refused by `spaceMembershipGateError`. Nothing in the product could say a
+membership is worth *15% off*, and nothing could say it about anything other than one ticket row on
+one event.
+
+Measured against the live example that prompted this: Royal Temple's Meld dates carried seven free
+members rows, each bound to one tier id. Expressing "Members get 15% off guest-hosted events,
+Guardians get 20%, and both get the seasonal events at a member rate" through that gate needs a row
+per tier per object, and still cannot reach weeknight stays or the store, which have no ticket rows.
+
+**The tempting wrong move** is to widen the gate: add `discount_bps` next to `space_tier_id`. It
+looks additive and fails the same way the per-object shape always fails. The rate would live on the
+object rather than on the membership, so the same promise would be re-entered on every event and
+would drift between them the first time somebody edited one.
+
+**Decision.**
+
+1. **A benefit is a modifier, and tiers are assigned to it.** `space_member_benefits` carries
+   `kind` (`included` / `percent` / `amount_off` / `fixed_price`), `value`, `scope`, an optional
+   `max_uses` + `period`, and a date window. `space_tier_benefits` is a composite-keyed join, so
+   "Members and Guardians both get 15% off" is **one row assigned twice**, not two rows that drift.
+   `percent` is stored in **basis points**, so a rate never needs a float.
+2. **The gate is subsumed, not replaced.** Today's free members ticket is precisely a benefit of
+   kind `included` scoped to `space_events`. The two coexist: the gate decides **admission**, a
+   benefit decides **price**. No existing ticket row is migrated.
+3. **🔴 Benefits never stack.** Two applicable benefits resolve to the **higher**, never the sum.
+   Stacking is how a 15% and a 20% row quietly become 35% off and how a percent plus a fixed price
+   becomes a negative total. The rule lives in one exported function, `resolveBenefit`, so a second
+   call site cannot re-implement it differently. Ties break on benefit id, so resolution is
+   deterministic and no test depends on array order.
+4. **🔴 The discount is applied BEFORE the take-rate.** `spaceTakeRateCents` receives the
+   **discounted** gross. A fee computed on the list price bills the Space a percentage of money
+   nobody paid, and it is invisible to every test that only asserts the buyer's total. It has its own
+   test (`lib/billing/benefit-fee-order.test.ts`) with a positive control, mutation-verified: putting
+   the list price back fails three assertions while the buyer's total stays correct.
+5. **One read, two questions.** `loadActiveMembership` resolves the buyer's membership ONCE; the
+   ADR-823 gate asks whether it admits, the benefit asks what it is worth. Two reads could answer the
+   same question two ways after a mid-checkout change. A guest short-circuits to `null` without a
+   query, because `member_profile_id = null` is not a query that could match and issuing it would let
+   a future reader believe the refusal was measured.
+6. **A cap needs a ledger.** `max_uses` without `space_benefit_redemptions` is a number on a policy.
+   One row per redemption, stamped with the period key (`YYYY-MM`, `YYYY`, `lifetime`), so the cap
+   read is an equality filter. `countRedemptions` fails **closed**: a read error reports the cap as
+   exhausted and the buyer pays list, rather than handing out a free redemption on a DB hiccup.
+7. **Benefits price `fixed` tiers only.** pwyc / sliding_scale / donation have no list price to take
+   a percentage of; the buyer names the amount and `min_cents` is the floor under it, so a benefit
+   there either breaks the floor or is clamped back to it and reads as broken.
+8. **Metered, not gated.** A meter key that prompts and blocks nothing (the `space_membership_tiers`
+   precedent, ADR-914). The Free plan keeps the simple included members ticket it has today.
+
+**Three fail-OPEN holes found in review and closed before merge.** All three were in the pure
+resolver, which was written first and reviewed after: the date window applied an **expired** benefit
+when `ctx.now` was unparseable (the only axis that did not fail closed); a negative or NaN
+`fixed_price` clamped to 0 and therefore read as **100% off**, because 0 is also a legitimate fixed
+price and a clamp cannot tell the two apart; and `resolveBenefit` never compared a benefit's
+`spaceId` to the purchase, trusting its caller.
+
+**Consequences.**
+
+- ✅ A Space expresses what a membership is worth once, across events, stays and products, instead of
+  once per object.
+- ✅ **`is_active` is still never consulted by a gate or a grant.** Verified while designing this:
+  `spaceMembershipGateError` matches on `membership.tier_id` alone, and `syncTierCircleAccess`
+  documents that the grant path "never consults price_cents and never consults is_active". That is
+  what makes a **founding rate locked for life** free of new machinery: retire the $44 tier, publish
+  a $55 one, and existing members keep their row, their circle and their tickets.
+- ⚠️ **Household is still not modelled.** One membership is one profile (the partial unique index on
+  `space_memberships`). A benefit can price a household tier; it cannot give a partner their own
+  access. Royal Temple's Guardian rung states household as house policy, deliberately.
+- 🔴 **This ADR's own migration caused a production drift incident**, recorded at
+  [LIVE-351](BUILD-BACKLOG.json) and fixed in #2647. The migration was applied to production from a
+  branch that had no file on `main`, so `check:migrations` went red on `main` and on every open PR,
+  and — the second-order defect — `check:rls` and `check:grants` scope to tables created in migration
+  FILES, so three new tables sat unaudited while CI reported "all revoked" and passed. The applied SQL
+  also omitted the revokes the `internal` verdict requires. **The rule: never apply a migration to
+  production ahead of the file that declares it.** The two-step apply in
+  `supabase/migrations/README.md` exists precisely to stop this, and step two was skipped.
+
+---
+
+## ADR-1373: A members-first window is a column, not a habit (2026-09-15)
+
+**Status:** Accepted · **Extends** [ADR-823](DECISIONS.md) · corroborated by
+`supabase/migrations/20270345004900_ticket_sales_window.sql`, `lib/events/sales-window.ts`,
+row `LIVE-352` in `docs/BUILD-BACKLOG.json`
+
+**Context.** "Members get first RSVP" was real policy with no mechanism. An operator kept it by
+leaving the public ticket row inactive and remembering to flip it on later. On a one-off event that
+is merely fragile; on Royal Temple's Meld, which runs a true fourteen-day cadence, it fails silently
+on **every occurrence** after the first, and the failure is invisible because a row that never opened
+looks exactly like a row nobody bought.
+
+**Decision.**
+
+1. **Three columns on `event_ticket_types`:** `sales_start_at` (absolute), `sales_starts_days_before`
+   (relative to the event's start), `sales_end_at` (so a members window can also close).
+2. **The relative count is the SERIES rule; the absolute time is a per-occurrence OVERRIDE, and it
+   wins.** The day count is written once and inherited by every occurrence; the absolute value is
+   what an operator typed for one date. If the series rule won, the override would be inexpressible
+   and an operator wanting to open one night early would have no way to say so. The reverse is not
+   true: clearing the absolute field hands the row straight back to the series rule, so the override
+   is undoable in one field. Decided in one function so no second call site can differ.
+3. **Relative means exact elapsed time** (N × 24h from the event's true start instant), so every
+   occurrence in a series gets identical notice. Across a DST transition the local clock time of the
+   opening shifts by an hour; that is pinned by a test rather than left to be discovered.
+4. **🔴 It fails OPEN.** No window, a draft with a null start, or a corrupt day count all resolve to
+   *on sale*. Refusing on a data gap is the ADR-823 root-exclusion bug with the roles reversed: an
+   unbuyable ticket, refused for a reason nobody can act on.
+5. **Admission is answered before time.** The gate sits after `spaceMembershipGateError` and before
+   the inventory check. A buyer the membership gate refuses must be told about the membership, never
+   handed a date — the date is not what is stopping them, and they would return to the same refusal.
+   Running before the free-claim return means a members-included free tier is windowed exactly like a
+   paid one. It never reads or alters `unitCents`, so ADR-1372's discount-before-take-rate ordering
+   is untouched.
+6. **A closed tier is visible, not missing.** It renders its own when-line ("Opens to guests on Fri,
+   Mar 5"), is unselectable, and is skipped by the preselect so nobody lands on a dead CTA. This
+   reuses the `soldOut` treatment already in `RateOptions`, because the answer is the same shape.
+
+**Consequences.**
+
+- ✅ The promise survives a recurrence without anyone remembering anything.
+- ✅ The admin events console now reads tiers through `listEventTicketTiers` instead of its own
+  hand-written select. It *writes* the full field set, so a reader missing these columns would have
+  blanked a host's window on every admin edit. That was a live bug waiting on the next console save.
+- ⚠️ Times are entered and resolved in the **event's own zone**, server-side. Doing the
+  `datetime-local` conversion in the browser would ship a tz database to every phone and change the
+  meaning of a saved window when a host travels.

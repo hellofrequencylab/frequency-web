@@ -29,6 +29,11 @@ import { Button } from '@/components/ui/button'
 // host no longer has to ask an operator to build anything past a single flat price.
 // Same shared writers as the /admin console; these call the host-gated actions.
 //
+// SALES WINDOW (ADR-1373): each tier says WHEN it may be bought. "Opens this many days before"
+// is the one that survives a repeating event, so it leads; the exact date and time beside it is the
+// per-occurrence override and wins when both are set. Blank means on sale right away, which is
+// every tier that existed before this control did.
+//
 // PRICING (Pricing Options P1, ADR-607): the price portion is the shared PriceModeEditor. A tier is
 // already one named option, so packages are off here; the tier's Price persists through the
 // priceToTicketPricingMode adapter onto the existing columns (NO migration).
@@ -36,6 +41,23 @@ import { Button } from '@/components/ui/button'
 const centsToDollars = (c: number | null | undefined) => (c != null ? (c / 100).toFixed(2) : '')
 
 const lbl = 'block text-meta font-medium text-muted mb-1'
+
+/** The tier's sales window in one clause for the collapsed row, or '' when it has none (ADR-1373).
+ *  Reads the DERIVED local values, so the operator sees the wall clock they typed in the event's
+ *  own city rather than a UTC instant. */
+function windowSummary(t: TicketTierRow): string {
+  const parts: string[] = []
+  if (t.sales_start_local) parts.push(`opens ${t.sales_start_local.replace('T', ' ')}`)
+  else if (t.sales_starts_days_before != null) {
+    parts.push(
+      t.sales_starts_days_before === 0
+        ? 'opens when the event starts'
+        : `opens ${t.sales_starts_days_before} ${t.sales_starts_days_before === 1 ? 'day' : 'days'} before`,
+    )
+  }
+  if (t.sales_end_local) parts.push(`closes ${t.sales_end_local.replace('T', ' ')}`)
+  return parts.join(', ')
+}
 
 function modeSummary(t: TicketTierRow): string {
   const summary = describePrice(ticketRowToPrice(t))
@@ -146,6 +168,7 @@ export function TicketTiersPanel({
                     {modeSummary(t)}
                     {' · '}
                     {t.quantity == null ? 'Unlimited' : `${t.sold}/${t.quantity} sold`}
+                    {windowSummary(t) ? ` · ${windowSummary(t)}` : ''}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
@@ -301,6 +324,53 @@ function TierForm({
             disabled={disabled}
           />
         </label>
+      </div>
+
+      {/* When it goes on sale (ADR-1373). The day count leads because it is the one that keeps
+          working on a repeating event; the exact date beside it covers this date only. */}
+      <div className="space-y-2 rounded-card border border-border bg-surface p-3">
+        <p className="text-meta font-semibold text-muted">When it goes on sale</p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <label className="block">
+            <span className={lbl}>Days before the event</span>
+            <Input
+              name="sales_starts_days_before"
+              type="number"
+              min="0"
+              step="1"
+              defaultValue={initial?.sales_starts_days_before ?? ''}
+              disabled={disabled}
+              placeholder="Right away"
+            />
+          </label>
+          <label className="block">
+            <span className={lbl}>
+              Or an exact time <span className="font-normal text-subtle">(this date only)</span>
+            </span>
+            <Input
+              name="sales_start_at"
+              type="datetime-local"
+              defaultValue={initial?.sales_start_local ?? ''}
+              disabled={disabled}
+            />
+          </label>
+          <label className="block">
+            <span className={lbl}>
+              Stops selling <span className="font-normal text-subtle">(optional)</span>
+            </span>
+            <Input
+              name="sales_end_at"
+              type="datetime-local"
+              defaultValue={initial?.sales_end_local ?? ''}
+              disabled={disabled}
+            />
+          </label>
+        </div>
+        <p className="text-meta text-subtle">
+          Leave all three blank and this ticket is on sale right away. Times are in the event&rsquo;s
+          own time zone. If you set both an exact time and a day count, the exact time wins for this
+          date.
+        </p>
       </div>
 
       <Checkbox
