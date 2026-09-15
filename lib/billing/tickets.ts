@@ -27,6 +27,19 @@
 // created on the destination charge with the transfer reversed and the application
 // fee returned, then the webhook/charge.refunded handler flips the ticket to
 // `refunded` and frees the tier's `sold` capacity. Flag-gated like all billing.
+//
+// TIMED INVENTORY (LIVE-343, migration 20270345004700). A ticket holds a seat, so this creator is
+// the ONE place in the repo that narrows the payment-method set: instant money only, because a
+// delayed-notification method completes Checkout WITHOUT paying and settles days later, which
+// cannot share a product with a 30 minute hold (`ticketPaymentMethodParams`). Three defences, in
+// order: narrow the methods; hold the seat of a payment that is genuinely in flight
+// (`markTicketPaymentProcessing` starts the second clock); and re-measure capacity at the settle,
+// under the same per-tier advisory lock the reservation takes. A ticket that no longer fits is
+// HONOURED and reported, never silently dropped, because the buyer has already been charged.
+//
+// THE SELLER'S SIDE (LIVE-345). `notifyTicketSaleHost` (./ticket-sale-notify.ts) tells the payee
+// they sold something, with a bell and an email, beside the buyer's receipts. Until it landed there
+// was no ticket-sold notification of any kind anywhere in the product.
 
 import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -44,8 +57,70 @@ import { resolveHostingSpaceId, resolveHostingSpaceIdFromRow } from '@/lib/event
 import { feeBearingSpaceId } from '@/lib/events/belonging'
 import { sendGuestTicketReceipt } from '@/lib/events/guest-ticket-email'
 import { sendMemberTicketReceipt } from '@/lib/events/member-ticket-email'
+import { notifyTicketSaleHost } from './ticket-sale-notify'
+import { profileAccountEmail } from '@/lib/profiles/account-email'
 
 export const TICKET_MAX_QTY = 10
+
+/** The env key holding a Stripe payment method configuration (`pmc_…`) scoped to INSTANT methods,
+ *  used for ticket checkouts only. Optional; see `ticketPaymentMethodParams`. */
+export const TICKET_PMC_ENV = 'STRIPE_TICKET_PAYMENT_METHOD_CONFIGURATION'
+
+/** The instant set, named explicitly, for the fallback branch. Apple Pay and Google Pay are not
+ *  payment method TYPES: they ride on `card` and Checkout offers them automatically on a supported
+ *  device, so listing `card` lists them. Link is its own type and has to be named or it disappears. */
+export const TICKET_INSTANT_METHODS = ['card', 'link'] as const
+
+/**
+ * The payment-method half of a TICKET Checkout Session, and the only place in this repo that
+ * narrows the set (owner decision). Every other creator stays on the full dashboard-controlled list.
+ *
+ * WHY TICKETS ARE DIFFERENT. A ticket is timed inventory. A delayed-notification method (ACH debit,
+ * a bank redirect) completes the Checkout Session without paying and settles three to five days
+ * later, which cannot share a product with a 30 minute seat hold: it is the mechanism behind the
+ * oversell LIVE-343 exists for, and no amount of locking makes "you have a seat, we will know in a
+ * week" a good answer for a Tuesday evening event. Narrowing the set removes the cause; the settle
+ * re-check remains for the rows already in flight and for any method Stripe reclassifies later.
+ *
+ * ⚠️ TWO WAYS TO DO THIS, AND THEY ARE NOT EQUIVALENT.
+ *
+ *   1. A PAYMENT METHOD CONFIGURATION (`payment_method_configuration: 'pmc_…'`) — PREFERRED, and
+ *      used whenever the env names one. The configuration is a Stripe-side object the owner edits
+ *      in the Dashboard, so tickets keep dashboard control over a SCOPED set: turning on a new
+ *      instant wallet next year is a Dashboard toggle and reaches tickets with no deploy.
+ *   2. An explicit `payment_method_types` array — the FALLBACK. It is a hardcoded list, and its
+ *      cost is exactly the thing the configuration avoids: a creator that passes one ignores the
+ *      Stripe Dashboard permanently, so any method enabled there later silently skips tickets and
+ *      nothing reports it. That is a real regression with a long fuse, and it is accepted here only
+ *      because the alternative is worse.
+ *
+ * 🔴 WHY THE FALLBACK EXISTS AT ALL: a configuration is addressed by an ID that must be created in
+ * the Stripe Dashboard (or through the API against the live account) and cannot be invented by this
+ * repo. There is no "the instant one" to reference by name. So the id is read from the env, and
+ * with no id we fall back rather than ship a ticket checkout that offers ACH.
+ *
+ * 🟢 WHAT THE OWNER DOES TO SWITCH, once and for good:
+ *   1. Stripe Dashboard → Settings → Payment methods → add a configuration named "Tickets (instant
+ *      only)", with card and Link ON and every delayed-notification method OFF (ACH direct debit,
+ *      Cash App Pay, bank redirects, Klarna / Afterpay and the other pay-later methods).
+ *   2. Copy its id (`pmc_…`) into STRIPE_TICKET_PAYMENT_METHOD_CONFIGURATION in the Vercel env.
+ *   3. Redeploy. Nothing else changes: this function starts returning branch 1 and the Dashboard is
+ *      back in charge of the ticket set.
+ *
+ * The two parameters are MUTUALLY EXCLUSIVE at Stripe (passing both is a request error), which is
+ * why this returns one or the other and never merges them.
+ */
+export function ticketPaymentMethodParams():
+  | { payment_method_configuration: string }
+  | { payment_method_types: Stripe.Checkout.SessionCreateParams.PaymentMethodType[] } {
+  const configured = (process.env[TICKET_PMC_ENV] ?? '').trim()
+  if (configured) return { payment_method_configuration: configured }
+  return {
+    payment_method_types: [
+      ...TICKET_INSTANT_METHODS,
+    ] as Stripe.Checkout.SessionCreateParams.PaymentMethodType[],
+  }
+}
 
 export type PricingMode = 'fixed' | 'free' | 'pwyc' | 'sliding_scale' | 'donation'
 
@@ -483,8 +558,27 @@ export async function createTicketCheckout(opts: {
     ? { buyer_profile_id: buyerProfileId }
     : { guest_email: guestEmail as string }
 
+  // THE ADDRESS STRIPE SENDS ITS OWN RECEIPT TO. `receipt_email` was set nowhere in this codebase,
+  // so Stripe's native receipt -- the one that arrives whatever happens to our outbox, our webhook
+  // or our send gate -- was never sent for anything. The buyer's own record of the charge depended
+  // entirely on us. A ticket is the one channel where that is least acceptable: the buyer may have
+  // no account at all, and the thing they bought has a door and a start time.
+  //
+  // A GUEST's address is the one they typed and the one the ticket is written against. A MEMBER's
+  // is their PROVEN account address, never anything the client supplied, for the same reason
+  // `customer_email` below is guest-only: a member's receipt must not be routable by form input.
+  // Best-effort by construction -- `profileAccountEmail` never throws and answers null for a
+  // profile with no auth user -- and a null simply omits the field, which is exactly where this
+  // path has been since it shipped.
+  const receiptEmail = guestEmail ?? (buyerProfileId ? await profileAccountEmail(buyerProfileId) : null)
+
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
+    // TICKETS ARE TIMED INVENTORY, SO THEY TAKE INSTANT MONEY ONLY (owner decision).
+    // See ticketPaymentMethodParams: a 3 to 5 day settlement cannot share a product with a 30
+    // minute seat hold. This is the ONLY creator in the repo that narrows the set; every other
+    // channel keeps the full dashboard-controlled list.
+    ...ticketPaymentMethodParams(),
     line_items: [
       {
         quantity: qty,
@@ -498,6 +592,10 @@ export async function createTicketCheckout(opts: {
     payment_intent_data: {
       application_fee_amount: fee,
       transfer_data: { destination: status.accountId },
+      // Stripe's OWN receipt, the backstop to ours. It lives here rather than at the top level
+      // because a Checkout Session has no `receipt_email` of its own: the field belongs to the
+      // PaymentIntent the session creates. Omitted rather than sent to a null.
+      ...(receiptEmail ? { receipt_email: receiptEmail } : {}),
       metadata: {
         kind: 'ticket',
         event_id: event.id,
@@ -641,6 +739,19 @@ interface SettledTicketRow {
   platform_fee_cents: number
   buyer_profile_id: string | null
   currency: string
+  /** LIVE-343, migration 20270345004700. `settle_ticket_atomic` re-measures the tier under the same
+   *  per-tier advisory lock `reserve_ticket_atomic` takes, and reports what it found on the row it
+   *  flipped. True means honouring this ticket put the tier past its `quantity`.
+   *
+   *  OPTIONAL on the type, not because the SQL omits them but because the SETTLE and the REFUND
+   *  share this row shape and `refund_ticket_atomic` returns the original eight columns. They are
+   *  also absent for the moments between this file merging and the migration being applied, which
+   *  reads as "not measured" rather than "measured false". Every consumer treats `undefined` as no
+   *  verdict. Untyped by construction: lib/database.types.ts still carries the eight-column shape
+   *  (ADR-246), and this cast is where the real one is declared. */
+  over_capacity?: boolean | null
+  tier_quantity?: number | null
+  tier_committed?: number | null
 }
 
 /**
@@ -717,7 +828,27 @@ function flippedRows(
  *  BEFORE a query is built, never inside one. */
 export async function recordTicketFromSession(session: Stripe.Checkout.Session): Promise<void> {
   if (session.metadata?.kind !== 'ticket') return
-  if (session.payment_status !== 'paid') return
+  if (session.payment_status !== 'paid') {
+    // ⏳ NOT PAID, BUT NOT ABANDONED EITHER (LIVE-343). A delayed-notification buyer (ACH debit,
+    // Cash App Pay, a bank redirect) does not pay at Checkout, they SUBMIT: Stripe completes the
+    // session at once with payment_status 'unpaid' and settles it days later with
+    // checkout.session.async_payment_succeeded, which lands here again as 'paid'. This function is
+    // only ever reached from those two events, so an unpaid arrival means exactly one thing: the
+    // payment is in flight.
+    //
+    // That fact has to reach the database, because capacity is decided there. `reserve_ticket_atomic`
+    // released a pending seat 30 minutes after `created_at` -- the Checkout SESSION expiry, which is
+    // the right clock for an abandoned card checkout and the wrong one for a payment that is still
+    // settling. At minute 31 the tier read a free seat and sold it to somebody else, and the settle
+    // days later flipped the first ticket anyway. Two buyers, one seat, nobody told.
+    //
+    // Stamping the row starts the second clock (7 days, migration 20270345004700), so the seat stays
+    // held while the payment settles and an abandoned card checkout still frees its seat in 30
+    // minutes. Best-effort: a miss costs the widened hold and leaves the settle-time capacity
+    // re-check as the backstop, which is exactly what that backstop is for.
+    await markTicketPaymentProcessing(session)
+    return
+  }
   const paymentIntentId =
     typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id ?? null
   // The guest's address, off the session Stripe SIGNED. Normalised the same way the checkout
@@ -825,6 +956,99 @@ export async function recordTicketFromSession(session: Stripe.Checkout.Session):
         currency: row.currency ?? session.currency ?? null,
       }).catch(() => {})
     }
+
+    // ── THE TIER WENT PAST ITS LIMIT (LIVE-343) ────────────────────────────────────────────────
+    // `settle_ticket_atomic` re-measured the tier under the same per-tier advisory lock
+    // `reserve_ticket_atomic` takes, and this ticket did not fit. It was HONOURED anyway: the buyer
+    // was already charged, an auto-refund is the only irreversible answer, and a human can undo an
+    // oversell. See the migration header for the full reasoning and the owner ruling it is flagged
+    // for. What this file owes is that the overage is never silent, in both directions:
+    //   * the OPERATOR gets it here, at error level, with the session id to paste into Stripe;
+    //   * the HOST gets it on the sale notice below, in words, with the same numbers.
+    if (row.over_capacity === true) {
+      console.error('[tickets] SETTLED A TICKET THAT NO LONGER FITS ITS TIER; the tier is over capacity', {
+        ticketId: row.id,
+        eventId: row.event_id,
+        ticketTypeId: row.ticket_type_id,
+        sessionId: session.id,
+        qty: row.qty,
+        tierQuantity: row.tier_quantity,
+        committedBefore: row.tier_committed,
+      })
+    }
+
+    // ── THE HOST FINDS OUT THEY SOLD SOMETHING (LIVE-345) ──────────────────────────────────────
+    // Beside the buyer's receipts, never instead of one: the two sides of a sale are two messages.
+    // Until this call the seller was told nothing by anything, on any channel, and their Stripe
+    // payout was the only signal. Best-effort and swallowed inside the module, which quarantines
+    // the elevated reads (event, host space, buyer, tier, account address) the webhook does not
+    // otherwise need. Sent exactly once because this loop runs exactly once.
+    await notifyTicketSaleHost({
+      id: row.id,
+      event_id: row.event_id,
+      ticket_type_id: row.ticket_type_id,
+      qty: row.qty,
+      // Gross off the signed session, for the same reason both receipt legs read it there.
+      amount_cents: session.amount_total ?? null,
+      platform_fee_cents: row.platform_fee_cents ?? 0,
+      currency: row.currency ?? session.currency ?? 'usd',
+      buyer_profile_id: row.buyer_profile_id,
+      guest_email: isGuest ? guestEmail : null,
+      over_capacity: row.over_capacity === true,
+      tier_quantity: row.tier_quantity ?? null,
+      tier_committed: row.tier_committed ?? null,
+    }).catch(() => {})
+  }
+}
+
+/** Start the delayed-notification clock on a ticket whose Checkout session completed UNPAID.
+ *
+ *  The whole of the reasoning is at the call site. Best-effort on the write and loud on the miss,
+ *  the same split `persistGuestEmail` makes: this runs inside a Stripe webhook whose money work has
+ *  not happened yet, so a throw here would make Stripe redeliver an event that can only re-stamp,
+ *  but a row that never gets stamped is a seat that can be resold under a buyer who is paying for
+ *  it, so every way of missing is logged.
+ *
+ *  Only ever stamps a `pending` row, and only the FIRST time: `payment_processing_at is null` keeps
+ *  a redelivered `completed` event from sliding the clock forward on a payment that has been
+ *  processing for six days, which would turn a bounded hold into an unbounded one.
+ *
+ *  Untyped reach (ADR-246): `payment_processing_at` arrives with migration 20270345004700 and
+ *  lib/database.types.ts has not been regenerated for it, and `.update()` is typed off that same
+ *  generated file. Same shape as `persistGuestEmail` used for `guest_email`. */
+async function markTicketPaymentProcessing(session: Stripe.Checkout.Session): Promise<void> {
+  // 'unpaid' is the delayed-notification state. 'no_payment_required' is a zero-total session,
+  // which a ticket checkout never creates (a free tier returns before Stripe), so it is left alone
+  // rather than given a clock it could never finish.
+  if (session.payment_status !== 'unpaid') return
+  try {
+    const { error } = await (db() as unknown as {
+      from: (t: string) => {
+        update: (v: Record<string, unknown>) => {
+          eq: (c: string, v: string) => {
+            eq: (c: string, v: string) => {
+              is: (c: string, v: null) => Promise<{ error: { message: string } | null }>
+            }
+          }
+        }
+      }
+    })
+      .from('event_tickets')
+      .update({ payment_processing_at: new Date().toISOString() })
+      .eq('stripe_checkout_session_id', session.id)
+      .eq('status', 'pending')
+      .is('payment_processing_at', null)
+    if (error) {
+      console.error('[tickets] could not start the settlement clock on a submitted payment; the seat may be resold', {
+        sessionId: session.id,
+        error: error.message,
+      })
+    }
+  } catch (e) {
+    console.error('[tickets] starting the settlement clock threw; the seat may be resold', {
+      sessionId: session.id,
+      error: e instanceof Error ? e.message : String(e),
+    })
   }
 }
 
