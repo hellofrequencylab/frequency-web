@@ -43502,3 +43502,58 @@ asking); and a banner Decline does not write a `consent_records` row, so the acc
 
 **Rows.** `OWN-061` half one (the banner). Half two, the EU AI Act Art. 50 disclosure on
 Vera-generated member-facing surfaces, is untouched here and stays open.
+## ADR-1371: an account holder is admitted, and the induction stops being a wall (2026-09-15)
+
+**Status.** Accepted. Closes the ruling half of `OWN-072`. Amends [ADR-1324](DECISIONS.md), which
+deferred this question deliberately rather than quietly, and narrows [ADR-047](DECISIONS.md)'s
+blocking-induction model to the signup path it was actually written for.
+
+**Context.** `app/(main)/layout.tsx` redirected any member whose profile did not satisfy
+`hasEffectivelyOnboarded()` into `/join` — a **signup** funnel — on every request. `#2553` made that
+funnel resumable, which shortened the march. It never answered why somebody who already has a
+working account is on a signup funnel at all, and `OWN-072` was filed to get that answered rather
+than inferred, because it touches admission for the whole product.
+
+**Measured against production on the day of the ruling, and the row's own number had expired.** The
+row argues from the nine hand-admitted accounts of ADR-1324. All nine now carry
+`meta.onboarding_completed`, so not one of them is behind the gate; the row's evidence describes a
+condition that has already cleared. Evaluating the real predicate — the full
+`hasEffectivelyOnboarded` disjunction, not the `onboarding_completed` key the row names — against
+all 58 profiles returns **8 marched, 50 admitted**. One of the 8 is `moderation` / Vera, the
+platform's own janitor account, which is a system row and not a person. So the live cost is **seven
+real members**, created between 26 June and 3 September, every one of them carrying an empty `meta`,
+a generated handle and the local part of their email as a display name. They are seven *different*
+people from the nine, and the set grows by one every time somebody signs up and does not finish.
+
+⚠️ Worth recording beside [ADR-1082](DECISIONS.md): the first count taken here was **11**, because it
+was taken against `meta.onboarding_completed` — the key the row's prose names — rather than against
+the predicate the code actually calls. A premise re-test that measures the row's own words instead of
+the code's behaviour reproduces the row's error with more confidence. The correct reading needed the
+predicate *and* a null-safe evaluation of it: in SQL the disjunction returns `NULL` for a profile
+whose `meta` is absent and `count(*) filter (where not …)` silently drops those rows, which is how
+8 first presented as 0.
+
+**Decision.**
+
+1. **A profile row is an account, and an account holder is admitted.** The induction gate is removed
+   from the member shell. What the induction collected is collected inline instead, the way the edit
+   rail already does it.
+2. **The induction remains the signup path.** `/join` is still where an account is created, and
+   `/onboarding` still forwards there while `FUNNEL_INDUCTION_ACTIVE` is on. It is reached by
+   **signing up**, not by being bounced out of an app you already belong to. A person who abandons
+   it halfway now lands in the product rather than on its doorstep.
+3. **The `!profile` branch is untouched and still redirects.** No profile row means the creation
+   trigger has not run; there is no account to admit yet. That is a different case and keeps its
+   different answer.
+
+**Consequences.** ✅ Seven real members reach the product on their next request, with no data change
+and no migration. ✅ The consent default is unaffected and stays safe: `completeOnboarding` records
+an omitted `emailOptIn` as consent **withheld**, so a member who never finishes the induction is
+recorded as not having opted in, which is the correct reading of silence. ⚠️ An admitted member who
+has not set a display name or handle still appears to the community under their email's local part
+and a generated handle until the inline collection lands; that is the follow-on code row this ADR
+files, and it is why admission and inline collection are one ruling rather than two. 🔴 The gate is
+**removed, not flag-guarded**: `FUNNEL_INDUCTION_ACTIVE` no longer has a reader in the member shell.
+A kill switch that silently re-marches seven people is the failure this ADR exists to end, and
+[LIVE-240](BUILD-BACKLOG.json) is the precedent for deleting a flag with the engine it gated rather
+than leaving it to be flipped back by accident.
