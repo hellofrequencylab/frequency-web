@@ -41239,3 +41239,129 @@ their own rows: `lib/pricing/feature-tiers.ts:248` (in-app ladder copy still pro
 outlive the tier silently) and `content/help/spaces/billing.md:45` (lists revenue splits).
 
 **Rows.** LIVE-232 (done, this ADR).
+
+## ADR-1346: ACCEPTED — the maintainer capture joins the turnstile, and one dispatch stops capturing three times at once (2026-09-15)
+
+**Context.** ADR-1331 put a turnstile in front of `pr-compare` and `lighthouse` so one
+preview-backed capture renders the ~160-surface list against the one shared database at a time.
+`e2e-manual.yml`, the workflow a maintainer DISPATCHES to take baselines, was not in scope, and
+two separate things were wrong with it.
+
+- **It had no turnstile at all.** Measured on main before this change: all four of its jobs
+  (`smoke`, `update-baselines`, `update-a11y`, `visual`, at lines 190, 265, 388 and 484) opened
+  with `- uses: actions/checkout@v7`, and the string `Turnstile` did not appear in the file.
+- **Its own jobs ran beside each other.** No job declared `needs:`, so the only serialisation was
+  the workflow-level `concurrency` group at lines 184-187 — `e2e-manual-${{ github.ref }}`,
+  `cancel-in-progress: false`. That group is keyed by REF and holds the RUN, so it serialised
+  neither two dispatches on two branches nor, more to the point, the four jobs of ONE dispatch.
+  Each of those jobs mints its own member session and captures the whole surface list.
+
+So one dispatch was two, three or four concurrent captures on the house profile, on top of
+whatever the PR gate was doing. The consequence, on 2026-09-14: the 23:28Z recapture on `b5`
+(run 34909054841, `capture_shell` on, pointed at PRODUCTION) ran its captures beside #2593's and
+#2592's `pr-compare` captures. Between 23:33Z and 23:42Z the REST edge answered **503 to 11,042
+requests on `/rest/v1/*`**, every one from a UA node — the ADR-1328 exhaustion shape, reproduced.
+The baselines that dispatch then COMMITTED were photographed inside that window and depicted
+degraded chrome: #2594's own compare failed 62 public comparisons at 1 to 2 percent, and a clean
+recapture the next morning superseded every one of those 62 PNGs. A capture run is the one job in
+this repo whose output is believed without further review, which is exactly why it must not be
+the job that runs in the worst conditions.
+
+Filed as LIVE-332, resolved here under ruling 10 of ADR-1325 (a CI rule change ships with its ADR
+and its control run).
+
+**Decision.** Two mechanisms, because there are two different overlaps and neither mechanism can
+cover both.
+
+- **Across RUNS: the same turnstile, pointed at a lane that spans both files.** Each of the four
+  jobs now opens with the byte-identical `Turnstile` step that opens `pr-compare` and
+  `lighthouse`, before any checkout (an inline `github-script` step needs no working tree, and the
+  waiting should happen before the install is paid for). The script gained two list-valued knobs
+  in place of one scalar: `TURNSTILE_PEERS`, the job names that count as a capture, and
+  `TURNSTILE_WORKFLOWS`, the workflow files to look for them in. The manual jobs queue behind all
+  six capture jobs of both files; `pr-compare` queues behind itself plus the four manual jobs, and
+  `lighthouse` behind itself plus the same four. **So a maintainer capture waits for a PR capture
+  and a PR capture waits for a maintainer one** — the reverse direction is the half that lives in
+  the other file, and it is pinned by the test. `lighthouse` stays out of `pr-compare`'s lane and
+  vice versa, so one run's two PR jobs still overlap; ADR-936 split them for that wall clock and
+  nothing here narrows it.
+- **Within ONE dispatch: a `needs:` chain.** `smoke` → `update-baselines` → `update-a11y` →
+  `visual`. The turnstile cannot do this half, and the reason is structural rather than
+  incidental: its rule 1 ignores the run's own jobs precisely so the PR pair can overlap, and its
+  bound can expire and proceed, where a `needs:` edge is an ordering GitHub enforces absolutely.
+  Each downstream job is `if: ${{ !cancelled() && inputs.<flag> }}`. The status function is
+  load-bearing: GitHub prepends an implicit `success()` to a job condition that names none, so a
+  bare `inputs.update_a11y` beside `needs: update-baselines` would ALSO demand that
+  update-baselines ran and passed, and a dispatch asking for a11y counts alone would capture
+  nothing at all while reporting tidy "skipped" rows. `always()` is the other candidate and is
+  wrong: it captures straight through a cancellation, the one moment nobody wants the load.
+- **`actions: read` joins the workflow-level `permissions:` block.** A `permissions:` block
+  REPLACES the default set, so with only `contents: write` (what the file carried, for the two
+  commit steps) every turnstile would have read zero runs, waited on nobody and cleared on poll 1
+  — a green step that measured nothing, which is the failure mode this file's own header spends
+  eighty lines refusing.
+- **An empty `TURNSTILE_WORKFLOWS` is now loud.** The knob has no fallback, and a turnstile with
+  nothing to poll clears immediately. Rule 5 forbids failing the job, so the script emits a
+  `::warning` and a job-summary paragraph saying the rule did not apply to it, and the
+  source-shape test refuses the omission before it can reach a runner.
+- **Every timeout rose by exactly the bound**, as ADR-1331 did for the PR jobs: `smoke` 30 → 120,
+  and the three 45s → 135, so a full 90-minute wait still leaves each suite every minute it had.
+
+**Consequences.** A full dispatch is now SEQUENTIAL, so its wall clock is the sum rather than the
+max: roughly 30 + 45 + 45 + 45 minutes of capture plus each job's wait. That is the price, and it
+is the right one, because a dispatch that finishes sooner by photographing a degraded site has
+produced nothing but work to undo. Runner minutes while waiting are the cost ADR-1331 already
+accepted, and the `needs:` chain actually reduces the API traffic against ADR-1331's shape: only
+one manual job is ever polling, because the others have not started. Run numbers are per workflow
+file, so across two files they are not one series and rule 3's tie-break between two WAITING runs
+resolves in favour of the file with the lower numbers — `e2e-manual.yml` has far fewer runs than
+`e2e.yml`, which hands a maintainer capture priority over a merely queued PR capture. Deliberate,
+and a strict order either way, so no two runs can end up waiting on each other. What does not
+change: nothing about what any job photographs. `visual` runs last and still compares against the
+baselines the dispatch started with, because `actions/checkout` takes the dispatched SHA rather
+than the branch tip.
+
+**Proof.** `scripts/e2e-preview-gate.test.ts` gained eight assertions: the turnstile opens every
+capture job, keyed by its own name, before any checkout; every job polls both files and a lane
+naming all six capture jobs; the PR gate names the four manual jobs in return and still excludes
+its sibling; the four jobs form a chain and the head of it is unconditional; every downstream
+condition names a status function and none of them is `always()`; `actions: read` is granted;
+every bound leaves at least 30 minutes for the suite; and all SIX copies of the script, across
+both files, are byte-identical. All eight were run against `origin/main`'s copies of the two
+workflows and all eight FAIL there, while the ten pre-existing assertions pass on both — so the
+new arms measure this change and nothing else. Separately, the exact script body that ships was
+lifted out of the YAML and driven through a fake Actions API over nine scenarios: clear on poll 1
+with nothing in flight; a PR capture in the other workflow holding a manual job; a manual capture
+holding a PR job (the reverse direction); `lighthouse` NOT holding `pr-compare`; rule 1's own-run
+skip; rule 2's completed job; rule 3's higher-numbered waiter; rule 5's unreadable API and bound;
+and the empty-list warning. Nine green.
+
+**The premise, measured rather than argued.** The job-level timings of the incident run itself
+(34909054841, read from the Actions API) are the control on the defect. Its `smoke` job
+(104192243485) and its `update-baselines` job (104192243334) were both created at 23:28:56Z and
+both started at 23:28:58Z, **on two different runners** (1000031489 and 1000031488). Each minted
+its own member session five seconds apart — 23:29:47Z and 23:29:52Z — and then the two captures
+ran side by side from 23:29:57Z to 23:36:25Z: six and a half minutes of two concurrent captures
+inside one dispatch, wholly inside the 23:33Z-23:42Z window in which the REST edge answered 503
+to 11,042 requests. Nothing about that reading depends on reading the workflow source.
+
+**🔴 THE CONTROL RUN IS OWED, AND WAS NOT OBTAINED.** Ruling 10 of ADR-1325 asks a CI rule change
+to cite a control, and this one cannot have it yet, for a mechanical reason rather than a
+judgment: `workflow_dispatch` runs the workflow file **as it exists on the dispatched ref**, and
+this rule exists only on an unpushed branch. A dispatch against `main` would execute the OLD file
+and add precisely the load this row exists to remove, so none was fired. What was done instead is
+written down above: the shipped script body driven through a fake API over nine scenarios, eight
+source assertions that fail on `main`, and eleven detected mutations. **What those cannot prove is
+the one thing the control must read:** that GitHub accepts this `needs:`/`if:` shape and that
+`!cancelled()` really does override skip-propagation from a SKIPPED dependency. The dispatch that
+proves it, once the branch is pushed, is `e2e-manual.yml` on this branch with **`update_a11y` ON
+and `update_baselines` OFF** — the exact case where the chain's middle link is skipped — and a
+`base_url` pointed at the branch's own preview rather than production. Green there means: the
+turnstile logged a poll (so the widened `permissions:` granted the API read), `update-baselines`
+reported `skipped`, and `update-a11y` RAN anyway, after `smoke` rather than beside it. The queue
+itself is a third reading, owed on the next manual dispatch that overlaps a PR run, whose log
+names that run as `capturing`. LIVE-332's CLOSED paragraph says both are outstanding.
+
+**Rows.** LIVE-332 (done, this ADR; its probe was a `grep-present` with an empty pattern and is
+now a `cmd` probe that reads the two mechanisms). LIVE-326 and LIVE-330 (done, unchanged; their
+probes read the PR half of the turnstile and still pass).

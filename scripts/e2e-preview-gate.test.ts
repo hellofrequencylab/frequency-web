@@ -187,3 +187,140 @@ describe('the turnstile replaces the job-level concurrency groups', () => {
     }
   })
 })
+
+// ── THE MAINTAINER CAPTURE IS IN THE SAME QUEUE (LIVE-332) ───────────────────────────────────────
+//
+// 🔴 THE DEFECT, measured on 2026-09-14. ADR-1331's turnstile covered e2e.yml only. e2e-manual.yml
+// carried NO turnstile — all four of its jobs opened with `actions/checkout` — and its
+// `concurrency` group is keyed by ref, which holds the RUN and not the job. So the four jobs of ONE
+// dispatch all started together, each minting a member session and capturing the whole surface
+// list. The 23:28Z recapture (run 34909054841, against production) ran beside two PRs' pr-compare
+// captures; the REST edge answered 503 to 11,042 requests on /rest/v1/* over the nine minutes that
+// followed, and the baselines that dispatch committed were photographed inside that window.
+//
+// Two mechanisms, and the assertions below pin both, because they cover different overlaps: the
+// turnstile handles other RUNS (in either workflow), and `needs:` handles this run's own jobs —
+// which the turnstile deliberately cannot, since rule 1 skips siblings so e2e.yml's two overlap.
+
+const manual = readFileSync('.github/workflows/e2e-manual.yml', 'utf8')
+
+/** Every capture job of the maintainer workflow, in the order they must now run. */
+const MANUAL_CHAIN = ['smoke', 'update-baselines', 'update-a11y', 'visual'] as const
+
+const TURNSTILE_RE = / {12}\/\/ THE TURNSTILE\.[\s\S]*?core\.setOutput\('waited_minutes'[^\n]*\n/g
+
+describe('the maintainer capture waits its turn too', () => {
+  /** One job of e2e-manual.yml: its header plus its steps, up to the next top-level job. */
+  function manualJob(job: (typeof MANUAL_CHAIN)[number]): string {
+    const start = manual.indexOf(`\n  ${job}:\n`)
+    expect(start, `${job} is gone from e2e-manual.yml`).toBeGreaterThan(-1)
+    const rest = manual.slice(start + 1)
+    const next = rest.search(/\n {2}[a-z][a-z0-9-]*:\n/)
+    return next < 0 ? rest : rest.slice(0, next)
+  }
+
+  /** The head of one preview-backed job in e2e.yml, for the reverse direction. */
+  function prJob(job: 'pr-compare' | 'lighthouse'): string {
+    const start = wf.indexOf(`\n  ${job}:\n`)
+    const end = wf.indexOf("      - name: Resolve the PR's Vercel preview URL", start)
+    expect(end).toBeGreaterThan(start)
+    return wf.slice(start, end)
+  }
+
+  it('every capture job opens with the turnstile, keyed by its own name, before any checkout', () => {
+    for (const job of MANUAL_CHAIN) {
+      const block = manualJob(job)
+      const turnstile = block.indexOf('      - name: Turnstile')
+      const checkout = block.indexOf('      - uses: actions/checkout')
+      expect(turnstile, `${job} carries no turnstile step`).toBeGreaterThan(-1)
+      expect(block).toMatch(/^ {8}id: turnstile$/m)
+      expect(block).toContain(`TURNSTILE_JOB: ${job}`)
+      // FIRST, not merely present: a wait that starts after the install has already paid for the
+      // runner, and the point is to spend the waiting time before the capture starts.
+      expect(checkout, `${job} checks out before its turnstile`).toBeGreaterThan(turnstile)
+    }
+  })
+
+  it('every capture job polls BOTH workflows, and a lane that spans both', () => {
+    for (const job of MANUAL_CHAIN) {
+      const block = manualJob(job)
+      // An empty or single-file list is the defect this row was filed for: a manual capture that
+      // cannot see a PR capture waits on nobody. The script warns at run time when the list is
+      // empty; this is the guard that stops it reaching a runner at all.
+      expect(block).toContain('TURNSTILE_WORKFLOWS: e2e.yml,e2e-manual.yml')
+      const peers = block.match(/TURNSTILE_PEERS: ([^\n]+)/)?.[1].split(',') ?? []
+      for (const name of [...MANUAL_CHAIN, 'pr-compare', 'lighthouse']) {
+        expect(peers, `${job} does not queue behind ${name}`).toContain(name)
+      }
+    }
+  })
+
+  it('and the PR gate waits for the maintainer capture in return', () => {
+    // The fix is symmetric, and half of it lives in the other file: without these a manual
+    // dispatch would yield to a PR capture while a PR capture walked straight past a manual one.
+    // lighthouse stays out of pr-compare's lane and vice versa, so one run's two jobs still
+    // overlap (ADR-936 split them for that wall clock).
+    for (const job of ['pr-compare', 'lighthouse'] as const) {
+      const head = prJob(job)
+      expect(head).toContain('TURNSTILE_WORKFLOWS: e2e.yml,e2e-manual.yml')
+      const peers = head.match(/TURNSTILE_PEERS: ([^\n]+)/)?.[1].split(',') ?? []
+      for (const name of MANUAL_CHAIN) expect(peers).toContain(name)
+      expect(peers).toContain(job)
+      expect(peers).not.toContain(job === 'pr-compare' ? 'lighthouse' : 'pr-compare')
+    }
+  })
+
+  it('the four capture jobs are a CHAIN, so one dispatch never captures twice at once', () => {
+    // The defect itself, in one assertion. A `needs:` edge is the only ordering here GitHub
+    // enforces absolutely: the turnstile's bound can expire and proceed, and its rule 1 ignores
+    // siblings on purpose.
+    for (let i = 1; i < MANUAL_CHAIN.length; i += 1) {
+      expect(manualJob(MANUAL_CHAIN[i]), `${MANUAL_CHAIN[i]} does not wait for ${MANUAL_CHAIN[i - 1]}`).toMatch(
+        new RegExp(`^ {4}needs: ${MANUAL_CHAIN[i - 1]}$`, 'm'),
+      )
+    }
+    // The head of the chain must be unconditional, or a dispatch that skips it skips everything.
+    expect(manualJob('smoke')).not.toMatch(/^ {4}(needs|if):/m)
+  })
+
+  it('a skipped job in the chain does not silently cancel the captures behind it', () => {
+    // GitHub prepends an implicit `success()` to a job `if:` that names no status function, so
+    // `if: ${{ inputs.update_a11y }}` beside `needs: update-baselines` would ALSO require
+    // update-baselines to have run AND passed. A dispatch asking for a11y counts alone would then
+    // capture nothing whatsoever and report it as tidy "skipped" rows.
+    for (const job of MANUAL_CHAIN.slice(1)) {
+      const cond = manualJob(job).match(/^ {4}if: ([^\n]+)$/m)?.[1] ?? ''
+      expect(cond, `${job} has no condition`).not.toBe('')
+      expect(cond, `${job}'s condition names no status function, so a skipped need skips it`).toMatch(
+        /!cancelled\(\)|always\(\)/,
+      )
+      // always() would capture straight through a cancellation, the one moment nobody wants load.
+      expect(cond).not.toContain('always()')
+    }
+  })
+
+  it('the turnstile reads the Actions API, which a workflow-level permissions block must grant', () => {
+    // `permissions:` REPLACES the default set rather than adding to it. With only
+    // `contents: write` (what this file carried) every turnstile would see zero runs, wait on
+    // nobody, and clear on poll 1 — a green step that measured nothing.
+    expect(manual).toMatch(/^permissions:\n(?:.*\n)*?  actions: read$/m)
+  })
+
+  it('every wait bound fits inside its job timeout with the capture budget intact', () => {
+    for (const job of MANUAL_CHAIN) {
+      const block = manualJob(job)
+      const timeout = Number(block.match(/timeout-minutes: (\d+)/)?.[1])
+      const bound = Number(block.match(/TURNSTILE_MAX_MINUTES: '(\d+)'/)?.[1])
+      expect(bound).toBeGreaterThan(0)
+      expect(timeout - bound, `${job} has no room left for its own suite`).toBeGreaterThanOrEqual(30)
+    }
+  })
+
+  it('all six turnstile scripts, across both files, are byte-identical', () => {
+    // Six copies of one script is six chances to drift, and the script IS the mechanism. Same
+    // rule the two-copy assertion above enforces, extended to the file that joined the lane.
+    const scripts = [...wf.matchAll(TURNSTILE_RE), ...manual.matchAll(TURNSTILE_RE)].map((m) => m[0])
+    expect(scripts).toHaveLength(6)
+    for (const script of scripts) expect(script).toBe(scripts[0])
+  })
+})
