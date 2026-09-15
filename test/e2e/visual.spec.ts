@@ -41,7 +41,8 @@
 //
 // Baselines are captured ON A RUNNER, never in an agent sandbox (which cannot reach a
 // deploy URL): .github/workflows/e2e.yml → workflow_dispatch → update_baselines.
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect } from './fixtures'
+import type { Page } from '@playwright/test'
 import {
   NARROW_PROJECT,
   PUBLIC_RENDER_STATES,

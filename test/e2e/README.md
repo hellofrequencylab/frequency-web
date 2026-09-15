@@ -56,6 +56,33 @@ Without it every SSR route serves Vercel's auth interstitial and the suites test
 the wall, not the app — `assertNotProtectionWall` in `surfaces.ts` fails loudly
 when that happens rather than letting it pass quietly.
 
+## Prefetches are refused (LIVE-328)
+
+Every spec takes `test` from `test/e2e/fixtures.ts`, not from `@playwright/test`. The
+one thing that fixture adds is a route on the browser context that answers every router
+PREFETCH with an empty 204 before it leaves the browser. On a production build each
+`<Link>` that scrolls into view fetches the RSC payload of its target, and on a member
+page that is every link in the rail, the dock and the tab bar: a full server render of a
+signed-in route each, with its own `/auth/v1/user` and the fifteen to twenty PostgREST
+reads the shell makes. That multiplier is what put the shared database into 503 on
+2026-09-14 ([ADR-1328](../../docs/DECISIONS.md)). No capture needs the cache those
+prefetches fill: every surface is reached by `page.goto`, and the overflow gate opens
+buttons, never links.
+
+| Request | Marker | What the fixture does |
+| :--- | :--- | :--- |
+| a router prefetch | `Next-Router-Prefetch: 1` (or `2` / `3`), `Next-Router-Segment-Prefetch` | fulfilled with an empty 204, never sent |
+| the fetch a `router.push` issues | `RSC: 1` and `_rsc=` in the query, no prefetch header | falls through to the network |
+| the document, assets, API calls | no `_rsc` query | not intercepted at all |
+
+`_rsc` is the cache-busting query Next puts on EVERY RSC fetch, prefetch or navigation, so
+it selects which requests to read the headers of and is never the verdict. A 204 rather
+than an abort because Chromium logs an aborted fetch as a console error and the smoke
+suite counts those. `router-prefetch.test.ts` proves both branches on a fake route with
+no browser, and pins that every spec imports the fixture. The before/after reading (the
+edge-log request count for the house profile during one run) is owed to the row's
+closing note.
+
 ## The matrix
 
 `test/e2e/surfaces.ts` is the single registry both suites read.
