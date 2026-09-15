@@ -6,7 +6,7 @@ order: 4
 published: 2026-09-10
 updated: 2026-09-10
 audience: member
-featureKeys: [billing]
+featureKeys: [payouts]
 status: published
 ---
 

@@ -96,7 +96,12 @@ export const FEATURE_KEYS: FeatureKey[] = [
   { key: 'connections', label: 'Connections', area: 'comms', routes: ['/connections'], core: true },
   { key: 'location', label: 'Your location', area: 'account', routes: ['/settings/connections'], core: true },
   { key: 'resonance', label: 'Resonance matching', area: 'discovery', routes: ['/settings/connections'], core: true },
-  { key: 'billing', label: 'Plans and billing (Space)', area: 'operator', routes: ['/spaces'], core: false },
+  //    2026-09-15 (LIVE-305): `billing` is the money a Space PAYS Frequency (plan, card, invoices, a cash
+  //    agreement), and every surface for that sits under /spaces/[slug]/settings/billing. Its prefix
+  //    was the bare '/spaces', which made EVERY Space page change flag plans-and-pricing.md and
+  //    billing.md, including the Get paid page, whose subject is money coming IN (the 2026-09-10 audit
+  //    watched the drift bot do exactly that). Money received has its own key now: `payouts`, below.
+  { key: 'billing', label: 'Plans and billing (Space)', area: 'operator', routes: ['/spaces/[slug]/settings/billing'], core: false },
 
   // ── Safety ──────────────────────────────────────────────────────────────────
   { key: 'moderation', label: 'Reporting & moderation', area: 'safety', routes: ['/feed'], core: true },
@@ -110,6 +115,15 @@ export const FEATURE_KEYS: FeatureKey[] = [
   { key: 'outreach', label: 'Outreach', area: 'operator', routes: ['/outreach'], core: false },
   { key: 'partners', label: 'Partners', area: 'operator', routes: ['/partners'], core: false },
   { key: 'pages', label: 'Page editor', area: 'operator', routes: ['/pages'], core: false },
+  // Payouts (LIVE-305): the money a Space RECEIVES, the opposite direction from `billing`. Its two
+  // surfaces are the Space's Get paid page (app/(main)/spaces/[slug]/settings/payments, ADR-1313) and the
+  // personal Receive payments card on /settings/billing (the Stripe Connect return lands there, and it
+  // is where the owner's one payout account is managed). `core: true` on purpose: check:help --strict
+  // fails on an undocumented core key, so content/help/spaces/get-paid.md is now DEMANDED by a gate
+  // rather than tolerated by one. The dynamic segment is written literally because lib/help/drift.ts
+  // fileToRoute keeps `[slug]` verbatim, so the prefix matches the real files under app/ and nothing
+  // else (feature-keys.test.ts proves the match against the walked tree).
+  { key: 'payouts', label: 'Get paid (Space payouts)', area: 'operator', routes: ['/spaces/[slug]/settings/payments', '/settings/billing'], core: true },
 ]
 
 /** Fast membership check for the coverage tool + any future validation. */

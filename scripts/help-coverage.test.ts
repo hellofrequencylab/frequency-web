@@ -64,6 +64,20 @@ describe('the live corpus is real', () => {
     expect(c.coreCovered.length).toBe(c.core.length)
   })
 
+  it('payouts is core and covered, so the money surface is gated like a core one (LIVE-305)', async () => {
+    // Before this row, content/help/spaces/get-paid.md sat on `billing` (core: false), so deleting it
+    // changed nothing this gate could see. `payouts` is core: true, which is what makes the article
+    // demanded rather than tolerated; the article and the key landed in one change so the orphan arm
+    // and the strict arm never disagreed.
+    const c = await collect()
+    const row = c.core.find((f) => f.key === 'payouts')
+    expect(row?.area).toBe('operator')
+    expect(c.statusOf('payouts')).toBe('covered')
+    expect(c.coverage.get('payouts')?.published).toContain('spaces/get-paid')
+    expect(c.coverage.get('billing')?.published).toContain('spaces/billing')
+    expect(c.coverage.get('billing')?.published).not.toContain('spaces/get-paid')
+  })
+
   it('the undocumented keys that remain are all secondary', async () => {
     // `core: false` IS the allowlist — one boolean per registry row, rather than a second list
     // that can drift away from it. Assert the two stay in sync.
