@@ -1,0 +1,73 @@
+# THROWAWAY CONTROL, not part of the product. Delete this file and its branch once read.
+#
+# It answers exactly one question, the one ADR-1346 (#2612) shipped WITHOUT a control run:
+#
+#   When a job's `needs:` dependency is SKIPPED (because that dependency's own `if:` was
+#   false), does a dependent job whose `if:` names a status function -- here
+#   `${{ !cancelled() && inputs.<flag> }}` -- still RUN, or does the skip propagate?
+#
+# It is the documented behaviour (a condition naming a status function replaces the implicit
+# `success()`), it parses, and scripts/e2e-preview-gate.test.ts pins it. But only a real run
+# measures it, and if it were WRONG the failure mode in e2e-manual.yml is a capture that
+# SILENTLY DOES NOT HAPPEN -- the invisible-regression class this repo keeps getting bitten by.
+#
+# The job names, the `needs:` chain and the `if:` expressions below are copied from
+# .github/workflows/e2e-manual.yml as merged in fc6f8ad29. Only the bodies differ: these echo
+# instead of capturing, so the control costs seconds and zero database load rather than a
+# 45-minute a11y capture against a project whose account hit its ceiling hours earlier.
+#
+# THE DISPATCH THAT MEASURES IT: update_baselines = false, update_a11y = true.
+#   PASS  -> smoke success, update-baselines skipped, update-a11y SUCCESS, visual skipped.
+#   FAIL  -> update-a11y also skipped, which means ADR-1346's chain silently drops captures
+#            and e2e-manual.yml needs `always() && ...` or a restructure.
+name: Control - skip propagation (throwaway)
+
+on:
+  workflow_dispatch:
+    inputs:
+      update_baselines:
+        description: mirrors e2e-manual.yml; leave OFF so this link SKIPS
+        type: boolean
+        default: false
+      update_a11y:
+        description: mirrors e2e-manual.yml; turn ON - this is the link under test
+        type: boolean
+        default: true
+      run_visual:
+        description: mirrors e2e-manual.yml
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: echo "smoke ran (no needs, no if - always runs, as in e2e-manual.yml)"
+
+  update-baselines:
+    runs-on: ubuntu-latest
+    needs: smoke
+    if: ${{ !cancelled() && inputs.update_baselines }}
+    timeout-minutes: 5
+    steps:
+      - run: echo "update-baselines ran - NOT expected on the measuring dispatch"
+
+  update-a11y:
+    runs-on: ubuntu-latest
+    needs: update-baselines
+    if: ${{ !cancelled() && inputs.update_a11y }}
+    timeout-minutes: 5
+    steps:
+      - run: echo "update-a11y RAN despite a skipped needs - the condition overrides skip propagation"
+
+  visual:
+    runs-on: ubuntu-latest
+    needs: update-a11y
+    if: ${{ !cancelled() && inputs.run_visual }}
+    timeout-minutes: 5
+    steps:
+      - run: echo "visual ran - NOT expected on the measuring dispatch"
