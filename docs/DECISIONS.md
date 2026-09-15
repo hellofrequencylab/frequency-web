@@ -40648,3 +40648,33 @@ manifest-derived; that is the debt ADR-1281 left open and this row did not claim
 sources are what the shadow test guards on every PR.
 
 **Rows.** LIVE-238 (done, this ADR).
+
+## ADR-1338: ACCEPTED — the PR size gate counts authored files, and a visual recapture no longer needs the [sweep] tag (2026-09-15)
+
+**Context.** The PR size gate in `.github/workflows/ci.yml` (docs/WORKFLOW.md: 40 files, [sweep] lifts
+it) read `github.event.pull_request.changed_files`, the API's total, because a depth-1 checkout has
+no merge base for `git diff`. The total cannot see WHAT the files are. A visual recapture writes
+60 to 90 PNGs under `test/e2e/__screenshots__/` plus the fingerprints stamp, all by a runner, so
+every PR that carried one tripped the gate on volume nobody authored: #2477 (87 files, 15 authored,
+HYG-072's own measurement), #2594 (91 files, 2 authored) and, on 2026-09-15, #2595 (84 files, 20
+authored) whose only sin was moving the words on two baselined marketing pages. The repo's answer
+was the [sweep] tag, which is defined as "single-purpose mechanical changes where every file takes
+the same one edit"; tagging a real change with it teaches that [sweep] means "big", the one thing the
+tag must not mean on a repo where merging deploys to production.
+
+**Decision.** The gate lists the PR's files through the REST API (paginated) and gates on the
+AUTHORED count: everything under `test/e2e/__screenshots__/` and `test/e2e/template-fingerprints.json`
+is runner output and is not counted. The 40 and 15 thresholds, the [sweep] lift and the wording are
+unchanged. The logic lives in `scripts/pr-size-gate.mjs` so it can be TESTED: `scripts/pr-size-gate.test.ts`
+is the control HYG-072 demanded before the gate is relied on, a 41-authored-file list that must fail
+and an 84-file recapture with 20 authored files that must pass, plus pagination and a 403 that must
+throw rather than count a partial list. The `checks` job gains `pull-requests: read` for the listing
+and nothing else. When the listing cannot be read the gate falls back to the API's total and prints a
+warning that says so: a fail-safe that fires silently is an invisible regression.
+
+**Consequences.** #2595 and #2597 (LIVE-230, LIVE-232), each a real change plus the recapture its
+template edit owed, pass the gate on their authored count and keep honest titles. [sweep] returns to
+meaning what docs/WORKFLOW.md says. The first live reading of the new gate is #2595's `checks` job
+after this lands. HYG-072 closes on this ADR.
+
+**Rows.** HYG-072 (done, this ADR).
