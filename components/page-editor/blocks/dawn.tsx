@@ -62,6 +62,13 @@ import { focalField, focalClass } from '@/lib/page-editor/image-controls'
 import { imgField } from '@/lib/page-editor/fields'
 import { cn } from '@/lib/utils'
 import type { LivePricing } from '@/lib/page-editor/live-pricing'
+// The ONLY runtime import this library takes from the pricing seam, and it is a LEAF: lib/pricing/
+// plan-story.ts imports nothing, so PlanBand's default kicker READS the approved plan argument
+// (ADR-916's rule) without pulling pricing-page.ts's nine-import chain into a module the page-editor
+// renderer reaches broadly. ADR-1363 rejected the derivation precisely because that chain could not be
+// priced before merging; ADR-1364 removed the chain rather than the rule. Import from './plan-story',
+// never from './pricing-page', or the trade comes back.
+import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import {
   accentize,
   toneField,
@@ -1632,8 +1639,11 @@ export const dawnComponents: Record<string, ComponentConfig> = {
       eyebrow: 'The plans',
       title: 'Pick the plan that fits.',
       titleAccent: '',
-      kicker:
-        'Two ladders. One for you as a member, one for the Space you run. Every rung on both sells, so a plan is never what turns selling on. You take one when money starts moving and you have a standing promise to keep.',
+      // The two-ladder setup is this block's OWN copy (it is what the band exists to say). The plan
+      // argument after it is not: it is PLAN_STORY.paidShort, read rather than typed, so a retired
+      // sentence can never sit here again the way ADR-1363 found one. Only the ", so " joint changed
+      // when the tail moved to the spine; the words are ADR-1363's, unaltered.
+      kicker: `Two ladders. One for you as a member, one for the Space you run. Every rung on both sells. ${PLAN_STORY.paidShort}`,
       plans: [
         {
           livePriceKey: 'member',

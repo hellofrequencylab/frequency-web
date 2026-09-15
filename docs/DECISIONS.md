@@ -43012,3 +43012,103 @@ any future block whose copy nobody has reviewed against this canon, which is a d
 decision.
 
 **Rows.** `LIVE-341` (done, this ADR).
+
+## ADR-1364: PLAN_STORY moves to a leaf module, so the derivation ADR-1363 refused costs nothing (2026-09-15)
+
+**Status.** Accepted. Closes `LIVE-342`. Does the `lib/pricing` refactor
+[ADR-1363](DECISIONS.md) named as the clean path and deliberately did not take, and takes the
+derivation that ADR rejected. It reverses nothing: ADR-1363's copy fix and its widened probe
+both stand, and this change moves no words.
+
+**Context.** ADR-1363 fixed a retired fee-ladder argument in
+`components/page-editor/blocks/dawn.tsx` at `PlanBand.defaultProps.kicker` by **rewriting the
+literal**, and it recorded, at length, that the elegant fix was the one it could not take:
+
+> the clean path is a leaf module holding `PLAN_STORY` with no imports of its own — a
+> `lib/pricing` refactor, and its own row.
+
+The house rule is READ, never typed ([ADR-916](DECISIONS.md), [ADR-1337](DECISIONS.md),
+[ADR-1350](DECISIONS.md)), and `PLAN_STORY.paid`'s own doc comment says *"Every surface
+interpolates this instead of arguing it again."* Four surfaces do. The block defaults could not,
+and the obstruction was the **artifact**, never the code:
+
+| | reading |
+|---|---|
+| `dawn.tsx` → pricing seam, before | one **type-only** import (`LivePricing`), which erases at compile |
+| `lib/pricing/pricing-page.ts` imports | **9** (`./gates`, `./beta`, `./pricing-grid`, `./feature-tiers`, `./plans`, `./defaults`, `./catalog-config`, `./loadout`, `@/lib/billing/pricing-keys`) |
+| who reaches `dawn.tsx` | the page-editor renderer, broadly |
+| gates that price a new runtime edge there | `check:build-budget`, `check:og-trace`, `check:shell-weight`, `check:build-fanout` |
+| where those gates run | **`postbuild` on Vercel only**, never in CI |
+
+So the cost of `import { PLAN_STORY } from '@/lib/pricing/pricing-page'` could not be measured
+before merging, and shipping an unmeasured fan-out change is the 2026-08-11 incident's shape
+([`docs/DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md), [ADR-1002](DECISIONS.md)). ADR-1363 was right to
+refuse the trade for an XS row.
+
+**Decision.**
+
+1. **`PLAN_STORY` moves to `lib/pricing/plan-story.ts`, which imports NOTHING.** Every doc comment
+   moves with it — they carry which ADR retired what, and why each sentence is worded as it is.
+   The module's own header states the constraint and why breaking it re-creates the problem: if a
+   sentence needs a figure, the **caller** interpolates it, because the caller already holds the
+   catalog. A price belongs to the catalog; an argument belongs here; the moment the two mix, the
+   module stops being free to import.
+2. **`pricing-page.ts` re-exports it**, so not one of the four surfaces changed. It keeps its own
+   `import` too, for the ladder summary's `PLAN_STORY.spine`.
+3. **`PlanBand.defaultProps.kicker` reads the constant.** The two-ladder setup stays a literal —
+   it is the band's own copy, and the reason the block exists — and the plan argument after it is
+   `PLAN_STORY.paidShort`.
+4. **`PLAN_STORY` gains one key, `paidShort`**: the `paid` argument in two short sentences instead
+   of three, for a surface with room for a line rather than a paragraph. Its value is **the exact
+   words ADR-1363 approved for that kicker**, moved rather than reworded, so the change that derives
+   the sentence moves no copy; only the `", so "` joint became a full stop. Interpolating `paid`
+   itself was measured and rejected: it triples an italic kicker that every sibling block keeps
+   under ~100 characters. A short form typed at the call site was rejected for the reason ADR-1350
+   exists — that is how eighteen surfaces each grew their own version of the long one. `CREW_NOTE`
+   already carries `fromLabel` beside `foundingLabel` on the identical reasoning.
+
+**The trade was removed, not taken.** This is the distinction worth carrying: ADR-1363's choice was
+between a measurable copy fix and an unmeasurable bundle risk, and it correctly took the first. The
+move does not accept the risk with better arguments — it deletes the thing that made the risk
+unmeasurable. A dependency-free module has no fan-out to price, so there is nothing for a
+`postbuild` gate to say about the new edge. **Where a rule and a gate disagree, the cheapest honest
+move is often to change the shape of the code until they no longer can.**
+
+**The guard.** `LIVE-342`'s probe measures the **consequence**, not the title: the leaf's import list
+is empty, `pricing-page.ts` re-exports and does not re-declare, and `dawn.tsx`'s edge lands on the
+leaf and never on `pricing-page.ts`. It fires in the direction that will actually happen — someone
+adds "just one import" to `plan-story.ts` for a figure, or repoints `dawn.tsx` at `pricing-page.ts`
+for a second constant — and either silently restores the unmeasurable risk. ✅ Each arm was proven
+to fire **alone**, by mutation on the real tree, and the whole probe exits 1 against `origin/main`.
+
+⚠️ **One arm was written wrong first, and the failure is the useful part.** The re-export check was
+`F.includes('./plan-story')`, which the file's own plain `import` satisfies — so deleting the
+re-export fired **nothing**. It is the shape-not-truth failure this repo names in four ADRs,
+reproduced while writing a guard *against* that failure, and it was caught only because every arm
+was mutation-tested rather than assumed. Both probes now pin the `export { PLAN_STORY } … from
+'./plan-story'` form. **Asserting a path appears is not asserting what the file does with it.**
+
+**`LIVE-253`'s probe follows the sentences.** Its three model-reason assertions read the leaf module
+now; `pricing-page.ts` **stays** in the corpus, because it still holds live copy (`PAID_WALL_COPY`,
+`TIER_CORE_INCLUDED`, the ladder summary) the idiom pass must keep walking. So the corpus goes
+9 files → **10**, not 9 → 9: a real new file joined and none left. Three assertions are new — the
+re-export, `dawn.tsx` reading `PLAN_STORY.paidShort`, and the derived tail pinned as a **literal**
+negative there, which is what "retyped instead of read" looks like in a diff. The literal pin is its
+own assertion rather than a 23rd `NEG` row, because that list carries one shared message ("still
+tells a reader a paid plan buys lower rates or higher caps") that would be **false** for it, and a
+misleading failure message is the defect `HYG-097` was filed for.
+
+**Consequences.** ✅ `LIVE-253` green across 10 files, 22 retired sentences, 21 idioms, 248
+assertions. ✅ `LIVE-342` green, each arm proven alone. ✅ No copy moved: the only string difference
+in the tree is one `", so "` becoming `". "`. ✅ Scope measured before widening, as ADR-1363
+measured its own: the only other plan-shaped string in `dawn.tsx` is the `ValueBand` principle card
+*"Zero percent on your own bookings, always, and taking money is never behind a plan. One price, no
+surprise invoices."* — on-model, and not the same sentence as any `PLAN_STORY` key, so it stays a
+literal. Deriving prose that merely agrees would make the constant a dumping ground.
+🔴 **Stated limit, and it is the whole point of the row:** CI cannot prove the artifact half. The
+gates that price fan-out run only in `postbuild` on Vercel, so **what `check:build-budget` and
+`check:shell-weight` print on this PR's own build is the verification**, and it is read before
+merging rather than after — the standing rule from [`AGENTS.md`](../AGENTS.md) that a gate which has
+never seen a real artifact is worse than no gate.
+
+**Rows.** `LIVE-342` (done, this ADR). `LIVE-253`'s probe widened; its `done` status is unchanged.

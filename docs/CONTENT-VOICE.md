@@ -66,8 +66,16 @@ one. [`CORE-MODEL.md`](CORE-MODEL.md) §1 and §2 are the live argument and it i
 join free, businesses host free, **you pay when you start charging**, because a plan is what the
 *repeat* runs on ([ADR-914](DECISIONS.md): never gate the transaction, gate the repeat). The rate and
 the meters are still stated, because both are true; neither is the reason. Write the reason from
-`PLAN_STORY.paid` in `lib/pricing/pricing-page.ts`, which every pricing surface interpolates, and
-never retype it.
+`PLAN_STORY.paid` in [`lib/pricing/plan-story.ts`](../lib/pricing/plan-story.ts), which every pricing
+surface interpolates, and never retype it. Use `PLAN_STORY.paidShort` where there is room for a line
+rather than a paragraph (a block kicker, a card footnote): it is the same argument in the same order,
+two sentences instead of three, and it exists so nobody writes their own short version.
+
+That module imports **nothing**, on purpose ([ADR-1364](DECISIONS.md)), so any surface can read the
+approved sentence at no bundle cost — including the page-editor **block defaults**, where a retired
+sentence is worse than on a static page because `defaultProps` seeds it into a new document every
+time an operator inserts the block ([ADR-1363](DECISIONS.md)). It used to live in
+`lib/pricing/pricing-page.ts`, whose nine imports made that derivation too expensive to take.
 
 ---
 
