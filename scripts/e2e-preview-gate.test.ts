@@ -324,3 +324,63 @@ describe('the maintainer capture waits its turn too', () => {
     for (const script of scripts) expect(script).toBe(scripts[0])
   })
 })
+
+// ── 🔴 A CAPTURE TAKEN INSIDE A 5xx WINDOW MAY NOT BE COMMITTED (LIVE-333, ADR-NNNN) ────────────
+//
+// The 2026-09-14 recapture (run 34909054841) photographed 89 PNGs while the REST edge answered 503
+// to 11,042 requests, PASSED, committed, merged as #2594, and the next three pr-compare runs failed
+// 62 public comparisons at 1 to 2 percent against baselines that depicted a degraded shell.
+//
+// The row that filed this assumed the step order already refused the commit — "the runner exits
+// non-zero before the commit step". IT DOES NOT, and the assertion below is why the row was wrong:
+// `update-baselines`' commit step is `if: always()`, deliberately (ADR-1273 — one flaky surface
+// must not discard the other captures), so a non-zero capture runs it anyway. The two cases are
+// told apart by a MARKER the capture writes, and this is the guard that notices the fail-safe
+// exists. Both assertions were watched go red with the defect put back.
+
+describe('the maintainer capture refuses to commit a degraded run', () => {
+  /** The `Commit baselines to the branch` step of one job, header and shell body. */
+  function commitStep(after: string): string {
+    const from = manual.indexOf(`\n  ${after}:\n`)
+    expect(from, `${after} is gone from e2e-manual.yml`).toBeGreaterThan(-1)
+    const start = manual.indexOf('      - name: Commit baselines to the branch', from)
+    expect(start, `${after} has no commit step`).toBeGreaterThan(-1)
+    const end = manual.indexOf('\n      - name: ', start + 10)
+    return manual.slice(start, end < 0 ? manual.length : end)
+  }
+
+  it('reads the refusal marker and EXITS NON-ZERO before it stages anything', () => {
+    const step = commitStep('update-baselines')
+    // The `always()` is still there and still right; this assertion pins the reason it is safe.
+    expect(step, "the always() this guard exists because of has gone — re-read LIVE-333").toContain(
+      'if: always()',
+    )
+    const marker = step.indexOf('test/e2e/.degraded-capture.jsonl')
+    const refuse = step.indexOf('exit 1')
+    const stage = step.indexOf('git add ')
+    expect(marker, 'the commit step does not look for a refused capture').toBeGreaterThan(-1)
+    // `-s`, not `-f`: an EMPTY marker is a clean run, and a capture that opened the file without
+    // refusing anything must not block a commit.
+    expect(step).toContain('if [ -s test/e2e/.degraded-capture.jsonl ]; then')
+    expect(refuse, 'a refused capture must exit non-zero').toBeGreaterThan(marker)
+    expect(stage, 'the refusal must come BEFORE git add, or a partial lands anyway').toBeGreaterThan(refuse)
+    // And it prints what it found: a run refused with "something failed" costs a whole dispatch.
+    expect(step).toContain('cat test/e2e/.degraded-capture.jsonl')
+  })
+
+  it('the a11y commit step is protected by step ORDER, so it must never gain always()', () => {
+    // The other half of the reading, and the honest part: this step needs no marker check because
+    // GitHub prepends an implicit success() to a step with no `if:`. Asserting the absence is what
+    // stops somebody "fixing" it into always() by symmetry with the job above.
+    const step = commitStep('update-a11y')
+    expect(step).not.toContain('if: always()')
+    expect(step.match(/^ {8}if: /m), 'the a11y commit step must stay unconditional').toBeNull()
+  })
+
+  it('the debug artifact carries the marker, which is the only place the URLs survive', () => {
+    const upload = manual.slice(manual.indexOf('      - name: Upload baselines (debug copy)'))
+    expect(upload.slice(0, 600)).toContain('test/e2e/.degraded-capture.jsonl')
+    // A dotfile needs this or upload-artifact silently drops it — a swallowed fail-safe.
+    expect(upload.slice(0, 600)).toContain('include-hidden-files: true')
+  })
+})

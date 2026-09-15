@@ -4,7 +4,7 @@
 //
 // Not a `*.spec.ts`, so Playwright's default testMatch never collects it as a test file.
 
-import { existsSync, readFileSync } from 'node:fs'
+import { appendFileSync, existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { BrowserContext, Locator, Page } from '@playwright/test'
 
@@ -1307,4 +1307,303 @@ export async function routerPrefetchRoute(route: RouterPrefetchRoute): Promise<v
 /** Install the refusal on a context. Every page the context opens inherits it. */
 export async function refuseRouterPrefetch(context: BrowserContext): Promise<void> {
   await context.route(isRscRequestUrl, routerPrefetchRoute)
+}
+
+/* ── THE CAPTURE REFUSES A DEGRADED DEPLOYMENT (LIVE-333, ADR-NNNN) ──────────────────────────── */
+
+/**
+ * A CAPTURE TAKEN INSIDE A 5xx WINDOW COMMITS THE WINDOW AS TRUTH.
+ *
+ * The incident, 2026-09-14. The recapture dispatched at 23:28Z (run 34909054841, against
+ * production) photographed 89 PNGs while the REST edge answered 503 to 11,042 requests between
+ * 23:33Z and 23:42Z — the ADR-1328 exhaustion shape, reproduced by this repo's own capture
+ * fan-out. The run PASSED. The runner committed the PNGs, the PR merged as #2594, and the next
+ * three `pr-compare` runs failed 62 public comparisons at 1 to 2 percent on every page and every
+ * mode, because the baselines they were measured against depicted a shell whose data reads had
+ * failed. Nothing failed at the point that mattered: the capture never looked at the responses the
+ * page received, and the commit step never asked whether the capture had been clean. ADR-1328
+ * wrote down that the fan-out causes the windows; nothing wrote down that a capture inside one
+ * writes the window into the repository, where it becomes the definition of correct.
+ *
+ * So: every response with status >= 500 that the page under test — or any of its RSC fetches,
+ * images, fonts, scripts or stylesheets — receives is RECORDED, and a surface that saw one is
+ * REFUSED with the URL and the status in the message instead of being photographed.
+ *
+ * ── WHERE THE IGNORABLE LINE IS DRAWN, AND WHY ───────────────────────────────────────────────
+ *
+ * DEFAULT-DENY. Any 5xx fails the capture unless its URL matches `TELEMETRY_5XX_IGNORED` below,
+ * which is a CLOSED, enumerated list of beacons that render nothing. The argument for that
+ * direction, rather than an allowlist of "requests that matter":
+ *
+ *   1. These surfaces are not open-internet pages. Everything the browser fetches on them is
+ *      either the app's own origin or one of three named third parties (`app/layout.tsx`:
+ *      Google Analytics and Vercel Web Analytics; `instrumentation-client.ts`: Sentry, and only
+ *      when a DSN is configured). The list of exceptions is short and it is knowable.
+ *   2. The failure modes are asymmetric. Default-ALLOW means every NEW data path — a new route
+ *      handler, a new RSC segment, a new `/_next/image` transform — is silently exempt until
+ *      somebody remembers to add it, which is this row's own defect wearing a fresh coat.
+ *      Default-DENY means one loud failure that PRINTS THE URL, and a one-line addition here
+ *      carrying its reason. ADR-970 warns that a gate which cannot fire honestly gets routed
+ *      around; that warning cuts toward default-deny when the noise is nameable and bounded,
+ *      which it is, because the message hands you the exact string to add.
+ *   3. Everything not on the list can change what the camera sees, including the things that
+ *      look harmless. A 500 from `/_next/image` freezes an empty box into a baseline and then
+ *      INVERTS the gate for that region — green while the image stays broken, red the day it
+ *      renders. That is not hypothetical; see the 🔴 note in `settle()` about
+ *      `spaces--dawn-dark-mobile.png`, one contiguous 421px band at identical dimensions.
+ *
+ * ── 🔴 WHAT THIS CANNOT SEE, SAID OUT LOUD ───────────────────────────────────────────────────
+ *
+ * This is a BROWSER-SIDE recorder, and the 5xx of 2026-09-14 were not browser-side: every one
+ * carried user agent `node` and no referer (ADR-1328), i.e. they were PostgREST answering the
+ * Next server, on a hop the browser never observes. This guard therefore catches the half of a
+ * degraded window that reaches the browser — a document or RSC fetch that 5xxes, a broken image
+ * transform — and it CANNOT catch a server read that failed and was softened into an empty list
+ * on the way out, because ADR-1339 makes softening the deliberate behaviour for a list reader and
+ * a softened read renders a 200. A page that renders its empty state over a failed read is
+ * pixel-different and HTTP-clean, and no `page.on('response')` in the world will say so.
+ *
+ * Do NOT close that half by failing on `incomplete`-shaped guesses, and do not read a green run
+ * here as "the deployment was healthy". It means the browser saw no server error. The other half
+ * is closed by not capturing inside a window at all, which is what the ADR-1331/ADR-1346
+ * turnstile and the `needs:` chain are for, and by the run-level marker below, which is what
+ * stops a partial capture being committed.
+ */
+
+/**
+ * The only 5xx that do not fail a capture: beacons whose response cannot change a pixel. Each
+ * entry names the file that puts it on the page and the reason it renders nothing.
+ *
+ * ⚠️ IT IS NOT A SUBSTRING LIST, and that is not fussiness. `entry.match` is compared against a
+ * PARSED URL: a `host` entry matches that host exactly or a true subdomain of it, and a `path`
+ * entry matches the pathname's prefix. A plain `url.includes('googletagmanager.com')` also ignores
+ * `https://googletagmanager.com.evil.test/x` and `https://cdn.example/?r=googletagmanager.com`,
+ * which is the incomplete-sanitisation pattern `assertNotProtectionWall` above already carries a
+ * note about — and this one would be worse, because the consequence is a SILENCED gate rather than
+ * a noisy one. The test beside this file drives that exact look-alike.
+ *
+ * ⚠️ Add to this ONLY for something that renders nothing. A masked element is NOT a reason — a
+ * mask paints over a box, and the box is still laid out by whatever did or did not load into it
+ * (see `settle()`). For a one-run reprieve use `PW_CAPTURE_ALLOW_5XX` instead of editing this.
+ */
+export const TELEMETRY_5XX_IGNORED: readonly {
+  readonly kind: 'host' | 'path'
+  readonly match: string
+  readonly why: string
+}[] = [
+  // app/layout.tsx → <Analytics /> from @vercel/analytics/next. SAME ORIGIN, so it is a path:
+  // no host list could express it, which is why this list has two kinds at all.
+  {
+    kind: 'path',
+    match: '/_vercel/insights/',
+    why: 'Vercel Web Analytics beacon (app/layout.tsx) — fire-and-forget, renders nothing.',
+  },
+  {
+    kind: 'path',
+    match: '/_vercel/speed-insights/',
+    why: 'Vercel Speed Insights beacon — same shape, same origin, renders nothing.',
+  },
+  // app/layout.tsx → <GoogleAnalytics /> (components/analytics/google-analytics.tsx).
+  {
+    kind: 'host',
+    match: 'googletagmanager.com',
+    why: 'The gtag loader (components/analytics/google-analytics.tsx) — a failed load leaves the page identical.',
+  },
+  {
+    kind: 'host',
+    match: 'google-analytics.com',
+    why: 'The GA collect beacon, regional hosts included (subdomains match) — a measurement of the page, never part of it.',
+  },
+  // instrumentation-client.ts, and only on a deploy that configures NEXT_PUBLIC_SENTRY_DSN.
+  {
+    kind: 'host',
+    match: 'ingest.sentry.io',
+    why: 'Sentry error transport (instrumentation-client.ts) — monitoring must not take down what it monitors, and it paints nothing.',
+  },
+  {
+    kind: 'host',
+    match: 'ingest.us.sentry.io',
+    why: 'The regional Sentry ingest host, same reason.',
+  },
+]
+
+/**
+ * Escape hatch, mirroring `PW_VISUAL_EXTRA_MASK` (see `envMaskSelectors`): quiet one URL for one
+ * run without waiting for a code change. `PW_CAPTURE_ALLOW_5XX="/embed/,partner.example"`.
+ *
+ * A plain substring here, unlike the list above, and deliberately: an operator typed this value
+ * for this run and it leaves no diff behind, so it cannot become a permanent hole the way a
+ * loose entry in the committed list would.
+ */
+function envAllowed5xx(): readonly string[] {
+  return (process.env.PW_CAPTURE_ALLOW_5XX ?? '')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+}
+
+/** Exact host, or a true subdomain of it. `evil.googletagmanager.com.test` is neither. */
+function hostMatches(host: string, match: string): boolean {
+  return host === match || host.endsWith(`.${match}`)
+}
+
+/** Is this URL on the telemetry list (or this run's env reprieve)? */
+export function isIgnorable5xx(url: string): boolean {
+  if (envAllowed5xx().some((match) => url.includes(match))) return true
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    // An unparseable URL is not a beacon we recognise, so it is NOT ignorable. Default-deny holds
+    // even when the input is malformed: the failure mode of guessing wrong here is a silent gate.
+    return false
+  }
+  return TELEMETRY_5XX_IGNORED.some((entry) =>
+    entry.kind === 'host'
+      ? hostMatches(parsed.host, entry.match)
+      : parsed.pathname.startsWith(entry.match),
+  )
+}
+
+/** One recorded server error. */
+export interface ServerError {
+  readonly url: string
+  readonly status: number
+  /** Playwright's own classification (`document`, `fetch`, `image`, `script`, …). Reported so a
+   *  reader can tell a failed RSC payload from a failed image without opening the URL. */
+  readonly resourceType: string
+}
+
+/** The slice of Playwright's `Response` this reads, so a vitest can script one without a browser. */
+export interface ObservedResponse {
+  url(): string
+  status(): number
+  request(): { resourceType(): string }
+}
+
+/**
+ * The VERDICT on one response, pure and browser-free: a `ServerError` when this response would
+ * make the capture a photograph of a degraded deployment, `null` otherwise.
+ */
+export function serverErrorFrom(response: ObservedResponse): ServerError | null {
+  const status = response.status()
+  if (status < 500) return null
+  const url = response.url()
+  if (isIgnorable5xx(url)) return null
+  let resourceType = 'unknown'
+  try {
+    resourceType = response.request().resourceType()
+  } catch {
+    // A fake, or a request Playwright has already disposed. The status and the URL are the
+    // load-bearing half of the message; never lose a refusal over the label on it.
+  }
+  return { url, status, resourceType }
+}
+
+/** What one capture saw. One per test, because one Playwright test captures one surface. */
+export interface ServerErrorLog {
+  readonly seen: ServerError[]
+}
+
+export function createServerErrorLog(): ServerErrorLog {
+  return { seen: [] }
+}
+
+/**
+ * Install the recorder on a context. Every page the context opens is covered, and so is every
+ * frame and every subresource — which is the point: `page.on('response')` on the main frame alone
+ * would miss the RSC fetches the row names.
+ *
+ * Synchronous, unlike `refuseRouterPrefetch`: `context.on` is not a protocol call.
+ */
+export function watchServerErrors(context: BrowserContext, log: ServerErrorLog): void {
+  context.on('response', (response) => {
+    try {
+      const error = serverErrorFrom(response)
+      if (error) log.seen.push(error)
+    } catch {
+      // A recorder that throws inside an event handler takes down the run it was meant to
+      // report on. Losing one reading is survivable; losing the suite is not.
+    }
+  })
+}
+
+/** At most this many distinct URL+status pairs are printed. A window produces thousands. */
+const MAX_SERVER_ERRORS_PRINTED = 10
+
+/** Where a refusal is recorded for the RUN, so the commit step in e2e-manual.yml can read it. */
+export const DEGRADED_CAPTURE_LOG = 'test/e2e/.degraded-capture.jsonl'
+
+/**
+ * The refusal message, or `null` when the capture was clean. Split from the throw so a vitest can
+ * read the message without catching, and so the same text serves the visual and a11y suites.
+ */
+export function serverErrorRefusal(log: ServerErrorLog, label: string): string | null {
+  if (log.seen.length === 0) return null
+  const byKey = new Map<string, ServerError>()
+  for (const error of log.seen) byKey.set(`${error.status} ${error.url}`, error)
+  const distinct = [...byKey.values()]
+  const printed = distinct.slice(0, MAX_SERVER_ERRORS_PRINTED)
+  return [
+    `REFUSING TO CAPTURE ${label}: the deployment answered ${log.seen.length} request(s) with a server error during this capture.`,
+    '',
+    ...printed.map((error) => `  · ${error.status}  ${error.url}  (${error.resourceType})`),
+    ...(distinct.length > printed.length
+      ? [`  … and ${distinct.length - printed.length} further distinct URL+status pair(s).`]
+      : []),
+    '',
+    'A capture taken inside a 5xx window photographs a degraded shell, and a COMMITTED baseline',
+    'then becomes the definition every later comparison is measured against. On 2026-09-14 that',
+    'cost 62 public comparisons failing at 1 to 2 percent across three runs (run 34909054841,',
+    '11,042 x 503 on /rest/v1/*, merged as #2594). Re-dispatch the capture against a healthy',
+    'deployment rather than re-running until it goes green.',
+    '',
+    'If one of the URLs above is telemetry that cannot change a pixel, add it to',
+    'TELEMETRY_5XX_IGNORED in test/e2e/surfaces.ts with the reason it renders nothing, or take a',
+    'one-run reprieve with PW_CAPTURE_ALLOW_5XX="<substring>".',
+  ].join('\n')
+}
+
+/** Record a refusal for the whole RUN. Append, not write: workers run in parallel. */
+function appendDegradedCapture(label: string, seen: readonly ServerError[]): void {
+  appendFileSync(
+    join(process.cwd(), ...DEGRADED_CAPTURE_LOG.split('/')),
+    JSON.stringify({ label, seen }) + '\n',
+  )
+}
+
+/**
+ * THE REFUSAL. Called by the visual suite immediately before the shutter and by the a11y suite
+ * immediately before axe runs — after `settle()`, so it sees everything the page fetched, and
+ * before anything is written, so a degraded surface leaves no PNG and no observation behind.
+ *
+ * It also lands a line in `DEGRADED_CAPTURE_LOG`, which is half (2) of the row: the
+ * `update-baselines` commit step reads that file and refuses to commit, because its `if: always()`
+ * means a non-zero capture does NOT stop it on its own (that `always()` is deliberate and right —
+ * ADR-1273, a single flaky surface must not discard the other captures — so the marker is what
+ * tells a run-wide degradation apart from one flake).
+ *
+ * `sink` is injectable so the vitest beside this file can drive the real refusal without writing
+ * into the repository.
+ */
+export function assertNoServerErrors(
+  log: ServerErrorLog,
+  label: string,
+  sink: (label: string, seen: readonly ServerError[]) => void = appendDegradedCapture,
+): void {
+  const refusal = serverErrorRefusal(log, label)
+  if (refusal === null) return
+  let sinkFailure = ''
+  try {
+    sink(label, log.seen)
+  } catch (cause) {
+    // Every fail-safe needs a gate that notices it fired (AGENTS.md), and that includes this
+    // one's own marker: if the file could not be written, the commit step will see a clean run,
+    // so say so in the message that IS going to be read.
+    sinkFailure =
+      `\n\n⚠️ ALSO: the run-level marker at ${DEGRADED_CAPTURE_LOG} could not be written ` +
+      `(${String(cause)}), so the commit step in e2e-manual.yml cannot see this refusal. ` +
+      `Do not commit the baselines this run produced.`
+  }
+  throw new Error(refusal + sinkFailure)
 }

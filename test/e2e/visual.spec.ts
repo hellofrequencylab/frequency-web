@@ -51,6 +51,7 @@ import {
   appSurfaces,
   applyRenderState,
   assertMemberSession,
+  assertNoServerErrors,
   assertNotProtectionWall,
   currentPathname,
   headerBandSurfaces,
@@ -61,6 +62,7 @@ import {
   publicSurfaces,
   settle,
   type RenderState,
+  type ServerErrorLog,
   type Surface,
 } from './surfaces'
 
@@ -72,6 +74,7 @@ async function capture(
   page: Page,
   surface: Surface,
   state: RenderState,
+  serverErrors: ServerErrorLog,
 ): Promise<void> {
   await applyRenderState(page, state)
   await page.goto(surface.path, { waitUntil: 'load' })
@@ -104,6 +107,13 @@ async function capture(
   // operatorLandedElsewhere: a missing baseline is a gap, a misattributed one gates everybody.
   const drifted = operatorLandedElsewhere(page, surface)
   if (drifted) test.skip(true, drifted)
+  // 🔴 AND: was the deployment HEALTHY while we were looking at it? (LIVE-333, ADR-NNNN.) The
+  // checks above ask whether this is the right page; this one asks whether the page's data reads
+  // worked. A capture taken inside the 2026-09-14 503 window was committed as the baseline and
+  // 62 public comparisons then failed against it at 1 to 2 percent. Last thing before the
+  // shutter, so it covers everything `settle()` waited for, and BEFORE it, so a degraded surface
+  // leaves no PNG behind — there is nothing to review in a photograph of an outage.
+  assertNoServerErrors(serverErrors, `${surface.path} [${state.id} · ${test.info().project.name}]`)
   // `viewportOnly` surfaces photograph the first screen. See the note on Surface.viewportOnly:
   // a full-page baseline of a live, shared stream measures WHEN it was taken, not how it looks.
   await expect(page).toHaveScreenshot(`${surface.slug}--${state.id}.png`, {
@@ -130,8 +140,8 @@ test.describe('visual', { tag: '@visual' }, () => {
   for (const state of PUBLIC_RENDER_STATES) {
     test.describe(state.id, () => {
       for (const surface of publicSurfaces()) {
-        test(`${surface.path} matches baseline`, async ({ page }) => {
-          await capture(page, surface, state)
+        test(`${surface.path} matches baseline`, async ({ page, serverErrors }) => {
+          await capture(page, surface, state, serverErrors)
         })
       }
     })
@@ -163,8 +173,8 @@ test.describe('visual · member shell', { tag: ['@visual', '@shell'] }, () => {
   for (const state of SHELL_RENDER_STATES) {
     test.describe(state.id, () => {
       for (const surface of appSurfaces()) {
-        test(`${surface.path} matches baseline`, async ({ page }) => {
-          await capture(page, surface, state)
+        test(`${surface.path} matches baseline`, async ({ page, serverErrors }) => {
+          await capture(page, surface, state, serverErrors)
         })
       }
     })
@@ -207,8 +217,8 @@ test.describe('visual · operator console', { tag: ['@visual', '@shell'] }, () =
   for (const state of SHELL_RENDER_STATES) {
     test.describe(state.id, () => {
       for (const surface of operatorSurfaces()) {
-        test(`${surface.path} matches baseline`, async ({ page }) => {
-          await capture(page, surface, state)
+        test(`${surface.path} matches baseline`, async ({ page, serverErrors }) => {
+          await capture(page, surface, state, serverErrors)
         })
       }
     })
@@ -240,8 +250,8 @@ test.describe('visual · header band', { tag: '@visual' }, () => {
   for (const state of PUBLIC_RENDER_STATES) {
     test.describe(state.id, () => {
       for (const surface of headerBandSurfaces()) {
-        test(`${surface.path} header band matches baseline`, async ({ page }) => {
-          await capture(page, surface, state)
+        test(`${surface.path} header band matches baseline`, async ({ page, serverErrors }) => {
+          await capture(page, surface, state, serverErrors)
         })
       }
     })

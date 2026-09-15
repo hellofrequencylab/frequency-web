@@ -622,6 +622,18 @@ jobs:
         # hand-off dead-ends. always(): a single flaky surface must not discard the
         # other captures — the job stays red on real failures, but partials still land.
         #
+        # 🔴 AND `always()` IS EXACTLY WHY THIS STEP NEEDS A GATE OF ITS OWN (LIVE-333, ADR-NNNN).
+        # The row that filed the degraded-capture guard assumed the step ORDER already refused a
+        # bad commit — "the runner exits non-zero before the commit step". It does not, and this
+        # `if: always()` is the line that says so: a non-zero `pnpm test:e2e:update` skips the
+        # fingerprint re-stamp above (no `always()` there) and then runs THIS step anyway. That
+        # is the right call for one flaky surface and the wrong one for a degraded deployment,
+        # where the whole run is suspect and the PNGs that DID land were taken at the edge of a
+        # 5xx window. So the two cases are told apart by a marker the capture writes: the
+        # refusal in `assertNoServerErrors` (test/e2e/surfaces.ts) appends one line per refused
+        # surface, and the shell below refuses the commit when that file is non-empty. Nothing
+        # else about this step changes, so a flake still lands its partials.
+        #
         # ⚠️ THIS COMMIT DOES NOT RE-TRIGGER CI. GitHub deliberately suppresses workflow
         # runs for pushes made with GITHUB_TOKEN, so the freshly captured baselines land on
         # the branch with ZERO checks against them and the PR's last judged SHA stays the
@@ -630,6 +642,17 @@ jobs:
         # (or re-run the PR's checks) to get the branch judged on what it now contains.
         if: always()
         run: |
+          # ── THE DEGRADED-CAPTURE REFUSAL (LIVE-333, ADR-NNNN) ───────────────────────────────
+          # One line per surface the capture refused because the deployment answered it with a
+          # 5xx. A non-empty file means the pictures this run took describe an outage, and
+          # committing them makes the outage the baseline every later comparison is measured
+          # against — which is what happened on 2026-09-14 (run 34909054841; 62 public
+          # comparisons then failed at 1 to 2 percent across three runs).
+          if [ -s test/e2e/.degraded-capture.jsonl ]; then
+            echo "::error title=degraded capture::The deployment answered a capture with a server error, so NOTHING is committed. Re-dispatch against a healthy deployment; the refused surfaces are listed below and the full capture is in the debug artifact."
+            cat test/e2e/.degraded-capture.jsonl
+            exit 1
+          fi
           git config user.email noreply@anthropic.com
           git config user.name Claude
           git add test/e2e/__screenshots__/ test/e2e/template-fingerprints.json
@@ -650,8 +673,13 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: visual-baselines
-          path: test/e2e/__screenshots__/
+          path: |
+            test/e2e/__screenshots__/
+            test/e2e/.degraded-capture.jsonl
           retention-days: 7
+          # The refusal marker is a dotfile, and it is the one file worth having when a capture
+          # was refused: the URLs and statuses the browser actually saw (LIVE-333).
+          include-hidden-files: true
 
   # The a11y ratchet's seed/re-freeze path (ADR-928). Same shape as update-baselines and for
   # the same reason: the numbers must come from a real deployment, and only the runner holds
@@ -844,6 +872,13 @@ jobs:
       - name: Merge into the ratchet
         run: pnpm a11y:baselines
       - name: Commit baselines to the branch
+        # 🔴 NO `always()` HERE, AND IT MUST STAY THAT WAY (LIVE-333, ADR-NNNN). GitHub prepends
+        # an implicit `success()` to a step with no `if:`, so a capture that refused a surface —
+        # a degraded deployment, an a11y regression, anything — stops this step and the numbers
+        # are never merged or pushed. That is the step ORDER doing the work the update-baselines
+        # job needs an explicit marker check for, because that job's commit step IS `always()`.
+        # Adding `always()` here would silently reopen the same hole.
+        #
         # Same GITHUB_TOKEN caveat as update-baselines above: this push does NOT re-trigger
         # CI, so the branch carries new baselines that nothing has been judged against.
         run: |

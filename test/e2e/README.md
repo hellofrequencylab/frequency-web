@@ -83,6 +83,56 @@ no browser, and pins that every spec imports the fixture. The before/after readi
 edge-log request count for the house profile during one run) is owed to the row's
 closing note.
 
+## A degraded deployment is refused, not photographed (LIVE-333)
+
+The same fixture records every response with status **500 or above** that the page under
+test — or any of its RSC fetches, images, fonts, scripts or stylesheets — receives, and a
+capture that saw one **fails that surface with the URL and the status in the message**
+rather than photographing it. `assertNoServerErrors` runs after `settle()` and before the
+shutter in the visual suite, and after `settle()` and before axe in the a11y suite.
+
+Why: on 2026-09-14 a recapture (run `34909054841`) took 89 PNGs while the REST edge
+answered `503` to 11,042 requests. The run passed, the runner committed the PNGs, and the
+next three `pr-compare` runs failed **62 public comparisons at 1 to 2 percent** on every
+page and mode, because the baselines depicted a shell whose data reads had failed
+([ADR-1328](../../docs/DECISIONS.md) wrote down that the capture fan-out causes those
+windows; ADR-NNNN writes down that a capture inside one commits the window as truth).
+
+| 5xx on | Verdict |
+| :--- | :--- |
+| the document, an RSC fetch, `/_next/image`, a font, a script, a stylesheet, an API route | **refuses** the surface |
+| `googletagmanager.com`, `google-analytics.com`, `ingest.sentry.io` (and subdomains) | ignored |
+| `/_vercel/insights/*`, `/_vercel/speed-insights/*` | ignored |
+| anything matching `PW_CAPTURE_ALLOW_5XX` | ignored for that run only |
+
+The line is **default-deny**: the ignored set is the closed, enumerated
+`TELEMETRY_5XX_IGNORED` list in `surfaces.ts`, matched against a **parsed** URL (host
+entries admit true subdomains and nothing else; path entries are prefixes), and everything
+else refuses. A beacon renders nothing; every other response can change what the camera
+sees, including the ones that look harmless — a 500 from `/_next/image` freezes an empty box
+into a baseline and inverts the gate for that region.
+
+🔴 **A green run here does not mean the deployment was healthy.** This recorder is
+browser-side, and the 2026-09-14 5xx were not: they carried user agent `node`, i.e.
+PostgREST answering the Next server on a hop the browser never sees. A server read that
+failed and was **softened** into an empty list ([ADR-1339](../../docs/DECISIONS.md) makes
+softening deliberate for a list reader) renders a 200 and is pixel-different, and no
+response listener can report it. That half is closed by not capturing inside a window at
+all — the turnstile and the `needs:` chain of [ADR-1346](../../docs/DECISIONS.md) — and by
+the commit refusal below.
+
+**Half two, the commit.** Each refusal appends a line to `test/e2e/.degraded-capture.jsonl`
+(gitignored, uploaded with the debug artifact). The `update-baselines` commit step reads
+that file and exits non-zero before it stages anything. That check is load-bearing rather
+than belt-and-braces: the step is `if: always()` on purpose (ADR-1273 — one flaky surface
+must not discard the other captures), so a non-zero capture does **not** stop it. The
+`update-a11y` commit step needs no marker because it carries no `if:` at all, and GitHub
+prepends an implicit `success()`; it must never gain `always()`.
+
+`server-errors.test.ts` drives the real fixture with a scripted 503 and asserts the
+refusal, plus the negative controls: a clean run passes, a telemetry 5xx passes, a
+look-alike host does not.
+
 ## The matrix
 
 `test/e2e/surfaces.ts` is the single registry both suites read.
@@ -307,6 +357,7 @@ ceiling carrying that reason.
 | `PW_ROOM_PATH` | no (**no default** — unset means no room surface) | The room surface to capture |
 | `PW_SPACE_SLUG` | no | Adds `/spaces/<slug>/manage` to the matrix |
 | `PW_VISUAL_EXTRA_MASK` | no | Extra mask selectors, comma-separated |
+| `PW_CAPTURE_ALLOW_5XX` | no | URL substrings whose 5xx does not refuse the capture, comma-separated (one-run reprieve) |
 | `PW_MEMBER_EMAIL` | to mint a session | The e2e member account (see below) |
 | `SUPABASE_SERVICE_ROLE_KEY` | to mint a session | Admin key, used only to mint |
 | `PW_REQUIRE_SHELL` | no | `1` makes an unphotographed shell a **failure** |

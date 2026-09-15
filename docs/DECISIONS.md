@@ -41475,3 +41475,137 @@ names that run as `capturing`. LIVE-332's CLOSED paragraph says both are outstan
 **Rows.** LIVE-332 (done, this ADR; its probe was a `grep-present` with an empty pattern and is
 now a `cmd` probe that reads the two mechanisms). LIVE-326 and LIVE-330 (done, unchanged; their
 probes read the PR half of the turnstile and still pass).
+
+## ADR-NNNN: ACCEPTED — a capture refuses a degraded deployment, and the ignorable 5xx is a closed list of beacons (2026-09-15)
+
+**Context.** ADR-1328 established that the "Supabase windows" of 2026-09-14 were this repo's own
+e2e fan-out, and ADR-1331/ADR-1346 stopped the captures overlapping. Neither wrote down what
+happens to a capture taken *inside* a window. On 2026-09-14 the recapture dispatched at 23:28Z
+(run `34909054841`, against production) photographed **89 PNGs while the REST edge answered `503`
+to 11,042 requests** between 23:33Z and 23:42Z. The run PASSED. The runner committed the PNGs,
+the PR merged as #2594, and the next three `pr-compare` runs failed **62 public comparisons at 1
+to 2 percent** on every page and every mode, because the baselines they were measured against
+depicted a shell whose data reads had failed. Lane V's clean recapture at 00:26Z superseded all
+62. Nothing failed at the point that mattered: the capture never read the responses the page
+received, and the commit step never asked whether the capture had been clean. A committed baseline
+is not a record — it is the *definition* every later comparison is measured against, so a bad one
+inverts the gate rather than merely dirtying it.
+
+**Two premises in the row were wrong, and both are worth recording.**
+
+1. *"The shared capture fixture in `test/e2e`"* — `fixtures.ts` is genuinely shared (LIVE-328
+   made every spec import its `test`), but the CAPTURE path is two functions, `capture()` in
+   `visual.spec.ts` and `open()` in `a11y.spec.ts`, over shared helpers in `surfaces.ts`. The
+   recorder therefore goes on the CONTEXT in the fixture, where no spec can forget it; the
+   refusal is called from both capture functions, where it can run before anything is written.
+2. *"The runner exits non-zero before the commit step, so the existing step order already does
+   this"* — **it does not.** `update-baselines`' commit step is `if: always()`, deliberately
+   (ADR-1273: one flaky surface must not discard the other captures). A non-zero capture skips
+   the fingerprint re-stamp, which has no `always()`, and then runs the commit anyway. The
+   `update-a11y` commit step *is* protected, by carrying no `if:` at all. So half (2) needed
+   real work, and the two cases had to be told apart rather than collapsed.
+
+**Decision.**
+
+- **The capture records every browser-visible 5xx and refuses the surface that saw one.**
+  `watchServerErrors(context, log)` listens on the BrowserContext's `response` event — context
+  and not page, so the RSC fetches, images, fonts, scripts and stylesheets of every frame are
+  covered, which is the clause that matters: an App Router page's data reads are separate
+  requests, and a guard reading only the navigation response would have passed the 2026-09-14
+  capture, because the shell rendered. `assertNoServerErrors` runs after `settle()` and before
+  the shutter (visual) / before axe (a11y), so it sees everything the page fetched and a refused
+  surface leaves no PNG and no a11y observation behind. The message carries the URL, the status
+  and Playwright's resource type, because a capture that fails with "a request failed" costs a
+  45-minute dispatch to diagnose.
+
+- **🔴 THE JUDGEMENT CALL, and the thing a future reader will want to revisit: the ignorable 5xx
+  is DEFAULT-DENY over a closed list of beacons.** Any 5xx refuses the capture unless its URL
+  matches `TELEMETRY_5XX_IGNORED` (`test/e2e/surfaces.ts`): the Vercel Web Analytics and Speed
+  Insights beacons by PATH (same origin, so no host list could express them), and
+  `googletagmanager.com`, `google-analytics.com` and the Sentry ingest hosts by HOST. Three
+  reasons for that direction rather than an allowlist of "requests that matter":
+  1. These surfaces are not open-internet pages. Everything the browser fetches is the app's own
+     origin or one of three named third parties (`app/layout.tsx`, `instrumentation-client.ts`).
+     The exception list is short and knowable.
+  2. The failure modes are asymmetric. Default-allow exempts every NEW data path — a new route
+     handler, a new RSC segment, a new image transform — until somebody remembers to add it,
+     which is this row's own defect in a fresh coat. Default-deny costs one loud failure that
+     PRINTS THE URL and a one-line addition carrying its reason. ADR-970 warns that a gate which
+     cannot fire honestly gets routed around; that cuts toward default-deny when the noise is
+     nameable and bounded, and here the message hands you the exact string to add.
+  3. Everything off the list can change what the camera sees. A 500 from `/_next/image` freezes
+     an empty box into a baseline and then INVERTS the gate for that region — green while the
+     image stays broken, red the day it renders. That is the measured
+     `spaces--dawn-dark-mobile.png` defect in `settle()`'s note, not a hypothetical.
+  **Matched on a PARSED URL, not a substring**, and the first draft got this wrong: its own unit
+  test caught `https://googletagmanager.com.evil.test/x` being ignored by
+  `url.includes('googletagmanager.com')`. Host entries admit the host and true subdomains (so the
+  regional GA and Sentry hosts still pass) and nothing else; path entries are pathname prefixes.
+  This is the incomplete-sanitisation pattern `assertNotProtectionWall` already carries a note
+  about, and it is worse here, because the consequence is a SILENCED gate rather than a noisy one.
+  An unparseable URL is not ignorable — default-deny holds on malformed input.
+  The one-run reprieve is `PW_CAPTURE_ALLOW_5XX`, a plain substring, mirroring
+  `PW_VISUAL_EXTRA_MASK`: an operator typed it for one run and it leaves no diff, so it cannot
+  become a permanent hole the way a loose committed entry would. A MASK is explicitly **not** a
+  reason to add a permanent entry — a mask paints over a box, and the box is still laid out by
+  whatever did or did not load into it.
+
+- **The commit refuses a degraded run, and only a degraded run.** Each refusal appends a line to
+  `test/e2e/.degraded-capture.jsonl` (gitignored; uploaded with the debug artifact, with
+  `include-hidden-files: true` so the dotfile is not silently dropped). The `update-baselines`
+  commit step reads that file with `-s` and exits non-zero **before `git add`**. `if: always()`
+  stays, so one flaky surface still lands its partials; a run-wide degradation lands nothing,
+  because when the deployment was sick there is no way to know which of the PNGs that *did* land
+  were taken at the healthy edge of the window. The `update-a11y` commit step gains a 🔴 comment
+  saying it is protected by step order and must never gain `always()`.
+
+- **🔴 WHAT THIS CANNOT SEE, RECORDED AS PART OF THE DECISION.** This is a browser-side recorder
+  and the 2026-09-14 5xx were not browser-side: every one carried user agent `node` and no
+  referer (ADR-1328), i.e. PostgREST answering the Next server on a hop the browser never
+  observes. **It is therefore NOT claimed that this guard would have failed that run.** It closes
+  the half that reaches the browser (a document or RSC fetch that 5xxes, a broken image
+  transform). A server read that failed and was SOFTENED into an empty list renders a 200, and
+  ADR-1339 makes softening the deliberate behaviour for a list reader on a crawlable surface, so
+  a page rendering its empty state over a failed read is pixel-different and HTTP-clean. No
+  response listener can report that, and the honest thing is to say so in the code, the README and
+  here rather than let a green run read as "the deployment was healthy". The other half is closed
+  by not capturing inside a window at all (ADR-1331, ADR-1346) and by the commit refusal above.
+
+- **Scope held deliberately.** The guard covers the visual and a11y captures, which are the two
+  paths that WRITE a record (a PNG, a ratchet number). `smoke.spec.ts` already asserts
+  `response.ok()` on each document it visits, and `overflow.spec.ts` measures rather than records.
+  Neither was changed.
+
+**Proof.** `test/e2e/server-errors.test.ts`: 15 vitest cases driving the real recorder and the
+real refusal with scripted responses — a 503 on an RSC URL refusing with the URL and status in the
+message; the run-level marker being written; the marker's own write failure being reported LOUDLY
+in the same message (AGENTS.md: every fail-safe needs a gate that notices it fired, including this
+one's); all six resource types refusing; every 5xx status refusing and 200/301/400/401/403/404/429
+not; and the negative controls — a clean run, the five real beacons, the look-alike hosts, the env
+reprieve, a disposed request, and a 400-response window printing a bounded, deduplicated message.
+`scripts/e2e-preview-gate.test.ts` gained 3 assertions on the workflow shape (the marker read
+before `git add`, the `always()` still present and now safe, the a11y step still unconditional,
+the marker in the artifact) and runs 21 cases in total. The row's probe was rewritten from a
+`grep` for the string `status() >= 500` — which passes from a comment — to 21 consequence
+assertions plus a spawned run of the unit test; it fails on `origin/main` copies of the five files
+("test/e2e/surfaces.ts installs no response recorder") and passes here, and **20 single mutations
+of the finished tree were each detected**, including three that only move the guard (after the
+shutter, before `settle()` in either suite) and one that deletes the unit test, which reports a
+missing path rather than crashing with `ENOENT`.
+
+**Consequences.** A capture against a sick deployment now costs a red job and a re-dispatch
+instead of a merged baseline and three red PR runs. A new third party that 5xxes will fail a
+capture once, loudly, and cost one line in `TELEMETRY_5XX_IGNORED` with its reason — that is the
+accepted price of the default-deny direction, and the message is written to make the fix obvious.
+A masked third-party embed that 5xxes will also fail, and the remedy is `PW_CAPTURE_ALLOW_5XX` for
+the run, not a permanent entry. **Still owed, and it is a reading rather than work:** a
+`workflow_dispatch` of `e2e-manual.yml` on this branch with `update_baselines` ON against a
+HEALTHY preview, which is the control proving the marker check is a no-op on a clean run — green
+means the "Commit baselines to the branch" step printed no `::error title=degraded capture`, found
+no marker, and committed as it always did. The refusal path itself cannot be dispatched honestly
+(it needs a degraded deployment), which is precisely why it is driven by the unit test instead.
+
+**Rows.** LIVE-333 (done). LIVE-328 remains owed its before/after edge-log reading — note that
+this recorder does **not** serve it: LIVE-328 needs the REQUEST COUNT for the house profile read
+from the project's edge logs, and this log counts only browser-visible 5xx. The row's sentence
+"the same recorder is what LIVE-328's measurement reads" was wrong when it was written.
