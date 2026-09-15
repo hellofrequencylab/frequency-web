@@ -22,6 +22,8 @@ import { computeBookingRefundCents } from './cancellation'
 import { canTakePayments } from './selling'
 import { getVariantsByIds } from './variants'
 import { effectiveVariantPriceCents, effectiveVariantStock } from './types'
+import { receiptEmailFor } from '@/lib/billing/receipt-address'
+import { sendOrderReceipts } from './order-receipt'
 import type { CheckoutInput, CommerceVariant, ServiceConfig } from './types'
 
 function db(): SupabaseClient {
@@ -251,6 +253,12 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
     return { error: CHECKOUT_START_FAILED }
   }
 
+  // Stripe's own receipt, as a backstop (LIVE-344). The first-party order receipt is what a buyer is
+  // meant to read (lib/commerce/order-receipt.ts); this is what still reaches them when that message
+  // cannot be composed. Best-effort by construction: an unresolvable address omits the field and
+  // never refuses a checkout.
+  const receiptEmail = await receiptEmailFor(input.buyerProfileId)
+
   let session: Stripe.Checkout.Session
   try {
     session = await stripe.checkout.sessions.create({
@@ -263,16 +271,21 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
           product_data: { name: l.title },
         },
       })),
-      ...(charge.sellerStripeAccountId
-        ? {
-            payment_intent_data: {
+      // payment_intent_data is now UNCONDITIONAL, because `receipt_email` belongs on it and a
+      // PLATFORM (first-party Frequency Store) order has no connected account to carry it. The
+      // Connect fields stay conditional exactly as before: a platform charge sets no application
+      // fee, no transfer and no on_behalf_of.
+      payment_intent_data: {
+        ...(charge.sellerStripeAccountId
+          ? {
               application_fee_amount: charge.platformFeeCents,
               transfer_data: { destination: charge.sellerStripeAccountId },
               on_behalf_of: charge.sellerStripeAccountId,
-              metadata: { kind: 'commerce_order', buyer_profile_id: input.buyerProfileId, order_id: orderId },
-            },
-          }
-        : {}),
+            }
+          : {}),
+        ...(receiptEmail ? { receipt_email: receiptEmail } : {}),
+        metadata: { kind: 'commerce_order', buyer_profile_id: input.buyerProfileId, order_id: orderId },
+      },
       client_reference_id: input.buyerProfileId,
       metadata: { kind: 'commerce_order', buyer_profile_id: input.buyerProfileId, order_id: orderId },
       success_url: `${appUrl()}/orders?ok=1&session_id={CHECKOUT_SESSION_ID}`,
@@ -341,10 +354,17 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     .update({ status: 'paid', paid_at: new Date().toISOString(), stripe_payment_intent_id: paymentIntentId })
     .eq('stripe_checkout_session_id', session.id)
     .eq('status', 'pending')
-    .select('id, owner_kind, entity_id, amount_cents, platform_fee_cents, buyer_profile_id, currency')
+    // owner_profile_id / owner_space_id ride along for the SELLER's notice (LIVE-344): the row already
+    // knows who the money went to, and re-reading the product to find out would be a second read of a
+    // fact this update is holding.
+    // ONE LITERAL, not a concatenation: the generated PostgREST types parse this string, and a built
+    // one widens to `string` and types the result as GenericStringError[].
+    .select('id, owner_kind, owner_profile_id, owner_space_id, entity_id, amount_cents, platform_fee_cents, buyer_profile_id, currency')
   const rows = (updated ?? []) as {
     id: string
     owner_kind: 'platform' | 'profile' | 'space'
+    owner_profile_id: string | null
+    owner_space_id: string | null
     entity_id: string
     amount_cents: number
     platform_fee_cents: number
@@ -382,6 +402,22 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     // Bookable services (Phase 4, ADR-596): if this order paid the deposit on a held booking, confirm
     // it. No-op / fail-soft for a normal product order (no linked booking) and pre-migration.
     await confirmBookingByOrder(row.id)
+
+    // TELL THE TWO PEOPLE IN THE ORDER (LIVE-344). Runs once per row THIS delivery flipped, so a
+    // redelivered webhook flips nothing and sends nothing. Fire-and-forget beside the ledger append,
+    // for the same reason: the money has moved, and a failed message must never 500 a settled payment
+    // into a redelivery loop. The module logs every miss for itself.
+    await sendOrderReceipts({
+      id: row.id,
+      ownerKind: row.owner_kind,
+      ownerProfileId: row.owner_profile_id,
+      ownerSpaceId: row.owner_space_id,
+      buyerProfileId: row.buyer_profile_id,
+      amountCents: row.amount_cents,
+      currency: row.currency,
+      // The address Stripe collected is the only way to reach a buyer with no account.
+      buyerEmail: session.customer_details?.email ?? null,
+    }).catch(() => {})
   }
 }
 

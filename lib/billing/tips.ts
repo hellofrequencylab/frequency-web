@@ -28,6 +28,8 @@ import { getConnectStatus, payoutsLive } from './connect'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction, ENTITY_ID } from '@/lib/finance/record'
 import { notifyTipRecipient } from './tips-notify'
+import { sendTipperReceipt } from './tip-receipt'
+import { receiptEmailFor } from './receipt-address'
 
 // The amounts live in ./tips-core (dependency-free) so client components can read them
 // without dragging this module's admin client + Stripe SDK into the browser (LIVE-037).
@@ -87,6 +89,10 @@ export async function createTipCheckout(opts: {
   const fee = 0
   const message = opts.message?.trim().slice(0, 280) || null
 
+  // Stripe's own receipt, as a backstop (LIVE-344). The tipper's first-party record is
+  // ./tip-receipt.ts; this is what still arrives when that cannot be composed.
+  const tipperReceiptEmail = await receiptEmailFor(opts.fromProfileId)
+
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
     line_items: [
@@ -103,6 +109,7 @@ export async function createTipCheckout(opts: {
     payment_intent_data: {
       application_fee_amount: fee,
       transfer_data: { destination: status.accountId },
+      ...(tipperReceiptEmail ? { receipt_email: tipperReceiptEmail } : {}),
       metadata: { kind: 'tip', from_profile_id: opts.fromProfileId, to_profile_id: opts.toProfileId },
     },
     metadata: { kind: 'tip', from_profile_id: opts.fromProfileId, to_profile_id: opts.toProfileId },
@@ -166,6 +173,11 @@ export async function recordTipFromSession(session: Stripe.Checkout.Session): Pr
     // 2026-09-05 (scan2 L9-05): tell the recipient. Runs once per flipped row, so a redelivered
     // event (zero rows flipped) never notifies twice. Best-effort like the ledger append below.
     await notifyTipRecipient(row).catch(() => {})
+    // LIVE-344: tell the person whose card was charged. The recipient's half above shipped on
+    // 2026-09-05 and the TIPPER's did not, which is the wrong half to have: a tip has no order, no
+    // ticket and no membership behind it, so this message is the payer's only possible record. Same
+    // once-per-flipped-row contract, same best-effort handling, and ./tip-receipt.ts logs its misses.
+    await sendTipperReceipt(row).catch(() => {})
     // A tip is a Connect destination charge — the gross transfers to the recipient; the
     // entity's (Labs, for-profit) revenue is the platform application fee. Idempotent per
     // tip; best-effort so a ledger hiccup never fails the webhook.

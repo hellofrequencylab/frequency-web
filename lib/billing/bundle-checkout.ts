@@ -20,6 +20,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { bundleSellable, getHouseholdBundle } from '@/lib/pricing/settings'
 import { householdBundlePriceKey } from '@/lib/pricing/bundle'
 import { resolveStripePriceId } from './pricing-prices'
+import { receiptEmailFor } from './receipt-address'
 import { BUNDLE_KIND, BUNDLE_SEAT_IDS_KEY, bundleRoster } from './bundle-seats'
 import type { BillingPeriod } from './pricing-keys'
 
@@ -100,10 +101,15 @@ export async function createBundleCheckout(opts: {
     bundle_tier: config.tier,
     ...(seatList ? { [BUNDLE_SEAT_IDS_KEY]: seatList } : {}),
   }
+  // STRIPE'S OWN RECEIPT, AS A BACKSTOP (LIVE-344). A subscription takes no `receipt_email` (it is a
+  // payment-intent parameter), so the CUSTOMER's address is the equivalent: it is where every invoice
+  // receipt goes. The caller's `email` is whatever the surface happened to hold, so fall back to the
+  // buyer's proven account address rather than minting a customer Stripe can never write to.
+  const receiptEmail = opts.email ?? (await receiptEmailFor(opts.profileId))
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
-    ...(customer ? { customer } : { customer_email: opts.email ?? undefined }),
+    ...(customer ? { customer } : { customer_email: receiptEmail ?? undefined }),
     client_reference_id: opts.profileId,
     metadata,
     // The SUBSCRIPTION carries the same metadata, because seating runs off the subscription events
