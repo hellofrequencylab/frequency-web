@@ -6,7 +6,7 @@
 
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { Locator, Page } from '@playwright/test'
+import type { BrowserContext, Locator, Page } from '@playwright/test'
 
 /* ── The four render states ────────────────────────────────────────────────────
    app/globals.css defines TWO orthogonal axes:
@@ -1217,4 +1217,79 @@ export function currentPathname(page: Page): string {
   } catch {
     return ''
   }
+}
+
+/* ── Router prefetches ────────────────────────────────────────────────────── */
+
+/**
+ * THE CAPTURE REFUSES ROUTER PREFETCHES (LIVE-328, out of ADR-1328).
+ *
+ * Every `<Link>` that scrolls into view on a production build asks the server for the RSC
+ * payload of the route it points at, with `Next-Router-Prefetch: 1` on the request. On a member
+ * page that is every link in the rail, the dock and the tab bar, and each one is a full server
+ * render of a signed-in route: its own `/auth/v1/user` and the fifteen to twenty PostgREST reads
+ * the app shell makes. The 2026-09-14 edge logs put the house profile's reads at 1,200 to 2,900
+ * per table per fifteen minutes during the e2e runs, and the 5xx that followed were ours. A
+ * capture never navigates by clicking a link (`page.goto` issues a document request, and the
+ * overflow gate opens buttons only), so nothing here reads the cache those prefetches would fill.
+ *
+ * HOW A PREFETCH IS TOLD FROM A NAVIGATION, read from next/dist/client/components:
+ *   · `app-router-headers.js` names the headers: `rsc` on every RSC fetch, `next-router-prefetch`
+ *     ('1', or '2' / '3' for the segment cache's tiers) on a prefetch, and
+ *     `next-router-segment-prefetch` beside it when the segment cache asks for one segment.
+ *   · `router-reducer/fetch-server-response.js` `createFetch()` appends `_rsc=<hash>` to EVERY RSC
+ *     fetch, prefetch and navigation alike (`setCacheBustingSearchParam`). So `_rsc` marks an RSC
+ *     request, not a prefetch: it is the cheap URL selector that keeps the interception off every
+ *     image and script, and the HEADER is the decision. Refusing on `_rsc` alone would refuse the
+ *     soft navigation a `router.push` issues, which is the one thing the row says to let through.
+ *
+ * WHY FULFIL A 204 RATHER THAN ABORT. `route.abort()` makes Chromium print
+ * `Failed to load resource: net::ERR_FAILED` to the console, and the classic prefetch path logs
+ * `Failed to fetch RSC payload ... Falling back to browser navigation` on a rejected fetch.
+ * `smoke.spec.ts` counts console errors on `/`, so an abort would fail the smoke run on noise the
+ * fixture itself made. An empty 2xx with no content type is silent on both of Next's paths: the
+ * segment cache's `fetchPrefetchResponse` returns null on a non-flight content type, and the
+ * classic path returns its MPA fallback on `!res.body`. Either way the prefetch is a miss, a later
+ * link click would issue a real navigation request, and the server never rendered anything.
+ */
+const ROUTER_PREFETCH_HEADERS: readonly string[] = ['next-router-prefetch', 'next-router-segment-prefetch']
+
+/** The query Next puts on every RSC fetch (`NEXT_RSC_UNION_QUERY`). A selector, never a verdict. */
+const RSC_QUERY = '_rsc'
+
+/** The slice of Playwright's `Route` the handler reads, so a vitest can fake one without a browser. */
+export interface RouterPrefetchRoute {
+  request(): { url(): string; headers(): Record<string, string> }
+  fulfill(response: { status: number; headers?: Record<string, string> }): Promise<void>
+  fallback(): Promise<void>
+}
+
+/** Is this URL an RSC fetch at all? Only these are worth pausing to read the headers of. */
+export function isRscRequestUrl(url: URL): boolean {
+  return url.searchParams.has(RSC_QUERY)
+}
+
+/** Is this request a router PREFETCH, as opposed to the fetch a navigation issues? Header names
+ *  are compared case-insensitively; Playwright lower-cases them, a fake might not. */
+export function isRouterPrefetch(request: { headers(): Record<string, string> }): boolean {
+  const headers = request.headers()
+  return Object.keys(headers).some((name) => ROUTER_PREFETCH_HEADERS.includes(name.toLowerCase()))
+}
+
+/**
+ * The route handler: a prefetch gets an empty 204 and never leaves the browser; anything else
+ * falls through to the next handler, or to the network. Exported so the vitest beside this file
+ * can prove both branches on a fake route.
+ */
+export async function routerPrefetchRoute(route: RouterPrefetchRoute): Promise<void> {
+  if (isRouterPrefetch(route.request())) {
+    await route.fulfill({ status: 204 })
+    return
+  }
+  await route.fallback()
+}
+
+/** Install the refusal on a context. Every page the context opens inherits it. */
+export async function refuseRouterPrefetch(context: BrowserContext): Promise<void> {
+  await context.route(isRscRequestUrl, routerPrefetchRoute)
 }

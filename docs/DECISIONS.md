@@ -40807,3 +40807,65 @@ the moment the edge answers. The six reads outside the `sectionRead` chain (`get
 named here rather than fixed; they are outside the row's eight files.
 
 **Rows.** LIVE-331 closed.
+
+## ADR-1340: the e2e capture refuses router prefetches with an empty 204, keyed on the header and not the _rsc query (2026-09-15)
+
+**Context.** ADR-1328 read the 2026-09-14 edge logs and found the day's two "Supabase windows"
+were the build loop's own e2e runs: every signed-in capture surface issued one server render for
+the page and one more for every link in its shell, because a production `<Link>` prefetches the
+RSC payload of its target when it scrolls into view, and on a member page that is the rail, the
+dock and the tab bar. Each prefetch is a full render of a signed-in route: its own `/auth/v1/user`
+and the fifteen to twenty PostgREST reads the shell makes, 1,200 to 2,900 per table per fifteen
+minutes for the house profile alone. ADR-1328 serialised the runs (LIVE-326, then ADR-1331's
+turnstile) and filed LIVE-328 for the multiplier inside one run: the capture should refuse
+prefetch requests, since it never navigates by clicking a link. Re-tested before building:
+nothing under `test/e2e/` routed or aborted any request; every spec reaches its surface with
+`page.goto`, a document request; `overflow.spec.ts` opens buttons only ("a link navigates, and
+this must not wander off the surface under test"). The premise held.
+
+One part of the row did not survive reading Next 16.3.4's client. It said to refuse "the `_rsc`
+prefetch query on older shapes". `_rsc` is `NEXT_RSC_UNION_QUERY`, and
+`router-reducer/fetch-server-response.js` `createFetch()` appends it to EVERY RSC fetch through
+`setCacheBustingSearchParam`, navigation and prefetch alike. Refusing on it would refuse the fetch
+a `router.push` issues, which is the one request the row says to let through. The prefetch is
+named by its headers: `next-router-prefetch` (`1`, or `2` / `3` for the segment cache's tiers)
+and, when the segment cache asks for one segment, `next-router-segment-prefetch` beside it
+(`app-router-headers.js`, `segment-cache/cache.js`).
+
+**Decision.**
+
+- **One `test` for every spec.** `test/e2e/fixtures.ts` exports Playwright's `test` with a
+  single override: the built-in `context` fixture is wrapped, not replaced, and
+  `refuseRouterPrefetch(context)` runs on it before the test gets it, so `test.use({ storageState })`
+  in the shell describes still mints the signed-in context it always did. `smoke`, `a11y`,
+  `overflow` and `visual` import `test` from it; `router-prefetch.test.ts` pins by source shape that
+  no spec takes a value import of `test` from `@playwright/test`, since a spec that did would
+  bypass the refusal in silence.
+- **The `_rsc` query selects, the header decides.** `context.route(isRscRequestUrl, routerPrefetchRoute)`:
+  only URLs carrying `_rsc` are paused at all (so images, scripts and the document are never
+  intercepted), and of those, only a request with `next-router-prefetch` or
+  `next-router-segment-prefetch` is refused. Everything else calls `route.fallback()`.
+- **Fulfilled with an empty 204, not aborted.** `route.abort()` makes Chromium print
+  `Failed to load resource: net::ERR_FAILED` to the console, and Next's classic prefetch path
+  logs `Failed to fetch RSC payload` on a rejected fetch; `smoke.spec.ts` counts console errors on
+  `/`, so an abort would fail the smoke run on noise the fixture made. An empty 2xx with no content
+  type is silent on both of Next's paths (`fetchPrefetchResponse` returns null on a non-flight
+  content type; the classic path returns its MPA fallback on `!res.body`). The server renders
+  nothing, and a later link click would issue a real navigation request.
+- **Proven without a browser.** `test/e2e/router-prefetch.test.ts` runs under vitest: the selector
+  on `_rsc` URLs and non-RSC URLs, the verdict on each header shape and on a navigation's headers,
+  the handler fulfilling a prefetch with 204 and falling through on a navigation of the same URL,
+  the 2xx invariant, and the wiring. LIVE-328's probe reads the same consequences from the tree.
+
+**Consequences.** A signed-in capture surface costs the server one render instead of one plus
+every link in its shell. The number that says how much is NOT in this ADR, and is owed: the
+edge-log request count for the house profile (`78d47bae`) during ONE `pr-compare` run, read before
+and after this change on the same preview, the way ADR-1328 read the day. The coordinator takes
+that reading on the first run after merge and writes it into LIVE-328's closing note; until then
+the reduction is reasoned, not measured. What does not change: the pages photographed. No spec
+navigates from a page, so no prefetched router cache was ever read, and the pixels and the axe
+counts are those of the same first render. Local runs against a dev server are unaffected in
+practice: prefetching is production-only, so the route simply never matches there.
+
+**Rows.** LIVE-328 (done, this ADR). LIVE-326 and LIVE-330 (done; the serialisation this
+multiplier sits inside).

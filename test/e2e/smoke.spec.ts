@@ -2,7 +2,7 @@
 // preview or local dev server) via PW_BASE_URL — nothing is mocked. The whole
 // file skips itself when PW_BASE_URL is unset so listing/CI collection never
 // fails.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 const baseURL = process.env.PW_BASE_URL;
 
