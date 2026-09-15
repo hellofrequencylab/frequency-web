@@ -68,51 +68,16 @@ export const MIN_RPC_CALLS = 60
  *  `kind` is optional (matches any). An entry that matches nothing fails the guard. */
 /** @type {{ file: string, table: string, column?: string | null, kind?: string | null, added: string, reason: string, owner: string }[]} */
 export const ALLOWLIST = [
-  // EMPTY on 2026-09-14 (HYG-087). The four entries this carried all said the same thing, "the
-  // migration is applied and lib/database.types.ts has not been regenerated": convert_signup_leads_for_me
-  // (rpc, 20270345003300), event_tickets.guest_email (an update in lib/billing/tickets.ts and a select
-  // in lib/events/cancellation.ts, 20270345003400) and claim_guest_tickets (rpc, same migration). The
-  // types were regenerated from the live project in that change, so the contract reads the real
-  // column and the real functions, and the entries had to go with them: a stale entry fails the guard.
+  // EMPTY again on 2026-09-15. The twelve entries this carried were all the same claim in two
+  // shapes: three benefit tables (space_member_benefits, space_tier_benefits,
+  // space_benefit_redemptions, migration 20270345004800) and three sales-window columns on
+  // event_ticket_types across three files (migration 20270345004900). Both migrations are applied
+  // and lib/database.types.ts was regenerated from the live project, so the contract now reads the
+  // real tables and the real columns, and the entries had to go with them: a stale entry fails the
+  // guard, which is what keeps this list shrinking.
   //
   // When you need an entry here, keep the shape below and say which artifact retires it:
   //   { file, kind: 'select' | 'update' | 'insert' | 'rpc', table, column, added, reason, owner }
-  { file: 'app/(main)/events/[slug]/page.tsx', table: 'event_ticket_types', column: 'sales_start_at', kind: 'select',
-    added: '2026-09-15', owner: 'LIVE-352',
-    reason: 'ADR-1371. Migration 20270345004900 adds this column and is applied at merge, not before: applying ahead of the file on main is what turned check:migrations red for every open PR on 2026-09-15 (LIVE-351). Retire by regenerating lib/database.types.ts once the migration is applied.' },
-  { file: 'app/(main)/events/[slug]/page.tsx', table: 'event_ticket_types', column: 'sales_starts_days_before', kind: 'select',
-    added: '2026-09-15', owner: 'LIVE-352',
-    reason: 'ADR-1371. Migration 20270345004900 adds this column and is applied at merge, not before: applying ahead of the file on main is what turned check:migrations red for every open PR on 2026-09-15 (LIVE-351). Retire by regenerating lib/database.types.ts once the migration is applied.' },
-  { file: 'app/(main)/events/[slug]/page.tsx', table: 'event_ticket_types', column: 'sales_end_at', kind: 'select',
-    added: '2026-09-15', owner: 'LIVE-352',
-    reason: 'ADR-1371. Migration 20270345004900 adds this column and is applied at merge, not before: applying ahead of the file on main is what turned check:migrations red for every open PR on 2026-09-15 (LIVE-351). Retire by regenerating lib/database.types.ts once the migration is applied.' },
-  { file: 'lib/billing/tickets.ts', table: 'event_ticket_types', column: 'sales_start_at', kind: 'select',
-    added: '2026-09-15', owner: 'LIVE-352',
-    reason: 'ADR-1371. Migration 20270345004900 adds this column and is applied at merge, not before: applying ahead of the file on main is what turned check:migrations red for every open PR on 2026-09-15 (LIVE-351). Retire by regenerating lib/database.types.ts once the migration is applied.' },
-  { file: 'lib/billing/tickets.ts', table: 'event_ticket_types', column: 'sales_starts_days_before', kind: 'select',
-    added: '2026-09-15', owner: 'LIVE-352',
-    reason: 'ADR-1371. Migration 20270345004900 adds this column and is applied at merge, not before: applying ahead of the file on main is what turned check:migrations red for every open PR on 2026-09-15 (LIVE-351). Retire by regenerating lib/database.types.ts once the migration is applied.' },
-  { file: 'lib/billing/tickets.ts', table: 'event_ticket_types', column: 'sales_end_at', kind: 'select',
-    added: '2026-09-15', owner: 'LIVE-352',
-    reason: 'ADR-1371. Migration 20270345004900 adds this column and is applied at merge, not before: applying ahead of the file on main is what turned check:migrations red for every open PR on 2026-09-15 (LIVE-351). Retire by regenerating lib/database.types.ts once the migration is applied.' },
-  { file: 'lib/events/ticket-tiers.ts', table: 'event_ticket_types', column: 'sales_start_at', kind: 'select',
-    added: '2026-09-15', owner: 'LIVE-352',
-    reason: 'ADR-1371. Migration 20270345004900 adds this column and is applied at merge, not before: applying ahead of the file on main is what turned check:migrations red for every open PR on 2026-09-15 (LIVE-351). Retire by regenerating lib/database.types.ts once the migration is applied.' },
-  { file: 'lib/events/ticket-tiers.ts', table: 'event_ticket_types', column: 'sales_starts_days_before', kind: 'select',
-    added: '2026-09-15', owner: 'LIVE-352',
-    reason: 'ADR-1371. Migration 20270345004900 adds this column and is applied at merge, not before: applying ahead of the file on main is what turned check:migrations red for every open PR on 2026-09-15 (LIVE-351). Retire by regenerating lib/database.types.ts once the migration is applied.' },
-  { file: 'lib/events/ticket-tiers.ts', table: 'event_ticket_types', column: 'sales_end_at', kind: 'select',
-    added: '2026-09-15', owner: 'LIVE-352',
-    reason: 'ADR-1371. Migration 20270345004900 adds this column and is applied at merge, not before: applying ahead of the file on main is what turned check:migrations red for every open PR on 2026-09-15 (LIVE-351). Retire by regenerating lib/database.types.ts once the migration is applied.' },
-  { file: 'lib/spaces/benefits-store.ts', table: 'space_member_benefits', column: null, kind: null,
-    added: '2026-09-15', owner: 'LIVE-353',
-    reason: 'ADR-1370. Table is applied in production (migration 20270345004800) but lib/database.types.ts has not been regenerated, the standing ADR-246 seam. The store reaches it through the narrow untyped cast the membership modules use. Retire by regenerating the types.' },
-  { file: 'lib/spaces/benefits-store.ts', table: 'space_tier_benefits', column: null, kind: null,
-    added: '2026-09-15', owner: 'LIVE-353',
-    reason: 'ADR-1370. Table is applied in production (migration 20270345004800) but lib/database.types.ts has not been regenerated, the standing ADR-246 seam. The store reaches it through the narrow untyped cast the membership modules use. Retire by regenerating the types.' },
-  { file: 'lib/spaces/benefits-store.ts', table: 'space_benefit_redemptions', column: null, kind: null,
-    added: '2026-09-15', owner: 'LIVE-353',
-    reason: 'ADR-1370. Table is applied in production (migration 20270345004800) but lib/database.types.ts has not been regenerated, the standing ADR-246 seam. The store reaches it through the narrow untyped cast the membership modules use. Retire by regenerating the types.' },
 ]
 
 /** Walk `root` against `typesFile` and return the raw report. Pure: no exit, no console. */
