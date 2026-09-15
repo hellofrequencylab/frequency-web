@@ -59,7 +59,7 @@ ambition is described concretely (what the money builds), never as a rescue plea
 [NAMING.md](NAMING.md): "Community Collective" (brand) and "the Collective plan" (tier) stay legible;
 no em dashes.
 
-🔴 **AMENDED (ADR-NNNN, 2026-09-15, LIVE-253): a paid tier is NOT framed as "buying down your rate".**
+🔴 **AMENDED (ADR-1350, 2026-09-15, LIVE-253): a paid tier is NOT framed as "buying down your rate".**
 This paragraph said to, and eighteen public strings obeyed it, which put the fee ladder in the first
 sentence of every pricing surface and taught readers that a free Space is the small version of a paid
 one. [`CORE-MODEL.md`](CORE-MODEL.md) §1 and §2 are the live argument and it is the opposite: people

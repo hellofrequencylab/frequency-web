@@ -102,7 +102,7 @@ export function priceStrings(): PriceStrings {
  *  2026-07): what is free, WHY a plan, and how the rate works, stated so a skeptic believes it. No em
  *  dashes.
  *
- *  🔴 THE REASON TO TAKE A PLAN LIVES HERE NOW (LIVE-253, ADR-NNNN), because it is an argument and
+ *  🔴 THE REASON TO TAKE A PLAN LIVES HERE NOW (LIVE-253, ADR-1350), because it is an argument and
  *  arguments drift exactly the way figures did. Eighteen public strings each typed their own version of
  *  it and fourteen of them said the opposite of the model: that a plan buys a lower rate and higher
  *  caps, which reads a free Space as the small version of a paid one. docs/CORE-MODEL.md is explicit

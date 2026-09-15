@@ -41240,7 +41240,7 @@ outlive the tier silently) and `content/help/spaces/billing.md:45` (lists revenu
 
 **Rows.** LIVE-232 (done, this ADR).
 
-## ADR-NNNN: the reason to take a plan lives in one sentence, and the fee ladder stops being the sales pitch (2026-09-15)
+## ADR-1350: the reason to take a plan lives in one sentence, and the fee ladder stops being the sales pitch (2026-09-15)
 
 **Status.** Accepted. Closes `LIVE-253`. Extends [ADR-916](DECISIONS.md) and
 [ADR-1337](DECISIONS.md) (every figure and tier name is READ, never typed) to the **argument**, and

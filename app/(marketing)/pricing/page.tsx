@@ -398,7 +398,7 @@ export default async function PricingPage() {
 
         <Section tone="ink" width="wide" className="spot relative overflow-hidden">
           <div className="relative z-10">
-            {/* 🔴 THE PAID ARGUMENT IS MONEY, NOT LIMITS (LIVE-253, ADR-NNNN). This kicker read
+            {/* 🔴 THE PAID ARGUMENT IS MONEY, NOT LIMITS (LIVE-253, ADR-1350). This kicker read
                 "The paid plans buy the rate down and lift the caps", which argues that free is the
                 small version of paid. It is not: a free Space is the whole thing, and a plan is
                 what you take when money starts moving through it. The FAQ below has argued it
@@ -421,7 +421,7 @@ export default async function PricingPage() {
               ))}
             </div>
             {/* ✅ Every sentence in this paragraph is INTERPOLATED from the spine rather than
-                retyped, which is the same rule ADR-916 set for figures and ADR-NNNN extends to the
+                retyped, which is the same rule ADR-916 set for figures and ADR-1350 extends to the
                 argument. `PLAN_STORY.meters` used to read "Paid plans raise the limits" and this
                 comment used to say so; the spine was corrected in #2513 and the note outlived it,
                 which is exactly why the sentences live in one module and not in fourteen.

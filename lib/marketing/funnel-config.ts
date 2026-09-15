@@ -54,7 +54,7 @@ function breakEvenCaption(keep: string): string {
 
 /** The shared pricing-beat intro. It leads with the promise, not the plan: the transaction is never
  *  behind a wall, so a paid rung is what a Space takes once it is charging the same person again
- *  (docs/CORE-MODEL.md §2, ADR-NNNN), and where the rate settles follows from that rather than being
+ *  (docs/CORE-MODEL.md §2, ADR-1350), and where the rate settles follows from that rather than being
  *  the offer. The doc line here said the opposite until LIVE-253. The per-niche clause names the
  *  moment a door's reader would actually step up. */
 function pricingIntro(stepUp: string): string {
