@@ -56,7 +56,9 @@
             "HYG-075",
             "HYG-089",
             "HYG-091",
-            "LIVE-335"
+            "LIVE-335",
+            "LIVE-337",
+            "HYG-093"
           ]
         },
         {
@@ -68,7 +70,8 @@
             "LIVE-272",
             "LIVE-273",
             "HYG-090",
-            "HYG-092"
+            "HYG-092",
+            "LIVE-338"
           ]
         },
         {
@@ -11966,8 +11969,8 @@
       "detail": "MEASURED 2026-09-10, and it cost three sessions before anyone ran `eslint --version`.\n\n`pnpm run` prepends exactly ONE entry to PATH: the invoking directory's RELATIVE `./node_modules/.bin`. It does NOT add an ancestor package's bin dir (counted: zero occurrences of the parent repo's). A `git worktree` never inherits node_modules, and .claude/hooks/session-start.sh installs only in the root it is invoked at. So a subagent worktree starts uninstalled, `pnpm lint` falls through to the machine global ESLint 10.1.0 against a repo pinning ^9, and it dies inside eslint-plugin-react with \"contextOrFilename.getFilename is not a function\" - a message naming a React rule and nothing about the cause.\n\n🔴 THE COST WAS NOT THE CRASH, IT WAS THE MISATTRIBUTION. Two agents reported \"the repo pins the wrong ESLint\" and it reached a briefing, and a third repeated it three times including in a PR body, before anyone measured. BOTH readings were true of different directories: in the main checkout `pnpm lint` exits 0 on 4,744 files in 175s. Worktrees are this repo's own documented parallel-agent practice, so this is the default path, not an edge.\n\nTHE REPO HALF IS DONE (ADR-1319): `prelint` now refuses first and names the fix, so the failure is legible instead of a React stack trace. THE ENVIRONMENTAL HALF IS NOT, and it is not repo-observable: whether the harness can install per-worktree is a property of the harness. Until it can, every worktree needs a manual `pnpm install --frozen-lockfile` before lint or tests, which docs/WORKFLOW.md now says.",
       "verify": {
         "kind": "manual",
-        "evidence": "Measured 2026-09-10: `pnpm exec printenv PATH` shows ./node_modules/.bin as pnpm's only prepended entry; a fresh worktree resolves eslint to /opt/node22/bin/eslint v10.1.0 while the repo declares ^9 and the main checkout has v9.39.4. Whether the harness can install per-worktree is not observable from the repo, so this cannot be probed here.",
-        "checked": "2026-09-10"
+        "evidence": "RE-MEASURED 2026-09-15 and the premise HELD. Three worktrees the Agent tool created minutes earlier (06:56:36Z, 06:57:09Z, 06:57:55Z) each had NO node_modules at all, and in one of them `pnpm exec eslint --version` read v10.1.0 against a repo pinning ^9, with `pnpm run prelint` refusing and naming the fix (ADR-1319 working as designed). The seven OLDER worktrees carry a node_modules SYMLINK to the parent repo and read v9.39.4, which is why sampling an old worktree reads as though the harness now installs per-worktree. It does not; something writes the symlink after creation. Measuring an old worktree measures the wrong moment, and that misattribution is this row’s own subject.",
+        "checked": "2026-09-15"
       }
     },
     {
@@ -12784,6 +12787,57 @@
         "cmd": "node -e 'const fs=require(\"fs\");const {execFileSync}=require(\"child_process\");const Q=String.fromCharCode(39);const NL=String.fromCharCode(10);const fail=(m)=>{console.error(m);process.exit(1)};const R=(f)=>{try{return fs.readFileSync(f,\"utf8\")}catch{fail(\"missing \"+f)}};const S=\"scripts/maintenance/db-usage.mjs\";const y=R(\".github/workflows/maintenance.yml\");const from=y.indexOf(\"- name: Database account usage\");if(from<0)fail(\"maintenance.yml has no database usage step, so an approach to the account ceiling is still invisible\");const end=y.indexOf(NL+\"      - name:\",from+1);const step=y.slice(from,end<0?y.length:end);if(!step.includes(S+\" --print-query\")||!step.includes(\"node \"+S+\" usage.json\"))fail(\"the usage step does not run \"+S);if(!step.includes(\"GITHUB_STEP_SUMMARY\"))fail(\"the usage reading is not posted to the run summary\");if(!step.includes(\"set +e\"))fail(\"the usage reading can fail the sweep; it must be a reading, never a blocking gate\");if(!y.includes(\"steps.dbusage.outputs.code != \"+Q+\"0\"+Q))fail(\"a non-green usage reading never reaches the tracking issue\");const run=(a)=>{try{return {code:0,out:String(execFileSync(\"node\",[S].concat(a),{encoding:\"utf8\",stdio:[\"ignore\",\"pipe\",\"pipe\"]}))}}catch(e){return {code:e.status,out:String(e.stdout||\"\")+String(e.stderr||\"\")}}};const q=run([\"--print-query\"]);if(q.code!==0)fail(S+\" --print-query failed\");for(const t of [\"max_connections\",\"pg_stat_activity\",\"pg_stat_database\",\"pg_database_size\"])if(!q.out.includes(t))fail(\"the reading does not measure \"+t);if(!q.out.includes(\"coalesce(d.stats_reset, pg_postmaster_start_time())\"))fail(\"the reading does not anchor its window, so every rate it prints is meaningless\");const green=run([\"--payload\",JSON.stringify([{usage:{maxConnections:90,connections:45,clientBackends:37,dbBytes:175090835,transactions:962166,rowsRead:25828237,statsSince:\"2026-09-15T04:41:02+00:00\",statsResetSeen:false,windowSeconds:6098}}])]);if(green.code!==0||!green.out.includes(\"45 of 90 (50%)\")||!green.out.includes(\"/min\"))fail(\"the reading does not turn a payload into a connection share and a rate over a stated window\");const blind=run([\"/nonexistent-am-usage.json\"]);if(blind.code!==79)fail(\"a read that could not happen does not report itself indeterminate (exit \"+blind.code+\")\");if(!blind.out.includes(\"Could not look\")||blind.out.includes(\"Headroom\"))fail(\"a read that could not happen is reported as a clean reading\");console.log(\"LIVE-336 ok: maintenance.yml reads the account ceiling, posts it to the run summary, and says so when it could not look\")'"
       },
       "closed": "2026-09-15"
+    },
+    {
+      "id": "LIVE-337",
+      "title": "A hard-deleted PAST occurrence is re-minted by the cron on its next run, for any live series",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/event-recurrence.ts",
+        "ref": "computeOccurrenceDates, the missing from bound"
+      },
+      "detail": "FOUND 2026-09-15 by the lane working LIVE-271 (ADR-1348), while measuring the per-anchor read cost. It is NOT COUNT-specific and it is NOT theoretical, which is why it is its own row rather than a line in that one.  `computeOccurrenceDates` expands a rule from the ANCHOR with no lower bound, so the expansion always includes the series' past dates. The upsert then diffs that full set against `existingDays`. An occurrence an operator HARD DELETED in the past is therefore absent from `existingDays`, reads as missing, and is re-minted on the next cron run. It comes back every night for the life of the series.  WHY LIVE-271 DID NOT COVER IT: that row's guard skips an EXHAUSTED anchor before the child read, so it removes the re-mint only for series that have run out. A LIVE series keeps expanding from the anchor and keeps re-minting. The two rows share a file and nothing else.  THE SHAPE OF THE FIX is a `from` bound on the expansion, but the bound is a decision rather than a constant: too recent and a legitimately missing NEAR-past occurrence stops being repaired, too old and the delete is undone. It interacts with ADR-1304's retirement pass, which is the other half of the same loop. Whoever takes it should read ADR-807 (what a zone-resolved instant means here) and ADR-1304 first.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const R=(f)=>{try{return fs.readFileSync(f,\"utf8\")}catch{fail(\"missing \"+f)}};const NL=String.fromCharCode(10);const src=R(\"lib/event-recurrence.ts\");const i=src.indexOf(\"function computeOccurrenceDates\");if(i<0)fail(\"computeOccurrenceDates not found in lib/event-recurrence.ts\");let j=src.indexOf(NL+\"function \",i+1);const k=src.indexOf(NL+\"export \",i+1);if(k>=0&&(j<0||k<j))j=k;const body=j<0?src.slice(i):src.slice(i,j);if(!/from|since|notBefore|lowerBound|floor/.test(body))fail(\"computeOccurrenceDates still expands from the anchor with no lower bound, so a hard-deleted past occurrence is re-minted every run\");const tests=fs.readdirSync(\"lib\").filter((f)=>f.indexOf(\"recurrence\")>=0&&f.indexOf(\".test.\")>=0);const drives=tests.filter((f)=>{const t=R(\"lib/\"+f);return (t.indexOf(\"computeOccurrenceDates\")>=0||t.indexOf(\"generateOccurrencesForAnchor\")>=0)&&(t.indexOf(\"re-mint\")>=0||t.indexOf(\"remint\")>=0||t.indexOf(\"hard-deleted\")>=0||t.indexOf(\"hard deleted\")>=0)});if(!drives.length)fail(\"no recurrence test asserts that a deleted past occurrence is not re-minted, so the lower bound is asserted by nothing (scanned \"+tests.length+\" test file(s) in lib)\");console.log(\"LIVE-337 ok: the expansion carries a lower bound and a test drives it\")'"
+      }
+    },
+    {
+      "id": "LIVE-338",
+      "title": "A COUNT=1 series reads as an unreadable rule to the retirement pass, so its stale future dates are never retired",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/event-recurrence.ts",
+        "ref": "retireStaleOccurrences, the expected.length === 0 stand-down"
+      },
+      "detail": "FOUND 2026-09-15 by the lane working LIVE-271 (ADR-1348), beside LIVE-337 and separate from both.  `retireStaleOccurrences` (ADR-1304) stands down when `expected.length === 0`, and that guard exists for a good reason: an unreadable or unparseable rule must not be treated as \"this series expects no dates\", because retiring on that reading would delete a live series' real occurrences. The trouble is that a COUNT=1 series reaches `expected.length === 0` HONESTLY once its single date has passed, and the ADR-1299 picker admits any count from 1 to 400. So the one shape that most needs retiring is the one the stand-down protects.  CONSEQUENCE is bounded and is why this is P3 rather than P1: it strands future occurrence rows that a reduced or spent COUNT=1 series should no longer carry. Nothing is minted wrongly and nothing is deleted wrongly; dates simply stay behind. Live COUNT-bounded series measured 2026-09-15: ZERO, so nothing is stranded today.  THE FIX is to distinguish \"the rule expanded to nothing\" from \"the rule could not be read\", which the expander already knows and the caller currently flattens into one empty array. Do it beside LIVE-337 if the same person is in this file, but do not fold it into LIVE-337's own change: the bound and the stand-down are different decisions.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const R=(f)=>{try{return fs.readFileSync(f,\"utf8\")}catch{fail(\"missing \"+f)}};const NL=String.fromCharCode(10);const src=R(\"lib/event-recurrence.ts\");const i=src.indexOf(\"function retireStaleOccurrences\");if(i<0)fail(\"retireStaleOccurrences not found in lib/event-recurrence.ts\");let j=src.indexOf(NL+\"function \",i+1);const k=src.indexOf(NL+\"export \",i+1);if(k>=0&&(j<0||k<j))j=k;const body=j<0?src.slice(i):src.slice(i,j);if(!/unreadable|unparseable|unparsed|cannotRead|expandFailed|ruleUnreadable/.test(body))fail(\"retireStaleOccurrences still cannot tell an empty expansion from an unreadable rule, so a spent COUNT=1 series keeps its stale future dates\");console.log(\"LIVE-338 ok: the stand-down distinguishes an empty expansion from an unreadable rule\")'"
+      }
+    },
+    {
+      "id": "HYG-093",
+      "title": "check:adr cannot see the literal ADR-NNNN, so an unassigned placeholder ships with every gate green",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "scripts/check-adr.mjs",
+        "ref": "the numeric heading and citation patterns"
+      },
+      "detail": "FOUND 2026-09-15 on main, in a row that had already merged. The build loop's convention is that a LANE never mints an ADR number (two lanes in flight would collide): it writes the literal `ADR-NNNN` and the coordinator substitutes the real number at push time. That convention is sound and it has no gate.  `check:adr` matches NUMERIC headings and citations, so the literal string `ADR-NNNN` is invisible to it: the guard reports every number declared once and every citation resolving, and passes. A placeholder can therefore reach main inside a backlog row, a code comment, a workflow file or a doc with all 26 contract guards green.  MEASURED: `docs/BUILD-BACKLOG.json` on main carried `LIVE-332`'s closed paragraph reading \"CLOSED 2026-09-15 (ADR-NNNN)\" after #2612 merged. `docs/DECISIONS.md` carried ADR-1346 correctly for the same decision, so the number WAS assigned and only the row kept the placeholder. Nothing failed. It was found by eye while preparing a later lane, not by a gate.  WHY IT MATTERS more than a typo: the one list is the only record of what is done (ADR-1043), and a closed row citing a number that resolves to nothing is exactly the unverifiable-prose failure the list exists to prevent. A reader following the citation finds no ADR.  THE FIX is one line in an existing guard rather than a new one: `check:adr` should refuse any tracked file containing `ADR-` followed by a non-numeric placeholder (NNNN, XXX, TODO, ?), with the coordinator's substitution step as the documented remedy. Keep it in `check:adr` rather than a new script, so it runs in the same `checks` group that already reads every doc. AGENTS.md's rule applies literally here: every fail-safe needs a gate that notices it fired, and the lane convention is a fail-safe with none.  ⚠️ A TRAP FOR WHOEVER FIXES THIS, found while filing the row. The first draft of this row’s own probe also asserted that docs/BUILD-BACKLOG.json contains no literal placeholder, and it fired on THIS ROW, because the row has to quote the placeholder in order to describe it. That is the same defect LIVE-235 shipped earlier the same day: a probe that cannot tell a live claim from a recorded description of one. The probe now measures only the guard’s capability. THE SAME TRAP APPLIES TO THE FIX: a refusal that scans every tracked file for the bare substring will fail on this row’s detail, and on any ADR or doc that discusses the convention, so scope it to CITATION positions (an ADR heading, or an ADR- reference that is meant to resolve to an entry) rather than to the substring, or exclude the backlog’s descriptive fields.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const R=(f)=>{try{return fs.readFileSync(f,\"utf8\")}catch{fail(\"missing \"+f)}};const g=R(\"scripts/check-adr.mjs\");if(!/NNNN|placeholder/.test(g))fail(\"scripts/check-adr.mjs still cannot see a non-numeric ADR placeholder, so an unassigned placeholder ships with every gate green\");console.log(\"HYG-093 ok: check:adr refuses a non-numeric ADR placeholder\")'"
+      }
     }
   ]
 }
