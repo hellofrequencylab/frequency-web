@@ -15,7 +15,7 @@ import { verticalRailRules } from '@/lib/verticals'
 
 export type PanelKey =
   | 'dispatches' | 'events' | 'members' | 'leaderboard' | 'online' | 'circles'
-  | 'newcircles' | 'activenow' | 'pulse'
+  | 'newcircles' | 'activenow' | 'pulse' | 'practice'
 
 /** True on The Quest surfaces (the `/crew` tree: hub, journey, leaderboard, streaks, store, …).
  *  These pages OWN the member's standing — the Quest hub's StandingHero/SeasonMap plus the
@@ -54,10 +54,17 @@ const RULES: { test: (p: string) => boolean; panels: PanelKey[] }[] = [
     test: (p) => ['/journeys', '/practices', '/library'].some((s) => p === s || p.startsWith(s + '/')),
     panels: ['leaderboard', 'online'],
   },
-  // Home (feed / Around You) — the community pulse. Each panel self-falls-back so
-  // the rail is always full: events (yours → community), people (active → newest),
-  // circles (new → popular), plus recent broadcasts.
-  { test: (p) => p === '/feed' || p === '/nearby' || p.startsWith('/nearby/'), panels: ['events', 'activenow', 'dispatches', 'newcircles'] },
+  // Home (/feed) — the practice board LEADS the rail (CORE-MODEL §5 Phase 7.5.3, ADR-1294). The
+  // Quest board used to be the first module above the composer; the community board took that
+  // spot, and the board moved here. `events` is NOT in this rule any more: the community board now
+  // names the member's next gathering on the page itself, and a rail panel never shows the
+  // function the page already features (the rail's own rule, right-sidebar.tsx). The rest still
+  // self-fall-back so the column is never bare: people (active → newest), circles (new → popular),
+  // plus recent Dispatches.
+  { test: (p) => p === '/feed', panels: ['practice', 'activenow', 'dispatches', 'newcircles'] },
+  // Around You — the community pulse, unchanged: this page owns no gathering of its own, so the
+  // events panel stays, and the practice board does not belong on a place page.
+  { test: (p) => p === '/nearby' || p.startsWith('/nearby/'), panels: ['events', 'activenow', 'dispatches', 'newcircles'] },
 ]
 
 // The baseline for any page not matched above. Uses panels that effectively ALWAYS render —

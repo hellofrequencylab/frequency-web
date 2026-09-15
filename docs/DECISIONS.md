@@ -40928,6 +40928,245 @@ because no probe in this repo can see the `menu_items` rows that decide the live
 code-only probe passing while production still shows six tabs is the shape-not-truth failure
 [ADR-970](DECISIONS.md) exists to refuse.
 
+## ADR-1342: Four capability-bundle presets become the Space setup shape, applied at provision (2026-09-15)
+
+**Status:** Accepted. Implements owner ruling 1 of [ADR-1294](DECISIONS.md) and the bundle spec in
+[`OFFER-MODEL.md`](OFFER-MODEL.md) §3. Closes `LIVE-249` and `LIVE-149`; `OWN-048` stays open on its
+second ask. Extends [ADR-1197](DECISIONS.md) (the bundle mechanism), which deliberately shipped with
+one pass-through row and no curation.
+
+**The ruling.** "Everything freemium. Every tool is available to every Space with usage caps; a new
+Space starts with **core tools on and the rest off but switchable**." `CAPABILITY_BUNDLES` is the one
+mechanism in the tree that can say that sentence, because a bundle is SUBTRACTIVE: it writes a
+top-level `false` for a tool it omits and deletes the off-switch for one it includes, and it cannot
+write `spaces.plan` or the reserved `entitlements.billing` namespace. It can hide a tool; it can
+never grant a paid one. That is also why it could not be the add-on mechanism the first draft of the
+offer model proposed.
+
+**The four presets.** `lib/pricing/bundles.ts` now holds five rows: the pass-through `general` plus
+`studio`, `practice`, `venue` and `nonprofit`. Each is CORE plus a short list:
+
+| Preset | Label | On, beyond core |
+|---|---|---|
+| `studio` | Studio or gym | availability · memberships · practices · qr |
+| `practice` | Solo practice | availability · practices · journeys |
+| `venue` | Venue | availability · qr · collaborators |
+| `nonprofit` | Non Profit | donations · journeys · qr |
+
+`CORE_SPACE_FUNCTION_KEYS` is exported and is seven: `billing` (which no bundle may ever switch off,
+SCAN-536), plus `profile`, `members`, `circles`, `events`, `loom` and `reviews`. The middle four are
+the four nouns of the product and the two things they are made of; `loom` is the image library all of
+them write into; `reviews` is the only trust surface a Space has on day one. 🔴 `circles` is
+load-bearing rather than a taste call: `createSpace` lands a new owner on `/manage/circles`
+(LIVE-261), so a preset that subtracted Circles would deliver them to a screen their own Space
+forbids.
+
+**Two rules, pinned by tests rather than by this paragraph.**
+
+1. **No preset subtracts a core key.** A preset that did would hand an owner a console with a hole
+   in it, and the hole would look like a bug in the tool rather than in the preset.
+2. **No preset names a TIER-MARKED function as ON.** The set is derived from the registry by
+   `entitlement !== null` (today `crm`, `email`, `shop`, `program`), so a tool that becomes
+   tier-marked joins it without an edit here. The reason is exact: the only effect of LISTING a
+   function is that its off-switch is deleted, so listing a paid one would read as a grant a bundle
+   cannot make. Every paid tool therefore starts off and one switch away, which is what "off but
+   switchable" asks for.
+
+**Why the curation could be authored now when ADR-1197 said it could not.** ADR-1197 refused to
+guess: of the real operator Spaces roughly 18 of 21 are solo wellness practitioners and
+coaches-and-healers is the only niche door that has produced a customer, so three curated bundles
+would have committed two of them on nothing. That has not changed, and it is why only `practice` has
+customers behind it. The other three are not guesses either: they are read off the existing Focus
+registry, which the owner already authored and the create wizard already asks about. `studio` is the
+Studio-or-gym Focus, `venue` the Event-space Focus, `nonprofit` the two nonprofit Focuses.
+
+**There is deliberately no fifth preset for a PRODUCT business.** Its defining tool is the Shop, the
+Shop is tier-marked, and rule 2 forbids naming it on. So `business:product` is absent from the
+Mode map and such a Space stands up with every tool on, exactly as it did before this change. An
+honest gap beats a preset that appears to include the one thing it cannot include.
+
+**The Spark carries the choice, and nothing else does.** `lib/studio/entities/space.ts` declares
+`preset` as a `select` on the `model` section with `placement: 'spark'` and, deliberately, no
+`editPlane` ([ADR-1281](DECISIONS.md)). A preset is a STARTING shape, not a property of the Space:
+re-asking it on a rail would switch tools off behind an owner who had since tuned them by hand, and
+after creation the tools are edited one switch at a time on the surface that already owns them. No
+UI was hand-rolled; the create form still asks only "what do you run?".
+
+The four options are RESTATED in the manifest rather than imported, for a hard reason:
+`bundles.ts` reads `BILLING_NAMESPACE` from `lib/spaces/entitlements.ts`, which imports
+`lib/spaces/membership.ts`, which declares `import 'server-only'`. A manifest is imported by client
+surfaces, so importing the registry there would break the build the first time a wizard rendered.
+`bundles.test.ts` pins the restatement against the registry on ids AND labels, so it cannot drift.
+
+**Provision applies it, through the one writer.** `createSpace` resolves
+`resolveSetupPreset(input.preset) ?? setupPresetForMode(type, modeVariant)` and applies it with
+`setSpaceBundle`, which stays the sole writer: it reads the two jsonb columns the insert just seeded
+from the operator's per-type defaults, hands them to the pure resolver, and writes the result back,
+so the off-switches land OVER those defaults instead of instead of them. `SETUP_PRESET_BY_MODE` is
+the Mode-to-bundle map LIVE-149 named as its missing half, and it is exported so the tests can walk
+it against the live Focus registry: a key naming a retired Focus would otherwise fail silently as
+"no preset for this Space".
+
+**Nothing stores the preset id, on purpose.** The preset's whole effect is the switches it wrote, and
+those ARE the state every surface reads. A column holding the name of a shape the operator has since
+edited would be a second, quietly wrong answer to "what is on". The provenance is the audit draft:
+the preset rides in the `proposeAndConfirmCreate` payload, so the log records the shape the Space was
+born in. **No migration.**
+
+**The apply is best-effort and is NOT silent.** A Space that exists with every tool on is a working
+Space, so a failed shaping step must not fail the provision; but a fail-safe needs a gate that
+notices it fired, so both the refusal (`setSpaceBundle` returns a reason) and a throw are logged with
+the space id and the bundle id. A preset that quietly stopped applying would otherwise look exactly
+like a preset nobody chose.
+
+**Proof.** `lib/pricing/bundles.test.ts` (43 tests) adds: the four ids in catalog order; core is real
+and includes the undisableable key; no preset subtracts core; no preset names a tier-marked tool on,
+with a positive control that the tier-marked set is non-empty; every preset actually subtracts
+something, so none is a second pass-through; the copy carries no em or en dashes; per preset, the
+blobs a real provision produces (`seedSpaceConfigFromDefaults` then `nextBlobsForBundle`) read back
+through `spaceFunctionEnabled` with core ON and every omitted key OFF; re-applying `general` restores
+everything; `resolveSetupPreset` refuses `general` and is total; the Mode map maps only registered
+`(type, Focus)` pairs to registered presets and is pinned whole; `business:product` is unmapped; the
+manifest field's options match the registry on ids and labels and it declares no edit plane; and a
+source-shape guard that provision resolves, derives, applies through `setSpaceBundle`, logs the
+failure, and never reaches for `setSpacePlan` / `setSpaceAddons`.
+
+**What this does not settle.** `OWN-048`'s second ask. Its bundle-spec half is delivered and
+OFFER-MODEL §3 is the spec; the recorded keep / merge / retire decision per function key is an owner
+ruling and stays open. Its premise was re-measured in the same pass and had drifted: `SPACE_FUNCTIONS`
+declares **nineteen** live keys, not 22, because LIVE-226 retired `enroll`, `tickets` and `checkin`
+into `journeys` / `events` / `events`. This change adds evidence toward the remaining nineteen
+without ruling on them: seven are now declared structural by `CORE_SPACE_FUNCTION_KEYS`, and each of
+the other twelve is shown to be genuinely optional by at least one shipped preset switching it off.
+
+**Rows.** LIVE-249 closed. LIVE-149 closed, in the same change as the first curated bundle, which is
+the condition that row set for itself. OWN-048 stays open with its premise re-derived.
+
+## ADR-1343: The feed hero is a community board, and the practice board moves to the rail (2026-09-15)
+
+**Status:** ✅ Shipped. Implements [ADR-1294](DECISIONS.md) ruling and
+[`CORE-MODEL.md`](CORE-MODEL.md) §5 Phase 7 item 5.3. Closes `LIVE-248`.
+
+**The change.** The first module above the composer on `/feed` is the member's people, not the
+game. `components/feed/community-board.tsx` renders two groups: **Next in your Circles** (the next
+upcoming event in a Circle the member is active in, with its date chip, Circle name and location,
+linking at the event) and **In your Spaces** (the three newest posts in the Spaces they belong to
+or own). `PracticePrompt` and `JourneyBoard` keep every feature and change column: they are a
+right-rail panel now, `components/sidebar/practice-panel.tsx`, registered under the `practice` key.
+
+**Why the hero and not the nav.** ADR-1294 demoted the Quest from the centre to "a side thing we
+all do together" and ADR-1295 removed the last wall around it. Both were rulings about what the
+product *is*; neither changed the one surface a member actually looks at. The top of home was the
+game and nothing else: `PracticePrompt` before activation completed, `JourneyBoard` after, and the
+page paid for `getPracticesToLogToday`, `getPartialPracticesToday` and `getMemberPillarBalance`
+before it could paint. A member with three Circles and a Space learned nothing about any of them
+until they scrolled past their own streak.
+
+**Two of the four nouns, read once.** `lib/feed/community-board.ts` is one request-cached reader
+(`cache()`), and **scope is the policy** because it runs through the service-role client: active
+`memberships` only; `circleEventVisibilities(true)` from the one shared list, so `unlisted` and
+`private` events are never listable here; `status = 'published'`, not cancelled, not removed; and
+for the Spaces half the member's own `space_members` rows **plus the Spaces they own**, since an
+owner holds no membership row (the same asymmetry `lib/dispatches.ts` handles). The upcoming floor
+is wall clock in the community's zone, the same one the rail's `EventsPanel` uses, so tonight's 7pm
+gathering does not drop off the board at 5:01pm Pacific. Both halves are fail-safe to nothing: a
+read that throws degrades that group, never the page.
+
+**The empty state is one state.** Two hollow groups would be worse than the board it replaced, so
+a member with nothing to show gets a single `EmptyState`: no Circles and no Spaces reads *"Find
+your people"* and points at `/circles`; Circles that simply had a quiet week reads *"Quiet week"*
+and points at `/events`. The empty branch is deliberately **not** masked for the visual suite, the
+same rule the feed stream's empty pane follows; the populated branch is, because every pixel of it
+is a reading.
+
+**What the rail gave up to make room.** `pageRailPanels('/feed')` now leads
+`['practice', 'activenow', 'dispatches', 'newcircles']`. `events` left that rule: the page names
+the member's next gathering itself, and the rail's own standing rule is that a panel never shows
+the function the page already features. `/nearby` was split out of the shared rule and keeps the
+events panel, because that page owns no gathering of its own and the practice board does not belong
+on a place page. **`lib/layout/page-chrome.ts` is untouched** and no page toggles the rail.
+
+**Measured, not assumed.** Three client modules join the shell's graph
+(`practice-prompt`, `journey-board`, `log-practice-button`) and every dependency of theirs was
+already in it (`on-air/mindless`, `on-air/movement`, `zap-toast`, `standing-tiles`,
+`ProgressTrack`, `RankBadge`), walked with the shell gate's own `walkRouteClientGraph`: 578 client
+modules reachable from `app/(main)/layout.tsx`. That is why the panel takes a plain static import
+rather than a `next/dynamic` wrapper. In the other direction two reads left the page's critical
+path, and `getMemberProgress` gained `getCachedMemberProgress`, so the page (activation guide,
+stage celebration) and the panel share one six-way fan-out instead of making two.
+
+**The consequence we are choosing, stated rather than discovered.** The rail is `hidden lg:flex`,
+so **below `lg` the practice board is off `/feed` entirely**. That is the demotion, not a gap: the
+phone's home for the game is the left drawer's Vault cluster (`MobileGameStats`), which already
+carries the counts and today's move, and `/practices` carries the log buttons at every viewport.
+If the owner wants the board back on a phone, the honest fix is a mobile slot for it, not a return
+to the hero.
+
+**Proof.** `components/feed/community-board.test.tsx`: the body renders every state without a
+database (gathering first then Spaces, the Spaces-only case, both empty cases), plus a
+comment-stripped source-shape half that pins the board above `<CaptureBar>`, the absence of both
+game modules from the page (import and element), the `<Suspense>` boundary, the rail rule's leading
+key and the registry's render. Comment-stripped matters here: the comments in these files name
+`JourneyBoard` in order to say where it went. `LIVE-248`'s probe measures the same consequence and
+was proven both ways, exit 1 on `origin/main` naming five failures and exit 0 on this tree.
+
+**Owed.** The six `app-feed-*` visual baselines are stale by the height of the swapped module.
+`/feed` is an advisory-tier shell surface, so a shell recapture is owed rather than blocking, and
+no PNG was edited here.
+
+## ADR-1341: the mobile centre button is Create, and the Zap menu is its Post row (2026-09-15)
+
+**Status:** Accepted · `components/layout/create-button.tsx` (the button and the sheet),
+`components/layout/app-shell.tsx` (the mount), `components/feed/create-actions.ts` (the one list),
+`components/layout/create-button.test.tsx`, `docs/NAMING.md` (the Create button and the Zap menu).
+Amends ADR-230; closes `LIVE-247` (docs/CORE-MODEL.md §5, phase 7 row 5.2).
+
+**Context.** ADR-230 made the raised centre button of the mobile tab bar the Zap button: one tap
+fired `open-capture` and the Zap menu opened, a composer over the earning tiles. The model
+(`CORE-MODEL` §5) says the most prominent affordance on a phone should start a post, an event or a
+circle, and the row that carried that sentence measured the button still firing the event. Two
+things made the fix small. The desktop feed already had a create menu, `CreateMenu`, rendering the
+shared `CREATE_ITEMS` list, so the mobile side needed a surface for that list rather than a second
+list. And `canCreate` already granted `event.create` and `circle.create` to every signed-in member
+(the doors opened under LIVE-222 and LIVE-266), so the only thing standing between a member and
+those two creations was the list's own gating, which still said Crew and Host.
+
+**Decision.**
+1. **The centre button is Create.** A plus on the disc, label "Create", `aria-haspopup="dialog"`.
+   It opens a `Dialog align="bottom"` sheet named by its own heading. The button and the sheet live
+   in `components/layout/create-button.tsx`, not inline in the shell, so a test can press the real
+   button; the disc's geometry (slot 0a of the mobile stacking contract, `--tab-bar-lift`) moves
+   with it unchanged.
+2. **One list, two surfaces.** Below Post, the sheet renders `createItemsForRole(role)`, the same
+   list the desktop feed's `CreateMenu` renders. A creation is added in `create-actions.ts` and
+   both menus pick it up; neither menu declares a row of its own.
+3. **The Zap menu is the Post row.** The sheet's first row dispatches `open-capture` on the post
+   mode, so the composer, Vera's line, the Mindless door and the earning tiles are one tap further
+   in rather than gone. The shell itself no longer dispatches the event; the Post row is the only
+   member-facing dispatcher, and `CaptureLauncher` is still the only listener.
+4. **Event and Circle are open to every member in the list**, matching the capability. Room and
+   Dispatch stay host-only. What a free member may publish remains a metered quantity where the
+   thing goes live, never a menu decision.
+5. **Names.** NAMING.md now carries **the Create button** (the disc and its sheet) and **the Zap
+   menu** (the "Capture a moment" sheet behind Post) as two entries where it carried one. The three
+   help pages that told members to tap the Zap button say Create, then Post.
+
+**Proof.** `create-button.test.tsx` mounts the button in jsdom and asserts: closed until pressed;
+opens a dialog labelled by its "Create" heading; a plain member sees Post, `/events/new` and
+`/circles/new` and not the host creates; a host also sees `/nearby` and `/messages`; a null
+visitor-preview role reads as a member; Post dispatches `{ mode: 'post' }` and closes; picking a
+create closes. A source block pins that app-shell mounts `<CreateButton role={viewer.role} />`
+and contains no `open-capture` in code, while capture-launcher still listens. The row's probe
+measures the same five facts with comments stripped. `header-fit.test.ts` follows the centre
+button into its file for the seven-equal-sevenths rules. Arm C of `check:shell-weight` reads 0
+leaks: the new file imports the Dialog primitive, two lucide glyphs and the pure list.
+
+**Consequences.** The phone's strongest affordance creates something. The Zap menu costs one more
+tap, which is the trade the model asked for; if the owner wants the bolt back at the surface, it
+is a row in the sheet, not a second button. The desktop feed menu now shows New Event and New
+Circle to every member, which it should have since the doors opened. ADR-230's account of the
+button is history; its account of the menu still holds.
+
 ## ADR-1337: every marketing figure AND every tier name is read from the catalog, and the guard covers the CMS templates and the help center (2026-09-14)
 
 **Status.** Accepted. Closes `LIVE-232`. Extends [ADR-916](DECISIONS.md) (the single-source

@@ -34,11 +34,18 @@ import { EntityCtaLink } from '@/components/widgets/entity/entity-cta-link'
 //
 //   MEMBERSHIP (service / product / membership Focus): the real MEMBERSHIP surface (ENTITY-SPACES-SYSTEM
 //   2.5). The member sees the active tiers (name / price / benefits) and joins one, or sees their tier +
-//   a Cancel. v1 takes NO payment: joining registers the member, and the copy says so plainly.
+//   a Cancel. A FREE tier registers the member; a PAID tier opens Stripe Checkout
+//   (membership-join-card -> startSpaceMembershipCheckout -> createSpaceMembershipCheckout), so this
+//   surface takes money. It said "v1 takes NO payment" until 2026-09-15, which the checkout had
+//   already overtaken.
 //
 //   DONATE (donations Focus): the real DONATE surface (MASTER-PLAN ADMIN-04). The member sees the fund
-//   label, description, and suggested amounts. v1 takes NO money; the copy says so plainly. DonateMember
-//   fires the `space.cta_click` event on mount.
+//   label, description, and suggested amounts, and gives through a Stripe Connect destination charge
+//   to the Space owner (LIVE-235). A fund whose owner is not payout ready keeps the preview copy
+//   instead of a button that would resolve to a refusal, which `donate-member` decides by asking
+//   `spaceCanTakeDonations` first. This line said "v1 takes NO money" until 2026-09-15; the module it
+//   describes had already corrected its own header. DonateMember fires the `space.cta_click` event on
+//   mount.
 //
 //   ENROLL (packages / cohort / programs Focus): the real ENROLL surface (MASTER-PLAN ADMIN-04). The
 //   member sees the program details + seats left and enrolls (or sees their status + a Cancel). v1 takes

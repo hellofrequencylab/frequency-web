@@ -12,12 +12,13 @@ import { EventArt, ContactArt, ConnectArt, PartnersArt, CheckInArt, GhostArt, Mi
 
 type Mode = 'post' | 'note' | 'photo' | 'contact'
 
-// Capture — the app-wide primary action (ADR-155/156a). Two triggers, one modal:
-//   • mobile  → the raised centre-nav button (MobileTabBar) dispatches 'open-capture'
-//     (contact-forward — you're out meeting people);
-//   • desktop → a floating FAB (the mobile tab bar isn't there).
-// The modal is always mounted so either trigger can open it from any page. Posts
-// default to the member's wall.
+// Capture — the Zap menu (ADR-155/156a, ADR-230). One trigger, one modal:
+//   • mobile  → the Post row of the Create sheet (components/layout/create-button.tsx, the
+//     raised centre button) dispatches 'open-capture'. Until LIVE-247 the centre button itself
+//     fired it; the button now opens the Create sheet and this menu is its first row.
+//   • desktop → none. The feed's inline Capture box is the entry.
+// The modal is always mounted so the trigger can open it from any page. Posts default to the
+// member's wall.
 //
 // THE OVERLAY IS `Dialog align="sheet"` (LIVE-089) — full-bleed on mobile, a centred card at sm+,
 // which is the exact geometry this hand-rolled one described. It had a real ESC handler and a real
@@ -88,14 +89,14 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
     }
   }, [open, veraLine])
 
-  // The centre-nav button (and anything else) opens the modal via a window event,
+  // The Create sheet's Post row (and anything else) opens the modal via a window event,
   // optionally requesting a starting mode.
   useEffect(() => {
     const onOpen = (e: Event) => {
       const m = (e as CustomEvent).detail?.mode as Mode | undefined
       setMode(m ?? 'post')
-      // Go fullscreen on the same gesture that dispatched 'open-capture' (the
-      // centre-nav button / FAB) — window listeners run synchronously inside that
+      // Go fullscreen on the same gesture that dispatched 'open-capture' (the Create
+      // sheet's Post row) — window listeners run synchronously inside that
       // click, so the gesture-gated request still lands (C.1-3). Best-effort.
       void requestAppFullscreen()
       setOpen(true)
@@ -115,7 +116,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
 
   return (
     <>
-      {/* No desktop button — Capture lives in the mobile centre-nav; on web the feed's
+      {/* No desktop button — Capture lives behind the mobile Create sheet; on web the feed's
           inline Capture box is the entry. This component only hosts the modal. */}
       <Dialog open={open} onClose={close} ariaLabel="Capture a moment" align="sheet" className="h-full sm:h-auto sm:max-w-md">
         {/* Full-screen on mobile, a centred card on desktop. */}
