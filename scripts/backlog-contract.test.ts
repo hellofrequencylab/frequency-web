@@ -795,6 +795,14 @@ describe('the real tree', () => {
   it('keeps every backlog source pointing at a file that exists', () => {
     // A row whose source doc was deleted is a row that outlived its justification. The guard
     // enforces this; asserting it here as well makes the intent legible next to the fixtures.
+    //
+    // ⚠️ THAT SENTENCE WAS FALSE UNTIL 2026-09-15 AND IS THE REASON THIS NOTE EXISTS. The guard
+    // checked existsSync and this asserts statSync().isFile(), so the two disagreed on exactly one
+    // input: a DIRECTORY. test/e2e/__screenshots__/visual.spec.ts is one -- Playwright names a
+    // snapshot folder after its spec, so it wears a .ts extension -- and LIVE-340 cited it as a
+    // source. pnpm check:backlog passed; this failed in CI. The weaker check was the one a human
+    // runs by hand, which is the worst way round for the two to differ. check-backlog.mjs now uses
+    // isFile() too, so the claim above is true and the failure lands locally (HYG-097).
     const doc = JSON.parse(readFileSync(path.join(ROOT, 'docs/BUILD-BACKLOG.json'), 'utf8'))
     const missing = doc.entries
       .filter((e: { source?: { file?: string } }) => e.source?.file)

@@ -269,9 +269,25 @@ function validate(entries) {
       if (!Array.isArray(p.paths) || p.paths.length === 0) problems.push(`${at}: verify.kind "${p.kind}" needs "paths"`)
     }
 
-    // A source that no longer exists is how a row outlives the document that justified it.
-    if (e.source?.file && !existsSync(e.source.file)) {
-      problems.push(`${at}: source file "${e.source.file}" does not exist`)
+    // A source that no longer exists is how a row outlives the document that justified it. It has
+    // to be a FILE rather than merely a path that resolves, and the difference is not academic:
+    // `test/e2e/__screenshots__/visual.spec.ts` is a DIRECTORY wearing a .ts name (Playwright names
+    // a snapshot folder after its spec), so an existsSync check accepted it while the suite's own
+    // mirror of this rule -- statSync().isFile() in scripts/backlog-contract.test.ts, whose comment
+    // claims "the guard enforces this" -- rejected it. The weaker check is the one a human runs by
+    // hand, so the failure arrived in CI instead of locally. HYG-097.
+    if (e.source?.file) {
+      // No initialiser: both branches below assign, so a default here is a dead store. CodeQL
+      // flagged exactly that on this change ("Useless assignment to local variable").
+      let what
+      try {
+        what = statSync(e.source.file).isFile() ? 'file' : 'a directory, not a file'
+      } catch {
+        what = 'missing'
+      }
+      if (what !== 'file') {
+        problems.push(`${at}: source file "${e.source.file}" is ${what}`)
+      }
     }
   }
   return problems
