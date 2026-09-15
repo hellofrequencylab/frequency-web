@@ -402,7 +402,7 @@ export function appSurfaces(
   const { roomPath, spaceSlug } = env
   const surfaces: Surface[] = [
     // The home feed. `viewportOnly` for the reason on the flag, and since LIVE-308 the first
-    // screen also carries two `data-visual-mask` sites (`feed-*` in VISUAL_MASK_SITES below).
+    // screen also carries three `data-visual-mask` sites (`feed-*` in VISUAL_MASK_SITES below).
     // Read the committed PNG before reasoning about this row: at 1280x800 and 390x844 the first
     // screen of the e2e account is the date eyebrow, the time-of-day greeting, the onboarding
     // guide and the top of the Capture box. POSTS ARE NOT ON IT. What moves every hour up there
@@ -413,11 +413,14 @@ export function appSurfaces(
     // picture is the design surface: the shell, the Settings divider row, the onboarding guide
     // (account state, which moves only when the account acts), the Capture box, and the
     // empty pane if the stream is empty.
-    // ⚠️ Heights this cannot hold, so the next size mismatch is read correctly: the guide gives
-    // way to the JourneyBoard when onboarding completes; the walkthrough, role-promotion, Your
-    // corner, host-prompt and romance cards each mount or not per account and per day; and at
-    // 390 wide the afternoon greeting is a few pixels wider than the title block, so the h1 may
-    // take a third line between 12:00 and 18:00 Pacific. None of those is a mask's to fix.
+    // ⚠️ Heights this cannot hold, so the next size mismatch is read correctly: the community
+    // board (ADR-1294) is one module, two modules or an EmptyState depending on what the
+    // member's Circles and Spaces did this week, and the guide simply disappears when
+    // onboarding completes (the practice board it used to graduate into is a rail panel now);
+    // the walkthrough, role-promotion, Your corner, host-prompt and romance cards each mount or
+    // not per account and per day; and at 390 wide the afternoon greeting is a few pixels wider
+    // than the title block, so the h1 may take a third line between 12:00 and 18:00 Pacific.
+    // None of those is a mask's to fix.
     { path: '/feed', slug: 'app-feed', audience: 'member', viewportOnly: true },
     { path: '/settings', slug: 'app-settings', audience: 'member' },
     // Around You. Listed KNOWING it will SKIP until the seeded member account and its three repo
@@ -877,6 +880,12 @@ export const VISUAL_MASK_SITES: readonly {
     kind: 'live',
     why: 'PanelSkeleton, so a capture that lands mid-stream paints the same box.',
   },
+  {
+    value: 'rail-panel',
+    file: 'components/sidebar/practice-panel.tsx',
+    kind: 'live',
+    why: 'The practice board the /feed hero gave up (ADR-1294): streak, Zaps, Gems, rank, the milestone pips and today’s practices are every one of them a reading, and the board it renders swaps at activation.',
+  },
   // ── /nearby, the Dispatches page (LIVE-301) ─────────────────────────────────────────────
   // Five boxes on ONE page, and the count is the finding rather than a smell: `/nearby` is the
   // community dashboard, so almost everything on it below the header band is a reading. See the
@@ -975,6 +984,12 @@ export const VISUAL_MASK_SITES: readonly {
     file: 'app/(main)/feed/page.tsx',
     kind: 'live',
     why: 'FeedListSkeleton, so a capture that lands mid-stream paints the same box the list would.',
+  },
+  {
+    value: 'feed-community-board',
+    file: 'components/feed/community-board.tsx',
+    kind: 'live',
+    why: 'The first module above the composer (ADR-1294) and every pixel of it is a reading: the next gathering in the member’s Circles with its date chip and location, and the newest posts in their Spaces with authors and relative times. The skeleton carries it too, so a capture that lands mid-stream paints the same box. The EMPTY state is deliberately unmasked, the same rule the feed stream’s empty pane follows.',
   },
 ]
 
