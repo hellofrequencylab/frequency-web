@@ -41564,3 +41564,107 @@ duplicates, and the code wins. Two findings are left for other rows, not done he
 "Funnels" naming collision (a `NAMING.md` change), and `spaces/[slug]/settings/calendar` living under
 `/settings` while every other Space console door moved to the Manage hub (ADR-1336's shape, a
 follow-up for whoever finishes that migration). No schema change; no data change.
+
+## ADR-1348: a series that ends by COUNT is skipped by a pure predicate, not marked by a column (2026-09-15)
+
+**Status:** Accepted (2026-09-15). Closes `LIVE-271`. Code: `lib/event-recurrence.ts`
+(`anchorIsExhausted`, the guard inside `generateOccurrencesForAnchor`), tests in
+`lib/event-recurrence-exhausted.test.ts`. **No migration, no column, no backfill.**
+
+**Context.** The daily occurrence cron picks the series worth rolling forward with
+
+```
+.or(`recurrence_until.is.null,recurrence_until.gt.${now}`)
+```
+
+which reads the two ends the enum model had, indefinite or ended on a date, and cannot see the third
+one the rule model added ([ADR-1299](DECISIONS.md)): `COUNT=6`. A COUNT-bounded series carries a NULL
+`recurrence_until` **by construction** — RFC 5545 §3.3.10 forbids both, `resolveSubmittedRepeat`
+writes a null end beside a COUNT rule, and `rruleForRepeat` refuses to emit both — so the filter
+reads an exhausted six-week course as INDEFINITE and hands it to the per-anchor path every day, for
+the life of the row.
+
+**Nothing was ever wrong on the page, and that framing is load-bearing.** The expander stops at the
+count, so the upsert payload is empty and no date is minted. This is a COST decision, not a
+correctness one, and the cost was re-measured rather than quoted:
+
+| what | measured 2026-09-15 |
+| --- | --- |
+| recurring anchors on the platform | **1** (`breathe-connect-expand`, legacy weekly enum, 13 children) |
+| anchors carrying a COUNT rule | **0** |
+| COUNT rules with a NULL end | **0** |
+| exhausted COUNT series | **0** |
+| daily reads per exhausted anchor | **4**, not the 2 the row stated |
+
+The four is the one measurement that moved the row. [ADR-1304](DECISIONS.md) put
+`retireStaleOccurrences` ahead of generation in the same loop, and it takes its own anchor read plus
+its own children read before it early-returns. So the row's stated "one anchor read plus one child
+query" had doubled since it was filed, and half of it is not this decision's to remove.
+
+**Decision — a pure predicate consulted before the read, `anchorIsExhausted(anchor, now)`.** It asks
+the engine for the next occurrence at or after `now` (`nextRepeatOccurrence`, which already bounds
+itself) and answers true only when there is none. It covers both ends, so a caller does not have to
+know which one a series uses. `generateOccurrencesForAnchor` consults it directly after the dormancy
+guard and **before** the child-occurrence query, because that query is what the day costs and nothing
+below it could ever mint a date.
+
+**FALSE is the fail-safe answer and every uncertain case takes it.** A rule this code cannot read is
+a malformed RRULE, not an ended series; the same is true of an unparseable `starts_at` or end. Saying
+"exhausted" on any of those would stop a LIVE series materialising, which is a correctness failure
+bought with a saved read. This is the same reading `retireStaleOccurrences` already stands down on.
+
+**Retirement is deliberately NOT skipped for an exhausted anchor**, and this is the trap inside the
+cheap fix. A series whose COUNT was REDUCED (six dates to three) is exhausted **and** still carrying
+the dates the old count minted. Retiring those is precisely what ADR-1304 exists for, so skipping the
+whole per-anchor block would have traded a saved read for a healing path.
+
+**Decision — the rejected fix, which is the valuable half.** Two were on the table.
+
+- 🔴 **The obvious one, refused outright:** stamp the computed last occurrence into
+  `recurrence_until` when a COUNT series is saved. It would make the existing filter work and would
+  break the `.ics` export, because that column is what `rruleForRepeat` appends as `UNTIL=`, and a
+  rule carrying both UNTIL and COUNT is invalid per RFC 5545, which a strict client may reject whole.
+  It would also put a wall-clock-as-UTC-parts value in a column [ADR-807](DECISIONS.md) defines as a
+  zone-resolved instant.
+- ⚠️ **The honest one, rejected on measurement:** a stored `recurrence_exhausted_at` read by the
+  anchor filter. It is the only fix that shrinks the query HEAD rather than the per-row cost, and its
+  headline argument is that it doubles as the resume cursor `LIVE-190` says the loop is missing.
+  **It does not.** LIVE-190 asks for a watermark the driving query can ORDER BY staleness, "a
+  generated-at or prompted-at stamp", written on every visit; an exhaustion marker is written only
+  for the spent minority and orders nothing. The two look alike and answer different questions.
+  Against it: a migration, RLS and grants, regenerated types, a backfill, and a denormalised fact
+  that every rule-editing path (the create action, the edit action, the admin action, the settings
+  rail) has to invalidate — where a STALE marker stops a LIVE series materialising. Zero affected
+  rows does not buy that surface. **The probe accepts it anyway**: if COUNT series arrive in numbers,
+  the column can land later without reopening the row, and a harness arm proves the probe would pass
+  on it.
+
+**Decision — the probe measures the read, not the name.** The row's own probe tested for one of three
+identifiers in the module, which an identifier in dead code satisfies. The replacement extracts
+`generateOccurrencesForAnchor`'s body, finds the child-occurrence read, and fails unless the
+exhaustion check sits ahead of it, returns on the spot, and is backed by a predicate that actually
+expands a rule — or unless the anchor filter reads a stored end-marker that a migration creates.
+Every file is read through a helper that fails with the missing path, so an absent file is a verdict
+and not an `ENOENT` crash. It exits 1 on `origin/main` and 0 on this tree, and a 9-arm mutation
+harness fires on each arm (guard deleted, guard moved after the read, guard that does not return,
+predicate reduced to a constant, predicate un-exported, read-counting test deleted, test that no
+longer calls the function, source file missing, child read re-spelled), beside an unmutated control
+and the acceptance arm above.
+
+**Decision — the test counts queries.** `lib/event-recurrence-exhausted.test.ts` mocks the admin
+client with a recording fake: an exhausted COUNT anchor must produce ONE anchor read, ZERO child
+reads and ZERO writes. Two positive controls in the same block (the same anchor with its COUNT
+removed, and a COUNT that has not run out) must still read their children, so a test that passed
+because nothing queries anything cannot read as coverage.
+
+**Consequences.** An exhausted COUNT series costs two fewer reads a day, forever, with no schema
+surface and nothing to invalidate. The query head is unchanged: such an anchor is still SELECTed and
+still consumes one of the `limit` slots, which is honest and currently free, since `limit` defaults to
+2000 against an anchor population of one and the clock is the bound that matters (LIVE-190). Two
+adjacent defects were found while measuring and are recorded rather than folded in, because neither is
+COUNT-specific: `retireStaleOccurrences` stands down on `expected.length === 0`, which a COUNT=1
+series reaches honestly, so that one shape reads as an unreadable rule and its stale future dates are
+never retired; and `computeOccurrenceDates` expands from the anchor with no `from` bound, so for ANY
+live series a hard-deleted PAST occurrence is re-minted on the next run. Each wants its own row.
+
+**Rows.** LIVE-271 (done, this ADR).
