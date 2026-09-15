@@ -41997,7 +41997,97 @@ the naming canon wins on names, and that bullet's subject is the plan NAME.
 
 **Rows.** LIVE-253 (done, this ADR).
 
----
+## ADR-1352: a maintainer dispatch is refused for what it would COMMIT, not for the ref it names (2026-09-15)
+
+**Context.** `e2e-manual.yml` is dispatch-only, and two of its four jobs end in a `git push` that
+stamps fresh baselines onto the dispatched branch. On 2026-09-14 run `34904181882` was dispatched
+on **`main`** with `update_baselines` on. Read back from the Actions API: `head_branch: main`,
+`event: workflow_dispatch`, `conclusion: failure`, `22:27:16Z` to `22:34:07Z` — **6m51s and a
+110 MB artifact**, and then the commit step died on *"Changes must be made through a pull
+request"*. `main` is protected and `GITHUB_TOKEN` is not exempt from a protection rule, so the
+push could never have landed no matter how good the capture was. The whole run was spent to
+discover a fact that was knowable in the first second. It was also not free to bystanders: since
+ADR-1331/ADR-1346 every capture job opens with a turnstile, and a run that is *waiting* makes
+every other capture in both workflows queue behind it.
+
+**The premise was re-tested before any work, because the file had changed twice since the
+incident** (#2612/ADR-1346 added the turnstile and the `needs:` chain, #2617/ADR-1351 added the
+degraded-capture marker). It held: the commit steps are still the only pushes in the file —
+`:619` in `update-baselines` (push at `:669`, under the deliberate `if: always()` at `:643`) and
+`:874` in `update-a11y` (push at `:893`, deliberately carrying no `if:` at all) — and nothing
+guarded the ref. `github.ref` occurred exactly once in the file, in the `concurrency` group;
+`refs/heads/main` occurred nowhere.
+
+**🔴 The row's stated fix was too blunt, and the evidence against it is a run that already
+happened.** HYG-089 asked for *"a first step in both jobs that fails immediately when
+`github.ref` is `refs/heads/main`"*. That would have refused run `34940970232` — the dispatch on
+`main`, `update_baselines` off, that finally took the control ADR-1346 recorded as owed. It could
+**only** be taken on `main`, because `workflow_dispatch` runs the workflow file *as it exists on
+the dispatched ref*, so a CI rule that has just merged exists on no other ref. A blanket refusal
+would have made that control, and every future "does this workflow still work" dispatch,
+impossible. A dispatch on a protected ref is not the defect; **a dispatch that would commit** is.
+
+**Decision.**
+
+1. **One step, three copies, byte-identical**, named `Refuse a committing dispatch on a protected
+   ref`. It fails when `GITHUB_REF_NAME` equals `PROTECTED_BRANCH` (`main`) **AND** `WOULD_COMMIT`
+   (`inputs.update_baselines || inputs.update_a11y`) is `true`. Both halves, or the read-only case
+   is caught too.
+2. **It reads `GITHUB_REF_NAME`, which is the value the push itself targets** (`git push origin
+   "HEAD:${GITHUB_REF_NAME}"`), so the guard asks exactly the question the push will ask: can this
+   ref be written? `github.ref` would read `refs/tags/…` on a tag dispatch and miss that the push
+   still lands on a *branch* of that name.
+3. **It lives in `smoke` as well as the two committing jobs, and the `smoke` copy is what saves
+   the money.** `update-baselines` is `needs: smoke`, so a guard living only in the pushing jobs
+   would still let `smoke` run its turnstile (up to 90 minutes) and its whole suite (30) first.
+   The per-job copies are **not** defence in depth: each downstream job is
+   `if: !cancelled() && inputs.<flag>`, so a **failed** `smoke` does not stop them (ADR-1346 chose
+   that on purpose). Both halves are load-bearing.
+4. **`visual` is deliberately exempt.** It pushes nothing, so a visual compare against production
+   from any ref stays legal. A guard there would refuse work that can always land.
+5. **It is a STEP THAT FAILS, never a job-level `if:` that skips** — and this is the finding that
+   most changes the row's shape. A job-level condition makes the job report **`skipped`**, which
+   is the exact word ADR-1346's control reads to tell *"the chain let me run"* from *"a skipped
+   need skipped me"*. On run `34940970232`: `smoke` success, `update-baselines` **skipped**,
+   `update-a11y` **ran**. A failing FIRST step leaves the job created, scheduled and started, so
+   **every job-level reading survives** and only the seconds after it go unspent. Concretely: had
+   this guard existed on 2026-09-15, that control would still have been readable, at ~40 seconds
+   instead of ~6 minutes. The one reading it would have cost is `smoke`'s turnstile poll, and that
+   is obtainable from a read-only dispatch, which this rule explicitly allows.
+6. **First step, ahead of the turnstile.** A guard behind a 90-minute wait has burned the wait and
+   held the capture lane shut on behalf of a run that was never going to be allowed to commit.
+
+**The honest limit, stated rather than discovered later.** The test is a literal branch name, so
+it misses **any other protected ref** — a protected release branch would still spend the capture
+and still die at the push. Reading real protection needs `administration: read`, which this file
+does not grant and should not: it would widen the token for every job here to learn a static fact.
+Worse, `GET /branches/{branch}/protection` **404s both for an unprotected branch and for a token
+that cannot see it**, so an API guard could not tell *"not protected"* from *"cannot look"* —
+failing open is the vacuous pass this workflow's header spends eighty lines refusing, and failing
+closed refuses every branch dispatch, i.e. everything. `PROTECTED_BRANCH` is the single place a
+second name goes, and the source-shape test reads it from the workflow rather than restating it.
+
+**Proof.** Ten assertions in `scripts/e2e-preview-gate.test.ts`; **7 fail against
+`git show origin/main:`** of the workflow, and the three that do not are correctly inert there —
+the premise guard (*the jobs that push are exactly these two*) and the scope control (*`visual`
+does not carry it*) describe facts true before and after. The shipped shell body was driven
+through **nine input combinations**, including the read-only-on-`main` case that must pass and two
+near-miss branch names (`mainline`, `feature/main`) that must not be refused. The row's probe was
+**replaced**: it was a `grep-present` for the literal `refs/heads/main`, a spelling the shipped
+fix does not contain and which any comment mentioning the string would have satisfied. It is now a
+`cmd` probe reading the consequence — presence in every job that pushes (derived from source with
+comments stripped, after the first draft's own explanatory comment quoting `git push origin` made
+`smoke` read as a third committing job), position ahead of both the turnstile and the checkout,
+both halves of the conjunction, `exit 1`, no step-level `if:`, and `visual` exempt. **Twelve
+mutations, twelve detected** — the twelfth (*the guard becomes conditional*) was a genuine hole on
+the first pass, caught by the vitest assertions but not the probe, and the probe was widened
+rather than the arm dropped.
+
+**What a read-only dispatch on a protected ref still does:** everything it did before. `smoke`
+against production, and a `visual` compare against committed baselines, both run untouched on
+`main`.
+
+**Rows.** HYG-089 (done, this ADR).
 
 ## ADR-1353: the materialiser's window has a FLOOR at the run clock, so a deleted PAST date stays deleted (2026-09-15)
 

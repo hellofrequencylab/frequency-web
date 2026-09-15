@@ -231,12 +231,75 @@ jobs:
     # waiting (TURNSTILE_MAX_MINUTES), exactly as e2e.yml's two jobs carry it. Raise both or neither.
     timeout-minutes: 120
     steps:
+      # ── A DISPATCH THAT CANNOT COMMIT IS REFUSED BEFORE IT SPENDS ANYTHING (HYG-089, ADR-1352) ──
+      # 🔴 THE DEFECT, measured. Run 34904181882 (2026-09-14, 22:27:16Z to 22:34:07Z) was dispatched
+      # on `main` with update_baselines on. Seven minutes and a 110 MB artifact later that run's commit
+      # step died on "Changes must be made through a pull request": `main` is protected, and
+      # GITHUB_TOKEN is not exempt from a protection rule. The capture was re-dispatched on a branch
+      # and the first one was pure waste — no baseline, no reading, one capture lane held shut.
+      #
+      # THE RULE IS NARROWER THAN "REFUSE main": refuse a dispatch that would COMMIT. Exactly two
+      # jobs here carry a `git push` — update-baselines and update-a11y — and each runs only when
+      # its own input is set, so `update_baselines || update_a11y` IS the committing dispatch.
+      #
+      # A READ-ONLY DISPATCH ON A PROTECTED REF STAYS LEGAL, and that is not politeness: it is the
+      # only way to get some readings at all. `workflow_dispatch` runs the workflow file AS IT
+      # EXISTS ON THE DISPATCHED REF, so a rule that has just merged can only be exercised on
+      # `main`. Run 34940970232 (2026-09-15, on `main`) is the control ADR-1346 owed and was taken
+      # that way. `smoke` against production and a `visual` compare against committed baselines are
+      # both still one dispatch away, on any ref.
+      #
+      # ⚠️ IT IS A STEP THAT FAILS, NEVER A JOB-LEVEL `if:` THAT SKIPS, and that is load-bearing
+      # rather than stylistic. A skipped job reports `skipped` — the exact word ADR-1346's control
+      # reads to tell "the chain let me run" from "a skipped need skipped me". A job-level guard
+      # would have made that control unreadable. A failing FIRST step leaves the job visibly
+      # created, scheduled and started, so every job-level reading survives; only the seconds after
+      # it are not spent.
+      #
+      # ⚠️ WHY A LITERAL BRANCH NAME AND NOT AN API READ OF "is this ref protected". Reading
+      # protection needs `administration: read`, which this file does not grant and should not — it
+      # would widen the token for every job here to learn a fact that is static. Worse, the
+      # branch-protection endpoint 404s BOTH for an unprotected branch and for a token that cannot
+      # see it, so the guard could not tell "not protected" from "cannot look": failing open is the
+      # vacuous pass this file spends eighty lines refusing, and failing closed refuses every branch
+      # dispatch, i.e. everything. WHAT THE LITERAL TEST MISSES, stated now rather than discovered
+      # later: any OTHER protected ref. A committing dispatch on a protected release branch would
+      # still spend the capture and still die at the push. PROTECTED_BRANCH is the one place to add
+      # one, and scripts/e2e-preview-gate.test.ts reads it from here rather than restating it.
+      #
+      # It reads GITHUB_REF_NAME because that is the value the push itself targets
+      # (`git push origin "HEAD:${GITHUB_REF_NAME}"`, in the two committing jobs), so it asks the
+      # same question the push will: can this ref be written? `github.ref` would read `refs/tags/...`
+      # on a tag dispatch and miss that the push still lands on a BRANCH of that name.
+      #
+      # FIRST, BEFORE THE TURNSTILE, and that order is load-bearing twice. The turnstile waits up to
+      # 90 minutes, and WHILE IT WAITS it makes every other capture in both workflows queue behind
+      # this run. A guard sitting behind it would burn the wait and hold the lane shut on behalf of a
+      # run that was never going to be allowed to commit.
+      - name: Refuse a committing dispatch on a protected ref
+        env:
+          PROTECTED_BRANCH: main
+          # True exactly when this dispatch asked for something that ends in a `git push`. In the two
+          # committing jobs it is necessarily true — each runs only when its own input is set — so
+          # there this step reduces to the ref test, which is why all three copies can be identical.
+          WOULD_COMMIT: ${{ inputs.update_baselines || inputs.update_a11y }}
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF_NAME:-}" = "${PROTECTED_BRANCH}" ] && [ "${WOULD_COMMIT}" = "true" ]; then
+            echo "::error title=committing dispatch on a protected ref::This dispatch would commit captures to ${GITHUB_REF_NAME}, which is protected, so the push at the end of the capture is refused by branch protection after the entire capture has been spent (run 34904181882: seven minutes, 110 MB, nothing kept). Re-dispatch with the ref set to the BRANCH these baselines belong on. A read-only dispatch, update_baselines and update_a11y both off, is allowed on any ref and is how ADR-1346's control was taken."
+            exit 1
+          fi
+          echo "ref=${GITHUB_REF_NAME:-} would_commit=${WOULD_COMMIT}: nothing in this dispatch pushes to ${PROTECTED_BRANCH}, so the capture may proceed."
       # THE TURNSTILE (ADR-1331, extended to this file by LIVE-332). Byte-identical to the
       # step that opens pr-compare and lighthouse in e2e.yml, and pointed at the same lane:
       # every capture job of BOTH workflows, so a maintainer capture waits for a PR capture
       # and a PR capture waits for a maintainer one. It is the FIRST step, before checkout,
       # because an inline github-script step needs no working tree and the wait should happen
       # before we pay for an install. It never fails the job (rule 5).
+      #
+      # ⚠️ IT IS NOW THE SECOND STEP: the protected-ref refusal above runs first, on purpose. A
+      # dispatch that can never commit must not spend this wait, and must not make every other
+      # capture in both workflows queue behind it while it waits (HYG-089, ADR-1352).
       #
       # It does NOT serialise this run's OWN jobs — rule 1 skips them on purpose, so that
       # e2e.yml's two jobs can still overlap. The needs: chain above does that job here.
@@ -427,12 +490,75 @@ jobs:
     # 45 for the capture (unchanged) plus the turnstile's 90-minute bound.
     timeout-minutes: 135
     steps:
+      # ── A DISPATCH THAT CANNOT COMMIT IS REFUSED BEFORE IT SPENDS ANYTHING (HYG-089, ADR-1352) ──
+      # 🔴 THE DEFECT, measured. Run 34904181882 (2026-09-14, 22:27:16Z to 22:34:07Z) was dispatched
+      # on `main` with update_baselines on. Seven minutes and a 110 MB artifact later that run's commit
+      # step died on "Changes must be made through a pull request": `main` is protected, and
+      # GITHUB_TOKEN is not exempt from a protection rule. The capture was re-dispatched on a branch
+      # and the first one was pure waste — no baseline, no reading, one capture lane held shut.
+      #
+      # THE RULE IS NARROWER THAN "REFUSE main": refuse a dispatch that would COMMIT. Exactly two
+      # jobs here carry a `git push` — update-baselines and update-a11y — and each runs only when
+      # its own input is set, so `update_baselines || update_a11y` IS the committing dispatch.
+      #
+      # A READ-ONLY DISPATCH ON A PROTECTED REF STAYS LEGAL, and that is not politeness: it is the
+      # only way to get some readings at all. `workflow_dispatch` runs the workflow file AS IT
+      # EXISTS ON THE DISPATCHED REF, so a rule that has just merged can only be exercised on
+      # `main`. Run 34940970232 (2026-09-15, on `main`) is the control ADR-1346 owed and was taken
+      # that way. `smoke` against production and a `visual` compare against committed baselines are
+      # both still one dispatch away, on any ref.
+      #
+      # ⚠️ IT IS A STEP THAT FAILS, NEVER A JOB-LEVEL `if:` THAT SKIPS, and that is load-bearing
+      # rather than stylistic. A skipped job reports `skipped` — the exact word ADR-1346's control
+      # reads to tell "the chain let me run" from "a skipped need skipped me". A job-level guard
+      # would have made that control unreadable. A failing FIRST step leaves the job visibly
+      # created, scheduled and started, so every job-level reading survives; only the seconds after
+      # it are not spent.
+      #
+      # ⚠️ WHY A LITERAL BRANCH NAME AND NOT AN API READ OF "is this ref protected". Reading
+      # protection needs `administration: read`, which this file does not grant and should not — it
+      # would widen the token for every job here to learn a fact that is static. Worse, the
+      # branch-protection endpoint 404s BOTH for an unprotected branch and for a token that cannot
+      # see it, so the guard could not tell "not protected" from "cannot look": failing open is the
+      # vacuous pass this file spends eighty lines refusing, and failing closed refuses every branch
+      # dispatch, i.e. everything. WHAT THE LITERAL TEST MISSES, stated now rather than discovered
+      # later: any OTHER protected ref. A committing dispatch on a protected release branch would
+      # still spend the capture and still die at the push. PROTECTED_BRANCH is the one place to add
+      # one, and scripts/e2e-preview-gate.test.ts reads it from here rather than restating it.
+      #
+      # It reads GITHUB_REF_NAME because that is the value the push itself targets
+      # (`git push origin "HEAD:${GITHUB_REF_NAME}"`, in the two committing jobs), so it asks the
+      # same question the push will: can this ref be written? `github.ref` would read `refs/tags/...`
+      # on a tag dispatch and miss that the push still lands on a BRANCH of that name.
+      #
+      # FIRST, BEFORE THE TURNSTILE, and that order is load-bearing twice. The turnstile waits up to
+      # 90 minutes, and WHILE IT WAITS it makes every other capture in both workflows queue behind
+      # this run. A guard sitting behind it would burn the wait and hold the lane shut on behalf of a
+      # run that was never going to be allowed to commit.
+      - name: Refuse a committing dispatch on a protected ref
+        env:
+          PROTECTED_BRANCH: main
+          # True exactly when this dispatch asked for something that ends in a `git push`. In the two
+          # committing jobs it is necessarily true — each runs only when its own input is set — so
+          # there this step reduces to the ref test, which is why all three copies can be identical.
+          WOULD_COMMIT: ${{ inputs.update_baselines || inputs.update_a11y }}
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF_NAME:-}" = "${PROTECTED_BRANCH}" ] && [ "${WOULD_COMMIT}" = "true" ]; then
+            echo "::error title=committing dispatch on a protected ref::This dispatch would commit captures to ${GITHUB_REF_NAME}, which is protected, so the push at the end of the capture is refused by branch protection after the entire capture has been spent (run 34904181882: seven minutes, 110 MB, nothing kept). Re-dispatch with the ref set to the BRANCH these baselines belong on. A read-only dispatch, update_baselines and update_a11y both off, is allowed on any ref and is how ADR-1346's control was taken."
+            exit 1
+          fi
+          echo "ref=${GITHUB_REF_NAME:-} would_commit=${WOULD_COMMIT}: nothing in this dispatch pushes to ${PROTECTED_BRANCH}, so the capture may proceed."
       # THE TURNSTILE (ADR-1331, extended to this file by LIVE-332). Byte-identical to the
       # step that opens pr-compare and lighthouse in e2e.yml, and pointed at the same lane:
       # every capture job of BOTH workflows, so a maintainer capture waits for a PR capture
       # and a PR capture waits for a maintainer one. It is the FIRST step, before checkout,
       # because an inline github-script step needs no working tree and the wait should happen
       # before we pay for an install. It never fails the job (rule 5).
+      #
+      # ⚠️ IT IS NOW THE SECOND STEP: the protected-ref refusal above runs first, on purpose. A
+      # dispatch that can never commit must not spend this wait, and must not make every other
+      # capture in both workflows queue behind it while it waits (HYG-089, ADR-1352).
       #
       # It does NOT serialise this run's OWN jobs — rule 1 skips them on purpose, so that
       # e2e.yml's two jobs can still overlap. The needs: chain above does that job here.
@@ -695,12 +821,75 @@ jobs:
     # 45 for the capture (unchanged) plus the turnstile's 90-minute bound.
     timeout-minutes: 135
     steps:
+      # ── A DISPATCH THAT CANNOT COMMIT IS REFUSED BEFORE IT SPENDS ANYTHING (HYG-089, ADR-1352) ──
+      # 🔴 THE DEFECT, measured. Run 34904181882 (2026-09-14, 22:27:16Z to 22:34:07Z) was dispatched
+      # on `main` with update_baselines on. Seven minutes and a 110 MB artifact later that run's commit
+      # step died on "Changes must be made through a pull request": `main` is protected, and
+      # GITHUB_TOKEN is not exempt from a protection rule. The capture was re-dispatched on a branch
+      # and the first one was pure waste — no baseline, no reading, one capture lane held shut.
+      #
+      # THE RULE IS NARROWER THAN "REFUSE main": refuse a dispatch that would COMMIT. Exactly two
+      # jobs here carry a `git push` — update-baselines and update-a11y — and each runs only when
+      # its own input is set, so `update_baselines || update_a11y` IS the committing dispatch.
+      #
+      # A READ-ONLY DISPATCH ON A PROTECTED REF STAYS LEGAL, and that is not politeness: it is the
+      # only way to get some readings at all. `workflow_dispatch` runs the workflow file AS IT
+      # EXISTS ON THE DISPATCHED REF, so a rule that has just merged can only be exercised on
+      # `main`. Run 34940970232 (2026-09-15, on `main`) is the control ADR-1346 owed and was taken
+      # that way. `smoke` against production and a `visual` compare against committed baselines are
+      # both still one dispatch away, on any ref.
+      #
+      # ⚠️ IT IS A STEP THAT FAILS, NEVER A JOB-LEVEL `if:` THAT SKIPS, and that is load-bearing
+      # rather than stylistic. A skipped job reports `skipped` — the exact word ADR-1346's control
+      # reads to tell "the chain let me run" from "a skipped need skipped me". A job-level guard
+      # would have made that control unreadable. A failing FIRST step leaves the job visibly
+      # created, scheduled and started, so every job-level reading survives; only the seconds after
+      # it are not spent.
+      #
+      # ⚠️ WHY A LITERAL BRANCH NAME AND NOT AN API READ OF "is this ref protected". Reading
+      # protection needs `administration: read`, which this file does not grant and should not — it
+      # would widen the token for every job here to learn a fact that is static. Worse, the
+      # branch-protection endpoint 404s BOTH for an unprotected branch and for a token that cannot
+      # see it, so the guard could not tell "not protected" from "cannot look": failing open is the
+      # vacuous pass this file spends eighty lines refusing, and failing closed refuses every branch
+      # dispatch, i.e. everything. WHAT THE LITERAL TEST MISSES, stated now rather than discovered
+      # later: any OTHER protected ref. A committing dispatch on a protected release branch would
+      # still spend the capture and still die at the push. PROTECTED_BRANCH is the one place to add
+      # one, and scripts/e2e-preview-gate.test.ts reads it from here rather than restating it.
+      #
+      # It reads GITHUB_REF_NAME because that is the value the push itself targets
+      # (`git push origin "HEAD:${GITHUB_REF_NAME}"`, in the two committing jobs), so it asks the
+      # same question the push will: can this ref be written? `github.ref` would read `refs/tags/...`
+      # on a tag dispatch and miss that the push still lands on a BRANCH of that name.
+      #
+      # FIRST, BEFORE THE TURNSTILE, and that order is load-bearing twice. The turnstile waits up to
+      # 90 minutes, and WHILE IT WAITS it makes every other capture in both workflows queue behind
+      # this run. A guard sitting behind it would burn the wait and hold the lane shut on behalf of a
+      # run that was never going to be allowed to commit.
+      - name: Refuse a committing dispatch on a protected ref
+        env:
+          PROTECTED_BRANCH: main
+          # True exactly when this dispatch asked for something that ends in a `git push`. In the two
+          # committing jobs it is necessarily true — each runs only when its own input is set — so
+          # there this step reduces to the ref test, which is why all three copies can be identical.
+          WOULD_COMMIT: ${{ inputs.update_baselines || inputs.update_a11y }}
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF_NAME:-}" = "${PROTECTED_BRANCH}" ] && [ "${WOULD_COMMIT}" = "true" ]; then
+            echo "::error title=committing dispatch on a protected ref::This dispatch would commit captures to ${GITHUB_REF_NAME}, which is protected, so the push at the end of the capture is refused by branch protection after the entire capture has been spent (run 34904181882: seven minutes, 110 MB, nothing kept). Re-dispatch with the ref set to the BRANCH these baselines belong on. A read-only dispatch, update_baselines and update_a11y both off, is allowed on any ref and is how ADR-1346's control was taken."
+            exit 1
+          fi
+          echo "ref=${GITHUB_REF_NAME:-} would_commit=${WOULD_COMMIT}: nothing in this dispatch pushes to ${PROTECTED_BRANCH}, so the capture may proceed."
       # THE TURNSTILE (ADR-1331, extended to this file by LIVE-332). Byte-identical to the
       # step that opens pr-compare and lighthouse in e2e.yml, and pointed at the same lane:
       # every capture job of BOTH workflows, so a maintainer capture waits for a PR capture
       # and a PR capture waits for a maintainer one. It is the FIRST step, before checkout,
       # because an inline github-script step needs no working tree and the wait should happen
       # before we pay for an install. It never fails the job (rule 5).
+      #
+      # ⚠️ IT IS NOW THE SECOND STEP: the protected-ref refusal above runs first, on purpose. A
+      # dispatch that can never commit must not spend this wait, and must not make every other
+      # capture in both workflows queue behind it while it waits (HYG-089, ADR-1352).
       #
       # It does NOT serialise this run's OWN jobs — rule 1 skips them on purpose, so that
       # e2e.yml's two jobs can still overlap. The needs: chain above does that job here.
