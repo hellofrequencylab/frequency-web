@@ -76,6 +76,13 @@
 
 import { readFileSync, existsSync } from 'node:fs'
 
+// The freshness rule is IMPORTED, not copied. `check-stored-links.mjs` derived it (ADR-1241)
+// after that census stamped a new `capturedAt` over an old body, and HYG-023 already filed the
+// duplicated-inline-logic version of this mistake, so a second hand-rolled copy here would be
+// the defect it names. Script-to-script import is the established shape in this directory
+// (`check-adoption.mjs` has four importers).
+import { freshnessProblems, MAX_CENSUS_AGE_DAYS } from './check-stored-links.mjs'
+
 export const CENSUS_PATH = 'scripts/stored-block-types.json'
 
 /** The exit code that means "I could not look", per check-backlog.mjs. A probe that cannot read
@@ -242,6 +249,25 @@ export function report(census, { probe = false, io = {} } = {}) {
     lines.push('', `🔴 check:stored-blocks — the census failed its integrity floors (${CENSUS_PATH}):`, '')
     for (const p of problems) lines.push(`    ${p}`)
     lines.push('', '    A census that measures nothing passes everything. Re-capture it with the SQL in', `    ${CENSUS_PATH} ("recaptureQuery") rather than lowering a floor.`, '')
+    return { code: INDETERMINATE, lines }
+  }
+
+  // ── FRESHNESS: the arm this guard did not have (HYG-096) ──────────────────────────────────
+  // The floors above catch a census that measures nothing. They do NOT catch one that measured
+  // production accurately four months ago, which reads exactly like a clean bill of health. Its
+  // sibling has had this arm since ADR-1241; this census already carried `capturedAt` and a
+  // `recaptureLog`, so the data was here the whole time and only the check was missing.
+  const stale = freshnessProblems(census)
+  if (stale.length) {
+    lines.push('', `🔴 check:stored-blocks — the census is STALE (${CENSUS_PATH}, ceiling ${MAX_CENSUS_AGE_DAYS} days):`, '')
+    for (const p of stale) lines.push(`    ${p}`)
+    lines.push(
+      '',
+      '    A stale census cannot say whether a stored block still resolves, so this is 79 rather',
+      '    than a verdict. Re-run the SQL in "recaptureQuery" against production, rewrite "stores"',
+      '    from the result, then set "capturedAt" AND add a recaptureLog entry dated the same day.',
+      '',
+    )
     return { code: INDETERMINATE, lines }
   }
 
