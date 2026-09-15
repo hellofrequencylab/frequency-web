@@ -18,7 +18,11 @@
 // capabilities that genuinely need a plan are still named plainly, because naming them is what makes
 // the promise checkable, but they are the CONSEQUENCE of that sentence rather than the pitch: selling
 // memberships (Business), campaigns and funnels (Business), and revenue splits (Collective). Do not
-// reintroduce a "paid does more / lifts the caps / unlocks" beat here. Everything else is a meter, and
+// reintroduce a "paid does more / lifts the caps / unlocks" beat here, and that includes a SECTION
+// TITLE: the five step-up cards each read "When you start charging, it does more." until LIVE-255,
+// which is this rule broken by the heading above the copy that obeys it. A card that names a plan
+// capability says WHICH REPEAT it serves (the second session, the second month, the second gift),
+// because the repeat is what a plan carries (PLAN_STORY.paid, ADR-1350). Everything else is a meter, and
 // the caps are never typed here, they live in lib/pricing/feature-meters.ts (ADR-837) and the copy
 // stays qualitative.
 
@@ -260,7 +264,7 @@ export const COACHES_FUNNEL: FunnelConfig = {
     {
       icon: 'spark',
       soft: true,
-      title: "When you start charging, it does more.",
+      title: 'A plan is for the second session.',
       body: "Email to bring quiet clients back. Reminders that send themselves, so no one slips. And a nudge when someone's drifting, while there's still time to reach them.",
     },
   ],
@@ -350,7 +354,7 @@ export const STUDIOS_FUNNEL: FunnelConfig = {
     {
       icon: 'spark',
       soft: true,
-      title: 'When you start charging, it does more.',
+      title: 'A plan is for the second month.',
       body: 'Email to bring quiet members back, reminders that send themselves, and a nudge when someone is drifting.',
     },
   ],
@@ -440,7 +444,7 @@ export const EVENTS_FUNNEL: FunnelConfig = {
     {
       icon: 'spark',
       soft: true,
-      title: 'When you start charging, it does more.',
+      title: 'A plan is for the second night.',
       body: 'Email everyone who holds a ticket, send reminders that run themselves, and reach quiet guests before the next date.',
     },
   ],
@@ -531,7 +535,7 @@ export const COMMUNITY_FUNNEL: FunnelConfig = {
     {
       icon: 'envelope',
       soft: true,
-      title: 'When you start charging, it does more.',
+      title: 'A plan is for the second time they show up.',
       body: 'Email to bring quiet members back, reminders that send themselves, and a nudge when someone is drifting.',
     },
   ],
@@ -625,7 +629,7 @@ export const NONPROFITS_FUNNEL: FunnelConfig = {
     {
       icon: 'spark',
       soft: true,
-      title: 'When you start charging, it does more.',
+      title: 'A plan is for the second gift.',
       body: 'Email to bring lapsed donors back, receipts and reminders that send themselves, and a nudge when a recurring gift is about to end.',
     },
   ],
