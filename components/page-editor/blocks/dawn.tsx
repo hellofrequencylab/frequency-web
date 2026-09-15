@@ -1633,7 +1633,7 @@ export const dawnComponents: Record<string, ComponentConfig> = {
       title: 'Pick the plan that fits.',
       titleAccent: '',
       kicker:
-        'Two ladders. One for you as a member, one for the Space you run. Every rung on both sells, so the only thing that moves down the ladder is the rate.',
+        'Two ladders. One for you as a member, one for the Space you run. Every rung on both sells, so a plan is never what turns selling on. You take one when money starts moving and you have a standing promise to keep.',
       plans: [
         {
           livePriceKey: 'member',

@@ -42861,3 +42861,79 @@ database *after* the capture date. Only a re-capture can, and this repo has no c
 job. What the arm does is stop a stale reading passing quietly as a fresh one.
 
 **Rows.** `HYG-096` (done, this ADR).
+
+## ADR-1362: a block DEFAULT is live copy the moment anyone inserts the block (2026-09-15)
+
+**Status.** Accepted. Closes `LIVE-341`. Extends [ADR-1350](DECISIONS.md), which retired the fee
+ladder as the sales pitch, to the page-editor **block defaults** — the one class of copy that ADR's
+own inventory could not see.
+
+**Context.** ADR-1350 retired twenty-three live strings that argued a paid plan buys a lower rate
+and higher caps, and it closed with a candid limit: *"no probe over prose catches an arbitrary NEW
+off-model sentence that uses none of the nineteen idioms."* This is not that case. This string was
+already there, and it was missed for a structural reason.
+
+`components/page-editor/blocks/dawn.tsx`, `PlanBand.defaultProps.kicker`:
+
+> *"Two ladders. One for you as a member, one for the Space you run. Every rung on both sells, so
+> the only thing that moves down the ladder is the rate."*
+
+The first two sentences are on-model. The third is the retired argument in one clause: with every
+rung selling, the rate becomes the ladder's only remaining purpose, which is exactly what ADR-1350
+decision 2 refused (*"the rate stays stated and stops being the offer"*).
+
+**Two gaps let it through, and neither is the stated limit.** `LIVE-253`'s probe — the enforcement,
+and it is a backlog probe rather than a vitest file — builds its corpus from **eight named paths**
+and `components/page-editor/blocks/` is not among them. And its twenty-idiom pass carried
+`"down the ladder makes it smaller"` and `"down the ladder shrinks"` but not the phrasing this
+string actually used. So the sentence was invisible twice over.
+
+🔴 **And a block default is worse than a static page, because it propagates.** A retired sentence on
+`/pricing` is wrong in one place. A retired sentence in `defaultProps` is seeded into a new document
+every time an operator inserts that block, so the defect multiplies by adoption and each copy is
+then owner content that no source guard will ever read again — the same shape as
+[ADR-1359](DECISIONS.md)'s finding about `/`.
+
+**Decision.**
+
+1. **The clause is rewritten on-model**: *"...Every rung on both sells, so a plan is never what turns
+   selling on. You take one when money starts moving and you have a standing promise to keep."*
+   That is `PLAN_STORY.paid`'s argument in the band's own voice, it keeps the two-ladder framing the
+   block exists to set up, and it passes `CONTENT-VOICE.md` §10 (no em dashes, plain sentences, no
+   narrating the reader).
+2. **`LIVE-253`'s probe now walks the block library.** Adding the file to its corpus brings it into
+   the idiom pass automatically, because that pass iterates `Object.keys(src)` rather than a second
+   hand-kept list — the one piece of that probe's design that made this a one-line extension.
+3. **The exact sentence is pinned as a negative, and two idioms are added** for the phrasing it
+   used. The pin catches this sentence returning verbatim; the idioms catch it returning reworded.
+
+⚠️ **The elegant fix was rejected, and the reason belongs on the record rather than looking like an
+oversight.** This repo's rule is READ, never typed ([ADR-916](DECISIONS.md),
+[ADR-1337](DECISIONS.md), ADR-1350), and `PLAN_STORY.rate` is the approved sentence — its sibling's
+comment even says *"Every surface interpolates this instead of arguing it again."* So
+`kicker: '...' + PLAN_STORY.rate` is the obvious shape. It was not taken because of the
+**artifact**, not the code: `dawn.tsx` reaches the pricing seam today through a **type-only** import
+that erases at compile, and importing `lib/pricing/pricing-page.ts` would pull a nine-import runtime
+chain (`gates`, `beta`, `pricing-grid`, `feature-tiers`, …) into the **marketing block library**,
+which the page-editor renderer reaches broadly. The gates that price that —
+`check:build-budget`, `check:shell-weight`, `check:build-fanout` — run only in `postbuild` on
+Vercel, so the cost cannot be measured before merging, and `AGENTS.md`'s standing lesson is that a
+source change whose artifact cost nobody measured is the 2026-08-11 incident's shape. Trading a
+measurable copy fix for an unmeasurable bundle risk is the wrong trade for an XS row. **If the
+derivation is wanted later, the clean path is a leaf module holding `PLAN_STORY` with no imports of
+its own** — a `lib/pricing` refactor, and its own row.
+
+**Consequences.** ✅ Proven both ways on real trees: the extended probe exits **0** here and **1**
+against `origin/main`'s `dawn.tsx`, and all **three** new arms fire independently there (the exact-
+sentence pin, and both new idioms), so none is carried by another. ✅ The corpus goes 8 files → **9**,
+the idiom list 20 → **21**, the exact-sentence pins 21 → **22**; the probe's own assertion count is
+computed from those lengths, so it reports the wider coverage rather than a stale number. ✅ Scope
+was **measured before widening**: scanning the entire `components/page-editor/blocks/` tree for the
+retired idioms returns **exactly one hit**, this string, so bringing the directory into the corpus
+catches this and nothing else and cannot turn a `done` row red for an unrelated reason. ⚠️ **Stated
+limit:** only `dawn.tsx` is covered, not the whole blocks directory. That is deliberate — it is the
+one block file carrying plan copy today, and a corpus entry that reads a directory would go red on
+any future block whose copy nobody has reviewed against this canon, which is a different and larger
+decision.
+
+**Rows.** `LIVE-341` (done, this ADR).
