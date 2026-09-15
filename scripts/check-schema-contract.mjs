@@ -77,20 +77,6 @@ export const ALLOWLIST = [
   //
   // When you need an entry here, keep the shape below and say which artifact retires it:
   //   { file, kind: 'select' | 'update' | 'insert' | 'rpc', table, column, added, reason, owner }
-  {
-    file: 'lib/billing/tickets.ts',
-    table: 'event_tickets',
-    column: 'payment_processing_at',
-    // No `kind`: the one write site is both an `update` payload key and an `is(…, null)` filter on
-    // the same statement, and they retire together.
-    added: '2026-09-15',
-    reason:
-      'LIVE-343. The column arrives with migration 20270345004700 (settle_ticket_rechecks_capacity), ' +
-      'which is applied through the Supabase MCP before this merges. It is the second clock that keeps ' +
-      'a submitted delayed-notification payment from having its seat resold at minute 30. Exactly the ' +
-      'shape the event_tickets.guest_email entry had while 20270345003400 was pending.',
-    owner: 'Regenerate lib/database.types.ts from the live project once 20270345004700 is applied, and delete this entry in the same change.',
-  },
 ]
 
 /** Walk `root` against `typesFile` and return the raw report. Pure: no exit, no console. */
