@@ -54,7 +54,8 @@
 // Only the OUTERMOST offender in a subtree is reported. One overflowing card otherwise names
 // every descendant it drags with it, and the fix is always on the ancestor.
 
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from './fixtures'
+import type { Page } from '@playwright/test'
 
 import {
   applyRenderState,
