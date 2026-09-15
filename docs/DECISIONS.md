@@ -42792,3 +42792,72 @@ guard against a mutated backlog, and a probe that expensive gets routed around, 
 the mutation control above.
 
 **Rows.** `HYG-097` (done, this ADR).
+
+## ADR-1361: the block census gets the freshness arm its sibling has had since ADR-1241 (2026-09-15)
+
+**Status.** Accepted. Closes `HYG-096`. Extends [ADR-1241](DECISIONS.md), which derived the rule for
+`scripts/stored-links.json`, to `scripts/stored-block-types.json`. Applies
+[ADR-970](DECISIONS.md): a check that cannot fail honestly reads as coverage.
+
+**Context.** Two sibling censuses answer two halves of one question about stored page documents in
+production — `stored-links.json` asks *"does every stored link still GO anywhere?"* and
+`stored-block-types.json` asks *"does every stored block still RESOLVE?"*. Both are hand-captured
+snapshots of a live database, committed so CI can reason about production without reaching it.
+
+Only one of them could tell whether its snapshot was still worth believing:
+
+| | `check-stored-links.mjs` | `check-stored-blocks.mjs` |
+|---|---|---|
+| integrity floors (stores / documents / types) | ✅ | ✅ |
+| `capturedAt` **present** | ✅ | ✅ |
+| `capturedAt` is a real date, not in the future | ✅ | 🔴 **absent** |
+| `capturedAt` within `MAX_CENSUS_AGE_DAYS` (120) | ✅ | 🔴 **absent** |
+| `capturedAt` equals the newest `recaptureLog` entry | ✅ | 🔴 **absent** |
+
+A grep for `AGE_DAYS|MAX_CENSUS|STALE_DAYS|120` in the blocks guard returned nothing.
+
+Two things make this worse than a missing nice-to-have. First, **the data was already there**:
+`stored-block-types.json` carries `capturedAt` *and* a `recaptureLog`, so the arm was checkable the
+whole time and only the check was missing. Second, **the third row of that table is not
+hypothetical** — the links census's own recapture log records it happening: a `capturedAt` was
+stamped forward while the body still held the previous reading, and three probes went on agreeing
+with a snapshot that no longer described production. That is precisely what ADR-1241 was written
+against, and the blocks census had no defence against the same move.
+
+The floors catch a census that measures *nothing*. They do not catch one that measured production
+accurately four months ago — and that is the more dangerous shape, because at a glance it is
+indistinguishable from a clean bill of health.
+
+**Decision.**
+
+1. **The blocks guard grows a freshness arm, returning `INDETERMINATE` (79)**, exactly as the links
+   guard does. 79 rather than 1 is the honest code: a stale census cannot say whether a stored
+   block resolves, so it is not a verdict either way.
+2. **The rule is IMPORTED, never copied.** `check-stored-blocks.mjs` imports `freshnessProblems`
+   and `MAX_CENSUS_AGE_DAYS` from `check-stored-links.mjs`. `HYG-023` already filed the
+   duplicated-inline-logic version of this mistake between these two files, so a second
+   hand-rolled copy would be the defect it names. Script-to-script import is the established shape
+   in `scripts/` — `check-adoption.mjs` alone has four importers — so this needs no new module and
+   no re-homing of the links guard's own definitions.
+3. **Compatibility was measured before the wiring, not assumed.** The shared reader extracts a date
+   from the first ten characters of each log entry. Both censuses store log entries as strings
+   opening `YYYY-MM-DD`, so `recaptureDates()` returns `2026-09-15, 2026-08-18` for the blocks
+   census — and a test pins that it returns more than one date and that the newest equals
+   `capturedAt`, so the newest-entry arm can never pass vacuously on an unreadable log.
+
+**Consequences.** ✅ Both censuses now read **FRESH** with 0 problems, so this is a ratchet rather
+than a migration — nothing is retro-broken and no date needed moving to land it. ✅ Proven both
+ways on real trees: **5 of the 7 new assertions fail against `origin/main`'s guard**, and 42 of 42
+pass here. The two that pass on both trees are the controls, and that is the correct split — they
+measure the census and the shared function rather than the new wiring. ✅ All three stale directions
+were driven on the **blocks** census specifically, not just on the links one: past the ceiling (257
+days, naming the ceiling), a date in the future, and the ADR-1241 case of a `capturedAt` moved
+forward alone, which is inside the age ceiling and so can *only* be caught by the newest-entry rule.
+✅ A source-shape arm asserts the import is present and that the guard declares no
+`MAX_CENSUS_AGE_DAYS` of its own, so the two guards agree on the ceiling by construction rather
+than by two numbers that happen to match today. ⚠️ **Stated limit, unchanged from the links guard
+and worth restating rather than implying:** neither guard can catch an orphan written to the
+database *after* the capture date. Only a re-capture can, and this repo has no credentialled CI
+job. What the arm does is stop a stale reading passing quietly as a fresh one.
+
+**Rows.** `HYG-096` (done, this ADR).

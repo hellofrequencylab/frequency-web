@@ -14,6 +14,7 @@ import {
   mapsTypeToSuccessor,
   report,
 } from './check-stored-blocks.mjs'
+import { freshnessProblems, recaptureDates, MAX_CENSUS_AGE_DAYS } from './check-stored-links.mjs'
 import { config } from '@/lib/page-editor/config'
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -418,5 +419,71 @@ describe('the probe answers 0 / 1 / 79 and never confuses them', () => {
 
   it('loadCensus throws on a missing file rather than manufacturing an empty corpus', () => {
     expect(() => loadCensus('scripts/definitely-not-here.json')).toThrow()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// FRESHNESS (HYG-096). The floors above catch a census that measures NOTHING. They do not catch
+// one that measured production accurately four months ago, and that is the dangerous shape,
+// because a stale reading is indistinguishable from a clean bill of health at a glance.
+//
+// The sibling census has had this arm since ADR-1241, and it was derived there for a reason worth
+// repeating: its own recapture log records a `capturedAt` being stamped forward while the body
+// still held the previous reading, and three probes went on agreeing with a snapshot that no
+// longer described production. This census already carried `capturedAt` AND a `recaptureLog`, so
+// the data was here the whole time and only the check was missing.
+//
+// The rule is IMPORTED from check-stored-links.mjs, never copied — HYG-023 already filed the
+// duplicated-inline-logic version of this mistake.
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+describe('FRESHNESS — a stale census is 79, not a clean bill of health', () => {
+  it('the real census is FRESH, so the arm is not silently off (the control)', () => {
+    expect(freshnessProblems(census)).toEqual([])
+    expect(report(census).code).toBe(0)
+  })
+
+  it('reads a date out of every recaptureLog entry, so the newest-entry rule has something to compare', () => {
+    // If this returned [] the "date moved alone" arm below would pass vacuously on any census.
+    const dates = recaptureDates(census)
+    expect(dates.length).toBeGreaterThan(1)
+    expect(dates[0]).toBe(census.capturedAt)
+  })
+
+  it('🔴 a census past the age ceiling is INDETERMINATE', () => {
+    const old = { ...census, capturedAt: '2026-01-01' }
+    const { code, lines } = report(old)
+    expect(code).toBe(INDETERMINATE)
+    expect(lines.join('\n')).toContain('STALE')
+    expect(lines.join('\n')).toContain(String(MAX_CENSUS_AGE_DAYS))
+  })
+
+  it('🔴 a capturedAt moved forward with no reading behind it is INDETERMINATE', () => {
+    // The exact defect ADR-1241 was written against, now caught on this census too. The date is
+    // well inside the age ceiling, so ONLY the newest-entry rule can catch it.
+    const moved = { ...census, capturedAt: '2026-09-14' }
+    const { code, lines } = report(moved)
+    expect(code).toBe(INDETERMINATE)
+    expect(lines.join('\n')).toContain('a date moved without a reading behind it')
+  })
+
+  it('🔴 a capturedAt in the future is INDETERMINATE', () => {
+    const ahead = { ...census, capturedAt: '2099-01-01', recaptureLog: ['2099-01-01 — fabricated'] }
+    expect(report(ahead).code).toBe(INDETERMINATE)
+  })
+
+  it('🔴 a census with no recaptureLog cannot be dated, so it is INDETERMINATE', () => {
+    const undated = { ...census, recaptureLog: [] }
+    const { code, lines } = report(undated)
+    expect(code).toBe(INDETERMINATE)
+    expect(lines.join('\n')).toContain('recaptureLog')
+  })
+
+  it('shares ONE rule with the sibling guard rather than re-implementing it', () => {
+    // A second hand-rolled copy is the HYG-023 defect. Assert the import, and assert the two
+    // guards agree on the ceiling by construction rather than by two numbers that match today.
+    const src = readFileSync(join(ROOT, 'scripts/check-stored-blocks.mjs'), 'utf8')
+    expect(src).toContain("from './check-stored-links.mjs'")
+    expect(src).not.toMatch(/const\s+MAX_CENSUS_AGE_DAYS\s*=/)
+    expect(MAX_CENSUS_AGE_DAYS).toBeGreaterThan(0)
   })
 })
