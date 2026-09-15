@@ -82,7 +82,7 @@ false. They are the real work.
 
 ## 3. Everything freemium: the caps
 
-Every one of the 22 Space functions is already **universal and default-on** in the resolver
+Every one of the Space functions is already **universal and default-on** in the resolver
 (`lib/spaces/functions.ts:334-340`). Only four carry an entitlement. So "every tool available" is
 almost the shipped state — what has to change is the **caps**, five of which currently read zero and
 therefore act as locks rather than allowances.
@@ -110,12 +110,19 @@ or members.*
 is `CAPABILITY_BUNDLES` (`lib/pricing/bundles.ts`) used as an onboarding preset rather than a
 paywall — which is exactly what it can do, because **bundles are subtractive only**: they can turn a
 tool off for a Space, never grant a paid one. Presets named for what someone runs (a studio, a
-practice, a venue, a non-profit) make a 22-tool console feel like a five-tool one on day one, and
-every hidden tool is one switch away.
+practice, a venue, a non-profit) make a nineteen-tool console feel like a seven-tool one on day one,
+and every hidden tool is one switch away. ⚠️ **One thing a preset may never do**, and it is the rule
+the built presets are pinned against: it may not name a **tier-marked** tool as ON (`crm`, `email`,
+`shop`, `program`). The only effect of listing a tool is that its off-switch is deleted, so listing a
+paid one would read as a grant a bundle cannot make. Every paid tool starts off and one switch away,
+which is what "off but switchable" asks for, and it is why there is no preset for a **product**
+business: the Shop is its defining tool and the Shop is tier-marked.
 
-✅ **This closes an open P1 owner row.** `OWN-048` says: *"before any bundle ships, write a full spec
-per bundle and review the function registry at the same time."* The mechanism is built and proven and
-holds exactly one pass-through row. This section is the spec it is waiting for.
+✅ **This section is the spec for the bundle half of an open P1 owner row.** `OWN-048` says: *"before
+any bundle ships, write a full spec per bundle and review the function registry at the same time."*
+It is the bundle half only: the recorded keep / merge / retire decision per function key is still a
+ruling nobody has taken. Status for both halves lives in
+[`BUILD-BACKLOG.json`](BUILD-BACKLOG.json), never here.
 
 ---
 

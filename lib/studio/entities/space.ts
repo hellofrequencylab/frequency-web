@@ -65,6 +65,22 @@ const SOCIAL_PLATFORM_OPTIONS: readonly FieldOption[] = [
   { value: 'spotify', label: 'Spotify' },
 ]
 
+/**
+ * THE SETUP PRESETS, as choices (owner ruling 1 of ADR-1294; the registry is `SETUP_PRESETS` in
+ * lib/pricing/bundles.ts). RESTATED rather than imported, for a harder reason than the social
+ * platforms above: `bundles.ts` reads `BILLING_NAMESPACE` from lib/spaces/entitlements.ts, which
+ * imports lib/spaces/membership.ts, which declares `import 'server-only'`. A manifest is imported by
+ * client surfaces (the Spark, the review board), so importing the registry here would break the
+ * build the first time a wizard rendered. `lib/pricing/bundles.test.ts` pins this list against the
+ * real registry, ids and labels both, so the restatement cannot drift.
+ */
+const SETUP_PRESET_OPTIONS: readonly FieldOption[] = [
+  { value: 'studio', label: 'Studio or gym' },
+  { value: 'practice', label: 'Solo practice' },
+  { value: 'venue', label: 'Venue' },
+  { value: 'nonprofit', label: 'Non Profit' },
+]
+
 export const SPACE_MANIFEST: EntityManifest = {
   entity: 'space',
   label: 'Space',
@@ -80,7 +96,7 @@ export const SPACE_MANIFEST: EntityManifest = {
   steer: { mood: true, directions: true, lock: ['identity'] },
 
   sections: [
-    { key: 'model', title: 'What you run', desc: 'Your operating model and who can find you. You can switch it later.' },
+    { key: 'model', title: 'What you run', desc: 'Your operating model, the tools you start with, and who can find you. You can switch the model later.' },
     { key: 'identity', title: 'Identity', desc: 'Name, handle, and brand. What people see across the network.' },
     { key: 'story', title: 'About and story', desc: 'The words a visitor reads. Vera drafts a starting point you edit.' },
     { key: 'contact', title: 'Contact and hours', desc: 'The details every surface reads from. Fill them once and they show up everywhere.' },
@@ -111,6 +127,25 @@ export const SPACE_MANIFEST: EntityManifest = {
         { value: 'private', label: 'Private, only you and your members' },
       ],
       read: (d) => str(d.visibility) || 'network',
+    },
+    // The STARTING SETUP: which capability bundle the new Space is shaped by, so it opens with its
+    // core tools on and the rest off but switchable (owner ruling 1, ADR-1294). Empty is legitimate
+    // and is the fail-safe: `createSpace` then derives one from the Mode + Focus already chosen
+    // above (`setupPresetForMode`), and a pair with no honest preset applies no bundle at all, which
+    // leaves the Space with every tool on exactly as before this field existed.
+    //
+    // NO `editPlane`, deliberately (ADR-1281): a preset is a STARTING shape, not a property of the
+    // Space. Re-asking it later would be a screen that silently switches tools off behind an
+    // operator's back; after creation the tools are edited one switch at a time on the Space's own
+    // function settings, which is the surface that already owns them.
+    {
+      path: 'preset',
+      label: 'Starting setup',
+      kind: 'select',
+      section: 'model',
+      placement: 'spark',
+      options: SETUP_PRESET_OPTIONS,
+      read: (d) => str(d.preset),
     },
 
     // ── Identity. Name and handle are what creation genuinely cannot complete without. ──

@@ -40927,3 +40927,117 @@ green: no template's rendered words moved.
 because no probe in this repo can see the `menu_items` rows that decide the live header, and a
 code-only probe passing while production still shows six tabs is the shape-not-truth failure
 [ADR-970](DECISIONS.md) exists to refuse.
+
+## ADR-1342: Four capability-bundle presets become the Space setup shape, applied at provision (2026-09-15)
+
+**Status:** Accepted. Implements owner ruling 1 of [ADR-1294](DECISIONS.md) and the bundle spec in
+[`OFFER-MODEL.md`](OFFER-MODEL.md) §3. Closes `LIVE-249` and `LIVE-149`; `OWN-048` stays open on its
+second ask. Extends [ADR-1197](DECISIONS.md) (the bundle mechanism), which deliberately shipped with
+one pass-through row and no curation.
+
+**The ruling.** "Everything freemium. Every tool is available to every Space with usage caps; a new
+Space starts with **core tools on and the rest off but switchable**." `CAPABILITY_BUNDLES` is the one
+mechanism in the tree that can say that sentence, because a bundle is SUBTRACTIVE: it writes a
+top-level `false` for a tool it omits and deletes the off-switch for one it includes, and it cannot
+write `spaces.plan` or the reserved `entitlements.billing` namespace. It can hide a tool; it can
+never grant a paid one. That is also why it could not be the add-on mechanism the first draft of the
+offer model proposed.
+
+**The four presets.** `lib/pricing/bundles.ts` now holds five rows: the pass-through `general` plus
+`studio`, `practice`, `venue` and `nonprofit`. Each is CORE plus a short list:
+
+| Preset | Label | On, beyond core |
+|---|---|---|
+| `studio` | Studio or gym | availability · memberships · practices · qr |
+| `practice` | Solo practice | availability · practices · journeys |
+| `venue` | Venue | availability · qr · collaborators |
+| `nonprofit` | Non Profit | donations · journeys · qr |
+
+`CORE_SPACE_FUNCTION_KEYS` is exported and is seven: `billing` (which no bundle may ever switch off,
+SCAN-536), plus `profile`, `members`, `circles`, `events`, `loom` and `reviews`. The middle four are
+the four nouns of the product and the two things they are made of; `loom` is the image library all of
+them write into; `reviews` is the only trust surface a Space has on day one. 🔴 `circles` is
+load-bearing rather than a taste call: `createSpace` lands a new owner on `/manage/circles`
+(LIVE-261), so a preset that subtracted Circles would deliver them to a screen their own Space
+forbids.
+
+**Two rules, pinned by tests rather than by this paragraph.**
+
+1. **No preset subtracts a core key.** A preset that did would hand an owner a console with a hole
+   in it, and the hole would look like a bug in the tool rather than in the preset.
+2. **No preset names a TIER-MARKED function as ON.** The set is derived from the registry by
+   `entitlement !== null` (today `crm`, `email`, `shop`, `program`), so a tool that becomes
+   tier-marked joins it without an edit here. The reason is exact: the only effect of LISTING a
+   function is that its off-switch is deleted, so listing a paid one would read as a grant a bundle
+   cannot make. Every paid tool therefore starts off and one switch away, which is what "off but
+   switchable" asks for.
+
+**Why the curation could be authored now when ADR-1197 said it could not.** ADR-1197 refused to
+guess: of the real operator Spaces roughly 18 of 21 are solo wellness practitioners and
+coaches-and-healers is the only niche door that has produced a customer, so three curated bundles
+would have committed two of them on nothing. That has not changed, and it is why only `practice` has
+customers behind it. The other three are not guesses either: they are read off the existing Focus
+registry, which the owner already authored and the create wizard already asks about. `studio` is the
+Studio-or-gym Focus, `venue` the Event-space Focus, `nonprofit` the two nonprofit Focuses.
+
+**There is deliberately no fifth preset for a PRODUCT business.** Its defining tool is the Shop, the
+Shop is tier-marked, and rule 2 forbids naming it on. So `business:product` is absent from the
+Mode map and such a Space stands up with every tool on, exactly as it did before this change. An
+honest gap beats a preset that appears to include the one thing it cannot include.
+
+**The Spark carries the choice, and nothing else does.** `lib/studio/entities/space.ts` declares
+`preset` as a `select` on the `model` section with `placement: 'spark'` and, deliberately, no
+`editPlane` ([ADR-1281](DECISIONS.md)). A preset is a STARTING shape, not a property of the Space:
+re-asking it on a rail would switch tools off behind an owner who had since tuned them by hand, and
+after creation the tools are edited one switch at a time on the surface that already owns them. No
+UI was hand-rolled; the create form still asks only "what do you run?".
+
+The four options are RESTATED in the manifest rather than imported, for a hard reason:
+`bundles.ts` reads `BILLING_NAMESPACE` from `lib/spaces/entitlements.ts`, which imports
+`lib/spaces/membership.ts`, which declares `import 'server-only'`. A manifest is imported by client
+surfaces, so importing the registry there would break the build the first time a wizard rendered.
+`bundles.test.ts` pins the restatement against the registry on ids AND labels, so it cannot drift.
+
+**Provision applies it, through the one writer.** `createSpace` resolves
+`resolveSetupPreset(input.preset) ?? setupPresetForMode(type, modeVariant)` and applies it with
+`setSpaceBundle`, which stays the sole writer: it reads the two jsonb columns the insert just seeded
+from the operator's per-type defaults, hands them to the pure resolver, and writes the result back,
+so the off-switches land OVER those defaults instead of instead of them. `SETUP_PRESET_BY_MODE` is
+the Mode-to-bundle map LIVE-149 named as its missing half, and it is exported so the tests can walk
+it against the live Focus registry: a key naming a retired Focus would otherwise fail silently as
+"no preset for this Space".
+
+**Nothing stores the preset id, on purpose.** The preset's whole effect is the switches it wrote, and
+those ARE the state every surface reads. A column holding the name of a shape the operator has since
+edited would be a second, quietly wrong answer to "what is on". The provenance is the audit draft:
+the preset rides in the `proposeAndConfirmCreate` payload, so the log records the shape the Space was
+born in. **No migration.**
+
+**The apply is best-effort and is NOT silent.** A Space that exists with every tool on is a working
+Space, so a failed shaping step must not fail the provision; but a fail-safe needs a gate that
+notices it fired, so both the refusal (`setSpaceBundle` returns a reason) and a throw are logged with
+the space id and the bundle id. A preset that quietly stopped applying would otherwise look exactly
+like a preset nobody chose.
+
+**Proof.** `lib/pricing/bundles.test.ts` (43 tests) adds: the four ids in catalog order; core is real
+and includes the undisableable key; no preset subtracts core; no preset names a tier-marked tool on,
+with a positive control that the tier-marked set is non-empty; every preset actually subtracts
+something, so none is a second pass-through; the copy carries no em or en dashes; per preset, the
+blobs a real provision produces (`seedSpaceConfigFromDefaults` then `nextBlobsForBundle`) read back
+through `spaceFunctionEnabled` with core ON and every omitted key OFF; re-applying `general` restores
+everything; `resolveSetupPreset` refuses `general` and is total; the Mode map maps only registered
+`(type, Focus)` pairs to registered presets and is pinned whole; `business:product` is unmapped; the
+manifest field's options match the registry on ids and labels and it declares no edit plane; and a
+source-shape guard that provision resolves, derives, applies through `setSpaceBundle`, logs the
+failure, and never reaches for `setSpacePlan` / `setSpaceAddons`.
+
+**What this does not settle.** `OWN-048`'s second ask. Its bundle-spec half is delivered and
+OFFER-MODEL §3 is the spec; the recorded keep / merge / retire decision per function key is an owner
+ruling and stays open. Its premise was re-measured in the same pass and had drifted: `SPACE_FUNCTIONS`
+declares **nineteen** live keys, not 22, because LIVE-226 retired `enroll`, `tickets` and `checkin`
+into `journeys` / `events` / `events`. This change adds evidence toward the remaining nineteen
+without ruling on them: seven are now declared structural by `CORE_SPACE_FUNCTION_KEYS`, and each of
+the other twelve is shown to be genuinely optional by at least one shipped preset switching it off.
+
+**Rows.** LIVE-249 closed. LIVE-149 closed, in the same change as the first curated bundle, which is
+the condition that row set for itself. OWN-048 stays open with its premise re-derived.
