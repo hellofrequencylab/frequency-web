@@ -41240,6 +41240,242 @@ outlive the tier silently) and `content/help/spaces/billing.md:45` (lists revenu
 
 **Rows.** LIVE-232 (done, this ADR).
 
+## ADR-1345: ACCEPTED — the database account gets a weekly reading, because the outage that took the previews down reported ACTIVE_HEALTHY throughout (2026-09-15)
+
+**Status.** Accepted. A CI-rule change under [ADR-1325](DECISIONS.md) ruling 10: it ships with this
+record and a green control run on current `main`, cited below by run id. Closes `LIVE-336`.
+
+**Context.** On 2026-09-15, 04:23Z to 04:41Z, the Supabase account hit its ceiling and every preview
+deployment failed for eighteen minutes. The builds failing was **correct** rather than a second bug:
+`LIVE-325` had just taught a menu read that fails during `next build` to fail the build instead of
+shipping default menus, so the outage surfaced as red builds and not as a silently wrong public
+header.
+
+🔴 **What makes it a decision is the SHAPE of the failure, not the eighteen minutes.** The control
+plane reported the project `ACTIVE_HEALTHY` for the whole window. The single signal an operator
+reaches for first said everything was fine while every query failed, and nothing in the repo, in
+`ci.yml`, or in `.github/workflows/maintenance.yml` read anything that would have moved. The load is
+substantially the build loop's own: [ADR-1328](DECISIONS.md) measured 1,200 to 2,900 PostgREST reads
+per table per fifteen minutes for a single profile, `LIVE-326` serialised the runs and `LIVE-328`
+removed the prefetch multiplier inside each one, and neither of those notices a ceiling. An
+instrument was owed, beside `LIVE-332` and `LIVE-333`, which are the same subject.
+
+**Decision.**
+
+- **The weekly `sweep` job gains a step, "Database account usage".** It follows the four
+  DB-credentialled steps above it exactly: the step performs the token-gated read against
+  `POST /v1/projects/{ref}/database/query`, and `scripts/maintenance/db-usage.mjs` consumes the JSON,
+  so the script never touches a database and is tested without one
+  (`scripts/maintenance/db-usage.test.ts`). It belongs here and not in the `ci.yml` guard array for
+  the reason its four siblings state: CI has no database credentials, so it could only pass
+  vacuously there (ADR-970), and no pull request can cause or fix the finding.
+- **One SELECT, three readings, and only ONE of them is a ceiling.** Connections against
+  `max_connections` — the only ceiling the database declares about itself, and so the only figure
+  that gets a percentage and a verdict tier (75% warn, 90% critical). Then transactions and rows read
+  over a **stated window**, and the database size in bytes.
+- **The window is anchored, or the rate means nothing.** `pg_stat_database`'s counters are cumulative
+  since `stats_reset`, and on this project `stats_reset` is **NULL** — the stats have never been
+  reset — so the query falls back to `pg_postmaster_start_time()` and the report says *which* anchor
+  it used. A cumulative counter printed without its window is a number that reads like a rate and is
+  not one.
+- ⚠️ **No plan quota is read, and that is the decision rather than an omission.** The account plan
+  ceiling, the thing actually hit, is not exposed to the role this reads as. Inventing a denominator
+  would produce a confident percentage of a made-up number, which is the `ACTIVE_HEALTHY` defect
+  wearing this instrument's name. Volume and size therefore carry **no percentage** and are a
+  **trend** across these summaries — the reading history lives in the run summaries, not in a
+  constant in the file (AGENTS.md: watch the trend, not the number).
+- **It is a READING, never a blocking gate.** The step runs under `set +e` and cannot fail the sweep.
+  A weekly job going red because a connection count moved is a job everybody learns to route around
+  (ADR-970). The exit code exists only to ROUTE the finding: `0` headroom, `1` a ceiling at or over
+  its threshold, `79` it could not look. A non-zero code writes `dbusage.txt`, the existing
+  "Report to a tracking issue on delta" step's `if` gains `steps.dbusage.outputs.code != '0'`, and
+  its body gains one more section. No second issue writer, and a green reading writes nothing, so a
+  clean week stays quiet.
+- 🔴 **"Could not look" is never reported as "fine."** This is the half the row was actually about.
+  The un-armed arm prints `🔴 Could not look — the database account ceiling was NOT read on this
+  run`, sets `code=79`, and says in words that nothing there claims headroom. Unlike its four
+  siblings, whose skip is a quiet ℹ️ line and no file, it also writes `dbusage.txt`: 79 already
+  satisfies the tracking-issue condition, so omitting the file would open an issue with no section
+  explaining it, which is a notice with nothing in it. A fetch that returns an
+  error envelope, an empty result, a truncated body, or a row missing either half of the connection
+  ceiling parses to `null` and comes back as the same 79 with the same words. Every fail-safe needs a
+  gate that notices it fired, and here the notice is the tracking issue.
+- ⚠️ **It depends on `SUPABASE_ACCESS_TOKEN`, which expires 2026-12-09.** `LIVE-273` already carries
+  that as an open owner row and no new row is filed for it. On expiry this step degrades to 79 with
+  its words rather than to silence, which is the whole point of the four-outcome design.
+
+**The control.** `maintenance.yml` already accepts `workflow_dispatch`, so no change was needed to
+get one. Run id **`34936585002`** — `workflow_dispatch` on `main` at `ed8c8a57a`, 2026-09-15 06:21Z,
+**success**, 66 seconds, all sixteen steps green. It proves the two things this step depends on:
+`SUPABASE_ACCESS_TOKEN` is armed and `SUPABASE_PROJECT_REF` resolves (`azsqfeonabsbmemvddqd`), and
+every credentialled sibling took a real read on that path — header menu drift 23 live rows against 23
+code defaults, front-door copy canon 71 strings and 0 findings, generated types drift ✅ matching the
+live schema. The sweep was already non-green for reasons this change does not touch (three new
+Supabase advisors, four design-debt baselines not bought by a sweep), so tracking issue #2555 was
+updated, which is the same path a non-green usage reading will take.
+
+**The reading it actually printed.** Taken through the Management API on 2026-09-15 06:23Z, against
+the live project:
+
+| Reading | Value | Against |
+| :--- | :--- | :--- |
+| Connections | **45 of 90 (50%)**, 37 client backends | ✅ the one declared ceiling, 25 points below warn |
+| Transactions | **962,166** · ~9,467/min | ⚠️ no readable ceiling — a trend |
+| Rows read | **25,828,237** · ~254,132/min | ⚠️ no readable ceiling — a trend |
+| Window | since **2026-09-15 04:41:02Z** (1h 42m) | postmaster start; stats never reset |
+| Database size | **167.0 MiB** | ⚠️ no readable plan ceiling |
+
+🔴 **`pg_postmaster_start_time()` reads 04:41:02Z, the exact minute the outage ended.** The database
+was restarted out of the incident. That is a fifth independent confirmation of a window that was
+diagnosed from four readings before the cause was known, and it arrived as a side effect of building
+the instrument — which is the argument for the instrument.
+
+**The probe was re-pointed, and the reason is the rule.** As filed, `LIVE-336`'s probe grepped
+`maintenance.yml` for the words *usage*, *quota*, *ceiling*. It did fire on the base tree, so it was
+not vacuous — but it measures the row's own title rather than its consequence, and the header comment
+of this very change satisfies it with no step, no script and no reading. The probe now measures what
+was built: the step exists and runs `db-usage.mjs`, its report reaches `$GITHUB_STEP_SUMMARY`, it runs
+under `set +e`, its code reaches the tracking issue, the SQL names `max_connections`, both `pg_stat`
+views and the postmaster anchor, a real payload becomes `45 of 90 (50%)` with a per-minute rate, and
+an unreadable payload exits 79 saying *Could not look* and **not** *Headroom*. All twelve arms were
+driven against mutated trees and all twelve fire, including the base tree and a positive control.
+
+**Consequences.** The account now has a weekly reading with an owner, and the next approach to the
+connection ceiling is visible a week before it is total rather than never. Volume is a series, so the
+first three or four sweeps are worth more than any one of them; nothing in this record should be read
+as a budget. The step adds one query and one node process to a job that already installs the tree, so
+its cost is seconds. `LIVE-332` (the manual capture workflow running two concurrent captures outside
+the turnstile) and `LIVE-333` (a capture taken inside an edge 5xx window committing that window as
+truth) stay open and are the other two thirds of the subject.
+
+**Rows.** LIVE-336
+
+## ADR-1346: ACCEPTED — the maintainer capture joins the turnstile, and one dispatch stops capturing three times at once (2026-09-15)
+
+**Context.** ADR-1331 put a turnstile in front of `pr-compare` and `lighthouse` so one
+preview-backed capture renders the ~160-surface list against the one shared database at a time.
+`e2e-manual.yml`, the workflow a maintainer DISPATCHES to take baselines, was not in scope, and
+two separate things were wrong with it.
+
+- **It had no turnstile at all.** Measured on main before this change: all four of its jobs
+  (`smoke`, `update-baselines`, `update-a11y`, `visual`, at lines 190, 265, 388 and 484) opened
+  with `- uses: actions/checkout@v7`, and the string `Turnstile` did not appear in the file.
+- **Its own jobs ran beside each other.** No job declared `needs:`, so the only serialisation was
+  the workflow-level `concurrency` group at lines 184-187 — `e2e-manual-${{ github.ref }}`,
+  `cancel-in-progress: false`. That group is keyed by REF and holds the RUN, so it serialised
+  neither two dispatches on two branches nor, more to the point, the four jobs of ONE dispatch.
+  Each of those jobs mints its own member session and captures the whole surface list.
+
+So one dispatch was two, three or four concurrent captures on the house profile, on top of
+whatever the PR gate was doing. The consequence, on 2026-09-14: the 23:28Z recapture on `b5`
+(run 34909054841, `capture_shell` on, pointed at PRODUCTION) ran its captures beside #2593's and
+#2592's `pr-compare` captures. Between 23:33Z and 23:42Z the REST edge answered **503 to 11,042
+requests on `/rest/v1/*`**, every one from a UA node — the ADR-1328 exhaustion shape, reproduced.
+The baselines that dispatch then COMMITTED were photographed inside that window and depicted
+degraded chrome: #2594's own compare failed 62 public comparisons at 1 to 2 percent, and a clean
+recapture the next morning superseded every one of those 62 PNGs. A capture run is the one job in
+this repo whose output is believed without further review, which is exactly why it must not be
+the job that runs in the worst conditions.
+
+Filed as LIVE-332, resolved here under ruling 10 of ADR-1325 (a CI rule change ships with its ADR
+and its control run).
+
+**Decision.** Two mechanisms, because there are two different overlaps and neither mechanism can
+cover both.
+
+- **Across RUNS: the same turnstile, pointed at a lane that spans both files.** Each of the four
+  jobs now opens with the byte-identical `Turnstile` step that opens `pr-compare` and
+  `lighthouse`, before any checkout (an inline `github-script` step needs no working tree, and the
+  waiting should happen before the install is paid for). The script gained two list-valued knobs
+  in place of one scalar: `TURNSTILE_PEERS`, the job names that count as a capture, and
+  `TURNSTILE_WORKFLOWS`, the workflow files to look for them in. The manual jobs queue behind all
+  six capture jobs of both files; `pr-compare` queues behind itself plus the four manual jobs, and
+  `lighthouse` behind itself plus the same four. **So a maintainer capture waits for a PR capture
+  and a PR capture waits for a maintainer one** — the reverse direction is the half that lives in
+  the other file, and it is pinned by the test. `lighthouse` stays out of `pr-compare`'s lane and
+  vice versa, so one run's two PR jobs still overlap; ADR-936 split them for that wall clock and
+  nothing here narrows it.
+- **Within ONE dispatch: a `needs:` chain.** `smoke` → `update-baselines` → `update-a11y` →
+  `visual`. The turnstile cannot do this half, and the reason is structural rather than
+  incidental: its rule 1 ignores the run's own jobs precisely so the PR pair can overlap, and its
+  bound can expire and proceed, where a `needs:` edge is an ordering GitHub enforces absolutely.
+  Each downstream job is `if: ${{ !cancelled() && inputs.<flag> }}`. The status function is
+  load-bearing: GitHub prepends an implicit `success()` to a job condition that names none, so a
+  bare `inputs.update_a11y` beside `needs: update-baselines` would ALSO demand that
+  update-baselines ran and passed, and a dispatch asking for a11y counts alone would capture
+  nothing at all while reporting tidy "skipped" rows. `always()` is the other candidate and is
+  wrong: it captures straight through a cancellation, the one moment nobody wants the load.
+- **`actions: read` joins the workflow-level `permissions:` block.** A `permissions:` block
+  REPLACES the default set, so with only `contents: write` (what the file carried, for the two
+  commit steps) every turnstile would have read zero runs, waited on nobody and cleared on poll 1
+  — a green step that measured nothing, which is the failure mode this file's own header spends
+  eighty lines refusing.
+- **An empty `TURNSTILE_WORKFLOWS` is now loud.** The knob has no fallback, and a turnstile with
+  nothing to poll clears immediately. Rule 5 forbids failing the job, so the script emits a
+  `::warning` and a job-summary paragraph saying the rule did not apply to it, and the
+  source-shape test refuses the omission before it can reach a runner.
+- **Every timeout rose by exactly the bound**, as ADR-1331 did for the PR jobs: `smoke` 30 → 120,
+  and the three 45s → 135, so a full 90-minute wait still leaves each suite every minute it had.
+
+**Consequences.** A full dispatch is now SEQUENTIAL, so its wall clock is the sum rather than the
+max: roughly 30 + 45 + 45 + 45 minutes of capture plus each job's wait. That is the price, and it
+is the right one, because a dispatch that finishes sooner by photographing a degraded site has
+produced nothing but work to undo. Runner minutes while waiting are the cost ADR-1331 already
+accepted, and the `needs:` chain actually reduces the API traffic against ADR-1331's shape: only
+one manual job is ever polling, because the others have not started. Run numbers are per workflow
+file, so across two files they are not one series and rule 3's tie-break between two WAITING runs
+resolves in favour of the file with the lower numbers — `e2e-manual.yml` has far fewer runs than
+`e2e.yml`, which hands a maintainer capture priority over a merely queued PR capture. Deliberate,
+and a strict order either way, so no two runs can end up waiting on each other. What does not
+change: nothing about what any job photographs. `visual` runs last and still compares against the
+baselines the dispatch started with, because `actions/checkout` takes the dispatched SHA rather
+than the branch tip.
+
+**Proof.** `scripts/e2e-preview-gate.test.ts` gained eight assertions: the turnstile opens every
+capture job, keyed by its own name, before any checkout; every job polls both files and a lane
+naming all six capture jobs; the PR gate names the four manual jobs in return and still excludes
+its sibling; the four jobs form a chain and the head of it is unconditional; every downstream
+condition names a status function and none of them is `always()`; `actions: read` is granted;
+every bound leaves at least 30 minutes for the suite; and all SIX copies of the script, across
+both files, are byte-identical. All eight were run against `origin/main`'s copies of the two
+workflows and all eight FAIL there, while the ten pre-existing assertions pass on both — so the
+new arms measure this change and nothing else. Separately, the exact script body that ships was
+lifted out of the YAML and driven through a fake Actions API over nine scenarios: clear on poll 1
+with nothing in flight; a PR capture in the other workflow holding a manual job; a manual capture
+holding a PR job (the reverse direction); `lighthouse` NOT holding `pr-compare`; rule 1's own-run
+skip; rule 2's completed job; rule 3's higher-numbered waiter; rule 5's unreadable API and bound;
+and the empty-list warning. Nine green.
+
+**The premise, measured rather than argued.** The job-level timings of the incident run itself
+(34909054841, read from the Actions API) are the control on the defect. Its `smoke` job
+(104192243485) and its `update-baselines` job (104192243334) were both created at 23:28:56Z and
+both started at 23:28:58Z, **on two different runners** (1000031489 and 1000031488). Each minted
+its own member session five seconds apart — 23:29:47Z and 23:29:52Z — and then the two captures
+ran side by side from 23:29:57Z to 23:36:25Z: six and a half minutes of two concurrent captures
+inside one dispatch, wholly inside the 23:33Z-23:42Z window in which the REST edge answered 503
+to 11,042 requests. Nothing about that reading depends on reading the workflow source.
+
+**🔴 THE CONTROL RUN IS OWED, AND WAS NOT OBTAINED.** Ruling 10 of ADR-1325 asks a CI rule change
+to cite a control, and this one cannot have it yet, for a mechanical reason rather than a
+judgment: `workflow_dispatch` runs the workflow file **as it exists on the dispatched ref**, and
+this rule exists only on an unpushed branch. A dispatch against `main` would execute the OLD file
+and add precisely the load this row exists to remove, so none was fired. What was done instead is
+written down above: the shipped script body driven through a fake API over nine scenarios, eight
+source assertions that fail on `main`, and eleven detected mutations. **What those cannot prove is
+the one thing the control must read:** that GitHub accepts this `needs:`/`if:` shape and that
+`!cancelled()` really does override skip-propagation from a SKIPPED dependency. The dispatch that
+proves it, once the branch is pushed, is `e2e-manual.yml` on this branch with **`update_a11y` ON
+and `update_baselines` OFF** — the exact case where the chain's middle link is skipped — and a
+`base_url` pointed at the branch's own preview rather than production. Green there means: the
+turnstile logged a poll (so the widened `permissions:` granted the API read), `update-baselines`
+reported `skipped`, and `update-a11y` RAN anyway, after `smoke` rather than beside it. The queue
+itself is a third reading, owed on the next manual dispatch that overlaps a PR run, whose log
+names that run as `capturing`. LIVE-332's CLOSED paragraph says both are outstanding.
+
+**Rows.** LIVE-332 (done, this ADR; its probe was a `grep-present` with an empty pattern and is
+now a `cmd` probe that reads the two mechanisms). LIVE-326 and LIVE-330 (done, unchanged; their
+probes read the PR half of the turnstile and still pass).
+
 ## ADR-1347: the nine duplicate consoles, counted: one was a duplicate, seven were scopes (2026-09-15)
 
 **Status.** Accepted. Closes `LIVE-239`, the third and last of the duplicate-operator-door rows,
