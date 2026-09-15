@@ -5,9 +5,20 @@ import {
   BETA_CTA_SECONDARY_LABEL,
   BETA_CTA_SECONDARY_HREF,
 } from '@/lib/site'
-import { priceStrings, pricingCatalog, CREW_NOTE, MISSION_FRAMING } from '@/lib/pricing/pricing-page'
+import {
+  priceStrings,
+  pricingCatalog,
+  pricingTiers,
+  tierListAnchor,
+  CREW_NOTE,
+  MISSION_FRAMING,
+  type PricingTier,
+} from '@/lib/pricing/pricing-page'
+import { planExtras } from '@/lib/pricing/pricing-grid'
+import { PRICING_DEFAULTS } from '@/lib/pricing/defaults'
+import { formatBps } from '@/lib/pricing/display'
 import { formatLoadoutCents } from '@/lib/pricing/loadout'
-import { NETWORK_TAKE_RATE_DEFAULT } from '@/lib/billing/pricing-keys'
+import { NETWORK_TAKE_RATE_DEFAULT, catalogItem, networkTakeRateBpsForPlan } from '@/lib/billing/pricing-keys'
 
 // Every dollar figure in this template interpolates from the ONE code catalog (priceStrings /
 // pricingCatalog) and the CREW_NOTE labels, so the CMS fallback can never drift from /pricing.
@@ -22,26 +33,104 @@ const P = priceStrings()
 // charging path applies (lib/billing/fees.ts), so a rate this template publishes is the rate a seller
 // is actually charged. It used to type them as prose, which is how a CMS document ships a fee ladder
 // the product stopped using: the free-Member rung did not exist here at all, and the free-Space rung
-// was written into one FAQ answer and nowhere else.
-const R = (bps: number) => `${bps / 100}%`
+// was written into one FAQ answer and nowhere else. The member ladder is a fixed pair (ADR-878), so
+// its two rates read the vector by name; the Space rates read off the ladder below, per rung.
 const RATE = {
-  memberFree: R(NETWORK_TAKE_RATE_DEFAULT.memberFree),
-  member: R(NETWORK_TAKE_RATE_DEFAULT.member),
-  free: R(NETWORK_TAKE_RATE_DEFAULT.free),
-  // The paid rung (ADR-1335): Business, Collective and Independent all stand on it, so both cards
-  // read one number until LIVE-232 and LIVE-228 retire the Collective card.
-  business: R(NETWORK_TAKE_RATE_DEFAULT.paid),
-  collective: R(NETWORK_TAKE_RATE_DEFAULT.paid),
-  nonprofit: R(NETWORK_TAKE_RATE_DEFAULT.nonprofit),
+  memberFree: formatBps(NETWORK_TAKE_RATE_DEFAULT.memberFree),
+  member: formatBps(NETWORK_TAKE_RATE_DEFAULT.member),
 }
 const CAT = pricingCatalog()
-// 🔴 THE OPENING BETA PRICE IS CLOSED (owner, 2026-08-17, ADR-1060): every plan is sold at its LIST
-// price, so the yearly figures below read the LIST year, not the founding one. Quoting the founding
-// year here would print $190 beside a $29 monthly, a yearly nobody can buy. The list and founding
-// amounts are equal on a plan that never carried a beta anchor (Non Profit).
-const BUSINESS_YEAR = formatLoadoutCents(CAT.business_base.year.listCents)
-const COLLECTIVE_YEAR = formatLoadoutCents(CAT.collective_base.year.listCents)
-const NONPROFIT_YEAR = formatLoadoutCents(CAT.nonprofit_seat.year.listCents)
+
+// 🔴 THE SPACE LADDER IS READ, NEVER LISTED (LIVE-232). Every Space card, every FAQ answer that
+// walks the plans, and the kicker that lists their rates map SPACE_TIERS, the same derived model
+// /pricing renders (pricingTiers over lib/pricing/display.ts ADVERTISED_SPACE_PLANS). So a plan the
+// owner takes off the advertised ladder leaves this template with no edit here, and its name, price,
+// yearly figure and rate can never be typed into a document. The amounts come through the same beta
+// window rule the checkout bills on, so a yearly figure here is always one a buyer can actually buy.
+// The only thing this file says per plan is the feature bullets, keyed by plan id so a retired id
+// fails to typecheck rather than surviving as a card.
+const SPACE_TIERS = pricingTiers()
+const PAID_SPACE_TIERS = SPACE_TIERS.filter((t) => t.price.month.foundingCents > 0)
+const monthOf = (t: PricingTier) => formatLoadoutCents(t.price.month.foundingCents)
+const yearOf = (t: PricingTier) => formatLoadoutCents(t.price.year.foundingCents)
+const rateOf = (t: PricingTier) => formatBps(networkTakeRateBpsForPlan(t.id))
+
+/** Join into a plain English list: "a, b, and c". */
+const andList = (items: readonly string[]): string =>
+  items.length <= 1
+    ? (items[0] ?? '')
+    : items.length === 2
+      ? `${items[0]} and ${items[1]}`
+      : `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`
+
+/** The per-plan feature bullets, the one thing this template says for itself about a plan. `inherits`
+ *  adds an "Everything in <the rung below>" bullet read off the ladder, never typed. */
+const SPACE_TIER_COPY: Record<PricingTier['id'], { inherits: boolean; features: readonly string[]; noteLead?: string; noteTail?: string }> = {
+  free: {
+    inherits: false,
+    features: [
+      'Your storefront, page, events, posts, and members',
+      'Show up in Discover',
+      'Be a Collaborator on other Spaces’ events',
+    ],
+  },
+  business: {
+    inherits: true,
+    features: [
+      'Unlimited contacts and campaigns at volume',
+      'The full CRM, email branding, reporting, and exports',
+      'Bookings, tickets, memberships, and your own website',
+    ],
+  },
+  collective: {
+    inherits: true,
+    features: [
+      'Automations and multiple pipelines',
+      'Team seats and roles',
+      'Membership tickets, Collaborator hosting, and shared events',
+    ],
+  },
+  nonprofit: {
+    inherits: false,
+    features: ['The whole paid feature set', 'Donations built in', 'For verified 501(c)(3) nonprofits'],
+    noteLead: 'Flat. ',
+    noteTail: ' Verified 501(c)(3).',
+  },
+}
+
+/** One Tiers-block card for a Space plan, every figure and name read off the tier. */
+const spaceTierCard = (t: PricingTier, i: number) => {
+  const copy = SPACE_TIER_COPY[t.id]
+  const free = t.price.month.foundingCents <= 0
+  const below = SPACE_TIERS[i - 1]
+  return {
+    name: t.name,
+    livePriceKey: t.id,
+    price: free ? 'Free' : monthOf(t),
+    strikePrice: free ? '' : (tierListAnchor(t, 'month') ?? ''),
+    cadence: free ? 'forever' : '/mo',
+    priceNote: free
+      ? ''
+      : `${copy.noteLead ?? ''}Or ${yearOf(t)} a year, which is two months free. 0% on your own bookings, ${rateOf(t)} on business the network sends you.${copy.noteTail ?? ''}`,
+    tagline: t.tagline,
+    highlight: t.featured ? 'featured' : 'normal',
+    badge: 'none',
+    features: [
+      ...(copy.inherits && below ? [{ text: `Everything in ${below.name}` }] : []),
+      ...copy.features.map((text) => ({ text })),
+    ],
+    ctaLabel: t.cta.label,
+    ctaHref: t.cta.href,
+    ctaStyle: t.featured ? 'primary' : 'secondary',
+  }
+}
+
+// The seat add-on reads the same catalog row the /pricing extras card does, through the same
+// placeholder rule: while the owner has not set a real seat price the card says so instead of
+// printing the stand-in amount, and the day LIVE-229 clears the flag this card goes live with no edit.
+const EXTRAS = planExtras({ values: PRICING_DEFAULTS, catalog: CAT })
+const SEATS = EXTRAS.find((e) => e.key === 'seats')!
+const SEATS_PLACEHOLDER = catalogItem('operator_seat').placeholder === true
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PRICING — the honest, warm version. Copies THE COMMUNITY's shape and rhythm.
@@ -60,9 +149,9 @@ const NONPROFIT_YEAR = formatLoadoutCents(CAT.nonprofit_seat.year.listCents)
 //  • Honest numbers, one source: every dollar figure interpolates from the code catalog
 //    (priceStrings / pricingCatalog above), so this template can never drift from /pricing.
 //    Nothing here charges (PLACEHOLDER_PRICING is on; CTAs are plain links). The ladder is
-//    the founder's ladder (ADR-878): Member free and Crew on the personal side, then Free
-//    Space, Business, Collective, Non Profit. That is the whole advertised ladder (LIVE-227,
-//    owner ruling 2026-09-08): Independent is still sellable but by hand only, and Partner is a
+//    the founder's ladder (ADR-878): Member free and Crew on the personal side, then every
+//    plan on the advertised Space ladder, read from lib/pricing/display.ts (LIVE-227, owner
+//    ruling 2026-09-08): Independent is still sellable but by hand only, and Partner is a
 //    retired legacy label, so neither is named on any public surface. No countdowns, no fake
 //    scarcity.
 //  • Tone beat alternates (surface → canvas → surface …) with a `Statement`
@@ -145,83 +234,37 @@ export const data: Data = {
     },
 
     // ── Section 2: For Spaces (practitioners, businesses, orgs) ──────────────────
-    // Four plans (Free Space, Business, Collective, Non Profit), so two Tiers blocks
-    // (three + one) keep the cards readable. That is the whole advertised ladder (LIVE-227).
+    // The whole advertised Space ladder (LIVE-227), mapped from SPACE_TIERS: the first three
+    // rungs in one Tiers block, anything past them in a second, so the cards stay readable at
+    // any ladder length and a ladder of three or fewer renders one block.
     {
       type: 'Tiers',
       props: {
         id: 'pr-spaces-a',
         eyebrow: 'For Spaces',
         title: 'For practitioners and businesses.', titleAccent: '',
-        kicker: `Run your community as a Space. You keep 100% of your own bookings, always. The only take-rate is on business the network sends you, and each step up buys it down: Free ${RATE.free}, Business ${RATE.business}, Collective ${RATE.collective}, Non Profit ${RATE.nonprofit}.`,
-        items: [
-          {
-            name: 'Free Space', livePriceKey: 'free', price: 'Free', strikePrice: '', cadence: 'forever', priceNote: '',
-            tagline: 'Put your business on the map. A real Space, free for as long as you want.',
-            highlight: 'normal', badge: 'none',
-            features: [
-              { text: 'Your storefront, page, events, posts, and members' },
-              { text: 'Show up in Discover' },
-              { text: 'Be a Collaborator on other Spaces’ events' },
-            ],
-            ctaLabel: 'Start free', ctaHref: '/sign-in', ctaStyle: 'secondary',
-          },
-          {
-            name: 'Business', livePriceKey: 'business', price: P.businessList, strikePrice: '', cadence: '/mo',
-            priceNote: `Or ${BUSINESS_YEAR} a year, which is two months free. 0% on your own bookings, ${RATE.business} only on business the network sends you.`,
-            tagline: 'Own your audience.',
-            highlight: 'featured', badge: 'none',
-            features: [
-              { text: 'Everything in Free' },
-              { text: 'Unlimited contacts and campaigns at volume' },
-              { text: 'The full CRM, email branding, reporting, and exports' },
-              { text: 'Bookings, tickets, memberships, and your own website' },
-            ],
-            ctaLabel: 'Start a Space', ctaHref: '/spaces', ctaStyle: 'primary',
-          },
-          {
-            name: 'Collective', livePriceKey: 'collective', price: P.collectiveList, strikePrice: '', cadence: '/mo',
-            priceNote: `Or ${COLLECTIVE_YEAR} a year, which is two months free. 0% on your own, ${RATE.collective} only on business the network sends you.`,
-            tagline: 'Be the venue.',
-            highlight: 'normal', badge: 'none',
-            features: [
-              { text: 'Everything in Business' },
-              { text: 'Automations and multiple pipelines' },
-              { text: 'Team seats and roles' },
-              { text: 'Membership tickets, Collaborator hosting, and shared events' },
-            ],
-            ctaLabel: 'Start a Space', ctaHref: '/spaces', ctaStyle: 'secondary',
-          },
-        ],
-        footnote: '',
-        tone: 'canvas', width: 'wide', align: 'left', layout: { spaceTop: 'default', spaceBottom: 'none', visibility: 'all' },
+        kicker: `Run your community as a Space. You keep 100% of your own bookings, always. The only take-rate is on business the network sends you, and each step up buys it down: ${SPACE_TIERS.map((t) => `${t.name} ${rateOf(t)}`).join(', ')}.`,
+        items: SPACE_TIERS.slice(0, 3).map(spaceTierCard),
+        footnote: SPACE_TIERS.length > 3 ? '' : 'Every plan is one price, the same whenever you start. Pay yearly and you get two months free.',
+        tone: 'canvas', width: 'wide', align: 'left', layout: { spaceTop: 'default', spaceBottom: SPACE_TIERS.length > 3 ? 'none' : 'default', visibility: 'all' },
       },
     },
-    {
-      type: 'Tiers',
-      props: {
-        id: 'pr-spaces-b',
-        eyebrow: '',
-        title: '', titleAccent: '',
-        kicker: '',
-        items: [
+    ...(SPACE_TIERS.length > 3
+      ? [
           {
-            name: 'Non Profit', livePriceKey: 'nonprofit', price: P.nonprofit, strikePrice: '', cadence: '/mo',
-            priceNote: `Flat. Or ${NONPROFIT_YEAR} a year, which is two months free. ${RATE.nonprofit} take-rate, always. Verified 501(c)(3).`,
-            tagline: 'The full Collective toolkit for a verified 501(c)(3).',
-            highlight: 'normal', badge: 'none',
-            features: [
-              { text: 'The full Collective feature set' },
-              { text: 'Donations built in' },
-              { text: 'For verified 501(c)(3) nonprofits' },
-            ],
-            ctaLabel: 'Get verified', ctaHref: '/spaces', ctaStyle: 'secondary',
+            type: 'Tiers',
+            props: {
+              id: 'pr-spaces-b',
+              eyebrow: '',
+              title: '', titleAccent: '',
+              kicker: '',
+              items: SPACE_TIERS.slice(3).map((t, i) => spaceTierCard(t, i + 3)),
+              footnote: 'Every plan is one price, the same whenever you start. Pay yearly and you get two months free.',
+              tone: 'canvas', width: 'wide', align: 'left', layout: { spaceTop: 'sm', spaceBottom: 'default', visibility: 'all' },
+            },
           },
-        ],
-        footnote: 'Every plan is one price, the same whenever you start. Pay yearly and you get two months free.',
-        tone: 'canvas', width: 'wide', align: 'left', layout: { spaceTop: 'sm', spaceBottom: 'default', visibility: 'all' },
-      },
-    },
+        ]
+      : []),
 
     // ── Section 3a: Plan add-ons (what you add to a paid plan) ────────────────────
     {
@@ -245,19 +288,25 @@ export const data: Data = {
             ctaLabel: 'Add it from your Space billing', ctaHref: '/spaces', ctaStyle: 'secondary',
           },
           {
-            name: 'Operator seats', price: 'from $9', strikePrice: '', cadence: '/seat/mo',
-            priceNote: 'A placeholder, not yet activated. Your first operator seat is always free.',
+            name: 'Operator seats', price: SEATS.price, strikePrice: '', cadence: '',
+            priceNote: SEATS_PLACEHOLDER
+              ? 'Not yet activated, so the price is not locked in. Your first operator seat is always free.'
+              : 'Your first operator seat is always free.',
             tagline: 'Add operators to help run your Space.',
-            highlight: 'normal', badge: 'comingSoon',
+            highlight: 'normal', badge: SEATS_PLACEHOLDER ? 'comingSoon' : 'none',
             features: [
               { text: 'Your owner seat is free' },
               { text: 'Add editors, moderators, and admins' },
-              { text: 'Available on any paid Space plan' },
+              { text: SEATS.availability },
             ],
-            ctaLabel: 'Coming soon', ctaHref: '', ctaStyle: 'disabled',
+            ctaLabel: SEATS_PLACEHOLDER ? 'Coming soon' : 'Add seats from your Space billing',
+            ctaHref: SEATS_PLACEHOLDER ? '' : '/spaces',
+            ctaStyle: SEATS_PLACEHOLDER ? 'disabled' : 'secondary',
           },
         ],
-        footnote: 'Add-ons are flat, never a percentage. Operator seats are a soft placeholder, so their price is not locked in yet.',
+        footnote: SEATS_PLACEHOLDER
+          ? 'Add-ons are flat, never a percentage. Operator seats are a soft placeholder, so their price is not locked in yet.'
+          : 'Add-ons are flat, never a percentage.',
         tone: 'surface', width: 'wide', align: 'left', layout: { spaceTop: 'default', spaceBottom: 'none', visibility: 'all' },
       },
     },
@@ -273,7 +322,7 @@ export const data: Data = {
         items: [
           {
             name: 'Space Memberships', price: 'Owner-set', strikePrice: '', cadence: '',
-            priceNote: 'For example, $25 to $100 a month.',
+            priceNote: 'You set the tiers and the prices.',
             tagline: 'Paid member tiers a Space owner defines.',
             highlight: 'normal', badge: 'none',
             features: [
@@ -377,10 +426,10 @@ export const data: Data = {
         id: 'pr-faq', eyebrow: 'Straight answers', title: 'Questions, answered plainly.', titleAccent: '',
         items: [
           { q: 'Is being a Member really free?', a: 'Yes. The Member tier is free, forever. You can browse Circles and Events, attend gatherings in person, earn Zaps, and message Vera up to 10 times a day, all without paying.' },
-          { q: 'Is there a discount for paying yearly?', a: `Yes. Pay yearly on any plan and you get two months free: Business is ${BUSINESS_YEAR} a year instead of ${P.businessList} a month, and Collective is ${COLLECTIVE_YEAR} a year instead of ${P.collectiveList} a month. Crew is contribute what you want: anything from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested, and every amount buys the same access.` },
+          { q: 'Is there a discount for paying yearly?', a: `Yes. Pay yearly on any plan and you get two months free: ${andList(PAID_SPACE_TIERS.map((t) => `${t.name} is ${yearOf(t)} a year instead of ${monthOf(t)} a month`))}. Crew is contribute what you want: anything from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested, and every amount buys the same access.` },
           { q: 'What is the difference between Member and Crew?', a: `Member is the free tier, forever, and the community itself is never behind it. Both tiers can sell: a free Member can run a ticketed event and get paid. Crew takes the rate on network-sourced sales from ${RATE.memberFree} down to ${RATE.member}, lifts the caps, and adds the full game, with Gems, Vault cash-in, your own Quest to author, unlimited Vera, and the leaderboard, for whatever you choose to pay, from ${CREW_NOTE.foundingLabel} a month. Those two are the whole member ladder.` },
-          { q: 'What do the Space plans cost?', a: `Business is ${P.businessList} a month or ${BUSINESS_YEAR} a year, and Collective is ${P.collectiveList} a month or ${COLLECTIVE_YEAR} a year. Non Profit is ${P.nonprofit} a month, flat, for a verified 501(c)(3). Every plan is the same price whenever you start, and yearly is two months free.` },
-          { q: 'How does the take-rate work?', a: `You keep 100% of the business you bring yourself, always, on every tier. Someone who already follows you, is on your list, or has bought from you before is yours, and Frequency takes nothing on them. There is a rate only on someone the network introduces, and every step up buys it down: a free Member or a free Space is ${RATE.memberFree}, Crew is ${RATE.member}, Business is ${RATE.business}, Collective is ${RATE.collective}, and Non Profit is ${RATE.nonprofit}.` },
+          { q: 'What do the Space plans cost?', a: `A Space is free to start and stays free until you start charging. ${andList(PAID_SPACE_TIERS.map((t) => `${t.name} is ${monthOf(t)} a month or ${yearOf(t)} a year`))}. Every plan is the same price whenever you start, and yearly is two months free.` },
+          { q: 'How does the take-rate work?', a: `You keep 100% of the business you bring yourself, always, on every tier. Someone who already follows you, is on your list, or has bought from you before is yours, and Frequency takes nothing on them. There is a rate only on someone the network introduces, and every step up buys it down: a free Member is ${RATE.memberFree}, Crew is ${RATE.member}, ${andList(SPACE_TIERS.map((t) => `${t.name} is ${rateOf(t)}`))}.` },
           { q: 'What about refunds?', a: 'Every plan is month to month, and you can cancel at any time. Cancel and your plan simply runs out its paid period. No contracts, no lock-in.' },
           { q: 'Can I buy my way into a Host or Guide role?', a: 'No, and that is on purpose. Host, Guide, and Mentor are earned by showing up and looking after the people around you. Those roles come from the community, never from a checkout page.' },
           { q: 'Where does the money go?', a: MISSION_FRAMING },

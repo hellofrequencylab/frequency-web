@@ -4,7 +4,7 @@ description: What's free, what membership includes, and how the Vault works.
 category: membership
 order: 1
 published: 2026-06-03
-updated: 2026-09-09
+updated: 2026-09-14
 audience: member
 featureKeys: [vault]
 status: published
@@ -38,4 +38,4 @@ A membership can also cover several people at once. One payment, four seats, eac
 
 ## What Crew costs
 
-Everything you have earned stays yours. Crew is the paid personal tier, and the only one. It is contribute what you want: pick any monthly amount from $4.99 up, and every amount buys exactly the same Crew. Pay the suggested amount or more and you wear the Supporter badge. It all lives on the [upgrade page](/upgrade).
+Everything you have earned stays yours. Crew is the paid personal tier, and the only one. It is contribute what you want: pick any monthly amount at or above the floor, and every amount buys exactly the same Crew. Pay the suggested amount or more and you wear the Supporter badge. The floor and the suggested amount are on the [upgrade page](/upgrade), which is where it all lives.
