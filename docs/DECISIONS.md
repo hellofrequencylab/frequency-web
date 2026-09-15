@@ -6371,7 +6371,6 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 
 **Consequences:** The daily WAM act gains a ritual surface with zero new economy paths to audit. P3 items (PWA shortcut, desktop modal entry, bells/haptics, presence counter, custom pattern) and P4 (reveal animation/art pass) are scoped in docs/ON-AIR.md. Migration is additive + idempotent; regenerate database.types.ts after apply (new tables are read via untyped handles until then).
 
-
 ## ADR-230: The Zap button — the center action becomes the earning hub
 
 **Status:** Accepted · `components/layout/app-shell.tsx` (center tab: engraved bolt, label "Zap"), `components/feed/capture-launcher.tsx` (the menu: Vera live line + composer prompt + 2×3 tool grid + log link), `components/feed/zap-menu-art.tsx` (six welcome-art spot scenes), `app/api/zap-prompt/route.ts`. Names in NAMING.md ("The Zap button").
@@ -6386,7 +6385,6 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 **Update — the menu leads with the ritual (owner pass):** the **Mindless row moved to the TOP of the grid** (above Event / Contact / Connect) and got more presence (border-2 primary/50, deeper wash, h-14 art, base-size label). The Capture box folds its formatting tools behind a small **Format** toggle (`compactTools` on Composer — writing stays front and center), the feature row reads **Post · Photo · Note · Connect** (Photo promoted from the hidden camera path; Dispatch stays host-only at the end), and the Connect feature gains **"Take a profile pic"** — front camera → avatars bucket (own folder, same path as onboarding) → `updateMyAvatar` server action persists it.
 
 **Consequences:** One surface now teaches the whole earning loop. Follow-ups: in-app QR scanner for Check In/Ghost Node tiles (BarcodeDetector + jsQR fallback), contextual tile pulses (live event → Check In), first-open education line, tile CTR analytics. The Camera icon leaves the tab bar; help copy updated.
-
 
 ## ADR-231: The system account is Vera — Moderator chip, hidden from people surfaces, one-line join notices
 
@@ -6403,7 +6401,6 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 **Update — the line becomes a scoreboard (owner pass):** the chip background is gone — the line is bare centered text. When attribution exists (`referred_by_profile_id`) the body reads "@new joined through @inviter 👋"; `SystemLine` moved to its own server component (`components/feed/system-line.tsx`) and now fetches each mentioned member's LIVE `current_season_zaps`, rendering a small ⚡count beside every linked name — the newcomer sees the currency exists, the inviter gets public credit. Prod backfill (2026-06-11): charlotteproud's missed cookie attribution to psalmpollock was set, the inviter's `invite_accepted` 40⚡ paid through the real ledger (trigger moved season total + Amplitude), and her join line updated.
 
 **Consequences:** A welcome is now a quiet ritual line, not a card competing with member posts; Vera is one continuous presence (assistant, Dispatches, moderation voice); and `is_system` is the single switch for "not a person." Follow-ups: her `/people/moderation` profile page could grow a purpose-built layout; the demo engine's welcome copy and any future system notices (milestones, season turns) can reuse the SystemLine path. Note: production's `post_type` enum was missing the repo's `'note'` value when this shipped (drift predating this ADR) — apply 20260606180000 alongside these.
-
 
 ## ADR-232: Joining pays — initial Zaps, a friend-link bonus, and a join line for everyone
 
@@ -6441,7 +6438,6 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 
 **Update — owner screenshot pass:** the two controls became **edge handles** in the app's existing flush-tab language (half-pills growing out of their screen edge, bordered, inner-rounded — the same grammar as the Vera/Next-steps pills) so they read "something slides from here" in tight space; open state tints them (primary-bg left, signal right). The header gained air between the bell and the account button. The Zap arch is now a **true semicircle** (h-8 w-16, height = half width) so it hugs the button's radius instead of reading as a squared tab. The composer (everywhere): **formatting folds below the divider** — a small ˄ Format toggle in the bottom row unfolds the tools above it (full-screen compose always shows them) — and the input grew a line (rows 3, min-h-24).
 
-
 ## ADR-235: The in-app QR scanner — Check In and Ghost Node go live
 
 **Status:** Accepted · `components/scan/scanner.tsx`, `app/(main)/scan/page.tsx`, `lib/scan/resolve.ts` (+test), `lib/layout/page-chrome.ts` ('/scan' FOCUS), `components/feed/capture-launcher.tsx` (tiles live), dependency `jsqr`.
@@ -6453,14 +6449,12 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 - **The Zap menu**: Check In → `/scan?hint=checkin` ("Scan at the door"), Ghost Node → `/scan?hint=node` — both LIVE; Partners stays the last coming-soon tile (its offer surface is the next backlog item).
 **Consequences:** Every earning tile in the Zap menu except Partners is now real. The scanner is generic: future codes (gift zaps, circle joins) work with zero scanner changes because the resolver owns the semantics.
 
-
 ## ADR-236: The partner-offer surface — every Zap menu tile earns
 
 **Status:** Accepted · `lib/partners/read.ts` (`listLiveOffers`), `app/(main)/partners/page.tsx` (offers-first section), `components/scan/scanner.tsx` (`partner` hint), `components/feed/capture-launcher.tsx` (Partners tile live).
 **Context:** The Partners tile was the last coming-soon tile (ADR-230): the directory existed, but members had no offers-first view and no unlocked state — and unlocking happens physically (a partner plaque is a `nodes` row with `partner_id`; `captureNode` inserts `partner_redemptions` and pays the node's zaps).
 **Decision:** The partners index leads with **"Offers right now"** — every active offer across active partners (expired `valid_until` filtered), each card showing the deal, the business, and the viewer's **Unlocked ✓** state (`partner_redemptions` by offer, falling back to the partner for plaque-first redemptions with null offer_id). A standing line links to **/scan?hint=partner** ("Point at the partner's plaque or code") — the page never claims anything; unlocking stays a real-world act through the existing node pipeline. The Zap menu's Partners tile goes live → /partners. With that, **every tile in the Zap menu earns**.
 **Consequences:** ADR-230's follow-up list is fully closed except polish items (tile pulses, education line, CTR analytics — next). Offer freshness is owner-managed via the existing partner admin; no schema changes.
-
 
 ## ADR-237: Zap menu polish — the live pulse, the first-open line, tile analytics
 
@@ -6471,7 +6465,6 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 - **First-open education line** (per device, `fq_zap_intro_seen`): "First time? Everything in this menu earns. Tap a tile, do the real thing, and the Zaps follow." Set in the open-event handler, shown once.
 - **Tile analytics** ride the ADR-166 interaction firehose (open taxonomy, consent enforced server-side): `zap_menu.open` on open, `zap_menu.tile_tap` with `{tile}` for every tile, the Mindless row, and the journal link — CTR per tile readable from `interaction_events` with zero new infrastructure.
 **Consequences:** ADR-230's follow-up list is fully closed. Tile-level usage lands in the existing analytics tables for the admin traffic panel to surface later.
-
 
 ## ADR-238: Vera's profile page — the voice gets her own layout
 
@@ -7069,7 +7062,6 @@ Writes are **staff-gated** (`requireAdmin('admin')`, admin+), `isSafeRoute`-vali
 **Decision (recorded, not yet built):** Three+ overlapping "journey" surfaces exist — `/crew` hub, `/crew/quests` list, `/crew/journey` progress, `/journeys` library — alongside the old **7-tab `QuestTabs`** and 3 orphaned legacy redirects (`/crew/journeys`, `/crew/arcs`, `/admin/quests`). Recommended consolidation: make **`/crew`** the canonical "My Journey" (fold `/crew/quests` + `/crew/journey` into the hub Season Map), keep `/journeys` as the explicit browse / build library, collapse `QuestTabs`, delete the orphaned redirects, and label the "this season's Quest" vs "the library" distinction.
 
 **Open decision for the owner:** which surface is the canonical "My Journey," and how aggressively to collapse the tab bar. Do **not** build the consolidation until that's chosen — it's an IA / product call, not a wiring fix.
-
 
 ## ADR-294: Route-scoped module sets — a page only offers (and renders) its own blocks
 
@@ -16762,7 +16754,6 @@ Two bugs the new tests caught, recorded because both shapes recur: the `entryPoi
 
 The durable rule: **charge for the introduction, never for the relationship — and prove which one it was from a row, not a cookie.**
 
-
 ## ADR-914
 
 **Selling is not a tier. The rate is the ladder.** (2026-07-30, owner ruling; supersedes ADR-913's seller gate)
@@ -16877,7 +16868,6 @@ The durable rule: **a cap with no grandfather is a promise broken retroactively,
 **Consequences.** ⚠️ The published document is still a database row nothing in CI can read, so the guarantee is only as strong as the seed template plus the fallback. A janitor who deletes a `livePriceKey` gets typed text back with no error — the intended fail-safe, and also how this can silently regress. ⚠️ The `pricing` template is deliberately not regenerated on later DAWN passes (ADR-926): a full Publish would freeze figures.
 
 The durable rule: **a CMS may own the words and never the numbers — the moment Publish can write a figure into a document, the figure has forked, and it has forked somewhere nothing can grep.**
-
 
 ## ADR-919 — Crew is pay what you want, so it has no price to lock (2026-07-30)
 
@@ -20250,7 +20240,6 @@ near-identical document-extraction actions that had grown independently in Journ
 has a cover-image column, so all three commerce manifests use `images` with first-as-cover; a real
 cover is a schema change, not a manifest one.
 
-
 ## ADR-987: The Loom is the only image picker an operator sees
 
 **Status:** Accepted · shipped for the in-rail block editor, the on-canvas photo slot, both Puck
@@ -21544,7 +21533,6 @@ underneath it.
 console: the owner passes, a stranger is refused and writes NOTHING, a platform admin passes on a
 row they do not own. The business test drives all three arms over ONE list of every per-row
 action, so adding an action means adding a row to that list and seeing the rule proved for it.
-
 
 ## ADR-1000: An edge token used as a fill is invisible to a gate that only measures it as ink
 
@@ -22872,7 +22860,6 @@ closed Circle is already members-only through the existing `p.visibility = 'grou
 - **A RESTRICTIVE policy on `posts`.** Wide blast radius for a narrow residue: a `public` post's raw
   `scope_id` uuid stays readable for a hidden Circle, but the **name** is not resolvable now that
   both the `circles` row and the origin chip are gated. Recorded as a named limit instead.
-
 
 ## ADR-1017: Sparks open OVER the page, as intercepted routes, and every exit is guarded
 
@@ -24335,7 +24322,6 @@ strands. The rule this leaves behind: **a metric defined on an identity cannot b
 that lacks that identity, so the feature is always the shortest honest path to the identity, never a
 way around it.**
 ---
-
 
 ## ADR-1034: Around You opens on the map, and the map's popup grows a door it does not own (2026-08-14)
 
@@ -27525,7 +27511,6 @@ pre-2026-08-19 row. Same reasoning as keeping `meta.beta.oath`: history is kept 
   ignored rather than resurrected.
 - The funnel is one beat shorter and opens on a question about the visitor instead of a demand from
   us, which is what the niche funnels were always for.
-
 
 ## ADR-1089: The Beta Command Center is deleted, and the approval spine that outlived it moves somewhere honest
 
@@ -35596,7 +35581,6 @@ understand. `check-adoption.mjs` is immune to this by accident of format — its
 `_readme` array *inside* the JSON, so it round-trips through parse/stringify. That is the durable
 lesson: **comments-as-data survive a regenerator; comments-as-formatting do not.**
 
-
 ## ADR-1203: directory privacy and member suspension were each enforced on one path — now the database enforces both on every path (2026-09-04)
 
 **Status.** Accepted. Continues the second-path finding of ADR-1198 (a column that did not exist) into the rules that live in code.
@@ -35614,8 +35598,6 @@ lesson: **comments-as-data survive a regenerator; comments-as-formatting do not.
 
 **Consequences.** Both migrations were applied to production via MCP before merge, in the deploy-safe order (the old code keeps working through argument defaults), with ledger versions reconciled to the repo filenames and the live state verified afterwards: 47 triggers across 32 tables, no `service_role` bypass, `members_near` on its five-argument signature. Rows SCAN-546, SCAN-547 and HYG-051 are `done` with consequence probes. Second paths this change did not close are named in the rows: the operator member-picker (arguably exempt) and the AI owner brief.
 
-
-
 ## ADR-1205: three CI guards could pass over nothing; each now has a floor and a fixture that must fail (2026-09-04)
 
 **Status.** Accepted.
@@ -35625,7 +35607,6 @@ lesson: **comments-as-data survive a regenerator; comments-as-formatting do not.
 **Decision.** Non-triviality floors at roughly 70% of today's readings, in the `check-one-list.mjs` idiom, and a test sibling per guard whose fixtures must fail: a planted client import of the admin client, an empty walk, a workflow step with neither `run` nor `uses`, a phantom class. The `ci.yml` counts read 24 and 48; the check-menu ledger entry states the actual `bank` state (one concept carried from module rows into `App.surfaces.editor.placement`). The two test fixtures are shaped so that text-scanning guards do not read them as findings: the boundary test assembles its planted import specifier at runtime so `check:admin-client`'s regex never matches the test's own source, rather than adding a test to a frozen baseline. Nothing in CI regenerates or diffs `lib/database.types.ts`; a report-only `gen types` drift step is drafted and not wired (HYG-052), per the rule that a gate is wired in the same change as the run that proves it.
 
 **Consequences.** SCAN-549 is `done`; HYG-052 is `open`.
-
 
 ## ADR-1201: five production defects with one shape — a rule enforced on one path and bypassed on another (2026-09-04)
 
@@ -35651,7 +35632,6 @@ Two things were re-tested and NOT changed. The host-payout failure logged at 20:
 
 **Consequences.** The five rows below are `done` with consequence probes. The generalisable lesson is the one ADR-1174 through ADR-1176 already drew and this audit found under-applied: every rule that had reached SQL held; every rule that stayed in application code was bypassed by a second path. The remaining instances of the same shape — member suspension enforced on 2 of ~22 write paths, three privacy controls not consulted by `/network` and `/search`, notification preferences with no reader, Space-tier capacity absent from the paid checkout — are being worked in the same series and will land under their own rows. Two gates this audit found unable to fire (`check:client-boundary` has no non-triviality floor and no test sibling, while guarding the service-role client from the browser bundle) are in that series as well.
 
-
 ## ADR-1204: ten notification switches had no reader, a mute muted nothing, and twelve sends bypassed the consent seam (2026-09-04)
 
 **Status.** Accepted. Continues the second-path finding of ADR-1198 (a column that did not exist) into the rules that live in code.
@@ -35665,8 +35645,6 @@ Two things were re-tested and NOT changed. The host-payout failure logged at 20:
 - **RSVP confirmations, guest-approval confirmations, cancellation notices and RSVP reminders are deliberately NOT subject-muted** — the member asked for them by RSVPing, and a mute swallowing a cancellation would strand someone at a venue. Whether a mute should mean "all of it" is an owner ruling (OWN-049).
 
 **Consequences.** SCAN-548 is `done` with a consequence probe; OWN-049 is `open`. `docs/ARCHITECTURE.md` names `resolveSendGate` as the seam. Two history docs still describe `shouldSend` as the idiom and stay as written.
-
-
 
 ## ADR-1206: four duplicated rules had started to disagree; one home each, and a parity test where two homes must remain (2026-09-04)
 
@@ -36845,7 +36823,6 @@ The failure is silent in both directions, which is what makes it a measurement p
 **Consequences.** The next stall is one command to characterise instead of a session of scrolling, and the characterisation lands beside a recorded band rather than a memory. `LIVE-123` carries the dated measurement, so the next reader starts from "the machine changed on 2026-09-02, and here is what healthy looks like on it" rather than from a description of hardware this project no longer runs on. Two incidental readings from tonight's production `postbuild` blocks, recorded because they were free and neither is this row's business: `check:cache-budget` predicted 1.37 GB against an `Uploading build cache [1.41 GB]` line, the estimate running ~3% LOW in the direction `LIVE-175` is watching; and `check:shell-weight` read 1027 KB across 22 chunks (73% of the 1400 KB ceiling), `check:build-budget` 6.12 GB across 458 functions, `check:og-trace` 20 rasterising plus 64 incidental of 100.
 
 ⚠️ **The generalisable part: re-test the premise against the PLATFORM, not only the repo.** [ADR-1082](DECISIONS.md) established that a row's blocker is a claim with an expiry date, and this repo now reflexively re-measures a row's *code* premise before working it. This row's premise was not about code. It was about a machine — 4 cores, 8 GB, 3 workers — printed on line 2 of every single build log, and it expired six days before anyone looked. Six captures were filed with timestamps, cache ids, compile durations and commit ranges, and exactly one of them ever quoted the configuration line sitting above all of it. **When a row names an environment, the environment is part of the premise, and it is usually the cheapest half to re-read.**
-
 
 ## ADR-1260: the eyebrow and display slices continue, and the shadow slice rule learns three preconditions before it ships anything (2026-09-08)
 
@@ -39800,7 +39777,6 @@ on Vercel, not in CI — per the rule at the top of AGENTS.md, the reading that 
 real build prints, and it is reported on the PR rather than predicted here.
 
 **Rows.** (none — owner directive, taken directly)
-
 
 ## ADR-1324: ACCEPTED — the induction resumes, because a gate that only opens from beat 0 is a lock (2026-09-11)
 
@@ -43352,3 +43328,59 @@ production build and nowhere else, and their output is to be read before merging
 
 **Rows.** `LIVE-342` (done, this ADR), `LIVE-253` (probe follows the spine; corpus 9 → 10),
 `LIVE-341` (its deferred derivation, now taken).
+
+## ADR-1371: an account holder is admitted, and the induction stops being a wall (2026-09-15)
+
+**Status.** Accepted. Closes the ruling half of `OWN-072`. Amends [ADR-1324](DECISIONS.md), which
+deferred this question deliberately rather than quietly, and narrows [ADR-047](DECISIONS.md)'s
+blocking-induction model to the signup path it was actually written for.
+
+**Context.** `app/(main)/layout.tsx` redirected any member whose profile did not satisfy
+`hasEffectivelyOnboarded()` into `/join` — a **signup** funnel — on every request. `#2553` made that
+funnel resumable, which shortened the march. It never answered why somebody who already has a
+working account is on a signup funnel at all, and `OWN-072` was filed to get that answered rather
+than inferred, because it touches admission for the whole product.
+
+**Measured against production on the day of the ruling, and the row's own number had expired.** The
+row argues from the nine hand-admitted accounts of ADR-1324. All nine now carry
+`meta.onboarding_completed`, so not one of them is behind the gate; the row's evidence describes a
+condition that has already cleared. Evaluating the real predicate — the full
+`hasEffectivelyOnboarded` disjunction, not the `onboarding_completed` key the row names — against
+all 58 profiles returns **8 marched, 50 admitted**. One of the 8 is `moderation` / Vera, the
+platform's own janitor account, which is a system row and not a person. So the live cost is **seven
+real members**, created between 26 June and 3 September, every one of them carrying an empty `meta`,
+a generated handle and the local part of their email as a display name. They are seven *different*
+people from the nine, and the set grows by one every time somebody signs up and does not finish.
+
+⚠️ Worth recording beside [ADR-1082](DECISIONS.md): the first count taken here was **11**, because it
+was taken against `meta.onboarding_completed` — the key the row's prose names — rather than against
+the predicate the code actually calls. A premise re-test that measures the row's own words instead of
+the code's behaviour reproduces the row's error with more confidence. The correct reading needed the
+predicate *and* a null-safe evaluation of it: in SQL the disjunction returns `NULL` for a profile
+whose `meta` is absent and `count(*) filter (where not …)` silently drops those rows, which is how
+8 first presented as 0.
+
+**Decision.**
+
+1. **A profile row is an account, and an account holder is admitted.** The induction gate is removed
+   from the member shell. What the induction collected is collected inline instead, the way the edit
+   rail already does it.
+2. **The induction remains the signup path.** `/join` is still where an account is created, and
+   `/onboarding` still forwards there while `FUNNEL_INDUCTION_ACTIVE` is on. It is reached by
+   **signing up**, not by being bounced out of an app you already belong to. A person who abandons
+   it halfway now lands in the product rather than on its doorstep.
+3. **The `!profile` branch is untouched and still redirects.** No profile row means the creation
+   trigger has not run; there is no account to admit yet. That is a different case and keeps its
+   different answer.
+
+**Consequences.** ✅ Seven real members reach the product on their next request, with no data change
+and no migration. ✅ The consent default is unaffected and stays safe: `completeOnboarding` records
+an omitted `emailOptIn` as consent **withheld**, so a member who never finishes the induction is
+recorded as not having opted in, which is the correct reading of silence. ⚠️ An admitted member who
+has not set a display name or handle still appears to the community under their email's local part
+and a generated handle until the inline collection lands; that is the follow-on code row this ADR
+files, and it is why admission and inline collection are one ruling rather than two. 🔴 The gate is
+**removed, not flag-guarded**: `FUNNEL_INDUCTION_ACTIVE` no longer has a reader in the member shell.
+A kill switch that silently re-marches seven people is the failure this ADR exists to end, and
+[LIVE-240](BUILD-BACKLOG.json) is the precedent for deleting a flag with the engine it gated rather
+than leaving it to be flipped back by accident.
