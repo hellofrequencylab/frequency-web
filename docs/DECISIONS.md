@@ -43278,3 +43278,77 @@ layouts would need the full `(main)` segment; each guard names the file and the 
 it must carry, so a fifth area added without a writer fails the row.
 
 **Rows.** `LIVE-243` (done, this ADR).
+## ADR-1368: the fan-out that blocked a derivation was a property of the module, not of the copy (2026-09-15)
+
+**Status.** Accepted. Closes `LIVE-342`. Completes [ADR-1363](DECISIONS.md), which fixed a retired
+plan argument in a page-editor block default by rewriting the literal, recorded that it had
+**refused** to derive it, and named this refactor as the way out.
+
+**Context.** This repo's rule is READ, never typed ([ADR-916](DECISIONS.md),
+[ADR-1337](DECISIONS.md), [ADR-1350](DECISIONS.md)), and `PLAN_STORY.paid` is the approved plan
+argument — its own doc comment says *"Every surface interpolates this instead of arguing it again."*
+Four surfaces do. `components/page-editor/blocks/dawn.tsx` could not, and ADR-1363 was explicit that
+the obstacle was **the artifact, not the code**:
+
+| | before |
+|---|---|
+| how `dawn.tsx` reached the pricing seam | `import type { LivePricing }` — **type-only, erases at compile** |
+| what `lib/pricing/pricing-page.ts` costs | **nine** runtime imports (`catalog-config`, `loadout`, `plans`, `gates`, `feature-tiers`, `beta`, `defaults`, `pricing-grid`, `billing/pricing-keys`) |
+| who reaches `dawn.tsx` | the page-editor renderer, **broadly** |
+| what would price it | `check:build-budget`, `check:og-trace`, `check:shell-weight`, `check:build-fanout` |
+| when those run | **`postbuild` on Vercel only, never in CI** |
+
+So one approved *sentence* cost the whole pricing *engine*, in a module no pre-merge gate measures.
+ADR-1363 took the measurable copy fix over the unmeasurable bundle risk, which was right for an XS
+row, and wrote down the escape: *"the clean path is a leaf module holding `PLAN_STORY` with no
+imports of its own"*.
+
+**The finding worth keeping.** The obstacle was never the copy and never the rule. It was that an
+approved *constant* was living inside a *computed* module. `PLAN_STORY` is plain string literals and
+always was; `pricing-page.ts` is a catalog-reading, gate-merging, grid-deriving server surface. One
+file held both, so every caller that wanted the cheap half had to buy the expensive half. That is a
+packaging defect, and packaging defects are invisible to every gate this repo runs pre-merge —
+`check:build-fanout` would have seen the *consequence*, on Vercel, after the merge that caused it.
+
+**Decision.**
+
+1. **`PLAN_STORY` moves verbatim to `lib/pricing/plan-story.ts`, which imports nothing.** Doc
+   comments move with it: they carry which ADR retired which sentence, and that rationale is the
+   reason the strings read as they do.
+2. **`pricing-page.ts` imports it back and re-exports it.** Not one existing importer changed. The
+   re-export is a compatibility seam and says so; a new caller outside `lib/pricing` should import
+   the leaf directly, because reaching the spine *through* `pricing-page.ts` re-buys the exact chain
+   the split exists to avoid.
+3. **`PlanBand.defaultProps.kicker` derives the argument.** The two-ladder framing the block exists
+   to set up stays the block's own; the plan argument is interpolated.
+4. **It derives `.paid`, not `.rate`.** The sentence ADR-1363 wrote by hand was a compression of
+   `PLAN_STORY.paid` — that ADR says so itself (*"`PLAN_STORY.paid`'s argument in the band's own
+   voice"*), so `.paid` is the string that was being retyped. Ending a plan band on the rate would
+   put the rate back as the ladder's framing, which is what ADR-1350 decision 2 retired, and the
+   band's cards already bind the live rate through `LivePricing`.
+
+**`LIVE-253`'s probe followed the spine rather than being weakened.** Its three positive assertions
+pin sentences to a *path*, so moving the spine failed the probe immediately — which is the probe
+working. `SPINE` now points at `plan-story.ts`, and `pricing-page.ts` joins the corpus as an ordinary
+member so it keeps the full idiom pass. Corpus **9 files → 10**. `dawn.tsx` stays in it, which is the
+condition `LIVE-341`'s own evidence set for its protection surviving, and it is now scanned at the
+spine rather than at a copy of it.
+
+**Consequences.** ✅ The leaf is checked *as* a leaf: `LIVE-342`'s probe scans `plan-story.ts` for any
+import, re-export-from, or `require` line, so the property that makes the module worth having cannot
+be quietly destroyed. ✅ Proven both ways: `LIVE-253` exits 0 at 10 files and fires independently
+under three mutations (the retired sentence back in `dawn.tsx`, a spine sentence broken in the leaf,
+a surface dropping `PLAN_STORY.rate`); `LIVE-342` exits 0 and fires under three more (an import added
+to the leaf, the block retyping the sentence, the re-export deleted). ✅ Scope was measured before
+widening: every other plan-shaped default in `dawn.tsx` carries `rate: ''` and binds its figures to
+live pricing, so the one kicker was the only default retyping plan copy in the file.
+
+🔴 **Stated limit, and it is the whole reason this ADR exists.** Everything above is a *source*
+argument. The claim that actually matters — that the fan-out did not grow — is a claim about the
+**artifact**, and `AGENTS.md` is explicit that a gate which has never seen a real artifact is worse
+than no gate. Reading the imports proves the module is a leaf; it does not prove what Vercel built.
+`check:build-budget`, `check:shell-weight` and `check:build-fanout` print that on this PR's own
+production build and nowhere else, and their output is to be read before merging, not after.
+
+**Rows.** `LIVE-342` (done, this ADR), `LIVE-253` (probe follows the spine; corpus 9 → 10),
+`LIVE-341` (its deferred derivation, now taken).

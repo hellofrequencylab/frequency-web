@@ -66,8 +66,11 @@ one. [`CORE-MODEL.md`](CORE-MODEL.md) §1 and §2 are the live argument and it i
 join free, businesses host free, **you pay when you start charging**, because a plan is what the
 *repeat* runs on ([ADR-914](DECISIONS.md): never gate the transaction, gate the repeat). The rate and
 the meters are still stated, because both are true; neither is the reason. Write the reason from
-`PLAN_STORY.paid` in `lib/pricing/pricing-page.ts`, which every pricing surface interpolates, and
-never retype it.
+`PLAN_STORY.paid` in [`lib/pricing/plan-story.ts`](../lib/pricing/plan-story.ts), which every pricing
+surface interpolates, and never retype it. That module is a **leaf with no imports of its own**
+([ADR-1368](DECISIONS.md)), which is what lets even a page-editor block default read the sentence
+instead of arguing it again; import it from there rather than through `lib/pricing/pricing-page.ts`,
+which re-exports it for existing callers but carries the whole pricing engine behind it.
 
 ---
 
