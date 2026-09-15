@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
-// ── LIVE-337 / ADR-NNNN: THE MATERIALISER NEVER WRITES HISTORY ──────────────────────────────────
+// ── LIVE-337 / ADR-1353: THE MATERIALISER NEVER WRITES HISTORY ──────────────────────────────────
 //
 // 🔴 WHAT THIS FILE MEASURES IS THE UPSERT PAYLOAD, NOT THE BOUND. A test that asserts
 // `computeOccurrenceDates` has a `from` argument proves the spelling and nothing else: the defect

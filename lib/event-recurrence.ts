@@ -500,7 +500,7 @@ export function anchorIsExhausted(
 // EXDATE helper (bound = the materialization horizon) both delegate here so the series math lives once.
 //
 // `fromInstant` is the OPTIONAL lower bound (inclusive), and it is optional because the two callers
-// want opposite things from the past (ADR-NNNN). The materialiser passes one: it may only write the
+// want opposite things from the past (ADR-1353). The materialiser passes one: it may only write the
 // window it owns. The `.ics` EXDATE helper must NOT — an occurrence the rule produces and the
 // database does not have is exactly what it EXDATEs, and a PAST one has to be EXDATE'd or a
 // subscribed client re-expands the RRULE and resurrects it (ADR-807). Retirement passes none either:
@@ -529,7 +529,7 @@ export function expandOccurrenceInstants(
   })
 }
 
-// ── THE WINDOW HAS A FLOOR AS WELL AS A CEILING (LIVE-337, ADR-NNNN) ────────────────────────────
+// ── THE WINDOW HAS A FLOOR AS WELL AS A CEILING (LIVE-337, ADR-1353) ────────────────────────────
 //
 // This function expanded from the ANCHOR with no lower bound, so the candidate set always carried
 // every past date of the series, and the caller's only filter is `existingDays` — the days the

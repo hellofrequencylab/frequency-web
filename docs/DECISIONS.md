@@ -41999,7 +41999,7 @@ the naming canon wins on names, and that bullet's subject is the plan NAME.
 
 ---
 
-## ADR-NNNN: the materialiser's window has a FLOOR at the run clock, so a deleted PAST date stays deleted (2026-09-15)
+## ADR-1353: the materialiser's window has a FLOOR at the run clock, so a deleted PAST date stays deleted (2026-09-15)
 
 **Status:** Accepted (2026-09-15). Closes `LIVE-337`. Code: `lib/event-recurrence.ts`
 (`computeOccurrenceDates`' `now` floor, `expandOccurrenceInstants`' optional `fromInstant`), tests in

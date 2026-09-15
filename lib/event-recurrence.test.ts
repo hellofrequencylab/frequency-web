@@ -23,7 +23,7 @@ const day = (d: Date) => d.toISOString().slice(0, 10)
 // stop bound under test.
 const FAR = 5000
 
-// The window also has a FLOOR of `now` (LIVE-337, ADR-NNNN), so the third argument is passed
+// The window also has a FLOOR of `now` (LIVE-337, ADR-1353), so the third argument is passed
 // explicitly rather than left to the wall clock: these anchors are fixed dates in 2027-2029, and a
 // test whose assertions depend on today's date silently changes meaning as the year turns. A floor
 // BEFORE every anchor is what makes each case measure the thing it was written for (the monthly
