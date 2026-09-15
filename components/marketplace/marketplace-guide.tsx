@@ -20,7 +20,7 @@ const SURFACES = [
   { icon: Tag, area: 'market', name: 'Classifieds', href: '/classifieds', blurb: 'Swap, lend, give, and find things locally, no fees.' },
   { icon: Home, area: 'housing', name: 'Housing', href: '/housing', blurb: 'Rooms, rentals, and roommate matching.' },
   { icon: ShoppingBag, area: 'makers', name: 'Market', href: '/market', blurb: 'Products, services, and tickets from members and businesses.' },
-  { icon: CalendarDays, area: null, name: 'Events', href: '/events', blurb: 'Find paid and free events near you.' },
+  { icon: CalendarDays, area: null, name: 'Events', href: '/events?price=paid', blurb: 'Ticketed events from members and businesses.' },
   { icon: Store, area: 'shop', name: 'Frequency Store', href: '/store', blurb: 'First-party Frequency goods.' },
 ] as const satisfies readonly { area: MarketArea | null; name: string; href: string; blurb: string; icon: unknown }[]
 
