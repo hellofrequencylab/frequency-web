@@ -96,7 +96,6 @@
             "LIVE-244",
             "LIVE-245",
             "LIVE-246",
-            "LIVE-247",
             "PROG-R8",
             "LIVE-252",
             "LIVE-253",
@@ -11077,7 +11076,7 @@
     {
       "id": "LIVE-247",
       "title": "The mobile centre button creates something",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "XS",
@@ -11085,14 +11084,12 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "components/layout/app-shell.tsx:1573-1583 - the raised centre button fires an open-capture event instead of opening the create menu. The most prominent affordance in the mobile product should start a post, an event or a circle.",
+      "detail": "components/layout/app-shell.tsx:1573-1583 - the raised centre button fires an open-capture event instead of opening the create menu. The most prominent affordance in the mobile product should start a post, an event or a circle.\n\nCLOSED 2026-09-15. Premise re-tested first: `components/layout/app-shell.tsx` (the block had drifted to 1548-1583) still fired `open-capture` from the raised centre button, and `CaptureLauncher` (mounted once in app/(main)/layout.tsx) was its only listener; the existing create menu was `components/feed/create-menu.tsx` over the shared `CREATE_ITEMS` list in `components/feed/create-actions.ts`. The centre button is now `CreateButton` in `components/layout/create-button.tsx`: a plus on the disc, label \"Create\", `aria-haspopup=\"dialog\"`, opening a `Dialog align=\"bottom\"` sheet whose first row is Post and whose remaining rows are `createItemsForRole(role)`, the SAME list the desktop feed menu renders, so the two cannot drift. The Zap menu is not deleted: the Post row dispatches `open-capture` on the post mode, so the composer and the earning tiles are one tap further in, and the shell itself no longer dispatches the event. The shared list was also corrected: `canCreate` grants `event.create` and `circle.create` to every signed-in member (lib/core/capabilities.ts), `/events/new` has no role wall and `/circles/new` redirects only the signed-out (LIVE-266), yet the list still gated New Event to Crew and New Circle to Host, so a member on the desktop feed could reach both by URL and see neither in the menu; both rows are `EVERYONE` now, Room and Dispatch stay host-only. The button and its sheet live in their own file precisely so `components/layout/create-button.test.tsx` can press the real button in jsdom: it proves the sheet is closed until pressed, opens named by its own heading, offers Post plus `/events/new` and `/circles/new` to a plain member (and not the host creates), adds `/nearby` and `/messages` for a host, treats a null visitor-preview role as a member, that Post dispatches `{ mode: \"post\" }` and closes, and that picking a create closes; a source block pins that app-shell mounts `<CreateButton role={viewer.role} />` and contains no `open-capture` in code while capture-launcher still listens. `header-fit.test.ts` follows the centre button into its file. Shell weight: the new file imports only the Dialog primitive, two lucide glyphs and the pure item list; Arm C still reads 0 leaks. NAMING.md now names the Create button and the Zap menu separately (the Zap button entry described the old wiring), and the three help pages that told members to tap the Zap button say Create, then Post. The old probe (`grep-absent open-capture` in app-shell) measured a word rather than the wiring; the new one strips comments and checks the mount, the absence of the dispatch in shell code, the dispatch inside the Post door, the live listener, and the member-set assertion in the test.",
       "verify": {
-        "kind": "grep-absent",
-        "pattern": "open-capture",
-        "paths": [
-          "components/layout/app-shell.tsx"
-        ]
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const S=\"components/layout/app-shell.tsx\",C=\"components/layout/create-button.tsx\",T=\"components/layout/create-button.test.tsx\",L=\"components/feed/capture-launcher.tsx\";for(const f of [S,C,T,L])if(!fs.existsSync(f)){console.error(\"missing \"+f);process.exit(79)}const NL=String.fromCharCode(10);const blocks=s=>{let o=s;for(;;){const a=o.indexOf(\"/*\");if(a<0)return o;const z=o.indexOf(\"*/\",a);if(z<0)return o.slice(0,a);o=o.slice(0,a)+o.slice(z+2)}};const code=s=>blocks(s).split(NL).filter(l=>l.trim().indexOf(\"//\")!==0).join(NL);const shell=code(fs.readFileSync(S,\"utf8\")),centre=code(fs.readFileSync(C,\"utf8\")),test=fs.readFileSync(T,\"utf8\"),launcher=code(fs.readFileSync(L,\"utf8\"));const bad=[];if(shell.indexOf(\"<CreateButton role={viewer.role} />\")<0)bad.push(\"app-shell does not mount CreateButton in the tab bar\");if(shell.indexOf(\"open-capture\")>=0)bad.push(\"app-shell still dispatches open-capture itself\");if(centre.indexOf(\"setOpen(true)\")<0||centre.indexOf(\"<CreateSheet\")<0)bad.push(\"the centre button does not open the Create sheet\");if(centre.indexOf(\"createItemsForRole(\")<0)bad.push(\"the sheet does not render the shared CREATE_ITEMS list\");if(centre.indexOf(\"open-capture\")<0)bad.push(\"the Zap menu door (open-capture) is gone from the sheet\");if(launcher.indexOf(\"addEventListener(\")<0||launcher.indexOf(\"open-capture\")<0)bad.push(\"nothing listens for open-capture any more\");if(test.indexOf(\"offers a post, an event and a circle to a plain member\")<0||test.indexOf(\"expect(\")<0)bad.push(\"the member-set assertion is gone from \"+T);if(bad.length){console.error(bad.join(\"; \"));process.exit(1)}process.exit(0)'"
+      },
+      "closed": "2026-09-15"
     },
     {
       "id": "LIVE-248",
