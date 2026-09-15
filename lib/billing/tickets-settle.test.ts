@@ -93,6 +93,10 @@ vi.mock('@/lib/finance/record', () => ledger)
 // The member receipt (LIVE-316) is owned by ./guest-ticket-settle.test.ts, which holds the identity
 // contract. Here it is stubbed so the fake client's null reads do not read as a settle error.
 vi.mock('@/lib/events/member-ticket-email', () => ({ sendMemberTicketReceipt: async () => {} }))
+// The HOST's sale notice (LIVE-345) is owned by ./ticket-sale-notify.test.ts and its wiring by
+// ./tickets-settle-capacity.test.ts. Stubbed here for the same reason as the member receipt: it
+// opens its own reads, and the fake client's null answers would read as a settle error.
+vi.mock('./ticket-sale-notify', () => ({ notifyTicketSaleHost: async () => {} }))
 
 import { recordTicketFromSession, recordTicketRefund } from './tickets'
 
