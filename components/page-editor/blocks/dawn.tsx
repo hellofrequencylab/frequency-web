@@ -62,6 +62,12 @@ import { focalField, focalClass } from '@/lib/page-editor/image-controls'
 import { imgField } from '@/lib/page-editor/fields'
 import { cn } from '@/lib/utils'
 import type { LivePricing } from '@/lib/page-editor/live-pricing'
+// 🔴 THE ONLY RUNTIME IMPORT THIS FILE TAKES FROM THE PRICING SEAM, AND IT IS A LEAF (ADR-1368).
+// `lib/pricing/plan-story` has no imports of its own, so reading the approved plan argument costs
+// this block library nothing in the artifact. Do NOT reach for `@/lib/pricing/pricing-page` here:
+// that module pulls a nine-import runtime chain, the page-editor renderer reaches this file broadly,
+// and the gates that would price the fan-out only run in `postbuild` on Vercel (ADR-1363).
+import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import {
   accentize,
   toneField,
@@ -1632,8 +1638,16 @@ export const dawnComponents: Record<string, ComponentConfig> = {
       eyebrow: 'The plans',
       title: 'Pick the plan that fits.',
       titleAccent: '',
+      // READ, never typed (ADR-916, ADR-1337, ADR-1350). ADR-1363 wrote the last two sentences of
+      // this kicker BY HAND as "PLAN_STORY.paid's argument in the band's own voice", and said plainly
+      // that the derivation was refused on the artifact rather than the code. The leaf module
+      // (ADR-1368) removed that cost, so the argument is now READ and only the two-ladder framing
+      // this block exists to set up is still the block's own. It derives `.paid`, not `.rate`,
+      // because `.paid` is the sentence that was being retyped: the band's plan cards already carry
+      // the live rate, and ending a plan band on the rate is the framing ADR-1350 decision 2 retired.
       kicker:
-        'Two ladders. One for you as a member, one for the Space you run. Every rung on both sells, so a plan is never what turns selling on. You take one when money starts moving and you have a standing promise to keep.',
+        'Two ladders. One for you as a member, one for the Space you run. Every rung on both sells. ' +
+        PLAN_STORY.paid,
       plans: [
         {
           livePriceKey: 'member',
