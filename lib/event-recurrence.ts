@@ -9,7 +9,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createHash } from 'crypto'
-import { expandRepeat, repeatFor } from '@/lib/events/repeat-rule'
+import { expandRepeat, nextRepeatOccurrence, repeatFor } from '@/lib/events/repeat-rule'
 
 function sanitizeForLog(value: unknown): string {
   return String(value).replace(/[\r\n]+/g, '')
@@ -429,6 +429,55 @@ export function anchorIsDormant(anchor: Pick<Anchor, 'is_cancelled' | 'removed_a
   return !!anchor.is_cancelled || anchor.removed_at != null
 }
 
+// ── A SERIES THAT HAS RUN OUT (LIVE-271, ADR-1348) ──────────────────────────────────────────────
+//
+// The anchor filter in `generateAllOccurrences` asks for the series worth rolling forward with
+// `recurrence_until.is.null,recurrence_until.gt.now`. That is exactly right for the two ends the
+// enum model had — indefinite, or ended on a date — and it cannot see the third one the rule model
+// added (ADR-1299): `COUNT=6`.
+//
+// A COUNT-bounded series carries a NULL `recurrence_until` BY CONSTRUCTION. The two are mutually
+// exclusive (RFC 5545 §3.3.10), `resolveSubmittedRepeat` writes a null end beside a COUNT rule, and
+// `rruleForRepeat` refuses to emit both. So the filter reads an exhausted COUNT series as
+// INDEFINITE and hands it to the per-anchor path every day, for the life of the row.
+//
+// 🔴 THE FIX IS A PREDICATE, NOT A COLUMN, AND THE COLUMN IS THE TRAP. Stamping the computed last
+// occurrence into `recurrence_until` when a COUNT series is saved would make the existing filter
+// work and would break the `.ics` export: that column is what `rruleForRepeat` appends as `UNTIL=`,
+// and a rule carrying both UNTIL and COUNT is invalid per RFC 5545, which a strict client may
+// reject whole. It would also put a wall-clock-as-UTC-parts value in a column ADR-807 defines as a
+// zone-resolved instant.
+//
+// This is pure arithmetic over a rule the caller already holds, which is what makes it worth doing
+// in place of a read: the expansion costs microseconds, the child-occurrence query it skips is a
+// round trip.
+/** True when the series has RUN OUT: its rule produces no occurrence at or after `now`.
+ *
+ *  Both ends are covered, so a caller does not have to know which one a series uses — a COUNT that
+ *  has been reached, and a `recurrence_until` already past (which the anchor filter also excludes,
+ *  so for that shape this agrees with the filter rather than adding to it).
+ *
+ *  FALSE IS THE FAIL-SAFE ANSWER, and every uncertain case takes it. A rule this code cannot read
+ *  is not an ended series (it is a malformed RRULE, and `retireStaleOccurrences` stands down on the
+ *  same reading); neither is an unparseable `starts_at` or an unparseable end. Saying "exhausted"
+ *  on any of those would stop a LIVE series materialising, which is a correctness failure traded
+ *  for a saved read. */
+export function anchorIsExhausted(
+  anchor: Pick<Anchor, 'starts_at' | 'recurrence_type' | 'recurrence_until' | 'recurrence_rule'>,
+  now: Date = new Date(),
+): boolean {
+  const rule = repeatFor({
+    starts_at: anchor.starts_at,
+    recurrence_type: anchor.recurrence_type,
+    recurrence_rule: anchor.recurrence_rule ?? null,
+  })
+  if (!rule) return false
+  if (!anchor.starts_at || Number.isNaN(new Date(anchor.starts_at).getTime())) return false
+  const until = anchor.recurrence_until ? new Date(anchor.recurrence_until) : null
+  if (until && Number.isNaN(until.getTime())) return false
+  return nextRepeatOccurrence(anchor.starts_at, rule, until, now) === null
+}
+
 // ── THE STEPPING LIVES IN ONE PLACE NOW (ADR-1299) ──────────────────────────────────────────────
 //
 // This module used to carry its own `occurrenceAt` + `daysInUTCMonth`, a deliberate copy of the
@@ -497,6 +546,14 @@ export async function generateOccurrencesForAnchor(anchorId: string): Promise<nu
   if (anchor.recurrence_type === 'none') return 0
   // A cancelled or removed series is over: never mint another occurrence of it.
   if (anchorIsDormant(anchor)) return 0
+  // So is a series that has RUN OUT, and this is where that is noticed (LIVE-271, ADR-1348):
+  // the anchor filter above cannot see a COUNT-bounded end, so an exhausted series arrives here
+  // every day forever. The skip sits BEFORE the child-occurrence read on purpose — that read is
+  // what the day costs, and nothing below it could ever mint a date, because the expander stops at
+  // the count. Retirement is deliberately NOT skipped for such an anchor: a series whose COUNT was
+  // REDUCED is exhausted AND still carrying the dates the old count minted, and retiring those is
+  // what ADR-1304 is for.
+  if (anchorIsExhausted(anchor)) return 0
 
   const dates = computeOccurrenceDates(anchor)
   if (!dates.length) return 0
@@ -594,6 +651,14 @@ export async function generateAllOccurrences(
   // A cancelled or moderator-removed anchor is skipped here as well as in the per-anchor path:
   // the cron rolls the horizon forward every day, so without this filter ending a weekly series
   // stopped nothing — a fresh, NON-cancelled occurrence appeared each time the window advanced.
+  //
+  // ⚠️ THE `recurrence_until` CLAUSE IS NOT THE WHOLE OF "still running" (LIVE-271, ADR-1348). It
+  // reads the two ends the enum model had, and a COUNT-bounded series carries a NULL end by
+  // construction, so an exhausted one is selected here and reads as indefinite. `anchorIsExhausted`
+  // is what notices, in the per-anchor path, before the read that costs anything. A stored
+  // end-marker column would shrink this head too; it is not worth a column until COUNT series
+  // exist in numbers (measured 2026-09-15: zero), and the marker would have to be invalidated by
+  // every path that edits a rule.
   const { data: anchors } = await admin
     .from('events')
     .select('id, recurrence_until')
