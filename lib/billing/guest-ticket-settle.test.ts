@@ -79,6 +79,9 @@ const mail = vi.hoisted(() => ({
 const memberMail = vi.hoisted(() => ({
   sendMemberTicketReceipt: vi.fn(async (_opts: Record<string, unknown>) => {}),
 }))
+const saleNotice = vi.hoisted(() => ({
+  notifyTicketSaleHost: vi.fn(async (_sale: Record<string, unknown>) => {}),
+}))
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
@@ -119,6 +122,10 @@ vi.mock('@/lib/supabase/admin', () => ({
 vi.mock('@/lib/finance/record', () => ledger)
 vi.mock('@/lib/events/guest-ticket-email', () => mail)
 vi.mock('@/lib/events/member-ticket-email', () => memberMail)
+// The HOST's sale notice (LIVE-345). Stubbed as a spy rather than a no-op so this file can hold the
+// property it already owns for every other per-settle side effect: exactly one per flipped row, and
+// none at all on a redelivery. Its CONTENT is owned by ./ticket-sale-notify.test.ts.
+vi.mock('./ticket-sale-notify', () => saleNotice)
 
 import { recordTicketFromSession } from './tickets'
 
@@ -260,6 +267,9 @@ describe('a redelivered webhook', () => {
     expect(mail.sendGuestTicketReceipt).toHaveBeenCalledTimes(1)
     expect(leadCalls()).toHaveLength(1)
     expect(ledger.recordFinancialTransaction).toHaveBeenCalledTimes(1)
+    // ...and ONE sale notice (LIVE-345). The host is told once, on the delivery that flipped the
+    // row, for exactly the same reason the buyer is emailed once: idempotency is the flip's.
+    expect(saleNotice.notifyTicketSaleHost).toHaveBeenCalledTimes(1)
     // A redelivery is ordinary. It must not cry wolf, or the real alarm below stops being read.
     expect(errors().join('\n')).not.toContain('NO TICKET ROW')
   })
@@ -271,6 +281,9 @@ describe('a redelivered webhook', () => {
     await recordTicketFromSession(guestSession())
 
     expect(mail.sendGuestTicketReceipt).not.toHaveBeenCalled()
+    // Nothing was sold, so nobody is told they sold it. The notice is keyed on a FLIPPED row, never
+    // on the session, which is what keeps a lost ticket from also inventing a sale for the host.
+    expect(saleNotice.notifyTicketSaleHost).not.toHaveBeenCalled()
     expect(errors().join('\n')).toContain('PAID CHECKOUT SESSION WITH NO TICKET ROW')
   })
 })
