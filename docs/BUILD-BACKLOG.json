@@ -79,7 +79,6 @@
             "PROG-R4",
             "LIVE-228",
             "LIVE-229",
-            "LIVE-230",
             "LIVE-232",
             "PROG-R5",
             "LIVE-234",
@@ -10773,7 +10772,7 @@
     {
       "id": "LIVE-230",
       "title": "Collapse the take rate to two numbers",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -10781,11 +10780,12 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "pricing_settings.take_rate.network_bps currently carries five rates (free 1000, business 500, collective 300, nonprofit 0, independent 0), none of which has ever been applied to a transaction. With Collective merged the ladder is: 10% free, 3% paid, 0% non-profit, 0% on your own audience. Two rungs a person can hold in their head.",
+      "detail": "pricing_settings.take_rate.network_bps currently carries five rates (free 1000, business 500, collective 300, nonprofit 0, independent 0), none of which has ever been applied to a transaction. With Collective merged the ladder is: 10% free, 3% paid, 0% non-profit, 0% on your own audience. Two rungs a person can hold in their head.\n\nCLOSED 2026-09-14 (ADR-1335): the ladder is two numbers plus two zeros, in basis points: free 1000, paid 300, nonprofit 0, own audience 0. SHAPE: keyed by RUNG (network_bps.free / .paid / .nonprofit) with the plan-to-rung map in code, lib/billing/pricing-keys.ts takeRateRungForPlan (business, collective and independent -> paid; nonprofit -> nonprofit; free, a legacy label and an unknown label -> free). Chosen over a plan-keyed vector because a plan-keyed vector leaves every reader guessing the moment a plan key is absent: six readers (the pricing grid, the meter upsell, the CMS template, the operator console, its save action, the ticket receipt) indexed network_bps by plan name and would have read undefined into a NaN fee, while a rung-keyed vector with one resolver has nothing to be missing. An unknown plan lands on the free rung, the higher rate, never on 0 and never on a throw (take-rate-ladder.test.ts). WHERE THE FIVE OLD KEYS WENT: free stays free; business, collective and independent all resolve to paid; nonprofit stays nonprofit. No reader indexes network_bps by plan name outside the resolver (source-shape pin in the same test). CODE-ONLY, no migration: networkTakeRateFromStored reads a stored row of either vintage (the 20270203 plan-named seed resolves to free 1000 / paid 300 / nonprofit 0; its retired business 500 / collective 300 / independent 0 are not read, and none had been applied to a transaction), getPricingValues normalises the row into the rung shape, and saveTakeRate only ever writes the rung shape, so the stored row rewrites itself on the first operator save. OWN AUDIENCE: the rung is declared (OWN_AUDIENCE_BPS = 0, applied by takeRateBps) and it is FED today, not a new dimension: lib/commerce/order-source.ts classifyOrderSource decides self from the seller's followers, members, contacts and prior buyers, lib/pricing/network-world.ts effectiveOrderSource collapses a disconnected Space to self, and every fee path short-circuits on self before reading a rate. PREMISE, re-tested: the five rates were stored config, not only a code constant (20270203000000_seed_take_rate_vector.sql had written network_bps into pricing_settings.take_rate); the code path that applies a rate exists (lib/billing/tickets.ts and lib/commerce/checkout.ts write platform_fee_cents into event_tickets and commerce_orders, tickets also take_rate_bps, and settlement records the fee in financial_transactions), so \"never applied\" is a statement about production rows this tree cannot read, not about the code. Copy that names a rate reads the ladder: funnel-config, funnel-graphics, what-is-frequency, the pricing grid and the meter upsell all resolve through the ladder; the help page table (content/help/spaces/plans-and-pricing.md) states the two numbers; lib/page-editor/templates/pricing.ts still reads NETWORK_TAKE_RATE_DEFAULT.business and .collective and is LIVE-232's file, which must read .paid (or the resolver) and drop the Collective read.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/billing/pricing-keys.ts\",\"utf8\");const m=s.match(/NETWORK_TAKE_RATE_DEFAULT[^=]*=\\s*\\{([\\s\\S]*?)\\n\\}/);if(!m){console.error(\"NETWORK_TAKE_RATE_DEFAULT not found\");process.exit(1)}if(/collective:/.test(m[1])){console.error(\"collective rung still in the take-rate ladder\");process.exit(1)}process.exit(0)'"
-      }
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-231",

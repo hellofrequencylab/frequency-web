@@ -36,7 +36,12 @@
 // Member, Crew, Space, Business, Collective, Non Profit.
 
 import { BETA_CTA_HREF } from '@/lib/site'
-import { catalogItem, type CatalogItemKey } from '@/lib/billing/pricing-keys'
+import {
+  catalogItem,
+  networkTakeRateBpsForPlan,
+  networkTakeRateFromStored,
+  type CatalogItemKey,
+} from '@/lib/billing/pricing-keys'
 import { ENTITLEMENT_LABEL, deriveTier, isPaid, type EntitlementTier } from '@/lib/core/entitlement'
 import type { ResolvedCatalogItem } from './catalog-config'
 import {
@@ -275,7 +280,9 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
   // the beta rate reads under its anchor exactly as it does today.
   const paid = spacePlanRows(values, betaActiveFor(input))
   const trial = trialNote(values)
-  const rateBps = (plan: SpacePlan): number => values.take_rate.network_bps[plan]
+  // The plan finds its RUNG through the one resolver (LIVE-230); nothing here indexes the vector by name.
+  const ladder = networkTakeRateFromStored(values.take_rate)
+  const rateBps = (plan: SpacePlan): number => networkTakeRateBpsForPlan(plan, ladder)
   const rate = (plan: SpacePlan): string =>
     `0% on your own bookings, ${formatBps(rateBps(plan))} on network-sourced sales`
 
@@ -493,7 +500,10 @@ export function resolveCell(source: RowSource, column: GridColumn, input: Pricin
           text: formatBps(isPaidTierLabel(column.tier) ? t.member_bps : t.member_free_bps),
         }
       }
-      return { kind: 'value', text: formatBps(input.values.take_rate.network_bps[column.tier as SpacePlan]) }
+      return {
+        kind: 'value',
+        text: formatBps(networkTakeRateBpsForPlan(column.tier, networkTakeRateFromStored(input.values.take_rate))),
+      }
     }
     case 'addon':
       return addonCell(source.addon, column, input)

@@ -2,7 +2,12 @@ import { describe, it, expect } from 'vitest'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { NETWORK_TAKE_RATE_DEFAULT, catalogItem } from '@/lib/billing/pricing-keys'
+import {
+  NETWORK_TAKE_RATE_DEFAULT,
+  catalogItem,
+  networkTakeRateBpsForPlan,
+  networkTakeRateFromStored,
+} from '@/lib/billing/pricing-keys'
 import { PRICING_DEFAULTS } from '@/lib/pricing/defaults'
 import { PLACEHOLDER_MEMBER_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
 import { catalogConfigByKey, defaultCatalogConfig } from '@/lib/pricing/catalog-config'
@@ -149,8 +154,10 @@ describe('one source: the code defaults are READ from the catalog and the rate v
     const t = PRICING_DEFAULTS.take_rate
     expect(t.member_free_bps).toBe(NETWORK_TAKE_RATE_DEFAULT.memberFree)
     expect(t.member_bps).toBe(NETWORK_TAKE_RATE_DEFAULT.member)
+    // Every plan, placed on its rung through the one resolver, reads the same number from the settings
+    // default as from the code vector (LIVE-230: the vector is keyed by rung, never by plan name).
     for (const plan of SPACE_PLANS) {
-      expect(t.network_bps[plan], plan).toBe(NETWORK_TAKE_RATE_DEFAULT[plan])
+      expect(networkTakeRateBpsForPlan(plan, networkTakeRateFromStored(t)), plan).toBe(networkTakeRateBpsForPlan(plan))
     }
   })
 
@@ -166,7 +173,7 @@ describe('one source: every published ladder moves when the config moves', () =>
     ...PRICING_DEFAULTS,
     take_rate: {
       ...PRICING_DEFAULTS.take_rate,
-      network_bps: { ...PRICING_DEFAULTS.take_rate.network_bps, business: 777 },
+      network_bps: { ...PRICING_DEFAULTS.take_rate.network_bps, paid: 777 },
     },
   }
 
@@ -181,7 +188,7 @@ describe('one source: every published ladder moves when the config moves', () =>
     const ladder = pricingLadderSummary({ values: edited, catalog, betaActive: true }).join('\n')
     expect(ladder).toContain('7.77%')
     // And the number it replaced is gone from the published corpus entirely.
-    expect(ladder).not.toContain('5% on network-sourced sales')
+    expect(ladder).not.toContain('3% on network-sourced sales')
   })
 
   it('every rung the grid publishes carries its rate as a number, not only as prose', () => {

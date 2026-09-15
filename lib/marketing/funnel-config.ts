@@ -36,10 +36,12 @@ const P = priceStrings()
 // this config stays safe to import anywhere), including the FREE Space rung. The free rung is quoted on
 // purpose: selling is free on every tier, so the free row has a real rate of its own and a paid row is a
 // lower number beside it, never a door that opens. The pricing beat is a ladder, not a gate.
+// The ladder is two numbers (LIVE-230): the free rung and the paid rung. Business and Collective both
+// stand on the paid rung, so the same figure is quoted wherever either plan is named.
 const RATE = {
   free: formatBps(NETWORK_TAKE_RATE_DEFAULT.free),
-  business: formatBps(NETWORK_TAKE_RATE_DEFAULT.business),
-  collective: formatBps(NETWORK_TAKE_RATE_DEFAULT.collective),
+  business: formatBps(NETWORK_TAKE_RATE_DEFAULT.paid),
+  collective: formatBps(NETWORK_TAKE_RATE_DEFAULT.paid),
 }
 /** The free-tier row's honest descriptor: a free Space sells from day one, at its own network rate. */
 const FREE_ROW_DETAIL = `Sell from day one, ${RATE.free} on network introductions`

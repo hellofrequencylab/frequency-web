@@ -40678,3 +40678,70 @@ meaning what docs/WORKFLOW.md says. The first live reading of the new gate is #2
 after this lands. HYG-072 closes on this ADR.
 
 **Rows.** HYG-072 (done, this ADR).
+
+## ADR-1335: the take rate is two numbers plus two zeros, keyed by rung, and a plan meets it through one resolver (2026-09-14)
+
+**Status.** Accepted. Closes `LIVE-230`. Applies `docs/CORE-MODEL.md` §5 phase 4 (PROG-R4) to the
+one money rule it names. Amends [ADR-811](DECISIONS.md) §4 (the five-rate network vector),
+[ADR-913](DECISIONS.md) and [ADR-914](DECISIONS.md) (the seeded values), and the seed in
+`20270203000000_seed_take_rate_vector.sql`, whose stored shape this ADR retires without a migration.
+
+**Context.** `pricing_settings.take_rate.network_bps` carried five rates keyed by plan name: free
+1000, business 500, collective 300, nonprofit 0, independent 0. Under PROG-R4 Collective merges into
+Business and Independent is kept but leaves public pricing, so three of the five names were one paid
+plan wearing three labels, each with a number of its own. Re-testing the row's premise before working
+it found two things it had not said. First, the five rates were stored config, not only a code constant:
+the 20270203 seed had written `network_bps` into the row, so an operator could read `business: 500` at
+`/admin/pricing` as live. Second, the code that applies a rate is real and complete: `lib/billing/
+tickets.ts` and `lib/commerce/checkout.ts` classify a source, resolve the operator vector, write
+`platform_fee_cents` into `event_tickets` (with `take_rate_bps` and `order_source`) and
+`commerce_orders`, and settlement records the fee in `financial_transactions`. "None has ever been
+applied" is a statement about production rows this repository cannot read, and it is not needed: the
+change is safe either way, because the paid number moves from 500 to 300 on Business and the
+receipt column records what was charged.
+
+Six readers indexed the vector by plan name (`network_bps.business`, `network_bps[plan]`): the
+pricing grid, the meter upsell, the what-is-frequency template, the operator console, its save action
+and the ticket receipt. Under a plan-keyed shape every one of them reads `undefined` for any plan the
+vector does not name, and `undefined * gross / 10000` is a `NaN` fee. Two layers of per-field merge
+hid that today; they would not hide a renamed plan.
+
+**Decision.**
+
+1. **The ladder is keyed by rung.** `NetworkTakeRate` is `{ free, paid, nonprofit, memberFree,
+   member }` and `NETWORK_TAKE_RATE_DEFAULT` is `free 1000 · paid 300 · nonprofit 0 · memberFree 1000
+   · member 800`. `TAKE_RATE_RUNGS` enumerates the three Space rungs. The fourth outcome, 0% on the
+   seller's own audience, is a RULE and not a stored rate: `OWN_AUDIENCE_BPS = 0`, applied by
+   `takeRateBps(plan, source)` and by the `source === 'self'` short-circuit every fee path already
+   carries. It is fed today: `classifyOrderSource` decides `self` from followers, members, contacts and
+   prior buyers, and `effectiveOrderSource` collapses a disconnected Space to `self`.
+2. **One resolver places a plan.** `takeRateRungForPlan`: business, collective and independent
+   resolve to `paid`; nonprofit to `nonprofit`; free, every legacy label and every unknown label to
+   `free`. The free rung is the higher rate, so a misspelled plan over-collects and is noticed rather
+   than under-collecting quietly; the resolver never throws and never returns 0 for a plan it cannot
+   place. `networkTakeRateBpsForPlan` reads the rung off the vector and falls back to the seeded rung
+   when an override left it absent or non-numeric (a missing key is not a free ride).
+3. **Code-only; no migration.** `networkTakeRateFromStored` assembles the vector from a stored row of
+   either vintage: a rung-keyed row is read rung by rung; a plan-keyed row (the 20270203 seed) resolves
+   to free 1000 / paid 300 / nonprofit 0 and its retired keys are not read. `getPricingValues`
+   normalises the row into the rung shape once, so every typed reader downstream sees `{ free, paid,
+   nonprofit }` and nothing else; `saveTakeRate` only ever writes that shape, so the stored row rewrites
+   itself on the first operator save. Both orders of deploy converge on the same numbers. A UPDATE that
+   rewrites the row ahead of that save would be the ADR-914 precedent (move the ruling into the row);
+   it is not required for correctness and is left to the operator.
+4. **No reader indexes the vector by plan name.** Pinned by a source-shape test in
+   `lib/billing/take-rate-ladder.test.ts`, beside the four-outcome table (free 1000 / paid 300 /
+   nonprofit 0 / own audience 0), the unknown-plan rule, and the either-vintage stored-row rule.
+
+**Consequences.** Business moves from 5% to 3% on network-sourced sales; Collective and Independent
+keep 3%; free and Non Profit are unchanged; the member rungs are unchanged. The console edits three
+Space fields (Free, Paid, Non Profit) instead of four. Copy that names a rate reads the ladder:
+the funnel config and graphic, the what-is-frequency template, the pricing grid and the meter upsell
+resolve through it, and the help page table states the two numbers. `lib/page-editor/templates/
+pricing.ts` is `LIVE-232`'s file and still reads `NETWORK_TAKE_RATE_DEFAULT.business` and
+`.collective`; it must read `.paid` (or the resolver) and drop the Collective read, which is the one
+place whole-tree `tsc` reports this change until that lane lands. `docs/VALUE-LADDER.md` §2 and
+`docs/PRICING.md`'s ADR-913 banner still print the five-rate ladder as history; this ADR is the
+record they defer to.
+
+**Rows.** LIVE-230 (done, this ADR). LIVE-232 picks up the template read named above.

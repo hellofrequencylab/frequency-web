@@ -298,21 +298,19 @@ describe('seeded defaults are sane (mirror the migration)', () => {
 
   it('take-rate: the LIVE rungs are the network vector plus BOTH individual seller rates (ADR-914)', () => {
     const t = PRICING_DEFAULTS.take_rate
-    // What actually charges (lib/billing/fees.ts): a Space pays its network-sourced rate, and only on a
-    // sale the network sourced. Business 5% → Collective 3% → Non Profit 0% → Independent 0% (off the graph).
-    expect(t.network_bps.business).toBe(500)
-    expect(t.network_bps.collective).toBe(300)
+    // What actually charges (lib/billing/fees.ts): a Space pays its RUNG's network-sourced rate, and only
+    // on a sale the network sourced. Two numbers plus a zero (LIVE-230): free 10% → paid 3% → Non Profit 0%.
+    expect(t.network_bps.paid).toBe(300)
     expect(t.network_bps.nonprofit).toBe(0)
-    expect(t.network_bps.independent).toBe(0)
     // A free Space pays the HIGHEST rate, so an unresolved plan over-collects rather than charging 0%.
-    expect(t.network_bps.free).toBeGreaterThan(t.network_bps.business)
+    expect(t.network_bps.free).toBeGreaterThan(t.network_bps.paid)
     // TWO individual seller rungs (ADR-914): a free Member sells at 10%, Crew at 8%. Selling is free on
     // every tier, so the ladder is these numbers descending rather than a capability appearing.
     expect(t.member_free_bps).toBe(1000)
     expect(t.member_bps).toBe(800)
     // The whole ladder must descend monotonically, or a rung is being sold for nothing.
     expect(t.member_free_bps).toBeGreaterThan(t.member_bps)
-    expect(t.member_bps).toBeGreaterThan(t.network_bps.business)
+    expect(t.member_bps).toBeGreaterThan(t.network_bps.paid)
     // A free Space is held to the free-Member standard, so those two rungs are EQUAL: moving a sale into
     // a free Space must not change its rate. Only paying does.
     expect(t.member_free_bps).toBe(t.network_bps.free)

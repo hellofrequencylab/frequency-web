@@ -73,10 +73,11 @@ the Market. Those are the only ones we take a percentage of:
 | Plan | Frequency's share of network-sourced sales |
 | --- | --- |
 | Free | 10% |
-| Business | 5% |
-| Collective | 3% |
+| Business | 3% |
 | Non Profit | 0% |
-| Independent | 0%, it is off the network, so there are no network-sourced sales |
+
+Two numbers, and a zero. Every paid plan is on the Business rate, and a Space that is off the network has
+no network-sourced sales to pay it on.
 
 **Every plan can sell, including Free.** A Free Space creates events, takes RSVPs, sells tickets, and
 takes payments from day one. You do not buy the ability to charge, you buy the rate down. A paid plan

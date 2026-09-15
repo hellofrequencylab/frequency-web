@@ -22,7 +22,7 @@ import {
   type SeatConfig,
   type PwywConfig,
 } from '@/lib/pricing/catalog-config'
-import { asCatalogItemKey } from '@/lib/billing/pricing-keys'
+import { asCatalogItemKey, TAKE_RATE_RUNGS } from '@/lib/billing/pricing-keys'
 import { ADDON_KEYS, asAddonKey } from '@/lib/pricing/plans'
 import { setFeatureGateOverride } from '@/lib/pricing/gates'
 import { billingEnabled } from '@/lib/billing/stripe'
@@ -142,11 +142,10 @@ export async function saveAddonEnabled(addon: string, enabled: boolean): Promise
   }
 }
 
-/** The network-tier keys the console may edit, as a TRUSTED constant. Every write target below comes from
- *  this list, never from a caller-supplied property name. `independent` is deliberately editable too (it
- *  is part of the stored vector), but the console does not render it: a disconnected Space has left the
- *  graph, so its network revenue is 0 by definition. */
-const NETWORK_TIER_KEYS = ['free', 'business', 'collective', 'nonprofit', 'independent'] as const
+/** The RUNGS the console may edit, as a TRUSTED constant (the ladder's own enumeration, LIVE-230: free /
+ *  paid / nonprofit). Every write target below comes from this list, never from a caller-supplied property
+ *  name. There is no per-plan key any more: Business, Collective and Independent all stand on `paid`. */
+const NETWORK_TIER_KEYS = TAKE_RATE_RUNGS
 
 /** Save the take-rate, in basis points (800 = 8%). Writes the fields that ACTUALLY CHARGE (ADR-914):
  *  `network_bps` (the per-Space-tier network-sourced vector `spaceTakeRateCents` reads) plus BOTH
@@ -168,6 +167,9 @@ export async function saveTakeRate(rate: {
   const clamp = (n: unknown) => Math.min(10000, Math.max(0, Math.round(Number(n) || 0)))
   try {
     const current = (await getPricingValues()).take_rate
+    // `current.network_bps` is the NORMALISED rung shape (getPricingValues rebuilds it per rung), so this
+    // write only ever stores `free / paid / nonprofit`: a row still carrying the retired plan-named keys
+    // (`business / collective / independent`, pre-LIVE-230) is rewritten in the new shape on the first save.
     const network = { ...current.network_bps }
     for (const tier of NETWORK_TIER_KEYS) {
       const next = rate.network_bps[tier]

@@ -50,7 +50,7 @@ function routeExists(href: string): boolean {
 //   * the take-rate row is the real network rate the fee code charges;
 //   * the page source contains no hard-coded dollar figure at all.
 
-import { yearlyFromMonthly } from '@/lib/billing/pricing-keys'
+import { networkTakeRateBpsForPlan, networkTakeRateFromStored, yearlyFromMonthly } from '@/lib/billing/pricing-keys'
 import { isBetaPricingActive } from './beta'
 import { catalogConfigByKey, defaultCatalogConfig } from './catalog-config'
 import { ADVERTISED_SPACE_PLANS, formatCents } from './display'
@@ -380,24 +380,26 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     // Pinning the numbers here is how the retired ladder ("Free Space 10%, Collective 3%") survived a
     // rate change: the test restated the very literals it was meant to guard. The row must equal what the
     // config carries, so an owner rate change moves the page and this test together (ADR-913).
-    const net = PRICING_DEFAULTS.take_rate.network_bps
+    const ladder = networkTakeRateFromStored(PRICING_DEFAULTS.take_rate)
     const cells = cellsByColumn(grid, 'take_rate')
     for (const plan of SHOWN_SPACE_PLANS) {
-      expect(cells[plan], `take_rate @ ${plan}`).toBe(`${net[plan] / 100}%`)
+      expect(cells[plan], `take_rate @ ${plan}`).toBe(`${networkTakeRateBpsForPlan(plan, ladder) / 100}%`)
     }
   })
 
-  it('holds the model invariants: the rate only falls as the tier rises, and 0% at the top', () => {
+  it('holds the model invariants: two numbers plus a zero, and the rate only falls as the plan rises', () => {
     const net = PRICING_DEFAULTS.take_rate.network_bps
-    // Non Profit takes nothing, and Independent is off the network entirely.
+    // Non Profit takes nothing.
     expect(net.nonprofit).toBe(0)
-    expect(net.independent).toBe(0)
-    // Across the PAID ladder the rate only ever falls, which is the claim the copy makes out loud
-    // ("the rate drops as your plan rises").
-    const paid = (['business', 'collective', 'nonprofit', 'independent'] as const).map((p) => net[p])
-    expect(paid).toEqual([...paid].sort((a, b) => b - a))
-    // Business is the rung the whole funnel steers to, so it is stated once, here.
-    expect(net.business).toBe(500)
+    // Across the ladder the rate only ever falls, which is the claim the copy makes out loud
+    // ("the rate drops as your plan rises"), and every paid plan stands on the one paid rung (LIVE-230).
+    expect(net.free).toBeGreaterThan(net.paid)
+    expect(net.paid).toBeGreaterThan(net.nonprofit)
+    for (const plan of ['business', 'collective', 'independent'] as const) {
+      expect(networkTakeRateBpsForPlan(plan, networkTakeRateFromStored(PRICING_DEFAULTS.take_rate)), plan).toBe(net.paid)
+    }
+    // The paid rung is the number the whole funnel steers to, so it is stated once, here.
+    expect(net.paid).toBe(300)
   })
 
   it('a meter row reads the tier rung on the usage ladder, not a typed number', () => {

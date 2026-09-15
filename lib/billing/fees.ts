@@ -32,16 +32,18 @@ export function platformFeeCents(grossCents: number): number {
 }
 
 // ── The NETWORK take-rate (ADR-811 §A, ruled ADR-913) ─────────────────────────────────────
-// A Space sale on Connect carries an application fee ONLY when the NETWORK sourced it. The rungs the
-// operator sets in pricing_settings.take_rate.network_bps (editable at /admin/pricing): Space free 10% →
-// Business 5% → Collective 3% → Non Profit 0% → Independent 0% (off the network). An individual seller
-// pays `member_free_bps` (10%) on the free Member tier or `member_bps` (8%) on Crew. And 0%, always,
-// when the buyer is the seller's own audience — that short-circuits before any IO below.
+// A Space sale on Connect carries an application fee ONLY when the NETWORK sourced it. The ladder is two
+// numbers plus two zeros (LIVE-230), keyed by RUNG in pricing_settings.take_rate.network_bps (editable at
+// /admin/pricing): a free Space 10% → a paid Space 3% → a Non Profit 0%, and 0%, always, when the buyer
+// is the seller's own audience — that short-circuits before any IO below. A plan finds its rung through
+// `takeRateRungForPlan` (Business, Collective and Independent all stand on `paid`). An individual seller
+// pays `member_free_bps` (10%) on the free Member tier or `member_bps` (8%) on Crew.
 //
 // The pure math lives in lib/billing/pricing-keys.ts (sourceAwareTakeRateCents); this IO wrapper reads the
-// operator rates and applies them. FAIL-SAFE in two layers: getPricingValues merges every field over the
-// seeded code default (no partial row can leave a tier undefined → NaN), and a thrown read falls back to
-// the flat platform fee — never to a 0% fee that under-collects.
+// operator rates and applies them. FAIL-SAFE in two layers: `networkTakeRateFromStored` rebuilds the vector
+// per rung over the seeded code default (no partial or pre-LIVE-230 row can leave a rung undefined → NaN,
+// and a missing rung is never a free ride), and a thrown read falls back to the flat platform fee — never
+// to a 0% fee that under-collects.
 
 /** The OPERATOR-RESOLVED network take-rate vector: the code defaults with the operator's
  *  pricing_settings merged over them, per field. The single place the live rate is assembled.
@@ -53,19 +55,14 @@ export function platformFeeCents(grossCents: number): number {
  *  one. A receipt that disagrees with the charge is worse than no receipt, because it is evidence
  *  that reads as authoritative and is wrong. */
 export async function resolvedNetworkRate(): Promise<import('./pricing-keys').NetworkTakeRate> {
-  const [{ getPricingValues }, { NETWORK_TAKE_RATE_DEFAULT }] = await Promise.all([
+  const [{ getPricingValues }, { NETWORK_TAKE_RATE_DEFAULT, networkTakeRateFromStored }] = await Promise.all([
     import('@/lib/pricing/settings'),
     import('./pricing-keys'),
   ])
   try {
-    const t = (await getPricingValues()).take_rate
-    // Per-field fallback so a partial operator override can never leave a rung undefined (→ NaN fee).
-    return {
-      ...NETWORK_TAKE_RATE_DEFAULT,
-      ...t.network_bps,
-      member: t.member_bps ?? NETWORK_TAKE_RATE_DEFAULT.member,
-      memberFree: t.member_free_bps ?? NETWORK_TAKE_RATE_DEFAULT.memberFree,
-    }
+    // Per-rung fallback so a partial operator override, or a row still stored in the pre-LIVE-230
+    // plan-named shape, can never leave a rung undefined (→ NaN fee) or resolve it to 0.
+    return networkTakeRateFromStored((await getPricingValues()).take_rate)
   } catch {
     return NETWORK_TAKE_RATE_DEFAULT
   }

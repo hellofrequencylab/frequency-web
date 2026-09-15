@@ -156,22 +156,44 @@ export function memberTakeRateCents(
   return Math.floor((grossCents * memberTakeRateBps(takeRate)) / 10000)
 }
 
-// ── The DIFFERENTIAL (network-sourced) take-rate (Phase 2, ADR-811 §A) ───────────────────────────────
+// ── The DIFFERENTIAL (network-sourced) take-rate (Phase 2, ADR-811 §A · collapsed by LIVE-230) ──────
 // The Community Collective principle: we NEVER take a cut of the business a member brings themselves
-// (`self` orders = 0%, always, the hard promise), and we take a small, tier-declining cut ONLY of the
-// business the NETWORK sourced (referral / discovery / marketplace). The rate drops as the tier rises,
-// so a paid plan visibly buys down the fee. All PURE; the IO wrappers (lib/billing/fees.ts) resolve the
-// operator-set rates and thread the classified `source`.
+// (`self` orders = 0%, always, the hard promise), and we take a small cut ONLY of the business the
+// NETWORK sourced (referral / discovery / marketplace). All PURE; the IO wrappers (lib/billing/fees.ts)
+// resolve the operator-set rates and thread the classified `source`.
+//
+// THE LADDER IS TWO NUMBERS PLUS TWO ZEROS (docs/CORE-MODEL.md §5 phase 4, PROG-R4): a free Space pays
+// 10% on a network-sourced sale, a PAID Space pays 3%, a verified Non Profit pays 0%, and every Space
+// pays 0% on its own audience. It is keyed by RUNG, not by plan name: Collective merged into Business,
+// Independent is kept but off public pricing, and none of the three had a rate of its own any more.
+// A plan resolves to its rung through `takeRateRungForPlan` below, which is the ONLY place a plan
+// name meets the ladder; no reader indexes the vector by plan name (pinned in take-rate-ladder.test.ts).
 
 /** An order's commercial source: the operator's OWN booking (0% fee, always) vs a sale the NETWORK
- *  sourced (referral / discovery / marketplace). PURE. */
+ *  sourced (referral / discovery / marketplace). PURE. Classified at checkout by
+ *  lib/commerce/order-source.ts and collapsed for a disconnected Space by lib/pricing/network-world.ts. */
 export type OrderSource = 'self' | 'network'
 
-/** NETWORK-sourced take-rate (bps) per SPACE plan tier (ADR-811 §4). `self` orders are 0 by rule, so this
- *  vector holds only the network side. The rate DROPS as the tier rises; a disconnected Independent space
- *  has left the graph, so its network revenue is 0 by definition.
+/** The three SPACE rungs a plan can stand on. `paid` is every paid plan (Business, and the Collective +
+ *  Independent labels that fold into it); `nonprofit` is the verified 501(c)(3) zero; `free` is the
+ *  reference rate and the default-deny rung. */
+export type TakeRateRung = 'free' | 'paid' | 'nonprofit'
+
+/** The rungs in ladder order, top rate first. The enumeration the console and the display readers walk. */
+export const TAKE_RATE_RUNGS: readonly TakeRateRung[] = ['free', 'paid', 'nonprofit']
+
+/** The 0% a seller pays on a sale to their OWN audience, at every rung. A RULE, never a stored rate: it
+ *  is declared here so the ladder reads as four outcomes (free / paid / nonprofit / own audience) and it
+ *  is applied by the `source === 'self'` short-circuit in every fee path, before any rate is read. The
+ *  distinction is FED today: lib/commerce/order-source.ts `classifyOrderSource` decides `self` from the
+ *  seller's followers, members, contacts and prior buyers (lib/commerce/seller-audience.ts), and
+ *  lib/pricing/network-world.ts `effectiveOrderSource` collapses a disconnected Space to `self`. */
+export const OWN_AUDIENCE_BPS = 0
+
+/** NETWORK-sourced take-rate (bps) per RUNG (LIVE-230). `self` orders are 0 by rule, so this vector
+ *  holds only the network side.
  *
- *  TWO individual (profile) seller rungs sit beside the space ladder (ADR-914): `memberFree` for a
+ *  TWO individual (profile) seller rungs sit beside the Space ladder (ADR-914): `memberFree` for a
  *  seller on the free Member tier and `member` for a Crew seller. Their own audience is always 0% on
  *  both; the rungs price only what the network sourced.
  *
@@ -180,56 +202,113 @@ export type OrderSource = 'self' | 'network'
  *  tier and the ladder IS the rate — which makes this rung the single most-charged number in the
  *  product rather than dead config. It is the reference rate the whole ladder descends from. */
 export interface NetworkTakeRate {
+  /** A free Space, and the default-deny rung for any plan the resolver cannot place. */
   free: number
-  business: number
-  collective: number
+  /** Every paid Space plan: Business, and the Collective + Independent labels that resolve into it. */
+  paid: number
+  /** A verified Non Profit. */
   nonprofit: number
-  independent: number
   /** Individual (profile) seller on the FREE Member tier — the reference rate (ADR-914). */
   memberFree: number
   /** Individual (profile) seller on the paid CREW tier. */
   member: number
 }
 
-/** The seeded default network take-rate: Space free 1000 (10%) · Business 500 (5%) · Collective 300 (3%) ·
- *  Non Profit 0 · Independent 0 (left the graph). The individual rungs are 1000 (10%) on the free Member
- *  tier and 800 (8%) on Crew. Launch low; earn the right to raise.
+/** The seeded default network take-rate: free 1000 (10%) · paid 300 (3%) · Non Profit 0. The individual
+ *  rungs are 1000 (10%) on the free Member tier and 800 (8%) on Crew. Launch low; earn the right to raise.
  *
  *  The free Member rung deliberately EQUALS the free Space rung: a free Space is held to the free
  *  Member standard (owner ruling), so moving a free sale into a free Space changes nothing. Only paying
  *  changes the rate, which is the entire point of the ladder. */
 export const NETWORK_TAKE_RATE_DEFAULT: NetworkTakeRate = {
   free: 1000,
-  business: 500,
-  collective: 300,
+  paid: 300,
   nonprofit: 0,
-  independent: 0,
   memberFree: 1000,
   member: 800,
 }
 
-/** The network-sourced take-rate bps for a space plan. `self` is 0 by rule and never reaches here. An
- *  unknown / legacy label narrows through asSpacePlan (default-deny to 'free', the HIGHER rate — never
- *  under-collect on a network sale). PURE. */
+/** THE plan-to-rung map: the one place a Space plan name meets the take-rate ladder. Business,
+ *  Collective and Independent all stand on the paid rung (Collective merged into Business; Independent
+ *  is kept but is a paid plan like any other, and a disconnected one collapses to `self` upstream, in
+ *  effectiveOrderSource, so its rung is never reached on a network sale). Non Profit is its own zero. A
+ *  legacy label narrows through asSpacePlan first; anything it cannot place is `free`, the HIGHER rate,
+ *  so an unknown plan can never buy the paid rate by being misspelled (never under-collect). PURE. */
+export function takeRateRungForPlan(plan: SpacePlan | string | null | undefined): TakeRateRung {
+  switch (asSpacePlan(plan)) {
+    case 'nonprofit':
+      return 'nonprofit'
+    case 'business':
+    case 'collective':
+    case 'independent':
+      return 'paid'
+    default:
+      return 'free'
+  }
+}
+
+/** The network-sourced take-rate bps for a space plan. `self` is 0 by rule and never reaches here. Reads
+ *  the plan's RUNG off the vector; a rung an operator override left absent or non-numeric falls back to
+ *  the seeded rung, never to `undefined` (→ NaN) and never to 0 (a missing key is not a free ride). PURE. */
 export function networkTakeRateBpsForPlan(
   plan: SpacePlan | string | null | undefined,
   rate: NetworkTakeRate = NETWORK_TAKE_RATE_DEFAULT,
 ): number {
-  const p = asSpacePlan(plan) // free | business | collective | nonprofit | independent
-  return rate[p]
+  const rung = takeRateRungForPlan(plan)
+  const bps = rate[rung]
+  return typeof bps === 'number' && Number.isFinite(bps) ? bps : NETWORK_TAKE_RATE_DEFAULT[rung]
+}
+
+/** The bps a SPACE sale settles at, source included: the seller's own audience → OWN_AUDIENCE_BPS (0),
+ *  a network-sourced sale → the plan's rung. The four outcomes of the ladder, in one call. PURE. */
+export function takeRateBps(
+  plan: SpacePlan | string | null | undefined,
+  source: OrderSource,
+  rate: NetworkTakeRate = NETWORK_TAKE_RATE_DEFAULT,
+): number {
+  if (source === 'self') return OWN_AUDIENCE_BPS
+  return networkTakeRateBpsForPlan(plan, rate)
+}
+
+/** The stored `pricing_settings.take_rate` fields the vector is assembled from. Declared structurally,
+ *  and LOOSELY on purpose: a row written before LIVE-230 carries `network_bps` keyed by PLAN NAME
+ *  (`free / business / collective / nonprofit / independent`), and a row written after it carries the
+ *  RUNG shape. This is the one type that admits both, so that exactly one function has to know. */
+export interface StoredTakeRateFields {
+  network_bps?: Partial<Record<string, unknown>> | null
+  member_free_bps?: unknown
+  member_bps?: unknown
+}
+
+/** Assemble the operator-resolved vector from a stored `take_rate` blob of EITHER historical shape.
+ *  Per-rung: a finite number stored under the rung's key wins, anything else is the seeded rung. The
+ *  retired plan-named keys (`business`, `collective`, `independent`) are NOT read: they were five
+ *  rates for what is now one rung, none of which had ever been applied to a transaction, and the
+ *  ruling that collapsed them (PROG-R4) set the paid rung's number. A row that still carries them
+ *  resolves to the ruling until the next operator save rewrites it in the rung shape. PURE. */
+export function networkTakeRateFromStored(stored: StoredTakeRateFields | null | undefined): NetworkTakeRate {
+  const bps = (v: unknown, fallback: number): number =>
+    typeof v === 'number' && Number.isFinite(v) ? v : fallback
+  const vec = stored?.network_bps ?? {}
+  return {
+    free: bps(vec.free, NETWORK_TAKE_RATE_DEFAULT.free),
+    paid: bps(vec.paid, NETWORK_TAKE_RATE_DEFAULT.paid),
+    nonprofit: bps(vec.nonprofit, NETWORK_TAKE_RATE_DEFAULT.nonprofit),
+    memberFree: bps(stored?.member_free_bps, NETWORK_TAKE_RATE_DEFAULT.memberFree),
+    member: bps(stored?.member_bps, NETWORK_TAKE_RATE_DEFAULT.member),
+  }
 }
 
 /** Source-aware application-fee cents for a SPACE sale. `self` → 0 (the hard promise); `network` → the
- *  tier's network bps. PURE (no I/O). Floors fractional cents so the recipient is never short. */
+ *  plan's rung. PURE (no I/O). Floors fractional cents so the recipient is never short. */
 export function sourceAwareTakeRateCents(
   grossCents: number,
   plan: SpacePlan | string | null | undefined,
   source: OrderSource,
   rate: NetworkTakeRate = NETWORK_TAKE_RATE_DEFAULT,
 ): number {
-  if (source === 'self') return 0
   if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
-  return Math.floor((grossCents * networkTakeRateBpsForPlan(plan, rate)) / 10000)
+  return Math.floor((grossCents * takeRateBps(plan, source, rate)) / 10000)
 }
 
 /** The individual (profile) seller's NETWORK take-rate bps for their tier: 10% on free Member, 8% on
