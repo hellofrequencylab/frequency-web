@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { listPublicPractices } from '@/lib/practices'
+import { emptyUnlessTransient } from '@/lib/discover'
 import { getPillars } from '@/lib/pillars'
 import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
@@ -25,7 +26,10 @@ export const metadata: Metadata = {
 
 export default async function PublicPracticesPage() {
   const [practices, pillars] = await Promise.all([
-    listPublicPractices('trending').catch(() => []),
+    // The reader already resolves `[]` on a database answer (LIVE-331). What this catch still sees
+    // is a thrown bug (log, empty) or a transport failure that outlasted the retry ladder, which is
+    // rethrown so this ISR page keeps its last good copy instead of caching an empty library.
+    listPublicPractices('trending').catch(emptyUnlessTransient('practices page')),
     getPillars().catch(() => []),
   ])
 

@@ -25,7 +25,7 @@
 // payload to the explicit row shape — never the client itself.
 
 import { createPublicClient } from '@/lib/supabase/public'
-import type { PublicEvent } from '@/lib/discover'
+import { listReadFailClosed, type PublicEvent } from '@/lib/discover'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 import {
   DEFAULT_CARDS_PER_SERIES,
@@ -295,19 +295,25 @@ async function getUpcomingSafeEvents(
   // so a raw instant hides tonight's gathering from every hub after 5pm Pacific. One value for the
   // query and the fold.
   const floor = seriesUpcomingFloor(dayInZone(new Date(), HOME_TZ))
-  const { data } = await supabase
-    .from('events')
-    .select(SAFE_COLUMNS)
-    .eq('visibility', 'public')
-    .eq('status', 'published')
-    .eq('is_cancelled', false)
-    .gte('starts_at', floor)
-    .order('starts_at', { ascending: true })
-    // NOT seriesFetchLimit: this cap is GLOBAL (the community's whole upcoming public set), not a
-    // display count, so rows past it are dropped by the database before any fold can run. The number
-    // is unchanged; SERIES_WIDE_READ just says what it is.
-    .limit(limit)
-  const rows = (data ?? []) as unknown as (SafeEventRow & SeriesFields)[]
+  // A failed read is REPORTED as failed (LIVE-331): a database answer logs and resolves `[]`, a
+  // transport failure throws `TransientReadError` after the same retry ladder every other discover
+  // read uses, so the hub pages and app/sitemap.ts never cache "no city has an upcoming event"
+  // for an hour on the strength of an edge that could not reach PostgREST. The thunk builds a
+  // fresh query per attempt.
+  const rows = await listReadFailClosed<SafeEventRow & SeriesFields>('discover_event_hubs', () =>
+    supabase
+      .from('events')
+      .select(SAFE_COLUMNS)
+      .eq('visibility', 'public')
+      .eq('status', 'published')
+      .eq('is_cancelled', false)
+      .gte('starts_at', floor)
+      .order('starts_at', { ascending: true })
+      // NOT seriesFetchLimit: this cap is GLOBAL (the community's whole upcoming public set), not a
+      // display count, so rows past it are dropped by the database before any fold can run. The
+      // number is unchanged; SERIES_WIDE_READ just says what it is.
+      .limit(limit),
+  )
   // FOLD BEFORE toEnriched. EnrichedPublicEvent does not carry the recurrence columns, so a fold
   // after the map is a silent no-op. One weekly series used to publish ~9 near-identical hub cards
   // and ~9 schema.org Event nodes; now it publishes its next `perSeries` dates.

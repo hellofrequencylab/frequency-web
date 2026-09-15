@@ -16,6 +16,7 @@
 
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isTransientReadFailure, listReadFailClosed } from '@/lib/discover'
 import { listFollowedSpaceIds } from './follows'
 import { normalizeSpaceType } from './types'
 import type { SpaceType } from './types'
@@ -205,6 +206,8 @@ type SpaceDiscoveryRow = {
   preferences: unknown
 }
 
+// A real PromiseLike (not a hand-typed `then`), so a thunk that builds one is what
+// `listReadFailClosed` retries: every attempt awaits a FRESH builder.
 type SpacesQuery = {
   select: (cols: string) => SpacesQuery
   eq: (col: string, val: string | boolean) => SpacesQuery
@@ -212,10 +215,7 @@ type SpacesQuery = {
   or: (filter: string) => SpacesQuery
   order: (col: string, opts: { ascending: boolean }) => SpacesQuery
   limit: (n: number) => SpacesQuery
-  then: (
-    resolve: (r: { data: SpaceDiscoveryRow[] | null; error: unknown }) => unknown,
-  ) => Promise<unknown>
-}
+} & PromiseLike<{ data: SpaceDiscoveryRow[] | null; error: unknown; status?: number }>
 
 type CountRow = { space_id: string }
 
@@ -436,7 +436,10 @@ async function rollupSignalsFor(
  *
  * Ordered by `sort`: newest (created_at desc) and name (A–Z) in the DB; standing (the DEFAULT) and
  * members after the grouped count read, in app code, because both need counts that arrive
- * separately. FAIL-SAFE: `[]` on any error. REQUEST-CACHED.
+ * separately. FAIL-SAFE on a database answer: `[]` with one log line. A TRANSPORT failure that
+ * outlasts the retry ladder is REPORTED (`TransientReadError`, LIVE-331), so app/sitemap.ts
+ * abandons that regeneration and the /discover/spaces hubs keep their last good copy rather than
+ * caching an empty directory for an hour. REQUEST-CACHED.
  */
 export const listNetworkedSpaces = cache(
   async ({ type, q, followerProfileId, onlyFollowed, subject, kind, sort }: DiscoveryFilters = {}): Promise<NetworkedSpace[]> => {
@@ -447,51 +450,53 @@ export const listNetworkedSpaces = cache(
       const followedIds = onlyFollowed ? await listFollowedSpaceIds(followerProfileId ?? null) : null
       if (onlyFollowed && (!followedIds || followedIds.size === 0)) return []
 
-      let query = spacesTable()
-        .select(COLS)
-        .eq('visibility', 'network')
-        .eq('network_connected', true) // the collective world gate (ADR-811 §3): standalone Spaces are walled off
-        .eq('status', 'active')
-        .neq('type', 'root')
-
       // Narrow to one type only when a known, non-empty value is passed (a stray param is ignored).
       const wantType = (type ?? '').trim()
-      if (wantType) query = query.eq('type', wantType)
-
-      // Narrow to one SUBJECT when a KNOWN key is passed ('all' / absent / off-list = no filter). The
-      // subject lives in the preferences jsonb (SUBJECT_PATH) and has NO default, so a plain literal
-      // match is exact: a Space that never picked a subject matches no subject pill.
-      if (isSubjectKey(subject)) {
-        query = query.eq(SUBJECT_PATH, subject)
-      }
-
       // Free-text: case-insensitive substring over name, brand name, and slug.
       const needle = sanitizeQuery(q ?? '')
-      if (needle) {
-        const like = `*${needle}*`
-        query = query.or(`name.ilike.${like},brand_name.ilike.${like},slug.ilike.${like}`)
-      }
-
       // DB ordering: newest sorts by created_at desc; everything else rides the DB in NAME order.
       // "Standing" (the default) and "Most members" both need counts that arrive separately, so they
       // are re-sorted in app code below — and name is what their ties fall back to, which is why the
       // DB order underneath them is name rather than arbitrary. A stable base order matters here:
       // the pager slices the sorted set, so an unstable tie-break would reshuffle rows across pages.
       const wantSort = normalizeSpaceSort(sort)
-      const ordered =
-        wantSort === 'newest'
-          ? query.order('created_at', { ascending: false })
-          : query.order('name', { ascending: true })
 
-      const result = (await ordered.limit(DISCOVERY_FETCH_LIMIT)) as {
-        data: SpaceDiscoveryRow[] | null
-        error: unknown
+      // The query is a THUNK so the retry ladder awaits a fresh builder per attempt (LIVE-331).
+      const build = () => {
+        let query = spacesTable()
+          .select(COLS)
+          .eq('visibility', 'network')
+          .eq('network_connected', true) // the collective world gate (ADR-811 §3): standalone Spaces are walled off
+          .eq('status', 'active')
+          .neq('type', 'root')
+
+        if (wantType) query = query.eq('type', wantType)
+
+        // Narrow to one SUBJECT when a KNOWN key is passed ('all' / absent / off-list = no filter). The
+        // subject lives in the preferences jsonb (SUBJECT_PATH) and has NO default, so a plain literal
+        // match is exact: a Space that never picked a subject matches no subject pill.
+        if (isSubjectKey(subject)) {
+          query = query.eq(SUBJECT_PATH, subject)
+        }
+
+        if (needle) {
+          const like = `*${needle}*`
+          query = query.or(`name.ilike.${like},brand_name.ilike.${like},slug.ilike.${like}`)
+        }
+
+        const ordered =
+          wantSort === 'newest'
+            ? query.order('created_at', { ascending: false })
+            : query.order('name', { ascending: true })
+        return ordered.limit(DISCOVERY_FETCH_LIMIT)
       }
 
-      if (result.error || !result.data) return []
+      // A database answer logs and resolves `[]` here; a transport failure throws past the catch
+      // below, which is the point (see the docblock).
+      const data = await listReadFailClosed<SpaceDiscoveryRow>('networked_spaces', build)
       // The "Following" filter intersects the networked set with the viewer's follows (computed
       // above). When it's off, `followedIds` is null and every networked row passes.
-      const followedRows = followedIds ? result.data.filter((r) => followedIds.has(r.id)) : result.data
+      const followedRows = followedIds ? data.filter((r) => followedIds.has(r.id)) : data
 
       // The KIND filter runs in APP CODE through the same total reader the card pill keys on
       // (spaceKind: canonical `kind`, legacy `category` fallback, 'business' default), so the
@@ -584,7 +589,12 @@ export const listNetworkedSpaces = cache(
       }
 
       return spaces
-    } catch {
+    } catch (err) {
+      // A transport failure is REPORTED, never swallowed (LIVE-331): the sitemap and the discover
+      // hubs decide what a failed regeneration means. Anything else is the deterministic class
+      // (a thrown bug, a sub-read that broke): one log line, and the empty directory it always was.
+      if (isTransientReadFailure(err)) throw err
+      console.error('[spaces/discovery] listNetworkedSpaces failed', err)
       return []
     }
   },
@@ -708,8 +718,7 @@ type PresenceQuery = {
   gte: (col: string, val: string) => PresenceQuery
   or: (filter: string) => PresenceQuery
   limit: (n: number) => PresenceQuery
-  then: (resolve: (r: { data: unknown[] | null; error: unknown }) => unknown) => Promise<unknown>
-}
+} & PromiseLike<{ data: unknown[] | null; error: unknown; status?: number }>
 
 function presenceTable(table: string): PresenceQuery {
   const db = createAdminClient() as unknown as { from: (t: string) => PresenceQuery }
@@ -730,20 +739,17 @@ async function presenceIds(
   pick: (row: Record<string, unknown>) => string | null,
 ): Promise<Set<string>> {
   const found = new Set<string>()
-  try {
-    const result = (await build(presenceTable(table).select(cols))) as {
-      data: Record<string, unknown>[] | null
-      error: unknown
-    }
-    if (result.error || !result.data) return found
-    for (const row of result.data) {
-      const id = pick(row)
-      if (id) found.add(id)
-    }
-    return found
-  } catch {
-    return found
+  // One presence read gates one tab segment for every Space, so a swallowed transport failure here
+  // would silently drop that segment's URLs across the whole sitemap (LIVE-331). A database answer
+  // still fails safe to "no Space has it"; transport is reported and reaches the tab reader's catch.
+  const rows = await listReadFailClosed<Record<string, unknown>>(`space_presence_${table}`, () =>
+    build(presenceTable(table).select(cols)),
+  )
+  for (const row of rows) {
+    const id = pick(row)
+    if (id) found.add(id)
   }
+  return found
 }
 
 /**
@@ -771,23 +777,25 @@ async function presenceIds(
  *                      `readProfilePages` list minus `home`, which renders the profile root's doc
  *                      and canonicalises there).
  *
- * FAIL-SAFE: `[]` on any error. REQUEST-CACHED.
+ * FAIL-SAFE on a database answer: `[]` with one log line. A TRANSPORT failure is REPORTED
+ * (`TransientReadError`, LIVE-331), the same contract as listNetworkedSpaces. REQUEST-CACHED.
  */
 export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfileTabRoute[]> => {
   try {
     // The SAME discovery boundary the directory applies (ADR-811 §3) — private and standalone
     // Spaces are isolated OUT by construction, so a walled Space can never leak a tab URL.
-    const result = (await spacesTable()
-      .select(TAB_COLS)
-      .eq('visibility', 'network')
-      .eq('network_connected', true)
-      .eq('status', 'active')
-      .neq('type', 'root')
-      .order('slug', { ascending: true })
-      .limit(DISCOVERY_FETCH_LIMIT)) as unknown as { data: SpaceTabRow[] | null; error: unknown }
+    const rows = await listReadFailClosed<SpaceTabRow>('networked_space_tabs', () =>
+      spacesTable()
+        .select(TAB_COLS)
+        .eq('visibility', 'network')
+        .eq('network_connected', true)
+        .eq('status', 'active')
+        .neq('type', 'root')
+        .order('slug', { ascending: true })
+        .limit(DISCOVERY_FETCH_LIMIT),
+    )
 
-    if (result.error || !result.data || result.data.length === 0) return []
-    const rows = result.data
+    if (rows.length === 0) return []
     const ids = rows.map((r) => r.id)
 
     // Floor the event window on today's start, the same way spaceHasPublicUpcomingEvents does, so
@@ -875,7 +883,10 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
       for (const pageSlug of declaredPageSlugs(r.preferences)) push(pageSlug)
     }
     return out
-  } catch {
+  } catch (err) {
+    // Same rule as listNetworkedSpaces: transport is reported, a thrown bug logs and empties.
+    if (isTransientReadFailure(err)) throw err
+    console.error('[spaces/discovery] listNetworkedSpaceProfileTabs failed', err)
     return []
   }
 })

@@ -20,6 +20,7 @@
 // the compiler, so the dozen `import type` client callers are unaffected.
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { listReadFailClosed } from '@/lib/discover'
 import { slugify as slugifyShared } from '@/lib/utils'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { recordEngagementEvent } from '@/lib/engagement/events'
@@ -232,15 +233,21 @@ export async function listPublicPractices(sort: PracticeSort = 'trending'): Prom
         ? [{ col: 'logs_total', asc: false }, { col: 'created_at', asc: false }]
         : [{ col: 'score', asc: false }, { col: 'created_at', asc: false }]
 
-  let q = db()
-    .from('practices_ranked')
-    .select(`${RANKED_COLS}, adopters, logs_30d, logs_total, score`)
-    .eq('is_public', true)
-  for (const o of order) q = q.order(o.col, { ascending: o.asc })
-  const rows = (await q).data as (Practice & {
-    adopters: number; logs_30d: number; logs_total: number; score: number
-  })[] | null
-  const base = rows ?? []
+  // A failed read is REPORTED as failed (LIVE-331): a database answer logs and resolves `[]`, a
+  // transport failure throws `TransientReadError` after the retry ladder, so app/sitemap.ts
+  // abandons that regeneration instead of advertising an empty library for an hour. The thunk
+  // builds a fresh query per attempt.
+  const build = () => {
+    let q = db()
+      .from('practices_ranked')
+      .select(`${RANKED_COLS}, adopters, logs_30d, logs_total, score`)
+      .eq('is_public', true)
+    for (const o of order) q = q.order(o.col, { ascending: o.asc })
+    return q
+  }
+  const base = await listReadFailClosed<
+    Practice & { adopters: number; logs_30d: number; logs_total: number; score: number }
+  >('practices_ranked', build)
   if (base.length === 0) return []
 
   const [subById, tagsByPractice, slugById] = await Promise.all([
@@ -993,8 +1000,13 @@ async function subcategoryMap(): Promise<Map<string, Subcategory>> {
 async function slugsForPractices(ids: string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>()
   if (ids.length === 0) return out
-  const { data } = await db().from('practices').select('id, slug').in('id', ids)
-  for (const r of (data as { id: string; slug: string | null }[] | null) ?? []) {
+  // The slug is the canonical public key every card and every sitemap URL links on; a swallowed
+  // transport failure here would have re-keyed the whole library to uuids for an hour, which is
+  // the same hole as an empty section wearing different clothes. Same rule as the ranked read.
+  const data = await listReadFailClosed<{ id: string; slug: string | null }>('practice_slugs', () =>
+    db().from('practices').select('id, slug').in('id', ids),
+  )
+  for (const r of data) {
     if (r.slug) out.set(r.id, r.slug)
   }
   return out

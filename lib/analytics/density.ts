@@ -9,6 +9,7 @@
 // the expansion call is auditable. Server-only; admin-gated at the page.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { listReadFailClosed } from '@/lib/discover'
 
 /** One city's grounded facts, straight from the RPC. */
 export interface DensityCityRow {
@@ -111,6 +112,10 @@ export function buildDensitySignal(rows: DensityCityRow[]): DensitySignal {
  *  `supabase gen types` is re-run (repo convention — see lib/marketplace.ts). */
 export async function getDensitySignal(): Promise<DensitySignal> {
   const db = createAdminClient()
-  const { data } = await db.rpc('density_by_city')
-  return buildDensitySignal((data ?? []) as DensityCityRow[])
+  // A failed read is REPORTED as failed (LIVE-331): a database answer logs and resolves an empty
+  // signal, a transport failure throws `TransientReadError` after the retry ladder, so the
+  // density-gated city pages and app/sitemap.ts never cache "no city clears the gate" for an
+  // hour on the strength of an edge that could not reach PostgREST.
+  const rows = await listReadFailClosed<DensityCityRow>('density_by_city', () => db.rpc('density_by_city'))
+  return buildDensitySignal(rows)
 }

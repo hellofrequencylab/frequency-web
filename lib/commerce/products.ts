@@ -4,6 +4,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { listReadFailClosed } from '@/lib/discover'
 import { ENTITY_ID } from '@/lib/finance/record'
 import type { CommerceProduct, OwnerKind, ProductInput, ProductStatus, MarketGroup, ServiceConfig, ProductCondition } from './types'
 import { kindsForGroup } from './types'
@@ -88,15 +89,20 @@ export async function listMakerProducts(opts: { q?: string; limit?: number } = {
   return ((data ?? []) as Record<string, unknown>[]).map(rowToProduct)
 }
 
+/** The Store catalog (/store and app/sitemap.ts). A failed read is REPORTED as failed (LIVE-331):
+ *  a database answer logs and resolves `[]`, a transport failure throws `TransientReadError` after
+ *  the retry ladder, so the sitemap abandons that regeneration rather than emptying the vertical. */
 export async function listShopProducts(opts: { limit?: number } = {}): Promise<CommerceProduct[]> {
-  const { data } = await db()
-    .from('commerce_products')
-    .select(PRODUCT_COLS)
-    .eq('owner_kind', 'platform')
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(Math.min(Math.max(opts.limit ?? 60, 1), 100))
-  return ((data ?? []) as Record<string, unknown>[]).map(rowToProduct)
+  const data = await listReadFailClosed<Record<string, unknown>>('shop_products', () =>
+    db()
+      .from('commerce_products')
+      .select(PRODUCT_COLS)
+      .eq('owner_kind', 'platform')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(Math.min(Math.max(opts.limit ?? 60, 1), 100)),
+  )
+  return data.map(rowToProduct)
 }
 
 export async function getProduct(id: string): Promise<CommerceProduct | null> {
@@ -213,18 +219,22 @@ export async function productOwnerSpaceId(id: string): Promise<string | null> {
 export async function listMarketListings(
   opts: { group?: MarketGroup; q?: string; limit?: number } = {},
 ): Promise<CommerceProduct[]> {
-  let query = db()
-    .from('commerce_products')
-    .select(PRODUCT_COLS)
-    .eq('status', 'active')
-    .eq('market_published', true)
-    .in('owner_kind', ['profile', 'space'])
-    .order('created_at', { ascending: false })
-    .limit(Math.min(Math.max(opts.limit ?? 40, 1), 100))
-  if (opts.group) query = query.in('product_kind', kindsForGroup(opts.group))
-  if (opts.q?.trim()) query = query.ilike('title', `%${opts.q.trim()}%`)
-  const { data } = await query
-  return ((data ?? []) as Record<string, unknown>[]).map(rowToProduct)
+  // Same failure contract as listShopProducts (LIVE-331); the thunk builds a fresh query per attempt.
+  const build = () => {
+    let query = db()
+      .from('commerce_products')
+      .select(PRODUCT_COLS)
+      .eq('status', 'active')
+      .eq('market_published', true)
+      .in('owner_kind', ['profile', 'space'])
+      .order('created_at', { ascending: false })
+      .limit(Math.min(Math.max(opts.limit ?? 40, 1), 100))
+    if (opts.group) query = query.in('product_kind', kindsForGroup(opts.group))
+    if (opts.q?.trim()) query = query.ilike('title', `%${opts.q.trim()}%`)
+    return query
+  }
+  const data = await listReadFailClosed<Record<string, unknown>>('market_listings', build)
+  return data.map(rowToProduct)
 }
 
 /** Set a listing's Market opt-in (the Shop console Catalog "Publish to Market" toggle). Caller (server
