@@ -42,7 +42,7 @@ import {
   type PlanExtra,
   type PricingGridInput,
 } from '@/lib/pricing/pricing-grid'
-import { MISSION_FRAMING, PLAN_STORY } from '@/lib/pricing/pricing-page'
+import { MISSION_FRAMING, PLAN_STORY, paidWalls } from '@/lib/pricing/pricing-page'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
 import { config } from '@/lib/page-editor/config'
@@ -108,7 +108,7 @@ function ladderCompact(offerings: Offering[]): string {
     .join(', ')
 }
 
-/** The plain "Business is X, Collective is Y" ladder sentence, built from the offerings. */
+/** The plain "<plan> is X, <plan> is Y" ladder sentence, built from the offerings. */
 function ladderSentence(offerings: Offering[]): string {
   return offerings
     .filter((o) => o.monthlyCents > 0)
@@ -162,6 +162,9 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
     .join(' ')
   const trial = trialNote(input.values)
   const rates = spaces.map((s) => `${s.label} ${s.takeRate.split(', ')[1]}`).join(', ')
+  // The walls are READ off the gate map through the operator's overrides (the same merge the grid
+  // does), so the plan each one names is the plan the product enforces, never a typed tier name.
+  const walls = paidWalls(input.gateOverrides)
 
   // The beta answer only exists while there IS a beta rate. Once the window closes every plan has one
   // price, the anchors are gone from the model, and an answer about "the rate you keep" would be
@@ -190,7 +193,9 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
     },
     {
       q: 'What actually needs a paid plan?',
-      a: 'Three things, and we name them plainly. Selling memberships needs Business, because a membership is a recurring promise to another person. Campaigns and funnels need Business, which is the line between messaging your own people and running an acquisition machine. Splitting revenue between businesses needs Collective, because that is what a collective is for. Everything else is a meter with a real free allowance, and a full meter stops new writes without ever hiding, deleting, or locking what is already there.',
+      a: `A short list, and we name it plainly. ${walls
+        .map((w) => `${w.what.charAt(0).toUpperCase()}${w.what.slice(1)}: ${w.plan}, because ${w.why}.`)
+        .join(' ')} Everything else is a meter with a real free allowance, and a full meter stops new writes without ever hiding, deleting, or locking what is already there.`,
     },
     {
       q: 'What stays free forever?',
@@ -255,16 +260,16 @@ export default async function PricingPage() {
   const members = memberOfferings(input)
   const spaces = spaceOfferings(input)
 
-  // The named offerings the DAWN 2 card rows place (row one: the free trio; row two: the paid Space
-  // plans). Looked up by stable id, so a ladder reorder in the model cannot shuffle the reference
-  // layout; every one is still the model's own object.
+  // The offerings the DAWN 2 card rows place. Row one is the free trio: the two member rungs (a fixed
+  // pair, ADR-878) and the free Space, which is always the ladder's first rung. Row two is EVERY paid
+  // Space plan in ladder order, read off the model rather than looked up by name, so a plan the owner
+  // takes off the advertised ladder (lib/pricing/display.ts) leaves this page with no edit here, and
+  // a plan added there appears without one.
   const member = members[0]!
   const crew = members[1]!
-  const spacesById = new Map(spaces.map((o) => [o.id, o]))
-  const spaceFree = spacesById.get('free')!
-  const business = spacesById.get('business')!
-  const collective = spacesById.get('collective')!
-  const nonprofit = spacesById.get('nonprofit')!
+  const spaceFree = spaces[0]!
+  const paidSpaces = spaces.filter((o) => o.monthlyCents > 0)
+  const walls = paidWalls(input.gateOverrides)
 
   // 🔴 THE PRICE SCHEMA IS EMITTED ON BOTH BRANCHES, and hoisting it here is the whole point.
   //
@@ -361,8 +366,8 @@ export default async function PricingPage() {
 
       {/* THE PLANS (DAWN 2 structure, design_handoff/dawn/ui_kits/marketing/pricing.html). Two bands
           instead of two side-by-side ladders. Row one, cream: everything a person starts free, Member ·
-          Crew · Space, with Crew the wide, floating middle card. Row two, ink: the paid Space plans,
-          Business · Collective · Non Profit, Collective floating. Every figure still reads off the
+          Crew · Space, with Crew the wide, floating middle card. Row two, ink: the paid Space plans
+          in ladder order, the featured one floating. Every figure AND every plan name reads off the
           offering model (operator config), never this file; the float reads Offering.featured, so the
           emphasized card and the model's emphasis cannot disagree. One billing toggle governs both
           bands, so a reader compares monthly against monthly.
@@ -397,12 +402,12 @@ export default async function PricingPage() {
               tone="ink"
               align="center"
               title="For your Space"
-              kicker="A Space is free for anyone to start, and a free Space is a real Space. You pay when you start charging: memberships, campaigns, and revenue splits are what a plan turns on, and every rung down the ladder shrinks what we take on a sale the network introduced."
+              kicker={`A Space is free for anyone to start, and a free Space is a real Space. You pay when you start charging: ${walls.map((w) => w.what).join(' and ')} are what a plan turns on, and every rung down the ladder shrinks what we take on a sale the network introduced.`}
             />
             <div className="stagger grid items-center gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
-              <PlanCard offering={business} tone="ink" />
-              <PlanCard offering={collective} tone="ink" />
-              <PlanCard offering={nonprofit} tone="ink" />
+              {paidSpaces.map((offering) => (
+                <PlanCard key={offering.id} offering={offering} tone="ink" />
+              ))}
             </div>
             {/* ⚠️ `PLAN_STORY.meters` still reads "Everything is included. Paid plans raise the
                 limits." (lib/pricing/pricing-page.ts:107), which is the limits argument this page
@@ -579,7 +584,7 @@ export default async function PricingPage() {
  *  badge, wider via the grid's 1.2fr middle column and taller via the negative block margin, exactly
  *  the reference's silhouette). Non-featured cards rest on the page (lift-1) and center vertically.
  *
- *  `featured` READS the model (`Offering.featured`: Crew + Collective, the DAWN 2 reference's "Best
+ *  `featured` READS the model (`Offering.featured`: one rung per ladder, the DAWN 2 reference's "Best
  *  choice" pair the owner adopted; see the flag's doc in lib/pricing/pricing-grid.ts), never a page
  *  prop — a prop here is how the page float and the comparison emphasis came to crown different
  *  plans. */

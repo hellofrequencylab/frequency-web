@@ -1,10 +1,10 @@
 ---
 title: Plans and pricing
-description: What each Space plan costs, what it includes, and how to pick the one that fits.
+description: What each Space plan is for, what it turns on, and how to pick the one that fits.
 category: spaces
 order: 2
 published: 2026-07-27
-updated: 2026-09-10
+updated: 2026-09-14
 audience: member
 featureKeys: [billing]
 status: published
@@ -13,19 +13,24 @@ status: published
 People join free. Businesses host free. You pay when you start charging.
 
 Every Space starts free and stays a real Space: your page, your events, your posts, your members.
-A plan is what you take once money is moving through it. This page covers what each plan costs and
-what it turns on.
+A plan is what you take once money is moving through it. This page covers what each plan is for
+and what it turns on.
+
+The figures live in one place. The [pricing page](/pricing) reads every price, every yearly figure,
+and every rate straight from the plan catalog, so it is always the number you will be charged. This
+article deliberately does not repeat them: a number copied here would go stale the day the catalog
+moved, and the pricing page cannot.
 
 ## The plans
 
-| Plan | Monthly | Yearly | Who it is for |
-| --- | --- | --- | --- |
-| **Free** | $0 | $0 | Getting set up, finding your people, running your first events |
-| **Business** | $29 | $290 | Running your practice: contacts, email, reporting, your full website |
-| **Collective** | $79 | $790 | Scale and team: everything in Business plus automation, multiple pipelines, seats, and Programs |
-| **Non Profit** | $39 | $390 | Verified nonprofits, with the full Collective toolkit |
+| Plan | Who it is for |
+| --- | --- |
+| **Free** | Getting set up, finding your people, running your first events |
+| **Business** | Running your practice: contacts, email, reporting, your full website |
+| **Collective** | Scale and team: everything in Business plus automation, multiple pipelines, seats, and Programs |
+| **Non Profit** | Verified nonprofits, with the whole paid toolkit at a flat rate |
 
-Those are the prices, and they are the same whenever you start. There is no beta rate any more: the
+Every plan is one price, the same whenever you start. There is no beta rate any more: the
 Opening Beta pricing closed on 17 August 2026.
 
 There is one more plan, **Independent**: white label, run on your own terms, off the shared network.
@@ -34,7 +39,7 @@ It is arranged directly rather than bought from this page, so if that is what yo
 
 Paying yearly gives you **two months free**: a yearly plan is ten months of the monthly price.
 
-Every paid plan starts with a **14 day free trial**.
+Every paid plan starts with a free trial. The pricing page shows how long it runs.
 
 ## What the paid plans turn on
 
@@ -52,7 +57,7 @@ Every paid plan starts with a **14 day free trial**.
 - **Team seats**, so other people can work in your Space
 - **Programs**, where your model becomes something others start Chapters of
 
-**Non Profit** grants the full Collective set at the nonprofit rate once your 501(c)(3) is verified.
+**Non Profit** grants the whole paid set at the nonprofit rate once your 501(c)(3) is verified.
 
 **Independent** adds white-label branding and takes your Space off the shared network. It is
 arranged directly, not bought from the plan picker.
@@ -68,28 +73,23 @@ it, sits in your Space Contacts or your own contact list, or has bought from you
 share is **0%**. We charge once for the introduction. After that they are your people, free.
 
 That leaves the sales the network brings you: someone who found you through discovery, a referral, or
-the Market. Those are the only ones we take a percentage of:
-
-| Plan | Frequency's share of network-sourced sales |
-| --- | --- |
-| Free | 10% |
-| Business | 3% |
-| Non Profit | 0% |
-
-Two numbers, and a zero. Every paid plan is on the Business rate, and a Space that is off the network has
-no network-sourced sales to pay it on.
+the Market. Those are the only ones we take a percentage of, and the shape is simple: a free Space
+pays the highest rate, every paid plan pays the one lower Business rate, and a verified Non Profit pays
+nothing. A Space that is off the network has no network-sourced sales, so it pays nothing on them. The
+exact rates are on the [pricing page](/pricing), on every plan card and in the comparison.
 
 **Every plan can sell, including Free.** A Free Space creates events, takes RSVPs, sells tickets, and
 takes payments from day one. You do not buy the ability to charge, you buy the rate down. A paid plan
 lowers what Frequency takes on the sales the network brings you, and it gives you the tools that turn
 those buyers into your own people, where the rate is 0% on every plan.
 
-Three things do genuinely need a plan, and they are all about money: **selling memberships**
-(Business), **campaigns and funnels** (Business), and **splitting revenue between businesses**
-(Collective). Nothing about being here, gathering people, or being found needs one.
+Two things do genuinely need a plan, and they are both about money: **selling memberships** and
+**campaigns and funnels**. Both open at Business. Nothing about being here, gathering people, or being
+found needs one.
 
-On your personal account the same shape applies: a free Member sells at 10%, and **Crew** brings that
-to 8%. Crew is contribute what you want, from $4.99 a month.
+On your personal account the same shape applies: a free Member sells at the free rate, and **Crew**
+brings it down. Crew is contribute what you want: pick any monthly amount at or above the floor shown
+on the [upgrade page](/upgrade).
 
 The idea is simple: we earn when the network earns you something, and never on the work you brought
 yourself.
@@ -104,7 +104,7 @@ lands in. See [Get paid](/help/spaces/get-paid).
   website.
 - Take **Collective** when other people work in your Space with you, or when you want to run a
   Program others can join.
-- If you are a verified nonprofit, take **Non Profit** and get the Collective toolkit at the lower
+- If you are a verified nonprofit, take **Non Profit** and get the whole paid toolkit at the lower
   rate.
 
 You can change plans whenever you like. See [Billing](/help/spaces/billing) for how that works.

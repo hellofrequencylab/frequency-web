@@ -31,23 +31,42 @@ import { SPACE_PLANS } from '@/lib/pricing/plans'
 // ── The surfaces under the rule ──────────────────────────────────────────────────────────────────────
 
 /** Every forward-facing marketing surface: the home page, the whole /(marketing) tree, the two
- *  answer-engine routes, and the marketing copy config + components those routes render from. A figure
- *  in any of these is a figure a visitor or an answer engine can read. */
+ *  answer-engine routes, the persona doors, the personal upgrade page, the marketing copy config +
+ *  components those routes render from, the CMS templates the editor seeds a marketing page from, the
+ *  pricing copy spine those templates and routes interpolate, the JSON-LD builders, and the Vera
+ *  primer. A figure in any of these is a figure a visitor or an answer engine can read.
+ *
+ *  🔴 THE CATALOG ITSELF IS NOT HERE, ON PURPOSE. lib/billing/pricing-keys.ts, lib/pricing/defaults.ts,
+ *  lib/pricing/catalog-config.ts and lib/pricing/feature-tiers.ts are where the amounts LIVE (in
+ *  cents, never as `$` strings); the rule is that every surface reads them from there. */
 const MARKETING_ROOTS = [
   'app/page.tsx',
   'app/(marketing)',
+  'app/(main)/upgrade',
+  'app/for',
   'app/llms.txt',
   'app/llms-full.txt',
   'lib/marketing',
+  'lib/page-editor/templates',
+  'lib/pricing/pricing-page.ts',
+  'lib/pricing/pricing-grid.ts',
+  'lib/pricing/display.ts',
+  'lib/jsonld.ts',
+  'lib/ai/voice.ts',
   'components/marketing',
 ]
+
+/** The help center. Markdown, not source, so it gets its own walk: no comments to strip, and no
+ *  template interpolation exists there at all, which is exactly why a figure in it can only ever be
+ *  typed. An article that needs a number points at /pricing, which reads the catalog. */
+const HELP_ROOTS = ['content/help']
 
 // The ONE statSync is on the caller's own `path` — a ROOTS entry, which may be a file
 // (app/llms.txt) or a directory. Below it every type comes from the dirent that produced the
 // name, so no path is resolved twice (ADR-1185).
-function sourceFiles(path: string, out: string[] = []): string[] {
+function sourceFiles(path: string, out: string[] = [], ext: RegExp = /\.tsx?$/): string[] {
   const keep = (p: string) => {
-    if (/\.tsx?$/.test(p) && !/\.test\.tsx?$/.test(p)) out.push(p)
+    if (ext.test(p) && !/\.test\.tsx?$/.test(p)) out.push(p)
   }
   if (statSync(path).isFile()) {
     keep(path)
@@ -81,8 +100,37 @@ const CSS_CONTEXT = /(linear-gradient\(|radial-gradient\(|color-mix\(|rootMargin
 
 /** 0% and 100% are not tier rates. They are the two halves of the promise ("you keep 100% of your own
  *  bookings", "0% on the people already yours"), they are identical on every tier, and they are true
- *  whatever the operator sets, so they are structural copy rather than a figure that can go stale. */
+ *  whatever the operator sets, so they are structural copy rather than a figure that can go stale.
+ *  This is the WHOLE allow-list. It names no price, no rate, and no tier, and it does not grow: a
+ *  figure that is not a price (a year, a count, a day of the month) never matches the two patterns
+ *  below in the first place, so it needs no waiver. */
 const PROMISE_PERCENTS = new Set(['0', '100'])
+
+/** Every line of `text` that carries a money literal: `$` followed by a digit, which is a price in
+ *  every register this repo writes in ("$19", "$0", "$2,490"). Template interpolation is `${`, which
+ *  never matches. Returned as "line:column-free excerpt" so a failure names the exact line. PURE. */
+export function dollarOffenders(text: string): { line: number; text: string }[] {
+  const out: { line: number; text: string }[] = []
+  text.split('\n').forEach((line, i) => {
+    if (/\$\d/.test(line)) out.push({ line: i + 1, text: line.trim() })
+  })
+  return out
+}
+
+/** Every percentage literal in `text` that is not one of the two promise halves and not a CSS stop.
+ *  PURE. */
+export function percentOffenders(text: string): { line: number; match: string; text: string }[] {
+  const out: { line: number; match: string; text: string }[] = []
+  text.split('\n').forEach((line, i) => {
+    if (CSS_CONTEXT.test(line)) return
+    for (const match of line.matchAll(/\b\d[\d,.]*%/g)) {
+      const value = match[0].slice(0, -1).replace(/,/g, '')
+      if (PROMISE_PERCENTS.has(value)) continue
+      out.push({ line: i + 1, match: match[0], text: line.trim() })
+    }
+  })
+  return out
+}
 
 describe('no marketing surface states a tier price or a rate as a literal', () => {
   const files = MARKETING_ROOTS.flatMap((root) => sourceFiles(root))
@@ -90,20 +138,21 @@ describe('no marketing surface states a tier price or a rate as a literal', () =
   it('finds the marketing surfaces (the scan is not vacuously empty)', () => {
     expect(files.length).toBeGreaterThan(40)
     expect(files).toContain('app/page.tsx')
-    expect(files.some((f) => f.includes('pricing'))).toBe(true)
+    expect(files).toContain('app/(marketing)/pricing/page.tsx')
+    expect(files).toContain('lib/page-editor/templates/pricing.ts')
+    expect(files).toContain('lib/pricing/pricing-page.ts')
+    expect(files).toContain('lib/ai/voice.ts')
     expect(files.some((f) => f.startsWith('app/llms'))).toBe(true)
+    expect(files.some((f) => f.startsWith('app/for/'))).toBe(true)
+    expect(files.some((f) => f.startsWith('app/(main)/upgrade/'))).toBe(true)
   })
 
   it('contains no hardcoded dollar figure', () => {
     const offenders: string[] = []
     for (const file of files) {
-      stripComments(readFileSync(file, 'utf8'))
-        .split('\n')
-        .forEach((line, i) => {
-          // `$` followed by a digit is a money literal in every register this repo writes in ("$19",
-          // "$0", "$2,490"). Template interpolation is `${`, which never matches.
-          if (/\$\d/.test(line)) offenders.push(`${file}:${i + 1}  ${line.trim()}`)
-        })
+      for (const o of dollarOffenders(stripComments(readFileSync(file, 'utf8')))) {
+        offenders.push(`${file}:${o.line}  ${o.text}`)
+      }
     }
     expect(
       offenders,
@@ -114,21 +163,71 @@ describe('no marketing surface states a tier price or a rate as a literal', () =
   it('contains no hardcoded percentage for a tier or a rate', () => {
     const offenders: string[] = []
     for (const file of files) {
-      stripComments(readFileSync(file, 'utf8'))
-        .split('\n')
-        .forEach((line, i) => {
-          if (CSS_CONTEXT.test(line)) return
-          for (const match of line.matchAll(/\b\d[\d,.]*%/g)) {
-            const value = match[0].slice(0, -1).replace(/,/g, '')
-            if (PROMISE_PERCENTS.has(value)) continue
-            offenders.push(`${file}:${i + 1}  ${match[0]}  ${line.trim()}`)
-          }
-        })
+      for (const o of percentOffenders(stripComments(readFileSync(file, 'utf8')))) {
+        offenders.push(`${file}:${o.line}  ${o.match}  ${o.text}`)
+      }
     }
     expect(
       offenders,
       `A rate belongs in NETWORK_TAKE_RATE_DEFAULT, read through the pricing grid and formatted with formatBps.\n${offenders.join('\n')}`,
     ).toEqual([])
+  })
+})
+
+describe('no help article states a price or a rate as a literal', () => {
+  const articles = HELP_ROOTS.flatMap((root) => sourceFiles(root, [], /\.mdx?$/))
+
+  it('finds the help center (the scan is not vacuously empty)', () => {
+    expect(articles.length).toBeGreaterThan(50)
+    expect(articles).toContain('content/help/spaces/plans-and-pricing.md')
+  })
+
+  it('contains no dollar figure and no rate (an article that needs a number links to /pricing)', () => {
+    const offenders: string[] = []
+    for (const file of articles) {
+      const text = readFileSync(file, 'utf8')
+      for (const o of dollarOffenders(text)) offenders.push(`${file}:${o.line}  ${o.text}`)
+      for (const o of percentOffenders(text)) offenders.push(`${file}:${o.line}  ${o.match}  ${o.text}`)
+    }
+    expect(
+      offenders,
+      `The help center has no template interpolation, so a figure in it can only be typed and can only go stale. Link to /pricing, which reads the catalog.\n${offenders.join('\n')}`,
+    ).toEqual([])
+  })
+})
+
+// ── The guard can actually fire: a planted literal is caught, and the allow-list is exactly two ─────
+
+describe('mutation check: the scanner catches a planted figure', () => {
+  it('reports a planted "$29" and a planted "5%" by line', () => {
+    const planted = [
+      "const kicker = 'Business is $29 a month.'",
+      'const note = `Yearly is ${yearly}, two months free.`',
+      "const rate = 'and 5% on network-sourced sales'",
+    ].join('\n')
+    expect(dollarOffenders(planted).map((o) => o.line)).toEqual([1])
+    expect(percentOffenders(planted).map((o) => `${o.line}:${o.match}`)).toEqual(['3:5%'])
+  })
+
+  it('reports a planted figure inside markdown prose and a table cell', () => {
+    const planted = ['| **Business** | $29 | $290 |', 'Crew brings that to 8%.', 'from $4.99 a month'].join('\n')
+    expect(dollarOffenders(planted).map((o) => o.line)).toEqual([1, 3])
+    expect(percentOffenders(planted).map((o) => o.match)).toEqual(['8%'])
+  })
+
+  it('lets the two promise halves, template interpolation, CSS stops, and non-price numbers through', () => {
+    const clean = [
+      'You keep 100% of your own bookings, 0% on the people already yours.',
+      'const price = `${o.monthly}/mo`',
+      "background: 'linear-gradient(90deg, var(--a) 40%, var(--b) 60%)'",
+      'Founded in 2020, 14 day trial, 501(c)(3), October 1, 2026.',
+    ].join('\n')
+    expect(dollarOffenders(clean)).toEqual([])
+    expect(percentOffenders(clean)).toEqual([])
+  })
+
+  it('the allow-list is the two promise halves and nothing else', () => {
+    expect([...PROMISE_PERCENTS].sort()).toEqual(['0', '100'])
   })
 })
 
