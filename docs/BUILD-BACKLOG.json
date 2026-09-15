@@ -86,7 +86,6 @@
             "LIVE-232",
             "PROG-R5",
             "LIVE-234",
-            "LIVE-235",
             "PROG-R6",
             "LIVE-239",
             "PROG-R7",
@@ -10863,7 +10862,7 @@
     {
       "id": "LIVE-235",
       "title": "Add the donation checkout",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -10871,12 +10870,12 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "space_donation_asks holds 0 rows and there is no donation checkout, while the membership checkout (lib/billing/space-membership-checkout.ts) works and is the obvious template. Donations are the lowest-friction way a community pays a business, and the ask surface already exists.",
+      "detail": "space_donation_asks holds 0 rows and there is no donation checkout, while the membership checkout (lib/billing/space-membership-checkout.ts) works and is the obvious template. Donations are the lowest-friction way a community pays a business, and the ask surface already exists.  RE-TESTED 2026-09-15 (ADR-1082) and the premise had EXPIRED. The row says \"there is no donation checkout\". There is: lib/billing/space-donation-checkout.ts is 385 lines and exports createSpaceDonationCheckout (a Stripe Connect DESTINATION charge to the Space owner), spaceCanTakeDonations, and the two webhook recorders; lib/billing/donation-actions.ts is the 'use server' seam that resolves the donor FROM THE SESSION and allows a signed-out gift at 0%; app/api/webhooks/stripe/route.ts imports recordSpaceDonationFromSession and calls it; components/spaces/donations/donate-member.tsx asks spaceCanTakeDonations first and renders a real Give button only when the fund can take one, keeping the preview copy otherwise so no button resolves to a refusal. donate-member's own header already recorded the correction (\"GIVING IS WIRED (LIVE-235)\"), so the code knew before the list did.  WHAT THIS CHANGE ADDS is the last honest inch: components/widgets/entity/entity-cta.tsx, the CALLER that mounts these surfaces, still told a reader that DONATE \"takes NO money\" and that MEMBERSHIP \"takes NO payment: joining registers the member\". Both were false and both are corrected. Four claims in that block were measured, not assumed: booking makes no payment claim (accurate), enroll genuinely takes no payment (components/spaces/enroll/enroll-member.tsx has no checkout of any kind), and the Space-level TICKETS surface genuinely takes no money (components/spaces/tickets/ticket-tier-file has no price field at all). Only the two that were wrong were touched.  WHAT IS NOT DONE, and it is not code: space_donation_asks still holds 0 rows and no donation has completed, so the row's original manual evidence (\"one paid ask exists and one donation has completed\") cannot be satisfied by this repo at all. That is the donation leg of LIVE-234, where it now lives. The probe here therefore measures the CONSEQUENCE that is a repo's to own: the checkout, its session-resolved seam, its webhook recorder, its payout-ready gate, and the absence of the claim that none of it exists.",
       "verify": {
-        "kind": "manual",
-        "evidence": "SQL: at least one paid donation ask exists and one donation has completed.",
-        "checked": "2026-09-08"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const R=(p)=>{try{return fs.readFileSync(p,\"utf8\")}catch{fail(\"missing \"+p)}};const ck=R(\"lib/billing/space-donation-checkout.ts\");if(!ck.includes(\"export async function createSpaceDonationCheckout\"))fail(\"no createSpaceDonationCheckout export\");if(!ck.includes(\"spaceCanTakeDonations\"))fail(\"checkout declares no payout-ready gate\");if(!ck.includes(\"recordSpaceDonationFromSession\"))fail(\"checkout has no webhook recorder\");const act=R(\"lib/billing/donation-actions.ts\");if(!act.includes(\"use server\"))fail(\"donation-actions is not a server-action module\");if(!act.includes(\"createSpaceDonationCheckout\"))fail(\"donation-actions does not call the checkout\");if(!act.includes(\"getMyProfileId\"))fail(\"donor is not resolved from the session\");const hook=R(\"app/api/webhooks/stripe/route.ts\");if(!hook.includes(\"recordSpaceDonationFromSession\"))fail(\"webhook does not record donations\");const card=R(\"components/spaces/donations/donate-member.tsx\");if(!card.includes(\"spaceCanTakeDonations\"))fail(\"member donate card does not gate on payout readiness\");const cta=R(\"components/widgets/entity/entity-cta.tsx\");if(cta.includes(\"v1 takes NO payment: joining registers the member\"))fail(\"entity-cta still asserts membership takes no payment\");if(cta.includes(\"v1 takes NO money; the copy says so plainly\"))fail(\"entity-cta still asserts the donate surface takes no money\");if(!cta.includes(\"opens Stripe Checkout\"))fail(\"entity-cta does not say the membership surface takes money\");if(!cta.includes(\"destination charge\"))fail(\"entity-cta does not say the donate surface takes money\");console.log(\"LIVE-235 ok: donation checkout wired, seam session-resolved, webhook records, card gated, caller comment true\")'"
+      },
+      "closed": "2026-09-15"
     },
     {
       "id": "LIVE-236",
