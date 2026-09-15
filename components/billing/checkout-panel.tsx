@@ -35,7 +35,7 @@ export default function CheckoutPanel({
   onFellBack,
 }: {
   clientSecret: string
-  priceLabel: string
+  priceLabel?: string
   onFellBack: () => void
 }) {
   return (

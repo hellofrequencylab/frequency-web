@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { createProduct, setProductStatus, deleteProduct, productOwnerProfileId } from '@/lib/commerce/products'
 import { createCommerceCheckout } from '@/lib/commerce/checkout'
+import { onPageCheckoutAvailable } from '@/lib/billing/stripe-browser'
 import { canListNew } from '@/lib/commerce/selling'
 import { normalizeCategory, normalizeTags } from '@/lib/commerce/categories'
 import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
@@ -147,14 +148,21 @@ export async function startCheckoutAction(
   productId: string,
   variantId?: string | null,
   entryPoint?: 'marketplace' | null,
-): Promise<{ url?: string; error?: string }> {
+): Promise<{ url?: string; clientSecret?: string; error?: string }> {
   const buyerProfileId = await getMyProfileId()
   if (!buyerProfileId) return { error: 'Sign in to buy.' }
-  return createCommerceCheckout({
+  const r = await createCommerceCheckout({
     buyerProfileId,
     items: [{ productId, variantId: variantId ?? null, qty: 1 }],
     entryPoint: entryPoint === 'marketplace' ? 'marketplace' : null,
+    // Ask for the on-page form only when the browser can actually mount it (LIVE-359).
+    ui: onPageCheckoutAvailable() ? 'elements' : 'hosted',
   })
+  // `orderId` is for the service-booking caller, not the browser; it is dropped here so a buy
+  // control cannot come to depend on an internal row id.
+  if (r.error) return { error: r.error }
+  if (r.clientSecret) return { clientSecret: r.clientSecret }
+  return { url: r.url }
 }
 
 // ── Seller (maker) storefront management — owner-gated ────────────────────────────

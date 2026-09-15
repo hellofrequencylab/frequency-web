@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button'
  * `useCheckout()` is the back-compat hook that works under either provider shape in
  * @stripe/react-stripe-js v6; the Elements-specific one is `useCheckoutElements()`.
  */
-function PayForm({ priceLabel, onFellBack }: { priceLabel: string; onFellBack: () => void }) {
+function PayForm({ priceLabel, onFellBack }: { priceLabel?: string; onFellBack: () => void }) {
   // ⚠️ `useCheckout()` returns a DISCRIMINATED UNION, not a checkout object:
   //   { type: 'loading' } | { type: 'success'; checkout } | { type: 'error'; error }
   // `confirm` lives on the success variant's `checkout` (StripeCheckoutElementsActions), so it has
@@ -85,7 +85,7 @@ function PayForm({ priceLabel, onFellBack }: { priceLabel: string; onFellBack: (
       )}
       <Button type="submit" disabled={busy} className="w-full">
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-        Pay {priceLabel}
+        {priceLabel ? `Pay ${priceLabel}` : 'Pay'}
       </Button>
     </form>
   )
@@ -97,7 +97,9 @@ export default function CheckoutForm({
   onFellBack,
 }: {
   clientSecret: string
-  priceLabel: string
+  /** Shown on the submit button as "Pay <label>". Omitted where the control has no single price
+   *  to name (a cart, a variable order): the button then reads simply "Pay". */
+  priceLabel?: string
   /** Called when the form cannot be used at all, so the caller can send the buyer to Stripe. */
   onFellBack: () => void
 }) {

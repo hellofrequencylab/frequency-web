@@ -10,6 +10,7 @@
 import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from '@/lib/billing/stripe'
+import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from '@/lib/billing/checkout-ui'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { spaceTakeRateCents, memberTakeRateCents } from '@/lib/billing/fees'
 import { classifyOrderSource } from './order-source'
@@ -51,6 +52,9 @@ const CHECKOUT_START_FAILED = 'Could not start checkout. Please try again.'
 
 export interface CommerceCheckoutResult {
   url?: string
+  /** Set INSTEAD of `url` when the caller asked for an on-page card form (LIVE-359). Callers branch
+   *  on which one arrived, never on which one they asked for -- see `@/lib/billing/checkout-ui`. */
+  clientSecret?: string
   error?: string
   /** The pending order's id (Phase 4: lets a service booking link its hold to the order it will settle). */
   orderId?: string
@@ -127,6 +131,7 @@ async function resolveCharge(seller: ProductRow, grossCents: number, source: Ord
 export async function createCommerceCheckout(input: CheckoutInput): Promise<CommerceCheckoutResult> {
   if (!input.items?.length) return { error: 'Your cart is empty.' }
   if (!stripe) return { error: 'Payments aren’t turned on yet.' }
+  const ui: CheckoutUi = input.ui === 'elements' ? 'elements' : 'hosted'
 
   const ids = [...new Set(input.items.map((i) => i.productId))]
   const { data } = await db().from('commerce_products').select(PRODUCT_COLS).in('id', ids)
@@ -288,11 +293,13 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
       },
       client_reference_id: input.buyerProfileId,
       metadata: { kind: 'commerce_order', buyer_profile_id: input.buyerProfileId, order_id: orderId },
-      success_url: `${appUrl()}/orders?ok=1&session_id={CHECKOUT_SESSION_ID}`,
-      // Cancel back to the surface the buyer was purchasing from, never the free peer board
-      // (`/marketplace` redirects to Classifieds). Frequency Store → /store; Market + Space
-      // shops both browse under the Market umbrella.
-      cancel_url: `${appUrl()}${seller.owner_kind === 'platform' ? '/store' : '/market'}`,
+      ...checkoutReturnFields(ui, {
+        successUrl: `${appUrl()}/orders?ok=1&session_id={CHECKOUT_SESSION_ID}`,
+        // Cancel back to the surface the buyer was purchasing from, never the free peer board
+        // (`/marketplace` redirects to Classifieds). Frequency Store → /store; Market + Space
+        // shops both browse under the Market umbrella.
+        cancelUrl: `${appUrl()}${seller.owner_kind === 'platform' ? '/store' : '/market'}`,
+      }),
     })
   } catch (err) {
     console.error('[commerce] stripe session create failed', { orderId, err })
@@ -309,7 +316,15 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
     .eq('id', orderId)
     .eq('status', 'pending')
     .select('id')
-  if (linkErr || !(linked ?? []).length || !session.url) {
+
+  // 🔴 RESOLVE BEFORE THE GUARD, NOT AFTER. This condition used to read `!session.url`, which is
+  // TRUE FOR EVERY ELEMENTS SESSION -- Stripe returns `url: null` and a client secret instead. Left
+  // as it was, turning the on-page form on would have marked every commerce order 'failed' and
+  // expired a session the buyer was about to pay, while typechecking perfectly (`stripe` ships no
+  // types). "Nothing to hand back" is the question the guard actually means, and only
+  // resolveCheckoutSession can answer it for both modes.
+  const handed = resolveCheckoutSession(session, ui, 'commerce')
+  if (linkErr || !(linked ?? []).length || handed.error) {
     console.error('[commerce] session link failed', { orderId, sessionId: session.id, error: linkErr?.message ?? null })
     try {
       await stripe.checkout.sessions.expire(session.id)
@@ -320,7 +335,7 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
     return { error: CHECKOUT_START_FAILED }
   }
 
-  return { url: session.url, orderId }
+  return { ...handed, orderId }
 }
 
 /** Mark a never-paid pending order 'failed' so nothing dangles (L6-03). Guarded on status='pending' so it

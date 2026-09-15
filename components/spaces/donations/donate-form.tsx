@@ -3,11 +3,13 @@
 import { useState, useTransition } from 'react'
 import { ArrowRight, Loader2 } from 'lucide-react'
 import { startSpaceDonationCheckout } from '@/lib/billing/donation-actions'
+import CheckoutPanel from '@/components/billing/checkout-panel'
 import { isError } from '@/lib/action-result'
 import { formatPriceCents } from '@/lib/commerce/types'
 
 // THE DONATE CHECKOUT CONTROL (LIVE-235). The member half of the fund: quick-pick chips from the
-// owner's ask, a custom amount, and a button that opens Stripe Checkout.
+// owner's ask, a custom amount, and a button that opens the card form RIGHT HERE (LIVE-359) or,
+// when the on-page form cannot be offered, Stripe Checkout.
 //
 // WHAT IT REPLACES. The Donate card used to render a DISPLAY-ONLY amount picker under a line
 // admitting that pressing it took no payment, because there was no donation checkout at all. This
@@ -39,12 +41,27 @@ export function DonateForm({
   const [selected, setSelected] = useState<number | null>(chips[0] ?? null)
   const [custom, setCustom] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
   // The custom field wins whenever it holds anything, so a donor who types over a chip gets what they
   // typed. An empty field falls back to the selected chip.
   const customCents = custom.trim() ? Math.round(Number(custom) * 100) : null
   const cents = customCents ?? selected
+
+  /**
+   * The LAST line of defence. If the on-page form cannot mount or confirm at all, the donor must
+   * still be able to give, so ask the server again and take whatever it hands back.
+   */
+  function fallBackToHosted() {
+    setClientSecret(null)
+    setError('Opening secure checkout…')
+    start(async () => {
+      const result = await startSpaceDonationCheckout(spaceId, cents ?? 0)
+      if (!isError(result) && result.data.url) window.location.href = result.data.url
+      else setError('Could not start your gift. Please try again.')
+    })
+  }
 
   function give() {
     setError(null)
@@ -58,7 +75,11 @@ export function DonateForm({
         setError(result.error)
         return
       }
-      window.location.href = result.data.url
+      // Branch on what CAME BACK, never on what was asked for: the server declines the on-page
+      // path whenever it cannot be honoured, and the url branch catches that without this
+      // control needing to know why.
+      if (result.data.clientSecret) setClientSecret(result.data.clientSecret)
+      else if (result.data.url) window.location.href = result.data.url
     })
   }
 
@@ -132,6 +153,14 @@ export function DonateForm({
         <p role="alert" className="text-body-sm text-danger">
           {error}
         </p>
+      )}
+
+      {clientSecret && (
+        <CheckoutPanel
+          clientSecret={clientSecret}
+          priceLabel={formatPriceCents(cents ?? 0)}
+          onFellBack={fallBackToHosted}
+        />
       )}
     </div>
   )
