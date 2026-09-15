@@ -101,15 +101,8 @@
   a visible rubric, and there is **ONE Zap reward per session** (the "On Air is a
   stage, never a second economy" invariant holds). **"On Air" remains the internal
   name**; routes, schema, and `timer_kind` are unchanged.
-- **The Create button** (LIVE-247, 2026-09-15) = the raised center action button on the
-  mobile tab bar (a plus on the disc, label "Create"). It opens the **Create sheet**: Post
-  first, then the structured creates from the ONE list (`CREATE_ITEMS`,
-  `components/feed/create-actions.ts`): Event, Circle, Conversation, and Room and Dispatch
-  for hosts. The desktop feed's Create menu renders the same list. Until 2026-09-15 this
-  button was the Zap button and fired the Zap menu directly (ADR-230).
-- **The Zap menu** (ADR-230) = the "Capture a moment" sheet, reached from the Create
-  sheet's **Post** row; the desktop feed's inline Capture box is the same composer. Its
-  menu of earning tools is unchanged. Live row: share, Event, Contact, **Connect**
+- **The Zap button** (ADR-230) = the raised center action button (the engraved ⚡)
+  and its menu of earning tools. Live row: share, Event, Contact, **Connect**
   (your personal code, /codes). Coming-soon row: Check In, Ghost Node, Partners.
   Member-facing name is **Zap**; the BACKEND keeps the Capture naming
   (`open-capture`, `captures`, capture flows): Zap is the function that captures.
@@ -118,6 +111,11 @@
   BETWEEN the live and coming-soon rows: a door to the timer app, not a
   capture tile. On Air's other entries are the home JourneyBoard, practice
   pages, /on-air, the PWA shortcut, and a desktop-only header lotus (MindlessLaunch in app-shell; off on phone by owner directive, pinned in header-fit.test.ts).
+  ⚠️ **There is no "Create button" in this canon.** LIVE-247 renamed this disc to Create on
+  2026-09-14 and demoted the Zap menu to a row in its sheet; the owner reverted it the next
+  day (ADR-1362). The raised centre button is the Zap button, and it opens the Zap menu in
+  one tap. The desktop feed's **Create menu** (a dropdown, `CREATE_ITEMS`) is a different
+  thing and keeps its name.
 - **Dispatch / Dispatches** = the host-and-above wider announcement (`dispatches`, route
   `/nearby`). **This is the sole member-facing name; every visible label, help article,
   notification topic, and admin heading says Dispatch.** "Broadcast" is **retired from member

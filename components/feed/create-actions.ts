@@ -4,15 +4,20 @@ import { CalendarDays, Users, Hash, MessageSquare, Radio } from 'lucide-react'
 // The role-gated "structured" creates — the things that need their own form/page
 // (an event, a circle, a room, a broadcast, a conversation), as opposed to the
 // inline post types (Post / Announce) the composer hosts directly. Shared by the
-// desktop feed's CreateMenu dropdown and the mobile Create sheet behind the raised
-// centre button (components/layout/create-button.tsx, LIVE-247) so the list and its
-// role gating never drift.
+// desktop feed's CreateMenu dropdown so the list and its role gating never drift.
+//
+// THIS LIST HAS ONE SURFACE AGAIN. LIVE-247 gave it a second one — a mobile Create sheet
+// behind the raised centre button — and the owner reverted that on 2026-09-15 (ADR-1362): the
+// centre button is the Zap bolt again, because Zapping in one tap is what it is for. Nothing
+// the sheet hosted is stranded: /events and /circles carry their own compose buttons
+// (EventCompose, NewCircleCompose) on every viewport, and /messages and /nearby host the
+// host-only two. The ROLE WIDENING below is kept, because it was never about the sheet.
 //
 // EVENT AND CIRCLE ARE OPEN TO EVERY MEMBER. `canCreate` (lib/core/capabilities.ts) grants
 // `event.create` and `circle.create` to any signed-in member, /events/new has no role wall
 // and /circles/new redirects only the signed-out (LIVE-266). This list gated both to Crew
 // and Host after those doors opened, so the desktop menu hid two creations the member could
-// reach by URL, and the mobile sheet would have hidden them from the people it exists for.
+// reach by URL.
 // What a free member may PUBLISH is still a quantity (the meters in feature-meters.ts),
 // enforced where the thing goes live, never in a menu.
 

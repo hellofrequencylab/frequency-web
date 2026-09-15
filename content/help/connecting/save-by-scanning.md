@@ -14,7 +14,7 @@ Met someone at an event or around town? Scan their personal Frequency code and t
 
 ## How it works
 
-- When you scan another member's personal code (the **Connect** code from their Zap menu), Frequency saves them as a contact for you.
+- When you scan another member's personal code (the **Connect** code from their Zap button), Frequency saves them as a contact for you.
 - The contact is **pre-filled from their public profile**: their name, and their title if they chose to share it. Their photo shows automatically because the contact is linked to their profile.
 - It's stamped with **where and when you met**, the event or place if the code carried one, otherwise your city, plus the date.
 - Right after the scan, you land on their contact page, so you can **set a follow-up** in one tap.

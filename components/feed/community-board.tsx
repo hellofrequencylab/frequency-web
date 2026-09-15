@@ -5,10 +5,15 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { eventDateBadge, formatEventDate, relativeTime } from '@/lib/utils'
 import { getCommunityBoard, type CommunityBoard as Board } from '@/lib/feed/community-board'
 
-// THE FEED'S FIRST MODULE (CORE-MODEL §5 Phase 7.5.3, ADR-1294). The top of home used to be the
-// game: PracticePrompt, then JourneyBoard once activation completed. Both now sit in the right
-// rail, and the module above the composer is the two nouns a member actually belongs to — the
-// next gathering in their Circles, and what has been posted in their Spaces.
+// THE COMMUNITY BOARD (ADR-1294), IN THE RIGHT RAIL (ADR-1362). The two nouns a member actually
+// belongs to: the next gathering in their Circles, and what has been posted in their Spaces.
+//
+// It led /feed for a day under LIVE-248, with the practice board moved to the rail to make room.
+// The owner reversed that: the rail is `hidden lg:flex`, so the practice board — which carries the
+// one-tap Start Practice button — was not demoted by the move, it was deleted from every phone.
+// This board takes the rail slot instead, which is the panel a desktop-only column can afford.
+// The body is unchanged; only its host is. The rail spaces its panels with `space-y-6`, so the
+// root sets no bottom margin of its own (components/sidebar/community-panel.tsx is the host).
 //
 // Composed, not authored: ModuleCard for the group chrome, EmptyState for the nothing-yet case,
 // semantic tokens throughout (PAGE-FRAMEWORK §3). The BODY is a pure function of the board so a
@@ -87,7 +92,7 @@ export function CommunityBoardBody({ board }: { board: Board }) {
     return (
       // NOT masked, deliberately: an empty state is design surface, not a reading. Same rule
       // the feed stream's empty pane follows (VISUAL_MASK_SITES, `feed-stream`).
-      <div data-community-board className="mb-6">
+      <div data-community-board>
         <EmptyState
           icon={Users}
           title={belongs ? 'Quiet week' : 'Find your people'}
@@ -111,7 +116,7 @@ export function CommunityBoardBody({ board }: { board: Board }) {
   }
 
   return (
-    <div data-community-board data-visual-mask="feed-community-board" className="mb-6 space-y-5">
+    <div data-community-board data-visual-mask="feed-community-board" className="space-y-5">
       {gathering && (
         <ModuleCard title="Next in your Circles">
           <GatheringRow gathering={gathering} />
@@ -139,27 +144,10 @@ export function CommunityBoardBody({ board }: { board: Board }) {
 }
 
 /**
- * The feed's community board. Its own async Server Component so the page can stream it behind a
- * <Suspense> and the shell never waits on these reads (PAGE-FRAMEWORK §5).
+ * The community board. Its own async Server Component so its host can stream it behind a
+ * <Suspense> and nothing waits on these reads (PAGE-FRAMEWORK §5). The rail's own boundary and
+ * PanelSkeleton do that today, which is why this file no longer ships a bespoke skeleton.
  */
 export async function CommunityBoard({ profileId }: { profileId: string }) {
   return <CommunityBoardBody board={await getCommunityBoard(profileId)} />
-}
-
-/** The board's streaming placeholder: the same box the real module paints. */
-export function CommunityBoardSkeleton() {
-  return (
-    <div data-visual-mask="feed-community-board" className="mb-6 space-y-3" aria-hidden>
-      <div className="h-3 w-40 rounded bg-surface-elevated animate-pulse" />
-      <div className="rounded-card border border-border bg-surface p-4">
-        <div className="flex items-center gap-3">
-          <div className="h-11 w-11 rounded-lg bg-surface-elevated animate-pulse" />
-          <div className="flex-1 space-y-2">
-            <div className="h-3 w-3/5 rounded bg-surface-elevated animate-pulse" />
-            <div className="h-3 w-2/5 rounded bg-surface-elevated animate-pulse" />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
 }

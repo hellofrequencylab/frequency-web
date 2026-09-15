@@ -14,7 +14,7 @@ Posts are how you share a moment: a thought, a photo, a question, a heads-up. A 
 
 ## Posting
 
-Tap the **Create button** (the plus in the middle of the tab bar), then **Post**, to open the Zap menu and capture a moment. Pick a style:
+Tap the **Zap button** to capture a moment, then pick a style:
 
 - **Post.** Say something to your people.
 - **Photo.** Snap what you're in the middle of.

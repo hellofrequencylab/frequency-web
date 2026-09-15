@@ -46,9 +46,6 @@ const read = (p: string) => readFileSync(new URL(p, import.meta.url), 'utf8')
 const MARKETING = read('./marketing-header.tsx')
 const SITE = read('./site-header.tsx')
 const SHELL = read('./app-shell.tsx')
-// The raised centre button (Create) and its sheet moved out of the shell in LIVE-247 so a test can
-// press the real thing; it is still a seventh of this row, so its shrink rules are pinned here.
-const CENTRE = read('./create-button.tsx')
 const BRAND = read('./brand-mark.tsx')
 const MOBILE_MENU = read('./marketing-mobile-menu.tsx')
 const USER_MENU = read('./user-menu.tsx')
@@ -259,12 +256,12 @@ describe('MobileTabBar: seven equal sevenths, whatever the labels say', () => {
 
   it('lets the two edge buttons shrink too, so the row stays uniform', () => {
     expect(SHELL).toContain("'flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-medium text-muted")
-    expect(CENTRE).toContain('relative flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-semibold')
+    expect(SHELL).toContain('relative flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-semibold')
   })
 
   it('clips a long label to one line instead of wrapping or overflowing', () => {
-    const labels = (SHELL + CENTRE).match(/className="w-full truncate text-center leading-none"/g) ?? []
-    // Menu, Create, and the shared destination-tab renderer.
+    const labels = SHELL.match(/className="w-full truncate text-center leading-none"/g) ?? []
+    // Menu, Zap, and the shared destination-tab renderer.
     expect(labels.length).toBeGreaterThanOrEqual(3)
   })
 
