@@ -272,7 +272,7 @@ export default async function MainLayout({
     redirect('/onboarding')
   }
 
-  // AN ACCOUNT HOLDER IS ADMITTED (ADR-1367, ruling on OWN-072). This gate used to redirect any
+  // AN ACCOUNT HOLDER IS ADMITTED (ADR-1368, ruling on OWN-072). This gate used to redirect any
   // member without `onboarding_completed` into /join — a SIGNUP funnel — on EVERY request. /join
   // is the front door for someone who does not have an account yet; marching someone who already
   // has a working one back through it answers a question they already answered, forever.

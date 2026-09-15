@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 
-// ADR-1367: an account holder is admitted, and the induction stops being a wall.
+// ADR-1368: an account holder is admitted, and the induction stops being a wall.
 //
 // The defect this pins was invisible to every other gate in the repo. `app/(main)/layout.tsx`
 // redirected any member who did not satisfy `hasEffectivelyOnboarded()` into /join, a SIGNUP
@@ -23,7 +23,7 @@ function code(src: string): string {
   return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
 }
 
-describe('the member shell admits an account holder (ADR-1367)', () => {
+describe('the member shell admits an account holder (ADR-1368)', () => {
   const SRC = code(RAW)
 
   it('strips comments rather than reading them — the guard below is only honest if this holds', () => {
