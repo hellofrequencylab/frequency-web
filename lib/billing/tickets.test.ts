@@ -1,5 +1,10 @@
-import { describe, it, expect } from 'vitest'
-import { ticketTotalCents, spaceMembershipGateError } from './tickets'
+import { describe, it, expect, afterEach } from 'vitest'
+import {
+  ticketTotalCents,
+  spaceMembershipGateError,
+  ticketPaymentMethodParams,
+  TICKET_PMC_ENV,
+} from './tickets'
 
 // `ticketTotalCents` is the pure gross-amount derivation behind a ticket purchase.
 describe('ticketTotalCents', () => {
@@ -56,5 +61,53 @@ describe('spaceMembershipGateError', () => {
     const flagOff = { space_members_only: false, space_tier_id: 'mt-1' }
     expect(spaceMembershipGateError(flagOff, null, 'Royal Temple')).not.toBeNull()
     expect(spaceMembershipGateError(flagOff, { tier_id: 'mt-1' }, 'Royal Temple')).toBeNull()
+  })
+})
+
+// A ticket is TIMED INVENTORY, so the ticket checkout is the one creator in this repo that narrows
+// the payment-method set (LIVE-343, owner decision). A delayed-notification method (ACH debit, a
+// bank redirect) completes Checkout WITHOUT paying and settles three to five days later, which
+// cannot share a product with a 30 minute seat hold.
+describe('ticketPaymentMethodParams', () => {
+  const ORIGINAL = process.env[TICKET_PMC_ENV]
+
+  afterEach(() => {
+    if (ORIGINAL === undefined) delete process.env[TICKET_PMC_ENV]
+    else process.env[TICKET_PMC_ENV] = ORIGINAL
+  })
+
+  it('PREFERS a payment method configuration, so the Stripe dashboard still controls the set', () => {
+    process.env[TICKET_PMC_ENV] = 'pmc_instant_only'
+    expect(ticketPaymentMethodParams()).toEqual({ payment_method_configuration: 'pmc_instant_only' })
+  })
+
+  it('never sends both parameters: Stripe rejects a request carrying the two', () => {
+    process.env[TICKET_PMC_ENV] = 'pmc_instant_only'
+    expect(ticketPaymentMethodParams()).not.toHaveProperty('payment_method_types')
+    delete process.env[TICKET_PMC_ENV]
+    expect(ticketPaymentMethodParams()).not.toHaveProperty('payment_method_configuration')
+  })
+
+  it('falls back to card + link when no configuration id is set', () => {
+    delete process.env[TICKET_PMC_ENV]
+    // Apple Pay and Google Pay are not types: they ride on `card`. Link is its own type and
+    // disappears from Checkout unless it is named, which is the one easy thing to get wrong here.
+    expect(ticketPaymentMethodParams()).toEqual({ payment_method_types: ['card', 'link'] })
+  })
+
+  it('offers NO delayed-notification method on either branch', () => {
+    delete process.env[TICKET_PMC_ENV]
+    const types = (ticketPaymentMethodParams() as { payment_method_types: string[] }).payment_method_types
+    // The whole point of the row: these are the methods that complete a session unpaid.
+    for (const delayed of ['us_bank_account', 'sofort', 'bancontact', 'ideal', 'cashapp', 'klarna', 'afterpay_clearpay']) {
+      expect(types).not.toContain(delayed)
+    }
+  })
+
+  it('treats a blank or whitespace env value as unset rather than as an id', () => {
+    // A blank var is the normal state of an optional key in a copied .env, and sending
+    // `payment_method_configuration: ''` to Stripe is a request error, not a no-op.
+    process.env[TICKET_PMC_ENV] = '   '
+    expect(ticketPaymentMethodParams()).toEqual({ payment_method_types: ['card', 'link'] })
   })
 })
