@@ -173,6 +173,29 @@ describe('the walls are the three the strategy names, and nothing has crept in',
     expect(PLACEHOLDER_METER_LIMITS).not.toHaveProperty('space_memberships')
   })
 
+  it('member benefits never state the membership wall a second time, and are never a gate of their own', () => {
+    // ADR-1372. A benefit is a priced modifier assigned to a membership tier, so the wall that
+    // matters is the one deciding whether the Space has a tier at all: space_memberships.
+    //
+    // The first draft pinned this free rung to ZERO and tied it to space_membership_tiers. That is
+    // the ADR-914 worry applied one step too far, and LIVE-225 is the row that settled it: "a cap of
+    // zero is a wall wearing a meter's clothes". LIVE-225 grandfathers exactly ONE zero,
+    // space_membership_tiers, because that one IS the paid line. A second zero re-opens the pattern
+    // that row closed, in the one place meant to meter rather than refuse. So: above zero, and
+    // unreachable in practice, because a free Space has no tier to assign a benefit to anyway.
+    expect(PLACEHOLDER_METER_LIMITS.space_member_benefits?.free).toBeGreaterThan(0)
+    // The zero that IS allowed stays exactly where LIVE-225 left it, so this test fails if a future
+    // change quietly hands the exception to a second key.
+    expect(PLACEHOLDER_METER_LIMITS.space_membership_tiers?.free).toBe(0)
+    // And it is metered ONLY. The named-wall list above is the whole set; a second gate by this name
+    // would be a quieter opinion about the same customer, which is what this file exists to catch.
+    expect(FEATURE_GATES).not.toHaveProperty('space_member_benefits')
+    // Above the wall it is a real dial, not a second wall: Business gets a finite allowance and the
+    // top rung stops counting.
+    expect(PLACEHOLDER_METER_LIMITS.space_member_benefits?.business).toBeGreaterThan(0)
+    expect(PLACEHOLDER_METER_LIMITS.space_member_benefits?.collective).toBeNull()
+  })
+
   it('campaigns are a wall at Business, and sends stay metered', () => {
     expect(FEATURE_GATES.space_campaigns?.minEntitlement).toBe('business')
     // The distinction the wall encodes: messaging your own people is free (metered by sends), running

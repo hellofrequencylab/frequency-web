@@ -326,6 +326,11 @@ export const METER_UPSELL_SURFACES: Record<string, MeterUpsellSurface> = {
     kind: 'in-context',
     note: 'The tier editor already holds the full tier list, so the real count is free.',
   },
+  space_member_benefits: {
+    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    kind: 'ladder',
+    note: 'Free allowance is zero, so the 80% prompt never applies below the Business wall; the plan hub carries the ladder, and a Business Space near 6 benefits is prompted there. Move this row to in-context once the benefits editor renders the count it already loads.',
+  },
   // ── Personal tier axis. All six were total gaps: the plan hub filters to axis === 'plan' and the
   // member upgrade page mounted no meter at all. /upgrade is now the tier-axis ladder, and the two
   // authoring surfaces that already hold a real count carry the 80% prompt as well.

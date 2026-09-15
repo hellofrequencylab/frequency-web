@@ -27,6 +27,13 @@ export type TicketTierView = {
   /** What the unlocking membership costs (e.g. "$44/mo") — shown as the price to NON-members so
    *  the row communicates the real cost of access; members see the ticket's own price. */
   membershipPriceLabel: string | null
+  /** ADR-1373: this tier's sales window hasn't opened yet. Resolved server-side against the
+   *  event's true start instant; the checkout re-decides authoritatively. */
+  notYetOnSale: boolean
+  /** ADR-1373: this tier's sales window has closed. */
+  salesClosed: boolean
+  /** ADR-1373: when it opens, in the event's own zone ("Fri, Mar 5"). Null when nothing delays it. */
+  opensOnLabel: string | null
 }
 
 const dollars = (cents: number | null | undefined) =>
@@ -100,12 +107,19 @@ export function TicketButton({
   // named membership tier; a plain members gate takes any active membership.
   const unlocked = (t: TicketTierView) =>
     !!viewerIsSpaceMember && (t.spaceTierId == null || t.spaceTierId === viewerSpaceTierId)
+  // A tier nobody can buy right now (ADR-1373). Treated exactly like sold out for selection and for
+  // the CTA, because the two are the same fact to a buyer: this row is not purchasable today. The
+  // difference is what the row SAYS, which is handled in the price slot below.
+  const offSale = (t: TicketTierView) => t.notYetOnSale || t.salesClosed
   // Selected tier id (tiered events) and the per-tier buyer amount (dollars string). A MEMBER's
   // included ticket preselects — a member landing on their own event should not find the paid
   // Day pass highlighted over the ticket their membership already covers.
   const [selectedId, setSelectedId] = useState<string | null>(
     hasTiers
-      ? (tiers!.find((t) => !t.soldOut && t.spaceMembersOnly && unlocked(t))?.id ??
+      ? // A member's own open ticket first, then any tier that can actually be bought right now, then
+        // the first row. Preselecting a tier that is off sale would land a buyer on a dead CTA.
+        (tiers!.find((t) => !t.soldOut && !offSale(t) && t.spaceMembersOnly && unlocked(t))?.id ??
+          tiers!.find((t) => !t.soldOut && !offSale(t))?.id ??
           tiers!.find((t) => !t.soldOut)?.id ??
           tiers![0].id)
       : null,
@@ -168,7 +182,8 @@ export function TicketButton({
 
   // ── Tiered selector ──
   const buyerChosen = selected ? isBuyerChosen(selected.pricingMode) : false
-  const ctaDisabled = isPending || !selected || selected.soldOut || previewMode
+  const ctaDisabled =
+    isPending || !selected || selected.soldOut || offSale(selected) || previewMode
 
   return (
     <div className="space-y-3">
@@ -180,7 +195,7 @@ export function TicketButton({
               key={t.id}
               type="button"
               onClick={() => selectTier(t)}
-              disabled={t.soldOut}
+              disabled={t.soldOut || offSale(t)}
               aria-pressed={active}
               className={`flex w-full items-start justify-between gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-55 ${
                 active
@@ -223,6 +238,18 @@ export function TicketButton({
               <span className="shrink-0 text-body-sm font-semibold text-text">
                 {t.soldOut ? (
                   <span className="text-subtle">Sold out</span>
+                ) : t.notYetOnSale ? (
+                  // Not open yet (ADR-1373): say WHEN, in the event's own zone. A dead button with
+                  // no date is the thing this feature exists to stop. A members row that the
+                  // viewer's membership already opens never reaches here, because its own window
+                  // has started.
+                  <span className="text-subtle">
+                    {t.opensOnLabel
+                      ? `Opens to ${t.spaceMembersOnly ? 'members' : 'guests'} on ${t.opensOnLabel}`
+                      : 'Not on sale yet'}
+                  </span>
+                ) : t.salesClosed ? (
+                  <span className="text-subtle">Sales closed</span>
                 ) : t.spaceMembersOnly && !unlocked(t) && t.membershipPriceLabel ? (
                   // Non-member (or signed out) on a members ticket: the price of ACCESS is the
                   // membership, so show that instead of a misleading bare "Free".

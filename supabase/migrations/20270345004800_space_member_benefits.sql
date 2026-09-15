@@ -1,4 +1,4 @@
--- space_member_benefits: what a membership tier is WORTH at a checkout (ADR-1103).
+-- space_member_benefits: what a membership tier is WORTH at a checkout (ADR-1372).
 -- Canonical record: supabase/migrations/20270345004800_space_member_benefits.sql. SAFE to re-run.
 
 create table if not exists public.space_member_benefits (
@@ -23,7 +23,7 @@ create table if not exists public.space_member_benefits (
 );
 
 comment on table public.space_member_benefits is
-  'What a membership tier is worth at a checkout (ADR-1103): a priced modifier with a scope, assigned to tiers via space_tier_benefits. Complements the ADR-823 admission gate rather than replacing it. Writes are service-role only, gated on canEditProfile.';
+  'What a membership tier is worth at a checkout (ADR-1372): a priced modifier with a scope, assigned to tiers via space_tier_benefits. Complements the ADR-823 admission gate rather than replacing it. Writes are service-role only, gated on canEditProfile.';
 comment on column public.space_member_benefits.kind is
   'included = 100% off; percent = value is basis points (1500 = 15%); amount_off = value is cents off; fixed_price = value is the cents the member pays.';
 comment on column public.space_member_benefits.value is
@@ -48,7 +48,7 @@ create table if not exists public.space_tier_benefits (
 );
 
 comment on table public.space_tier_benefits is
-  'Assigns a space_member_benefits row to a space_membership_tiers row (ADR-1103). Many-to-many so one benefit serves several tiers and can never drift between them.';
+  'Assigns a space_member_benefits row to a space_membership_tiers row (ADR-1372). Many-to-many so one benefit serves several tiers and can never drift between them.';
 
 create index if not exists space_tier_benefits_benefit_idx
   on public.space_tier_benefits (benefit_id);
@@ -63,7 +63,7 @@ create table if not exists public.space_benefit_redemptions (
 );
 
 comment on table public.space_benefit_redemptions is
-  'One row per benefit redemption (ADR-1103), stamped with the period key it counts against so a max_uses cap is a cheap equality read. Service-role writes only, from the checkout path.';
+  'One row per benefit redemption (ADR-1372), stamped with the period key it counts against so a max_uses cap is a cheap equality read. Service-role writes only, from the checkout path.';
 comment on column public.space_benefit_redemptions.period_key is
   'The window this redemption counts against: YYYY-MM for a monthly cap, YYYY for a yearly one, lifetime when the benefit is uncapped or capped in total.';
 

@@ -101,7 +101,12 @@ export function RsvpPaymentFlow({
   // rates. The selection seeds from the list this reader sees, not from the full one.
   const rateList = guestRsvpDoor ? rates.filter((r) => r.kind === 'general') : rates
   const [selectedId, setSelectedId] = useState<string>(
-    () => (rateList.find((r) => r.covered) ?? rateList[0])?.id ?? '',
+    () =>
+      // A rate the viewer's membership covers, then any rate they can actually take today
+      // (ADR-1373), then whatever is first. Landing on an off-sale rate is a dead end.
+      (rateList.find((r) => r.covered && !r.offSale) ??
+        rateList.find((r) => !r.offSale) ??
+        rateList[0])?.id ?? '',
   )
   const [payOpen, setPayOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -120,6 +125,7 @@ export function RsvpPaymentFlow({
     guestRsvpDoor && selected && !selected.covered ? `Pay the ${selected.priceLabel} at the door.` : undefined
 
   function selectRate(r: FlowRate) {
+    if (r.offSale) return
     setSelectedId(r.id)
     setError(null)
     if (r.covered) setPayOpen(false)

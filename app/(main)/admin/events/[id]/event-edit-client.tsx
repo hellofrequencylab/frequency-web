@@ -51,6 +51,14 @@ export type TierEditRow = {
   space_members_only: boolean
   /** ADR-823: narrows the gate to one space_membership_tiers row; null = any active membership. */
   space_tier_id: string | null
+  /** ADR-1373: the sales window, plus the derived `datetime-local` values the form round-trips on.
+   *  The console WRITES all three on every save, so it has to READ them too or an admin edit would
+   *  silently blank a window a host set. */
+  sales_start_at: string | null
+  sales_starts_days_before: number | null
+  sales_end_at: string | null
+  sales_start_local: string | null
+  sales_end_local: string | null
   sort_order: number
   active: boolean
 }
@@ -589,6 +597,48 @@ function TierForm({
         <Field label="Sort order">
           <Input name="sort_order" type="number" step="1" defaultValue={initial?.sort_order ?? 0} disabled={disabled} />
         </Field>
+      </div>
+
+      {/* When it goes on sale (ADR-1373). The same three controls as the host-facing Manage panel,
+          on the same form field names, so both surfaces write the same row the same way. The two
+          datetime values are the event's OWN wall clock, resolved server-side by the shared reader
+          rather than by the browser's zone. */}
+      <div className="space-y-2 rounded-card border border-border bg-surface p-3">
+        <p className="text-meta font-semibold text-muted">When it goes on sale</p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Field label="Days before the event">
+            <Input
+              name="sales_starts_days_before"
+              type="number"
+              min="0"
+              step="1"
+              defaultValue={initial?.sales_starts_days_before ?? ''}
+              disabled={disabled}
+              placeholder="Right away"
+            />
+          </Field>
+          <Field label={<>Or an exact time <span className="font-normal text-subtle">(this date only)</span></>}>
+            <Input
+              name="sales_start_at"
+              type="datetime-local"
+              defaultValue={initial?.sales_start_local ?? ''}
+              disabled={disabled}
+            />
+          </Field>
+          <Field label={<>Stops selling <span className="font-normal text-subtle">(optional)</span></>}>
+            <Input
+              name="sales_end_at"
+              type="datetime-local"
+              defaultValue={initial?.sales_end_local ?? ''}
+              disabled={disabled}
+            />
+          </Field>
+        </div>
+        <p className="text-meta text-subtle">
+          Leave all three blank and this ticket is on sale right away. Times are in the
+          event&rsquo;s own time zone. If you set both an exact time and a day count, the exact time
+          wins for this date.
+        </p>
       </div>
 
       <Checkbox
