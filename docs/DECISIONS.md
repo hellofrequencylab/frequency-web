@@ -40869,3 +40869,61 @@ practice: prefetching is production-only, so the route simply never matches ther
 
 **Rows.** LIVE-328 (done, this ADR). LIVE-326 and LIVE-330 (done; the serialisation this
 multiplier sits inside).
+
+## ADR-1344: The public header is four tabs, and the two it lost are grouped rather than deleted (2026-09-15)
+
+**Context.** [`docs/CORE-MODEL.md`](CORE-MODEL.md) §4 sets a target of **4** public header tabs
+against **6** today, and §5.6 (`LIVE-250`) routes the change at `lib/nav/registry.ts`. It states
+the number and not the membership, which is the part that needed deciding. It also named **two**
+footer drifts, and re-measuring on 2026-09-15 found one of them fixed five weeks earlier.
+
+Measured before changing anything:
+
+| Claim | Reading |
+|---|---|
+| Six header tabs | ✅ TRUE. Code: Home · The Community · The Quest · The Lab · Spaces · About, 22 dropdown links. Live `menu_items`: 6 categories / 24 items |
+| Dead `maker` navKey in the footer | ✅ TRUE. `NAV_AREAS` has no `maker` key; ADR-868 retired that rail row and `lib/verticals/maker.ts` declares `nav: []` |
+| Footer points market at `/market`, umbrella door is `/classifieds` | 🔴 EXPIRED. #1647 re-pointed the `market`-keyed row to Classifieds → `/classifieds`. The `/market` row is the `maker` one, and that label/href pair is canon ([`NAMING.md`](NAMING.md) §Marketplace & Commerce) |
+
+**Decision.** Four things.
+
+1. **The four are the four that already carried panels**: The Community · The Quest · Spaces ·
+   About. The six were four dropdown triggers plus two plain links, so the derivation picks itself
+   rather than being invented: the plain links go. `Home` pointed at `/`, which the wordmark beside
+   it already links (`marketing-header.tsx`, `href={authed ? '/feed' : '/'}`); a tab duplicating the
+   brand mark costs a slot and buys nothing. `The Lab` is not one of the four nouns, so it becomes a
+   ROW in the About panel, beside the other story pages.
+2. **Nothing is removed. Things are grouped** (CORE-MODEL §4). `/the-lab` keeps its page, its flat
+   footer link, its sitemap entry at priority 0.8 and its `llms.txt` line; `/` keeps the wordmark and
+   its footer link. The flat marketing footer stays **six**, because the footer is the site map and
+   was never required to mirror the tab bar.
+3. **The footer's Market row drops `navKey: 'maker'` for an explicit `minAccess: 'visitor'`.** A
+   `navKey` is a DEFERRAL to the rail's access matrix; deferring to a key that does not exist reads
+   as coverage and is not. `member-footer.tsx` resolves `NAV_AREA_DEFAULTS[key] ?? 'visitor'`, so the
+   row has been gated at visitor by accident, and `/admin/roles` had no permission-grid row to change
+   it with. The keyless form states the same gate on purpose. Label and href are unchanged and canon.
+4. **The live surface is DB rows, so the change ships in two halves.** `lib/menus/read.ts` prefers
+   `menus` / `menu_categories` / `menu_items` over the code defaults, so editing
+   `HEADER_TRIGGER_SEEDS` moves the FALLBACK and nothing a visitor sees. The data half is
+   `supabase/migrations/20270345004400_public_header_four_tabs.sql`, carrying its `MENU CACHE:` note
+   because raw SQL cannot call `revalidatePath` and the marketing surfaces are static at
+   `revalidate = 3600`.
+
+**Consequences.** `lib/nav/registry.source.test.ts`'s "the public header carries ALL SIX primary
+pages" case is re-pointed rather than relaxed. Its count is now four, and the half worth keeping —
+the LIVE-107 guard, *a primary page with no path from the header* — is widened to what it always
+meant: reachable as a trigger **or** as a row in any panel. `/` is the one footer link with no header
+node, and that exemption is **measured** off `marketing-header.tsx` rather than excused in a comment,
+so a wordmark that stops linking home fails the case with the footer link that lost its path. Two new
+guards sit beside it: no footer `navKey` may name a missing `NAV_AREA` (with a positive control, so
+green cannot mean "no row has one"), and `/the-lab` must still have a header path and be inside the
+About panel — the count and the grouping are pinned together, because deleting two destinations is
+the cheap way to hit a tab count. `PRIMARY_NAV` / `SITE_NAV` / `PUBLIC_MEGA_NAV` fall out of the
+registry unchanged in mechanism; every tab now opens a dropdown, and `lib/site.ts` keeps its
+plain-link branch for a future tab with no sub-pages. `test/e2e/template-fingerprints.test.ts` is
+green: no template's rendered words moved.
+
+**Rows.** `LIVE-250` stays **open** until the migration is applied. Its `verify` stays `manual`,
+because no probe in this repo can see the `menu_items` rows that decide the live header, and a
+code-only probe passing while production still shows six tabs is the shape-not-truth failure
+[ADR-970](DECISIONS.md) exists to refuse.

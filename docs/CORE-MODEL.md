@@ -232,7 +232,7 @@ survey counted the editors and nobody had before.
 | 5.3 | Feed hero becomes a **community board** (your circles' next gathering, your spaces' activity); `PracticePrompt` and `JourneyBoard` move to the rail | `app/(main)/feed/page.tsx:245-290` | First module above the composer is community |
 | 5.4 | Operator console **12 boxes → 5**: Your page · Your people · Gather · Money · Reach | `lib/admin/modules/space-modules.ts` (parents only), `space-hub.ts` | 5 parentless rows; all 34 still reachable |
 | 5.5 | Bundle presets as the setup shape (studio · practice · venue · non-profit), core on and the rest off-but-switchable | `lib/pricing/bundles.ts` | ≥4 bundles; closes **OWN-048** |
-| 5.6 | Public header **6 → 4** tabs; fix the two footer drifts (`market`→`/classifieds`, dead `maker` key) | `lib/nav/registry.ts:146-212,296-352` | 4 triggers, no dead navKey |
+| 5.6 | Public header **6 → 4** tabs; fix the member footer's dead `maker` navKey. ⚠️ The header is DB rows (`menu_items`), so the code seeds are the FALLBACK and a code-only edit moves nothing live | `lib/nav/registry.ts` HEADER_TRIGGER_SEEDS + MEMBER_FOOTER_COLUMNS | 4 triggers, no dead navKey, and the live `header` menu reads 4 categories |
 
 ### Phase 8 — The story matches · **M**
 

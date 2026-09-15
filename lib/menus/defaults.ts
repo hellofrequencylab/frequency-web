@@ -148,7 +148,7 @@ function category(
   }
 }
 
-// ── header, from the registry's surface:'header' nodes (the six primary pages) ──
+// ── header, from the registry's surface:'header' nodes (the four public tabs) ──
 // One header menu whose TOP-LEVEL categories are the triggers (MegaBar at
 // triggerLevel='category'). Each header TRIGGER node (headerTriggers()) becomes a
 // top-level category:
