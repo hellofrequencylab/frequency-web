@@ -43329,6 +43329,107 @@ production build and nowhere else, and their output is to be read before merging
 **Rows.** `LIVE-342` (done, this ADR), `LIVE-253` (probe follows the spine; corpus 9 → 10),
 `LIVE-341` (its deferred derivation, now taken).
 
+## ADR-1369: the enforced CSP had to learn five Stripe hosts before one line of checkout could load (2026-09-15)
+
+**Status.** Accepted. Phase 1 of the on-page checkout program, and deliberately nothing else: the
+Content-Security-Policy in `next.config.ts`, plus a recorded owner action for Apple Pay. No billing
+module is touched by this decision.
+
+**Context.** The CSP has been **enforced** since [ADR-170](DECISIONS.md), and it carried **zero
+Stripe hosts**. The owner has chosen `ui_mode: 'custom'` — Checkout Sessions driven by Stripe
+Elements through `initCheckout` — which puts Stripe *on our own page* for the first time: a script
+from Stripe's origin, an iframe per Element, an authentication frame, and XHRs from our origin to
+Stripe's API. Every one of those is a directive this policy governs, and every one of them was
+refused.
+
+**🔴 The failure mode is invisible to everything this repo can test.** A missing CSP source throws
+nowhere in our code. Stripe.js never loads, or it loads and mounts an Element that paints as a blank
+rectangle, or a card sails through validation and dies at a 3D Secure challenge that cannot open a
+frame. The browser reports it in a console line and a POST to `/api/csp-report`; no type, gate or
+unit test sees anything. That is the same shape as the incident class DEPLOY-SAFETY rule 6 names —
+a fail-safe with nothing watching it — which is why the host set is now pinned by a test rather than
+left to a reviewer reading a 400-character string.
+
+**Decision — three directives, five entries, audited one at a time.**
+
+| Host | Directive | Why it is needed |
+| --- | --- | --- |
+| `https://js.stripe.com` | `script-src` **and** `frame-src` | One tag on our page; it appends its own further chunks from the same host, and mounts every Element as an iframe from it. Script-src alone loads the library and then blanks every field. |
+| `https://hooks.stripe.com` | `frame-src` | The authentication frame: 3D Secure challenges and redirect-based methods. |
+| `https://api.stripe.com` | `connect-src` | Every XHR the browser half makes: the Checkout Session reads behind `initCheckout`, the payment-method create, confirm. |
+| `https://merchant-ui-api.stripe.com` | `connect-src` | Custom mode's saved-payment-method management. ⚠️ See below. |
+| *(none)* | `img-src` | **No change needed** — Stripe's wallet marks and card-brand art come from `https://*.stripe.com` and the directive already reads `'self' data: blob: https:`. |
+
+**⚠️ One entry the audit could NOT prove, and it says so in the config.** Stripe's published CSP
+guidance names `merchant-ui-api.stripe.com` for **Connect embedded components**, not for Elements.
+It is carried anyway, for two reasons that are worth separating: custom mode's saved-payment-method
+management reads it, and it sits inside the **same trust boundary as `api.stripe.com`** — the host
+that already sees the card — so the marginal exposure is nil while the marginal cost of being wrong
+about it is a broken checkout. A `connect-src` host nothing contacts costs one line. The comment in
+`next.config.ts` says to **delete it** if the integration lands and it is never hit, rather than let
+it survive as folklore.
+
+**What did NOT change is the other half of the audit**, recorded because "the CSP must be blocking
+it" is the first guess when a payment surface misbehaves and each of these cost a real look:
+`style-src` and `font-src` are not involved (an Element styles and renders inside *its own*
+document, at js.stripe.com's origin under js.stripe.com's policy); `form-action 'self'` is not
+involved (Stripe.js navigates the top window by assignment, and the issuer's form POST happens
+inside the hooks.stripe.com document); `worker-src 'self' blob:` was **already open and is
+load-bearing**, because Stripe.js builds workers from blobs and a *missing* worker-src falls back to
+script-src — the single most reported Stripe CSP failure. `https://*.js.stripe.com` in `script-src`
+is a **Trusted Types** requirement; we do not set `require-trusted-types-for`, so it joins that
+change and not this one.
+
+**Deliberately left out: the fail-soft beacons** — `q.stripe.com`, `r.stripe.com`,
+`errors.stripe.com`, `m.stripe.com` / `m.stripe.network`. A blocked beacon costs a Radar signal and
+a console line, never a payment, and the rule here is to allowlist what has been audited rather than
+what is plausible. **`report-uri /api/csp-report` stays on and is the gate that notices**: if one of
+them fires in production it arrives as a report naming the host *and* the directive, and that report
+is the evidence to add it on.
+
+**🔴 Apple Pay needs a file this repository cannot write, and a CSP change does not reach it.**
+On-page wallets require **payment method domain registration** — hosted Checkout is registered on
+Stripe's own domain, an Elements page is not — and the association file must answer **200** from
+`/.well-known/apple-developer-merchantid-domain-association`. Its bytes come from Stripe per domain,
+so no agent can generate them, and a placeholder would read as present and fail at the first tap.
+`public/.well-known/` therefore still carries `apple-app-site-association` **only**, on purpose.
+
+**Owner action, in order:**
+
+1. Stripe Dashboard → **Settings → Payment method domains** → add `frequencylocal.com`, then add
+   `www.frequencylocal.com`. Apple verifies **each** domain that shows the button, apex and
+   subdomain alike, in test and in live mode.
+2. Download the association file offered for each domain.
+3. Hand it to engineering to commit at `public/.well-known/apple-developer-merchantid-domain-association`
+   (no extension, served as-is). If the two domains are handed different bytes, say so — that turns
+   a static file into a host-aware route handler and is a design change, not a paste.
+4. Deploy, confirm `curl -I https://frequencylocal.com/.well-known/apple-developer-merchantid-domain-association`
+   returns **200**, then press **Verify** in the Dashboard.
+5. Wallets stay off until steps 1-4 are green. Card payments do not depend on any of this.
+
+**Consequences.** ✅ The host set is pinned by `test/contract/csp-stripe-hosts.test.ts`, **proven
+both ways on real trees**: 8 assertions green on this tree, and **3 of them fail against the tree
+before this change**, each naming the directive that is missing a host. The five that stay green on
+the old tree are honestly green — they assert what did *not* change (`img-src`'s blanket `https:`,
+`worker-src blob:`, `report-uri`, no Stripe wildcard, no beacon). ✅ The frame-src containment test
+in `lib/spotlight/embeds.test.ts` and the Maps directive test in
+`components/maps/maps-wiring.test.ts` both still pass: this change only appends.
+⚠️ **Stated limit, and it is the same one ADR-1002 keeps re-teaching: this test reads SOURCE, not a
+served response.** Nothing in CI issues a request and reads the `Content-Security-Policy` header
+that comes back, so a change that detached `securityHeaders` from `headers()` would leave every
+assertion here green. ⚠️ **Second stated limit:** the host set is a claim about Stripe's current
+behaviour, verified against Stripe's published guidance via search (`docs.stripe.com` is blocked to
+direct fetch from this environment) rather than against a browser running our checkout. The first
+real integration run is what confirms it, and `/api/csp-report` is where a miss will show up.
+⚠️ **Out of scope but found while researching, and cheaper to read here than to hit in Phase 2:**
+Stripe's 2026-03-25 API changelog records that the `ui_mode` enum values were **renamed**, with the
+older `hosted` / `embedded` / `custom` values rejected on newer API versions. The mode the owner
+chose is unchanged in substance; its spelling may not be. Confirm against the pinned API version
+before writing the session-create call.
+
+**Rows.** None claimed here — the backlog is the coordinator's. This ADR asks for two: a code row
+for the Phase 2 integration, and an **owner** row carrying the Apple Pay registration above as its
+`ownerAction`, since no probe in this repository can close it.
 ## ADR-1371: an account holder is admitted, and the induction stops being a wall (2026-09-15)
 
 **Status.** Accepted. Closes the ruling half of `OWN-072`. Amends [ADR-1324](DECISIONS.md), which
