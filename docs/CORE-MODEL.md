@@ -218,7 +218,7 @@ survey counted the editors and nobody had before.
 |---|---|---|
 | 6.1 | One editor per entity | Circles and Events each ship `edit` **and** `manage` **and** `settings`; Practices ship `edit` and `manage`. Keep the registry-driven one: `STUDIO.md` already rules that field lists derive from the manifest. |
 | 6.2 | One Space-settings door | Three doors over two implementations, with the file comments narrating an ADR-785 → ADR-788 flip-flop. |
-| 6.3 | Resolve the **nine duplicate console pairs** | Four Circle consoles · three Event consoles · four CRMs at four scopes · three funnel builders · two contact rosters. |
+| 6.3 | Resolve the **nine duplicate console pairs** | ⚠️ **Re-measured 2026-09-15 and this cell was wrong twice over** (ADR-NNNN; the code wins). There are **four** funnel builders, not three, and they build three different objects plus one deliberate second view; the hub and nexus "CRMs" are `LeaderCrmViewer` message rosters with no pipeline; and the Circle, Event and CRM sets are one console per SCOPE (one entity · its container · platform staff), which is what the row's own test asks for. One pair was two consoles doing one job at one scope: the contact rosters. |
 | 6.4 | Pick **one** onboarding engine | Three exist for one job and **all three are dark**: Next Steps, Walkthroughs, and the tour provider. Phase 9 cannot turn the lights on until this is settled. |
 
 ---

@@ -5,6 +5,7 @@ import {
   contactMatchesFacets,
   contactMatchesText,
   sortContacts,
+  sourceLabel,
   type ContactRosterRow,
 } from './contacts-roster'
 
@@ -22,6 +23,8 @@ function row(over: Partial<ContactRosterRow> = {}): ContactRosterRow {
     profileId: null,
     avatarUrl: null,
     status: 'lead',
+    consentState: 'unknown',
+    source: null,
     communityRole: null,
     isBusiness: false,
     activeThisWeek: false,
@@ -32,7 +35,7 @@ function row(over: Partial<ContactRosterRow> = {}): ContactRosterRow {
     upgradeCandidate: false,
     upgradeReasons: [],
     createdAt: null,
-    badges: ['status:lead', 'business:no', 'active:no'],
+    badges: ['status:lead', 'business:no', 'active:no', 'consent:unknown'],
     sortValues: { joined: 0, statusRank: 2, active: 0, spaces: 0, upgrade: 0 },
     ...over,
   }
@@ -155,5 +158,79 @@ describe('buildContactFacets — registry + data driven, pruned to what rows can
     const facets = buildContactFacets(rows)
     const spaceFacet = facets.find((f) => f.key === 'space')
     expect(spaceFacet?.options.map((o) => o.label)).toEqual(['Alpha Lab', 'Zen Studio'])
+  })
+})
+
+// ── CONSENT + SOURCE (LIVE-239) ─────────────────────────────────────────────────────────────────────
+// The two reads that came here when the second contacts roster retired. The point of the first block
+// is the one thing the surviving roster could NOT do before: find an unsubscribed non-member. `status`
+// collapses that person into 'lead', so a status facet can never answer it and a separate consent
+// facet is the whole reason this data is on the row.
+
+describe('the consent facet answers what the status facet cannot', () => {
+  it('an unsubscribed LEAD is invisible to the status facet and found by the consent facet', () => {
+    const optedOut = row({
+      status: 'lead',
+      consentState: 'unsubscribed',
+      badges: ['status:lead', 'business:no', 'active:no', 'consent:unsubscribed'],
+    })
+    const neverAsked = row({
+      status: 'lead',
+      consentState: 'unknown',
+      badges: ['status:lead', 'business:no', 'active:no', 'consent:unknown'],
+    })
+
+    // Both read as a lead, so the status facet cannot tell them apart.
+    expect(contactMatchesFacets(optedOut, { status: 'status:lead' })).toBe(true)
+    expect(contactMatchesFacets(neverAsked, { status: 'status:lead' })).toBe(true)
+    // The consent facet does.
+    expect(contactMatchesFacets(optedOut, { consent: 'consent:unsubscribed' })).toBe(true)
+    expect(contactMatchesFacets(neverAsked, { consent: 'consent:unsubscribed' })).toBe(false)
+  })
+
+  it('is offered with the three states present in the data, and pruned to them', () => {
+    const facets = buildContactFacets([
+      row({ badges: ['status:lead', 'consent:subscribed'] }),
+      row({ badges: ['status:lead', 'consent:unsubscribed'] }),
+    ])
+    const consent = facets.find((f) => f.key === 'consent')
+    expect(consent?.label).toBe('Consent')
+    expect(consent?.options.map((o) => o.value)).toEqual(['consent:subscribed', 'consent:unsubscribed'])
+  })
+
+  it('is dropped entirely when no row carries a consent badge', () => {
+    const facets = buildContactFacets([row({ badges: ['status:lead'] })])
+    expect(facets.some((f) => f.key === 'consent')).toBe(false)
+  })
+})
+
+describe('the source facet is data-driven, like Space', () => {
+  it('offers one option per distinct source, name-sorted, with no per-value code', () => {
+    const facets = buildContactFacets([
+      row({ source: 'beta_waitlist', badges: ['status:lead', 'source:beta_waitlist'] }),
+      row({ source: 'beta_waitlist', badges: ['status:lead', 'source:beta_waitlist'] }),
+      row({ source: 'card_scan', badges: ['status:lead', 'source:card_scan'] }),
+    ])
+    const source = facets.find((f) => f.key === 'source')
+    expect(source?.options).toEqual([
+      { value: 'source:beta_waitlist', label: 'Beta waitlist' },
+      { value: 'source:card_scan', label: 'Card scan' },
+    ])
+  })
+
+  it('is dropped when nothing records a source', () => {
+    expect(buildContactFacets([row()]).some((f) => f.key === 'source')).toBe(false)
+  })
+})
+
+describe('sourceLabel', () => {
+  it('reads an underscored or hyphenated source as a plain sentence', () => {
+    expect(sourceLabel('beta_waitlist')).toBe('Beta waitlist')
+    expect(sourceLabel('partner-import')).toBe('Partner import')
+  })
+
+  it('leaves a source nobody has seen before readable rather than blank', () => {
+    expect(sourceLabel('somethingNew')).toBe('SomethingNew')
+    expect(sourceLabel('___')).toBe('___')
   })
 })

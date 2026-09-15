@@ -153,6 +153,12 @@ describe('the retired stubs really are gone, not merely redirected past', () => 
     // LIVE-238 (ADR-1336): the two losing Space-settings doors retire into the Manage hub's tab.
     '/spaces/:slug/settings/basics',
     '/spaces/:slug/manage/settings',
+    // LIVE-239 (ADR-NNNN): the second contacts roster retires into the Resonance CRM's Contacts leaf.
+    // The `:id` entry is the interesting one: the FORWARDING page moved (it resolves a contact id to a
+    // profile id, which a config rule cannot do), so this pins that /admin/marketing/contacts/:id is
+    // served by a rule AND that no route file answers there any more.
+    '/admin/marketing/contacts',
+    '/admin/marketing/contacts/:id',
   ]
 
   it('each retired path is served by a config rule', async () => {
