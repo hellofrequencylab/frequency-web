@@ -123,7 +123,6 @@
             "DEF-HARDEN",
             "SCAN-502",
             "HYG-071",
-            "HYG-072",
             "LIVE-313"
           ]
         },
@@ -9877,7 +9876,7 @@
     {
       "id": "HYG-072",
       "title": "The PR-size gate counts generated visual baselines, so a recapture trips the 40-file gate on volume it did not author",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "hygiene",
       "size": "S",
@@ -9885,12 +9884,13 @@
         "file": ".github/workflows/ci.yml",
         "ref": "PR size gate"
       },
-      "detail": "FILED 2026-09-08 by the stabilisation audit (ADR-1290). The gate reads github.event.pull_request.changed_files -- the API's own count, deliberately, because a depth-1 checkout has no merge base -- and fails above 40 unless the title carries [sweep]. It cannot see WHAT the files are.\n\nMEASURED ON THE PR IT IS CURRENTLY BLOCKING. #2477 (LIVE-213) changes 87 files: 72 of them are PNGs under test/e2e/__screenshots__/visual.spec.ts/, and the other 15 are the authored change (8 tsx, 3 ts, 2 md, 2 json). Fifteen is INSIDE the 15-file guidance and nowhere near the 40-file gate; the PR is blocked entirely on generated output a runner wrote. All 156 baselines in the repo live in that one directory, so the scope is unambiguous.\n\nTHE PRECEDENT WORKAROUND IS THE WRONG SHAPE. The repo's answer so far has been the [sweep] tag (f2cf16a / #2472 is a baseline recapture tagged that way), but [sweep] is defined as \"single-purpose mechanical changes where every file takes the same one edit\", and a recapture PR carrying 15 differently-edited authored files is not that. Tagging it teaches the reviewer that [sweep] means \"big\", which is the one thing the tag must not mean on a repo where merging deploys to production.\n\nTHE WORK is to count AUTHORED files: list the PR's files (paginated -- a recapture can exceed 100) and subtract test/e2e/__screenshots__/**, then gate on that number. It needs pull-requests: read on the checks job.\n\n\\U0001f534 DO NOT SHIP THIS BLIND. It edits a REQUIRED status check on a protected branch, and it cannot be exercised locally -- which is the 2026-08-11 shape this repo names in AGENTS.md: a build-blocking gate that has never seen a real artifact. Land it with a deliberate control in the same change: one PR that must still FAIL (>40 authored files) and one that must now PASS (a recapture), both observed before it is relied on.",
+      "detail": "FILED 2026-09-08 by the stabilisation audit (ADR-1290). The gate reads github.event.pull_request.changed_files -- the API's own count, deliberately, because a depth-1 checkout has no merge base -- and fails above 40 unless the title carries [sweep]. It cannot see WHAT the files are.\n\nMEASURED ON THE PR IT IS CURRENTLY BLOCKING. #2477 (LIVE-213) changes 87 files: 72 of them are PNGs under test/e2e/__screenshots__/visual.spec.ts/, and the other 15 are the authored change (8 tsx, 3 ts, 2 md, 2 json). Fifteen is INSIDE the 15-file guidance and nowhere near the 40-file gate; the PR is blocked entirely on generated output a runner wrote. All 156 baselines in the repo live in that one directory, so the scope is unambiguous.\n\nTHE PRECEDENT WORKAROUND IS THE WRONG SHAPE. The repo's answer so far has been the [sweep] tag (f2cf16a / #2472 is a baseline recapture tagged that way), but [sweep] is defined as \"single-purpose mechanical changes where every file takes the same one edit\", and a recapture PR carrying 15 differently-edited authored files is not that. Tagging it teaches the reviewer that [sweep] means \"big\", which is the one thing the tag must not mean on a repo where merging deploys to production.\n\nTHE WORK is to count AUTHORED files: list the PR's files (paginated -- a recapture can exceed 100) and subtract test/e2e/__screenshots__/**, then gate on that number. It needs pull-requests: read on the checks job.\n\n\\U0001f534 DO NOT SHIP THIS BLIND. It edits a REQUIRED status check on a protected branch, and it cannot be exercised locally -- which is the 2026-08-11 shape this repo names in AGENTS.md: a build-blocking gate that has never seen a real artifact. Land it with a deliberate control in the same change: one PR that must still FAIL (>40 authored files) and one that must now PASS (a recapture), both observed before it is relied on.\n\nCLOSED 2026-09-15 (ADR-1338): the gate now lists the PR's files through the REST API (paginated) in scripts/pr-size-gate.mjs and gates on the AUTHORED count; test/e2e/__screenshots__/** and test/e2e/template-fingerprints.json are runner output and do not count. Thresholds, the [sweep] lift and the wording are unchanged; the checks job gains pull-requests: read; a listing failure falls back to the API total with a printed warning. The control this row demanded is scripts/pr-size-gate.test.ts (41 authored must fail, 84 files with 20 authored must pass, pagination, a 403 throws); the first live reading is #2595's checks job, which failed at \"84 changed files\" on the old gate with 20 authored files. The trigger was #2595 (LIVE-230): a real change whose template edit owed a recapture, exactly the shape this row measured on #2477.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\".github/workflows/ci.yml\",\"utf8\");const i=s.indexOf(\"PR size gate\");if(i<0){console.error(\"the PR size gate is gone from ci.yml\");process.exit(1)}const step=s.slice(i,i+4000);if(step.indexOf(\"__screenshots__\")<0){console.error(\"the PR size gate still counts generated visual baselines toward the 40-file limit\");process.exit(1)}process.exit(0)'",
         "note": "Measures the CONSEQUENCE in the workflow that actually gates a PR: the size step must name the generated-baseline directory it excludes. Scoped to the step rather than the file, so an unrelated mention of __screenshots__ elsewhere in ci.yml cannot pass it. Pure node, no shell pipeline."
-      }
+      },
+      "closed": "2026-09-15"
     },
     {
       "id": "LIVE-215",

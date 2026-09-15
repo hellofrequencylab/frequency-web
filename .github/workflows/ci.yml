@@ -150,6 +150,12 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # pull-requests: read lets the PR size gate LIST the PR's files (scripts/pr-size-gate.mjs,
+    # ADR-1338) instead of reading the API's total count, which cannot see that a visual recapture
+    # is runner output. Nothing else in this job writes or reads a pull request.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6.0.9
@@ -177,22 +183,16 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
-          # The API's own count, not a git diff: the checkout is depth-1, so BASE...HEAD has no
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The API's own total, kept as the FALLBACK: the checkout is depth-1, so BASE...HEAD has no
           # merge base on the runner and `git diff` exits 128 (this step's first version did
-          # exactly that). GitHub already counted the PR's files; use its number.
+          # exactly that). The gate now lists the PR's files through the API and counts the ones a
+          # person AUTHORED: everything under test/e2e/__screenshots__/ and the fingerprints stamp
+          # is runner output and does not count toward the 40 (HYG-072, ADR-1338). If the listing
+          # cannot be read the gate falls back to this total and prints a warning saying so.
           CHANGED: ${{ github.event.pull_request.changed_files }}
-        run: |
-          set -euo pipefail
-          count="${CHANGED}"
-          echo "Changed files vs base: ${count}"
-          if [ "${count}" -gt 40 ]; then
-            case "${PR_TITLE}" in
-              *"[sweep]"*) echo "::notice title=PR size::${count} files, allowed by the [sweep] tag (single-purpose mechanical change)";;
-              *) echo "::error title=PR size::${count} changed files exceeds the 40-file gate (docs/WORKFLOW.md). Split by backlog row, or tag the title [sweep] if every file takes the same one mechanical edit."; exit 1;;
-            esac
-          elif [ "${count}" -gt 15 ]; then
-            echo "::warning title=PR size::${count} changed files is past the 15-file guidance (docs/WORKFLOW.md). Fine if it is one honest row; consider splitting otherwise."
-          fi
+        run: node scripts/pr-size-gate.mjs
       # ADR-1327. tsc on this tree peaks above node's default ~4 GB heap: on 2026-09-14 the step died
       # on #2571 with "Ineffective mark-compacts near heap limit" at 4026 of 4128 MB after 112 s, on a
       # PR that changed no TypeScript. The lanes had already measured 3.7 GB RSS locally that day.
