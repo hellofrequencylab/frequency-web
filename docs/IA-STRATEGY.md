@@ -375,12 +375,14 @@ Events, Members, Leaderboard, Progress, a good base. Shape it into a deliberate
 `channels`) and externally (Discord/Slack/YouTube all mean "chat room /
 broadcaster"). **Decision: the member-facing label is "Interests."**
 
-- **Member-facing "Interests"** = the global topics a circle practices
-  (Spirituality, Movement, Holistic Health, Human Relating, Activism, Creative,
-  Business Support). Warm, personal framing that reads naturally in the
-  wake-up/onboarding flow ("pick your interests").
-- **Retire the legacy `channels` concept from member view**: keep it only in
-  `/admin/channels`.
+- **Member-facing "Interests"** = the global topics a circle practices, the
+  `topical_channels` rows an operator curates at `/admin/channels`. Warm,
+  personal framing that reads naturally in the wake-up/onboarding flow ("pick
+  your interests").
+- **The legacy `channels` concept is retired outright**, not just hidden from
+  member view: the table was dropped, empty, on 2026-09-15
+  ([ADR-1349](DECISIONS.md)), and `/admin/channels` manages `topical_channels`.
+  The overload this section was written about no longer exists in the schema.
 - **Migration surface:** nav label, the `/channels` route (consider redirecting
   `/channels` → `/interests` or just relabeling the nav while keeping the route
   short-term), page headings, and onboarding copy. The DB table

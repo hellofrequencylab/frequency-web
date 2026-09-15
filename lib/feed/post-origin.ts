@@ -16,7 +16,7 @@ import type { PostScopeContext } from '@/components/feed/post-card'
  *
  * - circle  → name + `/circles/[slug]` + `circles.image_url`
  * - event   → title + `/events/[slug]` + the public event-media cover URL
- * - channel → name + `/channels/[id]` (no image; the icon fallback renders)
+ * - channel → name + `/channels/[slug]` (no image; the icon fallback renders)
  * - space   → brand name + `/spaces/[slug]` + `spaces.brand_logo_url`
  * - wall    → display name + `/people/[handle]` + the member's avatar
  *
@@ -43,7 +43,13 @@ export async function buildScopeContextResolver(
       // this is the second lock, for every other caller of this resolver.
       admin.from('circles').select('id, name, slug, image_url, unlisted, access').in('id', ids),
       admin.from('events').select('id, title, slug, cover_image_path').in('id', ids),
-      admin.from('channels').select('id, name').in('id', ids),
+      // CHANNELS = `topical_channels`, the one Channel table (LIVE-334, ADR-1349). This read the
+      // retired hierarchy-v2 `channels` table, so the chip never resolved: a Channel forum post
+      // (`/channels/[id]` renders a feed on `posts.scope_id = <topical channel id>`, and the
+      // Channel manage hub counts the same rows) came back `undefined` and rendered no origin at
+      // all. `slug` because that is what the Channel page resolves first; the route also accepts
+      // the uuid, which is the fallback.
+      admin.from('topical_channels').select('id, name, slug').in('id', ids),
       admin.from('spaces').select('id, name, brand_name, slug, brand_logo_url').in('id', ids),
       admin.from('profiles').select('id, display_name, handle, avatar_url').in('id', ids),
     ])
@@ -102,9 +108,14 @@ export async function buildScopeContextResolver(
         byScope.set(e.id, { type: 'event', name: e.title, href: `/events/${e.slug}`, image_url: eventCoverUrl(e.cover_image_path) })
       }
     }
-    for (const ch of (channelsR.data ?? []) as { id: string; name: string }[]) {
+    for (const ch of (channelsR.data ?? []) as { id: string; name: string; slug: string | null }[]) {
       if (!byScope.has(ch.id)) {
-        byScope.set(ch.id, { type: 'channel', name: ch.name, href: `/channels/${ch.id}`, image_url: null })
+        byScope.set(ch.id, {
+          type: 'channel',
+          name: ch.name,
+          href: `/channels/${ch.slug || ch.id}`,
+          image_url: null,
+        })
       }
     }
     for (const s of (spacesR.data ?? []) as { id: string; name: string | null; brand_name: string | null; slug: string; brand_logo_url: string | null }[]) {

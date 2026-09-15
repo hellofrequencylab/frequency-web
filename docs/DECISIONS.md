@@ -41476,6 +41476,309 @@ names that run as `capturing`. LIVE-332's CLOSED paragraph says both are outstan
 now a `cmd` probe that reads the two mechanisms). LIVE-326 and LIVE-330 (done, unchanged; their
 probes read the PR half of the turnstile and still pass).
 
+## ADR-1347: the nine duplicate consoles, counted: one was a duplicate, seven were scopes (2026-09-15)
+
+**Status.** Accepted. Closes `LIVE-239`, the third and last of the duplicate-operator-door rows,
+after `LIVE-237` ([ADR-1333](DECISIONS.md)) and `LIVE-238` ([ADR-1336](DECISIONS.md)). Applies
+their method and keeps their ordering: re-measure the premise door by door BEFORE deleting
+anything, retire a loser with an exact permanent redirect, and move what only the loser carried
+into the survivor rather than dropping it.
+
+**Context.** The row named "nine duplicate operator consoles" from the 2026-09-08 route survey:
+four Circle consoles, three Event consoles, four CRMs at four scopes, three funnel builders, two
+contact rosters, plus `manage/settings` vs `settings/basics` and `manage/modules` vs `manage/mode`.
+Re-measured on disk on 2026-09-15, the premise had moved twice over. Five of the named doors were
+already gone (the two sibling rows retired them the day before), and of the doors that remained,
+**exactly one pair was two consoles doing one job at one scope.** The rest were not duplicates at
+all, and the row's own acceptance test is what says so: its evidence line asks for "one console per
+job per scope … each resolved or deliberately kept with a reason", not for a smaller number of
+routes.
+
+**The count, door by door.** Measured 2026-09-15 on `ed8c8a57a`.
+
+| Pair the row named | Measured | Ruling |
+|---|---|---|
+| Circle consoles (4) | 4 live, 1 already gone | **Kept, three scopes + a builder.** `circles/[slug]/manage` is ONE circle's hub; `spaces/[slug]/manage/circles` is the roster of the Circles a Space runs, with the Journey each is moving through (ADR-842); `admin/circles` is the platform staff table (`resonance_public`, `featured_at`, hub assignment, the circle-text default); `circles/[slug]/edit` is the Stage 4 Starter Circle builder seven creation flows commit into, kept deliberately by ADR-1333. `circles/[slug]/settings` was the duplicate and ADR-1333 retired it. |
+| Event consoles (3) | 3 live, 2 already gone | **Kept, three scopes.** `events/[slug]/manage` is ONE event's hub; `spaces/[slug]/settings/calendar` is the Space's calendar console (month grid, drafts, co-host approvals) over MANY events; `admin/events` is platform staff (posted-event claim links, host handover, poster quality, series display, listing horizon). ADR-1333 retired the two that WERE duplicates of the hub, `events/[slug]/{edit,settings}`. |
+| CRMs at four scopes (4) | 4 live | **Kept, and two are not CRMs.** `spaces/[slug]/crm` is the paid per-Space pipeline (deals, stages, entitlement-gated); `admin/crm` is the platform member master-detail. The hub and nexus routes are `LeaderCrmViewer` message rosters titled "Message Members" (ADR-827) with no pipeline, so the row's premise that they duplicate the Space CRM is wrong on the code; they leave with the noun under `LIVE-242`, as the row already said. |
+| Funnel builders (3) | **4** live | **Kept, three different objects and one deliberate second view.** `admin/growth/funnels` builds the funnel OBJECT (`lib/funnels/store`, entry → wedge → capture → convert); `admin/marketing/funnels` is titled "Campaigns" and groups ENTRY POINTS (`lib/entry-points/campaigns`, flyers and QR scans); `pages/sequences` is the sign-up INDUCTION library (`sequence_overrides`, ADR-1090). The fourth the row missed, `admin/marketing/messaging/funnels/[id]`, is a second VIEW of the first object and says so in its own header. Nothing here can be retired without deleting a distinct object's only console. **This is a NAMING collision, not a duplicate door** (three surfaces read "Funnels" to an operator), and it is recorded as a finding rather than renamed here: `docs/NAMING.md` rules names, and a rename is that canon's change, not this row's. |
+| Contact rosters (2) | 2 live | **RESOLVED.** The one true duplicate. See below. |
+| `manage/settings` vs `settings/basics` | both gone | **Already resolved** by `LIVE-238` / ADR-1336. |
+| `manage/modules` vs `manage/mode` | 2 live | **Kept, two jobs, split on purpose.** `/manage/modules` is the Module Manager (feature on/off, menu order, hidden, per-module min role); `/manage/mode` is the Mode + Focus preset (pipeline, lexicon, nav emphasis, label overrides). `mode/page.tsx` carries the line that settles it: "menu visibility lives in the Module Manager since ADR-552 Phase 4". |
+
+**Decision: retire `/admin/marketing/contacts`, the second contacts roster.** Both rosters read the
+SAME cohort through the SAME reader (`searchContacts`; the survivor's `loadContactsRoster` calls it),
+at the same scope, for the same operator. The survivor is `/admin/crm/contacts` on the evidence: it
+is the registered catalog destination (`crm-contacts` in `STUDIO_LEAVES`), it is the classifier-backed
+roster (ADR-625) with facets, sorting and the R5 upgrade segment, and the retired page had had NO
+menu leaf since 2026-07, when the catalog comment declared the Resonance CRM its replacement and left
+the page reachable "on deep links only". Two months of that is how one cohort came to have two
+rosters. Retired with an exact 308 to the survivor, plus a second exact 308 for `:id`.
+
+**What moved, because the survivor did not have it.** Three things, and nothing else:
+
+1. **Per-row consent**, as `ConsentEditor` in the roster island (optimistic like its
+   `RelationshipEditor` sibling, rolling back on a write that matched no row). This is the part that
+   was a real capability gap, not a cosmetic one: `status` COLLAPSES consent, so an unsubscribed
+   non-member reads as a plain `lead` and, before this change, no control on the surviving roster
+   could find or clear an opt-out.
+2. **Bulk consent** (the staff power action, ADR-379), as a selection plus a bulk bar. Scoped to the
+   rows the CURRENT QUERY SHOWS, not to every loaded row: the retired table had no filters, this
+   roster has seven facets, and "select all" quietly writing 500 rows behind a facet would be the
+   power action's worst possible reading.
+3. **The scan-intro switch** (`scan_invite_email_enabled`), read through the existing fail-safe
+   `scanInviteEnabled()` rather than a second hand-rolled `platform_flags` query.
+
+The `[id]` route MOVED rather than being redirected away: `:id` is a CONTACT id and its destination
+needs a PROFILE id, so a `next.config` rule cannot do the resolution, and the CRM graph's `PartyLink`
+deep link needs something to land on. It is the same 24-line forwarder (ADR-459), at
+`app/(main)/admin/crm/contacts/[id]/page.tsx`.
+
+**Where the writes live, and why not beside the route.** The consent write is `setContactsConsent`
+in `lib/crm/contact-consent.ts`, the module whose own header calls itself "the one place that answers
+may we contact this person" (ADR-372), scoped by construction to one `.in('id', ids)`. The flag write
+stays in `lib/platform-flags.ts`. So the new `app/(main)/admin/crm/contacts/actions.ts` is a thin
+`requireStaffCap('marketing')` adapter that opens no service-role client, and the admin-client
+ratchet (ADR-923) **shrank by two** instead of trading one page's entries for another's.
+
+**No menu change.** `check:menu`'s contract is that what is IN a menu is a catalog row, and the
+surviving door already had one. `STUDIO_LEAVES` gained and lost nothing; only the stale comment above
+`crm-marketing` was corrected, because it claimed the retired page "stays reachable".
+
+**Proof.** `actions.test.ts` pins the moved actions network-free: the capability gate runs before every
+write, a denied gate writes and revalidates nothing, the selection reaches `setContactsConsent`
+unchanged, a write that touched no row reports 0 and revalidates NOTHING (so the optimistic chip rolls
+back rather than painting a false success), and the flag flip carries the acting staffer's id.
+`contacts-roster.test.ts` pins the read with the case that motivated it: two rows that are
+indistinguishable to the status facet and separated by the consent facet, the consent facet pruned to
+the states present and dropped when absent, and the Source facet derived from the data (so the
+`beta_waitlist` segment the retired table hand-listed is a filter with no per-value code).
+`redirect-shadow.test.ts` lists both retired sources under "the retired stubs really are gone, not
+merely redirected past", which fails if a route file ever answers there again.
+
+**Consequences.** One contacts roster, and the only one that could ever see an opt-out now can. Six
+of the nine pairs are recorded as deliberately kept with the reason on the row, which is what the
+row asked for and is cheaper to re-read than to re-measure. `docs/CORE-MODEL.md` §5 row 6.3's "Today"
+cell is corrected in the same pass: it named four funnel builders as three and four CRM scopes as
+duplicates, and the code wins. Two findings are left for other rows, not done here: the three-way
+"Funnels" naming collision (a `NAMING.md` change), and `spaces/[slug]/settings/calendar` living under
+`/settings` while every other Space console door moved to the Manage hub (ADR-1336's shape, a
+follow-up for whoever finishes that migration). No schema change; no data change.
+
+## ADR-1348: a series that ends by COUNT is skipped by a pure predicate, not marked by a column (2026-09-15)
+
+**Status:** Accepted (2026-09-15). Closes `LIVE-271`. Code: `lib/event-recurrence.ts`
+(`anchorIsExhausted`, the guard inside `generateOccurrencesForAnchor`), tests in
+`lib/event-recurrence-exhausted.test.ts`. **No migration, no column, no backfill.**
+
+**Context.** The daily occurrence cron picks the series worth rolling forward with
+
+```
+.or(`recurrence_until.is.null,recurrence_until.gt.${now}`)
+```
+
+which reads the two ends the enum model had, indefinite or ended on a date, and cannot see the third
+one the rule model added ([ADR-1299](DECISIONS.md)): `COUNT=6`. A COUNT-bounded series carries a NULL
+`recurrence_until` **by construction** — RFC 5545 §3.3.10 forbids both, `resolveSubmittedRepeat`
+writes a null end beside a COUNT rule, and `rruleForRepeat` refuses to emit both — so the filter
+reads an exhausted six-week course as INDEFINITE and hands it to the per-anchor path every day, for
+the life of the row.
+
+**Nothing was ever wrong on the page, and that framing is load-bearing.** The expander stops at the
+count, so the upsert payload is empty and no date is minted. This is a COST decision, not a
+correctness one, and the cost was re-measured rather than quoted:
+
+| what | measured 2026-09-15 |
+| --- | --- |
+| recurring anchors on the platform | **1** (`breathe-connect-expand`, legacy weekly enum, 13 children) |
+| anchors carrying a COUNT rule | **0** |
+| COUNT rules with a NULL end | **0** |
+| exhausted COUNT series | **0** |
+| daily reads per exhausted anchor | **4**, not the 2 the row stated |
+
+The four is the one measurement that moved the row. [ADR-1304](DECISIONS.md) put
+`retireStaleOccurrences` ahead of generation in the same loop, and it takes its own anchor read plus
+its own children read before it early-returns. So the row's stated "one anchor read plus one child
+query" had doubled since it was filed, and half of it is not this decision's to remove.
+
+**Decision — a pure predicate consulted before the read, `anchorIsExhausted(anchor, now)`.** It asks
+the engine for the next occurrence at or after `now` (`nextRepeatOccurrence`, which already bounds
+itself) and answers true only when there is none. It covers both ends, so a caller does not have to
+know which one a series uses. `generateOccurrencesForAnchor` consults it directly after the dormancy
+guard and **before** the child-occurrence query, because that query is what the day costs and nothing
+below it could ever mint a date.
+
+**FALSE is the fail-safe answer and every uncertain case takes it.** A rule this code cannot read is
+a malformed RRULE, not an ended series; the same is true of an unparseable `starts_at` or end. Saying
+"exhausted" on any of those would stop a LIVE series materialising, which is a correctness failure
+bought with a saved read. This is the same reading `retireStaleOccurrences` already stands down on.
+
+**Retirement is deliberately NOT skipped for an exhausted anchor**, and this is the trap inside the
+cheap fix. A series whose COUNT was REDUCED (six dates to three) is exhausted **and** still carrying
+the dates the old count minted. Retiring those is precisely what ADR-1304 exists for, so skipping the
+whole per-anchor block would have traded a saved read for a healing path.
+
+**Decision — the rejected fix, which is the valuable half.** Two were on the table.
+
+- 🔴 **The obvious one, refused outright:** stamp the computed last occurrence into
+  `recurrence_until` when a COUNT series is saved. It would make the existing filter work and would
+  break the `.ics` export, because that column is what `rruleForRepeat` appends as `UNTIL=`, and a
+  rule carrying both UNTIL and COUNT is invalid per RFC 5545, which a strict client may reject whole.
+  It would also put a wall-clock-as-UTC-parts value in a column [ADR-807](DECISIONS.md) defines as a
+  zone-resolved instant.
+- ⚠️ **The honest one, rejected on measurement:** a stored `recurrence_exhausted_at` read by the
+  anchor filter. It is the only fix that shrinks the query HEAD rather than the per-row cost, and its
+  headline argument is that it doubles as the resume cursor `LIVE-190` says the loop is missing.
+  **It does not.** LIVE-190 asks for a watermark the driving query can ORDER BY staleness, "a
+  generated-at or prompted-at stamp", written on every visit; an exhaustion marker is written only
+  for the spent minority and orders nothing. The two look alike and answer different questions.
+  Against it: a migration, RLS and grants, regenerated types, a backfill, and a denormalised fact
+  that every rule-editing path (the create action, the edit action, the admin action, the settings
+  rail) has to invalidate — where a STALE marker stops a LIVE series materialising. Zero affected
+  rows does not buy that surface. **The probe accepts it anyway**: if COUNT series arrive in numbers,
+  the column can land later without reopening the row, and a harness arm proves the probe would pass
+  on it.
+
+**Decision — the probe measures the read, not the name.** The row's own probe tested for one of three
+identifiers in the module, which an identifier in dead code satisfies. The replacement extracts
+`generateOccurrencesForAnchor`'s body, finds the child-occurrence read, and fails unless the
+exhaustion check sits ahead of it, returns on the spot, and is backed by a predicate that actually
+expands a rule — or unless the anchor filter reads a stored end-marker that a migration creates.
+Every file is read through a helper that fails with the missing path, so an absent file is a verdict
+and not an `ENOENT` crash. It exits 1 on `origin/main` and 0 on this tree, and a 9-arm mutation
+harness fires on each arm (guard deleted, guard moved after the read, guard that does not return,
+predicate reduced to a constant, predicate un-exported, read-counting test deleted, test that no
+longer calls the function, source file missing, child read re-spelled), beside an unmutated control
+and the acceptance arm above.
+
+**Decision — the test counts queries.** `lib/event-recurrence-exhausted.test.ts` mocks the admin
+client with a recording fake: an exhausted COUNT anchor must produce ONE anchor read, ZERO child
+reads and ZERO writes. Two positive controls in the same block (the same anchor with its COUNT
+removed, and a COUNT that has not run out) must still read their children, so a test that passed
+because nothing queries anything cannot read as coverage.
+
+**Consequences.** An exhausted COUNT series costs two fewer reads a day, forever, with no schema
+surface and nothing to invalidate. The query head is unchanged: such an anchor is still SELECTed and
+still consumes one of the `limit` slots, which is honest and currently free, since `limit` defaults to
+2000 against an anchor population of one and the clock is the bound that matters (LIVE-190). Two
+adjacent defects were found while measuring and are recorded rather than folded in, because neither is
+COUNT-specific: `retireStaleOccurrences` stands down on `expected.length === 0`, which a COUNT=1
+series reaches honestly, so that one shape reads as an unreadable rule and its stale future dates are
+never retired; and `computeOccurrenceDates` expands from the anchor with no `from` bound, so for ANY
+live series a hard-deleted PAST occurrence is re-minted on the next run. Each wants its own row.
+
+**Rows.** LIVE-271 (done, this ADR).
+
+## ADR-1349: there is one Channel table, and the hierarchy-v2 pair is dropped rather than described (2026-09-15)
+
+**Status:** Accepted · `supabase/migrations/20270345004500_drop_retired_channels.sql` (the drop),
+`components/widgets/community/manage.tsx` + `components/widgets/community/structure.tsx` (the two
+count tiles), `lib/feed/post-origin.ts` + `lib/feed/post-origin.test.ts` (the origin chip),
+`scripts/table-grants.txt` (the grant verdicts), `lib/database.types.ts` (the generated contract),
+`lib/moderation/suspension-coverage.ts` + `lib/moderation/suspension-coverage.test.ts` (the
+suspension ledger and its SQL comparison),
+`supabase/tests/suspension_reaches_every_member_write.test.sql` (the live-catalog bag),
+`docs/GLOSSARY.md`, `docs/DATABASE.md`, `docs/CONTENT-ARCHITECTURE.md`, `docs/IA-STRATEGY.md`,
+`docs/ROLES.md`. Closes `LIVE-334`. Completes what ADR-1244 and L9-01 left standing.
+
+**Context.** `20240102000000_hierarchy_v2.sql` created `channels` (hub/nexus/outpost-scoped "focus
+groups") and `channel_memberships`. `20240201000000_hierarchy_v3_topical_channels.sql` replaced the
+concept a month later with `topical_channels` + `topical_channel_memberships`, and every Channel
+surface a member or an operator can reach reads those. The v2 pair was never migrated and never
+deleted, so for two years the repo carried two tables called "channels" and a paragraph in
+`GLOSSARY.md` whose job was to stop a reader confusing them. L9-01 (2026-09-05) cut the last
+WRITER: the operator "New Channel" flow called a legacy `createChannel` that inserted into the v2
+tables and redirected to `/channels/<uuid>`, which the Channel page turned into a 404.
+
+What was left was measured against production on 2026-09-15 before any of this was written, and the
+measurement is why the change is a drop and not a deprecation note. `channels` 0 rows,
+`channel_memberships` 0 rows, `topical_channels` 9 rows (9 active), one inbound FK
+(`channel_memberships.channel_id`), no view, matview or function depending on either table. Three
+things the row that filed this did not know:
+
+- **The origin chip was not dead code, it was wrong code.** `lib/feed/post-origin.ts` looked up a
+  post's Channel scope in the retired table. `/channels/[id]` renders a feed on
+  `posts.scope_id = <topical channel id>` and the Channel manage hub counts the same rows, so a
+  Channel forum post resolved to `undefined` and rendered no origin at all. The read was filed as
+  "a lookup for a post origin no post carries"; it is a lookup for a post origin pointed at the
+  wrong table.
+- **Both count tiles said 0 about a thing there are nine of.** The Community "Manage" tile read the
+  retired table and linked to `/admin/channels`, which lists every live one.
+- **`channels` carried a suspension trigger.** `trg_channels_block_suspended` was live in
+  `pg_trigger`, `lib/moderation/suspension-coverage.ts` listed the table, and
+  `supabase/tests/suspension_reaches_every_member_write.test.sql` pinned the LIVE trigger catalog
+  to a hand-written bag that named it. A drop with none of that touched is a red `db-tests` run on
+  the next deploy, which is the shape of failure `AGENTS.md` names: the gate that notices measures
+  something the change did not think about.
+
+**Decision.**
+
+1. **Drop the tables, and the two enums that existed only to type their columns.**
+   `20270345004500_drop_retired_channels.sql` drops `channel_memberships` first (it owns the only FK
+   into `channels`, so no `cascade` is needed and nothing else can be reached by one), then
+   `channels`, then `channel_content_type` and `channel_scope_type` — measured as used by
+   `channels.scope` / `channels.type` and by nothing else in the schema or the tree. The policies go
+   with the tables, including `"channel_memberships: crew+ join own"` as re-emitted by
+   `20260612060000_retire_crew_role_value.sql`, and so does the suspension trigger. Every statement
+   is `if exists`, and a closing `do` block raises unless both tables are gone AND both `topical_`
+   tables survived, so a half-applied or misread run fails loudly instead of green.
+
+2. **A count tile counts the table its link opens.** `manage.tsx` counts `topical_channels`
+   unfiltered, because its tile opens `/admin/channels`, which lists shown and hidden rows.
+   `structure.tsx` counts `is_active` rows, matching the sibling Circles read in the same batch
+   ("what the community can browse") and the count the `/channels` hero already prints. Removing
+   both tiles was the other legitimate answer and was rejected: the operator dashboard's job is to
+   say how many Channels exist, and there is a true answer.
+
+3. **The origin chip reads `topical_channels`, by slug.** `/channels/[id]` resolves a uuid or a
+   slug, and the slug is what every other link into a Channel uses; the uuid stays as the fallback
+   for a row without one. Pinned by two tests beside the fixtures: a source-shape guard that the
+   module reads the live table and neither retired one, and the slug-less fallback.
+
+4. **The repo-side bookkeeping moves in the same change, because four separate gates count these
+   tables.** `scripts/table-grants.txt` loses both verdicts (`check:grants` enforces a bijection
+   between the ledger and the tables it parses out of the migrations, so a verdict for a dropped
+   table fails). `lib/database.types.ts` loses both table blocks and both enums — hand-trimmed, and
+   the file's table set was first verified identical to production's 280, so it now equals what a
+   regenerate produces once the drop lands rather than guessing at one. The suspension ledger loses
+   its `channels` row; `topical_channels` does not take its place, because it has no actor column
+   and is janitor-managed platform curation rather than a member write. The pgTAP bag drops
+   `('channels')`.
+
+5. **The suspension test's SQL comparison becomes cumulative instead of the migration being
+   rewritten.** `lib/moderation/suspension-coverage.test.ts` asserts that the tables
+   `20270344000000` attaches the trigger to ARE the ledger's covered set, both ways. A dropped table
+   breaks that in a way with only two fixes: edit the applied migration so it no longer describes
+   what ran, or teach the comparison that a later migration can retire a table. The second, for the
+   same reason `scripts/check-rls.mjs` replays statements in order rather than subtracting sets over
+   the whole history: a migration file is a record, not a description of the schema today. The
+   subtraction reads `drop table` out of every migration sorting after the suspension one, with
+   comments stripped so a DOWN script in a block comment cannot retire a live table, and it carries
+   a non-vacuity arm — a parser that matches nothing would make the stray check pass on an
+   unfiltered list.
+
+6. **`GLOSSARY.md` states one Channel and stops warning about two.** The blockquote that existed to
+   keep the two apart is replaced by a definition of the one, and the doc no longer enumerates the
+   topics: it listed seven, there are nine, and a restated count in prose is the thing `AGENTS.md`
+   says has already been wrong twice. `DATABASE.md`, `CONTENT-ARCHITECTURE.md`, `IA-STRATEGY.md` §6
+   and the `ROLES.md` overlays row lose their references in the same pass, so no live doc names a
+   table that does not exist.
+
+**Consequences.** Nothing a member or an operator can see changes except two numbers that were
+wrong and one chip that never rendered. The schema loses two tables, two enums, seven policies,
+nine indexes and one trigger, and with them the `anon` / `authenticated` grants that
+`ALTER DEFAULT PRIVILEGES` had put on both tables since creation (ADR-959). The migration is NOT
+applied by the change that adds it: the coordinator applies it through the ledger immediately before
+merge, because `check:migrations` compares repo files to `supabase_migrations.schema_migrations` and
+an early apply reddens every sibling PR. `db-tests` must be run after the apply, not before — it
+reads the live catalog, and that is the one gate here whose verdict changes at apply time rather
+than at merge time. The row's probe measures five consequences (no non-test file reads either table,
+a migration carries both drops outside a comment, no grant verdict survives, the generated contract
+declares neither table, the suspension ledger does not cover `channels`), fires on `origin/main`
+naming the three reads, and fired on all 18 arms of its mutation harness.
+
+**Rows.** LIVE-334 (done, this ADR).
+
 ## ADR-1351: ACCEPTED — a capture refuses a degraded deployment, and the ignorable 5xx is a closed list of beacons (2026-09-15)
 
 **Context.** ADR-1328 established that the "Supabase windows" of 2026-09-14 were this repo's own
