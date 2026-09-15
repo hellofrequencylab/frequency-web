@@ -5,7 +5,7 @@ import { catalogConfigByKey, loadCatalogConfig } from '@/lib/pricing/catalog-con
 import { isBetaPricingActive } from '@/lib/pricing/beta'
 import { loadFeatureGateOverrides } from '@/lib/pricing/gates'
 import { allOfferings, type Offering, type PricingGridInput } from '@/lib/pricing/pricing-grid'
-import { offeringLadderLabel, paidWallsPhrase } from '@/lib/pricing/pricing-page'
+import { offeringLadderLabel, paidWallsPhrase, PLAN_STORY } from '@/lib/pricing/pricing-page'
 
 // /llms-full.txt — the comprehensive, self-maintaining companion to the curated /llms.txt route
 // (AIO, docs/CONTENT-VOICE §8). Where llms.txt is a hand-written brand summary, this dumps the
@@ -71,7 +71,10 @@ export async function GET() {
     '',
     '### The honest-money model',
     '',
-    'People join free. Businesses host free. You pay when you start charging. Selling is free on every tier: a free Member and a free Space can sell tickets and take payments and donations from day one, and a paid plan buys a lower rate, not permission. You keep 100% of your own bookings, always, and tips carry no fee on any rung. We earn only a small, shrinking take-rate on the business the network sends you, never on what you bring in yourself. That network-only rate drops as your plan rises:',
+    // LIVE-253: "a paid plan buys a lower rate, not permission" got the second half right and the
+    // first half backwards, and the paragraph then closed on "that rate drops as your plan rises",
+    // so the corpus argued the fee ladder twice. Both halves are PLAN_STORY now.
+    `People join free. Businesses host free. You pay when you start charging. Selling is free on every tier: a free Member and a free Space can sell tickets and take payments and donations from day one. ${PLAN_STORY.paid} ${PLAN_STORY.rate} You keep 100% of your own bookings, always, and tips carry no fee on any rung. We earn only a small take-rate on the business the network sends you, never on what you bring in yourself. Where each rung settles:`,
     ...takeRateLines(offerings),
     '',
     // The walls and the plan each opens at are READ off the gate map (paidWallsPhrase), the same

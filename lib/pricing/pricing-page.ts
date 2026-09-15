@@ -99,11 +99,31 @@ export function priceStrings(): PriceStrings {
 }
 
 /** The one narrative spine every pricing/marketing surface can reuse verbatim (owner plan story,
- *  2026-07): what is free, what a paid plan buys, stated so a skeptic believes it. No em dashes. */
+ *  2026-07): what is free, WHY a plan, and how the rate works, stated so a skeptic believes it. No em
+ *  dashes.
+ *
+ *  🔴 THE REASON TO TAKE A PLAN LIVES HERE NOW (LIVE-253, ADR-NNNN), because it is an argument and
+ *  arguments drift exactly the way figures did. Eighteen public strings each typed their own version of
+ *  it and fourteen of them said the opposite of the model: that a plan buys a lower rate and higher
+ *  caps, which reads a free Space as the small version of a paid one. docs/CORE-MODEL.md is explicit
+ *  that it is not (§1 "Businesses host free", §2 "gate at the point where it starts making them
+ *  money", which is ADR-914's "never gate the transaction, gate the repeat"). The rate and the meters
+ *  are still stated, because both are true; what changed is that neither is the reason any more. */
 export const PLAN_STORY = {
   /** The whole spine in one breath. */
   spine:
     'Frequency is where your local community happens. People join free. Businesses host free. You pay when you start charging, and never for access to people.',
+  /** WHY a plan, in the model's own terms: the moment, not the meter. The free rung is the whole
+   *  product, the transaction is never walled, and a plan is what the REPEAT runs on. Every surface
+   *  interpolates this instead of arguing it again; the capabilities it names are read off the gate map
+   *  (paidWalls), so the sentence and the product cannot disagree. */
+  paid:
+    'A plan is what you take when money starts moving. Never the transaction: a free Space sells tickets and takes donations from day one, and a free Space is the whole thing, not a trial of it. What a plan carries is the repeat, the part where you make a standing promise to the same person and have to keep it.',
+  /** The rate, stated as the consequence it is. It used to be the sales argument on every surface,
+   *  which made the ladder read as a fee ladder you climb to pay less, rather than as one price you
+   *  take once you are charging. */
+  rate:
+    'The rate is what a plan settles at, not what a plan is for. It applies only to a sale the network introduced, and it is lower on a paid plan.',
   /** The meter framing: paid is how much, never whether. */
   meters:
     'Everything is included on every plan. The free allowances are real, and a full meter never hides, deletes, or locks what is already there.',

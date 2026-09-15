@@ -84,7 +84,11 @@ export const COMPARISONS: Comparison[] = [
     forReader:
       'You have the followers and the links. You are missing the part where it turns into people you actually know.',
     moneyBeat:
-      'People join free, businesses host free, and you pay when you start charging. Selling from your Spotlight page is open on a free account, from day one. Frequency takes 0% on your own bookings, always, and 0% on anyone already yours: a follower, a contact, or someone who bought from you before. A paid plan does not switch selling on, it lowers what we take on the people the network introduces you to. One honest price, and never a cut of the business you bring yourself.',
+      // LIVE-253: this clause read "A paid plan does not switch selling on, it lowers what we take
+      // on the people the network introduces you to", which answers the right question and then
+      // gives the wrong reason. A plan is what the REPEAT runs on (docs/CORE-MODEL.md §2, ADR-914's
+      // "never gate the transaction, gate the repeat"); where the rate settles follows from it.
+      'People join free, businesses host free, and you pay when you start charging. Selling from your Spotlight page is open on a free account, from day one. Frequency takes 0% on your own bookings, always, and 0% on anyone already yours: a follower, a contact, or someone who bought from you before. A paid plan does not switch selling on. It is what you take once you are charging the same person again, month after month, and it settles at a lower rate on the people the network introduces you to. One honest price, and never a cut of the business you bring yourself.',
   },
   {
     slug: 'calendly',
@@ -124,7 +128,7 @@ export const COMPARISONS: Comparison[] = [
     forReader:
       'You have been to plenty of events. You want the few that turn into people you keep seeing, not another ticket stub.',
     moneyBeat:
-      'Eventbrite charges a fee on every ticket you sell, to everyone, every time. On Frequency people join free, businesses host free, and you pay when you start charging. We take 0% on anyone already yours: a follower, a contact, or someone who bought from you before. You can sell on a free account from day one, and a paid plan lowers what we take on the people the network introduces you to. One honest price, and only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
+      'Eventbrite charges a fee on every ticket you sell, to everyone, every time. On Frequency people join free, businesses host free, and you pay when you start charging. We take 0% on anyone already yours: a follower, a contact, or someone who bought from you before. You can sell on a free account from day one, and a plan is what you take once you are charging the same person again rather than selling a one-off ticket. One honest price, and only a small slice of the business the network brings you, never a cut of the business you bring yourself.',
   },
   {
     slug: 'mighty-networks',
@@ -218,7 +222,7 @@ export function comparisonCopy(c: Comparison): ComparisonCopy {
       : []),
     {
       q: `Is Frequency free?`,
-      a: `Yes. Frequency is free to join, and it stays free. You can browse Circles and events near you, join one, host your own gathering, and take RSVPs without paying anything. Selling tickets and taking payments is free on every tier; what a paid tier buys is a lower rate on the sales the network introduces. Frequency takes 0% on your own bookings, always.`,
+      a: `Yes. Frequency is free to join, and it stays free. You can browse Circles and events near you, join one, host your own gathering, and take RSVPs without paying anything. Selling tickets and taking payments is free on every tier; a paid tier is what you take once you are charging the same person again, month after month. Frequency takes 0% on your own bookings, always.`,
     },
     {
       q: `Who is Frequency for?`,

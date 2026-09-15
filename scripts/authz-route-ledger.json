@@ -156,15 +156,15 @@
     },
     "app/llms-full.txt/route.ts": {
       "verdict": "public",
-      "reason": "AIO corpus for answer engines (docs/CONTENT-VOICE §8). Published help articles plus the pricing ladder read from lib/pricing/pricing-grid.ts — the same model /pricing renders. Everything it emits is already on a public page. 2026-09-14 re-read (LIVE-232): now also reads the operator feature-gate overrides (a service-role read of pricing_feature_gates, the same read /pricing makes) so the paid-plan walls sentence derives from the gate map; still no caller identity, still public copy.",
-      "checked": "2026-09-14",
-      "digest": "cb156b5960d51922"
+      "reason": "AIO corpus for answer engines (docs/CONTENT-VOICE §8). Published help articles plus the pricing ladder read from lib/pricing/pricing-grid.ts — the same model /pricing renders. Everything it emits is already on a public page. 2026-09-14 re-read (LIVE-232): now also reads the operator feature-gate overrides (a service-role read of pricing_feature_gates, the same read /pricing makes) so the paid-plan walls sentence derives from the gate map; still no caller identity, still public copy. 2026-09-15 re-read (LIVE-253): copy only. The positioning blurb now interpolates PLAN_STORY.paid and PLAN_STORY.rate from lib/pricing/pricing-page.ts instead of typing the retired caps-and-rates argument. No new read, no caller identity, same public output.",
+      "checked": "2026-09-15",
+      "digest": "daa0a050a022d12c"
     },
     "app/llms.txt/route.ts": {
       "verdict": "public",
-      "reason": "Curated AIO brand summary (ADR-916). Reads through the admin client for live public counts and the operator's pricing config, all of which /pricing and the public pages already show. No caller identity anywhere. 2026-08-25 re-read: added a Live-directories section and derived the COMPARE list from the COMPARISONS registry — still static public copy plus the same public reads. 2026-09-14 re-read (LIVE-232): now also reads the operator feature-gate overrides (the same service-role read /pricing makes) so the paid-plan walls sentence derives from the gate map; no caller identity, same public output.",
-      "checked": "2026-09-14",
-      "digest": "985d06a98b54afa4"
+      "reason": "Curated AIO brand summary (ADR-916). Reads through the admin client for live public counts and the operator's pricing config, all of which /pricing and the public pages already show. No caller identity anywhere. 2026-08-25 re-read: added a Live-directories section and derived the COMPARE list from the COMPARISONS registry — still static public copy plus the same public reads. 2026-09-14 re-read (LIVE-232): now also reads the operator feature-gate overrides (the same service-role read /pricing makes) so the paid-plan walls sentence derives from the gate map; no caller identity, same public output. 2026-09-15 re-read (LIVE-253): copy only. The positioning blurb now interpolates PLAN_STORY.paid and PLAN_STORY.rate from lib/pricing/pricing-page.ts instead of typing the retired caps-and-rates argument. No new read, no caller identity, same public output.",
+      "checked": "2026-09-15",
+      "digest": "4eca5caafea0e5d3"
     },
     "app/podcasts/[spaceSlug]/[showSlug]/rss.xml/route.ts": {
       "verdict": "model-gated",

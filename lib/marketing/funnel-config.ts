@@ -52,9 +52,11 @@ function breakEvenCaption(keep: string): string {
   return `You keep 100% of ${keep}, on every plan including the free one. Frequency earns only when the network introduces someone new, and once they are yours it is 0% for good.`
 }
 
-/** The shared pricing-beat intro. It leads with the rate promise, not the plan: nothing is behind a
- *  wall, so what a paid rung buys is a smaller number and the tools that make it smaller still. The
- *  per-niche clause names the moment a door's reader would actually step up. */
+/** The shared pricing-beat intro. It leads with the promise, not the plan: the transaction is never
+ *  behind a wall, so a paid rung is what a Space takes once it is charging the same person again
+ *  (docs/CORE-MODEL.md §2, ADR-NNNN), and where the rate settles follows from that rather than being
+ *  the offer. The doc line here said the opposite until LIVE-253. The per-niche clause names the
+ *  moment a door's reader would actually step up. */
 function pricingIntro(stepUp: string): string {
   return `People join free, businesses host free, and you pay when you start charging. Selling is never behind a plan: a free Space takes payments from day one, and your own people are always free. ${stepUp} No add-on menu, no surprise fees.`
 }
@@ -62,7 +64,7 @@ function pricingIntro(stepUp: string): string {
 /** The shared what-does-it-cost FAQ answer, with the per-niche "you keep 100% of ..." clause and an
  *  optional extra sentence (the community-builders Collective line). One template, five doors. */
 function costAnswer(keep: string, extra = ''): string {
-  return `Nothing to be here, and nothing to start selling. A free Space takes payments from day one at ${RATE.free} on the sales the network introduces, and 0% on the people already yours. You pay when you start charging: Business is ${P.businessList} a month, or two months free if you pay for the year, and it takes that rate to ${RATE.business} and turns on memberships and campaigns. You keep 100% of ${keep} either way.${extra} You always see the full number, nothing hidden.`
+  return `Nothing to be here, and nothing to start selling. A free Space takes payments from day one at ${RATE.free} on the sales the network introduces, and 0% on the people already yours. You pay when you start charging: Business is ${P.businessList} a month, or two months free if you pay for the year, and it is what memberships and campaigns run on, settling at ${RATE.business} on network introductions. You keep 100% of ${keep} either way.${extra} You always see the full number, nothing hidden.`
 }
 
 // ── The small, consistent feature-icon set (drawn once, house tokens) ─────────────────────────────

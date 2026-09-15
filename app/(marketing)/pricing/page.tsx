@@ -185,7 +185,11 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
   return [
     {
       q: 'How does Frequency pricing work?',
-      a: `People join free. Businesses host free. You pay when you start charging. Nothing about being here costs anything: joining, Circles, events, a Space, a page, a roster. A plan is what you take once money is moving, and it buys a lower rate on the sales the network introduces plus the tools that build the list which takes that rate to zero. There are two ladders. Membership: ${member!.label} is free forever and already hosts events, takes RSVPs, sells tickets, and takes donations at ${networkRate(member!)}; ${crew!.label} is ${crew!.monthly} and takes that to ${networkRate(crew!)} with the caps off. Spaces: ${ladder} ${annualDiscountNote(input.values)}`,
+      // LIVE-253: this answer used to argue "a plan buys a lower rate plus the tools that build the
+      // list", and described Crew as the same rung "with the caps off". Both are the inverse of the
+      // model. The reason is PLAN_STORY.paid, read from the spine, and the capabilities it names are
+      // read off the gate map; the rate and the ladder follow as the facts they are.
+      a: `People join free. Businesses host free. You pay when you start charging. Nothing about being here costs anything: joining, Circles, events, a Space, a page, a roster. ${PLAN_STORY.paid}${walls.length > 0 ? ` On a Space, that is ${walls.map((w) => w.what).join(', ')}.` : ''} There are two ladders. Membership: ${member!.label} is free forever and already hosts events, takes RSVPs, sells tickets, and takes donations at ${networkRate(member!)}; ${crew!.label} is ${crew!.monthly}, and it is the personal rung for someone selling their own events without running a Space. Spaces: ${ladder} ${annualDiscountNote(input.values)}`,
     },
     {
       q: 'Can I run a Space for free?',
@@ -204,7 +208,7 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
     ...betaFaq,
     {
       q: 'Do you take a cut of my sales?',
-      a: `Not of your own. You keep 100% of the bookings and sales you bring in yourself, always, and tips are never touched. We earn a share only of a sale the network introduced, a referral or a discovery inside the collective, and that rate drops as your plan rises: ${rates}. Selling as a person rather than a Space needs no plan at all: ${member!.label} sells at ${networkRate(member!)} and ${crew!.label} at ${networkRate(crew!)}. Once a buyer is yours, meaning they follow you, they are one of your members, they are in your contacts, or they have bought before, we take nothing on them again: we charge once for the introduction, and after that they are your people, free.`,
+      a: `Not of your own. You keep 100% of the bookings and sales you bring in yourself, always, and tips are never touched. We earn a share only of a sale the network introduced, a referral or a discovery inside the collective. ${PLAN_STORY.rate} Where each rung settles: ${rates}. Selling as a person rather than a Space needs no plan at all: ${member!.label} sells at ${networkRate(member!)} and ${crew!.label} at ${networkRate(crew!)}. Once a buyer is yours, meaning they follow you, they are one of your members, they are in your contacts, or they have bought before, we take nothing on them again: we charge once for the introduction, and after that they are your people, free.`,
     },
     {
       q: 'How do team seats work?',
@@ -226,7 +230,10 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
     },
     {
       q: 'What happens if I downgrade?',
-      a: 'Nothing disappears. Your contacts, posts, events, and history stay visible and stay yours; you just go back to the free limits, so you cannot add past the caps until you upgrade again. You can export your contacts and your data before, during, or after, anytime.',
+      // LIVE-253: "you cannot add past the caps until you upgrade again" turned the downgrade answer
+      // into a second sales pitch for the caps. What a reader needs here is what happens to their
+      // stuff, which is nothing, plus the honest consequence: the parts that charge on a repeat stop.
+      a: 'Nothing disappears. Your contacts, posts, events, and history stay visible and stay yours, and you go back to the free allowances. What stops is the repeat: an open membership stops billing and no new tier can be sold. You can export your contacts and your data before, during, or after, anytime.',
     },
     {
       q: 'Can I leave and take my people with me?',
@@ -341,7 +348,7 @@ export default async function PricingPage() {
             <br className="hidden sm:block" /> <span className="text-primary">always free.</span>
           </>
         }
-        subtitle={`People join free. Businesses host free. You pay when you start charging, and never on your own people: not a follower, not a member, not a contact, not anyone who bought from you before. On a sale the network introduces we take a share, and every rung down the ladder makes it smaller. ${ladder}. The grid below is the proof.`}
+        subtitle={`People join free. Businesses host free. You pay when you start charging, and never on your own people: not a follower, not a member, not a contact, not anyone who bought from you before. ${PLAN_STORY.rate} ${ladder}. The grid below is the proof.`}
       >
         <Button href="/spaces">
           Start a Space <ArrowRight className="h-5 w-5" />
@@ -379,7 +386,7 @@ export default async function PricingPage() {
             align="center"
             eyebrow="The plans"
             title="Pick the plan that fits."
-            kicker="Two ladders. One for you as a member, one for the Space you run. Every rung on both sells, so the only thing that moves down the ladder is the rate. You can be on both, and you can start on the free rung of either."
+            kicker="Two ladders. One for you as a member, one for the Space you run. Every rung on both sells, and every rung on both is a real rung rather than a sample of the one above. You can be on both, and you can start on the free rung of either."
           />
           <PricingBillingToggle yearlyNote={annualDiscountNote(input.values)} />
           <div className="stagger grid items-center gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
@@ -391,39 +398,43 @@ export default async function PricingPage() {
 
         <Section tone="ink" width="wide" className="spot relative overflow-hidden">
           <div className="relative z-10">
-            {/* 🔴 THE PAID ARGUMENT IS MONEY, NOT LIMITS (LIVE-253). This kicker read "The paid
-                plans buy the rate down and lift the caps", which argues that free is the small
-                version of paid. It is not: a free Space is the whole thing, and a plan is what
-                you take when money starts moving through it. The FAQ below has argued it
+            {/* 🔴 THE PAID ARGUMENT IS MONEY, NOT LIMITS (LIVE-253, ADR-NNNN). This kicker read
+                "The paid plans buy the rate down and lift the caps", which argues that free is the
+                small version of paid. It is not: a free Space is the whole thing, and a plan is
+                what you take when money starts moving through it. The FAQ below has argued it
                 correctly since ADR-916 ("Selling memberships needs Business, because a membership
-                is a recurring promise to another person"); the band a reader meets FIRST now says
-                the same thing, instead of the opposite. */}
+                is a recurring promise to another person"); the band a reader meets FIRST says the
+                same thing.
+                The rate tail that used to close this kicker ("every rung down the ladder shrinks
+                what we take") is gone too: it put the fee ladder back in the first sentence a
+                reader of this band meets. The reason is PLAN_STORY.paid, the capabilities are read
+                off the gate map, and the rate has its own line in the paragraph below. */}
             <SectionHeading
               tone="ink"
               align="center"
               title="For your Space"
-              kicker={`A Space is free for anyone to start, and a free Space is a real Space. You pay when you start charging: ${walls.map((w) => w.what).join(' and ')} are what a plan turns on, and every rung down the ladder shrinks what we take on a sale the network introduced.`}
+              kicker={`A Space is free for anyone to start. ${PLAN_STORY.paid}${walls.length > 0 ? ` On a Space, that is ${walls.map((w) => w.what).join(', ')}.` : ''}`}
             />
             <div className="stagger grid items-center gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
               {paidSpaces.map((offering) => (
                 <PlanCard key={offering.id} offering={offering} tone="ink" />
               ))}
             </div>
-            {/* ⚠️ `PLAN_STORY.meters` still reads "Everything is included. Paid plans raise the
-                limits." (lib/pricing/pricing-page.ts:107), which is the limits argument this page
-                is being moved off. It is deliberately still INTERPOLATED rather than retyped here:
-                that module is the one spine every pricing surface reads, and a page that keeps its
-                own copy of a shared sentence is exactly the drift ADR-916 removed. The sentence
-                that leads the paragraph is the model; the meter line follows as the footnote it
-                actually is. When the spine is corrected upstream, this band moves with it. */}
+            {/* ✅ Every sentence in this paragraph is INTERPOLATED from the spine rather than
+                retyped, which is the same rule ADR-916 set for figures and ADR-NNNN extends to the
+                argument. `PLAN_STORY.meters` used to read "Paid plans raise the limits" and this
+                comment used to say so; the spine was corrected in #2513 and the note outlived it,
+                which is exactly why the sentences live in one module and not in fourteen.
+                The clause that closed the rate sentence ("and it drops as your plan rises") is now
+                PLAN_STORY.rate, which states the same fact and says plainly that it is not the
+                reason to take a plan. */}
             <p className="mx-auto mt-10 max-w-2xl text-center text-body leading-relaxed text-on-ink-muted">
               You pay when you start charging, never to be here.{' '}
               {annualDiscountNote(input.values)} Never a wall in front of the transaction.{' '}
-              {PLAN_STORY.meters} You keep 100% of your own bookings on every rung: the take-rate
-              applies only to a sale the network introduced, and it drops as your plan rises. Once
-              someone is yours, a follower, one of your members, a contact, or a past buyer, we take
-              nothing on them again. We charge once for the introduction. After that they are your
-              people, free.
+              {PLAN_STORY.meters} You keep 100% of your own bookings on every rung.{' '}
+              {PLAN_STORY.rate} Once someone is yours, a follower, one of your members, a contact,
+              or a past buyer, we take nothing on them again. We charge once for the introduction.
+              After that they are your people, free.
             </p>
           </div>
         </Section>
