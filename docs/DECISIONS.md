@@ -41113,3 +41113,56 @@ was proven both ways, exit 1 on `origin/main` naming five failures and exit 0 on
 **Owed.** The six `app-feed-*` visual baselines are stale by the height of the swapped module.
 `/feed` is an advisory-tier shell surface, so a shell recapture is owed rather than blocking, and
 no PNG was edited here.
+
+## ADR-1341: the mobile centre button is Create, and the Zap menu is its Post row (2026-09-15)
+
+**Status:** Accepted · `components/layout/create-button.tsx` (the button and the sheet),
+`components/layout/app-shell.tsx` (the mount), `components/feed/create-actions.ts` (the one list),
+`components/layout/create-button.test.tsx`, `docs/NAMING.md` (the Create button and the Zap menu).
+Amends ADR-230; closes `LIVE-247` (docs/CORE-MODEL.md §5, phase 7 row 5.2).
+
+**Context.** ADR-230 made the raised centre button of the mobile tab bar the Zap button: one tap
+fired `open-capture` and the Zap menu opened, a composer over the earning tiles. The model
+(`CORE-MODEL` §5) says the most prominent affordance on a phone should start a post, an event or a
+circle, and the row that carried that sentence measured the button still firing the event. Two
+things made the fix small. The desktop feed already had a create menu, `CreateMenu`, rendering the
+shared `CREATE_ITEMS` list, so the mobile side needed a surface for that list rather than a second
+list. And `canCreate` already granted `event.create` and `circle.create` to every signed-in member
+(the doors opened under LIVE-222 and LIVE-266), so the only thing standing between a member and
+those two creations was the list's own gating, which still said Crew and Host.
+
+**Decision.**
+1. **The centre button is Create.** A plus on the disc, label "Create", `aria-haspopup="dialog"`.
+   It opens a `Dialog align="bottom"` sheet named by its own heading. The button and the sheet live
+   in `components/layout/create-button.tsx`, not inline in the shell, so a test can press the real
+   button; the disc's geometry (slot 0a of the mobile stacking contract, `--tab-bar-lift`) moves
+   with it unchanged.
+2. **One list, two surfaces.** Below Post, the sheet renders `createItemsForRole(role)`, the same
+   list the desktop feed's `CreateMenu` renders. A creation is added in `create-actions.ts` and
+   both menus pick it up; neither menu declares a row of its own.
+3. **The Zap menu is the Post row.** The sheet's first row dispatches `open-capture` on the post
+   mode, so the composer, Vera's line, the Mindless door and the earning tiles are one tap further
+   in rather than gone. The shell itself no longer dispatches the event; the Post row is the only
+   member-facing dispatcher, and `CaptureLauncher` is still the only listener.
+4. **Event and Circle are open to every member in the list**, matching the capability. Room and
+   Dispatch stay host-only. What a free member may publish remains a metered quantity where the
+   thing goes live, never a menu decision.
+5. **Names.** NAMING.md now carries **the Create button** (the disc and its sheet) and **the Zap
+   menu** (the "Capture a moment" sheet behind Post) as two entries where it carried one. The three
+   help pages that told members to tap the Zap button say Create, then Post.
+
+**Proof.** `create-button.test.tsx` mounts the button in jsdom and asserts: closed until pressed;
+opens a dialog labelled by its "Create" heading; a plain member sees Post, `/events/new` and
+`/circles/new` and not the host creates; a host also sees `/nearby` and `/messages`; a null
+visitor-preview role reads as a member; Post dispatches `{ mode: 'post' }` and closes; picking a
+create closes. A source block pins that app-shell mounts `<CreateButton role={viewer.role} />`
+and contains no `open-capture` in code, while capture-launcher still listens. The row's probe
+measures the same five facts with comments stripped. `header-fit.test.ts` follows the centre
+button into its file for the seven-equal-sevenths rules. Arm C of `check:shell-weight` reads 0
+leaks: the new file imports the Dialog primitive, two lucide glyphs and the pure list.
+
+**Consequences.** The phone's strongest affordance creates something. The Zap menu costs one more
+tap, which is the trade the model asked for; if the owner wants the bolt back at the surface, it
+is a row in the sheet, not a second button. The desktop feed menu now shows New Event and New
+Circle to every member, which it should have since the doors opened. ADR-230's account of the
+button is history; its account of the menu still holds.
