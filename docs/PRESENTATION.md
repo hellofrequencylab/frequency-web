@@ -36,6 +36,11 @@ This applies to **every artifact an agent or routine creates** in this repo. Ski
 ## ADRs (`docs/DECISIONS.md`)
 - Keep the house format: **Status · Context · Decision · Consequences**, corroborated by
   the file/migration. Continue the `ADR-NNN` numbering.
+- ⚠️ **An unassigned number is refused in citation position** (`pnpm check:adr`, ADR-1354). A
+  placeholder written BARE — an ADR heading, `(ADR-…)`, `see ADR-…` — fails the guard, which names
+  the file, the line and the remedy. To DISCUSS the convention instead of citing a number, put the
+  token in `backticks` or a fenced block; that is the whole line the guard draws, and it is why
+  this bullet reads the way it does.
 
 ## Emails (support drafts, `/support-triage`)
 - Warm, concise, on-brand. Short paragraphs, no jargon, one clear ask or answer. Sign off

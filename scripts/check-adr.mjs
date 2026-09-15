@@ -101,6 +101,32 @@ export function runCheck(text = readFileSync(LEDGER, 'utf8')) {
   return { total: counts.size, collisions, defined: new Set(counts.keys()) }
 }
 
+/** One walk, shared by both scans below. Extracted from `findDanglingCitations` when the
+ *  placeholder scan needed the same traversal over a WIDER file set: the defect that motivated it
+ *  shipped inside `docs/BUILD-BACKLOG.json`, and this file's original extension filter does not
+ *  include JSON, which is half of why nothing fired.
+ *
+ *  `.claude/` stays unreachable (dot-directories are skipped) and that is load-bearing, not
+ *  incidental: it holds the build loop's git worktrees, so walking it would read every lane's
+ *  entire checkout. */
+function collectFiles(roots, extensions) {
+  const files = []
+  const walk = (dir) => {
+    let entries
+    try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return }
+    for (const e of entries) {
+      if (e.name === 'node_modules' || e.name.startsWith('.')) continue
+      const full = join(dir, e.name)
+      if (e.isDirectory()) { walk(full); continue }
+      if (extensions.test(e.name)) files.push(full)
+    }
+  }
+  for (const r of roots) walk(r)
+  return files
+}
+
+const CODE_ROOTS = ['app', 'lib', 'components', 'scripts', 'docs', 'supabase', 'test']
+
 /** Every `ADR-NNN` CITED anywhere in the repo that has no `## ADR-NNN` heading.
  *
  *  This guard exists because ADR-913 and ADR-918 were cited 82 times across code, tests, CI
@@ -109,26 +135,16 @@ export function runCheck(text = readFileSync(LEDGER, 'utf8')) {
  *  so a number with ZERO headings is simply absent from its map. A reader following one of those
  *  citations for the rationale found nothing, and nothing failed. */
 export function findDanglingCitations(defined) {
-  const roots = ['app', 'lib', 'components', 'scripts', 'docs', 'supabase', 'test']
   const cited = new Map()
-  const walk = (dir) => {
-    let entries
-    try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return }
-    for (const e of entries) {
-      if (e.name === 'node_modules' || e.name.startsWith('.')) continue
-      const full = join(dir, e.name)
-      if (e.isDirectory()) { walk(full); continue }
-      if (!/\.(ts|tsx|mts|mjs|js|md|sql)$/.test(e.name)) continue
-      const text = readFileSync(full, 'utf8')
-      for (const m of text.matchAll(/\bADR-(\d{2,4})\b/g)) {
-        // Normalized to 3 digits: the ledger writes ADR-089 while prose sometimes writes
-        // ADR-89, and those are the same decision, not a missing one.
-        const id = String(Number(m[1])).padStart(3, '0')
-        if (!cited.has(id)) cited.set(id, full)
-      }
+  for (const full of collectFiles(CODE_ROOTS, /\.(ts|tsx|mts|mjs|js|md|sql)$/)) {
+    const text = readFileSync(full, 'utf8')
+    for (const m of text.matchAll(/\bADR-(\d{2,4})\b/g)) {
+      // Normalized to 3 digits: the ledger writes ADR-089 while prose sometimes writes
+      // ADR-89, and those are the same decision, not a missing one.
+      const id = String(Number(m[1])).padStart(3, '0')
+      if (!cited.has(id)) cited.set(id, full)
     }
   }
-  for (const r of roots) walk(r)
   const normalizedDefined = new Set([...defined].map((d) => String(Number(d)).padStart(3, '0')))
   return [...cited.entries()]
     .filter(([id]) => !normalizedDefined.has(id) && !KNOWN_MISSING.has(id))
@@ -136,14 +152,123 @@ export function findDanglingCitations(defined) {
     .sort((a, b) => a.id.localeCompare(b.id))
 }
 
+// ── PLACEHOLDERS WHERE AN ADR NUMBER BELONGS (HYG-093, ADR-1354) ──────────────────────────────
+//
+// A lane in the build loop NEVER mints an ADR number -- two lanes in flight would collide on it --
+// so it writes a literal placeholder and the COORDINATOR substitutes the real number at push time.
+// That convention is sound, and until 2026-09-15 it had no gate: both scans above are NUMERIC
+// (`ADR-(\d+)`), so a placeholder is not a duplicate, is not a dangling citation, and is simply
+// invisible. #2612 proved it -- a CLOSED backlog row reached main citing a number that resolved to
+// nothing, with all 26 contract guards green, and it was found by eye rather than by a gate.
+// AGENTS.md states the rule this closes: every fail-safe needs a gate that notices it fired.
+//
+// ── WHERE THE LINE IS DRAWN, which is the whole difficulty of this scan ───────────────────────
+// A file that DESCRIBES the convention must not be refused for saying its name. This guard's own
+// comments, HYG-093's backlog row, docs/PRESENTATION.md and docs/BASELINE-TODO-2026-08-12.md all
+// have to write the token down. So the rule is POSITIONAL, never the bare substring:
+//
+//   a CITATION is written BARE     -- `## ADR-<ph>:`, `(ADR-<ph>)`, `see ADR-<ph>` ... a reader is
+//                                     expected to follow it to an entry, which is exactly what a
+//                                     placeholder cannot deliver. REFUSED.
+//   a MENTION is written in CODE   -- inside a backtick span, or inside a fenced block ... the
+//                                     token is the subject under discussion, not a reference.
+//                                     ALLOWED.
+//
+// The escape is one keystroke, it is visible in the rendered doc, and it needs no exemption list
+// that only this guard knows about. That last property is the point: a path allowlist would have
+// had to name every doc that discusses numbering, and would have grown quietly.
+//
+// 🔴 ONE NAMED BLIND SPOT, rather than a hidden one (ADR-970). In a .ts/.mjs file a template
+// literal is ALSO backtick-delimited, so a placeholder inside one reads as a mention and escapes.
+// That is accepted: ADR citations in this repo live in comments, docs and SQL headers, never in
+// runtime strings, and buying the difference costs a JS parser. If a citation ever does belong in
+// a template literal, write the number.
+//
+// `ADR-TBD` is deliberately NOT in this token set. It is a DIFFERENT marker with a DIFFERENT
+// remedy -- it says "no decision record exists for this yet" (17 live occurrences across 15 files
+// on 2026-09-15: privacy predicates, suspension coverage, five migrations), not "a number is due
+// to be substituted here". Folding it in would make the failure message below false for most of
+// what it fired on, which is the ten-minute diagnosis this guard exists to avoid. It gets its own
+// shrink-only ratchet instead, with its own message.
+const PLACEHOLDER_TOKEN = /\bADR-(N{2,4}|X{2,4}|TODO|\?{1,4})(?![\w-])/gi
+// The character class is not decoration. Written plainly this pattern MATCHES ITSELF -- a regex
+// literal is not a backtick span -- and the frozen count below would have been one over from the
+// moment it was typed. Same reason every prose mention in this file is in `backticks`.
+const TBD_TOKEN = /\bADR-T[B]D(?![\w-])/gi
+
+/** Frozen population of `ADR-TBD` markers in bare citation position, measured 2026-09-15.
+ *  A RATCHET on the same contract as KNOWN_MISSING above: it may shrink and must never grow.
+ *  A shrink does not fail (three lanes run concurrently and one fixing a marker must not break
+ *  another's build); growth does, because the remedy is to write the ADR. */
+const TBD_FROZEN = 17
+
+/** Bare-position placeholder hits in one file's text.
+ *
+ *  Strips the two forms that mean "quoted, under discussion" -- an inline code span on the line,
+ *  and any line inside a fenced block -- and reports what is left. Exported so the tests can pin
+ *  BOTH directions: the refusal AND the sentence that discusses the convention. */
+export function findPlaceholders(text, file = '<text>') {
+  const hits = []
+  let fenced = false
+  text.split('\n').forEach((raw, i) => {
+    if (/^\s*(?:```|~~~)/.test(raw)) { fenced = !fenced; return }
+    if (fenced) return
+    const line = raw.replace(/`[^`\n]*`/g, '')
+    for (const m of line.matchAll(PLACEHOLDER_TOKEN)) hits.push({ file, line: i + 1, token: m[0] })
+  })
+  return hits
+}
+
+/** Bare-position `ADR-TBD` count in one file's text, scoped exactly as above. */
+export function countTbd(text) {
+  let n = 0
+  let fenced = false
+  for (const raw of text.split('\n')) {
+    if (/^\s*(?:```|~~~)/.test(raw)) { fenced = !fenced; continue }
+    if (fenced) continue
+    n += [...raw.replace(/`[^`\n]*`/g, '').matchAll(TBD_TOKEN)].length
+  }
+  return n
+}
+
+/** WHAT THE PLACEHOLDER SCAN READS, as data rather than as two inline literals.
+ *
+ *  Wider than the citation scan above on purpose, and the extra `json` is not a detail: the
+ *  measured defect shipped in `docs/BUILD-BACKLOG.json`, which the original filter never opened.
+ *  Exported so HYG-093's probe can assert the reach in O(1) -- the real walk costs 1.5s of CPU and
+ *  a probe that burns that becomes the thing scripts/backlog-contract.test.ts fails on. The FULL
+ *  walk is asserted in scripts/check-adr.test.ts, where the second is affordable. */
+export const PLACEHOLDER_SCAN = [
+  { roots: CODE_ROOTS, extensions: /\.(ts|tsx|mts|mjs|js|md|sql|json)$/ },
+  { roots: [join('.github', 'workflows')], extensions: /\.(yml|yaml)$/ },
+]
+
+/** The whole tree, including JSON and the workflow files -- the surfaces a lane's placeholder has
+ *  actually been seen on are a backlog row, a code comment and a doc. */
+export function scanPlaceholders() {
+  const files = PLACEHOLDER_SCAN.flatMap((s) => collectFiles(s.roots, s.extensions))
+  const placeholders = []
+  let tbd = 0
+  for (const file of files) {
+    const text = readFileSync(file, 'utf8')
+    placeholders.push(...findPlaceholders(text, file))
+    tbd += countTbd(text)
+  }
+  return { placeholders, tbd, files }
+}
+
 function main() {
   const { total, collisions, defined } = runCheck()
   const dangling = findDanglingCitations(defined)
+  const { placeholders, tbd, files } = scanPlaceholders()
+  const tbdGrew = tbd > TBD_FROZEN
 
-  if (collisions.length === 0 && dangling.length === 0) {
+  if (collisions.length === 0 && dangling.length === 0 && placeholders.length === 0 && !tbdGrew) {
     console.log(
       `✓ ADR contract: ${total} distinct ADR number(s), each declared exactly once, ` +
-        'and every cited number resolves to an entry.',
+        'and every cited number resolves to an entry.\n' +
+        `  ${files.length} file(s) scanned for an unassigned placeholder in citation position: none. ` +
+        `${tbd} undecided marker(s), ceiling ${TBD_FROZEN}.`,
     )
     return
   }
@@ -167,6 +292,30 @@ function main() {
       `  • ADR-${d.id} is CITED but never written. First seen: ${d.firstSeen}\n` +
         '    A citation is a promise that a reader can go and find the reasoning. Either add\n' +
         `    the entry at that number, or correct the citation to the ADR that really covers it.\n`,
+    )
+  }
+
+  for (const p of placeholders) {
+    console.error(
+      `  • a lane left ${p.token} in ${p.file}:${p.line} — an ADR number that resolves to nothing.\n` +
+        '    A lane never mints a number (two lanes in flight would collide), so the COORDINATOR\n' +
+        '    substitutes the real one at push time. That step has not run, or it missed this file.\n' +
+        `    Replace ${p.token} with the number written into ${LEDGER} for this change — the same\n` +
+        '    number in every file that carries the placeholder, the ADR heading included.\n' +
+        '    If you are DESCRIBING the convention rather than citing a number, put the token in\n' +
+        '    `backticks` (or a fenced block). That is the line this guard draws: bare means a\n' +
+        '    reader should be able to follow it, quoted means it is the subject of the sentence.\n',
+    )
+  }
+
+  if (tbdGrew) {
+    console.error(
+      `  • ${tbd} undecided ADR marker(s) in citation position, above the frozen ${TBD_FROZEN}.\n` +
+        '    The `ADR-TBD` form says no decision record exists yet, so a reader following it finds\n' +
+        '    nothing — the same broken promise as a dangling number, with a different remedy:\n' +
+        `    write the entry in ${LEDGER} and cite its number, or cite the ADR that already\n` +
+        '    covers this. The population is a shrink-only ratchet; lower TBD_FROZEN in\n' +
+        '    scripts/check-adr.mjs when it comes down, and never raise it.\n',
     )
   }
 

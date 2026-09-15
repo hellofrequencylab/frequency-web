@@ -42265,3 +42265,95 @@ it would print zero every night on every series, which is the noise ADR-970 warn
 wallpaper.
 
 **Rows.** LIVE-337 (done, this ADR).
+
+## ADR-1354: a placeholder where an ADR number belongs is refused in citation position, and prose that names it is not (2026-09-15)
+
+**Status.** Accepted, 2026-09-15. Enforced in `scripts/check-adr.mjs` (`pnpm check:adr`, which runs
+in CI's `checks` job inside the existing "Contract guards" array — no new script, no new step) and
+pinned by `scripts/check-adr.test.ts`. Row: HYG-093.
+
+**Context.** The build loop's convention is that a LANE never mints an ADR number, because two lanes
+in flight would collide on it: the lane writes a literal placeholder and the COORDINATOR substitutes
+the real number at push time. That convention is sound and it had no gate. Both of `check:adr`'s
+scans are numeric — `HEADING` is `^#{2,3} ADR-(\d+[a-z]?)` and the citation scan is `\bADR-(\d{2,4})\b`
+— so a non-numeric placeholder is not a duplicate, is not a dangling citation, and is simply absent
+from both maps. The guard then prints *"every cited number resolves to an entry"* and exits 0. Worse,
+the extension filter on its tree walk was `ts|tsx|mts|mjs|js|md|sql`, which does not include JSON, so
+the one file the one list lives in was never read at all.
+
+It shipped. After #2612 merged, `docs/BUILD-BACKLOG.json` carried `LIVE-332`'s closed paragraph
+citing an unsubstituted number while `docs/DECISIONS.md` carried ADR-1346 correctly for the same
+decision — the number WAS assigned, and only the row kept the placeholder. All 26 contract guards
+were green and it was found by eye while preparing a later lane. That matters more than a typo:
+[ADR-1043](DECISIONS.md) makes the one list the only record of what is done, and a closed row citing
+a number that resolves to nothing is exactly the unverifiable-prose failure the list exists to
+prevent. AGENTS.md states the rule directly: every fail-safe needs a gate that notices it fired.
+
+**Decision.** `check:adr` gains a third scan, `findPlaceholders`, over a walk widened to include
+`.json` and the workflow files. It refuses `ADR-` followed by a run of `N`, a run of `X`, `TODO`, or
+a run of `?`, and the failure names the file, the line and the remedy: *a lane left this here; the
+coordinator substitutes the real number at push time*.
+
+🔴 **The whole difficulty is the scope, not the pattern, and the line is drawn POSITIONALLY.** A
+refusal scoped to the bare substring fails on the row that describes the defect, on this ADR, on
+`docs/PRESENTATION.md`, on `docs/BASELINE-TODO-2026-08-12.md` and on the guard's own comments — every
+one of which has to write the token down in order to discuss it. HYG-093's first probe draft hit
+exactly that wall and fired on its own row. So:
+
+| Position | Shape | Verdict |
+| --- | --- | --- |
+| A **citation** | written bare — an ADR heading, `(ADR-…)`, `see ADR-…` | **refused** |
+| A **mention** | written in code — inside a backtick span, or a fenced block | allowed |
+
+Bare means *a reader is expected to follow this to an entry*, which is precisely what a placeholder
+cannot deliver; code formatting means *this token is the subject of the sentence*. The escape is one
+keystroke, it is visible in the rendered doc, and it needs no path allowlist — which was the
+alternative, and which would have had to name every doc that discusses numbering and would have
+grown quietly. `KNOWN_MISSING`'s own comment already set this precedent from the other direction:
+three numbers were removed from that list by REWORDING the prose so it stopped looking like a
+reference.
+
+Two honest limits are written into the guard rather than left to be discovered:
+
+- **A named blind spot.** In a `.ts`/`.mjs` file a template literal is also backtick-delimited, so a
+  placeholder inside one reads as a mention and escapes. Accepted: ADR citations in this repo live in
+  comments, docs and SQL headers, never in runtime strings, and closing it costs a JS parser.
+  [ADR-970](DECISIONS.md) is about gates that cannot fire honestly; a gate with a stated blind spot is
+  not one of those, a gate with a hidden one is.
+- **`ADR-TBD` is deliberately NOT in the token set.** It is a different marker with a different
+  remedy — *no decision record exists yet* rather than *a number is due to be substituted here* — and
+  it has 17 live occurrences across 15 files (privacy predicates, suspension coverage, five
+  migrations). Folding it in would make the placeholder message false for most of what it fired on,
+  which is the ten-minute diagnosis this guard exists to avoid. It gets `TBD_FROZEN = 17` instead: a
+  shrink-only ratchet with its own message, on the same contract as `KNOWN_MISSING` and
+  `scripts/adoption-baselines.json`. Growth fails; a shrink does not, because three lanes run
+  concurrently and one fixing a marker must not break another's build.
+
+**Consequences.** ✅ Proven both ways rather than reasoned about: the row's probe exits 1 against
+`origin/main`'s copy of the guard (extracted with `git show`, not a checkout) and 0 on the merged
+tree, and a **10-arm mutation harness fired 10/10** — renaming either export, returning early,
+dropping the code-span strip (which fires the negative control), narrowing the token set two
+different ways, suppressing the push, off-by-one line numbers, disabling the fence skip, and removing
+`json` from the extension filter. ✅ The test file carries the positive AND the negative control,
+with a comment saying why deleting the negative half is how the rule gets "tightened" into
+unusability. ✅ The guard now prints its reading on success: files scanned, placeholders found,
+undecided markers against the ceiling.
+
+⚠️ **This guard fails on an UNSUBSTITUTED lane tree, by design, and that is the point rather than a
+defect.** On the branch that introduced it, `pnpm check:adr` exits 1 and names every site that still
+carries one — this ADR's heading, HYG-093's closed paragraph, the note in `docs/PRESENTATION.md`, and
+the citation comments in the guard and its test. **Do not restate that count anywhere; read what the
+guard prints.** That list IS the coordinator's substitution checklist, printed by the tool rather
+than carried in a hand-back, and a plain `ADR-<placeholder>` → real-number pass over those files
+takes the guard to exit 0 (verified before hand-back, on a scratch copy). The
+consequence to keep in mind: from now on a lane's tree is expected to be red on `check:adr` until the
+substitution runs, and `pnpm test` is deliberately NOT given the same live assertion, so it stays
+green and the failure is reported in exactly one place.
+
+⚠️ **Deliberately not done.** `.claude/` is not scanned and must not be: dot-directories are skipped
+by the walk, and that tree holds the build loop's git worktrees, so walking it would read every
+lane's entire checkout. `.claude/skills/sync-docs/SKILL.md:27` does carry a bare placeholder in
+instructional prose and is therefore invisible to this guard — stated here rather than quietly
+tolerated. The `ADR-TBD` population is a finding for a row of its own, not a silent omission.
+
+**Rows.** HYG-093 (done, this ADR).
