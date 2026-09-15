@@ -1,5 +1,6 @@
 import { EventsSurface } from '@/components/marketplace/events-surface'
 import { EventsHeaderActions } from '@/components/marketplace/events-header-actions'
+import { CommerceLastVisited } from '@/components/marketplace/commerce-last-visited'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, eventsListingSchema } from '@/lib/jsonld'
 import { pageContentMetadata } from '@/lib/page-content'
@@ -58,9 +59,19 @@ export default async function EventsPage({
     eventsListingSchema(data.sortedEvents, 'Upcoming events near you'),
   ]
 
+  // THE MARKETPLACE COOKIE IS STAMPED HERE, NOT IN A LAYOUT (LIVE-243), and only on the
+  // COMMERCE FACE. Classifieds, Housing and Market each stamp it from a subtree layout,
+  // because every path under them is a commerce path. Events is not: it is also one of the
+  // four member nouns with its own rail row, so a layout would tell /marketplace "you were
+  // last in the Marketplace" for a member who only ever opened Events from the rail, and
+  // then send them to a paid-only filter they never asked for. `price=paid` is what the area
+  // nav links to, so this stamps exactly the visits that arrived through the Marketplace.
+  const onCommerceFace = sp.price === 'paid'
+
   return (
     <>
       <JsonLd data={jsonLd} />
+      {onCommerceFace && <CommerceLastVisited surface="events" />}
       <EventsSurface
         data={data}
         basePath="/events"
