@@ -498,9 +498,17 @@ export function anchorIsExhausted(
 // an EXPLICIT upper-bound instant (inclusive), stopping at recurrence_until if set. Pure and
 // Date.now()-independent — the seam computeOccurrenceDates (horizon = now + N days) and the .ics feed
 // EXDATE helper (bound = the materialization horizon) both delegate here so the series math lives once.
+//
+// `fromInstant` is the OPTIONAL lower bound (inclusive), and it is optional because the two callers
+// want opposite things from the past (ADR-NNNN). The materialiser passes one: it may only write the
+// window it owns. The `.ics` EXDATE helper must NOT — an occurrence the rule produces and the
+// database does not have is exactly what it EXDATEs, and a PAST one has to be EXDATE'd or a
+// subscribed client re-expands the RRULE and resurrects it (ADR-807). Retirement passes none either:
+// it judges a child against the full expansion and does its own `>= now` filtering downstream.
 export function expandOccurrenceInstants(
   anchor: Pick<Anchor, 'starts_at' | 'recurrence_type' | 'recurrence_until' | 'recurrence_rule'>,
   untilInstant: Date,
+  fromInstant: Date | null = null,
 ): Date[] {
   const rule = repeatFor({
     starts_at: anchor.starts_at,
@@ -512,21 +520,57 @@ export function expandOccurrenceInstants(
   return expandRepeat(anchor.starts_at, rule, {
     through: untilInstant,
     until: seriesEnd,
+    // Occurrences before this are dropped from the RESULT but still counted against the rule's
+    // COUNT, because they happened — so bounding the window can never make a COUNT series mint
+    // dates it had already spent (repeat-rule.ts, `seen` vs `out`).
+    from: fromInstant,
     // The anchor is already a row in the database; this function mints the ones that are not.
     includeAnchor: false,
   })
 }
 
-// Compute occurrence start times for an anchor up to the window edge.
-// Excludes the anchor itself (it's already in the DB). Stops at
-// recurrence_until if set.
+// ── THE WINDOW HAS A FLOOR AS WELL AS A CEILING (LIVE-337, ADR-NNNN) ────────────────────────────
+//
+// This function expanded from the ANCHOR with no lower bound, so the candidate set always carried
+// every past date of the series, and the caller's only filter is `existingDays` — the days the
+// database already has. A date that is past AND absent therefore read as MISSING and was minted.
+// Two ways a row gets into that state, and neither wants a row written:
+//
+//   · an operator HARD DELETED it (`deleteEvent`, available to a host, a circle manager or staff on
+//     any event including a child occurrence). It came back on the next cron run, and the run after
+//     that, for the life of the series.
+//   · the RULE CHANGED. A weekly Thursday series edited to Wednesdays expands Wednesdays from the
+//     anchor, so every Wednesday since the series began was absent, read as missing, and was minted
+//     as a past gathering that never took place.
+//
+// 🔴 THE FLOOR IS `now`, THE SAME INSTANT THE RETIREMENT PASS ALREADY USES. The two halves of the
+// reconciliation loop are documented in `generateAllOccurrences` as "the same window read the same
+// way", and until this bound that was true of the ceiling only: `staleOccurrenceIds` filters
+// children to `starts_at >= now` and generation started at the anchor. Both now read
+// [now, now + horizonDays], so a date is either produced-and-kept or not-produced-and-retired, with
+// no third region where one of them writes and the other declines to look.
+//
+// WHAT IT DELIBERATELY STOPS REPAIRING: a date whose start instant has already passed, even when it
+// is genuinely missing. For that to be a loss, generation must have failed for the WHOLE of the
+// HORIZON_DAYS the date spent inside the window, which is a cron outage of two months — the
+// heartbeat's business, and repaired from `now` forward by the first run that succeeds. Against
+// that: respecting a delete an operator performed on purpose, through a UI that warns them the
+// event is part of a series. The trade is not close.
+//
+// FAIL-SAFE DIRECTION (the rule this file keeps): when in doubt, DO the work. The floor is derived
+// from `now` alone, so there is no reading of the anchor that can make it wrong, and `expandRepeat`
+// ignores a `from` that is not a valid date — an unparseable floor expands the FULL window rather
+// than none of it.
 export function computeOccurrenceDates(
   anchor: Pick<Anchor, 'starts_at' | 'recurrence_type' | 'recurrence_until' | 'recurrence_rule'>,
   horizonDays: number = HORIZON_DAYS,
+  now: Date = new Date(),
 ): Date[] {
   if (anchor.recurrence_type === 'none') return []
-  const horizon = new Date(Date.now() + horizonDays * 24 * 60 * 60 * 1000)
-  return expandOccurrenceInstants(anchor, horizon)
+  const horizon = new Date(now.getTime() + horizonDays * 24 * 60 * 60 * 1000)
+  // `now` is the floor as well as the origin of the horizon: the materialiser owns the window that
+  // starts here and never writes history.
+  return expandOccurrenceInstants(anchor, horizon, now)
 }
 
 // Materialise missing future occurrences for a single anchor. Idempotent.

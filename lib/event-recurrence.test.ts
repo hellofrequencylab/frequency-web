@@ -23,12 +23,20 @@ const day = (d: Date) => d.toISOString().slice(0, 10)
 // stop bound under test.
 const FAR = 5000
 
+// The window also has a FLOOR of `now` (LIVE-337, ADR-NNNN), so the third argument is passed
+// explicitly rather than left to the wall clock: these anchors are fixed dates in 2027-2029, and a
+// test whose assertions depend on today's date silently changes meaning as the year turns. A floor
+// BEFORE every anchor is what makes each case measure the thing it was written for (the monthly
+// clamp, the stop bound) and nothing else.
+const NOW = new Date('2027-01-01T00:00:00.000Z')
+
 describe('computeOccurrenceDates — monthly day-clamping (F1)', () => {
   it('clamps a Jan-31 anchor to Feb 28/29, Mar 31, Apr 30, … (no Feb skip)', () => {
     // 2027 (non-leap) → Feb 28.
     const dates = computeOccurrenceDates(
       { starts_at: '2027-01-31T09:00:00.000Z', recurrence_type: 'monthly', recurrence_until: '2027-06-30T23:59:59.000Z' },
       FAR,
+      NOW,
     )
     const days = dates.map(day)
     expect(days).toEqual([
@@ -44,6 +52,7 @@ describe('computeOccurrenceDates — monthly day-clamping (F1)', () => {
     const dates = computeOccurrenceDates(
       { starts_at: '2027-01-31T00:00:00.000Z', recurrence_type: 'monthly', recurrence_until: '2027-04-30T23:59:59.000Z' },
       FAR,
+      NOW,
     )
     const days = dates.map(day)
     // March must be the 31st (original day), proving Feb's clamp didn't carry forward.
@@ -55,6 +64,7 @@ describe('computeOccurrenceDates — monthly day-clamping (F1)', () => {
     const dates = computeOccurrenceDates(
       { starts_at: '2028-02-29T12:00:00.000Z', recurrence_type: 'monthly', recurrence_until: '2029-02-28T23:59:59.000Z' },
       FAR,
+      NOW,
     )
     const days = dates.map(day)
     // Mar 29, Apr 29 … (clamped to 28/30 where needed), and the next Feb (2029, non-leap)
@@ -69,6 +79,7 @@ describe('computeOccurrenceDates — monthly day-clamping (F1)', () => {
     const dates = computeOccurrenceDates(
       { starts_at: '2027-01-15T17:30:00.000Z', recurrence_type: 'monthly', recurrence_until: '2027-03-31T23:59:59.000Z' },
       FAR,
+      NOW,
     )
     expect(dates[0].toISOString()).toBe('2027-02-15T17:30:00.000Z')
   })
@@ -79,6 +90,7 @@ describe('computeOccurrenceDates — daily/weekly unchanged (regression)', () =>
     const dates = computeOccurrenceDates(
       { starts_at: '2027-01-01T08:00:00.000Z', recurrence_type: 'daily', recurrence_until: '2027-01-04T23:59:59.000Z' },
       FAR,
+      NOW,
     )
     expect(dates.map(day)).toEqual(['2027-01-02', '2027-01-03', '2027-01-04'])
   })
@@ -87,6 +99,7 @@ describe('computeOccurrenceDates — daily/weekly unchanged (regression)', () =>
     const dates = computeOccurrenceDates(
       { starts_at: '2027-01-01T08:00:00.000Z', recurrence_type: 'weekly', recurrence_until: '2027-01-29T23:59:59.000Z' },
       FAR,
+      NOW,
     )
     expect(dates.map(day)).toEqual(['2027-01-08', '2027-01-15', '2027-01-22', '2027-01-29'])
   })
