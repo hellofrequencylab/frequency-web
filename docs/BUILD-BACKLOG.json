@@ -13125,6 +13125,24 @@
       }
     },
     {
+      "id": "LIVE-351",
+      "title": "Three live tables were created straight in production, so two security guards could not see them",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270345004800_space_member_benefits.sql",
+        "ref": "the recovered space_member_benefits migration"
+      },
+      "detail": "FOUND 2026-09-15 20:29Z by check:migrations, which is the only gate that could have found it. A migration named space_member_benefits was applied to production at 20:27:10Z with NO file on any branch, no PR, and no session running. The ledger read 699 rows against 698 repo files, so the REQUIRED `checks` context failed on every open PR and on main itself. Measured, not inferred: at 20:05Z both sides were 698 with MATCHING sha256, so the drift was 22 minutes old when it was caught.\n\nTHE SECOND-ORDER DEFECT IS THE REAL ONE, and the drift is what exposed it. Because the three tables (space_member_benefits, space_tier_benefits, space_benefit_redemptions) existed in no migration file, check:rls and check:grants COULD NOT SEE THEM: both scope to tables created in migrations. That CI run reported \"276 live public table(s) ... all revoked\" and PASSED while three real production tables sat outside its scope carrying Supabase default ALL grants to anon and authenticated. Safe only because RLS was on with zero policies, and deny-all beats a grant. Fragile the moment anyone writes the first policy: a policy written for READS is governed by an ALL grant, so it would open INSERT/UPDATE/DELETE with it, and neither guard would fire. This is ADR-959 arriving through a door ADR-959 did not cover.\n\nRECOVERED 2026-09-15. The SQL came from supabase_migrations.schema_migrations.statements and was never retyped: 1 statement, 4615 bytes, md5 c8fd8886ae466cf8c7bf8311d2d1ffc7, reproduced byte-for-byte before it was committed, at the path the SQL own header comment named. The ledger row carried the APPLY time (20260915202710) rather than the filename version, which is the two-step apply in supabase/migrations/README.md with step two skipped, so it was restamped to 20270345004800. Committing the file alone would have left a file with no row AND a row with no file: two drifts instead of one. Both sides now read 699 and digest c813e2e9d6f4fb29df90e9fc86be1ddedf574abadc5ed93c41a086d43d96d473.\n\nThe three tables are declared internal in scripts/table-grants.txt and listed in scripts/rls-deny-all.txt, the verdict the contract defines for service-role-only tables and the only one that fails closed; the table comments say so themselves. The revokes that verdict REQUIRES were not in the applied SQL, so they were added to the migration and applied to production in the same pass. The live ACL now reads postgres and service_role only, and check:grants reads 279 live tables, 84 internal, all revoked.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const T=[\"space_member_benefits\",\"space_tier_benefits\",\"space_benefit_redemptions\"];const g=\"scripts/table-grants.txt\",d=\"scripts/rls-deny-all.txt\",p=\"supabase/migrations/20270345004800_space_member_benefits.sql\";for(const f of [g,d,p]) if(!fs.existsSync(f)) fail(f+\" is missing, so this probe cannot be evaluated\");const G=fs.readFileSync(g,\"utf8\"),D=fs.readFileSync(d,\"utf8\"),P=fs.readFileSync(p,\"utf8\");for(const t of T){if(!new RegExp(\"^\"+t+\"\\\\s+internal\\\\s*$\",\"m\").test(G)) fail(t+\" has no internal verdict in scripts/table-grants.txt, so check:grants cannot hold it to a revoke\");if(!new RegExp(\"^\"+t+\"\\\\s*$\",\"m\").test(D)) fail(t+\" is not on the RLS deny-all list, so a table with zero policies reads as unguarded\");if(!new RegExp(\"revoke\\\\s+all\\\\s+on\\\\s+table\\\\s+public\\\\.\"+t+\"\\\\s+from\\\\s+anon,\\\\s*authenticated\",\"i\").test(P)) fail(t+\" has no revoke from anon, authenticated in its migration, so Supabase default ALL grants stand and only RLS holds the door\");}process.exit(0)'",
+        "note": "Measures the CONSEQUENCE on all three tables at once: an internal verdict, a deny-all listing, and the revoke that verdict requires actually present in the migration. Never the row title. Carries its own floor: a missing file fails rather than passing silently."
+      }
+    },
+    {
       "id": "HYG-098",
       "title": "Nothing pinned the metadata.kind seam between the nine money creators and their recorders",
       "status": "done",
