@@ -52,11 +52,16 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
     the re-derivation and the full measurement record; do not change the constant without a paired
     reading on a LOADED mix that proves the new value.
   - `check:shell-weight` ([ADR-1066](docs/DECISIONS.md)) — the CLIENT half: the app shell's eager
-    first-load JS (**1012 KB across 22 chunks, production e3cec7af2, 2026-08-25 21:43Z** — one
-    kilobyte and one chunk above the 1011 KB / 21 it read hours earlier, which was itself one kilobyte above the 1010 KB
-    it read on two artifacts a week earlier, ceiling 1,400 KB — **72%**, the most headroom of the
-    five) plus named fingerprints for admin module bodies that must stay behind `next/dynamic` (all 8
-    lazy, positive control present, 493 client-reference manifests read). Promoted from `--warn-only`
+    first-load JS (**1027 KB across 22 chunks, production `96f3fc7ac`, 2026-09-15 09:55Z**, ceiling
+    1,400 KB — **73%**, the most headroom of the gates that carry a ratio) plus named fingerprints
+    for admin module bodies that must stay behind `next/dynamic` (all 8 lazy, positive control
+    present, 450 client-reference manifests read).
+    ⚠️ **Do not restate the per-reading history here.** This paragraph tracked it kilobyte by
+    kilobyte — 1010, then 1011, then 1012, each with the artifact it came from — and was **15 KB
+    stale within three weeks** ([ADR-1355](docs/DECISIONS.md)). Read it the way the budget bullet
+    above asks: watch the TREND, and let the reading history live in the PR bodies and `scratchpad`,
+    which are dated by construction. The manifest count moved the same day, 493 down to 450, and a
+    DROP there is worth a glance rather than a doc edit. Promoted from `--warn-only`
     in #2188 after two green production readings; the source-shape test pins the promoted state.
     ✅ **ARM C joined it on 2026-08-25 ([ADR-1140](docs/DECISIONS.md), `SCAN-506`) and does NOT run
     here.** Arms A/B measure the artifact, so `postbuild` is their only possible home; Arm C reads
