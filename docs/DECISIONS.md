@@ -42462,3 +42462,100 @@ downstream verification of that work, not a competing task — which is why it r
 correctly P0: it is costing something today, it is simply costing it to the owner.
 
 **Rows.** LIVE-234 and OWN-061 (both still open; only their `ownerAction` and detail changed).
+
+## ADR-1358: the front door states the model, and it is written as a MIGRATION because the front door is a database row (2026-09-15)
+
+**Status.** Accepted. Closes `LIVE-252`. Applies [ADR-1294](DECISIONS.md) /
+[`CORE-MODEL.md`](CORE-MODEL.md) §5 phase 8 item 6.1. Upholds `OWN-043` (the published document is
+the source of truth for `/`) and answers the question [ADR-1115](DECISIONS.md) §4 left open: HOW an
+agent may change that document without bypassing review. Reaffirms [ADR-1197](DECISIONS.md) on the
+one surface its guard cannot see.
+
+**Context, measured before anything was edited.** `/` resolves `getPublishedData('home')` then
+`getTemplate('home')` then an empty document (`app/page.tsx`). `pages` holds four rows; `home` is
+the only one with a published document, 13 blocks, published 2026-07-13. So
+`lib/page-editor/templates/home.ts` is unreachable, exactly as the row said, and the row's premise
+held in full:
+
+| The row said | Measured 2026-09-15 |
+|---|---|
+| `app/page.tsx:145-147` resolves published → template → EMPTY | ✅ True, unchanged. |
+| A 13-block document has been published since 2026-07-13 | ✅ True. 13 blocks, `published_at` 2026-07-13 01:50Z. |
+| Live H1 is "Frequency exists to create and support healthy community" | ✅ True, verbatim. |
+| No Space story | ✅ True, and stronger than stated: the word **Space** appeared nowhere in 13 blocks, so the front door named three of the model's four nouns. |
+| No money promise | ✅ True. The document never said what anything costs, and `/` carried no link to `/pricing` at all. |
+
+Two things the row did not know, both found by measuring rather than reading:
+
+1. **Four RETIRED CTA labels were still shipping on the front door.** ADR-1197 cut the site to two
+   approved verbs and `lib/site.cta.test.ts` enforces it — over `lib/page-editor/templates`. The
+   live front door is a database row, so it kept "JOIN THE BETA" (pointing at a beta window that
+   closed 2026-08-17 and a page `LIVE-251` has since deleted), "Start a Circle" twice, and "or
+   just join as a member" twice, the last containing the word `lib/site.ts` says in as many words
+   not to put back. Every template was green throughout.
+2. **The authority over `/` is SPLIT, and nothing said so.** The body is the published document;
+   the `<title>` and meta description are code, because `page_content` has no `/` row and
+   `resolvePageContent` falls through to `SITE_TAGLINE` / `SITE_DESCRIPTION`. A copy pass on the
+   front door touches two surfaces.
+
+**Decision 1: the words change through a migration, not an UPDATE and not the template.**
+ADR-1115 §4 refused an agent-issued `UPDATE` to `pages.published_data` because it "bypasses both
+the editor and the owner's review", and that refusal is right about the mechanism. A migration is
+the same write with the review attached:
+`supabase/migrations/20270345004600_home_document_states_the_model.sql` names every before and
+after string in a reviewable diff, is **guarded** on the previous hero title (it no-ops if already
+applied and REFUSES if anyone has published since, rather than clobbering their copy), addresses
+every block by its own `id` rather than by index, writes `data` and `published_data` together so
+the owner's next Publish cannot silently revert it, and carries its own **exact inverse** at the
+foot. The precedent is the same shape as `20270345004400` (the public header, DB rows) and
+`20270323000000` (the stored link repair). Writing the copy into `templates/home.ts` instead is the
+one thing `OWN-043` exists to forbid, and it is what the row's title means by "in the DATABASE".
+
+**Decision 2: what the front door now says, and what it deliberately does not.** The H1 is the
+first sentence of `PLAN_STORY.spine` (`lib/pricing/pricing-page.ts`) and the hero subtitle carries
+the three lines, seeker sentence first. A new `ValueBand` block, `home-model`, carries the four
+nouns one card each, which is where the Space story lands. The mid `CallToAction` becomes the money
+section (its heading is the third line; its body reuses `PLAN_STORY.paid`'s own opening sentence)
+and gains the first link `/` has ever had to `/pricing`. Six canon drifts nobody could see go with
+it: the brand's own name in lowercase, `circle` for `Circle` three times, `journey` as a vague noun
+(CONTENT-VOICE §5d), "interest" as the member word for a topic, "hold the space" (§5b), and
+"practices" for `Practice`.
+
+Two omissions, stated rather than left to be noticed:
+
+- **"Placement is earned, never sold"** — CORE-MODEL §1's second mechanic — is NOT on the page.
+  `PROG-R10` is open and the earned-placement machinery is not built, so it would be a promise the
+  product cannot keep. It joins the page with phase 10.
+- **No figure enters the document.** A jsonb row cannot interpolate the catalog the way a marketing
+  surface does ([ADR-918](DECISIONS.md): "a janitor edits the WORDS, the NUMBERS stay derived"), so
+  a price or rate typed here would freeze at today's value with no gate able to see it drift. The
+  rate sentence stays qualitative and `/pricing`, which reads the catalog, is one click away.
+
+**Decision 3: the model gets a gate that notices it left.** `scripts/maintenance/home-copy-canon.mjs`
+is the only instrument that can read this document (it POSTs SQL to the Management API in the
+maintenance sweep, LIVE-148). It had one arm, the naming and voice canons, and that arm scored the
+2026-07-13 document **zero findings** — correctly, because nothing on it was off voice. It was also
+a front door that mentioned neither a Space nor a price. So a second arm is added: `MODEL_CLAIMS`
+asks whether the page still states each claim of the model, loosely enough that an operator may
+rewrite the sentence, and `modelGaps` reports the ones it no longer makes. Both arms stay
+**advisory** for the reason the file already records: an operator can publish at any moment, and a
+sweep that goes red for a word choice trains everyone to ignore it. The test suite pins the pairing
+that made the arm necessary — the old document is clean on voice and missing four claims — and
+proves each claim's detector fires on its own by redacting it from an otherwise complete document.
+
+**Consequences.**
+
+- `/` is static at `revalidate = 3600` and raw SQL cannot call `revalidatePath`, so the edge served
+  the previous words until the hour elapsed or the next deploy rebuilt the route. Bounded, named in
+  the migration's own header, the same lag `20270345004400` recorded.
+- Both stored-document censuses record this document and both were re-captured. That re-capture
+  found four weeks of drift NOT caused by this change: `pages.data` holds four documents rather
+  than five, `pages.published_data` one rather than two, `FeatureGrid` has left the corpus with the
+  documents that carried it, and the Space micro-sites grew 18 to 19. `scripts/stored-links.json`
+  has a freshness arm and was current; `scripts/stored-block-types.json` has none and was stale,
+  which is filed rather than fixed here.
+- The rendered markup of `/` moves, so the visual baselines for the front door need a recapture.
+  They are not regenerated by hand: a fingerprint no screenshot has produced is worse than a stale
+  one.
+- `check:seo`, `check:canon` and `lib/site.cta.test.ts` all still pass and all still cannot see this
+  page. That is the standing limitation, and the maintenance arm is the answer to it.

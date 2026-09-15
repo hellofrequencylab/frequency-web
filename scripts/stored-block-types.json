@@ -3,25 +3,25 @@
   "why": "ADR-978 stopped an unknown type from DESTROYING a document, but nothing noticed that five types were already orphaned — they were found by hand, twice (ADR-977 D-9, then again for LIVE-028). A fail-safe with no gate that notices it fired is an invisible regression (AGENTS.md, Deploy safety).",
   "howToRecapture": "Run the SQL in `recaptureQuery` against production (read-only) and rewrite `stores` from the result, then set `capturedAt`. Re-capture after applying a document migration; the guard reads the registry live, so it does NOT need a re-capture when the registry changes.",
   "scope": "The Puck-shaped registry only (lib/page-editor/config.tsx). The Spotlight union (lib/spotlight/blocks/schema.ts) and the entity-block registry (lib/entity-blocks/registry.ts) are separate catalogs with separate storage and are NOT covered here.",
-  "capturedAt": "2026-08-18",
+  "capturedAt": "2026-09-15",
+  "recaptureLog": [
+    "2026-08-18 — first capture (LIVE-028, ADR-1055), taken after 20270305000000 rewrote the five orphan types.",
+    "2026-09-15 (LIVE-252, ADR-1358): RE-CAPTURED because 20270345004600 rewrote the published home document, which is the event `howToRecapture` names. TWO KINDS OF MOVEMENT, named apart. (1) MINE: `ValueBand` enters both `pages` stores once, as the new `home-model` block, and every home count rises by one block. It resolves in the live registry (components/page-editor/blocks/dawn.tsx, category `sections`), so nothing is quarantined. (2) NOT MINE, and stale for up to four weeks before this change: `pages.data` holds FOUR documents, not five, `pages.published_data` holds ONE, not two, and `FeatureGrid` has left the corpus entirely with the documents that carried it — `pages` has four rows today (about / home / how-it-works / the-lab) and `home` is the only one with a published document. `spaces.preferences.pageDocs` grew 18 documents to 19. A census with no freshness arm drifted exactly the way its neighbour's recaptureLog predicts; the neighbour (scripts/stored-links.json) now fails on a stale date and this one still does not, which is filed rather than fixed here."
+  ],
   "project": "Frequency Community (azsqfeonabsbmemvddqd)",
   "recaptureQuery": "with docs as (select 'pages.data' as store, slug as doc_key, data as doc from pages where data is not null union all select 'pages.published_data', slug, published_data from pages where published_data is not null union all select 'spaces.preferences.puck', slug, preferences->'puck' from spaces where preferences ? 'puck' union all select 'spaces.preferences.pageDocs', s.slug||'#'||d.key, d.value from spaces s, lateral jsonb_each(coalesce(s.preferences->'pageDocs','{}'::jsonb)) d), items as (select store, doc_key, e->>'type' as type from docs, lateral jsonb_array_elements(doc->'content') e where jsonb_typeof(doc->'content')='array') select store, type, count(*) as blocks, count(distinct doc_key) as docs from items group by store, type order by store, type;",
   "stores": [
     {
       "store": "pages.data",
-      "note": "The marketing draft documents. The five orphan types were rewritten to their registry successors by 20270305000000 (LIVE-028); every type below resolves.",
-      "documents": 5,
+      "note": "The marketing draft documents, FOUR of them (about / home / how-it-works / the-lab). The five orphan types were rewritten to their registry successors by 20270305000000 (LIVE-028); every type below resolves. The home draft is byte-identical to the published document, because both publishPage and 20270345004600 write `data` and `published_data` together.",
+      "documents": 4,
       "types": {
         "CallToAction": {
-          "blocks": 7,
-          "docs": 5
+          "blocks": 5,
+          "docs": 4
         },
         "CircleFirstNight": {
-          "blocks": 2,
-          "docs": 2
-        },
-        "FeatureGrid": {
-          "blocks": 2,
+          "blocks": 1,
           "docs": 1
         },
         "Gallery": {
@@ -29,138 +29,142 @@
           "docs": 1
         },
         "Heading": {
-          "blocks": 3,
-          "docs": 2
+          "blocks": 2,
+          "docs": 1
         },
         "Hero": {
-          "blocks": 5,
-          "docs": 5
+          "blocks": 4,
+          "docs": 4
         },
         "Image": {
           "blocks": 2,
           "docs": 2
         },
         "Marquee": {
-          "blocks": 2,
-          "docs": 2
+          "blocks": 1,
+          "docs": 1
         },
         "MediaText": {
-          "blocks": 12,
-          "docs": 5
+          "blocks": 10,
+          "docs": 4
         },
         "RolesPath": {
-          "blocks": 2,
-          "docs": 2
+          "blocks": 1,
+          "docs": 1
         },
         "Statement": {
-          "blocks": 8,
-          "docs": 5
+          "blocks": 7,
+          "docs": 4
         },
         "Text": {
-          "blocks": 3,
-          "docs": 2
+          "blocks": 2,
+          "docs": 1
+        },
+        "ValueBand": {
+          "blocks": 1,
+          "docs": 1
         }
       }
     },
     {
       "store": "pages.published_data",
-      "note": "Clean before and after the LIVE-028 rewrite, which deliberately did not touch it.",
-      "documents": 2,
+      "note": "ONE document, `home`, and by OWN-043 it IS the front door: app/page.tsx renders it and nothing else. Clean before and after the LIVE-028 rewrite, which deliberately did not touch it. 14 blocks since 20270345004600 (LIVE-252) added the `home-model` ValueBand.",
+      "documents": 1,
       "types": {
         "CallToAction": {
-          "blocks": 4,
-          "docs": 2
-        },
-        "CircleFirstNight": {
-          "blocks": 2,
-          "docs": 2
-        },
-        "FeatureGrid": {
           "blocks": 2,
           "docs": 1
         },
+        "CircleFirstNight": {
+          "blocks": 1,
+          "docs": 1
+        },
         "Heading": {
-          "blocks": 3,
-          "docs": 2
+          "blocks": 2,
+          "docs": 1
         },
         "Hero": {
-          "blocks": 2,
-          "docs": 2
+          "blocks": 1,
+          "docs": 1
         },
         "Marquee": {
-          "blocks": 2,
-          "docs": 2
+          "blocks": 1,
+          "docs": 1
         },
         "MediaText": {
-          "blocks": 4,
-          "docs": 2
+          "blocks": 2,
+          "docs": 1
         },
         "RolesPath": {
-          "blocks": 2,
-          "docs": 2
+          "blocks": 1,
+          "docs": 1
         },
         "Statement": {
-          "blocks": 2,
-          "docs": 2
+          "blocks": 1,
+          "docs": 1
         },
         "Text": {
-          "blocks": 3,
-          "docs": 2
+          "blocks": 2,
+          "docs": 1
+        },
+        "ValueBand": {
+          "blocks": 1,
+          "docs": 1
         }
       }
     },
     {
       "store": "spaces.preferences.pageDocs",
-      "note": "18 Space documents, 12 distinct types, all resolving.",
-      "documents": 18,
+      "note": "19 Space documents, 12 distinct types, all resolving. Was 18 at the 2026-08-18 capture; the 19th Space carries the same seeded set.",
+      "documents": 19,
       "types": {
         "SpaceAbout": {
-          "blocks": 18,
-          "docs": 18
+          "blocks": 19,
+          "docs": 19
         },
         "SpaceBooking": {
-          "blocks": 18,
-          "docs": 18
+          "blocks": 19,
+          "docs": 19
         },
         "SpaceBusiness": {
-          "blocks": 18,
-          "docs": 18
+          "blocks": 19,
+          "docs": 19
         },
         "SpaceCallout": {
-          "blocks": 18,
-          "docs": 18
+          "blocks": 19,
+          "docs": 19
         },
         "SpaceCommunity": {
-          "blocks": 18,
-          "docs": 18
+          "blocks": 19,
+          "docs": 19
         },
         "SpaceContact": {
-          "blocks": 18,
-          "docs": 18
+          "blocks": 19,
+          "docs": 19
         },
         "SpaceEvents": {
-          "blocks": 18,
-          "docs": 18
+          "blocks": 19,
+          "docs": 19
         },
         "SpaceFAQ": {
           "blocks": 9,
           "docs": 9
         },
         "SpaceHighlights": {
-          "blocks": 18,
-          "docs": 18
+          "blocks": 19,
+          "docs": 19
         },
         "SpaceOfferings": {
-          "blocks": 18,
-          "docs": 18
+          "blocks": 19,
+          "docs": 19
         },
         "SpacePractices": {
-          "blocks": 18,
-          "docs": 18
+          "blocks": 19,
+          "docs": 19
         },
         "SpaceReviews": {
-          "blocks": 18,
-          "docs": 18
+          "blocks": 19,
+          "docs": 19
         }
       }
     }
