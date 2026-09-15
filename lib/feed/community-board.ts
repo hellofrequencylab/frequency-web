@@ -18,17 +18,22 @@ import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 //
 // SCOPE IS THE POLICY. These reads go through the service-role admin client, so the query is the
 // gate. WHY the bypass, measured rather than assumed: the live SELECT policies cannot express this
-// board for a plain member. `posts` has one read policy and every branch of it is keyed to CIRCLE
-// scope, so a post scoped to a SPACE matches nothing; `events` grants `circle_only` only at role
-// `crew` or above; and `spaces_read_active` hides a member's own private or draft Space because an
-// owner holds no `space_members` row. The full reading is in scripts/admin-client-baseline.txt
-// beside this file's entry.
+// board for a plain member. `events` grants `circle_only` only at role `crew` or above, so an
+// ordinary member would see none of their own Circles' gatherings; `spaces_read_active` hides a
+// member's own private or draft Space, because an owner holds no `space_members` row; and the one
+// `posts` read policy admits a `cluster` announcement only to someone already in that Circle, its
+// hub or its channel. The full reading is in scripts/admin-client-baseline.txt beside this file's
+// entry.
 //
-// So the QUERY is the gate: a gathering is only eligible when it belongs to a Circle this member is
-// ACTIVE in and its visibility is one an insider may be shown (`circleEventVisibilities(true)` —
-// never `unlisted`, never `private`), and a post is only eligible when its scope is a Space this
-// member is an active member of or owns. The same rule the rail's EventsPanel applies, from the
-// same one list.
+// So the QUERY is the gate:
+//   • a gathering is only eligible when it belongs to a Circle this member is ACTIVE in and its
+//     visibility is one an insider may be shown (`circleEventVisibilities(true)` — never
+//     `unlisted`, never `private`). The same rule the rail's EventsPanel applies, from the same
+//     one list.
+//   • a post is only eligible when its Circle is owned by a Space this member belongs to or owns,
+//     that Circle is neither draft, archived nor unlisted, and the post is `public` or `cluster`.
+//     Belonging to a Space is not belonging to its Circles, so a `group` post (circle-members
+//     only) is never eligible here. See `spaceActivity` for why this goes through Circles at all.
 //
 // FAIL-SAFE, never an error: any read that throws or errors degrades that half to nothing, so the
 // module falls back to its empty state rather than taking the feed down with it.
@@ -145,14 +150,46 @@ async function nextGathering(db: Db, circleIds: string[]): Promise<BoardGatherin
   }
 }
 
-/** The newest posts across those Spaces, with the Space's brand name and the author. */
+/**
+ * The newest posts in the Circles those Spaces OWN, with the Space's brand name and the author.
+ *
+ * 🔴 POSTS ARE CIRCLE-SCOPED, NOT SPACE-SCOPED, and this half read the wrong thing until
+ * 2026-09-15. `posts` carries a bare `scope_id` and no `scope_type` column, and every writer in
+ * the repo stamps a CIRCLE id on it (`app/(main)/feed/actions.ts`, `lib/circles/remix.ts`,
+ * `app/(main)/admin/actions.ts`; `lib/system-line.ts` uses the system profile's own id). No path
+ * anywhere scopes a post to a Space, no Space surface reads `posts`, and a live join of `posts` to
+ * `spaces` returned ZERO rows. So `.in('scope_id', spaceIds)` could only ever return nothing, and
+ * the fail-safe below would have hidden that forever.
+ *
+ * "In your Spaces" therefore resolves through `circles.space_id`: the Circles a Space owns are
+ * what a Space publishes.
+ *
+ * VISIBILITY IS NARROWED ON PURPOSE, because belonging to a Space is not belonging to its Circles:
+ *   • draft, archived and unlisted Circles are excluded, mirroring the `circles` read policy;
+ *   • only `public` and `cluster` posts are eligible. A `group` post is circle-members-only, and
+ *     this reader cannot prove the member joined that Circle, so surfacing one here would leak it.
+ *     A member of the Circle still sees its `group` posts in the feed stream below this board.
+ */
 async function spaceActivity(db: Db, spaceIds: string[]): Promise<BoardSpacePost[]> {
   if (spaceIds.length === 0) return []
   try {
+    const { data: circleRows } = await db
+      .from('circles')
+      .select('id, space_id, status, unlisted')
+      .in('space_id', spaceIds)
+      .not('status', 'in', '(draft,archived)')
+      .eq('unlisted', false)
+    const spaceOfCircle = new Map<string, string>()
+    for (const c of (circleRows ?? []) as { id: string; space_id: string | null }[]) {
+      if (c.space_id) spaceOfCircle.set(c.id, c.space_id)
+    }
+    if (spaceOfCircle.size === 0) return []
+
     const { data } = await db
       .from('posts')
       .select('id, body, created_at, scope_id, author:profiles!author_id ( display_name )')
-      .in('scope_id', spaceIds)
+      .in('scope_id', [...spaceOfCircle.keys()])
+      .in('visibility', ['public', 'cluster'])
       .is('parent_id', null)
       .is('hidden_at', null)
       .not('body', 'is', null)
@@ -167,10 +204,17 @@ async function spaceActivity(db: Db, spaceIds: string[]): Promise<BoardSpacePost
     }[]
     if (rows.length === 0) return []
 
+    const spaceIdsSeen = [
+      ...new Set(
+        rows
+          .map((r) => (r.scope_id ? spaceOfCircle.get(r.scope_id) : undefined))
+          .filter((id): id is string => !!id),
+      ),
+    ]
     const { data: spaces } = await db
       .from('spaces')
       .select('id, name, brand_name, slug')
-      .in('id', [...new Set(rows.map((r) => r.scope_id).filter((id): id is string => !!id))])
+      .in('id', spaceIdsSeen)
     const byId = new Map<string, { name: string; slug: string | null }>()
     for (const s of (spaces ?? []) as { id: string; name: string | null; brand_name: string | null; slug: string | null }[]) {
       byId.set(s.id, { name: s.brand_name?.trim() || s.name || 'Space', slug: s.slug })
@@ -179,7 +223,8 @@ async function spaceActivity(db: Db, spaceIds: string[]): Promise<BoardSpacePost
     const out: BoardSpacePost[] = []
     for (const r of rows) {
       const body = (r.body ?? '').trim()
-      const space = r.scope_id ? byId.get(r.scope_id) : undefined
+      const spaceId = r.scope_id ? spaceOfCircle.get(r.scope_id) : undefined
+      const space = spaceId ? byId.get(spaceId) : undefined
       if (!body || !space) continue
       const author = Array.isArray(r.author) ? r.author[0] : r.author
       out.push({

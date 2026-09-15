@@ -169,14 +169,39 @@ describe('the reader is the gate (it runs through the admin client)', () => {
     expect(reader).toMatch(/\.eq\('status', 'active'\)/)
     // Insider visibilities come from the one shared list, never a hand-typed array here.
     expect(reader).toMatch(/circleEventVisibilities\(true\)/)
-    expect(reader).not.toMatch(/'unlisted'/)
+    // Precise on purpose: the circles read carries a legitimate `.eq('unlisted', false)`, so the
+    // guard is that no hand-typed visibility ARRAY names it.
+    expect(reader).not.toMatch(/\[[^\]]*'unlisted'/)
     expect(reader).toMatch(/\.eq\('is_cancelled', false\)/)
     expect(reader).toMatch(/\.is\('removed_at', null\)/)
     expect(reader).toMatch(/\.eq\('status', 'published'\)/)
   })
 
-  it('scopes Space activity to the member’s own Spaces, top-level posts only', () => {
-    expect(reader).toMatch(/\.in\('scope_id', spaceIds\)/)
+  it('reaches Space activity through the Circles a Space OWNS, never by scoping a post to a Space', () => {
+    // `posts.scope_id` is always a CIRCLE id: there is no scope_type column and no writer in the
+    // repo stamps a Space, so `.in('scope_id', spaceIds)` could only ever return nothing. This
+    // is the shape that regression would take, so it is asserted absent.
+    expect(reader).not.toMatch(/\.in\('scope_id', spaceIds\)/)
+    expect(reader).toMatch(/\.from\('circles'\)/)
+    expect(reader).toMatch(/\.in\('space_id', spaceIds\)/)
+    expect(reader).toMatch(/\.in\('scope_id', \[\.\.\.spaceOfCircle\.keys\(\)\]\)/)
+  })
+
+  it('never surfaces a circle-members-only post, and skips a Circle a Space has hidden', () => {
+    // Belonging to a Space is not belonging to its Circles, so `group` is out. Scoped to the
+    // activity reader: `'group'` is a legitimate SCOPE TYPE in the events read above it.
+    const activity = reader.slice(
+      reader.indexOf('async function spaceActivity'),
+      reader.indexOf('export const getCommunityBoard'),
+    )
+    expect(activity.length).toBeGreaterThan(200)
+    expect(activity).toMatch(/\.in\('visibility', \['public', 'cluster'\]\)/)
+    expect(activity).not.toMatch(/'group'/)
+    expect(activity).toMatch(/\.not\('status', 'in', '\(draft,archived\)'\)/)
+    expect(activity).toMatch(/\.eq\('unlisted', false\)/)
+  })
+
+  it('reads top-level, unhidden posts only, and the member’s own Space as well', () => {
     expect(reader).toMatch(/\.is\('parent_id', null\)/)
     expect(reader).toMatch(/\.is\('hidden_at', null\)/)
     // The owner of a Space holds no space_members row, so their own Space is read too.
