@@ -601,6 +601,34 @@ Collision guards:
 - **"Store"**: retired as the per-Space services label (now **Shop**) and reserved for **Frequency
   Store** (first-party) only. The **Vault Store** (Gems, unchanged) is a separate proper noun.
 
+## Money in: getting paid (Stripe Connect) (ADR-1365, September 2026)
+
+The rewards economy and the Stripe Connect side both say **payout**, and until this entry only the
+rewards one was in the canon. These are the money-IN names, the ones a Space host actually reads on
+`/spaces/[slug]/settings/payments`, `/settings/billing` and `content/help/spaces/get-paid.md`.
+
+- **Get paid**: the name of the surface, and the only member-facing name for it. The operator's
+  payout home (`/spaces/[slug]/settings/payments`, title `Get paid`, help article
+  `spaces/get-paid`): where the money lands, which money paths are live, and what the network
+  takes. Never "Payouts" as a page title, never "Payments", never "Monetization".
+- **payout account**: the Stripe Connect account the money lands in. Lower case, and always
+  something an operator **adds** rather than applies for: *"Add a payout account to start selling
+  tickets."* Say **payout account** in member-facing copy and keep **Stripe Connect** for the one
+  sentence that has to name the processor. Never "merchant account", never a bare "Stripe account".
+- **money path**: one of the **five** ways money comes in, and the set is closed: memberships,
+  bookings, orders, donations, tickets (`PayoutChannel`, `lib/billing/payout-prompt.ts`). The
+  plural is how a surface covering several at once names them: *"which of your money paths are
+  live."* Never "revenue stream", and never "channel" — Channels is the focus-area feature.
+- **Receive payments**: the personal entry point. The account-menu item that deep-links to
+  `/settings#payouts` (`lib/nav/registry.ts`), and where Stripe returns a host after onboarding.
+- **Manage payouts**: the button that opens the Stripe dashboard once an account is connected.
+  **The verb pair is fixed:** you *receive payments* on Frequency and you *manage payouts* in
+  Stripe. Do not swap them, and do not invent a third verb.
+- **A payout account is a SETUP STEP, never a gate** (`lib/billing/payout-prompt.ts`, with the
+  ruling stated at length in `lib/events/ticket-eligibility.ts`). Stripe will not move money to an
+  unverified account at any price, which is a banking fact and not a tier. So the copy reads *"two
+  minutes and you can"*, never *"you cannot"* and never *"upgrade"*.
+
 ## Drafts: one surface, every unfinished thing (owner ruling, August 2026)
 
 **Drafts** (capital D) = the member's own page at `/drafts`, and it is the ONLY member surface
@@ -730,6 +758,11 @@ Phase-6 zero-hits grep carves them out:
   Mindless (the On Air timer). Two dials, no collision.
 - **"co-op"**: one meaning only, a Circle **Run** of a Journey (cohort, ADR-252).
 - **"task"**: `crew_tasks` IS the canon Task entity: no new entity, no collision.
+- **"payout"**: two meanings, and they never meet on one surface. The **rewards-economy payout**
+  is Zaps and Gems (the large payout at completion, the per-log fallback, the Spark bonus layer) and
+  belongs to member game copy. The **payout account** is Stripe Connect, real money to a bank, and
+  belongs to operator money copy, which says *payout account*, *Receive payments* or *Manage
+  payouts* rather than a bare "payout". See §Money in.
 - **"live"/"static"**: retired only as the old status set; alive in live-location,
   Next.js static rendering, etc.
 

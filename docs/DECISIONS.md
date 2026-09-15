@@ -43013,7 +43013,203 @@ decision.
 
 **Rows.** `LIVE-341` (done, this ADR).
 
-## ADR-1364: PLAN_STORY moves to a leaf module, so the derivation ADR-1363 refused costs nothing (2026-09-15)
+## ADR-1364: a section HEADING is where a retired pitch survives a rule that forbids it (2026-09-15)
+
+**Status.** Accepted. Closes `LIVE-255`. The third application of [ADR-1350](DECISIONS.md) in two
+days, after [ADR-1359](DECISIONS.md) (the front door is a database row) and
+[ADR-1363](DECISIONS.md) (a block default is live copy).
+
+**Context.** `LIVE-255` named three defects in `lib/marketing/funnel-config.ts`, the one config that
+drives all five `/for/<niche>` operator doors. **Re-tested before being worked, per `AGENTS.md`, and
+two of the three had already been fixed** by `LIVE-253` without this row being circled back to:
+
+| claim | on the tree |
+|---|---|
+| `:14-17` names the three feature gates as the paid argument | 🔴 **false** — the lead comment now opens *"THE ARGUMENT FOR PAYING IS MONEY, NOT MORE (LIVE-255)"* and names the three capabilities as the **consequence**, not the pitch |
+| `:51` repeats *"Selling is never behind a plan"* on every door | ⚠️ **survives at `:61`**, but inside `pricingIntro`, now following *"People join free, businesses host free, and you pay when you start charging"* — a supporting clause of the money argument rather than the pitch |
+| `:253/343/433/524/618` each close with *"When you're ready, it does more."* | ✅ **half fixed, half live** |
+
+That third row is the finding. The **trigger clause** was corrected — all five now read *"When you
+start charging…"*, which is exactly ADR-1350's model. **The promise was not.** All five still end
+*"…it does more."*
+
+**🔴 And line 21 of the same file forbids it, in those words.** The config's own standing comment
+reads: *"Do not reintroduce a 'paid does more / lifts the caps / unlocks' beat here."* A file
+violating its own stated rule — in a **section HEADING**, above five bodies that obey it.
+
+**Decision, three parts.**
+
+1. **A heading counts as the pitch, and the rule now says so.** Line 21 is corrected to name the
+   section title explicitly and to say what a step-up card should do instead: name **which repeat**
+   it serves. That is `PLAN_STORY.paid`'s argument — *what a plan carries is the repeat* — and it is
+   what all five card bodies were already about. Every one of them is about people coming **back**:
+   *"bring quiet clients back"*, *"a nudge when someone is drifting"*, *"reach quiet guests before
+   the next date"*, *"a recurring gift is about to end"*. The heading was the only part arguing
+   something else.
+
+2. **Each door names its own repeat**, in the noun its own copy already uses: the second session
+   (coaches and healers), the second month (studios), the second night (event hosts — their loop
+   copy is *"the guest who had a great night brings friends to the next one"*), the second time they
+   show up (community builders), the second gift (nonprofits).
+
+3. **`LIVE-253`'s corpus-wide probe gains the idiom `"it does more"`** and the exact five-door
+   heading as a pin, so the beat cannot return anywhere in the nine files it reads.
+
+**Why `"it does more"` and not `"does more"`.** Measured, not assumed. `"does more"` appears in
+three places of legitimate unrelated copy — `lib/circles/templates.ts:111` (*"does more work than a
+page of rules"*) and two help articles — none of them in the corpus today, but an idiom that would
+misfire the moment a corpus file writes *"does more work than"* is a gate that gets routed around.
+`"it does more"` matches the pitch and none of the three.
+
+**Consequences.** ✅ Proven both ways on real trees: `LIVE-253` exits **0** here and **1** against
+`origin/main`'s `funnel-config.ts` with **both** new arms firing independently; `LIVE-255`'s own new
+probe exits **0** here and **1** there with **all six** arms firing. Idioms 22 → **23**, exact pins
+22 → **23**. ✅ `LIVE-255`'s verify moves from `manual` (*"copy review of funnel-config.ts against
+the three lines"*) to `cmd`. **That manual line is why two of its three claims went stale
+unnoticed**: a copy review has no record of what it found, so nothing could tell the row that
+`LIVE-253` had already fixed two thirds of it. ✅ The new probe carries a **slug arm** — if the five
+doors ever stop being driven from this config, it says so rather than passing on a file that no
+longer renders anything. ⚠️ **Stated limit:** nothing measures the *next* off-model heading in a
+config not yet in the corpus. This is the third instance of the same pattern in two days (a database
+row, a block default, a section heading), and each was found by reading, not by a gate. The general
+answer is a canon check over every string a reader can see, which is `HYG-091`-adjacent and a larger
+decision than this row.
+
+**Rows.** `LIVE-255` (done, this ADR), `LIVE-253` (probe widened again).
+
+## ADR-1365: getting paid had five names in the product and none in the canon (2026-09-15)
+
+**Status.** Accepted. Closes `HYG-091`, which [ADR-1315](DECISIONS.md)'s row `LIVE-305` (#2598)
+named and deliberately left alone rather than amend the canon mid-change.
+
+**Context.** `docs/NAMING.md` is the terminology canon and always wins on names. It carries **nine**
+occurrences of *payout* and every one of them is either the rewards economy — the large payout at
+completion, the per-log Zap fallback, the Spark bonus layer — or a parenthetical inside the Events
+role section (*"Only a Space has a Connect payout account"*, `:391`). **The word appears and is
+nowhere defined.**
+
+Meanwhile the Stripe Connect side, which a Space host reads on
+`/spaces/[slug]/settings/payments`, `/settings/billing` and `content/help/spaces/get-paid.md`, runs
+on five names the canon had never heard of: **Get paid**, **money paths**, **payout account**,
+**Receive payments**, **Manage payouts**. The last is wider than the row said — *payout account*
+alone appears across at least eight non-test modules.
+
+**🔴 And the Collision guards section, which exists for exactly this, had no entry.** It guards
+*current*, *quest*, *field*, *agent*, *initiate/adept/master*, *luminary*, *channels*, *tune*,
+*co-op*, *task* and *live/static* — eleven words with two meanings each, spelled out. Two meanings
+of *payout* shared a word with no line saying which is which: one is a game reward, the other is
+real money to a bank.
+
+**Decision.**
+
+1. **A `§Money in` section names the money-in vocabulary**, each entry attributed to the surface it
+   comes from rather than invented: the surface (**Get paid**), the account (**payout account**,
+   with *Stripe Connect* kept for the one sentence that names the processor), the closed five-member
+   set (**money path**: memberships, bookings, orders, donations, tickets), and the **fixed verb
+   pair** — you *receive payments* on Frequency and you *manage payouts* in Stripe, never swapped.
+2. **The canon records that a payout account is a SETUP STEP, never a gate.** Stripe will not move
+   money to an unverified account at any price, which is a banking fact and not a tier, so the copy
+   reads *"two minutes and you can"* and never *"you cannot"* or *"upgrade"*. That ruling already
+   governs the code (`lib/billing/payout-prompt.ts`, stated at length in
+   `lib/events/ticket-eligibility.ts`); it was not in the canon a copywriter reads.
+3. **A `"payout"` collision guard** assigns each meaning its side: the rewards payout is member game
+   copy, the payout account is operator money copy, and operator copy says *payout account*,
+   *Receive payments* or *Manage payouts* rather than a bare *payout*.
+
+**The probe is the interesting part.** `HYG-091` shipped with `grep-present` for the words *"Get
+paid"* in `NAMING.md` — the shape-not-truth failure named in four ADRs, since writing the phrase
+anywhere in the file would have closed the row. It is re-pointed to a `cmd` probe whose load-bearing
+arm **reads the channel set out of `lib/billing/payout-prompt.ts`** and fails if the canon's
+money-path bullet does not list every one. A sixth money path shipped without a canon line now turns
+this row red. Five further arms check that each surface the canon quotes still says what it is
+quoted as saying, so the entry cannot quietly drift from the product it describes.
+
+**Consequences.** ✅ Proven **three** ways on real trees: exit **0** on the lane (18 assertions);
+exit **1** against `origin/main`'s `NAMING.md` with **8** arms firing independently; and exit **1**
+on a tree carrying the new canon plus a synthetic sixth channel, where the only failure is *"the
+money path bullet does not list the subscriptions path"* — the consequence arm doing its job.
+⚠️ **One arm was dropped rather than special-cased.** A first draft also forbade the phrase *"revenue
+stream"* in the money-path bullet, and failed on its own tree: the bullet is precisely where the
+canon says `Never "revenue stream"`. **A negative pin cannot live in the same text as the
+prohibition it enforces** — the same shape as needing `strip()` before an idiom pass reads a file
+whose comment states the rule. ⚠️ **Stated limit:** nothing checks the reverse direction, that no
+member-facing string uses a money-in word the canon does not carry. `check:canon` reads the retired
+list, not this section, and widening it to a positive vocabulary check over money copy is a larger
+decision than this row.
+
+**Rows.** `HYG-091` (done, this ADR).
+
+## ADR-1366: the marketplace flag reached the route and the member nav, never the area nav (2026-09-15)
+
+**Status.** Accepted. Closes `LIVE-245`. Amends nothing; it delivers the mechanism the owner ruling
+of 2026-09-08 assumed already existed.
+
+**Context — and the row had been re-tested once already, wrongly.** `LIVE-245` is an owner ruling:
+the Frequency Store's catalog is four `is_demo` products, so `marketplace_shop_published` stays
+false, `/store` stays out of the tab bar, and *"flipping it the day real merch exists is a one-row
+change."* A re-test on 2026-09-15 declared two halves of that false, and **one of those findings was
+itself wrong**:
+
+> *"platform_flags.marketplace_shop_published has NO production reader. The only occurrence in the
+> repo is `lib/marketplace/visibility.test.ts:51`, as a test FIXTURE."*
+
+🔴 **False.** `marketplaceVisibility()` reads `platform_flags` for every
+`marketplace_<area>_published` key, and `app/(main)/layout.tsx:600-607` consumes it with real
+consequence: it sets `navAccess[AREA_NAV_KEY[area]] = 'none'` and **redirects a member off a hidden
+area's path to `/feed`**. A literal grep missed it because **the key is composed** —
+`areaFlagKey()` returns a template string. That is precisely the false negative a grep-shaped
+premise check produces, and it is worth naming beside [ADR-1082](DECISIONS.md): a premise re-test
+can expire in *both* directions, and "there is no reader" is the claim most cheaply checked by
+looking for the *consequence* rather than the string.
+
+**What was actually broken, measured against production.** `marketplace_shop_published` is `false`
+and has been since **2026-07-11 04:18:36Z** (`platform_flags`; `market`, `housing` and `makers` are
+all `true`). The flag reaches the member nav, the route, and
+`components/marketplace/hidden-banner.tsx`. **It never reached the marketplace AREA nav.**
+`MarketplaceFacets` typed all five areas with no visibility input at all, and `MarketplaceGuide`'s
+*"What's where"* card named all five surfaces the same way. So for two months a live member browsing
+`/classifieds`, `/housing`, `/housing/roommates`, `/market` or the events surface has seen a
+**Frequency Store pill and a card advertising it**, and clicking either lands on a route that
+redirects them to `/feed`.
+
+**Decision — and it is the opposite of deleting the entry.**
+
+1. One pure decision, `visibleAreas(vis, operator)`, and one cached read, `browsableAreas()`, both
+   in `lib/marketplace/visibility.ts` beside the switch they read. An operator still sees a hidden
+   area, so it can be stocked.
+2. **Both navs filter through it, and every entry stays declared.** `area` names the visibility key
+   each entry answers to, or `null` for Events — a member noun with its own rail row, never a
+   switchable market area.
+3. **The read lives in the components, not the call sites.** Six surfaces mount these navs and none
+   of them changed; the seventh cannot forget to pass a flag it never sees.
+
+**🔴 The row's stored probe was inverted, and it mattered.** It read
+`if (nav.includes('/store')) fail('the Frequency Store is still an area in the Marketplace nav')` —
+so **deleting the entry would have closed the row and broken the ruling it was enforcing**, because
+"a one-row change" is only true if the entry is still there for a flag flip to bring back. The probe
+now asserts the entry *is* declared, says which flag it answers to, and is filtered rather than
+rendered.
+
+**Consequences.** ✅ Proven both ways on real trees: the probe exits **0** here and **1** against
+`origin/main` with **9 of 12** arms firing, and the two that stay green on main are honestly green
+(the `/store` href is there; neither component re-types the area set). ✅ The decision itself is
+driven for real in `components/marketplace/facet-nav.test.tsx` — **11 assertions, 9 of which fail
+against `origin/main`** — including the live production case (`shop: false`, not an operator → the
+Store is dropped), the operator case, the fail-closed read-error case, and each area hidden one at a
+time. That runs in the required `test` job on every PR, which is earlier and stronger than a probe,
+the same reasoning that puts `check:shell-weight`'s Arm C in a vitest file. ✅ Zero extra database
+reads: both halves are `cache()`d and `app/(main)/layout.tsx` already takes them on every request in
+this segment. ⚠️ **Stated limit:** the source-shape half of the test is a shape, because an async
+server component reading two Supabase helpers cannot be rendered in that environment. Each guard
+names the symbol that must be imported and the list that must *not* be mapped, rather than grepping
+for the row's own words, and comments are stripped first so a guard about the code is not answered by
+a comment explaining the guard.
+
+**Rows.** `LIVE-245` (done, this ADR). `LIVE-243` is unblocked by this and stays open: its own arms
+(the two-member `COMMERCE_SURFACES` cookie, the missing housing and events layouts, the Events entry
+pointing at the full index rather than `?price=paid`) are untouched here.
+
+## ADR-1367: PLAN_STORY moves to a leaf module, so the derivation ADR-1363 refused costs nothing (2026-09-15)
 
 **Status.** Accepted. Closes `LIVE-342`. Does the `lib/pricing` refactor
 [ADR-1363](DECISIONS.md) named as the clean path and deliberately did not take, and takes the

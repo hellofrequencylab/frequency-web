@@ -66,7 +66,7 @@ import type { LivePricing } from '@/lib/page-editor/live-pricing'
 // plan-story.ts imports nothing, so PlanBand's default kicker READS the approved plan argument
 // (ADR-916's rule) without pulling pricing-page.ts's nine-import chain into a module the page-editor
 // renderer reaches broadly. ADR-1363 rejected the derivation precisely because that chain could not be
-// priced before merging; ADR-1364 removed the chain rather than the rule. Import from './plan-story',
+// priced before merging; ADR-1367 removed the chain rather than the rule. Import from './plan-story',
 // never from './pricing-page', or the trade comes back.
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import {

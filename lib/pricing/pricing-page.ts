@@ -99,7 +99,7 @@ export function priceStrings(): PriceStrings {
   }
 }
 
-/** THE PLAN STORY MOVED OUT OF THIS FILE (ADR-1364), and is re-exported here so no importer changed.
+/** THE PLAN STORY MOVED OUT OF THIS FILE (ADR-1367), and is re-exported here so no importer changed.
  *
  *  It lives in ./plan-story, which imports NOTHING. This module has nine imports, and that was the
  *  whole reason ADR-1363 had to rewrite a block default's sentence by hand instead of deriving it: a

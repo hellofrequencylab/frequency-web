@@ -9,7 +9,7 @@
 // library the derivation the house rule demands (READ, never typed — ADR-916, ADR-1337, ADR-1350).
 // dawn.tsx reached the pricing seam only through a type-only import that erases at compile, and the
 // gates that would price a new runtime edge there (check:build-budget, check:og-trace,
-// check:shell-weight, check:build-fanout) run only in `postbuild` on Vercel, never in CI. ADR-1364
+// check:shell-weight, check:build-fanout) run only in `postbuild` on Vercel, never in CI. ADR-1367
 // splits the sentences out instead, which costs nothing to import from anywhere.
 //
 // SO: DO NOT ADD AN IMPORT TO THIS FILE. If a sentence here needs a figure, the figure is

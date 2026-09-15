@@ -71,7 +71,7 @@ surface interpolates, and never retype it. Use `PLAN_STORY.paidShort` where ther
 rather than a paragraph (a block kicker, a card footnote): it is the same argument in the same order,
 two sentences instead of three, and it exists so nobody writes their own short version.
 
-That module imports **nothing**, on purpose ([ADR-1364](DECISIONS.md)), so any surface can read the
+That module imports **nothing**, on purpose ([ADR-1367](DECISIONS.md)), so any surface can read the
 approved sentence at no bundle cost — including the page-editor **block defaults**, where a retired
 sentence is worse than on a static page because `defaultProps` seeds it into a new document every
 time an operator inserts the block ([ADR-1363](DECISIONS.md)). It used to live in
