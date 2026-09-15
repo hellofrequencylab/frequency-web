@@ -43138,3 +43138,73 @@ list, not this section, and widening it to a positive vocabulary check over mone
 decision than this row.
 
 **Rows.** `HYG-091` (done, this ADR).
+
+## ADR-1366: the marketplace flag reached the route and the member nav, never the area nav (2026-09-15)
+
+**Status.** Accepted. Closes `LIVE-245`. Amends nothing; it delivers the mechanism the owner ruling
+of 2026-09-08 assumed already existed.
+
+**Context — and the row had been re-tested once already, wrongly.** `LIVE-245` is an owner ruling:
+the Frequency Store's catalog is four `is_demo` products, so `marketplace_shop_published` stays
+false, `/store` stays out of the tab bar, and *"flipping it the day real merch exists is a one-row
+change."* A re-test on 2026-09-15 declared two halves of that false, and **one of those findings was
+itself wrong**:
+
+> *"platform_flags.marketplace_shop_published has NO production reader. The only occurrence in the
+> repo is `lib/marketplace/visibility.test.ts:51`, as a test FIXTURE."*
+
+🔴 **False.** `marketplaceVisibility()` reads `platform_flags` for every
+`marketplace_<area>_published` key, and `app/(main)/layout.tsx:600-607` consumes it with real
+consequence: it sets `navAccess[AREA_NAV_KEY[area]] = 'none'` and **redirects a member off a hidden
+area's path to `/feed`**. A literal grep missed it because **the key is composed** —
+`areaFlagKey()` returns a template string. That is precisely the false negative a grep-shaped
+premise check produces, and it is worth naming beside [ADR-1082](DECISIONS.md): a premise re-test
+can expire in *both* directions, and "there is no reader" is the claim most cheaply checked by
+looking for the *consequence* rather than the string.
+
+**What was actually broken, measured against production.** `marketplace_shop_published` is `false`
+and has been since **2026-07-11 04:18:36Z** (`platform_flags`; `market`, `housing` and `makers` are
+all `true`). The flag reaches the member nav, the route, and
+`components/marketplace/hidden-banner.tsx`. **It never reached the marketplace AREA nav.**
+`MarketplaceFacets` typed all five areas with no visibility input at all, and `MarketplaceGuide`'s
+*"What's where"* card named all five surfaces the same way. So for two months a live member browsing
+`/classifieds`, `/housing`, `/housing/roommates`, `/market` or the events surface has seen a
+**Frequency Store pill and a card advertising it**, and clicking either lands on a route that
+redirects them to `/feed`.
+
+**Decision — and it is the opposite of deleting the entry.**
+
+1. One pure decision, `visibleAreas(vis, operator)`, and one cached read, `browsableAreas()`, both
+   in `lib/marketplace/visibility.ts` beside the switch they read. An operator still sees a hidden
+   area, so it can be stocked.
+2. **Both navs filter through it, and every entry stays declared.** `area` names the visibility key
+   each entry answers to, or `null` for Events — a member noun with its own rail row, never a
+   switchable market area.
+3. **The read lives in the components, not the call sites.** Six surfaces mount these navs and none
+   of them changed; the seventh cannot forget to pass a flag it never sees.
+
+**🔴 The row's stored probe was inverted, and it mattered.** It read
+`if (nav.includes('/store')) fail('the Frequency Store is still an area in the Marketplace nav')` —
+so **deleting the entry would have closed the row and broken the ruling it was enforcing**, because
+"a one-row change" is only true if the entry is still there for a flag flip to bring back. The probe
+now asserts the entry *is* declared, says which flag it answers to, and is filtered rather than
+rendered.
+
+**Consequences.** ✅ Proven both ways on real trees: the probe exits **0** here and **1** against
+`origin/main` with **9 of 12** arms firing, and the two that stay green on main are honestly green
+(the `/store` href is there; neither component re-types the area set). ✅ The decision itself is
+driven for real in `components/marketplace/facet-nav.test.tsx` — **11 assertions, 9 of which fail
+against `origin/main`** — including the live production case (`shop: false`, not an operator → the
+Store is dropped), the operator case, the fail-closed read-error case, and each area hidden one at a
+time. That runs in the required `test` job on every PR, which is earlier and stronger than a probe,
+the same reasoning that puts `check:shell-weight`'s Arm C in a vitest file. ✅ Zero extra database
+reads: both halves are `cache()`d and `app/(main)/layout.tsx` already takes them on every request in
+this segment. ⚠️ **Stated limit:** the source-shape half of the test is a shape, because an async
+server component reading two Supabase helpers cannot be rendered in that environment. Each guard
+names the symbol that must be imported and the list that must *not* be mapped, rather than grepping
+for the row's own words, and comments are stripped first so a guard about the code is not answered by
+a comment explaining the guard.
+
+**Rows.** `LIVE-245` (done, this ADR). `LIVE-243` is unblocked by this and stays open: its own arms
+(the two-member `COMMERCE_SURFACES` cookie, the missing housing and events layouts, the Events entry
+pointing at the full index rather than `?price=paid`) are untouched here.

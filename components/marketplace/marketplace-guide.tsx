@@ -2,22 +2,31 @@ import Link from 'next/link'
 import { Tag, Home, ShoppingBag, CalendarDays, Store, ArrowRight } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { SectionHeader } from '@/components/ui/section-header'
+import { browsableAreas, type MarketArea } from '@/lib/marketplace/visibility'
 
 // Shared bottom-of-page guide for every commerce surface (ADR-596). Names the five
 // surfaces in one line each, then points sellers at Business. Server component,
 // semantic tokens only, no em or en dashes. Composed from the kit (SectionHeader +
 // buttonClasses) so it reads the same under Classifieds, Housing, Market, Events,
 // and the Frequency Store.
+//
+// AND IT SHOWS THE AREAS THE FLAG SAYS ARE OPEN (LIVE-245). Every surface stays declared, and
+// `area` names the lib/marketplace/visibility key it answers to (null for Events, a member noun
+// rather than a switchable market area). Same reason as MarketplaceFacets: this card named the
+// Frequency Store on every commerce page while marketplace_shop_published was false, so it read
+// as an answer to "what's where" that sent a member somewhere they get redirected out of.
 
 const SURFACES = [
-  { icon: Tag, name: 'Classifieds', href: '/classifieds', blurb: 'Swap, lend, give, and find things locally, no fees.' },
-  { icon: Home, name: 'Housing', href: '/housing', blurb: 'Rooms, rentals, and roommate matching.' },
-  { icon: ShoppingBag, name: 'Market', href: '/market', blurb: 'Products, services, and tickets from members and businesses.' },
-  { icon: CalendarDays, name: 'Events', href: '/events', blurb: 'Find paid and free events near you.' },
-  { icon: Store, name: 'Frequency Store', href: '/store', blurb: 'First-party Frequency goods.' },
-] as const
+  { icon: Tag, area: 'market', name: 'Classifieds', href: '/classifieds', blurb: 'Swap, lend, give, and find things locally, no fees.' },
+  { icon: Home, area: 'housing', name: 'Housing', href: '/housing', blurb: 'Rooms, rentals, and roommate matching.' },
+  { icon: ShoppingBag, area: 'makers', name: 'Market', href: '/market', blurb: 'Products, services, and tickets from members and businesses.' },
+  { icon: CalendarDays, area: null, name: 'Events', href: '/events', blurb: 'Find paid and free events near you.' },
+  { icon: Store, area: 'shop', name: 'Frequency Store', href: '/store', blurb: 'First-party Frequency goods.' },
+] as const satisfies readonly { area: MarketArea | null; name: string; href: string; blurb: string; icon: unknown }[]
 
-export function MarketplaceGuide() {
+export async function MarketplaceGuide() {
+  const open = new Set(await browsableAreas())
+  const surfaces = SURFACES.filter((s) => s.area === null || open.has(s.area))
   return (
     <section
       aria-label="About the marketplace"
@@ -26,7 +35,7 @@ export function MarketplaceGuide() {
       <SectionHeader title="What's where" />
 
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {SURFACES.map((s) => (
+        {surfaces.map((s) => (
           <li key={s.name} className="flex items-start gap-3">
             <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-control bg-surface-elevated text-primary-strong">
               <s.icon className="h-5 w-5" aria-hidden />
