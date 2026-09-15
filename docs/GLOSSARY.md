@@ -26,13 +26,17 @@ from clustering; they are not appointed top-down.
 | **Outpost** | `outposts` | The **brick-and-mortar home base of a Nexus**: one per Nexus, the seed toward a Lab (NAMING.md §Community structure). Circles meet in homes/public spaces, **never** Outposts. When a **Frequency Lab** (standalone for-profit venue) exists in the Nexus, the Outpost HQ lives there. *(Current code still treats it as the top container; rework in [ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md) §11.)* |
 | **Nexus region** | `nexus_regions` | Legacy geography tree. Being phased out. |
 
-> **Two "channel" concepts, do not confuse:**
-> - **`topical_channels`** (current): global topical forums (Spirituality,
->   Movement, Holistic Health, Human Relating, Activism, Creative, Business
->   Support). Janitor-managed. Powers the `/channels` UI. Circles link via
->   `circles.topical_channel_id`.
-> - **`channels`** (legacy): hub/nexus/outpost-scoped *focus groups*. Managed at
->   `/admin/channels`. Older concept, still present.
+> **There is ONE "channel" concept: `topical_channels`.** Global topical forums,
+> janitor-managed, sorted under a Pillar via `pillar_id`. It powers the
+> `/channels` UI, the `/admin/channels` console, and the Channel forum
+> (`posts.scope_id` = a topical channel id). Circles link via
+> `circles.topical_channel_id`; members "tune in" via
+> `topical_channel_memberships`.
+>
+> The hierarchy-v2 `channels` / `channel_memberships` pair (hub/nexus/outpost
+> "focus groups", `20240102000000`) was replaced by this one a month later and
+> **dropped, empty, on 2026-09-15** ([ADR-1349](DECISIONS.md)). Nothing in the
+> tree or the schema carries it; older docs and ADRs that mention it are history.
 
 ## Roles: two independent axes (canon: NAMING.md §Roles)
 

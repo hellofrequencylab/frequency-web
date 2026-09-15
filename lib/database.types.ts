@@ -854,98 +854,6 @@ export type Database = {
           },
         ]
       }
-      channel_memberships: {
-        Row: {
-          channel_id: string
-          id: string
-          joined_at: string | null
-          profile_id: string
-          status: string
-        }
-        Insert: {
-          channel_id: string
-          id?: string
-          joined_at?: string | null
-          profile_id: string
-          status?: string
-        }
-        Update: {
-          channel_id?: string
-          id?: string
-          joined_at?: string | null
-          profile_id?: string
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "channel_memberships_channel_id_fkey"
-            columns: ["channel_id"]
-            isOneToOne: false
-            referencedRelation: "channels"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "channel_memberships_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      channels: {
-        Row: {
-          created_at: string | null
-          creator_id: string | null
-          creator_role: Database["public"]["Enums"]["community_role"]
-          description: string | null
-          event_date: string | null
-          id: string
-          is_public: boolean
-          member_cap: number | null
-          name: string
-          scope: Database["public"]["Enums"]["channel_scope_type"]
-          scope_id: string
-          type: Database["public"]["Enums"]["channel_content_type"]
-        }
-        Insert: {
-          created_at?: string | null
-          creator_id?: string | null
-          creator_role: Database["public"]["Enums"]["community_role"]
-          description?: string | null
-          event_date?: string | null
-          id?: string
-          is_public?: boolean
-          member_cap?: number | null
-          name: string
-          scope: Database["public"]["Enums"]["channel_scope_type"]
-          scope_id: string
-          type?: Database["public"]["Enums"]["channel_content_type"]
-        }
-        Update: {
-          created_at?: string | null
-          creator_id?: string | null
-          creator_role?: Database["public"]["Enums"]["community_role"]
-          description?: string | null
-          event_date?: string | null
-          id?: string
-          is_public?: boolean
-          member_cap?: number | null
-          name?: string
-          scope?: Database["public"]["Enums"]["channel_scope_type"]
-          scope_id?: string
-          type?: Database["public"]["Enums"]["channel_content_type"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "channels_creator_id_fkey"
-            columns: ["creator_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       circle_challenge_adoptions: {
         Row: {
           adopted_by: string | null
@@ -17834,8 +17742,6 @@ export type Database = {
         | "special"
       achievement_tier: "bronze" | "silver" | "gold" | "platinum"
       challenge_difficulty: "easy" | "normal" | "hard" | "legendary"
-      channel_content_type: "group" | "event" | "thread"
-      channel_scope_type: "hub" | "nexus" | "outpost"
       circle_type: "in-person" | "online"
       community_role:
         | "member"
@@ -18018,8 +17924,6 @@ export const Constants = {
       ],
       achievement_tier: ["bronze", "silver", "gold", "platinum"],
       challenge_difficulty: ["easy", "normal", "hard", "legendary"],
-      channel_content_type: ["group", "event", "thread"],
-      channel_scope_type: ["hub", "nexus", "outpost"],
       circle_type: ["in-person", "online"],
       community_role: [
         "member",

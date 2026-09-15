@@ -44,7 +44,13 @@ async function load(): Promise<StructureData> {
         // whatever its access mode; an unlisted one would leak its existence through the total.
         admin.from('circles').select('id', { count: 'exact', head: true }).eq('status', 'active')
           .eq('unlisted', false),
-        admin.from('channels').select('id', { count: 'exact', head: true }),
+        // CHANNELS = `topical_channels`, the one Channel table (LIVE-334, ADR-1349). This counted
+        // the retired hierarchy-v2 `channels` table (0 rows for the whole life of the v3 concept),
+        // so the "Channels" stat read 0 while members could browse every live one. `is_active` to
+        // match the sibling Circles read above — this tile counts what the community can browse,
+        // and it is the same filter the /channels hero counts on.
+        admin.from('topical_channels').select('id', { count: 'exact', head: true })
+          .eq('is_active', true),
         // GATHERINGS, not materialised occurrences (LIVE-198 / SERIES-COUNT). Recurrence is
         // materialised (ADR-007), so one weekly series is ~9 rows inside the cron's 60-day horizon
         // and this tile counted it nine times. A row read rather than `head: true`, because the

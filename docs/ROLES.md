@@ -148,7 +148,7 @@ access = union of
 | Partners | **`profile_personas`**: `profile_id, persona, state, stripe_account_id?, entity_id?` (multi-row). |
 | Admin (platform) | **`team_members`**: `profile_id, staff_role` → domains via matrix; Janitor/Admin the super-tiers. |
 | Org (Hook) admin | **tenant-scoped** staff rows on the org's Hook instance, isolated; never read by the Frequency resolver. |
-| Overlays | **`outposts`** `(nexus_id, lab_id?, place)` + **`labs`** (for-profit venues) + `channels`; members affiliate via join rows; events can scope to an outpost. |
+| Overlays | **`outposts`** `(nexus_id, lab_id?, place)` + **`labs`** (for-profit venues); members affiliate via join rows; events can scope to an outpost. |
 | All | one **capability resolver** computing the union per request/context (extends ADR-017). |
 
 ## The access matrix (source of truth)

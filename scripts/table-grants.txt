@@ -23,7 +23,9 @@
 # `public` table with an anon-readable stripe_customer_id column). `internal` is the load-bearing
 # one, and it is the only verdict that fails closed. If you are unsure, write `internal`.
 #
-# 39 public · 155 authenticated · 78 internal · 272 total
+# 39 public · 156 authenticated · 81 internal · 276 total (recounted 2026-09-15 with LIVE-334,
+# which dropped the retired `channels` + `channel_memberships` rows; the line read 272 and had been
+# stale since before that change).
 
 achievements                         public
 admin_audit_log                      authenticated
@@ -43,8 +45,6 @@ capability_permissions               authenticated
 captures                             authenticated
 challenge_progress                   authenticated
 challenge_qr_codes                   internal
-channel_memberships                  authenticated
-channels                             authenticated
 circle_challenge_adoptions           authenticated
 circle_practices                     public
 circle_profiles                      authenticated
