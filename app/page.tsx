@@ -61,6 +61,28 @@ const EMPTY: Data = { content: [], root: {} }
 // fresh editor session and the safety rung if the published document is ever unpublished — see
 // templates.test.ts, which fails loudly if it stops resolving.)
 //
+// ✅ REAFFIRMED 2026-09-15 (LIVE-252, ADR-1358), with the two things that ruling leaves implicit
+// written down, because both cost a lane a re-measurement:
+//   • THE AUTHORITY IS SPLIT, and the split is the honest answer to "which surface owns `/`?".
+//     The BODY is the published document (this route renders it and nothing else). The <title> and
+//     the meta description are CODE: `page_content` carries no `/` row, so `resolvePageContent`
+//     above falls through to SITE_NAME · SITE_TAGLINE and SITE_DESCRIPTION from lib/site.ts. A
+//     copy pass on the front door therefore touches two surfaces, not one.
+//   • A CHANGE TO THE WORDS IS A MIGRATION, not a pull request to this file. The model copy
+//     (CORE-MODEL §5 phase 8 item 6.1: people join free, businesses host free, you pay when you
+//     start charging, plus the four nouns) was written into `pages.published_data` and `pages.data`
+//     by supabase/migrations/20270345004600_home_document_states_the_model.sql — guarded on the
+//     previous hero title, idempotent, and carrying its own exact inverse. That is the reviewable
+//     form ADR-1115 §4 asked for when it refused a bare agent-issued UPDATE to this row.
+//
+// ⚠️ THE GATES THAT GOVERN THE REST OF THE SITE DO NOT REACH THIS DOCUMENT, and that has now cost
+// something real twice. `lib/site.cta.test.ts` enforces ADR-1197's two approved CTA labels across
+// `lib/page-editor/templates`, so the front door went on shipping four RETIRED ones ("JOIN THE
+// BETA", "Start a Circle" twice, "or just join as a member" twice) for eleven days after the
+// ruling, with every template green. The instrument that CAN see this page is
+// scripts/maintenance/home-copy-canon.mjs, which reads production in the maintenance sweep
+// (LIVE-148). When a rule has to hold on `/`, it goes there; a filesystem scanner cannot reach it.
+//
 // 🔴 EVERY SCHEMA NODE SURVIVES, AND THE COUNT WAS MEASURED, NOT REASONED. /the-lab lost its
 // FAQPage for weeks (LIVE-040) because a `faqSchema()` call rode a legacy branch that never
 // rendered. This route carried the same shape — `faqSchema(HOME_FAQ)` sat INSIDE `Splash` — so it
