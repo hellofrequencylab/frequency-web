@@ -28,8 +28,38 @@ import type { EntitlementTier } from '@/lib/core/entitlement'
 
 const SECRET = process.env.STRIPE_SECRET_KEY
 
+/**
+ * The Stripe API version this repository is written against, pinned explicitly.
+ *
+ * 🔴 WHY PINNING MATTERS, and why the usual reasoning about it is wrong here. An unpinned
+ * `new Stripe(SECRET)` does NOT fall back to the account's dashboard default. stripe-node picks
+ * `props.apiVersion || DEFAULT_API_VERSION` (node_modules/stripe/cjs/stripe.core.js) and
+ * DEFAULT_API_VERSION is a constant baked into the installed package
+ * (node_modules/stripe/cjs/apiVersion.js). So before this line, the contract for every money call
+ * in this repo was a property of whatever `stripe` version pnpm last resolved — a dependency bump
+ * could silently move it with no code change and no review.
+ *
+ * That is the failure class docs/DEPLOY-SAFETY.md exists for: a change nobody made, arriving
+ * through a gate nobody watched. Pinning turns an implicit, floating contract into a declared one
+ * that moves only when someone edits this line.
+ *
+ * ⚠️ It is pinned to the SDK's own baked-in version rather than an older one on purpose: matching
+ * what the installed package already sends makes this a no-op TODAY and a guard TOMORROW. Changing
+ * it is a deliberate migration, and `stripe-api-version.test.ts` fails when the two drift apart so
+ * the choice is re-made rather than inherited.
+ *
+ * ⚠️ TypeScript cannot help here. The installed `stripe` package ships NO type declarations at all
+ * (no `types` field, no .d.ts), so `Stripe.*` resolves to `any` throughout this repo — proven by a
+ * probe whose control error was reported while a deliberately bogus `ui_mode` value was not. A
+ * wrong version string or a misspelled param is a RUNTIME error here, never a compile error, which
+ * is the other reason this is pinned and tested rather than merely passed.
+ */
+export const STRIPE_API_VERSION = '2026-08-26.dahlia'
+
 /** The Stripe client, or null when billing isn't configured. */
-export const stripe = SECRET ? new Stripe(SECRET) : null
+export const stripe = SECRET
+  ? new Stripe(SECRET, { apiVersion: STRIPE_API_VERSION as never })
+  : null
 
 // The webhook route guards `if (!stripe || STRIPE_WEBHOOK_SECRETS.length === 0)` before use.
 // Warn at module load (not throw) so a misconfigured env doesn't crash unrelated pages.
