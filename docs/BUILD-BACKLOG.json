@@ -49,7 +49,8 @@
             "LIVE-186",
             "LIVE-213",
             "LIVE-332",
-            "LIVE-333"
+            "LIVE-333",
+            "LIVE-336"
           ]
         },
         {
@@ -57,7 +58,8 @@
           "ids": [
             "HYG-075",
             "HYG-089",
-            "HYG-091"
+            "HYG-091",
+            "LIVE-335"
           ]
         },
         {
@@ -12750,6 +12752,41 @@
         "kind": "manual",
         "evidence": "Owner-deferred with texting (DEF-A2P).",
         "checked": "2026-09-14"
+      }
+    },
+    {
+      "id": "LIVE-335",
+      "title": "The posts table has no Space-scope read branch, so the whole feed and rail stack runs on the service role",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "scripts/admin-client-baseline.txt",
+        "ref": "the lib/feed entries"
+      },
+      "detail": "MEASURED 2026-09-15 against pg_policy on the live project, while justifying the RLS bypass LIVE-248's community board needed. `posts` has exactly ONE read policy and every branch of it is keyed to CIRCLE scope (private.get_my_circle_ids, the region, the hub, the tuned channel) plus a signed-out public branch. There is no branch for a Space at all, and there does not need to be one for the row as written: `posts` carries a bare `scope_id` with no `scope_type` column, and every writer in the repo stamps a CIRCLE id on it (app/(main)/feed/actions.ts, lib/circles/remix.ts, app/(main)/admin/actions.ts; lib/system-line.ts stamps the system profile's own id), so a Space-scoped post does not exist. A live join of `posts` to `spaces` returned ZERO rows.  THE REAL GAP is narrower and sharper than \"add a Space branch\". A Space member who has NOT joined one of its Circles cannot read that Circle's `cluster` announcements, because the cluster branch requires Circle, hub or channel membership. That is why lib/feed/community-board.ts reaches Space activity through circles.space_id on the SERVICE ROLE: the query can express \"a Circle my Space owns\", and the policy cannot. Two neighbouring findings from the same reading stand beside it: `events` grants `circle_only` only at role `crew` or above, so an ordinary member sees none of their own Circles' gatherings under RLS; and `spaces_read_active` requires status = 'active' AND (non-private OR is_space_member), and a Space's OWNER holds no space_members row, so their own private or draft Space is invisible to them.  WHY THIS IS A ROW AND NOT A LINE IN THE BASELINE: five files in scripts/admin-client-baseline.txt (four lib/feed/* readers plus components/sidebar/rail-panels.tsx, now six with community-board.ts) hold a full RLS bypass for this one reason. Converging any of them needs a policy migration, not effort. The owner was asked on 2026-09-15 and chose to add the policies in their own PR; the three questions that PR must answer are the three findings above.",
+      "ownerAction": "ruling",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const R=(f)=>{try{return fs.readFileSync(f,\"utf8\")}catch{fail(\"missing \"+f)}};const base=R(\"scripts/admin-client-baseline.txt\").split(\"\\n\").filter((l)=>l.trim()&&!l.startsWith(\"#\"));const mod=R(\"lib/feed/community-board.ts\");if(mod.includes(\"createAdminClient\"))fail(\"lib/feed/community-board.ts still imports the service-role client, so the Space-scope read is still a bypass\");if(base.includes(\"lib/feed/community-board.ts\"))fail(\"lib/feed/community-board.ts is still declared in the RLS-bypass baseline\");console.log(\"LIVE-335 ok: the community board reads Space activity under RLS\")'"
+      }
+    },
+    {
+      "id": "LIVE-336",
+      "title": "The database account can be exhausted by the loop, and nothing in the repo notices",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1331 and the 2026-09-15 outage"
+      },
+      "detail": "INCIDENT 2026-09-15 04:23Z to 04:41Z, eighteen minutes, diagnosed from four independent readings before the cause was known and confirmed by the owner afterwards: the Supabase account had hit its ceiling and was upgraded. EVERY preview deployment failed during the window, which was CORRECT behaviour rather than a second bug: LIVE-325 had just taught a menu read that fails during `next build` to FAIL THE BUILD instead of shipping default menus, so the outage surfaced as red builds rather than as a silently wrong public header.  THE SHAPE OF THE FAILURE IS WHAT MAKES THIS A ROW. The control plane kept reporting the project ACTIVE_HEALTHY throughout, so a status read would have said everything was fine while every query failed. Nothing in the repo, in CI, or in the maintenance workflow reads anything that would have moved. The signal that WOULD have moved is the one the loop itself generates: concurrent e2e captures plus preview builds prerendering signed-in routes, which ADR-1328 already measured at 1,200 to 2,900 PostgREST reads per table per fifteen minutes for a single profile. LIVE-326 serialised the runs and LIVE-328 removed the prefetch multiplier inside each one, so the load is lower than it was, but neither of those notices a ceiling.  WHAT IS OWED is a reading, not a fix: a scheduled step in .github/workflows/maintenance.yml that queries the project's own usage or request volume and posts it to the run summary with an owner, so the next approach to the ceiling is visible before it is total. Pair it with LIVE-332 (the manual capture workflow runs outside the turnstile AND runs its two capture jobs in parallel, so one dispatch is two concurrent captures) and LIVE-333 (a capture taken inside an edge 5xx window commits that window as truth). All three are the same subject: the loop's own load is now a production risk and needs an instrument.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};let y;try{y=fs.readFileSync(\".github/workflows/maintenance.yml\",\"utf8\")}catch{fail(\"maintenance.yml is missing\")}if(!/usage|quota|ceiling|request.volume/i.test(y))fail(\"maintenance.yml reads no database usage or quota signal, so an approach to the account ceiling is still invisible\");if(!/GITHUB_STEP_SUMMARY/.test(y))fail(\"the usage reading is not posted to the run summary\");console.log(\"LIVE-336 ok: the account ceiling has a scheduled reading\")'"
       }
     }
   ]
