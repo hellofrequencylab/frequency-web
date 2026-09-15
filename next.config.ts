@@ -28,11 +28,13 @@ const csp = [
   // maps.googleapis.com + maps.gstatic.com: the Google Maps JS API loader and the chunks it
   // pulls in, used ONLY when NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY is set (ADR-901). With no
   // browsable key nothing from those hosts is ever requested — the maps run on MapLibre.
+  // js.stripe.com: Stripe.js, the ONLY script Stripe puts on our page — it appends its own further
+  // chunks from that same host. The full Stripe audit sits below the Maps one.
   // vercel.live is listed TWICE on purpose, here and below. A CSP wildcard matches
   // sub-domains ONLY: `https://*.vercel.live` does not cover the apex, and the preview
   // toolbar serves its feedback bundle from `https://vercel.live/_next-live/...`. The
   // smoke suite caught this as a console error on every preview deployment.
-  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''} https://www.googletagmanager.com https://va.vercel-scripts.com https://vercel.live https://*.vercel.live https://maps.googleapis.com https://maps.gstatic.com`,
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''} https://www.googletagmanager.com https://va.vercel-scripts.com https://vercel.live https://*.vercel.live https://maps.googleapis.com https://maps.gstatic.com https://js.stripe.com`,
   // fonts.googleapis.com: the Maps JS API injects a Roboto stylesheet link at runtime.
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
@@ -44,12 +46,16 @@ const csp = [
   // keyed path, ADR-901), Photon (address geocoding), ipapi (IP geo). Web vitals are
   // first-party (POST /api/vitals, ADR-922) — the old vitals.vercel-insights.com entry
   // was the stale allowlist ADR-922 said should go rather than grow a third collector.
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frequencylocal.com wss://api.frequencylocal.com https://www.google-analytics.com https://region1.google-analytics.com https://vercel.live https://*.vercel.live https://tiles.openfreemap.org https://maps.googleapis.com https://maps.gstatic.com https://photon.komoot.io https://ipapi.co",
+  // Stripe: api.stripe.com is every XHR the on-page checkout makes from our origin;
+  // merchant-ui-api.stripe.com is audited (with its caveat) in the Stripe block below.
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frequencylocal.com wss://api.frequencylocal.com https://www.google-analytics.com https://region1.google-analytics.com https://vercel.live https://*.vercel.live https://tiles.openfreemap.org https://maps.googleapis.com https://maps.gstatic.com https://photon.komoot.io https://ipapi.co https://api.stripe.com https://merchant-ui-api.stripe.com",
   // frame-src — the only hosts we may embed. Spotlight media embeds (lib/spotlight/embeds.ts)
   // reconstruct iframe srcs ONLY for these allowlisted players; keep the two lists in sync.
   // Bandcamp, Apple Music and Twitch (two player hosts: clips have their own) joined on
   // 2026-09-08 (PROG-SPOT, ADR-1279).
-  "frame-src 'self' https://vercel.live https://*.vercel.live https://www.youtube.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com https://bandcamp.com https://embed.music.apple.com https://player.twitch.tv https://clips.twitch.tv",
+  // The two Stripe hosts are NOT media embeds and are not in that sync rule: js.stripe.com mounts
+  // every Element, hooks.stripe.com carries the 3DS / redirect authentication frame (ADR-1367).
+  "frame-src 'self' https://vercel.live https://*.vercel.live https://www.youtube.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com https://bandcamp.com https://embed.music.apple.com https://player.twitch.tv https://clips.twitch.tv https://js.stripe.com https://hooks.stripe.com",
   "media-src 'self' blob: https:",
   "worker-src 'self' blob:",
   'report-uri /api/csp-report', // keep reporting even while enforcing — catch any miss
@@ -71,6 +77,69 @@ const csp = [
 // `document.querySelector('script[nonce]').nonce` onto the main.js tag it appends, so the
 // nonce must be on our injected tag in lib/maps/google-loader.ts or the second script is
 // blocked and the map dies with no rejection to fall back on.
+
+// 🔴 THE STRIPE HOST SET IS SCOPED TO `ui_mode: 'custom'` — five hosts, audited one at a time.
+// Phase 1 of the checkout program (ADR-1367). The CSP is ENFORCED and carried ZERO Stripe hosts, so
+// every on-page payment surface was blocked before a line of it existed. Nothing loads Stripe in the
+// browser yet: `stripe` in package.json is the SERVER SDK, which our own Node process calls and no
+// browser directive governs, and `@stripe/stripe-js` is not a dependency. This opens the door the
+// integration walks through, and it is scoped to the mode the owner chose — Checkout Sessions +
+// Elements via `initCheckout` — not to every host Stripe has ever served.
+//
+//   • https://js.stripe.com — `script-src` AND `frame-src`. One tag on our page, which then appends
+//     its own chunks from that SAME host and mounts every Element as an iframe from it. Both
+//     directives or nothing: script-src alone loads the library and then blanks every field.
+//   • https://hooks.stripe.com — `frame-src` only. The authentication frame: 3D Secure challenges
+//     and the redirect-based methods. A card that sails through never requests it, which is exactly
+//     why it belongs here BEFORE launch rather than after the first challenged payment.
+//   • https://api.stripe.com — `connect-src`. Every XHR Stripe.js makes from our origin: the
+//     Checkout Session reads behind `initCheckout`, the payment-method create, and confirm.
+//   • https://merchant-ui-api.stripe.com — `connect-src`. ⚠️ THE ONE ENTRY THIS AUDIT COULD NOT
+//     PROVE from Stripe's published CSP guidance, which names it for Connect embedded components
+//     rather than for Elements. It is carried because custom mode's saved-payment-method
+//     management reads it and it sits inside the SAME trust boundary as api.stripe.com — the host
+//     that already sees the card. A connect-src host nothing ever contacts costs one line; if the
+//     integration lands and this is never hit, DELETE it rather than leaving it as folklore.
+//   • `img-src 'self' data: blob: https:` — NO CHANGE NEEDED, and this line is the audit rather
+//     than an omission: the wallet marks and card-brand art Stripe serves from https://*.stripe.com
+//     are already covered by the blanket `https:` source, so narrowing img-src later is what would
+//     break Stripe, not widening it now.
+//
+// Directives Stripe does NOT touch — checked, not assumed:
+//   • `style-src` / `font-src` — an Element styles and renders inside ITS OWN document, which is
+//     js.stripe.com's origin under js.stripe.com's CSP, not ours. The positioning style Stripe.js
+//     sets on our page is inline, which this policy already allows.
+//   • `form-action 'self'` — Stripe.js navigates the top window by assignment for a redirect
+//     method; the issuer's form POST happens inside the hooks.stripe.com document, under its policy.
+//   • `worker-src 'self' blob:` — already open, and load-bearing: Stripe.js builds workers from
+//     blobs, and a MISSING worker-src falls back to script-src, which is the single most reported
+//     Stripe CSP failure. Do not tighten it to `'self'` without re-reading this line.
+//   • `https://*.js.stripe.com` in script-src is a TRUSTED TYPES requirement. We do not set
+//     `require-trusted-types-for`, so the apex host is the whole need. It joins that change, not this one.
+//
+// DELIBERATELY LEFT OUT: the telemetry and fraud beacons (q.stripe.com, r.stripe.com,
+// errors.stripe.com, m.stripe.network / m.stripe.com). They are fail-soft — a blocked beacon costs
+// a Radar signal and a console line, never a payment — and the rule here is to allowlist what has
+// been audited, not what is plausible. `report-uri /api/csp-report` is the thing that notices: if
+// one of them fires in production it arrives as a report naming the host AND the directive, and
+// that report is the evidence to add it on. Do not pre-open them on the strength of a blog post.
+//
+// ⚠️ THE ADR-170 NONCE FOLLOW-UP applies here too: Stripe.js reads the nonce off the script tag that
+// loaded it and propagates it to the frames and chunks it injects, so a nonce-based script-src needs
+// the nonce ON our loader tag, exactly as the Maps note above requires.
+//
+// ⚠️ APPLE PAY NEEDS A FILE THIS REPO CANNOT WRITE — an OWNER action, not a code task, and a CSP
+// change does not reach it. On-page wallets (Elements/custom, unlike hosted Checkout, which is
+// registered for us) require payment method domain registration, and the association file must
+// answer 200 from `/.well-known/apple-developer-merchantid-domain-association` on every domain that
+// shows the button (frequencylocal.com AND www.frequencylocal.com). Its bytes come from the Stripe
+// Dashboard per domain — Settings → Payment method domains → add the domain → download the file —
+// so no agent can generate them, and a placeholder would register as present and fail at the first
+// tap. `public/.well-known/` therefore still carries apple-app-site-association ONLY, on purpose:
+// the gap is recorded, not papered over. ADR-1367 carries the owner's steps. The PATH itself is
+// already proven: proxy.ts's matcher does not exclude /.well-known, and it does not redirect it
+// either — the universal-links file has been served from public/ there all along, and Apple's check
+// needs a plain 200 with no hop.
 
 // Baseline security headers applied to every route. X-Frame-Options is SAMEORIGIN (not
 // DENY) so the Puck editor's same-origin preview iframe keeps working while cross-origin
