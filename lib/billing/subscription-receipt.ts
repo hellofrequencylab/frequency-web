@@ -136,7 +136,7 @@ export async function sendSpaceMembershipReceipts(opts: {
           { label: 'Started', value: when },
         ],
         closing: [
-          'It renews on its own until you cancel it, and you can cancel any time from your plan and billing settings.',
+          'It renews on its own until you cancel it, and you can cancel any time from Plan and billing in your settings.',
           'Keep this email as your record of what you joined and what it costs.',
         ],
         actionLabel: `Go to ${space.name}`,
@@ -240,9 +240,9 @@ export async function sendSpacePlanReceipt(opts: {
           trialing
             ? 'Billing starts when the trial ends. Cancel before then and nothing is charged.'
             : 'It renews on its own until you cancel it.',
-          'Everything about the plan, including cancelling, lives in the Space billing settings.',
+          'Everything about the plan, including cancelling, is in Plan and billing for this Space.',
         ],
-        actionLabel: 'Open billing settings',
+        actionLabel: 'Open Plan and billing',
         actionUrl: `${appUrl()}/spaces/${space.slug}/settings/billing`,
       },
       logTag: LOG_PLAN,
@@ -301,9 +301,9 @@ export async function sendMembershipInvoiceReceipt(opts: {
           isCrew
             ? 'Every Crew amount carries the same access. You can change what you contribute, or stop, any time.'
             : 'It renews on its own until you cancel it.',
-          'Your plan and billing settings hold every payment and the button to change it.',
+          'Plan and billing holds every payment you have made and the button to change it.',
         ],
-        actionLabel: 'See your plan and billing',
+        actionLabel: 'Go to Plan and billing',
         actionUrl: `${appUrl()}/settings/billing`,
       },
       logTag: LOG_INVOICE,

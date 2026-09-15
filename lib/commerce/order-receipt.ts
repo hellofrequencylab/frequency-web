@@ -187,9 +187,9 @@ export async function sendOrderReceipts(order: SettledOrder): Promise<void> {
         ],
         closing: [
           'The money goes to your payout account on your usual payout schedule.',
-          'Open the order to see the shipping details and mark it sent.',
+          'Open Orders to see the shipping details and mark it sent.',
         ],
-        actionLabel: 'Open the order',
+        actionLabel: 'Open Orders',
         actionUrl: seller.consoleUrl,
       },
       logTag: LOG,

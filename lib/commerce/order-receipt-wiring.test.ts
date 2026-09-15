@@ -41,7 +41,7 @@ vi.mock('@/lib/supabase/admin', () => {
   }
 })
 
-const receipts = vi.hoisted(() => ({ order: vi.fn(async () => {}) }))
+const receipts = vi.hoisted(() => ({ order: vi.fn(async (_a: Record<string, unknown>) => {}) }))
 vi.mock('./order-receipt', () => ({ sendOrderReceipts: receipts.order, ORDER_SOLD_NOTIFICATION_TYPE: 'x' }))
 
 vi.mock('@/lib/finance/record', () => ({ recordFinancialTransaction: vi.fn(async () => ({ recorded: true })) }))

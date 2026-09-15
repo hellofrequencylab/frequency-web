@@ -60,7 +60,7 @@ export async function sendSupporterContributionReceipt(contribution: SettledCont
           'A contribution buys nothing extra. It funds the build, and the Supporter mark is now on your profile.',
           'Keep this email as your record of it.',
         ],
-        actionLabel: 'See your plan and billing',
+        actionLabel: 'Go to Plan and billing',
         actionUrl: `${appUrl()}/settings/billing`,
       },
       logTag: LOG,

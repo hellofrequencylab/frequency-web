@@ -62,12 +62,12 @@ vi.mock('@/lib/supabase/admin', () => {
 // The receipt modules themselves are spies here: what they SAY is pinned by their own tests; what
 // this file measures is how many times a settle reaches them.
 const receipts = vi.hoisted(() => ({
-  donation: vi.fn(async () => {}),
-  supporter: vi.fn(async () => {}),
-  tipper: vi.fn(async () => {}),
-  membership: vi.fn(async () => {}),
-  plan: vi.fn(async () => {}),
-  invoice: vi.fn(async () => {}),
+  donation: vi.fn(async (_a: Record<string, unknown>) => {}),
+  supporter: vi.fn(async (_a: Record<string, unknown>) => {}),
+  tipper: vi.fn(async (_a: Record<string, unknown>) => {}),
+  membership: vi.fn(async (_a: Record<string, unknown>) => {}),
+  plan: vi.fn(async (_a: Record<string, unknown>) => {}),
+  invoice: vi.fn(async (_a: Record<string, unknown>) => {}),
 }))
 vi.mock('./donation-receipt', () => ({ sendDonationReceipts: receipts.donation, DONATION_RECEIVED_NOTIFICATION_TYPE: 'x' }))
 vi.mock('./supporter-receipt', () => ({ sendSupporterContributionReceipt: receipts.supporter }))
