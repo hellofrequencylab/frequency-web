@@ -3,7 +3,11 @@ import { CommerceLastVisited } from '@/components/marketplace/commerce-last-visi
 
 // Housing subtree layout: pass-through chrome-wise; its one job is to stamp the
 // Marketplace umbrella's last-visited cookie (ADR-868) so /marketplace lands back here.
-// Covers the index AND every listing, roommate and new-listing page under /housing/*.
+// Covers the index, /housing/roommates, and every listing under /housing/*.
+//
+// Housing is a pure commerce area — unlike Events it has no member-rail identity of its
+// own — so a layout is the right altitude here, exactly as for Classifieds and Market
+// (LIVE-243).
 export default function HousingLayout({ children }: { children: ReactNode }) {
   return (
     <>

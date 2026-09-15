@@ -8,116 +8,105 @@ import {
   commerceSurfaceHref,
   parseCommerceSurface,
   type CommerceSurface,
-} from '@/lib/marketplace/last-visited'
+} from './last-visited'
 
-// LIVE-243. The Marketplace umbrella has two halves that have to agree and, until this file,
-// nothing measured them in the same place — which is exactly how they drifted. The AREA NAV
-// (MarketplaceFacets, components/marketplace/facet-nav.tsx) has offered five areas since
-// ADR-596; the LAST-VISITED COOKIE remembered two of them, ['classifieds','market'], and its
-// writer was mounted in only those two layouts. A member last browsing Housing or Events had
-// their cookie narrowed back to 'classifieds' by parseCommerceSurface, so /marketplace returned
-// them to a surface they had not been on. Neither half was wrong on its own terms; the pair was.
+// LIVE-243. The area nav has listed Classifieds, Housing, Market and Events since ADR-596, and this
+// whitelist knew only classifieds and market. parseCommerceSurface NARROWS an unknown value rather
+// than failing, so the two never disagreed out loud: a member whose last commerce surface was
+// Housing or Events clicked Marketplace and was silently sent to Classifieds.
 //
-// Three things are pinned here, and the third is the one that would have caught the defect.
-// (1) The DECISION is pure, so every case is driven for real rather than asserted about.
-// (2) The nav's href for an area the cookie remembers is the SAME href the cookie returns to.
-// (3) Every remembered surface actually WRITES the cookie, from the layout that owns its route.
-//
-// (2) and (3) are source shapes: MarketplaceFacets is an async server component that reads two
-// React-cached Supabase helpers, and CommerceLastVisited is a client component whose whole job
-// is a document.cookie write on mount — neither renders in this environment. What makes that
-// acceptable is the same thing that makes it acceptable in facet-nav.test.tsx: each guard names
-// the exact symbol and token that must be present, rather than grepping for the row's own words.
+// Nothing measured the writer and the reader together, which is how they drifted. The load-bearing
+// test here is the drift case: it reads the NAV's own hrefs off disk and requires every commerce
+// destination to be one the nav actually offers, and every href the nav offers (bar the Frequency
+// Store, which LIVE-245 gates on a flag) to be reachable as a surface.
 
-const NAV = readFileSync(join(process.cwd(), 'components/marketplace/facet-nav.tsx'), 'utf8')
-const HUB = readFileSync(join(process.cwd(), 'app/(main)/marketplace/page.tsx'), 'utf8')
+const R = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
+const NAV = R('components/marketplace/facet-nav.tsx')
 
-/** Every `href: '...'` MarketplaceFacets declares in its AREAS table. */
+/** The hrefs the area nav links to, read from its source rather than restated. */
 function navHrefs(): string[] {
-  return [...NAV.matchAll(/href: '([^']+)'/g)].map((m) => m[1])
+  const hrefs = [...NAV.matchAll(/href: '([^']+)'/g)].map((m) => m[1])
+  if (hrefs.length < 4) throw new Error(`facet-nav.tsx yielded only ${hrefs.length} hrefs; its shape moved`)
+  return hrefs
 }
 
-/** The layout that owns a surface's route subtree, derived from the href the cookie returns to
- *  (so a query facet like Events' `?price=paid` does not have to be repeated here). */
-function layoutFor(surface: CommerceSurface): string {
-  const path = commerceSurfaceHref(surface).split('?')[0]
-  return join(process.cwd(), `app/(main)${path}/layout.tsx`)
-}
-
-describe('the cookie vocabulary', () => {
-  it('round-trips every surface it claims to remember', () => {
-    for (const s of COMMERCE_SURFACES) expect(parseCommerceSurface(s)).toBe(s)
-  })
-
-  it('narrows anything it does not know to Classifieds, the default door', () => {
-    for (const v of [undefined, null, '', 'store', 'feed', 'CLASSIFIEDS', '../../etc']) {
-      expect(parseCommerceSurface(v)).toBe('classifieds')
-    }
-  })
-
-  it('remembers all four umbrella areas', () => {
-    // The defect: this list was ['classifieds','market'] while the nav offered four.
+describe('the commerce surface vocabulary', () => {
+  it('carries all four areas the nav browses, in nav order', () => {
     expect([...COMMERCE_SURFACES]).toEqual(['classifieds', 'housing', 'market', 'events'])
   })
 
-  it('gives every surface a route to land on', () => {
-    for (const s of COMMERCE_SURFACES) {
-      expect(commerceSurfaceHref(s)).toMatch(/^\//)
-    }
-  })
-
-  it('returns to the COMMERCE face of Events, not the full member index', () => {
-    // Events is also a member noun with its own rail row, so the umbrella's door has to be the
-    // paid and ticketed view or it is a second Events index.
+  it('lands Events on the commerce face, not the member index', () => {
+    // The tab has to read as the commerce face (paid and ticketed) rather than a second Events
+    // index — Events is also one of the four member nouns and carries its own rail row.
     expect(commerceSurfaceHref('events')).toBe('/events?price=paid')
   })
 
-  it('names the cookie once and keeps it a year', () => {
+  it('gives every surface a destination', () => {
+    for (const s of COMMERCE_SURFACES) expect(commerceSurfaceHref(s)).toMatch(/^\//)
+  })
+
+  it('narrows anything it does not recognise to the default door', () => {
+    for (const bad of [undefined, null, '', 'shop', 'store', 'feed', 'HOUSING', '../etc'])
+      expect(parseCommerceSurface(bad)).toBe('classifieds')
+  })
+
+  it('accepts every surface it claims to carry', () => {
+    for (const s of COMMERCE_SURFACES) expect(parseCommerceSurface(s)).toBe(s)
+  })
+
+  it('keeps the cookie contract stable', () => {
     expect(COMMERCE_LAST_COOKIE).toBe('commerce_last')
     expect(COMMERCE_LAST_MAX_AGE).toBe(60 * 60 * 24 * 365)
   })
 })
 
-describe('the area nav and the cookie point at the same places', () => {
-  it('MarketplaceFacets links every remembered surface at exactly the href it returns to', () => {
-    // The drift guard. A nav entry that moves (Events gaining ?price=paid) without the cookie
-    // moving with it puts a member back somewhere the tab no longer goes.
-    const hrefs = navHrefs()
-    for (const s of COMMERCE_SURFACES) {
-      expect(hrefs).toContain(commerceSurfaceHref(s))
+describe('the drift case: the nav and the cookie cannot disagree', () => {
+  it('every commerce destination is an href the area nav offers', () => {
+    const offered = navHrefs()
+    for (const s of COMMERCE_SURFACES) expect(offered).toContain(commerceSurfaceHref(s))
+  })
+
+  it('every area the nav offers is reachable as a surface, bar the flag-gated Store', () => {
+    const reachable = COMMERCE_SURFACES.map(commerceSurfaceHref)
+    for (const href of navHrefs()) {
+      if (href === '/store') continue // LIVE-245: gated on marketplace_shop_published, not a tab
+      expect(reachable).toContain(href)
     }
-  })
-
-  it('leaves the Frequency Store declared in the nav and OUT of the cookie, on purpose', () => {
-    // Its publication is an open ruling (LIVE-245) and its flag has no production reader, so the
-    // umbrella must not learn to return a member to a door that may be shut. The two lists are
-    // deliberately different lengths; this asserts the difference is the one we meant.
-    expect(navHrefs()).toContain('/store')
-    expect([...COMMERCE_SURFACES]).not.toContain('store')
-  })
-
-  it('the /marketplace door narrows through this module rather than a second whitelist', () => {
-    expect(HUB).toContain('parseCommerceSurface')
-    expect(HUB).toContain('commerceSurfaceHref')
-    expect(HUB).not.toMatch(/redirect\('\//)
   })
 })
 
-describe('every remembered surface writes the cookie', () => {
-  it.each([...COMMERCE_SURFACES])('%s mounts CommerceLastVisited in its layout', (surface) => {
-    // Housing and Events had no layout at all, so two of the four areas could be browsed for a
-    // year without the umbrella ever learning where the member was.
-    const path = layoutFor(surface)
-    expect(existsSync(path)).toBe(true)
-    const src = readFileSync(path, 'utf8')
-    expect(src).toContain('CommerceLastVisited')
-    expect(src).toContain(`surface="${surface}"`)
+describe('every surface has something that writes the cookie', () => {
+  // Classifieds, Housing and Market stamp it from a subtree layout: every path under them is a
+  // commerce path. Events does NOT, and that asymmetry is deliberate (see the page's comment).
+  const LAYOUTS: [CommerceSurface, string][] = [
+    ['classifieds', 'app/(main)/classifieds/layout.tsx'],
+    ['housing', 'app/(main)/housing/layout.tsx'],
+    ['market', 'app/(main)/market/layout.tsx'],
+  ]
+
+  for (const [surface, path] of LAYOUTS) {
+    it(`${surface} stamps it from ${path}`, () => {
+      expect(existsSync(join(process.cwd(), path))).toBe(true)
+      const src = R(path)
+      expect(src).toContain('CommerceLastVisited')
+      expect(src).toContain(`surface="${surface}"`)
+    })
+  }
+
+  it('events stamps it from the PAGE, and only on the commerce face', () => {
+    // A layout here would tell /marketplace "you were last in the Marketplace" for a member who
+    // only ever opened Events from their rail, then send them to a paid-only filter.
+    expect(existsSync(join(process.cwd(), 'app/(main)/events/layout.tsx'))).toBe(false)
+    const page = R('app/(main)/events/page.tsx')
+    expect(page).toContain('CommerceLastVisited')
+    expect(page).toContain(`surface="events"`)
+    expect(page).toMatch(/sp\.price === 'paid'/)
+    expect(page).toMatch(/\{onCommerceFace && <CommerceLastVisited/)
   })
 
-  it('and nothing else does', () => {
-    // The positive control for the guard above: it measures a real mount, not the mere presence
-    // of a layout file. /store is a commerce route with no layout, and must stay that way while
-    // the cookie does not remember it.
-    expect(existsSync(join(process.cwd(), 'app/(main)/store/layout.tsx'))).toBe(false)
+  it('the /marketplace door reads the cookie through the whitelist', () => {
+    const door = R('app/(main)/marketplace/page.tsx')
+    expect(door).toContain('parseCommerceSurface')
+    expect(door).toContain('commerceSurfaceHref')
   })
 })

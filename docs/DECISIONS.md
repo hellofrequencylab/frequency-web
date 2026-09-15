@@ -43209,7 +43209,76 @@ a comment explaining the guard.
 (the two-member `COMMERCE_SURFACES` cookie, the missing housing and events layouts, the Events entry
 pointing at the full index rather than `?price=paid`) are untouched here.
 
-## ADR-1367: an account holder is admitted, and the induction stops being a wall (2026-09-15)
+## ADR-1367: the Marketplace remembered two of four areas, and narrowed the rest away (2026-09-15)
+
+**Status.** Accepted. Closes `LIVE-243`. Completes [ADR-868](DECISIONS.md)'s umbrella door and wires
+the commerce face [ADR-596](DECISIONS.md) implied. Sits directly on
+[ADR-1366](DECISIONS.md), which gave the same nav its visibility gate.
+
+**Context.** `/marketplace` is the member rail's one Marketplace row: a server page that reads the
+`commerce_last` cookie and redirects to whichever commerce area you last browsed. The area nav has
+listed **four** areas since ADR-596 — Classifieds, Housing, Market, Events. The cookie's whitelist
+knew **two**:
+
+```ts
+export const COMMERCE_SURFACES = ['classifieds', 'market'] as const
+```
+
+and only `app/(main)/classifieds/layout.tsx` and `app/(main)/market/layout.tsx` mounted the writer.
+
+**🔴 The silent part is why it survived.** `parseCommerceSurface` **narrows** an unrecognised cookie
+value to `'classifieds'` rather than failing. So the writer and the reader never disagreed out loud:
+a member whose last commerce surface was Housing or Events clicked Marketplace and was sent somewhere
+they had not been — by design, with nothing anywhere recording that it had happened. The nav grew to
+five entries and the cookie stayed at two because **nothing measured them together.**
+
+**Decision.** Four surfaces, four writers, and one part of it deliberately **not** symmetrical.
+
+| area | where the cookie is stamped | why |
+|---|---|---|
+| Classifieds | subtree layout *(existing)* | every path beneath it is a commerce path |
+| **Housing** | **subtree layout (new)** | same — covers `/housing`, `/housing/roommates` and every listing |
+| Market | subtree layout *(existing)* | same |
+| **Events** | **its PAGE, guarded on `sp.price === 'paid'`** | 🔴 see below |
+
+**Events is the one area that is also a member noun.** It carries its own rail row, so it appears
+twice in the product, and a subtree layout there would tell `/marketplace` *"you were last in the
+Marketplace"* for a member who only ever opened Events from their rail — then send them to a
+paid-only filter they never asked for. `price=paid` is exactly what the area nav links to, so the
+guard stamps the visits that arrived **through** the Marketplace and no others. It needs no
+`useSearchParams` and therefore no Suspense question: the page already awaits `searchParams`.
+
+`commerceSurfaceHref('events')` returns **`/events?price=paid`**, and the Events entry in **both**
+navs points there. `MarketplaceGuide`'s blurb moves from *"Find paid and free events near you"* to
+*"Ticketed events from members and businesses"*, so the card stops describing a destination it no
+longer links to. None of this is invented: `EventsSurface` was already parameterised for it (its own
+doc comment names *"the commerce tab, where these host actions do not belong"*) and
+`index-data.ts` already declared the `price` facet. **The shape was anticipated and never wired.**
+
+**🔴 One probe arm is inverted, and it is the interesting one.** The probe written for this row
+earlier the same day required `app/(main)/events/layout.tsx` to **exist** and mount the writer —
+copying the Classifieds/Market pattern onto the one area where it is wrong. It now requires that
+file to be **absent**. That is the second inverted probe in two rows (ADR-1366's demanded the
+Frequency Store entry be *deleted*), and both inversions have the same cause: a probe written from
+the pattern rather than from the consequence. The rule to carry: **a probe copied from a sibling
+surface inherits the sibling's assumptions**, and an area that is two things at once breaks them.
+
+**Consequences.** ✅ Proven **four** ways. The probe exits **0** here (14 assertions) and **1**
+against the pre-change tree: with the housing layout absent it fails on the missing path by name;
+with the layout present and the other three files reverted, **6 of 14** arms fire independently; and
+with every file correct but a synthetic `events/layout.tsx` added, the **inverted arm fires alone** —
+so the asymmetry is genuinely enforced rather than asserted. ✅ The decision is driven for real in
+`lib/marketplace/last-visited.test.ts` — **13 assertions, 5 of which fail against the pre-change
+tree** — whose load-bearing case is the **drift case**: it reads the nav's hrefs off disk and
+requires the two to agree in **both** directions (every commerce destination is an href the nav
+offers; every href the nav offers is reachable as a surface, bar the flag-gated `/store`). That is
+the test that did not exist, and its absence is the whole reason a five-way nav and a two-way cookie
+could drift apart. ⚠️ **Stated limit:** the writer coverage half is a source shape. Rendering these
+layouts would need the full `(main)` segment; each guard names the file and the exact `surface="…"`
+it must carry, so a fifth area added without a writer fails the row.
+
+**Rows.** `LIVE-243` (done, this ADR).
+## ADR-1368: an account holder is admitted, and the induction stops being a wall (2026-09-15)
 
 **Status.** Accepted. Closes the ruling half of `OWN-072`. Amends [ADR-1324](DECISIONS.md), which
 deferred this question deliberately rather than quietly, and narrows [ADR-047](DECISIONS.md)'s

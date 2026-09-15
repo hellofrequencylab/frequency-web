@@ -3,22 +3,15 @@
 // CommerceLastVisited client component (writes it), so the whitelist can never drift
 // between the writer and the reader.
 //
-// The cookie remembers WHICH of the umbrella's four areas (Classifieds | Housing | Market |
-// Events) the member last browsed, so clicking Marketplace lands them back where they were. It
-// is non-sensitive UI preference state: plain (not httpOnly — a client component writes it),
-// SameSite=Lax, one year.
+// The cookie remembers WHICH of the umbrella's areas the member last browsed, so clicking
+// Marketplace lands them back where they were. It is non-sensitive UI preference state:
+// plain (not httpOnly — a client component writes it), SameSite=Lax, one year.
 //
-// IT REMEMBERED TWO OF THE FOUR UNTIL 2026-09-15 (LIVE-243). The area nav
-// (components/marketplace/facet-nav.tsx) has carried Housing and Events since ADR-596, but this
-// whitelist carried only ['classifieds','market'] and the writer was mounted only under those
-// two, so a member last browsing Housing or Events had their cookie narrowed back to
-// 'classifieds' by parseCommerceSurface and was returned somewhere they had not been. The nav
-// and the cookie are now pinned together by lib/marketplace/last-visited.test.ts, which is what
-// stops the two halves drifting again: nothing had ever measured them in the same place.
-//
-// The Frequency Store is deliberately NOT here. Its publication is an open ruling (LIVE-245) and
-// its flag has no production reader, so the umbrella must not learn to return a member to a door
-// that may be shut. Add 'store' the day that row closes, with the writer in its layout.
+// 🔴 IT CARRIED TWO OF FOUR UNTIL LIVE-243, and that is worse than carrying none. The area
+// nav has listed Classifieds, Housing, Market and Events since ADR-596, but this whitelist
+// knew only classifieds and market, and parseCommerceSurface NARROWS an unknown value to
+// 'classifieds'. So a member whose last commerce surface was Housing or Events clicked
+// Marketplace and was sent somewhere they had not been, silently and by design.
 
 export const COMMERCE_LAST_COOKIE = 'commerce_last'
 
@@ -27,10 +20,12 @@ export type CommerceSurface = (typeof COMMERCE_SURFACES)[number]
 
 /** Route each surface token lands on.
  *
- *  Events carries its `price=paid` facet, because the umbrella's Events door is the COMMERCE
- *  FACE of Events (paid and ticketed), not the full member index — the same href the area nav
- *  points at, and what lets Events be a tab here while it also holds its own member rail row.
- *  The facet is a real one: PRICE_OPTIONS in app/(main)/events/index-data.ts. */
+ *  ⚠️ EVENTS LANDS ON THE COMMERCE FACE, NOT THE MEMBER INDEX (owner ruling, LIVE-243).
+ *  Events is a marketplace area AND one of the four member nouns with its own rail row, so
+ *  it appears twice; the tab has to read as the commerce face (paid and ticketed) rather
+ *  than a second Events index. `price=paid` is a facet /events already declares
+ *  (PRICE_OPTIONS in app/(main)/events/index-data.ts), so this is a filter the surface
+ *  supports rather than a route invented here. */
 const SURFACE_HREF: Record<CommerceSurface, string> = {
   classifieds: '/classifieds',
   housing: '/housing',
