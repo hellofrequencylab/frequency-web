@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
-// ── The Stripe half of the enforced CSP (ADR-1367, checkout Phase 1) ────────────────────────────
+// ── The Stripe half of the enforced CSP (ADR-1369, checkout Phase 1) ────────────────────────────
 //
 // THE FAILURE THIS EXISTS FOR, and it is the one an integration cannot see coming: the CSP in
 // next.config.ts is ENFORCED, it is a single joined string, and a host that is missing from it does

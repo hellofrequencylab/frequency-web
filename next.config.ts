@@ -54,7 +54,7 @@ const csp = [
   // Bandcamp, Apple Music and Twitch (two player hosts: clips have their own) joined on
   // 2026-09-08 (PROG-SPOT, ADR-1279).
   // The two Stripe hosts are NOT media embeds and are not in that sync rule: js.stripe.com mounts
-  // every Element, hooks.stripe.com carries the 3DS / redirect authentication frame (ADR-1367).
+  // every Element, hooks.stripe.com carries the 3DS / redirect authentication frame (ADR-1369).
   "frame-src 'self' https://vercel.live https://*.vercel.live https://www.youtube.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com https://bandcamp.com https://embed.music.apple.com https://player.twitch.tv https://clips.twitch.tv https://js.stripe.com https://hooks.stripe.com",
   "media-src 'self' blob: https:",
   "worker-src 'self' blob:",
@@ -79,7 +79,7 @@ const csp = [
 // blocked and the map dies with no rejection to fall back on.
 
 // 🔴 THE STRIPE HOST SET IS SCOPED TO `ui_mode: 'custom'` — five hosts, audited one at a time.
-// Phase 1 of the checkout program (ADR-1367). The CSP is ENFORCED and carried ZERO Stripe hosts, so
+// Phase 1 of the checkout program (ADR-1369). The CSP is ENFORCED and carried ZERO Stripe hosts, so
 // every on-page payment surface was blocked before a line of it existed. Nothing loads Stripe in the
 // browser yet: `stripe` in package.json is the SERVER SDK, which our own Node process calls and no
 // browser directive governs, and `@stripe/stripe-js` is not a dependency. This opens the door the
@@ -136,7 +136,7 @@ const csp = [
 // Dashboard per domain — Settings → Payment method domains → add the domain → download the file —
 // so no agent can generate them, and a placeholder would register as present and fail at the first
 // tap. `public/.well-known/` therefore still carries apple-app-site-association ONLY, on purpose:
-// the gap is recorded, not papered over. ADR-1367 carries the owner's steps. The PATH itself is
+// the gap is recorded, not papered over. ADR-1369 carries the owner's steps. The PATH itself is
 // already proven: proxy.ts's matcher does not exclude /.well-known, and it does not redirect it
 // either — the universal-links file has been served from public/ there all along, and Apple's check
 // needs a plain 200 with no hop.

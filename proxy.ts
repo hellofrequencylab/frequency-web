@@ -129,7 +129,7 @@ export async function proxy(request: NextRequest) {
     supabaseResponse.cookies.delete(ACCOUNT_COOKIE)
   }
 
-  // ── COOKIE CONSENT, DECIDED HERE BECAUSE THE WRITER IS HERE (OWN-061, ADR-1367) ───────────────
+  // ── COOKIE CONSENT, DECIDED HERE BECAUSE THE WRITER IS HERE (OWN-061, ADR-1370) ───────────────
   //
   // The 90-day first-touch cookie below is written at the EDGE, on the visitor's very first request,
   // before a byte of page JS runs. That is why a banner alone could never gate it: by the time any

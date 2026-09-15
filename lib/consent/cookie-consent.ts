@@ -1,4 +1,4 @@
-// The BROWSER-LEVEL cookie consent law, in one pure place (OWN-061, ADR-1367).
+// The BROWSER-LEVEL cookie consent law, in one pure place (OWN-061, ADR-1370).
 //
 // ── WHAT THIS IS AND WHAT IT IS NOT ─────────────────────────────────────────────────────────────
 // lib/consent/consent.ts is the ACCOUNT-level ledger: `consent_records` keyed by a profile id,

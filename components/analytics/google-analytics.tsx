@@ -24,7 +24,7 @@
 // unset (local / non-Vercel). VERCEL_ENV is a Vercel system variable, present at build and
 // runtime, and this is a Server Component, so the read is a real one and not an inlined blank.
 //
-// ── 🔴 2026-09-15 (OWN-061, ADR-1367): THE TAG NO LONGER LOADS UNCONDITIONALLY ─────────────────
+// ── 🔴 2026-09-15 (OWN-061, ADR-1370): THE TAG NO LONGER LOADS UNCONDITIONALLY ─────────────────
 // This file used to render `<script async src=".../gtag/js?id=...">` flat into the head, and the
 // only consent surface anywhere was <GaConsentGate/> in the AUTHENTICATED (main) layout. The tag
 // mounts in the ROOT layout, so every anonymous visitor and every route outside (main) got GA4

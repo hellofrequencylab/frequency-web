@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest'
 
-// ── 🔴 THE OTHER HALF OF THE ORDERING ARM (OWN-061, ADR-1367) ───────────────────────────────────
+// ── 🔴 THE OTHER HALF OF THE ORDERING ARM (OWN-061, ADR-1370) ───────────────────────────────────
 //
 // The ruling: "a banner that gates GA4 but lets the attribution cookie set on first paint is not
 // consent, it is a banner. The gate must sit in front of BOTH writers, and the check that proves it

@@ -14,7 +14,7 @@ import {
   type ConsentChoice,
 } from '@/lib/consent/cookie-consent'
 
-// The cookie consent banner (OWN-061, ADR-1367). The ASKING half; lib/consent/cookie-consent.ts is
+// The cookie consent banner (OWN-061, ADR-1370). The ASKING half; lib/consent/cookie-consent.ts is
 // the law, proxy.ts and the GA head script are the two writers that obey it.
 //
 // ── WHY IT ASKS SOME PEOPLE AND NOT OTHERS ──────────────────────────────────────────────────────
