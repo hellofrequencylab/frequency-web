@@ -47,14 +47,18 @@
           "name": "W0b · P1 — repairs ready to work now, and the instruments that keep the gates honest. This is the wave to pull from when you want the next thing to do.",
           "ids": [
             "LIVE-186",
-            "LIVE-213"
+            "LIVE-213",
+            "LIVE-332",
+            "LIVE-333"
           ]
         },
         {
           "name": "W0c · P2 — small cleanups worth doing whenever a lane is clear, plus the tail of a sequenced repair whose head is higher up the slate (LIVE-293 and LIVE-294 follow LIVE-290 to LIVE-292).",
           "ids": [
             "HYG-075",
-            "LIVE-328"
+            "LIVE-328",
+            "HYG-089",
+            "HYG-091"
           ]
         },
         {
@@ -66,7 +70,9 @@
             "LIVE-221",
             "LIVE-271",
             "LIVE-272",
-            "LIVE-273"
+            "LIVE-273",
+            "HYG-090",
+            "LIVE-334"
           ]
         },
         {
@@ -82,7 +88,6 @@
             "PROG-R5",
             "LIVE-234",
             "LIVE-235",
-            "LIVE-236",
             "PROG-R6",
             "LIVE-239",
             "PROG-R7",
@@ -10879,7 +10884,7 @@
     {
       "id": "LIVE-236",
       "title": "Wire the per-Space email event writer",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
@@ -10887,12 +10892,13 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "space_email_events is read but never written, so an operator who sends email cannot see whether it landed. Sending without delivery feedback is worse than not sending.",
+      "detail": "space_email_events is read but never written, so an operator who sends email cannot see whether it landed. Sending without delivery feedback is worse than not sending.\n\nCLOSED 2026-09-15, PREMISE EXPIRED (re-tested by a lane before working it, the ADR-1082 rule). The writer exists: lib/spaces/email-tracking.ts recordEmailEvent inserts into space_email_events from the open pixel (/e/o/[token]), the click redirect (/e/c/[token]), the inbound reply (lib/crm/inbox.ts) and, since #2507 on 2026-09-09 (one day AFTER this row was checked on 2026-09-08 and never re-read), the Resend delivery webhook: app/api/webhooks/resend/route.ts calls recordSpaceSendEventFromResend for delivered, opened, clicked, bounced and complained, and migration 20270345003000 widened the kind CHECK to carry them. Per-recipient queued and sent with the provider id live in outreach_sends by design (recordSend in lib/spaces/email.ts, flipped to delivered by the same webhook), so writing them here would duplicate the ledger. lib/spaces/email-tracking-delivery.test.ts pins the Resend map and the row shape. The table is EMPTY in production (0 rows, and 0 in outreach_sends) because no Space email has ever been sent, not because nothing writes it; the old manual evidence (\"non-empty after a real send\") measured a send nobody has made, which is an owner or content act. The probe now measures the writer. One small gap left open, not a row: app/api/webhooks/resend/route.test.ts does not pin that the route calls recordSpaceSendEventFromResend.",
       "verify": {
-        "kind": "manual",
-        "evidence": "SQL: space_email_events is non-empty after a real send.",
-        "checked": "2026-09-08"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const route=fs.readFileSync(\"app/api/webhooks/resend/route.ts\",\"utf8\");const lib=fs.readFileSync(\"lib/spaces/email-tracking.ts\",\"utf8\");if(!/recordSpaceSendEventFromResend\\(/.test(route)){console.error(\"the Resend webhook does not record per-Space delivery events\");process.exit(1)}if(!/from\\(\\x27space_email_events\\x27\\)[\\s\\S]{0,200}\\.insert\\(/.test(lib)){console.error(\"lib/spaces/email-tracking.ts does not insert into space_email_events\");process.exit(1)}'",
+        "note": "Passes while the Resend webhook records per-Space delivery events and the tracking module inserts them. Re-pointed 2026-09-15 from a manual \"table non-empty after a real send\", which measured a send nobody has made."
+      },
+      "closed": "2026-09-15"
     },
     {
       "id": "LIVE-237",
@@ -11029,11 +11035,12 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "OWNER RULING 2026-09-08. Channels ship an index, a detail page (720 lines), an editor and a 1,400-line console - and the channels table holds ZERO rows. channel_memberships is also empty, has no writer, and app/(main)/channels/actions.test.ts:233 literally asserts the app never writes it. A Channel reads as a topic Circle. Nothing is lost because there are no channels; redirect old links at /circles.",
+      "detail": "OWNER RULING 2026-09-08. Channels ship an index, a detail page (720 lines), an editor and a 1,400-line console - and the channels table holds ZERO rows. channel_memberships is also empty, has no writer, and app/(main)/channels/actions.test.ts:233 literally asserts the app never writes it. A Channel reads as a topic Circle. Nothing is lost because there are no channels; redirect old links at /circles.\n\nRE-TESTED 2026-09-15 by a lane before working it: DO NOT BUILD AS WRITTEN. The three facts above are true of the RETIRED legacy tables channels and channel_memberships (20240102000000_hierarchy_v2.sql), and no route under app/(main)/channels or app/(main)/admin/channels reads them (actions.test.ts:184,232 and load-channels.test.ts:109-111 pin that). Every Channel surface reads topical_channels: the SEVEN seeded topics of docs/NAMING.md's locked Pillar > Channel > Circle ladder (Spirituality, Movement, Holistic Health, Human Relating, Activism, Creative, Business Support), with topical_channel_memberships written by tune in/out and READ by Messages (room access), Events connectors, People associations and profile associations; circles.topical_channel_id is consumed in 26 files; the Circle manifest's topicalChannelId field points at it; the sitemap emits /channels/<slug> per topic; Programs and Chapters (topical_channels.template_id, lib/channels/programs.ts, the Space program settings, two help articles) hang off it; 30 files outside the Channel directories consume topical_channel*. docs/GLOSSARY.md:29-35 already distinguishes the two. Retiring /channels as a redirect PR would delete the tune-in surface for seven live topics and the Programs feature, which is not \"nothing is lost\". OWNER: re-take ruling 6 (ADR-1294 / CORE-MODEL section 4b row 6) on the corrected measurement, the way the Store ruling was corrected beneath that table. If topical Channels are still to fold into Circles, that is a data-model change (topical_channel_id, the manifest field, Programs, Channel-scoped rooms, the sitemap) with a migration plan, an L not an M. LIVE-241's rail count (16 to 7) assumes this fold and waits on the same ruling. The legacy tables' residue is LIVE-334.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const p=[\"app/(main)/channels\"];const left=p.filter(x=>fs.existsSync(x));if(left.length)console.error(\"still present: \"+left.join(\", \"));process.exit(left.length?1:0)'"
-      }
+      },
+      "ownerAction": "ruling"
     },
     {
       "id": "LIVE-245",
@@ -12484,6 +12491,63 @@
       "closed": "2026-09-15"
     },
     {
+      "id": "LIVE-332",
+      "title": "The manual capture workflow runs outside the turnstile, and its own two capture jobs run in parallel, so one dispatch is two or three concurrent captures on the house profile",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": ".github/workflows/e2e-manual.yml",
+        "ref": "jobs smoke + update-baselines"
+      },
+      "detail": "FILED 2026-09-15 out of the 23:33Z to 23:42Z edge window on 2026-09-14 (11,042 responses of 503 on /rest/v1/*, every one UA node, the ADR-1328 exhaustion shape reproduced). ADR-1331 put pr-compare and lighthouse in e2e.yml behind a turnstile that waits (control 1: 41 polls, 20.6 min, FIFO, never cancelled; control 2 on 2026-09-15: three PRs, waits of 4 and 21 minutes, one cancellation and it was the per-PR supersede). e2e-manual.yml was not in scope: its concurrency group is per ref with cancel-in-progress false, which serialises only dispatches of the SAME ref, and inside one dispatch the smoke job and the update-baselines job each mint a member session and capture the whole surface list AT THE SAME TIME. The recapture dispatched on b5 at 23:28Z (run 34909054841, capture_shell on, against production) ran its two captures beside #2593's pr-compare capture and #2592's, so three or four captures hit the house profile at once, and the edge went to 503 for nine minutes. The baselines that dispatch committed were photographed inside the window and depicted degraded chrome (#2594's own compare: 62 public comparisons failed at 1 to 2 percent); Lane V's clean preview recapture on 2026-09-15 00:26Z superseded every one of those 62 PNGs.\n\nTHE FIX: the same turnstile step that opens pr-compare and lighthouse in e2e.yml runs first in BOTH jobs of e2e-manual.yml, polling the same set of in-progress capture jobs across both workflows (a manual capture waits for a PR capture and a PR capture waits for a manual one), and update-baselines declares needs: smoke so one dispatch never captures twice at once. Read the turnstile's log on the next manual dispatch that overlaps a PR run and record the wait as control 3.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "Turnstile \\(wait",
+        "paths": [
+          ".github/workflows/e2e-manual.yml"
+        ],
+        "note": "Passes once e2e-manual.yml carries the ADR-1331 turnstile step by its e2e.yml name. Written 2026-09-15; the serialisation of its own two jobs is checked by reading the run, not by this probe."
+      }
+    },
+    {
+      "id": "LIVE-333",
+      "title": "A capture taken inside an edge 5xx window commits the window as truth: nothing between the runner and the baseline commit notices that the pages it photographed were degraded",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": ".github/workflows/e2e-manual.yml",
+        "ref": "job update-baselines, the commit step"
+      },
+      "detail": "FILED 2026-09-15. The 2026-09-14 recapture (run 34909054841) captured 89 PNGs while the REST edge answered 503 to 11,042 requests (23:33Z to 23:42Z); the run passed, the runner committed the PNGs, the PR merged as #2594, and the next three pr-compare runs failed 62 public comparisons at 1 to 2 percent on every page and mode because the baselines depicted a shell whose data reads had failed. Nothing failed loudly at the point that mattered: the capture step does not look at the responses the page under test received, and the commit step does not ask whether the capture was clean. ADR-1328 wrote down that the capture fan-out causes the windows; it did not write down that a capture inside a window writes the window into the repo.\n\nTHE FIX, two halves. (1) The shared capture fixture in test/e2e records every response with status 500 or above that the page under test (or its RSC fetches) received during a visual or a11y capture, and a capture that saw one FAILS that surface with the URL and status in the message rather than photographing it. (2) The update-baselines job refuses to commit when any capture failed for that reason (the runner exits non-zero before the commit step, so the existing step order already does this once (1) fails the test; prove it with a run rather than assuming). A unit test drives the fixture with a scripted 503 response and asserts the capture refuses. The same recorder is what LIVE-328's measurement reads.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const dir=\"test/e2e\";const src=fs.readdirSync(dir).filter(f=>/\\.ts$/.test(f)&&!/\\.test\\.ts$/.test(f)).map(f=>fs.readFileSync(dir+\"/\"+f,\"utf8\")).join(\"\\n\");if(!/status\\(\\)\\s*>=\\s*500/.test(src)){console.error(\"no capture fixture under test/e2e records a 5xx response\");process.exit(1)}'",
+        "note": "Passes once a capture fixture under test/e2e reads response.status() against 500. Written 2026-09-15; the refusal itself is proven by the unit test the closing note names."
+      }
+    },
+    {
+      "id": "LIVE-334",
+      "title": "The retired channels and channel_memberships tables still exist with three residual reads, and they are what the \"Channels are empty\" ruling was measured on",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20240102000000_hierarchy_v2.sql",
+        "ref": "channels, channel_memberships"
+      },
+      "detail": "FILED 2026-09-15 out of LIVE-244's re-test. The legacy channels table (0 rows in production) and channel_memberships (0 rows, no writer; app/(main)/channels/actions.test.ts:233 asserts the app never writes it) are the tables the 2026-09-08 \"fold Channels into Circles\" count was taken on; nothing under /channels reads them (those routes read topical_channels, the seven live topics). Their residue in code is three reads: components/widgets/community/manage.tsx:120 and components/widgets/community/structure.tsx:47 (count-only tiles) and lib/feed/post-origin.ts:46 (an id-to-name lookup for a post origin no post carries), plus the RLS policy re-emitted in 20260612060000_retire_crew_role_value.sql:234-238.\n\nTHE FIX: one migration that drops both tables (after check:rls and check:grants stop counting them), the three reads removed, the count tiles reading topical_channels if a count is still wanted, and docs/GLOSSARY.md:29-35 trimmed to the one Channel that exists. This is a migration row: the coordinator applies it through the ledger before the PR merges (check:migrations).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const files=[\"components/widgets/community/manage.tsx\",\"components/widgets/community/structure.tsx\",\"lib/feed/post-origin.ts\"];const left=files.filter(f=>fs.existsSync(f)&&/from\\(\\x27channels\\x27\\)/.test(fs.readFileSync(f,\"utf8\")));if(left.length){console.error(\"legacy channels still read by: \"+left.join(\", \"));process.exit(1)}const dir=\"supabase/migrations\";const dropped=fs.readdirSync(dir).some(f=>/drop table if exists public\\.channels\\b/i.test(fs.readFileSync(dir+\"/\"+f,\"utf8\")));if(!dropped){console.error(\"no migration drops public.channels\");process.exit(1)}'",
+        "note": "Passes once no code reads the legacy channels table and a migration drops it. Written 2026-09-15."
+      }
+    },
+    {
       "id": "HYG-087",
       "title": "Three check:schema-contract allowlist entries are removable now that both guest-door migrations are applied and the types can be regenerated",
       "status": "done",
@@ -12520,6 +12584,66 @@
         "note": "Passes when the overstatement is gone. Written 2026-09-14."
       },
       "closed": "2026-09-14"
+    },
+    {
+      "id": "HYG-089",
+      "title": "e2e-manual.yml accepts ref=main, spends the whole capture, and then cannot commit because branch protection refuses the runner's push",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": ".github/workflows/e2e-manual.yml",
+        "ref": "on: workflow_dispatch"
+      },
+      "detail": "FILED 2026-09-15. Run 34904181882 on 2026-09-14 was dispatched on main with update_baselines on: seven minutes and a 110 MB artifact later, the commit step failed with \"Changes must be made through a pull request\" (main is protected, six required checks), and the artifact could not be reached from the coordinator either (the agent proxy refuses CONNECT to api.github.com). The capture had to be re-dispatched on a branch. The workflow header already says a capture stamps the branch's source, so a main dispatch is never what anyone wants.\n\nTHE FIX: a first step in both jobs that fails immediately when github.ref is refs/heads/main (or any protected ref), naming the branch to dispatch on instead.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "refs/heads/main",
+        "paths": [
+          ".github/workflows/e2e-manual.yml"
+        ],
+        "note": "Passes once the workflow names the protected ref it refuses. Written 2026-09-15."
+      }
+    },
+    {
+      "id": "HYG-090",
+      "title": "A Dependabot bump of maplibre-gl fails the test job STALE until a person runs the worker copy and commits the pair",
+      "status": "open",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "scripts/copy-maplibre-worker.mjs",
+        "ref": "the committed pair under public/maplibre"
+      },
+      "detail": "FILED 2026-09-15. prebuild and predev run scripts/copy-maplibre-worker.mjs so a build always ships the worker that matches the installed maplibre-gl, and scripts/copy-maplibre-worker.test.ts pins that the COMMITTED pair under public/maplibre matches too. A Dependabot bump changes the package and not the committed pair, so its PR fails the test job with STALE every time, and someone runs the script by hand and pushes onto the bot's branch (it happened on 2026-09-14). The guard is right; the automation is missing.\n\nTHE FIX: a small workflow (or a step in ci.yml gated on the dependabot actor and a maplibre-gl bump) that runs the copy script and commits the regenerated pair back to the PR branch, so the bump PR is green on its own. Note the GITHUB_TOKEN rule from the recapture work: a push made with the runner's token starts no CI, so the workflow must either use a token that does or re-trigger the run.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const dir=\".github/workflows\";const hit=fs.readdirSync(dir).some(f=>/\\.ya?ml$/.test(f)&&/copy-maplibre-worker\\.mjs/.test(fs.readFileSync(dir+\"/\"+f,\"utf8\").replace(/^\\s*#.*$/gm,\"\")));if(!hit){console.error(\"no workflow runs the maplibre worker copy on a bump\");process.exit(1)}'",
+        "note": "Passes once a workflow (comments stripped) runs scripts/copy-maplibre-worker.mjs. codeql.yml mentions the script only in a comment today. Written 2026-09-15."
+      }
+    },
+    {
+      "id": "HYG-091",
+      "title": "The money-in vocabulary the UI and the help center already use (\"Get paid\", \"payout account\", \"Receive payments\", \"Manage payouts\") is in no canon",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/NAMING.md",
+        "ref": "the terminology canon"
+      },
+      "detail": "FILED 2026-09-15, owed by LIVE-305 (#2598), which named it and deliberately did not touch the canon. docs/NAMING.md uses \"payout\" only for the rewards economy (Zap and Gem payouts); the Stripe Connect side, which a Space host reads on /spaces/[slug]/settings/payments, /settings/billing and content/help/spaces/get-paid.md, has five names in the product and none in the canon: Get paid, money paths, payout account, Receive payments, Manage payouts. Two meanings of \"payout\" now share a word with no line saying which is which.\n\nTHE FIX: a NAMING.md entry for the money-in side that names the surface (Get paid), the account (the payout account, a Stripe Connect account), the verb pair (receive payments, manage payouts), and disambiguates from the rewards-economy payout; then pnpm check:canon over the surfaces that use them.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "Get paid",
+        "paths": [
+          "docs/NAMING.md"
+        ],
+        "note": "Passes once the canon names the money-in surface. Written 2026-09-15."
+      }
     },
     {
       "id": "OWN-074",
