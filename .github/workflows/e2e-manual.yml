@@ -622,7 +622,7 @@ jobs:
         # hand-off dead-ends. always(): a single flaky surface must not discard the
         # other captures — the job stays red on real failures, but partials still land.
         #
-        # 🔴 AND `always()` IS EXACTLY WHY THIS STEP NEEDS A GATE OF ITS OWN (LIVE-333, ADR-NNNN).
+        # 🔴 AND `always()` IS EXACTLY WHY THIS STEP NEEDS A GATE OF ITS OWN (LIVE-333, ADR-1351).
         # The row that filed the degraded-capture guard assumed the step ORDER already refused a
         # bad commit — "the runner exits non-zero before the commit step". It does not, and this
         # `if: always()` is the line that says so: a non-zero `pnpm test:e2e:update` skips the
@@ -642,7 +642,7 @@ jobs:
         # (or re-run the PR's checks) to get the branch judged on what it now contains.
         if: always()
         run: |
-          # ── THE DEGRADED-CAPTURE REFUSAL (LIVE-333, ADR-NNNN) ───────────────────────────────
+          # ── THE DEGRADED-CAPTURE REFUSAL (LIVE-333, ADR-1351) ───────────────────────────────
           # One line per surface the capture refused because the deployment answered it with a
           # 5xx. A non-empty file means the pictures this run took describe an outage, and
           # committing them makes the outage the baseline every later comparison is measured
@@ -872,7 +872,7 @@ jobs:
       - name: Merge into the ratchet
         run: pnpm a11y:baselines
       - name: Commit baselines to the branch
-        # 🔴 NO `always()` HERE, AND IT MUST STAY THAT WAY (LIVE-333, ADR-NNNN). GitHub prepends
+        # 🔴 NO `always()` HERE, AND IT MUST STAY THAT WAY (LIVE-333, ADR-1351). GitHub prepends
         # an implicit `success()` to a step with no `if:`, so a capture that refused a surface —
         # a degraded deployment, an a11y regression, anything — stops this step and the numbers
         # are never merged or pushed. That is the step ORDER doing the work the update-baselines

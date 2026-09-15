@@ -1,4 +1,4 @@
-// The one `test` every e2e spec imports (LIVE-328, ADR-1328; LIVE-333, ADR-NNNN).
+// The one `test` every e2e spec imports (LIVE-328, ADR-1328; LIVE-333, ADR-1351).
 //
 // It is Playwright's own `test` with two overrides, both of them about what the capture costs and
 // what it is allowed to photograph:

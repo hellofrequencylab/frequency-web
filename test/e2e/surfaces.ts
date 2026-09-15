@@ -1309,7 +1309,7 @@ export async function refuseRouterPrefetch(context: BrowserContext): Promise<voi
   await context.route(isRscRequestUrl, routerPrefetchRoute)
 }
 
-/* ── THE CAPTURE REFUSES A DEGRADED DEPLOYMENT (LIVE-333, ADR-NNNN) ──────────────────────────── */
+/* ── THE CAPTURE REFUSES A DEGRADED DEPLOYMENT (LIVE-333, ADR-1351) ──────────────────────────── */
 
 /**
  * A CAPTURE TAKEN INSIDE A 5xx WINDOW COMMITS THE WINDOW AS TRUTH.

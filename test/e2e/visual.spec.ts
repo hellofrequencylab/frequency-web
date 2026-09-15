@@ -107,7 +107,7 @@ async function capture(
   // operatorLandedElsewhere: a missing baseline is a gap, a misattributed one gates everybody.
   const drifted = operatorLandedElsewhere(page, surface)
   if (drifted) test.skip(true, drifted)
-  // 🔴 AND: was the deployment HEALTHY while we were looking at it? (LIVE-333, ADR-NNNN.) The
+  // 🔴 AND: was the deployment HEALTHY while we were looking at it? (LIVE-333, ADR-1351.) The
   // checks above ask whether this is the right page; this one asks whether the page's data reads
   // worked. A capture taken inside the 2026-09-14 503 window was committed as the baseline and
   // 62 public comparisons then failed against it at 1 to 2 percent. Last thing before the

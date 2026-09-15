@@ -331,7 +331,7 @@ async function open(
     test.skip(true, drifted)
     return false
   }
-  // 🔴 AND: was the deployment HEALTHY while we were looking at it? (LIVE-333, ADR-NNNN.) Same
+  // 🔴 AND: was the deployment HEALTHY while we were looking at it? (LIVE-333, ADR-1351.) Same
   // guard the visual suite runs before its shutter, for the same reason and one door along: an
   // axe pass over a shell whose data reads 5xx'd counts the EMPTY STATE's contrast and files it
   // under the surface's name, and under PW_A11Y_UPDATE it freezes that number into the ratchet.

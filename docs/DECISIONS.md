@@ -41476,7 +41476,7 @@ names that run as `capturing`. LIVE-332's CLOSED paragraph says both are outstan
 now a `cmd` probe that reads the two mechanisms). LIVE-326 and LIVE-330 (done, unchanged; their
 probes read the PR half of the turnstile and still pass).
 
-## ADR-NNNN: ACCEPTED — a capture refuses a degraded deployment, and the ignorable 5xx is a closed list of beacons (2026-09-15)
+## ADR-1351: ACCEPTED — a capture refuses a degraded deployment, and the ignorable 5xx is a closed list of beacons (2026-09-15)
 
 **Context.** ADR-1328 established that the "Supabase windows" of 2026-09-14 were this repo's own
 e2e fan-out, and ADR-1331/ADR-1346 stopped the captures overlapping. Neither wrote down what

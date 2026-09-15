@@ -325,7 +325,7 @@ describe('the maintainer capture waits its turn too', () => {
   })
 })
 
-// ── 🔴 A CAPTURE TAKEN INSIDE A 5xx WINDOW MAY NOT BE COMMITTED (LIVE-333, ADR-NNNN) ────────────
+// ── 🔴 A CAPTURE TAKEN INSIDE A 5xx WINDOW MAY NOT BE COMMITTED (LIVE-333, ADR-1351) ────────────
 //
 // The 2026-09-14 recapture (run 34909054841) photographed 89 PNGs while the REST edge answered 503
 // to 11,042 requests, PASSED, committed, merged as #2594, and the next three pr-compare runs failed

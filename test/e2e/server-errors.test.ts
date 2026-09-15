@@ -1,4 +1,4 @@
-// THE CAPTURE REFUSES A DEGRADED DEPLOYMENT (LIVE-333, ADR-NNNN).
+// THE CAPTURE REFUSES A DEGRADED DEPLOYMENT (LIVE-333, ADR-1351).
 //
 // 🔴 THE DEFECT, measured. The 2026-09-14 recapture (run 34909054841, against production)
 // photographed 89 PNGs while the REST edge answered 503 to 11,042 requests between 23:33Z and

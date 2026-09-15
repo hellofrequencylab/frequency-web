@@ -96,7 +96,7 @@ answered `503` to 11,042 requests. The run passed, the runner committed the PNGs
 next three `pr-compare` runs failed **62 public comparisons at 1 to 2 percent** on every
 page and mode, because the baselines depicted a shell whose data reads had failed
 ([ADR-1328](../../docs/DECISIONS.md) wrote down that the capture fan-out causes those
-windows; ADR-NNNN writes down that a capture inside one commits the window as truth).
+windows; ADR-1351 writes down that a capture inside one commits the window as truth).
 
 | 5xx on | Verdict |
 | :--- | :--- |
