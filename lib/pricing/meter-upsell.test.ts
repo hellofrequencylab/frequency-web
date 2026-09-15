@@ -158,7 +158,7 @@ describe('the copy rules', () => {
     // The rate, both rungs, read from config (free 10% -> Business 5%).
     expect(crm.change).toContain('network-sourced')
     expect(crm.change).toContain(`${PRICING_DEFAULTS.take_rate.network_bps.free / 100}%`)
-    expect(crm.change).toContain(`${PRICING_DEFAULTS.take_rate.network_bps.business / 100}%`)
+    expect(crm.change).toContain(`${PRICING_DEFAULTS.take_rate.network_bps.paid / 100}%`)
   })
 
   it('names the rate on the PERSONAL axis too (free Member 10% -> Crew 8%)', () => {
@@ -169,7 +169,7 @@ describe('the copy rules', () => {
 
   it('drops the rate clause rather than inventing one when the rate does not move', () => {
     const flat: MeterRateLadder = {
-      network_bps: { ...rates.network_bps, business: rates.network_bps.free! },
+      network_bps: { ...rates.network_bps, paid: rates.network_bps.free },
       member_free_bps: rates.member_free_bps,
       member_bps: rates.member_bps,
     }
@@ -251,7 +251,10 @@ describe('the copy rules', () => {
 describe('meterRateBps', () => {
   it('reads the per-plan vector on the plan axis', () => {
     expect(meterRateBps('plan', 'free', rates)).toBe(PRICING_DEFAULTS.take_rate.network_bps.free)
-    expect(meterRateBps('plan', 'collective', rates)).toBe(PRICING_DEFAULTS.take_rate.network_bps.collective)
+    // Every paid plan label lands on the paid rung (LIVE-230), through the resolver, never by name.
+    expect(meterRateBps('plan', 'business', rates)).toBe(PRICING_DEFAULTS.take_rate.network_bps.paid)
+    expect(meterRateBps('plan', 'collective', rates)).toBe(PRICING_DEFAULTS.take_rate.network_bps.paid)
+    expect(meterRateBps('plan', 'nonprofit', rates)).toBe(PRICING_DEFAULTS.take_rate.network_bps.nonprofit)
   })
 
   it('reads the two member rungs on the tier axis', () => {

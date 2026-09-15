@@ -18,7 +18,8 @@ import { NETWORK_TAKE_RATE_DEFAULT } from '@/lib/billing/pricing-keys'
 // + the ONE code catalog), so a rate or price change reflows every label here.
 const P = priceStrings()
 const FREE_RATE_BPS = NETWORK_TAKE_RATE_DEFAULT.free
-const BUSINESS_RATE_BPS = NETWORK_TAKE_RATE_DEFAULT.business
+// Business stands on the PAID rung of the ladder (LIVE-230: free / paid / nonprofit, no per-plan rate).
+const BUSINESS_RATE_BPS = NETWORK_TAKE_RATE_DEFAULT.paid
 const FREE_RATE_LABEL = formatBps(FREE_RATE_BPS)
 const BUSINESS_RATE_LABEL = formatBps(BUSINESS_RATE_BPS)
 // Where the plan pays for itself: the monthly network sales at which the points Business saves cover its

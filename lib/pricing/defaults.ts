@@ -70,9 +70,12 @@ export interface PricingDefaults {
      *  `member_bps` is the Crew rung. Both are 0% on the seller's own audience, always. */
     member_free_bps: number
     member_bps: number
-    // NETWORK-sourced take-rate per space tier (ADR-811 §A). `self` orders are 0 by rule (not stored).
-    // The rate drops as the tier rises; the individual seller rate rides member_bps.
-    network_bps: { free: number; business: number; collective: number; nonprofit: number; independent: number }
+    // NETWORK-sourced take-rate per RUNG (LIVE-230): a free Space, a paid Space (Business, and the
+    // Collective + Independent labels that resolve into it), a Non Profit. `self` orders are 0 by rule
+    // (not stored). A plan finds its rung through lib/billing/pricing-keys.ts takeRateRungForPlan; no
+    // reader indexes this object by plan name. A row stored before LIVE-230 (keyed by plan name) is
+    // normalised into this shape by getPricingValues, so the typed value is always rung-keyed.
+    network_bps: { free: number; paid: number; nonprofit: number }
   }
   /** Vera free-tier daily message cap. */
   vera_free_daily_cap: { messages: number }
@@ -134,14 +137,12 @@ export const PRICING_DEFAULTS: PricingDefaults = {
     // rung on purpose: a free Space is held to the free-Member standard, so only paying moves the rate.
     member_free_bps: NETWORK_TAKE_RATE_DEFAULT.memberFree,
     member_bps: NETWORK_TAKE_RATE_DEFAULT.member,
-    // Network-sourced Space rates: free Space 10% -> Business 5% -> Collective 3% -> Non Profit 0 ->
-    // Independent 0 (left the graph). Launch low, earn the right to raise.
+    // Network-sourced Space rates, two numbers plus a zero: free Space 10% -> paid Space 3% -> Non Profit
+    // 0 (docs/CORE-MODEL.md §5 phase 4). Launch low, earn the right to raise.
     network_bps: {
       free: NETWORK_TAKE_RATE_DEFAULT.free,
-      business: NETWORK_TAKE_RATE_DEFAULT.business,
-      collective: NETWORK_TAKE_RATE_DEFAULT.collective,
+      paid: NETWORK_TAKE_RATE_DEFAULT.paid,
       nonprofit: NETWORK_TAKE_RATE_DEFAULT.nonprofit,
-      independent: NETWORK_TAKE_RATE_DEFAULT.independent,
     },
   },
   // THE FREE VERA DAILY CAP, read from the meter (ADR-917). It used to be a hand-typed 10 here while

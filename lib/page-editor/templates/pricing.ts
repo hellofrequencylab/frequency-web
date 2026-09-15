@@ -28,8 +28,10 @@ const RATE = {
   memberFree: R(NETWORK_TAKE_RATE_DEFAULT.memberFree),
   member: R(NETWORK_TAKE_RATE_DEFAULT.member),
   free: R(NETWORK_TAKE_RATE_DEFAULT.free),
-  business: R(NETWORK_TAKE_RATE_DEFAULT.business),
-  collective: R(NETWORK_TAKE_RATE_DEFAULT.collective),
+  // The paid rung (ADR-1335): Business, Collective and Independent all stand on it, so both cards
+  // read one number until LIVE-232 and LIVE-228 retire the Collective card.
+  business: R(NETWORK_TAKE_RATE_DEFAULT.paid),
+  collective: R(NETWORK_TAKE_RATE_DEFAULT.paid),
   nonprofit: R(NETWORK_TAKE_RATE_DEFAULT.nonprofit),
 }
 const CAT = pricingCatalog()

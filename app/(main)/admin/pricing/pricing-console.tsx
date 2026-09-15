@@ -1044,9 +1044,10 @@ function Field({
   )
 }
 
-/** The take-rate editor. These six fields are the ones that ACTUALLY CHARGE: `take_rate.network_bps` per
- *  Space tier (what lib/billing/fees.ts spaceTakeRateCents applies) plus the two individual seller rungs,
- *  `member_free_bps` and `member_bps`, which memberTakeRateCents picks between on the payee's real tier.
+/** The take-rate editor. These five fields are the ones that ACTUALLY CHARGE: `take_rate.network_bps` per
+ *  Space RUNG (free / paid / nonprofit, LIVE-230; what lib/billing/fees.ts spaceTakeRateCents applies
+ *  after takeRateRungForPlan places the plan) plus the two individual seller rungs, `member_free_bps` and
+ *  `member_bps`, which memberTakeRateCents picks between on the payee's real tier.
  *
  *  🔴 The FREE MEMBER field is the reference rate the whole ladder descends from (ADR-914) and the single
  *  most-charged number in the product, since selling is free on every tier. It was absent from this
@@ -1064,9 +1065,10 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
   const bps = (v: string) => Math.round((Number(v) || 0) * 100)
   const [memberFree, setMemberFree] = useState(pct(rate.member_free_bps))
   const [crew, setCrew] = useState(pct(rate.member_bps))
+  // The Space ladder is three RUNGS (LIVE-230): free, paid (Business, and the Collective + Independent
+  // labels that resolve into it), and Non Profit. There is no per-plan field to edit any more.
   const [free, setFree] = useState(pct(rate.network_bps.free))
-  const [business, setBusiness] = useState(pct(rate.network_bps.business))
-  const [collective, setCollective] = useState(pct(rate.network_bps.collective))
+  const [paid, setPaid] = useState(pct(rate.network_bps.paid))
   const [nonprofit, setNonprofit] = useState(pct(rate.network_bps.nonprofit))
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -1081,8 +1083,7 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
         member_bps: bps(crew),
         network_bps: {
           free: bps(free),
-          business: bps(business),
-          collective: bps(collective),
+          paid: bps(paid),
           nonprofit: bps(nonprofit),
         },
       })
@@ -1100,8 +1101,7 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
         <Field label="Free member %" value={memberFree} onChange={setMemberFree} />
         <Field label="Crew member %" value={crew} onChange={setCrew} />
         <Field label="Free Space %" value={free} onChange={setFree} />
-        <Field label="Business %" value={business} onChange={setBusiness} />
-        <Field label="Collective %" value={collective} onChange={setCollective} />
+        <Field label="Paid Space %" value={paid} onChange={setPaid} />
         <Field label="Non Profit %" value={nonprofit} onChange={setNonprofit} />
         <div className="flex items-center gap-2">
           <SaveCue pending={pending} saved={saved} />

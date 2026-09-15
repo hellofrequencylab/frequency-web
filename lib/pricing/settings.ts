@@ -22,6 +22,7 @@ import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { billingEnabled } from '@/lib/billing/stripe'
 import { crewFloorPrice, PRICING_DEFAULTS, type PricingDefaults } from './defaults'
+import { networkTakeRateFromStored, type StoredTakeRateFields } from '@/lib/billing/pricing-keys'
 import { asPwywConfig, PWYW_CONFIG_KEY } from './catalog-config'
 import {
   asHouseholdBundleConfig,
@@ -98,6 +99,25 @@ export const loadPricingSettings = cache(async (): Promise<Record<string, unknow
   return (await readPricingSettings()).values
 })
 
+/** The stored `take_rate` blob, whatever its vintage, as the typed rung-keyed shape (LIVE-230). The flat
+ *  legacy trio merges per field as before. The `network_bps` vector is REBUILT per rung through the one
+ *  function that knows both stored shapes (`networkTakeRateFromStored`): a row written before LIVE-230
+ *  carries `free / business / collective / nonprofit / independent`, and its retired plan-named keys are
+ *  dropped here rather than carried into the typed value, so no reader downstream ever sees a vector
+ *  it has to guess at. A rung the row lacks is the seeded rung, never undefined and never 0. PURE. */
+function normaliseTakeRate(stored: unknown): PricingDefaults['take_rate'] {
+  const row = (stored && typeof stored === 'object' ? stored : {}) as Partial<PricingDefaults['take_rate']> &
+    StoredTakeRateFields
+  const vec = networkTakeRateFromStored(row)
+  return {
+    ...PRICING_DEFAULTS.take_rate,
+    ...row,
+    member_free_bps: vec.memberFree,
+    member_bps: vec.member,
+    network_bps: { free: vec.free, paid: vec.paid, nonprofit: vec.nonprofit },
+  }
+}
+
 /** The full, typed pricing values (DB merged over defaults). FAIL-SAFE to PRICING_DEFAULTS. */
 export async function getPricingValues(): Promise<PricingDefaults> {
   const raw = await loadPricingSettings()
@@ -122,7 +142,7 @@ export async function getPricingValues(): Promise<PricingDefaults> {
     },
     // Merge each bps field over the default so a legacy DB row (written before `free_bps` existed) still
     // resolves a free rate instead of an undefined → NaN fee. The default is the code source of truth.
-    take_rate: { ...PRICING_DEFAULTS.take_rate, ...(pick('take_rate', {}) as Partial<PricingDefaults['take_rate']>) },
+    take_rate: normaliseTakeRate(pick('take_rate', {})),
     vera_free_daily_cap: pick('vera_free_daily_cap', PRICING_DEFAULTS.vera_free_daily_cap),
     trial: pick('trial', PRICING_DEFAULTS.trial),
     annual_discount: pick('annual_discount', PRICING_DEFAULTS.annual_discount),

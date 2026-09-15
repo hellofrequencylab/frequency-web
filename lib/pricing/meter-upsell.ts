@@ -33,15 +33,22 @@ import {
 } from './feature-meters'
 import { formatBps } from './display'
 import type { GateAxis } from './gates'
+import { isSpacePlanLabel } from './plans'
+import {
+  networkTakeRateBpsForPlan,
+  networkTakeRateFromStored,
+  type StoredTakeRateFields,
+} from '@/lib/billing/pricing-keys'
 
 // ── The rate ladder this module reads (structurally satisfied by pricing_settings.take_rate) ────────
 
 /** The slice of the operator take-rate table the upsell copy needs. Declared structurally rather than
  *  imported from the settings shape so this module stays pure and the test can build one by hand. The
  *  live object is `(await getPricingValues()).take_rate`. */
-export interface MeterRateLadder {
-  /** NETWORK-sourced take rate in basis points, per Space plan (free 1000 → business 500 → …). */
-  network_bps: Record<string, number>
+export interface MeterRateLadder extends StoredTakeRateFields {
+  /** NETWORK-sourced take rate in basis points, per Space RUNG (free 1000 → paid 300 → nonprofit 0,
+   *  LIVE-230). A plan is placed on its rung by the one resolver; nothing here indexes by plan name. */
+  network_bps: { free: number; paid: number; nonprofit: number }
   /** The free Member rung, in basis points. The reference rate the whole ladder descends from. */
   member_free_bps: number
   /** The Crew rung, in basis points. */
@@ -54,8 +61,12 @@ export interface MeterRateLadder {
  *  than inventing one. PURE. */
 export function meterRateBps(axis: GateAxis, tier: string, rates: MeterRateLadder): number | null {
   if (axis === 'plan') {
-    const bps = rates.network_bps?.[tier]
-    return typeof bps === 'number' ? bps : null
+    // COPY, not a charge: a label that is not a Space plan gets null, so the sentence drops its rate
+    // clause rather than quoting a rung nobody is on. (The charging resolver answers the same question
+    // the other way, unknown → the free rung, because under-collecting is the failure it guards.) A known
+    // plan reads its rung through the one resolver; nothing here indexes the vector by plan name.
+    if (!isSpacePlanLabel(tier)) return null
+    return networkTakeRateBpsForPlan(tier, networkTakeRateFromStored(rates))
   }
   // The personal axis has exactly two rungs: a free Member and a paying one (Crew).
   const bps = tier === 'free' ? rates.member_free_bps : rates.member_bps

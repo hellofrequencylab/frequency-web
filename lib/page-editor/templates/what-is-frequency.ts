@@ -4,6 +4,7 @@ import { priceStrings, CREW_NOTE } from '@/lib/pricing/pricing-page'
 import { PLACEHOLDER_SPACE_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
 import { formatBps, formatCents } from '@/lib/pricing/display'
 import { PRICING_DEFAULTS } from '@/lib/pricing/settings'
+import { networkTakeRateBpsForPlan, networkTakeRateFromStored } from '@/lib/billing/pricing-keys'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WHAT IS FREQUENCY — the EIGHTH and LAST seeker article enrolled in the page
@@ -105,10 +106,12 @@ const INDEPENDENT_PRICE = formatCents(PLACEHOLDER_SPACE_PRICE_CENTS.independent)
 // reference rate is the one a reader starts on; the paid rungs are what buys it down. Verified Non Profit
 // is zero, and Independent is off the network.
 const TAKE = PRICING_DEFAULTS.take_rate
+/** A Space plan's rate, through the one plan-to-rung resolver (LIVE-230): free / paid / nonprofit. */
+const SPACE_RATE = (plan: string) => formatBps(networkTakeRateBpsForPlan(plan, networkTakeRateFromStored(TAKE)))
 const MEMBER_RATE = formatBps(TAKE.member_free_bps)
 const CREW_RATE = formatBps(TAKE.member_bps)
-const BUSINESS_RATE = formatBps(TAKE.network_bps.business)
-const NETWORK_RATES = `Member ${MEMBER_RATE}, Crew ${CREW_RATE}, Business ${BUSINESS_RATE}, Non Profit ${formatBps(TAKE.network_bps.nonprofit)}`
+const BUSINESS_RATE = SPACE_RATE('business')
+const NETWORK_RATES = `Member ${MEMBER_RATE}, Crew ${CREW_RATE}, Business ${BUSINESS_RATE}, Non Profit ${SPACE_RATE('nonprofit')}`
 /** The 0%-forever half of the model, stated the same way everywhere it appears. */
 const OWN_AUDIENCE_LINE =
   'It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free.'
@@ -245,13 +248,13 @@ export const spec: ArticleSpec = {
         {
           name: 'Collective',
           price: `${P.collectiveList}/mo`,
-          note: `${formatBps(TAKE.network_bps.collective)} network only`,
+          note: `${SPACE_RATE('collective')} network only`,
           who: 'Be the venue: team seats, automations, and Collaborator hosting.',
         },
         {
           name: 'Non Profit',
           price: `${P.nonprofit}/mo`,
-          note: `${formatBps(TAKE.network_bps.nonprofit)} network only`,
+          note: `${SPACE_RATE('nonprofit')} network only`,
           who: 'The full Collective toolkit, verified 501(c)(3).',
         },
         {
