@@ -14,10 +14,10 @@ Your feed is home: the running stream of what's happening in the Circles you're 
 
 ## What shows up
 
-The first thing above the box where you post is your **community board**. It carries two facts
-about the people you have already joined: the next gathering in one of your Circles, and the most
-recent posts in your Spaces. If your Circles have nothing on yet, it says so and points at
-[what's on](/events) rather than filling the space with strangers.
+The first thing above the box where you post is your **practice board**: your streak, the
+practices you have left to log today, and your Journey's next step, with a **Start Practice**
+button on each one that opens the timer where you are. It is there on every screen size, phone
+included.
 
 Below the board, the stream:
 
@@ -37,14 +37,13 @@ Below the board, the stream:
 
 If nobody's around you yet, the feed shows a warm **be a founder in your neighborhood** prompt: start the first Circle, host the first gathering, or invite a few people. An empty corner is the opening, not a dead end. And if you haven't set a location yet, you'll see a nudge to turn it on, with the same promise we always keep: your exact location is never shared.
 
-## Where your practice went
+## Your community board
 
-Your streak, the practices you have left to log today, and your Journey's next step are in the
-right rail, not at the top of the feed. The game is a side thing the community does together, so
-home leads with the community and the board keeps every button it had.
-
-On a phone the right rail is hidden, so the same counts and today's move live in the left drawer,
-and [Practices](/practices) carries the log buttons on every screen size.
+On a wide screen, the column to the right of the feed carries your **community board**: the next
+gathering in one of your Circles, and the most recent posts in your Spaces. If your Circles have
+nothing on yet, it says so and points at [what's on](/events) rather than filling the space with
+strangers. The column is hidden on a phone, where the same gatherings are one tap away under
+[Events](/events).
 
 ## Making it yours
 

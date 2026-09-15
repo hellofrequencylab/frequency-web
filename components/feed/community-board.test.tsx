@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { CommunityBoard as Board } from '@/lib/feed/community-board'
 
-// THE FEED HERO IS A COMMUNITY BOARD (LIVE-248 · CORE-MODEL §5 Phase 7.5.3 · ADR-1294).
+// THE COMMUNITY BOARD (LIVE-248 · ADR-1294), NOW IN THE RIGHT RAIL (ADR-1362).
 //
 // Two halves, because each catches what the other cannot:
 //
@@ -13,10 +13,10 @@ import type { CommunityBoard as Board } from '@/lib/feed/community-board'
 //      rather than two empty groups.
 //   2. SOURCE SHAPE. The order of modules on a page is not something a render test can assert
 //      from the outside (the page is an async Server Component fanning out five reads behind
-//      three Suspense boundaries), and "the game is no longer in the hero" is a statement about
-//      what the file does NOT contain. Both are read off the source, comment-stripped so a
+//      three Suspense boundaries), and "the community board is not in the hero" is a statement
+//      about what the file does NOT contain. Both are read off the source, comment-stripped so a
 //      mention in a comment cannot satisfy them — which matters here precisely because the
-//      comments in these files DO name JourneyBoard, to say where it went.
+//      comments in these files DO name both boards, to say where each one lives.
 
 vi.mock('next/link', () => ({
   default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a>,
@@ -108,48 +108,46 @@ describe('the board renders community first', () => {
   })
 })
 
-describe('the game modules are out of the hero and in the rail', () => {
+describe('the practice board leads the page, and the community board leads the rail', () => {
   const feed = code(FEED)
 
-  it('the feed page renders the community board and neither practice board', () => {
-    expect(feed).toMatch(/<CommunityBoard profileId=/)
-    expect(feed).not.toMatch(/<JourneyBoard\b/)
-    expect(feed).not.toMatch(/<PracticePrompt\b/)
-    // Not imported either: a module the page cannot name is a module the hero cannot regrow.
-    expect(feed).not.toMatch(/from '@\/components\/feed\/journey-board'/)
-    expect(feed).not.toMatch(/from '@\/components\/practice\/practice-prompt'/)
+  // ADR-1362 (owner ruling, 2026-09-15) REVERSED the placement LIVE-248 shipped. These tests used
+  // to assert the opposite of every line below, and they passed — because they measured the
+  // placement instead of its CONSEQUENCE. The rail is `hidden lg:flex`, so "the practice board
+  // moved to the rail" and "the practice board is gone from every phone" were the same sentence,
+  // and nothing in the suite could tell them apart. The last test here is the one that can.
+
+  it('the feed page renders the practice board and not the community board', () => {
+    expect(feed).toMatch(/<JourneyBoard\b/)
+    expect(feed).toMatch(/<PracticePrompt\b/)
+    // The community board is a RAIL panel now, so the page neither renders nor imports it.
+    expect(feed).not.toMatch(/<CommunityBoard\b/)
+    expect(feed).not.toMatch(/from '@\/components\/feed\/community-board'/)
   })
 
-  it('the community board is the FIRST module above the composer', () => {
-    const board = feed.indexOf('<CommunityBoard profileId')
+  it('the practice board is the FIRST module above the composer', () => {
+    const board = feed.search(/<JourneyBoard\b/)
     const composer = feed.indexOf('<CaptureBar')
     expect(board).toBeGreaterThan(-1)
     expect(composer).toBeGreaterThan(-1)
     expect(board, 'the board must sit above the composer').toBeLessThan(composer)
-    // And nothing else in the hero is a module: the only things above it are the activation
-    // guide and the page heading, both of which the board is allowed to follow.
+    // Nothing else in the hero is a module: the only things above it are the activation guide
+    // and the page heading, both of which the board is allowed to follow.
     const above = feed.slice(0, board)
     expect(above).not.toMatch(/<LocalCornerCard\b/)
     expect(above).not.toMatch(/<HostPromptCard\b/)
     expect(above).not.toMatch(/<RomanceStrip\b/)
   })
 
-  it('streams behind its own Suspense so neither read blocks the shell (PAGE-FRAMEWORK §5)', () => {
-    const board = feed.indexOf('<CommunityBoard profileId')
-    const suspense = feed.lastIndexOf('<Suspense', board)
-    expect(suspense).toBeGreaterThan(-1)
-    expect(feed.slice(suspense, board)).toContain('CommunityBoardSkeleton')
-  })
-
-  it('the rail leads /feed with the practice board, and drops the panel the hero now owns', () => {
+  it('the rail leads /feed with the community board, and keeps events off that rule', () => {
     const map = code(RAIL_MAP)
     // The key exists on the union, so an unregistered string cannot pass as one.
-    expect(map).toMatch(/\|\s*'practice'/)
+    expect(map).toMatch(/\|\s*'community'/)
     const rule = map.match(/\{ test: \(p\) => p === '\/feed', panels: \[([^\]]+)\] \}/)
     expect(rule, `the /feed rail rule is gone from ${RAIL_MAP}`).toBeTruthy()
     const panels = rule![1].split(',').map((k) => k.trim().replace(/'/g, ''))
-    expect(panels[0]).toBe('practice')
-    // The community board names the next gathering on the page, so the rail does not repeat it.
+    expect(panels[0]).toBe('community')
+    // The community board names the next gathering, so the rail does not repeat it below itself.
     expect(panels).not.toContain('events')
     // /nearby keeps the events panel: that page owns no gathering of its own.
     expect(map).toMatch(/p === '\/nearby'[^\n]*panels: \['events'/)
@@ -157,8 +155,25 @@ describe('the game modules are out of the hero and in the rail', () => {
 
   it('the registry renders the panel, so the key is not a dead string', () => {
     const registry = code(RAIL_REGISTRY)
-    expect(registry).toMatch(/practice: \{\s*render: \(\{ profileId \}\) => <PracticeBoardPanel profileId=\{profileId\} \/>,/)
-    expect(registry).toMatch(/from '@\/components\/sidebar\/practice-panel'/)
+    expect(registry).toMatch(/community: \{\s*render: \(\{ profileId \}\) => <CommunityBoardPanel profileId=\{profileId\} \/>,/)
+    expect(registry).toMatch(/from '@\/components\/sidebar\/community-panel'/)
+  })
+
+  // 🔴 THE REGRESSION GUARD (ADR-1362). The right rail is `hidden lg:flex` in app-shell, so
+  // ANYTHING whose only home is a rail panel does not exist below the `lg` breakpoint — which is
+  // most of the members, most of the time. The practice board carries LogPracticeButton, the
+  // one-tap Start Practice / Continue Practice control that is the timer's entry point, so a
+  // rail-only practice board is a deleted timer on a phone. That is what LIVE-248 shipped for a
+  // day. This measures the consequence: the board's two faces must be rendered by a PAGE, and no
+  // rail panel may be their only host.
+  it('no practice board is rail-only, because the rail does not exist on a phone', () => {
+    const registry = code(RAIL_REGISTRY)
+    expect(registry).not.toMatch(/<JourneyBoard\b/)
+    expect(registry).not.toMatch(/<PracticePrompt\b/)
+    expect(registry).not.toMatch(/practice-panel/)
+    // The rail's breakpoint is the whole reason for this rule, so the rule fails loudly if the
+    // rail ever stops being desktop-only and someone forgets this test explains why.
+    expect(code('components/layout/app-shell.tsx')).toMatch(/hidden lg:flex/)
   })
 })
 
