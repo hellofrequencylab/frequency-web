@@ -40,8 +40,14 @@
       "note": "The development order for the whole open queue, waves in sequence, ids in order within a wave. Array order IS the sequence — W0 first through W10 last, with `owner-timed` kept at the end because it is scheduled by the owner rather than by this order. Owner-lane rows are decisions, not sequenced dev. Status lives only in each row's probe; this object is the sequence.",
       "waves": [
         {
-          "name": "W0 · P0 — costing something today: an incident, a wrong money/consent/permission answer, or a crawl-facing defect the submitted sitemap exposes. EMPTY IS THE GOAL. It is not empty: LIVE-290 is a live money defect (half the spaces on the platform have a working Stripe account and no surface that says so). OWN-050 is the other P0 and is a console action, in owner-timed.",
-          "ids": []
+          "name": "W0 · the journeys that must complete before anything else matters, in this order. EMPTY IS STILL THE GOAL, and it was empty for the wrong reason: its previous name cited LIVE-290 and OWN-050 as why it was not, and both are done, while five rows that cost something TODAY sat scattered across WR and owner-timed (OWN-073 from owner-timed, OWN-074 from owner-timed, LIVE-234 from WR, OWN-072 from owner-timed, LIVE-260 from WR). 🔴 THIS IS DELIBERATELY NOT A CODE WAVE, and that is the finding rather than a scheduling choice: nothing has ever been charged on this platform (commerce_orders 0, event_tickets 0, space_subscription_items 0, financial_transactions 0, stripe_webhook_events 1, re-read against production 2026-09-15), and PROG-R5 — the P0 phase written to unblock exactly that — was re-measured the same day and its DIAGNOSIS HAD EXPIRED: host_payouts_enabled and billing_live both read true, 2 of 58 profiles hold a fully onboarded Stripe account, and one Space carries two paid tiers behind a payout-ready owner, so the membership loop is unblocked END TO END in production and has still never completed once. Four of these five are the owner’s and three are minutes rather than days. OWN-073 and OWN-074 are owed to real people right now; LIVE-234 is the five non-zero row counts that turn every revenue number in this model from arithmetic into evidence; OWN-072 is the ruling on a signup funnel that eight of nine returning members bounced off exactly once; LIVE-260 is the only P1 here and the only one that is a confirmation rather than an action, because LIVE-240 left no flags to flip. ADR-1368.",
+          "ids": [
+            "OWN-073",
+            "OWN-074",
+            "LIVE-234",
+            "OWN-072",
+            "LIVE-260"
+          ]
         },
         {
           "name": "W0b · P1 — repairs ready to work now, and the instruments that keep the gates honest. This is the wave to pull from when you want the next thing to do.",
@@ -51,10 +57,11 @@
           ]
         },
         {
-          "name": "W0c · P2 — small cleanups worth doing whenever a lane is clear, plus the tail of a sequenced repair whose head is higher up the slate (LIVE-293 and LIVE-294 follow LIVE-290 to LIVE-292).",
+          "name": "W0c · P2 — small cleanups worth doing whenever a lane is clear, plus the one dated item that does not belong in the P3 wave (LIVE-273, whose token expires 2026-12-09). Its previous name pointed at a sequenced repair whose head was higher up the slate; that whole chain (LIVE-290 to LIVE-294) is done, so the clause described a dependency that no longer exists. ADR-1368.",
           "ids": [
             "HYG-075",
-            "LIVE-335"
+            "LIVE-335",
+            "LIVE-273"
           ]
         },
         {
@@ -64,7 +71,6 @@
             "LIVE-220",
             "LIVE-221",
             "LIVE-272",
-            "LIVE-273",
             "HYG-090",
             "HYG-092",
             "LIVE-338",
@@ -81,7 +87,6 @@
             "LIVE-228",
             "LIVE-229",
             "PROG-R5",
-            "LIVE-234",
             "PROG-R6",
             "PROG-R7",
             "LIVE-241",
@@ -91,7 +96,6 @@
             "PROG-R8",
             "LIVE-254",
             "PROG-R9",
-            "LIVE-260",
             "PROG-R10",
             "LIVE-263",
             "PROG-R11",
@@ -216,10 +220,7 @@
             "HYG-068",
             "OWN-066",
             "OWN-067",
-            "OWN-070",
-            "OWN-072",
-            "OWN-073",
-            "OWN-074"
+            "OWN-070"
           ]
         }
       ],
@@ -10316,12 +10317,13 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "Highest commercial leverage in the plan, and the reason it is P0 rather than P1: nothing has EVER been charged on this platform. Production on 2026-09-08 read 0 commerce_orders, 0 event_tickets, 0 space_subscription_items, 0 financial_transactions. Five money loops are built and none has completed once. Surfacing Stripe Connect onboarding at the first sell attempt unblocks all five with one push.\n\nPREMISE RE-TESTED 2026-09-15 against production (the ADR-1082 rule), and it SPLIT: the symptom held exactly, the diagnosis had expired. Still true, unchanged from 2026-09-08: commerce_orders 0, event_tickets 0, space_subscription_items 0, financial_transactions 0, stripe_webhook_events 1. No longer true: onboarding is not the blocker. host_payouts_enabled and billing_live both read true; 2 of 58 profiles hold a Stripe account and BOTH are fully onboarded (charges + payouts enabled), against \"1 with an account, 0 onboarded\" when the row was written; and one Space carries two paid membership tiers ($10 and $5) behind a fully payout-ready owner, so the membership loop is unblocked END TO END in production and has still never completed. A second Space has a $44 tier behind an owner with no account at all, which is the reader the prompt is now for.\n\nSO THE ROW'S STATED FIX IS ALREADY SHIPPED AND DID NOT PRODUCE A SALE. Of the four children, LIVE-233 (surface onboarding), LIVE-235 (donation checkout) and LIVE-236 (per-Space email writer) are closed, and LIVE-339 closed the one seam LIVE-233 left open plus a misdirect it exposed (ADR-1357). The only child left is LIVE-234, five non-zero row counts, which needs a real purchase and cannot be satisfied by this repository at all. This row therefore stays OPEN on LIVE-234 and is NOT a code row any more: do not pick it up expecting to build something. 'Nothing has ever been charged' is still true and is no longer evidence that onboarding is why.",
+      "detail": "Highest commercial leverage in the plan, and the reason it is P0 rather than P1: nothing has EVER been charged on this platform. Production on 2026-09-08 read 0 commerce_orders, 0 event_tickets, 0 space_subscription_items, 0 financial_transactions. Five money loops are built and none has completed once. Surfacing Stripe Connect onboarding at the first sell attempt unblocks all five with one push.\n\nPREMISE RE-TESTED 2026-09-15 against production (the ADR-1082 rule), and it SPLIT: the symptom held exactly, the diagnosis had expired. Still true, unchanged from 2026-09-08: commerce_orders 0, event_tickets 0, space_subscription_items 0, financial_transactions 0, stripe_webhook_events 1. No longer true: onboarding is not the blocker. host_payouts_enabled and billing_live both read true; 2 of 58 profiles hold a Stripe account and BOTH are fully onboarded (charges + payouts enabled), against \"1 with an account, 0 onboarded\" when the row was written; and one Space carries two paid membership tiers ($10 and $5) behind a fully payout-ready owner, so the membership loop is unblocked END TO END in production and has still never completed. A second Space has a $44 tier behind an owner with no account at all, which is the reader the prompt is now for.\n\nSO THE ROW'S STATED FIX IS ALREADY SHIPPED AND DID NOT PRODUCE A SALE. Of the four children, LIVE-233 (surface onboarding), LIVE-235 (donation checkout) and LIVE-236 (per-Space email writer) are closed, and LIVE-339 closed the one seam LIVE-233 left open plus a misdirect it exposed (ADR-1357). The only child left is LIVE-234, five non-zero row counts, which needs a real purchase and cannot be satisfied by this repository at all. This row therefore stays OPEN on LIVE-234 and is NOT a code row any more: do not pick it up expecting to build something. 'Nothing has ever been charged' is still true and is no longer evidence that onboarding is why. ── GAINED ownerAction: account 2026-09-15 (ADR-1368). The guard allows a non-owner row to carry one, meaning code work gated on an owner action, and this row is the purest case of it: its only open child is LIVE-234, which needs a purchase. Without the field the report printed it FIRST in the NOW list as P0/M, which reads as pickable work and is exactly what its own detail spends a paragraph telling a reader not to do. It now prints under RULINGS CARRIED BY OTHER LANES beside the OWNER section (12 -> 13) instead of hiding in a live row detail.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase; proven by its child rows. Three of four are closed (LIVE-233, LIVE-235, LIVE-236) plus LIVE-339; the open one is LIVE-234, which needs a purchase in production, not a commit. Re-measured 2026-09-15: the four money counters all still 0, but host_payouts_enabled true and 2/58 profiles fully onboarded, so onboarding is no longer the blocker and the row's own diagnosis has expired (ADR-1357). Sequence in docs/CORE-MODEL.md §5 phase 5.",
         "checked": "2026-09-15"
-      }
+      },
+      "ownerAction": "account"
     },
     {
       "id": "PROG-R6",
@@ -11580,7 +11582,7 @@
         "file": "docs/BUILD-BACKLOG.json",
         "ref": "the 2026-09-10 outage"
       },
-      "detail": "FOUND 2026-09-10 the hard way. check:migrations went red on every PR for five hours with:\n\n    🔴 check:migrations — the ledger comparison could not RUN:\n       ledger query HTTP 401 from the Supabase Management API. {\"message\":\"Unauthorized\"}\n\nThe cause was the SUPABASE_ACCESS_TOKEN repo secret expiring mid-session. main compared 686 ⇄ 686 successfully at 01:40Z; the next push 401'd at 02:24Z, before anything had touched the database. It reproduced identically on six runs across three branches, so it was never a flake. The owner minted a fresh scoped token on 2026-09-10 and the gate went green the same minute: 687 repo file(s) ⇄ 687 applied row(s).\n\n🔴 IT WILL HAPPEN AGAIN ON OR ABOUT 2026-12-09. Supabase's scoped-token dialog caps expiry at 90 DAYS - there is no \"never\" option - and 90 days was chosen. So this is not a defect to fix, it is a RENEWAL with a date, and the reason it earns a row is that the failure does not look like what it is: the message says \"ledger query\", the guard is named check:migrations, and the natural reading on the day is \"something is wrong with the migrations or the database\". Nothing in the repo says \"the credential has an expiry\". The first hour of the 2026-09-10 outage went into proving the 401 was NOT the PR's, which is exactly the hour this row exists to save.\n\nTHE FIX, about two minutes: mint a token at https://supabase.com/dashboard/account/tokens (Project scope, org hkveprznovcteywuczcv, project azsqfeonabsbmemvddqd = Frequency Community; Database + Project read permissions), then replace the SUPABASE_ACCESS_TOKEN secret at Settings → Secrets and variables → Actions. Verify before relying on it:\n\n    curl -s -o /dev/null -w '%{http_code}\\n' -X POST \\\n      -H \"Authorization: Bearer sbp_...\" -H \"Content-Type: application/json\" \\\n      -d '{\"query\":\"select 1\"}' \\\n      https://api.supabase.com/v1/projects/azsqfeonabsbmemvddqd/database/query\n\nBLAST RADIUS, wider than the one gate that shouts: the same secret arms the Supabase security and performance advisor diffs in .github/workflows/maintenance.yml. Those do not fail when it is dead - they SKIP, quietly, which is the ADR-970 shape. So an expired token costs a red check plus an advisory sweep that silently stops advising, and only the first of those is visible.\n\nWHY THIS IS A ROW AND NOT A GUARD: a probe cannot read a repo secret, and it cannot read the token's expiry date from the Supabase side either. What it CAN do is what this row's evidence does - carry the date. Re-read the expiry when renewing and move the date; if Supabase ever offers a longer or non-expiring option, take it and say so here.",
+      "detail": "FOUND 2026-09-10 the hard way. check:migrations went red on every PR for five hours with:\n\n    🔴 check:migrations — the ledger comparison could not RUN:\n       ledger query HTTP 401 from the Supabase Management API. {\"message\":\"Unauthorized\"}\n\nThe cause was the SUPABASE_ACCESS_TOKEN repo secret expiring mid-session. main compared 686 ⇄ 686 successfully at 01:40Z; the next push 401'd at 02:24Z, before anything had touched the database. It reproduced identically on six runs across three branches, so it was never a flake. The owner minted a fresh scoped token on 2026-09-10 and the gate went green the same minute: 687 repo file(s) ⇄ 687 applied row(s).\n\n🔴 IT WILL HAPPEN AGAIN ON OR ABOUT 2026-12-09. Supabase's scoped-token dialog caps expiry at 90 DAYS - there is no \"never\" option - and 90 days was chosen. So this is not a defect to fix, it is a RENEWAL with a date, and the reason it earns a row is that the failure does not look like what it is: the message says \"ledger query\", the guard is named check:migrations, and the natural reading on the day is \"something is wrong with the migrations or the database\". Nothing in the repo says \"the credential has an expiry\". The first hour of the 2026-09-10 outage went into proving the 401 was NOT the PR's, which is exactly the hour this row exists to save.\n\nTHE FIX, about two minutes: mint a token at https://supabase.com/dashboard/account/tokens (Project scope, org hkveprznovcteywuczcv, project azsqfeonabsbmemvddqd = Frequency Community; Database + Project read permissions), then replace the SUPABASE_ACCESS_TOKEN secret at Settings → Secrets and variables → Actions. Verify before relying on it:\n\n    curl -s -o /dev/null -w '%{http_code}\\n' -X POST \\\n      -H \"Authorization: Bearer sbp_...\" -H \"Content-Type: application/json\" \\\n      -d '{\"query\":\"select 1\"}' \\\n      https://api.supabase.com/v1/projects/azsqfeonabsbmemvddqd/database/query\n\nBLAST RADIUS, wider than the one gate that shouts: the same secret arms the Supabase security and performance advisor diffs in .github/workflows/maintenance.yml. Those do not fail when it is dead - they SKIP, quietly, which is the ADR-970 shape. So an expired token costs a red check plus an advisory sweep that silently stops advising, and only the first of those is visible.\n\nWHY THIS IS A ROW AND NOT A GUARD: a probe cannot read a repo secret, and it cannot read the token's expiry date from the Supabase side either. What it CAN do is what this row's evidence does - carry the date. Re-read the expiry when renewing and move the date; if Supabase ever offers a longer or non-expiring option, take it and say so here.\n\n── MOVED W0d -> W0c 2026-09-15 (ADR-1368). W0d is the P3 set (\"the perf set and the deferred niceties, priced against a 12-visitor funnel\"); this is its only P2 and it is not a nicety: the token expires 2026-12-09 on a fixed date, and the row exists because the failure reads as a different problem. A dated item in the wave that is explicitly de-prioritised against merit is how a deadline gets missed.",
       "verify": {
         "kind": "manual",
         "evidence": "2026-09-10: rotated after a five-hour outage; check:migrations green the same minute (687 ⇄ 687, versions sha256 2889e24c…). New token is Project-scoped with a 90-day cap, the longest the dialog offers, so it dies on or about 2026-12-09. Closes when Supabase offers a longer-lived option for this use, or when the renewal is automated; until then it goes stale on purpose and the staleness IS the reminder.",
@@ -12708,7 +12710,7 @@
       "id": "OWN-074",
       "title": "Two of the four hosts with priced events have no Stripe Connect account, so nobody can buy from them signed in or out",
       "status": "open",
-      "priority": "P1",
+      "priority": "P0",
       "lane": "owner",
       "size": "XS",
       "ownerAction": "content",
@@ -12716,7 +12718,7 @@
         "file": "docs/DECISIONS.md",
         "ref": "the guest-door handoff of 2026-09-14 (session 012voDkq), PRs #2552 and #2556"
       },
-      "detail": "FILED 2026-09-14 from the guest-door handoff, measured on production: ten upcoming events, all priced; hosts able to take money 1 of 3. The host of Returning Home ($55, 23 Oct, tickets mode) has no Connect account, so the event is unsellable to anyone. The host of Meld ($22, 16 Sep, RSVP mode) has none either; a member can still RSVP, the guest door is withheld until LIVE-314 lands. Five Breathe events have no payee row at all, harmless while RSVP mode. No amount of further building changes the first two: it needs two people to finish Connect onboarding at /settings/billing. LIVE-233 (the prompt at the first sell attempt) is the product side of the same fact.",
+      "detail": "FILED 2026-09-14 from the guest-door handoff, measured on production: ten upcoming events, all priced; hosts able to take money 1 of 3. The host of Returning Home ($55, 23 Oct, tickets mode) has no Connect account, so the event is unsellable to anyone. The host of Meld ($22, 16 Sep, RSVP mode) has none either; a member can still RSVP, the guest door is withheld until LIVE-314 lands. Five Breathe events have no payee row at all, harmless while RSVP mode. No amount of further building changes the first two: it needs two people to finish Connect onboarding at /settings/billing. LIVE-233 (the prompt at the first sell attempt) is the product side of the same fact.\n\n── RAISED P1 -> P0 2026-09-15 (ADR-1368). W0 exists for \"a wrong money answer costing something today\" and this is one: the events are LIVE and PRICED and nobody can buy from two of the hosts, so every visitor who tries is a lost sale that already happened. It was P1 only because it is owner work rather than code, and W0 is explicitly not a code wave.",
       "verify": {
         "kind": "manual",
         "evidence": "2026-09-14: 1 of 3 paying hosts connected. Closes when both named hosts read charges and payouts enabled, checked in the Stripe dashboard or profiles.stripe_payouts_enabled.",
