@@ -17,10 +17,18 @@ import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 // the first thing home says.
 //
 // SCOPE IS THE POLICY. These reads go through the service-role admin client, so the query is the
-// gate: a gathering is only eligible when it belongs to a Circle this member is ACTIVE in and its
-// visibility is one an insider may be shown (`circleEventVisibilities(true)` — never `unlisted`,
-// never `private`), and a post is only eligible when its scope is a Space this member is an active
-// member of or owns. The same rule the rail's EventsPanel applies, from the same one list.
+// gate. WHY the bypass, measured rather than assumed: the live SELECT policies cannot express this
+// board for a plain member. `posts` has one read policy and every branch of it is keyed to CIRCLE
+// scope, so a post scoped to a SPACE matches nothing; `events` grants `circle_only` only at role
+// `crew` or above; and `spaces_read_active` hides a member's own private or draft Space because an
+// owner holds no `space_members` row. The full reading is in scripts/admin-client-baseline.txt
+// beside this file's entry.
+//
+// So the QUERY is the gate: a gathering is only eligible when it belongs to a Circle this member is
+// ACTIVE in and its visibility is one an insider may be shown (`circleEventVisibilities(true)` —
+// never `unlisted`, never `private`), and a post is only eligible when its scope is a Space this
+// member is an active member of or owns. The same rule the rail's EventsPanel applies, from the
+// same one list.
 //
 // FAIL-SAFE, never an error: any read that throws or errors degrades that half to nothing, so the
 // module falls back to its empty state rather than taking the feed down with it.

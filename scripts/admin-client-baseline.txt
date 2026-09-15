@@ -122,6 +122,25 @@
 # (event, seat) pair. It cannot converge onto the session client because the seat a host marks is
 # not the host's own row: a guest RSVP and a guest ticket have no profile at all, so no session
 # policy on either table could reach them for an update. Writes the two columns and nothing else.
+# lib/feed/community-board.ts (added 2026-09-15, LIVE-248): the feed's first module, reading the
+# next gathering in the member's Circles and the newest posts in their Spaces. Same posture as the
+# four lib/feed/* readers and components/sidebar/rail-panels.tsx already in this list, and the
+# reason is MEASURED against the live SELECT policies (pg_policy, 2026-09-15) rather than assumed.
+# The session client would silently drop three of its reads:
+#   (1) `posts` has exactly ONE read policy and every branch of it is keyed to CIRCLE scope
+#       (get_my_circle_ids, region, hub, tuned channel) plus a signed-out public branch. A post
+#       scoped to a SPACE matches no branch, so the whole activity half reads empty.
+#   (2) `events`'s read policy grants `circle_only` only at role `crew` or above, so an ordinary
+#       member would see none of their own Circles' gatherings.
+#   (3) `spaces_read_active` requires status = 'active' AND (non-private OR is_space_member), and a
+#       Space's OWNER holds no space_members row, so the member's own private or draft Space
+#       disappears from their own board.
+# The two reads that WOULD converge (memberships, space_members, both profile_id =
+# get_my_profile_id()) are not worth splitting one module across two clients. Scope is the gate
+# instead, in the query: a gathering must belong to a Circle the member is ACTIVE in and carry an
+# insider visibility (circleEventVisibilities(true) — never `unlisted`, never `private`), and a post
+# must be scoped to a Space the member belongs to or owns. READ-ONLY; it writes nothing. Converging
+# it means giving `posts` a Space-scope read branch: a migration and a policy review, not a line here.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -649,6 +668,7 @@ lib/events/ticket-tiers.ts
 lib/events/tier-prices.ts
 lib/events/waitlist-notify.test.ts
 lib/events/waitlist-notify.ts
+lib/feed/community-board.ts
 lib/feed/density.ts
 lib/feed/feed-people.ts
 lib/feed/post-origin.ts
