@@ -72,7 +72,8 @@
             "LIVE-272",
             "LIVE-273",
             "HYG-090",
-            "LIVE-334"
+            "LIVE-334",
+            "HYG-092"
           ]
         },
         {
@@ -11012,16 +11013,16 @@
       "status": "open",
       "priority": "P2",
       "lane": "live",
-      "size": "M",
+      "size": "S",
       "source": {
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "OWNER CORRECTION 2026-09-08: the Marketplace is ONE experience with sub-tabs, not four nav areas. That is what ADR-868 intended - the market vertical contributes one umbrella row at /marketplace - but the tab bar was never built. What exists instead is MarketplaceGuide, a BOTTOM-of-page \"What's where\" card, and lib/marketplace/last-visited.ts remembers only TWO surfaces (classifieds | market) rather than the full set.\n\nBUILD: a real top sub-nav across Classifieds, Housing, Market and Events. Extend COMMERCE_SURFACES to match so /marketplace returns you where you were.\n\nEvents is a tab by owner ruling. Note the consequence and design around it: Events also holds its own member rail row as one of the four nouns, so it appears twice. The tab should read as the commerce face of Events (paid and ticketed), not a second Events index.\n\nStore is NOT a tab yet - see LIVE-245.",
+      "detail": "OWNER CORRECTION 2026-09-08: the Marketplace is ONE experience with sub-tabs, not four nav areas. That is what ADR-868 intended - the market vertical contributes one umbrella row at /marketplace - but the tab bar was never built. What exists instead is MarketplaceGuide, a BOTTOM-of-page \"What's where\" card, and lib/marketplace/last-visited.ts remembers only TWO surfaces (classifieds | market) rather than the full set.\n\nBUILD: a real top sub-nav across Classifieds, Housing, Market and Events. Extend COMMERCE_SURFACES to match so /marketplace returns you where you were.\n\nEvents is a tab by owner ruling. Note the consequence and design around it: Events also holds its own member rail row as one of the four nouns, so it appears twice. The tab should read as the commerce face of Events (paid and ticketed), not a second Events index.\n\nStore is NOT a tab yet - see LIVE-245.\n\nPREMISE RE-MEASURED 2026-09-15 (a lane re-tested before building; verified independently by the coordinator): the top sub-nav DOES exist. components/marketplace/facet-nav.tsx exports MarketplaceFacets, a nav labelled \"Browse areas\" carrying FIVE areas (Classifieds, Housing, Market, Events, Frequency Store), wrapped by components/marketplace/marketplace-bar.tsx and composed UNDER THE HERO, ABOVE THE CONTENT on seven surfaces: /classifieds, /housing, /housing/roommates, /market, /store, the events surface, and the Space manage console. \"The tab bar was never built\" is false, and MarketplaceGuide is a second, redundant answer to the same question rather than the only one.\n\nWHAT IS ACTUALLY UNBUILT, and this row is now scoped to exactly this:\n(1) COMMERCE_SURFACES (lib/marketplace/last-visited.ts) carries TWO of four, ['classifieds','market'], and the cookie writer CommerceLastVisited is mounted in only app/(main)/classifieds/layout.tsx and app/(main)/market/layout.tsx (there is no housing or events layout), so /marketplace cannot return a member to Housing or Events: it narrows an unknown cookie to classifieds and sends them somewhere they were not.\n(2) The Events entry links to bare /events, the full member index of paid AND free events. The commerce face is /events?price=paid: app/(main)/events/index-data.ts already declares PRICE_OPTIONS [free, paid] and exposes a price facet, and EventsSurface is already parameterised for it (its own doc comment says the actions slot is omitted \"on the commerce tab, where these host actions do not belong\"). The shape was anticipated in the component and never wired.\n(3) NO TEST ANYWHERE PINS THE AREA NAV: grep for MarketplaceFacets, MarketplaceBar or facet-nav across every test file returns nothing. The five-way nav and the two-way cookie drifted apart precisely because nothing measured them together.\n\nOut of scope here, each with its own row: the Frequency Store entry is LIVE-245's (it is in the nav against that ruling, and its flag has no production reader); whether the area nav converts from pills to UnderlineTabs under ADR-937 is HYG-092, an owner ruling, because UnderlineTabs already occupies the second-level facet row on these same pages.",
       "verify": {
-        "kind": "manual",
-        "evidence": "The four tabs render at the top of all four surfaces, and /marketplace returns to the last one visited.",
-        "checked": "2026-09-08"
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const surfaces=fs.readFileSync(\"lib/marketplace/last-visited.ts\",\"utf8\");for(const s of [\"housing\",\"events\"]){if(!surfaces.includes(\"\\x27\"+s+\"\\x27\"))fail(\"COMMERCE_SURFACES does not carry \"+s)}for(const f of [\"app/(main)/housing/layout.tsx\",\"app/(main)/events/layout.tsx\"]){if(!fs.existsSync(f)||!fs.readFileSync(f,\"utf8\").includes(\"CommerceLastVisited\"))fail(f+\" does not mount the commerce cookie writer\")}const nav=fs.readFileSync(\"components/marketplace/facet-nav.tsx\",\"utf8\");if(!nav.includes(\"price=paid\"))fail(\"the Events area still points at the full events index, not the commerce face\");const pinned=[\"components/marketplace/facet-nav.test.tsx\",\"components/marketplace/marketplace-bar.test.tsx\",\"lib/marketplace/last-visited.test.ts\"].some(f=>fs.existsSync(f)&&fs.readFileSync(f,\"utf8\").includes(\"MarketplaceFacets\"));if(!pinned)fail(\"no test pins the area nav\")'",
+        "note": "Passes when the cookie remembers all four areas and is written from all four, the Events area points at the commerce face, and a test pins the nav. Re-pointed 2026-09-15 from a manual \"the four tabs render\", which measured a nav that already existed and missed all three real gaps."
       }
     },
     {
@@ -11046,18 +11047,18 @@
       "id": "LIVE-245",
       "title": "Keep the Frequency Store off until there is real merch",
       "status": "open",
-      "priority": "P3",
+      "priority": "P2",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "OWNER RULING 2026-09-08, taken on a corrected measurement. The Store's catalog is FOUR products, all is_demo = true: Frequency Logo Tee $32, Enamel Pin Set $14, Field Tote Bag $28, Sticker Pack $8. The \"49 items\" figure that first reached the owner was store_items, which is the VAULT (gem_cost, season_id) at /crew/store - a different surface. The Store is backed by commerce_products where owner_kind = platform.\n\nSo: marketplace_shop_published stays false, /store stays out of the tab bar, the route and commerce plumbing stay ready. Flipping it the day real merch exists is a one-row change.",
+      "detail": "OWNER RULING 2026-09-08, taken on a corrected measurement. The Store's catalog is FOUR products, all is_demo = true: Frequency Logo Tee $32, Enamel Pin Set $14, Field Tote Bag $28, Sticker Pack $8. The \"49 items\" figure that first reached the owner was store_items, which is the VAULT (gem_cost, season_id) at /crew/store - a different surface. The Store is backed by commerce_products where owner_kind = platform.\n\nSo: marketplace_shop_published stays false, /store stays out of the tab bar, the route and commerce plumbing stay ready. Flipping it the day real merch exists is a one-row change.\n\nRE-TESTED 2026-09-15: THIS RULING IS NOT IN FORCE, so the row is code work now, not a hold. Two halves of its own evidence are false against the tree. (a) \"/store is absent from the Marketplace tab set\": components/marketplace/facet-nav.tsx line 14 carries { key: 'shop', href: '/store', label: 'Frequency Store' }, so the Store is an area on all seven surfaces that compose the nav, and MarketplaceGuide names five surfaces including it. (b) \"Flipping it the day real merch exists is a one-row change\": platform_flags.marketplace_shop_published has NO production reader. The only occurrence in the repo is lib/marketplace/visibility.test.ts:51, as a test FIXTURE, so no code consults the flag to decide whether the Store appears; the promised one-row change does not exist yet and a flag flip today would move nothing.\n\nTHE FIX, both halves together: remove the shop entry from the area nav (and from MarketplaceGuide's copy) and give the flag a real production reader that gates the entry, so the day merch exists the flag alone brings it back. That is the shape the ruling assumed it already had.",
       "verify": {
-        "kind": "manual",
-        "evidence": "platform_flags.marketplace_shop_published is false, and /store is absent from the Marketplace tab set.",
-        "checked": "2026-09-08"
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const nav=fs.readFileSync(\"components/marketplace/facet-nav.tsx\",\"utf8\");if(nav.includes(\"/store\"))fail(\"the Frequency Store is still an area in the Marketplace nav, against the LIVE-245 ruling\");const walk=(d)=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>{const f=d+\"/\"+e.name;if(e.isDirectory())return e.name===\"node_modules\"?[]:walk(f);return /\\.tsx?$/.test(e.name)&&!/\\.test\\.tsx?$/.test(e.name)?[f]:[]});const readers=[\"lib\",\"components\",\"app\"].flatMap(walk).filter(f=>fs.readFileSync(f,\"utf8\").includes(\"marketplace_shop_published\"));if(readers.length===0)fail(\"marketplace_shop_published has no production reader, so the flag gates nothing\")'",
+        "note": "Passes when the Store is out of the area nav AND a non-test module reads marketplace_shop_published, so the flag is what brings it back. Re-pointed 2026-09-15 from a manual evidence line that was false in both halves."
       }
     },
     {
@@ -12643,6 +12644,25 @@
           "docs/NAMING.md"
         ],
         "note": "Passes once the canon names the money-in surface. Written 2026-09-15."
+      }
+    },
+    {
+      "id": "HYG-092",
+      "title": "The Marketplace area nav is pills, and the owner superseded pills; converting it would put two underline rows on one page",
+      "status": "open",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "XS",
+      "ownerAction": "ruling",
+      "source": {
+        "file": "components/marketplace/facet-nav.tsx",
+        "ref": "the rounded-pill area links"
+      },
+      "detail": "FILED 2026-09-15 out of LIVE-243's re-test. ADR-937 ruling 4 says \"UnderlineTabs is the one tab vocabulary, consoles included\" and \"the pill convention is superseded\". components/marketplace/facet-nav.tsx:31 renders its five area links as rounded-pill, so the Marketplace area nav is the pill convention still standing. It cannot simply be converted, which is why this is a ruling and not a sweep: UnderlineTabs ALREADY occupies the second-level facet row inside these same surfaces (category tabs on the events surface, kind tabs on /classifieds, groups on /market), so making the area nav underlined too would stack two underline rows on one page and the reader would not know which level they are on.\n\nOWNER: rule on the chrome grammar for a two-level browse surface. Either (a) the area nav stays pills as a deliberate exception to ADR-937 and the ADR records the exception, or (b) the area nav becomes UnderlineTabs and the second-level row moves to a different grammar (pills, a segmented control, a select), or (c) the two levels merge. Any of the three is one small change; the wrong one costs a re-theme round.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Unruled. ADR-937 ruling 4 supersedes pills; facet-nav.tsx:31 still renders rounded-pill, and UnderlineTabs holds the second-level row on the same pages. Needs an owner ruling on the two-level grammar before either side moves.",
+        "checked": "2026-09-15"
       }
     },
     {
