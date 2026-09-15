@@ -36,6 +36,9 @@ import { mergeGate, type FeatureGateOverrides } from './gates'
 import { PLACEHOLDER_MEMBER_PRICE_CENTS } from './feature-tiers'
 import { isBetaPricingActive, effectiveCatalogAmounts } from './beta'
 import { PRICING_DEFAULTS, type PricingDefaults } from './defaults'
+// The approved copy spine, which deliberately lives in a LEAF module (ADR-1368). Imported here only
+// so this module can read it (pricingLadderSummary) and re-export it for existing callers.
+import { PLAN_STORY } from './plan-story'
 import { allOfferings, spaceOfferings, type Offering } from './pricing-grid'
 import {
   type BillingInterval,
@@ -98,41 +101,17 @@ export function priceStrings(): PriceStrings {
   }
 }
 
-/** The one narrative spine every pricing/marketing surface can reuse verbatim (owner plan story,
- *  2026-07): what is free, WHY a plan, and how the rate works, stated so a skeptic believes it. No em
- *  dashes.
+/** THE NARRATIVE SPINE, RE-EXPORTED. The constant itself moved to `./plan-story`, a LEAF module with
+ *  no imports of its own (ADR-1368), so a caller that wants one approved sentence no longer has to
+ *  take this module's nine-import runtime chain with it. That is not a style preference: it is what
+ *  ADR-1363 refused to pay when it declined to derive a page-editor block default from
+ *  `PLAN_STORY.paid`, because the fan-out gates that would have priced the import run only in
+ *  `postbuild` on Vercel and the cost could not be measured before merging.
  *
- *  🔴 THE REASON TO TAKE A PLAN LIVES HERE NOW (LIVE-253, ADR-1350), because it is an argument and
- *  arguments drift exactly the way figures did. Eighteen public strings each typed their own version of
- *  it and fourteen of them said the opposite of the model: that a plan buys a lower rate and higher
- *  caps, which reads a free Space as the small version of a paid one. docs/CORE-MODEL.md is explicit
- *  that it is not (§1 "Businesses host free", §2 "gate at the point where it starts making them
- *  money", which is ADR-914's "never gate the transaction, gate the repeat"). The rate and the meters
- *  are still stated, because both are true; what changed is that neither is the reason any more. */
-export const PLAN_STORY = {
-  /** The whole spine in one breath. */
-  spine:
-    'Frequency is where your local community happens. People join free. Businesses host free. You pay when you start charging, and never for access to people.',
-  /** WHY a plan, in the model's own terms: the moment, not the meter. The free rung is the whole
-   *  product, the transaction is never walled, and a plan is what the REPEAT runs on. Every surface
-   *  interpolates this instead of arguing it again; the capabilities it names are read off the gate map
-   *  (paidWalls), so the sentence and the product cannot disagree. */
-  paid:
-    'A plan is what you take when money starts moving. Never the transaction: a free Space sells tickets and takes donations from day one, and a free Space is the whole thing, not a trial of it. What a plan carries is the repeat, the part where you make a standing promise to the same person and have to keep it.',
-  /** The rate, stated as the consequence it is. It used to be the sales argument on every surface,
-   *  which made the ladder read as a fee ladder you climb to pay less, rather than as one price you
-   *  take once you are charging. */
-  rate:
-    'The rate is what a plan settles at, not what a plan is for. It applies only to a sale the network introduced, and it is lower on a paid plan.',
-  /** The meter framing: paid is how much, never whether. */
-  meters:
-    'Everything is included on every plan. The free allowances are real, and a full meter never hides, deletes, or locks what is already there.',
-  /** The honest yearly framing. It used to carry the Opening Beta line ("beta rates hold through the
-   *  Summer of Frequency"), which stopped being true when the owner closed the window on 2026-08-17
-   *  (ADR-1060). What replaces it is the deal that survived: the same price whenever you start, and two
-   *  months free on the year. */
-  founding: 'Every plan is one price, the same whenever you start, and paying for the year is two months free.',
-} as const
+ *  This re-export is the compatibility seam, so no existing importer changed. NEW callers outside
+ *  `lib/pricing` should import from `@/lib/pricing/plan-story` directly and keep the copy free of the
+ *  engine; importing it from HERE re-introduces exactly the chain the split exists to avoid. */
+export { PLAN_STORY }
 
 // ── The three commercial tiers (the pricing TABLE columns) ──────────────────────────────────────────
 
