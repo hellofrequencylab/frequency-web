@@ -10,7 +10,10 @@ import { ProgressTrack } from '@/components/ui/progress-track'
 
 const COLLAPSE_KEY = 'fq_streak_collapsed'
 
-// Feed streak tracker + practice reminders (the WAM North-Star surface). The
+// Streak tracker + practice reminders (the WAM North-Star surface). It used to open /feed; it
+// is a RIGHT-RAIL panel now (components/sidebar/practice-panel.tsx, ADR-1294), which is why the
+// root sets no bottom margin of its own: the rail spaces its panels with `space-y-6`, and the
+// one host is the rail. The
 // streak is a Duolingo-style progress bar toward award checkpoints; it collapses
 // to a skinny line, but the reminders (the practices to log, or the caught-up
 // note) stay visible either way. Renders nothing when there's no streak AND
@@ -59,7 +62,7 @@ export function PracticePrompt({
   // progress bar + the expand chevron. Reminders/checkpoints only show when open.
   if (collapsed) {
     return (
-      <div className="mb-6 rounded-card border border-border bg-surface-elevated px-3 py-1.5">
+      <div className="rounded-card border border-border bg-surface-elevated px-3 py-1.5">
         <div className="flex items-center gap-2.5">
           <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-surface text-primary-strong lift-1">
             <Flame className="h-3.5 w-3.5" />
@@ -89,7 +92,7 @@ export function PracticePrompt({
     // NEUTRAL, not tinted (DAWN index.html StreakBar): surface-elevated + border, so the
     // strip does not read as a second amber block under the amber eyebrow. The only amber
     // left inside is the Zap/flame glyph and the milestone dots.
-    <div className="mb-6 rounded-card border border-border bg-surface-elevated p-4">
+    <div className="rounded-card border border-border bg-surface-elevated p-4">
       {/* Streak header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">

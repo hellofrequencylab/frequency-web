@@ -5,6 +5,7 @@
 // it advances. The left nav stays fully visible — stages reveal *surfaces*, not
 // areas (owner decision, 2026-06-06).
 
+import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { getOnboardingStatus, type OnboardingStatus } from '@/lib/onboarding/status'
@@ -208,6 +209,19 @@ export async function getMemberProgress(profileId: string): Promise<MemberProgre
     journeys,
   }
 }
+
+/**
+ * The same spine, memoised for the request. Two surfaces now read it on one /feed render — the
+ * page (the activation guide and the stage celebration) and the right rail's practice panel (the
+ * board that moved off the hero, ADR-1294) — and each call is a six-way fan-out. React's
+ * `cache()` dedupes per REQUEST, which is exactly the scope of the double render; the read is pure
+ * (the stage WRITE is `acknowledgeStage`, below, and is never called from here), so sharing it
+ * changes nothing but the query count. Same reasoning as `loadGameStats` in the rail.
+ *
+ * Prefer this in a render. `getMemberProgress` stays exported for callers outside a request scope,
+ * where `cache()` has no request to key on.
+ */
+export const getCachedMemberProgress = cache(getMemberProgress)
 
 /**
  * Record the highest stage a member has seen, so the "just unlocked" celebration

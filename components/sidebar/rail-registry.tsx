@@ -3,6 +3,7 @@ import {
   DispatchesPanel, EventsPanel, MembersPanel, LeaderboardPanel, WhoOnlinePanel,
   CirclesPanel, NewCirclesPanel, ActiveNowPanel, PulsePanel,
 } from '@/components/sidebar/rail-panels'
+import { PracticeBoardPanel } from '@/components/sidebar/practice-panel'
 import type { PanelKey } from '@/lib/layout/rail-panels'
 
 // The right rail's WIDGET SLOT registry (PAGE-FRAMEWORK §4.4, ADR-250 step 2). The route
@@ -65,5 +66,11 @@ export const RAIL_PANELS: Record<PanelKey, RailPanelDef> = {
   leaderboard: {
     gate: ({ isCrew }) => isCrew,
     render: () => <LeaderboardPanel />,
+  },
+  // The practice board, demoted out of the /feed hero and into this column (ADR-1294). One key
+  // for both faces of it: the panel itself picks PracticePrompt before activation completes and
+  // JourneyBoard after, exactly as the hero did.
+  practice: {
+    render: ({ profileId }) => <PracticeBoardPanel profileId={profileId} />,
   },
 }

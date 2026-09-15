@@ -97,7 +97,6 @@
             "LIVE-245",
             "LIVE-246",
             "LIVE-247",
-            "LIVE-248",
             "PROG-R8",
             "LIVE-252",
             "LIVE-253",
@@ -11098,7 +11097,7 @@
     {
       "id": "LIVE-248",
       "title": "The feed hero becomes a community board",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
@@ -11106,12 +11105,13 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "app/(main)/feed/page.tsx:245-290 - the whole feed hero is the game today. It becomes your circles' next gathering and your spaces' activity; PracticePrompt and JourneyBoard move to the rail. The first module above the composer should be community, which is the demotion the owner asked for expressed in the one place a member actually looks.",
+      "detail": "app/(main)/feed/page.tsx:245-290 - the whole feed hero is the game today. It becomes your circles' next gathering and your spaces' activity; PracticePrompt and JourneyBoard move to the rail. The first module above the composer should be community, which is the demotion the owner asked for expressed in the one place a member actually looks. CLOSED 2026-09-15. The premise held on re-measurement: the hero was the game and nothing else, PracticePrompt before activation completed and JourneyBoard after, with the page fetching getPracticesToLogToday, getPartialPracticesToday and getMemberPillarBalance before painting to feed them. The first module above the composer is now components/feed/community-board.tsx: the next gathering in one of the member's Circles (title, date chip, Circle name, location, linking at the event) and the three newest posts in the Spaces they belong to or own, read by lib/feed/community-board.ts through one request-cached reader and streamed behind its own <Suspense> so neither read can hold the greeting or the composer (PAGE-FRAMEWORK §5). Scope is the policy in that reader: active memberships only, circleEventVisibilities(true) from the one shared list (never unlisted, never private), published and uncancelled, and for the Spaces half the member's own space_members rows plus the Spaces they own, because an owner holds no membership row. Both halves are fail-safe to nothing. The empty case is ONE EmptyState rather than two hollow groups: a member with no Circles is pointed at one, a member whose Circles had a quiet week is pointed at what is on. The practice board kept every feature and changed column: components/sidebar/practice-panel.tsx is a new rail panel under the 'practice' key making the same PracticePrompt-before-activation / JourneyBoard-after switch the hero used to make, and pageRailPanels('/feed') now leads ['practice', 'activenow', 'dispatches', 'newcircles'] — 'events' left that rule because the page names the gathering itself and a rail panel never repeats the function the page features. /nearby keeps its own rule, events panel included. page-chrome.ts is untouched and no page toggles the rail. Measured with the shell gate's own walkRouteClientGraph: three client modules join the shell's graph (practice-prompt, journey-board, log-practice-button) and every dependency of theirs — mindless, movement, zap-toast, standing-tiles, ProgressTrack, RankBadge — was already among the 578 client modules the (main) layout reaches. Two reads left the page's critical path, and getMemberProgress gained a request-cached wrapper so the page and the panel share one six-way fan-out instead of making two. Known and deliberate: the rail is hidden lg:flex, so below lg the board is off /feed entirely — that is the demotion rather than a gap, and the phone's home for the game is the drawer's Vault cluster (MobileGameStats), which already carries the counts and today's move. Owed: the six app-feed-* visual baselines are stale by the height of the swapped module; /feed is an advisory-tier shell surface, so a shell recapture is owed rather than blocking.",
       "verify": {
-        "kind": "manual",
-        "evidence": "The first module above the composer on /feed is community, not game.",
-        "checked": "2026-09-08"
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs = require('fs');const F = 'app/(main)/feed/page.tsx';const M = 'lib/layout/rail-panels.ts';const R = 'components/sidebar/rail-registry.tsx';const B = 'components/feed/community-board.tsx';const P = 'components/sidebar/practice-panel.tsx';for (const f of [F, M, R, B, P]) if (!fs.existsSync(f)) { console.error('missing ' + f); process.exit(1) }const code = (f) => fs.readFileSync(f, 'utf8').split(String.fromCharCode(10)).filter((l) => !/^\\s*(\\/\\/|\\*|\\/\\*)/.test(l)).join(String.fromCharCode(10));const feed = code(F), map = code(M), reg = code(R);const bad = [];const board = feed.indexOf('<CommunityBoard profileId');const composer = feed.indexOf('<CaptureBar');if (board < 0) bad.push('the feed hero does not render <CommunityBoard>');if (composer < 0) bad.push('the feed renders no <CaptureBar>, so above-the-composer cannot be measured');if (board >= 0 && composer >= 0 && board > composer) bad.push('the community board sits BELOW the composer');if (/<JourneyBoard\\b/.test(feed)) bad.push('JourneyBoard is back in the feed hero');if (/<PracticePrompt\\b/.test(feed)) bad.push('PracticePrompt is back in the feed hero');const rule = map.match(/p === '\\/feed', panels: \\[([^\\]]+)\\]/);if (!rule) bad.push('no /feed rail rule in ' + M);else {;const keys = rule[1].split(',').map((s) => s.trim().replace(/'/g, ''));if (keys[0] !== 'practice') bad.push('the /feed rail does not lead with the practice board: ' + keys.join('/'));if (keys.indexOf('events') >= 0) bad.push('the /feed rail repeats the events panel the hero now owns');}if (!/<PracticeBoardPanel\\b/.test(reg)) bad.push('the rail registry does not render PracticeBoardPanel');if (bad.length) { console.error(bad.join('; ')); process.exit(1) }process.exit(0)\"",
+        "note": "Measures the CONSEQUENCE, not the title: in the comment-stripped feed page the community board is rendered and sits BEFORE <CaptureBar>, which is what \"the first module above the composer is community\" means as a fact; neither <JourneyBoard> nor <PracticePrompt> is in the page at all; the /feed rail rule LEADS with the practice key and no longer carries 'events'; and the rail registry actually renders PracticeBoardPanel, so the key is not a dead string. Comment-stripped on purpose — the comments in these files name JourneyBoard to say where it went, and a probe that read them would pass on a reverted hero. Proven both ways on 2026-09-15: exit 1 on origin/main naming five failures (no board, both game modules in the hero, no /feed rule, no panel), exit 0 on this tree."
+      },
+      "closed": "2026-09-15"
     },
     {
       "id": "LIVE-249",

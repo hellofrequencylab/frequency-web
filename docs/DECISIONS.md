@@ -41041,3 +41041,75 @@ the other twelve is shown to be genuinely optional by at least one shipped prese
 
 **Rows.** LIVE-249 closed. LIVE-149 closed, in the same change as the first curated bundle, which is
 the condition that row set for itself. OWN-048 stays open with its premise re-derived.
+
+## ADR-1343: The feed hero is a community board, and the practice board moves to the rail (2026-09-15)
+
+**Status:** ✅ Shipped. Implements [ADR-1294](DECISIONS.md) ruling and
+[`CORE-MODEL.md`](CORE-MODEL.md) §5 Phase 7 item 5.3. Closes `LIVE-248`.
+
+**The change.** The first module above the composer on `/feed` is the member's people, not the
+game. `components/feed/community-board.tsx` renders two groups: **Next in your Circles** (the next
+upcoming event in a Circle the member is active in, with its date chip, Circle name and location,
+linking at the event) and **In your Spaces** (the three newest posts in the Spaces they belong to
+or own). `PracticePrompt` and `JourneyBoard` keep every feature and change column: they are a
+right-rail panel now, `components/sidebar/practice-panel.tsx`, registered under the `practice` key.
+
+**Why the hero and not the nav.** ADR-1294 demoted the Quest from the centre to "a side thing we
+all do together" and ADR-1295 removed the last wall around it. Both were rulings about what the
+product *is*; neither changed the one surface a member actually looks at. The top of home was the
+game and nothing else: `PracticePrompt` before activation completed, `JourneyBoard` after, and the
+page paid for `getPracticesToLogToday`, `getPartialPracticesToday` and `getMemberPillarBalance`
+before it could paint. A member with three Circles and a Space learned nothing about any of them
+until they scrolled past their own streak.
+
+**Two of the four nouns, read once.** `lib/feed/community-board.ts` is one request-cached reader
+(`cache()`), and **scope is the policy** because it runs through the service-role client: active
+`memberships` only; `circleEventVisibilities(true)` from the one shared list, so `unlisted` and
+`private` events are never listable here; `status = 'published'`, not cancelled, not removed; and
+for the Spaces half the member's own `space_members` rows **plus the Spaces they own**, since an
+owner holds no membership row (the same asymmetry `lib/dispatches.ts` handles). The upcoming floor
+is wall clock in the community's zone, the same one the rail's `EventsPanel` uses, so tonight's 7pm
+gathering does not drop off the board at 5:01pm Pacific. Both halves are fail-safe to nothing: a
+read that throws degrades that group, never the page.
+
+**The empty state is one state.** Two hollow groups would be worse than the board it replaced, so
+a member with nothing to show gets a single `EmptyState`: no Circles and no Spaces reads *"Find
+your people"* and points at `/circles`; Circles that simply had a quiet week reads *"Quiet week"*
+and points at `/events`. The empty branch is deliberately **not** masked for the visual suite, the
+same rule the feed stream's empty pane follows; the populated branch is, because every pixel of it
+is a reading.
+
+**What the rail gave up to make room.** `pageRailPanels('/feed')` now leads
+`['practice', 'activenow', 'dispatches', 'newcircles']`. `events` left that rule: the page names
+the member's next gathering itself, and the rail's own standing rule is that a panel never shows
+the function the page already features. `/nearby` was split out of the shared rule and keeps the
+events panel, because that page owns no gathering of its own and the practice board does not belong
+on a place page. **`lib/layout/page-chrome.ts` is untouched** and no page toggles the rail.
+
+**Measured, not assumed.** Three client modules join the shell's graph
+(`practice-prompt`, `journey-board`, `log-practice-button`) and every dependency of theirs was
+already in it (`on-air/mindless`, `on-air/movement`, `zap-toast`, `standing-tiles`,
+`ProgressTrack`, `RankBadge`), walked with the shell gate's own `walkRouteClientGraph`: 578 client
+modules reachable from `app/(main)/layout.tsx`. That is why the panel takes a plain static import
+rather than a `next/dynamic` wrapper. In the other direction two reads left the page's critical
+path, and `getMemberProgress` gained `getCachedMemberProgress`, so the page (activation guide,
+stage celebration) and the panel share one six-way fan-out instead of making two.
+
+**The consequence we are choosing, stated rather than discovered.** The rail is `hidden lg:flex`,
+so **below `lg` the practice board is off `/feed` entirely**. That is the demotion, not a gap: the
+phone's home for the game is the left drawer's Vault cluster (`MobileGameStats`), which already
+carries the counts and today's move, and `/practices` carries the log buttons at every viewport.
+If the owner wants the board back on a phone, the honest fix is a mobile slot for it, not a return
+to the hero.
+
+**Proof.** `components/feed/community-board.test.tsx`: the body renders every state without a
+database (gathering first then Spaces, the Spaces-only case, both empty cases), plus a
+comment-stripped source-shape half that pins the board above `<CaptureBar>`, the absence of both
+game modules from the page (import and element), the `<Suspense>` boundary, the rail rule's leading
+key and the registry's render. Comment-stripped matters here: the comments in these files name
+`JourneyBoard` in order to say where it went. `LIVE-248`'s probe measures the same consequence and
+was proven both ways, exit 1 on `origin/main` naming five failures and exit 0 on this tree.
+
+**Owed.** The six `app-feed-*` visual baselines are stale by the height of the swapped module.
+`/feed` is an advisory-tier shell surface, so a shell recapture is owed rather than blocking, and
+no PNG was edited here.

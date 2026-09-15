@@ -4,7 +4,7 @@ description: What you see on the home feed and where it comes from.
 category: getting-started
 order: 11
 published: 2026-06-03
-updated: 2026-06-27
+updated: 2026-09-15
 audience: member
 featureKeys: [feed]
 status: published
@@ -13,6 +13,13 @@ status: published
 Your feed is home: the running stream of what's happening in the Circles you're part of. It's not an endless algorithmic scroll of strangers; it's the people and groups you've actually joined.
 
 ## What shows up
+
+The first thing above the box where you post is your **community board**. It carries two facts
+about the people you have already joined: the next gathering in one of your Circles, and the most
+recent posts in your Spaces. If your Circles have nothing on yet, it says so and points at
+[what's on](/events) rather than filling the space with strangers.
+
+Below the board, the stream:
 
 - **Posts from your Circles**: updates, photos, and conversations from members.
 - **Events and Dispatches**: upcoming gatherings and announcements from your Hosts.
@@ -29,6 +36,15 @@ Your feed is home: the running stream of what's happening in the Circles you're 
 ## When your corner is quiet
 
 If nobody's around you yet, the feed shows a warm **be a founder in your neighborhood** prompt: start the first Circle, host the first gathering, or invite a few people. An empty corner is the opening, not a dead end. And if you haven't set a location yet, you'll see a nudge to turn it on, with the same promise we always keep: your exact location is never shared.
+
+## Where your practice went
+
+Your streak, the practices you have left to log today, and your Journey's next step are in the
+right rail, not at the top of the feed. The game is a side thing the community does together, so
+home leads with the community and the board keeps every button it had.
+
+On a phone the right rail is hidden, so the same counts and today's move live in the left drawer,
+and [Practices](/practices) carries the log buttons on every screen size.
 
 ## Making it yours
 
