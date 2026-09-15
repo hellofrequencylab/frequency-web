@@ -9,7 +9,13 @@
     "regeneration stamps capturedIn 'local', which greens the gate but marks in the file that no",
     "capture stands behind it - and LIVE-040's probe rejects 'local', so only a runner capture closes",
     "that row. capturedIn is provenance for a reader, not an input to the gate: the gate compares",
-    "fingerprints only, so it works in the depth-1 clone CI and agents actually get."
+    "fingerprints only, so it works in the depth-1 clone CI and agents actually get.",
+    "NO `home` ENTRY, AND THAT IS THE POINT (HYG-095). Every page here resolves the PUBLISHED",
+    "document first and only falls back to its template, so a template fingerprint is meaningful",
+    "exactly where no published document shadows the slug. By OWN-043 `/` is shadowed, so hashing",
+    "getTemplate(\"home\") measured a branch production never takes - and it stayed green when",
+    "LIVE-252 rewrote the published document. The shadowed set is READ from scripts/stored-links.json,",
+    "never typed here, so publishing a second page drops it from coverage on its own."
   ],
   "surfaces": {
     "about": {
@@ -22,10 +28,6 @@
     },
     "friendship-as-an-adult": {
       "fingerprint": "ee78e39690cbe0b8",
-      "capturedIn": "c8a374804"
-    },
-    "home": {
-      "fingerprint": "57b77832a9ff42a2",
       "capturedIn": "c8a374804"
     },
     "how-to-be-more-social": {
