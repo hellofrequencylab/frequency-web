@@ -135,6 +135,12 @@ describe('startGuestTicket — what it hands the money boundary', () => {
     })
     expect(res).toEqual({ data: { url: 'https://stripe.test/cs_1' } })
     expect(createTicketCheckout).toHaveBeenCalledWith({
+      // `ui` joined this call in LIVE-347. It is asserted here rather than relaxed into an
+      // objectContaining because the point of this assertion is that these keys and ONLY these
+      // keys reach the money boundary. With no NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY in the test
+      // env, onPageCheckoutAvailable() is false and the value is 'hosted' — which is also the
+      // proof that a deployment without the key never asks for a session it cannot render.
+      ui: 'hosted',
       guestEmail: 'sam@example.com',
       eventId: EVENT,
       qty: 2,
@@ -220,7 +226,15 @@ describe('startGuestTicket — a signed-in caller gets their MEMBER ticket, not 
     expect(res).toEqual({ data: { url: 'https://stripe.test/cs_1' } })
     expect(createTicketCheckout).toHaveBeenCalledTimes(1)
     const [opts] = createTicketCheckout.mock.calls[0]
-    expect(opts).toEqual({ buyerProfileId: 'buyer-1', eventId: EVENT, qty: 3, ticketTypeId: 'tt-1', amountCents: null })
+    // `ui` joined the call in LIVE-347; 'hosted' because the test env has no publishable key.
+    expect(opts).toEqual({
+      ui: 'hosted',
+      buyerProfileId: 'buyer-1',
+      eventId: EVENT,
+      qty: 3,
+      ticketTypeId: 'tt-1',
+      amountCents: null,
+    })
     // The address they typed does not decide who the ticket belongs to.
     expect(opts).not.toHaveProperty('guestEmail')
   })
@@ -252,6 +266,7 @@ describe('startTicket — the member path is untouched (regression)', () => {
     const res = await startTicket(EVENT)
     expect(res).toEqual({ data: { url: 'https://stripe.test/cs_1' } })
     expect(createTicketCheckout).toHaveBeenCalledWith({
+      ui: 'hosted',
       buyerProfileId: 'buyer-1',
       eventId: EVENT,
       qty: 1,

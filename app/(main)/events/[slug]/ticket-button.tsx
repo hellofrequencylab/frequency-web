@@ -7,6 +7,7 @@ import { isError } from '@/lib/action-result'
 import { ticketRowToPrice, type Price } from '@/lib/commerce/types'
 import { PriceInput, type PriceSelection } from '@/components/commerce/price-input'
 import { Button } from '@/components/ui/button'
+import TicketCheckoutPanel from '@/components/events/ticket-checkout-panel'
 
 export type TicketTierView = {
   id: string
@@ -115,6 +116,28 @@ export function TicketButton({
   // PriceInput (which pre-fills the suggested anchor and enforces the floor). null for a fixed / free tier.
   const [selection, setSelection] = useState<PriceSelection | null>(null)
 
+  /**
+   * Set once the server hands back a session that renders here. Null means "no on-page session",
+   * which is the state every hosted checkout stays in.
+   */
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
+
+  /**
+   * The LAST line of defence. If the form cannot mount or confirm at all — Stripe.js blocked, the
+   * session unloadable, confirm throwing — the buyer must still be able to pay. Dropping the
+   * secret and re-running `go()` asks the server again; with the on-page path having just failed
+   * in the browser, what matters is that this ends at a working checkout rather than a dead form.
+   */
+  function fallBackToHosted() {
+    setClientSecret(null)
+    setError('Opening secure checkout…')
+    startTransition(async () => {
+      const r = await startTicket(eventId, { qty: 1, ticketTypeId: selected?.id ?? null })
+      if (!isError(r) && r.data.url) window.location.href = r.data.url
+      else setError('Could not start checkout. Please try again.')
+    })
+  }
+
   function selectTier(t: TicketTierView) {
     setSelectedId(t.id)
     setError(null)
@@ -144,6 +167,12 @@ export function TicketButton({
       } else if (r.data.free) {
         // A free tier: nothing to charge. Refresh so the page reflects the claim.
         window.location.reload()
+      } else if (r.data.clientSecret) {
+        // ON-PAGE (LIVE-347): the card form opens right here, under the button, and the buyer
+        // never leaves Frequency. Branching on what CAME BACK rather than on what was asked for
+        // is deliberate — the server declines the on-page path whenever it cannot be honoured,
+        // and the next branch catches that without this component needing to know why.
+        setClientSecret(r.data.clientSecret)
       } else if (r.data.url) {
         window.location.href = r.data.url
       }
@@ -162,6 +191,13 @@ export function TicketButton({
           Get ticket · {priceLabel}
         </Button>
         {error && <p className="text-body-sm text-danger">{error}</p>}
+        {clientSecret && (
+          <TicketCheckoutPanel
+            clientSecret={clientSecret}
+            priceLabel={priceLabel}
+            onFellBack={fallBackToHosted}
+          />
+        )}
       </div>
     )
   }
@@ -275,6 +311,13 @@ export function TicketButton({
         {selected?.pricingMode === 'free' ? 'Claim ticket' : 'Get ticket'}
       </Button>
       {error && <p className="text-body-sm text-danger">{error}</p>}
+      {clientSecret && (
+        <TicketCheckoutPanel
+          clientSecret={clientSecret}
+          priceLabel={priceLabel}
+          onFellBack={fallBackToHosted}
+        />
+      )}
     </div>
   )
 }
