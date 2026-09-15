@@ -16,6 +16,7 @@ import { getConnectStatus } from './connect'
 import { spaceTakeRateCents } from './fees'
 import { classifyOrderSource } from '@/lib/commerce/order-source'
 import { effectiveOrderSource } from '@/lib/pricing/network-world'
+import { receiptEmailFor } from './receipt-address'
 
 export interface SpaceMembershipCheckoutResult {
   url?: string
@@ -91,6 +92,12 @@ export async function createSpaceMembershipCheckout(
     const interval: 'month' | 'year' = tier.interval === 'year' ? 'year' : 'month'
 
     const metadata = { kind: 'space_membership', space_id: spaceId, tier_id: tierId, member_id: memberId }
+    // STRIPE'S OWN RECEIPT, AS A BACKSTOP (LIVE-344). `receipt_email` is a payment-intent parameter
+    // and Stripe rejects it in `mode: 'subscription'`, so on a subscription the equivalent is the
+    // CUSTOMER's address: it is what every invoice receipt is sent to. This session set NEITHER a
+    // customer nor a customer_email, so a member who started paying monthly here was unreachable by
+    // Stripe as well as by us. See ./receipt-address.ts for the whole rule.
+    const receiptEmail = await receiptEmailFor(memberId)
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       line_items: [
@@ -112,6 +119,7 @@ export async function createSpaceMembershipCheckout(
         transfer_data: { destination: ownerStatus.accountId },
         metadata,
       },
+      ...(receiptEmail ? { customer_email: receiptEmail } : {}),
       client_reference_id: memberId,
       metadata,
       success_url: `${appUrl()}/spaces/${space.slug ?? spaceId}?membership=joined&session_id={CHECKOUT_SESSION_ID}`,

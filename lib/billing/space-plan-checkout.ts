@@ -23,7 +23,7 @@ import {
 import { itemKeyForCatalogKey, readLockedPriceId } from './space-subscription-items'
 import { isBetaPricingActive, loadoutChargeArm, loadoutChargePriceKey } from '@/lib/pricing/beta'
 import { spaceHasBetaPriceGrant } from './space-beta-grant'
-import { profileAccountEmail } from '@/lib/profiles/account-email'
+import { receiptEmailFor } from './receipt-address'
 
 /** The per-plan enable flag for a space plan (must be ON, with billing live, to sell it). */
 const PLAN_FLAG: Record<SpacePlanKey, 'plan_business_enabled' | 'plan_nonprofit_enabled'> = {
@@ -259,7 +259,11 @@ export async function createSpaceLoadoutCheckout(
       return null
     }
     customer = (owner as { stripe_customer_id?: string | null } | null)?.stripe_customer_id ?? undefined
-    ownerEmail = (await profileAccountEmail(space.owner_profile_id)) ?? undefined
+    // STRIPE'S OWN RECEIPT, AS A BACKSTOP (LIVE-344). A subscription takes no `receipt_email` (it is
+    // a payment-intent parameter), so the CUSTOMER's address is the equivalent: it is where every
+    // invoice receipt goes. This path already resolved one; ./receipt-address.ts is now the single
+    // named seam every checkout creator resolves it through.
+    ownerEmail = await receiptEmailFor(space.owner_profile_id)
   }
 
   // PHASE D: the seat-quantity items (Team add-on / Nonprofit seat) bill the LICENSED seat count. The
