@@ -23,6 +23,7 @@ import {
   promoteMembership as promoteMembershipImpl,
   type MembershipTier,
 } from '@/lib/spaces/memberships'
+import { type BillingInterval } from '@/lib/spaces/membership-pricing'
 import { getMyProfileId } from '@/lib/auth'
 import { setTierCircle as setTierCircleImpl } from '@/lib/spaces/tier-circle'
 import { createSpaceMembershipCheckout } from '@/lib/billing/space-membership-checkout'
@@ -37,12 +38,15 @@ export async function setMembershipTiers(
 }
 
 /** Join a tier. Any authenticated member; v1 records the membership and takes no charge. A FULL
- *  tier with the waitlist on records a waitlist spot instead ({ waitlisted: true }, ADR-824). */
+ *  tier with the waitlist on records a waitlist spot instead ({ waitlisted: true }, ADR-824).
+ *  `interval` is the cadence the member picked on the join surface (ADR-1374); the implementation
+ *  resolves it against the tier before it records anything. */
 export async function joinTier(
   spaceId: string,
   tierId: string,
+  interval: BillingInterval = 'month',
 ): Promise<ActionResult<{ waitlisted: boolean }>> {
-  return joinTierImpl(spaceId, tierId)
+  return joinTierImpl(spaceId, tierId, interval)
 }
 
 /** Cancel a membership (or leave a waitlist). The member who joined or a space admin only. */
@@ -58,14 +62,17 @@ export async function promoteMembership(membershipId: string): Promise<ActionRes
 /** Start a PAID space-membership checkout (Pricing P3). GATED inside createSpaceMembershipCheckout
  *  on billingLive() + the owner being Connect-ready; it returns a reason (never a charge) when not
  *  payable, so the caller falls back to the existing display-only joinTier path. Resolves the member
- *  from the session (the member never passes their own id). On success returns the Stripe URL. */
+ *  from the session (the member never passes their own id). On success returns the Stripe URL.
+ *  `interval` is the cadence the member picked (ADR-1374); a yearly request on a tier with no yearly
+ *  price comes back as 'no_annual_price' and is NOT a fallback case. */
 export async function startSpaceMembershipCheckout(
   spaceId: string,
   tierId: string,
+  interval: BillingInterval = 'month',
 ): Promise<ActionResult<{ url: string }>> {
   const memberId = await getMyProfileId()
   if (!memberId) return fail('Not signed in')
-  const result = await createSpaceMembershipCheckout(spaceId, tierId, memberId)
+  const result = await createSpaceMembershipCheckout(spaceId, tierId, memberId, interval)
   if (result.url) return ok({ url: result.url })
   // 'billing_off' / 'free_tier' / 'no_owner_payouts' etc. — the caller decides whether to fall back
   // to the free join path; a clean error keeps this from ever being a broken button.

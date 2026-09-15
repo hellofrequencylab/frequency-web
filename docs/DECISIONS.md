@@ -43696,3 +43696,67 @@ looks exactly like a row nobody bought.
 - ⚠️ Times are entered and resolved in the **event's own zone**, server-side. Doing the
   `datetime-local` conversion in the browser would ship a tz database to every phone and change the
   meaning of a saved window when a host travels.
+
+---
+
+## ADR-1374: a membership tier carries its own yearly price, so a yearly plan stops being a second tier (2026-09-15)
+
+**Status.** Accepted. Files [LIVE-360](BUILD-BACKLOG.json). Extends the membership model of
+[ADR-363](DECISIONS.md) (the Connect subscription) and [ADR-824](DECISIONS.md) (capacity and
+waitlist, which are counted per tier and were therefore being counted per cadence). Numbered 1374
+because 1372 and 1373 are claimed by work already on `ship`.
+
+**Context.** `space_membership_tiers` holds ONE `price_cents` and ONE `interval`, so the only way to
+offer the same membership yearly was to publish a SECOND tier priced per year. Royal Temple did
+exactly that, and the member join surface stacked **seven cards for four memberships**: four monthly
+tiers and three yearly twins, in one column, with nothing in the data joining a twin back to its
+original. The costs are not cosmetic. A visitor reads seven unrelated products and has to work out
+which three are duplicates. Capacity and the waitlist count per ROW, so a tier limited to 20 spots
+sells 20 monthly and 20 yearly. An owner editing a price has to remember there are two rows.
+`space_memberships.tier_id` is the only record of what somebody bought, so "how many members pay
+yearly" is answerable only by knowing which tiers were twins.
+
+**Decision.**
+
+1. **One tier, two cadences.** `price_cents` keeps its meaning and is the MONTHLY price.
+   `annual_price_cents` is the OPTIONAL yearly alternative for the **same** tier, and `null` means
+   the tier is monthly only, which is what every existing row is. It is never a second tier.
+2. **A membership records what it is paying.** `space_memberships.billing_interval` (`month` |
+   `year`, default `month`) is written by `joinTier` from the cadence the member picked and by the
+   Stripe webhook reconciler from the subscription's own recurring interval. Once one tier can be
+   bought two ways, `tier_id` alone can no longer answer the question.
+3. **One toggle, above a two-column grid.** The join surface renders a labelled monthly/yearly
+   radiogroup and one card per membership. The toggle appears only when at least one tier actually
+   has a yearly price: a control that changes nothing on every card is a dead switch.
+4. **A monthly-only tier says so rather than looking identical.** Under the yearly toggle it keeps
+   showing its monthly price and adds "Monthly only. This tier has no yearly price." The failure
+   being avoided is the silent one, where a card under a yearly toggle shows a monthly figure and
+   the member believes they are seeing a year's price.
+5. **The saving is computed, never asserted.** "Two months free" is printed only when the yearly
+   price is exactly ten months of the monthly one. An in-between saving says the amount
+   ("Save $78 a year"); a yearly price that saves nothing, or costs more, says nothing at all.
+6. **A yearly checkout fails closed.** `createSpaceMembershipCheckout` bills `annual_price_cents` on
+   a yearly Stripe interval, and REFUSES (`no_annual_price`) when the tier has none. Billing the
+   monthly amount instead would charge a member a twelfth of what the card said on a subscription
+   they believe is annual, and the join card treats that reason like `no_owner_payouts`: it tells the
+   member, and does NOT fall through to the free join path ([LIVE-233](BUILD-BACKLOG.json)).
+   The take-rate math and the `billingLive()` gate are untouched; they read the resolved amount.
+
+**Why a column and not a prices table.** A prices table is the general answer to a problem this is
+not. The product sells two cadences, the toggle offers two, and a Stripe subscription takes one
+interval. A table would buy a third cadence nobody has asked for at the cost of a join on every read
+of the join card, and it would put the "which of these rows is the same membership" question back in
+exactly the place this ADR takes it out of.
+
+**Consequences.** ✅ An owner collapses seven cards into four by setting a yearly price on each
+monthly tier and retiring the twin; capacity, the waitlist, the linked circle and the members-only
+event gate then all count the membership once. ✅ Nothing migrates and no row changes meaning: a
+tier published before this keeps `annual_price_cents` null and reads as monthly only, and a legacy
+tier whose own `interval` is `year` keeps billing yearly and records `billing_interval = 'year'`.
+⚠️ The twins are NOT merged by the migration. Merging them would have to guess which yearly tier
+belongs to which monthly one and would move live memberships between rows; the operator collapses
+them, and until they do the surface reads exactly as it does today. ⚠️ A tier's yearly price is
+refused on a FREE tier, in the editor with a message and in `normalizeTier` as a fail-closed
+backstop: a tier with no monthly price has nothing to bill yearly. 🔴 Both columns are phantoms to
+`lib/database.types.ts` until the migration applies at merge, so five dated ALLOWLIST entries carry
+them in `scripts/check-schema-contract.mjs` and retire together when the types are regenerated.

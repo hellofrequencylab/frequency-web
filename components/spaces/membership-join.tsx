@@ -9,7 +9,7 @@ import { billingLive } from '@/lib/pricing/settings'
 import { viewerManagesSpace } from '@/lib/spaces/operator'
 import { EmptyState } from '@/components/ui/empty-state'
 import { AdminSetupPrompt } from '@/components/spaces/admin-setup-prompt'
-import { MembershipJoinCard } from '@/components/spaces/membership-join-card'
+import { MembershipTierPicker } from '@/components/spaces/membership-tier-picker'
 import { MembershipCancelButton } from '@/components/spaces/membership-cancel-button'
 
 // MEMBER JOIN SURFACE (ENTITY-SPACES-SYSTEM §2.5, memberships v1). The self-fetching server half of
@@ -18,6 +18,11 @@ import { MembershipCancelButton } from '@/components/spaces/membership-cancel-bu
 // a Cancel). When the owner has not published any tiers, an EmptyState names the situation and the
 // next step. Server-first; the fetch sits behind a <Suspense> in the caller (entity-cta) so the tab
 // paints instantly (PAGE-FRAMEWORK §5).
+//
+// ONE CARD PER MEMBERSHIP (ADR-1374): a tier carries its own optional yearly price, so a yearly
+// plan is no longer a second tier and the grid is the four memberships an owner actually sells
+// rather than a stack of monthly/yearly twins. The cadence toggle and the grid live in the client
+// picker below; every read stays here on the server.
 //
 // HONESTY (CONTENT-VOICE skeptic test): v1 takes NO payment. The price is what membership will cost;
 // joining registers the member now and paid billing comes later. The copy here and in the join card
@@ -118,24 +123,22 @@ export async function MembershipJoin({
           ? 'Pick a tier to join. A paid tier opens secure checkout; a free tier registers you right away.'
           : 'Pick a tier to join. Joining registers you as a member. We do not take a payment yet, so paid billing is coming later.'}
       </p>
-      <div className="grid gap-4 @lg:grid-cols-2">
-        {tiers.map((tier) => (
-          <MembershipJoinCard
-            key={tier.id}
-            spaceId={spaceId}
-            tier={tier}
-            billingOn={billingOn}
-            includedEvents={includedEvents
-              .filter((e) => includedEventCoversTier(e, tier.id))
-              .map((e) => ({ slug: e.slug, title: e.title }))}
-            spotsLeft={
-              tier.capacity != null && tier.id
-                ? Math.max(0, tier.capacity - (activeCounts.get(tier.id) ?? 0))
-                : null
-            }
-          />
-        ))}
-      </div>
+      {/* The cadence toggle + the two-column grid (ADR-1374). Everything the cards need is resolved
+          here on the server; the picker owns only which cadence is selected. */}
+      <MembershipTierPicker
+        spaceId={spaceId}
+        billingOn={billingOn}
+        cards={tiers.map((tier) => ({
+          tier,
+          includedEvents: includedEvents
+            .filter((e) => includedEventCoversTier(e, tier.id))
+            .map((e) => ({ slug: e.slug, title: e.title })),
+          spotsLeft:
+            tier.capacity != null && tier.id
+              ? Math.max(0, tier.capacity - (activeCounts.get(tier.id) ?? 0))
+              : null,
+        }))}
+      />
     </div>
   )
 }

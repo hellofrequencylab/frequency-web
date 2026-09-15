@@ -11,6 +11,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 //      must be a real, active tier of THIS Space.
 //   4. CANCEL ownership: the member who joined may cancel; a non-member non-admin may not; a space
 //      admin may cancel another member's.
+//   5. THE YEARLY OPTION (ADR-1374): annualPriceCents normalizes to null for absent / 0 / malformed
+//      and on a FREE tier, it survives a save, a tier with no yearly option reads back null, and a
+//      join records the cadence the TIER can honor rather than the one the caller asked for.
 
 // ── Mock the caller identity + Space resolver + capability seam (toggled per test) ──────────────
 let currentProfileId: string | null = 'member-0000-4000-a000-0000000membr'
@@ -52,6 +55,7 @@ type TierRow = {
   space_id: string
   name: string
   price_cents: number
+  annual_price_cents?: number | null
   interval: string
   description: string | null
   benefits: unknown
@@ -67,6 +71,7 @@ type MembershipRow = {
   tier_id: string
   status: string
   started_at: string
+  billing_interval?: string
 }
 const db = {
   tiers: [] as TierRow[],
@@ -252,6 +257,7 @@ import {
   planTierSetOps,
   type MembershipTier,
 } from './memberships'
+import { annualSavingLabel, resolveBillingInterval, tierPriceView } from './membership-pricing'
 
 beforeEach(() => {
   currentProfileId = 'member-0000-4000-a000-0000000membr'
@@ -271,6 +277,7 @@ function tier(over: Partial<MembershipTier> = {}): MembershipTier {
   return {
     name: 'Unlimited',
     priceCents: 2500,
+    annualPriceCents: null,
     interval: 'month',
     description: null,
     benefits: ['Unlimited classes'],
@@ -323,6 +330,7 @@ describe('normalizeTier (pure, fail-closed)', () => {
       id: 'abc',
       name: 'Gold',
       priceCents: 1999,
+      annualPriceCents: null,
       interval: 'year',
       description: 'great',
       benefits: ['x'],
@@ -352,6 +360,18 @@ describe('normalizeTier (pure, fail-closed)', () => {
     const t = normalizeTier({ name: 'Basic', interval: 'weekly', priceCents: -5 })
     expect(t?.interval).toBe('month')
     expect(t?.priceCents).toBe(0)
+  })
+
+  it('parses the yearly price (ADR-1374); absent, zero and malformed all read as no offer', () => {
+    expect(normalizeTier({ name: 'A', priceCents: 4400, annualPriceCents: 44000 })?.annualPriceCents).toBe(44000)
+    expect(normalizeTier({ name: 'A', priceCents: 4400 })?.annualPriceCents).toBeNull()
+    expect(normalizeTier({ name: 'A', priceCents: 4400, annualPriceCents: 0 })?.annualPriceCents).toBeNull()
+    expect(normalizeTier({ name: 'A', priceCents: 4400, annualPriceCents: -10 })?.annualPriceCents).toBeNull()
+    expect(normalizeTier({ name: 'A', priceCents: 4400, annualPriceCents: 'lots' })?.annualPriceCents).toBeNull()
+  })
+
+  it('refuses a yearly price on a FREE tier: there is nothing to bill yearly', () => {
+    expect(normalizeTier({ name: 'A', priceCents: 0, annualPriceCents: 44000 })?.annualPriceCents).toBeNull()
   })
 
   it('is active by default; only an explicit false turns it off', () => {
@@ -721,5 +741,110 @@ describe('listSpaceMemberships (action) — owner only', () => {
     })
     const list = await listSpaceMemberships('space-1')
     expect(list.map((m) => m.id)).toEqual(['mem1'])
+  })
+})
+
+// ── THE YEARLY OPTION (ADR-1374) ────────────────────────────────────────────────────────────────
+// One tier, two cadences. What is locked: the yearly price survives a save, a tier that has no
+// yearly option reads back as null (including a row written before the column existed), and a JOIN
+// records the cadence the tier can actually honor rather than the one the caller asked for.
+
+describe('the yearly price on a tier (ADR-1374)', () => {
+  it('saves annual_price_cents onto the tier row', async () => {
+    const r = await setMembershipTiers('space-1', [
+      tier({ name: 'Guardian', priceCents: 4400, annualPriceCents: 44000 }),
+    ])
+    expect('error' in r).toBe(false)
+    expect(db.tiers[0]!.annual_price_cents).toBe(44000)
+  })
+
+  it('reads a tier with NO yearly option back as null, column or no column', async () => {
+    seedActiveTier('t0')
+    const tiers = await listMembershipTiers('space-1')
+    expect(tiers[0]!.annualPriceCents).toBeNull()
+  })
+
+  it('reads a saved yearly price back onto the tier', async () => {
+    seedActiveTier('t0', { annual_price_cents: 44000 })
+    const tiers = await listMembershipTiers('space-1')
+    expect(tiers[0]!.annualPriceCents).toBe(44000)
+  })
+})
+
+describe('joinTier records the cadence (ADR-1374)', () => {
+  it('records year when the tier offers a yearly price', async () => {
+    seedActiveTier('t0', { annual_price_cents: 44000 })
+    const r = await joinTier('space-1', 't0', 'year')
+    expect('error' in r).toBe(false)
+    expect(db.memberships[0]!.billing_interval).toBe('year')
+  })
+
+  it('records month for a yearly request on a monthly-only tier, never a cadence it cannot honor', async () => {
+    seedActiveTier('t0')
+    const r = await joinTier('space-1', 't0', 'year')
+    expect('error' in r).toBe(false)
+    expect(db.memberships[0]!.billing_interval).toBe('month')
+  })
+
+  it('defaults to month when the caller names no cadence', async () => {
+    seedActiveTier('t0')
+    const r = await joinTier('space-1', 't0')
+    expect('error' in r).toBe(false)
+    expect(db.memberships[0]!.billing_interval).toBe('month')
+  })
+
+  it('keeps a legacy yearly tier yearly (its single price has always been charged that way)', async () => {
+    seedActiveTier('t0', { interval: 'year' })
+    const r = await joinTier('space-1', 't0')
+    expect('error' in r).toBe(false)
+    expect(db.memberships[0]!.billing_interval).toBe('year')
+  })
+})
+
+describe('membership-pricing (pure, ADR-1374)', () => {
+  const paid = { priceCents: 4400, annualPriceCents: 44000, interval: 'month' as const }
+  const monthlyOnly = { priceCents: 4400, annualPriceCents: null, interval: 'month' as const }
+  const freeTier = { priceCents: 0, annualPriceCents: null, interval: 'month' as const }
+
+  it('shows the yearly price under the yearly toggle', () => {
+    expect(tierPriceView(paid, 'year')).toMatchObject({
+      cents: 44000,
+      cadence: 'year',
+      monthlyOnly: false,
+    })
+    expect(tierPriceView(paid, 'month')).toMatchObject({ cents: 4400, cadence: 'month' })
+  })
+
+  it('keeps a monthly-only tier on its monthly price and flags it', () => {
+    expect(tierPriceView(monthlyOnly, 'year')).toMatchObject({
+      cents: 4400,
+      cadence: 'month',
+      monthlyOnly: true,
+    })
+  })
+
+  it('leaves a free tier alone on both sides of the toggle', () => {
+    expect(tierPriceView(freeTier, 'year')).toMatchObject({ free: true, monthlyOnly: false })
+    expect(tierPriceView(freeTier, 'month')).toMatchObject({ free: true })
+  })
+
+  it('never claims a saving the two numbers do not support', () => {
+    expect(annualSavingLabel(4400, 44000)).toBe('Two months free') // ten months of the monthly price
+    expect(annualSavingLabel(4400, 48400)).toBe('One month free')
+    expect(annualSavingLabel(4400, 52800)).toBeNull() // identical money
+    expect(annualSavingLabel(4400, 60000)).toBeNull() // yearly costs more
+    expect(annualSavingLabel(4400, null)).toBeNull()
+    expect(annualSavingLabel(0, 44000)).toBeNull()
+  })
+
+  it('says the amount when the saving is not a whole number of months', () => {
+    expect(annualSavingLabel(4400, 45000)).toBe('Save $78 a year')
+  })
+
+  it('resolves a join cadence against what the tier offers', () => {
+    expect(resolveBillingInterval(paid, 'year')).toBe('year')
+    expect(resolveBillingInterval(monthlyOnly, 'year')).toBe('month')
+    expect(resolveBillingInterval(paid, 'month')).toBe('month')
+    expect(resolveBillingInterval({ ...monthlyOnly, interval: 'year' }, 'month')).toBe('year')
   })
 })
