@@ -42357,3 +42357,66 @@ instructional prose and is therefore invisible to this guard — stated here rat
 tolerated. The `ADR-TBD` population is a finding for a row of its own, not a silent omission.
 
 **Rows.** HYG-093 (done, this ADR).
+
+## ADR-1355: Phase 1 closes — what seven rounds of the automated loop actually measured (2026-09-15)
+
+**Status.** Accepted, 2026-09-15. Closes the Phase 1 program run under ADR-1325's twelve owner
+rulings. Record only: no code, no gate, no schema. Rows: HYG-094 filed; the phase's closed rows are
+listed in `docs/BUILD-BACKLOG.json`, which remains the only status record (ADR-1043).
+
+**Context.** ADR-1325 authorised an automated, phased build loop: one backlog row per PR, lanes in
+git worktrees, squash-merge on green only, migrations applied before their PR merges, an ADR for
+every CI rule change. Phase 1 ran seven rounds. This ADR records what the loop LEARNED, because the
+per-round facts are already in the rows and the PR bodies and do not need restating, while the
+recurring failure shapes are not written down anywhere a future round would look.
+
+**The backlog at the close.** 604 done, 93 open, 6 parked, 1 blocked, on production `dc11ed247`. Of
+the 94 open-or-blocked rows, **25 carry `ownerAction`**, so the agent-workable set is 69. That ratio
+is the useful number: the loop is not running out of rows, it is running into rulings.
+
+**Every artifact gate green on the closing deploy, and the cache pairing is now five readings deep.**
+`check:build-budget` 6.00 GB / 455 functions (75%) · `check:og-trace` 20 rasterising + 62 incidental
+of 100 · `check:cache-budget` estimated 1.30 GB against an actual `Uploading build cache [1.31 GB]`
+· `check:shell-weight` 1027 KB / 22 chunks (73%) · `check:build-fanout` closed · `check:notfound-routes`
+167 dynamic + 285 static with one arbitrary-URL route, owned. The cache constant's record now reads:
+exact on a 2.23 GiB raw cache, −2.8% on 2.43 GiB, −0.8% on 2.28 GiB, and badly LOW on the one
+sixteen-deploy LOADED mix that trimmed. `PACKED_PER_RAW` stays at 0.53; `LIVE-175` holds the
+re-derivation and it wants a paired reading on a loaded mix, not another resting one.
+
+**What the loop kept getting wrong, which is the part worth keeping.** Four shapes recurred often
+enough to name:
+
+1. **A single reading is not a measurement, and the second reading is often not either.** ADR-1352's
+   live control read "failure" on one job's commit step and "skipped" on its sibling's
+   identically-named step. The first reading said "a step ran that should not have"; the COMPARISON
+   said "one of these two is wrong"; and only reading the two steps' own comments said that **both
+   are deliberate, for opposite and documented reasons** — one carries `always()` so a partial
+   capture still lands, the other refuses `always()` so a refused capture is never merged. Three
+   readings, three different conclusions, and the third is the one HYG-094 is filed on. The same
+   shape appeared in a probe that tested for a preceding backtick where only backtick PARITY matches
+   the guard, and in an eslint version read from a stale worktree that inverted LIVE-306's
+   conclusion. The cheap version of this discipline is: before filing against a difference, read
+   what each side says about itself.
+2. **"I could not look" collapsed into "not yet" or "done".** Two waiters reported confidently about
+   state they never read — one polled an API unauthenticated and parsed `"?"` for twenty minutes
+   about a deploy that had been READY for 107 seconds. `scripts/maintenance/db-usage.mjs` already
+   models the fix with a distinct exit code for "could not look"; nothing else copied it.
+3. **A gate that has never fired is not a gate.** This is ADR-1002's lesson restated, and the phase
+   paid it forward: ADR-1352's guard got a real dispatch pair on the protected ref before being
+   called done (refuses in 3s with the turnstile SKIPPED; 14s for the whole run, against 6m51s and
+   110 MB for the defect it replaces), and its `update-a11y` arm was dispatched separately rather
+   than inferred from the unit test.
+4. **A doc that restates a number goes stale on a schedule.** `AGENTS.md`'s shell-weight paragraph
+   tracked the figure kilobyte by kilobyte and was 15 KB out within three weeks; its page-framework
+   paragraph had already been wrong twice about a count. Both now say to read the enforced source
+   instead. Prose that carries a measurement needs the same treatment the one list gets: the
+   machine-readable thing wins, and the doc says where it lives.
+
+**One convention changed under the loop, and it costs something.** HYG-093's guard (ADR-1354) refuses
+an unsubstituted ADR placeholder in citation position, which means **every lane tree is now expected
+to be red on `check:adr` until the coordinator substitutes**. In exchange the guard prints the
+substitution sites with file and line. That trade was taken deliberately: a red lane branch is
+strictly better than an unsubstituted heading reaching `main`, where all 26 contract guards were
+blind to it.
+
+**Rows.** HYG-094 (filed, this ADR).
