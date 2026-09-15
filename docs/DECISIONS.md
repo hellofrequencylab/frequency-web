@@ -41997,7 +41997,7 @@ the naming canon wins on names, and that bullet's subject is the plan NAME.
 
 **Rows.** LIVE-253 (done, this ADR).
 
-## ADR-NNNN: a placeholder where an ADR number belongs is refused in citation position, and prose that names it is not (2026-09-15)
+## ADR-1354: a placeholder where an ADR number belongs is refused in citation position, and prose that names it is not (2026-09-15)
 
 **Status.** Accepted, 2026-09-15. Enforced in `scripts/check-adr.mjs` (`pnpm check:adr`, which runs
 in CI's `checks` job inside the existing "Contract guards" array — no new script, no new step) and

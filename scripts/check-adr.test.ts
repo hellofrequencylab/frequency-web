@@ -67,7 +67,7 @@ describe('the live ledger', () => {
   })
 })
 
-// ── THE PLACEHOLDER HALF (HYG-093, ADR-NNNN) ──────────────────────────────────────────────────
+// ── THE PLACEHOLDER HALF (HYG-093, ADR-1354) ──────────────────────────────────────────────────
 //
 // A lane never mints an ADR number; it writes a placeholder and the coordinator substitutes the
 // real one at push time. Both scans above are NUMERIC, so that fail-safe had no gate, and one

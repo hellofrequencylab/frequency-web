@@ -152,7 +152,7 @@ export function findDanglingCitations(defined) {
     .sort((a, b) => a.id.localeCompare(b.id))
 }
 
-// ── PLACEHOLDERS WHERE AN ADR NUMBER BELONGS (HYG-093, ADR-NNNN) ──────────────────────────────
+// ── PLACEHOLDERS WHERE AN ADR NUMBER BELONGS (HYG-093, ADR-1354) ──────────────────────────────
 //
 // A lane in the build loop NEVER mints an ADR number -- two lanes in flight would collide on it --
 // so it writes a literal placeholder and the COORDINATOR substitutes the real number at push time.
