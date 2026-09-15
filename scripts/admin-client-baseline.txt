@@ -148,6 +148,18 @@
 # the policy: `posts.scope_id` is always a CIRCLE id (there is no scope_type column and no writer
 # stamps a Space), so the read goes through circles.space_id and the policy question is the
 # `cluster` branch above.
+# lib/billing/ticket-sale-notify.ts (added 2026-09-15, LIVE-345): the HOST's side of a ticket sale,
+# the exact sibling of lib/billing/tips-notify.ts already in this list and under the identical
+# posture: the caller is STRIPE. It runs from recordTicketFromSession inside the webhook, so there
+# is no session client to prefer and no cookie to run under, and there is no candidate session
+# anyway -- the person it writes for is the HOST, who is not the person who just bought anything.
+# Four reads and one write, all bounded by ids the settled row already holds: the event's title,
+# slug and host resolution; the hosting Space's owner (the payee, ADR-819); the buyer's display
+# name; the tier's name. It writes ONE `notifications` row, which has no insert policy for anybody.
+# The host's account address comes through lib/profiles/account-email, because auth.users is not
+# readable any other way. Quarantined in its own module for the same reason the two ticket receipt
+# modules are, so lib/billing/tickets.ts is not where the elevated reads live, and what it reads
+# reaches a bell body and an email body only, never an HTTP response.
 # lib/billing/receipt-email.ts + donation-receipt.ts + subscription-receipt.ts + tip-receipt.ts +
 # lib/commerce/order-receipt.ts (added 2026-09-15, LIVE-344): the PAYER's side of the four money
 # loops that told nobody anything, plus the one seam they all compose through. Identical posture to
@@ -551,6 +563,7 @@ lib/billing/space-subscription-items.ts
 lib/billing/space-subscriptions.ts
 lib/billing/subscription-receipt.ts
 lib/billing/supporter.ts
+lib/billing/ticket-sale-notify.ts
 lib/billing/tickets.ts
 lib/billing/tip-receipt.ts
 lib/billing/tips-notify.ts
