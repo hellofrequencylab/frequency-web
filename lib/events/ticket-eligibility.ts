@@ -22,11 +22,20 @@
 // permission is the whole point of this rewrite, because the two produce completely different surfaces:
 // a gate says "you cannot", a setup step says "two minutes and you can".
 //
-// That distinction is load-bearing right now. Production has exactly ONE profile with a Stripe account
-// and ZERO with onboarding complete, so nobody on the platform can receive money at all. The funnel is
-// open and correctly guarded; it has no completions because nothing ever asks. Hence the ruling that
-// onboarding is triggered AT FIRST SALE, on the surface where someone has just decided to charge, and
-// never buried in a settings page nobody visits.
+// That distinction is load-bearing, and the ruling it produced is: onboarding is triggered AT FIRST
+// SALE, on the surface where someone has just decided to charge, and never buried in a settings page
+// nobody visits.
+//
+// ⚠️ THE NUMBER THIS PARAGRAPH USED TO CARRY HAS MOVED, so it is dated rather than described as now.
+// It read "exactly ONE profile with a Stripe account and ZERO with onboarding complete, so nobody on
+// the platform can receive money at all". Re-measured 2026-09-15 (PROG-R5): 2 of 58 profiles hold a
+// Stripe account and BOTH are fully onboarded, charges and payouts enabled, and `host_payouts_enabled`
+// is true. So the setup step is being completed now and the ruling above is what changed it.
+//
+// 🔴 AND IT DID NOT PRODUCE A SALE. commerce_orders, event_tickets, space_subscription_items and
+// financial_transactions all still read 0 on 2026-09-15, unchanged from 2026-09-08, with one Space
+// carrying two paid membership tiers behind a fully payout-ready owner. Onboarding was A blocker and
+// is no longer THE blocker: do not read a completed onboarding as a completed loop (LIVE-234).
 
 import { NEEDS_PAYOUT_ACCOUNT } from '@/lib/billing/payout-prompt'
 

@@ -86,6 +86,32 @@ export function needsPayoutLine(channels: readonly PayoutChannel[]): string {
  *  exactly one copy of this sentence in the repo. lib/events/ticket-eligibility.ts re-exports it. */
 export const NEEDS_PAYOUT_ACCOUNT = needsPayoutLine(['tickets'])
 
+/** The channels named as a noun list, with the generic word when a surface names none. Extracted
+ *  because five prompt branches and `payeeSetupLine` all say it. Pure. */
+export function channelNounList(channels: readonly PayoutChannel[]): string {
+  const list = normalizeChannels(channels)
+  return list.length ? listPhrase(list.map((c) => PAYOUT_CHANNEL_WORDS[c].noun)) : 'payments'
+}
+
+/**
+ * THE ONE SENTENCE FOR A READER WHO IS NOT THE PAYEE.
+ *
+ * 🔴 EXTRACTED SO A CLIENT SURFACE CAN SAY IT TOO. `payoutPrompt` below is the server path and owns
+ * this sentence in its `relation: 'other'` branch. The event form's price control is a CLIENT
+ * component that cannot call the resolver, and it has the same reader: a Space editor who sets a
+ * ticket price on a Space they do not own. Before this, that reader was handed "Set that up" linking
+ * to their OWN /settings/billing, which would onboard the WRONG Stripe account — a misdirect, not
+ * just a dead end, because a space-hosted event pays the space OWNER (ADR-819). Both callers now
+ * derive the sentence here, so the client control and the server card cannot drift.
+ *
+ * Never a button: `openPayoutDashboard` / `startPayoutOnboarding` both resolve the CALLER's account,
+ * so there is nothing a non-payee can usefully press.
+ */
+export function payeeSetupLine(channels: readonly PayoutChannel[], payeeName?: string | null): string {
+  const who = (payeeName ?? '').trim() || 'The owner'
+  return `${who} is who Stripe pays, so their payout account is the one that has to exist. Ask them to add it and your ${channelNounList(channels)} can take money. It takes about two minutes.`
+}
+
 // ── The decision ────────────────────────────────────────────────────────────────────────────────
 
 /** Where the payee's Stripe account actually is. */
@@ -168,7 +194,7 @@ export function payoutPrompt(input: PayoutPromptInput): PayoutPrompt | null {
   const channels = normalizeChannels(input.channels)
   const relation = input.relation
   const who = (input.payeeName ?? '').trim()
-  const list = channels.length ? listPhrase(channels.map((c) => PAYOUT_CHANNEL_WORDS[c].noun)) : 'payments'
+  const list = channelNounList(channels)
 
   // READY. Silent by default, so every surface that treats this card as a nudge is unchanged and
   // `/market/manage` does not grow a standing banner. A surface that opts in gets the one thing the
@@ -237,7 +263,7 @@ export function payoutPrompt(input: PayoutPromptInput): PayoutPrompt | null {
       relation,
       channels,
       headline: 'This space cannot get paid yet',
-      body: `${who || 'The owner'} is who Stripe pays, so their payout account is the one that has to exist. Ask them to add it and your ${list} can take money. It takes about two minutes.`,
+      body: payeeSetupLine(channels, who),
       action: 'none',
       actionLabel: null,
     }

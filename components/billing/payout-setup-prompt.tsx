@@ -15,8 +15,15 @@ import { StartPayoutButton, ManagePayoutButton } from './payout-controls'
 // decision + copy live in lib/billing/payout-prompt.ts; this file only renders them.
 //
 // 🔴 IT STARTS ONBOARDING INLINE. That is the whole point of the row. A link to a settings page is a
-// second decision on a page the operator did not want to be on, and production has zero completed
-// onboardings to show for that design. StartPayoutButton posts to the SAME server action the
+// second decision on a page the operator did not want to be on, and for as long as it was the only
+// design production had ZERO completed onboardings.
+//
+// ⚠️ THAT ZERO IS NOW A TWO, so do not re-quote it as current. Measured 2026-09-15 (PROG-R5): 2 of 58
+// profiles hold a Stripe account and both are fully onboarded, charges and payouts enabled. Both rows
+// were last written after this card shipped (#2507, 2026-09-09), which is consistent with the inline
+// shape working but is NOT proof of it: `updated_at` moves on any profile write, and nothing records
+// which surface started an onboarding. Attributing it would need a real event, not this column.
+// StartPayoutButton posts to the SAME server action the
 // settings card uses (startPayoutOnboarding -> createOnboardingLink) and redirects straight into
 // Stripe's hosted form, so the operator finishes where they were already standing.
 //

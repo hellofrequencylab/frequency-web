@@ -298,8 +298,15 @@ export default async function NewEventPage({
   }
   const readyByPayee = await getConnectReadyMap([...scopePayees.values()])
   const payoutsReadyByScope: Record<string, boolean> = {}
+  // WHO THE PAYEE IS, not just whether they are ready (PROG-R5). Readiness alone cannot tell the
+  // price control whether the person reading it can DO anything about it, and the two answers lead
+  // to opposite surfaces: the caller gets inline Stripe onboarding, a Space editor who does not own
+  // the Space gets told who has to act. Free to compute — `scopePayees` already holds the payee, so
+  // this is the same loop and no extra read.
+  const payoutSelfByScope: Record<string, boolean> = {}
   for (const [scopeKey, payeeId] of scopePayees) {
     if (readyByPayee[payeeId]) payoutsReadyByScope[scopeKey] = true
+    if (payeeId === profile.id) payoutSelfByScope[scopeKey] = true
   }
 
   // Duplicate flow (`?duplicate=<id>`): clone a source event into a prefilled manual form,
@@ -418,6 +425,7 @@ export default async function NewEventPage({
         startInManual={!!duplicateInitial}
         home={viewerHome}
         payoutsReadyByScope={payoutsReadyByScope}
+        payoutSelfByScope={payoutSelfByScope}
       />
     </>
   )

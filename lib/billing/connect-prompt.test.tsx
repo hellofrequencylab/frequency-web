@@ -64,6 +64,52 @@ describe('every sell path reaches the one Connect prompt (source shape)', () => 
   })
 })
 
+// The SIXTH seam: the event form's price control (PROG-R5, ADR-1357)
+//
+// LIVE-233 closed the five surfaces where an operator reads a refusal, and named this one as the
+// nuance it left open: the event CREATE form is where a host first decides to charge, and it linked
+// to /settings/billing, the exact shape the row retired everywhere else. The five paths above are
+// SERVER components that render the shared card; this one is a client component, so it cannot, and
+// the pinned consequence is different: it must start onboarding through the SAME button the card
+// uses, and it must tell a non-payee to ask instead of handing them a button for the wrong account.
+
+const EVENT_FORM = 'app/(main)/events/new/event-form.tsx'
+
+describe("the event form's price control offers onboarding where the host is standing", () => {
+  it('starts onboarding inline through the shared button, not a link to a settings page', () => {
+    const src = read(EVENT_FORM)
+    expect(src, 'must mount the shared onboarding button').toContain(
+      "import { StartPayoutButton } from '@/components/billing/payout-controls'",
+    )
+    expect(src).toMatch(/<StartPayoutButton\b/)
+    expect(src, 'the /settings/billing dead end is back on the first sell attempt').not.toMatch(
+      /href=["'`]\/settings\/billing/,
+    )
+  })
+
+  it('branches on whether the CALLER is the payee, so it cannot onboard the wrong account', () => {
+    // A space-hosted event pays the space OWNER (ADR-819) and this form offers Spaces the caller
+    // merely manages. Readiness alone cannot tell those two readers apart.
+    const src = read(EVENT_FORM)
+    expect(src).toMatch(/payoutSelfByScope\?\.\[payoutScopeKey\(scopeId\)\]/)
+    expect(src, 'the non-payee sentence must come from the kernel').toContain(
+      "import { payeeSetupLine } from '@/lib/billing/payout-prompt'",
+    )
+    expect(src).toMatch(/payeeSetupLine\(\[['"]tickets['"]\]/)
+  })
+
+  it('the server publishes the payee beside readiness, or the branch above is always false', () => {
+    // The map is what makes the distinction reachable; without it every host reads as a non-payee
+    // and the button never renders, which would be a silent regression rather than a failure.
+    const page = read('app/(main)/events/new/page.tsx')
+    expect(page).toMatch(/payoutSelfByScope\[scopeKey\]\s*=\s*true/)
+    expect(page).toMatch(/payeeId === profile\.id/)
+    expect(page).toMatch(/payoutSelfByScope=\{payoutSelfByScope\}/)
+    // And the Spark is the only thing that mounts the form, so it has to pass it through.
+    expect(read('app/(main)/events/event-spark.tsx')).toMatch(/payoutSelfByScope=\{payoutSelfByScope\}/)
+  })
+})
+
 // ── Behaviour ─────────────────────────────────────────────────────────────────────────────────
 
 const { getConnectStatus, payoutsLive, getCallerProfile } = vi.hoisted(() => ({

@@ -206,6 +206,7 @@ export function EventSpark({
   startInManual,
   home,
   payoutsReadyByScope,
+  payoutSelfByScope,
 }: {
   groups: Group[]
   journeys?: JourneyOption[]
@@ -218,6 +219,9 @@ export function EventSpark({
   home?: { lat: number; lng: number } | null
   /** Pass-through to EventForm's price control (LIVE-126). This component never reads it. */
   payoutsReadyByScope?: Record<string, boolean>
+  /** Pass-through to EventForm's price control (PROG-R5): is the CALLER the payee for each scope.
+   *  This component never reads it. */
+  payoutSelfByScope?: Record<string, boolean>
 }) {
   const router = useRouter()
   const [mode, setMode] = useState<'wizard' | 'manual'>(startInManual ? 'manual' : 'wizard')
@@ -280,6 +284,7 @@ export function EventSpark({
         initial={initial}
         home={home}
         payoutsReadyByScope={payoutsReadyByScope}
+        payoutSelfByScope={payoutSelfByScope}
       />
     )
 

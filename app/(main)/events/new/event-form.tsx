@@ -20,6 +20,8 @@ import { SPECIAL_INSTRUCTIONS_HELP, SPECIAL_INSTRUCTIONS_LABEL } from '@/lib/eve
 import { RepeatPicker } from '@/components/events/repeat-picker'
 import { repeatUntilDate } from '@/lib/events/repeat-rule'
 import { ticketSellerVerdict, payoutScopeKey, NEEDS_PAYOUT_ACCOUNT } from '@/lib/events/ticket-eligibility'
+import { payeeSetupLine } from '@/lib/billing/payout-prompt'
+import { StartPayoutButton } from '@/components/billing/payout-controls'
 
 // The draggable-pin location picker runs MapLibre, which must never touch the server, so it
 // lazy-mounts client-only (ssr:false) — the same dynamic-import pattern as EventLocationMap.
@@ -173,6 +175,7 @@ export function EventForm({
   defaultGroupId,
   home,
   payoutsReadyByScope,
+  payoutSelfByScope,
 }: {
   groups: Group[]
   /** Journeys the caller may link this event to (create AND edit). Empty/absent hides the field. */
@@ -201,6 +204,13 @@ export function EventForm({
    *  ready, which is the direction `ticketSellerVerdict` fails and the line this control showed
    *  unconditionally before, so a miss is never worse than the old behaviour. */
   payoutsReadyByScope?: Record<string, boolean>
+  /** Is the CALLER the payee for each scope this host can pick, keyed by `payoutScopeKey`
+   *  (PROG-R5). Readiness alone cannot answer "can the person reading this fix it?", and the two
+   *  answers need opposite surfaces: the payee is offered inline Stripe onboarding, while a Space
+   *  editor who does not own the Space is told who has to act. An absent key reads as NOT self,
+   *  fail-closed in the same direction as `payoutsReadyByScope` and as the server prompt's
+   *  `relation` default, because offering onboarding to a non-payee onboards the wrong account. */
+  payoutSelfByScope?: Record<string, boolean>
 }) {
   const isEdit = !!eventId
   // Sentinel scope for a standalone PUBLIC event (any nearby member — no circle/space needed).
@@ -285,6 +295,16 @@ export function EventForm({
   // Split the scope options into their two optgroups (circles you host / spaces you run).
   const circleOptions = useMemo(() => groups.filter((g) => g.kind !== 'space'), [groups])
   const spaceOptions = useMemo(() => groups.filter((g) => g.kind === 'space'), [groups])
+
+  // The selected scope's own name, for the price control's non-payee sentence (PROG-R5). The SPACE
+  // is what an editor recognises, which is why `resolveSpacePayoutPrompt` names it rather than the
+  // owner's display name: naming a person to someone who may not know them reads as a leak rather
+  // than a next step. Null falls back to "The owner", the same wording the server card uses.
+  const selectedScopeName = useMemo(() => {
+    if (!scopeId || scopeId === PUBLIC_SCOPE) return null
+    const bare = scopeId.startsWith(SPACE_PREFIX) ? scopeId.slice(SPACE_PREFIX.length) : scopeId
+    return groups.find((g) => g.id === bare)?.name ?? currentScopeName ?? null
+  }, [scopeId, groups, currentScopeName])
 
   // Whether the SELECTED scope is a circle: fixed by prop on edit (the scope can't change
   // there), derived live from the select on create (a bare circle id = circle; the public
@@ -929,8 +949,7 @@ export function EventForm({
                 a lower rate, not the permission. The one thing still required is a payout account,
                 because Stripe will not move money to an unverified one, and that is a banking fact
                 rather than a tier. So this reads as a SETUP STEP with somewhere to go, never as a
-                refusal: production has zero completed onboardings today precisely because the funnel
-                is open and nothing ever asks.
+                refusal.
 
                 🔴 AND IT NOW READS THE HOST'S REAL STATE (LIVE-126). This sentence used to render on
                 `priceMode === 'paid'` alone, so a host who finished payout onboarding last week was
@@ -942,24 +961,46 @@ export function EventForm({
 
                 THE LOOKUP FOLLOWS THE SCOPE PICKER, because the payee does: a space-hosted event pays
                 the space OWNER (ADR-819), not whoever is filling in this form. An unresolved scope has
-                no key, reads as not ready, and shows exactly what this control showed before. */}
-            <p className="mt-1.5 text-2xs leading-relaxed text-muted">
-              {priceMode === 'paid' ? (
-                ticketSellerVerdict({ payoutsReady: payoutsReadyByScope?.[payoutScopeKey(scopeId)] }).allowed ? (
-                  <>Sets a ticket price. Your payout account is ready, so ticket money lands in your bank.</>
-                ) : (
-                  <>
-                    Sets a ticket price. {NEEDS_PAYOUT_ACCOUNT}{' '}
-                    <Link href="/settings/billing" className="font-medium text-primary underline-offset-2 hover:underline">
-                      Set that up
-                    </Link>{' '}
-                    before or after you publish.
-                  </>
-                )
+                no key and reads as not ready.
+
+                🔴 AND IT NOW STARTS ONBOARDING WHERE THE HOST IS STANDING (PROG-R5, ADR-1357).
+                THIS IS THE FIRST SELL ATTEMPT on the ticket path — the moment someone types a price is
+                the moment they decide to charge, and ticket-eligibility.ts records the ruling that
+                onboarding is offered THERE and "never buried in a settings page nobody visits". This
+                control did exactly that: it linked to /settings/billing, the one shape LIVE-233
+                retired from the other four money paths, and production still reads zero charges.
+
+                WORSE THAN A DEAD END FOR ONE READER, which is why the payee is now published beside
+                readiness. `spaces` here includes Spaces the caller MANAGES as editor/moderator/admin
+                but does not OWN, and those pay the owner (ADR-819). That reader was being sent to
+                THEIR OWN /settings/billing, so finishing the flow onboarded the wrong Stripe account
+                and the event still could not sell. They now get the non-payee sentence and no button,
+                the same answer the server card gives them, from the same pure function. */}
+            {priceMode === 'paid' ? (
+              ticketSellerVerdict({ payoutsReady: payoutsReadyByScope?.[payoutScopeKey(scopeId)] }).allowed ? (
+                <p className="mt-1.5 text-2xs leading-relaxed text-muted">
+                  Sets a ticket price. Your payout account is ready, so ticket money lands in your bank.
+                </p>
+              ) : payoutSelfByScope?.[payoutScopeKey(scopeId)] ? (
+                // The payee is the caller, so the button can only ever onboard the right account.
+                // StartPayoutButton posts to the SAME server action as the settings card and the
+                // four other money paths, so there is one onboarding call site, not a sixth.
+                <div className="mt-1.5 space-y-2">
+                  <p className="text-2xs leading-relaxed text-muted">
+                    Sets a ticket price. {NEEDS_PAYOUT_ACCOUNT} You can do it before or after you publish.
+                  </p>
+                  <StartPayoutButton label="Set up payouts" />
+                </div>
               ) : (
-                'A free event people RSVP to. Switch to a price to sell tickets.'
-              )}
-            </p>
+                <p className="mt-1.5 text-2xs leading-relaxed text-muted">
+                  Sets a ticket price. {payeeSetupLine(['tickets'], selectedScopeName)}
+                </p>
+              )
+            ) : (
+              <p className="mt-1.5 text-2xs leading-relaxed text-muted">
+                A free event people RSVP to. Switch to a price to sell tickets.
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
