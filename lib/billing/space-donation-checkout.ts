@@ -32,6 +32,8 @@ import { classifyOrderSource } from '@/lib/commerce/order-source'
 import { effectiveOrderSource } from '@/lib/pricing/network-world'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction, ENTITY_ID } from '@/lib/finance/record'
+import { receiptEmailFor } from './receipt-address'
+import { sendDonationReceipts } from './donation-receipt'
 
 /** Gift bounds. The floor keeps a gift above the card fee that would eat it; the ceiling is the same
  *  sanity bound the ask editor already clamps a suggested amount to. */
@@ -164,6 +166,8 @@ export async function createSpaceDonationCheckout(opts: {
       ...(opts.donorProfileId ? { donor_profile_id: opts.donorProfileId } : {}),
     }
 
+    const donorReceiptEmail = await receiptEmailFor(opts.donorProfileId)
+
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: [
@@ -183,6 +187,11 @@ export async function createSpaceDonationCheckout(opts: {
       payment_intent_data: {
         application_fee_amount: fee,
         transfer_data: { destination: ownerStatus.accountId },
+        // Stripe's own receipt, as a backstop (LIVE-344). A SIGNED-OUT donor has no account address
+        // to resolve, so the field is simply absent for them and Stripe's checkout-collected address
+        // is all there is; the first-party gift receipt (./donation-receipt.ts) reaches them either
+        // way, because the settle reads that address off the session.
+        ...(donorReceiptEmail ? { receipt_email: donorReceiptEmail } : {}),
         metadata,
       },
       ...(opts.donorProfileId ? { client_reference_id: opts.donorProfileId } : {}),
@@ -250,7 +259,9 @@ export async function recordSpaceDonationFromSession(session: Stripe.Checkout.Se
     })
     .eq('stripe_checkout_session_id', session.id)
     .eq('status', 'pending')
-    .select('id, platform_fee_cents, donor_profile_id, currency')
+    // space_id / ask_id / amount_cents / message ride along for the RECEIPTS (LIVE-344): the flip
+    // already holds every fact the gift receipt and the fund notice print.
+    .select('id, space_id, ask_id, platform_fee_cents, amount_cents, donor_profile_id, currency, message')
   // The status flip is NOT best-effort: a settled payment the DB refuses to record would otherwise be
   // acked 200 and lost. Throwing releases the webhook's claim and returns non-2xx, so Stripe
   // redelivers into a working write. The LEDGER append below stays best-effort, as it is everywhere.
@@ -260,9 +271,13 @@ export async function recordSpaceDonationFromSession(session: Stripe.Checkout.Se
 
   const rows = (updated ?? []) as {
     id: string
+    space_id: string
+    ask_id: string | null
     platform_fee_cents: number | null
+    amount_cents: number | null
     donor_profile_id: string | null
     currency: string | null
+    message: string | null
   }[]
   for (const row of rows) {
     await recordFinancialTransaction({
@@ -275,6 +290,21 @@ export async function recordSpaceDonationFromSession(session: Stripe.Checkout.Se
       sourceTable: 'space_donations',
       sourceId: row.id,
       idempotencyKey: `space-donation:${row.id}`,
+    }).catch(() => {})
+
+    // TELL BOTH SIDES (LIVE-344). Runs once per row THIS delivery flipped, so a redelivered webhook
+    // flips nothing and sends nothing. Best-effort beside the ledger append, and the module logs
+    // every miss for itself: a donor who paid and heard nothing must leave a trace somewhere.
+    await sendDonationReceipts({
+      id: row.id,
+      spaceId: row.space_id,
+      askId: row.ask_id,
+      donorProfileId: row.donor_profile_id,
+      amountCents: row.amount_cents ?? 0,
+      currency: row.currency,
+      message: row.message,
+      // Giving needs no account, so for a signed-out donor this is the only address there is.
+      donorEmail: session.customer_details?.email ?? null,
     }).catch(() => {})
   }
 }

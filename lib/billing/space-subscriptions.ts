@@ -34,6 +34,7 @@ import { foundingPaymentSignal } from './founding-payment'
 import { lapseFoundingStatus } from '@/lib/founding/status'
 import { setSpaceSeatQuantity } from '@/lib/spaces/seats'
 import { syncTierCircleAccess } from '@/lib/spaces/tier-circle'
+import { sendSpaceMembershipReceipts, sendSpacePlanReceipt } from './subscription-receipt'
 
 /** The metadata kinds the space subscription webhook handles. */
 export type SubscriptionKind = 'space_plan' | 'space_membership'
@@ -105,6 +106,15 @@ export async function reconcileSpacePlanSubscription(sub: Stripe.Subscription): 
   const status = sub.status
   const isCanceled = paymentStatusForSubscription(status) === 'canceled'
   const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id ?? null
+
+  // THE PLAN THIS SPACE WAS ON BEFORE THIS EVENT (LIVE-344). Read FIRST, because the writes below
+  // overwrite it, and it is the only honest idempotency signal this path has: a subscription emits a
+  // `.created` and an `.updated` inside the same second and then one event per renewal, per card
+  // change and per status flip, all of which reconcile to the same paid plan. `free -> paid` happens
+  // once, and a redelivery reads `paid -> paid` and sends nothing.
+  // FAIL-SAFE TO NULL: an unreadable plan sends NO receipt and says so. A missed receipt is the
+  // defect this row is fixing, but a receipt on every renewal event is worse and is not recallable.
+  const priorPlan = await priorSpacePlan(spaceId)
 
   // Read the live item set. A canceled subscription targets the empty set (every item removed -> the
   // space reverts to free + the billing namespace clears); otherwise map the present items to the plan.
@@ -222,6 +232,38 @@ export async function reconcileSpacePlanSubscription(sub: Stripe.Subscription): 
   if (lapses && priorSubscriptionId === sub.id) {
     await lapseFoundingStatus({ spaceId })
   }
+
+  // TELL THE OPERATOR THEY ARE PAYING NOW (LIVE-344). Only on the free -> paid transition read at the
+  // top of this function, so a renewal, a card recovery and a redelivered event all send nothing.
+  // Best-effort: this runs from the Stripe webhook and a failed message must never 500 a settled
+  // subscription into a redelivery loop. ./subscription-receipt.ts logs every miss.
+  if (priorPlan === 'free' && settledPlan !== 'free') {
+    await sendSpacePlanReceipt({ spaceId, plan: settledPlan, sub }).catch(() => {})
+  }
+}
+
+/** The plan a Space is on right now, or null when it cannot be read. Its own request rather than a
+ *  column on a wider select, for the reason space-plan-checkout.ts records: a column that is not
+ *  deployed yet fails the WHOLE PostgREST request, and this must never take a reconcile down. */
+async function priorSpacePlan(spaceId: string): Promise<SpacePlan | null> {
+  try {
+    const { data, error } = await createAdminClient()
+      .from('spaces')
+      .select('plan')
+      .eq('id', spaceId)
+      .maybeSingle()
+    if (error) {
+      console.error('[space-subscriptions] prior plan unreadable; no plan receipt will be sent', {
+        spaceId,
+        error: error.message,
+      })
+      return null
+    }
+    return asSpacePlan((data as { plan?: string | null } | null)?.plan)
+  } catch (err) {
+    console.error('[space-subscriptions] prior plan read threw; no plan receipt will be sent', { spaceId, err })
+    return null
+  }
 }
 
 /** Reconcile a `space_membership` subscription event: upsert the membership's subscription id +
@@ -338,6 +380,15 @@ export async function reconcileSpaceMembershipSubscription(sub: Stripe.Subscript
   // confirmed it exists) — grant the tier's linked circle. Non-throwing by contract; a full circle
   // or write hiccup is logged, never bounced back into the webhook as a retry.
   await syncTierCircleAccess({ spaceId, profileId: memberId, tierId, action: 'grant' })
+
+  // TELL THE MEMBER AND THE SPACE (LIVE-344). THIS BRANCH ONLY: it is the first payment, the one
+  // moment a recurring charge actually starts. The UPDATE branch above is a tier switch, a card
+  // recovery or a cancellation, none of which is a new paying member. The 23505 arm is the OTHER
+  // event of the same checkout losing the insert race, so it sends nothing either: exactly one of the
+  // two inserts returns no error, and that is the one that receipts.
+  if (!error) {
+    await sendSpaceMembershipReceipts({ spaceId, memberProfileId: memberId, tierId, sub }).catch(() => {})
+  }
 }
 
 /** The shape of a supabase-js write error (subset). */
