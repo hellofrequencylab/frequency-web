@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Check, CreditCard, Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import TicketCheckoutPanel from '@/components/events/ticket-checkout-panel'
 import { setRsvpStatus } from '@/app/(main)/events/actions'
 import { startTicket } from '@/app/(main)/events/[slug]/ticket-actions'
 import { GuestRsvpForm } from '@/components/events/guest-rsvp-form'
@@ -134,6 +135,21 @@ export function RsvpPaymentFlow({
   // Complete a GENERAL-rate Going: hold the spot (the RSVP is the reservation, first come
   // first served), then hand off to secure checkout when payments are live. An abandoned
   // checkout leaves the RSVP standing and the host's follow-up funnel picks it up.
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
+
+  /** Last resort: if the on-page form cannot run, ask again and take the hosted redirect. */
+  function fallBackToHosted() {
+    setClientSecret(null)
+    startTransition(async () => {
+      const r = await startTicket(eventId, {
+        qty: 1,
+        ticketTypeId: selected && selected.kind === 'general' ? selected.ticketTypeId : null,
+      })
+      if (!isError(r) && r.data.url) window.location.href = r.data.url
+      else setError('Could not start checkout. Please try again.')
+    })
+  }
+
   function payAndGo() {
     setError(null)
     startTransition(async () => {
@@ -145,6 +161,12 @@ export function RsvpPaymentFlow({
       })
       if (isError(r)) {
         setError(r.error)
+      } else if (r.data.clientSecret) {
+        // ON-PAGE (LIVE-347). Without this branch the button would be DEAD once the server starts
+        // issuing elements sessions: `startTicket` stops returning a url and the old code below
+        // would simply do nothing. Every caller of that action has to handle both shapes, which is
+        // what rsvp-payment-flow.onpage.test.ts pins.
+        setClientSecret(r.data.clientSecret)
       } else if (r.data.url) {
         window.location.href = r.data.url
       }
@@ -153,6 +175,16 @@ export function RsvpPaymentFlow({
 
   return (
     <div className="space-y-3">
+      {/* The on-page card form (LIVE-347). Rendered FIRST so it lands in view the moment it
+          appears, rather than below the rate list the buyer has already finished with. */}
+      {clientSecret && (
+        <TicketCheckoutPanel
+          clientSecret={clientSecret}
+          priceLabel=""
+          onFellBack={fallBackToHosted}
+        />
+      )}
+
       {/* Phase 1 — pick your rate. The purchase door renders its own list; see `guestDoor`. */}
       {!guestDoor && rateList.length > 0 && (
         <RateOptions rates={rateList} selectedId={selectedId} onSelect={selectRate} />

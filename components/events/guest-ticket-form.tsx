@@ -4,6 +4,7 @@ import { useId, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import TicketCheckoutPanel from '@/components/events/ticket-checkout-panel'
 import { startGuestTicket } from '@/app/(main)/events/[slug]/ticket-actions'
 import { ticketRowToPrice, type Price } from '@/lib/commerce/types'
 import { PriceInput, type PriceSelection } from '@/components/commerce/price-input'
@@ -114,6 +115,20 @@ export function GuestTicketForm({
   const fieldId = useId()
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
+
+  /**
+   * The on-page form could not run. A guest has no account to come back to, so leaving them on a
+   * broken form is the worst outcome available: send them to the hosted page instead.
+   *
+   * ⚠️ Deliberately NOT re-submitting here. The guest action is rate limited per IP (5 per 10
+   * minutes) and a silent retry would spend that budget on a buyer who is already mid-purchase.
+   * The message asks them to press the button again, which re-runs the action honestly.
+   */
+  function fallBackToHosted() {
+    setClientSecret(null)
+    setError('Secure payment could not load here. Press the button again to continue on Stripe.')
+  }
   const [selection, setSelection] = useState<PriceSelection | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -179,6 +194,18 @@ export function GuestTicketForm({
     )
   }
 
+  if (clientSecret) {
+    // The card form replaces the email form entirely: the address has already been captured and
+    // the session created against it, so re-showing the form would invite a second submission.
+    return (
+      <TicketCheckoutPanel
+        clientSecret={clientSecret}
+        priceLabel=""
+        onFellBack={fallBackToHosted}
+      />
+    )
+  }
+
   return (
     <form
       className="space-y-3"
@@ -214,6 +241,11 @@ export function GuestTicketForm({
           })
           if (isError(result)) {
             setError(result.error)
+          } else if (result.data.clientSecret) {
+            // ON-PAGE (LIVE-347): a guest pays without leaving the event page. The guest door is
+            // the reason tickets were chosen as the proving path -- it is the only creator with a
+            // signed-out buyer, so it exercises the identity seam the other eight do not.
+            setClientSecret(result.data.clientSecret)
           } else if (result.data.url) {
             // Hosted Stripe Checkout. This page is gone after this line.
             window.location.href = result.data.url

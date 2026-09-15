@@ -184,6 +184,18 @@ export function resolveUnitCents(opts: {
 
 export interface TicketResult {
   url?: string
+  /**
+   * The Checkout Session client secret, returned INSTEAD of `url` when the caller asked for
+   * `ui_mode: 'elements'` (LIVE-347). The card form then mounts on Frequency and the buyer never
+   * leaves the page.
+   *
+   * ⚠️ Exactly one of `url` / `clientSecret` is ever set. A hosted session has no client secret to
+   * hand out, and an elements session has no `url` to redirect to -- Stripe returns `url: null` for
+   * it. Callers branch on which one arrived rather than on what they asked for, so an elements
+   * request that could not be honoured DEGRADES to the hosted redirect instead of failing: the
+   * buyer still gets to pay, which is the only outcome that matters on a money path.
+   */
+  clientSecret?: string
   error?: string
   /** True when a `free` tier needs no checkout. The caller records the claim as a going RSVP
    *  instead of redirecting to Stripe: `setRsvpStatus` for a member, `submitGuestRsvp` with the
@@ -420,6 +432,13 @@ export async function createTicketCheckout(opts: {
   ticketTypeId?: string | null
   /** Buyer's chosen amount (cents) for pwyc/sliding_scale/donation tiers. */
   amountCents?: number | null
+  /**
+   * `'elements'` asks for an ON-PAGE card form (LIVE-347) and returns `clientSecret`; `'hosted'`
+   * (the default) returns the Stripe-hosted `url`. Defaulting to hosted on purpose: every existing
+   * caller keeps the behaviour it was written against, and the new path is opted into one caller at
+   * a time rather than switched on under all of them at once.
+   */
+  ui?: 'hosted' | 'elements'
 }): Promise<TicketResult> {
   // ── EXACTLY ONE IDENTITY ────────────────────────────────────────────────────────────────────
   // A ticket belongs to a profile OR to an address, never to both and never to neither. This is
@@ -430,6 +449,9 @@ export async function createTicketCheckout(opts: {
   // this message could act on "both identities supplied".
   const buyerProfileId = opts.buyerProfileId || null
   const guestEmail = (opts.guestEmail || '').trim().toLowerCase() || null
+  // Opt-in, never inferred. See the `ui` option: hosted stays the default so no existing caller
+  // changes behaviour when this ships.
+  const wantsElements = opts.ui === 'elements'
   if (!!buyerProfileId === !!guestEmail) {
     console.error(
       '[tickets] createTicketCheckout needs exactly one identity, got',
@@ -854,9 +876,34 @@ export async function createTicketCheckout(opts: {
     // Hold the seat for 30 min: the session expires so an abandoned checkout frees its
     // reservation (matches the pending window in reserve_ticket_atomic).
     expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
-    success_url: `${appUrl()}/events/${event.slug}?ticket=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${appUrl()}/events/${event.slug}`,
-  })
+    // ── WHERE THE BUYER ENDS UP, AND WHY THE TWO MODES SPELL IT DIFFERENTLY (LIVE-347) ────────
+    //
+    // Hosted Checkout takes `success_url` + `cancel_url`, because Stripe owns the page and has to
+    // know where to send the browser back to. An `ui_mode: 'elements'` session is rendered by US,
+    // so there is no "back": Stripe REJECTS both of those fields in a non-hosted mode and takes a
+    // single `return_url` instead, used only when a payment method redirects away and returns
+    // (3DS, a bank app).
+    //
+    // 🔴 `session_id={CHECKOUT_SESSION_ID}` MUST SURVIVE THE SWAP. That placeholder is what makes
+    // the success path work WITHOUT the webhook: app/(main)/events/[slug]/page.tsx reads
+    // `?ticket=success&session_id=...` and calls recordTicketFromSessionId, which settles the
+    // ticket even if the webhook is late, retried, or never arrives. Dropping it would leave the
+    // buyer on a page that cannot see their own purchase until a background event lands.
+    //
+    // It stays a CLAIM, never proof: LIVE-322 and lib/events/ticket-ownership.ts keep
+    // `purchaseConfirmed` (message-grade, derived from the reconcile) apart from `ownsTicket`
+    // (registration-grade, derived from a real row), because a session id in a URL is typed by
+    // whoever is holding the keyboard.
+    ...(wantsElements
+      ? {
+          ui_mode: 'elements',
+          return_url: `${appUrl()}/events/${event.slug}?ticket=success&session_id={CHECKOUT_SESSION_ID}`,
+        }
+      : {
+          success_url: `${appUrl()}/events/${event.slug}?ticket=success&session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${appUrl()}/events/${event.slug}`,
+        }),
+  } as Parameters<typeof stripe.checkout.sessions.create>[0])
 
   // Reserve capacity + record the pending row ATOMICALLY (reserve_ticket_atomic, migration
   // 20260930000000). The old pre-check + separate insert oversold: concurrent buyers all passed
@@ -946,6 +993,27 @@ export async function createTicketCheckout(opts: {
     }
   })()
 
+  // ── WHAT COMES BACK, AND THE DELIBERATE DEGRADE ───────────────────────────────────────────
+  // An elements session has `url: null` and carries a `client_secret`; a hosted one is the
+  // reverse. If we ASKED for elements and got a secret, hand it back and the form mounts here.
+  //
+  // 🔴 If we asked for elements and got NO secret, fall through to the hosted URL rather than
+  // erroring. That is the whole safety property of this change: the on-page form is an
+  // enhancement over a working redirect, so every way it can fail to materialise -- an API
+  // version that does not know the mode, a Stripe-side rejection, a field this repo has wrong --
+  // lands the buyer on Stripe's page instead of a dead end. The compiler cannot help here
+  // (`stripe` ships no types; `Stripe.*` is `any`), so this branch is the check.
+  const clientSecret =
+    wantsElements && typeof (session as { client_secret?: unknown }).client_secret === 'string'
+      ? ((session as { client_secret: string }).client_secret)
+      : null
+  if (clientSecret) return { clientSecret }
+  if (wantsElements) {
+    console.error(
+      '[tickets] elements checkout was requested but Stripe returned no client_secret; falling back to the hosted redirect',
+      { sessionId: session.id },
+    )
+  }
   if (!session.url) return { error: 'Could not start checkout.' }
   return { url: session.url }
 }

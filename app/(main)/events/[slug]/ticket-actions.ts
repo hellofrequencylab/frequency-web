@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import { getMyProfileId } from '@/lib/auth'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { createTicketCheckout, refundTicket } from '@/lib/billing/tickets'
+import { onPageCheckoutAvailable } from '@/lib/billing/stripe-browser'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { setRsvpStatus } from '@/app/(main)/events/actions'
 import { submitGuestRsvp } from '@/app/(main)/events/guest-rsvp-actions'
@@ -22,7 +23,7 @@ import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 export async function startTicket(
   eventId: string,
   opts?: { qty?: number; ticketTypeId?: string | null; amountCents?: number | null },
-): Promise<ActionResult<{ url?: string; free?: boolean }>> {
+): Promise<ActionResult<{ url?: string; clientSecret?: string; free?: boolean }>> {
   // Hard server-side off while platform payments are dormant (lib/events/ticketing):
   // a stale link or client must never reach Stripe.
   if (!TICKETING_ENABLED) return fail('Ticket sales are off right now.')
@@ -30,12 +31,19 @@ export async function startTicket(
   const buyerProfileId = await getMyProfileId()
   if (!buyerProfileId) return fail('Sign in to buy a ticket.')
 
+  // ── ON-PAGE WHEN WE CAN, HOSTED WHEN WE CANNOT (LIVE-347) ─────────────────────────────────
+  // `onPageCheckoutAvailable()` is the publishable-key check. Reading it HERE rather than in the
+  // browser means the decision is made once, on the server, before a session exists -- so a
+  // deployment with no key never creates an elements session that nothing could render. The
+  // client still branches on what actually came back, never on what was asked for, because this
+  // is only the first of two places the on-page path can decline.
   const r = await createTicketCheckout({
     buyerProfileId,
     eventId,
     qty: opts?.qty ?? 1,
     ticketTypeId: opts?.ticketTypeId ?? null,
     amountCents: opts?.amountCents ?? null,
+    ui: onPageCheckoutAvailable() ? 'elements' : 'hosted',
   })
   if (r.error) return fail(r.error)
   // Free tier: no money moves, no checkout (createTicketCheckout already enforced the
@@ -50,6 +58,9 @@ export async function startTicket(
     await setRsvpStatus(eventId, 'going')
     return ok({ free: true })
   }
+  // Exactly one of these is ever set. A client secret means the card form mounts here; a url means
+  // the buyer goes to Stripe, which is what happens whenever the on-page path declined.
+  if (r.clientSecret) return ok({ clientSecret: r.clientSecret })
   if (!r.url) return fail('Could not start checkout.')
   return ok({ url: r.url })
 }
@@ -90,7 +101,7 @@ export async function startGuestTicket(input: {
   qty?: number
   /** Honeypot. A real person never sees this field, so anything in it is a bot. */
   company?: string
-}): Promise<ActionResult<{ url?: string; free?: boolean }>> {
+}): Promise<ActionResult<{ url?: string; clientSecret?: string; free?: boolean }>> {
   // Hard server-side off, FIRST and for the same reason as the member path: a stale link or a
   // client must never reach Stripe while platform payments are dormant.
   if (!TICKETING_ENABLED) return fail('Ticket sales are off right now.')
@@ -134,6 +145,7 @@ export async function startGuestTicket(input: {
   if (!EMAIL_RE.test(email)) return fail('Please enter a valid email address.')
 
   const r = await createTicketCheckout({
+    ui: onPageCheckoutAvailable() ? 'elements' : 'hosted',
     guestEmail: email,
     eventId: input.eventId,
     qty: input.qty ?? 1,
@@ -172,6 +184,7 @@ export async function startGuestTicket(input: {
     return ok({ free: true })
   }
 
+  if (r.clientSecret) return ok({ clientSecret: r.clientSecret })
   if (!r.url) return fail('Could not start checkout.')
   return ok({ url: r.url })
 }
