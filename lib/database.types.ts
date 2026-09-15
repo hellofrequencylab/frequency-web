@@ -4738,6 +4738,7 @@ export type Database = {
           guest_email: string | null
           id: string
           order_source: string | null
+          payment_processing_at: string | null
           platform_fee_cents: number
           qty: number
           refunded_at: string | null
@@ -4764,6 +4765,7 @@ export type Database = {
           guest_email?: string | null
           id?: string
           order_source?: string | null
+          payment_processing_at?: string | null
           platform_fee_cents?: number
           qty?: number
           refunded_at?: string | null
@@ -4790,6 +4792,7 @@ export type Database = {
           guest_email?: string | null
           id?: string
           order_source?: string | null
+          payment_processing_at?: string | null
           platform_fee_cents?: number
           qty?: number
           refunded_at?: string | null
@@ -17047,9 +17050,12 @@ export type Database = {
           entity_id: string
           event_id: string
           id: string
+          over_capacity: boolean
           platform_fee_cents: number
           qty: number
           ticket_type_id: string
+          tier_committed: number
+          tier_quantity: number
         }[]
       }
       show_limit: { Args: never; Returns: number }

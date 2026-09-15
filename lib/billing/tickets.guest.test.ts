@@ -60,6 +60,12 @@ const stripeFake = vi.hoisted(() => ({
 /** The payee's Connect readiness, flipped per test. Ready by default. */
 const connect = vi.hoisted(() => ({ status: { accountId: 'acct_host', ready: true } as { accountId: string | null; ready: boolean } }))
 
+/** The MEMBER buyer's proven account address, for `receipt_email`. Mocked at the module seam rather
+ *  than through the fake client because the real accessor reads `auth.users` through
+ *  `auth.admin.getUserById`, which the table-keyed fake below deliberately does not model. */
+const accountEmail = vi.hoisted(() => ({ value: 'buyer@example.com' as string | null }))
+vi.mock('@/lib/profiles/account-email', () => ({ profileAccountEmail: async () => accountEmail.value }))
+
 vi.mock('./stripe', () => ({ stripe: stripeFake, appUrl: () => 'https://app.test' }))
 vi.mock('./connect', () => ({
   payoutsLive: async () => true,
@@ -103,7 +109,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 }))
 
 import { TICKETS_NOT_READY } from '@/lib/events/ticket-eligibility'
-import { createTicketCheckout } from './tickets'
+import { createTicketCheckout, TICKET_PMC_ENV } from './tickets'
 
 const GUEST = 'sam@example.com'
 
@@ -384,5 +390,76 @@ describe('createTicketCheckout — THE MEMBER PATH IS UNCHANGED (regression)', (
     flatEvent()
     const out = await createTicketCheckout({ buyerProfileId: 'host-1', eventId: 'evt-1' })
     expect(out.error).toBe('You’re hosting this event.')
+  })
+})
+
+// ── A ticket is TIMED INVENTORY, so its session is shaped differently to every other one ────────
+
+describe('createTicketCheckout — instant money only (LIVE-343)', () => {
+  it('narrows the ticket session to card + link when no configuration id is set', async () => {
+    delete process.env[TICKET_PMC_ENV]
+    flatEvent()
+    await createTicketCheckout({ buyerProfileId: 'buyer-1', eventId: 'evt-1' })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const s = created() as any
+    // A delayed-notification method completes this session WITHOUT paying and settles days later,
+    // which is the mechanism behind the oversell. It cannot share a product with a 30 minute hold.
+    expect(s.payment_method_types).toEqual(['card', 'link'])
+    expect(s).not.toHaveProperty('payment_method_configuration')
+  })
+
+  it('hands the Stripe dashboard back control when a configuration id IS set', async () => {
+    process.env[TICKET_PMC_ENV] = 'pmc_instant_only'
+    flatEvent()
+    await createTicketCheckout({ buyerProfileId: 'buyer-1', eventId: 'evt-1' })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const s = created() as any
+    expect(s.payment_method_configuration).toBe('pmc_instant_only')
+    // Stripe rejects a request carrying both, so the hardcoded list must be gone entirely.
+    expect(s).not.toHaveProperty('payment_method_types')
+    delete process.env[TICKET_PMC_ENV]
+  })
+
+  it('keeps the 30 minute hold, which is the thing the narrowing protects', async () => {
+    flatEvent()
+    await createTicketCheckout({ buyerProfileId: 'buyer-1', eventId: 'evt-1' })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(typeof (created() as any).expires_at).toBe('number')
+  })
+})
+
+describe("createTicketCheckout — Stripe's own receipt, as the backstop to ours", () => {
+  it('addresses a GUEST receipt to the normalised address the ticket is written against', async () => {
+    flatEvent()
+    await createTicketCheckout({ guestEmail: ' Sam@Example.COM ', eventId: 'evt-1' })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((created() as any).payment_intent_data.receipt_email).toBe(GUEST)
+  })
+
+  it("addresses a MEMBER receipt to their PROVEN account address, never to client input", async () => {
+    accountEmail.value = 'buyer@example.com'
+    flatEvent()
+    await createTicketCheckout({ buyerProfileId: 'buyer-1', eventId: 'evt-1' })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const s = created() as any
+    expect(s.payment_intent_data.receipt_email).toBe('buyer@example.com')
+    // Same reason `customer_email` stays guest-only: a member's receipt must not be routable by
+    // anything a form supplied.
+    expect(s).not.toHaveProperty('customer_email')
+  })
+
+  it('omits the field rather than sending a null when the member has no readable address', async () => {
+    accountEmail.value = null
+    flatEvent()
+    await createTicketCheckout({ buyerProfileId: 'buyer-1', eventId: 'evt-1' })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((created() as any).payment_intent_data).not.toHaveProperty('receipt_email')
+    accountEmail.value = 'buyer@example.com'
+  })
+
+  it('lives on the PaymentIntent, not the session: a Checkout Session has no receipt_email', async () => {
+    flatEvent()
+    await createTicketCheckout({ guestEmail: GUEST, eventId: 'evt-1' })
+    expect(created()).not.toHaveProperty('receipt_email')
   })
 })
