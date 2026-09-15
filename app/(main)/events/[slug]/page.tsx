@@ -48,6 +48,7 @@ import { MembershipCheckoutFold } from '@/components/events/membership-checkout-
 import { RsvpPaymentFlow, type FlowRate } from '@/components/events/rsvp-payment-flow'
 import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { HOME_TZ, resolveZone, isEventPast, zoneAbbrev, eventInstant } from '@/lib/time/zone'
+import { formatSalesDate, ticketOnSale } from '@/lib/events/sales-window'
 import { type ActivityPost } from '@/components/events/event-activity'
 import { EventCheckInSurface } from '@/components/events/event-checkin-surface'
 import { type FactGuest } from '@/components/events/event-fact-panel'
@@ -661,7 +662,7 @@ export default async function EventDetailPage({
     admin
       .from('event_ticket_types')
       .select(
-        'id, name, description, pricing_mode, price_cents, min_cents, suggested_cents, quantity, sold, member_only, space_members_only, space_tier_id, active, sort_order, created_at',
+        'id, name, description, pricing_mode, price_cents, min_cents, suggested_cents, quantity, sold, member_only, space_members_only, space_tier_id, sales_start_at, sales_starts_days_before, sales_end_at, active, sort_order, created_at',
       )
       .eq('event_id', event.id)
       .eq('active', true)
@@ -797,15 +798,28 @@ export default async function EventDetailPage({
     member_only: boolean
     space_members_only: boolean
     space_tier_id: string | null
+    /** ADR-1373: the sales window columns. Three NULLs = no window, which is every legacy row. */
+    sales_start_at: string | null
+    sales_starts_days_before: number | null
+    sales_end_at: string | null
   }
   // `rawTiers` was fetched in the RSVP wave above (it needs only `event.id`), so this block
-  // spends no round trip of its own.
+  // spends no round trip of its own. Its select carries the ADR-1373 sales-window columns.
   const tierRows = ((rawTiers ?? []) as unknown as (TierRow & { active: boolean })[]).filter(
     (t) => t.active,
   )
 
+  // SALES WINDOW (ADR-1373): resolved ONCE here, server-side, against the event's TRUE start
+  // instant and rendered in the event's own zone. The buy panel shows a closed tier as "Opens to
+  // guests on <date>" rather than a dead button, so a members-first window reads as a schedule
+  // instead of as something broken. The checkout re-decides authoritatively; this is the honest
+  // preview of that decision, the same way the ADR-823 lock previews the membership gate.
+  const eventStartInstant = eventInstant(event.starts_at, eventTz)
+  const salesNow = new Date()
+
   const tiers: TicketTierView[] = tierRows.map((t) => {
     const spotsLeft = t.quantity == null ? null : Math.max(0, t.quantity - (t.sold ?? 0))
+    const sale = ticketOnSale(t, eventStartInstant, salesNow)
     return {
       id: t.id,
       name: t.name,
@@ -820,6 +834,9 @@ export default async function EventDetailPage({
       spaceMembersOnly: t.space_members_only || t.space_tier_id != null,
       spaceTierId: t.space_tier_id,
       membershipPriceLabel: null as string | null,
+      notYetOnSale: sale.reason === 'not_yet',
+      salesClosed: sale.reason === 'closed',
+      opensOnLabel: sale.opensAt ? formatSalesDate(sale.opensAt, eventTz) : null,
     }
   })
   const hasTiers = tiers.length > 0
@@ -1345,19 +1362,28 @@ export default async function EventDetailPage({
   const flowRates: FlowRate[] = tiers.map((t) => ({
     id: t.id,
     name: t.name,
-    priceLabel: t.spaceMembersOnly
-      ? memberUnlocks(t)
-        ? 'Included'
-        : t.membershipPriceLabel ?? 'Members'
-      : t.pricingMode === 'fixed'
-        ? `$${((t.priceCents ?? 0) / 100).toFixed(2)}`
-        : t.pricingMode === 'free'
-          ? 'Free'
-          : 'Pay what you can',
+    // A rate outside its window (ADR-1373) keeps its row and trades its price for the date it
+    // opens, so a guest can see that a public rate is coming rather than finding nothing.
+    priceLabel: t.notYetOnSale
+      ? t.opensOnLabel
+        ? `Opens to ${t.spaceMembersOnly ? 'members' : 'guests'} on ${t.opensOnLabel}`
+        : 'Not on sale yet'
+      : t.salesClosed
+        ? 'Sales closed'
+        : t.spaceMembersOnly
+          ? memberUnlocks(t)
+            ? 'Included'
+            : t.membershipPriceLabel ?? 'Members'
+          : t.pricingMode === 'fixed'
+            ? `$${((t.priceCents ?? 0) / 100).toFixed(2)}`
+            : t.pricingMode === 'free'
+              ? 'Free'
+              : 'Pay what you can',
     kind: t.spaceMembersOnly ? ('membership' as const) : ('general' as const),
     ticketTypeId: t.id,
     covered: t.spaceMembersOnly ? memberUnlocks(t) : t.pricingMode === 'free',
     tag: t.spaceMembersOnly ? (memberUnlocks(t) ? ('member' as const) : ('membership' as const)) : null,
+    offSale: t.notYetOnSale || t.salesClosed,
   }))
   const gatedNamedTierId = tiers.find((t) => t.spaceMembersOnly)?.spaceTierId ?? null
   const membershipFold =

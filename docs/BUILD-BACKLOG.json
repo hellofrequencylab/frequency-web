@@ -99,7 +99,7 @@
             "LIVE-346",
             "LIVE-348",
             "LIVE-349",
-            "LIVE-352"
+            "LIVE-359"
           ]
         },
         {
@@ -13198,6 +13198,138 @@
     },
     {
       "id": "LIVE-352",
+      "title": "A members-first sales window is a column on the tier, not a toggle an operator has to remember",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1373"
+      },
+      "detail": "Members-first was kept by hand: leave the public row inactive, remember to flip it. On a fourteen-day recurrence that fails silently on every occurrence after the first, and a row that never opened looks exactly like a row nobody bought. sales_starts_days_before is the SERIES rule inherited by every occurrence; sales_start_at is the per-occurrence override and wins when both are set. The probe measures the relative column, because that is the half a per-occurrence-only design would omit and the half a recurrence needs.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "sales_starts_days_before",
+        "paths": [
+          "supabase/migrations/20270345004900_ticket_sales_window.sql",
+          "lib/events/sales-window.ts"
+        ]
+      }
+    },
+    {
+      "id": "LIVE-353",
+      "title": "A member benefit is a priced modifier assignable to many tiers at once, not another per-object gate",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1372"
+      },
+      "detail": "ADR-823 gave a ticket row a binary ADMISSION gate. Nothing priced a membership. Extending that gate would need a row per tier per object and would still never reach stays or the store. space_tier_benefits is the assignment, and its composite key is the decision this row is making: one promise assigned to two tiers cannot drift between them.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "primary key \\(tier_id, benefit_id\\)",
+        "paths": [
+          "supabase/migrations/20270345004800_space_member_benefits.sql"
+        ]
+      }
+    },
+    {
+      "id": "LIVE-354",
+      "title": "The platform take-rate is computed on the discounted amount, never the list price",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1372"
+      },
+      "detail": "The money defect. spaceTakeRateCents applied to the list price bills a Space a percentage of money nobody paid, and it is invisible to any test that only checks the buyer's total. The checkout resolves the benefit into unitCents before ticketTotalCents builds the gross. The probe stops at 'the discounted amount is what the checkout computes': the ORDER of the calls is pinned by lib/billing/benefit-fee-order.test.ts, which pnpm test already owns, and re-running it here would pay twice and report the wrong owner (ADR-1101).",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "benefitAdjustedUnitCents",
+        "paths": [
+          "lib/billing/tickets.ts"
+        ]
+      }
+    },
+    {
+      "id": "LIVE-355",
+      "title": "A benefit usage cap is counted against real redemptions, so a guest pass is a benefit and not a policy line",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1372"
+      },
+      "detail": "max_uses without a ledger is a number on a policy. space_benefit_redemptions stores one row per redemption stamped with the period key it counts against, so the cap read is an equality filter rather than a date-range scan. The probe measures that the STORE actually reads the ledger: a benefits store that never mentions the table is a cap that never fires.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "space_benefit_redemptions",
+        "paths": [
+          "lib/spaces/benefits-store.ts"
+        ]
+      }
+    },
+    {
+      "id": "LIVE-356",
+      "title": "Operators assign benefits to tiers from the memberships editor, without a second surface",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1372"
+      },
+      "detail": "Memberships already composes the tier form, circle access and event access as stacked sections of one Offerings surface. Benefits join that surface rather than opening a parallel console, so a tier and what it is worth are edited in one place. The probe measures the composition, which is what would silently regress if someone gave benefits their own route.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "MembershipBenefits",
+        "paths": [
+          "app/(main)/spaces/[slug]/settings/memberships/section.tsx"
+        ]
+      }
+    },
+    {
+      "id": "LIVE-357",
+      "title": "Assignable benefits are metered as a paid capability, and the Free plan keeps its included members ticket",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1372"
+      },
+      "detail": "Defining priced modifiers is the paid half of memberships; the tier-bound included ticket that exists today is not, and must not start refusing on the Free plan. A meter prompts and blocks nothing (ADR-914), so this is a meter key rather than a hard gate.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "space_member_benefits",
+        "paths": [
+          "lib/pricing/feature-meters.ts"
+        ]
+      }
+    },
+    {
+      "id": "LIVE-358",
+      "title": "Royal Temple runs the four-rung ladder: Guest, Member, Guardian, Patron, with per-tier event tickets",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1372"
+      },
+      "detail": "The worked example that proves the primitive against a live Space. Guest and Member were RENAMED IN PLACE from Digital Member and Social Member: seven free members-ticket rows across the Meld dates plus one live membership pointed at the Social Member tier id, and recreating the row would have broken all eight links at once. Manual because no probe in this repo can read production rows.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Read back from production (space e4e224aa-966d-4cda-b748-e1209a633173) on 2026-09-15. Seven tiers, sort 0-6: Temple Guest 94a4aa54 $0/mo (renamed in place), Temple Member e4dfc12b $44/mo (renamed in place, 1 active membership preserved), Temple Member annual e43143d0 $440/yr, Temple Guardian 4b4659a5 $88/mo, Temple Guardian annual e401cccb $880/yr, Temple Patron 27cc7d59 $222/mo, Temple Patron annual 48c59330 $2220/yr. All 7 Meld dates carry 6 members-only ticket rows (one per paid tier) beside 1 public $22 Day pass, so no paid tier is refused by spaceMembershipGateError; verified by rendering /spaces/royaltemple/book, which lists every rung and advertises the included Meld ticket on each paid one. NOT done and deliberately left to the UI: the members' circle is unlinked (circle_id null on every tier), because creating a circle by raw SQL would bypass the invariants the Circle access panel maintains.",
+        "checked": "2026-09-15"
+      }
+    },
+    {
+      "id": "LIVE-359",
       "title": "Eight of the nine checkout creators still redirect to Stripe",
       "status": "open",
       "priority": "P2",

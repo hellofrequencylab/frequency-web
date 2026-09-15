@@ -8,9 +8,10 @@ import { StatusChip } from '@/components/admin/status'
 import { PageHeading } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { EventEditorWindow } from '@/components/studio/event/event-editor-window'
-import { EventEditClient, type TierEditRow } from './event-edit-client'
+import { EventEditClient } from './event-edit-client'
 import { loadSpaceAccessContext } from '@/lib/events/ticket-space-access'
 import { loadSeriesCancelPlan } from '@/lib/events/cancellation'
+import { listEventTicketTiers } from '@/lib/events/ticket-tiers'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,21 +29,11 @@ async function loadEvent(id: string) {
   return data ?? null
 }
 
-// Ticket tiers for the editor (EVENTS-SYSTEM §2.2). Typed read; the cast below only
-// narrows the DB's plain-string columns (pricing_mode) to the editor's union shape.
+// Ticket tiers for the editor (EVENTS-SYSTEM §2.2). ONE reader, shared with the host-facing
+// Manage panel (lib/events/ticket-tiers.listEventTicketTiers), rather than a second hand-written
+// select here. The two drifted the moment the sales window columns landed (ADR-1373): a console
+// that read fewer columns than it WROTE would have blanked a host's window on every admin edit.
 // `sold` is read-only here.
-async function loadTiers(eventId: string) {
-  const admin = createAdminClient()
-  const { data } = await admin
-    .from('event_ticket_types')
-    .select(
-      'id, name, description, pricing_mode, price_cents, min_cents, suggested_cents, quantity, sold, member_only, space_members_only, space_tier_id, sort_order, active',
-    )
-    .eq('event_id', eventId)
-    .order('sort_order', { ascending: true })
-    .order('created_at', { ascending: true })
-  return (data ?? []) as unknown as TierEditRow[]
-}
 
 export default async function AdminEventEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -52,7 +43,7 @@ export default async function AdminEventEditPage({ params }: { params: Promise<{
   const [event, caps, tiers, spaceAccess, series] = await Promise.all([
     loadEvent(id),
     getEventCapabilities(id),
-    loadTiers(id),
+    listEventTicketTiers(id),
     // Membership-linked ticket access (ADR-823): the "Who can buy" control's context.
     loadSpaceAccessContext(id),
     // How many dates of this event's series are still to come, for the series control (LIVE-206).
