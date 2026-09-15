@@ -31,7 +31,8 @@ import {
   formatLoadoutCents,
   type LoadoutTotal,
 } from './loadout'
-import type { AddonKey } from './plans'
+import { SPACE_PLAN_LABEL, type AddonKey, type SpacePlan } from './plans'
+import { mergeGate, type FeatureGateOverrides } from './gates'
 import { PLACEHOLDER_MEMBER_PRICE_CENTS } from './feature-tiers'
 import { isBetaPricingActive, effectiveCatalogAmounts } from './beta'
 import { PRICING_DEFAULTS, type PricingDefaults } from './defaults'
@@ -71,9 +72,9 @@ export interface PriceStrings {
    *  constant away from re-opening, but NO copy surface may quote it while `isBetaPricingActive()` is
    *  false: a sentence that offers "$19 at the Opening Beta price" is an offer the checkout refuses. */
   businessBeta: string
-  /** Collective list, and the charged price today, e.g. "$79". */
+  /** The `collective_base` list, and the charged price today, e.g. "$79". */
   collectiveList: string
-  /** The Collective beta anchor. Same caution as `businessBeta`: not charged while the window is shut. */
+  /** The `collective_base` beta anchor. Same caution as `businessBeta`: not charged while the window is shut. */
   collectiveBeta: string
   /** Non Profit flat, e.g. "$39". */
   nonprofit: string
@@ -143,8 +144,7 @@ export interface PricingTier {
   /** The dual-interval price for the headline (Pro base / nonprofit seat / org floor). */
   price: DualPrice
   /** Whether this tier is the highlighted, most-chosen column. Read off the offering model
-   *  (pricing-grid `Offering.featured`: Collective, the DAWN 2 reference's "Best choice"), never
-   *  decided here. */
+   *  (pricing-grid `Offering.featured`, the DAWN 2 reference's "Best choice"), never decided here. */
   featured: boolean
   /** One plain line on who the tier is for. */
   forWho: string
@@ -214,7 +214,7 @@ const TIER_CORE_INCLUDED: Record<PricingTier['id'], string> = {
   collective:
     'Everything in Business, plus team seats, automations, membership-included tickets, multiple pipelines, and hosting events with Collaborator Spaces.',
   nonprofit:
-    'The full Collective toolkit for verified nonprofits, with donations built in. Flat, never per seat.',
+    'The whole paid toolkit for verified nonprofits, with donations built in. Flat, never per seat.',
 }
 
 /** The CTA per tier. Copy + route only. */
@@ -225,8 +225,8 @@ const TIER_CTA: Record<PricingTier['id'], { label: string; href: string }> = {
   nonprofit: { label: 'Get verified', href: '/spaces' },
 }
 
-/** Build the FOUR public Space tier columns: Free Space FIRST (the first level of Space, where the core
- *  value lives), then Business, Collective, and Non Profit.
+/** Build the public Space tier columns: Free Space FIRST (the first level of Space, where the core
+ *  value lives), then every paid plan on the advertised ladder, in ladder order.
  *
  *  DERIVED FROM THE GRID (Phase 5, ADR-916). The column order, the labels, the taglines, the who-it-is-for
  *  lines, and every take-rate now come from lib/pricing/pricing-grid.ts spaceOfferings, the one derived
@@ -255,8 +255,8 @@ export function pricingTiers(
   // Vera AI is the only metered add-on. It is priced on, and available on, every paid tier.
   const tierAddons: TierAddonCell[] = PRICING_ADDONS.map((a) => ({ addon: a.key, value: proAddonPrice(a.key, cat) }))
 
-  // BETA AUTO-REVERT (ADR-811): during beta, Business/Collective show their Opening Beta anchor struck
-  // under the list; once beta ends the list becomes the price (no strike, no beta caption).
+  // BETA AUTO-REVERT (ADR-811): during beta, a plan with a beta anchor shows it struck under the list;
+  // once beta ends the list becomes the price (no strike, no beta caption).
   // effectiveCatalogAmounts mirrors what the checkout charges, so the table never quotes a price the
   // checkout won't honor.
   const eff = (a: CatalogAmounts) => effectiveCatalogAmounts(a, betaActive)
@@ -430,6 +430,62 @@ export function loadoutStripRow(p: PersonaLoadout, betaActive: boolean = isBetaP
  *  founder-window price to list on the cutover, matching the /pricing table + checkout. */
 export function loadoutStrip(betaActive: boolean = isBetaPricingActive()): LoadoutStripRow[] {
   return PERSONA_LOADOUTS.map((p) => loadoutStripRow(p, betaActive))
+}
+
+// ── What needs a paid plan: READ from the gate map, never typed ──────────────────────────────────────
+
+/** One capability a Space needs a paid plan for, with the plan it opens at. */
+export interface PaidWall {
+  /** The gate key in lib/pricing/gates.ts FEATURE_GATES. */
+  gate: string
+  /** The capability, in plain product voice ("selling memberships"). */
+  what: string
+  /** Why it is a wall rather than a meter, one clause, no number in it. */
+  why: string
+  /** The naming-canon label of the plan the gate opens at ("Business"). */
+  plan: string
+}
+
+/** The walls, by gate key, with the copy that explains each. The PLAN is deliberately absent: it is
+ *  read off the gate at call time, so a floor moved in code or raised by an operator at /admin moves
+ *  every sentence that names it. ADR-914 named three walls; the third, revenue splits, lost its gate
+ *  in HYG-079 because the feature is not built, and a sentence naming a plan for a capability no
+ *  gate carries is exactly the typed claim this list exists to prevent. */
+const PAID_WALL_COPY: readonly Omit<PaidWall, 'plan'>[] = [
+  {
+    gate: 'space_memberships',
+    what: 'selling memberships',
+    why: 'a membership is a recurring promise to another person',
+  },
+  {
+    gate: 'space_campaigns',
+    what: 'campaigns and funnels',
+    why: 'that is the line between messaging your own people and running an acquisition machine',
+  },
+]
+
+/** The capabilities that need a paid plan, each with the plan its gate opens at. PURE. `overrides`
+ *  is the operator's live gate map (loadFeatureGateOverrides()), merged over the code map exactly
+ *  the way featureAllowed merges it, so a floor an operator raised reads here too; omitted, the code
+ *  map alone. A wall whose gate is gone, or disabled, or no longer sits on the plan ladder drops out
+ *  rather than naming a plan for nothing. */
+export function paidWalls(overrides: FeatureGateOverrides = {}): PaidWall[] {
+  const walls: PaidWall[] = []
+  for (const copy of PAID_WALL_COPY) {
+    const gate = mergeGate(copy.gate, overrides)
+    if (!gate || !gate.enabled || gate.axis !== 'plan' || gate.minEntitlement === 'free') continue
+    walls.push({ ...copy, plan: SPACE_PLAN_LABEL[gate.minEntitlement as SpacePlan] })
+  }
+  return walls
+}
+
+/** The one-line answer-engine form, "selling memberships (Business) and campaigns and funnels
+ *  (Business)". PURE. Shared by /pricing, /llms.txt and /llms-full.txt so the three cannot disagree. */
+export function paidWallsPhrase(overrides: FeatureGateOverrides = {}): string {
+  const parts = paidWalls(overrides).map((w) => `${w.what} (${w.plan})`)
+  if (parts.length === 0) return 'nothing'
+  if (parts.length === 1) return parts[0]!
+  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
 }
 
 // ── Mission framing + the answer-engine ladder summary ──────────────────────────────────────────────

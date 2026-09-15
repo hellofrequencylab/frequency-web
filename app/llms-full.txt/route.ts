@@ -3,8 +3,9 @@ import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_TAGLINE, CONTACT_EMAIL, FOU
 import { getPricingValues } from '@/lib/pricing/settings'
 import { catalogConfigByKey, loadCatalogConfig } from '@/lib/pricing/catalog-config'
 import { isBetaPricingActive } from '@/lib/pricing/beta'
+import { loadFeatureGateOverrides } from '@/lib/pricing/gates'
 import { allOfferings, type Offering, type PricingGridInput } from '@/lib/pricing/pricing-grid'
-import { offeringLadderLabel } from '@/lib/pricing/pricing-page'
+import { offeringLadderLabel, paidWallsPhrase } from '@/lib/pricing/pricing-page'
 
 // /llms-full.txt — the comprehensive, self-maintaining companion to the curated /llms.txt route
 // (AIO, docs/CONTENT-VOICE §8). Where llms.txt is a hand-written brand summary, this dumps the
@@ -25,8 +26,12 @@ export const revalidate = 3600
  *  same revalidation it moves the page. Before Phase 5 (ADR-916) it read the code defaults only, so a
  *  price or rate an operator changed was published here at the old number until the next deploy. */
 async function pricingInput(): Promise<PricingGridInput> {
-  const [values, catalog] = await Promise.all([getPricingValues(), loadCatalogConfig()])
-  return { values, catalog: catalogConfigByKey(catalog), betaActive: isBetaPricingActive() }
+  const [values, catalog, gateOverrides] = await Promise.all([
+    getPricingValues(),
+    loadCatalogConfig(),
+    loadFeatureGateOverrides(),
+  ])
+  return { values, catalog: catalogConfigByKey(catalog), betaActive: isBetaPricingActive(), gateOverrides }
 }
 
 /** The network-only take-rate, one line per rung, straight off the offerings. Every ADVERTISED rung is
@@ -69,7 +74,10 @@ export async function GET() {
     'People join free. Businesses host free. You pay when you start charging. Selling is free on every tier: a free Member and a free Space can sell tickets and take payments and donations from day one, and a paid plan buys a lower rate, not permission. You keep 100% of your own bookings, always, and tips carry no fee on any rung. We earn only a small, shrinking take-rate on the business the network sends you, never on what you bring in yourself. That network-only rate drops as your plan rises:',
     ...takeRateLines(offerings),
     '',
-    'Three capabilities need a paid plan, and nothing else does: selling memberships (Business), campaigns and funnels (Business), and revenue splits (Collective). Everything else is a meter with a real free allowance, and a full meter stops new writes without ever hiding, deleting, or locking what is already there.',
+    // The walls and the plan each opens at are READ off the gate map (paidWallsPhrase), the same
+    // merge /pricing and /llms.txt do, so this line cannot name a plan for a wall the product does
+    // not enforce. It used to type "revenue splits (Collective)" for a gate HYG-079 had deleted.
+    `What needs a paid plan, and nothing else does: ${paidWallsPhrase(input.gateOverrides)}. Everything else is a meter with a real free allowance, and a full meter stops new writes without ever hiding, deleting, or locking what is already there.`,
     '',
     'Physical Spaces (Outposts and Frequency Labs) are funded by a separate community-owned vehicle, never out of platform margin.',
     '',
