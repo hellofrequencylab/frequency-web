@@ -41912,3 +41912,87 @@ no marker, and committed as it always did. The refusal path itself cannot be dis
 this recorder does **not** serve it: LIVE-328 needs the REQUEST COUNT for the house profile read
 from the project's edge logs, and this log counts only browser-visible 5xx. The row's sentence
 "the same recorder is what LIVE-328's measurement reads" was wrong when it was written.
+
+## ADR-1350: the reason to take a plan lives in one sentence, and the fee ladder stops being the sales pitch (2026-09-15)
+
+**Status.** Accepted. Closes `LIVE-253`. Extends [ADR-916](DECISIONS.md) and
+[ADR-1337](DECISIONS.md) (every figure and tier name is READ, never typed) to the **argument**, and
+applies [ADR-1294](DECISIONS.md) / [`CORE-MODEL.md`](CORE-MODEL.md) §1-§2. Amends
+[`CONTENT-VOICE.md`](CONTENT-VOICE.md) §1a, which was the source of the defect.
+
+**Context.** ADR-916 and ADR-1337 made every price, rate and tier name on the public surfaces derive
+from the catalog, because a typed figure drifts. The **sentence explaining why anyone should pay** was
+left typed, in eighteen places, and it drifted the same way: twenty-three live strings each argued the
+plan for themselves and the dominant version was *"a paid plan buys a lower rate and lifts the caps"*.
+That is the literal inverse of the model. `CORE-MODEL.md` §1 says businesses host free and you pay
+when you start charging; §2 says the owner's rule **is** ADR-914 correctly applied, *"never gate the
+transaction, gate the repeat"*. A page that sells the plan on caps and rates teaches a reader that a
+free Space is the small version of a paid one, which is the one thing the model says it is not.
+
+Two thirds of the row's premise had already moved by the time it was worked, which is worth recording
+because rows citing line numbers age fastest:
+
+| The row said | Measured 2026-09-15 |
+|---|---|
+| `pricing/page.tsx:198` names **three** things that need a paid plan | ⚠️ **Two.** ADR-1337 reads them off the gate map; revenue splits lost its gate in `HYG-079` and dropped out. |
+| The membership sentence is there and is first | ✅ True. `PAID_WALL_COPY[0]`, `why: 'a membership is a recurring promise to another person'`, plan read through `mergeGate`. |
+| `pricing-page.ts:105,107` says "Paid plans raise the limits" | ✅ Already gone (#2513). |
+| `page.tsx:398` says "The paid plans buy the rate down and lift the caps" | ✅ Already gone (#2512); survives only as a quoted historical string in a comment. |
+| `comparisons.ts:87` says "A paid plan does not switch selling on" | 🔴 Live. Retired here. |
+| "eleven more strings inventoried in the 2026-09-08 public survey" | 🔴 **The survey is not a persisted document.** No file in `docs/` and no ADR carries its list, so the inventory was rebuilt from scratch over the ADR-1337 guard's own `MARKETING_ROOTS`. It found twenty-three, two of which the probe's idiom pass found after the hand inventory was complete. |
+
+**Decision.**
+
+1. **One sentence, read not typed.** `PLAN_STORY` in `lib/pricing/pricing-page.ts` gains `paid` (why a
+   plan: *"A plan is what you take when money starts moving. Never the transaction ... What a plan
+   carries is the repeat, the part where you make a standing promise to the same person and have to
+   keep it."*) and `rate` (*"The rate is what a plan settles at, not what a plan is for."*). `/pricing`,
+   the CMS template the editor seeds `/edit/pricing` from, `/llms.txt` and `/llms-full.txt` all
+   interpolate both. The capabilities a plan turns on stay read off the gate map (`paidWalls`), so the
+   sentence and the product cannot disagree.
+2. **The rate stays stated and stops being the offer.** Nothing true was deleted: the ladder, the
+   yearly deal and the per-rung rate are all still on the page and still derived. What changed is that
+   no sentence offers them as the reason. The comparison grid's take-rate row now reads *"Where a rung
+   lands is set by the plan, and it is never the reason to take one."*
+3. **The kept third is the argument the page is built on.** The membership wall's why-clause was
+   already the model's own sentence and is untouched; the band a reader meets first and the FAQ that
+   opens the section now lead with it instead of contradicting it.
+4. **`CONTENT-VOICE.md` §1a is amended, because it was the instruction.** It told writers to *"frame a
+   paid tier as buying down your rate (savings + power)"*. Every retired string was obeying a LOCKED
+   canon. The clause now names the model's reason and points at `PLAN_STORY.paid`. The code wins
+   (`AGENTS.md`), and a canon that instructs the defect is the defect.
+5. **The probe leaves `manual` and asserts the POSITIVE first.** `LIVE-253`'s test is a negative over
+   prose, the hardest kind to probe honestly, and a probe of exactly this shape has already misfired in
+   this program by firing on the change that quoted the sentence it retired. So: the spine must state
+   the model's reason; each of the four surfaces must read `PLAN_STORY.paid` and `.rate`; the voice
+   canon must carry the amendment and must no longer instruct the retired framing. Twenty-one **exact**
+   original sentences are kept as negatives, and a nineteen-idiom pass (`buys the rate`, `lifts the
+   caps`, `raises the limits`, `past the caps`, `drops as your plan rises`, ...) runs over all eight
+   files to catch a re-statement in softer words. **Comments are stripped before matching**, borrowing
+   `marketing-figures.test.ts`'s rule, so documenting a retired sentence beside the corrected one is
+   not a violation. Every file is read through a helper that fails with the missing path rather than
+   throwing `ENOENT`.
+
+**Consequences.** ✅ Twenty-three live strings retired across `/pricing`, the CMS pricing template,
+both answer-engine routes, `/vs`, and the `/for` doors, none of them replacing the kept membership
+argument. ✅ Proven both ways: **46 of 186 assertions fail on `origin/main`** (exit 1, naming each), all
+pass on the merged tree (exit 0). ✅ A **19-arm mutation harness** (17 must-fire, 2 must-not-fire
+controls, one of which is a comment quoting a retired string) ran **19/19** as required. ✅ The idiom
+pass earned its place before it was ever committed: it caught two live strings the hand inventory had
+missed (`page.tsx`'s take-a-cut answer and `llms.txt:232`, both *"that rate drops as your plan
+rises"*). ⚠️ **Stated limit:** no probe over prose catches an arbitrary NEW off-model sentence that uses
+none of the nineteen idioms. The positive assertions narrow it, and the canon is now where the rule
+lives instead of in eighteen hand-typed copies.
+
+🔴 **Four surfaces state the same retired argument and were deliberately NOT changed**, because the row
+scopes to the public pricing argument and widening a copy PR into the product is how a diff stops being
+reviewable. Each is a finding for the owner, not a silent omission:
+`content/help/spaces/plans-and-pricing.md:82` (*"You do not buy the ability to charge, you buy the rate
+down"*, on a help article ADR-1337 had just rewritten) · `app/(main)/spaces/[slug]/settings/billing/plan-ladder.tsx:137`
+(*"Everything is included. Paid plans raise the limits"*) · `app/(main)/admin/pricing/pricing-console.tsx:870`
+and `:984` (operator-facing) · `app/(main)/upgrade`, the personal ladder, which is a different argument
+under [ADR-1084](DECISIONS.md). `docs/NAMING.md:492-494` carries it too (*"A paid Business is just a
+free Business using more (usage + seats) ... talks in terms of usage"*), and is left alone on purpose:
+the naming canon wins on names, and that bullet's subject is the plan NAME.
+
+**Rows.** LIVE-253 (done, this ADR).

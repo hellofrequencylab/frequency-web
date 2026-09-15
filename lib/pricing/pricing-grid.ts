@@ -269,7 +269,8 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
 
 /** The four ADVERTISED Space offerings, in ladder order: Free, Business, Collective, Non Profit. PURE.
  *
- *  A free Space is a real Space, available to anyone; the paid tiers are the depth above it. The paid
+ *  A free Space is a real Space, available to anyone, and the whole product rather than a trial of it
+ *  (docs/CORE-MODEL.md §1). The paid rungs are what a Space takes once money is moving through it. The paid
  *  rows come from spacePlanRows (the shared display shaping over the operator-set plan prices), which
  *  maps ADVERTISED_SPACE_PLANS, so the crossed-out anchor appears exactly where the config carries one
  *  and a tier the owner has taken off the public ladder cannot reappear here. */
@@ -866,8 +867,12 @@ const MEMBER_GROUPS: GroupDef[] = [
       {
         key: 'take_rate',
         label: 'Take-rate on network-sourced sales',
+        // LIVE-253: the last clause read "Every paid rung buys the rate on new introductions down
+        // further", which made this row the page's argument for paying. It is not: it is a fee
+        // schedule. The rate line now says what the rate IS, and the reason to take a plan is
+        // PLAN_STORY.paid, one sentence, read by every pricing surface.
         detail:
-          'You keep 100% from anyone already yours: a follower, a contact, or someone who bought before. Frequency charges once for the introduction. After that they are your people, free. Every paid rung buys the rate on new introductions down further.',
+          'You keep 100% from anyone already yours: a follower, a contact, or someone who bought before. Frequency charges once for the introduction. After that they are your people, free. Where a rung lands is set by the plan, and it is never the reason to take one.',
         source: { from: 'takeRate' },
       },
     ],

@@ -12,6 +12,7 @@ import {
   tierListAnchor,
   CREW_NOTE,
   MISSION_FRAMING,
+  PLAN_STORY,
   type PricingTier,
 } from '@/lib/pricing/pricing-page'
 import { planExtras } from '@/lib/pricing/pricing-grid'
@@ -181,7 +182,10 @@ export const data: Data = {
         id: 'pr-hero', variant: 'image',
         eyebrow: 'Pricing',
         title: 'Your own people are always free.', titleAccent: 'always free',
-        subtitle: "People join free. Businesses host free. You pay when you start charging. Being a Member is free, forever: browse Circles and Events, show up, earn Zaps, meet Vera, and run a ticketed event and get paid on day one. A business never pays for access to people either. Once money is moving, a plan buys a lower rate on the sales the network introduces, and your own people are always free.",
+        // LIVE-253: the last sentence read "Once money is moving, a plan buys a lower rate on the
+        // sales the network introduces". The reason is PLAN_STORY.paid now, read from the one spine
+        // rather than argued again in a document an operator can publish over the derived page.
+        subtitle: `People join free. Businesses host free. You pay when you start charging. Being a Member is free, forever: browse Circles and Events, show up, earn Zaps, meet Vera, and run a ticketed event and get paid on day one. A business never pays for access to people either. ${PLAN_STORY.paid}`,
         image: '/images/site/lab-lounge.jpg', focal: 'center',
         minHeight: 'screen',
         ctaPrimaryLabel: OPERATOR_CTA_LABEL, ctaPrimaryHref: OPERATOR_CTA_HREF,
@@ -198,7 +202,10 @@ export const data: Data = {
         id: 'pr-membership',
         eyebrow: 'Membership',
         title: 'For people.', titleAccent: '',
-        kicker: 'Free to join, and both rungs sell. Crew takes the rate down and lifts the caps.',
+        // LIVE-253: this read "Crew takes the rate down and lifts the caps", the retired sentence
+        // verbatim. Crew is the personal rung for someone selling their own events, and every Crew
+        // amount buys the same Crew (NAMING.md), so the rung is what it is for, not what it lifts.
+        kicker: 'Free to join, and both rungs sell. Crew is the personal rung for running your own ticketed events without running a Space.',
         items: [
           {
             name: 'Member', livePriceKey: 'member', price: 'Free', strikePrice: '', cadence: 'forever', priceNote: '',
@@ -218,7 +225,7 @@ export const data: Data = {
             tagline: 'The same selling at a lower rate, plus the full game, the Crew badge, and the tools that build your list.',
             highlight: 'normal', badge: 'none',
             features: [
-              { text: 'Everything in Member, at a lower network rate' },
+              { text: 'Everything in Member, and your own events to sell' },
               { text: 'Full game: Gems and Vault cash-in' },
               { text: 'Author and share your own Quest' },
               { text: 'Vera, unlimited' },
@@ -243,7 +250,9 @@ export const data: Data = {
         id: 'pr-spaces-a',
         eyebrow: 'For Spaces',
         title: 'For practitioners and businesses.', titleAccent: '',
-        kicker: `Run your community as a Space. You keep 100% of your own bookings, always. The only take-rate is on business the network sends you, and each step up buys it down: ${SPACE_TIERS.map((t) => `${t.name} ${rateOf(t)}`).join(', ')}.`,
+        // LIVE-253: this kicker argued the plan with "each step up buys it down". It now argues it
+        // with PLAN_STORY.paid and keeps the ladder as the fee schedule it is.
+        kicker: `Run your community as a Space. You keep 100% of your own bookings, always. ${PLAN_STORY.paid} The take-rate is only ever on business the network sends you: ${SPACE_TIERS.map((t) => `${t.name} ${rateOf(t)}`).join(', ')}.`,
         items: SPACE_TIERS.slice(0, 3).map(spaceTierCard),
         footnote: SPACE_TIERS.length > 3 ? '' : 'Every plan is one price, the same whenever you start. Pay yearly and you get two months free.',
         tone: 'canvas', width: 'wide', align: 'left', layout: { spaceTop: 'default', spaceBottom: SPACE_TIERS.length > 3 ? 'none' : 'default', visibility: 'all' },
@@ -427,9 +436,9 @@ export const data: Data = {
         items: [
           { q: 'Is being a Member really free?', a: 'Yes. The Member tier is free, forever. You can browse Circles and Events, attend gatherings in person, earn Zaps, and message Vera up to 10 times a day, all without paying.' },
           { q: 'Is there a discount for paying yearly?', a: `Yes. Pay yearly on any plan and you get two months free: ${andList(PAID_SPACE_TIERS.map((t) => `${t.name} is ${yearOf(t)} a year instead of ${monthOf(t)} a month`))}. Crew is contribute what you want: anything from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested, and every amount buys the same access.` },
-          { q: 'What is the difference between Member and Crew?', a: `Member is the free tier, forever, and the community itself is never behind it. Both tiers can sell: a free Member can run a ticketed event and get paid. Crew takes the rate on network-sourced sales from ${RATE.memberFree} down to ${RATE.member}, lifts the caps, and adds the full game, with Gems, Vault cash-in, your own Quest to author, unlimited Vera, and the leaderboard, for whatever you choose to pay, from ${CREW_NOTE.foundingLabel} a month. Those two are the whole member ladder.` },
+          { q: 'What is the difference between Member and Crew?', a: `Member is the free tier, forever, and the community itself is never behind it. Both tiers can sell: a free Member can run a ticketed event and get paid. Crew is the rung for someone doing that regularly: it adds the full game, with Gems, Vault cash-in, your own Quest to author, unlimited Vera, and the leaderboard, for whatever you choose to pay, from ${CREW_NOTE.foundingLabel} a month, and it settles at ${RATE.member} on network-sourced sales instead of ${RATE.memberFree}. Those two are the whole member ladder.` },
           { q: 'What do the Space plans cost?', a: `A Space is free to start and stays free until you start charging. ${andList(PAID_SPACE_TIERS.map((t) => `${t.name} is ${monthOf(t)} a month or ${yearOf(t)} a year`))}. Every plan is the same price whenever you start, and yearly is two months free.` },
-          { q: 'How does the take-rate work?', a: `You keep 100% of the business you bring yourself, always, on every tier. Someone who already follows you, is on your list, or has bought from you before is yours, and Frequency takes nothing on them. There is a rate only on someone the network introduces, and every step up buys it down: a free Member is ${RATE.memberFree}, Crew is ${RATE.member}, ${andList(SPACE_TIERS.map((t) => `${t.name} is ${rateOf(t)}`))}.` },
+          { q: 'How does the take-rate work?', a: `You keep 100% of the business you bring yourself, always, on every tier. Someone who already follows you, is on your list, or has bought from you before is yours, and Frequency takes nothing on them. There is a rate only on someone the network introduces. ${PLAN_STORY.rate} Where each rung settles: a free Member is ${RATE.memberFree}, Crew is ${RATE.member}, ${andList(SPACE_TIERS.map((t) => `${t.name} is ${rateOf(t)}`))}.` },
           { q: 'What about refunds?', a: 'Every plan is month to month, and you can cancel at any time. Cancel and your plan simply runs out its paid period. No contracts, no lock-in.' },
           { q: 'Can I buy my way into a Host or Guide role?', a: 'No, and that is on purpose. Host, Guide, and Mentor are earned by showing up and looking after the people around you. Those roles come from the community, never from a checkout page.' },
           { q: 'Where does the money go?', a: MISSION_FRAMING },

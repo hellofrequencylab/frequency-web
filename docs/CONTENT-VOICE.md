@@ -53,11 +53,21 @@ rests on **four brand promises**, stated plainly and only where they are true:
 3. **Month to month. Take your data and leave anytime.**
 4. **See exactly what the network earned you.**
 
-Pricing copy never nickel-and-dimes: talk in terms of belonging and shared success, frame a paid tier as
-*buying down your rate* (savings + power), and reserve the mission/"back the build" language for an opt-in
-Founding Steward, never a wall. The physical-spaces ambition is described concretely (what the money builds),
-never as a rescue plea. Naming defers to [NAMING.md](NAMING.md): "Community Collective" (brand) and "the
-Collective plan" (tier) stay legible; no em dashes.
+Pricing copy never nickel-and-dimes: talk in terms of belonging and shared success, and reserve the
+mission/"back the build" language for an opt-in Founding Steward, never a wall. The physical-spaces
+ambition is described concretely (what the money builds), never as a rescue plea. Naming defers to
+[NAMING.md](NAMING.md): "Community Collective" (brand) and "the Collective plan" (tier) stay legible;
+no em dashes.
+
+🔴 **AMENDED (ADR-1350, 2026-09-15, LIVE-253): a paid tier is NOT framed as "buying down your rate".**
+This paragraph said to, and eighteen public strings obeyed it, which put the fee ladder in the first
+sentence of every pricing surface and taught readers that a free Space is the small version of a paid
+one. [`CORE-MODEL.md`](CORE-MODEL.md) §1 and §2 are the live argument and it is the opposite: people
+join free, businesses host free, **you pay when you start charging**, because a plan is what the
+*repeat* runs on ([ADR-914](DECISIONS.md): never gate the transaction, gate the repeat). The rate and
+the meters are still stated, because both are true; neither is the reason. Write the reason from
+`PLAN_STORY.paid` in `lib/pricing/pricing-page.ts`, which every pricing surface interpolates, and
+never retype it.
 
 ---
 
