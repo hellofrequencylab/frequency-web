@@ -9,15 +9,32 @@ import { describe, it, expect } from 'vitest'
 // (`spaceFunctionEnabled`), never against the shape of the blob, because the defect this whole program
 // grew out of was a blob that looked correctly written and read back the other way.
 
+import fs from 'node:fs'
+import path from 'node:path'
+
 import {
   CAPABILITY_BUNDLES,
   ALL_SPACE_FUNCTION_KEYS,
+  CORE_SPACE_FUNCTION_KEYS,
+  GENERAL_BUNDLE_ID,
+  SETUP_PRESETS,
   UNDISABLEABLE_FUNCTION_KEY,
   capabilityBundle,
   capabilityBundleIds,
   nextBlobsForBundle,
+  resolveSetupPreset,
+  setupPresetForMode,
+  setupPresetIds,
+  SETUP_PRESET_BY_MODE,
 } from './bundles'
-import { SPACE_FUNCTIONS, spaceFunctionDef, spaceFunctionEnabled } from '@/lib/spaces/functions'
+import {
+  SPACE_FUNCTIONS,
+  seedSpaceConfigFromDefaults,
+  spaceFunctionDef,
+  spaceFunctionEnabled,
+} from '@/lib/spaces/functions'
+import { listModes } from '@/lib/spaces/modes'
+import { SPACE_MANIFEST } from '@/lib/studio/entities/space'
 import { spaceHasEntitlement, spaceBillingEntitlements, BILLING_NAMESPACE } from '@/lib/spaces/entitlements'
 import { BILLING_MANAGED_KEYS } from './plans'
 import { SPACE_ROLES } from '@/lib/spaces/membership-core'
@@ -190,5 +207,233 @@ describe('nextBlobsForBundle', () => {
     const snapshot = JSON.stringify([ent, roles])
     nextBlobsForBundle(ent, roles, narrow)
     expect(JSON.stringify([ent, roles])).toBe(snapshot)
+  })
+})
+
+// ── THE SETUP PRESETS (owner ruling 1 of ADR-1294, LIVE-249) ─────────────────────────────────────
+//
+// A preset is a product decision about what a kind of operator does NOT get, so the guards below
+// assert the two rules that keep it from becoming something else: it only ever SUBTRACTS, and it
+// never subtracts a tool the Space cannot work without. Consequences are read through the real
+// reader (`spaceFunctionEnabled`), never off the shape of the blob.
+
+/** The four presets the ruling names, by id. A fifth would be a product decision, not a refactor. */
+const RULED_PRESET_IDS = ['studio', 'practice', 'venue', 'nonprofit'] as const
+
+/** The tools a preset may not name as ON: naming one would read as granting it, and a bundle cannot
+ *  grant. Derived from the registry, so a tool that becomes tier-marked joins this set by itself. */
+const TIER_MARKED_KEYS = SPACE_FUNCTIONS.filter((f) => f.entitlement !== null).map((f) => f.key)
+
+describe('the four setup presets', () => {
+  it('are exactly the four the owner ruled, in catalog order, beside the pass-through', () => {
+    expect(setupPresetIds()).toEqual([...RULED_PRESET_IDS])
+    expect(capabilityBundleIds()).toEqual([GENERAL_BUNDLE_ID, ...RULED_PRESET_IDS])
+  })
+
+  it('names a real, undisableable core set', () => {
+    // Core is what every preset keeps. A key that is not in the registry could never be kept.
+    for (const key of CORE_SPACE_FUNCTION_KEYS) expect(spaceFunctionDef(key)?.key).toBe(key)
+    expect(CORE_SPACE_FUNCTION_KEYS).toContain(UNDISABLEABLE_FUNCTION_KEY)
+    expect(new Set(CORE_SPACE_FUNCTION_KEYS).size).toBe(CORE_SPACE_FUNCTION_KEYS.length)
+  })
+
+  it('never SUBTRACTS a core tool', () => {
+    // The half of the ruling a preset could get wrong without anyone noticing until an owner opened
+    // a console with a hole in it. /manage/circles is the first screen a new owner sees, so `circles`
+    // going off would be a dead end on the way in.
+    for (const preset of SETUP_PRESETS) {
+      const missing = CORE_SPACE_FUNCTION_KEYS.filter((key) => !preset.functions.includes(key))
+      expect({ preset: preset.id, coreMissing: missing }).toEqual({ preset: preset.id, coreMissing: [] })
+    }
+  })
+
+  it('never names a TIER-MARKED tool as on, so no preset can read as a grant', () => {
+    expect(TIER_MARKED_KEYS.length).toBeGreaterThan(0) // the positive control for the filter
+    for (const preset of SETUP_PRESETS) {
+      const granted = TIER_MARKED_KEYS.filter((key) => preset.functions.includes(key))
+      expect({ preset: preset.id, paidNamedOn: granted }).toEqual({ preset: preset.id, paidNamedOn: [] })
+    }
+  })
+
+  it('every one of them actually subtracts something, and adds nothing twice', () => {
+    // A preset that listed every function would be a second pass-through wearing a niche name.
+    for (const preset of SETUP_PRESETS) {
+      const omitted = ALL_SPACE_FUNCTION_KEYS.filter((key) => !preset.functions.includes(key))
+      expect(omitted.length, `${preset.id} subtracts nothing`).toBeGreaterThan(0)
+      expect(new Set(preset.functions).size, `${preset.id} repeats a key`).toBe(preset.functions.length)
+    }
+  })
+
+  it('carries operator-facing copy with no em or en dashes (CONTENT-VOICE §10)', () => {
+    for (const preset of SETUP_PRESETS) {
+      expect(preset.label.trim().length).toBeGreaterThan(0)
+      expect(preset.tagline.trim().length).toBeGreaterThan(0)
+      expect(`${preset.label} ${preset.tagline}`).not.toMatch(/[—–]/)
+    }
+  })
+})
+
+describe('applying a setup preset leaves core on and the preset list off', () => {
+  // This is the consequence LIVE-249 is closed against, measured exactly as provisioning produces
+  // it: the per-type seed blobs a new Space is inserted with, then the bundle applied over them.
+  const seeded = seedSpaceConfigFromDefaults('business', [])
+
+  it.each(SETUP_PRESETS.map((p) => [p.id, p] as const))('%s', (_id, preset) => {
+    const { entitlements } = nextBlobsForBundle(seeded.entitlements, seeded.featureRoles, preset)
+    const on = new Set<string>(preset.functions)
+    for (const def of SPACE_FUNCTIONS) {
+      // The undisableable key is on whatever the blob says, because its off-switch is never written.
+      const expected = on.has(def.key) || def.key === UNDISABLEABLE_FUNCTION_KEY
+      expect({ preset: preset.id, fn: def.key, on: spaceFunctionEnabled({ entitlements }, def) }).toEqual({
+        preset: preset.id,
+        fn: def.key,
+        on: expected,
+      })
+    }
+    // And every core tool is reachable, stated separately so a core regression names itself.
+    for (const key of CORE_SPACE_FUNCTION_KEYS) {
+      expect(spaceFunctionEnabled({ entitlements }, spaceFunctionDef(key)!), `${preset.id}/${key}`).toBe(true)
+    }
+  })
+
+  it('a preset never grants a paid tool the Space was not already paying for', () => {
+    // The inverse of the subtractive rule, read through the tool the plan would have paid for.
+    for (const preset of SETUP_PRESETS) {
+      const { entitlements } = nextBlobsForBundle({}, {}, preset)
+      for (const key of TIER_MARKED_KEYS) {
+        expect({ preset: preset.id, fn: key, on: spaceFunctionEnabled({ entitlements }, spaceFunctionDef(key)!) })
+          .toEqual({ preset: preset.id, fn: key, on: false })
+      }
+    }
+  })
+
+  it('re-applying the pass-through restores everything a preset switched off', () => {
+    const general = capabilityBundle(GENERAL_BUNDLE_ID)!
+    for (const preset of SETUP_PRESETS) {
+      const narrowed = nextBlobsForBundle({}, {}, preset)
+      const widened = nextBlobsForBundle(narrowed.entitlements, narrowed.featureRoles, general)
+      for (const def of SPACE_FUNCTIONS) {
+        expect({ preset: preset.id, fn: def.key, on: spaceFunctionEnabled({ entitlements: widened.entitlements }, def) })
+          .toEqual({ preset: preset.id, fn: def.key, on: true })
+      }
+    }
+  })
+})
+
+describe('resolveSetupPreset', () => {
+  it('accepts every registered preset id, trimmed', () => {
+    for (const id of setupPresetIds()) expect(resolveSetupPreset(`  ${id} `)?.id).toBe(id)
+  })
+
+  it('refuses the pass-through, so a creation form cannot use it to mean "everything on"', () => {
+    // Everything-on is what a Space is already; writing a bundle to say it would be a no-op write
+    // in the highest-risk path in the product.
+    expect(resolveSetupPreset(GENERAL_BUNDLE_ID)).toBeNull()
+  })
+
+  it('is total: null, empty and unknown all read as no preset', () => {
+    expect(resolveSetupPreset(null)).toBeNull()
+    expect(resolveSetupPreset(undefined)).toBeNull()
+    expect(resolveSetupPreset('')).toBeNull()
+    expect(resolveSetupPreset('not-a-preset')).toBeNull()
+  })
+})
+
+describe('the Mode to preset map (the data LIVE-149 was waiting for)', () => {
+  it('maps only registered (type, Focus) pairs, and only to registered presets', () => {
+    const registered = new Set(listModes().map((m) => `${m.type}:${m.variant}`))
+    const presets = new Set(setupPresetIds())
+    for (const [key, id] of Object.entries(SETUP_PRESET_BY_MODE)) {
+      expect({ key, isRegisteredMode: registered.has(key) }).toEqual({ key, isRegisteredMode: true })
+      expect({ key, id, isPreset: presets.has(id) }).toEqual({ key, id, isPreset: true })
+    }
+  })
+
+  it('pins the whole table, so a re-pointed Mode is a decision and not a typo', () => {
+    expect(SETUP_PRESET_BY_MODE).toEqual({
+      'business:packages': 'practice',
+      'business:cohort': 'practice',
+      'business:appointments': 'practice',
+      'business:service': 'practice',
+      'business:membership': 'studio',
+      'business:ticketed': 'venue',
+      'business:programs': 'venue',
+      'nonprofit:donations': 'nonprofit',
+      'nonprofit:programs': 'nonprofit',
+    })
+  })
+
+  it('leaves a PRODUCT business unmapped, which is the documented gap and not an oversight', () => {
+    // Its defining tool is the Shop, the Shop is tier-marked, and a preset may not name a paid tool
+    // as on. So there is no honest preset for it and it starts with every tool on, as it does today.
+    expect(setupPresetForMode('business', 'product')).toBeNull()
+  })
+
+  it('resolves every mapped Focus through the same reader provisioning uses', () => {
+    expect(setupPresetForMode('business', 'appointments')?.id).toBe('practice')
+    expect(setupPresetForMode('business', 'membership')?.id).toBe('studio')
+    expect(setupPresetForMode('business', 'ticketed')?.id).toBe('venue')
+    expect(setupPresetForMode('nonprofit', 'donations')?.id).toBe('nonprofit')
+  })
+
+  it('is total: no type, no Focus, and an unknown Focus all read as no preset', () => {
+    expect(setupPresetForMode(null, 'appointments')).toBeNull()
+    expect(setupPresetForMode('business', null)).toBeNull()
+    expect(setupPresetForMode('business', 'not-a-focus')).toBeNull()
+    expect(setupPresetForMode('root', 'appointments')).toBeNull()
+  })
+})
+
+describe('the Space Spark carries the preset field', () => {
+  const field = SPACE_MANIFEST.fields.find((f) => f.path === 'preset')
+
+  it('declares it on the Spark, as a choice', () => {
+    expect(field).toBeTruthy()
+    expect(field!.kind).toBe('select')
+    expect(field!.placement).toBe('spark')
+    expect(field!.section).toBe('model')
+  })
+
+  it('offers exactly the registered presets, ids AND labels', () => {
+    // The manifest RESTATES the registry because bundles.ts reaches a `server-only` module and a
+    // manifest is imported by client surfaces. This is the guard that makes the restatement safe.
+    expect(field!.options?.map((o) => o.value)).toEqual(SETUP_PRESETS.map((p) => p.id))
+    expect(field!.options?.map((o) => o.label)).toEqual(SETUP_PRESETS.map((p) => p.label))
+  })
+
+  it('is asked once and declares no later edit plane (ADR-1281)', () => {
+    // A preset is a STARTING shape. Re-asking it on a rail would switch tools off behind an owner
+    // who has since tuned them by hand.
+    expect(field!.editPlane).toBeUndefined()
+    expect(field!.prose).toBeUndefined()
+  })
+})
+
+describe('provisioning applies the preset through the one writer', () => {
+  // A SOURCE-SHAPE guard: the behaviour lives in a `use server` module this suite must not import,
+  // and the thing worth pinning is which seam it goes through. `setSpaceBundle` reads the two jsonb
+  // columns and hands them to the pure resolver above; a second writer here would be a second answer
+  // to "what is on".
+  const provision = fs.readFileSync(path.join(process.cwd(), 'lib/spaces/provision.ts'), 'utf8')
+
+  it('resolves a preset and applies it with setSpaceBundle', () => {
+    expect(provision).toMatch(/resolveSetupPreset/)
+    expect(provision).toMatch(/setupPresetForMode/)
+    expect(provision).toMatch(/setSpaceBundle\(spaceId, setupPreset\.id\)/)
+  })
+
+  it('takes the preset as an input, so an explicit Spark choice beats the derived one', () => {
+    expect(provision).toMatch(/preset\?: string \| null/)
+    expect(provision).toMatch(/resolveSetupPreset\(input\.preset\) \?\?/)
+  })
+
+  it('notices when the apply fails instead of swallowing it (AGENTS deploy-safety rule)', () => {
+    expect(provision).toMatch(/console\.error\([\s\S]{0,200}setup preset/)
+  })
+
+  it('never writes spaces.plan or the billing namespace from the preset path', () => {
+    // Shaping and charging are two decisions on two surfaces (ADR-874). The writer cannot touch
+    // money; this asserts the CALLER did not reach around it.
+    expect(provision).not.toMatch(/setSpacePlan|setSpaceAddons/)
   })
 })

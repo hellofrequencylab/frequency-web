@@ -63,7 +63,6 @@
         {
           "name": "W0d · P3 — the perf set and the deferred niceties. 12 visitors / 18 pageviews in 31 days: the funnel, not the page speed, is the constraint, and these are priced against that rather than against merit.",
           "ids": [
-            "LIVE-149",
             "LIVE-216",
             "LIVE-220",
             "LIVE-221",
@@ -99,7 +98,6 @@
             "LIVE-246",
             "LIVE-247",
             "LIVE-248",
-            "LIVE-249",
             "PROG-R8",
             "LIVE-252",
             "LIVE-253",
@@ -6344,7 +6342,7 @@
     {
       "id": "LIVE-149",
       "title": "Apply a capability bundle at provision, once there is a bundle worth applying",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "live",
       "size": "S",
@@ -6352,12 +6350,13 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1197, the deferred half of PROG-BUNDLE"
       },
-      "detail": "The mechanism shipped without its last link. lib/spaces/provision.ts does not call setSpaceBundle, so a Space is created with every tool on and a bundle must be applied afterwards by hand.\n\nThis is a deliberate hold, not an oversight. CAPABILITY_BUNDLES currently holds one pass-through row, so the branch could only ever be a no-op — speculative code in the Space creation path, which is the highest-risk path in the product, serving curation that does not exist yet.\n\nDO THIS IN THE SAME CHANGE AS THE FIRST CURATED BUNDLE, never before it. The seam is already open at both ends: /spaces/new reads ?mode= and resolves it to a ModeChoice (SCAN-533), and setSpaceBundle takes a space id and a bundle id. What is missing is the map from a Mode to a bundle, which is data, and one call after the row is inserted.\n\n⚠️ The first curated bundle is the moment this stops being mechanism and starts being a product decision: it decides what a given kind of operator does NOT get. The data says roughly 18 of 21 real Spaces are solo wellness practitioners and only the coaches-and-healers door has produced a customer, so that is the one bundle with evidence behind it.\n\n── RE-PRICED P2 -> P3 on 2026-09-07. Vercel Web Analytics, 31 days to 2026-09-07: 12 visitors, 18 pageviews. An SEO or funnel refinement cannot be P1 while the funnel itself has no traffic to refine — the constraint is upstream of every one of these rows. Re-priced by the live-lane audit on that reading, not on merit.",
+      "detail": "The mechanism shipped without its last link. lib/spaces/provision.ts does not call setSpaceBundle, so a Space is created with every tool on and a bundle must be applied afterwards by hand.\n\nThis is a deliberate hold, not an oversight. CAPABILITY_BUNDLES currently holds one pass-through row, so the branch could only ever be a no-op — speculative code in the Space creation path, which is the highest-risk path in the product, serving curation that does not exist yet.\n\nDO THIS IN THE SAME CHANGE AS THE FIRST CURATED BUNDLE, never before it. The seam is already open at both ends: /spaces/new reads ?mode= and resolves it to a ModeChoice (SCAN-533), and setSpaceBundle takes a space id and a bundle id. What is missing is the map from a Mode to a bundle, which is data, and one call after the row is inserted.\n\n⚠️ The first curated bundle is the moment this stops being mechanism and starts being a product decision: it decides what a given kind of operator does NOT get. The data says roughly 18 of 21 real Spaces are solo wellness practitioners and only the coaches-and-healers door has produced a customer, so that is the one bundle with evidence behind it.\n\n── RE-PRICED P2 -> P3 on 2026-09-07. Vercel Web Analytics, 31 days to 2026-09-07: 12 visitors, 18 pageviews. An SEO or funnel refinement cannot be P1 while the funnel itself has no traffic to refine — the constraint is upstream of every one of these rows. Re-priced by the live-lane audit on that reading, not on merit.\n\n── CLOSED 2026-09-15, in the same change as the first curated bundle, which is the condition this row set for itself. LIVE-249 registered the four presets; this row was the call after the insert plus the data in between. `createSpace` now resolves a preset (an explicit Spark choice first, else `setupPresetForMode(type, modeVariant)`) and applies it with `setSpaceBundle(spaceId, preset.id)`. `SETUP_PRESET_BY_MODE` in lib/pricing/bundles.ts is the Mode-to-bundle map this row named as the missing half; it maps nine of the ten registered Focuses and leaves `business:product` out on purpose, because that operator is defined by the Shop, the Shop is tier-marked, and a preset may not name a paid tool as on. An unmapped or absent pair applies no bundle at all, so the branch is never a no-op write: it either shapes the Space or does not run. Not silent when it fails (the refusal and the throw are both logged), because a preset that quietly stopped applying would look exactly like a preset nobody chose. This row's probe is unchanged and now passes: a curated bundle is registered AND provision applies one.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const R='lib/pricing/bundles.ts',P='lib/spaces/provision.ts';if(!fs.existsSync(R)||!fs.existsSync(P))process.exit(79);const r=fs.readFileSync(R,'utf8');const curated=(r.match(/id: '/g)||[]).length>1;if(!curated)process.exit(1);process.exit(/setSpaceBundle/.test(fs.readFileSync(P,'utf8'))?0:1)\"",
         "note": "Stays failing while only the pass-through bundle exists. Passes when a curated bundle is registered AND provision applies one. Fails loudly if a curated bundle lands without the wiring."
-      }
+      },
+      "closed": "2026-09-15"
     },
     {
       "id": "SCAN-537",
@@ -11117,7 +11116,7 @@
     {
       "id": "LIVE-249",
       "title": "Bundle presets become the Space setup shape (closes OWN-048)",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
@@ -11125,11 +11124,13 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "Owner ruling 1: a new Space starts with its CORE features on and the rest off but switchable. CAPABILITY_BUNDLES is exactly right for this and only this - it is SUBTRACTIVE, it can turn a tool off for a Space but never grant a paid one, which is why it could not be the add-on mechanism draft 1 proposed. Four presets: studio, practice, venue, non-profit. lib/pricing/bundles.ts.",
+      "detail": "Owner ruling 1: a new Space starts with its CORE features on and the rest off but switchable. CAPABILITY_BUNDLES is exactly right for this and only this - it is SUBTRACTIVE, it can turn a tool off for a Space but never grant a paid one, which is why it could not be the add-on mechanism draft 1 proposed. Four presets: studio, practice, venue, non-profit. lib/pricing/bundles.ts.\n\n── CLOSED 2026-09-15. Four curated presets are registered in lib/pricing/bundles.ts beside the pass-through row: `studio` (availability, memberships, practices, qr), `practice` (availability, practices, journeys), `venue` (availability, qr, collaborators) and `nonprofit` (donations, journeys, qr), each of them CORE plus that list. CORE is a named export, `CORE_SPACE_FUNCTION_KEYS`: billing (which no bundle may ever switch off), plus profile, members, circles, events, loom and reviews. `circles` is not a taste call, it is load-bearing: createSpace lands a new owner on /manage/circles, so a preset that subtracted Circles would deliver them to a screen their own Space forbids.\n\nTWO RULES MAKE THE PRESETS SAFE, and both are pinned by tests rather than by prose. (1) No preset subtracts a core key. (2) No preset names a TIER-MARKED function as ON: crm, email, shop and program are derived from the registry by `entitlement !== null`, and since the only effect of listing a function is that its off-switch is deleted, listing a paid one would read as a grant a bundle cannot make. So every paid tool starts off and one switch away, which is what \"off but switchable\" asks for.\n\nTHE SPARK CARRIES THE CHOICE. `lib/studio/entities/space.ts` declares `preset` as a `select` on the `model` section, placement `spark`, and deliberately NO `editPlane` (ADR-1281): a preset is a STARTING shape, not a property of the Space, and re-asking it on a rail would switch tools off behind an owner who has since tuned them by hand. The four options are RESTATED there rather than imported, because bundles.ts reads BILLING_NAMESPACE from lib/spaces/entitlements.ts which imports lib/spaces/membership.ts, a `server-only` module a client-imported manifest must not pull in; bundles.test.ts pins the restatement against the registry on ids AND labels, so it cannot drift. No hand-rolled UI was added: the create form still asks only \"what do you run?\".\n\nPROVISION APPLIES IT (this closes LIVE-149 in the same change, which is what that row asked for). createSpace resolves `resolveSetupPreset(input.preset) ?? setupPresetForMode(type, modeVariant)` and applies it with `setSpaceBundle`, the existing and still only writer. `SETUP_PRESET_BY_MODE` is the Mode-to-preset map LIVE-149 named as the missing data; it is SPARSE on purpose and `business:product` is absent, because a product business is defined by the Shop, the Shop is tier-marked, and rule 2 forbids naming it on, so there is nothing honest to give it yet and it stands up with every tool on exactly as before. Null on both paths applies no bundle, which is the fail-safe. The apply is best-effort (a Space with every tool on is a working Space) but never silent: both the refusal and the throw are logged with the space id and the bundle id.\n\nWHAT THIS DOES NOT CLOSE: OWN-048 stays open. Its bundle-spec half is delivered here and OFFER-MODEL §3 is the spec, but its second ask, a recorded keep/merge/retire decision per function key, is an owner ruling and is not answered by code. See the premise note on that row: the registry is no longer 22 keys.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e 'const b=require(\"fs\").readFileSync(\"lib/pricing/bundles.ts\",\"utf8\");const m=b.match(/CAPABILITY_BUNDLES[^=]*=\\s*\\[([^\\]]*)\\]/);const n=m?m[1].split(\",\").filter(x=>x.trim()).length:0;if(n<4)console.error(\"only \"+n+\" bundle(s)\");process.exit(n>=4?0:1)'"
-      }
+        "cmd": "node -e \"const fs=require('fs');const F=['lib/pricing/bundles.ts','lib/studio/entities/space.ts','lib/spaces/provision.ts'];for(const f of F)if(!fs.existsSync(f))process.exit(79);const b=fs.readFileSync(F[0],'utf8'),m=fs.readFileSync(F[1],'utf8'),p=fs.readFileSync(F[2],'utf8');const bad=[];const paid=['crm','email','shop','program'];for(const id of ['studio','practice','venue','nonprofit']){const row=(b.match(new RegExp('id: .'+id+'.[^}]*'))||[])[0];if(!row){bad.push('no preset row for '+id);continue}if(!/CORE_SPACE_FUNCTION_KEYS/.test(row)){bad.push(id+' does not keep the core set on');continue}const on=paid.filter(function(k){return new RegExp('[^a-z]'+k+'[^a-z]').test(row.slice(row.indexOf('functions:')))});if(on.length)bad.push(id+' names paid tool(s) on: '+on.join('/'))}if(!/SETUP_PRESETS/.test(b)||!/setupPresetForMode/.test(b))bad.push('bundles.ts exports no setup-preset seam');const fld=(m.match(/path: .preset.[\\s\\S]{0,400}/)||[])[0]||'';if(!fld)bad.push('the Space manifest declares no preset field');else if(!/placement: .spark./.test(fld))bad.push('the manifest preset field is not on the Spark');if(!/resolveSetupPreset\\(input\\.preset\\)/.test(p))bad.push('provision ignores an explicit preset choice');if(!/setupPresetForMode/.test(p))bad.push('provision derives no preset from the Mode');if(!/setSpaceBundle\\(spaceId, setupPreset\\.id\\)/.test(p))bad.push('provision never applies the preset');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\"",
+        "note": "Measures the CONSEQUENCE, in the three places the work had to land, and never the title: (1) all four preset rows exist in the registry, each keeps CORE_SPACE_FUNCTION_KEYS, and none names a tier-marked tool inside its own `functions` list, so a preset that started granting paid capability fails here; (2) the Space manifest declares the `preset` field on the Spark; (3) provision reads an explicit choice, derives one from the Mode, and applies it through setSpaceBundle. Fails on origin/main with all nine findings. Pure node, no test runner (LIVE-034)."
+      },
+      "closed": "2026-09-15"
     },
     {
       "id": "LIVE-250",

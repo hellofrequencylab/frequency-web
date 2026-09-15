@@ -11,6 +11,9 @@
 //   4. Insert the `spaces` row (status 'active', plan 'free', entitlements {}, the default DAWN
 //      skin, owner = caller, network_connected true), then seat the caller as an 'admin' member
 //      (addSpaceMember).
+//   5. Apply the SETUP PRESET (owner ruling 1 of ADR-1294): a capability bundle, chosen in the Spark
+//      or derived from the Mode, that leaves the Space's core tools on and the rest off but
+//      switchable. Subtractive only, so it can never grant a paid tool. Best-effort and logged.
 // On slug collision it returns a friendly fail; on success it redirects the new owner straight to the
 // Space's Circles manager, so the first screen is hosting rather than the console's command center
 // (LIVE-261; ADR-552 Phase 4 still holds for the console itself, no double-hop through /settings).
@@ -38,6 +41,8 @@ import { type ActionResult, fail } from '@/lib/action-result'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { featureGatesLive } from '@/lib/pricing/settings'
 import { isPaidSpacePlan, spaceCreationBlockReason } from '@/lib/pricing/space-limits'
+import { resolveSetupPreset, setupPresetForMode } from '@/lib/pricing/bundles'
+import { setSpaceBundle } from '@/lib/pricing/space-bundle'
 
 /** The fields the create wizard collects. `visibility` defaults to 'network' (discoverable). The
  *  `modeVariant` (the Focus, Space Modes M3) is optional: null resolves to the type's default Focus. */
@@ -49,6 +54,12 @@ export interface CreateSpaceInput {
   visibility?: 'network' | 'private'
   /** The Focus sub-mode chosen in the "what do you run?" step. Null = the type's default Focus. */
   modeVariant?: string | null
+  /**
+   * The STARTING SETUP: a capability-bundle id (`SETUP_PRESETS`, lib/pricing/bundles.ts) that shapes
+   * which of the Space's tools open switched on. Null / absent / unregistered = derive one from the
+   * Mode + Focus (`setupPresetForMode`), and apply none when that pair has no honest preset.
+   */
+  preset?: string | null
 }
 
 // `spaces` isn't in the generated DB types yet (ADR-246) — reach it through an untyped `from`
@@ -173,6 +184,16 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   // and existing rows are never backfilled — kind is the owner's data after provision.
   const seededKind = isSpaceType(type) ? kindForMode(type, modeVariant) : null
 
+  // THE SETUP SHAPE (owner ruling 1 of ADR-1294; LIVE-249 + LIVE-149). A new Space opens with its
+  // CORE tools on and the rest off but switchable, which is what a capability bundle does and the
+  // only thing it does: bundles are SUBTRACTIVE, so this can hide a tool and can never grant a paid
+  // one (lib/pricing/bundles.ts). An explicit choice from the Spark wins; otherwise the preset is
+  // DERIVED from the "what do you run?" answer, because that answer already says which one it is.
+  // Null on both paths (an unmapped Focus, no Focus at all) applies no bundle, so such a Space
+  // stands up with every tool on exactly as it did before this existed.
+  const setupPreset =
+    resolveSetupPreset(input.preset) ?? (isSpaceType(type) ? setupPresetForMode(type, modeVariant) : null)
+
   const entityId = await rootEntityId()
   if (!entityId) return fail('Spaces are not ready yet. Try again in a moment.')
 
@@ -199,7 +220,17 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   // is untouched, and a failed write keeps the line this action always returned.
   const governed = await proposeAndConfirmCreate<string>({
     entity: 'space',
-    draft: { type, name, slug, brandName, visibility, modeVariant: modeVariant ?? '' },
+    // The preset rides in the draft so the audit log records the SHAPE the Space was born in, which
+    // is the only durable trace of it: a preset is applied and not stored (see below).
+    draft: {
+      type,
+      name,
+      slug,
+      brandName,
+      visibility,
+      modeVariant: modeVariant ?? '',
+      preset: setupPreset?.id ?? '',
+    },
     rationale: 'Space builder: the member named the Space and tapped Create.',
     commit: async () => {
       try {
@@ -237,6 +268,35 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
 
   // Seat the owner as a Space admin (an explicit membership row, alongside owner_profile_id).
   await addSpaceMember({ spaceId, profileId, role: 'admin', status: 'active' })
+
+  // APPLY THE SETUP PRESET. `setSpaceBundle` is the one writer for this (lib/pricing/space-bundle.ts)
+  // and it stays the one writer: it reads the two jsonb columns this insert just seeded, hands them
+  // to the pure resolver, and writes back the result, so the off-switches land over the operator's
+  // per-type defaults rather than instead of them. It never touches `spaces.plan` or the reserved
+  // `entitlements.billing` namespace, so no plan grant can be disturbed here.
+  //
+  // NOTHING STORES THE PRESET ID, on purpose. The preset's whole effect is the switches it wrote,
+  // and those ARE the state every surface reads; a column holding the name of a shape the operator
+  // has since edited would be a second, quietly wrong answer to "what is on". The audit draft above
+  // is the provenance.
+  //
+  // Best-effort, like `ensureSpaceStages` below: a Space that exists with every tool on is a working
+  // Space, and failing the provision here would be strictly worse. It is NOT silent, though (AGENTS
+  // "every fail-safe needs a gate that notices it fired"): both the refusal and the throw are logged
+  // with the space and the bundle, because a preset that stopped applying would otherwise look
+  // exactly like a preset nobody chose.
+  if (setupPreset) {
+    try {
+      const applied = await setSpaceBundle(spaceId, setupPreset.id)
+      if (!applied.ok) {
+        console.error(
+          `[spaces/provision] setup preset "${setupPreset.id}" not applied to ${spaceId}: ${applied.reason}`,
+        )
+      }
+    } catch (err) {
+      console.error(`[spaces/provision] setup preset "${setupPreset.id}" threw for ${spaceId}:`, err)
+    }
+  }
 
   // ONBOARDING preset (Space Modes M4): seed the Mode's starter CRM pipeline. Reuses the existing
   // ensureSpaceStages plumbing (lib/crm/pipeline.ts) keyed on the Space type, so onboarding does not
