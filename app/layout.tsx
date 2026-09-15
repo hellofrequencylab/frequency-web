@@ -20,6 +20,7 @@ import { ThemeModeSync } from '@/components/layout/theme-mode-sync'
 import { JsonLd } from "@/components/json-ld";
 import { organizationSchema, websiteSchema } from "@/lib/jsonld";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
+import { CookieBanner } from "@/components/consent/cookie-banner";
 import { WebVitals } from "@/components/analytics/web-vitals";
 import { Analytics } from "@vercel/analytics/next";
 
@@ -184,7 +185,10 @@ export default function RootLayout({
             node carries the founding location (city-level only) so engines can
             resolve Frequency as a real, place-rooted entity. */}
         <JsonLd data={[organizationSchema({ foundingLocation: FOUNDING_PLACE, sameAs: SOCIAL_PROFILES }), websiteSchema()]} />
-        {/* GA4 — inert unless NEXT_PUBLIC_GA_MEASUREMENT_ID is set in production */}
+        {/* GA4 — inert unless NEXT_PUBLIC_GA_MEASUREMENT_ID is set in production, and, since
+            OWN-061, inert for a visitor in the prior-consent region who has not said yes. The
+            decision is made here in the head, synchronously, from the consent cookies the edge and
+            the banner write; the layout stays static and the shell bundle gains nothing. */}
         <GoogleAnalytics />
       </head>
       <body className="min-h-full flex flex-col">
@@ -206,6 +210,14 @@ export default function RootLayout({
             surfaces or the /for/* operator doors, which is where every acquisition decision is
             made. Cookie-free and ~1KB, so it costs the shell budget nothing meaningful. */}
         <Analytics />
+        {/* The cookie consent banner (OWN-061). It mounts here, in the ROOT layout, because the gap
+            it closes is exactly the one the (main) layout cannot see: an anonymous visitor on a
+            marketing, discover or help page, who never reaches the authenticated shell. It renders
+            null unless the edge has said prior consent is required and no choice exists yet, so for
+            everyone else it is one cookie read and nothing on screen. Bottom-LEFT by the corner
+            arbitration in docs/CHAT-SHELL-PLAN.md §2, which gives the bottom-right to one owner per
+            surface (the dock in (main), the support widget on the public pages). */}
+        <CookieBanner />
         {children}
         {/* The anonymous live-chat widget (ADR-816) no longer mounts here: corner arbitration
             (docs/CHAT-SHELL-PLAN.md §2) gives each surface ONE bottom-right owner. The widget
