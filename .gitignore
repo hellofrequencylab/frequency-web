@@ -67,6 +67,13 @@ test/e2e/.auth/
 # IS tracked — the raw per-worker capture is not.
 test/e2e/.a11y-observed.jsonl
 
+# DEGRADED-CAPTURE marker (LIVE-333, ADR-1351). One line per surface the visual or a11y capture
+# REFUSED to photograph because the deployment answered it with a 5xx. Written by
+# assertNoServerErrors (test/e2e/surfaces.ts); read by the "Commit baselines to the branch" step
+# in e2e-manual.yml, which refuses to commit when it is non-empty. Per-run evidence, never
+# committed — it is uploaded with the debug artifact instead.
+test/e2e/.degraded-capture.jsonl
+
 # ESLint's result cache. Written by `pnpm lint` (--cache --cache-strategy content) and
 # restored in CI by the ci.yml lint job's "Restore ESLint cache" step, keyed on
 # eslint.config.mjs + pnpm-lock.yaml. Machine-local and per-checkout — never committed.

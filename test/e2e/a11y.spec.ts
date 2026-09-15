@@ -81,6 +81,7 @@ import {
   appSurfaces,
   applyRenderState,
   assertMemberSession,
+  assertNoServerErrors,
   assertNotProtectionWall,
   currentPathname,
   operatorDenialReason,
@@ -89,6 +90,7 @@ import {
   publicSurfaces,
   settle,
   type RenderState,
+  type ServerErrorLog,
   type Surface,
 } from './surfaces'
 
@@ -286,7 +288,13 @@ function report(
 }
 
 /** Navigate + settle. Returns false when the surface is not actually available. */
-async function open(page: Page, surface: Surface, state: RenderState): Promise<boolean> {
+async function open(
+  page: Page,
+  surface: Surface,
+  state: RenderState,
+  serverErrors: ServerErrorLog,
+  testInfo: TestInfo,
+): Promise<boolean> {
   await applyRenderState(page, state)
   await page.goto(surface.path, { waitUntil: 'load' })
   await assertNotProtectionWall(page)
@@ -323,17 +331,35 @@ async function open(page: Page, surface: Surface, state: RenderState): Promise<b
     test.skip(true, drifted)
     return false
   }
+  // 🔴 AND: was the deployment HEALTHY while we were looking at it? (LIVE-333, ADR-1351.) Same
+  // guard the visual suite runs before its shutter, for the same reason and one door along: an
+  // axe pass over a shell whose data reads 5xx'd counts the EMPTY STATE's contrast and files it
+  // under the surface's name, and under PW_A11Y_UPDATE it freezes that number into the ratchet.
+  // Last thing before axe, so it covers everything `settle()` waited for.
+  assertNoServerErrors(serverErrors, `${surface.path} [${state.id} · ${testInfo.project.name}]`)
   return true
 }
 
-async function auditFull(page: Page, surface: Surface, state: RenderState, testInfo: TestInfo): Promise<void> {
-  if (!(await open(page, surface, state))) return
+async function auditFull(
+  page: Page,
+  surface: Surface,
+  state: RenderState,
+  testInfo: TestInfo,
+  serverErrors: ServerErrorLog,
+): Promise<void> {
+  if (!(await open(page, surface, state, serverErrors, testInfo))) return
   const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze()
   report(results.violations, contextKey(surface.path, state.id, testInfo.project.name), testInfo)
 }
 
-async function auditContrast(page: Page, surface: Surface, state: RenderState, testInfo: TestInfo): Promise<void> {
-  if (!(await open(page, surface, state))) return
+async function auditContrast(
+  page: Page,
+  surface: Surface,
+  state: RenderState,
+  testInfo: TestInfo,
+  serverErrors: ServerErrorLog,
+): Promise<void> {
+  if (!(await open(page, surface, state, serverErrors, testInfo))) return
   const results = await new AxeBuilder({ page }).withRules(['color-contrast']).analyze()
   report(results.violations, contextKey(surface.path, state.id, testInfo.project.name, true), testInfo)
 }
@@ -347,8 +373,8 @@ test.describe('a11y', { tag: '@a11y' }, () => {
   )
 
   for (const surface of publicSurfaces()) {
-    test(`${surface.path} has no serious+ violations (${DEFAULT_STATE.id})`, async ({ page }, testInfo) => {
-      await auditFull(page, surface, DEFAULT_STATE, testInfo)
+    test(`${surface.path} has no serious+ violations (${DEFAULT_STATE.id})`, async ({ page, serverErrors }, testInfo) => {
+      await auditFull(page, surface, DEFAULT_STATE, testInfo, serverErrors)
     })
   }
 })
@@ -369,14 +395,14 @@ test.describe('a11y · contrast', { tag: '@a11y' }, () => {
   for (const state of PUBLIC_RENDER_STATES.filter((s) => s.id !== DEFAULT_STATE.id)) {
     test.describe(state.id, () => {
       for (const surface of publicSurfaces()) {
-        test(`${surface.path} contrast holds`, async ({ page }, testInfo) => {
+        test(`${surface.path} contrast holds`, async ({ page, serverErrors }, testInfo) => {
           // Colour tokens are viewport-independent; running this on both projects would
           // report every violation twice. Desktop carries the state sweep.
           test.skip(
             testInfo.project.name !== 'desktop',
             'Contrast is viewport-independent — the desktop project carries the render-state sweep.',
           )
-          await auditContrast(page, surface, state, testInfo)
+          await auditContrast(page, surface, state, testInfo, serverErrors)
         })
       }
     })
@@ -400,8 +426,8 @@ test.describe('a11y · member shell', { tag: ['@a11y', '@shell'] }, () => {
   )
 
   for (const surface of appSurfaces()) {
-    test(`${surface.path} has no serious+ violations (${DEFAULT_STATE.id})`, async ({ page }, testInfo) => {
-      await auditFull(page, surface, DEFAULT_STATE, testInfo)
+    test(`${surface.path} has no serious+ violations (${DEFAULT_STATE.id})`, async ({ page, serverErrors }, testInfo) => {
+      await auditFull(page, surface, DEFAULT_STATE, testInfo, serverErrors)
     })
   }
 
@@ -410,12 +436,12 @@ test.describe('a11y · member shell', { tag: ['@a11y', '@shell'] }, () => {
   for (const state of SHELL_RENDER_STATES.filter((s) => s.id !== DEFAULT_STATE.id)) {
     test.describe(state.id, () => {
       for (const surface of appSurfaces()) {
-        test(`${surface.path} contrast holds`, async ({ page }, testInfo) => {
+        test(`${surface.path} contrast holds`, async ({ page, serverErrors }, testInfo) => {
           test.skip(
             testInfo.project.name !== 'desktop',
             'Contrast is viewport-independent — the desktop project carries the render-state sweep.',
           )
-          await auditContrast(page, surface, state, testInfo)
+          await auditContrast(page, surface, state, testInfo, serverErrors)
         })
       }
     })
@@ -450,20 +476,20 @@ test.describe('a11y · operator console', { tag: ['@a11y', '@shell'] }, () => {
   )
 
   for (const surface of operatorSurfaces()) {
-    test(`${surface.path} has no serious+ violations (${DEFAULT_STATE.id})`, async ({ page }, testInfo) => {
-      await auditFull(page, surface, DEFAULT_STATE, testInfo)
+    test(`${surface.path} has no serious+ violations (${DEFAULT_STATE.id})`, async ({ page, serverErrors }, testInfo) => {
+      await auditFull(page, surface, DEFAULT_STATE, testInfo, serverErrors)
     })
   }
 
   for (const state of SHELL_RENDER_STATES.filter((s) => s.id !== DEFAULT_STATE.id)) {
     test.describe(state.id, () => {
       for (const surface of operatorSurfaces()) {
-        test(`${surface.path} contrast holds`, async ({ page }, testInfo) => {
+        test(`${surface.path} contrast holds`, async ({ page, serverErrors }, testInfo) => {
           test.skip(
             testInfo.project.name !== 'desktop',
             'Contrast is viewport-independent — the desktop project carries the render-state sweep.',
           )
-          await auditContrast(page, surface, state, testInfo)
+          await auditContrast(page, surface, state, testInfo, serverErrors)
         })
       }
     })
