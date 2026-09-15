@@ -42654,6 +42654,84 @@ proves each claim's detector fires on its own by redacting it from an otherwise 
 - `check:seo`, `check:canon` and `lib/site.cta.test.ts` all still pass and all still cannot see this
   page. That is the standing limitation, and the maintenance arm is the answer to it.
 
+## ADR-1359: a fingerprint of a template is worthless where the template is not what renders (2026-09-15)
+
+**Status.** Accepted. Closes `HYG-095`. Extends [ADR-1358](DECISIONS.md), which named three gates
+that "still pass and all still cannot see this page" — `check:seo`, `check:canon` and
+`lib/site.cta.test.ts`. There is a **fourth**, and it is the one whose actual job this was:
+`test/e2e/template-fingerprints.test.ts` (ADR-1165, `LIVE-040`). Applies
+[ADR-970](DECISIONS.md) (a gate that cannot fire honestly gets routed around, and then it reads as
+coverage) and [OWN-043](BUILD-BACKLOG.json)'s finding that `/` serves a published document.
+
+**Context.** The fingerprint gate exists to answer one question: are the committed `@visual`
+baselines still a picture of the current source? It answers it by hashing the document
+`getTemplate(slug)` returns, which was a deliberate improvement over the file-date proxy it
+replaced — a proxy that was "right by accident" is the failure that file's own header spends
+fourteen lines on.
+
+It had the same class of defect one level up, and the measurement is unambiguous:
+
+| | |
+|---|---|
+| **2026-09-15 10:43:27Z** | `LIVE-252`'s migration rewrote the published `home` document: **13 blocks to 14**, new `<h1>` |
+| **The baselines** | `home` desktop **1280×6820 → 1280×7761** (+941 px), mobile **390×9376 → 390×10892** (+1516 px) |
+| **The fingerprint** | **byte-identical**, `57b77832a9ff42a2`, before and after |
+
+The re-stamp is not a reconstruction: `update-baselines` step 11 regenerates the fingerprint file
+from source, so in run `34965711182` the gate was **re-run from scratch against the moved page** and
+still produced the same hash. Only `capturedIn` moved.
+
+The cause is structural rather than a slip. **Every** page the gate covers resolves
+`isWellFormed(published) ? published : isWellFormed(template) ? template : EMPTY` — the template is
+the *fallback* on all fifteen, not the source. So "template-served" was never a property of the
+route; it is the property **"no published document shadows this slug"**, and that is a row in the
+`pages` table rather than anything in the tree. For fourteen it happened to hold. For `home` it has
+been false since OWN-043, so the gate was hashing a branch production never takes.
+
+Worth naming precisely, because the file was *honest about its limits and still wrong*: its
+"WHAT IT DOES NOT COVER" paragraph lists the header, footer and rails, `/discover`'s lack of a
+template, and the four auth surfaces. It does not list "the one surface whose body is a database
+row". An **unstated** gap is the kind ADR-970 treats as coverage.
+
+**Decision.**
+
+1. **A shadowed slug is excluded from the fingerprint set.** `home` loses its entry. A hash of a
+   dead branch is not partial coverage; it is a green light with nothing behind it.
+2. **The shadowed set is READ, never typed.** `scripts/stored-links.json` is a committed census of
+   the stored page documents in production. It records `pages.published_data`'s document count and
+   carries a block map per published document bearing its `slug` — today exactly one, `home`
+   ("`home` is the only page ever published"). It is plain JSON, it is itself guarded
+   (`check-stored-links.mjs` recomputes its counts and pins `capturedAt` to its newest recapture
+   entry, [ADR-1241](DECISIONS.md)), and reading it costs **no database** — so the gate stays
+   evaluable in the depth-1 clone CI actually gets, which was the whole point of replacing the date
+   proxy. Publishing a second page drops that slug from coverage on its own.
+3. **The two halves of the census must agree.** The reader cross-checks the number of block maps
+   against `pages.published_data.documents` and fails when they disagree, so a half-recaptured
+   census cannot quietly shrink the shadowed set.
+4. **A vacuous read is a failure, not an empty answer.** The dangerous direction is a census this
+   reader cannot parse coming back as "nothing is shadowed", which silently restores the dead
+   fingerprint. `publishedCountIn` throws on a missing `stores` array, a missing
+   `pages.published_data` row, and a non-numeric `documents`, and three controls assert each throw.
+5. **The exclusion carries a positive control.** "`home` is excluded" is asserted together with the
+   three facts that make it a *real* exclusion rather than a no-op: a template exists to be hashed,
+   `home` owns committed baseline PNGs, and it is absent from the fingerprint file. If the
+   mechanism stops working, that test fails instead of passing for an uninteresting reason.
+
+**Consequences.** ✅ Proven both ways on real trees: against `origin/main`'s fingerprint file the
+new gate **fails 2 of 23** (the coverage-set equality and the exclusion control, each naming
+`home`); on the corrected tree **22 of 22 pass**. ✅ Two synthetic-census controls show the reader
+noticing a second published page and then failing the count cross-check, so it is not a mechanism
+that only ever knows about `home`. ✅ Coverage is now **fourteen of the sixteen** public baseline
+sets, stated as such; it was advertised as fifteen and was really fourteen plus one hash of a dead
+branch. ⚠️ **Stated limit, in place of the one that was left implicit:** `/` now has **no
+source-readable staleness detector at all**, and cannot have one — its body is a database row. The
+reader for it is `scripts/stored-links.json`, re-captured whenever the document moves (it was, for
+`LIVE-252`, and the recapture is what recorded that the front door had been shipping four retired
+CTA labels). That is a census with a freshness rule, not a gate, and the difference is now written
+down rather than assumed.
+
+**Rows.** `HYG-095` (done, this ADR). `LIVE-340` carries the pixels and the `pr-compare` reading.
+
 ## ADR-1360: when two gates claim to enforce one rule, the one a human runs must not be the weaker (2026-09-15)
 
 **Status.** Accepted. Closes `HYG-097`. A CI rule change, so it is recorded here per
