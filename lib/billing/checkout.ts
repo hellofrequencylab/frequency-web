@@ -12,6 +12,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction, ENTITY_ID } from '@/lib/finance/record'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 import type { BillingPeriod } from './pricing-keys'
+import { receiptEmailFor } from './receipt-address'
+import { sendMembershipInvoiceReceipt } from './subscription-receipt'
 
 /** The member tier a checkout may be opened for. Crew, and only Crew: the sellable member ladder is
  *  Member (free) and Crew (ADR-878). Narrowing this here is what makes a Supporter purchase
@@ -89,10 +91,16 @@ export async function createMembershipCheckout(opts: {
 
   const customer = profileRow?.stripe_customer_id ?? undefined
 
+  // STRIPE'S OWN RECEIPT, AS A BACKSTOP (LIVE-344). A subscription takes no `receipt_email` (it is a
+  // payment-intent parameter), so the CUSTOMER's address is the equivalent: it is where every invoice
+  // receipt goes. The caller's `email` is whatever the surface happened to hold, so fall back to the
+  // member's proven account address rather than minting a customer Stripe can never write to.
+  const receiptEmail = opts.email ?? (await receiptEmailFor(opts.profileId))
+
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     line_items: [lineItem],
-    ...(customer ? { customer } : { customer_email: opts.email ?? undefined }),
+    ...(customer ? { customer } : { customer_email: receiptEmail ?? undefined }),
     client_reference_id: opts.profileId,
     // The chosen amount rides the metadata so the success redirect + the webhook can resolve the
     // Supporter mark from what the member actually picked, without re-reading the Stripe price.
@@ -213,7 +221,7 @@ export async function recordMembershipDuesFromInvoice(invoice: Stripe.Invoice): 
     }
   }
 
-  await recordFinancialTransaction({
+  const { recorded } = await recordFinancialTransaction({
     entityId: ENTITY_ID.foundation,
     revenueType: 'dues',
     amountCents: amount,
@@ -223,6 +231,29 @@ export async function recordMembershipDuesFromInvoice(invoice: Stripe.Invoice): 
     sourceId: invoice.id ?? null,
     idempotencyKey: invoice.id ? `invoice:${invoice.id}` : undefined,
   })
+
+  // THE MEMBER'S RECEIPT (LIVE-344). A member's own subscription is billed here and nowhere else, so
+  // this is the one place that sees both the FIRST payment and every renewal, which is exactly the
+  // cadence a subscription receipt wants.
+  //
+  // IDEMPOTENCY IS `recorded`. The ledger append is already exactly-once on `invoice:<id>`, and it
+  // reports whether THIS call was the one that wrote the row. A redelivered `invoice.paid` books
+  // nothing and therefore sends nothing, which is a stronger guarantee than any check this function
+  // could invent for itself. An invoice with no id has no idempotency key, so it never reports
+  // `recorded` twice for a different reason: it reports it every time, and Stripe always sets one.
+  //
+  // Best-effort: a failed message must never 500 a paid invoice into a redelivery loop.
+  // ./subscription-receipt.ts logs every miss.
+  if (recorded) {
+    await sendMembershipInvoiceReceipt({
+      profileId,
+      amountCents: amount,
+      currency: invoice.currency ?? 'usd',
+      tier: (subDetails.metadata?.tier as string | undefined) ?? null,
+      kind: (kind as string | undefined) ?? null,
+      invoiceId: invoice.id ?? null,
+    }).catch(() => {})
+  }
 }
 
 /** Open the Stripe billing portal for a member to manage/cancel; returns the URL. */

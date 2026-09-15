@@ -148,6 +148,23 @@
 # the policy: `posts.scope_id` is always a CIRCLE id (there is no scope_type column and no writer
 # stamps a Space), so the read goes through circles.space_id and the policy question is the
 # `cluster` branch above.
+# lib/billing/receipt-email.ts + donation-receipt.ts + subscription-receipt.ts + tip-receipt.ts +
+# lib/commerce/order-receipt.ts (added 2026-09-15, LIVE-344): the PAYER's side of the four money
+# loops that told nobody anything, plus the one seam they all compose through. Identical posture to
+# lib/billing/ticket-sale-notify.ts above and lib/billing/tips-notify.ts before it, and for the same
+# reason rather than by analogy: THE CALLER IS STRIPE. Every one of them runs from a recorder inside
+# app/api/webhooks/stripe/route.ts -- recordCommerceOrderFromSession, recordSpaceDonationFromSession,
+# recordTipFromSession, routeSpaceSubscription, recordMembershipDuesFromInvoice -- so there is no
+# session client to prefer, no cookie to run under, and no candidate session to borrow: the webhook
+# has no browser on the other end. A receipt that ran under RLS would be a receipt that could not be
+# sent, because the buyer is not signed in at the moment their money lands and a signed-out donor has
+# no profile row at all.
+# Each read is bounded by ids the settled row already holds (the order and its owner, the Space and
+# its ask, the tip's two parties, the tier, the invoice's subscription), and the only writes are
+# `notifications` rows, which have no insert policy for anybody. Account addresses come through
+# lib/profiles/account-email, because auth.users is not readable any other way. receipt-email.ts is
+# the single compose-and-send seam; the four per-loop modules hold only the facts their own loop
+# knows, which is what keeps this entry five narrow files instead of one wide one.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -520,18 +537,22 @@ lib/billing/bundle-seats.ts
 lib/billing/checkout.ts
 lib/billing/connect.ts
 lib/billing/crew-grants.ts
+lib/billing/donation-receipt.ts
 lib/billing/manual-agreements.ts
 lib/billing/operator-seats.ts
 lib/billing/payout-prompt-resolve.ts
 lib/billing/pricing-prices.ts
+lib/billing/receipt-email.ts
 lib/billing/space-beta-grant.ts
 lib/billing/space-donation-checkout.ts
 lib/billing/space-membership-checkout.ts
 lib/billing/space-plan-checkout.ts
 lib/billing/space-subscription-items.ts
 lib/billing/space-subscriptions.ts
+lib/billing/subscription-receipt.ts
 lib/billing/supporter.ts
 lib/billing/tickets.ts
+lib/billing/tip-receipt.ts
 lib/billing/tips-notify.ts
 lib/billing/tips.ts
 lib/blocking.ts
@@ -551,6 +572,7 @@ lib/circles/templates-data.ts
 lib/circles/transfer.ts
 lib/commerce/checkout.ts
 lib/commerce/disputes.ts
+lib/commerce/order-receipt.ts
 lib/commerce/orders.ts
 lib/commerce/products.ts
 lib/commerce/reports.ts

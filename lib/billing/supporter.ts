@@ -28,6 +28,7 @@
 import type Stripe from 'stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction, ENTITY_ID } from '@/lib/finance/record'
+import { sendSupporterContributionReceipt } from './supporter-receipt'
 
 /** The metadata `kind` tag on a supporter-contribution Checkout session, so the shared
  *  webhook / confirm recorders route to the right handler and no-op on other sessions. */
@@ -157,6 +158,16 @@ export async function recordSupporterContributionFromSession(
     if (row.profile_id) {
       await admin.from('profiles').update({ is_supporter: true }).eq('id', row.profile_id)
     }
+
+    // TELL THE CONTRIBUTOR (LIVE-344). Runs once per row THIS delivery flipped `pending` ->
+    // `succeeded`, so a redelivered webhook flips nothing and sends nothing. Best-effort beside the
+    // ledger append; the module logs every miss for itself.
+    await sendSupporterContributionReceipt({
+      id: row.id,
+      profileId: row.profile_id,
+      amountCents: row.amount_cents ?? 0,
+      currency: row.currency,
+    }).catch(() => {})
   }
 
   return { recorded: true, amountCents }

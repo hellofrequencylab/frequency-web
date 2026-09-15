@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createMembershipCheckout } from '@/lib/billing/checkout'
 import { stripe, appUrl } from '@/lib/billing/stripe'
+import { receiptEmailFor } from '@/lib/billing/receipt-address'
 import { billingLive } from '@/lib/pricing/settings'
 import { loadCatalogConfig, isValidPwywAmount } from '@/lib/pricing/catalog-config'
 import { formatCents } from '@/lib/pricing/display'
@@ -196,6 +197,8 @@ export async function startSupporterContribution(amountCents: number): Promise<S
   }
   const amount = Math.round(amountCents)
 
+  const contributorReceiptEmail = await receiptEmailFor(profileId)
+
   let session: Stripe.Checkout.Session
   try {
     session = await stripe.checkout.sessions.create({
@@ -213,7 +216,12 @@ export async function startSupporterContribution(amountCents: number): Promise<S
       client_reference_id: profileId,
       // The webhook + the success-page confirm read these to record the contribution + grant the badge.
       metadata: { kind: SUPPORTER_CONTRIBUTION_KIND, profile_id: profileId },
-      payment_intent_data: { metadata: { kind: SUPPORTER_CONTRIBUTION_KIND, profile_id: profileId } },
+      payment_intent_data: {
+        metadata: { kind: SUPPORTER_CONTRIBUTION_KIND, profile_id: profileId },
+        // Stripe's own receipt, as a backstop (LIVE-344). The first-party record is
+        // lib/billing/supporter-receipt.ts; this is what still arrives when that cannot be composed.
+        ...(contributorReceiptEmail ? { receipt_email: contributorReceiptEmail } : {}),
+      },
       success_url: `${appUrl()}/upgrade?supporter=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl()}/upgrade`,
     })
