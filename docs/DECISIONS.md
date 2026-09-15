@@ -41239,3 +41239,113 @@ their own rows: `lib/pricing/feature-tiers.ts:248` (in-app ladder copy still pro
 outlive the tier silently) and `content/help/spaces/billing.md:45` (lists revenue splits).
 
 **Rows.** LIVE-232 (done, this ADR).
+
+## ADR-1345: ACCEPTED — the database account gets a weekly reading, because the outage that took the previews down reported ACTIVE_HEALTHY throughout (2026-09-15)
+
+**Status.** Accepted. A CI-rule change under [ADR-1325](DECISIONS.md) ruling 10: it ships with this
+record and a green control run on current `main`, cited below by run id. Closes `LIVE-336`.
+
+**Context.** On 2026-09-15, 04:23Z to 04:41Z, the Supabase account hit its ceiling and every preview
+deployment failed for eighteen minutes. The builds failing was **correct** rather than a second bug:
+`LIVE-325` had just taught a menu read that fails during `next build` to fail the build instead of
+shipping default menus, so the outage surfaced as red builds and not as a silently wrong public
+header.
+
+🔴 **What makes it a decision is the SHAPE of the failure, not the eighteen minutes.** The control
+plane reported the project `ACTIVE_HEALTHY` for the whole window. The single signal an operator
+reaches for first said everything was fine while every query failed, and nothing in the repo, in
+`ci.yml`, or in `.github/workflows/maintenance.yml` read anything that would have moved. The load is
+substantially the build loop's own: [ADR-1328](DECISIONS.md) measured 1,200 to 2,900 PostgREST reads
+per table per fifteen minutes for a single profile, `LIVE-326` serialised the runs and `LIVE-328`
+removed the prefetch multiplier inside each one, and neither of those notices a ceiling. An
+instrument was owed, beside `LIVE-332` and `LIVE-333`, which are the same subject.
+
+**Decision.**
+
+- **The weekly `sweep` job gains a step, "Database account usage".** It follows the four
+  DB-credentialled steps above it exactly: the step performs the token-gated read against
+  `POST /v1/projects/{ref}/database/query`, and `scripts/maintenance/db-usage.mjs` consumes the JSON,
+  so the script never touches a database and is tested without one
+  (`scripts/maintenance/db-usage.test.ts`). It belongs here and not in the `ci.yml` guard array for
+  the reason its four siblings state: CI has no database credentials, so it could only pass
+  vacuously there (ADR-970), and no pull request can cause or fix the finding.
+- **One SELECT, three readings, and only ONE of them is a ceiling.** Connections against
+  `max_connections` — the only ceiling the database declares about itself, and so the only figure
+  that gets a percentage and a verdict tier (75% warn, 90% critical). Then transactions and rows read
+  over a **stated window**, and the database size in bytes.
+- **The window is anchored, or the rate means nothing.** `pg_stat_database`'s counters are cumulative
+  since `stats_reset`, and on this project `stats_reset` is **NULL** — the stats have never been
+  reset — so the query falls back to `pg_postmaster_start_time()` and the report says *which* anchor
+  it used. A cumulative counter printed without its window is a number that reads like a rate and is
+  not one.
+- ⚠️ **No plan quota is read, and that is the decision rather than an omission.** The account plan
+  ceiling, the thing actually hit, is not exposed to the role this reads as. Inventing a denominator
+  would produce a confident percentage of a made-up number, which is the `ACTIVE_HEALTHY` defect
+  wearing this instrument's name. Volume and size therefore carry **no percentage** and are a
+  **trend** across these summaries — the reading history lives in the run summaries, not in a
+  constant in the file (AGENTS.md: watch the trend, not the number).
+- **It is a READING, never a blocking gate.** The step runs under `set +e` and cannot fail the sweep.
+  A weekly job going red because a connection count moved is a job everybody learns to route around
+  (ADR-970). The exit code exists only to ROUTE the finding: `0` headroom, `1` a ceiling at or over
+  its threshold, `79` it could not look. A non-zero code writes `dbusage.txt`, the existing
+  "Report to a tracking issue on delta" step's `if` gains `steps.dbusage.outputs.code != '0'`, and
+  its body gains one more section. No second issue writer, and a green reading writes nothing, so a
+  clean week stays quiet.
+- 🔴 **"Could not look" is never reported as "fine."** This is the half the row was actually about.
+  The un-armed arm prints `🔴 Could not look — the database account ceiling was NOT read on this
+  run`, sets `code=79`, and says in words that nothing there claims headroom. Unlike its four
+  siblings, whose skip is a quiet ℹ️ line and no file, it also writes `dbusage.txt`: 79 already
+  satisfies the tracking-issue condition, so omitting the file would open an issue with no section
+  explaining it, which is a notice with nothing in it. A fetch that returns an
+  error envelope, an empty result, a truncated body, or a row missing either half of the connection
+  ceiling parses to `null` and comes back as the same 79 with the same words. Every fail-safe needs a
+  gate that notices it fired, and here the notice is the tracking issue.
+- ⚠️ **It depends on `SUPABASE_ACCESS_TOKEN`, which expires 2026-12-09.** `LIVE-273` already carries
+  that as an open owner row and no new row is filed for it. On expiry this step degrades to 79 with
+  its words rather than to silence, which is the whole point of the four-outcome design.
+
+**The control.** `maintenance.yml` already accepts `workflow_dispatch`, so no change was needed to
+get one. Run id **`34936585002`** — `workflow_dispatch` on `main` at `ed8c8a57a`, 2026-09-15 06:21Z,
+**success**, 66 seconds, all sixteen steps green. It proves the two things this step depends on:
+`SUPABASE_ACCESS_TOKEN` is armed and `SUPABASE_PROJECT_REF` resolves (`azsqfeonabsbmemvddqd`), and
+every credentialled sibling took a real read on that path — header menu drift 23 live rows against 23
+code defaults, front-door copy canon 71 strings and 0 findings, generated types drift ✅ matching the
+live schema. The sweep was already non-green for reasons this change does not touch (three new
+Supabase advisors, four design-debt baselines not bought by a sweep), so tracking issue #2555 was
+updated, which is the same path a non-green usage reading will take.
+
+**The reading it actually printed.** Taken through the Management API on 2026-09-15 06:23Z, against
+the live project:
+
+| Reading | Value | Against |
+| :--- | :--- | :--- |
+| Connections | **45 of 90 (50%)**, 37 client backends | ✅ the one declared ceiling, 25 points below warn |
+| Transactions | **962,166** · ~9,467/min | ⚠️ no readable ceiling — a trend |
+| Rows read | **25,828,237** · ~254,132/min | ⚠️ no readable ceiling — a trend |
+| Window | since **2026-09-15 04:41:02Z** (1h 42m) | postmaster start; stats never reset |
+| Database size | **167.0 MiB** | ⚠️ no readable plan ceiling |
+
+🔴 **`pg_postmaster_start_time()` reads 04:41:02Z, the exact minute the outage ended.** The database
+was restarted out of the incident. That is a fifth independent confirmation of a window that was
+diagnosed from four readings before the cause was known, and it arrived as a side effect of building
+the instrument — which is the argument for the instrument.
+
+**The probe was re-pointed, and the reason is the rule.** As filed, `LIVE-336`'s probe grepped
+`maintenance.yml` for the words *usage*, *quota*, *ceiling*. It did fire on the base tree, so it was
+not vacuous — but it measures the row's own title rather than its consequence, and the header comment
+of this very change satisfies it with no step, no script and no reading. The probe now measures what
+was built: the step exists and runs `db-usage.mjs`, its report reaches `$GITHUB_STEP_SUMMARY`, it runs
+under `set +e`, its code reaches the tracking issue, the SQL names `max_connections`, both `pg_stat`
+views and the postmaster anchor, a real payload becomes `45 of 90 (50%)` with a per-minute rate, and
+an unreadable payload exits 79 saying *Could not look* and **not** *Headroom*. All twelve arms were
+driven against mutated trees and all twelve fire, including the base tree and a positive control.
+
+**Consequences.** The account now has a weekly reading with an owner, and the next approach to the
+connection ceiling is visible a week before it is total rather than never. Volume is a series, so the
+first three or four sweeps are worth more than any one of them; nothing in this record should be read
+as a budget. The step adds one query and one node process to a job that already installs the tree, so
+its cost is seconds. `LIVE-332` (the manual capture workflow running two concurrent captures outside
+the turnstile) and `LIVE-333` (a capture taken inside an edge 5xx window committing that window as
+truth) stay open and are the other two thirds of the subject.
+
+**Rows.** LIVE-336
