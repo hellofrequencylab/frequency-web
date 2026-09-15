@@ -41167,7 +41167,7 @@ is a row in the sheet, not a second button. The desktop feed menu now shows New 
 Circle to every member, which it should have since the doors opened. ADR-230's account of the
 button is history; its account of the menu still holds.
 
-## ADR-NNNN: ACCEPTED — the database account gets a weekly reading, because the outage that took the previews down reported ACTIVE_HEALTHY throughout (2026-09-15)
+## ADR-1345: ACCEPTED — the database account gets a weekly reading, because the outage that took the previews down reported ACTIVE_HEALTHY throughout (2026-09-15)
 
 **Status.** Accepted. A CI-rule change under [ADR-1325](DECISIONS.md) ruling 10: it ships with this
 record and a green control run on current `main`, cited below by run id. Closes `LIVE-336`.
