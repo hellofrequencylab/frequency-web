@@ -328,13 +328,14 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'crm-pipeline', href: '/admin/crm/pipeline', label: 'Pipeline', desc: 'Upsell members into Business Spaces and grow donations: every prospect by stage, split by lane, with quick add and one-tap stage moves.', icon: 'Briefcase', min: 'host', staffDomain: 'marketing',
     world: 'growth', worldLabel: 'CRM: Pipeline', worldOrder: 9,
     adminGroups: [{ domain: 'crm', section: 'Pipeline' }], adminNav: { section: 'crm', heading: 'Engine' } },
-  // RETIRED from the menu (2026-07): the admin "Contacts" tab was the original pre-Resonance CRM and is
-  // fully replaced by the Resonance CRM (Roster + Intelligence + Pipeline + Marketing). Its leaf is removed
-  // so it no longer shows in any admin menu. The PAGE at /admin/marketing/contacts stays reachable (the
-  // platform importer still lands there via the ROOT-space contacts, and deep links from widgets / the CRM
-  // graph resolve to it) — this is a MENU removal only, not a page deletion. NOTE: the member-facing "My
-  // Contacts" (the personal CRM: card scanner + in-person capture + business lead-gen over network_contacts)
-  // is a DIFFERENT surface and is intentionally untouched.
+  // RETIRED from the menu (2026-07) and now RETIRED OUTRIGHT (LIVE-239, 2026-09-15): the admin "Contacts"
+  // tab was the original pre-Resonance CRM, fully replaced by the Resonance CRM (Roster + Intelligence +
+  // Pipeline + Marketing). Removing its leaf left the PAGE at /admin/marketing/contacts alive on deep
+  // links alone for two months, which is how one cohort ended up with two rosters. It is deleted now and
+  // /admin/marketing/contacts 308s to the `crm-contacts` leaf below; the three things only it carried
+  // (per-row consent, bulk consent, the scan-intro switch) moved onto that leaf's page in the same change.
+  // NOTE: the member-facing "My Contacts" (the personal CRM: card scanner + in-person capture + business
+  // lead-gen over network_contacts) is a DIFFERENT surface and is intentionally untouched.
   // Marketing — compose + send email to the whole community or a section (all members, a circle, a saved
   // segment, or individuals), with campaigns / funnels / drafts / sent in one place. Reuses the messaging
   // console + the block editor + the gated send pipeline; the popup composer always saves as a draft.

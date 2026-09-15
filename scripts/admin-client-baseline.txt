@@ -190,8 +190,6 @@ app/(main)/admin/library/vera-actions.ts
 app/(main)/admin/listing-seeder/actions.ts
 app/(main)/admin/marketing/agent/actions.ts
 app/(main)/admin/marketing/automations/actions.ts
-app/(main)/admin/marketing/contacts/actions.ts
-app/(main)/admin/marketing/contacts/page.tsx
 app/(main)/admin/marketing/funnels/actions.ts
 app/(main)/admin/marketing/funnels/variants/[codeId]/page.tsx
 app/(main)/admin/marketing/funnels/variants/actions.ts

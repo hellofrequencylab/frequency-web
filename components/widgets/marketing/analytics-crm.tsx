@@ -11,7 +11,7 @@ export async function MarketingAnalyticsCrm() {
   return (
     <AdminSection title="CRM">
       <div className="grid grid-cols-2 gap-3.5 @2xl:grid-cols-4">
-        <StatCard label="Contacts" value={counts.contacts.toLocaleString()} href="/admin/marketing/contacts" />
+        <StatCard label="Contacts" value={counts.contacts.toLocaleString()} href="/admin/crm/contacts" />
         <StatCard label="Campaigns" value={counts.campaigns.toLocaleString()} href="/admin/crm/marketing" />
         <StatCard label="Suppressed" value={email.suppressed.toLocaleString()} />
       </div>
