@@ -43012,3 +43012,67 @@ any future block whose copy nobody has reviewed against this canon, which is a d
 decision.
 
 **Rows.** `LIVE-341` (done, this ADR).
+
+## ADR-1364: a section HEADING is where a retired pitch survives a rule that forbids it (2026-09-15)
+
+**Status.** Accepted. Closes `LIVE-255`. The third application of [ADR-1350](DECISIONS.md) in two
+days, after [ADR-1359](DECISIONS.md) (the front door is a database row) and
+[ADR-1363](DECISIONS.md) (a block default is live copy).
+
+**Context.** `LIVE-255` named three defects in `lib/marketing/funnel-config.ts`, the one config that
+drives all five `/for/<niche>` operator doors. **Re-tested before being worked, per `AGENTS.md`, and
+two of the three had already been fixed** by `LIVE-253` without this row being circled back to:
+
+| claim | on the tree |
+|---|---|
+| `:14-17` names the three feature gates as the paid argument | 🔴 **false** — the lead comment now opens *"THE ARGUMENT FOR PAYING IS MONEY, NOT MORE (LIVE-255)"* and names the three capabilities as the **consequence**, not the pitch |
+| `:51` repeats *"Selling is never behind a plan"* on every door | ⚠️ **survives at `:61`**, but inside `pricingIntro`, now following *"People join free, businesses host free, and you pay when you start charging"* — a supporting clause of the money argument rather than the pitch |
+| `:253/343/433/524/618` each close with *"When you're ready, it does more."* | ✅ **half fixed, half live** |
+
+That third row is the finding. The **trigger clause** was corrected — all five now read *"When you
+start charging…"*, which is exactly ADR-1350's model. **The promise was not.** All five still end
+*"…it does more."*
+
+**🔴 And line 21 of the same file forbids it, in those words.** The config's own standing comment
+reads: *"Do not reintroduce a 'paid does more / lifts the caps / unlocks' beat here."* A file
+violating its own stated rule — in a **section HEADING**, above five bodies that obey it.
+
+**Decision, three parts.**
+
+1. **A heading counts as the pitch, and the rule now says so.** Line 21 is corrected to name the
+   section title explicitly and to say what a step-up card should do instead: name **which repeat**
+   it serves. That is `PLAN_STORY.paid`'s argument — *what a plan carries is the repeat* — and it is
+   what all five card bodies were already about. Every one of them is about people coming **back**:
+   *"bring quiet clients back"*, *"a nudge when someone is drifting"*, *"reach quiet guests before
+   the next date"*, *"a recurring gift is about to end"*. The heading was the only part arguing
+   something else.
+
+2. **Each door names its own repeat**, in the noun its own copy already uses: the second session
+   (coaches and healers), the second month (studios), the second night (event hosts — their loop
+   copy is *"the guest who had a great night brings friends to the next one"*), the second time they
+   show up (community builders), the second gift (nonprofits).
+
+3. **`LIVE-253`'s corpus-wide probe gains the idiom `"it does more"`** and the exact five-door
+   heading as a pin, so the beat cannot return anywhere in the nine files it reads.
+
+**Why `"it does more"` and not `"does more"`.** Measured, not assumed. `"does more"` appears in
+three places of legitimate unrelated copy — `lib/circles/templates.ts:111` (*"does more work than a
+page of rules"*) and two help articles — none of them in the corpus today, but an idiom that would
+misfire the moment a corpus file writes *"does more work than"* is a gate that gets routed around.
+`"it does more"` matches the pitch and none of the three.
+
+**Consequences.** ✅ Proven both ways on real trees: `LIVE-253` exits **0** here and **1** against
+`origin/main`'s `funnel-config.ts` with **both** new arms firing independently; `LIVE-255`'s own new
+probe exits **0** here and **1** there with **all six** arms firing. Idioms 22 → **23**, exact pins
+22 → **23**. ✅ `LIVE-255`'s verify moves from `manual` (*"copy review of funnel-config.ts against
+the three lines"*) to `cmd`. **That manual line is why two of its three claims went stale
+unnoticed**: a copy review has no record of what it found, so nothing could tell the row that
+`LIVE-253` had already fixed two thirds of it. ✅ The new probe carries a **slug arm** — if the five
+doors ever stop being driven from this config, it says so rather than passing on a file that no
+longer renders anything. ⚠️ **Stated limit:** nothing measures the *next* off-model heading in a
+config not yet in the corpus. This is the third instance of the same pattern in two days (a database
+row, a block default, a section heading), and each was found by reading, not by a gate. The general
+answer is a canon check over every string a reader can see, which is `HYG-091`-adjacent and a larger
+decision than this row.
+
+**Rows.** `LIVE-255` (done, this ADR), `LIVE-253` (probe widened again).
