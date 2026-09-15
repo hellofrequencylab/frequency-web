@@ -237,7 +237,22 @@ build time.
 
 - First-party events are internal product telemetry tied to the member's own account — no
   *additional* cookies, no new consent surface.
-- GA4 stays per ADR-048 (anonymized, ad signals off). EU/UK consent banner still deferred.
+- GA4 stays per ADR-048 (anonymized, ad signals off).
+- ✅ **The EU/UK consent banner is no longer deferred** ([ADR-1370](DECISIONS.md), OWN-061). It was
+  deferred here for most of this doc's life, and the deferral outlived its reason: the gap was not
+  the banner, it was that the ONLY consent surface in the product (`<GaConsentGate/>`) lived in the
+  authenticated `(main)` layout while the GA4 tag mounts in the ROOT layout, so no anonymous visitor
+  ever met one. The design, in one line: `lib/consent/cookie-consent.ts` is the law, and the two
+  non-essential writers both ask it first — the GA4 head script, and `proxy.ts` before it writes the
+  90-day first-touch cookie (HYG-048).
+  - **Opt-IN in the EU/EEA/UK, opt-OUT everywhere else**, keyed off `x-vercel-ip-country` at the
+    edge. The `analytics` scope default in `lib/consent/scopes.ts` is UNCHANGED, and so is every
+    existing visitor's behaviour outside that region.
+  - **`<GaConsentGate/>` is untouched and still runs.** Two layers, ANDed: this one is the browser,
+    for a visitor with no profile row; the `analytics` scope stays the account layer.
+  - ⚠️ The consent ORDERING is proved at runtime, never by source shape: `lib/consent/cookie-consent.test.ts`
+    executes the real head string in a DOM, `proxy-consent.test.ts` runs the real proxy and reads its
+    `Set-Cookie` headers. Both arms fail against the pre-OWN-061 tree.
 
 ## Dependencies / notes
 - Builds on the existing `engagement_events` backbone and the GA4 tag (ADR-048).
