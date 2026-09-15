@@ -14,6 +14,14 @@ import { referralsEnabled } from '@/lib/platform-flags'
 import { isFunnelSplashPath } from '@/lib/funnels/definitions'
 import { supabaseUrl, supabaseAnonKey } from '@/lib/supabase/env'
 import { ACCOUNT_COOKIE } from '@/lib/theme/mode'
+import {
+  CONSENT_COOKIE,
+  CONSENT_REGION_COOKIE,
+  CONSENT_MAX_AGE,
+  analyticsAllowed,
+  parseConsentChoice,
+  requiresPriorConsent,
+} from '@/lib/consent/cookie-consent'
 
 // The referral attribution cookie — the referrer's profile id, consumed once at
 // onboarding by applyReferralAttribution (lib/qr/referral.ts). Name + attributes MUST
@@ -121,6 +129,36 @@ export async function proxy(request: NextRequest) {
     supabaseResponse.cookies.delete(ACCOUNT_COOKIE)
   }
 
+  // ── COOKIE CONSENT, DECIDED HERE BECAUSE THE WRITER IS HERE (OWN-061, ADR-1367) ───────────────
+  //
+  // The 90-day first-touch cookie below is written at the EDGE, on the visitor's very first request,
+  // before a byte of page JS runs. That is why a banner alone could never gate it: by the time any
+  // component could render a question, the answer had already been written to the device. The gate
+  // has to sit in front of the writer, and this is the writer.
+  //
+  // Two facts, one law (lib/consent/cookie-consent.ts):
+  //   · `fq_ask` tells the browser whether prior consent is required where it is, so the head script
+  //     and the banner can answer synchronously without a second geo lookup. `x-vercel-ip-country`
+  //     is the same header app/q/[slug]/route.ts already reads. It is set on every response so a
+  //     visitor who moves region is re-asked, and deleted rather than left stale when they leave one.
+  //   · `fq_consent` is what they answered, written by the banner in the browser and read here.
+  //
+  // OUTSIDE the prior-consent region `analyticsAllowed` is true for an un-decided visitor, so this
+  // block is a no-op and first-touch behaves exactly as it did before. Nothing about the existing
+  // default changed for anyone the law does not cover.
+  const priorConsentRegion = requiresPriorConsent(request.headers.get('x-vercel-ip-country'))
+  if (priorConsentRegion) {
+    supabaseResponse.cookies.set(CONSENT_REGION_COOKIE, '1', {
+      path: '/', maxAge: CONSENT_MAX_AGE, sameSite: 'lax',
+    })
+  } else if (request.cookies.get(CONSENT_REGION_COOKIE)) {
+    supabaseResponse.cookies.delete(CONSENT_REGION_COOKIE)
+  }
+  const trackingAllowed = analyticsAllowed({
+    choice: parseConsentChoice(request.cookies.get(CONSENT_COOKIE)?.value),
+    priorConsentRegion,
+  })
+
   // First-touch attribution (ADR-095): record HOW an anonymous visitor first
   // arrived — campaign, referrer, landing page — once, immutably, so it survives
   // the sign-in round-trip and is never lost. Best practice is capture-on-arrival.
@@ -158,7 +196,11 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    if (!request.cookies.get(FIRST_TOUCH_COOKIE)) {
+    // 🔴 `trackingAllowed` FIRST, and it is not a style choice: the two writes below are the exact
+    // pair OWN-061's ruling names ("a banner that gates GA4 but lets the attribution cookie set on
+    // first paint is not consent, it is a banner"). Both are attribution storage, both are
+    // non-essential, both are 90 days, so both wait for a yes where a yes is required.
+    if (trackingAllowed && !request.cookies.get(FIRST_TOUCH_COOKIE)) {
       const touch = buildFirstTouch(request.nextUrl.searchParams, pathname, request.headers.get('referer'))
       supabaseResponse.cookies.set(FIRST_TOUCH_COOKIE, encodeFirstTouch(touch), {
         path: '/', maxAge: FIRST_TOUCH_MAX_AGE, sameSite: 'lax',
@@ -176,7 +218,7 @@ export async function proxy(request: NextRequest) {
       : pathname.startsWith('/events/')
         ? 'event_guest'
         : null
-    if (channelHint) {
+    if (trackingAllowed && channelHint) {
       supabaseResponse.cookies.set(CHANNEL_COOKIE, channelHint, {
         path: '/', maxAge: FIRST_TOUCH_MAX_AGE, sameSite: 'lax',
       })

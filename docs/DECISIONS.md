@@ -43434,3 +43434,75 @@ before writing the session-create call.
 **Rows.** None claimed here — the backlog is the coordinator's. This ADR asks for two: a code row
 for the Phase 2 integration, and an **owner** row carrying the Apple Pay registration above as its
 `ownerAction`, since no probe in this repository can close it.
+## ADR-1370: the consent surface was in the one layout anonymous visitors never reach, so the gate moved to the two writers (2026-09-15)
+
+**Decision.** Ship the EU/UK cookie consent banner OWN-061 was ruled on, and put the gate in front of
+**both** non-essential writers rather than in front of a component. `lib/consent/cookie-consent.ts`
+is the law; `analyticsAllowed({ choice, priorConsentRegion })` is the one function everything asks.
+**Opt-IN in the EU-27, the three non-EU EEA states and the UK. Opt-OUT everywhere else, unchanged.**
+
+**🔴 The defect, and why it is not the one the row's title describes.** The row reads as "we have no
+banner". The product did have a consent surface — `<GaConsentGate/>`, which sets Google's native
+`ga-disable-<ID>` kill switch from `hasConsent(profile.id, 'analytics')` — and it was in
+`app/(main)/layout.tsx`, the AUTHENTICATED shell. The GA4 tag mounts in the ROOT layout. So the gate
+covered signed-in members on member routes, and every anonymous visitor on every marketing, discover
+and help page got GA4 with no surface at all. The component's own header conceded it in prose
+("the acquisition tag loads site-wide for everyone") and nothing turned that sentence into a gate.
+The second writer had never been gated by anything: `proxy.ts` sets the 90-day first-touch cookie
+`fq_attr` at the EDGE, on the visitor's first request, before a byte of page JS exists. **No banner,
+however well built, could ever have fixed that one** — by the time a component can ask a question the
+answer is already on the device. That is what the ruling meant by "a banner that gates GA4 but lets
+the attribution cookie set on first paint is not consent, it is a banner."
+
+**Three things follow from where the writers actually are.**
+
+1. **The GA decision is a head STRING, not a client component.** The root layout is deliberately
+   static, so nothing there may read a cookie on the server; a client component could, but only after
+   hydration, which would move GA behind the bundle for everyone and put the decision in the eager
+   shell bytes every phone parses. `gaBootstrapScript()` runs synchronously in the head, defines one
+   IDEMPOTENT loader as `window.__fqGa`, and calls it only when the law allows. The banner calls the
+   *same* function on Allow, so accepting starts GA in that pageview with no reload and no second
+   copy of the loading rules. The `<script src>` tag is gone from the markup entirely.
+2. **The edge decision is in the edge.** `proxy.ts` reads `x-vercel-ip-country` (the header
+   `app/q/[slug]/route.ts` already reads), writes the boolean `fq_ask` so the browser can answer
+   synchronously without a second geo lookup, and skips `fq_attr` + `fq_src` when the law says no.
+3. **The banner only asks where asking is required**, and renders null otherwise, so the visitors
+   whose default did not change pay one `document.cookie` read and see nothing.
+
+**What did NOT change, deliberately.** `lib/consent/scopes.ts` still defaults `analytics` to
+GRANTED. `<GaConsentGate/>` is untouched and still runs in the (main) layout. The two are ANDed, not
+merged: this is the BROWSER layer, for a visitor who has no profile row to key a `consent_records`
+lookup on; the scope stays the ACCOUNT layer. An unknown country is treated as OUTSIDE the
+prior-consent region, because the header is absent in dev, in tests and on any non-Vercel host and is
+never absent for a real visitor on the production edge — failing closed there would flip the default
+for everyone the moment it hiccuped, which is the behaviour change the row forbids.
+
+**⚠️ The ordering is proved at RUNTIME, twice, because the ruling says a source-shape guard cannot
+catch it.** A grep for "consent" in `google-analytics.tsx` passes whether or not the tag waits.
+So neither test reads source. `lib/consent/cookie-consent.test.ts` executes the real head string in a
+DOM against a real `document.cookie` and asks whether a `googletagmanager.com` script element was
+appended; it also runs the string against `analyticsAllowed` across the full matrix, so the string
+cannot drift from the law (the instrument `lib/theme/mode.test.ts` established for the pre-paint
+bootstrap). `proxy-consent.test.ts` calls the real exported `proxy()` with a real `NextRequest` and
+reads the `Set-Cookie` headers off what comes back; only the Supabase session read and the referrals
+flag are mocked, and both are network edges, never a rule under test. **Both arms were run against
+the pre-change tree and both fail there**: 5 of 10 in the proxy file, and the GA assertion against a
+faithful reproduction of the old head output.
+
+**Consequences.** ✅ An anonymous EU/UK visitor now loads no GA4 and receives no attribution cookie
+until they answer. ✅ Allow and Decline are the same variant, size and one click, because consent
+that must be freely given cannot be nudged by making the refusal quieter. ✅ Decline is a real
+withdrawal: GA's kill switch for a tag that may already be running, and `fq_attr` / `fq_src` / `_ga*`
+cleared. ✅ A consenting visitor does not lose their attribution — Allow calls `router.refresh()`,
+which re-runs the edge against the same URL, campaign parameters intact. ✅ The re-entry is a window
+event (`open-cookie-choices`, the `open-chat` / `open-vera` convention), dispatched from the privacy
+policy, and it works outside the prior-consent region too. ⚠️ **Shell-weight cost is real and
+measured**: the banner mounts in the root layout, so it is in the eager set. Reading in the PR body.
+⚠️ **Stated limits, both for the owner rather than for a follow-up commit:** Switzerland and the
+Crown dependencies are NOT in `PRIOR_CONSENT_COUNTRIES` (the revised FADP has no prior-consent rule
+for cookies, so adding them would be a guess in the direction of asking people who did not need
+asking); and a banner Decline does not write a `consent_records` row, so the account-level
+`analytics` scope, which governs the first-party `/api/observe` stream, is left exactly as it was.
+
+**Rows.** `OWN-061` half one (the banner). Half two, the EU AI Act Art. 50 disclosure on
+Vera-generated member-facing surfaces, is untouched here and stays open.
