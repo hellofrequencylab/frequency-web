@@ -4,7 +4,7 @@ import { useId, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { isError } from '@/lib/action-result'
-import TicketCheckoutPanel from '@/components/events/ticket-checkout-panel'
+import CheckoutPanel from '@/components/billing/checkout-panel'
 import { startGuestTicket } from '@/app/(main)/events/[slug]/ticket-actions'
 import { ticketRowToPrice, type Price } from '@/lib/commerce/types'
 import { PriceInput, type PriceSelection } from '@/components/commerce/price-input'
@@ -198,7 +198,7 @@ export function GuestTicketForm({
     // The card form replaces the email form entirely: the address has already been captured and
     // the session created against it, so re-showing the form would invite a second submission.
     return (
-      <TicketCheckoutPanel
+      <CheckoutPanel
         clientSecret={clientSecret}
         priceLabel=""
         onFellBack={fallBackToHosted}

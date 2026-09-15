@@ -4,23 +4,46 @@ import { useState, useTransition } from 'react'
 import { Heart, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/field'
 import { startTip } from './tip-actions'
+import CheckoutPanel from '@/components/billing/checkout-panel'
 import { TIP_PRESETS_CENTS, TIP_MIN_CENTS, TIP_MAX_CENTS } from '@/lib/billing/tips-core'
 import { isError } from '@/lib/action-result'
 
-// "Tip" entry on a host/partner profile. Opens a small composer (preset chips +
-// custom amount + optional note), then redirects to Stripe Checkout. Only rendered
-// when the recipient is payouts-ready (the server decides; see page.tsx).
+// "Tip" entry on a host/partner profile. Opens a small composer (preset chips + custom amount +
+// optional note), then takes the card RIGHT HERE (LIVE-359) or, when the on-page form cannot be
+// offered, redirects to Stripe Checkout. Only rendered when the recipient is payouts-ready (the
+// server decides; see page.tsx).
 export function TipButton({ toProfileId, recipientName }: { toProfileId: string; recipientName: string }) {
   const [open, setOpen] = useState(false)
   const [amountCents, setAmountCents] = useState<number>(TIP_PRESETS_CENTS[1])
   const [custom, setCustom] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   // Custom field (in dollars) wins when non-empty.
   const effectiveCents = custom.trim() ? Math.round(parseFloat(custom) * 100) : amountCents
   const valid = Number.isFinite(effectiveCents) && effectiveCents >= TIP_MIN_CENTS && effectiveCents <= TIP_MAX_CENTS
+
+  /**
+   * The LAST line of defence, the same one the ticket doors carry. If the form cannot mount or
+   * confirm at all -- Stripe.js blocked, the session unloadable, confirm throwing -- the tipper
+   * must still be able to pay, so we ask the server again and take whatever it gives.
+   *
+   * ⚠️ This asks for a SECOND session, and `createTipCheckout` records a `pending` tip per session.
+   * The orphan never settles and nothing sweeps it: `checkout.session.expired` abandons commerce
+   * orders and Space donations but has no tip arm (LIVE-360). That is pre-existing and the reason
+   * this path stays last-resort rather than routine.
+   */
+  function fallBackToHosted() {
+    setClientSecret(null)
+    setError('Opening secure checkout…')
+    startTransition(async () => {
+      const r = await startTip(toProfileId, effectiveCents, message.trim() || undefined)
+      if (!isError(r) && r.data.url) window.location.href = r.data.url
+      else setError('Could not start checkout. Please try again.')
+    })
+  }
 
   function send() {
     setError(null)
@@ -30,8 +53,16 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
     }
     startTransition(async () => {
       const r = await startTip(toProfileId, effectiveCents, message.trim() || undefined)
-      if (isError(r)) setError(r.error)
-      else window.location.href = r.data.url
+      if (isError(r)) {
+        setError(r.error)
+      } else if (r.data.clientSecret) {
+        // ON-PAGE: the card form opens under the composer. Branching on what CAME BACK rather
+        // than on what was asked for is deliberate -- the server declines the on-page path
+        // whenever it cannot be honoured, and the next branch catches that.
+        setClientSecret(r.data.clientSecret)
+      } else if (r.data.url) {
+        window.location.href = r.data.url
+      }
     })
   }
 
@@ -94,6 +125,16 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
       />
 
       {error && <p className="mt-2 text-body-sm text-danger">{error}</p>}
+
+      {clientSecret && (
+        <div className="mt-3">
+          <CheckoutPanel
+            clientSecret={clientSecret}
+            priceLabel={`$${(effectiveCents / 100).toFixed(2)}`}
+            onFellBack={fallBackToHosted}
+          />
+        </div>
+      )}
 
       <div className="mt-3 flex items-center gap-2">
         <button

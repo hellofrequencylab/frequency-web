@@ -24,6 +24,7 @@ import 'server-only'
 import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from './stripe'
+import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from './checkout-ui'
 import { getConnectStatus, payoutsLive } from './connect'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction, ENTITY_ID } from '@/lib/finance/record'
@@ -43,6 +44,9 @@ function db(): SupabaseClient {
 
 export interface TipResult {
   url?: string
+  /** Set INSTEAD of `url` when the caller asked for an on-page card form (LIVE-359). Callers branch
+   *  on which one arrived, never on which one they asked for -- see `./checkout-ui`. */
+  clientSecret?: string
   error?: string
 }
 
@@ -52,9 +56,13 @@ export async function createTipCheckout(opts: {
   toProfileId: string
   amountCents: number
   message?: string | null
+  /** `'elements'` asks for an ON-PAGE card form and returns `clientSecret` instead of `url`
+   *  (LIVE-359). Hosted stays the default, so no existing caller changes behaviour. */
+  ui?: CheckoutUi
 }): Promise<TipResult> {
   if (!(await payoutsLive())) return { error: 'Tipping isn’t turned on yet.' }
   if (!stripe) return { error: 'Tipping isn’t turned on yet.' }
+  const ui: CheckoutUi = opts.ui === 'elements' ? 'elements' : 'hosted'
 
   const amount = Math.round(opts.amountCents)
   if (!Number.isFinite(amount) || amount < TIP_MIN_CENTS) return { error: `Minimum tip is $${TIP_MIN_CENTS / 100}.` }
@@ -113,8 +121,10 @@ export async function createTipCheckout(opts: {
       metadata: { kind: 'tip', from_profile_id: opts.fromProfileId, to_profile_id: opts.toProfileId },
     },
     metadata: { kind: 'tip', from_profile_id: opts.fromProfileId, to_profile_id: opts.toProfileId },
-    success_url: `${appUrl()}/people/${handle ?? ''}?tip=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${appUrl()}/people/${handle ?? ''}`,
+    ...checkoutReturnFields(ui, {
+      successUrl: `${appUrl()}/people/${handle ?? ''}?tip=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${appUrl()}/people/${handle ?? ''}`,
+    }),
   })
 
   // The pending row is what recordTipFromSession flips to `succeeded` on payment. If this insert
@@ -141,8 +151,7 @@ export async function createTipCheckout(opts: {
     return { error: 'Could not start checkout. Please try again.' }
   }
 
-  if (!session.url) return { error: 'Could not start checkout.' }
-  return { url: session.url }
+  return resolveCheckoutSession(session, ui, 'tips')
 }
 
 /** Mark the tip behind a completed Checkout session as succeeded (idempotent). */

@@ -1,6 +1,6 @@
 'use client'
 
-// The card form itself. Mounted ONLY through ticket-checkout-panel.tsx's
+// The card form itself. Mounted ONLY through checkout-panel.tsx's
 // `dynamic(..., { ssr: false })`, never imported directly by a page — see that file for why.
 //
 // Everything Stripe here is reached from this module or below it, so the whole integration is one
@@ -43,7 +43,7 @@ function PayForm({ priceLabel, onFellBack }: { priceLabel: string; onFellBack: (
 
   if (result.type === 'error') {
     // The session itself could not be loaded. Nothing here can recover it, and the hosted page can.
-    console.error('[ticket-checkout] checkout session failed to load', result.error)
+    console.error('[checkout] checkout session failed to load', result.error)
     onFellBack()
     return null
   }
@@ -69,7 +69,7 @@ function PayForm({ priceLabel, onFellBack }: { priceLabel: string; onFellBack: (
       // A THROWN confirm is not a decline -- a decline comes back as { type: 'error' }. This is the
       // integration failing, so the buyer goes to the hosted page rather than being trapped on a
       // form that cannot take their money.
-      console.error('[ticket-checkout] confirm threw; falling back to hosted', err)
+      console.error('[checkout] confirm threw; falling back to hosted', err)
       setBusy(false)
       onFellBack()
     }
@@ -91,7 +91,7 @@ function PayForm({ priceLabel, onFellBack }: { priceLabel: string; onFellBack: (
   )
 }
 
-export default function TicketCheckoutForm({
+export default function CheckoutForm({
   clientSecret,
   priceLabel,
   onFellBack,
@@ -115,7 +115,7 @@ export default function TicketCheckoutForm({
         // buyer's problem to solve, and all of them have the same answer: the hosted page still
         // works. Reported rather than swallowed -- a silent fallback would make on-page checkout
         // quietly stop existing with no symptom but a redirect nobody filed.
-        console.error('[ticket-checkout] Stripe.js did not load; falling back to hosted', err)
+        console.error('[checkout] Stripe.js did not load; falling back to hosted', err)
         if (live) {
           setDead(true)
           onFellBack()

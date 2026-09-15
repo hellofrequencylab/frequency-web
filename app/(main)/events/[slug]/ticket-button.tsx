@@ -7,7 +7,7 @@ import { isError } from '@/lib/action-result'
 import { ticketRowToPrice, type Price } from '@/lib/commerce/types'
 import { PriceInput, type PriceSelection } from '@/components/commerce/price-input'
 import { Button } from '@/components/ui/button'
-import TicketCheckoutPanel from '@/components/events/ticket-checkout-panel'
+import CheckoutPanel from '@/components/billing/checkout-panel'
 
 export type TicketTierView = {
   id: string
@@ -206,7 +206,7 @@ export function TicketButton({
         </Button>
         {error && <p className="text-body-sm text-danger">{error}</p>}
         {clientSecret && (
-          <TicketCheckoutPanel
+          <CheckoutPanel
             clientSecret={clientSecret}
             priceLabel={priceLabel}
             onFellBack={fallBackToHosted}
@@ -339,7 +339,7 @@ export function TicketButton({
       </Button>
       {error && <p className="text-body-sm text-danger">{error}</p>}
       {clientSecret && (
-        <TicketCheckoutPanel
+        <CheckoutPanel
           clientSecret={clientSecret}
           priceLabel={priceLabel}
           onFellBack={fallBackToHosted}

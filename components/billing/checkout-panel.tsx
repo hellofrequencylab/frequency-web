@@ -1,6 +1,9 @@
 'use client'
 
-// The seam that keeps Stripe out of everyone else's bundle (LIVE-347).
+// The seam that keeps Stripe out of everyone else's bundle (LIVE-347, generalised in LIVE-359).
+//
+// Entity-blind on purpose: it takes a client secret, a price label and a fallback, so every one of
+// the nine checkout creators mounts THIS, rather than each growing its own card form.
 //
 // 🔴 WHY THIS FILE EXISTS AT ALL. `dynamic(..., { ssr: false })` is NOT allowed in a Server
 // Component in this version of Next — node_modules/next/dist/docs/01-app/02-guides/lazy-loading.md
@@ -24,9 +27,9 @@
 // would make the two gates disagree about what this file is.
 import dynamic from 'next/dynamic'
 
-const TicketCheckoutForm = dynamic(() => import('./ticket-checkout-form'), { ssr: false })
+const CheckoutForm = dynamic(() => import('./checkout-form'), { ssr: false })
 
-export default function TicketCheckoutPanel({
+export default function CheckoutPanel({
   clientSecret,
   priceLabel,
   onFellBack,
@@ -37,7 +40,7 @@ export default function TicketCheckoutPanel({
 }) {
   return (
     <div className="rounded-lg border border-border p-4">
-      <TicketCheckoutForm
+      <CheckoutForm
         clientSecret={clientSecret}
         priceLabel={priceLabel}
         onFellBack={onFellBack}

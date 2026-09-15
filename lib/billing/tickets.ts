@@ -56,6 +56,7 @@
 import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from './stripe'
+import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from './checkout-ui'
 import { getConnectStatus, payoutsLive } from './connect'
 import { platformFeeCents, platformFeePct, spaceTakeRateCents, memberTakeRateCents, resolvedNetworkRate } from './fees'
 import { networkTakeRateBpsForPlan, memberNetworkTakeRateBps } from './pricing-keys'
@@ -451,7 +452,7 @@ export async function createTicketCheckout(opts: {
   const guestEmail = (opts.guestEmail || '').trim().toLowerCase() || null
   // Opt-in, never inferred. See the `ui` option: hosted stays the default so no existing caller
   // changes behaviour when this ships.
-  const wantsElements = opts.ui === 'elements'
+  const ui: CheckoutUi = opts.ui === 'elements' ? 'elements' : 'hosted'
   if (!!buyerProfileId === !!guestEmail) {
     console.error(
       '[tickets] createTicketCheckout needs exactly one identity, got',
@@ -894,15 +895,10 @@ export async function createTicketCheckout(opts: {
     // `purchaseConfirmed` (message-grade, derived from the reconcile) apart from `ownsTicket`
     // (registration-grade, derived from a real row), because a session id in a URL is typed by
     // whoever is holding the keyboard.
-    ...(wantsElements
-      ? {
-          ui_mode: 'elements',
-          return_url: `${appUrl()}/events/${event.slug}?ticket=success&session_id={CHECKOUT_SESSION_ID}`,
-        }
-      : {
-          success_url: `${appUrl()}/events/${event.slug}?ticket=success&session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${appUrl()}/events/${event.slug}`,
-        }),
+    ...checkoutReturnFields(ui, {
+      successUrl: `${appUrl()}/events/${event.slug}?ticket=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${appUrl()}/events/${event.slug}`,
+    }),
   } as Parameters<typeof stripe.checkout.sessions.create>[0])
 
   // Reserve capacity + record the pending row ATOMICALLY (reserve_ticket_atomic, migration
@@ -1003,19 +999,7 @@ export async function createTicketCheckout(opts: {
   // version that does not know the mode, a Stripe-side rejection, a field this repo has wrong --
   // lands the buyer on Stripe's page instead of a dead end. The compiler cannot help here
   // (`stripe` ships no types; `Stripe.*` is `any`), so this branch is the check.
-  const clientSecret =
-    wantsElements && typeof (session as { client_secret?: unknown }).client_secret === 'string'
-      ? ((session as { client_secret: string }).client_secret)
-      : null
-  if (clientSecret) return { clientSecret }
-  if (wantsElements) {
-    console.error(
-      '[tickets] elements checkout was requested but Stripe returned no client_secret; falling back to the hosted redirect',
-      { sessionId: session.id },
-    )
-  }
-  if (!session.url) return { error: 'Could not start checkout.' }
-  return { url: session.url }
+  return resolveCheckoutSession(session, ui, 'tickets')
 }
 
 /** Has this member already bought a (succeeded) ticket to this event? */

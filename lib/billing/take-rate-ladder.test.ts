@@ -267,8 +267,18 @@ describe('the fee a ticket charged is recoverable afterwards', () => {
   it('the receipt write can never fail the sale', () => {
     // The buyer has a live Checkout session by this point. Losing the explanation for a fee is bad;
     // losing the sale to protect the explanation is worse.
+    //
+    // The anchor is the function's TERMINAL statement -- whatever hands the caller its session.
+    // It was `if (!session.url)` until LIVE-359 moved that decision into ./checkout-ui, and this
+    // guard went red on the move, which is the guard working: the property held, its landmark
+    // shifted. Both ends are asserted to EXIST before they are compared, so a future rename
+    // fails loudly here instead of making `indexOf` return -1 and passing by arithmetic accident.
     const receipt = TICKETS.slice(TICKETS.indexOf('THE FEE RECEIPT'))
     expect(receipt).toMatch(/try \{[\s\S]*catch \{/)
-    expect(receipt.indexOf('catch')).toBeLessThan(receipt.indexOf('if (!session.url)'))
+    const caught = receipt.indexOf('catch')
+    const handedBack = receipt.indexOf('return resolveCheckoutSession(')
+    expect(caught, 'no catch found after THE FEE RECEIPT').toBeGreaterThan(-1)
+    expect(handedBack, 'the terminal return moved or was renamed -- re-anchor this guard').toBeGreaterThan(-1)
+    expect(caught).toBeLessThan(handedBack)
   })
 })

@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Check, CreditCard, Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
-import TicketCheckoutPanel from '@/components/events/ticket-checkout-panel'
+import CheckoutPanel from '@/components/billing/checkout-panel'
 import { setRsvpStatus } from '@/app/(main)/events/actions'
 import { startTicket } from '@/app/(main)/events/[slug]/ticket-actions'
 import { GuestRsvpForm } from '@/components/events/guest-rsvp-form'
@@ -178,7 +178,7 @@ export function RsvpPaymentFlow({
       {/* The on-page card form (LIVE-347). Rendered FIRST so it lands in view the moment it
           appears, rather than below the rate list the buyer has already finished with. */}
       {clientSecret && (
-        <TicketCheckoutPanel
+        <CheckoutPanel
           clientSecret={clientSecret}
           priceLabel=""
           onFellBack={fallBackToHosted}
