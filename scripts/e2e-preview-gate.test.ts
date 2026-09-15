@@ -384,3 +384,194 @@ describe('the maintainer capture refuses to commit a degraded run', () => {
     expect(upload.slice(0, 600)).toContain('include-hidden-files: true')
   })
 })
+
+// ── 🔴 A DISPATCH THAT CANNOT COMMIT MAY NOT SPEND THE CAPTURE FIRST (HYG-089, ADR-1352) ────────
+//
+// Run 34904181882 (2026-09-14, 22:27:16Z to 22:34:07Z) was dispatched on `main` with
+// update_baselines on. Seven minutes and a 110 MB artifact later the commit step failed with
+// "Changes must be made through a pull request" — `main` is protected and GITHUB_TOKEN is not
+// exempt — so the whole capture was spent to reach a push that could never land.
+//
+// THE RULE IS NARROWER THAN THE ROW ASKED FOR, and deliberately so. The row wanted "a first step
+// in both jobs that fails when github.ref is refs/heads/main". A blanket refusal would also have
+// refused run 34940970232, the READ-ONLY dispatch on `main` that is ADR-1346's control — and
+// `workflow_dispatch` runs the workflow file as it exists on the dispatched ref, so a rule that
+// has just merged can be exercised on NO OTHER REF. What is refused is a dispatch that would
+// COMMIT; a read-only one is allowed on any ref.
+//
+// The assertions below pin the rule, its POSITION (before the turnstile, whose wait is up to 90
+// minutes and which holds the capture lane shut while it waits), and its FORM (a failing step, not
+// a job-level `if:` — a skipped job reports `skipped`, the one word ADR-1346's control reads).
+// Every one was watched go red against `git show origin/main:` of the workflow.
+
+describe('a dispatch that cannot commit is refused before it spends anything', () => {
+  /** One job of e2e-manual.yml, header through its last step. */
+  function job(name: string): string {
+    const start = manual.indexOf(`\n  ${name}:\n`)
+    expect(start, `${name} is gone from e2e-manual.yml`).toBeGreaterThan(-1)
+    const rest = manual.slice(start + 1)
+    const next = rest.search(/\n {2}[a-z][a-z0-9-]*:\n/)
+    return next < 0 ? rest : rest.slice(0, next)
+  }
+
+  /** Every job the file declares, read from source so a NEW one cannot dodge these assertions. */
+  function jobNames(): string[] {
+    const from = manual.indexOf('\njobs:\n')
+    expect(from, 'e2e-manual.yml declares no jobs').toBeGreaterThan(-1)
+    return [...manual.slice(from).matchAll(/^ {2}([a-z][a-z0-9-]*):$/gm)].map((m) => m[1])
+  }
+
+  const GUARD = '      - name: Refuse a committing dispatch on a protected ref'
+
+  /** The guard step of one job: header, env and shell body. */
+  function guardStep(name: string): string {
+    const block = job(name)
+    const start = block.indexOf(GUARD)
+    expect(start, `${name} carries no protected-ref guard`).toBeGreaterThan(-1)
+    const end = block.indexOf('\n      - ', start + 10)
+    return block.slice(start, end < 0 ? block.length : end)
+  }
+
+  /** A job's lines with every comment dropped, YAML and shell alike.
+   *
+   *  ⚠️ NOT cosmetic, and it cost the first draft of these assertions a false positive: the
+   *  guard's own comment QUOTES the push it exists to protect, so a plain `includes('git push')`
+   *  read `smoke` as a committing job and the derivation below silently measured three jobs
+   *  instead of two. A text test that reads prose as code is the same class of bug
+   *  check-workflows.mjs grew `stripBlockScalars` for. */
+  function codeOf(block: string): string {
+    return block
+      .split('\n')
+      .filter((line) => !/^\s*#/.test(line))
+      .join('\n')
+  }
+
+  // Derived, never hardcoded: the jobs that actually push are the jobs that need the guard. A
+  // fifth committing job added without one fails here rather than on a wasted dispatch.
+  const commits = jobNames().filter((name) => codeOf(job(name)).includes('git push origin'))
+
+  it('the jobs that PUSH are the jobs the incident names, and there are exactly two', () => {
+    // If this ever reads differently, the assertions below are measuring the wrong set.
+    expect(commits).toEqual(['update-baselines', 'update-a11y'])
+  })
+
+  it('every committing job AND the head of the chain refuse a committing dispatch on a protected ref', () => {
+    // The head of the chain matters as much as the two that push. `update-baselines` is
+    // `needs: smoke`, so a guard living only in the committing jobs would still let `smoke` run
+    // its turnstile and its whole suite first — up to 120 minutes to reach a refusal.
+    for (const name of [...commits, 'smoke']) {
+      expect(job(name), `${name} carries no protected-ref guard`).toContain(GUARD)
+    }
+  })
+
+  it('the guard is the FIRST step, ahead of the turnstile and any checkout', () => {
+    for (const name of [...commits, 'smoke']) {
+      const block = job(name)
+      const steps = block.indexOf('    steps:\n')
+      expect(steps, `${name} has no steps:`).toBeGreaterThan(-1)
+      const first = block.indexOf('\n      - ', steps)
+      expect(block.slice(first + 1), `${name}'s first step is not the guard`).toMatch(
+        /^ {6}- name: Refuse a committing dispatch on a protected ref$/m,
+      )
+      // Explicitly ahead of BOTH costs, because they are different costs: the turnstile's wait
+      // also makes every other capture in both workflows queue behind this run.
+      const guard = block.indexOf(GUARD)
+      for (const [what, at] of [
+        ['turnstile', block.indexOf('      - name: Turnstile')],
+        ['checkout', block.indexOf('      - uses: actions/checkout')],
+      ] as const) {
+        expect(at, `${name} has no ${what}`).toBeGreaterThan(-1)
+        expect(at, `${name} reaches its ${what} before the guard`).toBeGreaterThan(guard)
+      }
+    }
+  })
+
+  it('it refuses the CONJUNCTION — a protected ref AND a dispatch that would commit', () => {
+    const step = guardStep('smoke')
+    // The branch is named in one place, as data, so a second protected ref is one line.
+    expect(step).toMatch(/^ {10}PROTECTED_BRANCH: main$/m)
+    // Both halves of the conjunction, on the value the push itself targets.
+    expect(step).toContain('"${GITHUB_REF_NAME:-}" = "${PROTECTED_BRANCH}"')
+    expect(step).toContain('"${WOULD_COMMIT}" = "true"')
+    expect(step, 'the two halves must be an AND, or a read-only dispatch is refused too').toContain(
+      '] && [',
+    )
+    // And it actually stops: a guard that prints and continues is the vacuous pass.
+    const refuse = step.indexOf('exit 1')
+    expect(refuse, 'the guard does not exit non-zero').toBeGreaterThan(-1)
+    expect(step.indexOf('::error'), 'a refusal must name itself').toBeGreaterThan(-1)
+    expect(step.indexOf('::error')).toBeLessThan(refuse)
+  })
+
+  it('🔴 a READ-ONLY dispatch on a protected ref is still allowed, which is what the control needs', () => {
+    // The row asked for a blanket refusal on refs/heads/main. This is the assertion that says no:
+    // run 34940970232 took ADR-1346's control on `main` because workflow_dispatch runs the file as
+    // it exists on the dispatched ref, and a just-merged rule exists nowhere else.
+    const step = guardStep('smoke')
+    // WOULD_COMMIT is the only thing standing between this guard and refusing every main dispatch.
+    expect(step, 'the guard no longer asks whether the dispatch would commit').toContain(
+      'WOULD_COMMIT:',
+    )
+    // A bare ref test, with no input in the condition, is the blunt version this rejects.
+    expect(step).not.toMatch(/if \[ "\$\{GITHUB_REF_NAME:-\}" = "\$\{PROTECTED_BRANCH\}" \]; then/)
+  })
+
+  it('WOULD_COMMIT names every input that gates a job which pushes', () => {
+    // The drift assertion. Each committing job runs only when its own input is set, which is why
+    // the guard can be one identical step everywhere — but only while WOULD_COMMIT lists them all.
+    const would = guardStep('smoke').match(/WOULD_COMMIT: ([^\n]+)/)?.[1] ?? ''
+    for (const name of commits) {
+      const cond = job(name).match(/^ {4}if: ([^\n]+)$/m)?.[1] ?? ''
+      const input = cond.match(/inputs\.([a-z_]+)/)?.[1]
+      expect(
+        input,
+        `${name} is gated on no input, so the guard cannot infer it would commit`,
+      ).toBeTruthy()
+      expect(would, `WOULD_COMMIT does not cover ${name} (inputs.${input})`).toContain(
+        `inputs.${input}`,
+      )
+    }
+  })
+
+  it('🔴 it is a STEP that fails, never a job-level if: that skips', () => {
+    // Not a style rule. A job-level guard makes the job report `skipped`, and `skipped` is the
+    // exact word ADR-1346's control reads to tell "the chain let me run" from "a skipped need
+    // skipped me" — on run 34940970232, update-baselines `skipped` while update-a11y RAN. A
+    // failing first step leaves every job-level reading intact and spends only seconds.
+    for (const name of [...commits, 'smoke']) {
+      const block = job(name)
+      const header = block.slice(0, block.indexOf('    steps:'))
+      expect(header, `${name} moved the protected-ref test into a job-level if:`).not.toMatch(
+        /GITHUB_REF_NAME|github\.ref|PROTECTED_BRANCH/,
+      )
+    }
+    // And the head of the chain still declares no job-level condition at all.
+    expect(job('smoke')).not.toMatch(/^ {4}(needs|if):/m)
+    // The guard itself must be unconditional: a step-level `if:` that mis-evaluates is a guard
+    // that silently does not run, which is the swallowed fail-safe this suite exists to catch.
+    expect(guardStep('smoke').match(/^ {8}if: /m), 'the guard must not be conditional').toBeNull()
+  })
+
+  it('the job that cannot commit does NOT carry it, so a read-only compare is never blocked', () => {
+    // Scope control. `visual` compares against COMMITTED baselines and pushes nothing, so a visual
+    // compare against production from any ref stays legal. A guard here would refuse work that
+    // can always land.
+    expect(codeOf(job('visual')), 'visual has grown a push — re-read HYG-089').not.toContain(
+      'git push origin',
+    )
+    expect(job('visual'), 'visual cannot commit, so it must not carry the refusal').not.toContain(
+      GUARD,
+    )
+  })
+
+  it('all three guard copies are byte-identical', () => {
+    // Three copies of one rule is three chances to drift, exactly as the turnstile's six are.
+    const copies = [
+      ...manual.matchAll(
+        / {6}- name: Refuse a committing dispatch[\s\S]*?\n {10}echo "ref=[^\n]*\n/g,
+      ),
+    ].map((m) => m[0])
+    expect(copies).toHaveLength(3)
+    for (const copy of copies) expect(copy).toBe(copies[0])
+  })
+})
