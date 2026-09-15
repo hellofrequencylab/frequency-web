@@ -82,11 +82,14 @@ resonance_matches
 segments
 signup_leads
 space_availability_overrides
+space_benefit_redemptions
 space_collaborations
 space_donations
 space_follower_event_reminders_sent
 space_function_type_defaults
+space_member_benefits
 space_standing
+space_tier_benefits
 space_venue_holds
 stripe_webhook_events
 studio_draft
