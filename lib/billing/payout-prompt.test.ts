@@ -7,6 +7,8 @@ import {
   PAYOUT_CHANNELS,
   PAYOUT_CHANNEL_WORDS,
   NEEDS_PAYOUT_ACCOUNT,
+  payeeSetupLine,
+  channelNounList,
   type PayoutChannel,
 } from './payout-prompt'
 import { NEEDS_PAYOUT_ACCOUNT as TICKETS_LINE, ticketSellerVerdict } from '@/lib/events/ticket-eligibility'
@@ -196,5 +198,57 @@ describe('payoutPrompt', () => {
       expect(p).not.toBeNull()
       expect(`${p?.headline} ${p?.body}`).not.toMatch(/—|–/)
     }
+  })
+})
+
+
+// ── The non-payee sentence, now shared with a CLIENT surface (PROG-R5, ADR-1357) ───────────────
+//
+// The event form's price control is the FIRST sell attempt on the ticket path and it is a client
+// component, so it cannot call the resolver. It used to hand every not-ready host a link to
+// /settings/billing, which for a Space editor who does not own the Space would have onboarded the
+// WRONG Stripe account (a space-hosted event pays the space owner, ADR-819). It now derives the
+// non-payee sentence from `payeeSetupLine`, the same function `payoutPrompt` uses, so the two
+// cannot drift. These cases pin that sameness rather than the wording.
+
+describe('payeeSetupLine (shared by the server card and the client price control)', () => {
+  it('is the EXACT body payoutPrompt gives a non-payee, so there is one copy of it', () => {
+    const p = payoutPrompt({
+      channels: ['tickets'],
+      status: NONE,
+      payoutsLive: true,
+      relation: 'other',
+      payeeName: 'Rosewood Studio',
+    })
+    expect(p?.state).toBe('needs_setup')
+    expect(p?.body).toBe(payeeSetupLine(['tickets'], 'Rosewood Studio'))
+  })
+
+  it('names the payee, and falls back to the neutral noun without one', () => {
+    expect(payeeSetupLine(['tickets'], 'Rosewood Studio')).toContain('Rosewood Studio')
+    for (const blank of [null, undefined, '', '   ']) {
+      expect(payeeSetupLine(['tickets'], blank)).toContain('The owner')
+    }
+  })
+
+  it('never offers the reader an action, because both onboarding calls resolve the CALLER', () => {
+    // The sentence has to stand alone next to no button. A verb the reader cannot perform is the
+    // misdirect this row removed, so it asks them to ask someone else.
+    expect(payeeSetupLine(['tickets'], 'Rosewood Studio')).toMatch(/Ask them/)
+  })
+
+  it('carries no em dash (CONTENT-VOICE; check:canon scans this seam)', () => {
+    expect(payeeSetupLine(['tickets'], 'Rosewood Studio')).not.toMatch(/—|–/)
+    expect(payeeSetupLine([], null)).not.toMatch(/—|–/)
+  })
+})
+
+describe('channelNounList', () => {
+  it('orders and de-duplicates like PAYOUT_CHANNELS, so two surfaces agree', () => {
+    expect(channelNounList(['tickets', 'memberships', 'tickets'])).toBe('memberships and tickets')
+  })
+
+  it('falls back to the generic noun when a surface names no channel', () => {
+    expect(channelNounList([])).toBe('payments')
   })
 })

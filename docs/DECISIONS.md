@@ -42463,6 +42463,100 @@ correctly P0: it is costing something today, it is simply costing it to the owne
 
 **Rows.** LIVE-234 and OWN-061 (both still open; only their `ownerAction` and detail changed).
 
+## ADR-1357: the first sell attempt on the ticket path starts onboarding, and readiness alone was the wrong question (2026-09-15)
+
+**Status.** Accepted, 2026-09-15. Row: PROG-R5 (phase 5 of the core-model rework, `docs/CORE-MODEL.md`
+§5 change 4.1). Amends [ADR-1313](DECISIONS.md), which closed the five surfaces LIVE-233 named and
+recorded this one as the nuance it left open. Pinned by `lib/billing/connect-prompt.test.tsx` (the
+sixth seam) and `lib/billing/payout-prompt.test.ts` (`payeeSetupLine`).
+
+**Context: the premise was re-measured first, and half of it had moved.** PROG-R5 says nothing has
+ever been charged on this platform and that surfacing Connect onboarding at the first sell attempt
+unblocks all five money loops with one push. Production, 2026-09-15, against the 2026-09-08 reads the
+row was written from:
+
+| Measure | 2026-09-08 (row) | 2026-09-15 | Held? |
+|---|---|---|---|
+| `commerce_orders` · `event_tickets` · `space_subscription_items` · `financial_transactions` | 0 · 0 · 0 · 0 | 0 · 0 · 0 · 0 | ✅ held |
+| `stripe_webhook_events` | 1 | 1 | ✅ held |
+| `host_payouts_enabled` / `billing_live` | — | **true / true** | ⚠️ not a blocker |
+| Profiles with a Stripe account, fully onboarded | 1 / **0** | **2 / 2** | 🔴 moved |
+| A payout-ready owner with something priced behind them | — | **yes**: one Space, two paid membership tiers ($10, $5), owner charges + payouts enabled | 🔴 moved |
+
+So the first half of the premise holds exactly and the second half no longer diagnoses the problem.
+**Onboarding was a blocker and is no longer THE blocker.** Payouts are switched on platform-wide, two
+payees are fully verified, and one Space has priced memberships sitting behind a payout-ready owner:
+that loop is unblocked end to end in production and has still never completed. What remains is
+LIVE-234 — a real purchase — which no repository change can produce.
+
+**Decision 1: close the sixth seam anyway, because it is the only one that is actually the FIRST sell
+attempt.** LIVE-233 consolidated four hand-written payout cards into one prompt and retired the link
+to `/settings/billing` from five surfaces. The event CREATE form's price control kept it. That is the
+surface where a host types a price, which is the moment they decide to charge, and
+`lib/events/ticket-eligibility.ts` has recorded the governing ruling all along: onboarding is offered
+*"on the surface where someone has just decided to charge, and never buried in a settings page nobody
+visits"*. The code contradicted its own ruling. It now mounts `StartPayoutButton`, the same client
+button the shared card uses, posting to the same `startPayoutOnboarding` action, so there is one
+onboarding call site and not a sixth.
+
+**Decision 2, and this is the part that was not merely missing but WRONG: readiness cannot answer
+"can the reader fix this?", so the server now publishes the PAYEE beside it.** `payoutsReadyByScope`
+(LIVE-126) told the price control whether money would land. It could not tell it who had to act. The
+create form offers Spaces the caller merely **manages** — the scope list is deliberately widened to
+`editor`/`moderator`/`admin` so the Calendar console's "New event" does not silently lose the Space —
+and a space-hosted event pays the space **OWNER** ([ADR-819](DECISIONS.md)). A Space editor who set a
+ticket price was therefore handed "Set that up" pointing at **their own** `/settings/billing`.
+Finishing that flow onboards the wrong Stripe account: the editor gets a verified personal account,
+the event still cannot sell, and nothing anywhere says why. That is a misdirect, not a dead end, and
+it is strictly worse than the refusal it was meant to soften.
+
+The fix costs one extra map off a loop that already resolves the payee, so no additional read:
+`payoutSelfByScope` marks the scopes where the caller is the payee. Three branches, one per reader:
+
+| The reader | What they get |
+|---|---|
+| Payee, account ready | The existing receipt sentence. No button, nothing to do. |
+| Payee, not ready | The kernel's sentence plus `StartPayoutButton`. Onboarding starts where they stand. |
+| Not the payee | `payeeSetupLine(['tickets'], <space name>)` and **no button**. |
+
+An absent key reads as **not** self. That is fail-closed in the same direction as
+`payoutsReadyByScope` and as `payoutPrompt`'s own `relation` default, and it is the safe direction
+here for an asymmetric reason: telling a payee to ask someone else costs one glance, while offering a
+non-payee a button onboards the wrong bank account.
+
+**Decision 3: the non-payee sentence is extracted, not copied.** `payoutPrompt` is server-side and
+already owned that wording in its `relation: 'other'` branch; the price control is a client component
+and cannot call the resolver. Rather than let a sixth surface grow its own sentence — the exact drift
+LIVE-233 spent a row undoing — `payeeSetupLine(channels, payeeName)` and `channelNounList(channels)`
+come out of the kernel as pure exports and `payoutPrompt` calls them. A test asserts the extracted
+function returns the **exact** body `payoutPrompt` produces for a non-payee, so the two cannot drift
+without failing. The kernel stays import-free, so the client pays nothing for it.
+
+**What this deliberately did NOT do.** No price was set, no pricing placeholder flipped, no Stripe
+price minted, no dollar amount changed. LIVE-229 (the operator seat at $12) and LIVE-228 (the $49
+tier merge) are held for an owner decision and were not touched; `catalog_operator_seat_active` reads
+`false` in production and stays there. Surfacing onboarding needs no price to exist, which is worth
+recording because it was the obvious place for this row to overreach.
+
+**Two comments were corrected rather than left to rot**, both of which asserted the opposite of what
+production now says: `lib/events/ticket-eligibility.ts` claimed "exactly ONE profile with a Stripe
+account and ZERO with onboarding complete, so nobody on the platform can receive money at all", and
+`components/billing/payout-setup-prompt.tsx` claimed "production has zero completed onboardings". Both
+now carry the dated 2026-09-15 reading, and both state plainly that a completed onboarding is not a
+completed loop. The second one explicitly refuses the causal claim available to it: both profile rows
+were last written after the card shipped, but `updated_at` moves on any write and nothing records
+which surface started an onboarding, so the correlation is named as correlation.
+
+🔴 **The lesson worth keeping, because it is the one this row nearly got wrong.** PROG-R5's stated fix
+was "one push unblocks five loops". Three of its four children were already closed, its diagnosis was
+already shipped, and its headline number (nothing charged) was still true — which is exactly the shape
+that invites building against a stale row. The re-measure separated the two halves: the *symptom* held
+perfectly and the *cause* had moved on. A row whose symptom is still true is not a row whose diagnosis
+is still true, and only a production read can tell those apart.
+
+**Rows.** PROG-R5 stays **open** and is re-pointed: its remaining child is LIVE-234, which needs a
+purchase, not a commit. The repo-ownable half of phase 5 is now closed and probed.
+
 ## ADR-1358: the front door states the model, and it is written as a MIGRATION because the front door is a database row (2026-09-15)
 
 **Status.** Accepted. Closes `LIVE-252`. Applies [ADR-1294](DECISIONS.md) /
