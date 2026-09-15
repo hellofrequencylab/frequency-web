@@ -429,7 +429,7 @@ export function anchorIsDormant(anchor: Pick<Anchor, 'is_cancelled' | 'removed_a
   return !!anchor.is_cancelled || anchor.removed_at != null
 }
 
-// ── A SERIES THAT HAS RUN OUT (LIVE-271, ADR-NNNN) ──────────────────────────────────────────────
+// ── A SERIES THAT HAS RUN OUT (LIVE-271, ADR-1348) ──────────────────────────────────────────────
 //
 // The anchor filter in `generateAllOccurrences` asks for the series worth rolling forward with
 // `recurrence_until.is.null,recurrence_until.gt.now`. That is exactly right for the two ends the
@@ -546,7 +546,7 @@ export async function generateOccurrencesForAnchor(anchorId: string): Promise<nu
   if (anchor.recurrence_type === 'none') return 0
   // A cancelled or removed series is over: never mint another occurrence of it.
   if (anchorIsDormant(anchor)) return 0
-  // So is a series that has RUN OUT, and this is where that is noticed (LIVE-271, ADR-NNNN):
+  // So is a series that has RUN OUT, and this is where that is noticed (LIVE-271, ADR-1348):
   // the anchor filter above cannot see a COUNT-bounded end, so an exhausted series arrives here
   // every day forever. The skip sits BEFORE the child-occurrence read on purpose — that read is
   // what the day costs, and nothing below it could ever mint a date, because the expander stops at
@@ -652,7 +652,7 @@ export async function generateAllOccurrences(
   // the cron rolls the horizon forward every day, so without this filter ending a weekly series
   // stopped nothing — a fresh, NON-cancelled occurrence appeared each time the window advanced.
   //
-  // ⚠️ THE `recurrence_until` CLAUSE IS NOT THE WHOLE OF "still running" (LIVE-271, ADR-NNNN). It
+  // ⚠️ THE `recurrence_until` CLAUSE IS NOT THE WHOLE OF "still running" (LIVE-271, ADR-1348). It
   // reads the two ends the enum model had, and a COUNT-bounded series carries a NULL end by
   // construction, so an exhausted one is selected here and reads as indefinite. `anchorIsExhausted`
   // is what notices, in the per-anchor path, before the read that costs anything. A stored

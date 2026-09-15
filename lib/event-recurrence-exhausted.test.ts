@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-// ── LIVE-271 / ADR-NNNN: A SERIES THAT HAS RUN OUT IS NOT READ AGAIN ────────────────────────────
+// ── LIVE-271 / ADR-1348: A SERIES THAT HAS RUN OUT IS NOT READ AGAIN ────────────────────────────
 //
 // 🔴 WHAT THIS FILE MEASURES IS THE READ, NOT THE NAME. A unit test asserting that a predicate
 // exists, or that it returns true for a spent rule, proves nothing about the defect: the defect was

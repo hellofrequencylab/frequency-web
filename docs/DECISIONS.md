@@ -41240,7 +41240,7 @@ outlive the tier silently) and `content/help/spaces/billing.md:45` (lists revenu
 
 **Rows.** LIVE-232 (done, this ADR).
 
-## ADR-NNNN: a series that ends by COUNT is skipped by a pure predicate, not marked by a column (2026-09-15)
+## ADR-1348: a series that ends by COUNT is skipped by a pure predicate, not marked by a column (2026-09-15)
 
 **Status:** Accepted (2026-09-15). Closes `LIVE-271`. Code: `lib/event-recurrence.ts`
 (`anchorIsExhausted`, the guard inside `generateOccurrencesForAnchor`), tests in
