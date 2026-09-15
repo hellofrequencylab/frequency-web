@@ -41240,7 +41240,7 @@ outlive the tier silently) and `content/help/spaces/billing.md:45` (lists revenu
 
 **Rows.** LIVE-232 (done, this ADR).
 
-## ADR-NNNN: there is one Channel table, and the hierarchy-v2 pair is dropped rather than described (2026-09-15)
+## ADR-1349: there is one Channel table, and the hierarchy-v2 pair is dropped rather than described (2026-09-15)
 
 **Status:** Accepted · `supabase/migrations/20270345004500_drop_retired_channels.sql` (the drop),
 `components/widgets/community/manage.tsx` + `components/widgets/community/structure.tsx` (the two

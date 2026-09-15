@@ -56,7 +56,7 @@ export const SUSPENSION_COVERED = {
   event_question_answers: { actor: 'profile_id' },
   event_dispatches: { actor: 'author_id' },
   // ── Circles ──
-  // `channels` left this list on 2026-09-15 (LIVE-334, ADR-NNNN) because the TABLE left the
+  // `channels` left this list on 2026-09-15 (LIVE-334, ADR-1349) because the TABLE left the
   // schema: the retired hierarchy-v2 `channels` was dropped, empty, and the trigger went with it.
   // The live Channel concept is `topical_channels`, which is janitor-managed platform curation
   // rather than a member write, so it is not a candidate for this ledger. The migration below

@@ -117,7 +117,7 @@ async function load(): Promise<ManageCounts> {
       admin.from('circles').select('id', { count: 'exact', head: true }).eq('status', 'active'),
       admin.from('hubs').select('id', { count: 'exact', head: true }),
       admin.from('nexuses').select('id', { count: 'exact', head: true }),
-      // CHANNELS = `topical_channels`, the one Channel table (LIVE-334, ADR-NNNN). This counted the
+      // CHANNELS = `topical_channels`, the one Channel table (LIVE-334, ADR-1349). This counted the
       // retired hierarchy-v2 `channels` table, which held 0 rows for the whole life of the v3
       // concept, so the tile read "0 channels" beside a link that opens a console listing every
       // live one. No `is_active` filter: this tile opens /admin/channels, which lists shown AND

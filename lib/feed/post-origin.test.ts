@@ -101,7 +101,7 @@ describe('buildScopeContextResolver', () => {
   })
 })
 
-// THE CHANNEL THE CHIP NAMES IS THE ONE THAT EXISTS (LIVE-334, ADR-NNNN).
+// THE CHANNEL THE CHIP NAMES IS THE ONE THAT EXISTS (LIVE-334, ADR-1349).
 //
 // Until now the resolver read the retired hierarchy-v2 `channels` table, which held 0 rows for the
 // whole life of the v3 concept, so a Channel forum post resolved to `undefined` and rendered no

@@ -38,7 +38,7 @@ const MIGRATIONS = 'supabase/migrations'
 const SQL_REL = `${MIGRATIONS}/20270344000000_suspension_reaches_every_member_write.sql`
 const SQL = read(SQL_REL)
 
-/** Tables dropped by a migration that sorts AFTER the suspension migration (LIVE-334, ADR-NNNN).
+/** Tables dropped by a migration that sorts AFTER the suspension migration (LIVE-334, ADR-1349).
  *
  *  WHY THIS EXISTS. A migration file is a record of what ran, not a description of the schema
  *  today, so the SQL⇄ledger comparison below has to be cumulative for the same reason
@@ -220,7 +220,7 @@ describe('3. the migration matches the ledger, both ways', () => {
 
   it('the drop subtraction is not vacuous (a parser that matches nothing would pass the test above)', () => {
     // `live` above is only a real filter if the scan actually finds drops. It found `channels`
-    // (LIVE-334, ADR-NNNN); an empty set here means the migration walk or the regex has stopped
+    // (LIVE-334, ADR-1349); an empty set here means the migration walk or the regex has stopped
     // working and the stray check is passing on an unfiltered list.
     expect(DROPPED_AFTER.size).toBeGreaterThan(0)
   })

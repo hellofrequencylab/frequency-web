@@ -44,7 +44,7 @@ async function load(): Promise<StructureData> {
         // whatever its access mode; an unlisted one would leak its existence through the total.
         admin.from('circles').select('id', { count: 'exact', head: true }).eq('status', 'active')
           .eq('unlisted', false),
-        // CHANNELS = `topical_channels`, the one Channel table (LIVE-334, ADR-NNNN). This counted
+        // CHANNELS = `topical_channels`, the one Channel table (LIVE-334, ADR-1349). This counted
         // the retired hierarchy-v2 `channels` table (0 rows for the whole life of the v3 concept),
         // so the "Channels" stat read 0 while members could browse every live one. `is_active` to
         // match the sibling Circles read above — this tile counts what the community can browse,

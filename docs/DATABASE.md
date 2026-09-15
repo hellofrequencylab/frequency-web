@@ -40,7 +40,7 @@ to be, never as a description of the current schema.
 `topical_channels` (FK `pillar_id`, renamed from `domain_id` in the same migration),
 `topical_channel_memberships` (the global topical layer, and the only one — the
 hierarchy-v2 `channels` / `channel_memberships` pair was dropped, empty, on
-2026-09-15, [ADR-NNNN](DECISIONS.md))
+2026-09-15, [ADR-1349](DECISIONS.md))
 
 **Content & feed**
 `posts`, `post_reactions`, `post_mentions`

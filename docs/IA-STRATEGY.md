@@ -381,7 +381,7 @@ broadcaster"). **Decision: the member-facing label is "Interests."**
   your interests").
 - **The legacy `channels` concept is retired outright**, not just hidden from
   member view: the table was dropped, empty, on 2026-09-15
-  ([ADR-NNNN](DECISIONS.md)), and `/admin/channels` manages `topical_channels`.
+  ([ADR-1349](DECISIONS.md)), and `/admin/channels` manages `topical_channels`.
   The overload this section was written about no longer exists in the schema.
 - **Migration surface:** nav label, the `/channels` route (consider redirecting
   `/channels` → `/interests` or just relabeling the nav while keeping the route

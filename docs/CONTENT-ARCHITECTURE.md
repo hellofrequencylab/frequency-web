@@ -36,7 +36,7 @@ We do **not** build a new substrate. `posts` is the unified activity table:
 
 **Naming:** **Pillar** = a `pillars` row (the Mind/Body/Spirit/Expression top level) · **Channel /
 Interest / Topic** = a `topical_channel` (the topical forum), and since 2026-09-15 the ONLY
-"channel" table — the hierarchy-v2 `channels` pair was dropped, empty ([ADR-NNNN](DECISIONS.md)).
+"channel" table — the hierarchy-v2 `channels` pair was dropped, empty ([ADR-1349](DECISIONS.md)).
 
 ## 3. Ranking: "an algorithm you get to choose"
 

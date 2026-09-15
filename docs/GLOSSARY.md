@@ -35,7 +35,7 @@ from clustering; they are not appointed top-down.
 >
 > The hierarchy-v2 `channels` / `channel_memberships` pair (hub/nexus/outpost
 > "focus groups", `20240102000000`) was replaced by this one a month later and
-> **dropped, empty, on 2026-09-15** ([ADR-NNNN](DECISIONS.md)). Nothing in the
+> **dropped, empty, on 2026-09-15** ([ADR-1349](DECISIONS.md)). Nothing in the
 > tree or the schema carries it; older docs and ADRs that mention it are history.
 
 ## Roles: two independent axes (canon: NAMING.md §Roles)

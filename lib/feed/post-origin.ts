@@ -43,7 +43,7 @@ export async function buildScopeContextResolver(
       // this is the second lock, for every other caller of this resolver.
       admin.from('circles').select('id, name, slug, image_url, unlisted, access').in('id', ids),
       admin.from('events').select('id, title, slug, cover_image_path').in('id', ids),
-      // CHANNELS = `topical_channels`, the one Channel table (LIVE-334, ADR-NNNN). This read the
+      // CHANNELS = `topical_channels`, the one Channel table (LIVE-334, ADR-1349). This read the
       // retired hierarchy-v2 `channels` table, so the chip never resolved: a Channel forum post
       // (`/channels/[id]` renders a feed on `posts.scope_id = <topical channel id>`, and the
       // Channel manage hub counts the same rows) came back `undefined` and rendered no origin at

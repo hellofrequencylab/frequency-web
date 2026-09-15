@@ -1,4 +1,4 @@
--- Drop the retired hierarchy-v2 `channels` + `channel_memberships` tables (LIVE-334, ADR-NNNN).
+-- Drop the retired hierarchy-v2 `channels` + `channel_memberships` tables (LIVE-334, ADR-1349).
 --
 -- WHAT THESE WERE. `20240102000000_hierarchy_v2.sql` created `channels` (hub/nexus/outpost-scoped
 -- "focus groups") and `channel_memberships` (the join/tune row). `20240201000000_hierarchy_v3_
