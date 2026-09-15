@@ -122,20 +122,38 @@ function studioNodes(): NavNode[] {
 // it makes sense). Order, labels, hrefs, descriptions, icons, and gates are preserved
 // EXACTLY; the projections in defaults.ts / site.ts rebuild the old shapes byte-for-byte.
 
-/** The six public marketing pages as `surface:'header'` TRIGGER nodes, in nav order.
+/** The FOUR public header tabs as `surface:'header'` TRIGGER nodes, in nav order.
  *  A trigger with sub-links (`items`) opens a dropdown — its sub-links are separate
  *  header nodes parented on the trigger's id; a trigger with no sub-links is a plain
  *  link. The trigger `label` is the tab name; `href` is the tab's CANONICAL landing
  *  (== the old PRIMARY_NAV href), carried even on dropdown triggers so PRIMARY_NAV /
  *  SITE_NAV derive from ONE source. `blurb` carries the sub-link description (`desc`).
- *  Visitor-gated (public marketing). All six primary pages (the FOOTER_LINK_SEEDS set)
- *  are triggers here, so the header and footer cover the same six tabs: The Community
- *  and Spaces open dropdowns (community explore pages; the Spaces directory + the
- *  persona doors and Business pricing), alongside The Quest and About.
+ *  Visitor-gated (public marketing).
+ *
+ *  ── SIX TABS BECAME FOUR (docs/CORE-MODEL.md §4, ADR-1294; LIVE-250) ─────────────────
+ *  The target is stated as a number, so the DERIVATION matters more than the number: the
+ *  six tabs were four dropdown panels plus two plain links, and the two plain links are
+ *  the two that go. **Nothing is removed. Things are grouped** (CORE-MODEL §4).
+ *
+ *    • `Home` was a tab pointing at `/`, which the wordmark beside it already links
+ *      (components/layout/marketing-header.tsx, `href={authed ? '/feed' : '/'}`). A tab
+ *      that duplicates the brand mark costs a slot and buys nothing.
+ *    • `The Lab` is not one of the four nouns, so it becomes a ROW in the About panel —
+ *      the story-of-Frequency panel it reads with — and keeps its own footer link, its
+ *      sitemap entry (priority 0.8) and its llms.txt line untouched.
+ *
+ *  The four that remain are the four that already carried panels: The Community, The
+ *  Quest, Spaces, About. `/` therefore no longer appears in the header AT ALL, which is
+ *  why `registry.source.test.ts` measures the wordmark's href rather than assuming it.
  *
  *  🔴 EVERY DROPDOWN TRIGGER LEADS WITH ITS OWN LANDING ROW. A trigger that opens a panel
  *  gets no href of its own, so a landing page that is not also a row in its own panel has
- *  no path from the header at all. `registry.gate.test.ts` holds that invariant. */
+ *  no path from the header at all. `registry.source.test.ts` holds that invariant.
+ *
+ *  ⚠️ THE LIVE HEADER IS DB ROWS, NOT THIS LIST. `menu_items` / `menu_categories` carry an
+ *  operator-editable copy of this surface and `lib/menus/read.ts` prefers it, so editing
+ *  these seeds alone moves NOTHING in production. The live rows move with the paired data
+ *  migration (`supabase/migrations/20270345004400_public_header_four_tabs.sql`). */
 type HeaderTriggerSeed = {
   id: string
   label: string
@@ -144,7 +162,6 @@ type HeaderTriggerSeed = {
 }
 
 const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
-  { id: 'home', label: 'Home', href: '/' },
   {
     id: 'the-community',
     label: 'The Community',
@@ -176,7 +193,6 @@ const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
       { label: 'Channels', href: '/discover/topics', desc: 'Browse by what you practice' },
     ],
   },
-  { id: 'the-lab', label: 'The Lab', href: '/the-lab' },
   {
     id: 'spaces',
     label: 'Spaces',
@@ -204,6 +220,11 @@ const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
     items: [
       { label: 'What is Frequency', href: '/what-is-frequency', desc: 'The short version: what it is, how it works, why it exists' },
       { label: 'About', href: '/about', desc: 'The mission and the people building it' },
+      // The Lab was its own plain-link tab until LIVE-250 took the header to four. It sits
+      // here, beside the other story pages, rather than anywhere else: a visitor reading
+      // "what is this" reads about the room in the same breath. Copy matches its llms.txt
+      // line (app/llms.txt/route.ts) so the two cannot drift.
+      { label: 'The Lab', href: '/the-lab', desc: 'The physical third space, and why a community needs a room' },
       { label: 'Help center', href: '/help', desc: 'Answers, guides, and support' },
       { label: 'Privacy', href: '/privacy', desc: 'How we handle your data' },
       { label: 'Terms', href: '/terms', desc: 'The rules of the road' },
@@ -247,7 +268,14 @@ function headerNodes(): NavNode[] {
  *  pages, in nav order, flat (no grouping). Labels + hrefs verbatim from the old
  *  MARKETING_NAV. These are the FLAT marketing footer (MARKETING_NAV + the DB footer
  *  seed read `marketingFooterNodes()`); the member sitemap footer below is a SEPARATE,
- *  column-grouped set of footer nodes and never appears in that flat list. */
+ *  column-grouped set of footer nodes and never appears in that flat list.
+ *
+ *  ⚠️ THIS LIST IS STILL SIX, AND THAT IS DELIBERATE. LIVE-250 took the HEADER to four
+ *  tabs; the footer is the site map, where a flat list of every primary page is the
+ *  point. `/` and `/the-lab` therefore keep their footer links: `/the-lab` is a row in
+ *  the About panel and `/` is the header's wordmark, so both are still reachable from
+ *  the header — which is the invariant `registry.source.test.ts` measures, in place of
+ *  the tab-for-tab pairing it used to assert. */
 const FOOTER_LINK_SEEDS: readonly { id: string; label: string; href: string }[] = [
   { id: 'home', label: 'Home', href: '/' },
   { id: 'the-community', label: 'The Community', href: '/the-community' },
@@ -302,7 +330,17 @@ const MEMBER_FOOTER_COLUMNS: readonly { title: string; links: readonly MemberFoo
       { id: 'events', label: 'Events', href: '/events', navKey: 'events' },
       { id: 'market', label: 'Classifieds', href: '/classifieds', navKey: 'market' },
       { id: 'housing', label: 'Housing', href: '/housing', navKey: 'housing' },
-      { id: 'maker', label: 'Market', href: '/market', navKey: 'maker' },
+      // 🔴 NO navKey, ON PURPOSE (LIVE-250). This row carried `navKey: 'maker'` and there is
+      // no NAV_AREA with that key: ADR-868 retired the Maker rail row, so `lib/verticals/maker.ts`
+      // declares `nav: []` and the key has pointed at nothing since. A dead key is not an error
+      // here — `reachable()` reads `NAV_AREA_DEFAULTS[key] ?? 'visitor'` and the server matrix
+      // has no 'maker' entry to short-circuit on — so the row has been gated at 'visitor' by
+      // ACCIDENT rather than by declaration, and an operator could not reach it from the
+      // /admin/roles permission grid either. The keyless form states the same gate on purpose.
+      // Label + href are canon-correct and unchanged: NAMING.md §Marketplace & Commerce puts
+      // member-facing **Market** at `/market` (internal id `maker`), and **Classifieds** at
+      // `/classifieds` (internal id `market`) — the row above.
+      { id: 'maker', label: 'Market', href: '/market', minAccess: 'visitor' },
       { id: 'shop', label: 'Frequency Store', href: '/store', navKey: 'shop' },
       { id: 'network', label: 'Members', href: '/network', navKey: 'people' },
     ],
@@ -702,7 +740,8 @@ export function headerTriggers(): HeaderTrigger[] {
 // footer is the column-grouped (parented) nodes rendered on member pages. Splitting on
 // `parent` keeps each footer projecting only its own nodes — no cross-contamination.
 
-/** The flat marketing footer links (the six primary pages), in registry order. The
+/** The flat marketing footer links (the six primary pages — NOT the four header tabs;
+ *  see FOOTER_LINK_SEEDS), in registry order. The
  *  parentless `surface:'footer'` nodes only, so the member sitemap columns never leak
  *  into MARKETING_NAV or the DB footer seed. */
 export function marketingFooterLinks(): NavNode[] {

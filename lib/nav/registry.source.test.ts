@@ -5,6 +5,7 @@
 // from the registry rather than hand-maintaining a parallel list. If a future change
 // reintroduces a second source (a hardcoded array, a divergent seed), one of these fails.
 
+import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import {
   NAV_REGISTRY,
@@ -16,6 +17,7 @@ import {
   nodesForSurface,
 } from '@/lib/nav/registry'
 import { PUBLIC_MEGA_NAV, MARKETING_NAV, PRIMARY_NAV } from '@/lib/site'
+import { NAV_AREAS } from '@/lib/nav-areas'
 import { defaultMenu } from '@/lib/menus/defaults'
 
 const REGISTRY_IDS = new Set(NAV_REGISTRY.map((n) => n.id))
@@ -36,14 +38,51 @@ describe('nav single-source invariant — the registry feeds every surface', () 
     }
   })
 
-  it('the public header carries ALL SIX primary pages (every footer link has a trigger)', () => {
+  it('the public header is FOUR tabs, and every footer link is still reachable from it', () => {
+    // ── WHY THIS CASE CHANGED SHAPE (LIVE-250, docs/CORE-MODEL.md §4) ──────────────────────
+    // It used to assert `triggers.length === 6` AND that every flat footer link was itself a
+    // TRIGGER href. The first half is now four. The second half was the valuable one — it is
+    // the LIVE-107 guard, "a primary page with no path from the header" — but pairing it
+    // tab-for-tab with the footer overstated it: a page reached as a ROW inside a panel is
+    // reached, and `/` is reached by the wordmark. So the reachability half is kept and
+    // widened to what it always meant, and the count is the model's number.
     const triggers = headerTriggers()
-    // The six primaries: Home, The Community, The Quest, The Lab, Spaces, About.
-    expect(triggers.length).toBe(6)
-    const triggerHrefs = triggers.map((t) => t.node.href)
+    // The four: The Community, The Quest, Spaces, About. Home left (the wordmark links `/`),
+    // and The Lab became a row in the About panel.
+    expect(triggers.length).toBe(4)
+    expect(triggers.map((t) => t.node.label)).toEqual(['The Community', 'The Quest', 'Spaces', 'About'])
+
+    // Every destination the header offers: a trigger's own landing, or any row in any panel.
+    const headerHrefs = new Set(nodesForSurface('header').map((n) => n.href))
+    // `/` is the ONE footer link with no header node, because the wordmark carries it. Measured
+    // rather than excused: if that Link ever stops pointing home, this case fails with the
+    // footer link that lost its path, not with a comment that used to be true.
+    const marketingHeader = readFileSync(new URL('../../components/layout/marketing-header.tsx', import.meta.url), 'utf8')
+    expect(marketingHeader, 'the wordmark no longer links home, so `/` has no path from the header').toContain(
+      "href={authed ? '/feed' : '/'}",
+    )
+    headerHrefs.add('/')
+
     for (const link of marketingFooterLinks()) {
-      expect(triggerHrefs, `footer link ${link.href} (${link.label}) has no header trigger`).toContain(link.href)
+      expect(
+        [...headerHrefs],
+        `footer link ${link.href} (${link.label}) has no path from the public header`,
+      ).toContain(link.href)
     }
+  })
+
+  it('the two tabs that left are still reachable, which is what "grouped, not deleted" means', () => {
+    // CORE-MODEL §4: "Nothing is removed. Things are grouped." The cheap way to hit a tab count
+    // is to delete two destinations, so the count above is paired with this.
+    const headerHrefs = nodesForSurface('header').map((n) => n.href)
+    expect(headerHrefs, '/the-lab lost its path from the header').toContain('/the-lab')
+    // And it landed in the About panel specifically, not loose at the top level.
+    const about = headerTriggers().find((t) => t.node.label === 'About')
+    expect(about?.items.map((i) => i.href)).toContain('/the-lab')
+    // Both keep their flat-footer link, which is the site map's job.
+    const footer = marketingFooterLinks().map((n) => n.href)
+    expect(footer).toContain('/')
+    expect(footer).toContain('/the-lab')
   })
 
   it('every DROPDOWN trigger leads with its own landing, or that page has no path from the header', () => {
@@ -103,6 +142,25 @@ describe('nav single-source invariant — the registry feeds every surface', () 
     expect(grouped.sort()).toEqual(all.sort())
     // and every section carries a real label (no ungrouped account links).
     for (const s of profileSections()) expect(s.label.length).toBeGreaterThan(0)
+  })
+
+  it('no footer link carries a navKey that names nothing (LIVE-250)', () => {
+    // ── THE DEFECT ──────────────────────────────────────────────────────────────────────────
+    // The member sitemap footer's Market row carried `navKey: 'maker'`, and ADR-868 had retired
+    // the Maker rail row — `lib/verticals/maker.ts` declares `nav: []`, so NAV_AREAS has no such
+    // key. Nothing threw, because member-footer.tsx reads `NAV_AREA_DEFAULTS[key] ?? 'visitor'`:
+    // the row was gated at visitor by ACCIDENT, and `/admin/roles` had no permission-grid row to
+    // change it with. A navKey is a DEFERRAL to the rail's access matrix; deferring to a key that
+    // does not exist reads as coverage and is not. A keyless link declares its own `gate`, which
+    // is the shape every other keyless footer row already uses.
+    const areaKeys = new Set(NAV_AREAS.map((a) => a.key))
+    const dead = nodesForSurface('footer')
+      .filter((n) => n.navKey && !areaKeys.has(n.navKey))
+      .map((n) => `${n.label} -> ${n.href} (navKey: ${n.navKey})`)
+    expect(dead, 'a footer navKey names no NAV_AREA; drop the key and declare minAccess instead').toEqual([])
+    // Positive control: the guard can only be green because the keys resolve, not because no
+    // footer row has one.
+    expect(nodesForSurface('footer').filter((n) => n.navKey).length).toBeGreaterThan(5)
   })
 
   it('the calm mobile spine lands on real calm registry nodes', () => {
