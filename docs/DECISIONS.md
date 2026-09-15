@@ -42653,3 +42653,64 @@ proves each claim's detector fires on its own by redacting it from an otherwise 
   one.
 - `check:seo`, `check:canon` and `lib/site.cta.test.ts` all still pass and all still cannot see this
   page. That is the standing limitation, and the maintenance arm is the answer to it.
+
+## ADR-1360: when two gates claim to enforce one rule, the one a human runs must not be the weaker (2026-09-15)
+
+**Status.** Accepted. Closes `HYG-097`. A CI rule change, so it is recorded here per
+[ADR-1325](DECISIONS.md). Sibling in kind to `HYG-095`, worked the same day: both are
+gates that passed while the thing they exist to catch was in the tree. (Cited as a ROW rather than
+by its ADR number on purpose -- that ADR lands in a different pull request, and `check:adr` rightly
+refuses a number that is not yet written.)
+
+**Context.** `docs/BUILD-BACKLOG.json` rows may carry a `source.file`, and the rule is that it
+points at something real — a row whose source document was deleted has outlived its justification.
+**Two** places enforced it:
+
+| where | check | a DIRECTORY |
+|---|---|---|
+| `scripts/check-backlog.mjs:273` — the guard, run by `pnpm check:backlog` and by the `checks` job | `existsSync(e.source.file)` | ✅ **accepted** |
+| `scripts/backlog-contract.test.ts:808` — run by `pnpm test` | `statSync(...).isFile()` | 🔴 **rejected** |
+
+They differ on exactly one input, and the test's own comment asserted they did not: *"The guard
+enforces this; asserting it here as well makes the intent legible next to the fixtures."*
+
+The input is not hypothetical. **`test/e2e/__screenshots__/visual.spec.ts` is a directory** —
+Playwright names a snapshot folder after its spec, so the folder wears a `.ts` extension and reads
+exactly like a file. `LIVE-340` cited it as its source while filing the recapture. `pnpm
+check:backlog` printed `✓ 707 entries, 542 probe(s) agree`. CI's `test` job then failed with
+`expected [ 'LIVE-340' ] to deeply equal []`, and `test` is a required context.
+
+**The direction of the disagreement is the whole finding.** Two gates drifting apart is ordinary
+entropy. What made this cost a cycle is that the **weaker** one is the one a human runs by hand: the
+author gets a green light locally and learns about the problem from a required check six minutes
+later. The same divergence with the strengths reversed would have cost nothing.
+
+**Decision.**
+
+1. **The guard uses `statSync(...).isFile()`**, inside a `try`/`catch` so a missing path still
+   reports as missing rather than throwing. The message now distinguishes the two states —
+   `is missing` versus `is a directory, not a file` — because "does not exist" was actively
+   misleading for a path that does exist.
+2. **The test's comment is corrected rather than deleted.** It now records that the claim was false
+   until today, which input separated the two checks, and why that direction mattered. A comment
+   that was wrong is worth keeping as a corrected comment; the next reader's question is "can I
+   trust this?", and the answer is more useful than silence.
+3. **No new gate.** This is one predicate moving, not a mechanism. The rule was already enforced
+   twice; it is now enforced twice consistently.
+
+**Consequences.** ✅ Proven both ways rather than reasoned about: the probe exits **1** on
+`origin/main` (naming the `existsSync` form and why it is weaker) and **0** here. ✅ The
+**consequence** is proven by a mutation control, not by reading the diff: pointing a real row's
+`source.file` at the snapshot directory makes `pnpm check:backlog` exit **1** with
+`OWN-001: source file "test/e2e/__screenshots__/visual.spec.ts" is a directory, not a file`, where
+before it exited 0. The primitives were read directly in the same pass —
+`existsSync(dir) = true`, `statSync(dir).isFile() = false`. ✅ All 706 rows on `main` already
+satisfy the stricter rule, so nothing is retro-broken and the change is a ratchet rather than a
+migration. ✅ `scripts/backlog-contract.test.ts` 26/26. ⚠️ **Stated limit:** the row's probe is a
+**source-shape** check — it reads the guard for the retired `existsSync` form and for an `isFile()`
+call in the source-file branch — because the honest consequence probe would have to run the 40-second
+guard against a mutated backlog, and a probe that expensive gets routed around, which
+[ADR-970](DECISIONS.md) says is worse than a narrower one. The consequence is proven once, here, by
+the mutation control above.
+
+**Rows.** `HYG-097` (done, this ADR).
