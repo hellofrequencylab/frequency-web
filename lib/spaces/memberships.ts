@@ -414,7 +414,15 @@ export async function setMembershipTiers(
       { gatesLive: await featureGatesLive() },
     )
     if (!allowed) {
-      return fail('Selling memberships comes with Business. Tickets, donations, and your shop stay open on every plan.')
+      // The wall's plan is NAMED off the merged gate, never typed, so this sentence and the settings
+      // section's notice (memberships/section.tsx, LIVE-231) can only ever say the same word.
+      const [{ loadFeatureGateOverrides }, { featureWallLabel }, { SPACE_PLAN_LABEL }] = await Promise.all([
+        import('@/lib/pricing/gates'),
+        import('@/lib/pricing/feature-tiers'),
+        import('@/lib/pricing/plans'),
+      ])
+      const wall = featureWallLabel('space_memberships', await loadFeatureGateOverrides()) ?? SPACE_PLAN_LABEL.business
+      return fail(`Selling memberships comes with ${wall}. Tickets, donations, and your shop stay open on every plan.`)
     }
   }
 

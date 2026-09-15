@@ -38,7 +38,7 @@ import { effectiveCatalogAmounts, isBetaPricingActive } from './beta'
 import { SPACE_PLAN_LABEL, SPACE_PLANS, type SpacePlan } from './plans'
 import { ENTITLEMENT_LABEL, ENTITLEMENT_TIERS, deriveTier, type EntitlementTier } from '@/lib/core/entitlement'
 import { catalogItem, type CatalogAmounts, type CatalogItemKey } from '@/lib/billing/pricing-keys'
-import type { GateAxis } from './gates'
+import { mergeGate, type FeatureGateOverrides, type GateAxis } from './gates'
 
 // ── THE GO-LIVE SWITCH ────────────────────────────────────────────────────────────────────────────
 
@@ -153,6 +153,19 @@ export function tierRankOnAxis(axis: GateAxis, tier: string): number {
 export function tierLabelOnAxis(axis: GateAxis, tier: string): string {
   if (axis === 'plan') return SPACE_PLAN_LABEL[tier as SpacePlan] ?? tier
   return ENTITLEMENT_LABEL[tier as EntitlementTier] ?? tier
+}
+
+/** The naming-canon label of the plan (or tier) a WALL sits on, read off the SAME merged gate the
+ *  live `featureAllowed` seam enforces (ADR-914's three walls: `space_memberships`, `space_campaigns`,
+ *  `space_membership_tickets`). A surface that says "charging your members is part of Business" reads
+ *  the word HERE, so an operator override that moves the wall moves the sentence with it, and no copy
+ *  carries a typed plan name that can drift from the gate (LIVE-231). Pass the overrides the caller
+ *  already loaded (`loadFeatureGateOverrides`, an IO seam this pure module never touches); the code
+ *  default stands with none. Null for a feature no gate declares. PURE. */
+export function featureWallLabel(feature: string, overrides: FeatureGateOverrides = {}): string | null {
+  const gate = mergeGate(feature, overrides)
+  if (!gate) return null
+  return tierLabelOnAxis(gate.axis, gate.minEntitlement)
 }
 
 /** The monthly price cents a tier is CHARGED on its axis. PURE. (Exported so the sibling meter ladder,

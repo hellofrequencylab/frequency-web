@@ -17,10 +17,12 @@ import {
   tierPriceCents,
   tierPriceLabel,
   featureTierLadder,
+  featureWallLabel,
   isFeatureUnlockedAt,
   currentStepIndex,
   tierRankOnAxis,
 } from './feature-tiers'
+import { SPACE_PLAN_LABEL } from './plans'
 
 /** The tier-gated feature keys, derived from the code gate map: enabled AND ranked above the free floor
  *  on the gate's own axis. This is the set the range selector must cover. */
@@ -235,5 +237,29 @@ describe('read helpers', () => {
     expect(currentStepIndex(wall, 'nonprofit')).toBe(1)
     // Unknown tier → the free floor.
     expect(currentStepIndex(wall, 'nonsense')).toBe(0)
+  })
+})
+
+// THE WALL'S NAME IS READ, NOT TYPED (LIVE-231). featureWallLabel is what the membership section and
+// the setMembershipTiers refusal both say the plan word through, so an operator override that moves the
+// wall moves the sentence with it, and a typo in a copy string can never disagree with the gate.
+describe('featureWallLabel', () => {
+  it('names the plan the space_memberships wall sits on, off the code gate map', () => {
+    expect(featureWallLabel('space_memberships')).toBe(SPACE_PLAN_LABEL.business)
+    expect(featureWallLabel('space_campaigns')).toBe(SPACE_PLAN_LABEL.business)
+  })
+
+  it('follows a valid operator override of the wall, and ignores an invalid one', () => {
+    expect(featureWallLabel('space_memberships', { space_memberships: { minEntitlement: 'nonprofit' } })).toBe(
+      SPACE_PLAN_LABEL.nonprofit,
+    )
+    // A label off the gate's ladder must not widen or rename the wall (mergeGate keeps the code default).
+    expect(featureWallLabel('space_memberships', { space_memberships: { minEntitlement: 'crew' } })).toBe(
+      SPACE_PLAN_LABEL.business,
+    )
+  })
+
+  it('is null for a feature no gate declares', () => {
+    expect(featureWallLabel('not_a_feature')).toBeNull()
   })
 })

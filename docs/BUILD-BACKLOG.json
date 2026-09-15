@@ -80,7 +80,6 @@
             "LIVE-228",
             "LIVE-229",
             "LIVE-230",
-            "LIVE-231",
             "LIVE-232",
             "PROG-R5",
             "LIVE-234",
@@ -10791,7 +10790,7 @@
     {
       "id": "LIVE-231",
       "title": "Make the membership upsell honest at the point of tier creation",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
@@ -10799,12 +10798,12 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "Memberships stay paid-gated - that is the model's third line, and ADR-914 (\"never gate the transaction, gate the repeat\") supports it: a recurring membership IS the repeat. What must change is the presentation. A free Space creating a membership tier should read \"charging your members is part of Business\", with the reason, not a lock icon. app/(main)/spaces/[slug]/settings/memberships/section.tsx.",
+      "detail": "Memberships stay paid-gated - that is the model's third line, and ADR-914 (\"never gate the transaction, gate the repeat\") supports it: a recurring membership IS the repeat. What must change is the presentation. A free Space creating a membership tier should read \"charging your members is part of Business\", with the reason, not a lock icon. app/(main)/spaces/[slug]/settings/memberships/section.tsx.\n\nCLOSED 2026-09-15 (lane Z of the Phase 1 build loop, round 3). THE PREMISE, RE-TESTED: there was no lock on the plan. The `memberships` FUNCTION is universal (entitlement null, lib/spaces/functions.ts), so a free Space with the role walked straight past FeatureLockedNotice into MembershipTierForm, typed a tier, pressed save, and met the Business wall only as a red error worded by setMembershipTiers ('Selling memberships comes with Business. Tickets, donations, and your shop stay open on every plan.'), with the plan name typed as a literal. The padlock this row named is FeatureLockedNotice's Lock glyph, which this section renders only for the 'role' and 'disabled' reasons (a teammate below the min-role, or the tool switched off), never for the plan; that component stays shared and untouched. WHAT A FREE SPACE READS NOW: the section asks the same featureAllowed('space_memberships') seam the write asks, and below the wall renders the house GateNotice (kind gated, no padlock, DAWN §5) in place of the editor: title 'Charging your members is part of Business', body 'A membership is a promise to someone else: they pay every month and expect you to still be here. That is why it comes with Business and not with a free Space. Tickets, donations, and your shop stay open on every plan.', and one door, the billing surface every MeterUpsell already links to (/spaces/[slug]/settings/billing under METER_UPSELL_CTA, 'See plans'); a viewer who cannot change the plan is pointed at an admin instead of at billing. A downgraded Space with tiers still listed keeps the editor under the notice, because clearing tiers is always allowed (memberships.ts) and hiding the form would trap it. WHERE THE NAME COMES FROM: featureWallLabel (lib/pricing/feature-tiers.ts, pure) runs mergeGate over the same loadFeatureGateOverrides the seam enforces and labels the result through tierLabelOnAxis, so the word is never typed and an operator override that moves the wall moves the sentence with it; setMembershipTiers' refusal now says the plan through the same helper, so the two sentences cannot part. Nothing changes above the wall, in the grace window (gates not live), or for a staff preview. Proven by app/(main)/spaces/[slug]/settings/memberships/section.test.tsx (rendered through the real MembershipsSection with its IO faked: the sentence, the door, no lucide-lock, no editor; the paid, Non Profit, grace-window and staff branches unchanged) and by featureWallLabel's pins in lib/pricing/feature-tiers.test.ts. The cmd probe reads the CONSEQUENCE in source: no Lock glyph imported on the three files of the tier-creation path, and section.tsx naming the wall through the featureWallLabel import rather than the prose; a planted Lock import failed it before this closed.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Copy review against docs/CONTENT-VOICE.md §10. No lock iconography on the tier-creation path.",
-        "checked": "2026-09-08"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const path=[\"app/(main)/spaces/[slug]/settings/memberships/section.tsx\",\"app/(main)/spaces/[slug]/settings/memberships/memberships-body.tsx\",\"components/spaces/membership-tier-form.tsx\"];const locks=path.filter(f=>{const s=fs.readFileSync(f,\"utf8\");const m=s.match(/import\\s*\\{([^}]*)\\}\\s*from\\s*.lucide-react./g)||[];return m.some(x=>/\\b(Lock|LockKeyhole|LockOpen|Unlock)\\b/.test(x))||/lucide-lock/.test(s)});const sec=fs.readFileSync(path[0],\"utf8\");const derived=/import \\{ featureWallLabel \\} from .@\\/lib\\/pricing\\/feature-tiers./.test(sec)&&sec.includes(\"featureWallLabel(\\x27space_memberships\\x27\")&&!/part of Business/.test(sec);if(locks.length)console.error(\"lock glyph on the tier-creation path: \"+locks.join(\", \"));if(!derived)console.error(\"section.tsx does not name the wall through featureWallLabel\");process.exit(locks.length||!derived?1:0)'"
+      },
+      "closed": "2026-09-15"
     },
     {
       "id": "LIVE-232",
