@@ -26,6 +26,8 @@
 // scripts/check-shell-weight.mjs skips leading banners. Putting the directive below this comment
 // would make the two gates disagree about what this file is.
 import dynamic from 'next/dynamic'
+import { useState } from 'react'
+import { Check, X } from 'lucide-react'
 
 const CheckoutForm = dynamic(() => import('./checkout-form'), { ssr: false })
 
@@ -33,17 +35,66 @@ export default function CheckoutPanel({
   clientSecret,
   priceLabel,
   onFellBack,
+  onClose,
+  doneTitle = 'You are in.',
+  doneBody = 'Your ticket is confirmed. A receipt is on its way to your email.',
 }: {
   clientSecret: string
   priceLabel?: string
   onFellBack: () => void
+  /**
+   * Dismiss the panel after a completed payment. The caller clears its client secret and
+   * refreshes, so the page reflects the purchase. Optional: a caller that navigates on its own
+   * does not need it, and then the confirmation simply has no close control.
+   */
+  onClose?: () => void
+  /** What the confirmation says. Defaults are ticket copy; a tip or a gift passes its own. */
+  doneTitle?: string
+  doneBody?: string
 }) {
+  const [done, setDone] = useState(false)
+
+  // ── PAID, AND STILL HERE ──────────────────────────────────────────────────────────────────
+  // The form resolves in place (`redirect: 'if_required'`), so the last thing a buyer sees is a
+  // confirmation rather than a page reload. It replaces the form instead of sitting under it:
+  // leaving a live card field on screen after the money moved invites a second submission
+  // against a session that is already paid.
+  if (done) {
+    return (
+      <div
+        className="motion-safe:animate-[slideUp_0.3s_ease-out] rounded-lg border border-border bg-surface p-4"
+        role="status"
+      >
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary">
+            <Check className="h-4 w-4 text-on-primary" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-body-sm font-bold text-text">{doneTitle}</p>
+            <p className="mt-0.5 text-meta text-muted">{doneBody}</p>
+          </div>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="-m-1 shrink-0 rounded-control p-1 text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="rounded-lg border border-border p-4">
+    <div className="motion-safe:animate-[slideUp_0.3s_ease-out] rounded-lg border border-border p-4">
       <CheckoutForm
         clientSecret={clientSecret}
         priceLabel={priceLabel}
         onFellBack={onFellBack}
+        onDone={() => setDone(true)}
       />
     </div>
   )

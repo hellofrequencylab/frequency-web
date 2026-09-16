@@ -211,6 +211,11 @@ export function GuestTicketForm({
         clientSecret={clientSecret}
         priceLabel=""
         onFellBack={fallBackToHosted}
+        // Closing after a completed payment reloads so the page shows what was just bought:
+        // the ticket row, the updated count, the RSVP state. `location.reload()` rather than
+        // router.refresh() because the purchase changes server-rendered state well outside
+        // this component's subtree.
+        onClose={() => window.location.reload()}
       />
     )
   }

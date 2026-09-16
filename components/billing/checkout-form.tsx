@@ -22,7 +22,16 @@ import { Button } from '@/components/ui/button'
  * `useCheckout()` is the back-compat hook that works under either provider shape in
  * @stripe/react-stripe-js v6; the Elements-specific one is `useCheckoutElements()`.
  */
-function PayForm({ priceLabel, onFellBack }: { priceLabel?: string; onFellBack: () => void }) {
+function PayForm({
+  priceLabel,
+  onFellBack,
+  onDone,
+}: {
+  priceLabel?: string
+  onFellBack: () => void
+  /** Paid without leaving the page. The panel swaps to its confirmation. */
+  onDone: () => void
+}) {
   // ⚠️ `useCheckout()` returns a DISCRIMINATED UNION, not a checkout object:
   //   { type: 'loading' } | { type: 'success'; checkout } | { type: 'error'; error }
   // `confirm` lives on the success variant's `checkout` (StripeCheckoutElementsActions), so it has
@@ -55,16 +64,23 @@ function PayForm({ priceLabel, onFellBack }: { priceLabel?: string; onFellBack: 
     setError(null)
     setBusy(true)
     try {
-      // `confirm()` either completes here or redirects away and comes back to the session's
-      // `return_url` (3DS, a bank app). Both paths land on the event page carrying session_id,
-      // which is what settles the ticket without waiting on the webhook.
-      const res = await checkout.confirm()
+      // `redirect: 'if_required'` is what keeps the buyer here. Without it Stripe navigates on
+      // EVERY success, so the purchase always ended on a page reload -- the thing that made this
+      // flow feel like leaving. With it, a card that needs no extra step resolves in place and we
+      // render the confirmation ourselves.
+      //
+      // ⚠️ 'if_required' is not 'never'. A 3DS challenge or a bank app STILL redirects, and lands
+      // on the session's `return_url` carrying session_id, which settles the purchase without
+      // waiting for the webhook. Both endings stay correct; only the common one changed.
+      const res = await checkout.confirm({ redirect: 'if_required' })
       if (res.type === 'error') {
         setError(res.error.message ?? 'That card was declined.')
         setBusy(false)
+        return
       }
-      // On success Stripe navigates. `busy` stays true through the handover so the button cannot
-      // be pressed a second time against the same session.
+      // Paid, and still here. `busy` stays true through the handover so the button cannot be
+      // pressed a second time against a session that is already paid.
+      onDone()
     } catch (err) {
       // A THROWN confirm is not a decline -- a decline comes back as { type: 'error' }. This is the
       // integration failing, so the buyer goes to the hosted page rather than being trapped on a
@@ -95,6 +111,7 @@ export default function CheckoutForm({
   clientSecret,
   priceLabel,
   onFellBack,
+  onDone,
 }: {
   clientSecret: string
   /** Shown on the submit button as "Pay <label>". Omitted where the control has no single price
@@ -102,6 +119,8 @@ export default function CheckoutForm({
   priceLabel?: string
   /** Called when the form cannot be used at all, so the caller can send the buyer to Stripe. */
   onFellBack: () => void
+  /** Called once the payment succeeded WITHOUT leaving the page. */
+  onDone: () => void
 }) {
   const [stripe, setStripe] = useState<Stripe | null>(null)
   const [dead, setDead] = useState(false)
@@ -140,7 +159,7 @@ export default function CheckoutForm({
 
   return (
     <CheckoutElementsProvider stripe={stripe} options={{ clientSecret }}>
-      <PayForm priceLabel={priceLabel} onFellBack={onFellBack} />
+      <PayForm priceLabel={priceLabel} onFellBack={onFellBack} onDone={onDone} />
     </CheckoutElementsProvider>
   )
 }

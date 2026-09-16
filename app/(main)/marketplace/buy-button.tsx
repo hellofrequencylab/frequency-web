@@ -72,7 +72,14 @@ export function BuyButton({
       {error && <p className="mt-2 text-body-sm text-warning">{error}</p>}
       {clientSecret && (
         <div className="mt-3">
-          <CheckoutPanel clientSecret={clientSecret} onFellBack={fallBackToHosted} />
+          <CheckoutPanel
+            clientSecret={clientSecret}
+            onFellBack={fallBackToHosted}
+            // Closing after a completed payment reloads so the page shows what was just bought.
+            onClose={() => window.location.reload()}
+            doneTitle="Order placed."
+            doneBody="A receipt is on its way to your email. You can follow the order from Orders."
+          />
         </div>
       )}
     </div>
