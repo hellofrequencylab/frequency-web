@@ -19,7 +19,7 @@ and it is the single most useful first action you can take here.
 On the gathering's page. Open a Circle you have joined, find its next gathering
 (it shows the date, time, and place), and open it. The **RSVP** button is right
 there. On a ticketed gathering that box is headed **Tickets** instead, and the
-button says **Buy ticket** with the price on it, because buying the ticket is how
+button says **Get tickets** with the price on it, because buying the ticket is how
 you say you are coming. You will also see your Circle's upcoming gatherings in
 your feed, so they do not sneak up on you.
 

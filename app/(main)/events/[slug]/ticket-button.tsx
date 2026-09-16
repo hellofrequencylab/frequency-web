@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import CheckoutPanel from '@/components/billing/checkout-panel'
 import PaymentMarks from '@/components/billing/payment-marks'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
+import { compactPrice, ticketCtaLabel } from '@/lib/billing/price-label'
 
 export type TicketTierView = {
   id: string
@@ -42,10 +43,6 @@ export type TicketTierView = {
 const dollars = (cents: number | null | undefined) =>
   cents != null ? `$${(cents / 100).toFixed(2)}` : ''
 
-/** `$44.00` → `$44`. A trailing `.00` is two characters of noise in a CTA that has to survive
- *  truncation on a phone; `$44.50` keeps its cents because dropping those would be a lie. The same
- *  rule `receiptAmount` applies in the money emails, so the button and the receipt agree. */
-const compactPrice = (label: string) => label.replace(/\.00\b/, '')
 
 function isBuyerChosen(mode: TicketTierView['pricingMode']) {
   return mode === 'pwyc' || mode === 'sliding_scale' || mode === 'donation'
@@ -315,7 +312,7 @@ export function TicketButton({
           open={open}
           pending={isPending}
           disabled={previewMode}
-          label={`Get tickets - ${compactPrice(priceLabel)}`}
+          label={ticketCtaLabel(priceLabel)}
           onOpen={go}
           onCollapse={collapse}
         />
@@ -368,11 +365,9 @@ export function TicketButton({
     if (t.pricingMode === 'free') return 'Get ticket'
     if (isBuyerChosen(t.pricingMode)) {
       const cents = selection?.valid ? selection.amountCents : null
-      return cents != null ? `Get tickets - ${compactPrice(dollars(cents))}` : 'Get tickets'
+      return cents != null ? ticketCtaLabel(dollars(cents)) : 'Get tickets'
     }
-    return t.priceCents != null
-      ? `Get tickets - ${compactPrice(dollars(t.priceCents))}`
-      : 'Get tickets'
+    return t.priceCents != null ? ticketCtaLabel(dollars(t.priceCents)) : 'Get tickets'
   }
 
   return (

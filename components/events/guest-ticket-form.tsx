@@ -7,6 +7,7 @@ import { isError } from '@/lib/action-result'
 import CheckoutPanel from '@/components/billing/checkout-panel'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { startGuestTicket, settleTicketAction } from '@/app/(main)/events/[slug]/ticket-actions'
+import { ticketCtaLabel } from '@/lib/billing/price-label'
 import { ticketRowToPrice, type Price } from '@/lib/commerce/types'
 import { PriceInput, type PriceSelection } from '@/components/commerce/price-input'
 import { RateOptions, type FlowRate } from '@/components/events/rate-options'
@@ -183,7 +184,12 @@ export function GuestTicketForm({
   // Moves with the signed-in buttons on purpose: the same event must not call the same act two
   // different things depending on whether you have an account. `isFree` (not an empty payLabel)
   // decides, so a free tier reads "Get ticket" instead of the old "Get ticket · Free".
-  const submitLabel = isFree || !payLabel ? 'Get ticket' : `Buy ticket · ${payLabel}`
+  //
+  // 🔴 ONE LABEL, SHARED (LIVE-366). This said "Buy ticket · $44" while the member door was
+  // renamed to "Get tickets - $44", which broke the invariant the line above states, and broke it
+  // in the one place nobody would look: the signed-out door. The help centre names this label in a
+  // sentence that has to be true for both readers, so both read it from `ticketCtaLabel`.
+  const submitLabel = isFree || !payLabel ? 'Get ticket' : ticketCtaLabel(payLabel)
   const soldOut = !!selected?.soldOut
 
   function selectRate(r: FlowRate) {

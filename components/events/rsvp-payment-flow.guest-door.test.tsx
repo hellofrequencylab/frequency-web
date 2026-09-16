@@ -166,9 +166,9 @@ describe('the signed-out door on a priced RSVP-mode event is the guest RSVP form
 
   it('a purchasable door still wins when checkout can charge', () => {
     const el = mount(<RsvpPaymentFlow {...signedOut({ mode: 'rsvp', paymentsReady: true })} />)
-    // The guest TICKET form, not the guest RSVP form: its button carries the price AND the verb
-    // that says money moves.
-    expect(el.textContent).toContain('Buy ticket')
+    // The guest TICKET form, not the guest RSVP form: its button carries the price, in the same
+    // words the signed-in door uses (LIVE-366).
+    expect(el.textContent).toContain('Get tickets')
     expect(el.textContent).not.toContain('at the door')
   })
 })
