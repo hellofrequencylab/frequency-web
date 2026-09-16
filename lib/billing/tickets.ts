@@ -1363,6 +1363,11 @@ export async function recordTicketFromSession(session: Stripe.Checkout.Session):
     // Written on the row THIS delivery flipped, so a redelivery neither re-enters this loop nor
     // rewrites it, and the value written is byte-identical to the one already there.
     if (isGuest) await persistGuestEmail(row.id, guestEmail, session.id)
+    // THE SEAT (owner report 2026-09-16). A paid ticket takes the same going RSVP a free claim
+    // takes, so the buyer is counted, shown and reminded like everyone else in the room. Runs for a
+    // member and a guest alike, once, on the row THIS delivery flipped -- a redelivery neither
+    // re-enters this loop nor re-seats anyone, and the RPC is idempotent besides.
+    await seatTicketHolder(row.id, session.id)
     // A BUYER IS A CONTACT (ADR-913). This is what makes "we charge once for the introduction" true:
     // the first sale from someone Frequency sourced is network-rated, this records the relationship,
     // and every later sale to that person resolves to their own audience at 0%.
@@ -1521,6 +1526,80 @@ async function markTicketPaymentProcessing(session: Stripe.Checkout.Session): Pr
   } catch (e) {
     console.error('[tickets] starting the settlement clock threw; the seat may be resold', {
       sessionId: session.id,
+      error: e instanceof Error ? e.message : String(e),
+    })
+  }
+}
+
+/**
+ * Give the ticket holder the seat they paid for (owner report 2026-09-16).
+ *
+ * 🔴 WHY A PAID TICKET NEEDED THIS AT ALL. A seat was two rows in two tables (LIVE-317): an
+ * `event_rsvps` row, or a succeeded `event_tickets` row for someone who paid and therefore had NO
+ * RSVP row. Every roster-shaped reader learned the union; the PUBLIC event page never did, so an
+ * owner who bought a ticket, got the receipt and saw "Ticket confirmed" was still told to "Be the
+ * first to RSVP" on the page they were standing on. The free-tier claim has recorded itself as a
+ * going RSVP since ADR-410; a paid ticket now lands on the same row, and the union readers already
+ * dedupe a person holding both (manage/load.ts lists them once, on the RSVP row).
+ *
+ * ⚠️ IT SENDS NOTHING AND AWARDS NOTHING, and that is the reason it is an RPC rather than a call
+ * into `setRsvpStatus`. That action sends an RSVP confirmation and awards the first-RSVP gem; this
+ * loop has ALREADY sent the buyer their receipt (LIVE-316 / LIVE-320) and told the host (LIVE-345).
+ * Routing the seat through it would send two emails for one act. The receipt is the confirmation.
+ *
+ * Best-effort on the WRITE, loud on the MISS -- the same split `persistGuestEmail` makes and for
+ * the same reason: the ticket is already `succeeded` when this runs, so throwing would fail a
+ * webhook whose money work is done, while a paid seat that never appears is the defect this
+ * function exists to close, so every way of missing one is logged.
+ *
+ * Untyped reach (ADR-246): `record_ticket_seat` arrives with migration 20270345005100 and
+ * lib/database.types.ts has not been regenerated for it. Same shape `markTicketPaymentProcessing`
+ * uses for `payment_processing_at`.
+ */
+async function seatTicketHolder(ticketId: string, sessionId: string): Promise<void> {
+  try {
+    const { data, error } = await (db() as unknown as {
+      rpc: (
+        fn: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ data: unknown; error: { message: string } | null }>
+    }).rpc('record_ticket_seat', { _ticket_id: ticketId })
+    if (error) {
+      console.error('[tickets] could not seat a settled ticket holder; they hold a ticket and no seat', {
+        ticketId,
+        sessionId,
+        error: error.message,
+      })
+      return
+    }
+    const rows = (Array.isArray(data) ? data : []) as { seat_status?: string | null }[]
+    if (rows.length === 0) {
+      // The RPC returns no rows for a ticket that is not live, or one carrying neither identity.
+      // Reaching here from the settle loop means the row WAS just flipped to succeeded, so this is
+      // the identity-less case `persistGuestEmail` also reports -- said again from the seat's side
+      // because the consequence is different: there, unclaimable; here, uncounted.
+      console.error('[tickets] a settled ticket seated nobody; it carries neither a buyer nor an address', {
+        ticketId,
+        sessionId,
+      })
+      return
+    }
+    // THE ONE OUTCOME THAT WOULD BE A LIE. The capacity trigger coerces a `going` insert to
+    // `waitlist` on a full event, and 20270345005100 exempts a ticket-backed seat precisely so a
+    // person who paid is never put on a waitlist. If that exemption is ever lost, this is where it
+    // shows -- and it must never be silent, because the buyer is being told they are in.
+    const seat = rows[0]?.seat_status ?? null
+    if (seat !== 'going') {
+      console.error('[tickets] A PAID SEAT DID NOT LAND ON going; the buyer paid for a seat they do not hold', {
+        ticketId,
+        sessionId,
+        seatStatus: seat,
+      })
+    }
+  } catch (e) {
+    console.error('[tickets] seating a settled ticket holder threw; they hold a ticket and no seat', {
+      ticketId,
+      sessionId,
       error: e instanceof Error ? e.message : String(e),
     })
   }

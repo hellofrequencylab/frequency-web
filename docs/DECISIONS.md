@@ -44037,64 +44037,140 @@ same surface.
 - ⚠️ **The featured rule is still positional**, just positional in a way that cannot be moved by its
   neighbours. A real `featured` flag on the tier model remains the honest end state, and this
   function is still the single place that would change.
+## ADR-1380: a paid ticket is a seat in the room, and the RSVP switch stays on a ticketed event (2026-09-16)
 
-## ADR-1380: Recover the applied migration the tree never recorded, and keep the recovery honest (2026-09-16)
+**Status:** Accepted · amends [ADR-826](#adr-826) (one join function per event) and the consequence
+LIVE-317 recorded · migration `20270345005100` · owner ruling, 2026-09-16
 
-**Status:** Accepted · **Applies** [ADR-1007](DECISIONS.md) (repo⇄ledger parity, rule 4) · **Repeats
-the lesson of** [ADR-1372](DECISIONS.md) · corroborated by
-`supabase/migrations/20270345005100_a_paid_ticket_is_a_seat_in_the_room.sql`
+**Context.** The owner bought a ticket through the on-page checkout, got the receipt and the
+"Ticket confirmed" line, and the event page went on saying **"Be the first to RSVP."**
 
-**Context.** Version `20270345005100`, name `a_paid_ticket_is_a_seat_in_the_room`, was applied to
-production on 2026-09-16 with no file in the tree. `pnpm check:migrations` rule 4 went red on `main`
-and therefore on every open PR: 701 repo files against 702 applied rows. A ledger row with no repo
-file is SQL production ran that a fresh environment will never reproduce, and the tree stops
-describing the database until it is recovered.
+That was not a bug in the settle path. A seat had been **two rows in two tables** since LIVE-317:
+an `event_rsvps` row, or a succeeded `event_tickets` row for someone who paid on a tickets-mode
+event and therefore had *no* RSVP row. ADR-826 made it a rule — one join function per event, never
+both — and every roster-shaped reader was taught the union: the host roster
+(`manage/load.ts`, which already dedupes a person holding both and lists them once on the RSVP
+row), the reminder cron, host-attested attendance (`lib/events/attendance.ts`), the CRM. The
+**public event page** was the one reader that never learned it. `goingRsvps` filtered `event_rsvps`
+alone, so `going` read 0 for a room with a paid ticket holder standing in it, and `WarmProof`
+printed its empty-state invite at the person who had just paid.
 
-🔴 **The ledger's `statements` column was NULL for the row**, so the recovery route the gate's own
-message recommends was unavailable. The SQL had to be reconstructed from the live catalog instead:
-`pg_get_functiondef` for the two functions, `pg_attribute` + `pg_constraint` + `pg_indexes` for the
-column, its foreign key and its index, and `obj_description` / `col_description` for both comments,
-which are the original author's words and were kept verbatim.
+**Decision.** A settled ticket mints the buyer's going RSVP. Two readings were available and the
+owner's report chose between them.
 
-This is the second time in one session. ADR-1372 recorded the same failure with three tables, and
-the cause is the same: a migration reaches production through a path that does not also write the
-file, and nothing notices until the next PR runs the gate. The gate is working; what is missing is
-that applying and committing are not one act.
+| | Teach the page the union | **Mint the seat** |
+|---|---|---|
+| Blast radius | One reader today, and every future reader of "who is going" | One write, in the settle path |
+| Fits ADR-826 | Yes — keeps one join function | No — amends it |
+| Fits the owner's other two asks | No | Yes |
+
+The owner asked for two more things in the same breath: the RSVP control should be **visible on a
+ticketed event**, and a press with no ticket should **open the ticket checkout**. Both say RSVP and
+tickets *coexist*. Once they coexist, "the ticket is instead of the answer" stops being true, and
+the seat belongs where every other seat already is.
+
+The shape is not new. The **free-tier claim has recorded itself as a going RSVP since ADR-410**
+(`ticket-actions.ts`: `if (r.free) await setRsvpStatus(eventId, 'going')`). What changes is only
+which of the two tables a *paid* seat lives in.
+
+**Three SQL properties, and one of them carries the money.**
+
+1. `record_ticket_seat(_ticket_id)` mints for a member or a guest, idempotently on both partial
+   unique indexes `event_rsvps` carries. A person who already answered is **moved to going** rather
+   than left alone: buying is a later and stronger signal than "maybe" or "can't go", and a payment
+   settles a pending approval request. That arm leaves `from_ticket_id` **null**, so a refund can
+   never delete an answer the person made themselves.
+2. 🔴 `enforce_event_rsvp_capacity()` **returns early for a row backed by a live paid ticket.** The
+   trigger coerces a `going` insert to `waitlist` on a full event. A ticket's inventory was already
+   decided somewhere else, under a different lock, against a different number —
+   `event_ticket_types.quantity`, taken by `reserve_ticket_atomic` and re-measured by
+   `settle_ticket_atomic`. Letting the RSVP trigger coerce a paid seat would take a person's money
+   and then put them on a waitlist for the thing they bought: SCAN-557's failure with the money
+   attached. The seat was sold; it is not re-auctioned.
+3. `refund_ticket_atomic()` releases the seat **its own ticket** minted, in the statement that
+   already flips the ticket and unbumps the tier.
+
+**It sends nothing and awards nothing**, which is why it is an RPC rather than a call into
+`setRsvpStatus`. That action emails a confirmation and pays the first-RSVP gem; the settle path has
+already sent the buyer a receipt (LIVE-316 / LIVE-320) and told the host (LIVE-345). Routing the
+seat through it would send two emails for one act. **The receipt is the confirmation.**
+
+**The UI half.** `page.tsx`'s answer-switch cascade carried an explicit `null` for a ticket holder
+and `!ticketsMode &&` on every surrounding branch, so on a ticketed event **no member saw an RSVP
+control at all**. A tickets-mode branch now sits *above* those (below them it would fall through to
+the same `null`) and renders `TicketedRsvpControls`. That component reads the ticket door out of a
+small client context — `components/events/join-intent.tsx`, because the event page is a Server
+Component and cannot hand a closure from one client island to another — and routes a ticketless
+Going press into the checkout instead of recording an answer nobody paid for. The segment greys and
+says where to go next, so the press is never inert.
+
+**Consequences.**
+
+- `RsvpControls` gains `goingNeedsTicket`. Its `allowGoing` and `onGoingIntercept` props already
+  existed for `RsvpPaymentFlow` and were **dead on this page**; they are now load-bearing.
+- With **no door listening** — sold out, sales closed, no payout account, a manager's preview — the
+  switch falls back to an ordinary RSVP. That is the honest control, not a degradation: with
+  nothing to buy, saying you are coming is the only thing the page can mean.
+- Outside the host's **booking window** with no door, the Going segment is not offered at all.
+  `setRsvpStatus` returns without writing for `going` there, so showing it would read as saved and
+  have recorded nothing.
+- A ticketed event's Going segment **never relabels itself "Join waitlist"**. `isFull` measures
+  `events.capacity`; the number that decides whether a ticketed seat is left is the tier's quantity.
+- The comments across `attendance.ts`, `manage/load.ts`, `manage/sections.tsx` and the reminder
+  cron that say *"a ticket holder has no RSVP row"* now describe the pre-2026-09-16 state. They are
+  left standing deliberately: the union they justify is still correct and still load-bearing for a
+  **guest** ticket claimed after the fact, and rewriting four files of accurate prose about a union
+  that still runs would be churn. LIVE-372 owns the wording pass.
+
+**Verified.** The `on conflict` inference over both partial indexes, the case-insensitive guest
+match, and the null `from_ticket_id` on the update arm were each asserted against the real project
+on 2026-09-16, with a control that deliberately asserted the wrong thing and fired as it must. The
+backfill of the one pre-existing settled ticket returned `minted=true, seat_status=going`, and a
+second call returned `minted=false`.
+
+## ADR-1381: Ledger parity is a NAME check, so a reconstructed migration can be wrong and still pass (2026-09-16)
+
+**Status:** Accepted · **Qualifies** [ADR-1007](DECISIONS.md) (repo⇄ledger parity) · **Occasioned
+by** [ADR-1380](DECISIONS.md) · corroborated by `scripts/maintenance/ledger-parity.mjs`
+
+**Context.** Migration `20270345005100` reached production before its file reached `main`, and
+`check:migrations` rule 4 went red on every open PR: 701 repo files against 702 applied rows. The
+gate's message says to recover the SQL from the ledger, which keeps `statements`. 🔴 **That column
+was NULL for this row**, so the only route left was to reconstruct the migration from the live
+catalog — `pg_get_functiondef`, `pg_attribute`, `pg_constraint`, `pg_indexes`, `obj_description`.
+
+That reconstruction was done, it was careful, and **it was incomplete.** It recovered
+`event_rsvps.from_ticket_id`, its foreign key, its index, `record_ticket_seat` and the `released`
+CTE added to `refund_ticket_atomic`. It MISSED two things the author's own file (ADR-1380) carries:
+the rewrite of `enforce_event_rsvp_capacity()` that lets a paid ticket past the waitlist, and
+`event_tickets_live_seat_idx`. The trigger rewrite is the migration's actual subject — it is what
+the name "a paid ticket is a seat in the room" refers to — and the sweep walked past it because the
+function already existed in the tree, so its presence read as agreement.
+
+**The finding, which outlives this incident.** Parity compares a sha256 of the versions and a sha256
+of the version+name pairs. **Nothing compares the SQL.** So the incomplete reconstruction would have
+turned rule 4 green, 702 against 702, both digests equal — and left a tree that replays a *different*
+migration than the one production ran, under a gate that had just certified them identical. A gate
+that can only see names cannot notice a body that is wrong, and the failure it was answering is
+precisely a body that is missing.
 
 **Decision.**
 
-1. **Recover, do not improve.** Every statement in the recovered file is idempotent and the two
-   function bodies are byte-equal to what production runs today. The file does NOT fix anything it
-   found. Recovering a migration and changing it are two different acts, and performing both at
-   once is how a tree quietly stops describing production — the next person cannot tell which lines
-   were replayed and which were invented.
-2. **State the recovery in the file's own header**, including which catalog query each part came
-   from. A reader six months out needs to know that this file was reconstructed rather than
-   recorded, because the confidence attached to the two is not the same.
-3. **Prove the parity numerically rather than by eye.** The gate prints a sha256 of the versions
-   and a sha256 of the version+name pairs for both sides. After the file landed, the repo side
-   reproduces `33942a62…` and `c5b063a2…`, which are exactly the ledger digests CI printed when it
-   failed. 702 files, 702 rows, both digests equal: the drift is closed, and the check is a string
-   comparison rather than a judgement.
-4. **`record_ticket_seat` keeps its verdict in `scripts/function-grants.txt` (`internal`).** The
-   live ACL grants EXECUTE to `service_role` only, and the recovered file restates the named revoke,
-   so the manifest row describes the tree as it is — which is that file's stated rule.
+1. **A catalog reconstruction is a last resort, and it is not evidence of completeness.** Reading
+   back the objects you thought to ask about proves those objects match. It says nothing about the
+   objects you did not think to ask about, and a migration is defined by the set, not the members.
+2. **Before reconstructing, look for the author's file on the remote — `git log --all` is not
+   enough.** It searches local refs. The file was on an open PR branch that had never been fetched,
+   so the search that said "this exists nowhere" was reading a smaller world than it appeared to.
+   `git fetch --all` first, or query the host for branches carrying the path.
+3. **When the author's file arrives, take it whole.** It did, in #2661, and the reconstruction was
+   discarded rather than merged beside it. Two files describing one migration is worse than the
+   drift either was meant to close.
+4. **Do NOT "fix" this by teaching rule 4 to compare bodies.** It cannot: the ledger's `statements`
+   is nullable and was null here, which is the condition that created the whole episode. The honest
+   move is to stop treating a green rule 4 as a statement about content, which is what this ADR
+   records.
 
-**What the recovered migration does**, recorded here because nothing else in the tree says it:
-buying a ticket and holding a seat were two separate facts. `event_tickets` carried the money;
-`event_rsvps` is what the host list, the capacity trigger, the reminders and the door all read, so a
-buyer who paid and never pressed RSVP was, to every one of those, not attending.
-`record_ticket_seat(_ticket_id)` mints that seat idempotently (by profile for a member, by lowercased
-address for a guest, riding the partial unique indexes `event_rsvps` already carries).
-`event_rsvps.from_ticket_id` records which ticket minted a seat and is set only on the insert that
-creates it, so `refund_ticket_atomic`'s new `released` CTE can delete the seats a refunded ticket
-minted and nothing else: someone who RSVP'd first and bought afterwards keeps the answer they gave.
-
-**Residuals, stated rather than hidden.**
-
-- ⚠️ **The function has no caller in the tree.** The settle path does not mint the seat yet, so the
-  migration's purpose is unrealised in production today. That is the state the recovery records;
-  wiring the caller is `LIVE-370` and is deliberately not done here.
-- ⚠️ **`lib/database.types.ts` does not carry `from_ticket_id` or `record_ticket_seat`.** No code
-  reads either, so `check:schema-contract` is green and a future reader that adds one will be told
-  to regenerate. A types regen is a large unrelated diff and does not belong in a recovery.
+**Residual.** `statements` being NULL on an applied row is unexplained and is the upstream cause of
+all of this. Nothing in the repo can set it after the fact, and no gate notices it. Recorded rather
+than solved.

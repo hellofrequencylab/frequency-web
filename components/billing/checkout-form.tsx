@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import {
   CheckoutElementsProvider,
+  ExpressCheckoutElement,
   PaymentElement,
   useCheckout,
 } from '@stripe/react-stripe-js/checkout'
@@ -86,15 +87,17 @@ function PayForm({
   const [error, setError] = useState<string | null>(null)
   /** Stripe has painted its fields. Until then the skeleton holds their exact space. */
   const [ready, setReady] = useState(false)
+  /**
+   * Whether the express row will render anything at all (LIVE-370). `undefined` until Stripe says;
+   * `false` means this device offers no Link and no wallet, so the row is not rendered rather than
+   * left as an empty gap above the card.
+   */
+  const [expressAvailable, setExpressAvailable] = useState<boolean | undefined>(undefined)
 
-  if (result.type === 'loading') {
-    return (
-      <div className="flex items-center gap-2 py-4 text-body-sm text-muted">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Preparing checkout…
-      </div>
-    )
-  }
+  // The same skeleton as everywhere else: with a promised secret this branch is now the COMMON
+  // one, held from the press until the session lands, so it has to be the final shape rather than
+  // a spinner the box then resizes away from.
+  if (result.type === 'loading') return <CardSkeleton />
 
   if (result.type === 'error') {
     // The session itself could not be loaded. Nothing here can recover it, and the hosted page can.
@@ -137,8 +140,88 @@ function PayForm({
     }
   }
 
+  /**
+   * The Link / wallet buttons confirm through the SAME session as the card form (LIVE-370).
+   *
+   * `checkout.confirm` takes the express event as `expressCheckoutConfirmEvent`, so there is one
+   * session, one settle and one confirmation whichever button the buyer used. Nothing downstream
+   * needs to know which it was.
+   *
+   * 🔴 `event.paymentFailed(...)` IS NOT OPTIONAL ON A DECLINE. Stripe's payment interface stays
+   * open waiting for a verdict, so returning without calling it leaves the buyer inside a sheet
+   * that never resolves. That is why every failing branch below calls it before anything else.
+   */
+  async function confirmExpress(event: {
+    paymentFailed: (o: { reason: 'fail' }) => void
+  }) {
+    setError(null)
+    setBusy(true)
+    try {
+      const res = await checkout.confirm({
+        redirect: 'if_required',
+        expressCheckoutConfirmEvent: event as never,
+      })
+      if (res.type === 'error') {
+        event.paymentFailed({ reason: 'fail' })
+        setError(res.error.message ?? 'That payment did not go through.')
+        setBusy(false)
+        return
+      }
+      onDone()
+    } catch (err) {
+      console.error('[checkout] express confirm threw; falling back to hosted', err)
+      event.paymentFailed({ reason: 'fail' })
+      setBusy(false)
+      onFellBack()
+    }
+  }
+
   return (
     <form onSubmit={submit} className="space-y-3">
+      {/* ── LINK AND THE DEVICE WALLETS, AS THEIR OWN BUTTONS ──────────────────────────────────
+          The owner asked for "Pay $44" and "Link" split apart. This is the only supported way to
+          do it: the express element renders Link (and whatever wallet the device actually has) as
+          real buttons, above the card form, confirming through the same session.
+
+          ⚠️ WALLETS ARE NOT SUPPRESSED TO MAKE IT "Link only". Apple Pay and Google Pay are the
+          fastest paths a phone has, and killing them to satisfy the letter of the ask would be a
+          regression for exactly the buyers who convert best. Link is ordered FIRST instead, so it
+          is the button a desktop buyer sees.
+
+          `link` takes only 'auto' | 'never' -- there is no 'always' -- so Stripe decides whether
+          the button can appear at all, and `onReady` is how we find out. A row that would render
+          nothing is not rendered, rather than left as an empty gap above the card fields. */}
+      {expressAvailable !== false && (
+        <div className={expressAvailable ? 'space-y-3' : 'h-0 overflow-hidden'}>
+          <ExpressCheckoutElement
+            options={{
+              buttonHeight: 44,
+              buttonTheme: {},
+              buttonType: {},
+              layout: { maxColumns: 2, maxRows: 1, overflow: 'never' },
+              paymentMethodOrder: ['link'],
+              paymentMethods: {
+                link: 'auto',
+                applePay: 'auto',
+                googlePay: 'auto',
+                paypal: 'never',
+                amazonPay: 'never',
+                klarna: 'never',
+              },
+            }}
+            onReady={(e) => setExpressAvailable(!!e.availablePaymentMethods)}
+            onConfirm={confirmExpress}
+            // The buyer closed Stripe's sheet without paying. Not an error, and not a fallback --
+            // the card form below is still standing and still theirs to use.
+            onCancel={() => setBusy(false)}
+          />
+          <div className="flex items-center gap-3">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-2xs text-muted">or pay by card</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+        </div>
+      )}
       {/* ── EVERY WAY TO PAY, IN THIS ONE AREA ────────────────────────────────────────────────
           `accordion` + `defaultCollapsed: false` puts the card fields open on arrival with the
           other methods listed beneath, so a buyer who just wants to type a card types it and a
@@ -176,7 +259,11 @@ function PayForm({
           // expanded, every other method is a collapsed row beneath it, and opening one closes
           // the other. That is Stripe's own behaviour, so the swap costs us no state to keep and
           // cannot drift out of sync with what the element thinks is selected.
-          wallets: { applePay: 'auto', googlePay: 'auto', link: 'auto' },
+          // The express row above owns Link and the wallets now, so the card form must not offer
+          // them a second time -- that was the duplication the owner saw as "the Link section".
+          // Safe because the row only hides itself when Stripe reports NO available method, which
+          // is the same condition under which these would not have rendered here either.
+          wallets: { applePay: 'never', googlePay: 'never', link: 'never' },
         }}
         // Hidden rather than unmounted: the element has to be IN THE TREE to load at all, so
         // unmounting it until ready would mean it never became ready. `h-0 overflow-hidden` keeps
@@ -207,7 +294,20 @@ export default function CheckoutForm({
   onFellBack,
   onDone,
 }: {
-  clientSecret: string
+  /**
+   * A secret, or a PROMISE of one (LIVE-371).
+   *
+   * 🔴 THE PROMISE IS THE POINT. `CheckoutElementsProvider` accepts `Promise<string> | string` and
+   * calls `initCheckoutElementsSdk` the moment it mounts, so handing it the IN-FLIGHT server call
+   * lets Stripe start initialising while the session is still being built. Waiting for a string
+   * made those two waits serial for no reason -- the last one left after the script and the chunk
+   * were both moved off the click.
+   *
+   * ⚠️ IT MUST REJECT, not hang, on every path that will never produce a secret: a sold-out tier,
+   * a free claim, the hosted degrade. A promise nobody settles leaves Stripe initialising forever
+   * behind a panel that looks like it is still loading.
+   */
+  clientSecret: string | Promise<string>
   /** Shown on the submit button as "Pay <label>". Omitted where the control has no single price
    *  to name (a cart, a variable order): the button then reads simply "Pay". */
   priceLabel?: string

@@ -35,6 +35,8 @@ import { isStaff, asWebRole } from '@/lib/core/roles'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { updateEventField } from '../admin-actions'
 import { RsvpControls } from '@/components/events/rsvp-controls'
+import { TicketedRsvpControls } from '@/components/events/ticketed-rsvp-controls'
+import { JoinIntentProvider } from '@/components/events/join-intent'
 import { readEventCheckInEnabled } from '@/lib/events/checkin-enabled'
 import { readEventSpecialInstructions } from '@/lib/events/special-instructions'
 import { rsvpWindowStateFromDetails, rsvpWindowNote } from '@/lib/events/rsvp-window'
@@ -1402,6 +1404,12 @@ export default async function EventDetailPage({
 
   // The Join column's primary action — reused in the aside AND the mobile sheet.
   const joinActions = (
+    /* ONE PROVIDER OVER BOTH DOORS (owner report 2026-09-16). The ticket cascade and the answer
+       switch below are two client islands; this is what lets the switch open the checkout without
+       either importing the other. It wraps the whole box rather than one branch because which
+       branch renders is decided several ternaries down. A free event mounts it and no door ever
+       registers, which is exactly the null case the context is built to survive. */
+    <JoinIntentProvider>
     <div className="space-y-4">
       <div className="space-y-4 rounded-card border border-border bg-surface p-4">
         <div className="flex items-center gap-2">
@@ -1696,6 +1704,42 @@ export default async function EventDetailPage({
              action would refuse. Anyone who ALREADY answered falls through to the ordinary controls
              below: closing RSVPs stops new answers, it does not lock people in. */
           <p className="text-body-sm text-muted">{rsvpWindowLine}</p>
+        ) : ticketsMode && myProfileId && !hasEnded ? (
+          /* 🔴 THE ANSWER SWITCH IS ON A TICKETED EVENT NOW (owner report 2026-09-16), reversing
+             the half of ADR-826 that said an event has ONE join function. This branch used to be
+             `ticketsMode && ownsTicket && !isPast ? null` -- an explicit nothing for a ticket
+             holder -- and every branch around it was guarded `!ticketsMode &&`, so on a ticketed
+             event NO member ever saw an RSVP control. The owner's ruling: "RSVP buttons should
+             always be visible", and a press with no ticket "goes grey and opens the ticket
+             payment section".
+
+             It sits ABOVE the RSVP-mode branches because those are all written `!ticketsMode &&`
+             and would otherwise fall through to `null` exactly as before.
+
+             A TICKET HOLDER gets the ordinary switch and their Going segment is already lit,
+             because the settle path now mints their seat (migration 20270345005100) -- that is
+             the same change that stopped this page telling a paying buyer to "Be the first to
+             RSVP". They can still answer Maybe or Can't go, which is real information for the
+             host and does not touch the ticket they hold.
+
+             ANYONE ELSE gets the intercepted switch, and only while a ticket door is actually
+             mounted to intercept INTO -- TicketedRsvpControls reads that from the join-intent
+             context and falls back to an ordinary RSVP when there is nothing to buy (sold out,
+             sales closed, no payout account). `isFull` is passed for symmetry only: the wrapper
+             suppresses the waitlist relabel on a ticketed event, where the seat count that
+             matters is the tier's quantity rather than `events.capacity`. */
+          <TicketedRsvpControls
+            holdsTicket={ownsTicket}
+            rsvpWindowOpen={rsvpWindowOpen}
+            eventId={event.id}
+            slug={event.slug}
+            status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
+            plusOnes={myPlusOnes}
+            isFull={capacityInfo.isFull}
+            initialNote={myRsvpNote}
+            requiresApproval={extra?.rsvp_requires_approval === true}
+            approvalStatus={myApprovalStatus}
+          />
         ) : !ticketsMode && myProfileId && !hasEnded ? (
           !(isPaidEvent && hasTiers) ? (
             <RsvpControls
@@ -1712,7 +1756,7 @@ export default async function EventDetailPage({
               approvalStatus={myApprovalStatus}
             />
           ) : null
-        ) : ticketsMode && ownsTicket && !isPast ? null : myProfileId && isWaitlisted ? (
+        ) : myProfileId && isWaitlisted ? (
           <form action={toggleRSVP.bind(null, event.id)}>
             <button
               type="submit"
@@ -1784,6 +1828,7 @@ export default async function EventDetailPage({
         )}
       </div>
     </div>
+    </JoinIntentProvider>
   )
 
   // Stamp the resolved per-viewer context into the request-scoped holder so EVERY event interior

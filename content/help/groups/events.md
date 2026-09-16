@@ -16,7 +16,8 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 ## RSVPing
 
 - Open an event to see the details and **RSVP** so the host knows you're coming. Not sure yet? Mark yourself **Interested** instead. It signals you're curious without claiming a spot.
-- **On a ticketed event there is no separate RSVP.** That box is headed **Tickets**, and buying the ticket is how you say you are coming. You pay on the event page itself: tap **Get tickets**, and the card fields open underneath.
+- **On a ticketed event, buying the ticket is how you say you are coming.** That box is headed **Tickets**, and you pay on the event page itself: tap **Get tickets**, and the card fields open underneath. Your ticket counts as a Going, so you show up in the count and on the host's list like anyone else.
+- **The answer switch is there on a ticketed event too**, under the Tickets box. Tap **Going** before you have a ticket and it opens the card fields instead of recording an answer, because on these events the ticket is the answer. **Interested** and **Can't go** you can give either way, ticket or no ticket, and the host reads them. Saying **Can't go** tells the host you are not coming; it does not cancel or refund a ticket you have already bought. For that, ask the host.
 - Bringing people? On a "going" RSVP you can add **+1, +2 guests** so the host has an accurate headcount.
 - The event page shows **who's already going** (faces, the count, your guests, and anyone from your Circles) so you can see the room before you arrive.
 - Changed your plans? You can update your RSVP anytime, right up until the event ends. A gathering that has already started still takes an answer, so you can say you are coming to something running now, or withdraw from a session part way through.
