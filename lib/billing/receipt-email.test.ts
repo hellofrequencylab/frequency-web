@@ -24,7 +24,12 @@ const m = vi.hoisted(() => ({
   spaceError: null as null | { message: string },
 }))
 
-vi.mock('@/lib/email', () => ({ enqueueEmail: (p: Record<string, unknown>) => m.enqueueEmail(p) }))
+// Only the SEND is stubbed. `emailShell` and the palette come from the real module, so what this
+// file asserts about the rendered message is what a mailbox actually receives.
+vi.mock('@/lib/email', async (importActual) => ({
+  ...(await importActual<typeof import('@/lib/email')>()),
+  enqueueEmail: (p: Record<string, unknown>) => m.enqueueEmail(p),
+}))
 vi.mock('@/lib/comms/send-gate', () => ({
   resolveSendGate: (...args: unknown[]) => {
     m.gateCalls.push(args)
@@ -255,6 +260,38 @@ describe('the rendered message', () => {
     expect(html).toContain('https://example.test/orders')
     expect(html).not.toContain('—')
     expect(text).not.toContain('—')
+  })
+
+
+  // The brand wrapper (lib/email.ts `emailShell`). Until 2026-09-16 this module hand-rolled a bare
+  // `<div>`: no doctype, no charset, no wordmark, no unsubscribe footer. A money email that does not
+  // look like a Frequency email is the one people forward to their bank.
+  it('renders inside the Frequency shell, not a bare div', () => {
+    const html = receiptHtml(content)
+    expect(html).toContain('<!DOCTYPE html>')
+    expect(html).toContain('<meta charset="UTF-8">')
+    expect(html).toContain('>frequency</a>')
+    expect(html).not.toMatch(/[\u2014\u2013]/)
+  })
+
+  // LIVE-365. This body is shared by all four money receipts, and two of those loops serve people
+  // who deliberately have no account: a signed-out donor and a guest payer. The shell's default
+  // footer asserts they joined, which is a FACTUAL CLAIM in a transactional email -- the one line a
+  // confused recipient acts on, by marking it spam.
+  it('tells the payer why they got it without claiming they joined', () => {
+    const html = receiptHtml(content)
+    expect(html).toContain('This is a receipt for a payment you made through Frequency.')
+    expect(html).not.toContain('joined Frequency')
+  })
+
+  // A receipt is transactional, so CAN-SPAM exempts it from the opt-out requirement. Offering the
+  // control anyway implies a buyer can opt out of proof of payment, and for a guest it points at a
+  // settings page they cannot reach. The sender's address is NOT exempt and stays.
+  it('carries no unsubscribe control but keeps the sender address line', () => {
+    const html = receiptHtml(content)
+    expect(html).not.toContain('Unsubscribe or manage emails')
+    expect(html).not.toContain('/settings/notifications')
+    expect(html).toMatch(/color:#A89E8C;">[^<]+</)
   })
 
   it('greets a payer with no name plainly', () => {

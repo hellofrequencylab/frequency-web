@@ -39,7 +39,17 @@
 import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { enqueueEmail } from '@/lib/email'
+import {
+  enqueueEmail,
+  emailShell,
+  RECEIPT_FOOTER,
+  EMAIL_INK,
+  EMAIL_MUTED,
+  EMAIL_RULE,
+  EMAIL_ACTION,
+  EMAIL_ACTION_INK,
+  EMAIL_P,
+} from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { profileAccountEmail } from '@/lib/profiles/account-email'
 import { formatPriceCents } from '@/lib/commerce/types'
@@ -87,14 +97,10 @@ export function receiptDate(when: Date = new Date()): string {
 
 // ── The message body ───────────────────────────────────────────────────────────────────────────
 //
-// Email HTML, not UI chrome: mail clients read no design tokens, so the palette is the same literal
-// ink / muted / rule values lib/email.ts and lib/billing/tips-notify.ts already use.
-const EMAIL_INK = '#3D352A' // token-ok: email HTML, mirrors lib/email.ts
-const EMAIL_MUTED = '#6B6253' // token-ok: email HTML, mirrors lib/email.ts
-const EMAIL_RULE = '#E9E1D4' // token-ok: email HTML, mirrors lib/email.ts
-const EMAIL_ACTION = '#E2912F' // token-ok: email HTML, mirrors lib/email.ts
-const EMAIL_ACTION_INK = '#FFFFFF' // token-ok: email HTML, mirrors lib/email.ts
-const EMAIL_P = 'font-size:15px;line-height:1.6;margin:0 0 20px;'
+// Email HTML, not UI chrome: mail clients read no design tokens, so the palette is literal hex,
+// imported from lib/email.ts rather than re-declared here. The BODY is composed below; the brand
+// wrapper (doctype, head, wordmark, card, unsubscribe footer) comes from `emailShell`, so a money
+// receipt is the same object as a ticket receipt.
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -129,10 +135,16 @@ export function receiptHtml(c: ReceiptContent): string {
     c.actionLabel && c.actionUrl
       ? `<p style="margin:0 0 20px;"><a href="${escapeHtml(c.actionUrl)}" style="display:inline-block;background:${EMAIL_ACTION};color:${EMAIL_ACTION_INK};font-size:15px;font-weight:700;text-decoration:none;padding:12px 26px;border-radius:10px;">${escapeHtml(c.actionLabel)}</a></p>`
       : ''
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">
+  // RECEIPT_FOOTER, not the shell's default: this body is shared by all four money receipts
+  // (donation, tip, order, subscription), and two of those loops serve people who deliberately
+  // have no account, so the default "you joined Frequency" line would be false. See LIVE-365.
+  return emailShell(
+    `
 <p style="${EMAIL_P}color:${EMAIL_INK};">${escapeHtml(greeting(c.greetingName))}</p>
 <p style="${EMAIL_P}color:${EMAIL_INK};">${escapeHtml(c.lead)}</p>
-${detail}${action}${closing}</div>`
+${detail}${action}${closing}`,
+    RECEIPT_FOOTER,
+  )
 }
 
 export function receiptText(c: ReceiptContent): string {
