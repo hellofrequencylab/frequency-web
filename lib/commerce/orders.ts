@@ -146,6 +146,89 @@ export interface SpaceEarnings {
   networkOrderCount: number
 }
 
+/**
+ * THE TICKET ARM (LIVE-375).
+ *
+ * 🔴 WHY THIS EXISTS. This summary read `commerce_orders` and nothing else, and an event ticket sale
+ * does not write `commerce_orders` -- it writes `event_tickets`, through `settle_ticket_atomic`. The
+ * two never met, so a Space that had sold tickets read $0.00 under a line that said "No sales yet".
+ * Measured on 2026-09-16: `commerce_orders` held ZERO rows platform-wide while a Space had a
+ * succeeded $44.00 ticket, so there was no Space for which the number was right.
+ *
+ * WHICH EVENTS COUNT AS THE SPACE'S. `host_space_id` is the hosting field -- it is what
+ * `payoutProfileId` resolves through, so it is the one that decides where the money was aimed. An
+ * event that names no host Space but BELONGS to this one (`space_id`, no `host_space_id`) counts
+ * too, because that is the shape every Space-created event had before hosting was a separate field,
+ * and excluding it would under-report a Space's own back catalogue.
+ *
+ * ⚠️ WHAT THIS DELIBERATELY DOES NOT DO. It adds nothing to the NETWORK slice. `event_tickets` has
+ * no `source` column, so there is no honest way to say a ticket sale was network-sourced, and the
+ * rule beside `networkGrossCents` is that anything not explicitly 'network' must never inflate it --
+ * brand promise #4 is only provable while that number cannot be overstated. Tickets therefore land
+ * in gross and in the fee, and in neither network figure.
+ *
+ * The window is measured on `succeeded_at`, the instant the money actually landed, rather than on
+ * `created_at`: a ticket row is created when checkout opens, which can be days earlier on a delayed
+ * settlement and is not when the Space earned anything.
+ */
+async function ticketEarnings(spaceId: string, sinceDays?: number): Promise<SpaceEarnings> {
+  const out: SpaceEarnings = {
+    grossCents: 0,
+    feeCents: 0,
+    netCents: 0,
+    refundedCents: 0,
+    orderCount: 0,
+    networkGrossCents: 0,
+    networkFeeCents: 0,
+    networkOrderCount: 0,
+  }
+
+  // Two steps rather than an embedded join: the "hosted by us, or ours and hosted by nobody" rule is
+  // an OR across two columns of the PARENT row, which an embedded filter cannot express without
+  // turning the inner join into a condition the outer query no longer controls.
+  const { data: evRows } = await db()
+    .from('events')
+    .select('id')
+    .or(`host_space_id.eq.${spaceId},and(space_id.eq.${spaceId},host_space_id.is.null)`)
+  const eventIds = ((evRows ?? []) as { id: string }[]).map((e) => e.id).filter(Boolean)
+  if (eventIds.length === 0) return out
+
+  let q = db()
+    .from('event_tickets')
+    .select('amount_cents, platform_fee_cents, status, refunded_at')
+    .in('event_id', eventIds)
+    .not('succeeded_at', 'is', null)
+  if (sinceDays && sinceDays > 0) {
+    q = q.gte('succeeded_at', new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString())
+  }
+  const { data } = await q
+  const rows = (data ?? []) as {
+    amount_cents?: number | null
+    platform_fee_cents?: number | null
+    status?: string | null
+    refunded_at?: string | null
+  }[]
+
+  for (const r of rows) {
+    const amt = Number(r.amount_cents) || 0
+    const fee = Number(r.platform_fee_cents) || 0
+    // `refund_ticket_atomic` sets BOTH the status and the stamp; either alone is enough to mean
+    // refunded, and reading both means a hand-repaired row cannot be counted as revenue twice.
+    // A ticket refund is all-or-nothing today -- there is no partial-refund record on these rows
+    // the way `commerce_orders.metadata` carries one -- so a refunded ticket moves its whole amount.
+    if (r.status === 'refunded' || r.refunded_at) {
+      out.refundedCents += amt
+      out.orderCount += 1
+    } else if (r.status === 'succeeded') {
+      out.grossCents += amt
+      out.feeCents += fee
+      out.orderCount += 1
+    }
+  }
+  out.netCents = out.grossCents - out.feeCents
+  return out
+}
+
 export async function spaceEarningsSummary(spaceId: string, sinceDays?: number): Promise<SpaceEarnings> {
   const empty: SpaceEarnings = {
     grossCents: 0,
@@ -209,6 +292,25 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number):
       }
     }
     out.netCents = out.grossCents - out.feeCents
+
+    // THE TICKET ARM, added rather than replacing (LIVE-375). Its own try/catch is INSIDE the
+    // helper's caller here rather than around the pair, so a failure to read tickets returns the
+    // commerce number instead of collapsing the whole header to zeros -- the same fail-safe posture
+    // the outer catch takes, applied at the finer grain the second source makes possible.
+    let tickets: SpaceEarnings | null = null
+    try {
+      tickets = await ticketEarnings(spaceId, sinceDays)
+    } catch {
+      tickets = null
+    }
+    if (tickets) {
+      out.grossCents += tickets.grossCents
+      out.feeCents += tickets.feeCents
+      out.refundedCents += tickets.refundedCents
+      out.orderCount += tickets.orderCount
+      // networkGross / networkFee / networkOrderCount are deliberately untouched; see ticketEarnings.
+      out.netCents = out.grossCents - out.feeCents
+    }
     return out
   } catch {
     return empty

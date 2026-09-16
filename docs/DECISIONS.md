@@ -44257,3 +44257,64 @@ guard exists, it sits above the Space lookups, and the corpus it matches is non-
 missing needle is `-1` and `-1` is less than every real index — the check read as correct precisely
 when the thing it guards was gone. Both needles are now asserted present before being ordered. It
 was caught by mutation-testing the file, not by reading it.
+
+## ADR-1384: A Space's earnings count ticket sales, added as a second arm rather than a second ledger (2026-09-16)
+
+**Status:** Accepted · **Closes** `LIVE-375` · **Honours** [ADR-914](DECISIONS.md) (never gate the
+transaction) and [ADR-811](DECISIONS.md) §A (the honest receipt) · corroborated by
+`lib/commerce/orders.ts`, `lib/commerce/orders.test.ts`
+
+**Context.** The Space command-center printed "Revenue, last 30 days" from `spaceEarningsSummary()`,
+and that function read exactly one table: `commerce_orders`. An event ticket sale does not write
+`commerce_orders` — it writes `event_tickets`, through `settle_ticket_atomic`. The two never met.
+
+🔴 **Measured rather than reasoned, 2026-09-16:** `commerce_orders` held **zero rows platform-wide**
+while a Space had a succeeded $44.00 ticket and its console said *"No sales yet"*. There was no Space
+for which that number was right. Meanwhile `lib/events/event-stats-core.ts` had computed
+`revenueCents` off succeeded tickets all along, so the event page and the Space page already
+disagreed about the same sale, and the event page was the one telling the truth.
+
+**Decision — a second ARM, not a second ledger.** Two shapes were on the table. Writing a
+`commerce_orders` row when a ticket settles is the tidier model and the right long-term shape; it is
+also a change inside a money path that has to answer what happens to every ticket already sold.
+Reading both sources ships now, is reversible, and makes a live surface stop lying this week. The
+owner picked it: fix the number first, model later. This ADR records the arm; the ledger merge stays
+open as the better end state.
+
+1. **Which events are the Space's.** `host_space_id` names it — that is the field `payoutProfileId`
+   resolves through, so it is the one that decides where the money was aimed — **or** `space_id`
+   names it and no host Space is set, which is the shape every Space-created event had before
+   hosting became its own field. Excluding the second clause would under-report a Space's own back
+   catalogue.
+2. **The window is `succeeded_at`, not `created_at`.** A ticket row is created when checkout opens,
+   which on a delayed-notification payment is days earlier and is not when the Space earned
+   anything.
+3. 🔴 **Tickets add NOTHING to the network slice.** `event_tickets` has no `source` column, so there
+   is no honest way to call a ticket sale network-sourced, and the standing rule beside
+   `networkGrossCents` is that anything not explicitly `'network'` must never inflate it. Brand
+   promise #4 — *"we earn only on the business the network brings you"* — is provable only while
+   that figure cannot be overstated. Tickets land in gross and in the fee, and in neither network
+   figure.
+4. **The fee is READ, never re-derived.** `platform_fee_cents` on the row is what was actually
+   charged at that seller's rate. Recomputing it from the rate ladder here would invent a second
+   opinion about a number Stripe has already acted on.
+5. **A refunded ticket is recognised by EITHER its status or its stamp**, so a hand-repaired row
+   cannot be counted as revenue. Ticket refunds are all-or-nothing today; there is no partial-refund
+   record on these rows the way `commerce_orders.metadata` carries one.
+6. **The ticket read fails safe on its own.** Its catch sits around the arm rather than the pair, so
+   a failure to read tickets returns the commerce number instead of collapsing the whole header to
+   zeros.
+
+**How it is held.** Six tests, mutation-tested: disabling the arm turns four of them red. They pin
+the production shape exactly (a succeeded ticket with no commerce order at all), that tickets ADD to
+commerce earnings rather than replace them, that refunds never reach gross, that the network slice
+stays zero, and that pending/failed tickets are not revenue.
+
+⚠️ **The test mock had to become table-aware in the same change, and that is worth recording.** It
+returned the same seeded rows to every query — harmless while this module read one table, and
+silently wrong the moment it read three: the events lookup and the ticket read would each have been
+handed `commerce_orders` rows, and the new assertions would have passed on numbers from the wrong
+source entirely.
+
+**Verified against production, not only in tests.** The same predicate run against the reporting
+Space returns 1 order, 4400 gross, 132 fee — the $44.00 ticket whose absence produced the row.
