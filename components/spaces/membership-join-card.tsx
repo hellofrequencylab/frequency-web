@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Check, ChevronUp, Ticket } from 'lucide-react'
@@ -99,11 +99,21 @@ export function MembershipJoinCard({
   const searchParams = useSearchParams()
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
-  // ON-PAGE CHECKOUT (CHECKOUT-HANDOFF §4). `open` is SEPARATE from the secret on purpose: collapsing
-  // the drawer keeps the session, so re-opening is instant and, more importantly, does not mint a
+  // ON-PAGE CHECKOUT (CHECKOUT-HANDOFF §4). `open` is SEPARATE from the session on purpose:
+  // collapsing the drawer keeps it, so re-opening is instant and, more importantly, does not mint a
   // SECOND subscription session for the same member.
-  const [clientSecret, setClientSecret] = useState<string | null>(null)
-  const [sessionId, setSessionId] = useState<string | null>(null)
+  //
+  // 🔴 THE SESSION CARRIES THE CADENCE IT WAS MINTED FOR, and that is the whole guard. A form minted
+  // for $44 a month must never sit under an $88 a year button, and the toggle above these cards can
+  // change that between one render and the next. Storing the two apart and resyncing them in an
+  // effect is a reactive patch over a structural problem: it also renders the stale form for one
+  // frame before the effect runs. Keeping them in one value makes a mismatched session
+  // unrepresentable instead, so the check below is a comparison rather than a lifecycle.
+  const [session, setSession] = useState<{
+    cadence: MembershipInterval
+    clientSecret: string
+    sessionId: string | null
+  } | null>(null)
   const [open, setOpen] = useState(false)
 
   // What this card charges at the selected cadence (ADR-1374). `monthlyOnly` is the honest case the
@@ -123,20 +133,16 @@ export function MembershipJoinCard({
   const rawReturn = searchParams.get('return_to')
   const returnTo = rawReturn && /^\/(?!\/)/.test(rawReturn) ? rawReturn : null
 
-  // 🔴 ANYTHING THAT CHANGES THE PRICE INVALIDATES THE SESSION. The cadence toggle above these cards
-  // does exactly that: a form minted for $44 a month must never sit under an $88 a year button.
-  useEffect(() => {
-    setClientSecret(null)
-    setSessionId(null)
-    setOpen(false)
-  }, [interval])
+  // The session, but only while it still matches what the button now charges. A cadence change makes
+  // this null on the very same render that changes the price, so there is no window in which the two
+  // disagree.
+  const liveSession = session && session.cadence === price.cadence ? session : null
 
   /** The LAST line of defence (CHECKOUT-HANDOFF §4). `forceHosted` is load-bearing: without it this
    *  asks for the same elements session that just failed to mount, finds no url, and dead-ends a
    *  member who is trying to pay. */
   function fallBackToHosted() {
-    setClientSecret(null)
-    setSessionId(null)
+    setSession(null)
     setError('Opening secure checkout…')
     if (!tier.id) return
     const tierId = tier.id
@@ -157,8 +163,9 @@ export function MembershipJoinCard({
     setError(null)
     const tierId = tier.id
 
-    // Already have a session: re-open it rather than spending a round trip and a second session.
-    if (clientSecret) {
+    // Already have a session for THIS cadence: re-open it rather than spending a round trip and
+    // minting a second subscription session for the same member.
+    if (liveSession) {
       setOpen(true)
       return
     }
@@ -178,8 +185,11 @@ export function MembershipJoinCard({
           // 🔴 Branch on what CAME BACK, never on what was asked for: the server declines the
           // on-page path whenever it cannot be honoured, and hands back a hosted URL instead.
           if (checkout.data.clientSecret) {
-            setClientSecret(checkout.data.clientSecret)
-            setSessionId(checkout.data.sessionId ?? null)
+            setSession({
+              cadence: price.cadence,
+              clientSecret: checkout.data.clientSecret,
+              sessionId: checkout.data.sessionId ?? null,
+            })
             setOpen(true)
             return
           }
@@ -308,15 +318,19 @@ export function MembershipJoinCard({
   // 4 + 6 + 7. The drawer opens BETWEEN the button and everything below it, so the card marks and
   // the footnotes are pushed down rather than swapped out: nothing the reader was looking at
   // disappears at the moment they commit.
-  const payDrawer = open && clientSecret && (
+  const payDrawer = open && liveSession && (
     <CheckoutPanel
-      clientSecret={clientSecret}
+      clientSecret={liveSession.clientSecret}
       priceLabel={formatPrice(price.cents)}
       onFellBack={fallBackToHosted}
       // 🔴 WITHOUT THIS a paid membership has exactly ONE way to become real. confirm() with
       // redirect:'if_required' never navigates on the common card path, so the return_url that
       // carries the webhook's backstop is never visited (CHECKOUT-HANDOFF §6).
-      onPaid={sessionId ? () => settleSpaceMembershipAction(sessionId) : undefined}
+      onPaid={
+        liveSession.sessionId
+          ? () => settleSpaceMembershipAction(liveSession.sessionId as string)
+          : undefined
+      }
       onClose={() => window.location.reload()}
       doneTitle="You are a member."
       doneBody={`Welcome to ${tier.name}. A receipt is on its way to your email.`}
