@@ -44214,3 +44214,46 @@ so the cheapest true answer on the card was the fourth row down.
 "Temple Member". The cadence toggle of ADR-1374 reads `annual_price_cents` on ONE tier, so it cannot
 fold those pairs, and the dialog shows six cards until the data is merged. That is a change to a live
 Space's tiers and belongs to its owner, not to this change.
+
+## ADR-1383: An event that already has a host Space is not up for asking, and the ask is a line not a banner (2026-09-16)
+
+**Status:** Accepted · **Corrects** [ADR-911](DECISIONS.md) (the host handshake) · corroborated by
+`app/(main)/events/host-transfer-actions.ts`, `app/(main)/events/[slug]/host-request-cta.tsx`
+
+**Context.** Owner, looking at MELD: *"The only time the ask to host notice should come up is when
+it's been posted by somebody else and there is no host."*
+
+Two faults, and the first is the one that matters.
+
+1. 🔴 **The gate never asked whether the event had a host.** `listSpacesThatCanAskToHost` filtered
+   the VIEWER's Spaces against `state.hostSpaceId` and stopped, which answers "is MY Space already
+   the host" and not "does this event have a host at all". MELD's `host_space_id` names Royal
+   Temple, the page prints **Hosted by Royal Temple** above the fold, and three lines below it
+   offered a stranger who happened to run some other Space the chance to take it over. Every rule
+   the gate did check was about the asker; none was about the event.
+2. **It was a banner.** A bordered card, a crown, a bold heading and a filled primary button, above
+   the event's own description — the visual weight of an announcement, for a quiet offer meant for
+   a handful of viewers.
+
+**Decision.**
+
+1. **Bail on any event a Space already holds:** `if (state.hostSpaceId) return []`, placed BEFORE
+   the owned/steward lookups so a hosted event costs one read rather than four. Once a Space holds
+   an event, moving hosting is the HOST's move, through the settings rail
+   (`event-host-offer-field`), where the person giving up the money is the one who starts it. The
+   ask exists for the case the component's own header describes: a venue posted an event somebody
+   else's business runs, and there is no Space on it to receive the money.
+2. **The ask is one muted line with the verb inline**, and it grows only when someone takes it up.
+   The consequence sentence and the confirm stay exactly where they were — at the point of the
+   click — because hosting moves money and that has to be read, not skimmed past in a banner
+   nobody asked for.
+3. **`requestEventHost` stays the authority.** It re-runs every rule on submit; this change only
+   stops the page proposing something that reads as a land grab.
+
+**How it is held.** `components/events/host-request-wiring.test.ts` gains three assertions: the
+guard exists, it sits above the Space lookups, and the corpus it matches is non-trivial.
+⚠️ **The ordering assertion was wrong when first written** and is worth recording: as a bare
+`indexOf(guard) < indexOf(lookup)` it PASSED against a mutant that deleted the guard, because a
+missing needle is `-1` and `-1` is less than every real index — the check read as correct precisely
+when the thing it guards was gone. Both needles are now asserted present before being ordered. It
+was caught by mutation-testing the file, not by reading it.

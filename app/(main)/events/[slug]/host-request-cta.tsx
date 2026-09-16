@@ -38,29 +38,31 @@ export function HostRequestCta({ eventId, spaces }: { eventId: string; spaces: H
 
   if (spaces.length === 0) return null
 
+  // A LINE, NOT A BANNER (owner report 2026-09-16). This was a bordered card with a crown, a bold
+  // heading and a filled primary button, sitting above the event's own description -- the visual
+  // weight of an announcement for something that is a quiet offer to a handful of viewers. It now
+  // reads as one muted sentence with the verb inline, and only grows when someone takes it up:
+  // pressing it opens the consequence and the confirm, because hosting moves money and that
+  // sentence has to be read at the point of the click, not skimmed in a banner nobody asked for.
   return (
-    <div className="mb-5 rounded-2xl border border-border bg-surface px-5 py-4">
-      <p className="flex items-center gap-1.5 text-body font-bold text-text">
-        <Crown className="h-4 w-4 shrink-0 text-primary" aria-hidden /> Does your Space run this event?
-      </p>
-
+    <div className="mb-5">
       {sent ? (
-        <p className="mt-2 inline-flex items-center gap-1.5 text-body-sm font-semibold text-success">
+        <p className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-success">
           <Check className="h-4 w-4" aria-hidden /> Asked. The current host decides, and you&rsquo;ll hear
           either way.
         </p>
       ) : !confirming ? (
-        <>
-          <p className="mt-1 text-body-sm text-muted">
-            You can ask to host it. Hosting means registrations and ticket payments run through your
-            Space, and the current host has to agree first.
-          </p>
-          <Button type="button" onClick={() => setConfirming(true)} className="mt-3">
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-meta text-muted">
+          <span className="inline-flex items-center gap-1.5">
+            <Crown className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
+            Does your Space run this event?
+          </span>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setConfirming(true)}>
             Ask to host
           </Button>
-        </>
+        </p>
       ) : (
-        <div className="mt-2">
+        <div className="rounded-card border border-border bg-surface px-4 py-3">
           {/* Naming the consequence at the point of the click, like the accept side does: hosting is
               a money change, not a credit line. */}
           <p className="text-body-sm text-muted">
