@@ -167,15 +167,15 @@ describe('day notes (ADR-1386)', () => {
   it('places weekly and dated notes on the right days, within bounds', async () => {
     const { notesForDay, parseDayNoteInput } = await import('./day-notes')
     const notes = [
-      { id: '1', label: 'Quiet hours', weekdays: [1], startsOn: '2026-09-22', endsOn: '2027-09-26', visibility: 'public' as const },
-      { id: '2', label: 'Retreat & rental', weekdays: [5, 6], startsOn: null, endsOn: null, visibility: 'public' as const },
-      { id: '3', label: 'Thanksgiving', weekdays: null, startsOn: '2026-11-24', endsOn: '2026-11-25', visibility: 'team' as const },
+      { id: '1', label: 'Quiet hours', weekdays: [1], startsOn: '2026-09-22', endsOn: '2027-09-26' },
+      { id: '2', label: 'Retreat & rental', weekdays: [5, 6], startsOn: null, endsOn: null },
+      { id: '3', label: 'Thanksgiving', weekdays: null, startsOn: '2026-11-24', endsOn: '2026-11-25' },
     ]
     expect(notesForDay(notes, '2026-09-28')).toEqual(['Quiet hours']) // a Monday in range
     expect(notesForDay(notes, '2026-09-21')).toEqual([]) // a Monday before it starts
     expect(notesForDay(notes, '2026-09-25')).toEqual(['Retreat & rental']) // Friday
     expect(notesForDay(notes, '2026-11-25')).toEqual(['Thanksgiving'])
-    expect(parseDayNoteInput({ label: 'X', mode: 'weekly', weekdays: [], startsOn: '', endsOn: '', isPublic: true })).toEqual({
+    expect(parseDayNoteInput({ label: 'X', mode: 'weekly', weekdays: [], startsOn: '', endsOn: '' })).toEqual({
       error: 'Pick at least one day of the week.',
     })
   })

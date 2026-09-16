@@ -44455,8 +44455,8 @@ this product and are not used for any stage.
 
 **Day notes, shipped with the first phase.** A short, unobtrusive label on a day's grid card that is
 neither an entry nor an event: Royal Temple's "Quiet hours" every Monday, "Flex day" on Thursday,
-"Retreat & rental" Friday and Saturday. A day note repeats on weekdays or covers a date range, is `team`
-or `public`, and never blocks time or appears as an item. It lives in `public.space_calendar_day_notes`,
+"Retreat & rental" Friday and Saturday. A day note repeats on weekdays or covers a date range, is internal to
+the team (never public, [ADR-1387](DECISIONS.md)), and never blocks time or appears as an item. It lives in `public.space_calendar_day_notes`,
 is managed as one small field on the Space's Calendar settings page, and reaches the grid through
 `notesForDay` in `lib/calendar/day-notes.ts`. It is separate from entries on purpose: a label that
 describes a day's character is not a thing that happens on it, and giving it an item's weight would
@@ -44494,3 +44494,35 @@ exist (a "someday" idea); whether a co-host sees the host's whole plan or only s
 a Production spawned from a co-owned plan, and therefore who is paid (the Host rule of ADR-911 says the
 host Space; the handoff has to say which Space that is); and whether a lapsed Pencil is deleted,
 archived or only flagged.
+
+## ADR-1387: Day notes are internal, and the Plan phase starts from three owner defaults (2026-09-16)
+
+**Status:** Accepted · **Amends** [ADR-1386](DECISIONS.md) (day notes; the PROG-CAL2 open questions) ·
+corroborated by `supabase/migrations/20270345005400_day_notes_are_team_only.sql`,
+`lib/calendar/day-notes.ts`, `app/(main)/spaces/[slug]/settings/calendar/day-notes-field.tsx`
+
+**Context.** ADR-1386 shipped day notes as `team` or `public`, and the Royal Temple seed made its three
+notes public. Once live, the public Calendar tab labelled every Monday "Quiet hours", every Thursday
+"Flex day" and every Friday and Saturday "Retreat & rental". Owner, the same day: the public view should
+never show those; they are internal notes.
+
+**Decision.**
+
+1. **A day note is visible to the Space's team only.** The public Calendar tab no longer reads day notes
+   at all, the settings field has no "Show on the public calendar" switch, and the pure type carries no
+   visibility. The table enforces it rather than trusting a page filter: every row is `team`, the check
+   admits only `team`, the read policy has no public arm, and anon has no table access. The column is
+   kept, so a future ruling for a public label is a check change, not a schema redesign.
+2. **Production was fixed before the code.** The three Royal Temple notes were set to `team` by hand the
+   moment the report arrived, so the public page stopped showing them without waiting for a deploy. The
+   migration repeats that update idempotently.
+
+**Owner defaults for PROG-CAL2 (Plan), given 2026-09-16 in answer to ADR-1386's open questions.**
+
+1. **A Plan may have no dates.** A "someday" idea is a Plan, listed on the Space's Calendar settings.
+2. **An accepted co-host sees the whole shared Plan**, not selected sections. Per-section sharing can
+   come later without changing who may see a Plan at all.
+3. **A lapsed Pencil is flagged, never deleted or archived**, which is what PROG-CAL1 already does.
+
+The fourth open question (which Space is the Host of a Production spawned from a co-owned plan) stays
+with `PROG-CAL3`.

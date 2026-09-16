@@ -6,7 +6,6 @@ import { Trash2 } from 'lucide-react'
 import { Button, buttonClasses } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
 import { Input, labelClasses } from '@/components/ui/field'
-import { Switch } from '@/components/ui/switch'
 import { isError } from '@/lib/action-result'
 import { WEEKDAY_NAMES, describeDayNote, type DayNote, type DayNoteInput } from '@/lib/calendar/day-notes'
 import { removeDayNote, saveDayNote } from './entry-actions'
@@ -14,7 +13,7 @@ import { removeDayNote, saveDayNote } from './entry-actions'
 // DAY NOTES FIELD (ADR-1386). The small settings field behind the quiet labels on the calendar's day
 // cards: "Quiet hours" on Mondays, "Retreat & rental" Friday and Saturday, or a note on a few dates.
 
-const EMPTY: DayNoteInput = { label: '', mode: 'weekly', weekdays: [], startsOn: '', endsOn: '', isPublic: true }
+const EMPTY: DayNoteInput = { label: '', mode: 'weekly', weekdays: [], startsOn: '', endsOn: '' }
 
 export function DayNotesField({ slug, notes, canEdit }: { slug: string; notes: DayNote[]; canEdit: boolean }) {
   const router = useRouter()
@@ -46,7 +45,7 @@ export function DayNotesField({ slug, notes, canEdit }: { slug: string; notes: D
     <div className="space-y-3 rounded-card border border-border bg-surface p-4">
       <div>
         <h3 className="text-body font-semibold text-text">Day notes</h3>
-        <p className="text-body-sm text-muted">A few quiet words on a day of the calendar, like Quiet hours on Mondays.</p>
+        <p className="text-body-sm text-muted">A few quiet words on a day of the calendar, like Quiet hours on Mondays. Only your team sees them.</p>
       </div>
 
       {notes.length > 0 && (
@@ -57,7 +56,6 @@ export function DayNotesField({ slug, notes, canEdit }: { slug: string; notes: D
                 <span className="block truncate text-body-sm font-medium text-text">{n.label}</span>
                 <span className="block text-meta text-muted">
                   {describeDayNote(n)}
-                  {n.visibility === 'team' ? ' · Team only' : ''}
                 </span>
               </span>
               {canEdit && (
@@ -130,10 +128,6 @@ export function DayNotesField({ slug, notes, canEdit }: { slug: string; notes: D
             </div>
           </div>
 
-          <label className="flex items-center justify-between gap-3 text-body-sm text-text">
-            <span id="day-note-public">Show on the public calendar</span>
-            <Switch checked={input.isPublic} onCheckedChange={(v) => setInput({ ...input, isPublic: v })} aria-labelledby="day-note-public" />
-          </label>
 
           {error && (
             <p role="alert" className="text-body-sm text-danger">

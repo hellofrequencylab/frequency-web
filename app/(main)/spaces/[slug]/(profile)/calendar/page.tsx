@@ -10,7 +10,6 @@ import { spaceEventRowsToItems } from '@/lib/calendar/public-month'
 import { listPublicUnavailableItems } from '@/lib/calendar/entries-store'
 import { monthGridWindow } from '@/lib/calendar/month-window'
 import { loadSpaceCalendarMonth } from './actions'
-import { listDayNotes } from '@/lib/calendar/day-notes-store'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 
@@ -48,10 +47,9 @@ export default async function SpaceCalendarPage({ params }: { params: Promise<{ 
   // to show as Unavailable in this month's grid. Every other month arrives through
   // loadSpaceCalendarMonth as the visitor browses (ADR-1385), so earlier months are not falsely empty.
   const grid = monthGridWindow(initialYear, initialMonth1)
-  const [rows, unavailable, dayNotes] = await Promise.all([
+  const [rows, unavailable] = await Promise.all([
     listSpaceCalendarEvents(space.id, { fromDay: grid.fromDay }),
     listPublicUnavailableItems(space.id, grid.fromDay, grid.toDay),
-    listDayNotes(space.id, { publicOnly: true }),
   ])
   const events = [...(await spaceEventRowsToItems(rows)), ...unavailable]
 
@@ -79,7 +77,6 @@ export default async function SpaceCalendarPage({ params }: { params: Promise<{ 
         initialYear={initialYear}
         initialMonth1={initialMonth1}
         loadMonth={loadSpaceCalendarMonth.bind(null, slug)}
-        dayNotes={dayNotes}
       />
 
       {rows.length === 0 && (

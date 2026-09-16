@@ -5,7 +5,7 @@ import { DAY_NOTE_COLS, dayNoteFromRow, type DayNote, type DayNoteWrite } from '
 // DAY NOTES, the IO half (ADR-1386). Read and written on the caller's own session: RLS returns public
 // notes to anyone and team notes to the Space's editors, and only editors may write.
 
-type Row = { id: string; label: string; weekdays: number[] | null; starts_on: string | null; ends_on: string | null; visibility: string }
+type Row = { id: string; label: string; weekdays: number[] | null; starts_on: string | null; ends_on: string | null }
 type Q = PromiseLike<{ data: Row[] | null; error: { message: string } | null }> & {
   select: (c: string) => Q
   eq: (c: string, v: string) => Q
@@ -26,12 +26,14 @@ async function db(): Promise<Untyped> {
   return (await createClient()) as unknown as Untyped
 }
 
-/** A Space's day notes the caller may see; `publicOnly` for the public Calendar tab. */
-export async function listDayNotes(spaceId: string, opts: { publicOnly?: boolean } = {}): Promise<DayNote[]> {
+/** A Space's day notes, for its team. RLS returns none to anyone who cannot edit the Space. */
+export async function listDayNotes(spaceId: string): Promise<DayNote[]> {
   try {
-    let q = (await db()).from('space_calendar_day_notes').select(DAY_NOTE_COLS).eq('space_id', spaceId)
-    if (opts.publicOnly) q = q.eq('visibility', 'public')
-    const { data, error } = await q.order('sort', { ascending: true })
+    const { data, error } = await (await db())
+      .from('space_calendar_day_notes')
+      .select(DAY_NOTE_COLS)
+      .eq('space_id', spaceId)
+      .order('sort', { ascending: true })
     if (error || !data) return []
     return data.map(dayNoteFromRow)
   } catch {
