@@ -32,6 +32,8 @@ import { canTakePayments } from '@/lib/commerce/selling'
 import { payoutsLive } from '@/lib/billing/connect'
 import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { blockingRange, type EntryRow } from '@/lib/calendar/entries'
+import { eventInstant } from '@/lib/time/zone'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -814,6 +816,41 @@ async function readOverrides(scheduleId: string | null): Promise<SlotOverride[]>
   }
 }
 
+/** The Space's UNAVAILABLE time from its private calendar (ADR-1385): every entry that blocks time and
+ *  is not cancelled, ending after `fromISO`, as true instant ranges. They join the booked ranges, so a
+ *  slot overlapping one is not offered and cannot be booked; existing bookings are never touched.
+ *  Service-role (a member choosing a slot cannot read the private layer); FAIL-SAFE to []. The table's
+ *  stored ends_at is a wall clock that can sit up to a day off the true instant, hence the day of slack. */
+async function readCalendarBlocks(spaceId: string, fromISO: string): Promise<Array<{ startMs: number; endMs: number }>> {
+  try {
+    const slack = new Date(new Date(fromISO).getTime() - 86400000).toISOString()
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (c: string, v: unknown) => {
+            eq: (c: string, v: unknown) => {
+              gt: (c: string, v: string) => { limit: (n: number) => PromiseLike<{ data: EntryRow[] | null; error: unknown }> }
+            }
+          }
+        }
+      }
+    }
+    const { data, error } = await db
+      .from('space_calendar_entries')
+      .select('starts_at, ends_at, time_zone, blocks_time, status')
+      .eq('space_id', spaceId)
+      .eq('blocks_time', true)
+      .gt('ends_at', slack)
+      .limit(500)
+    if (error || !data) return []
+    return data
+      .map((r) => blockingRange(r, eventInstant))
+      .filter((r): r is { startMs: number; endMs: number } => r !== null)
+  } catch {
+    return []
+  }
+}
+
 /** Resolve the full generator context for a Space in one place: the schedule rules + its overrides.
  *  FAIL-SAFE to defaults + []. */
 async function readScheduleContext(
@@ -1022,7 +1059,7 @@ export async function listOpenSlots(
     // waterfalling one after the other. Both readers are fail-safe to [], so Promise.all never rejects.
     // The early-return short-circuit is preserved: with no published windows there are no slots, so we
     // return [] without running the (already-overlapped, cheap) generator.
-    const [windows, booked, duration, context] = await Promise.all([
+    const [windows, booked, duration, context, calendarBlocks] = await Promise.all([
       readWindows(spaceId),
       // Exclude confirmed AND pending holds, so a held-but-unpaid slot is not offered (matches the index).
       readBlockingBookings(spaceId, now.toISOString()),
@@ -1030,6 +1067,7 @@ export async function listOpenSlots(
       resolveServiceDuration(spaceId, serviceTypeId),
       // P2: schedule rules (buffers / notice / window / tz) + date overrides.
       readScheduleContext(spaceId),
+      readCalendarBlocks(spaceId, now.toISOString()),
     ])
     if (windows.length === 0) return []
     // A service was chosen but did not resolve (inactive / bad id): offer nothing rather than the
@@ -1038,10 +1076,13 @@ export async function listOpenSlots(
     const scoped = windowsForService(windows, serviceTypeId ?? null)
     if (scoped.length === 0) return []
     const bookedMs = new Set(booked.map((b) => new Date(b.starts_at).getTime()))
-    const bookedRanges = booked.map((b) => ({
-      startMs: new Date(b.starts_at).getTime(),
-      endMs: new Date(b.ends_at).getTime(),
-    }))
+    const bookedRanges = [
+      ...booked.map((b) => ({
+        startMs: new Date(b.starts_at).getTime(),
+        endMs: new Date(b.ends_at).getTime(),
+      })),
+      ...calendarBlocks,
+    ]
     const ctx = buildSlotContext(scoped, context.schedule, context.overrides, duration, bookedRanges)
     return generateOpenSlots(ctx.windows, bookedMs, now, ctx.horizonDays, ctx.opts)
   } catch {
@@ -1439,11 +1480,17 @@ async function validateAndPlaceBooking(params: {
   if (scoped.length === 0) return { ok: false, error: 'That time is no longer available. Pick another.' }
 
   const context = await readScheduleContext(spaceId)
-  const booked = await readBlockingBookings(spaceId, now.toISOString())
-  const bookedRanges = booked.map((b) => ({
-    startMs: new Date(b.starts_at).getTime(),
-    endMs: new Date(b.ends_at).getTime(),
-  }))
+  const [booked, calendarBlocks] = await Promise.all([
+    readBlockingBookings(spaceId, now.toISOString()),
+    readCalendarBlocks(spaceId, now.toISOString()),
+  ])
+  const bookedRanges = [
+    ...booked.map((b) => ({
+      startMs: new Date(b.starts_at).getTime(),
+      endMs: new Date(b.ends_at).getTime(),
+    })),
+    ...calendarBlocks,
+  ]
   const ctx = buildSlotContext(scoped, context.schedule, context.overrides, duration, bookedRanges)
 
   const slotMinutes = slotLengthAt(ctx.windows, startsAt.getTime(), now, ctx.horizonDays, ctx.opts)

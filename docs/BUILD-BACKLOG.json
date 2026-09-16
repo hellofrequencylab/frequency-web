@@ -167,7 +167,14 @@
             "PROG-PRAC4",
             "DEF-DOMAIN",
             "DEF-CODE",
-            "PROG-GD5"
+            "PROG-GD5",
+            "PROG-CAL2",
+            "PROG-CAL3",
+            "PROG-CAL4",
+            "PROG-CAL5",
+            "PROG-CAL6",
+            "PROG-CAL7",
+            "PROG-CAL8"
           ]
         },
         {
@@ -13633,6 +13640,170 @@
       "verify": {
         "kind": "manual",
         "evidence": "Measured both ways on one commit, one machine, back to back: TZ=UTC gives 16 passed; TZ=America/Los_Angeles gives 5 failed, all in \"pickSeatLanding -- the landing rule\". Re-measure with: TZ=America/Los_Angeles npx vitest run lib/events/guest-seat-claim.test.ts",
+        "checked": "2026-09-16"
+      }
+    },
+    {
+      "id": "LIVE-378",
+      "title": "The Space calendar browses any month and carries a private layer that blocks bookings",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "supabase/migrations/20270345005200_private_calendar_layer.sql",
+        "ref": "ADR-1385, commit 2b1fa55cb on calendar-navigation-list"
+      },
+      "detail": "P0 of the Space calendar program (ADR-1385; the later phases are PROG-CAL1 to PROG-CAL8, ADR-1386).\n\nWHAT SHIPPED. (1) NAVIGATION in components/events/event-calendar.tsx and components/events/use-month-gestures.ts: a sideways trackpad or touch swipe pages one month per gesture, with a momentum lock (quiet 250ms, max 800ms) so one flick is one month; a vertical wheel pages months ONLY on the staff calendar, never on a public page that scrolls; PageUp/PageDown step a month and Shift steps a year; a month and year jump panel; a Today control when off the current month. (2) A LIST VIEW grouped by month with a pinned preview pane chosen by container query, so the same component works in a page, a settings panel and a narrow column. (3) MONTH ON DEMAND: the public tab loads its first month on the server and every other month through loadSpaceCalendarMonth (app/(main)/spaces/[slug]/(profile)/calendar/actions.ts over lib/calendar/public-month.ts, which composes the existing gated listSpaceCalendarEvents and never reimplements a gate); lib/calendar/month-window.ts computes the grid window. (4) THE PRIVATE LAYER: public.space_calendar_entries (kinds unavailable and private; wall clock as UTC parts plus time_zone like events; visibility team or public_unavailable; blocks_time; recurrence_rule, source_kind/source_id and metadata reserved; RLS quad on private.can_write_space_content) and public.space_public_unavailable, a times-only public projection. Staff create, edit and delete entries and toggle layers in app/(main)/spaces/[slug]/settings/calendar (entry-actions.ts, staff-calendar.tsx). (5) BOOKINGS: lib/spaces/booking.ts reads blocking entries (readCalendarBlocks) into the booked ranges, so Unavailable time removes slots; existing bookings are never cancelled. (6) THE REGISTRY: lib/calendar/registry.ts declares CALENDAR_LAYERS and ENTRY_KINDS once; a future source is one layer plus one adapter to CalendarEvent.\n\nHELD BY lib/calendar/entries.test.ts; Migrations 20270345005200 and 20270345005300 were applied to production on 2026-09-16 (ledger rows at the files' own versions, seed checksum matched the file) and lib/database.types.ts was regenerated, retiring the schema-contract allowlist entries.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const mig=fs.readFileSync(\"supabase/migrations/20270345005200_private_calendar_layer.sql\",\"utf8\");if(!mig.includes(\"create table if not exists public.space_calendar_entries\"))fail(\"the private layer table is not created\");if(!/function public\\.space_public_unavailable/.test(mig))fail(\"no times-only public projection\");const booking=fs.readFileSync(\"lib/spaces/booking.ts\",\"utf8\");if(!booking.includes(\"readCalendarBlocks(\"))fail(\"booking does not read calendar blocks\");const cal=fs.readFileSync(\"components/events/event-calendar.tsx\",\"utf8\");if(!cal.includes(\"useMonthGestures(\"))fail(\"the grid is not wired to the month gestures\");const reg=fs.readFileSync(\"lib/calendar/registry.ts\",\"utf8\");if(!/export const CALENDAR_LAYERS/.test(reg)||!/export const ENTRY_KINDS/.test(reg))fail(\"the layer and kind registry is missing\")'",
+        "note": "Passes when the migration creates space_calendar_entries and the times-only projection, booking folds calendar blocks into its booked ranges, the grid calls the gesture hook, and the registry declares layers and kinds. Written 2026-09-16."
+      },
+      "closed": "2026-09-16"
+    },
+    {
+      "id": "PROG-CAL1",
+      "title": "Calendar phase 1, Pencil: a tentative private date for a potential Production, clash warnings, and day notes",
+      "status": "done",
+      "priority": "P2",
+      "lane": "program",
+      "size": "L",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1386, owner rulings of 2026-09-16 on the Space calendar, plan and events system"
+      },
+      "detail": "Phase 1 of Pencil, Plan, Production (ADR-1386). Depends on LIVE-378 (the private layer).\n\nPENCIL. A new entry kind `pencil` on public.space_calendar_entries (registry row in lib/calendar/registry.ts plus the value in the kind check). A Pencil is a tentative private date for a potential Production: status tentative by default, visibility team, never public, does not block bookings by default. Columns: option_group uuid (the candidate dates of ONE pencil share it; a partial index on it) and hold_expires_at timestamptz (an optional date the pencilled date lapses by; the staff calendar flags it once passed; the column name is internal only; the staff field reads \"Lapses on\"). \"Keep this date\" keeps one candidate and deletes its siblings in the same group. UX verb: \"Pencil it in\" (docs/NAMING.md).\n\nCLASH WARNINGS. Pencilling over a published event, Unavailable time or another entry shows a warning naming what it overlaps. It warns and never refuses: a team pencils over things on purpose while it decides.\n\nDAY NOTES. A new table public.space_calendar_day_notes: a short label on a day's grid card that is neither an entry nor an event (Royal Temple: \"Quiet hours\" every Monday, \"Flex day\" Thursday, \"Retreat & rental\" Friday and Saturday). Repeats on weekdays or covers a date range; visibility team or public; never blocks time and never appears as an item. Managed as one small field on the Space's Calendar settings page; rendered by notesForDay in lib/calendar/day-notes.ts.\n\nSEED. A seed migration pre-loads Royal Temple's Fall Equinox 2026 to Fall Equinox 2027 schedule as Pencils plus its three weekly day notes.\n\nOPEN QUESTION carried to P2: whether a lapsed Pencil is deleted, archived or only flagged (v1 flags).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const q=String.fromCharCode(39);const mig=fs.readFileSync(\"supabase/migrations/20270345005200_private_calendar_layer.sql\",\"utf8\");if(!new RegExp(\"check \\\\(kind in \\\\([^)]*\"+q+\"pencil\"+q).test(mig))fail(\"the kind check does not admit pencil\");if(!mig.includes(\"space_calendar_day_notes\"))fail(\"no day notes table in the calendar migration\");const all=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\")).map(f=>fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\")).join(\"\\n\");if(!all.includes(\"create table if not exists public.space_calendar_day_notes\"))fail(\"space_calendar_day_notes is never created\");if(!fs.existsSync(\"lib/calendar/day-notes.ts\"))fail(\"lib/calendar/day-notes.ts is missing\");if(!fs.readFileSync(\"lib/calendar/day-notes.ts\",\"utf8\").includes(\"export function notesForDay\"))fail(\"notesForDay is not exported\")'",
+        "note": "Passes when the entries kind check admits pencil, a migration creates space_calendar_day_notes, and lib/calendar/day-notes.ts exports notesForDay. Written 2026-09-16 while the phase was mid-build."
+      },
+      "closed": "2026-09-16"
+    },
+    {
+      "id": "PROG-CAL2",
+      "title": "Calendar phase 2, Plan: the working record behind Pencils and Productions, opened as a drawer from any calendar item",
+      "status": "open",
+      "priority": "P2",
+      "lane": "program",
+      "size": "L",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1386, owner rulings of 2026-09-16 on the Space calendar, plan and events system"
+      },
+      "detail": "Phase 2 of Pencil, Plan, Production (ADR-1386). Depends on PROG-CAL1.\n\nDATA. New table public.space_plans: id, space_id (the host Space), title, stage (pencil | plan | production, derived where possible rather than typed), notes (rich text), links jsonb, owner_profile_id, created_by, timestamps, archived_at. A Plan holds MANY dates and MANY events (owner ruling 1): space_calendar_entries.source_kind = plan with source_id, or a plan_id column if the join earns one; events gain plan_id (nullable, on delete set null). crm_tasks gains plan_id uuid references space_plans on delete cascade (owner ruling 3: one team task inbox, no second task system); lib/crm/tasks.ts builders and filters learn a by-plan filter. Files ride the existing Loom asset layer, never a new bucket. RLS: the ADR-923 quad on private.can_write_space_content(space_id), PLUS read and write for an accepted co-host Space (below).\n\nUX. A Notion-style PLAN DRAWER opened from ANY calendar item that belongs to a plan (a Pencil, a Production, a task due date), and from a plan list on the Space's Calendar settings. The drawer shows the plan's dates on a mini timeline, its tasks (add, assign, due, done), notes, links and files. Creating a Pencil offers \"Start a plan\"; a Pencil can join an existing plan. The drawer is a rail composed from a manifest in lib/studio/entities (ADR-986), not a hand-built form.\n\nCO-HOSTS (owner ruling 4). A plan is visible to a co-host Space only through an ACCEPTED space_collaborations row between the two Spaces, and only for plans the host shares with that Space (a plan_shares join, status request/accepted like event_space_shares). Revoking the collaboration cascades like cancelOpenHoldsBetween.\n\nOPEN QUESTIONS. May a Plan exist with no date at all (a someday idea)? Does a co-host see the whole plan or only shared sections? Is a lapsed Pencil deleted, archived or flagged?",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Not started. Proven when space_plans exists with its RLS quad, crm_tasks carries plan_id, and a plan drawer opens from a calendar item.",
+        "checked": "2026-09-16"
+      }
+    },
+    {
+      "id": "PROG-CAL3",
+      "title": "Calendar phase 3, Production: \"Make it a Production\" opens the event Spark prefilled from the plan, and the Pencil becomes the event",
+      "status": "open",
+      "priority": "P2",
+      "lane": "program",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1386, owner rulings of 2026-09-16 on the Space calendar, plan and events system"
+      },
+      "detail": "Phase 3 of Pencil, Plan, Production (ADR-1386). Depends on PROG-CAL2.\n\nWHAT SHIPS. A \"Make it a Production\" action on a Pencil and in the plan drawer. It opens the EXISTING event Studio Spark (lib/studio/entities/event.ts through the registry) prefilled from the plan and the chosen Pencil: title, dates and time zone, location, description from plan notes, host Space. Never a second event wizard, never a hand-rolled review screen (ADR-986; check:studio enforces it). The prefill is a pure mapping from plan plus entry to the manifest's field keys, unit-tested, and it reads field keys FROM the manifest rather than naming them.\n\nTHE LINK. The created event carries plan_id; the Pencil entry is removed (or marked source of the event) in the same transaction, so the calendar card that was the Pencil IS the event card afterwards and never sits beside it as a duplicate. The event's manage view links back to its plan.\n\nREADINESS BAR. In the plan drawer, a readiness bar derived from the event manifest's REQUIRED fields and the plan's open tasks: what is still missing before this can be published. Derived, never a second list of what an event needs.\n\nINVARIANT. Nothing publishes without a person pressing publish in the Spark. The Production is draft until then.\n\nOPEN QUESTION. A Production spawned from a plan shared with a co-host: which Space is the Host, and so who is paid (ADR-911)? v1: the plan's owning Space; the co-host is offered as a Collaborator share.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Not started. Proven when a Pencil opens the event Spark prefilled through the manifest, the created event carries plan_id, and the Pencil card is replaced by the event card.",
+        "checked": "2026-09-16"
+      }
+    },
+    {
+      "id": "PROG-CAL4",
+      "title": "Calendar phase 4, Views: a board by stage, a My tasks inbox, task due dates on the calendar, and back-to-back items stacked",
+      "status": "open",
+      "priority": "P2",
+      "lane": "program",
+      "size": "L",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1386, owner rulings of 2026-09-16 on the Space calendar, plan and events system"
+      },
+      "detail": "Phase 4 of Pencil, Plan, Production (ADR-1386). Depends on PROG-CAL2 and PROG-CAL3.\n\nBOARD. A board of a Space's plans in three columns by stage: Pencil, Plan, Production. Moving a card forward is the same action as on the calendar (Make it a Production opens the Spark); a card never moves to Production by drag alone.\n\nMY TASKS. One inbox that merges plan tasks and CRM follow-ups (both are crm_tasks rows, owner ruling 3), filterable by plan, by contact, overdue and mine, reusing filterTasks and sortTasks in lib/crm/tasks.ts.\n\nDUE DATES AS A LAYER. A new calendar layer in lib/calendar/registry.ts for task due dates, with one adapter mapping crm_tasks rows to CalendarEvent (ADR-1385 section 7). Team only.\n\nSUNDAY STACK. Back-to-back items on one day (a Sunday of ceremony, lunch, workshop) render as ONE continuous block with its segments listed, instead of three chips that each truncate. A pure grouping function over the day's items, unit-tested, applied in the grid and the list.\n\nOPEN QUESTION. Is the board a Space settings surface or a member-facing tab for the team? Default: settings, composing a page template.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Not started. Proven when the stage board, the merged My tasks inbox, the due-date layer and the stacked-day rendering exist.",
+        "checked": "2026-09-16"
+      }
+    },
+    {
+      "id": "PROG-CAL5",
+      "title": "Calendar phase 5, Templates and relative scheduling: playbooks, tasks that move with the date, Run it again, repeating Pencils with exceptions",
+      "status": "open",
+      "priority": "P2",
+      "lane": "program",
+      "size": "L",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1386, owner rulings of 2026-09-16 on the Space calendar, plan and events system"
+      },
+      "detail": "Phase 5 of Pencil, Plan, Production (ADR-1386). Depends on PROG-CAL2 and PROG-CAL3.\n\nPLAYBOOKS. A plan template per event type (a retreat, a sound bath, a workshop): the task list, the default notes and links, and the event manifest defaults. Starting a plan from a playbook copies it.\n\nRELATIVE SCHEDULING. A plan task can be anchored relative to the Production date (for example 21 days before, 2 days after). Moving the date moves every anchored task; a task with a fixed date stays put. Stored as an offset plus anchor, resolved to due_at by one pure function in the event's own time zone.\n\nRUN IT AGAIN. From a finished Production, create a new plan from it: tasks re-anchored to a new date, notes carried, completion cleared.\n\nREPEATING PENCILS WITH EXPLICIT EXCEPTIONS. A Pencil may repeat using recurrence_rule (the ADR-1299 RRULE dialect), and a series carries EXPLICIT exceptions: a biweekly series with an intentionally skipped date keeps that skip. The generator must never normalise a deliberate gap back into the cadence; exceptions are stored, not inferred, and a test pins a skipped date surviving regeneration.\n\nOPEN QUESTION. Are playbooks per Space only, or shareable across the network like Starter Circles?",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Not started. Proven when a playbook seeds a plan, anchored tasks move with the date, Run it again works, and a repeating Pencil keeps an explicit skipped date.",
+        "checked": "2026-09-16"
+      }
+    },
+    {
+      "id": "PROG-CAL6",
+      "title": "Calendar phase 6, Vera: drafts a plan checklist, suggests dates, nudges readiness, and writes the recap, never publishing on its own",
+      "status": "open",
+      "priority": "P2",
+      "lane": "program",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1386, owner rulings of 2026-09-16 on the Space calendar, plan and events system"
+      },
+      "detail": "Phase 6 of Pencil, Plan, Production (ADR-1386). Depends on PROG-CAL3 and PROG-CAL5.\n\nWHAT VERA DOES. (1) Drafts a plan checklist from the Space's similar past Productions and playbooks. (2) Suggests dates from availability (Unavailable time, existing events, Pencils, day notes) and from past attendance on comparable events. (3) Readiness nudges: the missing required fields and overdue tasks, surfaced in the drawer and My tasks. (4) A post-production recap: attendance, sales, what ran late, drafted into the plan's notes.\n\nINVARIANTS. Vera NEVER publishes, sends or books on its own: every output is a proposal the team accepts, and proposals land in Drafts (docs/NAMING.md) where applicable. All generated copy goes through lib/ai/voice.ts. No data from another Space reaches a suggestion.\n\nOPEN QUESTION. Does the date suggestion read network-wide attendance patterns, or only the Space's own history? Default: own history only.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Not started. Proven when Vera drafts a checklist and suggests dates as proposals that nothing publishes without a person.",
+        "checked": "2026-09-16"
+      }
+    },
+    {
+      "id": "PROG-CAL7",
+      "title": "Calendar phase 7, Together: co-host Spaces work a plan with shared tasks, comments, activity and notifications, plus a private calendar feed",
+      "status": "open",
+      "priority": "P2",
+      "lane": "program",
+      "size": "L",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1386, owner rulings of 2026-09-16 on the Space calendar, plan and events system"
+      },
+      "detail": "Phase 7 of Pencil, Plan, Production (ADR-1386). Depends on PROG-CAL2 (co-host visibility) and PROG-CAL4.\n\nCOLLABORATION DEPTH (owner ruling 4). On a plan shared with a co-host Space through an accepted collaboration: tasks assignable to members of either Space, comments on the plan and on tasks, an activity log (who moved a date, who finished a task), and notifications through the existing notification preferences.\n\nPRIVATE FEED. A secret-token .ics feed of the Space's PRIVATE layer for its team (entries, Pencils, task due dates), following the member feed pattern (token-keyed, revocable, rotate on demand) and the one timezone seam in lib/events/ics.ts. Never slug-keyed: the private layer is never link-reachable.\n\nOPEN QUESTIONS. Can a co-host see the host's whole private layer in the feed, or only items of shared plans? Default: shared plans only. What does revoking a collaboration do to tasks assigned across the two Spaces?",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Not started. Proven when two Spaces work one plan with shared tasks, comments and activity, and a revocable token feed serves the private layer.",
+        "checked": "2026-09-16"
+      }
+    },
+    {
+      "id": "PROG-CAL8",
+      "title": "Calendar phase 8, Beyond events: the same plan spine for Journeys, Programs, maintenance and other project types",
+      "status": "open",
+      "priority": "P2",
+      "lane": "program",
+      "size": "XL",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1386, owner rulings of 2026-09-16 on the Space calendar, plan and events system"
+      },
+      "detail": "Phase 8 of Pencil, Plan, Production (ADR-1386). Depends on PROG-CAL2 to PROG-CAL5.\n\nWHAT SHIPS. space_plans gains a target kind so the same Pencil and Plan stages end in something other than an event: a Journey launch, a Program, building maintenance, a campaign. Each target kind declares, in a registry beside lib/calendar/registry.ts, the Studio manifest its \"Production\" step opens (or none, for maintenance) and its readiness source. The drawer, tasks, board, templates and feed are unchanged.\n\nOPEN QUESTIONS. Is the third stage still called Production for a non-event target, or does each kind name its own? (docs/NAMING.md has to rule before this phase starts.) Which target kinds are in v1?",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Not started. Proven when a plan with a non-event target kind runs the same stages and drawer.",
         "checked": "2026-09-16"
       }
     }

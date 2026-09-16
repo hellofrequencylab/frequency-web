@@ -1,0 +1,182 @@
+import { readFileSync } from 'node:fs'
+import { describe, it, expect } from 'vitest'
+import {
+  blockingRange,
+  entryDaySpan,
+  entryToCalendarItem,
+  entryToInput,
+  parseEntryInput,
+  publicUnavailableToItem,
+  spanDayKeys,
+  type EntryFormatters,
+  type EntryInput,
+  type EntryRow,
+} from './entries'
+import { CALENDAR_LAYERS, ENTRY_KINDS } from './registry'
+import { monthGridWindow, safeMonth } from './month-window'
+import { eventInstant } from '@/lib/time/zone'
+
+// The private calendar layer, pure half (ADR-1385). These pin the three things that would fail
+// silently: the all-day exclusive end, the public projection carrying no details, and a blocking
+// entry turning into the right TRUE instant range for bookings.
+
+const base: EntryInput = {
+  kind: 'unavailable',
+  title: 'Closed for the holiday',
+  notes: 'Staff only',
+  location: '',
+  allDay: true,
+  startDate: '2026-12-24',
+  endDate: '2026-12-26',
+  startTime: '09:00',
+  endTime: '17:00',
+  timeZone: 'America/Los_Angeles',
+  status: 'confirmed',
+  blocksTime: true,
+  showPublicly: true,
+}
+
+const fmt: EntryFormatters = {
+  timeLabel: () => 'T',
+  whenLabel: () => 'W',
+  dateLabel: (iso) => iso.slice(0, 10),
+  instantIso: (iso) => iso,
+}
+
+function row(input: EntryInput, id = '11111111-1111-4111-8111-111111111111'): EntryRow {
+  const parsed = parseEntryInput(input)
+  if ('error' in parsed) throw new Error(parsed.error)
+  return { id, space_id: 's', option_group: null, ...parsed.data }
+}
+
+describe('parseEntryInput', () => {
+  it('stores an all-day span with an exclusive end the day after the last day', () => {
+    const r = row(base)
+    expect(r.starts_at).toBe('2026-12-24T00:00:00.000Z')
+    expect(r.ends_at).toBe('2026-12-27T00:00:00.000Z')
+    expect(r.visibility).toBe('public_unavailable')
+    expect(r.location).toBeNull()
+  })
+
+  it('keeps a timed entry as wall clock parts', () => {
+    const r = row({ ...base, kind: 'private', allDay: false, endDate: '2026-12-24', startTime: '18:30', endTime: '20:00' })
+    expect(r.starts_at).toBe('2026-12-24T18:30:00.000Z')
+    expect(r.ends_at).toBe('2026-12-24T20:00:00.000Z')
+  })
+
+  it('never lets a Private entry be shown publicly', () => {
+    expect(row({ ...base, kind: 'private' }).visibility).toBe('team')
+  })
+
+  it('refuses bad input with a plain sentence', () => {
+    expect(parseEntryInput({ ...base, kind: 'party' })).toEqual({ error: 'Choose what kind of entry this is.' })
+    expect(parseEntryInput({ ...base, title: '  ' })).toEqual({ error: 'Give the entry a title.' })
+    expect(parseEntryInput({ ...base, startDate: '2026-02-31' })).toEqual({ error: 'Pick a valid date.' })
+    expect(parseEntryInput({ ...base, endDate: '2026-12-01' })).toEqual({ error: 'The end date is before the start date.' })
+    expect(parseEntryInput({ ...base, allDay: false, endDate: '2026-12-24', startTime: '10:00', endTime: '09:00' })).toEqual({
+      error: 'The end time is before the start time.',
+    })
+  })
+})
+
+describe('the round trip and the grid span', () => {
+  it('reads a stored all-day entry back to the same form', () => {
+    const back = entryToInput(row(base))
+    expect(back.startDate).toBe('2026-12-24')
+    expect(back.endDate).toBe('2026-12-26')
+    expect(back.allDay).toBe(true)
+  })
+
+  it('spans the inclusive days an entry covers', () => {
+    expect(entryDaySpan(row(base))).toEqual({ dayKey: '2026-12-24', endDayKey: '2026-12-26' })
+    expect(spanDayKeys('2026-12-30', '2027-01-02')).toEqual(['2026-12-30', '2026-12-31', '2027-01-01', '2027-01-02'])
+    expect(spanDayKeys('2026-01-01', '2027-01-01')).toHaveLength(62)
+  })
+})
+
+describe('what each audience sees', () => {
+  it('gives staff the full entry, editable, on its own layer', () => {
+    const item = entryToCalendarItem(row(base), fmt, { editable: true })
+    expect(item.layer).toBe('unavailable')
+    expect(item.notes).toBe('Staff only')
+    expect(item.entryInput?.title).toBe('Closed for the holiday')
+    expect(item.endDayKey).toBe('2026-12-26')
+  })
+
+  it('gives the public a bare Unavailable span with no details', () => {
+    const r = row(base)
+    const item = publicUnavailableToItem(
+      { starts_at: r.starts_at, ends_at: r.ends_at, all_day: r.all_day, time_zone: r.time_zone },
+      fmt,
+      0,
+    )
+    expect(item.title).toBe('Unavailable')
+    expect(item.notes).toBeUndefined()
+    expect(item.entryId).toBeUndefined()
+    expect(item.location).toBeNull()
+  })
+})
+
+describe('blockingRange', () => {
+  it('converts the wall clock in the entry zone to the true instant range', () => {
+    const r = row(base)
+    const range = blockingRange(r, eventInstant)!
+    // 00:00 in Los Angeles in December is 08:00 UTC.
+    expect(new Date(range.startMs).toISOString()).toBe('2026-12-24T08:00:00.000Z')
+    expect(new Date(range.endMs).toISOString()).toBe('2026-12-27T08:00:00.000Z')
+  })
+
+  it('does not block when the entry does not block time or is cancelled', () => {
+    expect(blockingRange({ ...row(base), blocks_time: false }, eventInstant)).toBeNull()
+    expect(blockingRange({ ...row(base), status: 'cancelled' }, eventInstant)).toBeNull()
+  })
+})
+
+describe('the registry and the month window', () => {
+  it('matches the kinds the migration allows', () => {
+    const sql = readFileSync('supabase/migrations/20270345005200_private_calendar_layer.sql', 'utf8')
+    const allowed = /kind\s+text not null check \(kind in \(([^)]*)\)\)/.exec(sql)![1]
+    expect(allowed.split(',').map((s) => s.trim().replace(/'/g, '')).sort()).toEqual(ENTRY_KINDS.map((k) => k.kind).sort())
+    for (const k of ENTRY_KINDS) expect(CALENDAR_LAYERS.some((l) => l.key === k.layer)).toBe(true)
+  })
+
+  it('loads the whole visible grid of a month', () => {
+    // September 2026 starts on a Tuesday and ends on a Wednesday.
+    expect(monthGridWindow(2026, 9)).toEqual({ fromDay: '2026-08-30', toDay: '2026-10-04' })
+    expect(safeMonth(2026, 13)).toBeNull()
+    expect(safeMonth('2026', '2')).toEqual({ year: 2026, month1: 2 })
+  })
+})
+
+describe('pencils (ADR-1386)', () => {
+  it('is tentative by default and shifts candidate dates by whole days', async () => {
+    const { candidateWrites } = await import('./entries')
+    const r = row({ ...base, kind: 'pencil', allDay: false, status: null, endDate: '2026-10-12', startDate: '2026-10-12', startTime: '19:00', endTime: '21:00', holdExpiresOn: '2026-10-01' })
+    expect(r.status).toBe('tentative')
+    expect(r.hold_expires_at).toBe('2026-10-01T00:00:00.000Z')
+    const extra = candidateWrites(r, ['2026-10-19', '2026-10-12', '', '2026-10-19'])
+    if ('error' in extra) throw new Error(extra.error)
+    expect(extra.map((e) => [e.starts_at, e.ends_at])).toEqual([['2026-10-19T19:00:00.000Z', '2026-10-19T21:00:00.000Z']])
+    expect(candidateWrites(r, ['2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16', '2026-10-17', '2026-10-18'])).toEqual({
+      error: 'A pencil can hold 6 dates at most.',
+    })
+  })
+})
+
+describe('day notes (ADR-1386)', () => {
+  it('places weekly and dated notes on the right days, within bounds', async () => {
+    const { notesForDay, parseDayNoteInput } = await import('./day-notes')
+    const notes = [
+      { id: '1', label: 'Quiet hours', weekdays: [1], startsOn: '2026-09-22', endsOn: '2027-09-26', visibility: 'public' as const },
+      { id: '2', label: 'Retreat & rental', weekdays: [5, 6], startsOn: null, endsOn: null, visibility: 'public' as const },
+      { id: '3', label: 'Thanksgiving', weekdays: null, startsOn: '2026-11-24', endsOn: '2026-11-25', visibility: 'team' as const },
+    ]
+    expect(notesForDay(notes, '2026-09-28')).toEqual(['Quiet hours']) // a Monday in range
+    expect(notesForDay(notes, '2026-09-21')).toEqual([]) // a Monday before it starts
+    expect(notesForDay(notes, '2026-09-25')).toEqual(['Retreat & rental']) // Friday
+    expect(notesForDay(notes, '2026-11-25')).toEqual(['Thanksgiving'])
+    expect(parseDayNoteInput({ label: 'X', mode: 'weekly', weekdays: [], startsOn: '', endsOn: '', isPublic: true })).toEqual({
+      error: 'Pick at least one day of the week.',
+    })
+  })
+})

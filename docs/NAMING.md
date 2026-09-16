@@ -455,6 +455,65 @@ cleanly by audience and this section pins which is which.
   repeating; it has no curriculum, no enrolment, and no page of its own. The repeating event's own
   page IS the series home, which is why there is no `/series/` route and must not be one.
 
+## Calendar: Unavailable, Private entry, Day note, and Pencil, Plan, Production (ADR-1385/ADR-1386, September 2026, owner-ruled)
+
+A Space calendar has a public layer (its events) and a private layer its team runs for itself
+(ADR-1385). Planning an event moves through three stages the owner named on 2026-09-16 (ADR-1386).
+These are the words for all of it. Proper nouns are capitalised in UI copy; the verbs stay sentences.
+
+- **Unavailable** = time the Space is not open, on the private layer (entry kind `unavailable`). It
+  blocks NEW bookings for the time it covers and never cancels one already made. The team can let the
+  public calendar show it; a visitor then sees the word "Unavailable" and the times, nothing else.
+  Staff control label: `Block bookings` (a sentence describing the effect, not a noun). **Not
+  "Closed"** as the entry name (a Space can be unavailable to bookings while its doors are open for a
+  private rental), **not "Blackout"**, **not "Busy"**.
+- **Private entry** = an in-house item on the private layer (kind `private`): a staff meeting,
+  maintenance, a private rental. Only the Space's team sees it, and it is never an event. **Not
+  "Private event"**: an event is a public-layer object with its own visibility values, and calling an
+  entry an event invites someone to look for it in the events system.
+- **Day note** = a short label on a day's calendar card that describes the day rather than occupying
+  it ("Quiet hours" every Monday, "Flex day" on Thursday, "Retreat & rental" Friday and Saturday).
+  Team or public. Never an item, never blocks time. **Not "Tag"** (a Loom and CRM word), **not
+  "Label"** as a product noun (it is fine as a form field caption), **not "Theme"** (the design system).
+- **Pencil** (stage 1) = a tentative private date for a potential Production (entry kind `pencil`). It
+  can carry several candidate dates until one is picked. Team only, never public. Verb: **"Pencil it
+  in"**; past tense **"penciled"** (one l, as the shipped staff copy spells it: "Each date is penciled
+  in"). A candidate is "a date"; choosing one is **"Keep this date"** (the others are removed). The optional lapse date's
+  field reads **"Lapses on"**.
+- **Plan** (stage 2) = the working record behind one or more Pencils and Productions: notes, links,
+  files, tasks, people. One Plan may hold many dates and many events. Co-host Spaces may work a Plan
+  through an accepted collaboration. Verb: **"Start a plan"**. **Collision guard:** the lowercase
+  word "plan" is also the membership **plans page** (ADR-1374) and a member's own plans in prose.
+  Capital-P Plan is the planning object only, and on a membership surface the word stays lowercase and
+  never names this object.
+- **Production** (stage 3) = the real, published event, created in the existing event Studio from the
+  Plan. It is not a new object: a Production IS an event, and every event rule in this canon applies
+  to it. Verb: **"Make it a Production"**. Once published, member-facing surfaces call it an event; the
+  word Production belongs to the team's planning surfaces (the board, the plan drawer, the readiness
+  bar), because a guest buying a ticket is coming to an event, not to a stage of someone's workflow.
+- **The three together** are written in order, "Pencil, Plan, Production", with commas in prose; an
+  arrow is fine in a diagram. Never abbreviated to "PPP" in UI.
+
+**Taken words: never use these for any stage or entry above.**
+
+- **Hold** is taken by **venue holds** (`space_venue_holds`, the Collaborators settings panel): an
+  advisory request to use a collaborating Space's venue. A Pencil is not a hold. The column
+  `space_calendar_entries.hold_expires_at` is an internal identifier only and never surfaces as the
+  word "hold".
+- **Block** is taken twice: **blocking a member** (`blocked_users`, the Block button on a profile) and
+  **blocks** in the editor and page builder (EDITOR-ARCHITECTURE). Unavailable time is never called "a
+  block" or "blocked time" in member copy; "Block bookings" survives only as the staff toggle sentence.
+- **Task** is taken by the canon **Task** (`crew_tasks`, the volunteer assignment, Quest section). A
+  Plan's to-dos are `crm_tasks` rows (ADR-628), the team's follow-up queue. On team surfaces they read
+  "to-dos" or sit under the existing CRM Tasks module heading; never capital-T Task as a new noun for
+  plan work, and never on a member-facing surface.
+- **Schedule** is taken by the **booking schedule** (`BookingScheduleForm`, a Space's availability
+  rules) and by scheduled sends (Dispatches, email campaigns). A Plan's dates are "dates", and
+  relative task timing is "due N days before", never "a schedule".
+
+**Internal only:** `layer`, `kind`, `entry`, `option_group`, `source_kind`, `blocks_time`,
+`space_plans`, `plan_id`. Members and staff read the nouns above, not these.
+
 ## Profile pages
 
 - **Spotlight** = a member's opt-in public mini-site (a linktree/personal page themed

@@ -2190,6 +2190,21 @@ h1, h2, h3, h4, h5, h6 {
   [class*="animate-[slideUp"] { animation: none !important; }
 }
 
+/* Calendar month change (ADR-1385): the new month eases in from the side it came from. Applied as
+   `motion-safe:animate-[calendarSlideNext...]`; the attribute guard below is the reduced-motion floor
+   (scripts/check-reduced-motion.test.ts). */
+@keyframes calendarSlideNext {
+  from { opacity: 0.4; transform: translateX(12px); }
+  to   { opacity: 1;   transform: translateX(0); }
+}
+@keyframes calendarSlidePrev {
+  from { opacity: 0.4; transform: translateX(-12px); }
+  to   { opacity: 1;   transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [class*="animate-[calendarSlide"] { animation: none !important; }
+}
+
 /* ── Spotlight animated gradient background ────────────────────────────────────
    A slow pan of an oversized gradient (background-size 300%). Member opt-in via the
    Spotlight theme editor; the duration is set inline from a validated value. Honors

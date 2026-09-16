@@ -44318,3 +44318,179 @@ source entirely.
 
 **Verified against production, not only in tests.** The same predicate run against the reporting
 Space returns 1 order, 4400 gross, 132 fee — the $44.00 ticket whose absence produced the row.
+
+## ADR-1385: A Space calendar is two layers, the public events and a private layer of entries, and it browses one month per gesture (2026-09-16)
+
+**Status:** Accepted · **Extends** [ADR-800](DECISIONS.md) (the grid over existing event infrastructure)
+and [ADR-807](DECISIONS.md) (the feeds) · **Uses** [ADR-923](DECISIONS.md) (the per-Space policy quad) ·
+Backlog `LIVE-378` · corroborated by `supabase/migrations/20270345005200_private_calendar_layer.sql`,
+`lib/calendar/registry.ts`, `lib/calendar/entries.ts`, `lib/calendar/public-month.ts`,
+`components/events/event-calendar.tsx`, `components/events/use-month-gestures.ts`, `lib/spaces/booking.ts`
+
+**Context.** The Space calendar of ADR-800 was a read-only picture of the events system: a grid over a
+window loaded once on the server, with no way past the edge of that window, and nothing on it that was
+not an event. A Space's team runs a real calendar alongside its public programme: days the building is
+closed, a staff meeting, a private rental, maintenance. None of those is an event and none may ever
+become public by accident, yet the team needs to see them beside the events, and a member booking a
+session needs the closed days to be closed. Two further faults showed once the grid was in daily use.
+Months before or after the loaded window rendered as an empty grid, which reads as "nothing happened",
+a false answer. And there was no fast way to move through the year.
+
+**Research, and what it ruled out.** The navigation was checked against how Google Calendar, Apple
+Calendar, Notion Calendar, Fantastical, Outlook and Luma behave, and against the platform facts that
+decide it (trackpad momentum, wheel delta modes, `touch-action`).
+
+1. **A vertical wheel must not change months on a public page.** The public Calendar tab sits inside a
+   scrolling page. A wheel that stops scrolling the page and flips a month instead reads as a bug, and
+   every mainstream calendar that pages on a vertical wheel does so only when the grid IS the whole work
+   surface. So the vertical wheel is opt-in, and only the staff calendar opts in.
+2. **One month per deliberate gesture.** A trackpad swipe emits a long tail of momentum events; counted
+   naively one flick moves five months. After a step the gesture locks until the wheel has been quiet
+   for 250ms (capped at 800ms), and deltas are normalised from lines and pages to pixels first.
+3. **Sideways swipes page everywhere.** A horizontal trackpad swipe or a clearly horizontal touch swipe
+   (at least 50px and 1.5 times its vertical travel) barely competes with page scroll. The grid sets
+   `touch-action: pan-y` so a vertical touch still scrolls the page.
+4. **Keyboard and jump.** PageUp and PageDown step a month, Shift steps a year; a month and year panel
+   jumps anywhere; a Today control appears only when the viewer is off the current month.
+5. **A list with a pinned preview, by container query, not viewport.** The same calendar is mounted in
+   a full page, a settings panel and a narrow column. The list groups by month and shows the selected
+   item in a preview pane beside it when the CONTAINER is wide enough, and as the existing popup when it
+   is not. A viewport breakpoint would have been wrong in two of the three mounts.
+
+**Decision.**
+
+1. **Two layers, never merged.** The PUBLIC layer is the events system, unchanged: every gate, share and
+   feed of ADR-800 and ADR-807 stays where it is. The PRIVATE layer is a new table,
+   `public.space_calendar_entries`, holding things that are not events. An entry is never an event and
+   no code path turns one into an event row. Every calendar item carries its `layer`, so the grid, the
+   list and the preview can style and filter by it without knowing where the row came from.
+2. **Kinds, v1: `unavailable` and `private`.** Unavailable is time the Space is not open; a Private
+   entry is an in-house item. Both default to the team only (`visibility = 'team'`).
+3. **One public read of the private layer, and it is times only.** A team may mark an entry
+   `public_unavailable`; the public calendar then shows that span as "Unavailable" with no title, notes,
+   location, kind or id. That projection is `public.space_public_unavailable()`, a SECURITY DEFINER
+   function whose column list is the gate, so it must never grow a detail column. Everything else about
+   the table is behind the ADR-923 quad on `private.can_write_space_content(space_id)`, read and written
+   through the caller's own session.
+4. **Time is stored the way events store it.** Wall clock as UTC parts, read in `time_zone`, with an
+   exclusive end for all-day entries. So the day key, the when-line formatter, the repeat engine and the
+   `.ics` writer work on entries without a second time model. `recurrence_rule` is reserved in the same
+   RRULE dialect as `events.recurrence_rule` (ADR-1299) and nothing writes it yet.
+5. **Unavailable blocks new bookings and never cancels an existing one.** An entry with `blocks_time`
+   joins the booked ranges inside `lib/spaces/booking.ts` (`readCalendarBlocks`), so a slot overlapping
+   it is neither offered nor bookable. A booking already made inside that span is left exactly as it is:
+   the calendar is not an authority over a member's confirmed plans, and cancelling someone's session
+   because staff drew a box is a consequence nobody asked for. The read is service-role (a member picking
+   a slot cannot read the private layer) and fails safe to no blocks.
+6. **Month on demand.** The first month loads on the server; every other month loads through
+   `loadSpaceCalendarMonth` (public tab) or the staff entry actions, one grid window at a time
+   (`lib/calendar/month-window.ts`). The public loader composes the EXISTING gated reader
+   (`listSpaceCalendarEvents`) and the Unavailable projection, and never reimplements a gate
+   (`lib/calendar/public-month.ts`). A month is never shown empty because it was never asked for.
+7. **A registry and a source adapter, so the next source is additive.** `lib/calendar/registry.ts`
+   declares every LAYER (`CALENDAR_LAYERS`) and every entry KIND (`ENTRY_KINDS`) once; the migration's
+   `kind` check mirrors it. A future source (a plan task's due date, a shift, a booking, a project
+   milestone) is ONE layer row plus ONE adapter that maps its rows to `CalendarEvent`; the grid needs no
+   change. A new kind of entry is one registry row plus one value in the check. The table also reserves
+   `source_kind` + `source_id` (constrained to be set together) so an entry can point at the record it
+   came from, and `metadata` for per-kind fields until one earns a column.
+
+**Rejected.** Private rows in `events` with a new visibility value: every one of the events system's
+readers, feeds and share branches would become a leak surface the day someone forgot the new value, and
+ADR-800's leak contract is re-applied per reader precisely because that has happened before. A separate
+calendar per kind: the whole point is one grid.
+
+**How it is held.** `lib/calendar/entries.test.ts` pins the form parsing, the row to form mapping and
+the blocking range. `scripts/check-schema-contract.mjs` carries the table and the RPC under `LIVE-378`
+until the generated types catch up (ADR-246), and the migration applies at merge. The backlog row's
+probe reads the consequence: the table exists, booking reads the blocks, and the grid is wired to the
+gesture hook.
+
+## ADR-1386: Pencil, Plan, Production: a date becomes a plan becomes a published event, on one spine (2026-09-16)
+
+**Status:** Accepted, phased · **Builds on** [ADR-1385](DECISIONS.md) (the private layer) · **Uses**
+[ADR-986](DECISIONS.md) (the Studio manifest), [ADR-628](DECISIONS.md) (`crm_tasks`),
+[ADR-835](DECISIONS.md) (Collaborators are Spaces) · Backlog `PROG-CAL1` to `PROG-CAL8` ·
+corroborated by `supabase/migrations/20270345005200_private_calendar_layer.sql`, `lib/calendar/registry.ts`
+
+**Context.** Owner, paraphrased: a Space puts a private date on its calendar as a potential event; as
+it plans the thing it uses a project system that keeps it organised; and eventually, when prompted, that
+plan spawns a full public event. The integration should feel organic, the way Notion links a calendar
+item, a page and a project so that each is one click from the others. Today those three are three
+unrelated places: the private layer (ADR-1385), the operator task queue (`crm_tasks`), and the event
+Studio. A team that plans a retreat in a spreadsheet and then retypes it into the event Spark has two
+records of one thing, and they disagree by the second week.
+
+**Owner rulings, 2026-09-16.**
+
+1. **One Plan can hold many dates and many events.** A retreat season, a festival weekend with five
+   sessions, a series of workshops. A Plan is not one-to-one with an event.
+2. **The stage names are Pencil, Plan, Production.** Production is the real, published event in the
+   existing events system, not a new object.
+3. **Plan tasks extend `crm_tasks`.** One team task inbox, not a second task system beside the CRM
+   follow-ups the team already works.
+4. **Co-hosts collaborate on a plan.** Another Space (a Collaborator in the ADR-835 sense) can work a
+   plan with its host through an accepted collaboration.
+
+**Decision: the lifecycle.**
+
+- **Pencil.** A tentative private date for a potential Production. It is a calendar entry of kind
+  `pencil` on the private layer, tentative by default and never public. A Pencil may carry several
+  candidate dates that share an `option_group`; "Keep this date" keeps one candidate and removes its
+  siblings. An optional `hold_expires_at` says when the pencilled date lapses, and the staff calendar
+  flags it once passed. Pencilling over an event, Unavailable time or another entry warns about the
+  clash and does not refuse it: a team pencils over things on purpose while it decides.
+- **Plan.** The working record behind one or more Pencils and Productions: notes, links, files, tasks,
+  people. A new table (`space_plans`) that the calendar items point at, opened as a drawer from any item
+  that belongs to it, so the calendar, the plan and the event are each one click from the others.
+  Its tasks are `crm_tasks` rows carrying a `plan_id`.
+- **Production.** The published event. "Make it a Production" opens the EXISTING event Spark prefilled
+  from the plan through the event manifest; there is never a second event wizard (ADR-986). The event
+  links back to its plan and the Pencil's calendar card becomes the event card rather than sitting
+  beside it as a duplicate.
+
+The words are fixed in `docs/NAMING.md`: Pencil, Plan and Production are the stage nouns; the verbs are
+"Pencil it in" and "Make it a Production". Hold, Block, Task and Schedule already mean other things in
+this product and are not used for any stage.
+
+**Day notes, shipped with the first phase.** A short, unobtrusive label on a day's grid card that is
+neither an entry nor an event: Royal Temple's "Quiet hours" every Monday, "Flex day" on Thursday,
+"Retreat & rental" Friday and Saturday. A day note repeats on weekdays or covers a date range, is `team`
+or `public`, and never blocks time or appears as an item. It lives in `public.space_calendar_day_notes`,
+is managed as one small field on the Space's Calendar settings page, and reaches the grid through
+`notesForDay` in `lib/calendar/day-notes.ts`. It is separate from entries on purpose: a label that
+describes a day's character is not a thing that happens on it, and giving it an item's weight would
+crowd every Monday.
+
+**The phases.** Each is one backlog row; the row's detail carries the full specification and its probe
+says when it is done.
+
+| Phase | Row | Ships |
+|---|---|---|
+| P0 | `LIVE-378` | The two-layer calendar and navigation (ADR-1385) |
+| P1 | `PROG-CAL1` | Pencil (candidates, lapse date, clash warnings) and day notes; Royal Temple's Fall Equinox 2026 to Fall Equinox 2027 schedule seeded as Pencils with its three weekly day notes |
+| P2 | `PROG-CAL2` | Plan: `space_plans`, `crm_tasks.plan_id`, the plan drawer, co-host visibility |
+| P3 | `PROG-CAL3` | Production: the Spark prefilled from the plan, the back link, the readiness bar |
+| P4 | `PROG-CAL4` | Views: board by stage, My tasks, due dates as a layer, back-to-back stacking |
+| P5 | `PROG-CAL5` | Templates and relative scheduling, Run it again, repeating Pencils with exceptions |
+| P6 | `PROG-CAL6` | Vera drafts and suggests, never publishes |
+| P7 | `PROG-CAL7` | Together: co-host collaboration depth and a private feed of the private layer |
+| P8 | `PROG-CAL8` | Beyond events: the same plan spine for Journeys, Programs and maintenance |
+
+**Invariants every phase keeps.**
+
+1. **Nothing becomes public without a person pressing the button.** A Pencil and a Plan are private to
+   the team (and to an accepted co-host); only a Production is public, and only through the event
+   Studio's own publish step. Vera may draft and suggest; it never publishes (P6).
+2. **One record per thing.** A date that became a Production is the event, not an entry plus an event.
+   A plan task is a `crm_tasks` row, not a copy of one.
+3. **The event manifest is the only source of an event's fields.** Prefill and readiness both read the
+   manifest; neither keeps its own list of what an event needs.
+4. **The calendar registry stays the seam.** Plans, task due dates and stacked items arrive as layers and
+   adapters (ADR-1385 §7), never as special cases in the grid.
+
+**Open questions, carried in the rows rather than guessed here.** Whether a Plan with no dates at all may
+exist (a "someday" idea); whether a co-host sees the host's whole plan or only shared sections; who owns
+a Production spawned from a co-owned plan, and therefore who is paid (the Host rule of ADR-911 says the
+host Space; the handoff has to say which Space that is); and whether a lapsed Pencil is deleted,
+archived or only flagged.

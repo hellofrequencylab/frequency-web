@@ -3,15 +3,18 @@ import { notFound } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
-import { listSpaceCalendarEvents, listCalendarEngagement } from '@/lib/events/store'
-import { formatEventWhen, eventInstant } from '@/lib/time/zone'
-import { eventDayKey } from '@/lib/events/calendar-grid'
+import { listSpaceCalendarEvents } from '@/lib/events/store'
 import { SITE_URL } from '@/lib/site'
-import { EventCalendar, type CalendarEvent } from '@/components/events/event-calendar'
+import { EventCalendar } from '@/components/events/event-calendar'
+import { spaceEventRowsToItems } from '@/lib/calendar/public-month'
+import { listPublicUnavailableItems } from '@/lib/calendar/entries-store'
+import { monthGridWindow } from '@/lib/calendar/month-window'
+import { loadSpaceCalendarMonth } from './actions'
+import { listDayNotes } from '@/lib/calendar/day-notes-store'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 
-// THE PER-SPACE CALENDAR TAB (Events EC2). A month grid of the Space's upcoming events; clicking one opens
+// THE PER-SPACE CALENDAR TAB (Events EC2, ADR-1385). A month grid or list of the Space's events; clicking one opens
 // a truncated popup with a "Go to Event" link. Guests can subscribe the whole Space calendar into any
 // calendar app via the public per-space .ics feed (Events EC1). The identity hero + tab chrome come from
 // the (profile) layout; this is the body.
@@ -40,35 +43,17 @@ export default async function SpaceCalendarPage({ params }: { params: Promise<{ 
   const now = new Date()
   const initialYear = now.getUTCFullYear()
   const initialMonth1 = now.getUTCMonth() + 1
-  const fromDay = `${initialYear}-${String(initialMonth1).padStart(2, '0')}-01`
 
-  const rows = await listSpaceCalendarEvents(space.id, { fromDay })
-  // Enrich with "going" count + cover for the popup (kept out of the feed RPCs; display-only).
-  const engagement = await listCalendarEngagement(rows.map((r) => r.id))
-
-  // Pre-format each event server-side (the timezone lib never ships to the client): the short chip time,
-  // the full popup when-line (both in the event's own zone), and the day key the grid buckets on. The
-  // absolute instant is passed too, so the client can offer a "show in my timezone" toggle via native Intl.
-  const events: CalendarEvent[] = rows
-    .map((ev): CalendarEvent | null => {
-      const dayKey = eventDayKey(ev.starts_at)
-      if (!dayKey) return null
-      const eng = engagement.get(ev.id)
-      return {
-        slug: ev.slug,
-        title: ev.title,
-        dayKey,
-        timeLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'time', withZone: false }),
-        whenLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'full' }),
-        startInstantIso: eventInstant(ev.starts_at, ev.time_zone)?.toISOString() ?? null,
-        location: ev.location,
-        goingCount: eng?.going ?? 0,
-        coverUrl: eng?.coverUrl ?? null,
-        coverFocus: eng?.coverFocus ?? null,
-        isCancelled: !!ev.is_cancelled,
-      }
-    })
-    .filter((e): e is CalendarEvent => e !== null)
+  // The page's own month forward (the gated reader, up to its row limit), plus any time the team chose
+  // to show as Unavailable in this month's grid. Every other month arrives through
+  // loadSpaceCalendarMonth as the visitor browses (ADR-1385), so earlier months are not falsely empty.
+  const grid = monthGridWindow(initialYear, initialMonth1)
+  const [rows, unavailable, dayNotes] = await Promise.all([
+    listSpaceCalendarEvents(space.id, { fromDay: grid.fromDay }),
+    listPublicUnavailableItems(space.id, grid.fromDay, grid.toDay),
+    listDayNotes(space.id, { publicOnly: true }),
+  ])
+  const events = [...(await spaceEventRowsToItems(rows)), ...unavailable]
 
   const brandName = space.brandName ?? space.name
   const httpsUrl = `${SITE_URL}/spaces/${slug}/calendar.ics`
@@ -89,9 +74,15 @@ export default async function SpaceCalendarPage({ params }: { params: Promise<{ 
         />
       </div>
 
-      <EventCalendar events={events} initialYear={initialYear} initialMonth1={initialMonth1} />
+      <EventCalendar
+        events={events}
+        initialYear={initialYear}
+        initialMonth1={initialMonth1}
+        loadMonth={loadSpaceCalendarMonth.bind(null, slug)}
+        dayNotes={dayNotes}
+      />
 
-      {events.length === 0 && (
+      {rows.length === 0 && (
         <p className="rounded-card border border-dashed border-border bg-surface px-4 py-6 text-center text-body-sm text-muted">
           No upcoming events yet. Check back soon, or subscribe to be notified when {brandName} adds one.
         </p>

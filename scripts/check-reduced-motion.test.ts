@@ -46,6 +46,14 @@ const GLOBALS = 'app/globals.css'
  *  Each entry names the selector that MUST be neutralized under reduced-motion; the test asserts
  *  that selector really is, so an entry cannot make an unguarded keyframe pass by existing. */
 const EXTERNALLY_APPLIED: Record<string, { guard: string; why: string }> = {
+  calendarSlideNext: {
+    guard: '[class*="animate-[calendarSlide"]',
+    why: 'Applied from TSX as a motion-safe arbitrary value on the calendar grid (components/events/event-calendar.tsx, ADR-1385).',
+  },
+  calendarSlidePrev: {
+    guard: '[class*="animate-[calendarSlide"]',
+    why: 'The previous-month twin of calendarSlideNext, same call site and same guard.',
+  },
   slideUp: {
     guard: '[class*="animate-[slideUp"]',
     why:
