@@ -44,7 +44,9 @@ There are two, and you can change your answer right up until the gathering ends.
 On a ticketed event your ticket IS your Going: buying it puts you in the room and
 counts you like anyone else. The box is headed **Tickets**, and the answer switch
 sits below it. Tap **Going** before you have a ticket and it opens the card fields
-rather than recording an answer nobody has paid for.
+rather than recording an answer nobody has paid for. Once you hold a ticket the switch
+behaves normally, and **Can't go** tells the host you are not coming without cancelling
+or refunding the ticket itself.
 Other events run on RSVP even when they have a price: first come, first served,
 with the cost paid at the door or covered by a membership. If the hosting Space's
 membership includes the event, being a member is enough: answer Going and your
