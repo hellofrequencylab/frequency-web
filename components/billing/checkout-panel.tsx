@@ -60,11 +60,19 @@ export default function CheckoutPanel({
   doneBody = 'Your ticket is confirmed. A receipt is on its way to your email.',
 }: {
   /**
-   * Null while the server is still building the session. The panel opens ANYWAY and animates,
-   * because the alternative is what the owner saw: press the button, watch nothing happen, then
-   * have a box appear. See the skeleton branch below.
+   * Three shapes, and the difference is WHEN Stripe may start:
+   *
+   * - `string` — the session already exists. Stripe initialises immediately.
+   * - `Promise<string>` — the session is still being built. Stripe initialises AGAINST THE
+   *   IN-FLIGHT CALL, so its own download and handshake overlap the server round trip instead of
+   *   queueing behind it (LIVE-371). A caller that takes this path MUST settle the promise on
+   *   every ending, rejection included; a promise nobody settles leaves this panel loading forever.
+   * - `null` — nothing has been asked for yet.
+   *
+   * In the last two the panel opens ANYWAY and animates, because the alternative is what the owner
+   * saw: press the button, watch nothing happen, then have a box appear. See the skeleton branch.
    */
-  clientSecret: string | null
+  clientSecret: string | Promise<string> | null
   priceLabel?: string
   onFellBack: () => void
   /**
