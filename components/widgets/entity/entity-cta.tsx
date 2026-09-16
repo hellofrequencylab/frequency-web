@@ -106,7 +106,10 @@ export async function EntityCta() {
   // The service / product / membership Focuses lead with memberships (the "Join" CTA).
   if (ctaKind === 'membership') {
     return (
-      <ModuleCard title="Become a member" tile>
+      // The plans surface renders its own cards, so it takes ModuleCard's BORDERLESS default rather
+    // than the white tile: a card on a white panel has no edge to read, which is what the tile skin
+    // produced here (docs/DESIGN.md, "a card means this is a distinct object").
+    <ModuleCard title="Become a member">
         <Suspense fallback={<MembershipSkeleton />}>
           <MembershipJoin spaceId={space.id} slug={space.slug} ownerProfileId={space.ownerProfileId} />
         </Suspense>

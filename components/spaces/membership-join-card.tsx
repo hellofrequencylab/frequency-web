@@ -3,8 +3,9 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Check, Loader2, Ticket } from 'lucide-react'
+import { Check, Ticket } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { isError } from '@/lib/action-result'
 import { formatPriceCents } from '@/lib/commerce/types'
 import { joinTier, startSpaceMembershipCheckout } from '@/lib/spaces/memberships-actions'
@@ -56,6 +57,8 @@ export function MembershipJoinCard({
   includedEvents = [],
   spotsLeft = null,
   interval = 'month',
+  featured = false,
+  layout = 'card',
 }: {
   spaceId: string
   tier: MembershipTier
@@ -70,6 +73,15 @@ export function MembershipJoinCard({
   includedEvents?: { slug: string; title: string }[]
   /** Remaining capacity (ADR-824); null = unlimited. 0 = full (waitlist or closed). */
   spotsLeft?: number | null
+  /** The one plan the grid leans on. Carries the heavier chrome ladder (lift-2, a primary border and
+   *  ring, more padding) and the only solid CTA in the set, so a reader's eye lands somewhere. The
+   *  caller resolves it ONCE from the tier set; never pass it per render site, because two callers
+   *  disagreeing is how a page comes to crown two different plans. */
+  featured?: boolean
+  /** `card` is the grid tile. `bar` is the full-width row the free tier takes above the grid: same
+   *  join logic, same states, laid out horizontally because a free tier has one short list and a
+   *  card of it is mostly empty space. */
+  layout?: 'card' | 'bar'
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -138,99 +150,184 @@ export function MembershipJoinCard({
     })
   }
 
-  return (
-    <div className="flex h-full flex-col rounded-card border border-border bg-surface p-5 lift-1">
-      <h3 className="text-body font-bold leading-tight text-text">{tier.name}</h3>
-      <p className="mt-1 text-body-sm text-muted">
-        {free ? (
-          'Free'
-        ) : (
-          <>
-            <span className="font-semibold text-text">{formatPrice(price.cents)}</span>{' '}
-            {intervalLabel(price.cadence)}
-          </>
+  // ── The pieces, built once and laid out twice ───────────────────────────────────────────────
+  // `bar` and `card` differ in ARRANGEMENT, never in behaviour: same join(), same capacity states,
+  // same honesty line. Keeping one component is what stops the free tier's row from drifting away
+  // from the paid tiers' cards the first time either is touched.
+
+  const priceBlock = (
+    <div className="flex items-baseline gap-1.5">
+      {free ? (
+        <span className="text-stat-sm font-black tabular-nums leading-none text-text">Free</span>
+      ) : (
+        <>
+          <span className="text-stat-sm font-black tabular-nums leading-none text-text">
+            {formatPrice(price.cents)}
+          </span>
+          <span className="text-body-sm text-muted">{intervalLabel(price.cadence)}</span>
+        </>
+      )}
+    </div>
+  )
+
+  const benefitList = tier.benefits.length > 0 && (
+    <ul className="space-y-2">
+      {tier.benefits.map((benefit, i) => (
+        <li key={i} className="flex items-start gap-2.5 text-body-sm leading-relaxed text-text">
+          <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-pill bg-success-bg">
+            <Check className="h-3 w-3 text-success" aria-hidden />
+          </span>
+          <span>{benefit}</span>
+        </li>
+      ))}
+    </ul>
+  )
+
+  const eventList = includedEvents.length > 0 && (
+    <ul className="space-y-2">
+      {includedEvents.map((e) => (
+        <li key={e.slug} className="flex items-start gap-2.5 text-body-sm leading-relaxed text-text">
+          <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-pill bg-primary-bg">
+            <Ticket className="h-3 w-3 text-primary-strong" aria-hidden />
+          </span>
+          <span>
+            Member ticket to{' '}
+            <Link href={`/events/${e.slug}`} className="font-medium underline underline-offset-2">
+              {e.title}
+            </Link>{' '}
+            included
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+
+  // The CTA carries the set's only solid fill on the featured plan; every other plan is secondary,
+  // so the grid has one obvious answer rather than four competing ones (marketing pricing does the
+  // same, `variant={featured ? 'primary' : 'secondary'}`).
+  const ctaVariant = featured || free ? 'primary' : 'secondary'
+  const cta =
+    full && !tier.waitlist ? (
+      <Button type="button" disabled variant={ctaVariant} className="w-full">
+        Full
+      </Button>
+    ) : (
+      <Button
+        type="button"
+        onClick={join}
+        loading={pending}
+        variant={ctaVariant}
+        className="w-full"
+      >
+        {full ? 'Join the waitlist' : free ? 'Join free' : `Join ${tier.name}`}
+      </Button>
+    )
+
+  const footnotes = (
+    <>
+      {full && tier.waitlist && (
+        <p className="mt-2 text-2xs text-muted">
+          This tier is full. Joining adds you to the waitlist; you become a member when a spot opens.
+        </p>
+      )}
+      {!free && !full && (
+        <p className="mt-2 text-2xs text-muted">
+          {billingOn
+            ? 'Join opens secure checkout. You can cancel any time.'
+            : 'No payment is taken yet. Paid billing comes later.'}
+        </p>
+      )}
+      {error && (
+        <p className="mt-2 text-2xs font-medium text-danger" role="alert">
+          {error}
+        </p>
+      )}
+    </>
+  )
+
+  const spotsLine = spotsLeft != null && spotsLeft > 0 && (
+    <p className="text-2xs text-muted">
+      {spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left
+    </p>
+  )
+
+  // ── BAR: the free tier, above the grid ──────────────────────────────────────────────────────
+  if (layout === 'bar') {
+    return (
+      <div className="rounded-card border border-border bg-surface px-5 py-5 lift-1 ring-focus">
+        <div className="flex flex-col gap-4 @md:flex-row @md:items-center @md:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <h3 className="text-card-title font-bold leading-tight text-text">{tier.name}</h3>
+              {priceBlock}
+            </div>
+            {tier.description && (
+              <p className="mt-2 max-w-prose text-body-sm leading-relaxed text-muted">
+                {tier.description}
+              </p>
+            )}
+          </div>
+          <div className="shrink-0 @md:w-56">
+            {spotsLine}
+            {cta}
+            {footnotes}
+          </div>
+        </div>
+        {tier.benefits.length > 0 && (
+          <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-border pt-4">
+            {tier.benefits.map((benefit, i) => (
+              <li key={i} className="flex items-start gap-2 text-body-sm text-muted">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden />
+                <span>{benefit}</span>
+              </li>
+            ))}
+          </ul>
         )}
-      </p>
-      {saving && <p className="mt-1 text-2xs font-semibold text-success">{saving}</p>}
+      </div>
+    )
+  }
+
+  // ── CARD: a paid plan in the grid ───────────────────────────────────────────────────────────
+  // The chrome ladder is the house one: lift-1 + a hairline at rest, lift-2 + a primary border and
+  // ring for the one featured plan. lift-3 is never a plan card; it is reserved for one object per
+  // page.
+  const shell = featured
+    ? 'border-2 border-primary bg-surface p-7 lift-2 ring-4 ring-primary-bg'
+    : 'border border-border bg-surface p-5 lift-1'
+
+  return (
+    <div className={`relative flex h-full flex-col rounded-card ring-focus ${shell}`}>
+      {featured && (
+        <span className="absolute -top-3 left-6">
+          <Badge tone="primary" solid size="sm">
+            Most chosen
+          </Badge>
+        </span>
+      )}
+
+      <h3 className="text-card-title font-bold leading-tight text-text">{tier.name}</h3>
+
+      <div className="mt-3">{priceBlock}</div>
+      {saving && <p className="mt-1.5 text-2xs font-semibold text-success">{saving}</p>}
       {price.monthlyOnly && (
-        <p className="mt-1 text-meta text-muted">Monthly only. This tier has no yearly price.</p>
+        <p className="mt-1.5 text-meta text-muted">Monthly only. This tier has no yearly price.</p>
       )}
 
       {tier.description && (
         <p className="mt-3 text-body-sm leading-relaxed text-muted">{tier.description}</p>
       )}
 
-      {tier.benefits.length > 0 && (
-        <ul className="mt-3 space-y-1.5">
-          {tier.benefits.map((benefit, i) => (
-            <li key={i} className="flex items-start gap-2 text-body-sm text-text">
-              <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden />
-              <span>{benefit}</span>
-            </li>
-          ))}
-        </ul>
+      {(benefitList || eventList) && (
+        <div className="mt-5 space-y-2 border-t border-border pt-5">
+          {benefitList}
+          {eventList}
+        </div>
       )}
 
-      {includedEvents.length > 0 && (
-        <ul className="mt-3 space-y-1.5">
-          {includedEvents.map((e) => (
-            <li key={e.slug} className="flex items-start gap-2 text-body-sm text-text">
-              <Ticket className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
-              <span>
-                Member ticket to{' '}
-                <Link href={`/events/${e.slug}`} className="font-medium underline underline-offset-2">
-                  {e.title}
-                </Link>{' '}
-                included
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <div className="mt-auto pt-4">
-        {/* Capacity states (ADR-824): open (spots shown when limited), full-with-waitlist, or
-            closed. The server re-checks on join, so these are honest hints, not the gate. */}
-        {spotsLeft != null && spotsLeft > 0 && (
-          <p className="mb-2 text-2xs text-muted">
-            {spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left
-          </p>
-        )}
-        {full && !tier.waitlist ? (
-          <Button type="button" disabled className="w-full justify-center">
-            Full
-          </Button>
-        ) : (
-          <Button type="button" onClick={join} disabled={pending} className="w-full justify-center">
-            {pending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Joining
-              </>
-            ) : full ? (
-              'Join the waitlist'
-            ) : (
-              'Join'
-            )}
-          </Button>
-        )}
-        {full && tier.waitlist && (
-          <p className="mt-2 text-2xs text-muted">
-            This tier is full. Joining adds you to the waitlist; you become a member when a spot
-            opens.
-          </p>
-        )}
-        {!free && !full && (
-          <p className="mt-2 text-2xs text-muted">
-            {billingOn
-              ? 'Join opens secure checkout. You can cancel any time.'
-              : 'No payment is taken yet. Paid billing comes later.'}
-          </p>
-        )}
-        {error && (
-          <p className="mt-2 text-2xs font-medium text-danger" role="alert">
-            {error}
-          </p>
-        )}
+      <div className="mt-auto pt-5">
+        {spotsLine}
+        {cta}
+        {footnotes}
       </div>
     </div>
   )
