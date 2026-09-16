@@ -4,7 +4,8 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Check, CreditCard, Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
-import TicketCheckoutPanel from '@/components/events/ticket-checkout-panel'
+import CheckoutPanel from '@/components/billing/checkout-panel'
+import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { setRsvpStatus } from '@/app/(main)/events/actions'
 import { startTicket } from '@/app/(main)/events/[slug]/ticket-actions'
 import { GuestRsvpForm } from '@/components/events/guest-rsvp-form'
@@ -144,6 +145,8 @@ export function RsvpPaymentFlow({
       const r = await startTicket(eventId, {
         qty: 1,
         ticketTypeId: selected && selected.kind === 'general' ? selected.ticketTypeId : null,
+        // 🔴 Load-bearing: see ticket-button.tsx. Re-asking for elements dead-ends the buyer.
+        forceHosted: true,
       })
       if (!isError(r) && r.data.url) window.location.href = r.data.url
       else setError('Could not start checkout. Please try again.')
@@ -151,6 +154,8 @@ export function RsvpPaymentFlow({
   }
 
   function payAndGo() {
+    // The script downloads alongside the server round trip rather than after it.
+    warmStripeBrowser()
     setError(null)
     startTransition(async () => {
       await setRsvpStatus(eventId, 'going', { slug })
@@ -178,10 +183,15 @@ export function RsvpPaymentFlow({
       {/* The on-page card form (LIVE-347). Rendered FIRST so it lands in view the moment it
           appears, rather than below the rate list the buyer has already finished with. */}
       {clientSecret && (
-        <TicketCheckoutPanel
+        <CheckoutPanel
           clientSecret={clientSecret}
           priceLabel=""
           onFellBack={fallBackToHosted}
+          // Closing after a completed payment reloads so the page shows what was just bought:
+          // the ticket row, the updated count, the RSVP state. `location.reload()` rather than
+          // router.refresh() because the purchase changes server-rendered state well outside
+          // this component's subtree.
+          onClose={() => window.location.reload()}
         />
       )}
 
@@ -247,6 +257,9 @@ export function RsvpPaymentFlow({
                   <button
                     type="button"
                     onClick={payAndGo}
+                    onPointerEnter={warmStripeBrowser}
+                    onFocus={warmStripeBrowser}
+                    onTouchStart={warmStripeBrowser}
                     disabled={pending}
                     className="inline-flex w-full items-center justify-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
                   >
@@ -266,6 +279,9 @@ export function RsvpPaymentFlow({
                   <button
                     type="button"
                     onClick={payAndGo}
+                    onPointerEnter={warmStripeBrowser}
+                    onFocus={warmStripeBrowser}
+                    onTouchStart={warmStripeBrowser}
                     disabled={pending}
                     className="inline-flex w-full items-center justify-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
                   >

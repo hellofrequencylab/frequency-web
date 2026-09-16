@@ -4,7 +4,8 @@ import { useId, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { isError } from '@/lib/action-result'
-import TicketCheckoutPanel from '@/components/events/ticket-checkout-panel'
+import CheckoutPanel from '@/components/billing/checkout-panel'
+import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { startGuestTicket } from '@/app/(main)/events/[slug]/ticket-actions'
 import { ticketRowToPrice, type Price } from '@/lib/commerce/types'
 import { PriceInput, type PriceSelection } from '@/components/commerce/price-input'
@@ -124,9 +125,18 @@ export function GuestTicketForm({
    * ⚠️ Deliberately NOT re-submitting here. The guest action is rate limited per IP (5 per 10
    * minutes) and a silent retry would spend that budget on a buyer who is already mid-purchase.
    * The message asks them to press the button again, which re-runs the action honestly.
+   *
+   * 🔴 BUT THE RETRY MUST ASK FOR SOMETHING DIFFERENT. Until 2026-09-16 it did not: pressing the
+   * button again re-ran the action with the same options, the server issued another elements
+   * session because the publishable key had not changed, and the form failed for the identical
+   * reason -- a loop that spent the rate-limit budget one press at a time and never reached a
+   * payable page. `hostedOnly` latches here so the next submit demands a hosted URL. The
+   * no-silent-retry reasoning above is unchanged; only the retry's destination is.
    */
+  const [hostedOnly, setHostedOnly] = useState(false)
   function fallBackToHosted() {
     setClientSecret(null)
+    setHostedOnly(true)
     setError('Secure payment could not load here. Press the button again to continue on Stripe.')
   }
   const [selection, setSelection] = useState<PriceSelection | null>(null)
@@ -168,7 +178,10 @@ export function GuestTicketForm({
   const isFree = hasTiers ? selected?.pricingMode === 'free' : false
   const buyerChosen = selected ? isBuyerChosen(selected.pricingMode) : false
   const payLabel = hasTiers ? (selected ? tierPriceLabel(selected) : '') : priceLabel ?? ''
-  const submitLabel = payLabel ? `Get ticket · ${payLabel}` : 'Get ticket'
+  // Moves with the signed-in buttons on purpose: the same event must not call the same act two
+  // different things depending on whether you have an account. `isFree` (not an empty payLabel)
+  // decides, so a free tier reads "Get ticket" instead of the old "Get ticket · Free".
+  const submitLabel = isFree || !payLabel ? 'Get ticket' : `Buy ticket · ${payLabel}`
   const soldOut = !!selected?.soldOut
 
   function selectRate(r: FlowRate) {
@@ -198,10 +211,15 @@ export function GuestTicketForm({
     // The card form replaces the email form entirely: the address has already been captured and
     // the session created against it, so re-showing the form would invite a second submission.
     return (
-      <TicketCheckoutPanel
+      <CheckoutPanel
         clientSecret={clientSecret}
         priceLabel=""
         onFellBack={fallBackToHosted}
+        // Closing after a completed payment reloads so the page shows what was just bought:
+        // the ticket row, the updated count, the RSVP state. `location.reload()` rather than
+        // router.refresh() because the purchase changes server-rendered state well outside
+        // this component's subtree.
+        onClose={() => window.location.reload()}
       />
     )
   }
@@ -238,6 +256,14 @@ export function GuestTicketForm({
             amountCents,
             qty: 1,
             company: String(data.get('company') || ''),
+            // Latched by fallBackToHosted above: this press is the retry, and it must not ask
+            // for the on-page form that already failed in this browser.
+            //
+            // Spread rather than `forceHosted: hostedOnly` so the NORMAL submit's argument object
+            // is byte-identical to what it has always been. guest-ticket-form.render.test.tsx
+            // pins that object exactly, and it is right to: this is the money boundary's argument
+            // contract, not an implementation detail.
+            ...(hostedOnly ? { forceHosted: true } : {}),
           })
           if (isError(result)) {
             setError(result.error)
@@ -327,7 +353,14 @@ export function GuestTicketForm({
         {/* `loading` rather than a label swap: the primitive marks the control aria-busy and
             disables it while keeping the label the same width, which is the one thing a
             pending state must not change (INTERACTION-STATES §4 rule 3). */}
-        <Button type="submit" loading={pending} disabled={soldOut}>
+        <Button
+          type="submit"
+          loading={pending}
+          disabled={soldOut}
+          onPointerEnter={warmStripeBrowser}
+          onFocus={warmStripeBrowser}
+          onTouchStart={warmStripeBrowser}
+        >
           {soldOut ? 'Sold out' : submitLabel}
         </Button>
         <p className="text-meta text-muted">

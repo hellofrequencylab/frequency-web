@@ -56,6 +56,8 @@
 import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from './stripe'
+import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from './checkout-ui'
+import { savedCardParamsFor, createAllowingSavedCard } from './saved-card'
 import { getConnectStatus, payoutsLive } from './connect'
 import { platformFeeCents, platformFeePct, spaceTakeRateCents, memberTakeRateCents, resolvedNetworkRate } from './fees'
 import { networkTakeRateBpsForPlan, memberNetworkTakeRateBps } from './pricing-keys'
@@ -451,7 +453,7 @@ export async function createTicketCheckout(opts: {
   const guestEmail = (opts.guestEmail || '').trim().toLowerCase() || null
   // Opt-in, never inferred. See the `ui` option: hosted stays the default so no existing caller
   // changes behaviour when this ships.
-  const wantsElements = opts.ui === 'elements'
+  const ui: CheckoutUi = opts.ui === 'elements' ? 'elements' : 'hosted'
   if (!!buyerProfileId === !!guestEmail) {
     console.error(
       '[tickets] createTicketCheckout needs exactly one identity, got',
@@ -463,6 +465,44 @@ export async function createTicketCheckout(opts: {
   if (!(await payoutsLive())) return { error: 'Ticketing isn’t turned on yet.' }
   if (!stripe) return { error: 'Ticketing isn’t turned on yet.' }
   const qty = Math.min(Math.max(Math.floor(opts.qty ?? 1), 1), TICKET_MAX_QTY)
+
+  // ── TWO BUYER-ONLY READS, STARTED NOW INSTEAD OF LAST (LIVE-363) ─────────────────────────
+  // Both depend on nothing but `buyerProfileId`, which is already known here, and both used to
+  // sit immediately before the Stripe call -- so their round trips were pure tail latency added
+  // to every purchase after all the pricing work had finished. `profileAccountEmail` is the more
+  // expensive of the two: a `profiles` read AND a second HTTP call to the Supabase Auth API.
+  //
+  // ⚠️ `.catch()` AT CREATION, NOT AT AWAIT. Every refusal between here and the await is an early
+  // `return`, and a floating promise that rejects after its function returned is an unhandled
+  // rejection. Catching here turns that into a value the awaiting code already knows how to read:
+  // a null email is the documented "omit the field" case, and a saved-card error is the
+  // fail-closed case. Neither invents a new behaviour, they just arrive earlier.
+  //
+  // The cost of being wrong is one wasted read for a buyer who gets refused. The gates themselves
+  // are untouched: nothing below reads these until the point it always did.
+  const receiptEmailPromise: Promise<string | null> = guestEmail
+    ? Promise.resolve(guestEmail)
+    : buyerProfileId
+      ? profileAccountEmail(buyerProfileId).catch(() => null)
+      : Promise.resolve(null)
+  const savedCardPromise = savedCardParamsFor(db(), buyerProfileId, 'tickets').catch(
+    () => ({ error: true }) as const,
+  )
+
+  // ── THREE READS THAT DEPEND ON NOTHING, WARMED NOW ───────────────────────────────────────
+  // The root Space id and the operator pricing settings take no arguments at all: they are the
+  // same for every buyer and every event, yet they were read mid-chain, each adding a serial
+  // round trip between the click and the Stripe call.
+  //
+  // Both are already wrapped in React `cache()` (lib/spaces/store.ts, lib/pricing/settings.ts),
+  // so this changes WHEN the request is made and nothing else -- the awaits below get the very
+  // same memoised promise. Results are deliberately ignored here; the real call sites are
+  // unchanged and still decide what to do with them.
+  //
+  // ⚠️ The payouts gate above is NOT part of this and must not become one. "Never reach Stripe
+  // when payouts are off" is a refusal whose position in the order is the guarantee.
+  void loadRootSpaceId().catch(() => null)
+  void resolvedNetworkRate().catch(() => null)
 
   const { data } = await db()
     .from('events')
@@ -825,9 +865,25 @@ export async function createTicketCheckout(opts: {
   // Best-effort by construction -- `profileAccountEmail` never throws and answers null for a
   // profile with no auth user -- and a null simply omits the field, which is exactly where this
   // path has been since it shipped.
-  const receiptEmail = guestEmail ?? (buyerProfileId ? await profileAccountEmail(buyerProfileId) : null)
+  const receiptEmail = await receiptEmailPromise
 
-  const session = await stripe.checkout.sessions.create({
+  // ── CAN THIS BUYER SAVE THEIR CARD? (LIVE-362) ───────────────────────────────────────────
+  // A member reuses their one Stripe customer, or gets one minted to save against; a GUEST gets
+  // nothing, because there is no account for a card to belong to and `customer_email` (which a
+  // guest session sets) cannot coexist with `customer`. An unreadable profile row REFUSES rather
+  // than guessing -- see ./saved-card for why a wrong guess is permanent.
+  const savedCard = await savedCardPromise
+  if ('error' in savedCard) return { error: 'Could not start checkout. Please try again.' }
+
+  // Captured locally because the create call is now inside a closure (the saved-card retry), and
+  // TypeScript does not carry the earlier `if (!stripe)` narrowing of an imported binding across
+  // one. Same client, named so the narrowing survives.
+  const sdk = stripe
+
+  const session = await createAllowingSavedCard(
+    (savedCardParams) =>
+      sdk.checkout.sessions.create({
+    ...savedCardParams,
     mode: 'payment',
     // TICKETS ARE TIMED INVENTORY, SO THEY TAKE INSTANT MONEY ONLY (owner decision).
     // See ticketPaymentMethodParams: a 3 to 5 day settlement cannot share a product with a 30
@@ -894,16 +950,14 @@ export async function createTicketCheckout(opts: {
     // `purchaseConfirmed` (message-grade, derived from the reconcile) apart from `ownsTicket`
     // (registration-grade, derived from a real row), because a session id in a URL is typed by
     // whoever is holding the keyboard.
-    ...(wantsElements
-      ? {
-          ui_mode: 'elements',
-          return_url: `${appUrl()}/events/${event.slug}?ticket=success&session_id={CHECKOUT_SESSION_ID}`,
-        }
-      : {
-          success_url: `${appUrl()}/events/${event.slug}?ticket=success&session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${appUrl()}/events/${event.slug}`,
-        }),
-  } as Parameters<typeof stripe.checkout.sessions.create>[0])
+    ...checkoutReturnFields(ui, {
+      successUrl: `${appUrl()}/events/${event.slug}?ticket=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${appUrl()}/events/${event.slug}`,
+    }),
+      } as Parameters<typeof sdk.checkout.sessions.create>[0]),
+    savedCard.params,
+    'tickets',
+  )
 
   // Reserve capacity + record the pending row ATOMICALLY (reserve_ticket_atomic, migration
   // 20260930000000). The old pre-check + separate insert oversold: concurrent buyers all passed
@@ -1003,19 +1057,7 @@ export async function createTicketCheckout(opts: {
   // version that does not know the mode, a Stripe-side rejection, a field this repo has wrong --
   // lands the buyer on Stripe's page instead of a dead end. The compiler cannot help here
   // (`stripe` ships no types; `Stripe.*` is `any`), so this branch is the check.
-  const clientSecret =
-    wantsElements && typeof (session as { client_secret?: unknown }).client_secret === 'string'
-      ? ((session as { client_secret: string }).client_secret)
-      : null
-  if (clientSecret) return { clientSecret }
-  if (wantsElements) {
-    console.error(
-      '[tickets] elements checkout was requested but Stripe returned no client_secret; falling back to the hosted redirect',
-      { sessionId: session.id },
-    )
-  }
-  if (!session.url) return { error: 'Could not start checkout.' }
-  return { url: session.url }
+  return resolveCheckoutSession(session, ui, 'tickets')
 }
 
 /** Has this member already bought a (succeeded) ticket to this event? */
@@ -1129,6 +1171,31 @@ function flippedRows(
  *  Nothing here passes a null profile id into a filter. `.eq('id', null)` matches no row and
  *  `.in('id', [null])` is worse, so every guest branch is taken on `!row.buyer_profile_id`
  *  BEFORE a query is built, never inside one. */
+/**
+ * Persist the Stripe customer a checkout minted, if we do not already hold one.
+ *
+ * Guarded on `stripe_customer_id is null` so this can only ever FILL a gap, never replace an
+ * existing id: a member's customer is their identity across subscriptions, invoices, saved cards
+ * and the billing portal, and overwriting it is the permanent split SCAN-539 names.
+ *
+ * Silent no-op for a guest (no profile to write to) and for a session that reused a customer.
+ */
+async function rememberStripeCustomer(session: Stripe.Checkout.Session): Promise<void> {
+  const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null
+  const profileId = session.metadata?.buyer_profile_id || null
+  if (!customerId || !profileId) return
+  try {
+    const { error } = await db()
+      .from('profiles')
+      .update({ stripe_customer_id: customerId })
+      .eq('id', profileId)
+      .is('stripe_customer_id', null)
+    if (error) console.error('[tickets] could not remember the Stripe customer', error.message)
+  } catch (err) {
+    console.error('[tickets] remembering the Stripe customer threw', err instanceof Error ? err.message : String(err))
+  }
+}
+
 export async function recordTicketFromSession(session: Stripe.Checkout.Session): Promise<void> {
   if (session.metadata?.kind !== 'ticket') return
   if (session.payment_status !== 'paid') {
@@ -1165,6 +1232,19 @@ export async function recordTicketFromSession(session: Stripe.Checkout.Session):
   // The RPC name is written out at the call site, not passed through a variable: check:schema-contract
   // resolves `.rpc('<literal>')` against the generated types and SKIPS a dynamic one, and a phantom
   // RPC on an untyped client fails at runtime, not at tsc (ADR-1207).
+  // ── REMEMBER THE CUSTOMER, SO A SAVED CARD IS FINDABLE NEXT TIME (LIVE-362) ──────────────
+  // When the checkout minted a customer (`customer_creation: 'always'`), THIS is the only place
+  // its id ever reaches us. Without writing it back, a member who ticked "save this card" has the
+  // card stored against a customer the next checkout will not reuse -- so they would be asked for
+  // it again, and a second customer would be minted, which is the split identity ./saved-card
+  // exists to prevent.
+  //
+  // Best-effort and NEVER-CLEARING, matching apply_membership_event_atomic's `coalesce(...)`: the
+  // write is guarded on the column still being null, so a redelivered webhook cannot overwrite an
+  // id an earlier purchase or a subscription already established. A failure here costs the
+  // convenience, never the ticket, so it does not gate the settle below.
+  await rememberStripeCustomer(session)
+
   const settleArgs = { _session_id: session.id, _payment_intent_id: paymentIntentId }
   const rows = flippedRows('settle_ticket_atomic', settleArgs, await db().rpc('settle_ticket_atomic', settleArgs))
   // ZERO ROWS IS TWO DIFFERENT FACTS AND ONLY ONE OF THEM IS FINE. A Stripe redelivery flips

@@ -25,6 +25,7 @@
 import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from './stripe'
+import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from './checkout-ui'
 import { getConnectStatus, payoutsLive } from './connect'
 import { spaceTakeRateCents } from './fees'
 import { asSpacePlan } from '@/lib/pricing/plans'
@@ -69,6 +70,9 @@ function isMissingTable(error: { code?: string | null } | null | undefined): boo
 
 export interface DonationCheckoutResult {
   url?: string
+  /** Set INSTEAD of `url` when the caller asked for an on-page card form (LIVE-359). Callers branch
+   *  on which one arrived, never on which one they asked for -- see `./checkout-ui`. */
+  clientSecret?: string
   error?: string
 }
 
@@ -105,9 +109,13 @@ export async function createSpaceDonationCheckout(opts: {
   amountCents: number
   donorProfileId: string | null
   message?: string | null
+  /** `'elements'` asks for an ON-PAGE card form and returns `clientSecret` instead of `url`
+   *  (LIVE-359). Hosted stays the default, so no existing caller changes behaviour. */
+  ui?: CheckoutUi
 }): Promise<DonationCheckoutResult> {
   if (!stripe) return { error: 'Giving is not turned on yet.' }
   if (!(await payoutsLive())) return { error: 'Giving is not turned on yet.' }
+  const ui: CheckoutUi = opts.ui === 'elements' ? 'elements' : 'hosted'
 
   const amountCheck = resolveDonationCents(opts.amountCents)
   if ('error' in amountCheck) return { error: amountCheck.error }
@@ -196,8 +204,10 @@ export async function createSpaceDonationCheckout(opts: {
       },
       ...(opts.donorProfileId ? { client_reference_id: opts.donorProfileId } : {}),
       metadata,
-      success_url: `${backHref}?donation=thanks&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: backHref,
+      ...checkoutReturnFields(ui, {
+        successUrl: `${backHref}?donation=thanks&session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: backHref,
+      }),
     })
 
     // The PENDING row is what recordSpaceDonationFromSession flips to succeeded. Written BEFORE the
@@ -229,8 +239,10 @@ export async function createSpaceDonationCheckout(opts: {
       return { error: DONATION_START_FAILED }
     }
 
-    if (!session.url) return { error: DONATION_START_FAILED }
-    return { url: session.url }
+    // The shared degrade (./checkout-ui) returns its own generic refusal when there is nothing to
+    // hand back; this path has a fund-specific one, so map it rather than leak the generic string.
+    const handed = resolveCheckoutSession(session, ui, 'space-donation')
+    return handed.error ? { error: DONATION_START_FAILED } : handed
   } catch (err) {
     console.error('[space-donation] checkout failed', err instanceof Error ? err.message : String(err))
     return { error: DONATION_START_FAILED }
