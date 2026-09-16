@@ -44174,3 +44174,43 @@ precisely a body that is missing.
 **Residual.** `statements` being NULL on an applied row is unexplained and is the upstream cause of
 all of this. Nothing in the repo can set it after the fact, and no gate notices it. Recorded rather
 than solved.
+
+## ADR-1382: One membership line on an event, named after the Space, opening the real plans page (2026-09-16)
+
+**Status:** Accepted · **Amends** [ADR-826](DECISIONS.md) (the rate list) · **Uses**
+[ADR-1374](DECISIONS.md) (the plans surface) · corroborated by
+`app/(main)/events/[slug]/page.tsx`, `components/events/rsvp-payment-flow.tsx`
+
+**Context.** A host who wires one members ticket per membership tier turns the RSVP box into a price
+list for the membership. MELD carries SEVEN ticket types, six of them members-only: Temple Member,
+Guardian and Patron, each with an annual twin, above a single $22 day pass. So the question the box
+exists to answer, "what does it cost to come on Wednesday", was answered by six numbers, none of
+which was the answer. Each row also priced the membership rather than the event ($88/mo, $222/mo),
+so the cheapest true answer on the card was the fourth row down.
+
+**Decision.**
+
+1. **Collapse every membership-gated rate into ONE row, titled with the SPACE's name and priced
+   "Included".** "Royal Temple · Included" says what the membership does to this event, which is the
+   only thing this list needs from it. The per-tier prices are not lost, they are moved one tap away
+   to where they sit beside what each tier includes.
+2. **One row whether or not the viewer is a member**, with the chip carrying the difference: the
+   warm `Member` check when their membership already covers the event, the green `Membership` lock
+   when it does not. Two rows would print the same sentence twice. The tier's own name is not lost
+   either: it is the heading of the card the dialog opens on.
+3. **Pressing it opens the PLANS PAGE, in a dialog, as a server component passed down as a node.**
+   The plans surface resolves five things on the server (the tiers, the viewer's own membership,
+   whether billing is live, the events each tier includes, the active count behind every spots-left
+   line). A client-side rebuild would be a second set of answers that can disagree with the first,
+   and this repo has paid for that shape before. What opens is the page, not a likeness of it.
+4. **Pressing Going on that row opens the same dialog**, so there is ONE membership surface rather
+   than a dialog and a fold that drift apart. The inline fold stays for callers that pass no node
+   (the guest ticket form, past events), which is why it is a fallback rather than a deletion.
+5. **The collapsed row goes off-sale only when EVERY membership rate is off-sale.** One closed tier
+   does not close a door another tier holds open.
+
+**Residual, stated rather than hidden.** The six tiers behind this are six separate
+`space_membership_tiers` rows: "Temple Member, annual" is its own tier rather than an annual price on
+"Temple Member". The cadence toggle of ADR-1374 reads `annual_price_cents` on ONE tier, so it cannot
+fold those pairs, and the dialog shows six cards until the data is merged. That is a change to a live
+Space's tiers and belongs to its owner, not to this change.

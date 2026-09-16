@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useId, useState, useTransition, type ReactNode } from 'react'
 import Link from 'next/link'
-import { Check, CreditCard, Loader2 } from 'lucide-react'
+import { Check, CreditCard, Loader2, X } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import CheckoutPanel from '@/components/billing/checkout-panel'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
@@ -12,6 +12,7 @@ import { GuestRsvpForm } from '@/components/events/guest-rsvp-form'
 import { GuestTicketForm, type GuestTicketTier } from '@/components/events/guest-ticket-form'
 import { RateOptions, type FlowRate } from '@/components/events/rate-options'
 import { RsvpControls } from '@/components/events/rsvp-controls'
+import { Dialog } from '@/components/ui/dialog'
 import { MembershipJoinCard } from '@/components/spaces/membership-join-card'
 import type { MembershipTier } from '@/lib/spaces/memberships'
 
@@ -40,6 +41,7 @@ export function RsvpPaymentFlow({
   plusOnes,
   isFull,
   initialNote,
+  membershipDialog,
   membership,
   paymentsReady,
   signedIn,
@@ -56,6 +58,19 @@ export function RsvpPaymentFlow({
   plusOnes: number
   isFull: boolean
   initialNote: string
+  /** THE MEMBERSHIP PAGE ITSELF, as a node, shown in a dialog when the membership rate is pressed
+   *  (owner spec 2026-09-16: "a pop up with the options from the membership page").
+   *
+   *  It is a SERVER component handed down as a prop rather than anything this file fetches. The
+   *  plans surface already resolves five things on the server -- the tiers, the viewer's own
+   *  membership, whether billing is live, which upcoming events each tier includes, and the active
+   *  count behind every spots-left line -- and a second copy of that assembled in a client
+   *  component is a second set of answers that can disagree with the first. Passing the node keeps
+   *  ONE plans surface: what opens here is the page, not a likeness of it.
+   *
+   *  When it is null the membership rate falls back to the inline fold below, which is what the
+   *  guest ticket form and past events still use. */
+  membershipDialog?: ReactNode
   /** The membership join context (the unlocking tier cards) for the membership rate's fold. */
   membership: {
     spaceId: string
@@ -126,11 +141,24 @@ export function RsvpPaymentFlow({
   const guestRsvpNote =
     guestRsvpDoor && selected && !selected.covered ? `Pay the ${selected.priceLabel} at the door.` : undefined
 
+  // THE MEMBERSHIP ROW IS A DOOR, NOT A PRICE. A rate the viewer's membership does not cover
+  // cannot be bought per event -- joining is the only way to take it -- so pressing it opens the
+  // plans dialog rather than arming a payment phase that has nothing to charge.
+  const opensPlans = (r: FlowRate | null) => !!membershipDialog && !!r && r.kind === 'membership' && !r.covered
+  const [plansOpen, setPlansOpen] = useState(false)
+  const plansTitleId = useId()
+
   function selectRate(r: FlowRate) {
     if (r.offSale) return
     setSelectedId(r.id)
     setError(null)
     if (r.covered) setPayOpen(false)
+    if (opensPlans(r)) {
+      // Selecting it and opening the dialog are one press. Closing the dialog without joining
+      // leaves the row selected, which is the honest state: this is still what they chose.
+      setPayOpen(false)
+      setPlansOpen(true)
+    }
   }
 
   // Complete a GENERAL-rate Going: hold the spot (the RSVP is the reservation, first come
@@ -214,7 +242,13 @@ export function RsvpPaymentFlow({
           plusOnes={plusOnes}
           isFull={isFull}
           initialNote={initialNote}
-          onGoingIntercept={needsPayment && !isGoing ? () => setPayOpen(true) : null}
+          onGoingIntercept={
+            needsPayment && !isGoing
+              ? // A membership rate opens the plans dialog; a general rate opens the payment phase.
+                // Both are "you cannot be Going yet, here is the thing that fixes that".
+                () => (opensPlans(selected) ? setPlansOpen(true) : setPayOpen(true))
+              : null
+          }
         />
       ) : guestDoor ? (
         /* SIGNED OUT, and the rates above cost money. A "Sign in to RSVP" link stood here, which
@@ -300,7 +334,7 @@ export function RsvpPaymentFlow({
               )}
               {error && <p className="text-body-sm text-danger">{error}</p>}
             </>
-          ) : membership ? (
+          ) : membership && !membershipDialog ? (
             <>
               <div>
                 <p className="text-body-sm font-bold text-text">Join {membership.spaceName}</p>
@@ -321,6 +355,42 @@ export function RsvpPaymentFlow({
             </>
           ) : null}
         </div>
+      )}
+
+      {/* THE PLANS DIALOG. `Dialog` owns the backdrop, ESC, the scroll lock, the focus trap and
+          restore, and it re-applies the Space's theme inside the portal -- the panel leaves the
+          event card's DOM, so without that the Space's heading face and palette would not follow
+          it. The body scrolls at `max-h-[85vh]` because the plans surface is a full page and a
+          phone cannot show it whole.
+
+          The node inside is rendered on the server whether or not this ever opens, which is the
+          price of it being the real plans surface rather than a copy. That is the same work the
+          page already does for the inline fold, not new work. */}
+      {membershipDialog && (
+        <Dialog
+          open={plansOpen}
+          onClose={() => setPlansOpen(false)}
+          ariaLabelledBy={plansTitleId}
+          align="center"
+          className="max-w-2xl"
+        >
+          <div className="w-full overflow-hidden rounded-card border border-border bg-canvas lift-3">
+            <div className="flex items-start justify-between gap-3 border-b border-border bg-surface px-5 py-4">
+              <h2 id={plansTitleId} className="font-section text-body-lg font-bold text-text">
+                Membership options
+              </h2>
+              <button
+                type="button"
+                onClick={() => setPlansOpen(false)}
+                aria-label="Close"
+                className="shrink-0 rounded-control p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+              >
+                <X className="h-4 w-4" aria-hidden />
+              </button>
+            </div>
+            <div className="max-h-[85vh] overflow-y-auto px-5 py-5">{membershipDialog}</div>
+          </div>
+        </Dialog>
       )}
     </div>
   )

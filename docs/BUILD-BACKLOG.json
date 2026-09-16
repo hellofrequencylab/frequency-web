@@ -41,7 +41,9 @@
       "waves": [
         {
           "name": "W0 · P0 — costing something today: an incident, a wrong money/consent/permission answer, or a crawl-facing defect the submitted sitemap exposes. EMPTY IS THE GOAL. It is not empty: LIVE-290 is a live money defect (half the spaces on the platform have a working Stripe account and no surface that says so). OWN-050 is the other P0 and is a console action, in owner-timed.",
-          "ids": []
+          "ids": [
+            "LIVE-375"
+          ]
         },
         {
           "name": "W0b · P1 — repairs ready to work now, and the instruments that keep the gates honest. This is the wave to pull from when you want the next thing to do.",
@@ -49,7 +51,9 @@
             "LIVE-186",
             "LIVE-213",
             "LIVE-367",
-            "LIVE-373"
+            "LIVE-373",
+            "LIVE-376",
+            "LIVE-377"
           ]
         },
         {
@@ -13576,6 +13580,61 @@
         "kind": "manual",
         "evidence": "public.circles where slug = the-circle: access = space_paid_members, unlisted = true. public_circles(200) returns 3 rows and no longer includes it.",
         "checked": "2026-09-16"
+      }
+    },
+    {
+      "id": "LIVE-375",
+      "title": "A Space dashboard reads $0.00 and \"No sales yet\" however many tickets it has sold",
+      "status": "open",
+      "priority": "P0",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/commerce/orders.ts",
+        "ref": "owner report 2026-09-16, House of Fates"
+      },
+      "detail": "THE WRONG MONEY ANSWER, ON A LIVE SURFACE. The Space command-center prints \"Revenue, last 30 days\" from spaceEarningsSummary(), and that function reads exactly ONE table: commerce_orders, filtered on owner_space_id. An event ticket sale does not write commerce_orders -- it writes event_tickets, through settle_ticket_atomic. The two never meet, so a Space that has sold tickets reads $0.00 under a detail line that says \"No sales yet\".\n\nMEASURED 2026-09-16, not inferred: commerce_orders holds ZERO rows platform-wide, and House of Fates had one succeeded $44.00 ticket (event hypnotic-sound-by-house-of-fates-2026-09-30, pi_3UGAl3PhyalyRPP10QR96gQP) while its dashboard said No sales yet. Every Space selling tickets today is in this state; there is no Space for which this number is currently right.\n\n🔴 WHY P0. The W0 band is \"a wrong money answer\". This is one, it is the first thing a host sees on their own console, and it says the opposite of the truth: a host checking whether their event is selling is told it is not. The owner found it by buying a ticket to a real event and looking.\n\nWHAT TO DO. Two shapes, and choosing between them is a product call rather than a mechanical one. (1) Make the summary read both sources: add a succeeded-event_tickets arm scoped by the events the Space owns (events.space_id / host_space_id), netting refunded_at rows the way the commerce arm nets partial refunds. (2) Write a commerce_orders row when a ticket settles, so ONE table is the ledger. Shape 2 is the tidier model and the bigger change, and it has to answer what happens to the ticket rows that already exist. Shape 1 is reversible and ships this week.\n\nWHATEVER SHIPS, the number has to agree with what the event page already computes: lib/events/event-stats-core.ts has carried revenueCents (gross on succeeded event_tickets) all along, so the per-event view and the Space view currently disagree with each other about the same sale.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "event_tickets",
+        "paths": [
+          "lib/commerce/orders.ts"
+        ]
+      }
+    },
+    {
+      "id": "LIVE-376",
+      "title": "A host cannot tell how to attach their event to their own Space, so it lands on the root",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/studio/entities",
+        "ref": "owner report 2026-09-16"
+      },
+      "detail": "Owner, about a real host on the platform: \"She also did not know how to set her events up to link to her space.\" She owns an active Space (House of Fates), created three events from her own account, and all three came out with space_id = the ROOT Frequency space and host_space_id = null. Nothing was broken and nothing told her anything was wrong.\n\nWHAT THAT COSTS, in the order it bites: the events do not read as the Space’s events; the Space console cannot manage their tickets; and payout attribution falls back to events.host_id instead of resolving through the Space owner (app/(main)/events/[slug]/page.tsx resolves payoutProfileId as hostSpaceOwnerId first, then event.host.id). It happens to land on the same person while the host IS the Space owner, and it stops doing so the moment a Space has a second organiser.\n\n🔴 THE DEFAULT IS THE DEFECT. The events_default_space_id trigger defaults a new event to the root, which is right for someone with no Space and wrong for someone with one. An owner of exactly one active Space almost certainly means that Space, and the creation flow should either default to it or ask. The current flow does neither, and offers no visible way to change it afterwards either.\n\nRE-TEST THE PREMISE BEFORE WORKING IT: check the event Spark manifest and the event settings rail for a host-space field before concluding there is none. The report is that it is not FINDABLE, which a present-but-buried control would also produce, and the fix differs (default plus label, versus add the field).\n\nFIXED BY HAND meanwhile: the three events were repointed to House of Fates on 2026-09-16 (space_id + host_space_id). That is the data, not the cause.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Not started. Three events created by the Space owner landed on the root space with host_space_id null; corrected by hand 2026-09-16.",
+        "checked": "2026-09-16"
+      }
+    },
+    {
+      "id": "LIVE-377",
+      "title": "guest-seat-claim passes only in UTC, so five tests are red on every non-UTC machine",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/events/guest-seat-claim.test.ts",
+        "ref": "measured 2026-09-16"
+      },
+      "detail": "MEASURED BOTH WAYS on 2026-09-16, on one machine, one commit, back to back: TZ=UTC gives 16 passed; the same file on the host default (America/Los_Angeles) gives 5 failed, all of them in \"pickSeatLanding -- the landing rule\". CI runs UTC, so the suite is green there and has been all along.\n\nWHAT IT COSTS. A developer outside UTC opens the repo and finds five red tests they did not write, in a file about wall clocks, and cannot tell from the output whether they broke something. Confirming it was pre-existing took a stash, a baseline run and a re-run -- about ten minutes for a test that was never failing in the sense that matters.\n\nThe test pins its own instant (NOW = 2026-08-13T19:00:00-07:00), so the dependency is not the constant; something on the path reads the AMBIENT zone rather than the event’s own, which is the exact distinction one of the five failing cases is named after (\"reads the wall clock through the event own zone, not the server zone\"). Worth reading as a possible product defect and not only a test-setup gap: if the ambient zone leaks in a test, it leaks on a server too.\n\nFix by pinning the zone the suite runs in, or by removing the ambient read the helper makes. Do NOT close this by setting TZ=UTC in the runner config alone if the leak turns out to be in lib/events/guest-seat-claim.ts -- that hides the same bug from the only place it currently shows.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "TZ=America/Los_Angeles npx vitest run lib/events/guest-seat-claim.test.ts --silent"
       }
     }
   ]
