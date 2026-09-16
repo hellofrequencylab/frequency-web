@@ -1,6 +1,8 @@
 // DAY NOTES, the pure half (ADR-1386). A quiet label on a day's grid card ("Quiet hours" every Monday,
 // "Flex day" on Thursdays, "Retreat & rental" Friday and Saturday, or a note on a date range). It
-// describes the day; it never occupies time and is never an event. Pure: no React, no Supabase.
+// describes the day; it never occupies time and is never an event. A day note is INTERNAL: only the
+// Space's team ever sees it, never the public Calendar tab (owner ruling 2026-09-16, ADR-1387).
+// Pure: no React, no Supabase.
 
 export interface DayNote {
   id: string
@@ -10,10 +12,9 @@ export interface DayNote {
   /** YYYY-MM-DD bounds, inclusive; either open when null (a dated note always has startsOn). */
   startsOn: string | null
   endsOn: string | null
-  visibility: 'team' | 'public'
 }
 
-export const DAY_NOTE_COLS = 'id, label, weekdays, starts_on, ends_on, visibility, sort'
+export const DAY_NOTE_COLS = 'id, label, weekdays, starts_on, ends_on, sort'
 
 export const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const
 
@@ -49,7 +50,6 @@ export function dayNoteFromRow(r: {
   weekdays: number[] | null
   starts_on: string | null
   ends_on: string | null
-  visibility: string
 }): DayNote {
   return {
     id: r.id,
@@ -57,7 +57,6 @@ export function dayNoteFromRow(r: {
     weekdays: r.weekdays && r.weekdays.length ? [...r.weekdays].sort() : null,
     startsOn: r.starts_on ? r.starts_on.slice(0, 10) : null,
     endsOn: r.ends_on ? r.ends_on.slice(0, 10) : null,
-    visibility: r.visibility === 'team' ? 'team' : 'public',
   }
 }
 
@@ -68,7 +67,6 @@ export interface DayNoteInput {
   weekdays: number[]
   startsOn: string
   endsOn: string
-  isPublic: boolean
 }
 
 export type DayNoteWrite = {
@@ -76,7 +74,6 @@ export type DayNoteWrite = {
   weekdays: number[] | null
   starts_on: string | null
   ends_on: string | null
-  visibility: 'team' | 'public'
 }
 
 /** Validate the settings form. Errors are plain sentences. */
@@ -88,14 +85,13 @@ export function parseDayNoteInput(input: DayNoteInput): { data: DayNoteWrite } |
   const endsOn = input.endsOn?.trim() || null
   if ((startsOn && !DATE_RE.test(startsOn)) || (endsOn && !DATE_RE.test(endsOn))) return { error: 'Pick a valid date.' }
   if (startsOn && endsOn && endsOn < startsOn) return { error: 'The end date is before the start date.' }
-  const visibility = input.isPublic ? 'public' : 'team'
   if (input.mode === 'weekly') {
     const days = [...new Set((input.weekdays ?? []).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6))].sort()
     if (!days.length) return { error: 'Pick at least one day of the week.' }
-    return { data: { label, weekdays: days, starts_on: startsOn, ends_on: endsOn, visibility } }
+    return { data: { label, weekdays: days, starts_on: startsOn, ends_on: endsOn } }
   }
   if (!startsOn) return { error: 'Pick the date the note is for.' }
-  return { data: { label, weekdays: null, starts_on: startsOn, ends_on: endsOn, visibility } }
+  return { data: { label, weekdays: null, starts_on: startsOn, ends_on: endsOn } }
 }
 
 /** "Mondays", "Friday and Saturday", "Sep 22 to Sep 26": how the settings list describes a note. */

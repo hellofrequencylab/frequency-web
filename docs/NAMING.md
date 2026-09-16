@@ -473,7 +473,7 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
   entry an event invites someone to look for it in the events system.
 - **Day note** = a short label on a day's calendar card that describes the day rather than occupying
   it ("Quiet hours" every Monday, "Flex day" on Thursday, "Retreat & rental" Friday and Saturday).
-  Team or public. Never an item, never blocks time. **Not "Tag"** (a Loom and CRM word), **not
+  Team only, never shown on the public calendar (ADR-1387). Never an item, never blocks time. **Not "Tag"** (a Loom and CRM word), **not
   "Label"** as a product noun (it is fine as a form field caption), **not "Theme"** (the design system).
 - **Pencil** (stage 1) = a tentative private date for a potential Production (entry kind `pencil`). It
   can carry several candidate dates until one is picked. Team only, never public. Verb: **"Pencil it

@@ -232,9 +232,10 @@ allowed.
 
 **Day notes** (`PROG-CAL1`). `public.space_calendar_day_notes` holds short labels that describe a day
 rather than occupy it: a `weekly` note sets `weekdays` (0 is Sunday) within optional `starts_on` /
-`ends_on` bounds; a `dated` note leaves `weekdays` null and covers `starts_on` through `ends_on`. A
-`public` note is readable by anyone and shows on the public tab; a `team` note only by the Space's
-editors. Writes are the operator quad. The grid asks `notesForDay` (`lib/calendar/day-notes.ts`) for a
+`ends_on` bounds; a `dated` note leaves `weekdays` null and covers `starts_on` through `ends_on`. Day notes
+are internal ([ADR-1387](DECISIONS.md)): only the Space's editors and platform staff read them, the
+public Calendar tab never shows them, and the table's check admits only `visibility = 'team'`. Writes
+are the operator quad. The grid asks `notesForDay` (`lib/calendar/day-notes.ts`) for a
 day's labels. A day note never blocks time and is never a calendar item.
 
 **Plan** (`PROG-CAL2`). `space_plans`, owned by the host Space. Calendar entries and events point at a
