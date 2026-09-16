@@ -22,9 +22,32 @@ import { createRoot, type Root } from 'react-dom/client'
 let fireReady: (() => void) | null = null
 let lastOptions: Record<string, unknown> | null = null
 
+let fireExpressReady: ((available: boolean) => void) | null = null
+let expressOptions: Record<string, unknown> | null = null
+let fireExpressConfirm: (() => Promise<void>) | null = null
+type ConfirmResult = { type: string; error?: { message?: string } }
+const confirm = vi.fn(async (_args?: Record<string, unknown>): Promise<ConfirmResult> => ({
+  type: 'success',
+}))
+
 vi.mock('@stripe/react-stripe-js/checkout', () => ({
   CheckoutElementsProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useCheckout: () => ({ type: 'success', checkout: { confirm: vi.fn() } }),
+  useCheckout: () => ({ type: 'success', checkout: { confirm } }),
+  ExpressCheckoutElement: ({
+    onReady,
+    onConfirm,
+    options,
+  }: {
+    onReady?: (e: { availablePaymentMethods?: Record<string, boolean> }) => void
+    onConfirm?: (e: { paymentFailed: (o: { reason: 'fail' }) => void }) => Promise<void>
+    options?: Record<string, unknown>
+  }) => {
+    expressOptions = options ?? null
+    fireExpressReady = (available: boolean) =>
+      onReady?.({ availablePaymentMethods: available ? { link: true } : undefined })
+    fireExpressConfirm = () => onConfirm!({ paymentFailed: paymentFailed })
+    return <div data-testid="express" />
+  },
   PaymentElement: ({
     onReady,
     options,
@@ -44,6 +67,7 @@ vi.mock('@/lib/billing/stripe-browser', () => ({
   loadStripeBrowser: () => Promise.resolve({ fake: true }),
 }))
 
+const paymentFailed = vi.fn()
 const CheckoutForm = (await import('./checkout-form')).default
 
 let container: HTMLDivElement | null = null
@@ -56,6 +80,11 @@ afterEach(() => {
   container = null
   fireReady = null
   lastOptions = null
+  fireExpressReady = null
+  fireExpressConfirm = null
+  expressOptions = null
+  confirm.mockClear()
+  paymentFailed.mockClear()
 })
 
 async function mount() {
@@ -120,10 +149,76 @@ describe('card first, Link under it', () => {
     expect(layout.defaultCollapsed).toBe(false)
   })
 
-  // 🔴 Ordering is a PREFERENCE, not a filter. Naming card and link must not turn into hiding
-  // PayPal or a wallet, and a device's wallet is the device's answer, never ours.
-  it('hides nothing: wallets stay auto', async () => {
+  // 🔴 A DEVICE'S WALLET IS THE DEVICE'S ANSWER, NEVER OURS. This invariant did not go away when
+  // the express row took the wallets over -- it MOVED. The card form now says `never` for all
+  // three precisely because something else says `auto`, and the pair is what has to hold. An
+  // assertion on either half alone would pass while a wallet quietly disappeared.
+  it('hides nothing: every wallet the card form gives up is offered by the express row', async () => {
     await mount()
-    expect(lastOptions?.wallets).toEqual({ applePay: 'auto', googlePay: 'auto', link: 'auto' })
+    const card = lastOptions?.wallets as Record<string, string>
+    const express = expressOptions?.paymentMethods as Record<string, string>
+    for (const w of ['applePay', 'googlePay', 'link'] as const) {
+      expect(card[w], `${w} is not offered twice`).toBe('never')
+      expect(express[w], `${w} is still offered once`).toBe('auto')
+    }
+  })
+})
+
+describe('Link and the wallets are their own buttons', () => {
+  // The owner asked for "Pay $44" and "Link" split apart. The express element is the only
+  // supported way to do it: real buttons, above the card form, on the SAME session.
+  it('renders an express row and orders Link first', async () => {
+    await mount()
+    expect(container!.querySelector('[data-testid="express"]')).not.toBeNull()
+    expect(expressOptions?.paymentMethodOrder).toEqual(['link'])
+  })
+
+  // 🔴 NOT "Link only". Apple Pay and Google Pay are the fastest paths a phone has, and killing
+  // them to satisfy the letter of the ask would be a regression for the buyers who convert best.
+  it('keeps the device wallets rather than suppressing them to isolate Link', async () => {
+    await mount()
+    const pm = expressOptions?.paymentMethods as Record<string, string>
+    expect(pm.link).toBe('auto')
+    expect(pm.applePay).toBe('auto')
+    expect(pm.googlePay).toBe('auto')
+  })
+
+  // And the card form must not offer them a second time -- the duplication that read as
+  // "the Link section" in the first place.
+  it('stops the card form offering Link and the wallets a second time', async () => {
+    await mount()
+    expect(lastOptions?.wallets).toEqual({ applePay: 'never', googlePay: 'never', link: 'never' })
+  })
+
+  // A row that would render nothing must not leave a gap above the card fields.
+  it('collapses the row when the device offers no Link and no wallet', async () => {
+    await mount()
+    await act(async () => fireExpressReady!(false))
+    expect(container!.querySelector('[data-testid="express"]')).toBeNull()
+  })
+
+  it('confirms through the same session as the card form', async () => {
+    await mount()
+    await act(async () => fireExpressReady!(true))
+    await act(async () => {
+      await fireExpressConfirm!()
+    })
+    expect(confirm).toHaveBeenCalledTimes(1)
+    const args = confirm.mock.calls[0]?.[0]
+    expect(args).toMatchObject({ redirect: 'if_required' })
+    expect(args).toHaveProperty('expressCheckoutConfirmEvent')
+  })
+
+  // 🔴 Stripe's sheet waits for a verdict. Returning without calling paymentFailed leaves the
+  // buyer inside an interface that never resolves.
+  it('tells Stripe the payment failed on a decline, so its sheet can close', async () => {
+    confirm.mockResolvedValueOnce({ type: 'error', error: { message: 'Card declined.' } })
+    await mount()
+    await act(async () => fireExpressReady!(true))
+    await act(async () => {
+      await fireExpressConfirm!()
+    })
+    expect(paymentFailed).toHaveBeenCalledWith({ reason: 'fail' })
+    expect(container!.textContent).toContain('Card declined.')
   })
 })

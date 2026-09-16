@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { Ticket, Loader2, Lock, Check, ChevronUp } from 'lucide-react'
 import { startTicket, refundTicketAction, settleTicketAction } from './ticket-actions'
 import { isError } from '@/lib/action-result'
@@ -11,6 +11,7 @@ import CheckoutPanel, { prefetchCheckoutForm } from '@/components/billing/checko
 import PaymentMarks from '@/components/billing/payment-marks'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { compactPrice, ticketCtaLabel } from '@/lib/billing/price-label'
+import { useJoinIntent } from '@/components/events/join-intent'
 
 export type TicketTierView = {
   id: string
@@ -84,6 +85,40 @@ function modeLabel(t: TicketTierView): string {
  * ticket for every visitor who moved a mouse. Production already carries stale pending rows from
  * clicks alone.
  */
+/**
+ * Warm the checkout while the page is idle, not while it is painting (LIVE-370).
+ *
+ * The owner asked for all of it to load in the background as the page loads. Two of the three
+ * waits can be: Stripe.js and the form's chunk. Doing it on MOUNT rather than on hover means a
+ * buyer who taps straight through has already paid for both.
+ *
+ * ⚠️ `requestIdleCallback`, not a bare call. This runs for every visitor to a ticketed event, most
+ * of whom will not buy, and Stripe.js is not small. Firing it inline would put a third-party
+ * download in front of the page's own first paint to save a wait that only a buyer ever reaches.
+ * At idle it costs the reader nothing and the buyer everything it can.
+ *
+ * 🔴 THE SESSION IS STILL NOT WARMED, and this is the line not to cross. Creating one reserves a
+ * seat (`reserve_ticket_atomic`, a 30-minute hold keyed on the session id), so doing it on page
+ * load would hold a ticket for every visitor who opened the page.
+ */
+function scheduleWarm(): () => void {
+  if (typeof window === 'undefined') return () => {}
+  const idle = (window as Window & { requestIdleCallback?: (cb: () => void) => number })
+    .requestIdleCallback
+  if (idle) {
+    const id = idle(() => warmCheckout())
+    return () => {
+      const cancel = (window as Window & { cancelIdleCallback?: (h: number) => void })
+        .cancelIdleCallback
+      cancel?.(id)
+    }
+  }
+  // Safari shipped requestIdleCallback late, so the fallback is a timeout past first paint
+  // rather than nothing: the browsers without it are exactly the ones on slower hardware.
+  const t = window.setTimeout(() => warmCheckout(), 1200)
+  return () => window.clearTimeout(t)
+}
+
 function warmCheckout(): void {
   // 🔴 A HEAD START MUST NEVER BE ABLE TO STOP A SALE. Both calls are optimisations -- the buyer
   // can pay without either -- so anything they throw is caught here rather than escaping into
@@ -228,7 +263,7 @@ export function TicketButton({
    * Set once the server hands back a session that renders here. Null means "no on-page session",
    * which is the state every hosted checkout stays in.
    */
-  const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [clientSecret, setClientSecret] = useState<string | Promise<string> | null>(null)
 
   /**
    * Is the drawer showing? Tracked SEPARATELY from the client secret so collapsing keeps the
@@ -244,6 +279,16 @@ export function TicketButton({
    * on its own landing page.
    */
   const [sessionId, setSessionId] = useState<string | null>(null)
+
+  // Only where a purchase is actually on offer: a sold-out or off-sale event, or a manager's
+  // preview, has nothing to warm for, and a reader there should not pay for Stripe.js at all.
+  const purchasable = !previewMode
+  useEffect(() => {
+    if (!purchasable) return
+    return scheduleWarm()
+  }, [purchasable])
+
+  const joinIntent = useJoinIntent()
 
   /**
    * The LAST line of defence. If the form cannot mount or confirm at all — Stripe.js blocked, the
@@ -294,6 +339,20 @@ export function TicketButton({
     setOpen(false)
   }
 
+  /**
+   * Hand the provider the server call itself, not its answer (LIVE-371).
+   *
+   * 🔴 THE LAST SERIAL WAIT. `CheckoutElementsProvider` takes `Promise<string> | string` and
+   * initialises the moment it mounts, so giving it the in-flight call lets Stripe start work while
+   * the session is still being built. Everything else was already overlapped -- the script and the
+   * chunk warm at idle on page load -- and this was the one left running after them.
+   *
+   * ⚠️ EVERY PATH THAT WILL NEVER PRODUCE A SECRET MUST REJECT. A sold-out tier, a free claim and
+   * the hosted degrade all end without one, and a promise nobody settles leaves Stripe
+   * initialising forever behind a panel that looks like it is still loading. The reject comes
+   * FIRST in each branch below, before the navigation or the state change, so no early return can
+   * skip past it.
+   */
   function go() {
     setError(null)
     // A session we already hold is re-shown WITHOUT asking the server again. The buyer who
@@ -325,7 +384,18 @@ export function TicketButton({
     // press produced nothing for the length of a round trip. Opening here costs nothing -- no
     // session exists yet, so no seat is reserved -- and the panel animates a card-shaped
     // placeholder until the secret lands. An error below closes it again.
+    let handOver!: (secret: string) => void
+    let giveUp!: (reason: Error) => void
+    const promised = new Promise<string>((resolve, reject) => {
+      handOver = resolve
+      giveUp = reject
+    })
+    // Nothing else awaits this promise -- the provider does. Without a catch of our own, every
+    // rejection below would also surface as an unhandled rejection in the console.
+    promised.catch(() => {})
+    setClientSecret(promised)
     setOpen(true)
+
     startTransition(async () => {
       const r = await startTicket(eventId, {
         qty: 1,
@@ -335,27 +405,67 @@ export function TicketButton({
       if (isError(r)) {
         // Close what we optimistically opened, and say the real reason. A sold-out answer must
         // read as sold out, never as a checkout that failed to load.
+        giveUp(new Error(r.error))
+        setClientSecret(null)
         setOpen(false)
         setError(r.error)
       } else if (r.data.free) {
         // A free tier: nothing to charge. Refresh so the page reflects the claim.
+        giveUp(new Error('free tier: nothing to charge'))
         window.location.reload()
       } else if (r.data.clientSecret) {
         // ON-PAGE (LIVE-347): the card form opens right here, under the button, and the buyer
         // never leaves Frequency. Branching on what CAME BACK rather than on what was asked for
         // is deliberate — the server declines the on-page path whenever it cannot be honoured,
         // and the next branch catches that without this component needing to know why.
-        setClientSecret(r.data.clientSecret)
         setSessionId(r.data.sessionId ?? null)
+        handOver(r.data.clientSecret)
         setOpen(true)
       } else if (r.data.url) {
-        // The on-page path declined; this is the hosted redirect. Close first so the skeleton is
-        // not left animating behind a navigation that may take a moment to commit.
+        // The on-page path declined; this is the hosted redirect. Give up the promise first so
+        // Stripe stops initialising a session it will never be handed, then close so the skeleton
+        // is not left animating behind a navigation that may take a moment to commit.
+        giveUp(new Error('hosted checkout instead'))
+        setClientSecret(null)
         setOpen(false)
         window.location.href = r.data.url
+      } else {
+        // Neither shape came back. Nothing can render, so say so rather than animating forever.
+        giveUp(new Error('no session'))
+        setClientSecret(null)
+        setOpen(false)
+        setError('Could not start checkout.')
       }
     })
   }
+
+  /**
+   * TELL THE ANSWER SWITCH WHERE THIS DOOR IS (owner report 2026-09-16). The RSVP control now
+   * renders beside the ticket cascade on a ticketed event, and pressing Going without a ticket
+   * opens THIS checkout rather than recording an answer nobody paid for. Two client islands under
+   * one Server Component cannot be handed a closure, so the door registers its opener and the
+   * switch asks for it (components/events/join-intent.tsx).
+   *
+   * Registered only where a purchase is genuinely on offer: a manager's preview is not a door a
+   * buyer may walk through, and `hasDoor` reading false there is what makes the RSVP side fall
+   * back to recording an ordinary answer instead of offering a press that does nothing.
+   *
+   * ⚠️ IT SITS HERE, BELOW `go`, AND NOT BESIDE THE OTHER EFFECTS. It was written up there, above
+   * the declaration, where a function declaration hoists and it ran correctly --
+   * `react-hooks/immutability` refuses it regardless, because reading a binding before its
+   * declaration is the shape it cannot reason about. Moving it below is the whole fix; do not move
+   * it back.
+   *
+   * No dependency array, and that one IS load-bearing: `go` is a new function on every render,
+   * closing over the selected tier and the typed amount. Re-registering each render is what keeps
+   * the context's ref holding a CURRENT opener, rather than the one built for whichever tier was
+   * selected the last time the deps happened to change.
+   */
+  useEffect(() => {
+    if (!joinIntent || !purchasable) return
+    joinIntent.registerTicketDoor(go)
+    return () => joinIntent.registerTicketDoor(null)
+  })
 
   // ── Implicit flat-price (no tiers): one button, one drawer ──
   if (!hasTiers) {

@@ -34,10 +34,12 @@ vi.mock('./ticket-actions', () => ({
 
 // The real panel lazily imports Stripe.js, which jsdom cannot load and which is not what these
 // claims are about. The stub keeps its IDENTITY and POSITION, which is exactly what is asserted.
+let lastSecret: unknown = undefined
 vi.mock('@/components/billing/checkout-panel', () => ({
-  default: ({ priceLabel }: { priceLabel?: string }) => (
-    <div data-testid="checkout-drawer" data-price={priceLabel} />
-  ),
+  default: ({ priceLabel, clientSecret }: { priceLabel?: string; clientSecret?: unknown }) => {
+    lastSecret = clientSecret
+    return <div data-testid="checkout-drawer" data-price={priceLabel} />
+  },
   // The chunk prefetch. Mocked because the real one starts a network fetch, but it MUST exist:
   // leaving it off made `warmCheckout()` throw, which aborted `go()` before the drawer opened --
   // which is how the production guard that a warm-up can never stop a sale got written.
@@ -61,6 +63,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  lastSecret = undefined
   if (root) act(() => root!.unmount())
   if (container) container.remove()
   root = null
@@ -247,6 +250,45 @@ describe('the drawer opens between the button and everything under it', () => {
   })
 })
 
+describe('the checkout warms while the page is idle', () => {
+  /** jsdom has no requestIdleCallback, so the component takes the timeout fallback. */
+  function runIdle() {
+    act(() => {
+      vi.advanceTimersByTime(2000)
+    })
+  }
+
+  // The owner asked for it to load in the background as the page loads. Two of the three waits
+  // can: Stripe.js and the form chunk. The SESSION cannot, and that is the line -- creating one
+  // reserves a seat for 30 minutes, so warming it on page load would hold a ticket for every
+  // visitor who merely opened the page.
+  it('warms Stripe and the form chunk on mount, without touching the server', async () => {
+    vi.useFakeTimers()
+    try {
+      mount(<TicketButton eventId="e1" priceLabel="$44.00" />)
+      expect(warmStripeBrowser, 'nothing runs during the paint itself').not.toHaveBeenCalled()
+      runIdle()
+      expect(warmStripeBrowser, 'and it runs once the page is idle').toHaveBeenCalled()
+      expect(startTicket, 'but no session, so no seat is held for a reader').not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  // A manager previewing an event with payouts unconnected cannot buy, so a reader there should
+  // not pay for Stripe.js at all.
+  it('does not warm where nothing can be bought', async () => {
+    vi.useFakeTimers()
+    try {
+      mount(<TicketButton eventId="e1" priceLabel="$44.00" previewMode />)
+      runIdle()
+      expect(warmStripeBrowser).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
 describe('the press does something immediately', () => {
   /** A server call that has not answered yet, so the render between press and answer is testable. */
   function pending() {
@@ -316,6 +358,68 @@ describe('the press does something immediately', () => {
     mount(<TicketButton eventId="e1" priceLabel="$44.00" />)
     await press(cta())
     expect(startTicket).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('the provider is handed the call, not its answer', () => {
+  function pendingCall() {
+    let answer!: (v: unknown) => void
+    startTicket.mockReturnValue(new Promise((r) => { answer = r }))
+    return (v: unknown) => answer(v)
+  }
+
+  // 🔴 THE LAST SERIAL WAIT. CheckoutElementsProvider takes `Promise<string> | string` and starts
+  // initialising the moment it mounts, so handing it the in-flight server call overlaps Stripe's
+  // own init with the session being built. Waiting for a string made them serial for no reason.
+  it('passes a promise down before the server has answered', async () => {
+    const answer = pendingCall()
+    mount(<TicketButton eventId="e1" priceLabel="$44.00" />)
+    await press(cta())
+
+    expect(lastSecret, 'the drawer already has something to initialise from').toBeInstanceOf(Promise)
+
+    await act(async () => answer({ data: { clientSecret: 'cs_1_secret_x', sessionId: 'cs_1' } }))
+    await expect(lastSecret as Promise<string>).resolves.toBe('cs_1_secret_x')
+  })
+
+  // ⚠️ A promise nobody settles leaves Stripe initialising forever behind a panel that looks like
+  // it is still loading. Every path that will never produce a secret has to reject.
+  it('rejects the promise when the tier sold out, rather than leaving it pending', async () => {
+    const answer = pendingCall()
+    mount(<TicketButton eventId="e1" priceLabel="$44.00" />)
+    await press(cta())
+    const promised = lastSecret as Promise<string>
+    const settled = promised.then(() => 'resolved').catch(() => 'rejected')
+
+    await act(async () => answer({ error: 'This ticket just sold out.' }))
+
+    await expect(settled).resolves.toBe('rejected')
+    expect(drawer()).toBeNull()
+    expect(container!.textContent).toContain('This ticket just sold out.')
+  })
+
+  it('rejects it on the hosted degrade too, before navigating away', async () => {
+    const answer = pendingCall()
+    mount(<TicketButton eventId="e1" priceLabel="$44.00" />)
+    await press(cta())
+    const settled = (lastSecret as Promise<string>).then(() => 'resolved').catch(() => 'rejected')
+
+    await act(async () => answer({ data: { url: 'https://stripe.test/pay' } }))
+
+    await expect(settled).resolves.toBe('rejected')
+  })
+
+  it('rejects it when neither shape comes back, and says so', async () => {
+    const answer = pendingCall()
+    mount(<TicketButton eventId="e1" priceLabel="$44.00" />)
+    await press(cta())
+    const settled = (lastSecret as Promise<string>).then(() => 'resolved').catch(() => 'rejected')
+
+    await act(async () => answer({ data: {} }))
+
+    await expect(settled).resolves.toBe('rejected')
+    expect(drawer()).toBeNull()
+    expect(container!.textContent).toContain('Could not start checkout.')
   })
 })
 

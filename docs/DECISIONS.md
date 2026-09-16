@@ -43981,3 +43981,96 @@ Space membership is the first of those four to convert.
   card path never navigates, so the `return_url` backstop is unreachable on the default path. If
   `onPaid` is ever dropped from this control, a paid membership has exactly one way to become real,
   behind a confirmation that already promised it.
+
+---
+
+## ADR-1380: a paid ticket is a seat in the room, and the RSVP switch stays on a ticketed event (2026-09-16)
+
+**Status:** Accepted · amends [ADR-826](#adr-826) (one join function per event) and the consequence
+LIVE-317 recorded · migration `20270345005100` · owner ruling, 2026-09-16
+
+**Context.** The owner bought a ticket through the on-page checkout, got the receipt and the
+"Ticket confirmed" line, and the event page went on saying **"Be the first to RSVP."**
+
+That was not a bug in the settle path. A seat had been **two rows in two tables** since LIVE-317:
+an `event_rsvps` row, or a succeeded `event_tickets` row for someone who paid on a tickets-mode
+event and therefore had *no* RSVP row. ADR-826 made it a rule — one join function per event, never
+both — and every roster-shaped reader was taught the union: the host roster
+(`manage/load.ts`, which already dedupes a person holding both and lists them once on the RSVP
+row), the reminder cron, host-attested attendance (`lib/events/attendance.ts`), the CRM. The
+**public event page** was the one reader that never learned it. `goingRsvps` filtered `event_rsvps`
+alone, so `going` read 0 for a room with a paid ticket holder standing in it, and `WarmProof`
+printed its empty-state invite at the person who had just paid.
+
+**Decision.** A settled ticket mints the buyer's going RSVP. Two readings were available and the
+owner's report chose between them.
+
+| | Teach the page the union | **Mint the seat** |
+|---|---|---|
+| Blast radius | One reader today, and every future reader of "who is going" | One write, in the settle path |
+| Fits ADR-826 | Yes — keeps one join function | No — amends it |
+| Fits the owner's other two asks | No | Yes |
+
+The owner asked for two more things in the same breath: the RSVP control should be **visible on a
+ticketed event**, and a press with no ticket should **open the ticket checkout**. Both say RSVP and
+tickets *coexist*. Once they coexist, "the ticket is instead of the answer" stops being true, and
+the seat belongs where every other seat already is.
+
+The shape is not new. The **free-tier claim has recorded itself as a going RSVP since ADR-410**
+(`ticket-actions.ts`: `if (r.free) await setRsvpStatus(eventId, 'going')`). What changes is only
+which of the two tables a *paid* seat lives in.
+
+**Three SQL properties, and one of them carries the money.**
+
+1. `record_ticket_seat(_ticket_id)` mints for a member or a guest, idempotently on both partial
+   unique indexes `event_rsvps` carries. A person who already answered is **moved to going** rather
+   than left alone: buying is a later and stronger signal than "maybe" or "can't go", and a payment
+   settles a pending approval request. That arm leaves `from_ticket_id` **null**, so a refund can
+   never delete an answer the person made themselves.
+2. 🔴 `enforce_event_rsvp_capacity()` **returns early for a row backed by a live paid ticket.** The
+   trigger coerces a `going` insert to `waitlist` on a full event. A ticket's inventory was already
+   decided somewhere else, under a different lock, against a different number —
+   `event_ticket_types.quantity`, taken by `reserve_ticket_atomic` and re-measured by
+   `settle_ticket_atomic`. Letting the RSVP trigger coerce a paid seat would take a person's money
+   and then put them on a waitlist for the thing they bought: SCAN-557's failure with the money
+   attached. The seat was sold; it is not re-auctioned.
+3. `refund_ticket_atomic()` releases the seat **its own ticket** minted, in the statement that
+   already flips the ticket and unbumps the tier.
+
+**It sends nothing and awards nothing**, which is why it is an RPC rather than a call into
+`setRsvpStatus`. That action emails a confirmation and pays the first-RSVP gem; the settle path has
+already sent the buyer a receipt (LIVE-316 / LIVE-320) and told the host (LIVE-345). Routing the
+seat through it would send two emails for one act. **The receipt is the confirmation.**
+
+**The UI half.** `page.tsx`'s answer-switch cascade carried an explicit `null` for a ticket holder
+and `!ticketsMode &&` on every surrounding branch, so on a ticketed event **no member saw an RSVP
+control at all**. A tickets-mode branch now sits *above* those (below them it would fall through to
+the same `null`) and renders `TicketedRsvpControls`. That component reads the ticket door out of a
+small client context — `components/events/join-intent.tsx`, because the event page is a Server
+Component and cannot hand a closure from one client island to another — and routes a ticketless
+Going press into the checkout instead of recording an answer nobody paid for. The segment greys and
+says where to go next, so the press is never inert.
+
+**Consequences.**
+
+- `RsvpControls` gains `goingNeedsTicket`. Its `allowGoing` and `onGoingIntercept` props already
+  existed for `RsvpPaymentFlow` and were **dead on this page**; they are now load-bearing.
+- With **no door listening** — sold out, sales closed, no payout account, a manager's preview — the
+  switch falls back to an ordinary RSVP. That is the honest control, not a degradation: with
+  nothing to buy, saying you are coming is the only thing the page can mean.
+- Outside the host's **booking window** with no door, the Going segment is not offered at all.
+  `setRsvpStatus` returns without writing for `going` there, so showing it would read as saved and
+  have recorded nothing.
+- A ticketed event's Going segment **never relabels itself "Join waitlist"**. `isFull` measures
+  `events.capacity`; the number that decides whether a ticketed seat is left is the tier's quantity.
+- The comments across `attendance.ts`, `manage/load.ts`, `manage/sections.tsx` and the reminder
+  cron that say *"a ticket holder has no RSVP row"* now describe the pre-2026-09-16 state. They are
+  left standing deliberately: the union they justify is still correct and still load-bearing for a
+  **guest** ticket claimed after the fact, and rewriting four files of accurate prose about a union
+  that still runs would be churn. LIVE-372 owns the wording pass.
+
+**Verified.** The `on conflict` inference over both partial indexes, the case-insensitive guest
+match, and the null `from_ticket_id` on the update arm were each asserted against the real project
+on 2026-09-16, with a control that deliberately asserted the wrong thing and fired as it must. The
+backfill of the one pre-existing settled ticket returned `minted=true, seat_status=going`, and a
+second call returned `minted=false`.

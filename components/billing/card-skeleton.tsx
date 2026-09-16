@@ -21,15 +21,20 @@
  */
 export default function CardSkeleton({ label = 'Preparing secure payment…' }: { label?: string }) {
   const bar = 'rounded-control bg-surface-elevated motion-safe:animate-pulse'
+  // Staggered, so the four bars read as fields arriving in order rather than one block breathing
+  // at once. The delays are inline styles rather than arbitrary classes on purpose: a
+  // `[animation-delay:150ms]` would be a class string the design-system scanners have to reason
+  // about, and this is presentation with no token to honour.
+  const step = (ms: number) => ({ animationDelay: `${ms}ms` })
   return (
     <div className="space-y-2">
       <div className="space-y-2" aria-hidden>
-        <div className={`${bar} h-10 w-full`} />
+        <div className={`${bar} h-10 w-full`} style={step(0)} />
         <div className="flex gap-2">
-          <div className={`${bar} h-10 w-1/2`} />
-          <div className={`${bar} h-10 w-1/2`} />
+          <div className={`${bar} h-10 w-1/2`} style={step(120)} />
+          <div className={`${bar} h-10 w-1/2`} style={step(240)} />
         </div>
-        <div className={`${bar} h-10 w-full`} />
+        <div className={`${bar} h-10 w-full`} style={step(360)} />
       </div>
       <p className="text-meta text-subtle" role="status">
         {label}

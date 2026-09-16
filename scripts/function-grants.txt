@@ -203,6 +203,7 @@ read_guest_seat                      public
 recompute_community_level            internal
 record_qr_scan                       internal
 record_streak_tick                   internal
+record_ticket_seat                   internal
 redeem_store_item_atomic             internal
 refresh_member_engagement_scores     internal
 refresh_resonance_density_cells      internal
