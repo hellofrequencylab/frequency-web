@@ -198,6 +198,9 @@ export interface TicketResult {
    * buyer still gets to pay, which is the only outcome that matters on a money path.
    */
   clientSecret?: string
+  /** The elements session's id, so the caller can settle from its own success handler rather than
+   *  waiting on the webhook (LIVE-366). See `CheckoutUiResult.sessionId` for why that matters. */
+  sessionId?: string
   error?: string
   /** True when a `free` tier needs no checkout. The caller records the claim as a going RSVP
    *  instead of redirecting to Stripe: `setRsvpStatus` for a member, `submitGuestRsvp` with the

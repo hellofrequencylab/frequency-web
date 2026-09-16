@@ -25,6 +25,23 @@ export interface CheckoutUiResult {
    * rather than on which one they asked for. That is what makes the degrade below safe.
    */
   clientSecret?: string
+  /**
+   * The Checkout Session's id, returned ALONGSIDE `clientSecret` on the elements path (LIVE-366).
+   *
+   * 🔴 IT IS WHAT LETS AN ON-PAGE PURCHASE SETTLE WITHOUT THE WEBHOOK, and that gap is not
+   * theoretical. `confirm({ redirect: 'if_required' })` means the common card path NEVER navigates,
+   * so the `return_url` carrying `session_id={CHECKOUT_SESSION_ID}` is never visited and the
+   * reconcile written as the webhook's backstop is unreachable on exactly the path that became the
+   * default. A late, retried or misconfigured webhook then means: no ticket row flipped, no
+   * receipt, no host notice -- behind a confirmation panel that already told the buyer they were in.
+   *
+   * Handing the id back lets the caller settle from its own success handler, through the same
+   * `recordTicketFromSession` the webhook uses. Both are safe to run: the settle is one conditional
+   * UPDATE on a `pending` row, so whichever arrives second flips nothing and sends nothing.
+   *
+   * Not set on the hosted path, which has a `url` whose landing page already carries the id.
+   */
+  sessionId?: string
   error?: string
 }
 
@@ -76,7 +93,7 @@ export function resolveCheckoutSession(
   const wantsElements = ui === 'elements'
 
   if (wantsElements && typeof session.client_secret === 'string' && session.client_secret) {
-    return { clientSecret: session.client_secret }
+    return { clientSecret: session.client_secret, sessionId: session.id }
   }
   if (wantsElements) {
     console.error(

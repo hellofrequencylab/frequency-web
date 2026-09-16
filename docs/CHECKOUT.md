@@ -49,7 +49,7 @@ return resolveCheckoutSession(session, ui, 'tips')        // at the return
 
 ```ts
 if (r.error) return fail(r.error)
-if (r.clientSecret) return ok({ clientSecret: r.clientSecret })
+if (r.clientSecret) return ok({ clientSecret: r.clientSecret, sessionId: r.sessionId })
 if (!r.url) return fail('Could not start checkout.')
 return ok({ url: r.url })
 ```
@@ -62,11 +62,22 @@ ui: opts?.forceHosted ? 'hosted' : onPageCheckoutAvailable() ? 'elements' : 'hos
 
 **5. Render the panel, warm Stripe on intent, and pass `forceHosted` in the fallback.**
 
+**6. Settle from your own success handler.** Write a `settle<Thing>Action(sessionId)` that calls your
+recorder's `record<Thing>FromSessionId`, and pass it as `onPaid`:
+
+```ts
+onPaid={sessionId ? () => settleTicketAction(sessionId) : undefined}
+```
+
+Without it your confirmation is a promise nothing has made true — see §3. The action needs no
+session gate (the payer may be a guest) and must never be fatal: a thrown reconcile behind a
+successful charge would send someone who already paid back to pay again.
+
 That is the change. If it is longer than that, the seam is being bypassed.
 
 ---
 
-## 3. The five things that have actually gone wrong
+## 3. The six things that have actually gone wrong
 
 Each of these shipped or nearly shipped. They are the reason the seam exists.
 
@@ -106,6 +117,21 @@ Copying one abandon arm to another table is a check-constraint violation at runt
 
 **Rule:** read the live constraint before writing a status value. The compiler cannot help.
 
+### 🔴 The path that keeps the buyer here is the one the backstop never covered
+
+`confirm({ redirect: 'if_required' })` is the whole feature: a card that needs no extra step resolves
+in place. It also means the buyer **never navigates**. So the session's `return_url` — carrying
+`session_id={CHECKOUT_SESSION_ID}` and written as the webhook's backstop — is visited only on the
+rare redirect (3DS, a bank app), and the reconcile behind it was unreachable on the path that had
+become the default. An on-page purchase had **one** way to become real, behind a confirmation panel
+that had already promised a ticket and a receipt.
+
+**Rule:** the seam hands `sessionId` back with the `clientSecret`, and the control passes a settle to
+`CheckoutPanel` as `onPaid`. The panel **awaits** it before confirming. Both settles are safe to run
+— the settle is one conditional `update … where status = 'pending' returning …`, so whichever
+arrives second flips nothing and sends nothing. The webhook stays the guarantee
+([ADR-1377](DECISIONS.md)).
+
 ### 🔴 The compiler cannot help AT ALL on the Stripe side
 
 The `stripe` package ships **no type declarations**. `Stripe.*` is `any` throughout. A wrong enum, a
@@ -113,6 +139,41 @@ rejected parameter or a misspelled field is a **runtime** failure in a money pat
 
 **Rule:** anything uncertain gets a retry that drops the uncertain part rather than the sale — see
 `createAllowingSavedCard`. And the degrade is always LOUD.
+
+---
+
+## 3b. The buyer-facing contract — eight states, one screen area
+
+The owner specified this after buying on a live event ([`LIVE-366`](BUILD-BACKLOG.json),
+[ADR-1377](DECISIONS.md)). It is the layout every checkout control composes, not a per-surface
+choice.
+
+| # | State | Where it lives |
+| :-- | :--- | :--- |
+| 1 | The **button leads** and names its price: `Get tickets - $44` | the control |
+| 2 | A row of **card marks** sits under the button | `components/billing/payment-marks.tsx` |
+| 3 | The options (tiers, amount) sit under the marks | the control |
+| 4 | Pressing the button opens the card layer **between** the button and the marks, pushing both it and the options **down** | the control's render order |
+| 5 | The trigger goes **quiet** while open, and still folds the drawer back up | the control |
+| 6 | Every payment method is in that one layer | `checkout-form.tsx` — `layout: accordion`, `defaultCollapsed: false` |
+| 7 | It ends in a **confirmation with a close button** | `checkout-panel.tsx` |
+| 8 | The receipt and the seller notice are already queued | §7, and the settle in §3 |
+
+Four things that are easy to get wrong and are each pinned by a test:
+
+- **The trigger goes quiet for a reason, not for decoration.** With the layer open, Stripe renders
+  its own amber "Pay $44". Two stacked amber buttons is the screen the owner called confusing, so
+  only one control on screen moves money and while the drawer is open it is Stripe's. A **greyed
+  control that does nothing** is worse than no control, so the quiet one collapses the drawer.
+- **Collapsing keeps the session.** Re-opening is then instant AND reserves no second seat.
+- **Changing the price drops it.** A form built for $44 must never sit under an $88 button, so
+  selecting another tier or editing the amount invalidates the session.
+- **A price in a CTA is a promise.** Where there is no price this control may charge — a free tier,
+  a members ticket the viewer cannot buy — it names no number at all.
+
+`appearanceFromTokens()` draws Stripe's fields from the live CSS custom properties with **no hex
+fallbacks**, and removes the `.Block` stroke around the Link / saved-card panel. A stroke there puts
+a box inside the card the layer already lives in.
 
 ---
 
@@ -160,6 +221,10 @@ attached one.
 | `lib/billing/receipt-address.test.ts` | A creator that resolves no address for the payer |
 | `lib/billing/take-rate-ladder.test.ts` | A fee-receipt write that could fail a live sale |
 | `LIVE-359`'s probe | Names every creator still redirecting |
+| `app/(main)/events/[slug]/ticket-button.states.test.tsx` | The eight states, by DOCUMENT POSITION: marks above the button · no price in the label · a session reused across a collapse · a session surviving a tier change |
+| `components/billing/checkout-panel.settle.test.tsx` | A confirmation shown before the settle resolves · a thrown settle reaching the buyer · a confirmation with no close control |
+| `app/(main)/events/[slug]/ticket-actions.settle.test.ts` | A settle with no kill switch, no shape check, no limiter, or one that turns a reconcile failure into an error after a charge |
+| `LIVE-366`'s probe | A seam that stops handing back `sessionId` · a door mounting the panel with no settle · card marks hoisted above the button |
 
 ⚠️ **Every one of these guards has passed a mutation it should have caught at least once**, by
 matching a name in a comment, an import line, a type annotation, a function definition, or the file
@@ -174,13 +239,21 @@ Every loop sends a first-party receipt to the payer and a notice to the earner, 
 the durable outbox. None can fail the sale (module-level try/catch, `sendMoneyReceipt` returns
 `false`, and the call sites add `.catch()` anyway).
 
-Two things to know:
+Three things to know:
 
-- **`emailShell` is not exported**, so only the ticket receipts carry the brand shell. Tip, donation
-  and order receipts render a bare `<div>` with no document, logo, footer or unsubscribe. Same
-  product, two visual identities.
+- **`emailShell` is THE wrapper, and it is exported.** Compose your body, hand it there, and a tip
+  receipt is the same object as a ticket receipt. It used to be private, and three money modules
+  each hand-rolled a bare `<div>` with no document, logo or footer.
+- **A receipt passes `RECEIPT_FOOTER`** ([ADR-1376](DECISIONS.md)). The shell's default footer says
+  the reader joined Frequency, which is false for a signed-out donor and for every guest payer, and
+  it is the one line a confused recipient acts on — by marking it spam. A receipt is also
+  transactional, so it carries no unsubscribe control; the sender address line stays, because that
+  is the part CAN-SPAM does not exempt.
 - **A missing `RESEND_API_KEY` loses every receipt silently.** `sendRawEmail` returns `{ id: null }`,
   the outbox job succeeds, and the message is gone — one `console.warn` is the only trace.
+- **Mail is queued, not sent.** `enqueueEmail` writes a `notification_queue` row; `/api/cron/process-queue`
+  drains it every two minutes (`vercel.json`). Expect a receipt inside ~3 minutes. Later than that
+  and the problem is upstream of the queue.
 
 ---
 

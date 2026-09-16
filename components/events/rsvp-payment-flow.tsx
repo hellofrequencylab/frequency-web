@@ -7,7 +7,7 @@ import { isError } from '@/lib/action-result'
 import CheckoutPanel from '@/components/billing/checkout-panel'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { setRsvpStatus } from '@/app/(main)/events/actions'
-import { startTicket } from '@/app/(main)/events/[slug]/ticket-actions'
+import { startTicket, settleTicketAction } from '@/app/(main)/events/[slug]/ticket-actions'
 import { GuestRsvpForm } from '@/components/events/guest-rsvp-form'
 import { GuestTicketForm, type GuestTicketTier } from '@/components/events/guest-ticket-form'
 import { RateOptions, type FlowRate } from '@/components/events/rate-options'
@@ -137,6 +137,8 @@ export function RsvpPaymentFlow({
   // first served), then hand off to secure checkout when payments are live. An abandoned
   // checkout leaves the RSVP standing and the host's follow-up funnel picks it up.
   const [clientSecret, setClientSecret] = useState<string | null>(null)
+  /** The session behind that secret, so this purchase settles without waiting on the webhook. */
+  const [sessionId, setSessionId] = useState<string | null>(null)
 
   /** Last resort: if the on-page form cannot run, ask again and take the hosted redirect. */
   function fallBackToHosted() {
@@ -172,6 +174,7 @@ export function RsvpPaymentFlow({
         // would simply do nothing. Every caller of that action has to handle both shapes, which is
         // what rsvp-payment-flow.onpage.test.ts pins.
         setClientSecret(r.data.clientSecret)
+        setSessionId(r.data.sessionId ?? null)
       } else if (r.data.url) {
         window.location.href = r.data.url
       }
@@ -187,6 +190,7 @@ export function RsvpPaymentFlow({
           clientSecret={clientSecret}
           priceLabel=""
           onFellBack={fallBackToHosted}
+          onPaid={sessionId ? () => settleTicketAction(sessionId) : undefined}
           // Closing after a completed payment reloads so the page shows what was just bought:
           // the ticket row, the updated count, the RSVP state. `location.reload()` rather than
           // router.refresh() because the purchase changes server-rendered state well outside

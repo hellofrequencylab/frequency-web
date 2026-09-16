@@ -30,6 +30,7 @@ const startGuestTicket = vi.fn()
 
 vi.mock('@/app/(main)/events/[slug]/ticket-actions', () => ({
   startGuestTicket: (...args: unknown[]) => startGuestTicket(...args),
+  settleTicketAction: vi.fn(),
 }))
 
 const { GuestTicketForm } = await import('./guest-ticket-form')

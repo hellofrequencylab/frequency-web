@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Ticket, Loader2, Lock, Check } from 'lucide-react'
-import { startTicket, refundTicketAction } from './ticket-actions'
+import { Ticket, Loader2, Lock, Check, ChevronUp } from 'lucide-react'
+import { startTicket, refundTicketAction, settleTicketAction } from './ticket-actions'
 import { isError } from '@/lib/action-result'
 import { ticketRowToPrice, type Price } from '@/lib/commerce/types'
 import { PriceInput, type PriceSelection } from '@/components/commerce/price-input'
 import { Button } from '@/components/ui/button'
 import CheckoutPanel from '@/components/billing/checkout-panel'
+import PaymentMarks from '@/components/billing/payment-marks'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 
 export type TicketTierView = {
@@ -41,6 +42,11 @@ export type TicketTierView = {
 const dollars = (cents: number | null | undefined) =>
   cents != null ? `$${(cents / 100).toFixed(2)}` : ''
 
+/** `$44.00` → `$44`. A trailing `.00` is two characters of noise in a CTA that has to survive
+ *  truncation on a phone; `$44.50` keeps its cents because dropping those would be a lie. The same
+ *  rule `receiptAmount` applies in the money emails, so the button and the receipt agree. */
+const compactPrice = (label: string) => label.replace(/\.00\b/, '')
+
 function isBuyerChosen(mode: TicketTierView['pricingMode']) {
   return mode === 'pwyc' || mode === 'sliding_scale' || mode === 'donation'
 }
@@ -69,6 +75,57 @@ function modeLabel(t: TicketTierView): string {
     case 'donation':
       return 'Donation'
   }
+}
+
+/**
+ * THE ONE TRIGGER, in its two states (LIVE-366).
+ *
+ * Closed it is the page's primary call to action and it names the price, because a CTA that hides
+ * what it costs is the thing a buyer stops at. Open it goes QUIET -- `secondary`, not amber -- for
+ * a reason that is not decoration: with the card layer up, Stripe renders its own amber "Pay $44",
+ * and two amber buttons stacked is exactly the screen the owner called confusing. Only one control
+ * on screen moves money, and while the drawer is open it is Stripe's.
+ *
+ * The quiet state is still LIVE: it collapses the drawer. A greyed-out control that does nothing is
+ * worse than no control, and "how do I close this" is the next question a buyer has.
+ */
+function CheckoutTrigger({
+  open,
+  pending,
+  disabled,
+  label,
+  onOpen,
+  onCollapse,
+}: {
+  open: boolean
+  pending: boolean
+  disabled?: boolean
+  /** What the button says when it is the CTA. Carries the price. */
+  label: string
+  onOpen: () => void
+  /** Fold the drawer back up. Never called while a payment is in flight -- the panel owns that. */
+  onCollapse: () => void
+}) {
+  return (
+    <Button
+      variant={open ? 'secondary' : 'primary'}
+      onClick={open ? onCollapse : onOpen}
+      onPointerEnter={warmStripeBrowser}
+      onFocus={warmStripeBrowser}
+      onTouchStart={warmStripeBrowser}
+      disabled={disabled}
+      loading={pending}
+      aria-expanded={open}
+      className="w-full justify-center"
+    >
+      {open ? (
+        <ChevronUp className="h-4 w-4" aria-hidden />
+      ) : (
+        <Ticket className="h-4 w-4" aria-hidden />
+      )}
+      {label}
+    </Button>
+  )
 }
 
 // Ticket selector on a paid event (EVENTS-SYSTEM §2.2). When the event has tiers we
@@ -138,6 +195,21 @@ export function TicketButton({
   const [clientSecret, setClientSecret] = useState<string | null>(null)
 
   /**
+   * Is the drawer showing? Tracked SEPARATELY from the client secret so collapsing keeps the
+   * session: re-opening is then instant and, more importantly, does not reserve a SECOND seat.
+   * A secret is dropped only when what it was created for changed -- a different tier, a different
+   * amount -- which the two setters below own.
+   */
+  const [open, setOpen] = useState(false)
+
+  /**
+   * The session id behind `clientSecret`, kept so the purchase can be settled the instant it is
+   * paid rather than whenever the webhook lands (LIVE-366). Null on the hosted path, which settles
+   * on its own landing page.
+   */
+  const [sessionId, setSessionId] = useState<string | null>(null)
+
+  /**
    * The LAST line of defence. If the form cannot mount or confirm at all — Stripe.js blocked, the
    * session unloadable, confirm throwing — the buyer must still be able to pay. Dropping the
    * secret and re-running `go()` asks the server again; with the on-page path having just failed
@@ -145,6 +217,7 @@ export function TicketButton({
    */
   function fallBackToHosted() {
     setClientSecret(null)
+    setSessionId(null)
     setError('Opening secure checkout…')
     startTransition(async () => {
       // 🔴 forceHosted IS LOAD-BEARING. Without it this asks for the same elements session that
@@ -160,14 +233,41 @@ export function TicketButton({
     })
   }
 
+  /**
+   * Fold the drawer back up without touching the session.
+   *
+   * ⚠️ THE PENDING TICKET STAYS PENDING, deliberately. The session that was created is still good
+   * for its 30-minute window, and `checkout.session.expired` sweeps it if the buyer never returns.
+   * Cancelling it here would mean a round trip to close a drawer, and would lose the seat the
+   * reservation is holding for someone who is coming right back.
+   */
+  function collapse() {
+    setOpen(false)
+    setError(null)
+  }
+
   function selectTier(t: TicketTierView) {
     setSelectedId(t.id)
     setError(null)
     setSelection(null)
+    // 🔴 THE OPEN SESSION IS FOR THE OLD TIER. Keeping it would charge the previous row's price
+    // behind a form that now sits under a different selection -- the one bug in this pattern that
+    // takes money for the wrong thing. Dropping it costs one round trip on the next press.
+    setClientSecret(null)
+    setSessionId(null)
+    setOpen(false)
   }
 
   function go() {
     setError(null)
+    // A session we already hold is re-shown WITHOUT asking the server again. The buyer who
+    // collapsed the drawer and changed their mind gets it back instantly, and no second seat is
+    // reserved. `selectTier` and the amount input drop the secret whenever it stops matching what
+    // the button now names, so this can never re-open a form for the wrong price.
+    if (clientSecret) {
+      setOpen(true)
+      return
+    }
     // 🔴 THE TWO WAITS NOW OVERLAP. Downloading Stripe.js used to start only once a client secret
     // existed, so the buyer waited for the server to build a session and THEN for the script.
     // Starting it here runs it alongside the server round trip. Idempotent and memoised.
@@ -199,43 +299,33 @@ export function TicketButton({
         // is deliberate — the server declines the on-page path whenever it cannot be honoured,
         // and the next branch catches that without this component needing to know why.
         setClientSecret(r.data.clientSecret)
+        setSessionId(r.data.sessionId ?? null)
+        setOpen(true)
       } else if (r.data.url) {
         window.location.href = r.data.url
       }
     })
   }
 
-  // ── Implicit flat-price (no tiers): the original simple button ──
+  // ── Implicit flat-price (no tiers): one button, one drawer ──
   if (!hasTiers) {
     return (
       <div className="space-y-2">
-        {/* 🔴 ONE CTA AT A TIME. With the form open this rendered a second orange button
-            directly above Stripe's own "Pay $44.00", so the card layer arrived under a button
-            that still said "Buy ticket · $44.00" and the buyer had to guess which one charged
-            them. The trigger has done its job once the form is up; the Pay button is the only
-            thing that moves money, so it is the only CTA left on screen. */}
-        {!clientSecret && (
-        <Button
-          onClick={go}
-          onPointerEnter={warmStripeBrowser}
-          onFocus={warmStripeBrowser}
-          onTouchStart={warmStripeBrowser}
-          disabled={isPending || previewMode}
-        >
-          {isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Ticket className="h-4 w-4" aria-hidden />
-          )}
-          Buy ticket · {priceLabel}
-        </Button>
-        )}
+        <CheckoutTrigger
+          open={open}
+          pending={isPending}
+          disabled={previewMode}
+          label={`Get tickets - ${compactPrice(priceLabel)}`}
+          onOpen={go}
+          onCollapse={collapse}
+        />
         {error && <p className="text-body-sm text-danger">{error}</p>}
-        {clientSecret && (
+        {open && clientSecret && (
           <CheckoutPanel
             clientSecret={clientSecret}
-            priceLabel={priceLabel}
+            priceLabel={compactPrice(priceLabel)}
             onFellBack={fallBackToHosted}
+            onPaid={sessionId ? () => settleTicketAction(sessionId) : undefined}
             // Closing after a completed payment reloads so the page shows what was just bought:
             // the ticket row, the updated count, the RSVP state. `location.reload()` rather than
             // router.refresh() because the purchase changes server-rendered state well outside
@@ -243,17 +333,78 @@ export function TicketButton({
             onClose={() => window.location.reload()}
           />
         )}
+        {/* UNDER the button, and it STAYS under it while the drawer is open -- the drawer opens
+            between the two, so pressing the button pushes this down rather than replacing it. */}
+        <PaymentMarks className="pt-0.5" />
       </div>
     )
   }
 
   // ── Tiered selector ──
   const buyerChosen = selected ? isBuyerChosen(selected.pricingMode) : false
-  const ctaDisabled =
-    isPending || !selected || selected.soldOut || offSale(selected) || previewMode
+  const ctaDisabled = !selected || selected.soldOut || offSale(selected) || previewMode
+
+  /**
+   * What the trigger says, for the tier that is selected RIGHT NOW.
+   *
+   * The price is in the label because the owner asked for it and because a CTA that hides its
+   * price is where a buyer stops. That means it has to be honest in five shapes, not one:
+   *
+   *  · a members ticket their membership covers costs nothing more -> no number at all
+   *  · a members ticket it does NOT cover is really the membership's price, so the button says
+   *    nothing about a ticket price it cannot charge; the join pointer below carries the offer
+   *  · a free tier is free
+   *  · pay-what-you-can names the amount the buyer has actually typed, or no amount yet
+   *  · a fixed tier names its own price, not the event's flat `priceLabel`
+   *
+   * A wrong number here is a price promise we then fail to keep at the card form.
+   */
+  function ctaLabel(): string {
+    const t = selected
+    if (!t) return 'Get tickets'
+    if (t.spaceMembersOnly && !unlocked(t)) return 'Members only'
+    // A member's included ticket lands here too: its pricing mode IS free, so it costs them
+    // nothing more and the button must not invent a number for it.
+    if (t.pricingMode === 'free') return 'Get ticket'
+    if (isBuyerChosen(t.pricingMode)) {
+      const cents = selection?.valid ? selection.amountCents : null
+      return cents != null ? `Get tickets - ${compactPrice(dollars(cents))}` : 'Get tickets'
+    }
+    return t.priceCents != null
+      ? `Get tickets - ${compactPrice(dollars(t.priceCents))}`
+      : 'Get tickets'
+  }
 
   return (
     <div className="space-y-3">
+      {/* ── THE BUTTON LEADS ─────────────────────────────────────────────────────────────────
+          Price-led CTA first, the accepted-card row under it, the ticket options under that.
+          Pressing the button opens the card layer BETWEEN the button and the marks, so both the
+          marks and the options are pushed down rather than swapped out: nothing a buyer was
+          looking at disappears when they commit. */}
+      <CheckoutTrigger
+        open={open}
+        pending={isPending}
+        disabled={ctaDisabled}
+        label={ctaLabel()}
+        onOpen={go}
+        onCollapse={collapse}
+      />
+      {error && <p className="text-body-sm text-danger">{error}</p>}
+      {open && clientSecret && (
+        <CheckoutPanel
+          clientSecret={clientSecret}
+          priceLabel={compactPrice(priceLabel)}
+          onFellBack={fallBackToHosted}
+          onPaid={sessionId ? () => settleTicketAction(sessionId) : undefined}
+          // Closing after a completed payment reloads so the page shows what was just bought:
+          // the ticket row, the updated count, the RSVP state. `location.reload()` rather than
+          // router.refresh() because the purchase changes server-rendered state well outside
+          // this component's subtree.
+          onClose={() => window.location.reload()}
+        />
+      )}
+      <PaymentMarks />
       <div className="space-y-2">
         {tiers!.map((t) => {
           const active = t.id === selectedId
@@ -357,46 +508,17 @@ export function TicketButton({
           price={tierToPrice(selected)}
           disabled={isPending}
           idPrefix={`tier-${selected.id}`}
-          onChange={setSelection}
+          // Same reason as `selectTier`: a session built for $20 must not stay open under a
+          // button that now says $50. Changing the amount drops it; the next press rebuilds it.
+          onChange={(next) => {
+            setSelection(next)
+            setClientSecret(null)
+            setSessionId(null)
+            setOpen(false)
+          }}
         />
       )}
 
-      {!clientSecret && (
-      <Button
-        onClick={go}
-        onPointerEnter={warmStripeBrowser}
-        onFocus={warmStripeBrowser}
-        onTouchStart={warmStripeBrowser}
-        disabled={ctaDisabled}
-      >
-        {isPending ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Ticket className="h-4 w-4" aria-hidden />
-        )}
-        {/* THE VERB CARRIES THE MONEY. "Get" is the same word this product uses for free things,
-            so it read identically whether or not a card was about to be asked for. "Buy" is read
-            first and survives truncation, which the price alone does not (CONTENT-VOICE §3c:
-            plain words, numbers over adjectives; NAMING.md §Marketplace makes "Ticket" the noun).
-            Free stays "Get ticket" rather than "Claim ticket": NAMING.md retires Claim as a
-            standalone button label, and while that line sits under Starter Circles it is written
-            unqualified, so this does not lean on a scope exemption nobody ruled. */}
-        {selected?.pricingMode === 'free' ? 'Get ticket' : 'Buy ticket'}
-      </Button>
-      )}
-      {error && <p className="text-body-sm text-danger">{error}</p>}
-      {clientSecret && (
-        <CheckoutPanel
-          clientSecret={clientSecret}
-          priceLabel={priceLabel}
-          onFellBack={fallBackToHosted}
-          // Closing after a completed payment reloads so the page shows what was just bought:
-          // the ticket row, the updated count, the RSVP state. `location.reload()` rather than
-          // router.refresh() because the purchase changes server-rendered state well outside
-          // this component's subtree.
-          onClose={() => window.location.reload()}
-        />
-      )}
     </div>
   )
 }

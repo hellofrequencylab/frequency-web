@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { getMyProfileId } from '@/lib/auth'
 import { rateLimitOk } from '@/lib/rate-limit'
-import { createTicketCheckout, refundTicket } from '@/lib/billing/tickets'
+import { createTicketCheckout, refundTicket, recordTicketFromSessionId } from '@/lib/billing/tickets'
 import { onPageCheckoutAvailable } from '@/lib/billing/stripe-browser'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { setRsvpStatus } from '@/app/(main)/events/actions'
@@ -39,7 +39,7 @@ export async function startTicket(
    */
   forceHosted?: boolean
   },
-): Promise<ActionResult<{ url?: string; clientSecret?: string; free?: boolean }>> {
+): Promise<ActionResult<{ url?: string; clientSecret?: string; sessionId?: string; free?: boolean }>> {
   // Hard server-side off while platform payments are dormant (lib/events/ticketing):
   // a stale link or client must never reach Stripe.
   if (!TICKETING_ENABLED) return fail('Ticket sales are off right now.')
@@ -76,9 +76,70 @@ export async function startTicket(
   }
   // Exactly one of these is ever set. A client secret means the card form mounts here; a url means
   // the buyer goes to Stripe, which is what happens whenever the on-page path declined.
-  if (r.clientSecret) return ok({ clientSecret: r.clientSecret })
+  // The session id rides along with the secret so the caller can settle from its own success
+  // handler (see `settleTicketAction`). It is not a capability: `recordTicketFromSessionId`
+  // re-reads the session from Stripe and refuses anything that is not a PAID ticket session.
+  if (r.clientSecret) return ok({ clientSecret: r.clientSecret, sessionId: r.sessionId })
   if (!r.url) return fail('Could not start checkout.')
   return ok({ url: r.url })
+}
+
+/**
+ * Settle an on-page purchase the moment it is paid, without waiting for the webhook (LIVE-366).
+ *
+ * 🔴 WHY THIS EXISTS. `confirm({ redirect: 'if_required' })` is what keeps a buyer on the page, and
+ * it means the common card path NEVER navigates. So the session's `return_url` -- the one carrying
+ * `session_id={CHECKOUT_SESSION_ID}`, written as the webhook's backstop -- is never visited, and
+ * the reconcile behind it is unreachable on exactly the path that became the default. Until this
+ * action existed, an on-page ticket had ONE way to become real, and if that one way was late,
+ * retried, or misconfigured, the buyer sat behind a confirmation panel telling them they were in
+ * while no row flipped, no receipt sent and no host was told.
+ *
+ * ⚠️ IT DOES NOT REPLACE THE WEBHOOK, and must not. This runs in the buyer's tab, so it dies with
+ * a closed laptop, a lost connection, or a 3DS hop that lands somewhere else. The webhook is the
+ * guarantee; this is the fast path that makes the guarantee usually unnecessary.
+ *
+ * BOTH ARE SAFE TO RUN. `settle_ticket_atomic` flips one row `where status = 'pending'` and returns
+ * what it flipped, so whichever arrives second matches nothing, returns no rows, and sends nothing.
+ * That is the same guard a webhook redelivery already relies on.
+ *
+ * AUTHORITY: none of it is here. `recordTicketFromSessionId` re-fetches the session FROM STRIPE and
+ * refuses unless `metadata.kind === 'ticket'` and `payment_status === 'paid'`, so the worst a
+ * caller can do with someone else's id is settle a purchase that genuinely happened -- which is
+ * precisely what the webhook would have done unprompted.
+ */
+// authz-ok: STRIPE IS THE AUTHORITY, and no session-holder gate is possible here. The caller may be
+// a signed-out guest settling their OWN purchase, so `getMyProfileId()` would refuse the majority
+// path this action exists to serve. What stands in its place is stronger than a session check:
+// `recordTicketFromSessionId` re-fetches the session FROM STRIPE and refuses anything that is not
+// `metadata.kind === 'ticket'` AND `payment_status === 'paid'`, so the most a caller can do with an
+// id that is not theirs is settle a purchase that genuinely happened -- which is precisely what the
+// webhook does, unprompted, seconds later. Nothing is read back to the caller but a boolean. The
+// per-IP limiter below is what stops that boolean being used to enumerate.
+export async function settleTicketAction(sessionId: string): Promise<ActionResult<{ settled: boolean }>> {
+  if (!TICKETING_ENABLED) return fail('Ticket sales are off right now.')
+  if (!sessionId || !sessionId.startsWith('cs_')) return fail('Not a checkout session.')
+  // Same limiter the guest door uses, for the same reason: this endpoint answers a yes/no about a
+  // session id, and a yes/no answered without limit is an oracle.
+  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  // ⚠️ `whenUnconfigured: 'allow'`, unlike the guest door below, and the asymmetry is deliberate.
+  // This runs AFTER a successful charge. Denying it does not protect anything -- the webhook will
+  // settle the same session regardless -- it only deletes the fast path, silently, on a deployment
+  // where the limiter happens not to be wired. A door that takes money fails closed; a reconcile
+  // that runs behind one fails open.
+  if (!(await rateLimitOk('settle_ticket', ip, 30, '1 m', { whenUnconfigured: 'allow' }))) {
+    return fail('Too many attempts. Try again in a minute.')
+  }
+  try {
+    const cents = await recordTicketFromSessionId(sessionId)
+    return ok({ settled: cents != null })
+  } catch (e) {
+    // NEVER fatal to the buyer. They paid; the webhook still owes them the ticket, and a thrown
+    // reconcile must not turn a successful payment into an error message. Loud, because a
+    // swallowed failure here is the invisible regression AGENTS.md names.
+    console.error('[tickets] on-page settle failed; the webhook is now the only path', e)
+    return ok({ settled: false })
+  }
 }
 
 // ── THE GUEST DOOR ──────────────────────────────────────────────────────────────────────────────
@@ -129,7 +190,7 @@ export async function startGuestTicket(input: {
    * exactly this, and the pair at 23:49:47/23:50:01 is the screenshot that reported it.
    */
   forceHosted?: boolean
-}): Promise<ActionResult<{ url?: string; clientSecret?: string; free?: boolean }>> {
+}): Promise<ActionResult<{ url?: string; clientSecret?: string; sessionId?: string; free?: boolean }>> {
   // Hard server-side off, FIRST and for the same reason as the member path: a stale link or a
   // client must never reach Stripe while platform payments are dormant.
   if (!TICKETING_ENABLED) return fail('Ticket sales are off right now.')
@@ -212,7 +273,9 @@ export async function startGuestTicket(input: {
     return ok({ free: true })
   }
 
-  if (r.clientSecret) return ok({ clientSecret: r.clientSecret })
+  // Same seam as the member door: the id rides along so the guest's purchase settles the
+  // moment it is paid instead of waiting on the webhook (LIVE-366).
+  if (r.clientSecret) return ok({ clientSecret: r.clientSecret, sessionId: r.sessionId })
   if (!r.url) return fail('Could not start checkout.')
   return ok({ url: r.url })
 }

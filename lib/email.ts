@@ -2277,6 +2277,13 @@ function ticketReceiptHtml(
       <a href="${who.claimUrl}" style="${btnStyle}">Add this ticket to an account &rarr;</a>
     </p>` : ''
 
+  // THE SHELL'S FOOTER, not a second one in the body (ADR-1376). This line used to print inside
+  // the card above its own rule, and then `emailShell` added the member footer underneath it: two
+  // "why you got this" sentences, the lower one asserting the reader joined Frequency -- false for
+  // every guest who bought a ticket without an account, which is most of them. Handing it to the
+  // shell leaves ONE footer that is true for whoever is reading, and drops the unsubscribe control
+  // that does not belong on a receipt (transactional mail is CAN-SPAM exempt from the opt-out, and
+  // a guest cannot reach the settings page it points at anyway).
   const footer = who.kind === 'guest'
     ? `You are getting this because this address was used to buy a ticket to ${escapeHtml(eventTitle)}.
       If that was not you, reply to this email and we will sort it out.`
@@ -2297,11 +2304,7 @@ function ticketReceiptHtml(
     ${addressLine}
     <a href="${eventUrl}" style="${btnStyle}">View event &rarr;</a>
     ${calendarBlock}${accountOffer}
-    <hr style="${dividerStyle}">
-    <p style="font-size:13px;color:#8F8675;">
-      ${footer}
-    </p>
-  `)
+  `, { text: footer, unsubscribe: false })
 }
 
 function ticketReceiptText(

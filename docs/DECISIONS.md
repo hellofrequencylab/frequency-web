@@ -43879,3 +43879,37 @@ so they are answered once, here.
 - ⚠️ `emailShell`'s footer parameter now has two shapes. The union is deliberate back-compat — every
   existing string caller is untouched — but a third variation should become a named footer constant
   beside `RECEIPT_FOOTER` rather than a third shape.
+
+## ADR-1377: an on-page purchase settles itself, because the path that keeps the buyer here is the one the backstop never covered (2026-09-16)
+
+**Status.** ACCEPTED. Ships with `LIVE-366`.
+
+**Context.** The on-page card form confirms with `redirect: 'if_required'` (ADR-1369 put the CSP in place for it). That flag is the whole point of the feature: a card that needs no extra step resolves in place, and the buyer never leaves the event page.
+
+It also means the buyer never **navigates**. And the reconcile that was written as the webhook's backstop lives on a navigation:
+
+```ts
+// lib/billing/checkout-ui.ts — the comment was right, and the path stopped being taken
+// 🔴 `session_id={CHECKOUT_SESSION_ID}` MUST SURVIVE THE SWAP wherever the success path settles
+// without waiting for the webhook.
+```
+
+`checkoutReturnFields` puts that URL in `return_url`, which Stripe visits **only when a payment method redirects away and comes back** — 3DS, a bank app. On the common card path nothing redirects, the event page is reloaded at its own URL with no `session_id`, and `recordTicketFromSessionId` is never called. So the belt-and-braces reconcile was unreachable on exactly the path that had become the default, and an on-page ticket had **one** way to become real.
+
+That is not a theoretical gap. When the webhook is late, retried, or misconfigured, the outcome is: no `event_tickets` row flipped, no buyer receipt, no host sale notice, no bell — behind a confirmation panel that has already told the buyer *"Your ticket is confirmed. A receipt is on its way to your email."* The panel makes a promise; nothing was making it true.
+
+**Decision.** `resolveCheckoutSession` returns the Checkout Session's `id` alongside the `client_secret` on the elements path, and each checkout door settles from its own success handler:
+
+1. `CheckoutPanel` takes `onPaid`, **awaits it**, and only then shows the confirmation. The wait is named ("Confirming your payment…"), because a form that goes quiet right after a card is submitted is the moment a buyer presses again.
+2. `settleTicketAction(sessionId)` calls the **same** `recordTicketFromSessionId` the redirect landing page calls, so the two cannot drift.
+3. The webhook is **unchanged and still the guarantee**. This runs in the buyer's tab, so it dies with a closed laptop or a lost connection.
+
+**Consequences.**
+
+- ✅ **Both paths are safe to run**, and that was true before this change rather than arranged for it: `settle_ticket_atomic` is one conditional `update … where status = 'pending' returning …`, so whichever settle arrives second matches no row, returns nothing, and the send loop it guards never runs. Webhook redelivery already depended on that guard.
+- ✅ **No new authority.** `recordTicketFromSessionId` re-fetches the session **from Stripe** and refuses unless `metadata.kind === 'ticket'` and `payment_status === 'paid'`. The worst a caller can do with someone else's id is settle a purchase that genuinely happened, which is what the webhook would have done unprompted. The action adds a `cs_` shape check and the ticketing kill switch on top.
+- ✅ **A thrown settle is never fatal.** The buyer has been charged; turning a reconcile failure into an error would send a successfully-charged person back to pay a second time. It logs loudly and confirms, which is the fail-safe **with** the gate that notices it fired: `[tickets] on-page settle failed; the webhook is now the only path`.
+- ⚠️ **Three doors were wired, not nine.** `ticket-button`, `guest-ticket-form` and `rsvp-payment-flow` all sell tickets and all now settle. Tips, commerce orders, Space donations and the membership creators mount the same `CheckoutPanel` and have the same gap; `onPaid` is optional precisely so they can adopt it one at a time, and each needs its own settle action because each has its own recorder. That is the next row, not a silent omission.
+- ⚠️ The ticket doors now carry a `sessionId` in client state. It is not a secret: it is half of the `client_secret` the same component already holds, and the server re-validates it against Stripe on every use.
+
+**What this does not fix.** Production shows fifteen `cs_live_` sessions created on one event with zero `checkout.session.completed` — sessions minted and never paid. That is a browser-side card-entry problem upstream of settlement, and nothing here addresses it; it is what the eight-state rebuild in the same change is aimed at.

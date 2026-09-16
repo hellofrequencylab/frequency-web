@@ -24,6 +24,7 @@ vi.mock('@/app/(main)/events/actions', () => ({ setRsvpStatus: vi.fn(), setRsvpP
 vi.mock('@/app/(main)/events/[slug]/ticket-actions', () => ({
   startTicket: vi.fn(),
   startGuestTicket: vi.fn(),
+  settleTicketAction: vi.fn(),
 }))
 vi.mock('@/app/(main)/events/[slug]/social-actions', () => ({ setEventRsvpDepth: vi.fn() }))
 vi.mock('@/lib/spaces/memberships-actions', () => ({

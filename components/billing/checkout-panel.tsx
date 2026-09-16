@@ -27,7 +27,7 @@
 // would make the two gates disagree about what this file is.
 import dynamic from 'next/dynamic'
 import { useState } from 'react'
-import { Check, X } from 'lucide-react'
+import { Check, X, Loader2 } from 'lucide-react'
 
 const CheckoutForm = dynamic(() => import('./checkout-form'), { ssr: false })
 
@@ -36,12 +36,27 @@ export default function CheckoutPanel({
   priceLabel,
   onFellBack,
   onClose,
+  onPaid,
   doneTitle = 'You are in.',
   doneBody = 'Your ticket is confirmed. A receipt is on its way to your email.',
 }: {
   clientSecret: string
   priceLabel?: string
   onFellBack: () => void
+  /**
+   * Run the moment the payment succeeds on-page, BEFORE the confirmation shows (LIVE-366).
+   *
+   * 🔴 THE CONFIRMATION IS A PROMISE, so something has to make it true. `redirect: 'if_required'`
+   * means the buyer never navigates, so the session's `return_url` reconcile never runs and the
+   * webhook is the only thing that would flip the row and send the receipt. A caller passes its
+   * settle action here and the panel waits for it, so the panel says "a receipt is on its way"
+   * only once something has actually been asked to send one.
+   *
+   * IT IS NEVER ALLOWED TO FAIL THE PAYMENT. A rejection is logged and the confirmation shows
+   * anyway: the money moved, the webhook still owes them the ticket, and an error screen after a
+   * successful charge is the worst thing this panel could say.
+   */
+  onPaid?: () => Promise<unknown>
   /**
    * Dismiss the panel after a completed payment. The caller clears its client secret and
    * refreshes, so the page reflects the purchase. Optional: a caller that navigates on its own
@@ -53,6 +68,34 @@ export default function CheckoutPanel({
   doneBody?: string
 }) {
   const [done, setDone] = useState(false)
+  const [settling, setSettling] = useState(false)
+
+  /** Paid. Settle first if the caller gave us a way to, then show the confirmation either way. */
+  async function paid() {
+    if (!onPaid) {
+      setDone(true)
+      return
+    }
+    setSettling(true)
+    try {
+      await onPaid()
+    } catch (err) {
+      console.error('[checkout] settle after payment failed; the webhook is now the only path', err)
+    }
+    setSettling(false)
+    setDone(true)
+  }
+
+  // The half-second between "charged" and "confirmed". Named rather than blank, because a form
+  // that goes quiet right after a card is submitted is the moment a buyer presses again.
+  if (settling) {
+    return (
+      <div className="flex items-center gap-2 pt-3 text-body-sm text-muted" role="status">
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+        Confirming your payment…
+      </div>
+    )
+  }
 
   // ── PAID, AND STILL HERE ──────────────────────────────────────────────────────────────────
   // The form resolves in place (`redirect: 'if_required'`), so the last thing a buyer sees is a
@@ -100,7 +143,7 @@ export default function CheckoutPanel({
         clientSecret={clientSecret}
         priceLabel={priceLabel}
         onFellBack={onFellBack}
-        onDone={() => setDone(true)}
+        onDone={paid}
       />
     </div>
   )
