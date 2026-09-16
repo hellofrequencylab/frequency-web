@@ -6,7 +6,8 @@ import { Check } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import CheckoutPanel from '@/components/billing/checkout-panel'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
-import { startGuestTicket } from '@/app/(main)/events/[slug]/ticket-actions'
+import { startGuestTicket, settleTicketAction } from '@/app/(main)/events/[slug]/ticket-actions'
+import { ticketCtaLabel } from '@/lib/billing/price-label'
 import { ticketRowToPrice, type Price } from '@/lib/commerce/types'
 import { PriceInput, type PriceSelection } from '@/components/commerce/price-input'
 import { RateOptions, type FlowRate } from '@/components/events/rate-options'
@@ -117,6 +118,8 @@ export function GuestTicketForm({
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
+  /** The session behind that secret, so a guest's purchase settles without waiting on the webhook. */
+  const [sessionId, setSessionId] = useState<string | null>(null)
 
   /**
    * The on-page form could not run. A guest has no account to come back to, so leaving them on a
@@ -181,7 +184,12 @@ export function GuestTicketForm({
   // Moves with the signed-in buttons on purpose: the same event must not call the same act two
   // different things depending on whether you have an account. `isFree` (not an empty payLabel)
   // decides, so a free tier reads "Get ticket" instead of the old "Get ticket · Free".
-  const submitLabel = isFree || !payLabel ? 'Get ticket' : `Buy ticket · ${payLabel}`
+  //
+  // 🔴 ONE LABEL, SHARED (LIVE-366). This said "Buy ticket · $44" while the member door was
+  // renamed to "Get tickets - $44", which broke the invariant the line above states, and broke it
+  // in the one place nobody would look: the signed-out door. The help centre names this label in a
+  // sentence that has to be true for both readers, so both read it from `ticketCtaLabel`.
+  const submitLabel = isFree || !payLabel ? 'Get ticket' : ticketCtaLabel(payLabel)
   const soldOut = !!selected?.soldOut
 
   function selectRate(r: FlowRate) {
@@ -215,6 +223,7 @@ export function GuestTicketForm({
         clientSecret={clientSecret}
         priceLabel=""
         onFellBack={fallBackToHosted}
+        onPaid={sessionId ? () => settleTicketAction(sessionId) : undefined}
         // Closing after a completed payment reloads so the page shows what was just bought:
         // the ticket row, the updated count, the RSVP state. `location.reload()` rather than
         // router.refresh() because the purchase changes server-rendered state well outside
@@ -272,6 +281,7 @@ export function GuestTicketForm({
             // the reason tickets were chosen as the proving path -- it is the only creator with a
             // signed-out buyer, so it exercises the identity seam the other eight do not.
             setClientSecret(result.data.clientSecret)
+            setSessionId(result.data.sessionId ?? null)
           } else if (result.data.url) {
             // Hosted Stripe Checkout. This page is gone after this line.
             window.location.href = result.data.url

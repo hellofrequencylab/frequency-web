@@ -30,6 +30,7 @@ const startGuestTicket = vi.fn()
 
 vi.mock('@/app/(main)/events/[slug]/ticket-actions', () => ({
   startGuestTicket: (...args: unknown[]) => startGuestTicket(...args),
+  settleTicketAction: vi.fn(),
 }))
 
 const { GuestTicketForm } = await import('./guest-ticket-form')
@@ -91,9 +92,11 @@ describe('the signed-out door on a priced event is a purchase, not a sign-in wal
     const el = mount(<GuestTicketForm eventId="e1" priceLabel="$25.00" signInHref={SIGN_IN} />)
     expect(el.querySelector('form')).toBeTruthy()
     expect(el.querySelector('input[name="email"]')).toBeTruthy()
-    // The price is said plainly on the control that charges it, and the VERB says it too:
-    // "Get" read identically on a free ticket and a $25 one. See ticket-button.tsx.
-    expect(el.textContent).toContain('Buy ticket · $25.00')
+    // The price is said plainly on the control that charges it, and it is the SAME label the
+    // signed-in door shows (LIVE-366): a member and a guest buying one ticket must not read two
+    // different sentences, and the help centre names this label once for both.
+    expect(el.textContent).toContain('Get tickets - $25')
+    expect(el.textContent, 'the empty cents are noise in a CTA').not.toContain('$25.00')
     // The one promise the page is allowed to make before payment.
     expect(el.textContent).toContain('No account needed.')
     // And the thing that must NOT be here.
@@ -163,7 +166,10 @@ describe('the signed-out door on a priced event is a purchase, not a sign-in wal
     // Free says "Get ticket" with no price appended: the old 'Get ticket · Free' printed a
     // price label for something that costs nothing, and "buy" would be a lie here.
     expect(el.textContent).toContain('Get ticket')
-    expect(el.textContent).not.toContain('Buy ticket')
+    // Scoped to the BUTTON, not the page: the tier list beside it legitimately prints "$25.00"
+    // for the paid rate, and a price in a list is a fact while a price in a CTA is a promise.
+    const cta = el.querySelector('button[type="submit"]')!
+    expect(cta.textContent, 'no price is appended to something that costs nothing').not.toMatch(/\$/)
     expect(el.textContent).not.toContain('· Free')
     expect(el.textContent).toContain('No account needed.')
     // And it does not promise a payment screen that will never come.

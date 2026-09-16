@@ -72,7 +72,7 @@ function PayForm({
 }: {
   priceLabel?: string
   onFellBack: () => void
-  /** Paid without leaving the page. The panel swaps to its confirmation. */
+  /** Paid without leaving the page. The panel settles, then swaps to its confirmation. */
   onDone: () => void
 }) {
   // ⚠️ `useCheckout()` returns a DISCRIMINATED UNION, not a checkout object:
@@ -136,7 +136,30 @@ function PayForm({
 
   return (
     <form onSubmit={submit} className="space-y-3">
-      <PaymentElement />
+      {/* ── EVERY WAY TO PAY, IN THIS ONE AREA ────────────────────────────────────────────────
+          `accordion` + `defaultCollapsed: false` puts the card fields open on arrival with the
+          other methods listed beneath, so a buyer who just wants to type a card types it and a
+          buyer who wants Link, a wallet or PayPal sees the row without a detour. `tabs`, the
+          default, hides everything past the third method behind a "more" control -- a second
+          click for the thing the owner asked to be visible.
+
+          `radios: 'if_multiple'` and `spacedAccordionItems: false` are what keep it MINIMAL:
+          no radio column when there is only one method, and no gaps turning each row into its
+          own little card inside a card.
+
+          Wallets stay `auto`, never `never`. Apple Pay and Google Pay are the fastest paths a
+          phone has, and whether they appear is the DEVICE's answer, not ours. */}
+      <PaymentElement
+        options={{
+          layout: {
+            type: 'accordion',
+            defaultCollapsed: false,
+            radios: 'if_multiple',
+            spacedAccordionItems: false,
+          },
+          wallets: { applePay: 'auto', googlePay: 'auto', link: 'auto' },
+        }}
+      />
       {error && (
         <p className="text-body-sm text-danger" role="alert">
           {error}

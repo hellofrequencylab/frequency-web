@@ -1409,7 +1409,7 @@ export default async function EventDetailPage({
           {/* NAME WHAT IS IN THE BOX. In tickets mode the ticket IS the answer and the RSVP switch
               deliberately does not render (ADR-826's join-model addendum), so heading this "RSVP"
               described a control that was not there. The price moved to the button with the verb
-              (`Buy ticket · $44.00`), so printing it again two lines above is the same number
+              (`Get tickets - $44`), so printing it again two lines above is the same number
               twice. */}
           <span className="text-body-sm font-bold text-text">{ticketsMode ? 'Tickets' : 'RSVP'}</span>
           {!ticketsMode && isPaidEvent && !hasTiers && (

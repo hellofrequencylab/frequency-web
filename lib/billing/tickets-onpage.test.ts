@@ -204,8 +204,32 @@ describe("ui: 'elements' asks Stripe for an on-page session", () => {
     flatEvent()
     stripeFake.checkout.sessions.create.mockResolvedValue({ id: 'cs_1', url: null, client_secret: 'cs_secret_1' })
     const out = await createTicketCheckout({ buyerProfileId: 'buyer-1', eventId: 'evt-1', ui: 'elements' })
-    expect(out).toEqual({ clientSecret: 'cs_secret_1' })
+    expect(out).toEqual({ clientSecret: 'cs_secret_1', sessionId: 'cs_1' })
     expect(out.url, 'exactly one of url / clientSecret is ever set').toBeUndefined()
+  })
+
+  // 🔴 THE SESSION ID IS LOAD-BEARING ON THIS PATH, and it is the one field whose absence is
+  // invisible. `confirm({ redirect: 'if_required' })` means the buyer never navigates, so the
+  // `return_url` asserted above -- the webhook's backstop -- is NEVER VISITED on the common card
+  // path. The id handed back here is what lets the caller settle from its own success handler
+  // instead, through the same recordTicketFromSession the webhook uses. Drop it and an on-page
+  // purchase has exactly one way to become real, behind a confirmation panel that already
+  // promised a ticket (LIVE-366).
+  it('hands back the session id, so an on-page purchase can settle without the webhook', async () => {
+    flatEvent()
+    stripeFake.checkout.sessions.create.mockResolvedValue({ id: 'cs_live_abc', url: null, client_secret: 'cs_live_abc_secret_xyz' })
+    const out = await createTicketCheckout({ buyerProfileId: 'buyer-1', eventId: 'evt-1', ui: 'elements' })
+    expect(out.sessionId).toBe('cs_live_abc')
+  })
+
+  // The hosted half of the same contract: it has a url whose landing page already carries the id
+  // in its query string, so handing one back here would be a second, redundant settle trigger.
+  it('does NOT hand back a session id on the hosted path', async () => {
+    flatEvent()
+    stripeFake.checkout.sessions.create.mockResolvedValue({ id: 'cs_2', url: 'https://stripe.test/pay', client_secret: null })
+    const out = await createTicketCheckout({ buyerProfileId: 'buyer-1', eventId: 'evt-1', ui: 'hosted' })
+    expect(out.url).toBe('https://stripe.test/pay')
+    expect(out.sessionId).toBeUndefined()
   })
 })
 
