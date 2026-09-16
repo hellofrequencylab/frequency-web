@@ -56,10 +56,6 @@ vi.mock('@/lib/billing/tickets', () => ({
 vi.mock('@/lib/billing/checkout', () => ({
   recordMembershipDuesFromInvoice: async () => {},
 }))
-vi.mock('@/lib/billing/supporter', () => ({
-  recordSupporterContributionFromSession: async () => {},
-  recordSupporterContributionRefundFromCharge: async () => {},
-}))
 vi.mock('@/lib/commerce/checkout', () => ({
   recordCommerceOrderFromSession: async () => {},
   recordCommerceRefundFromCharge: async () => {},

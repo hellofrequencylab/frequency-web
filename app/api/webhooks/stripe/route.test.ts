@@ -7,7 +7,7 @@ import type Stripe from 'stripe'
 //     without releasing the idempotency claim; a DB error 500s + releases it. (The guard
 //     MATH lives in the RPC and is covered by supabase/tests/membership_event_ordering_guard.test.sql.)
 //  2. Consolidation — one endpoint now dispatches BOTH the membership/subscription path and
-//     the payout-channel recorders (tips/tickets/supporter/commerce/dues/refunds/Connect),
+//     the payout-channel recorders (tips/tickets/commerce/dues/refunds/Connect),
 //     so those recorders fire for the right event types through this single route.
 
 const H = vi.hoisted(() => ({
@@ -42,17 +42,17 @@ const seen = (recorder: string, s: Stripe.Checkout.Session) => {
 vi.mock('@/lib/billing/tips', () => ({
   recordTipFromSession: async (s: Stripe.Checkout.Session) => { seen('tip', s) },
   recordTipRefundFromCharge: async () => { H.calls.push('tipRefund') },
+  // LIVE-364: the expired/failed sweep. Records under its own name so a test can prove the
+  // abandon arms fire WITHOUT any success recorder leaking in.
+  abandonTipFromSession: async () => { H.calls.push('abandonTip') },
 }))
 vi.mock('@/lib/billing/tickets', () => ({
   recordTicketFromSession: async (s: Stripe.Checkout.Session) => { seen('ticket', s) },
   recordTicketRefundFromCharge: async () => { H.calls.push('ticketRefund') },
+  abandonTicketFromSession: async () => { H.calls.push('abandonTicket') },
 }))
 vi.mock('@/lib/billing/checkout', () => ({
   recordMembershipDuesFromInvoice: async () => { H.calls.push('dues') },
-}))
-vi.mock('@/lib/billing/supporter', () => ({
-  recordSupporterContributionFromSession: async (s: Stripe.Checkout.Session) => { seen('supporter', s) },
-  recordSupporterContributionRefundFromCharge: async () => { H.calls.push('supporterRefund') },
 }))
 vi.mock('@/lib/commerce/checkout', () => ({
   recordCommerceOrderFromSession: async (s: Stripe.Checkout.Session) => { seen('order', s) },
@@ -190,7 +190,7 @@ describe('stripe webhook — consolidated payout-channel dispatch', () => {
     const res = await post()
     expect(res.status).toBe(200)
     expect(H.rpcCalls).toHaveLength(1) // member tier set
-    expect(H.calls).toEqual(['tip', 'ticket', 'supporter', 'order']) // every recorder fired
+    expect(H.calls).toEqual(['tip', 'ticket', 'order']) // every recorder fired
   })
 
   // 🔴 POSITIVE CONTROLS for the entitlement allowlist. Before the guard was `mode === 'subscription'
@@ -209,7 +209,7 @@ describe('stripe webhook — consolidated payout-channel dispatch', () => {
     const res = await post()
     expect(res.status).toBe(200)
     expect(H.rpcCalls).toHaveLength(0) // no setTier — this is the hole
-    expect(H.calls).toEqual(['tip', 'ticket', 'supporter', 'order']) // the order still records
+    expect(H.calls).toEqual(['tip', 'ticket', 'order']) // the order still records
   })
 
   it('a one-time Supporter contribution (mode:payment, its own kind) never grants a membership tier', async () => {
@@ -221,7 +221,7 @@ describe('stripe webhook — consolidated payout-channel dispatch', () => {
     const res = await post()
     expect(res.status).toBe(200)
     expect(H.rpcCalls).toHaveLength(0)
-    expect(H.calls).toEqual(['tip', 'ticket', 'supporter', 'order'])
+    expect(H.calls).toEqual(['tip', 'ticket', 'order'])
   })
 
   it('a subscription session that carries ANY kind (a Space plan) is routed by the subscription events, not here', async () => {
@@ -265,7 +265,7 @@ describe('stripe webhook — consolidated payout-channel dispatch', () => {
     // Supporter contribution refunded from the Stripe dashboard reached no recorder at all.
     H.event = plainEvent('charge.refunded')
     await post()
-    expect(H.calls).toEqual(['ticketRefund', 'orderRefund', 'tipRefund', 'supporterRefund'])
+    expect(H.calls).toEqual(['ticketRefund', 'orderRefund', 'tipRefund'])
   })
 
   it('acks an unhandled event type with 200', async () => {
@@ -293,8 +293,8 @@ describe('stripe webhook — checkout.session.async_payment_succeeded', () => {
     })
     const res = await post()
     expect(res.status).toBe(200)
-    expect(H.calls).toEqual(['tip', 'ticket', 'supporter', 'order']) // the SAME list `completed` runs
-    for (const r of ['tip', 'ticket', 'supporter', 'order']) {
+    expect(H.calls).toEqual(['tip', 'ticket', 'order']) // the SAME list `completed` runs
+    for (const r of ['tip', 'ticket', 'order']) {
       expect(paidDeliveries(r)).toEqual([{ recorder: r, id: 'cs_async_1', paymentStatus: 'paid' }])
     }
     expect(H.rpcCalls).toHaveLength(0) // never a member-tier write from this event
@@ -320,7 +320,7 @@ describe('stripe webhook — checkout.session.async_payment_succeeded', () => {
       metadata: { kind: 'tip', from_profile_id: 'p1', to_profile_id: 'p2' },
     })
     expect((await post()).status).toBe(200)
-    for (const r of ['tip', 'ticket', 'supporter', 'order']) {
+    for (const r of ['tip', 'ticket', 'order']) {
       expect(H.sessions.filter((x) => x.recorder === r)).toHaveLength(2) // handed both events
       expect(paidDeliveries(r)).toHaveLength(1) // recorded once
     }
@@ -330,7 +330,14 @@ describe('stripe webhook — checkout.session.async_payment_succeeded', () => {
   it('async_payment_failed still routes ONLY to the abandon path (the success half does not leak in)', async () => {
     H.event = plainEvent('checkout.session.async_payment_failed', { id: 'cs_async_3', payment_status: 'unpaid' })
     expect((await post()).status).toBe(200)
-    expect(H.calls).toEqual(['abandon'])
+    // LIVE-364 added the ticket and tip arms beside the commerce one. The point of this test is
+    // unchanged and is what the name says: async_payment_failed routes ONLY to abandon arms, and
+    // NO success recorder leaks in. Asserting the set rather than a single entry keeps that meaning
+    // while letting the sweep cover every creator that writes a pending row.
+    expect(H.calls).toEqual(['abandon', 'abandonTicket', 'abandonTip'])
+    expect(H.calls).not.toContain('tip')
+    expect(H.calls).not.toContain('ticket')
+    expect(H.calls).not.toContain('order')
     expect(H.sessions).toHaveLength(0)
   })
 })
@@ -391,7 +398,7 @@ describe('stripe webhook — household bundle seating', () => {
     const res = await post()
     expect(res.status).toBe(200)
     expect(H.rpcCalls).toHaveLength(0) // no apply_membership_event_atomic off a bundle payment
-    expect(H.calls).toEqual(['tip', 'ticket', 'supporter', 'order']) // recorders still no-op through
+    expect(H.calls).toEqual(['tip', 'ticket', 'order']) // recorders still no-op through
   })
 
   it('routes an active bundle subscription to the seating RPC instead of the member path', async () => {

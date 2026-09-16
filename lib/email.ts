@@ -1502,15 +1502,68 @@ const footerStyle    = `font-size:12px;color:#8F8675;margin-top:24px;text-align:
 const unsubBtnStyle  = `display:inline-block;border:1px solid #E9E1D4;border-radius:999px;padding:7px 18px;color:#6B6253;text-decoration:none;font-weight:600;font-size:12px;`
 const dividerStyle   = `border:none;border-top:1px solid #E9E1D4;margin:26px 0;`
 
+// The same palette as named parts, for the modules that compose their OWN body and hand it to
+// `emailShell` (the money receipts in lib/billing/*). They lived as three private copies in three
+// files until 2026-09-16; one source is what keeps a receipt looking like every other Frequency
+// email. Literal hex, not tokens: mail clients read no design tokens.
+export const EMAIL_INK        = '#3D352A' // token-ok: email HTML
+export const EMAIL_MUTED      = '#6B6253' // token-ok: email HTML
+export const EMAIL_RULE       = '#E9E1D4' // token-ok: email HTML
+export const EMAIL_ACTION     = '#E2912F' // token-ok: email HTML
+export const EMAIL_ACTION_INK = '#FFFFFF' // token-ok: email HTML
+/** One body paragraph, minus its colour: callers append `color:${EMAIL_INK};` or the muted one. */
+export const EMAIL_P = 'font-size:15px;line-height:1.6;margin:0 0 20px;'
+
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
-// `footer` overrides the default member footer — used by non-member transactional
-// mail (e.g. the scan intro) that must NOT claim membership and needs its own
-// unsubscribe line.
-function emailShell(content: string, footer?: string): string {
-  const foot = footer ?? `You're receiving this because you joined Frequency, the community collective.`
+/**
+ * A footer that replaces the default member one, and says whether the unsubscribe control belongs
+ * under it. A plain string keeps the control, which is what every marketing-adjacent override wants.
+ */
+export type EmailFooter = { text: string; unsubscribe: boolean }
+
+/**
+ * The footer every MONEY RECEIPT carries (LIVE-365).
+ *
+ * Two things are wrong with the member default on a receipt, and they are answered together here
+ * because they have the same cause: a receipt does not follow from membership, it follows from a
+ * payment.
+ *
+ *  1. "you joined Frequency" is a FACTUAL CLAIM, and it is false for the two loops that serve
+ *     people who deliberately have no account: a signed-out donor (giving requires no account by
+ *     design) and a guest payer through the guest door. A confused recipient acts on the only line
+ *     telling them why they got the mail, and the action is "mark as spam" -- which costs
+ *     deliverability on the receipts that ARE correct.
+ *  2. The unsubscribe control does not belong on one. A receipt is transactional, so CAN-SPAM
+ *     exempts it from the opt-out requirement (the sender's physical address, which the shell
+ *     prints separately, is NOT exempt and stays). Offering the control anyway implies a buyer can
+ *     opt out of proof of payment, and for a guest it points at a settings page they cannot reach.
+ */
+export const RECEIPT_FOOTER: EmailFooter = {
+  text: 'This is a receipt for a payment you made through Frequency.',
+  unsubscribe: false,
+}
+
+/**
+ * THE brand wrapper for every Frequency email: doctype, head, charset + viewport, the wordmark and
+ * tagline, the card, and the footer with the unsubscribe control and the CAN-SPAM contact line.
+ *
+ * EXPORTED (2026-09-16) because it was not, and three money-email modules each hand-rolled a bare
+ * `<div>` instead: no `<html>`, no charset, no logo, no footer. A receipt is the most consequential
+ * mail we send and it looked the least like us. Compose your BODY, hand it here, and the wrapper is
+ * the same one a ticket receipt gets.
+ *
+ * @param footer overrides the default member footer -- used by non-member transactional mail
+ *   (e.g. the scan intro) that must NOT claim membership and needs its own unsubscribe line, and by
+ *   the money receipts, which pass `RECEIPT_FOOTER` to drop the control as well as the claim.
+ */
+export function emailShell(content: string, footer?: string | EmailFooter): string {
+  const foot =
+    (typeof footer === 'string' ? footer : footer?.text) ??
+    `You're receiving this because you joined Frequency, the community collective.`
+  const showUnsub = typeof footer === 'object' ? footer.unsubscribe : true
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -1523,7 +1576,7 @@ function emailShell(content: string, footer?: string): string {
     </div>
     <div style="${footerStyle}">
       <p style="margin:0 0 14px;">${foot}</p>
-      <a href="${BASE_URL}/settings/notifications" style="${unsubBtnStyle}">Unsubscribe or manage emails</a>
+      ${showUnsub ? `<a href="${BASE_URL}/settings/notifications" style="${unsubBtnStyle}">Unsubscribe or manage emails</a>` : ''}
       <p style="margin:16px 0 0;color:#A89E8C;">${orgContactLine()}</p>
     </div>
   </div>

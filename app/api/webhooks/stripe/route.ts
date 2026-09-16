@@ -50,13 +50,13 @@ import { grantBetaFounding } from '@/lib/billing/beta-founding'
 import { foundingPaymentSignal } from '@/lib/billing/founding-payment'
 import { lapseFoundingStatus } from '@/lib/founding/status'
 import { persistAccount } from '@/lib/billing/connect'
-import { recordTipFromSession, recordTipRefundFromCharge } from '@/lib/billing/tips'
-import { recordTicketFromSession, recordTicketRefundFromCharge } from '@/lib/billing/tickets'
-import { recordMembershipDuesFromInvoice } from '@/lib/billing/checkout'
+import { recordTipFromSession, abandonTipFromSession, recordTipRefundFromCharge } from '@/lib/billing/tips'
 import {
-  recordSupporterContributionFromSession,
-  recordSupporterContributionRefundFromCharge,
-} from '@/lib/billing/supporter'
+  recordTicketFromSession,
+  abandonTicketFromSession,
+  recordTicketRefundFromCharge,
+} from '@/lib/billing/tickets'
+import { recordMembershipDuesFromInvoice } from '@/lib/billing/checkout'
 import {
   recordSpaceDonationFromSession,
   abandonSpaceDonationFromSession,
@@ -182,7 +182,6 @@ export async function POST(req: Request) {
   const recordPaidCheckout = async (s: Stripe.Checkout.Session) => {
     await recordTipFromSession(s)
     await recordTicketFromSession(s)
-    await recordSupporterContributionFromSession(s)
     await recordCommerceOrderFromSession(s)
     // LIVE-235: a gift to a Space fund settles here like every other one-off channel. It no-ops on a
     // session that is not a donation, so adding it to THIS list (the one both `completed` and
@@ -276,6 +275,14 @@ export async function POST(req: Request) {
         // A donation holds no slot, but a `pending` row that can never settle would sit in the fund
         // view forever and read as money that is coming. Release it (idempotent, pending only).
         await abandonSpaceDonationFromSession(s)
+        // LIVE-364: tickets and tips wrote a `pending` row per ATTEMPT and had NO arm here, so every
+        // abandoned checkout left one behind forever. Production held 11 such tickets against 9
+        // expired sessions and zero completed payments. Each no-ops on a session that is not its
+        // kind, so both belong on this list rather than behind a branch -- the same reason the
+        // settle side keeps ONE recorder list that both `completed` and `async_payment_succeeded`
+        // consume.
+        await abandonTicketFromSession(s)
+        await abandonTipFromSession(s)
         break
       }
 
@@ -377,12 +384,11 @@ export async function POST(req: Request) {
         // 2026-09-05 (L2-07): a TIP and a SUPPORTER CONTRIBUTION refunded from the Stripe
         // dashboard now reconcile too. Each recorder matches on the charge's payment_intent
         // against its own `succeeded` row, so a charge that isn't its kind is a harmless no-op
-        // and running all four for every refund is safe (the same principle as `completed`).
+        // and running them all for every refund is safe (the same principle as `completed`).
         const charge = event.data.object as Stripe.Charge
         await recordTicketRefundFromCharge(charge)
         await recordCommerceRefundFromCharge(charge)
         await recordTipRefundFromCharge(charge)
-        await recordSupporterContributionRefundFromCharge(charge)
         await recordSpaceDonationRefundFromCharge(charge)
         break
       }

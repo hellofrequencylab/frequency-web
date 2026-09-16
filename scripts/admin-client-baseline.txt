@@ -572,7 +572,6 @@ lib/billing/space-plan-checkout.ts
 lib/billing/space-subscription-items.ts
 lib/billing/space-subscriptions.ts
 lib/billing/subscription-receipt.ts
-lib/billing/supporter.ts
 lib/billing/ticket-sale-notify.ts
 lib/billing/tickets.ts
 lib/billing/tip-receipt.ts

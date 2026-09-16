@@ -35,7 +35,12 @@ const m = vi.hoisted(() => ({
   reads: [] as string[],
 }))
 
-vi.mock('@/lib/email', () => ({ enqueueEmail: (p: Record<string, unknown>) => m.enqueueEmail(p) }))
+// Only the SEND is stubbed. `emailShell` and the palette come from the real module, so what this
+// file asserts about the rendered message is what a mailbox actually receives.
+vi.mock('@/lib/email', async (importActual) => ({
+  ...(await importActual<typeof import('@/lib/email')>()),
+  enqueueEmail: (p: Record<string, unknown>) => m.enqueueEmail(p),
+}))
 vi.mock('@/lib/comms/send-gate', () => ({
   resolveSendGate: async () => ({ allowed: m.gateAllowed, reason: m.gateAllowed ? 'ok' : 'suppressed' }),
 }))
@@ -207,6 +212,21 @@ describe('a member bought a ticket to a personal event', () => {
     expect(m.notificationsInsert).toHaveBeenCalledTimes(1)
     expect(m.enqueueEmail).not.toHaveBeenCalled()
     expect(String((console.error as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0])).toContain('no account email')
+  })
+})
+
+describe('the shell', () => {
+  // The brand wrapper (lib/email.ts `emailShell`). Until 2026-09-16 this module hand-rolled a bare
+  // `<div>`: no doctype, no charset, no wordmark, no unsubscribe footer. A money email that does not
+  // look like a Frequency email is the one people forward to their bank.
+  it('sends the host notice in the same shell a ticket receipt gets', async () => {
+    await notifyTicketSaleHost(SALE)
+    const html = mail().html
+    expect(html).toContain('<!DOCTYPE html>')
+    expect(html).toContain('<meta charset="UTF-8">')
+    expect(html).toContain('>frequency</a>')
+    expect(html).toContain('Unsubscribe or manage emails')
+    expect(html).not.toMatch(/[\u2014\u2013]/)
   })
 })
 

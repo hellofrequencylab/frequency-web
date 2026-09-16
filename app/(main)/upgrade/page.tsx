@@ -12,7 +12,6 @@ import { FEATURE_METERS } from '@/lib/pricing/feature-meters'
 import { memberMeterUsage } from '@/lib/pricing/member-meter-usage'
 import { FeatureMeterRange } from '@/components/pricing/feature-meter-range'
 import { SectionHeader } from '@/components/ui/section-header'
-import { confirmSupporterContribution } from './actions'
 import { UpgradeToggle } from './upgrade-toggle'
 import { PwywPicker } from './pwyw-picker'
 
@@ -43,23 +42,15 @@ import { PwywPicker } from './pwyw-picker'
 const TIER_USAGE_METERS = Object.values(FEATURE_METERS).filter((m) => m.axis === 'tier')
 
 export default async function UpgradePage({
-  searchParams,
 }: {
-  searchParams?: Promise<{ supporter?: string; session_id?: string }>
+  // `?supporter=success&session_id=` is gone with the contribution itself (LIVE-361). Nothing can
+  // produce that redirect any more, so reading it would be a handler for an event that cannot
+  // happen -- which is what this page was doing.
+  searchParams?: Promise<Record<string, never>>
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/sign-in')
-
-  // Webhook-independent supporter-contribution confirm (the Stripe success redirect lands here with
-  // ?supporter=success&session_id=...). Idempotent: the same recorder the webhook runs, so the
-  // contribution + badge land exactly once no matter which fires first.
-  const sp = (await searchParams) ?? {}
-  let supporterThanks: { amountCents: number } | null = null
-  if (sp.supporter === 'success' && sp.session_id) {
-    const confirmed = await confirmSupporterContribution(sp.session_id)
-    if (confirmed.ok) supporterThanks = { amountCents: confirmed.amountCents }
-  }
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -132,16 +123,6 @@ export default async function UpgradePage({
       title="Membership"
       description="Belonging is free, and stays free. Crew is the personal tier: a lower fee on network sales, the badge, and a way to back the community."
     >
-      {/* Supporter-contribution thanks — the confirmed Stripe success redirect. Plain and concrete. */}
-      {supporterThanks && (
-        <div className="mb-8 rounded-2xl border border-success/30 bg-success-bg/30 px-5 py-4">
-          <p className="text-body-sm font-bold text-text">Thank you. Your contribution went through.</p>
-          <p className="mt-0.5 text-meta leading-relaxed text-muted">
-            {formatCents(supporterThanks.amountCents)} to the Foundation, and your Supporter badge is on.
-          </p>
-        </div>
-      )}
-
       {/* Beta banner — shown while paid membership has not gone live. */}
       {!live && (
         <div className="rounded-2xl bg-primary-bg border border-primary-bg/50 px-5 py-4 mb-8">

@@ -21,7 +21,7 @@
 // Server-only: it opens the service-role client.
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { enqueueEmail } from '@/lib/email'
+import { enqueueEmail, emailShell, EMAIL_INK, EMAIL_MUTED, EMAIL_RULE, EMAIL_P } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { profileAccountEmail } from '@/lib/profiles/account-email'
 import { formatPriceCents } from '@/lib/commerce/types'
@@ -262,24 +262,21 @@ export function payoutSentence(c: Pick<SaleCopy, 'feeLabel' | 'feeIsZero'>): str
     : `Frequency's fee on this sale was ${c.feeLabel}. The rest goes to your payout account on your usual payout schedule.`
 }
 
-// Email HTML, not UI chrome: mail clients read no design tokens, so the palette is the same literal
-// ink / muted / rule values lib/email.ts uses for every other transactional email.
-const EMAIL_INK = '#3D352A' // token-ok: email HTML, mirrors lib/email.ts
-const EMAIL_MUTED = '#6B6253' // token-ok: email HTML, mirrors lib/email.ts
-const EMAIL_RULE = '#E9E1D4' // token-ok: email HTML, mirrors lib/email.ts
-const EMAIL_P = `font-size:15px;line-height:1.6;margin:0 0 20px;`
+// Email HTML, not UI chrome: mail clients read no design tokens, so the palette is literal hex,
+// imported from lib/email.ts. Only the BODY is composed here; `emailShell` supplies the doctype,
+// the head, the wordmark and the unsubscribe footer, exactly as it does for a ticket receipt.
 
 function saleEmailHtml(c: SaleCopy): string {
   const overageBlock = c.overage
     ? `<p style="${EMAIL_P}color:${EMAIL_INK};border-left:3px solid ${EMAIL_RULE};padding-left:12px;">${escapeHtml(c.overage)}</p>`
     : ''
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">
+  return emailShell(`
 <p style="${EMAIL_P}color:${EMAIL_INK};">Hi ${escapeHtml(c.hostName)},</p>
 <p style="${EMAIL_P}color:${EMAIL_INK};">${escapeHtml(saleSentence(c))}</p>
 ${overageBlock}
 <p style="${EMAIL_P}color:${EMAIL_MUTED};">${escapeHtml(payoutSentence(c))}</p>
 <p style="${EMAIL_P}color:${EMAIL_INK};"><a href="${c.eventUrl}" style="color:${EMAIL_INK};">See who’s coming</a></p>
-</div>`
+`)
 }
 
 function saleEmailText(c: SaleCopy): string {

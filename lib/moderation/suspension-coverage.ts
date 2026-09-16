@@ -96,7 +96,11 @@ export const SUSPENSION_EXEMPT: Record<string, string> = {
   // Money ledgers are written by webhooks and system paths; a raise here desyncs Stripe.
   financial_transactions: 'ledger row written by webhooks and system paths',
   commerce_orders: 'ledger row written by checkout and webhooks',
-  supporter_contributions: 'ledger row written by webhooks',
+  // RETIRED (LIVE-361): the contribution charge and its recorder are gone, so nothing writes this
+  // any more. The table stays because it is schema, and it is still listed here on purpose --
+  // dropping the verdict would make a live table unaccounted for, which is the gap this file
+  // exists to close. It held 0 rows when the code was removed.
+  supporter_contributions: 'retired ledger; nothing writes it since LIVE-361, table kept empty',
   zap_transactions: 'economy ledger written by system paths',
   gem_transactions: 'economy ledger written by system paths',
   // Operator-authored rows sit behind operator authz. A suspension is a MEMBER sanction; the

@@ -43819,3 +43819,63 @@ cause:
 - ⚠️ Two other surfaces mount `MembershipJoinCard` (`membership-checkout-fold.tsx` and
   `rsvp-payment-flow.tsx`). Both keep the default `card` layout and `featured={false}`, so neither
   moves; a future featured plan in those contexts is a deliberate decision, not an inherited one.
+
+## ADR-1376: a money receipt is transactional, so it names the payment rather than a membership, and drops the opt-out (2026-09-16)
+
+**Status.** ACCEPTED. Closes `LIVE-365`.
+
+**Context.** `emailShell` (`lib/email.ts`) is the brand wrapper every Frequency email now renders
+inside. Its footer has always read:
+
+> You're receiving this because you joined Frequency, the community collective.
+
+That was true while the shell dressed member mail only. It stopped being true on 2026-09-16, when
+the four money receipts — donation, tip, commerce order, subscription — were routed through the same
+wrapper. They all compose one body, `receiptHtml` in `lib/billing/receipt-email.ts`, and two of the
+loops feeding it serve people who deliberately have no account:
+
+- a **signed-out donor** (giving requires no account by design; `lib/billing/donation-actions.ts`
+  resolves a null profile id on purpose), and
+- a **guest payer** through the guest door, for the same reason.
+
+Both were being told they joined something they did not. That is a factual claim in a transactional
+email, not a tone problem: the footer is the only line telling a recipient why the mail arrived, so
+getting it wrong is the one line a confused reader acts on — by marking it spam, which costs
+deliverability on the receipts that are correct.
+
+The same row carried a second, undeclared question the email audit had raised: whether a
+transactional receipt should show an unsubscribe control at all. Both questions have the same cause,
+so they are answered once, here.
+
+**Decision.**
+
+1. A money receipt's footer states the **payment**, not a relationship:
+   `This is a receipt for a payment you made through Frequency.` True for a member, a guest, and a
+   signed-out donor alike, and it still answers "why did I get this".
+2. A money receipt carries **no unsubscribe control**. A receipt is transactional, so CAN-SPAM
+   exempts it from the opt-out requirement. Offering the control anyway implies a buyer can opt out
+   of proof of payment, and for a guest it points at `/settings/notifications`, a page they cannot
+   reach. The sender's physical-address line is **not** exempt and stays.
+3. The mechanism is a widened footer parameter, not a second shell:
+   `emailShell(content, footer?: string | EmailFooter)`. A plain string keeps the control — which is
+   what every marketing-adjacent override wants, including the scan intro that already passes one —
+   and the object form (`{ text, unsubscribe }`) is how a caller drops it. The receipt's footer is a
+   single named export, `RECEIPT_FOOTER`, so all four receipts say one thing.
+
+**Consequences.**
+
+- ✅ One edit at the shared body covers all four receipts. Nothing per-entity had to change.
+- ✅ The two **notify** emails (`tips-notify`, `ticket-sale-notify`) are unaffected and keep the
+  member footer with its control. They go to the recipient or host, who is a member; their existing
+  assertions on `Unsubscribe or manage emails` still hold, which is the positive control that the
+  change is scoped to receipts.
+- ✅ `LIVE-365`'s probe measures the consequence with a balanced-paren scanner rather than a regex.
+  The first attempt used `/emailShell\s*\([\s\S]{0,4000}?,\s*[A-Za-z_]/` and passed on the UNFIXED
+  tree, because it matched a comma inside the body's template literal — the eighth instance in this
+  repo of a check matching something where it does nothing. The replacement walks the call's
+  arguments tracking strings, template literals and `${}` nesting, and asks whether a comma appears
+  at argument depth. It was mutation-tested four ways (single-argument call, renamed export with the
+  comment mention surviving, dropped parameter, membership claim restored); each failed as it must.
+- ⚠️ `emailShell`'s footer parameter now has two shapes. The union is deliberate back-compat — every
+  existing string caller is untouched — but a third variation should become a named footer constant
+  beside `RECEIPT_FOOTER` rather than a third shape.

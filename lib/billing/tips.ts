@@ -154,6 +154,33 @@ export async function createTipCheckout(opts: {
   return resolveCheckoutSession(session, ui, 'tips')
 }
 
+/**
+ * Release a tip whose checkout expired or failed (LIVE-364).
+ *
+ * `createTipCheckout` writes a `pending` tips row per checkout ATTEMPT, and nothing swept them: the
+ * expired-session handler covered commerce orders and Space donations only. Every started-and-
+ * abandoned tip left a row that would never settle and never go away.
+ *
+ * ⚠️ `failed`, NOT `abandoned`: tips_status_check allows pending|succeeded|failed|refunded. The
+ * donation arm's `abandoned` is not a value this table accepts.
+ *
+ * Idempotent on (session id, status = 'pending'), so a redelivery flips nothing and a tip that
+ * settled first is untouched.
+ */
+export async function abandonTipFromSession(session: Stripe.Checkout.Session): Promise<void> {
+  if (session.metadata?.kind !== 'tip') return
+  try {
+    const { error } = await db()
+      .from('tips')
+      .update({ status: 'failed' })
+      .eq('stripe_checkout_session_id', session.id)
+      .eq('status', 'pending')
+    if (error) console.error('[tips] could not release an abandoned tip', error.message)
+  } catch (e) {
+    console.error('[tips] releasing an abandoned tip threw', e instanceof Error ? e.message : String(e))
+  }
+}
+
 /** Mark the tip behind a completed Checkout session as succeeded (idempotent). */
 export async function recordTipFromSession(session: Stripe.Checkout.Session): Promise<void> {
   if (session.metadata?.kind !== 'tip') return

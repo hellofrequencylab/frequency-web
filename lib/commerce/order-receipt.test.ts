@@ -21,7 +21,12 @@ const m = vi.hoisted(() => ({
   itemsError: null as null | { message: string },
 }))
 
-vi.mock('@/lib/email', () => ({ enqueueEmail: (p: Record<string, unknown>) => m.enqueueEmail(p) }))
+// Only the SEND is stubbed. The receipt body is wrapped by the real `emailShell` (lib/email.ts),
+// so what this file asserts about the rendered message is what a mailbox actually receives.
+vi.mock('@/lib/email', async (importActual) => ({
+  ...(await importActual<typeof import('@/lib/email')>()),
+  enqueueEmail: (p: Record<string, unknown>) => m.enqueueEmail(p),
+}))
 vi.mock('@/lib/comms/send-gate', () => ({ resolveSendGate: async () => ({ allowed: true, reason: 'ok' }) }))
 vi.mock('@/lib/profiles/account-email', () => ({
   profileAccountEmail: async (id: string) => m.accountEmails.get(id) ?? null,

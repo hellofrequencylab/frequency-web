@@ -284,6 +284,26 @@ same guard locally and prints what to fix.
   `railForm()`, rendered by `RailManifestRepeat`. Ordered collections only; a keyed `map` repeat is
   reported as a `keyed-repeat` drop rather than silently omitted.
 
+# Embedded checkout — one seam, nine creators (never hand-roll a payment surface)
+
+A buyer pays ON FREQUENCY: the card fields open under the button they pressed and the payment
+resolves in place. Full spec: [`docs/CHECKOUT.md`](docs/CHECKOUT.md).
+
+- **To convert a creator:** take a `ui` option defaulting to hosted, route BOTH halves through
+  `lib/billing/checkout-ui.ts` (`checkoutReturnFields` + `resolveCheckoutSession`), return the
+  client secret through the action, and render `components/billing/checkout-panel.tsx`. That is the
+  whole change; longer means the seam is being bypassed.
+- 🔴 **`!session.url` is TRUE for every on-page session.** Stripe returns `url: null` and a client
+  secret. Post-create bookkeeping that asks about the URL will fail every order it was meant to
+  protect — `createCommerceCheckout` nearly shipped exactly that.
+- 🔴 **A fallback must pass `forceHosted`.** Without it the retry asks for the form that just
+  failed, gets another secret, finds no URL, and dead-ends the buyer. That shipped, on tickets.
+- 🔴 **The `stripe` package has NO type declarations.** `Stripe.*` is `any`, so a wrong enum or a
+  rejected parameter is a RUNTIME failure in a money path. Anything uncertain gets a retry that
+  drops the uncertain part rather than the sale, and every degrade logs.
+- **Status values are per-table**: `space_donations` takes `abandoned`; `event_tickets` and `tips`
+  take `failed`. Read the live constraint before writing one.
+
 # Admin menu — a locked, machine-enforced contract (extend the catalog, never rewrite the rail)
 
 The operator admin menu + rail + `/manage` consoles all derive from ONE source. Do NOT hand-roll
