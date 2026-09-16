@@ -28,8 +28,27 @@
 import dynamic from 'next/dynamic'
 import { useState } from 'react'
 import { Check, X, Loader2 } from 'lucide-react'
+import CardSkeleton from './card-skeleton'
 
 const CheckoutForm = dynamic(() => import('./checkout-form'), { ssr: false })
+
+/**
+ * Start downloading the card form's chunk on INTENT, before the click (LIVE-368).
+ *
+ * `warmStripeBrowser()` already warmed Stripe.js on hover, but not this. The split that keeps a
+ * reader who never buys from downloading any of Stripe also means that on the click, the chunk
+ * download was a COLD serial wait in front of the server round trip -- the buyer paid for the
+ * split at the exact moment it cost them most.
+ *
+ * Calling the same `import()` the `dynamic()` above uses resolves to the same chunk and the same
+ * module cache, so this is a pure head start: by the time a secret exists the form is already
+ * parsed. It reserves nothing and fetches no session, so a hover costs a chunk and never a seat.
+ */
+export function prefetchCheckoutForm(): void {
+  void import('./checkout-form').catch(() => {
+    // Silent on purpose. This is a head start, never a requirement; the real mount reports.
+  })
+}
 
 export default function CheckoutPanel({
   clientSecret,
@@ -40,7 +59,12 @@ export default function CheckoutPanel({
   doneTitle = 'You are in.',
   doneBody = 'Your ticket is confirmed. A receipt is on its way to your email.',
 }: {
-  clientSecret: string
+  /**
+   * Null while the server is still building the session. The panel opens ANYWAY and animates,
+   * because the alternative is what the owner saw: press the button, watch nothing happen, then
+   * have a box appear. See the skeleton branch below.
+   */
+  clientSecret: string | null
   priceLabel?: string
   onFellBack: () => void
   /**
@@ -127,6 +151,20 @@ export default function CheckoutPanel({
             </button>
           )}
         </div>
+      </div>
+    )
+  }
+
+  // ── PRESSED, AND SOMETHING HAPPENS ────────────────────────────────────────────────────────
+  // The drawer used to wait for the client secret, so the gap between the press and anything
+  // appearing was the whole server round trip -- dead time with no feedback but a faded button.
+  // Now the press opens the drawer at its final height immediately and the shape animates while
+  // the session is built, the chunk arrives and Stripe.js initialises. None of those three got
+  // faster; the buyer just stopped waiting at a page that looked broken.
+  if (!clientSecret) {
+    return (
+      <div className="motion-safe:animate-[slideUp_0.3s_ease-out] pt-3">
+        <CardSkeleton />
       </div>
     )
   }

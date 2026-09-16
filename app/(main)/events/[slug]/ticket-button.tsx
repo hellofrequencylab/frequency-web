@@ -7,7 +7,7 @@ import { isError } from '@/lib/action-result'
 import { ticketRowToPrice, type Price } from '@/lib/commerce/types'
 import { PriceInput, type PriceSelection } from '@/components/commerce/price-input'
 import { Button } from '@/components/ui/button'
-import CheckoutPanel from '@/components/billing/checkout-panel'
+import CheckoutPanel, { prefetchCheckoutForm } from '@/components/billing/checkout-panel'
 import PaymentMarks from '@/components/billing/payment-marks'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { compactPrice, ticketCtaLabel } from '@/lib/billing/price-label'
@@ -75,6 +75,21 @@ function modeLabel(t: TicketTierView): string {
 }
 
 /**
+ * Everything the checkout needs that is NOT a session, started on intent.
+ *
+ * Two things used to be serial on the click: Stripe.js and the card form's own chunk. Both are
+ * safe to fetch early because neither touches the server -- and the third wait, the Checkout
+ * Session, is deliberately NOT warmed here. Creating one RESERVES A SEAT
+ * (`reserve_ticket_atomic`, a 30-minute pending window), so warming it on hover would reserve a
+ * ticket for every visitor who moved a mouse. Production already carries stale pending rows from
+ * clicks alone.
+ */
+function warmCheckout(): void {
+  warmStripeBrowser()
+  prefetchCheckoutForm()
+}
+
+/**
  * THE ONE TRIGGER, in its two states (LIVE-366).
  *
  * Closed it is the page's primary call to action and it names the price, because a CTA that hides
@@ -83,8 +98,15 @@ function modeLabel(t: TicketTierView): string {
  * and two amber buttons stacked is exactly the screen the owner called confusing. Only one control
  * on screen moves money, and while the drawer is open it is Stripe's.
  *
- * The quiet state is still LIVE: it collapses the drawer. A greyed-out control that does nothing is
- * worse than no control, and "how do I close this" is the next question a buyer has.
+ * 🔴 WHEN OPEN IT IS NOT A BUTTON AT ALL. It was a quiet `secondary` one, sitting directly above
+ * Stripe's amber "Pay $44", and the owner's reading of the live page was blunt: "the second button
+ * seems really redundant." They were right, and the reason is worth keeping. Two stacked buttons
+ * for one act is confusing on its own, and it got worse because the thing that belongs BETWEEN
+ * them -- the card fields -- renders blank while Stripe fetches, so the two collapsed together
+ * into one meaningless pair.
+ *
+ * Open, this is a one-line text control instead: same job (fold the drawer back up), none of a
+ * button's weight. Only one control on screen looks like it moves money, and it is Stripe's.
  */
 function CheckoutTrigger({
   open,
@@ -103,23 +125,32 @@ function CheckoutTrigger({
   /** Fold the drawer back up. Never called while a payment is in flight -- the panel owns that. */
   onCollapse: () => void
 }) {
+  if (open) {
+    return (
+      <button
+        type="button"
+        onClick={onCollapse}
+        aria-expanded
+        className="flex w-full items-center justify-center gap-1 rounded-control py-1 text-meta font-semibold text-subtle transition-colors hover:text-text"
+      >
+        <ChevronUp className="h-3.5 w-3.5" aria-hidden />
+        Cancel
+      </button>
+    )
+  }
+
   return (
     <Button
-      variant={open ? 'secondary' : 'primary'}
-      onClick={open ? onCollapse : onOpen}
-      onPointerEnter={warmStripeBrowser}
-      onFocus={warmStripeBrowser}
-      onTouchStart={warmStripeBrowser}
+      onClick={onOpen}
+      onPointerEnter={warmCheckout}
+      onFocus={warmCheckout}
+      onTouchStart={warmCheckout}
       disabled={disabled}
       loading={pending}
-      aria-expanded={open}
+      aria-expanded={false}
       className="w-full justify-center"
     >
-      {open ? (
-        <ChevronUp className="h-4 w-4" aria-hidden />
-      ) : (
-        <Ticket className="h-4 w-4" aria-hidden />
-      )}
+      <Ticket className="h-4 w-4" aria-hidden />
       {label}
     </Button>
   )
@@ -279,6 +310,11 @@ export function TicketButton({
       }
       amountCents = selection.amountCents
     }
+    // 🔴 OPEN FIRST, ASK SECOND. The drawer used to appear only once the server answered, so the
+    // press produced nothing for the length of a round trip. Opening here costs nothing -- no
+    // session exists yet, so no seat is reserved -- and the panel animates a card-shaped
+    // placeholder until the secret lands. An error below closes it again.
+    setOpen(true)
     startTransition(async () => {
       const r = await startTicket(eventId, {
         qty: 1,
@@ -286,6 +322,9 @@ export function TicketButton({
         amountCents,
       })
       if (isError(r)) {
+        // Close what we optimistically opened, and say the real reason. A sold-out answer must
+        // read as sold out, never as a checkout that failed to load.
+        setOpen(false)
         setError(r.error)
       } else if (r.data.free) {
         // A free tier: nothing to charge. Refresh so the page reflects the claim.
@@ -299,6 +338,9 @@ export function TicketButton({
         setSessionId(r.data.sessionId ?? null)
         setOpen(true)
       } else if (r.data.url) {
+        // The on-page path declined; this is the hosted redirect. Close first so the skeleton is
+        // not left animating behind a navigation that may take a moment to commit.
+        setOpen(false)
         window.location.href = r.data.url
       }
     })
@@ -317,7 +359,7 @@ export function TicketButton({
           onCollapse={collapse}
         />
         {error && <p className="text-body-sm text-danger">{error}</p>}
-        {open && clientSecret && (
+        {open && (
           <CheckoutPanel
             clientSecret={clientSecret}
             priceLabel={compactPrice(priceLabel)}
@@ -386,7 +428,7 @@ export function TicketButton({
         onCollapse={collapse}
       />
       {error && <p className="text-body-sm text-danger">{error}</p>}
-      {open && clientSecret && (
+      {open && (
         <CheckoutPanel
           clientSecret={clientSecret}
           priceLabel={compactPrice(priceLabel)}
