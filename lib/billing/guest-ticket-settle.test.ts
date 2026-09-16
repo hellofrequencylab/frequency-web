@@ -57,6 +57,12 @@ const state = vi.hoisted(() => {
         if (call.table === 'rpc:settle_ticket_atomic') {
           return { data: settleQueue.length ? settleQueue.shift() : [], error: null }
         }
+        // The seat RPC answers with a seat (owner report 2026-09-16). A null answer would make the
+        // settle path report "a settled ticket seated nobody" in every test here, which is a fake
+        // shaped so the code under test cannot pass.
+        if (call.table === 'rpc:record_ticket_seat') {
+          return { data: [{ rsvp_id: 'r-1', minted: true, seat_status: 'going' }], error: null }
+        }
         return { data: null, error: null }
       }
       if (call.table === 'event_tickets' && call.op === 'select') return { data: ticketLookup, error: null }
@@ -274,6 +280,18 @@ describe('a redelivered webhook', () => {
     expect(errors().join('\n')).not.toContain('NO TICKET ROW')
   })
 
+  it('seats a GUEST buyer too — a guest who paid is in the room as much as a member who paid', async () => {
+    // The seat RPC resolves the guest's identity from the TICKET row's address, so nothing about
+    // the call differs between the two legs. That sameness is the assertion: a split here would be
+    // the shape of every guest-door defect this file already owns, where the member path got a
+    // thing and the guest path quietly did not.
+    state.setSettleQueue([[GUEST_ROW]])
+    await recordTicketFromSession(guestSession())
+    const seat = state.calls.find((c) => c.table === 'rpc:record_ticket_seat')
+    expect(seat).toBeDefined()
+    expect(seat!.payload).toMatchObject({ _ticket_id: 't-guest' })
+  })
+
   it('logs LOUDLY when a paid session has no ticket row at all', async () => {
     state.setSettleQueue([[]])
     state.setTicketLookup(null)
@@ -298,8 +316,31 @@ describe('a MEMBER settle takes the member leg (regression + LIVE-316)', () => {
     expect(leadCalls()).toHaveLength(0)
     expect(ledger.recordFinancialTransaction).toHaveBeenCalledTimes(1)
     expect(ledger.recordFinancialTransaction.mock.calls[0][0]).toMatchObject({ profileId: 'p-1' })
-    // Exactly one RPC: the settle. No extra traffic was added to the member path.
-    expect(state.calls.filter((c) => c.op === 'rpc').map((c) => c.table)).toEqual(['rpc:settle_ticket_atomic'])
+    // ⚠️ RE-POINTED 2026-09-16. This asserted the RPC list EQUALLED `['rpc:settle_ticket_atomic']`,
+    // which is an equality on an implementation, not on this test's subject. Its subject is the
+    // MEMBER / GUEST split: no guest stamp, no guest email, no lead. Seating the buyer
+    // (record_ticket_seat) is identity-blind by design and belongs on both legs, so an equality
+    // here would have failed a change that treats a member and a guest the same -- which is the
+    // one property this file exists to protect. What it now says is what it meant: the member leg
+    // adds no GUEST traffic.
+    const rpcs = state.calls.filter((c) => c.op === 'rpc').map((c) => c.table)
+    expect(rpcs).toContain('rpc:settle_ticket_atomic')
+    expect(rpcs.filter((r) => r === 'rpc:settle_ticket_atomic')).toHaveLength(1)
+    expect(rpcs).not.toContain('rpc:claim_guest_tickets')
+  })
+
+  // ── THE SEAT IS IDENTITY-BLIND (owner report 2026-09-16) ────────────────────────────────────
+  // A paid ticket now takes the same going RSVP a free claim takes, so the buyer is counted, shown
+  // and reminded like everyone else in the room. This file owns the identity contract, so it owns
+  // the claim that BOTH identities get one: a guest who paid is in the room exactly as much as a
+  // member who paid, and is the half that cannot sign in to complain about being missing.
+
+  it('seats a MEMBER buyer, naming the row the settle flipped', async () => {
+    state.setSettleQueue([[MEMBER_ROW]])
+    await recordTicketFromSession(memberSession())
+    const seat = state.calls.find((c) => c.table === 'rpc:record_ticket_seat')
+    expect(seat).toBeDefined()
+    expect(seat!.payload).toMatchObject({ _ticket_id: (MEMBER_ROW as { id: string }).id })
   })
 
   it('emails the MEMBER receipt once, keyed on the row buyer, with the tier and the gross off the signed session', async () => {

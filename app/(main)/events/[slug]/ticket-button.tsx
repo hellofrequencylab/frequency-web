@@ -11,6 +11,7 @@ import CheckoutPanel, { prefetchCheckoutForm } from '@/components/billing/checko
 import PaymentMarks from '@/components/billing/payment-marks'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { compactPrice, ticketCtaLabel } from '@/lib/billing/price-label'
+import { useJoinIntent } from '@/components/events/join-intent'
 
 export type TicketTierView = {
   id: string
@@ -287,6 +288,8 @@ export function TicketButton({
     return scheduleWarm()
   }, [purchasable])
 
+  const joinIntent = useJoinIntent()
+
   /**
    * The LAST line of defence. If the form cannot mount or confirm at all — Stripe.js blocked, the
    * session unloadable, confirm throwing — the buyer must still be able to pay. Dropping the
@@ -435,6 +438,34 @@ export function TicketButton({
       }
     })
   }
+
+  /**
+   * TELL THE ANSWER SWITCH WHERE THIS DOOR IS (owner report 2026-09-16). The RSVP control now
+   * renders beside the ticket cascade on a ticketed event, and pressing Going without a ticket
+   * opens THIS checkout rather than recording an answer nobody paid for. Two client islands under
+   * one Server Component cannot be handed a closure, so the door registers its opener and the
+   * switch asks for it (components/events/join-intent.tsx).
+   *
+   * Registered only where a purchase is genuinely on offer: a manager's preview is not a door a
+   * buyer may walk through, and `hasDoor` reading false there is what makes the RSVP side fall
+   * back to recording an ordinary answer instead of offering a press that does nothing.
+   *
+   * ⚠️ IT SITS HERE, BELOW `go`, AND NOT BESIDE THE OTHER EFFECTS. It was written up there, above
+   * the declaration, where a function declaration hoists and it ran correctly --
+   * `react-hooks/immutability` refuses it regardless, because reading a binding before its
+   * declaration is the shape it cannot reason about. Moving it below is the whole fix; do not move
+   * it back.
+   *
+   * No dependency array, and that one IS load-bearing: `go` is a new function on every render,
+   * closing over the selected tier and the typed amount. Re-registering each render is what keeps
+   * the context's ref holding a CURRENT opener, rather than the one built for whichever tier was
+   * selected the last time the deps happened to change.
+   */
+  useEffect(() => {
+    if (!joinIntent || !purchasable) return
+    joinIntent.registerTicketDoor(go)
+    return () => joinIntent.registerTicketDoor(null)
+  })
 
   // ── Implicit flat-price (no tiers): one button, one drawer ──
   if (!hasTiers) {

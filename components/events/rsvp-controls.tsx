@@ -49,6 +49,7 @@ export function RsvpControls({
   requiresApproval = false,
   approvalStatus = 'none',
   allowGoing = true,
+  goingNeedsTicket = false,
   initialNote = '',
   onGoingIntercept = null,
   onRecorded = null,
@@ -74,6 +75,12 @@ export function RsvpControls({
    *  ADR-826): the Going segment hides — buying/claiming the ticket IS "going" — while Maybe
    *  and Can't go stay answerable, and a guest can still change their answer any time. */
   allowGoing?: boolean
+  /** TICKETED EVENT, VIEWER HOLDS NO TICKET (owner report 2026-09-16). The Going segment STAYS
+   *  VISIBLE -- the owner's ruling is that the RSVP control is always on the page -- but pressing
+   *  it cannot record an answer, because on this event the way in is a ticket. The press greys the
+   *  segment and calls `onGoingIntercept`, which opens the ticket checkout. Requires an intercept:
+   *  without one the press would grey a control and do nothing, so the segment stays ordinary. */
+  goingNeedsTicket?: boolean
   /** The viewer's already-shared RSVP note (server-loaded). Non-empty → the note box starts
    *  COLLAPSED as "Shared with the group" instead of re-offering the composer every load. */
   initialNote?: string
@@ -96,6 +103,10 @@ export function RsvpControls({
   const [pending, startTransition] = useTransition()
   const [names, setNames] = useState<string[]>(plusOneNames)
   const [saveError, setSaveError] = useState<string | null>(null)
+  // Set once a ticket-gated Going press has been handed to the checkout. Purely local: nothing was
+  // recorded, so a reload correctly forgets it, and holding a ticket is what makes the segment
+  // light for real (the settle path mints the seat, migration 20270345005100).
+  const [handedOff, setHandedOff] = useState(false)
   const current: Status = status ?? 'not_going'
   const isGoing = current === 'going'
   const isMaybe = current === 'maybe'
@@ -182,7 +193,11 @@ export function RsvpControls({
 
   // The "Going" segment doubles as the waitlist CTA when the event is full and
   // the viewer isn't already confirmed/waitlisted — same intent, honest framing.
-  const goingIsWaitlist = isFull && !isGoing && !isWaitlisted
+  // A ticketed event's Going segment never relabels itself "Join waitlist": on that event the
+  // waitlist is not what the press does, the checkout is, and `event_ticket_types.quantity` -- not
+  // `events.capacity`, which is what `isFull` measures -- is the number that decides whether a seat
+  // is left. Offering a waitlist there would be offering the wrong door AND the wrong number.
+  const goingIsWaitlist = isFull && !isGoing && !isWaitlisted && !goingNeedsTicket
   const goingLabel = isGoing
     ? 'Going'
     : isWaitlisted
@@ -196,6 +211,11 @@ export function RsvpControls({
   // intercept installed, a FRESH Going hands off to the parent's payment phase instead.
   const onGoing = () => {
     if (onGoingIntercept && !isGoing && !isWaitlisted) {
+      // THE PRESS GOES GREY AND THE CHECKOUT OPENS (owner report 2026-09-16). On a ticketed event
+      // the way in is a ticket, so this press cannot record an answer -- but it must not look
+      // inert either. `handedOff` greys the segment for as long as the viewer has no ticket, which
+      // is the honest state: they asked to come and the next step is the card form below.
+      if (goingNeedsTicket) setHandedOff(true)
       onGoingIntercept()
       return
     }
@@ -265,7 +285,9 @@ export function RsvpControls({
                 ? 'bg-success-bg text-success'
                 : isWaitlisted
                   ? 'bg-surface-elevated text-muted'
-                  : 'text-muted hover:bg-surface-elevated hover:text-text'
+                  : handedOff
+                    ? 'bg-surface-elevated text-subtle'
+                    : 'text-muted hover:bg-surface-elevated hover:text-text'
             }`}
           >
             <GoingIcon className="h-5 w-5" />
@@ -303,6 +325,12 @@ export function RsvpControls({
           <span className="text-center leading-tight">Can&rsquo;t go</span>
         </button>
       </div>
+
+      {handedOff && !isGoing && !isWaitlisted && (
+        /* Says what just happened. Without it the segment greys and the only other thing that
+           moved is a card form further down the page, which on a phone is off screen. */
+        <p className="text-2xs text-muted">Pick your ticket below to lock in your spot.</p>
+      )}
 
       {(isGoing || isWaitlisted) && (
         <p className="text-2xs text-muted">

@@ -99,6 +99,15 @@ export const ALLOWLIST = [
   { file: 'lib/billing/space-subscriptions.ts', table: 'space_memberships', column: 'billing_interval', kind: 'update',
     added: '2026-09-15', owner: 'LIVE-360',
     reason: 'ADR-1374. The same reconciler keeps the cadence true across a tier switch or a card recovery. Migration 20270345005000 adds the column and applies at merge; retire by regenerating lib/database.types.ts.' },
+  // A PAID TICKET IS A SEAT (owner report 2026-09-16). Migration 20270345005100 adds the function
+  // and IS APPLIED on the live project -- verified by `to_regprocedure('public.record_ticket_seat(uuid)')`
+  // before the ledger row was repaired. This entry exists because lib/database.types.ts is
+  // deliberately NOT regenerated in the same change: a regen would also retire the five LIVE-360
+  // entries above, which belong to work in flight in another branch, and rewriting a shared
+  // generated file out from under it is how two correct changes become one merge conflict.
+  { file: 'lib/billing/tickets.ts', table: 'record_ticket_seat', kind: 'rpc',
+    added: '2026-09-16', owner: 'LIVE-372',
+    reason: 'Migration 20270345005100, applied. The settle path mints the buyer\'s going RSVP so a paid ticket counts as a seat on the public event page. Retires with the next regeneration of lib/database.types.ts, alongside the LIVE-360 entries above.' },
 ]
 
 /** Walk `root` against `typesFile` and return the raw report. Pure: no exit, no console. */
