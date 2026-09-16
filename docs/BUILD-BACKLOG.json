@@ -13460,6 +13460,26 @@
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const read=(p)=>{if(!fs.existsSync(p))fail(\"missing \"+p);return fs.readFileSync(p,\"utf8\")};const panel=\"components/billing/checkout-panel.tsx\";if(!/onPaid\\?:/.test(read(panel)))fail(\"CheckoutPanel no longer takes an onPaid, so this row cannot be evaluated: \"+panel);const doors=[\"app/(main)/marketplace/buy-button.tsx\",\"app/(main)/people/[handle]/tip-button.tsx\",\"components/spaces/donations/donate-form.tsx\"];const live=doors.filter((f)=>fs.existsSync(f));if(live.length===0)fail(\"none of the money doors this row names still exist; re-test the premise before working it\");const cold=live.filter((f)=>!/onPaid=\\{/.test(read(f)));if(cold.length===0)process.exit(0);console.error(\"these on-page money doors confirm a payment nothing has settled, so the buyer is promised a receipt only the webhook can send: \"+cold.join(\", \"));process.exit(1)'",
         "note": "Measures the CONSEQUENCE, never the row's title: each named door must pass a settle to the panel it mounts. Carries a floor -- if CheckoutPanel loses its `onPaid` parameter, or if none of the three doors still exists, the probe fails naming THAT rather than reporting the gap closed, because both would mean the row can no longer be evaluated. Mutation-tested three ways on 2026-09-16: all three doors settled (passes), only two of three (still fails, naming the third), and the panel's parameter removed (fails naming the floor)."
       }
+    },
+    {
+      "id": "LIVE-368",
+      "title": "The first subscription creator pays on the page, and its metadata round-trip is pinned",
+      "status": "done",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1378"
+      },
+      "detail": "docs/CHECKOUT.md left the four subscription creators on the hosted redirect deliberately: they grant entitlement from subscription_data.metadata, which is Record<string,string>, so a renamed key type-checks and silently stops granting access to someone who paid. Space membership is the first converted, and the precondition the doc names was met first: the round-trip is pinned by a test that was mutation-tested in both directions before it was trusted. The probe measures the SETTLE, because without it an on-page membership has exactly one way to become real: confirm() with redirect:'if_required' never navigates on the common card path, so the return_url backstop is unreachable there.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "recordMembershipFromSessionId",
+        "paths": [
+          "lib/spaces/memberships-actions.ts",
+          "lib/billing/space-membership-checkout.ts"
+        ]
+      }
     }
   ]
 }
