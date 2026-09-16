@@ -3,12 +3,18 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Check, Ticket } from 'lucide-react'
+import { Check, ChevronUp, Ticket } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import CheckoutPanel from '@/components/billing/checkout-panel'
+import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { isError } from '@/lib/action-result'
 import { formatPriceCents } from '@/lib/commerce/types'
-import { joinTier, startSpaceMembershipCheckout } from '@/lib/spaces/memberships-actions'
+import {
+  joinTier,
+  startSpaceMembershipCheckout,
+  settleSpaceMembershipAction,
+} from '@/lib/spaces/memberships-actions'
 import type { MembershipInterval, MembershipTier } from '@/lib/spaces/memberships'
 import {
   annualSavingLabel,
@@ -80,13 +86,35 @@ export function MembershipJoinCard({
   featured?: boolean
   /** `card` is the grid tile. `bar` is the full-width row the free tier takes above the grid: same
    *  join logic, same states, laid out horizontally because a free tier has one short list and a
-   *  card of it is mostly empty space. */
-  layout?: 'card' | 'bar'
+   *  card of it is mostly empty space.
+   *
+   *  `band` is the prestige rung, below the grid and ON THE CANVAS with no fill of its own. A
+   *  prestige tier loses when it is COMPARED and wins when it is ENCOUNTERED: inside the grid it
+   *  reads as the worst value per bullet, because that is arithmetically what it is. Out of the
+   *  grid, after the ordinary decision has been made, it asks a different question. The restraint
+   *  is the point, so this layout deliberately has less chrome than the cards above it, not more. */
+  layout?: 'card' | 'bar' | 'band'
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
+  // ON-PAGE CHECKOUT (CHECKOUT-HANDOFF §4). `open` is SEPARATE from the session on purpose:
+  // collapsing the drawer keeps it, so re-opening is instant and, more importantly, does not mint a
+  // SECOND subscription session for the same member.
+  //
+  // 🔴 THE SESSION CARRIES THE CADENCE IT WAS MINTED FOR, and that is the whole guard. A form minted
+  // for $44 a month must never sit under an $88 a year button, and the toggle above these cards can
+  // change that between one render and the next. Storing the two apart and resyncing them in an
+  // effect is a reactive patch over a structural problem: it also renders the stale form for one
+  // frame before the effect runs. Keeping them in one value makes a mismatched session
+  // unrepresentable instead, so the check below is a comparison rather than a lifecycle.
+  const [session, setSession] = useState<{
+    cadence: MembershipInterval
+    clientSecret: string
+    sessionId: string | null
+  } | null>(null)
+  const [open, setOpen] = useState(false)
 
   // What this card charges at the selected cadence (ADR-1374). `monthlyOnly` is the honest case the
   // toggle creates: yearly is selected, this tier has no yearly price, so it keeps its monthly one
@@ -105,34 +133,81 @@ export function MembershipJoinCard({
   const rawReturn = searchParams.get('return_to')
   const returnTo = rawReturn && /^\/(?!\/)/.test(rawReturn) ? rawReturn : null
 
+  // The session, but only while it still matches what the button now charges. A cadence change makes
+  // this null on the very same render that changes the price, so there is no window in which the two
+  // disagree.
+  const liveSession = session && session.cadence === price.cadence ? session : null
+
+  /** The LAST line of defence (CHECKOUT-HANDOFF §4). `forceHosted` is load-bearing: without it this
+   *  asks for the same elements session that just failed to mount, finds no url, and dead-ends a
+   *  member who is trying to pay. */
+  function fallBackToHosted() {
+    setSession(null)
+    setError('Opening secure checkout…')
+    if (!tier.id) return
+    const tierId = tier.id
+    start(async () => {
+      const r = await startSpaceMembershipCheckout(
+        spaceId,
+        tierId,
+        price.cadence === 'year' ? 'year' : 'month',
+        { forceHosted: true },
+      )
+      if (!isError(r) && r.data.url) window.location.href = r.data.url
+      else setError('Could not start checkout. Please try again.')
+    })
+  }
+
   function join() {
     if (!tier.id) return
     setError(null)
     const tierId = tier.id
+
+    // Already have a session for THIS cadence: re-open it rather than spending a round trip and
+    // minting a second subscription session for the same member.
+    if (liveSession) {
+      setOpen(true)
+      return
+    }
+
     start(async () => {
-      // Paid tier with billing live: try secure checkout first. If it no-ops (owner not payout-ready,
-      // billing off, etc.) fall back to the free join path so the button is never broken. A FULL tier
-      // skips checkout entirely: a waitlist spot is not a purchase (ADR-824).
+      // Paid tier with billing live: try checkout first. If it no-ops (owner not payout-ready,
+      // billing off, etc.) fall back to the free join path so the button is never broken. A FULL
+      // tier skips checkout entirely: a waitlist spot is not a purchase (ADR-824).
       if (billingOn && !free && !full) {
-        const checkout = await startSpaceMembershipCheckout(spaceId, tierId, price.cadence === 'year' ? 'year' : 'month')
+        warmStripeBrowser()
+        const checkout = await startSpaceMembershipCheckout(
+          spaceId,
+          tierId,
+          price.cadence === 'year' ? 'year' : 'month',
+        )
         if (!isError(checkout)) {
-          window.location.href = checkout.data.url
-          return
+          // 🔴 Branch on what CAME BACK, never on what was asked for: the server declines the
+          // on-page path whenever it cannot be honoured, and hands back a hosted URL instead.
+          if (checkout.data.clientSecret) {
+            setSession({
+              cadence: price.cadence,
+              clientSecret: checkout.data.clientSecret,
+              sessionId: checkout.data.sessionId ?? null,
+            })
+            setOpen(true)
+            return
+          }
+          if (checkout.data.url) {
+            window.location.href = checkout.data.url
+            return
+          }
         }
         // 🔴 NOT EVERY NO-OP IS A FALLBACK (LIVE-233). `no_owner_payouts` means the space owner has
         // no onboarded Stripe account, and falling through to joinTier handed the member a PAID tier
-        // FOR FREE, silently, with the operator never learning their tier was being given away. That
-        // is the membership path's version of the dead end this row exists to close: the operator now
-        // gets the shared Connect prompt on their Offerings surface, and the member is told the truth
-        // instead of being quietly let in. Every other reason ('billing_off', 'free_tier', a
-        // resolution miss) still falls back to the free join path, which is the v1 behavior.
-        if (checkout.error === 'no_owner_payouts') {
+        // FOR FREE, silently, with the operator never learning their tier was being given away.
+        if (isError(checkout) && checkout.error === 'no_owner_payouts') {
           setError('This space cannot take payment yet. Follow it to hear when joining opens.')
           return
         }
-        // 🔴 NOR IS A MISSING YEARLY PRICE (ADR-1374). Falling through here would record a
-        // membership for a cadence this tier does not sell, so it says so and stops.
-        if (checkout.error === 'no_annual_price') {
+        // 🔴 NOR IS A MISSING YEARLY PRICE (ADR-1374). Falling through would record a membership for
+        // a cadence this tier does not sell, so it says so and stops.
+        if (isError(checkout) && checkout.error === 'no_annual_price') {
           setError('This tier is monthly only. Switch the toggle to monthly to join it.')
           return
         }
@@ -206,6 +281,18 @@ export function MembershipJoinCard({
   // so the grid has one obvious answer rather than four competing ones (marketing pricing does the
   // same, `variant={featured ? 'primary' : 'secondary'}`).
   const ctaVariant = featured || free ? 'primary' : 'secondary'
+  const ctaLabel = full
+    ? 'Join the waitlist'
+    : free
+      ? 'Join free'
+      : layout === 'band'
+        ? `Become a ${tier.name}`
+        : `Join ${tier.name}`
+
+  // 1 + 3 (CHECKOUT-HANDOFF §4). The button leads, and it goes QUIET when the drawer is open:
+  // Stripe renders its own primary Pay button inside the panel, and two stacked primary buttons is
+  // the screen people call confusing. The quiet one stays LIVE and collapses the drawer, because a
+  // greyed control that does nothing is worse than no control at all.
   const cta =
     full && !tier.waitlist ? (
       <Button type="button" disabled variant={ctaVariant} className="w-full">
@@ -214,14 +301,41 @@ export function MembershipJoinCard({
     ) : (
       <Button
         type="button"
-        onClick={join}
+        onClick={open ? () => setOpen(false) : join}
+        onPointerEnter={warmStripeBrowser}
+        onFocus={warmStripeBrowser}
+        onTouchStart={warmStripeBrowser}
         loading={pending}
-        variant={ctaVariant}
+        aria-expanded={open}
+        variant={open ? 'secondary' : ctaVariant}
         className="w-full"
       >
-        {full ? 'Join the waitlist' : free ? 'Join free' : `Join ${tier.name}`}
+        {open && <ChevronUp className="h-4 w-4" aria-hidden />}
+        {ctaLabel}
       </Button>
     )
+
+  // 4 + 6 + 7. The drawer opens BETWEEN the button and everything below it, so the card marks and
+  // the footnotes are pushed down rather than swapped out: nothing the reader was looking at
+  // disappears at the moment they commit.
+  const payDrawer = open && liveSession && (
+    <CheckoutPanel
+      clientSecret={liveSession.clientSecret}
+      priceLabel={formatPrice(price.cents)}
+      onFellBack={fallBackToHosted}
+      // 🔴 WITHOUT THIS a paid membership has exactly ONE way to become real. confirm() with
+      // redirect:'if_required' never navigates on the common card path, so the return_url that
+      // carries the webhook's backstop is never visited (CHECKOUT-HANDOFF §6).
+      onPaid={
+        liveSession.sessionId
+          ? () => settleSpaceMembershipAction(liveSession.sessionId as string)
+          : undefined
+      }
+      onClose={() => window.location.reload()}
+      doneTitle="You are a member."
+      doneBody={`Welcome to ${tier.name}. A receipt is on its way to your email.`}
+    />
+  )
 
   const footnotes = (
     <>
@@ -270,6 +384,7 @@ export function MembershipJoinCard({
           <div className="shrink-0 @md:w-56">
             {spotsLine}
             {cta}
+            {payDrawer}
             {footnotes}
           </div>
         </div>
@@ -283,6 +398,48 @@ export function MembershipJoinCard({
             ))}
           </ul>
         )}
+      </div>
+    )
+  }
+
+  // ── BAND: the prestige rung, under the grid, on the canvas ──────────────────────────────────
+  if (layout === 'band') {
+    return (
+      <div className="border-t border-border pt-8">
+        <div className="mx-auto flex max-w-2xl flex-col items-center gap-5 text-center">
+          <div>
+            <p className="eyebrow text-primary-strong">By invitation, and by choice</p>
+            <h3 className="mt-2 text-page-title font-bold leading-tight text-text">{tier.name}</h3>
+          </div>
+
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-stat-md font-black tabular-nums leading-none text-text">
+              {formatPrice(price.cents)}
+            </span>
+            <span className="text-body-sm text-muted">{intervalLabel(price.cadence)}</span>
+          </div>
+
+          {tier.description && (
+            <p className="max-w-prose text-body leading-relaxed text-muted">{tier.description}</p>
+          )}
+
+          {tier.benefits.length > 0 && (
+            <ul className="flex flex-col items-center gap-2">
+              {tier.benefits.map((benefit, i) => (
+                <li key={i} className="text-body-sm leading-relaxed text-text">
+                  {benefit}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="w-full max-w-xs">
+            {spotsLine}
+            {cta}
+            {payDrawer}
+                {footnotes}
+          </div>
+        </div>
       </div>
     )
   }
@@ -327,6 +484,7 @@ export function MembershipJoinCard({
       <div className="mt-auto pt-5">
         {spotsLine}
         {cta}
+        {payDrawer}
         {footnotes}
       </div>
     </div>

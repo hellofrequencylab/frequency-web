@@ -13475,6 +13475,26 @@
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const read=(p)=>{if(!fs.existsSync(p))fail(\"missing \"+p);return fs.readFileSync(p,\"utf8\")};const Q=\"[\\x22\\x27]\";const panel=read(\"components/billing/checkout-panel.tsx\");if(!new RegExp(\"^import CardSkeleton from \"+Q+\"\\\\./card-skeleton\"+Q,\"m\").test(panel))fail(\"the panel no longer imports the skeleton STATICALLY, so nothing can paint before the lazily-imported form chunk arrives -- and that chunk is one of the waits the skeleton exists to cover\");if(!/clientSecret:\\s*string\\s*\\|\\s*null/.test(panel))fail(\"the panel takes a non-null client secret again, so the drawer cannot open until the server answers and the press goes back to doing nothing\");const form=read(\"components/billing/checkout-form.tsx\");if(!new RegExp(\"paymentMethodOrder:\\\\s*\\\\[\\\\s*\"+Q+\"card\"+Q+\"\\\\s*,\\\\s*\"+Q+\"link\"+Q+\"\\\\s*\\\\]\").test(form))fail(\"the card is no longer ordered before link, so Stripe picks the order and puts Link on top of the one field every buyer can use\");if(!new RegExp(\"wallets:\\\\s*\\\\{[^}]*applePay:\\\\s*\"+Q+\"auto\"+Q).test(form))fail(\"a wallet is no longer auto -- ordering card first must never turn into hiding what a device can pay with\");const btn=read(\"app/(main)/events/[slug]/ticket-button.tsx\");const go=btn.slice(btn.indexOf(\"function go()\"));const body=go.slice(0,go.indexOf(\"\\n  }\"));const warm=body.indexOf(\"warmCheckout()\");if(warm<0)fail(\"go() no longer warms Stripe.js and the form chunk, so both downloads go back to being serial behind the server call\");const opens=body.indexOf(\"setOpen(true)\",warm);const asks=body.indexOf(\"startTransition\");if(opens<0||asks<0||opens>asks)fail(\"go() no longer opens the drawer BEFORE the server call, so the press is silent for a whole round trip again\");if(!/setOpen\\(false\\)\\s*\\n\\s*setError\\(r\\.error\\)/.test(btn))fail(\"an error answer no longer closes the drawer it optimistically opened, so a sold-out tier leaves a form animating over an answer that will never come\");process.exit(0)'",
         "note": "Measures the CONSEQUENCE in six parts, never the row's title: the panel imports the skeleton STATICALLY (a skeleton inside the lazy chunk cannot cover the lazy chunk's own download); the panel accepts a NULL secret (or the drawer cannot open before the server answers); `go()` warms both downloads and opens the drawer BEFORE `startTransition`; an error answer closes what was optimistically opened; card is ordered before link; and no wallet is disabled, because ordering must never become hiding. The ordering check is anchored AFTER `warmCheckout()` on purpose -- its first version anchored on the first `setOpen(true)` in the function and was satisfied by the early reuse branch, so it PASSED the mutation that moved the optimistic open. Mutation-tested seven ways on 2026-09-16; all seven fail as they must."
       }
+    },
+    {
+      "id": "LIVE-369",
+      "title": "The first subscription creator pays on the page, and its metadata round-trip is pinned",
+      "status": "done",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1378"
+      },
+      "detail": "docs/CHECKOUT.md left the four subscription creators on the hosted redirect deliberately: they grant entitlement from subscription_data.metadata, which is Record<string,string>, so a renamed key type-checks and silently stops granting access to someone who paid. Space membership is the first converted, and the precondition the doc names was met first: the round-trip is pinned by a test that was mutation-tested in both directions before it was trusted. The probe measures the SETTLE, because without it an on-page membership has exactly one way to become real: confirm() with redirect:'if_required' never navigates on the common card path, so the return_url backstop is unreachable there.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "recordMembershipFromSessionId",
+        "paths": [
+          "lib/spaces/memberships-actions.ts",
+          "lib/billing/space-membership-checkout.ts"
+        ]
+      }
     }
   ]
 }

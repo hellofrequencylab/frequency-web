@@ -69,7 +69,14 @@ export function MembershipTierPicker({
   // Free tiers lead, paid tiers compare. `priceCents === 0` is the whole test: a free tier is the
   // one the toggle cannot change and the one with nothing to weigh against a sibling.
   const freeCards = cards.filter((c) => c.tier.priceCents === 0)
-  const paidCards = cards.filter((c) => c.tier.priceCents > 0)
+  const allPaid = cards.filter((c) => c.tier.priceCents > 0)
+
+  // THE PRESTIGE RUNG LEAVES THE GRID. With three or more paid tiers the dearest one is lifted out
+  // and rendered as a band below, because a prestige tier loses every comparison it is entered into:
+  // per bullet it is arithmetically the worst value on the page, and a grid invites exactly that
+  // arithmetic. Below two paid tiers there is no comparison to protect, so nothing is lifted.
+  const prestige = allPaid.length >= 3 ? allPaid[allPaid.length - 1] : null
+  const paidCards = prestige ? allPaid.slice(0, -1) : allPaid
   const featured = featuredIndex(paidCards.length)
 
   return (
@@ -135,6 +142,19 @@ export function MembershipTierPicker({
             ))}
           </div>
         </>
+      )}
+
+      {prestige && (
+        <MembershipJoinCard
+          key={prestige.tier.id ?? prestige.tier.name}
+          spaceId={spaceId}
+          tier={prestige.tier}
+          billingOn={billingOn}
+          includedEvents={prestige.includedEvents}
+          spotsLeft={prestige.spotsLeft}
+          interval={interval}
+          layout="band"
+        />
       )}
     </div>
   )

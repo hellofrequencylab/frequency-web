@@ -22,10 +22,19 @@ import { spaceTakeRateCents } from './fees'
 import { classifyOrderSource } from '@/lib/commerce/order-source'
 import { effectiveOrderSource } from '@/lib/pricing/network-world'
 import { receiptEmailFor } from './receipt-address'
+import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from './checkout-ui'
+import { routeSpaceSubscription } from './space-subscriptions'
 import type { BillingInterval } from '@/lib/spaces/membership-pricing'
 
 export interface SpaceMembershipCheckoutResult {
   url?: string
+  /** An on-page (elements) session's secret. EXACTLY ONE of this and `url` is ever set: an elements
+   *  session has no url, and a hosted one has no secret. Branch on what came back, never on what was
+   *  asked for (CHECKOUT-HANDOFF §4). */
+  clientSecret?: string
+  /** The session id, so the control can settle from its success handler rather than waiting on the
+   *  webhook. Handed back for BOTH shapes. */
+  sessionId?: string
   /** Why no URL (when checkout didn't start). 'billing_off' | 'not_payable' | 'no_owner_payouts' |
    *  'tier_not_found' | 'free_tier' | 'no_annual_price' | 'error'. */
   reason?:
@@ -50,9 +59,14 @@ export async function createSpaceMembershipCheckout(
   tierId: string,
   memberId: string,
   selected: BillingInterval = 'month',
+  opts: { ui?: CheckoutUi } = {},
 ): Promise<SpaceMembershipCheckoutResult> {
   if (!stripe) return { reason: 'billing_off' }
   if (!(await billingLive())) return { reason: 'billing_off' }
+
+  // Defaults to hosted, which is what makes this rollout safe surface by surface: every caller that
+  // does not ask for the on-page form keeps today's redirect exactly (CHECKOUT-HANDOFF §2).
+  const ui: CheckoutUi = opts.ui === 'elements' ? 'elements' : 'hosted'
 
   try {
     const db = createAdminClient()
@@ -164,14 +178,67 @@ export async function createSpaceMembershipCheckout(
       ...(receiptEmail ? { customer_email: receiptEmail } : {}),
       client_reference_id: memberId,
       metadata,
-      success_url: `${appUrl()}/spaces/${space.slug ?? spaceId}?membership=joined&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl()}/spaces/${space.slug ?? spaceId}`,
+      // Hosted takes success_url + cancel_url; an elements session REJECTS both and takes a single
+      // return_url. Hand-writing either pair fails at RUNTIME, in a money path, because the stripe
+      // package ships no type declarations (CHECKOUT-HANDOFF §2).
+      ...checkoutReturnFields(ui, {
+        successUrl: `${appUrl()}/spaces/${space.slug ?? spaceId}?membership=joined&session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${appUrl()}/spaces/${space.slug ?? spaceId}`,
+      }),
     })
-    if (!session.url) return { reason: 'error' }
-    return { url: session.url }
+
+    // 🔴 TRAP 1 (CHECKOUT-HANDOFF §2), and it was live in this file: `!session.url` is TRUE FOR
+    // EVERY ELEMENTS SESSION, so the guard that used to sit here would have failed every on-page
+    // join while type-checking perfectly. Ask the resolver, never the URL. The resolver also owns
+    // the degrade: an elements request Stripe will not honour comes back as the hosted URL rather
+    // than an error, so the buyer always has a way to pay.
+    const handed = resolveCheckoutSession(session, ui, 'space_membership')
+    if (handed.error) return { reason: 'error' }
+    return { url: handed.url, clientSecret: handed.clientSecret, sessionId: session.id }
   } catch {
     return { reason: 'error' }
   }
+}
+
+/**
+ * THE SETTLE'S RECORDER (CHECKOUT-HANDOFF §6). Grant entitlement for an on-page membership join from
+ * its checkout session id, in the buyer's own tab, rather than waiting on the webhook.
+ *
+ * WHY THIS EXISTS AT ALL. `confirm({ redirect: 'if_required' })` is what keeps the buyer on the page,
+ * and it means the common card path NEVER navigates. So the session's `return_url` -- written as the
+ * webhook's backstop -- is visited only on a redirect (3DS, a bank app). Without this, an on-page
+ * join has exactly ONE way to become real, behind a confirmation panel that already promised it.
+ *
+ * WHY IT NEEDS NO SESSION GATE. It re-fetches the session FROM STRIPE and refuses anything that is
+ * not `metadata.kind === 'space_membership'` and not actually paid. The most a caller can do with
+ * someone else's id is grant a membership that genuinely happened, which is exactly what the webhook
+ * does unprompted seconds later. Stripe is the authority, not the caller.
+ *
+ * 🔴 IT REUSES THE WEBHOOK'S OWN RECONCILER, deliberately. `routeSpaceSubscription` is the function
+ * the webhook calls, it dispatches on the same metadata this session stamped, and it documents
+ * itself as idempotent. A second implementation here is how the two paths come to disagree about
+ * what a paid membership means.
+ */
+export async function recordMembershipFromSessionId(sessionId: string): Promise<boolean> {
+  if (!stripe) return false
+  if (!sessionId.startsWith('cs_')) return false
+
+  // Expanding the subscription costs one call and saves a second round trip; the reconciler wants
+  // the subscription OBJECT, because that is where subscription_data.metadata lives.
+  const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ['subscription'] })
+
+  if (session.metadata?.kind !== 'space_membership') return false
+  // A subscription session reads `complete` once its first invoice is paid; `payment_status` is
+  // checked too rather than instead, because an unpaid session can reach `complete` on a trial and
+  // this path must never grant on one.
+  if (session.status !== 'complete') return false
+  if (session.payment_status !== 'paid') return false
+
+  const sub = session.subscription
+  if (!sub || typeof sub === 'string') return false
+
+  await routeSpaceSubscription(sub)
+  return true
 }
 
 /** Round to 2 dp (Stripe's application_fee_percent precision). Pure. */

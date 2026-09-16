@@ -43913,3 +43913,71 @@ That is not a theoretical gap. When the webhook is late, retried, or misconfigur
 - ⚠️ The ticket doors now carry a `sessionId` in client state. It is not a secret: it is half of the `client_secret` the same component already holds, and the server re-validates it against Stripe on every use.
 
 **What this does not fix.** Production shows fifteen `cs_live_` sessions created on one event with zero `checkout.session.completed` — sessions minted and never paid. That is a browser-side card-entry problem upstream of settlement, and nothing here addresses it; it is what the eight-state rebuild in the same change is aimed at.
+
+---
+
+## ADR-1378: The first subscription creator moves on-page, and the prestige rung leaves the grid (2026-09-16)
+
+**Status:** Accepted · **Extends** [ADR-1376](DECISIONS.md)/[ADR-1377](DECISIONS.md) (on-page checkout)
+and [ADR-1375](DECISIONS.md) (the plans surface) · corroborated by
+`lib/billing/space-membership-checkout.ts`, `lib/billing/membership-metadata-roundtrip.test.ts`,
+`components/spaces/membership-join-card.tsx`
+
+**Context.** `docs/CHECKOUT.md` converted the payment-mode creators and deliberately left the four
+**subscription** creators on the hosted redirect, with the reason written down: they stamp
+`subscription_data.metadata`, and `lib/billing/space-subscriptions.ts` reads `space_id` /
+`member_id` / `tier_id` / `billing_interval` back off it **to grant entitlement**. Nothing in that
+path is typed, because `Stripe.Metadata` is `Record<string, string>`. A renamed or dropped key
+type-checks, ships, and silently stops granting access to someone who paid. There is no error, no
+failed build, and no row whose absence anyone notices.
+
+Space membership is the first of those four to convert.
+
+**Decision.**
+
+1. **Prove the round-trip before anything else, and leave the proof behind.**
+   `lib/billing/membership-metadata-roundtrip.test.ts` pins the keys the creator stamps against the
+   keys the reconciler reads, with non-triviality floors so a regex that matched nothing cannot pass.
+   It was **mutation-tested in both directions** before it was trusted: dropping `tier_id` fails two
+   assertions, and moving the stamp off `subscription_data` onto the session alone fails a third.
+   That second mutation is the subtle one, and it is the one that would have shipped: a session-only
+   stamp survives `checkout.session.completed` and then vanishes, so every later event (renewal,
+   cancellation, a tier switch) arrives with nothing to resolve. It would look correct on day one
+   and fail on day thirty.
+2. **🔴 `!session.url` was already live in this file**, at the exact line the handoff warns about. It
+   is TRUE for every elements session, so the guard that stood there would have failed every on-page
+   join while type-checking perfectly. It is now `resolveCheckoutSession`, which also owns the
+   degrade: an elements request Stripe will not honour comes back as a hosted URL rather than an
+   error, so a member always has a way to pay.
+3. **The settle reuses the webhook's own reconciler.** `recordMembershipFromSessionId` re-fetches the
+   session from Stripe, refuses anything that is not `kind='space_membership'` **and**
+   `status='complete'` **and** `payment_status='paid'`, then calls `routeSpaceSubscription` — the
+   function the webhook calls, which documents itself as idempotent. A second implementation is how
+   two paths come to disagree about what a paid membership means.
+   It needs no session gate for the reason §6 gives: the most a caller can do with someone else's id
+   is grant a membership that genuinely happened. Stripe is the authority, not the caller.
+4. **The cadence toggle invalidates the session.** Anything that changes the price must, and this
+   surface has a control that changes it by 10x. A form minted for $44 a month must never sit under
+   an $88 a year button.
+5. **The prestige rung leaves the grid.** With three or more paid tiers the dearest is lifted out and
+   rendered as a band below, on the canvas, with no fill of its own. A prestige tier loses every
+   comparison it is entered into, because per bullet it is arithmetically the worst value on the
+   page; a grid invites exactly that arithmetic. Below the grid, after the ordinary decision, it asks
+   a different question. Its copy is three lines rather than six, and it leads with what the rate
+   carries for other people, which is the actual reason anyone takes it.
+
+**Consequences.**
+
+- ✅ `forceHosted` is passed as a **property**, not a positional boolean, because
+  `onpage-callers.test.ts` requires the property and is right to: a positional `true` survives a
+  refactor while silently meaning nothing. The guard caught this on the first run.
+- ⚠️ **`components/billing/payment-marks.tsx` does not exist.** The handoff's file table lists it as
+  shared and never-fork, and no converted caller imports it. Card marks are therefore absent from
+  this control too. Doc drift, recorded rather than invented around.
+- ⚠️ **Three subscription creators remain on hosted checkout.** Nothing here converts them, and each
+  needs its own round-trip proof first. The test written here is membership-specific by design; the
+  pattern generalises, the assertions do not.
+- 🔴 **The settle is the only fast path.** `confirm({ redirect: 'if_required' })` means the common
+  card path never navigates, so the `return_url` backstop is unreachable on the default path. If
+  `onPaid` is ever dropped from this control, a paid membership has exactly one way to become real,
+  behind a confirmation that already promised it.
