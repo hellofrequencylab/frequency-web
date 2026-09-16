@@ -19,6 +19,10 @@ import { IconButton } from '@/components/ui/icon-button'
 // the wire; benefits are one-per-line. The server re-validates + normalizes, so this form is
 // convenience, not the gate.
 //
+// ONE ROW PER MEMBERSHIP (ADR-1374): the optional "Yearly price" field is the yearly alternative for
+// THIS tier, so an owner who used to publish a monthly tier and a yearly twin now keeps one row and
+// fills in both numbers. Blank means monthly only, which is what every existing tier is.
+//
 // HONESTY (CONTENT-VOICE skeptic test): the editor labels the price as what membership WILL cost,
 // because v1 takes no payment. Plain labels, no narrated feelings, no em/en dashes (CONTENT-VOICE §10).
 
@@ -33,6 +37,7 @@ interface TierDraft {
   id?: string
   name: string
   price: string // dollars, e.g. "25" or "25.50"
+  annualPrice: string // dollars; blank = this tier is monthly only (ADR-1374)
   interval: MembershipInterval
   description: string
   benefitsText: string // one benefit per line
@@ -63,6 +68,7 @@ function toDrafts(tiers: MembershipTier[]): TierDraft[] {
     id: t.id,
     name: t.name,
     price: centsToDollars(t.priceCents),
+    annualPrice: t.annualPriceCents != null ? centsToDollars(t.annualPriceCents) : '',
     interval: t.interval,
     description: t.description ?? '',
     benefitsText: t.benefits.join('\n'),
@@ -76,6 +82,7 @@ function emptyDraft(): TierDraft {
   return {
     name: '',
     price: '',
+    annualPrice: '',
     interval: 'month',
     description: '',
     benefitsText: '',
@@ -145,6 +152,18 @@ export function MembershipTierForm({
         setError('Use a price like 25 or 25.50 (or leave it blank for free).')
         return
       }
+      // THE YEARLY PRICE (ADR-1374): optional, and blank is the normal answer. It is refused on a
+      // free tier rather than dropped silently, because a tier with no monthly price has nothing to
+      // charge yearly and the operator should be told that, not have their typing disappear.
+      const annualCents = dollarsToCents(r.annualPrice)
+      if (annualCents == null) {
+        setError('Use a yearly price like 440 or 440.50 (or leave it blank for monthly only).')
+        return
+      }
+      if (annualCents > 0 && priceCents === 0) {
+        setError('A yearly price needs a monthly price too. Set the price, or clear the yearly one.')
+        return
+      }
       const benefits = r.benefitsText
         .split('\n')
         .map((b) => b.trim())
@@ -158,6 +177,7 @@ export function MembershipTierForm({
         id: r.id,
         name,
         priceCents,
+        annualPriceCents: annualCents > 0 ? annualCents : null,
         interval: r.interval,
         description: r.description.trim() || null,
         benefits,
@@ -253,6 +273,24 @@ export function MembershipTierForm({
                     onChange={(e) => update(i, { price: e.target.value })}
                     placeholder="0"
                     className={cn(fieldClasses, 'w-28')}
+                  />
+                </span>
+              </label>
+              {/* THE YEARLY OPTION (ADR-1374). One field, on the SAME row as the tier it belongs
+                  to, because a yearly plan is this tier billed differently and never a second tier.
+                  Blank is the default and means monthly only. */}
+              <label className="flex flex-col gap-1">
+                <span className="text-meta font-medium text-muted">
+                  Yearly price <span className="font-normal text-subtle">(optional)</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="text-body-sm text-muted">$</span>
+                  <input
+                    inputMode="decimal"
+                    value={r.annualPrice}
+                    onChange={(e) => update(i, { annualPrice: e.target.value })}
+                    placeholder="Monthly only"
+                    className={cn(fieldClasses, 'w-36')}
                   />
                 </span>
               </label>
@@ -354,7 +392,8 @@ export function MembershipTierForm({
 
       <p className="text-meta text-subtle">
         The price is what membership will cost. We do not take a payment when someone joins yet, so
-        paid billing is coming later.
+        paid billing is coming later. Set a yearly price and members can pick monthly or yearly on
+        that same tier. Leave it blank and the tier stays monthly only.
       </p>
 
       {error && (

@@ -278,6 +278,16 @@ export async function reconcileSpaceMembershipSubscription(sub: Stripe.Subscript
   const payment = paymentStatusForSubscription(sub.status)
   // status column is CHECK-constrained to active/cancelled; payment_status carries the finer Stripe state.
   const status: 'active' | 'cancelled' = payment === 'canceled' ? 'cancelled' : 'active'
+  // WHAT THIS MEMBERSHIP IS PAYING (ADR-1374). The subscription's own recurring interval is the
+  // settled truth for a paid membership, so it wins; the checkout's metadata is the fallback for an
+  // event whose items are not expanded, and 'month' is the last resort, which is also the column
+  // default. Anything Stripe reports that is not a year (week, day) records as month: the column
+  // says which of the two cadences the product sells, not every interval Stripe can express.
+  const subInterval = sub.items?.data?.[0]?.price?.recurring?.interval
+  const billingInterval: 'month' | 'year' =
+    subInterval === 'year' || (!subInterval && sub.metadata?.billing_interval === 'year')
+      ? 'year'
+      : 'month'
 
   const db = createAdminClient() as unknown as {
     from: (t: string) => {
@@ -317,6 +327,7 @@ export async function reconcileSpaceMembershipSubscription(sub: Stripe.Subscript
         stripe_subscription_id: sub.id,
         payment_status: payment,
         status,
+        billing_interval: billingInterval,
         ...(tierId ? { tier_id: tierId } : {}),
       })
       .eq('id', activeId)
@@ -367,6 +378,7 @@ export async function reconcileSpaceMembershipSubscription(sub: Stripe.Subscript
       status: 'active',
       payment_status: payment,
       stripe_subscription_id: sub.id,
+      billing_interval: billingInterval,
     },
   ])
   // Swallow ONLY the benign unique-violation (23505): the `.created` and `.updated` events are different
