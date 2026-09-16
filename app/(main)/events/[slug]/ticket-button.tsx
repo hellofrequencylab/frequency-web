@@ -85,8 +85,16 @@ function modeLabel(t: TicketTierView): string {
  * clicks alone.
  */
 function warmCheckout(): void {
-  warmStripeBrowser()
-  prefetchCheckoutForm()
+  // 🔴 A HEAD START MUST NEVER BE ABLE TO STOP A SALE. Both calls are optimisations -- the buyer
+  // can pay without either -- so anything they throw is caught here rather than escaping into
+  // `go()`, where it would abort the press before the drawer even opened. Loud, never silent: a
+  // warm-up that has started failing is a real regression, it is just not the buyer's problem.
+  try {
+    warmStripeBrowser()
+    prefetchCheckoutForm()
+  } catch (err) {
+    console.error('[checkout] warm-up failed; the purchase path is unaffected', err)
+  }
 }
 
 /**
@@ -296,10 +304,13 @@ export function TicketButton({
       setOpen(true)
       return
     }
-    // 🔴 THE TWO WAITS NOW OVERLAP. Downloading Stripe.js used to start only once a client secret
-    // existed, so the buyer waited for the server to build a session and THEN for the script.
-    // Starting it here runs it alongside the server round trip. Idempotent and memoised.
-    warmStripeBrowser()
+    // 🔴 THE THREE WAITS NOW OVERLAP. Downloading Stripe.js used to start only once a client
+    // secret existed, so the buyer waited for the server to build a session and THEN for the
+    // script. `warmCheckout` starts BOTH the script and the form's chunk alongside the server
+    // round trip -- and it is called here as well as on hover, because a pointer that never
+    // hovered (a tap, a keyboard) would otherwise reach this line having warmed nothing.
+    // Idempotent and memoised, so the hover case pays nothing for the second call.
+    warmCheckout()
     const tier = selected
     // Client-side floor hint (the server re-enforces it authoritatively).
     let amountCents: number | undefined

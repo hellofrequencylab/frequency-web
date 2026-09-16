@@ -38,9 +38,16 @@ vi.mock('@/components/billing/checkout-panel', () => ({
   default: ({ priceLabel }: { priceLabel?: string }) => (
     <div data-testid="checkout-drawer" data-price={priceLabel} />
   ),
+  // The chunk prefetch. Mocked because the real one starts a network fetch, but it MUST exist:
+  // leaving it off made `warmCheckout()` throw, which aborted `go()` before the drawer opened --
+  // which is how the production guard that a warm-up can never stop a sale got written.
+  prefetchCheckoutForm: vi.fn(),
 }))
 
-vi.mock('@/lib/billing/stripe-browser', () => ({ warmStripeBrowser: vi.fn() }))
+const warmStripeBrowser = vi.fn()
+vi.mock('@/lib/billing/stripe-browser', () => ({
+  warmStripeBrowser: (...a: unknown[]) => warmStripeBrowser(...(a as [])),
+}))
 
 const { TicketButton } = await import('./ticket-button')
 type Tier = import('./ticket-button').TicketTierView
@@ -278,6 +285,27 @@ describe('the press does something immediately', () => {
     expect(drawer(), 'no form is left animating over an answer that will never come').toBeNull()
     expect(container!.textContent).toContain('This ticket just sold out.')
     expect(cta(), 'and the CTA is back').toBeDefined()
+  })
+
+  // 🔴 AN OPTIMISATION MUST NEVER BE ABLE TO STOP A SALE. Both warm-ups are head starts the buyer
+  // can pay without, so a throw from either has to die in `warmCheckout` rather than escape into
+  // `go()` and abort the press. This is not hypothetical: an incomplete mock made
+  // `prefetchCheckoutForm` undefined, `go()` threw on the call, and the drawer never opened --
+  // the same shape a bad deploy of that chunk would have in production.
+  it('still sells a ticket when the warm-up throws', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    warmStripeBrowser.mockImplementationOnce(() => {
+      throw new Error('blocked by an extension')
+    })
+    startTicket.mockResolvedValue({ data: { clientSecret: 'cs_1_secret_x', sessionId: 'cs_1' } })
+    mount(<TicketButton eventId="e1" priceLabel="$44.00" />)
+
+    await press(cta())
+
+    expect(drawer(), 'the press still opens the checkout').not.toBeNull()
+    expect(startTicket, 'and still asks for a session').toHaveBeenCalledTimes(1)
+    expect(err, 'the failure is reported, never swallowed').toHaveBeenCalled()
+    err.mockRestore()
   })
 
   // 🔴 OPENING RESERVES NOTHING. The seat is reserved by `reserve_ticket_atomic`, keyed on the
