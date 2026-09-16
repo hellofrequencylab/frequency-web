@@ -54,10 +54,6 @@ import { recordTipFromSession, recordTipRefundFromCharge } from '@/lib/billing/t
 import { recordTicketFromSession, recordTicketRefundFromCharge } from '@/lib/billing/tickets'
 import { recordMembershipDuesFromInvoice } from '@/lib/billing/checkout'
 import {
-  recordSupporterContributionFromSession,
-  recordSupporterContributionRefundFromCharge,
-} from '@/lib/billing/supporter'
-import {
   recordSpaceDonationFromSession,
   abandonSpaceDonationFromSession,
   recordSpaceDonationRefundFromCharge,
@@ -182,7 +178,6 @@ export async function POST(req: Request) {
   const recordPaidCheckout = async (s: Stripe.Checkout.Session) => {
     await recordTipFromSession(s)
     await recordTicketFromSession(s)
-    await recordSupporterContributionFromSession(s)
     await recordCommerceOrderFromSession(s)
     // LIVE-235: a gift to a Space fund settles here like every other one-off channel. It no-ops on a
     // session that is not a donation, so adding it to THIS list (the one both `completed` and
@@ -377,12 +372,11 @@ export async function POST(req: Request) {
         // 2026-09-05 (L2-07): a TIP and a SUPPORTER CONTRIBUTION refunded from the Stripe
         // dashboard now reconcile too. Each recorder matches on the charge's payment_intent
         // against its own `succeeded` row, so a charge that isn't its kind is a harmless no-op
-        // and running all four for every refund is safe (the same principle as `completed`).
+        // and running them all for every refund is safe (the same principle as `completed`).
         const charge = event.data.object as Stripe.Charge
         await recordTicketRefundFromCharge(charge)
         await recordCommerceRefundFromCharge(charge)
         await recordTipRefundFromCharge(charge)
-        await recordSupporterContributionRefundFromCharge(charge)
         await recordSpaceDonationRefundFromCharge(charge)
         break
       }

@@ -8,7 +8,7 @@ import type Stripe from 'stripe'
 // Nothing in the receipt modules dedupes, deliberately: each CALLER sends only for work IT did, and
 // this file pins that contract on every lane at once, by running each settle TWICE the way a
 // redelivery runs it. The second run finds nothing to do, exactly as it does in production:
-//   • the one-off lanes (tip, supporter, donation) flip `pending` -> `succeeded` and `.select()`
+//   • the one-off lanes (tip, donation) flip `pending` -> `succeeded` and `.select()`
 //     returns zero rows the second time;
 //   • the Space membership lane INSERTS the membership, and the second insert returns 23505;
 //   • the Space plan lane reads the plan BEFORE it writes, so the second run reads paid -> paid;
@@ -63,14 +63,12 @@ vi.mock('@/lib/supabase/admin', () => {
 // this file measures is how many times a settle reaches them.
 const receipts = vi.hoisted(() => ({
   donation: vi.fn(async (_a: Record<string, unknown>) => {}),
-  supporter: vi.fn(async (_a: Record<string, unknown>) => {}),
   tipper: vi.fn(async (_a: Record<string, unknown>) => {}),
   membership: vi.fn(async (_a: Record<string, unknown>) => {}),
   plan: vi.fn(async (_a: Record<string, unknown>) => {}),
   invoice: vi.fn(async (_a: Record<string, unknown>) => {}),
 }))
 vi.mock('./donation-receipt', () => ({ sendDonationReceipts: receipts.donation, DONATION_RECEIVED_NOTIFICATION_TYPE: 'x' }))
-vi.mock('./supporter-receipt', () => ({ sendSupporterContributionReceipt: receipts.supporter }))
 vi.mock('./tip-receipt', () => ({ sendTipperReceipt: receipts.tipper }))
 vi.mock('./subscription-receipt', () => ({
   sendSpaceMembershipReceipts: receipts.membership,
@@ -106,7 +104,6 @@ vi.mock('@/lib/spaces/seats', () => ({ setSpaceSeatQuantity: vi.fn(async () => {
 vi.mock('@/lib/spaces/tier-circle', () => ({ syncTierCircleAccess: vi.fn(async () => {}) }))
 
 import { recordSpaceDonationFromSession } from './space-donation-checkout'
-import { recordSupporterContributionFromSession } from './supporter'
 import { recordTipFromSession } from './tips'
 import { reconcileSpaceMembershipSubscription, reconcileSpacePlanSubscription } from './space-subscriptions'
 import { recordMembershipDuesFromInvoice } from './checkout'
@@ -138,19 +135,6 @@ describe('the one-off lanes send once per settled row, never on a redelivery', (
     await recordSpaceDonationFromSession(paidSession('space_donation'))
     expect(receipts.donation).toHaveBeenCalledTimes(1)
     expect(receipts.donation.mock.calls[0][0]).toMatchObject({ id: 'g-1', spaceId: 's-1', donorEmail: 'buyer@example.test' })
-  })
-
-  it('a contribution: one receipt on the flip, none on the redelivery', async () => {
-    state.push(
-      'supporter_contributions',
-      { data: [{ id: 'c-1', amount_cents: 2500, profile_id: 'p-1', currency: 'usd' }], error: null },
-      { data: [], error: null },
-    )
-    state.push('profiles', { data: null, error: null }, { data: null, error: null })
-    await recordSupporterContributionFromSession(paidSession('supporter_contribution'))
-    await recordSupporterContributionFromSession(paidSession('supporter_contribution'))
-    expect(receipts.supporter).toHaveBeenCalledTimes(1)
-    expect(receipts.supporter.mock.calls[0][0]).toMatchObject({ id: 'c-1', profileId: 'p-1', amountCents: 2500 })
   })
 
   it('a tip: one tipper receipt on the flip, none on the redelivery', async () => {
