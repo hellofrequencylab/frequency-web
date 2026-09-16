@@ -5,6 +5,7 @@ import { Heart, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/field'
 import { startTip } from './tip-actions'
 import CheckoutPanel from '@/components/billing/checkout-panel'
+import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { TIP_PRESETS_CENTS, TIP_MIN_CENTS, TIP_MAX_CENTS } from '@/lib/billing/tips-core'
 import { isError } from '@/lib/action-result'
 
@@ -49,6 +50,7 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
 
   function send() {
     setError(null)
+    warmStripeBrowser()
     if (!valid) {
       setError(`Enter an amount between $${TIP_MIN_CENTS / 100} and $${TIP_MAX_CENTS / 100}.`)
       return
@@ -141,6 +143,9 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
       <div className="mt-3 flex items-center gap-2">
         <button
           onClick={send}
+          onPointerEnter={warmStripeBrowser}
+          onFocus={warmStripeBrowser}
+          onTouchStart={warmStripeBrowser}
           disabled={isPending || !valid}
           className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >

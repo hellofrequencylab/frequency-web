@@ -98,3 +98,29 @@ export function loadStripeBrowser(): Promise<Stripe> {
 export function __resetStripeBrowserForTests(): void {
   pending = null
 }
+
+/**
+ * Start loading Stripe.js NOW, without waiting for anyone to need it (LIVE-363).
+ *
+ * 🔴 THE LAG WAS SEQUENTIAL, AND THAT IS THE WHOLE POINT OF THIS FUNCTION. A buyer used to wait
+ * for the server to build a Checkout Session (several database reads, a Connect status check, a
+ * fee calculation, the Stripe API call and a reservation), and THEN wait for Stripe.js to arrive,
+ * because nothing asked for the script until a client secret existed to render. Two slow things,
+ * one after the other, both after the click.
+ *
+ * Called on intent (hover, focus, touch) and again at the top of the click handler, the script
+ * downloads WHILE the server works. The two waits overlap instead of stacking, and by the time a
+ * secret comes back the SDK is usually already resolved.
+ *
+ * Fire-and-forget by contract: it returns nothing and swallows everything. A warm-up that failed
+ * is not an error -- `loadStripeBrowser()` will be called again for real and will report properly
+ * then. The memo in that function is what makes this cheap: the second call is the same promise.
+ *
+ * Safe to call repeatedly, on every hover, and with no publishable key (it no-ops).
+ */
+export function warmStripeBrowser(): void {
+  if (!publishableKey()) return
+  void loadStripeBrowser().catch(() => {
+    // Deliberately silent. The real call path reports; this one only ever pre-warms.
+  })
+}

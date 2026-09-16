@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { ArrowRight, Loader2 } from 'lucide-react'
 import { startSpaceDonationCheckout } from '@/lib/billing/donation-actions'
 import CheckoutPanel from '@/components/billing/checkout-panel'
+import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { isError } from '@/lib/action-result'
 import { formatPriceCents } from '@/lib/commerce/types'
 
@@ -65,6 +66,7 @@ export function DonateForm({
 
   function give() {
     setError(null)
+    warmStripeBrowser()
     if (!cents || !Number.isFinite(cents) || cents < MIN_CENTS) {
       setError(`Minimum gift is ${formatPriceCents(MIN_CENTS)}.`)
       return
@@ -141,6 +143,9 @@ export function DonateForm({
       <button
         type="button"
         onClick={give}
+        onPointerEnter={warmStripeBrowser}
+        onFocus={warmStripeBrowser}
+        onTouchStart={warmStripeBrowser}
         disabled={pending}
         className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
       >

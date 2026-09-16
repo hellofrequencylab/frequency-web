@@ -8,6 +8,7 @@ import { ticketRowToPrice, type Price } from '@/lib/commerce/types'
 import { PriceInput, type PriceSelection } from '@/components/commerce/price-input'
 import { Button } from '@/components/ui/button'
 import CheckoutPanel from '@/components/billing/checkout-panel'
+import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 
 export type TicketTierView = {
   id: string
@@ -167,6 +168,10 @@ export function TicketButton({
 
   function go() {
     setError(null)
+    // 🔴 THE TWO WAITS NOW OVERLAP. Downloading Stripe.js used to start only once a client secret
+    // existed, so the buyer waited for the server to build a session and THEN for the script.
+    // Starting it here runs it alongside the server round trip. Idempotent and memoised.
+    warmStripeBrowser()
     const tier = selected
     // Client-side floor hint (the server re-enforces it authoritatively).
     let amountCents: number | undefined
@@ -204,13 +209,27 @@ export function TicketButton({
   if (!hasTiers) {
     return (
       <div className="space-y-2">
+        {/* 🔴 ONE CTA AT A TIME. With the form open this rendered a second orange button
+            directly above Stripe's own "Pay $44.00", so the card layer arrived under a button
+            that still said "Buy ticket · $44.00" and the buyer had to guess which one charged
+            them. The trigger has done its job once the form is up; the Pay button is the only
+            thing that moves money, so it is the only CTA left on screen. */}
+        {!clientSecret && (
         <Button
           onClick={go}
+          onPointerEnter={warmStripeBrowser}
+          onFocus={warmStripeBrowser}
+          onTouchStart={warmStripeBrowser}
           disabled={isPending || previewMode}
         >
-          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ticket className="h-4 w-4" />}
-          Get ticket · {priceLabel}
+          {isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Ticket className="h-4 w-4" aria-hidden />
+          )}
+          Buy ticket · {priceLabel}
         </Button>
+        )}
         {error && <p className="text-body-sm text-danger">{error}</p>}
         {clientSecret && (
           <CheckoutPanel
@@ -342,13 +361,29 @@ export function TicketButton({
         />
       )}
 
+      {!clientSecret && (
       <Button
         onClick={go}
+        onPointerEnter={warmStripeBrowser}
+        onFocus={warmStripeBrowser}
+        onTouchStart={warmStripeBrowser}
         disabled={ctaDisabled}
       >
-        {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ticket className="h-4 w-4" />}
-        {selected?.pricingMode === 'free' ? 'Claim ticket' : 'Get ticket'}
+        {isPending ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Ticket className="h-4 w-4" aria-hidden />
+        )}
+        {/* THE VERB CARRIES THE MONEY. "Get" is the same word this product uses for free things,
+            so it read identically whether or not a card was about to be asked for. "Buy" is read
+            first and survives truncation, which the price alone does not (CONTENT-VOICE §3c:
+            plain words, numbers over adjectives; NAMING.md §Marketplace makes "Ticket" the noun).
+            Free stays "Get ticket" rather than "Claim ticket": NAMING.md retires Claim as a
+            standalone button label, and while that line sits under Starter Circles it is written
+            unqualified, so this does not lean on a scope exemption nobody ruled. */}
+        {selected?.pricingMode === 'free' ? 'Get ticket' : 'Buy ticket'}
       </Button>
+      )}
       {error && <p className="text-body-sm text-danger">{error}</p>}
       {clientSecret && (
         <CheckoutPanel

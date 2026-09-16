@@ -5,6 +5,7 @@ import { ShoppingBag } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { startCheckoutAction } from './commerce-actions'
 import CheckoutPanel from '@/components/billing/checkout-panel'
+import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 
 // Buy control for a commerce product (maker / shop). Calls the checkout action and takes the card
 // RIGHT HERE (LIVE-359) or, when the on-page form cannot be offered, hands off to Stripe Checkout;
@@ -35,6 +36,7 @@ export function BuyButton({
 
   async function buy() {
     setError(null)
+    warmStripeBrowser()
     const res = await startCheckoutAction(productId, variantId, entryPoint ?? null)
     // Branch on what CAME BACK, never on what was asked for: the server declines the on-page path
     // whenever it cannot be honoured, and the url branch catches that.
@@ -65,6 +67,9 @@ export function BuyButton({
         disabled={pending || disabled}
         className={buttonClasses('primary', 'md')}
         onClick={() => start(buy)}
+        onPointerEnter={warmStripeBrowser}
+        onFocus={warmStripeBrowser}
+        onTouchStart={warmStripeBrowser}
       >
         <ShoppingBag className="h-4 w-4" aria-hidden />
         {pending ? 'Starting…' : label}

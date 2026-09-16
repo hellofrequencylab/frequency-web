@@ -17,6 +17,49 @@ import { loadStripeBrowser } from '@/lib/billing/stripe-browser'
 import { Button } from '@/components/ui/button'
 
 /**
+ * Stripe's fields, drawn with this page's own tokens (LIVE-363).
+ *
+ * Without this the Payment Element renders Stripe's default theme: its own font, its own radius,
+ * and a STROKED BOX around the saved-payment / Link block. Dropped into a card that already has a
+ * border, that reads as a second, foreign panel bolted onto ours rather than part of the page.
+ *
+ * 🔴 NO HEX FALLBACKS. Every value is read from the live custom properties, and a property that
+ * does not resolve is OMITTED rather than defaulted, because a hardcoded colour here would be a
+ * raw hex in member-facing UI (check:tokens) AND would silently ignore the member's theme -- this
+ * app has light, dark, Midnight and a light-lock, and the Appearance object is built per mount, so
+ * it follows whichever is active.
+ */
+function appearanceFromTokens(): Record<string, unknown> {
+  const cs = getComputedStyle(document.documentElement)
+  const read = (name: string): string => cs.getPropertyValue(name).trim()
+  const put = (into: Record<string, string>, key: string, name: string) => {
+    const v = read(name)
+    if (v) into[key] = v
+  }
+
+  const variables: Record<string, string> = {}
+  put(variables, 'colorPrimary', '--color-primary')
+  put(variables, 'colorBackground', '--color-surface')
+  put(variables, 'colorText', '--color-text')
+  put(variables, 'colorTextSecondary', '--color-text-muted')
+  put(variables, 'colorDanger', '--color-danger')
+  put(variables, 'borderRadius', '--radius-control')
+
+  const border = read('--color-border')
+  const surface = read('--color-surface')
+
+  // `.Block` is the saved-payment / Link container. Ours is already inside the RSVP card, so its
+  // own border and shadow are the "box within a box" the owner asked to remove.
+  const rules: Record<string, Record<string, string>> = {
+    '.Block': { border: 'none', boxShadow: 'none', ...(surface ? { backgroundColor: surface } : {}) },
+    '.Tab': { boxShadow: 'none', ...(border ? { border: `1px solid ${border}` } : {}) },
+    '.Input': { boxShadow: 'none', ...(border ? { border: `1px solid ${border}` } : {}) },
+  }
+
+  return { variables, rules }
+}
+
+/**
  * The submit half, inside the provider so it can reach the checkout session.
  *
  * `useCheckout()` is the back-compat hook that works under either provider shape in
@@ -158,7 +201,18 @@ export default function CheckoutForm({
   }
 
   return (
-    <CheckoutElementsProvider stripe={stripe} options={{ clientSecret }}>
+    <CheckoutElementsProvider
+      stripe={stripe}
+      options={{
+        clientSecret,
+        elementsOptions: {
+          appearance: appearanceFromTokens(),
+          // Stripe draws its own loading state; ours already ran above. Two spinners for one wait
+          // is what made this feel slower than it was.
+          loader: 'never',
+        },
+      }}
+    >
       <PayForm priceLabel={priceLabel} onFellBack={onFellBack} onDone={onDone} />
     </CheckoutElementsProvider>
   )

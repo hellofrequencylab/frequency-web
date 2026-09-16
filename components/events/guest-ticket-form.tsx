@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import CheckoutPanel from '@/components/billing/checkout-panel'
+import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { startGuestTicket } from '@/app/(main)/events/[slug]/ticket-actions'
 import { ticketRowToPrice, type Price } from '@/lib/commerce/types'
 import { PriceInput, type PriceSelection } from '@/components/commerce/price-input'
@@ -177,7 +178,10 @@ export function GuestTicketForm({
   const isFree = hasTiers ? selected?.pricingMode === 'free' : false
   const buyerChosen = selected ? isBuyerChosen(selected.pricingMode) : false
   const payLabel = hasTiers ? (selected ? tierPriceLabel(selected) : '') : priceLabel ?? ''
-  const submitLabel = payLabel ? `Get ticket · ${payLabel}` : 'Get ticket'
+  // Moves with the signed-in buttons on purpose: the same event must not call the same act two
+  // different things depending on whether you have an account. `isFree` (not an empty payLabel)
+  // decides, so a free tier reads "Get ticket" instead of the old "Get ticket · Free".
+  const submitLabel = isFree || !payLabel ? 'Get ticket' : `Buy ticket · ${payLabel}`
   const soldOut = !!selected?.soldOut
 
   function selectRate(r: FlowRate) {
@@ -349,7 +353,14 @@ export function GuestTicketForm({
         {/* `loading` rather than a label swap: the primitive marks the control aria-busy and
             disables it while keeping the label the same width, which is the one thing a
             pending state must not change (INTERACTION-STATES §4 rule 3). */}
-        <Button type="submit" loading={pending} disabled={soldOut}>
+        <Button
+          type="submit"
+          loading={pending}
+          disabled={soldOut}
+          onPointerEnter={warmStripeBrowser}
+          onFocus={warmStripeBrowser}
+          onTouchStart={warmStripeBrowser}
+        >
           {soldOut ? 'Sold out' : submitLabel}
         </Button>
         <p className="text-meta text-muted">

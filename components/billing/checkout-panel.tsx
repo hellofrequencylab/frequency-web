@@ -62,7 +62,7 @@ export default function CheckoutPanel({
   if (done) {
     return (
       <div
-        className="motion-safe:animate-[slideUp_0.3s_ease-out] rounded-lg border border-border bg-surface p-4"
+        className="motion-safe:animate-[slideUp_0.3s_ease-out] rounded-control bg-surface-elevated p-3"
         role="status"
       >
         <div className="flex items-start gap-3">
@@ -89,7 +89,13 @@ export default function CheckoutPanel({
   }
 
   return (
-    <div className="motion-safe:animate-[slideUp_0.3s_ease-out] rounded-lg border border-border p-4">
+    // ── NO BOX. ────────────────────────────────────────────────────────────────────────────
+    // This used to be `rounded-lg border border-border p-4`, which put a bordered panel inside
+    // the bordered RSVP card: a box in a box, reading as a foreign widget bolted on. The layer
+    // now belongs to the card it opens in -- it simply appears under the button and pushes what
+    // follows down. Stripe's own `.Block` stroke is removed in the Appearance rules for the same
+    // reason; a stroke there would put the box back one level deeper.
+    <div className="motion-safe:animate-[slideUp_0.3s_ease-out] pt-3">
       <CheckoutForm
         clientSecret={clientSecret}
         priceLabel={priceLabel}

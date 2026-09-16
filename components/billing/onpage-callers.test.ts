@@ -186,3 +186,42 @@ describe('a fallback must be able to REACH the hosted page', () => {
     ).toBe(true)
   })
 })
+
+describe('the two slow things overlap', () => {
+  /**
+   * The owner's report, 2026-09-15: "It took forever for it to load. Then you had to wait for the
+   * stripe stuff to load above it."
+   *
+   * Both halves were real and they were SEQUENTIAL. The server builds a Checkout Session (several
+   * reads, a Connect check, a fee calculation, the Stripe call, a reservation), and only once a
+   * client secret came back did anything ask for Stripe.js -- so the buyer paid for both waits end
+   * to end. `warmStripeBrowser()` starts the download on intent and again at the top of the click
+   * handler, so the script arrives while the server is still working.
+   *
+   * This measures the CONSEQUENCE -- a control that mounts the form must also pre-warm -- rather
+   * than that the function exists. Comments are blanked first: a control whose only mention of
+   * warming is a comment about warming has not warmed anything.
+   */
+  const mounts = ALL.filter((f) => readFileSync(f, 'utf8').includes('<CheckoutPanel'))
+
+  it('found controls that mount the card form', () => {
+    expect(mounts.length, 'nothing renders CheckoutPanel; the walk or the component name is wrong').toBeGreaterThan(2)
+  })
+
+  it.each(mounts)('%s starts Stripe.js before it needs it', (file) => {
+    const src = code(file)
+    // ⚠️ THE CALL OR THE PROP, never the identifier. A first version accepted
+    // `warmStripeBrowser\s*[({=}]` so that it would match a JSX prop -- and the `}` in that class
+    // matched the IMPORT LINE's closing brace, so a control that had lost every call still passed.
+    // That is the fourth time in this file's history that a guard matched a name somewhere it does
+    // nothing. Blanking comments was not enough; an import is not a comment.
+    const calls = /warmStripeBrowser\s*\(/.test(src)
+    const passedAsHandler = /=\{\s*warmStripeBrowser\s*\}/.test(src)
+    expect(
+      calls || passedAsHandler,
+      `${file} mounts the card form but never calls warmStripeBrowser. Its buyer waits for the ` +
+        `session round trip and THEN for Stripe.js, one after the other, which is the lag the ` +
+        `owner reported on 2026-09-15.`,
+    ).toBe(true)
+  })
+})

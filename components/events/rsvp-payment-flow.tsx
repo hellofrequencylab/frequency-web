@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Check, CreditCard, Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import CheckoutPanel from '@/components/billing/checkout-panel'
+import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { setRsvpStatus } from '@/app/(main)/events/actions'
 import { startTicket } from '@/app/(main)/events/[slug]/ticket-actions'
 import { GuestRsvpForm } from '@/components/events/guest-rsvp-form'
@@ -153,6 +154,8 @@ export function RsvpPaymentFlow({
   }
 
   function payAndGo() {
+    // The script downloads alongside the server round trip rather than after it.
+    warmStripeBrowser()
     setError(null)
     startTransition(async () => {
       await setRsvpStatus(eventId, 'going', { slug })
@@ -254,6 +257,9 @@ export function RsvpPaymentFlow({
                   <button
                     type="button"
                     onClick={payAndGo}
+                    onPointerEnter={warmStripeBrowser}
+                    onFocus={warmStripeBrowser}
+                    onTouchStart={warmStripeBrowser}
                     disabled={pending}
                     className="inline-flex w-full items-center justify-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
                   >
@@ -273,6 +279,9 @@ export function RsvpPaymentFlow({
                   <button
                     type="button"
                     onClick={payAndGo}
+                    onPointerEnter={warmStripeBrowser}
+                    onFocus={warmStripeBrowser}
+                    onTouchStart={warmStripeBrowser}
                     disabled={pending}
                     className="inline-flex w-full items-center justify-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
                   >
