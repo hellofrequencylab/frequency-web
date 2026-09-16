@@ -4665,6 +4665,9 @@ export type Database = {
           price_cents: number | null
           pricing_mode: string
           quantity: number | null
+          sales_end_at: string | null
+          sales_start_at: string | null
+          sales_starts_days_before: number | null
           sold: number
           sort_order: number
           space_members_only: boolean
@@ -4683,6 +4686,9 @@ export type Database = {
           price_cents?: number | null
           pricing_mode?: string
           quantity?: number | null
+          sales_end_at?: string | null
+          sales_start_at?: string | null
+          sales_starts_days_before?: number | null
           sold?: number
           sort_order?: number
           space_members_only?: boolean
@@ -4701,6 +4707,9 @@ export type Database = {
           price_cents?: number | null
           pricing_mode?: string
           quantity?: number | null
+          sales_end_at?: string | null
+          sales_start_at?: string | null
+          sales_starts_days_before?: number | null
           sold?: number
           sort_order?: number
           space_members_only?: boolean
@@ -4727,9 +4736,9 @@ export type Database = {
       event_tickets: {
         Row: {
           amount_cents: number
-          attribution_ref: string | null
           attended_at: string | null
           attended_by: string | null
+          attribution_ref: string | null
           buyer_profile_id: string | null
           created_at: string
           currency: string
@@ -4754,9 +4763,9 @@ export type Database = {
         }
         Insert: {
           amount_cents: number
-          attribution_ref?: string | null
           attended_at?: string | null
           attended_by?: string | null
+          attribution_ref?: string | null
           buyer_profile_id?: string | null
           created_at?: string
           currency?: string
@@ -4781,9 +4790,9 @@ export type Database = {
         }
         Update: {
           amount_cents?: number
-          attribution_ref?: string | null
           attended_at?: string | null
           attended_by?: string | null
+          attribution_ref?: string | null
           buyer_profile_id?: string | null
           created_at?: string
           currency?: string
@@ -12400,6 +12409,48 @@ export type Database = {
           },
         ]
       }
+      space_benefit_redemptions: {
+        Row: {
+          amount_cents: number
+          benefit_id: string
+          created_at: string
+          id: string
+          member_profile_id: string
+          period_key: string
+        }
+        Insert: {
+          amount_cents?: number
+          benefit_id: string
+          created_at?: string
+          id?: string
+          member_profile_id: string
+          period_key?: string
+        }
+        Update: {
+          amount_cents?: number
+          benefit_id?: string
+          created_at?: string
+          id?: string
+          member_profile_id?: string
+          period_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_benefit_redemptions_benefit_id_fkey"
+            columns: ["benefit_id"]
+            isOneToOne: false
+            referencedRelation: "space_member_benefits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_benefit_redemptions_member_profile_id_fkey"
+            columns: ["member_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_billing_agreements: {
         Row: {
           amount_cents: number
@@ -13260,6 +13311,59 @@ export type Database = {
           },
         ]
       }
+      space_member_benefits: {
+        Row: {
+          created_at: string
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          kind: string
+          label: string
+          max_uses: number | null
+          period: string | null
+          scope: string
+          space_id: string
+          starts_at: string | null
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          kind: string
+          label: string
+          max_uses?: number | null
+          period?: string | null
+          scope?: string
+          space_id: string
+          starts_at?: string | null
+          value?: number
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          label?: string
+          max_uses?: number | null
+          period?: string | null
+          scope?: string
+          space_id?: string
+          starts_at?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_member_benefits_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_members: {
         Row: {
           created_at: string
@@ -13895,6 +13999,39 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_tier_benefits: {
+        Row: {
+          benefit_id: string
+          created_at: string
+          tier_id: string
+        }
+        Insert: {
+          benefit_id: string
+          created_at?: string
+          tier_id: string
+        }
+        Update: {
+          benefit_id?: string
+          created_at?: string
+          tier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_tier_benefits_benefit_id_fkey"
+            columns: ["benefit_id"]
+            isOneToOne: false
+            referencedRelation: "space_member_benefits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_tier_benefits_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "space_membership_tiers"
             referencedColumns: ["id"]
           },
         ]

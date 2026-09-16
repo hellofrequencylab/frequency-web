@@ -642,8 +642,14 @@ describe('every event_ticket_types column is classified as carried or reset', ()
     ).matchAll(/^\s*([a-z_]+):/gm),
   ].map((m) => m[1])
 
-  /** Reset by omission, each for the reason named beside it in lib/event-recurrence.ts. */
-  const reset = ['id', 'event_id', 'sold', 'created_at']
+  /** Reset by omission, each for the reason named beside it in lib/event-recurrence.ts.
+   *
+   *  The last two joined on 2026-09-15 (ADR-1373). They are ABSOLUTE instants an operator typed for
+   *  the ANCHOR'S date: copied onto the ninth occurrence they name a moment already past, so the
+   *  members-first window would read as open from the moment the row was minted — a promise that is
+   *  silently public on every date but the first, which is the exact failure ADR-1373 removes. The
+   *  RELATIVE `sales_starts_days_before` DOES travel, and is why the relative shape exists at all. */
+  const reset = ['id', 'event_id', 'sold', 'created_at', 'sales_start_at', 'sales_end_at']
 
   it('parses a non-trivial list from both sides (a regex matching nothing must fail)', () => {
     expect(carried.length).toBeGreaterThan(8)

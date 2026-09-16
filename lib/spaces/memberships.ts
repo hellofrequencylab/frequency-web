@@ -2,6 +2,13 @@
 // server actions behind the membership surfaces, the Business analog of lib/spaces/booking.ts:
 //   space_membership_tiers: the tiers an owner publishes (name, price shown, interval, benefits).
 //   space_memberships:      a member's membership in one of those tiers.
+//
+// ONE TIER, TWO CADENCES (ADR-1374). price_cents is the MONTHLY price; annual_price_cents is the
+// OPTIONAL yearly alternative for the SAME tier, and null means monthly only. Before it, a yearly
+// plan had to be published as a SECOND tier, which is why one Space's join surface stacked seven
+// cards for four memberships. space_memberships.billing_interval records which cadence the member
+// bought, because tier_id alone can no longer say. The arithmetic and the labels are pure and live
+// in lib/spaces/membership-pricing.ts, which the client surfaces import at runtime.
 // Backed by the service-role admin client (the tables are in the generated DB types, so access is
 // typed; mirrors lib/spaces/booking.ts). The server is the authority for "which
 // space" and "what may this caller do here" (P5): every write re-checks authorization; reads
@@ -43,6 +50,7 @@ import { ensureSpaceMemberContact } from '@/lib/crm/lead-capture'
 import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
 import { syncTierCircleAccess } from '@/lib/spaces/tier-circle'
 import { stripe } from '@/lib/billing/stripe'
+import { resolveBillingInterval, type BillingInterval } from '@/lib/spaces/membership-pricing'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -57,8 +65,12 @@ export interface MembershipTier {
   /** The tier id (absent for a not-yet-saved draft from the editor). */
   id?: string
   name: string
+  /** The MONTHLY price in cents (0 = free). Unchanged by ADR-1374. */
   priceCents: number
   interval: MembershipInterval
+  /** The OPTIONAL yearly price for this SAME tier, in cents; null = this tier is monthly only
+   *  (ADR-1374). Never a second tier: one tier, two cadences, one toggle on the join surface. */
+  annualPriceCents: number | null
   description: string | null
   benefits: string[]
   /** Max ACTIVE members (ADR-824); null = unlimited. */
@@ -136,6 +148,7 @@ export function normalizeTier(raw: {
   id?: unknown
   name?: unknown
   priceCents?: unknown
+  annualPriceCents?: unknown
   interval?: unknown
   description?: unknown
   benefits?: unknown
@@ -167,10 +180,19 @@ export function normalizeTier(raw: {
       ? Math.min(capNum, 1_000_000)
       : null
 
+  // THE YEARLY PRICE (ADR-1374): optional, and 0 is NOT an offer. A tier with no yearly figure, a
+  // malformed one, or a literal zero all normalize to null, which is the single state the join card
+  // reads as "monthly only". A FREE tier never carries one either: there is nothing to bill yearly,
+  // and a free tier that showed a yearly price under the toggle would be a contradiction.
+  const monthlyCents = normalizePriceCents(raw.priceCents)
+  const annualRaw = raw.annualPriceCents == null ? 0 : normalizePriceCents(raw.annualPriceCents)
+  const annualPriceCents = monthlyCents > 0 && annualRaw > 0 ? annualRaw : null
+
   const tier: MembershipTier = {
     name,
-    priceCents: normalizePriceCents(raw.priceCents),
+    priceCents: monthlyCents,
     interval,
+    annualPriceCents,
     description,
     benefits: normalizeBenefits(raw.benefits),
     capacity,
@@ -232,6 +254,8 @@ type TierRow = {
   space_id: string
   name: string
   price_cents: number
+  /** ADR-1374; optional in the type because a row read before the migration lands has no column. */
+  annual_price_cents?: number | null
   interval: string
   description: string | null
   benefits: unknown
@@ -256,8 +280,36 @@ function membershipsTable() {
   return createAdminClient().from('space_memberships')
 }
 
+/** The same two tables reached LOOSE, for the two columns ADR-1374 adds. `annual_price_cents` and
+ *  `billing_interval` are newer than lib/database.types.ts (the migration applies at merge, the
+ *  standing ADR-246 seam), so a typed write payload rejects them at compile time. The handles are
+ *  deliberately narrow: exactly the chains used below, nothing wider, so the rest of this module
+ *  keeps its generated types. Retire both once the types are regenerated. */
+function looseTiersTable() {
+  return createAdminClient().from('space_membership_tiers') as unknown as {
+    update: (v: Record<string, unknown>) => {
+      eq: (c: string, v: string) => {
+        eq: (c: string, v: string) => Promise<{ error: { message?: string } | null }>
+      }
+    }
+    insert: (rows: Record<string, unknown>[]) => Promise<{ error: { message?: string } | null }>
+  }
+}
+function looseMembershipsTable() {
+  return createAdminClient().from('space_memberships') as unknown as {
+    insert: (rows: Record<string, unknown>[]) => {
+      select: (cols: string) => {
+        maybeSingle: () => Promise<{
+          data: { id?: string } | null
+          error: { message?: string } | null
+        }>
+      }
+    }
+  }
+}
+
 const TIER_COLS =
-  'id, space_id, name, price_cents, interval, description, benefits, capacity, waitlist, sort, is_active'
+  'id, space_id, name, price_cents, annual_price_cents, interval, description, benefits, capacity, waitlist, sort, is_active'
 const MEMBERSHIP_COLS = 'id, space_id, member_profile_id, tier_id, status, started_at'
 
 /** Map a DB tier row to the app's MembershipTier (benefits re-normalized; a malformed row's name is
@@ -266,11 +318,17 @@ function mapTierRow(r: TierRow): MembershipTier {
   const interval: MembershipInterval = INTERVALS.includes(r.interval as MembershipInterval)
     ? (r.interval as MembershipInterval)
     : 'month'
+  // The yearly price re-normalizes on READ as well as on write (ADR-1374): a row written before the
+  // column existed has no field at all, and a 0 left by an older write is not an offer.
+  const annual =
+    typeof r.annual_price_cents === 'number' && r.annual_price_cents > 0 ? r.annual_price_cents : null
+  const priceCents = typeof r.price_cents === 'number' ? r.price_cents : 0
   return {
     id: r.id,
     name: r.name,
-    priceCents: typeof r.price_cents === 'number' ? r.price_cents : 0,
+    priceCents,
     interval,
+    annualPriceCents: priceCents > 0 ? annual : null,
     description: r.description ?? null,
     benefits: normalizeBenefits(r.benefits),
     capacity: typeof r.capacity === 'number' && r.capacity >= 0 ? r.capacity : null,
@@ -289,7 +347,10 @@ async function readTiers(spaceId: string, activeOnly: boolean): Promise<Membersh
       .eq('space_id', spaceId)
       .order('sort', { ascending: true })
     if (error || !data) return []
-    const rows = activeOnly ? data.filter((r) => r.is_active !== false) : data
+    // annual_price_cents is newer than lib/database.types.ts (ADR-246 seam; the migration applies at
+    // merge), so the selected rows are narrowed to the local TierRow rather than the generated one.
+    const all = data as unknown as TierRow[]
+    const rows = activeOnly ? all.filter((r) => r.is_active !== false) : all
     return rows.map(mapTierRow)
   } catch {
     return []
@@ -429,9 +490,12 @@ export async function setMembershipTiers(
   // Normalize + drop anything invalid. An empty result is a valid "no tiers" state.
   const clean = normalizeTierSet(tiers)
 
-  const toRow = (t: MembershipTier) => ({
+  // annual_price_cents is newer than the generated DB types (ADR-246 seam), so the payload is built
+  // loose and the typed chain takes it through one narrow cast at each call site below.
+  const toRow = (t: MembershipTier): Record<string, unknown> => ({
     name: t.name,
     price_cents: t.priceCents,
+    annual_price_cents: t.annualPriceCents,
     interval: t.interval,
     description: t.description,
     benefits: t.benefits,
@@ -450,11 +514,11 @@ export async function setMembershipTiers(
     const plan = planTierSetOps((existing ?? []).map((r) => r.id), clean)
 
     for (const t of plan.updates) {
-      const upd = await tiersTable().update(toRow(t)).eq('id', t.id).eq('space_id', spaceId)
+      const upd = await looseTiersTable().update(toRow(t)).eq('id', t.id).eq('space_id', spaceId)
       if (upd.error) return fail('Could not save your tiers. Try again.')
     }
     if (plan.inserts.length > 0) {
-      const { error } = await tiersTable().insert(
+      const { error } = await looseTiersTable().insert(
         plan.inserts.map((t) => ({ space_id: spaceId, ...toRow(t) })),
       )
       if (error) return fail('Could not save your tiers. Try again.')
@@ -522,10 +586,16 @@ export async function getMyMembership(spaceId: string): Promise<MyMembership | n
  * and takes a waitlist, a `waitlist` row instead. A friendly fail if the member already holds an
  * open row here (the one-open unique index is the final guard against a race). Returns
  * ActionResult<{ waitlisted }> so the join card can say which outcome happened.
+ *
+ * `selected` is the cadence the member picked on the join surface (ADR-1374). It is a REQUEST, not
+ * a fact: the row records resolveBillingInterval(tier, selected), so a yearly pick on a tier with no
+ * yearly price is written as the monthly membership it actually is rather than a cadence the tier
+ * cannot honor. The paid path refuses that case outright instead (createSpaceMembershipCheckout).
  */
 export async function joinTier(
   spaceId: string,
   tierId: string,
+  selected: BillingInterval = 'month',
 ): Promise<ActionResult<{ waitlisted: boolean }>> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to become a member.')
@@ -560,15 +630,20 @@ export async function joinTier(
     }
   }
 
+  // What this membership is actually paying (ADR-1374). Resolved from the TIER, never taken on the
+  // caller's word, so the column can be trusted by anything that reads it later.
+  const billingInterval = resolveBillingInterval(tier, selected)
+
   let membershipRowId: string | null = null
   try {
-    const { data, error } = await membershipsTable()
+    const { data, error } = await looseMembershipsTable()
       .insert([
         {
           space_id: spaceId,
           member_profile_id: profileId,
           tier_id: tierId,
           status: waitlisted ? 'waitlist' : 'active',
+          billing_interval: billingInterval,
         },
       ])
       .select(MEMBERSHIP_COLS)
