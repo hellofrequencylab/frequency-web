@@ -221,6 +221,23 @@ export async function listSpacesThatCanAskToHost(eventId: string): Promise<HostA
     if (!state) return []
     if (hostTransferBlockReason(state)) return []
 
+    // 🔴 AN EVENT THAT ALREADY HAS A HOST SPACE IS NOT UP FOR ASKING (owner report 2026-09-16).
+    //
+    // This used to filter the viewer's OWN Spaces against `state.hostSpaceId` and stop there, which
+    // answers "is MY Space already the host" and never asks "does this event have a host at all".
+    // So the pitch appeared on a Space's own flagship event, to anybody who happened to run some
+    // other Space: MELD reads "Hosted by Royal Temple" at the top of the page and still offered a
+    // stranger the chance to take it over, three lines below.
+    //
+    // The ask exists for the case the component's own header describes: a venue posted an event
+    // that somebody else's business actually runs, and there is no Space on it to receive the
+    // money. Once a Space holds it, moving hosting is the HOST's move, through the settings rail
+    // (event-host-offer-field), where the person giving up the money is the one initiating.
+    //
+    // The action stays the authority -- `requestEventHost` still runs every rule on submit. This
+    // only stops the page proposing something that reads as a land grab.
+    if (state.hostSpaceId) return []
+
     // One pending offer per event (the partial unique index): the ask would be refused, so no CTA.
     // The action's refusal string tells the same viewer the same fact, so hiding here reveals no more.
     const { data: pending } = await admin

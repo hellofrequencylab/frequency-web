@@ -44174,3 +44174,86 @@ precisely a body that is missing.
 **Residual.** `statements` being NULL on an applied row is unexplained and is the upstream cause of
 all of this. Nothing in the repo can set it after the fact, and no gate notices it. Recorded rather
 than solved.
+
+## ADR-1382: One membership line on an event, named after the Space, opening the real plans page (2026-09-16)
+
+**Status:** Accepted · **Amends** [ADR-826](DECISIONS.md) (the rate list) · **Uses**
+[ADR-1374](DECISIONS.md) (the plans surface) · corroborated by
+`app/(main)/events/[slug]/page.tsx`, `components/events/rsvp-payment-flow.tsx`
+
+**Context.** A host who wires one members ticket per membership tier turns the RSVP box into a price
+list for the membership. MELD carries SEVEN ticket types, six of them members-only: Temple Member,
+Guardian and Patron, each with an annual twin, above a single $22 day pass. So the question the box
+exists to answer, "what does it cost to come on Wednesday", was answered by six numbers, none of
+which was the answer. Each row also priced the membership rather than the event ($88/mo, $222/mo),
+so the cheapest true answer on the card was the fourth row down.
+
+**Decision.**
+
+1. **Collapse every membership-gated rate into ONE row, titled with the SPACE's name and priced
+   "Included".** "Royal Temple · Included" says what the membership does to this event, which is the
+   only thing this list needs from it. The per-tier prices are not lost, they are moved one tap away
+   to where they sit beside what each tier includes.
+2. **One row whether or not the viewer is a member**, with the chip carrying the difference: the
+   warm `Member` check when their membership already covers the event, the green `Membership` lock
+   when it does not. Two rows would print the same sentence twice. The tier's own name is not lost
+   either: it is the heading of the card the dialog opens on.
+3. **Pressing it opens the PLANS PAGE, in a dialog, as a server component passed down as a node.**
+   The plans surface resolves five things on the server (the tiers, the viewer's own membership,
+   whether billing is live, the events each tier includes, the active count behind every spots-left
+   line). A client-side rebuild would be a second set of answers that can disagree with the first,
+   and this repo has paid for that shape before. What opens is the page, not a likeness of it.
+4. **Pressing Going on that row opens the same dialog**, so there is ONE membership surface rather
+   than a dialog and a fold that drift apart. The inline fold stays for callers that pass no node
+   (the guest ticket form, past events), which is why it is a fallback rather than a deletion.
+5. **The collapsed row goes off-sale only when EVERY membership rate is off-sale.** One closed tier
+   does not close a door another tier holds open.
+
+**Residual, stated rather than hidden.** The six tiers behind this are six separate
+`space_membership_tiers` rows: "Temple Member, annual" is its own tier rather than an annual price on
+"Temple Member". The cadence toggle of ADR-1374 reads `annual_price_cents` on ONE tier, so it cannot
+fold those pairs, and the dialog shows six cards until the data is merged. That is a change to a live
+Space's tiers and belongs to its owner, not to this change.
+
+## ADR-1383: An event that already has a host Space is not up for asking, and the ask is a line not a banner (2026-09-16)
+
+**Status:** Accepted · **Corrects** [ADR-911](DECISIONS.md) (the host handshake) · corroborated by
+`app/(main)/events/host-transfer-actions.ts`, `app/(main)/events/[slug]/host-request-cta.tsx`
+
+**Context.** Owner, looking at MELD: *"The only time the ask to host notice should come up is when
+it's been posted by somebody else and there is no host."*
+
+Two faults, and the first is the one that matters.
+
+1. 🔴 **The gate never asked whether the event had a host.** `listSpacesThatCanAskToHost` filtered
+   the VIEWER's Spaces against `state.hostSpaceId` and stopped, which answers "is MY Space already
+   the host" and not "does this event have a host at all". MELD's `host_space_id` names Royal
+   Temple, the page prints **Hosted by Royal Temple** above the fold, and three lines below it
+   offered a stranger who happened to run some other Space the chance to take it over. Every rule
+   the gate did check was about the asker; none was about the event.
+2. **It was a banner.** A bordered card, a crown, a bold heading and a filled primary button, above
+   the event's own description — the visual weight of an announcement, for a quiet offer meant for
+   a handful of viewers.
+
+**Decision.**
+
+1. **Bail on any event a Space already holds:** `if (state.hostSpaceId) return []`, placed BEFORE
+   the owned/steward lookups so a hosted event costs one read rather than four. Once a Space holds
+   an event, moving hosting is the HOST's move, through the settings rail
+   (`event-host-offer-field`), where the person giving up the money is the one who starts it. The
+   ask exists for the case the component's own header describes: a venue posted an event somebody
+   else's business runs, and there is no Space on it to receive the money.
+2. **The ask is one muted line with the verb inline**, and it grows only when someone takes it up.
+   The consequence sentence and the confirm stay exactly where they were — at the point of the
+   click — because hosting moves money and that has to be read, not skimmed past in a banner
+   nobody asked for.
+3. **`requestEventHost` stays the authority.** It re-runs every rule on submit; this change only
+   stops the page proposing something that reads as a land grab.
+
+**How it is held.** `components/events/host-request-wiring.test.ts` gains three assertions: the
+guard exists, it sits above the Space lookups, and the corpus it matches is non-trivial.
+⚠️ **The ordering assertion was wrong when first written** and is worth recording: as a bare
+`indexOf(guard) < indexOf(lookup)` it PASSED against a mutant that deleted the guard, because a
+missing needle is `-1` and `-1` is less than every real index — the check read as correct precisely
+when the thing it guards was gone. Both needles are now asserted present before being ordered. It
+was caught by mutation-testing the file, not by reading it.

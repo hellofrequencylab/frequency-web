@@ -47,6 +47,7 @@ import { GuestTicketForm } from '@/components/events/guest-ticket-form'
 import { GuestCheckInPrompt } from '@/components/events/guest-check-in-prompt'
 import { safeHttpUrl } from '@/lib/safe-url'
 import { MembershipCheckoutFold } from '@/components/events/membership-checkout-fold'
+import { MembershipJoin } from '@/components/spaces/membership-join'
 import { RsvpPaymentFlow, type FlowRate } from '@/components/events/rsvp-payment-flow'
 import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { HOME_TZ, resolveZone, isEventPast, zoneAbbrev, eventInstant } from '@/lib/time/zone'
@@ -1387,6 +1388,44 @@ export default async function EventDetailPage({
     tag: t.spaceMembersOnly ? (memberUnlocks(t) ? ('member' as const) : ('membership' as const)) : null,
     offSale: t.notYetOnSale || t.salesClosed,
   }))
+
+  // ONE MEMBERSHIP LINE, NAMED AFTER THE SPACE (owner spec 2026-09-16).
+  //
+  // A host who wires a members ticket per membership tier turns this list into a price list for
+  // the membership: MELD had SIX members-only rows (three tiers, each with an annual twin) above a
+  // single $22 day pass, so the question "what does it cost to come on Wednesday" was answered by
+  // six numbers, none of which was the answer. The owner's instruction is to stop pricing the
+  // membership here and say what the membership DOES: "Royal Temple — Included".
+  //
+  // 🔴 IT IS ONE ROW WHETHER OR NOT THE VIEWER IS A MEMBER, and the chip carries the difference:
+  // `member` (warm check) when their membership already covers the event, `membership` (green
+  // lock) when it does not. Two rows would put the same sentence on screen twice, and the price
+  // the collapsed row no longer shows is one tap away in the dialog it opens, where it sits beside
+  // what the tier actually includes. The tier's own name is not lost either -- it is the heading of
+  // the card the dialog opens on.
+  //
+  // The row stays selectable unless EVERY membership rate is off sale; one closed tier does not
+  // close the door when another is open.
+  const membershipRates = flowRates.filter((r) => r.kind === 'membership')
+  const collapsedRates: FlowRate[] =
+    spaceHost && membershipRates.length > 0
+      ? [
+          ...flowRates.filter((r) => r.kind === 'general'),
+          {
+            id: `membership:${eventSpaceId ?? spaceHost.slug}`,
+            name: spaceHost.name,
+            priceLabel: 'Included',
+            kind: 'membership' as const,
+            // Nothing to buy per event on this row: joining is what it does, and that happens in
+            // the dialog. A null ticket type keeps `startTicket` from ever being handed it.
+            ticketTypeId: null,
+            covered: membershipRates.some((r) => r.covered),
+            tag: membershipRates.some((r) => r.covered) ? ('member' as const) : ('membership' as const),
+            offSale: membershipRates.every((r) => r.offSale),
+          },
+        ]
+      : flowRates
+
   const gatedNamedTierId = tiers.find((t) => t.spaceMembersOnly)?.spaceTierId ?? null
   const membershipFold =
     spaceHost && eventSpaceId && hostMembershipTiers.length > 0
@@ -1464,7 +1503,21 @@ export default async function EventDetailPage({
           <RsvpPaymentFlow
             eventId={event.id}
             slug={event.slug}
-            rates={flowRates}
+            rates={collapsedRates}
+            /* THE PLANS SURFACE ITSELF, in the dialog the collapsed membership row opens (owner
+               spec 2026-09-16). `MembershipJoin` is the same server component the Space's plans
+               tab renders, so the dialog shows the real tiers, the cadence toggle, the included
+               events and the spots-left lines, and a viewer who is already a member sees their
+               membership rather than an offer -- none of which this page has to know about. */
+            membershipDialog={
+              spaceHost && eventSpaceId ? (
+                <MembershipJoin
+                  spaceId={eventSpaceId}
+                  slug={spaceHost.slug}
+                  ownerProfileId={hostSpaceOwnerId}
+                />
+              ) : null
+            }
             status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
             plusOnes={myPlusOnes}
             isFull={capacityInfo.isFull}

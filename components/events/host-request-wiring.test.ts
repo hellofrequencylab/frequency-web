@@ -77,3 +77,45 @@ describe('the loader mirrors the gate requestEventHost itself enforces', () => {
     expect(ask).toContain('shouldAutoAcceptHostTransfer({ callerHostsEvent: hostsEvent, callerRunsTargetSpace: true })')
   })
 })
+
+// ── The gate that was missing (owner report 2026-09-16) ──
+// The loader filtered the VIEWER'S Spaces against `state.hostSpaceId` and stopped there, which
+// answers "is my Space already the host" and never "does this event have a host at all". So the ask
+// appeared on a Space's own flagship event: MELD reads "Hosted by Royal Temple" at the top of the
+// page and still offered a stranger the chance to take it over three lines below. The rule is that
+// an event already held by a Space is not up for asking; moving it is the host's move, from the
+// settings rail. Source-shape like the rest of this file, and for the same reason: losing the rule
+// is silent -- nothing errors, the pitch just comes back.
+describe('an event that already has a host Space is not up for asking', () => {
+  const gate = sourceWithoutComments('app/(main)/events/host-transfer-actions.ts', { imports: true })
+
+  it('is non-trivial (guards a vacuous pass)', () => {
+    expect(gate.length).toBeGreaterThan(2000)
+    // The loader really is in the corpus being matched, so a rename cannot pass this file silently.
+    expect(gate).toContain('listSpacesThatCanAskToHost')
+  })
+
+  it('🔴 returns no Spaces at all once a host Space holds the event', () => {
+    expect(
+      gate,
+      'listSpacesThatCanAskToHost must bail on an event whose host_space_id is set. Without it the ' +
+        'page offers to take over an event that visibly names its host, to anyone who runs any ' +
+        'other Space.',
+    ).toMatch(/if\s*\(\s*state\.hostSpaceId\s*\)\s*return\s*\[\]/)
+  })
+
+  it('bails BEFORE it spends queries working out which Spaces the viewer runs', () => {
+    // Ordering is the cheap half of the same rule: the early return sits above the owned/steward
+    // lookups, so a hosted event costs one read rather than four.
+    //
+    // 🔴 BOTH NEEDLES ARE ASSERTED PRESENT FIRST. Written as a bare indexOf comparison this passed
+    // against a mutant that DELETED the guard: a missing needle is -1, and -1 is less than every
+    // real index, so the ordering read as correct precisely when the line was gone. Caught by
+    // mutation-testing this file rather than by reading it.
+    const guardAt = gate.indexOf('if (state.hostSpaceId) return []')
+    const lookupAt = gate.indexOf("eq('owner_profile_id', profileId)")
+    expect(guardAt, 'the guard must be present to be ordered').toBeGreaterThan(-1)
+    expect(lookupAt, 'the owner lookup must be present to be ordered').toBeGreaterThan(-1)
+    expect(guardAt).toBeLessThan(lookupAt)
+  })
+})
