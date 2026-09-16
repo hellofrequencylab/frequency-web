@@ -1405,9 +1405,14 @@ export default async function EventDetailPage({
     <div className="space-y-4">
       <div className="space-y-4 rounded-card border border-border bg-surface p-4">
         <div className="flex items-center gap-2">
-          <Ticket className="h-4 w-4 text-primary" />
-          <span className="text-body-sm font-bold text-text">RSVP</span>
-          {isPaidEvent && !hasTiers && (
+          <Ticket className="h-4 w-4 text-primary" aria-hidden />
+          {/* NAME WHAT IS IN THE BOX. In tickets mode the ticket IS the answer and the RSVP switch
+              deliberately does not render (ADR-826's join-model addendum), so heading this "RSVP"
+              described a control that was not there. The price moved to the button with the verb
+              (`Buy ticket · $44.00`), so printing it again two lines above is the same number
+              twice. */}
+          <span className="text-body-sm font-bold text-text">{ticketsMode ? 'Tickets' : 'RSVP'}</span>
+          {!ticketsMode && isPaidEvent && !hasTiers && (
             <span className="text-body-sm font-medium text-muted">· {priceLabel} ticket</span>
           )}
         </div>

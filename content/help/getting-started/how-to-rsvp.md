@@ -18,8 +18,10 @@ and it is the single most useful first action you can take here.
 
 On the gathering's page. Open a Circle you have joined, find its next gathering
 (it shows the date, time, and place), and open it. The **RSVP** button is right
-there. You will also see your Circle's upcoming gatherings in your feed, so they
-do not sneak up on you.
+there. On a ticketed gathering that box is headed **Tickets** instead, and the
+button says **Buy ticket** with the price on it, because buying the ticket is how
+you say you are coming. You will also see your Circle's upcoming gatherings in
+your feed, so they do not sneak up on you.
 
 Events also show up on Space pages. Tap one there and a small window opens with
 the basics and the same RSVP button, so you can answer without leaving the page.
@@ -39,7 +41,8 @@ There are two, and you can change your answer right up until the gathering ends.
 - **Interested** signals you are curious without claiming a spot. Use it when you
   are not sure yet.
 
-An event shows one way to join. On a ticketed event, your ticket is your Going.
+An event shows one way to join. On a ticketed event, your ticket is your Going, so
+the box is headed **Tickets** and there is no separate answer to give.
 Other events run on RSVP even when they have a price: first come, first served,
 with the cost paid at the door or covered by a membership. If the hosting Space's
 membership includes the event, being a member is enough: answer Going and your

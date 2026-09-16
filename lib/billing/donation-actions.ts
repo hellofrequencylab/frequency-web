@@ -12,13 +12,27 @@
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { createSpaceDonationCheckout } from './space-donation-checkout'
+import { onPageCheckoutAvailable } from './stripe-browser'
 
-/** Start a gift to a Space's fund. Returns the hosted Checkout URL, or a member-facing refusal. */
+/**
+ * Start a gift to a Space's fund. Returns EITHER an on-page client secret or the hosted Checkout
+ * URL (LIVE-359), or a member-facing refusal.
+ *
+ * ⚠️ Both fields are optional and exactly one arrives, so a caller that reads only `url` goes DEAD
+ * the moment elements mode is on. components/billing/onpage-callers.test.ts fails any caller that
+ * does not branch on both.
+ */
 export async function startSpaceDonationCheckout(
   spaceId: string,
   amountCents: number,
   message?: string | null,
-): Promise<ActionResult<{ url: string }>> {
+  opts?: {
+  /** 🔴 Set by a caller whose on-page form already FAILED, to demand a session it can redirect
+   *  to. Without it the fallback re-asks for elements, gets another client secret, finds no `url`
+   *  and dead-ends the buyer -- the live 2026-09-15 ticket failure. */
+    forceHosted?: boolean
+  },
+): Promise<ActionResult<{ url?: string; clientSecret?: string }>> {
   if (!spaceId) return fail('This fund is not available.')
   const donorProfileId = await getMyProfileId()
   const result = await createSpaceDonationCheckout({
@@ -26,7 +40,10 @@ export async function startSpaceDonationCheckout(
     amountCents,
     donorProfileId,
     message: message ?? null,
+    // Ask for the on-page form only when the browser can actually mount it.
+    ui: opts?.forceHosted ? 'hosted' : onPageCheckoutAvailable() ? 'elements' : 'hosted',
   })
+  if (result.clientSecret) return ok({ clientSecret: result.clientSecret })
   if (result.url) return ok({ url: result.url })
   return fail(result.error ?? 'Could not start your gift. Please try again.')
 }

@@ -1,6 +1,10 @@
 // Commerce core contracts (ADR-39X). The charge model (destination charge +
 // application fee) lives in ./checkout.ts; these are data shapes only.
 
+// `import type` only -- erased at build, so this types-only module gains no runtime edge to
+// lib/billing (LIVE-359).
+import type { CheckoutUi } from '@/lib/billing/checkout-ui'
+
 export type OwnerKind = 'platform' | 'profile' | 'space'
 export type ProductKind = 'physical' | 'digital' | 'service' | 'booking' | 'ticket'
 /** A physical listing's condition (Phase 0). null = unset (services/bookings/tickets have none).
@@ -76,6 +80,9 @@ export interface CheckoutInput {
    *  the order is classified `network` even without a referral cookie. Absent = classify from cookies,
    *  default `self`. */
   entryPoint?: 'discovery' | 'marketplace' | 'referral' | null
+  /** `'elements'` asks for an ON-PAGE card form and returns `clientSecret` instead of `url`
+   *  (LIVE-359). Hosted stays the default, so no existing caller changes behaviour. */
+  ui?: CheckoutUi
 }
 
 // ── Variants (Etsy-Grade Phase 2) ───────────────────────────────────────────
