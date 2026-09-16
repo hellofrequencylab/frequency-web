@@ -60,14 +60,18 @@ function code(rel: string): string {
   return raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1')
 }
 
-/** The eight NON-TICKET Checkout Session creators. Event tickets are excluded because they are the
- *  one loop that already had a first-party receipt (lib/events/member-ticket-email.ts and its guest
- *  sibling) and are owned elsewhere. */
+/** The NON-TICKET Checkout Session creators. Event tickets are excluded because they are the one
+ *  loop that already had a first-party receipt (lib/events/member-ticket-email.ts and its guest
+ *  sibling) and are owned elsewhere.
+ *
+ *  It was eight; it is SEVEN. app/(main)/upgrade/actions.ts was the Supporter contribution, retired
+ *  whole by LIVE-361 -- it had no caller anywhere, and Supporter is a PWYW badge on Crew rather than
+ *  a second purchase. That file creates no Checkout Session at all now, so requiring it to resolve a
+ *  payer address would be asserting against a creator that does not exist. */
 const PAYMENT_MODE_CREATORS = [
   'lib/commerce/checkout.ts',
   'lib/billing/space-donation-checkout.ts',
   'lib/billing/tips.ts',
-  'app/(main)/upgrade/actions.ts',
 ]
 const SUBSCRIPTION_MODE_CREATORS = [
   'lib/billing/checkout.ts',
@@ -77,10 +81,11 @@ const SUBSCRIPTION_MODE_CREATORS = [
 ]
 
 describe('every non-ticket checkout creator resolves an address for the payer', () => {
-  it('there are eight of them, and no ticket creator is on the list', () => {
+  it('there are seven of them, and no ticket creator is on the list', () => {
     const all = [...PAYMENT_MODE_CREATORS, ...SUBSCRIPTION_MODE_CREATORS]
-    expect(all).toHaveLength(8)
-    expect(new Set(all).size).toBe(8)
+    // SEVEN since LIVE-361 retired the Supporter contribution creator whole.
+    expect(all).toHaveLength(7)
+    expect(new Set(all).size).toBe(7)
     expect(all.some((f) => f.includes('tickets'))).toBe(false)
   })
 

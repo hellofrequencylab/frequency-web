@@ -1,12 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createMembershipCheckout } from '@/lib/billing/checkout'
-import { stripe, appUrl } from '@/lib/billing/stripe'
-import { receiptEmailFor } from '@/lib/billing/receipt-address'
 import { billingLive } from '@/lib/pricing/settings'
 import { loadCatalogConfig, isValidPwywAmount } from '@/lib/pricing/catalog-config'
 import { formatCents } from '@/lib/pricing/display'
@@ -133,21 +130,6 @@ export async function startMembershipCheckout(
 // one choice rather than a second purchase. If a member-facing "turn the badge off again" control
 // is ever built, it should be added THEN, with its caller and its test in the same change.
 
-/** The signed-in caller's profile id (session-derived), or null when not signed in. Never trust a
- *  client-supplied id; resolve it from the auth session (mirrors the founders checkout action). */
-async function getMyProfileId(): Promise<string | null> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data } = await createAdminClient()
-    .from('profiles')
-    .select('id')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  return data?.id ?? null
-}
 
 // ── THE SUPPORTER CONTRIBUTION IS RETIRED (LIVE-361) ────────────────────────────────────────────
 // `startSupporterContribution` and `confirmSupporterContribution` lived here and are gone.

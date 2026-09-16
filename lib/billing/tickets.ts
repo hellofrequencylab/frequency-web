@@ -536,6 +536,29 @@ export async function createTicketCheckout(opts: {
   // silent refusal of every guest, so it does not depend on the line above staying there.)
   if (buyerProfileId && payeeProfileId === buyerProfileId) return { error: 'You’re hosting this event.' }
 
+  // ── THE HEAVIEST READ ON THIS PATH, STARTED ~200 LINES EARLY (LIVE-363) ──────────────────
+  // `classifyOrderSource` is up to SIX database reads in two waves (the four audience checks in
+  // parallel, then a prior-purchase scan). Every input it needs is already known here:
+  // `buyerProfileId`, `payeeProfileId` (resolved just above) and `feeBearingSpaceId(event)`, which
+  // is pure. It was awaited only after the tier read, the membership read, three benefit reads and
+  // one round trip per capped benefit -- none of which it depends on, and all of which it could
+  // have been running underneath.
+  //
+  // 🔴 TIMING-ONLY, AND THAT IS ENFORCED BY THE SHAPE. The result is settled into a VALUE rather
+  // than caught: a rejection today fails the checkout, and quietly turning that into the classifier's
+  // fail-safe (`self`, 0%) would be a money change smuggled in as a performance change. So the
+  // rejection is carried and RE-THROWN at the original await point, where it would have arrived
+  // anyway. Settling it here is also what stops an early `return` between here and there from
+  // leaving an unhandled rejection.
+  const orderSourcePromise = classifyOrderSource({
+    buyerProfileId,
+    sellerProfileId: payeeProfileId,
+    sellerSpaceId: feeBearingSpaceId(event),
+  }).then(
+    (value) => ({ ok: true as const, value }),
+    (reason: unknown) => ({ ok: false as const, reason }),
+  )
+
   // ── Resolve the tier (or the implicit flat-price tier) ────────────────────────
   let tier: TicketTypeRow | null = null
   if (opts.ticketTypeId) {
@@ -756,11 +779,11 @@ export async function createTicketCheckout(opts: {
   // A GUEST passes `null`, which is the honest answer: there is no profile to test the
   // relationship check ("already your audience") against, so a guest falls through to the cookie
   // signals and is priced as the stranger they are. Never `self` by accident.
-  const { source, attributionRef } = await classifyOrderSource({
-    buyerProfileId,
-    sellerProfileId: payeeProfileId,
-    sellerSpaceId: feeSpaceId,
-  })
+  // Started right after the payee resolved; this is where it was always consumed. A rejection is
+  // re-thrown HERE so the failure surfaces exactly where it used to (see the hoist above).
+  const orderSource = await orderSourcePromise
+  if (!orderSource.ok) throw orderSource.reason
+  const { source, attributionRef } = orderSource.value
   let fee: number
   // THE RECEIPT (ADR-914). The rate actually applied, recorded rather than recomputed later.
   // `platform_fee_cents / gross` cannot recover it: the fee FLOORS fractional cents, so a small ticket
@@ -1058,6 +1081,44 @@ export async function createTicketCheckout(opts: {
   // lands the buyer on Stripe's page instead of a dead end. The compiler cannot help here
   // (`stripe` ships no types; `Stripe.*` is `any`), so this branch is the check.
   return resolveCheckoutSession(session, ui, 'tickets')
+}
+
+/**
+ * Release a ticket whose checkout expired or failed (LIVE-364).
+ *
+ * The mirror of `recordTicketFromSession`, and it exists because there was NO tip/ticket arm on
+ * `checkout.session.expired` at all: commerce orders and Space donations were swept, tickets were
+ * not, so every abandoned ticket checkout left a `pending` row behind forever. Production held 11
+ * of them, from 9 expired sessions and not one completed payment.
+ *
+ * ⚠️ `failed`, NOT `abandoned`. event_tickets_status_check allows pending|succeeded|failed|refunded
+ * and space_donations allows abandoned -- so copying the donation arm verbatim would violate a check
+ * constraint on a money table at runtime, where nothing in this repo's build could have caught it.
+ * Read off the live schema before it was written.
+ *
+ * 🔴 NEVER TOUCHES A PAYMENT STILL IN FLIGHT. A delayed-notification ticket (ACH, Cash App, a bank
+ * redirect) is ALSO `status = 'pending'`, distinguished only by `payment_processing_at` -- that is
+ * the second clock markTicketPaymentProcessing starts so the seat survives a settlement that takes
+ * days. Flipping one of those to `failed` would cancel a seat somebody is in the middle of paying
+ * for. Stripe should never expire a session it already completed, so this guard should be
+ * unreachable; it is here because "should" is not a guarantee worth a seat.
+ *
+ * Idempotent by the same predicate the settle uses: keyed on the session id AND `status = 'pending'`,
+ * so a redelivered event flips nothing, and a ticket that settled first is untouched.
+ */
+export async function abandonTicketFromSession(session: Stripe.Checkout.Session): Promise<void> {
+  if (session.metadata?.kind !== 'ticket') return
+  try {
+    const { error } = await db()
+      .from('event_tickets')
+      .update({ status: 'failed' })
+      .eq('stripe_checkout_session_id', session.id)
+      .eq('status', 'pending')
+      .is('payment_processing_at', null)
+    if (error) console.error('[tickets] could not release an abandoned ticket', error.message)
+  } catch (e) {
+    console.error('[tickets] releasing an abandoned ticket threw', e instanceof Error ? e.message : String(e))
+  }
 }
 
 /** Has this member already bought a (succeeded) ticket to this event? */

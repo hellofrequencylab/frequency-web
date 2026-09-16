@@ -42,10 +42,14 @@ const seen = (recorder: string, s: Stripe.Checkout.Session) => {
 vi.mock('@/lib/billing/tips', () => ({
   recordTipFromSession: async (s: Stripe.Checkout.Session) => { seen('tip', s) },
   recordTipRefundFromCharge: async () => { H.calls.push('tipRefund') },
+  // LIVE-364: the expired/failed sweep. Records under its own name so a test can prove the
+  // abandon arms fire WITHOUT any success recorder leaking in.
+  abandonTipFromSession: async () => { H.calls.push('abandonTip') },
 }))
 vi.mock('@/lib/billing/tickets', () => ({
   recordTicketFromSession: async (s: Stripe.Checkout.Session) => { seen('ticket', s) },
   recordTicketRefundFromCharge: async () => { H.calls.push('ticketRefund') },
+  abandonTicketFromSession: async () => { H.calls.push('abandonTicket') },
 }))
 vi.mock('@/lib/billing/checkout', () => ({
   recordMembershipDuesFromInvoice: async () => { H.calls.push('dues') },
@@ -326,7 +330,14 @@ describe('stripe webhook — checkout.session.async_payment_succeeded', () => {
   it('async_payment_failed still routes ONLY to the abandon path (the success half does not leak in)', async () => {
     H.event = plainEvent('checkout.session.async_payment_failed', { id: 'cs_async_3', payment_status: 'unpaid' })
     expect((await post()).status).toBe(200)
-    expect(H.calls).toEqual(['abandon'])
+    // LIVE-364 added the ticket and tip arms beside the commerce one. The point of this test is
+    // unchanged and is what the name says: async_payment_failed routes ONLY to abandon arms, and
+    // NO success recorder leaks in. Asserting the set rather than a single entry keeps that meaning
+    // while letting the sweep cover every creator that writes a pending row.
+    expect(H.calls).toEqual(['abandon', 'abandonTicket', 'abandonTip'])
+    expect(H.calls).not.toContain('tip')
+    expect(H.calls).not.toContain('ticket')
+    expect(H.calls).not.toContain('order')
     expect(H.sessions).toHaveLength(0)
   })
 })
