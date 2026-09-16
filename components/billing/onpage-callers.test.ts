@@ -49,6 +49,20 @@ function walk(dir: string, out: string[] = []): string[] {
 
 const ALL = [...ROOTS, 'lib'].flatMap((r) => walk(r))
 
+/**
+ * Source with comments blanked.
+ *
+ * 🔴 REQUIRED, not tidiness. The fallback guard below first matched `forceHosted` anywhere in the
+ * file and PASSED against a ticket-button reverted to the shipped bug -- because the explanatory
+ * comment above the fix still said the word. A guard that is satisfied by a comment describing
+ * the fix is the shape-not-truth failure this repo names in four ADRs, and it appeared here in a
+ * test written to prevent exactly that.
+ */
+const code = (f: string) =>
+  readFileSync(f, 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/^\s*\/\/.*$/gm, ' ')
+
 const callers = ACTIONS.flatMap(({ call, definition }) =>
   ALL.filter((f) => !f.endsWith(definition) && readFileSync(f, 'utf8').includes(call)).map((f) => ({ file: f, call })),
 )
@@ -104,7 +118,24 @@ describe('asking for elements obliges you to read what elements returns', () => 
   // server boundary instead of the browser one, where no component test would see it.
   const askers = ALL.filter((f) => {
     const src = readFileSync(f, 'utf8')
-    return CREATORS.some((c) => src.includes(c)) && /\bui:\s*(onPageCheckoutAvailable|'elements')/.test(src)
+    // ⚠️ Matches anywhere in the `ui:` expression, not just its first token. The first version
+    // anchored on `ui: onPageCheckoutAvailable` and matched ZERO modules the moment the
+    // forceHosted fix made every call site read `ui: opts?.forceHosted ? 'hosted' : ...`. The
+    // floor below is the only reason that was caught rather than passing as a clean bill of health.
+    // ⚠️ THREE ways this detector has already been wrong, every one caught by the floor below.
+    // (1) Anchored on `ui: onPageCheckoutAvailable`, it matched ZERO modules once the forceHosted
+    //     fix made every call site read `ui: opts?.forceHosted ? 'hosted' : ...`.
+    // (2) Widened to match anywhere on the line, it matched the CREATORS' own normalisation,
+    //     `const ui: CheckoutUi = opts.ui === 'elements' ? ...` -- a declaration, not a call site.
+    // (3) A negative lookahead did not fix (2): `\s*` backtracks to zero width, so the lookahead
+    //     was evaluated at the space and passed. Regex-golf lost; this is line-wise instead.
+    //
+    // An option being PASSED, never a variable being declared.
+    if (!CREATORS.some((c) => src.includes(c))) return false
+    return src.split('\n').some((line) => {
+      if (/\b(const|let|var)\s+ui\s*:/.test(line)) return false
+      return /\bui:/.test(line) && /(onPageCheckoutAvailable|'elements')/.test(line)
+    })
   })
 
   it('found modules that ask for elements mode', () => {
@@ -117,6 +148,41 @@ describe('asking for elements obliges you to read what elements returns', () => 
       /\.clientSecret\b/.test(src),
       `${file} passes ui: 'elements' to a checkout creator but never reads clientSecret off the ` +
         `result. It will receive a session with url: null and hand its caller nothing at all.`,
+    ).toBe(true)
+  })
+})
+
+describe('a fallback must be able to REACH the hosted page', () => {
+  /**
+   * 🔴 THIS WAS LIVE IN PRODUCTION ON 2026-09-15, and it is the reason this block exists.
+   *
+   * Every on-page control has an `onFellBack` escape for when the card form cannot mount. Each one
+   * called its action again -- and the action re-read the publishable key, found it still set, and
+   * issued ANOTHER elements session. The control then looked for `url`, found none, and showed
+   * "Could not start checkout. Please try again." The buyer could not pay by any route, having
+   * burned two Stripe sessions and two pending rows per attempt.
+   *
+   * event_tickets carries the fingerprint: pairs of rows 14-90s apart, one click each.
+   *
+   * The escape only works if the retry asks for something DIFFERENT, so a control that renders
+   * CheckoutPanel must pass `forceHosted` somewhere. This measures that consequence rather than
+   * the presence of a fallback function, because a fallback that cannot reach hosted is the bug.
+   */
+  const mounts = ALL.filter((f) => readFileSync(f, 'utf8').includes('<CheckoutPanel'))
+
+  it('found controls that mount the card form', () => {
+    expect(mounts.length, 'nothing renders CheckoutPanel; the walk or the component name is wrong').toBeGreaterThan(2)
+  })
+
+  it.each(mounts)('%s can demand a hosted session when the form fails', (file) => {
+    const src = code(file)
+    expect(
+      // The PROPERTY being passed, in real code: `forceHosted:` or `forceHosted,` in an object.
+      // A bare mention cannot satisfy it, and neither can a comment (blanked by `code`).
+      /\bforceHosted\s*[:,]/.test(src),
+      `${file} mounts CheckoutPanel but never passes forceHosted. When its form fails to mount, ` +
+        `its fallback asks for the same elements session again, receives another client secret, ` +
+        `finds no url and dead-ends the buyer. That exact loop shipped on 2026-09-15.`,
     ).toBe(true)
   })
 })

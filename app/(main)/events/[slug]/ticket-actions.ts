@@ -22,7 +22,23 @@ import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 // tier returns `{ free: true }` instead of a URL — there's nothing to charge.
 export async function startTicket(
   eventId: string,
-  opts?: { qty?: number; ticketTypeId?: string | null; amountCents?: number | null },
+  opts?: {
+    qty?: number
+    ticketTypeId?: string | null
+    amountCents?: number | null
+  /**
+   * 🔴 THE FALLBACK'S ONLY WAY HOME. Set by a caller whose on-page form already FAILED in the
+   * browser, to demand a session it can actually redirect to.
+   *
+   * Without it the fallback asks this action again, this action asks for `elements` again (the
+   * publishable key has not changed), and a second client secret comes back for a form that just
+   * proved it cannot mount. The caller then finds no `url`, says "Could not start checkout" and
+   * the buyer is stuck -- having burned two Stripe sessions and two pending rows. That was live in
+   * production on 2026-09-15: every pair of event_tickets rows 14-90s apart is one buyer hitting
+   * exactly this, and the pair at 23:49:47/23:50:01 is the screenshot that reported it.
+   */
+  forceHosted?: boolean
+  },
 ): Promise<ActionResult<{ url?: string; clientSecret?: string; free?: boolean }>> {
   // Hard server-side off while platform payments are dormant (lib/events/ticketing):
   // a stale link or client must never reach Stripe.
@@ -43,7 +59,7 @@ export async function startTicket(
     qty: opts?.qty ?? 1,
     ticketTypeId: opts?.ticketTypeId ?? null,
     amountCents: opts?.amountCents ?? null,
-    ui: onPageCheckoutAvailable() ? 'elements' : 'hosted',
+    ui: opts?.forceHosted ? 'hosted' : onPageCheckoutAvailable() ? 'elements' : 'hosted',
   })
   if (r.error) return fail(r.error)
   // Free tier: no money moves, no checkout (createTicketCheckout already enforced the
@@ -101,6 +117,18 @@ export async function startGuestTicket(input: {
   qty?: number
   /** Honeypot. A real person never sees this field, so anything in it is a bot. */
   company?: string
+  /**
+   * 🔴 THE FALLBACK'S ONLY WAY HOME. Set by a caller whose on-page form already FAILED in the
+   * browser, to demand a session it can actually redirect to.
+   *
+   * Without it the fallback asks this action again, this action asks for `elements` again (the
+   * publishable key has not changed), and a second client secret comes back for a form that just
+   * proved it cannot mount. The caller then finds no `url`, says "Could not start checkout" and
+   * the buyer is stuck -- having burned two Stripe sessions and two pending rows. That was live in
+   * production on 2026-09-15: every pair of event_tickets rows 14-90s apart is one buyer hitting
+   * exactly this, and the pair at 23:49:47/23:50:01 is the screenshot that reported it.
+   */
+  forceHosted?: boolean
 }): Promise<ActionResult<{ url?: string; clientSecret?: string; free?: boolean }>> {
   // Hard server-side off, FIRST and for the same reason as the member path: a stale link or a
   // client must never reach Stripe while platform payments are dormant.
@@ -145,7 +173,7 @@ export async function startGuestTicket(input: {
   if (!EMAIL_RE.test(email)) return fail('Please enter a valid email address.')
 
   const r = await createTicketCheckout({
-    ui: onPageCheckoutAvailable() ? 'elements' : 'hosted',
+    ui: input.forceHosted ? 'hosted' : onPageCheckoutAvailable() ? 'elements' : 'hosted',
     guestEmail: email,
     eventId: input.eventId,
     qty: input.qty ?? 1,

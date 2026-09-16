@@ -26,6 +26,12 @@ export async function startSpaceDonationCheckout(
   spaceId: string,
   amountCents: number,
   message?: string | null,
+  opts?: {
+  /** 🔴 Set by a caller whose on-page form already FAILED, to demand a session it can redirect
+   *  to. Without it the fallback re-asks for elements, gets another client secret, finds no `url`
+   *  and dead-ends the buyer -- the live 2026-09-15 ticket failure. */
+    forceHosted?: boolean
+  },
 ): Promise<ActionResult<{ url?: string; clientSecret?: string }>> {
   if (!spaceId) return fail('This fund is not available.')
   const donorProfileId = await getMyProfileId()
@@ -35,7 +41,7 @@ export async function startSpaceDonationCheckout(
     donorProfileId,
     message: message ?? null,
     // Ask for the on-page form only when the browser can actually mount it.
-    ui: onPageCheckoutAvailable() ? 'elements' : 'hosted',
+    ui: opts?.forceHosted ? 'hosted' : onPageCheckoutAvailable() ? 'elements' : 'hosted',
   })
   if (result.clientSecret) return ok({ clientSecret: result.clientSecret })
   if (result.url) return ok({ url: result.url })

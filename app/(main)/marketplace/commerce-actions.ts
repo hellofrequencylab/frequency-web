@@ -148,6 +148,10 @@ export async function startCheckoutAction(
   productId: string,
   variantId?: string | null,
   entryPoint?: 'marketplace' | null,
+  /** 🔴 Set by a caller whose on-page form already FAILED, to demand a session it can redirect
+   *  to. Without it the fallback re-asks for elements, gets another client secret, finds no `url`
+   *  and dead-ends the buyer -- the live 2026-09-15 ticket failure. */
+  opts?: { forceHosted?: boolean },
 ): Promise<{ url?: string; clientSecret?: string; error?: string }> {
   const buyerProfileId = await getMyProfileId()
   if (!buyerProfileId) return { error: 'Sign in to buy.' }
@@ -156,7 +160,7 @@ export async function startCheckoutAction(
     items: [{ productId, variantId: variantId ?? null, qty: 1 }],
     entryPoint: entryPoint === 'marketplace' ? 'marketplace' : null,
     // Ask for the on-page form only when the browser can actually mount it (LIVE-359).
-    ui: onPageCheckoutAvailable() ? 'elements' : 'hosted',
+    ui: opts?.forceHosted ? 'hosted' : onPageCheckoutAvailable() ? 'elements' : 'hosted',
   })
   // `orderId` is for the service-booking caller, not the browser; it is dropped here so a buy
   // control cannot come to depend on an internal row id.

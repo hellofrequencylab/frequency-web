@@ -146,7 +146,14 @@ export function TicketButton({
     setClientSecret(null)
     setError('Opening secure checkout…')
     startTransition(async () => {
-      const r = await startTicket(eventId, { qty: 1, ticketTypeId: selected?.id ?? null })
+      // 🔴 forceHosted IS LOAD-BEARING. Without it this asks for the same elements session that
+      // just failed to mount, gets a second client secret, finds no `url`, and dead-ends the
+      // buyer. That was the live 2026-09-15 failure.
+      const r = await startTicket(eventId, {
+        qty: 1,
+        ticketTypeId: selected?.id ?? null,
+        forceHosted: true,
+      })
       if (!isError(r) && r.data.url) window.location.href = r.data.url
       else setError('Could not start checkout. Please try again.')
     })

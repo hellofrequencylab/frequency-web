@@ -144,6 +144,8 @@ export function RsvpPaymentFlow({
       const r = await startTicket(eventId, {
         qty: 1,
         ticketTypeId: selected && selected.kind === 'general' ? selected.ticketTypeId : null,
+        // 🔴 Load-bearing: see ticket-button.tsx. Re-asking for elements dead-ends the buyer.
+        forceHosted: true,
       })
       if (!isError(r) && r.data.url) window.location.href = r.data.url
       else setError('Could not start checkout. Please try again.')

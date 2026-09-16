@@ -16,6 +16,12 @@ export async function startTip(
   toProfileId: string,
   amountCents: number,
   message?: string,
+  opts?: {
+  /** 🔴 Set by a caller whose on-page form already FAILED, to demand a session it can redirect
+   *  to. Without it the fallback re-asks for elements, gets another client secret, finds no `url`
+   *  and dead-ends the buyer -- the live 2026-09-15 ticket failure. */
+    forceHosted?: boolean
+  },
 ): Promise<ActionResult<{ url?: string; clientSecret?: string }>> {
   const fromProfileId = await getMyProfileId()
   if (!fromProfileId) return fail('Sign in to send a tip.')
@@ -27,7 +33,7 @@ export async function startTip(
     message,
     // Ask for the on-page form only when the browser can actually mount it. Without the
     // publishable key Stripe.js cannot load, so requesting elements would strand the buyer.
-    ui: onPageCheckoutAvailable() ? 'elements' : 'hosted',
+    ui: opts?.forceHosted ? 'hosted' : onPageCheckoutAvailable() ? 'elements' : 'hosted',
   })
   if (r.error) return fail(r.error)
   if (r.clientSecret) return ok({ clientSecret: r.clientSecret })

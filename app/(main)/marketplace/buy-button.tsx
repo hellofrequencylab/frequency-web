@@ -50,7 +50,9 @@ export function BuyButton({
     setClientSecret(null)
     setError('Opening secure checkout…')
     start(async () => {
-      const res = await startCheckoutAction(productId, variantId, entryPoint ?? null)
+      const res = await startCheckoutAction(productId, variantId, entryPoint ?? null, {
+        forceHosted: true,
+      })
       if (res.url) window.location.href = res.url
       else setError('Could not start checkout. Please try again.')
     })

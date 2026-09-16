@@ -57,7 +57,7 @@ export function DonateForm({
     setClientSecret(null)
     setError('Opening secure checkout…')
     start(async () => {
-      const result = await startSpaceDonationCheckout(spaceId, cents ?? 0)
+      const result = await startSpaceDonationCheckout(spaceId, cents ?? 0, null, { forceHosted: true })
       if (!isError(result) && result.data.url) window.location.href = result.data.url
       else setError('Could not start your gift. Please try again.')
     })

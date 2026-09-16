@@ -39,7 +39,9 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
     setClientSecret(null)
     setError('Opening secure checkout…')
     startTransition(async () => {
-      const r = await startTip(toProfileId, effectiveCents, message.trim() || undefined)
+      const r = await startTip(toProfileId, effectiveCents, message.trim() || undefined, {
+        forceHosted: true,
+      })
       if (!isError(r) && r.data.url) window.location.href = r.data.url
       else setError('Could not start checkout. Please try again.')
     })
