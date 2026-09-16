@@ -4490,6 +4490,7 @@ export type Database = {
           created_at: string | null
           decline_reason: string | null
           event_id: string
+          from_ticket_id: string | null
           guest_claimed_at: string | null
           guest_claimed_by: string | null
           guest_email: string | null
@@ -4512,6 +4513,7 @@ export type Database = {
           created_at?: string | null
           decline_reason?: string | null
           event_id: string
+          from_ticket_id?: string | null
           guest_claimed_at?: string | null
           guest_claimed_by?: string | null
           guest_email?: string | null
@@ -4534,6 +4536,7 @@ export type Database = {
           created_at?: string | null
           decline_reason?: string | null
           event_id?: string
+          from_ticket_id?: string | null
           guest_claimed_at?: string | null
           guest_claimed_by?: string | null
           guest_email?: string | null
@@ -4562,6 +4565,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_rsvps_from_ticket_id_fkey"
+            columns: ["from_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "event_tickets"
             referencedColumns: ["id"]
           },
           {
@@ -12613,6 +12623,153 @@ export type Database = {
           },
         ]
       }
+      space_calendar_day_notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          ends_on: string | null
+          id: string
+          label: string
+          sort: number
+          space_id: string
+          starts_on: string | null
+          updated_at: string
+          visibility: string
+          weekdays: number[] | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          ends_on?: string | null
+          id?: string
+          label: string
+          sort?: number
+          space_id: string
+          starts_on?: string | null
+          updated_at?: string
+          visibility?: string
+          weekdays?: number[] | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          ends_on?: string | null
+          id?: string
+          label?: string
+          sort?: number
+          space_id?: string
+          starts_on?: string | null
+          updated_at?: string
+          visibility?: string
+          weekdays?: number[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_calendar_day_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_calendar_day_notes_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_calendar_entries: {
+        Row: {
+          all_day: boolean
+          blocks_time: boolean
+          created_at: string
+          created_by: string | null
+          ends_at: string
+          hold_expires_at: string | null
+          id: string
+          kind: string
+          location: string | null
+          metadata: Json
+          notes: string | null
+          option_group: string | null
+          recurrence_rule: string | null
+          source_id: string | null
+          source_kind: string | null
+          space_id: string
+          starts_at: string
+          status: string
+          time_zone: string
+          title: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          all_day?: boolean
+          blocks_time?: boolean
+          created_at?: string
+          created_by?: string | null
+          ends_at: string
+          hold_expires_at?: string | null
+          id?: string
+          kind: string
+          location?: string | null
+          metadata?: Json
+          notes?: string | null
+          option_group?: string | null
+          recurrence_rule?: string | null
+          source_id?: string | null
+          source_kind?: string | null
+          space_id: string
+          starts_at: string
+          status?: string
+          time_zone?: string
+          title: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          all_day?: boolean
+          blocks_time?: boolean
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string
+          hold_expires_at?: string | null
+          id?: string
+          kind?: string
+          location?: string | null
+          metadata?: Json
+          notes?: string | null
+          option_group?: string | null
+          recurrence_rule?: string | null
+          source_id?: string | null
+          source_kind?: string | null
+          space_id?: string
+          starts_at?: string
+          status?: string
+          time_zone?: string
+          title?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_calendar_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_calendar_entries_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_collaborations: {
         Row: {
           collaborator_space_id: string
@@ -13418,6 +13575,7 @@ export type Database = {
       }
       space_membership_tiers: {
         Row: {
+          annual_price_cents: number | null
           benefits: Json
           capacity: number | null
           circle_id: string | null
@@ -13434,6 +13592,7 @@ export type Database = {
           waitlist: boolean
         }
         Insert: {
+          annual_price_cents?: number | null
           benefits?: Json
           capacity?: number | null
           circle_id?: string | null
@@ -13450,6 +13609,7 @@ export type Database = {
           waitlist?: boolean
         }
         Update: {
+          annual_price_cents?: number | null
           benefits?: Json
           capacity?: number | null
           circle_id?: string | null
@@ -13484,6 +13644,7 @@ export type Database = {
       }
       space_memberships: {
         Row: {
+          billing_interval: string
           created_at: string
           id: string
           member_profile_id: string
@@ -13495,6 +13656,7 @@ export type Database = {
           tier_id: string
         }
         Insert: {
+          billing_interval?: string
           created_at?: string
           id?: string
           member_profile_id: string
@@ -13506,6 +13668,7 @@ export type Database = {
           tier_id: string
         }
         Update: {
+          billing_interval?: string
           created_at?: string
           id?: string
           member_profile_id?: string
@@ -17073,6 +17236,14 @@ export type Database = {
         Args: { _profile: string; _streak_type: string; _window_days: number }
         Returns: Json
       }
+      record_ticket_seat: {
+        Args: { _ticket_id: string }
+        Returns: {
+          minted: boolean
+          rsvp_id: string
+          seat_status: string
+        }[]
+      }
       redeem_store_item_atomic: {
         Args: { _cost: number; _item: string; _profile: string }
         Returns: string
@@ -17220,6 +17391,15 @@ export type Database = {
           starts_at: string
           time_zone: string
           title: string
+        }[]
+      }
+      space_public_unavailable: {
+        Args: { p_from_day: string; p_space_id: string; p_to_day: string }
+        Returns: {
+          all_day: boolean
+          ends_at: string
+          starts_at: string
+          time_zone: string
         }[]
       }
       st_3dclosestpoint: {

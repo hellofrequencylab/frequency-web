@@ -70,56 +70,14 @@ export const MIN_RPC_CALLS = 60
  *  `kind` is optional (matches any). An entry that matches nothing fails the guard. */
 /** @type {{ file: string, table: string, column?: string | null, kind?: string | null, added: string, reason: string, owner: string }[]} */
 export const ALLOWLIST = [
-  { file: 'lib/calendar/day-notes-store.ts', table: 'space_calendar_day_notes',
-    added: '2026-09-16', owner: 'PROG-CAL1',
-    reason: 'ADR-1386, day notes. Migration 20270345005200 creates the table and applies at merge; retire by regenerating lib/database.types.ts.' },
-  { file: 'lib/calendar/entries-store.ts', table: 'space_calendar_entries',
-    added: '2026-09-16', owner: 'LIVE-378',
-    reason: 'ADR-1385, the private calendar layer. Migration 20270345005200 creates the table and the public projection and applies at merge; retire by regenerating lib/database.types.ts.' },
-  { file: 'lib/calendar/entries-store.ts', table: 'space_public_unavailable', kind: 'rpc',
-    added: '2026-09-16', owner: 'LIVE-378',
-    reason: 'ADR-1385, the private calendar layer. Migration 20270345005200 creates the table and the public projection and applies at merge; retire by regenerating lib/database.types.ts.' },
-  { file: 'lib/spaces/booking.ts', table: 'space_calendar_entries',
-    added: '2026-09-16', owner: 'LIVE-378',
-    reason: 'ADR-1385, the private calendar layer. Migration 20270345005200 creates the table and the public projection and applies at merge; retire by regenerating lib/database.types.ts. The slot builder reads Unavailable time so it can remove those slots.' },
-  // Emptied once on 2026-09-15 and refilled the same day, which is the list working as intended.
-  // The twelve entries it had carried (three benefit tables from migration 20270345004800, three
-  // sales-window columns on event_ticket_types from 20270345004900) retired the moment those
-  // migrations were applied and lib/database.types.ts was regenerated from the live project: a
-  // stale entry fails the guard, which is what keeps this list shrinking rather than accumulating.
-  // The five below are the next cohort, on exactly the same clock.
+  // Emptied again on 2026-09-16, when migrations 20270345005200 and 20270345005300 (ADR-1385/1386)
+  // were applied and lib/database.types.ts was regenerated from the live project with --schema public.
+  // That one regeneration retired eleven entries: four for the calendar layer (LIVE-378, PROG-CAL1),
+  // five for the yearly membership price (LIVE-360, merged in #2651) and one for record_ticket_seat
+  // (LIVE-372). A stale entry fails the guard, which is what keeps this list shrinking.
   //
-  // When you need an entry here, keep the shape below and say which artifact retires it:
+  // When you need an entry here, keep this shape and say which artifact retires it:
   //   { file, kind: 'select' | 'update' | 'insert' | 'rpc', table, column, added, reason, owner }
-  //
-  // ADR-1374, the yearly membership price. Migration 20270345005000 adds both columns and is
-  // applied AT MERGE, not before: applying ahead of the file on main is what turned check:migrations
-  // red for every open PR on 2026-09-15 (LIVE-351). All five entries retire together by regenerating
-  // lib/database.types.ts once that migration is applied.
-  { file: 'lib/spaces/memberships.ts', table: 'space_membership_tiers', column: 'annual_price_cents', kind: 'select',
-    added: '2026-09-15', owner: 'LIVE-360',
-    reason: 'ADR-1374. The join surface reads the tier\'s optional yearly price. Migration 20270345005000 adds the column and applies at merge; retire by regenerating lib/database.types.ts.' },
-  { file: 'lib/spaces/memberships.ts', table: 'space_memberships', column: 'billing_interval', kind: 'insert',
-    added: '2026-09-15', owner: 'LIVE-360',
-    reason: 'ADR-1374. joinTier records which cadence the member bought. Migration 20270345005000 adds the column and applies at merge; retire by regenerating lib/database.types.ts.' },
-  { file: 'lib/billing/space-membership-checkout.ts', table: 'space_membership_tiers', column: 'annual_price_cents', kind: 'select',
-    added: '2026-09-15', owner: 'LIVE-360',
-    reason: 'ADR-1374. A yearly checkout bills this amount and fails closed without it. Migration 20270345005000 adds the column and applies at merge; retire by regenerating lib/database.types.ts.' },
-  { file: 'lib/billing/space-subscriptions.ts', table: 'space_memberships', column: 'billing_interval', kind: 'insert',
-    added: '2026-09-15', owner: 'LIVE-360',
-    reason: 'ADR-1374. The webhook records the cadence from the subscription\'s own recurring interval on the first payment. Migration 20270345005000 adds the column and applies at merge; retire by regenerating lib/database.types.ts.' },
-  { file: 'lib/billing/space-subscriptions.ts', table: 'space_memberships', column: 'billing_interval', kind: 'update',
-    added: '2026-09-15', owner: 'LIVE-360',
-    reason: 'ADR-1374. The same reconciler keeps the cadence true across a tier switch or a card recovery. Migration 20270345005000 adds the column and applies at merge; retire by regenerating lib/database.types.ts.' },
-  // A PAID TICKET IS A SEAT (owner report 2026-09-16). Migration 20270345005100 adds the function
-  // and IS APPLIED on the live project -- verified by `to_regprocedure('public.record_ticket_seat(uuid)')`
-  // before the ledger row was repaired. This entry exists because lib/database.types.ts is
-  // deliberately NOT regenerated in the same change: a regen would also retire the five LIVE-360
-  // entries above, which belong to work in flight in another branch, and rewriting a shared
-  // generated file out from under it is how two correct changes become one merge conflict.
-  { file: 'lib/billing/tickets.ts', table: 'record_ticket_seat', kind: 'rpc',
-    added: '2026-09-16', owner: 'LIVE-372',
-    reason: 'Migration 20270345005100, applied. The settle path mints the buyer\'s going RSVP so a paid ticket counts as a seat on the public event page. Retires with the next regeneration of lib/database.types.ts, alongside the LIVE-360 entries above.' },
 ]
 
 /** Walk `root` against `typesFile` and return the raw report. Pure: no exit, no console. */
