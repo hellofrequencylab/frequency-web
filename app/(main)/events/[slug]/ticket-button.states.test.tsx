@@ -38,9 +38,16 @@ vi.mock('@/components/billing/checkout-panel', () => ({
   default: ({ priceLabel }: { priceLabel?: string }) => (
     <div data-testid="checkout-drawer" data-price={priceLabel} />
   ),
+  // The chunk prefetch. Mocked because the real one starts a network fetch, but it MUST exist:
+  // leaving it off made `warmCheckout()` throw, which aborted `go()` before the drawer opened --
+  // which is how the production guard that a warm-up can never stop a sale got written.
+  prefetchCheckoutForm: vi.fn(),
 }))
 
-vi.mock('@/lib/billing/stripe-browser', () => ({ warmStripeBrowser: vi.fn() }))
+const warmStripeBrowser = vi.fn()
+vi.mock('@/lib/billing/stripe-browser', () => ({
+  warmStripeBrowser: (...a: unknown[]) => warmStripeBrowser(...(a as [])),
+}))
 
 const { TicketButton } = await import('./ticket-button')
 type Tier = import('./ticket-button').TicketTierView
@@ -72,6 +79,15 @@ const cta = () =>
   Array.from(container!.querySelectorAll('button')).find((b) =>
     /Get ticket/i.test(b.textContent ?? ''),
   )!
+
+/** The control that folds the drawer back up. Open, it replaces the CTA entirely. */
+const closer = () =>
+  Array.from(container!.querySelectorAll('button')).find((b) =>
+    /Cancel/i.test(b.textContent ?? ''),
+  )!
+
+/** Whichever control currently sits at the top of the box, open or closed. */
+const topControl = () => cta() ?? closer()
 
 const marks = () => container!.querySelector('[aria-label*="Visa"]')!
 const drawer = () => container!.querySelector('[data-testid="checkout-drawer"]')
@@ -169,7 +185,7 @@ describe('the drawer opens between the button and everything under it', () => {
   it('renders the checkout under the button and ABOVE the marks, so nothing is replaced', async () => {
     await open()
     expect(drawer(), 'the drawer opens on the page, not on Stripe').not.toBeNull()
-    expect(before(cta(), drawer()!), 'the drawer belongs under the button').toBe(true)
+    expect(before(topControl(), drawer()!), 'the drawer belongs under the control').toBe(true)
     expect(before(drawer()!, marks()), 'and above the marks, which it PUSHES DOWN').toBe(true)
   })
 
@@ -182,26 +198,39 @@ describe('the drawer opens between the button and everything under it', () => {
     const option = Array.from(container!.querySelectorAll('button')).find((b) =>
       /General/.test(b.textContent ?? ''),
     )!
-    expect(before(cta(), drawer()!)).toBe(true)
+    expect(before(topControl(), drawer()!)).toBe(true)
     expect(before(drawer()!, marks())).toBe(true)
     expect(before(marks(), option)).toBe(true)
   })
 
-  it('goes quiet when it opens, so only Stripe has an amber button on screen', async () => {
+  // 🔴 THE SECOND BUTTON IS GONE, not merely quietened. It was `secondary` and sat directly above
+  // Stripe's own amber "Pay $44"; the owner read the live page and called it redundant. Two
+  // stacked buttons for one act is the confusion, and a quieter fill does not remove it.
+  it('replaces the CTA with a one-line control, leaving no second button', async () => {
     mount(<TicketButton eventId="e1" priceLabel="$44.00" />)
     expect(cta().className, 'closed, it is the primary call to action').toContain('bg-primary')
+    const closedButtons = container!.querySelectorAll('button').length
+
     startTicket.mockResolvedValue({ data: { clientSecret: 'cs_1_secret_x', sessionId: 'cs_1' } })
     await press(cta())
-    expect(cta().className, 'open, it is not').not.toContain('bg-primary')
-    expect(cta().getAttribute('aria-expanded')).toBe('true')
+
+    expect(cta(), 'no button still offers to get tickets').toBeUndefined()
+    expect(closer(), 'and the way out is a text control, not a button-shaped one').toBeDefined()
+    expect(closer().className).not.toContain('bg-primary')
+    expect(
+      container!.querySelectorAll('button').length,
+      'opening must not ADD a control to the box',
+    ).toBeLessThanOrEqual(closedButtons)
+    expect(closer().getAttribute('aria-expanded')).toBe('true')
   })
 
   // A greyed control that does nothing is worse than no control, and "how do I close this" is the
   // next question a buyer has.
-  it('the quiet button is still live: it folds the drawer back up', async () => {
+  it('that control is still live: it folds the drawer back up', async () => {
     await open()
-    await press(cta())
+    await press(closer())
     expect(drawer()).toBeNull()
+    expect(cta(), 'and the CTA comes back').toBeDefined()
     expect(cta().getAttribute('aria-expanded')).toBe('false')
   })
 
@@ -211,9 +240,81 @@ describe('the drawer opens between the button and everything under it', () => {
   it('re-opening reuses the session instead of asking the server again', async () => {
     await open()
     expect(startTicket).toHaveBeenCalledTimes(1)
-    await press(cta())
+    await press(closer())
     await press(cta())
     expect(drawer()).not.toBeNull()
+    expect(startTicket).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('the press does something immediately', () => {
+  /** A server call that has not answered yet, so the render between press and answer is testable. */
+  function pending() {
+    let answer!: (v: unknown) => void
+    startTicket.mockReturnValue(new Promise((r) => { answer = r }))
+    return (v: unknown) => answer(v)
+  }
+
+  // 🔴 THE DEAD TIME IS THE COMPLAINT. The drawer used to wait for the client secret, so pressing
+  // the button produced nothing at all for the length of a round trip -- the owner pressed it on
+  // the live page and watched a faded button.
+  it('opens the drawer before the server answers, so the press is never silent', async () => {
+    const answer = pending()
+    mount(<TicketButton eventId="e1" priceLabel="$44.00" />)
+    await press(cta())
+
+    expect(drawer(), 'the drawer is up while the session is still being built').not.toBeNull()
+    expect(closer(), 'and the way out is already there').toBeDefined()
+
+    await act(async () => {
+      answer({ data: { clientSecret: 'cs_1_secret_x', sessionId: 'cs_1' } })
+    })
+    expect(drawer()).not.toBeNull()
+  })
+
+  // Opening optimistically is only safe if every way the answer can disappoint closes it again.
+  it('closes it again and says why when the tier sold out', async () => {
+    const answer = pending()
+    mount(<TicketButton eventId="e1" priceLabel="$44.00" />)
+    await press(cta())
+    expect(drawer()).not.toBeNull()
+
+    await act(async () => {
+      answer({ error: 'This ticket just sold out.' })
+    })
+    expect(drawer(), 'no form is left animating over an answer that will never come').toBeNull()
+    expect(container!.textContent).toContain('This ticket just sold out.')
+    expect(cta(), 'and the CTA is back').toBeDefined()
+  })
+
+  // 🔴 AN OPTIMISATION MUST NEVER BE ABLE TO STOP A SALE. Both warm-ups are head starts the buyer
+  // can pay without, so a throw from either has to die in `warmCheckout` rather than escape into
+  // `go()` and abort the press. This is not hypothetical: an incomplete mock made
+  // `prefetchCheckoutForm` undefined, `go()` threw on the call, and the drawer never opened --
+  // the same shape a bad deploy of that chunk would have in production.
+  it('still sells a ticket when the warm-up throws', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    warmStripeBrowser.mockImplementationOnce(() => {
+      throw new Error('blocked by an extension')
+    })
+    startTicket.mockResolvedValue({ data: { clientSecret: 'cs_1_secret_x', sessionId: 'cs_1' } })
+    mount(<TicketButton eventId="e1" priceLabel="$44.00" />)
+
+    await press(cta())
+
+    expect(drawer(), 'the press still opens the checkout').not.toBeNull()
+    expect(startTicket, 'and still asks for a session').toHaveBeenCalledTimes(1)
+    expect(err, 'the failure is reported, never swallowed').toHaveBeenCalled()
+    err.mockRestore()
+  })
+
+  // 🔴 OPENING RESERVES NOTHING. The seat is reserved by `reserve_ticket_atomic`, keyed on the
+  // session id, so it cannot happen before the server call -- which is exactly why opening early
+  // is free. If this ever started calling the server twice, it would start reserving twice.
+  it('asks the server exactly once for one press', async () => {
+    startTicket.mockResolvedValue({ data: { clientSecret: 'cs_1_secret_x', sessionId: 'cs_1' } })
+    mount(<TicketButton eventId="e1" priceLabel="$44.00" />)
+    await press(cta())
     expect(startTicket).toHaveBeenCalledTimes(1)
   })
 })
@@ -234,6 +335,7 @@ describe('the session is dropped whenever it stops matching the button', () => {
       /VIP/.test(b.textContent ?? ''),
     )!
     await press(vip)
+
     expect(drawer(), 'the $44 session must not stay open under an $88 button').toBeNull()
     await press(cta())
     expect(startTicket, 'and the next press builds a new one').toHaveBeenCalledTimes(2)
