@@ -33,7 +33,7 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
    *
    * ⚠️ This asks for a SECOND session, and `createTipCheckout` records a `pending` tip per session.
    * The orphan never settles and nothing sweeps it: `checkout.session.expired` abandons commerce
-   * orders and Space donations but has no tip arm (LIVE-360). That is pre-existing and the reason
+   * orders and Space donations but has no tip arm (LIVE-364). That is pre-existing and the reason
    * this path stays last-resort rather than routine.
    */
   function fallBackToHosted() {
