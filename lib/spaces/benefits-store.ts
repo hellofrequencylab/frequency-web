@@ -366,13 +366,26 @@ export async function usesForMember(
   memberProfileId: string,
   nowIso: string,
 ): Promise<Record<string, number>> {
+  // An uncapped benefit is never counted: the resolver ignores the entry, and reading the ledger
+  // for it would be a query per line for nothing.
+  const capped = benefits.filter((b) => b.id && b.maxUses != null)
+
+  // ⚠️ ONE WAVE, NOT A QUEUE (LIVE-363). This was `await` inside a `for`, so a tier with four
+  // capped benefits cost four SERIAL round trips on the checkout path -- and this sits between
+  // the buyer clicking and the Stripe session existing. Each count is independent: a different
+  // benefit id, the same member, the same instant. Nothing here reads a previous iteration.
+  //
+  // The per-benefit semantics are unchanged, which is the part that matters: `countRedemptions`
+  // still fails CLOSED per benefit (an unreadable ledger must not read as "no uses yet" and hand
+  // out a capped benefit again), and running them together does not soften that -- each promise
+  // resolves to exactly what the serial call would have. Same prior art as
+  // lib/commerce/seller-audience.ts, for the same reason: the worst case here is the common case.
+  const counts = await Promise.all(
+    capped.map(async (b) => [b.id as string, await countRedemptions(b.id as string, memberProfileId, periodKeyFor(b.period, nowIso))] as const),
+  )
+
   const out: Record<string, number> = {}
-  for (const b of benefits) {
-    // An uncapped benefit is never counted: the resolver ignores the entry, and reading the ledger
-    // for it would be a query per line for nothing.
-    if (!b.id || b.maxUses == null) continue
-    out[b.id] = await countRedemptions(b.id, memberProfileId, periodKeyFor(b.period, nowIso))
-  }
+  for (const [id, n] of counts) out[id] = n
   return out
 }
 

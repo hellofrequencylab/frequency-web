@@ -207,6 +207,17 @@ export default function CheckoutForm({
         clientSecret,
         elementsOptions: {
           appearance: appearanceFromTokens(),
+          // ── SAVE THIS CARD (LIVE-362) ──────────────────────────────────────────────────
+          // Stripe renders the checkbox itself, and only when the session can actually honour
+          // it -- that is, when the server attached a customer. A member gets the option; a
+          // guest never sees it, because a guest session carries no customer and there is no
+          // account for the card to belong to. Letting Stripe own the control also means the
+          // regional consent wording it is required to show comes for free, which a checkbox
+          // of ours would have to reproduce and keep current.
+          //
+          // `enableRedisplay: 'auto'` is the other half: it is what lets a saved card be OFFERED
+          // back on the next purchase. Without it a card can be saved and never shown again.
+          savedPaymentMethod: { enableSave: 'auto', enableRedisplay: 'auto' },
           // Stripe draws its own loading state; ours already ran above. Two spinners for one wait
           // is what made this feel slower than it was.
           loader: 'never',
