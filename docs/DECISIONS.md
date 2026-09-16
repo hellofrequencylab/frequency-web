@@ -43981,3 +43981,59 @@ Space membership is the first of those four to convert.
   card path never navigates, so the `return_url` backstop is unreachable on the default path. If
   `onPaid` is ever dropped from this control, a paid membership has exactly one way to become real,
   behind a confirmation that already promised it.
+
+---
+
+## ADR-1379: The plans page sells: the upgrade is featured, and the prestige rung is a dark room (2026-09-16)
+
+**Status:** Accepted · **Amends** [ADR-1375](DECISIONS.md) (the featured rule) · **Extends**
+[ADR-1378](DECISIONS.md) (the prestige band) · corroborated by
+`components/spaces/membership-tier-picker.tsx`, `components/spaces/membership-join-card.tsx`
+
+**Context.** Three faults, all visible on the live page and all introduced by earlier passes of this
+same surface.
+
+1. **🔴 The page crowned the CHEAPEST paid plan.** ADR-1375 featured the middle rung, on the
+   standard reading that the middle of three carries the volume. ADR-1378 then lifted the prestige
+   rung OUT of the grid. On a four-tier ladder the grid held two, `Math.floor((2-1)/2)` resolved to
+   index 0, and "Most chosen" landed on the  tier while the  tier sat beside it unmarked. **A
+   rule outsmarted itself the moment another rule moved its inputs**, and neither ADR was wrong on
+   its own.
+2. **The cards were too narrow for their own copy.** This column shares width with the right rail.
+   At the `@md` breakpoint each card landed near 270px and every benefit line wrapped, turning two
+   plans into two tall ribbons.
+3. **The prestige rung argued on bullets and lost.** Rendered as a plain centered block it read as a
+   fourth option that cost 2.5x the one above it, which per bullet is exactly what it is.
+
+**Decision.**
+
+1. **Feature the DEAREST card still in the grid.** Once prestige is lifted out, what the grid holds
+   is the entry rung and the upgrade; the upgrade is what a page like this exists to sell. The rule
+   reads the same whether the grid holds two rungs or five, and it cannot be moved by a neighbouring
+   rule the way a positional middle can.
+2. **The featured plan gets a primary HEADER BAND, not a heavier outline.** A border says "this one
+   is different"; a filled header says "start here", and it survives being scanned at arm's length.
+   It also frees the badge from floating on the card's border, where it collided with the card above
+   once the grid began stacking.
+3. **The grid stays STACKED until roughly 320px a card** (`@2xl`), which is the width the copy was
+   written for. A stacked pair on a narrow column reads better than a cramped row.
+4. **The prestige rung stops arguing and changes register.** It is rendered on `bg-ink` — the
+   system's own dark band, described at its token as "deep warm near-black ... drawn from
+   Frequency's black wood-slat interiors" — with `on-ink` foregrounds, three lines rather than a
+   list, and invitation framing. The research this pass rests on puts it plainly: people pay more
+   for a feeling than for features. A tier that lists seven of them is competing on the axis where
+   it is arithmetically the worst value on the page.
+5. **Each plan carries a short "best for" line**, DERIVED rather than authored. An operator already
+   writes a description; asking for a second one-liner per tier is how a tier editor grows a field
+   nobody fills in.
+
+**Consequences.**
+
+- ✅ `check:contrast` passes on the ink pairing, which matters because it is the one place here
+  where a foreground and its ground are both non-default.
+- ⚠️ **The ink family is documented for "the public site's dark bands ... marketing pages."** This is
+  a member surface, so the usage widens that note deliberately. It is still a sales band, and the
+  `on-ink` tokens exist precisely so the contrast is safe rather than hand-mixed.
+- ⚠️ **The featured rule is still positional**, just positional in a way that cannot be moved by its
+  neighbours. A real `featured` flag on the tier model remains the honest end state, and this
+  function is still the single place that would change.

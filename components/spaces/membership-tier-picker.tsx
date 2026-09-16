@@ -38,20 +38,24 @@ export interface MembershipTierCardData {
 }
 
 /**
- * Which paid plan the grid leans on, resolved ONCE here.
+ * Which plan the grid leans on, resolved ONCE here.
  *
- * The rule is positional and deliberately dumb: the MIDDLE paid rung, or the first when there are
- * fewer than three. Pricing research is consistent that the middle of three carries most of the
- * volume, and one rule beats a per-site prop. The marketing pricing page's own comment records what
- * happens otherwise: two callers disagreed and the page crowned two different plans.
+ * THE RULE IS THE DEAREST CARD STILL IN THE GRID, and the first version of this got it wrong in a
+ * way worth keeping written down. It featured the MIDDLE rung, on the standard reading that the
+ * middle of three carries the volume. But the prestige rung is lifted OUT of this grid, so on a
+ * four-tier ladder the grid holds two, "middle" resolved to index 0, and the page crowned the
+ * CHEAPEST paid plan. The rule outsmarted itself the moment another rule moved its inputs.
  *
- * It is not a claim about THIS space's sales. When a tier model carries a real featured flag, this
- * function is the single place that has to change.
+ * What the grid actually shows, once prestige is gone, is the entry rung and the upgrade. The
+ * upgrade is the thing a page like this exists to sell, so it is the one that gets the weight, and
+ * that reads the same whether the grid holds two rungs or five.
+ *
+ * It is still not a claim about THIS space's sales. When a tier model carries a real featured flag,
+ * this function is the single place that changes.
  */
 export function featuredIndex(paidCount: number): number {
   if (paidCount <= 0) return -1
-  if (paidCount < 3) return 0
-  return Math.floor((paidCount - 1) / 2)
+  return paidCount - 1
 }
 
 export function MembershipTierPicker({
@@ -122,12 +126,17 @@ export function MembershipTierPicker({
             </div>
           )}
 
-          {/* Three across on a wide column, two on a medium one, stacked on a phone. The cards sit
-              in a container-query context on the entity tabs, so the breakpoints follow the column
-              they are in rather than the viewport; the sm/lg pair is the fallback for a mount that
-              is not a container. items-stretch keeps the featured card's extra padding from making
-              its siblings match its height. */}
-          <div className="grid items-stretch gap-4 @md:grid-cols-2 @3xl:grid-cols-3 sm:grid-cols-2 lg:grid-cols-3">
+          {/* 🔴 THE BREAKPOINT IS LATE ON PURPOSE. These cards carry five to seven benefit lines,
+              and this column shares its width with the right rail: at @md each card landed near
+              270px and every line wrapped, turning two plans into two tall ribbons. They stay
+              STACKED until there is room for roughly 320px a card, which is the width the copy was
+              written for. A stacked pair on a narrow column reads better than a cramped row.
+
+              The cards sit in a container-query context on the entity tabs, so the breakpoints
+              follow the column they are in rather than the viewport; the lg pair is the fallback
+              for a mount that is not a container. items-stretch keeps the featured card's header
+              band from making its sibling short. */}
+          <div className="grid items-stretch gap-4 @2xl:grid-cols-2 @5xl:grid-cols-3 lg:grid-cols-2">
             {paidCards.map((c, i) => (
               <MembershipJoinCard
                 key={c.tier.id ?? c.tier.name}
