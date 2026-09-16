@@ -7,17 +7,34 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // in-memory row set.
 
 let rows: Record<string, unknown>[] = []
+/** Ticket rows, and the events they hang off, for the LIVE-375 arm. Empty by default so every test
+ *  written before tickets existed reads exactly as it did. */
+let ticketRows: Record<string, unknown>[] = []
+let eventRows: Record<string, unknown>[] = []
+
+// 🔴 THE MOCK IS TABLE-AWARE, and it has to be. It used to return the SAME seeded rows to every
+// query, which was harmless while this module read one table and silently wrong the moment it read
+// three: the events lookup and the ticket read would each have been handed the commerce_orders rows,
+// and the assertions would have passed on numbers that came from the wrong place entirely.
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => {
-    // Every builder method returns the same thenable chain; awaiting it resolves to the seeded rows.
+    let table = ''
     const chain: Record<string, unknown> = {
-      from: () => chain,
+      from: (t: string) => {
+        table = t
+        return chain
+      },
       select: () => chain,
       eq: () => chain,
       neq: () => chain,
       gte: () => chain,
-      then: (resolve: (v: { data: Record<string, unknown>[]; error: null }) => unknown) =>
-        Promise.resolve(resolve({ data: rows, error: null })),
+      or: () => chain,
+      in: () => chain,
+      not: () => chain,
+      then: (resolve: (v: { data: Record<string, unknown>[]; error: null }) => unknown) => {
+        const data = table === 'event_tickets' ? ticketRows : table === 'events' ? eventRows : rows
+        return Promise.resolve(resolve({ data, error: null }))
+      },
     }
     return chain
   },
@@ -27,6 +44,10 @@ import { spaceEarningsSummary } from './orders'
 
 beforeEach(() => {
   rows = []
+  ticketRows = []
+  // One event, so the ticket arm gets past its "no events, nothing to sum" early return whenever a
+  // test seeds tickets. Tests that seed none are unaffected either way.
+  eventRows = [{ id: 'event-1' }]
 })
 
 describe('spaceEarningsSummary — network-sourced split', () => {
@@ -149,5 +170,77 @@ describe('spaceEarningsSummary — partially refunded orders (LIVE-160)', () => 
     expect(e.grossCents).toBe(0)
     expect(e.feeCents).toBe(0)
     expect(e.refundedCents).toBe(10000)
+  })
+})
+
+// ── LIVE-375: ticket sales are earnings too ──────────────────────────────────────────────────────
+//
+// The defect this pins: spaceEarningsSummary read `commerce_orders` and nothing else, while an event
+// ticket sale writes `event_tickets`. A Space that had sold tickets read $0.00 under a line that
+// said "No sales yet" — measured against production, where commerce_orders held zero rows platform
+// wide and a Space had a succeeded $44.00 ticket.
+describe('spaceEarningsSummary — event ticket sales (LIVE-375)', () => {
+  it('🔴 counts a succeeded ticket when there is no commerce order at all', async () => {
+    // Exactly the production shape that produced the report.
+    rows = []
+    ticketRows = [{ amount_cents: 4400, platform_fee_cents: 132, status: 'succeeded', refunded_at: null }]
+    const e = await spaceEarningsSummary('space-1', 30)
+    expect(e.grossCents, 'the sale must reach gross; this is the $0.00 the owner saw').toBe(4400)
+    expect(e.feeCents).toBe(132)
+    expect(e.netCents).toBe(4268)
+    expect(e.orderCount).toBe(1)
+  })
+
+  it('adds ticket earnings to commerce earnings rather than replacing them', async () => {
+    rows = [{ amount_cents: 10000, platform_fee_cents: 1000, status: 'paid', source: 'self' }]
+    ticketRows = [{ amount_cents: 4400, platform_fee_cents: 132, status: 'succeeded', refunded_at: null }]
+    const e = await spaceEarningsSummary('space-1', 30)
+    expect(e.grossCents).toBe(14400)
+    expect(e.feeCents).toBe(1132)
+    expect(e.netCents).toBe(13268)
+    expect(e.orderCount).toBe(2)
+  })
+
+  it('a refunded ticket moves to refunded and never to gross', async () => {
+    ticketRows = [
+      { amount_cents: 4400, platform_fee_cents: 132, status: 'succeeded', refunded_at: null },
+      { amount_cents: 2200, platform_fee_cents: 66, status: 'refunded', refunded_at: '2026-09-16T00:00:00Z' },
+      // A hand-repaired row: the stamp alone is enough, so it cannot be counted as revenue.
+      { amount_cents: 1100, platform_fee_cents: 33, status: 'succeeded', refunded_at: '2026-09-16T00:00:00Z' },
+    ]
+    const e = await spaceEarningsSummary('space-1', 30)
+    expect(e.grossCents).toBe(4400)
+    expect(e.refundedCents).toBe(3300)
+    expect(e.orderCount).toBe(3)
+  })
+
+  it('🔴 never adds a ticket to the NETWORK slice, because event_tickets has no source column', async () => {
+    // Brand promise #4 is only provable while this number cannot be overstated. A ticket sale has no
+    // honest claim to being network-sourced, so it must land in gross and in neither network figure.
+    ticketRows = [{ amount_cents: 9900, platform_fee_cents: 990, status: 'succeeded', refunded_at: null }]
+    const e = await spaceEarningsSummary('space-1', 30)
+    expect(e.grossCents).toBe(9900)
+    expect(e.networkGrossCents).toBe(0)
+    expect(e.networkFeeCents).toBe(0)
+    expect(e.networkOrderCount).toBe(0)
+  })
+
+  it('a Space with no events reads zero tickets without touching event_tickets', async () => {
+    eventRows = []
+    // Seeded, and must not be reached: with no events there is nothing to attribute them to.
+    ticketRows = [{ amount_cents: 5000, platform_fee_cents: 500, status: 'succeeded', refunded_at: null }]
+    const e = await spaceEarningsSummary('space-1', 30)
+    expect(e.grossCents).toBe(0)
+    expect(e.orderCount).toBe(0)
+  })
+
+  it('a pending or failed ticket is not revenue', async () => {
+    ticketRows = [
+      { amount_cents: 4400, platform_fee_cents: 132, status: 'pending', refunded_at: null },
+      { amount_cents: 4400, platform_fee_cents: 132, status: 'failed', refunded_at: null },
+    ]
+    const e = await spaceEarningsSummary('space-1', 30)
+    expect(e.grossCents).toBe(0)
+    expect(e.orderCount).toBe(0)
   })
 })
