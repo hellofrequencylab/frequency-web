@@ -550,6 +550,20 @@ export async function createTicketCheckout(opts: {
   // rejection is carried and RE-THROWN at the original await point, where it would have arrived
   // anyway. Settling it here is also what stops an early `return` between here and there from
   // leaving an unhandled rejection.
+  // The payee's payout readiness (LIVE-363). Keyed on payeeProfileId, which resolved on the line
+  // above, and it was awaited AFTER the tier read, the membership read and the whole benefit chain
+  // -- none of which it depends on. `getConnectStatus` is a `profiles` read and never calls Stripe
+  // (lib/billing/connect.ts), so this is one more round trip taken off the serial path.
+  //
+  // ⚠️ THE READ MOVES, THE GATE DOES NOT. The fail-closed check stays exactly where it was, for the
+  // reason written there: letting a buyer pay into an account Stripe cannot pay out of strands
+  // someone's money between two parties who each think the other has it. Starting the read early
+  // cannot change that verdict -- it is the same row, read at the same request.
+  const connectStatusPromise = getConnectStatus(payeeProfileId).then(
+    (value) => ({ ok: true as const, value }),
+    (reason: unknown) => ({ ok: false as const, reason }),
+  )
+
   const orderSourcePromise = classifyOrderSource({
     buyerProfileId,
     sellerProfileId: payeeProfileId,
@@ -631,18 +645,27 @@ export async function createTicketCheckout(opts: {
   // admission is still the gate's decision alone, and a benefit only prices what it lets through.
   if (tier && tierIsGated) {
     if (!membershipSpaceId) return { error: 'That ticket type isn’t available.' }
-    const { data: hsName } = await db()
-      .from('spaces')
-      .select('name, brand_name')
-      .eq('id', membershipSpaceId)
-      .maybeSingle()
-    const hs = hsName as { name: string | null; brand_name: string | null } | null
-    const gateError = spaceMembershipGateError(
-      tier,
-      membership,
-      hs?.brand_name ?? hs?.name ?? 'the hosting space',
-    )
-    if (gateError) return { error: gateError }
+    // ── ASK THE GATE BEFORE PAYING FOR THE WORDS (LIVE-363) ────────────────────────────────
+    // The Space's name is read ONLY to word a refusal, and it used to be fetched before anyone
+    // knew whether there would be one -- so every member who passed this gate paid for a round
+    // trip whose only output was a string they never saw.
+    //
+    // `spaceMembershipGateError` is PURE (no client, no IO), so asking it twice costs nothing and
+    // the verdict cannot differ between the two calls: same tier, same membership, and the name
+    // only ever appears INSIDE the message. A pass returns before the read happens at all.
+    const verdict = spaceMembershipGateError(tier, membership, 'the hosting space')
+    if (verdict) {
+      const { data: hsName } = await db()
+        .from('spaces')
+        .select('name, brand_name')
+        .eq('id', membershipSpaceId)
+        .maybeSingle()
+      const hs = hsName as { name: string | null; brand_name: string | null } | null
+      // Re-worded with the real name. Falls back to the verdict we already hold, so an unreadable
+      // Space still refuses -- it just refuses in the generic words rather than not at all.
+      const named = spaceMembershipGateError(tier, membership, hs?.brand_name ?? hs?.name ?? 'the hosting space')
+      return { error: named ?? verdict }
+    }
   }
 
   // ── SALES WINDOW (ADR-1373): may this ticket be bought YET? ───────────────────────────────────
@@ -752,7 +775,11 @@ export async function createTicketCheckout(opts: {
   // collect, because charging a fee we promised not to is worse than missing one. Not here: letting a
   // buyer pay into an account Stripe cannot pay out of does not under-collect, it takes someone's
   // money and strands it between two parties who both think the other has it.
-  const status = await getConnectStatus(payeeProfileId)
+  // Started as soon as the payee resolved; this is where it was always consumed, and a rejection is
+  // re-thrown HERE so the failure surfaces exactly where it used to.
+  const connectStatus = await connectStatusPromise
+  if (!connectStatus.ok) throw connectStatus.reason
+  const status = connectStatus.value
   if (!status.accountId || !status.ready) {
     // The BUYER sees a neutral sentence. A stranger is never told anything about the host's account
     // state; the HOST gets the real line (NEEDS_PAYOUT_ACCOUNT) beside the price control, where it is
