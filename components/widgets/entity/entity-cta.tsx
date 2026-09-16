@@ -106,14 +106,26 @@ export async function EntityCta() {
   // The service / product / membership Focuses lead with memberships (the "Join" CTA).
   if (ctaKind === 'membership') {
     return (
-      // The plans surface renders its own cards, so it takes ModuleCard's BORDERLESS default rather
-    // than the white tile: a card on a white panel has no edge to read, which is what the tile skin
-    // produced here (docs/DESIGN.md, "a card means this is a distinct object").
-    <ModuleCard title="Become a member">
+      // NOT a ModuleCard. Two reasons, and the second is the one that shows.
+      //
+      // 1. The plans surface renders its own cards, so it needs the canvas under them rather than
+      //    ModuleCard's white tile: a card on a white panel has no edge to read (docs/DESIGN.md,
+      //    "a card means this is a distinct object").
+      // 2. ModuleCard's title is `text-body-sm font-bold`, the RAIL role. That is right for a
+      //    sidebar panel and wrong for the primary sales surface on the page, where it rendered the
+      //    heading at the same size as a module label in the right-hand column.
+      //
+      // So the heading is rendered here at the role the rest of this Space uses, with `font-section`
+      // resolving the Space THEME's heading face (ADR-578) — the same pairing the entity blocks on
+      // this page use, so a themed Space gets its own typography here instead of the default sans.
+      <section>
+        <h2 className="mb-2 px-1 font-section text-page-title font-bold text-text">
+          Become a member
+        </h2>
         <Suspense fallback={<MembershipSkeleton />}>
           <MembershipJoin spaceId={space.id} slug={space.slug} ownerProfileId={space.ownerProfileId} />
         </Suspense>
-      </ModuleCard>
+      </section>
     )
   }
 
