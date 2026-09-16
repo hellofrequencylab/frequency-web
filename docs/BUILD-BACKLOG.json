@@ -176,11 +176,7 @@
         },
         {
           "name": "W9 · DEFERRED 1 of 4 — the App Platform (owner ruling 2026-09-07). Modules with enforced boundaries, enablement inside RLS, the flagship packaged apps. A3 was P1 and sat in W2; see the ruling for what parking it costs.",
-          "ids": [
-            "PROG-A1",
-            "PROG-A3",
-            "PROG-A4"
-          ]
+          "ids": []
         },
         {
           "name": "W10 · (empty since 2026-09-14) white label moved into W4 by ADR-1325; kept so the wave numbering the rulings cite stays stable",
@@ -188,16 +184,11 @@
         },
         {
           "name": "W11 · DEFERRED 3 of 4 — the Etsy-grade store (owner rulings 2026-08-24 and 2026-09-07).",
-          "ids": [
-            "DEF-ETSY"
-          ]
+          "ids": []
         },
         {
           "name": "W12 · DEFERRED 4 of 4 — mobile (Expo/RN on the shared contract). Held on the 2026-08-20 ruling; the 2026-09-07 correction did not re-name it. Also holds the guest door's phone door (PROG-GD6), parked with texting.",
-          "ids": [
-            "DEF-MOBILE",
-            "PROG-GD6"
-          ]
+          "ids": []
         },
         {
           "name": "owner-timed",

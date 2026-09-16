@@ -43760,3 +43760,62 @@ refused on a FREE tier, in the editor with a message and in `normalizeTier` as a
 backstop: a tier with no monthly price has nothing to bill yearly. 🔴 Both columns are phantoms to
 `lib/database.types.ts` until the migration applies at merge, so five dated ALLOWLIST entries carry
 them in `scripts/check-schema-contract.mjs` and retire together when the types are regenerated.
+
+---
+
+## ADR-1375: The plans surface puts the free tier in a bar, the paid tiers in a grid, and the cards on the canvas (2026-09-16)
+
+**Status:** Accepted · **Extends** [ADR-1374](DECISIONS.md) (a yearly plan is not a second tier) ·
+corroborated by `components/spaces/membership-tier-picker.tsx`,
+`components/spaces/membership-join-card.tsx`, `components/widgets/entity/entity-cta.tsx`
+
+**Context.** Royal Temple's join surface rendered four memberships as four equal cards inside one
+white panel, and read as a list rather than a decision. Three separate faults, each with a named
+cause:
+
+1. **No ground.** The mount passed `ModuleCard`'s `tile` skin, which is
+   `rounded-2xl border border-border bg-surface p-4 lift-1`. Every plan card is *also* `bg-surface`,
+   so white sat on white and no card had an edge to read. `docs/DESIGN.md` states the rule this
+   broke: *a card means "this is a distinct object"*.
+2. **A free tier competed in a grid it cannot win.** A free tier has no price and one short list, so
+   as a column it is mostly empty space, and CSS grid drags its siblings' heights to match it.
+3. **No answer.** Four cards of identical weight, identical padding and identical solid CTAs give a
+   reader nothing to land on.
+
+**Decision.**
+
+1. **The free tier is a BAR above the decision, not a card inside it.** Same component, same
+   `join()`, same capacity and honesty states, laid out horizontally via a `layout` prop. One
+   component rather than two is what stops the free row from drifting away from the paid cards the
+   first time either is edited.
+2. **The paid tiers are a comparison grid** on the canvas: `ModuleCard`'s borderless default, so each
+   card's own fill, hairline and lift finally read.
+3. **One plan is featured, and the rule lives in ONE function.** `featuredIndex(paidCount)` returns
+   the middle paid rung. The chrome ladder is the house one: featured takes `lift-2`,
+   `border-2 border-primary`, `ring-4 ring-primary-bg` and `p-7`; everything else keeps `lift-1`,
+   a hairline and `p-5`. `lift-3` is never a plan card, because it is reserved for one object per
+   page.
+   **Why a function and not a prop:** the marketing pricing page carries a comment recording exactly
+   what a per-call-site prop produced there, which is two callers disagreeing and the page crowning
+   two different plans. When a tier model grows a real featured flag, this function is the single
+   place that changes.
+4. **The featured plan carries the set's only solid CTA.** Every other plan is `secondary`, matching
+   `variant={featured ? 'primary' : 'secondary'}` on the public pricing grid.
+5. **The badge composes `Badge`, it is not hand-rolled.** An inline `uppercase` + `tracking-wider`
+   span is the `handrolled-eyebrow` debt class, held at a baseline that may not rise; the primitive
+   carries the same treatment from inside an excluded file.
+
+**Consequences.**
+
+- ✅ Prices moved to the `text-stat-sm` role rather than a literal display step, so they scale with
+  `--type-scale` and cannot trip `literal-display-type`.
+- ✅ The pending state stops changing the button's width: `Button`'s `loading` prop sets `aria-busy`
+  and disables without swapping the label, which is the one thing `docs/INTERACTION-STATES.md` says
+  a pending state must never do. The previous card swapped in "Joining" beside a spinner.
+- ⚠️ **The featured rung is positional, not measured.** For Royal Temple that crowns Temple Guardian
+  at $88, while the volume rung the pricing research points at is Temple Member at $44. The rule is
+  honest about being a rule; an operator who disagrees is asking for a real featured flag on the tier
+  model, which is the change item 3 anticipates.
+- ⚠️ Two other surfaces mount `MembershipJoinCard` (`membership-checkout-fold.tsx` and
+  `rsvp-payment-flow.tsx`). Both keep the default `card` layout and `featured={false}`, so neither
+  moves; a future featured plan in those contexts is a deliberate decision, not an inherited one.
