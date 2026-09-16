@@ -48,7 +48,9 @@
           "ids": [
             "LIVE-186",
             "LIVE-213",
-            "LIVE-367"
+            "LIVE-367",
+            "LIVE-370",
+            "LIVE-371"
           ]
         },
         {
@@ -13494,6 +13496,62 @@
           "lib/spaces/memberships-actions.ts",
           "lib/billing/space-membership-checkout.ts"
         ]
+      }
+    },
+    {
+      "id": "LIVE-370",
+      "title": "A paid ticket still does not mint the seat: record_ticket_seat has no caller",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270345005100_a_paid_ticket_is_a_seat_in_the_room.sql",
+        "ref": "ADR-1380"
+      },
+      "detail": "Migration 20270345005100 shipped record_ticket_seat(_ticket_id) to production on 2026-09-16 and NOTHING IN THE TREE CALLS IT, so the defect it was written against is still live: event_tickets carries the money, event_rsvps is what the host list, the capacity trigger, the reminders and the door read, and a buyer who paid without pressing RSVP is not attending as far as any of them are concerned.\n\nThe release half IS wired: refund_ticket_atomic now deletes the seats a refunded ticket minted (from_ticket_id). Only the mint is missing, which means the asymmetry is live too.\n\nWHAT TO DO. Call record_ticket_seat from the ticket settle path in lib/billing/tickets.ts, after settle_ticket_atomic returns a flipped row, on the flipped ticket id. It is idempotent by construction (both inserts ride event_rsvps' partial unique indexes), so a redelivered webhook updates the same row rather than minting a second seat, and it returns `minted` so the caller can tell a new seat from a redelivery without a second read. It sends nothing and awards nothing; the settle path already sends the receipt. service_role only, which is what the webhook holds.\n\nNOTE FOR WHOEVER PICKS THIS UP: the migration was recovered from the live catalog rather than committed by its author (ADR-1380), so there may be an in-flight branch that already writes this caller. Check before duplicating it.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "record_ticket_seat",
+        "paths": [
+          "lib/billing/tickets.ts"
+        ]
+      }
+    },
+    {
+      "id": "LIVE-371",
+      "title": "One new public Circle breaks four BLOCKING visual baselines on every open branch",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "test/e2e/visual.spec.ts",
+        "ref": "observed 2026-09-16, runs 35038257196 onward"
+      },
+      "detail": "WHAT HAPPENED, with the window measured. A Circle was created in production at 23:30:17Z on 2026-09-15. The last green e2e run started 23:27:15Z; the next one, 00:02:11Z, failed, and so did EVERY e2e run on EVERY branch after it, including branches that touch no public code at all. The four failures are always the same: /discover matches baseline, dawn-light and midnight-light, desktop and mobile, in the tier the job labels \"public surfaces (blocking)\".\n\nThe assertion says the cause outright: \"Expected an image 1280px by 7493px, received 1280px by 7672px\" (mobile 9541 -> 9671). The page did not change colour, it GREW, by about one CircleCard row. /discover renders getPublicCircles() against live production data, so the count of public Circles is an input to a committed baseline.\n\nWHY MASKING IS NOT THE ANSWER, already written down. surfaces.ts says it at waitForStable: \"A mask paints over a region; the element keeps its box, so a masked block that arrives late still moves everything under it. The failure is the page HEIGHT, not its pixels.\" The same sentence applies to a row that is genuinely there.\n\nWHY THIS IS P1 RATHER THAN A RE-BASELINE. Re-baselining closes it until the next Circle, and the owner adds Circles as ordinary product work. Between the two, every open PR carries a red blocking job it did not cause, which is the condition under which people start reading a red gate as weather. Three routes, in the order they are worth trying: (1) photograph a surface whose content is fixed rather than the live index, (2) give the shot a fixed viewport clip instead of fullPage so the count below the fold cannot move the assertion, or (3) move /discover to the advisory tier and keep a structural test for what the page must contain. Pick one and write the reason beside it.\n\nIMMEDIATE STATE: cleared on 2026-09-16 by unlisting the Circle that caused it (it was meant to be private and should never have been listed, which is LIVE-372). The suite is green again and the fragility is untouched.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Not started. The four /discover rows failed on every branch from run 35038257196 to 35059005812; green again once the Circle was unlisted.",
+        "checked": "2026-09-16"
+      }
+    },
+    {
+      "id": "LIVE-372",
+      "title": "A Space private Circle was created listed, and appeared on /discover",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/circles/visibility.ts",
+        "ref": "ADR-1015 (the two axes)"
+      },
+      "detail": "THE CIRCLE. Royal Temple asked for \"the primary private Circle\", and it was created with access = space_paid_members and unlisted = false. Those are the two INDEPENDENT axes ADR-1015 deliberately separated: access decides who may enter and see content, unlisted decides whether it appears in discovery. Setting one is not setting the other, and public_circles() filters on status and NOT unlisted without reading access at all -- by design, because a listed closed Circle is the lead-funnel cell the owner asked for.\n\nSo the Circle was doing exactly what a listed closed Circle does: name, about, member count and city on /discover and at /discover/circles/the-circle, with the roster and posts shut. Nothing leaked from INSIDE it. But it was not what was asked for, and it was one of only four Circles on the public index.\n\nFIXED 2026-09-16: unlisted = true on that row alone. public_circles() went 4 -> 3, which also cleared the four blocking visual baselines it had been breaking (LIVE-371).\n\nTHE LESSON, which is why this row exists rather than a silent fix: \"private\" in a request maps to TWO columns, and an agent that sets the access one and stops has half-answered it. Anything creating a Circle from a description should decide both axes explicitly and say which it chose.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "public.circles where slug = the-circle: access = space_paid_members, unlisted = true. public_circles(200) returns 3 rows and no longer includes it.",
+        "checked": "2026-09-16"
       }
     }
   ]

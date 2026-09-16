@@ -44037,3 +44037,64 @@ same surface.
 - ⚠️ **The featured rule is still positional**, just positional in a way that cannot be moved by its
   neighbours. A real `featured` flag on the tier model remains the honest end state, and this
   function is still the single place that would change.
+
+## ADR-1380: Recover the applied migration the tree never recorded, and keep the recovery honest (2026-09-16)
+
+**Status:** Accepted · **Applies** [ADR-1007](DECISIONS.md) (repo⇄ledger parity, rule 4) · **Repeats
+the lesson of** [ADR-1372](DECISIONS.md) · corroborated by
+`supabase/migrations/20270345005100_a_paid_ticket_is_a_seat_in_the_room.sql`
+
+**Context.** Version `20270345005100`, name `a_paid_ticket_is_a_seat_in_the_room`, was applied to
+production on 2026-09-16 with no file in the tree. `pnpm check:migrations` rule 4 went red on `main`
+and therefore on every open PR: 701 repo files against 702 applied rows. A ledger row with no repo
+file is SQL production ran that a fresh environment will never reproduce, and the tree stops
+describing the database until it is recovered.
+
+🔴 **The ledger's `statements` column was NULL for the row**, so the recovery route the gate's own
+message recommends was unavailable. The SQL had to be reconstructed from the live catalog instead:
+`pg_get_functiondef` for the two functions, `pg_attribute` + `pg_constraint` + `pg_indexes` for the
+column, its foreign key and its index, and `obj_description` / `col_description` for both comments,
+which are the original author's words and were kept verbatim.
+
+This is the second time in one session. ADR-1372 recorded the same failure with three tables, and
+the cause is the same: a migration reaches production through a path that does not also write the
+file, and nothing notices until the next PR runs the gate. The gate is working; what is missing is
+that applying and committing are not one act.
+
+**Decision.**
+
+1. **Recover, do not improve.** Every statement in the recovered file is idempotent and the two
+   function bodies are byte-equal to what production runs today. The file does NOT fix anything it
+   found. Recovering a migration and changing it are two different acts, and performing both at
+   once is how a tree quietly stops describing production — the next person cannot tell which lines
+   were replayed and which were invented.
+2. **State the recovery in the file's own header**, including which catalog query each part came
+   from. A reader six months out needs to know that this file was reconstructed rather than
+   recorded, because the confidence attached to the two is not the same.
+3. **Prove the parity numerically rather than by eye.** The gate prints a sha256 of the versions
+   and a sha256 of the version+name pairs for both sides. After the file landed, the repo side
+   reproduces `33942a62…` and `c5b063a2…`, which are exactly the ledger digests CI printed when it
+   failed. 702 files, 702 rows, both digests equal: the drift is closed, and the check is a string
+   comparison rather than a judgement.
+4. **`record_ticket_seat` keeps its verdict in `scripts/function-grants.txt` (`internal`).** The
+   live ACL grants EXECUTE to `service_role` only, and the recovered file restates the named revoke,
+   so the manifest row describes the tree as it is — which is that file's stated rule.
+
+**What the recovered migration does**, recorded here because nothing else in the tree says it:
+buying a ticket and holding a seat were two separate facts. `event_tickets` carried the money;
+`event_rsvps` is what the host list, the capacity trigger, the reminders and the door all read, so a
+buyer who paid and never pressed RSVP was, to every one of those, not attending.
+`record_ticket_seat(_ticket_id)` mints that seat idempotently (by profile for a member, by lowercased
+address for a guest, riding the partial unique indexes `event_rsvps` already carries).
+`event_rsvps.from_ticket_id` records which ticket minted a seat and is set only on the insert that
+creates it, so `refund_ticket_atomic`'s new `released` CTE can delete the seats a refunded ticket
+minted and nothing else: someone who RSVP'd first and bought afterwards keeps the answer they gave.
+
+**Residuals, stated rather than hidden.**
+
+- ⚠️ **The function has no caller in the tree.** The settle path does not mint the seat yet, so the
+  migration's purpose is unrealised in production today. That is the state the recovery records;
+  wiring the caller is `LIVE-370` and is deliberately not done here.
+- ⚠️ **`lib/database.types.ts` does not carry `from_ticket_id` or `record_ticket_seat`.** No code
+  reads either, so `check:schema-contract` is green and a future reader that adds one will be told
+  to regenerate. A types regen is a large unrelated diff and does not belong in a recovery.
