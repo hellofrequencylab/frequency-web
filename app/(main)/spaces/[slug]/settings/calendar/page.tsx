@@ -14,7 +14,10 @@ import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 import { formatEventWhen, eventInstant } from '@/lib/time/zone'
 import { eventDayKey } from '@/lib/events/calendar-grid'
 import { SITE_URL } from '@/lib/site'
-import { EventCalendar, type CalendarEvent } from '@/components/events/event-calendar'
+import type { CalendarEvent } from '@/components/events/event-calendar'
+import { listStaffCalendarItems } from '@/lib/calendar/entries-store'
+import { monthGridWindow } from '@/lib/calendar/month-window'
+import { StaffCalendar } from './staff-calendar'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
 import { EventShareApprovals } from '@/components/events/event-share-approvals'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -114,6 +117,14 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
     }),
   ].filter((e): e is CalendarEvent => e !== null)
 
+  // THE PRIVATE LAYER (ADR-1385): this month's Unavailable time and Private entries. Other months load
+  // as the calendar browses. Read on the caller's own session, so RLS decides what a viewer sees.
+  const grid = monthGridWindow(initialYear, initialMonth1)
+  const entryItems = featureLocked
+    ? []
+    : await listStaffCalendarItems(space.id, grid.fromDay, grid.toDay, { editable: canManage })
+  events.push(...entryItems)
+
   // "N upcoming events." — GATHERINGS, not materialised occurrences (LIVE-198 / SERIES-COUNT).
   // Recurrence is materialised (ADR-007), so a weekly series is ~9 rows inside the cron's 60-day
   // horizon and the operator's own console told them they had nine events when they have one. The
@@ -138,7 +149,7 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
     <FocusTemplate
       eyebrow={brandName}
       title="Calendar"
-      description="Run your space's calendar. Calendar and list views, click any event to edit it, and approve co-hosted events other hosts bring you."
+      description="Run your space's calendar. Your public events, plus private entries and unavailable time only your team can see."
       width={featureLocked ? undefined : 'wide'}
     >
       {featureLocked ? (
@@ -177,22 +188,13 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
           {/* Pending co-host requests (renders nothing when the inbox is empty). */}
           <EventShareApprovals spaceId={space.id} />
 
-          {events.length > 0 ? (
-            <EventCalendar events={events} initialYear={initialYear} initialMonth1={initialMonth1} />
-          ) : (
-            <div className="rounded-card border border-dashed border-border bg-surface px-4 py-10 text-center">
-              <p className="text-body-sm font-semibold text-text">Your calendar is ready.</p>
-              <p className="mt-1 text-body-sm text-muted">
-                Create an event and it shows up here, on your public Calendar tab, and in the subscribe feed.
-              </p>
-              <Link
-                href={`/events/new?space=${space.id}`}
-                className="mt-4 inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
-              >
-                <Plus className="h-4 w-4" aria-hidden /> Create your first event
-              </Link>
-            </div>
-          )}
+          <StaffCalendar
+            slug={space.slug}
+            events={events}
+            initialYear={initialYear}
+            initialMonth1={initialMonth1}
+            canEdit={canManage}
+          />
 
           {managedEvents.length > 0 && (
             <div className="pt-2">

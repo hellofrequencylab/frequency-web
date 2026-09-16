@@ -227,6 +227,7 @@ set_updated_at                       public
 settle_ticket_atomic                 internal
 similar_library_assets               internal
 space_public_calendar_feed           internal
+space_public_unavailable             public
 sync_contact_from_profile            internal
 sync_event_scope_arc                 internal
 sync_post_scope_arc                  internal
