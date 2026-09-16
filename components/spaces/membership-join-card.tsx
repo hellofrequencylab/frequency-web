@@ -153,7 +153,7 @@ export function MembershipJoinCard({
       </p>
       {saving && <p className="mt-1 text-2xs font-semibold text-success">{saving}</p>}
       {price.monthlyOnly && (
-        <p className="mt-1 text-2xs text-subtle">Monthly only. This tier has no yearly price.</p>
+        <p className="mt-1 text-meta text-muted">Monthly only. This tier has no yearly price.</p>
       )}
 
       {tier.description && (

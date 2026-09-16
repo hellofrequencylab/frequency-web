@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { MembershipJoinCard } from '@/components/spaces/membership-join-card'
 import { hasAnnualOption, type BillingInterval } from '@/lib/spaces/membership-pricing'
 import type { MembershipTier } from '@/lib/spaces/memberships'
+import { Button } from '@/components/ui/button'
 
 // MEMBERSHIP TIER PICKER (client). The cadence toggle plus the two-column grid of join cards
 // (ADR-1374). It is the ONLY client state on the join surface: the server half
@@ -89,16 +90,15 @@ function IntervalButton({
   label: string
 }) {
   return (
-    <button
+    <Button
       type="button"
       role="radio"
       aria-checked={active}
       onClick={onClick}
-      className={`rounded-pill px-4 py-1.5 text-body-sm font-semibold transition-colors ${
-        active ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
-      }`}
+      variant={active ? 'primary' : 'ghost'}
+      size="sm"
     >
       {label}
-    </button>
+    </Button>
   )
 }
