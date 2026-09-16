@@ -15,6 +15,7 @@ import {
 import type { Stripe } from '@stripe/stripe-js'
 import { loadStripeBrowser } from '@/lib/billing/stripe-browser'
 import { Button } from '@/components/ui/button'
+import CardSkeleton from './card-skeleton'
 
 /**
  * Stripe's fields, drawn with this page's own tokens (LIVE-363).
@@ -83,6 +84,8 @@ function PayForm({
   const result = useCheckout()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  /** Stripe has painted its fields. Until then the skeleton holds their exact space. */
+  const [ready, setReady] = useState(false)
 
   if (result.type === 'loading') {
     return (
@@ -149,26 +152,51 @@ function PayForm({
 
           Wallets stay `auto`, never `never`. Apple Pay and Google Pay are the fastest paths a
           phone has, and whether they appear is the DEVICE's answer, not ours. */}
+      {!ready && <CardSkeleton />}
       <PaymentElement
+        onReady={() => setReady(true)}
         options={{
+          // 🔴 CARD FIRST, ALWAYS. Without `paymentMethodOrder` Stripe picks the order itself --
+          // "a dynamic ordering that optimizes payment method display for each user" -- and what
+          // it chose on the live page was Link at the top, so the one field every buyer can use
+          // sat underneath a method most of them do not have. The owner's instruction was exact:
+          // the card field first, Link as a button under it.
+          //
+          // This list is a PREFERENCE, not a filter. A method Stripe has enabled but that is not
+          // named here still renders, after these; naming card and link does not hide PayPal or a
+          // wallet. That is why there is no `wallets: never` anywhere near this.
+          paymentMethodOrder: ['card', 'link'],
           layout: {
             type: 'accordion',
             defaultCollapsed: false,
             radios: 'if_multiple',
             spacedAccordionItems: false,
           },
+          // The accordion is what makes "Link as a button under the card" literal: card renders
+          // expanded, every other method is a collapsed row beneath it, and opening one closes
+          // the other. That is Stripe's own behaviour, so the swap costs us no state to keep and
+          // cannot drift out of sync with what the element thinks is selected.
           wallets: { applePay: 'auto', googlePay: 'auto', link: 'auto' },
         }}
+        // Hidden rather than unmounted: the element has to be IN THE TREE to load at all, so
+        // unmounting it until ready would mean it never became ready. `h-0 overflow-hidden` keeps
+        // it mounted and fetching while the skeleton holds the visible space, and the swap is one
+        // class change rather than a remount.
+        className={ready ? undefined : 'h-0 overflow-hidden'}
       />
       {error && (
         <p className="text-body-sm text-danger" role="alert">
           {error}
         </p>
       )}
-      <Button type="submit" disabled={busy} className="w-full">
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-        {priceLabel ? `Pay ${priceLabel}` : 'Pay'}
-      </Button>
+      {/* The Pay button arrives WITH the fields, never before them. Rendering it over an empty
+          area is what made the live page look like two stacked buttons and nothing else. */}
+      {ready && (
+        <Button type="submit" disabled={busy} className="w-full">
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          {priceLabel ? `Pay ${priceLabel}` : 'Pay'}
+        </Button>
+      )}
     </form>
   )
 }
@@ -215,12 +243,10 @@ export default function CheckoutForm({
 
   if (dead) return null
   if (!stripe) {
-    return (
-      <div className="flex items-center gap-2 py-4 text-body-sm text-muted">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Loading secure payment…
-      </div>
-    )
+    // The SAME skeleton the element is about to be replaced by, so the drawer opens at its final
+    // height and stays there. It used to be a centred spinner, which meant the buyer watched the
+    // box change shape twice on the way to one card field.
+    return <CardSkeleton />
   }
 
   return (
