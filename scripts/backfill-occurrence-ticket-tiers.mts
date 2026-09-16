@@ -54,6 +54,11 @@ const TIER_CATALOG_COLUMNS = [
   'space_tier_id',
   'sort_order',
   'active',
+  // ADR-1373: the SERIES rule travels; the absolute sales_start_at / sales_end_at do not, because
+  // an instant typed for the anchor's date has already passed by the ninth occurrence. Kept
+  // identical to lib/event-recurrence.ts on purpose: LIVE-283's probe fails if the two disagree,
+  // because a backfill that carries a different set than the mint writes a different past.
+  'sales_starts_days_before',
 ] as const
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL

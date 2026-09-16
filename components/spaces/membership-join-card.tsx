@@ -9,10 +9,21 @@ import { isError } from '@/lib/action-result'
 import { formatPriceCents } from '@/lib/commerce/types'
 import { joinTier, startSpaceMembershipCheckout } from '@/lib/spaces/memberships-actions'
 import type { MembershipInterval, MembershipTier } from '@/lib/spaces/memberships'
+import {
+  annualSavingLabel,
+  tierPriceView,
+  type BillingInterval,
+} from '@/lib/spaces/membership-pricing'
 
 // MEMBER JOIN CARD (client). One tier rendered as a kit card (name, price, interval, benefits) with
 // a Join button. The server re-validates the tier + that the caller is not already a member, so this
 // card is convenience, not the gate.
+//
+// ONE CARD PER MEMBERSHIP, NOT PER CADENCE (ADR-1374). `interval` is what the toggle above the grid
+// is set to (membership-tier-picker.tsx). A tier with a yearly price shows it, with the saving
+// computed from the operator's two real numbers; a tier without one keeps its monthly price and
+// says "Monthly only" rather than looking like a yearly offer it cannot honor; a free tier ignores
+// the toggle. The same cadence rides into checkout and into the recorded membership.
 //
 // TWO PATHS (Pricing P3): while billing is OFF (billingOn=false) the button keeps the EXACT
 // display-only behavior — joinTier records a membership and takes no charge. When billing is live AND
@@ -44,9 +55,13 @@ export function MembershipJoinCard({
   billingOn = false,
   includedEvents = [],
   spotsLeft = null,
+  interval = 'month',
 }: {
   spaceId: string
   tier: MembershipTier
+  /** The cadence the member picked on the toggle above the cards (ADR-1374). A tier with no yearly
+   *  price keeps showing its monthly one and says so; a free tier ignores this entirely. */
+  interval?: BillingInterval
   /** When true (billing live), a PAID tier joins via Stripe Checkout; otherwise the display-only
    *  joinTier path is used (unchanged OFF behavior). */
   billingOn?: boolean
@@ -61,7 +76,15 @@ export function MembershipJoinCard({
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
-  const free = tier.priceCents === 0
+  // What this card charges at the selected cadence (ADR-1374). `monthlyOnly` is the honest case the
+  // toggle creates: yearly is selected, this tier has no yearly price, so it keeps its monthly one
+  // and must say that rather than sitting beside a yearly card looking identical.
+  const price = tierPriceView(tier, interval)
+  const saving =
+    price.cadence === 'year' && !price.free
+      ? annualSavingLabel(tier.priceCents, tier.annualPriceCents)
+      : null
+  const free = price.free
   const full = spotsLeft != null && spotsLeft <= 0
   // Join-and-return (ADR-823): an event page's "join their membership" pointer carries
   // ?return_to=/events/<slug>, so after joining the member lands back on the ticket they came
@@ -79,7 +102,7 @@ export function MembershipJoinCard({
       // billing off, etc.) fall back to the free join path so the button is never broken. A FULL tier
       // skips checkout entirely: a waitlist spot is not a purchase (ADR-824).
       if (billingOn && !free && !full) {
-        const checkout = await startSpaceMembershipCheckout(spaceId, tierId)
+        const checkout = await startSpaceMembershipCheckout(spaceId, tierId, price.cadence === 'year' ? 'year' : 'month')
         if (!isError(checkout)) {
           window.location.href = checkout.data.url
           return
@@ -95,8 +118,14 @@ export function MembershipJoinCard({
           setError('This space cannot take payment yet. Follow it to hear when joining opens.')
           return
         }
+        // 🔴 NOR IS A MISSING YEARLY PRICE (ADR-1374). Falling through here would record a
+        // membership for a cadence this tier does not sell, so it says so and stops.
+        if (checkout.error === 'no_annual_price') {
+          setError('This tier is monthly only. Switch the toggle to monthly to join it.')
+          return
+        }
       }
-      const result = await joinTier(spaceId, tierId)
+      const result = await joinTier(spaceId, tierId, price.cadence === 'year' ? 'year' : 'month')
       if (isError(result)) {
         setError(result.error)
         return
@@ -117,11 +146,15 @@ export function MembershipJoinCard({
           'Free'
         ) : (
           <>
-            <span className="font-semibold text-text">{formatPrice(tier.priceCents)}</span>{' '}
-            {intervalLabel(tier.interval)}
+            <span className="font-semibold text-text">{formatPrice(price.cents)}</span>{' '}
+            {intervalLabel(price.cadence)}
           </>
         )}
       </p>
+      {saving && <p className="mt-1 text-2xs font-semibold text-success">{saving}</p>}
+      {price.monthlyOnly && (
+        <p className="mt-1 text-meta text-muted">Monthly only. This tier has no yearly price.</p>
+      )}
 
       {tier.description && (
         <p className="mt-3 text-body-sm leading-relaxed text-muted">{tier.description}</p>
