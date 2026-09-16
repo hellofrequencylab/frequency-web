@@ -155,4 +155,103 @@ zone; a subscribe button that downloads a dead snapshot; burying the grid behind
 - **Calendar surfaces compose the page framework** (`IndexTemplate` for the grid; the rail falls
   through to `'global'` — no `page-chrome` edit needed).
 
+## The private layer (ADR-1385)
+
+A Space calendar is **two layers that are never merged**. The rationale and the navigation research
+are in [ADR-1385](DECISIONS.md); what is done is in the backlog (`LIVE-378`), not here.
+
+| Layer | Source | Who sees it | Becomes an event? |
+|---|---|---|---|
+| **Events** (public) | the events system, every gate of EC1 to EC3 unchanged | anyone the event's own visibility admits | it is one |
+| **Private** | `public.space_calendar_entries`, kind `private` | the Space's team | never |
+| **Unavailable** | `public.space_calendar_entries`, kind `unavailable` | the team; optionally the public, as times only | never |
+
+**The table.** One row per entry. `kind` is declared once in `lib/calendar/registry.ts`
+(`ENTRY_KINDS`) and mirrored by the table's check constraint. Time follows the events convention
+(`lib/time/zone.ts`): `starts_at` / `ends_at` hold the Space's wall clock as UTC parts, read in
+`time_zone`, and an all-day entry ends at 00:00 of the day after its last day. So `eventDayKey`, the
+when-line formatter and the `.ics` builders work on entries unchanged. Reserved and not yet written:
+`recurrence_rule` (the ADR-1299 RRULE dialect), `source_kind` + `source_id` (set together, pointing at
+the record an entry came from) and `metadata`.
+
+**Access.** RLS is the ADR-923 quad on `private.can_write_space_content(space_id)`, and the app reads
+and writes through the caller's own session (`lib/calendar/entries-store.ts`,
+`app/(main)/spaces/[slug]/settings/calendar/entry-actions.ts`), so the policies are the lock. The ONLY
+visitor read is `public.space_public_unavailable(space_id, from_day, to_day)`: SECURITY DEFINER,
+returning `starts_at, ends_at, all_day, time_zone` for entries marked `public_unavailable` and nothing
+else. Its column list is the gate; it must never gain a detail column.
+
+**Bookings.** `readCalendarBlocks` in `lib/spaces/booking.ts` reads every non-cancelled entry with
+`blocks_time` and adds its true-instant range to the booked ranges the slot builder already honours. A
+slot that overlaps is neither offered nor bookable. An existing booking inside the range is never
+touched. The read is service-role and fails safe to no blocks.
+
+**Loading a month.** The first month renders on the server. Every other month is fetched when the
+viewer browses to it: `loadSpaceCalendarMonth` for the public tab (over `lib/calendar/public-month.ts`,
+which composes `listSpaceCalendarEvents` and the Unavailable projection without reimplementing either
+gate) and the staff entry actions for the settings calendar. `lib/calendar/month-window.ts` computes
+the visible grid window, including the spill days either side.
+
+**Navigation** (`components/events/event-calendar.tsx`, `components/events/use-month-gestures.ts`).
+
+- A sideways trackpad swipe, a sideways wheel, or a clearly horizontal touch swipe pages ONE month,
+  then locks until the input has been quiet for 250ms (at most 800ms), which swallows momentum.
+- A vertical wheel pages months only where the mount opts in (`vertical`): the staff calendar. A public
+  calendar lives inside a scrolling page and never captures the vertical wheel.
+- PageUp and PageDown step a month; with Shift, a year. A month and year panel jumps anywhere. Today
+  appears when the viewer is off the current month.
+- The list view groups by month. A preview pane pins beside it when the calendar's CONTAINER is wide
+  enough (a container query, because the same component mounts in a page, a panel and a column), and
+  the popup is used otherwise.
+
+**Adding a source.** Every calendar item (`lib/calendar/item.ts`) carries a `layer`. A new source, such
+as a plan task's due date, a shift or a booking, is one row in `CALENDAR_LAYERS` plus one adapter that
+maps its rows to `CalendarEvent`. The grid, the list and the preview need no change. A new kind of
+private entry is one `ENTRY_KINDS` row plus one value in the check constraint.
+
+## Pencil, Plan, Production (ADR-1386)
+
+The lifecycle that turns an idea into a published event without retyping it. The owner rulings and the
+invariants are in [ADR-1386](DECISIONS.md); each phase is a backlog row (`PROG-CAL1` to `PROG-CAL8`)
+whose detail carries the full specification and whose probe says when it is done. The member-facing
+words are fixed in `docs/NAMING.md`.
+
+```
+ Pencil ───────────────▶ Plan ───────────────────────▶ Production
+ a tentative private     the working record: notes,    the published event, created
+ date (entry kind        links, files, crm_tasks rows  through the existing event Spark
+ 'pencil'), candidates   with plan_id; holds many      prefilled from the plan; links
+ share option_group      dates and many events         back to it; replaces the Pencil card
+```
+
+**Pencil** (`PROG-CAL1`). An entry of kind `pencil` on the private layer: tentative, team only, and not
+blocking bookings unless staff say so. Candidate dates for one Pencil share `option_group`; picking one
+keeps that row and removes its siblings. `hold_expires_at` is an optional lapse date the staff calendar
+flags. Pencilling over an event, Unavailable time or another entry raises a clash warning and is still
+allowed.
+
+**Day notes** (`PROG-CAL1`). `public.space_calendar_day_notes` holds short labels that describe a day
+rather than occupy it: a `weekly` note sets `weekdays` (0 is Sunday) within optional `starts_on` /
+`ends_on` bounds; a `dated` note leaves `weekdays` null and covers `starts_on` through `ends_on`. A
+`public` note is readable by anyone and shows on the public tab; a `team` note only by the Space's
+editors. Writes are the operator quad. The grid asks `notesForDay` (`lib/calendar/day-notes.ts`) for a
+day's labels. A day note never blocks time and is never a calendar item.
+
+**Plan** (`PROG-CAL2`). `space_plans`, owned by the host Space. Calendar entries and events point at a
+plan; `crm_tasks.plan_id` makes plan tasks part of the one team task inbox (`lib/crm/tasks.ts`). The
+plan drawer opens from any calendar item that belongs to a plan and is composed from a Studio manifest.
+A co-host Space sees a plan only through an accepted collaboration and a share of that plan.
+
+**Production** (`PROG-CAL3`). "Make it a Production" opens the event Spark (`lib/studio/entities/event.ts`)
+prefilled by a pure mapping from the plan and the chosen Pencil onto the manifest's field keys. The event
+carries `plan_id`, and the Pencil is retired in the same step so the calendar shows one card. The
+readiness bar is derived from the manifest's required fields plus the plan's open tasks. Publishing is
+always the person's own press in the Spark.
+
+**Later phases.** Views (`PROG-CAL4`: stage board, My tasks, due dates as a layer, back-to-back items
+stacked as one block), templates and relative scheduling (`PROG-CAL5`: tasks anchored to the Production
+date, Run it again, repeating Pencils whose explicit exceptions a generator must never normalise), Vera
+proposals (`PROG-CAL6`, never publishing), co-host collaboration and a token-keyed private feed
+(`PROG-CAL7`), and the same spine for non-event projects (`PROG-CAL8`).
+
 Voice: all calendar copy follows `docs/CONTENT-VOICE.md` (no em/en dashes) + `docs/NAMING.md`.

@@ -7,6 +7,8 @@
 -- declared ONCE in lib/calendar/registry.ts (the check constraint below mirrors that list):
 --   unavailable  time the Space is not open. Blocks new bookings for the time it covers.
 --   private      an in-house item (a staff meeting, maintenance, a private rental).
+--   pencil       a date penciled in for a potential Production (ADR-1386): the first stage of
+--                Pencil, Plan, Production. Tentative by default, never public.
 -- A later kind (a task due date, a shift, a project milestone) is one row in the registry plus one
 -- value added to the check, never a new table: `source_kind` + `source_id` let an entry point at
 -- the record it came from, and `metadata` carries per-kind fields until one earns a column.
@@ -29,12 +31,12 @@
 --
 -- House style: additive + idempotent (SAFE to re-run). Reached untyped until lib/database.types.ts
 -- regenerates (ADR-246). Rollback: drop function public.space_public_unavailable(uuid, date, date);
--- drop table public.space_calendar_entries.
+-- drop table public.space_calendar_day_notes; drop table public.space_calendar_entries.
 
 create table if not exists public.space_calendar_entries (
   id           uuid primary key default gen_random_uuid(),
   space_id     uuid not null references public.spaces(id) on delete cascade,
-  kind         text not null check (kind in ('unavailable', 'private')),
+  kind         text not null check (kind in ('unavailable', 'private', 'pencil')),
   title        text not null check (char_length(title) between 1 and 200),
   notes        text check (notes is null or char_length(notes) <= 4000),
   location     text check (location is null or char_length(location) <= 300),
@@ -48,6 +50,11 @@ create table if not exists public.space_calendar_entries (
   -- RFC 5545 RRULE subset, the same dialect as events.recurrence_rule (lib/events/repeat-rule.ts).
   -- Stored now so repeating entries need no migration; nothing writes it yet.
   recurrence_rule text,
+  -- PENCIL CANDIDATES (ADR-1386): the candidate dates of one pencil share this id. Picking a date
+  -- keeps that row and removes its siblings. Null for a single date.
+  option_group uuid,
+  -- An optional date the pencil lapses by; the staff calendar flags it once it has passed.
+  hold_expires_at timestamptz,
   source_kind  text,
   source_id    uuid,
   metadata     jsonb not null default '{}'::jsonb,
@@ -73,6 +80,8 @@ comment on column public.space_calendar_entries.source_kind is
 
 create index if not exists space_calendar_entries_space_starts_idx
   on public.space_calendar_entries (space_id, starts_at);
+create index if not exists space_calendar_entries_option_group_idx
+  on public.space_calendar_entries (option_group) where option_group is not null;
 
 drop trigger if exists space_calendar_entries_set_updated_at on public.space_calendar_entries;
 create trigger space_calendar_entries_set_updated_at
@@ -132,3 +141,65 @@ comment on function public.space_public_unavailable(uuid, date, date) is
   'Public projection of the private calendar layer (ADR-1385): unavailable times only, never details.';
 
 grant execute on function public.space_public_unavailable(uuid, date, date) to anon, authenticated;
+
+-- ── Day notes (ADR-1386) ────────────────────────────────────────────────────────────────────────
+-- A short, quiet label on a day's grid card: "Quiet hours" every Monday, "Flex day" on Thursdays,
+-- "Retreat & rental" Friday and Saturday, or a note on one date range. Not an entry and never an
+-- event: it describes the day, it does not occupy time. Managed as a small field on the Space's
+-- Calendar settings page.
+--   weekly  weekdays set (0 = Sunday .. 6 = Saturday); applies on those days within
+--           [starts_on, ends_on], either bound open when null.
+--   dated   weekdays null; applies every day from starts_on through ends_on (or starts_on alone).
+-- A PUBLIC note is readable by anyone (it is shown on the public Calendar tab); a TEAM note only by the
+-- Space's editors. Writes are the operator quad.
+
+create table if not exists public.space_calendar_day_notes (
+  id          uuid primary key default gen_random_uuid(),
+  space_id    uuid not null references public.spaces(id) on delete cascade,
+  label       text not null check (char_length(label) between 1 and 40),
+  weekdays    smallint[] check (weekdays is null or (cardinality(weekdays) between 1 and 7 and weekdays <@ array[0,1,2,3,4,5,6]::smallint[])),
+  starts_on   date,
+  ends_on     date,
+  visibility  text not null default 'public' check (visibility in ('team', 'public')),
+  sort        integer not null default 0,
+  created_by  uuid references public.profiles(id) on delete set null,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  constraint space_calendar_day_notes_has_days check (weekdays is not null or starts_on is not null),
+  constraint space_calendar_day_notes_range check (ends_on is null or starts_on is null or ends_on >= starts_on)
+);
+
+comment on table public.space_calendar_day_notes is
+  'Quiet per-day labels on a Space calendar (ADR-1386): weekly (weekdays) or dated (starts_on..ends_on). Rendered by lib/calendar/day-notes.ts.';
+
+create index if not exists space_calendar_day_notes_space_idx
+  on public.space_calendar_day_notes (space_id, sort);
+
+drop trigger if exists space_calendar_day_notes_set_updated_at on public.space_calendar_day_notes;
+create trigger space_calendar_day_notes_set_updated_at
+  before update on public.space_calendar_day_notes
+  for each row execute function public.set_updated_at();
+
+alter table public.space_calendar_day_notes enable row level security;
+
+drop policy if exists space_calendar_day_notes_read on public.space_calendar_day_notes;
+create policy space_calendar_day_notes_read on public.space_calendar_day_notes
+  for select using (
+    visibility = 'public'
+    or private.can_write_space_content(space_id)
+    or private.get_my_web_role() in ('admin', 'janitor')
+  );
+
+drop policy if exists space_calendar_day_notes_space_insert on public.space_calendar_day_notes;
+create policy space_calendar_day_notes_space_insert on public.space_calendar_day_notes
+  for insert with check (private.can_write_space_content(space_id));
+
+drop policy if exists space_calendar_day_notes_space_update on public.space_calendar_day_notes;
+create policy space_calendar_day_notes_space_update on public.space_calendar_day_notes
+  for update
+  using (private.can_write_space_content(space_id))
+  with check (private.can_write_space_content(space_id));
+
+drop policy if exists space_calendar_day_notes_space_delete on public.space_calendar_day_notes;
+create policy space_calendar_day_notes_space_delete on public.space_calendar_day_notes
+  for delete using (private.can_write_space_content(space_id));

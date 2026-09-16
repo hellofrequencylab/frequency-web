@@ -1,25 +1,27 @@
 'use client'
 
-import { useCallback, useState, useTransition, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, useTransition, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus } from 'lucide-react'
+import { AlertTriangle, Plus, X } from 'lucide-react'
 import { EventCalendar, type CalendarEvent } from '@/components/events/event-calendar'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/icon-button'
 import { Input, Textarea, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { ENTRY_KINDS, entryKind, type CalendarLayerKey } from '@/lib/calendar/registry'
-import type { EntryInput } from '@/lib/calendar/entries'
+import { MAX_CANDIDATE_DATES, type EntryInput } from '@/lib/calendar/entries'
+import type { DayNote } from '@/lib/calendar/day-notes'
 import { isError } from '@/lib/action-result'
-import { deleteCalendarEntry, loadStaffCalendarMonth, saveCalendarEntry } from './entry-actions'
+import { deleteCalendarEntry, findEntryClashes, loadStaffCalendarMonth, pickPencilDate, saveCalendarEntry } from './entry-actions'
 
 // THE STAFF CALENDAR (ADR-1385). The Space's public events and its private layer on one grid, with
 // layer toggles, the vertical wheel paging months, and a drawer to add, edit and delete private
 // entries (Unavailable time and Private entries). Writes go through ./entry-actions, which run on the
 // caller's own session, so the table's RLS is the lock.
 
-const LAYERS: CalendarLayerKey[] = ['events', 'private', 'unavailable']
+const LAYERS: CalendarLayerKey[] = ['events', 'pencil', 'private', 'unavailable']
 
 function browserZone(): string {
   try {
@@ -34,6 +36,8 @@ function blankInput(kind: string, dayKey: string): EntryInput {
   return {
     kind: def.kind,
     title: def.kind === 'unavailable' ? 'Unavailable' : '',
+    holdExpiresOn: '',
+    candidateDates: [],
     notes: '',
     location: '',
     allDay: def.defaults.allDay,
@@ -42,7 +46,7 @@ function blankInput(kind: string, dayKey: string): EntryInput {
     startTime: '09:00',
     endTime: '10:00',
     timeZone: browserZone(),
-    status: 'confirmed',
+    status: def.defaultStatus,
     blocksTime: def.defaults.blocksTime,
     showPublicly: false,
   }
@@ -54,6 +58,7 @@ export function StaffCalendar({
   initialYear,
   initialMonth1,
   canEdit,
+  dayNotes,
 }: {
   slug: string
   events: CalendarEvent[]
@@ -61,6 +66,7 @@ export function StaffCalendar({
   initialMonth1: number
   /** False for a platform staff preview: the calendar is read-only. */
   canEdit: boolean
+  dayNotes?: DayNote[]
 }) {
   const router = useRouter()
   const [draft, setDraft] = useState<{ id: string | null; input: EntryInput } | null>(null)
@@ -71,7 +77,7 @@ export function StaffCalendar({
   const loadMonth = useCallback((y: number, m: number) => loadStaffCalendarMonth(slug, y, m), [slug])
   const openNew = (dayKey: string) => {
     setError(null)
-    setDraft({ id: null, input: blankInput('unavailable', dayKey) })
+    setDraft({ id: null, input: blankInput('pencil', dayKey) })
   }
   const today = () => new Date().toLocaleDateString('en-CA')
 
@@ -109,12 +115,44 @@ export function StaffCalendar({
   const input = draft?.input
   const def = input ? entryKind(input.kind) : null
 
+  // CLASH WARNINGS (ADR-1386): what this entry would overlap. A warning, never a block.
+  const [clashes, setClashes] = useState<string[]>([])
+  const clashKey = draft
+    ? JSON.stringify([draft.id, draft.input.kind, draft.input.allDay, draft.input.startDate, draft.input.endDate, draft.input.startTime, draft.input.endTime])
+    : null
+  useEffect(() => {
+    if (!clashKey || !draft) return
+    let live = true
+    const t = setTimeout(() => {
+      findEntryClashes(slug, draft.id, draft.input)
+        .then((c) => live && setClashes(c))
+        .catch(() => live && setClashes([]))
+    }, 400)
+    return () => {
+      live = false
+      clearTimeout(t)
+    }
+    // Only the date-shaped fields move the check; `draft` is read at fire time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clashKey, slug])
+  const shownClashes = clashKey ? clashes : []
+
+  const pick = (item: CalendarEvent) => {
+    if (!item.entryId) return
+    const id = item.entryId
+    startTransition(async () => {
+      const res = await pickPencilDate(slug, id)
+      if (isError(res)) setError(res.error)
+      else done()
+    })
+  }
+
   return (
     <div className="space-y-2">
       {canEdit && (
         <div className="flex justify-end">
           <Button variant="secondary" size="sm" onClick={() => openNew(today())}>
-            <Plus className="h-4 w-4" aria-hidden /> Add to calendar
+            <Plus className="h-4 w-4" aria-hidden /> Pencil it in
           </Button>
         </div>
       )}
@@ -126,6 +164,8 @@ export function StaffCalendar({
         wheelPaging
         layers={LAYERS}
         refreshKey={refreshKey}
+        dayNotes={dayNotes}
+        onPickDate={canEdit ? pick : undefined}
         onCreateAt={canEdit ? openNew : undefined}
         onEditEntry={
           canEdit
@@ -142,7 +182,7 @@ export function StaffCalendar({
         {input && (
           <form onSubmit={submit} className="space-y-4 rounded-card border border-border bg-surface p-6 lift-3">
             <h2 id="calendar-entry-title" className="text-lead font-bold text-text">
-              {draft?.id ? 'Edit entry' : 'Add to calendar'}
+              {draft?.id ? 'Edit entry' : def?.isPencil ? 'Pencil it in' : 'Add to calendar'}
             </h2>
 
             <div className="grid gap-1">
@@ -165,6 +205,7 @@ export function StaffCalendar({
                             allDay: next.defaults.allDay,
                             blocksTime: next.defaults.blocksTime,
                             showPublicly: next.canShowPublicly ? d.input.showPublicly : false,
+                            status: next.defaultStatus,
                             title: d.input.title === 'Unavailable' && next.kind !== 'unavailable' ? '' : d.input.title,
                           },
                         }
@@ -227,6 +268,64 @@ export function StaffCalendar({
               </div>
             </div>
             <p className="text-meta text-muted">Times are in {input.timeZone.replace(/_/g, ' ')}.</p>
+
+            {def?.isPencil && !draft?.id && (
+              <div className="grid gap-1">
+                <span className={labelClasses}>Other possible dates (optional)</span>
+                {(input.candidateDates ?? []).map((d, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Input
+                      type="date"
+                      aria-label={`Other date ${i + 1}`}
+                      value={d}
+                      onChange={(e) =>
+                        set(
+                          'candidateDates',
+                          (input.candidateDates ?? []).map((x, j) => (j === i ? e.target.value : x)),
+                        )
+                      }
+                    />
+                    <IconButton
+                      label={`Remove other date ${i + 1}`}
+                      onClick={() => set('candidateDates', (input.candidateDates ?? []).filter((_, j) => j !== i))}
+                    >
+                      <X className="h-4 w-4" aria-hidden />
+                    </IconButton>
+                  </div>
+                ))}
+                {(input.candidateDates?.length ?? 0) + 1 < MAX_CANDIDATE_DATES && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => set('candidateDates', [...(input.candidateDates ?? []), ''])}
+                  >
+                    <Plus className="h-4 w-4" aria-hidden /> Add another date
+                  </Button>
+                )}
+                <p className="text-meta text-muted">Each date is penciled in. Keep one when you decide.</p>
+              </div>
+            )}
+
+            {def?.isPencil && (
+              <div className="grid gap-1">
+                <label htmlFor="entry-lapse" className={labelClasses}>Lapses on (optional)</label>
+                <Input id="entry-lapse" type="date" value={input.holdExpiresOn ?? ''} onChange={(e) => set('holdExpiresOn', e.target.value)} />
+              </div>
+            )}
+
+            {shownClashes.length > 0 && (
+              <div role="status" className="rounded-control bg-warning-bg px-3 py-2 text-body-sm text-warning">
+                <p className="flex items-center gap-1.5 font-medium">
+                  <AlertTriangle className="h-4 w-4" aria-hidden /> This overlaps
+                </p>
+                <ul className="mt-1 list-disc pl-5">
+                  {shownClashes.map((c) => (
+                    <li key={c}>{c}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <div className="grid gap-1">
               <label htmlFor="entry-location" className={labelClasses}>Location (optional)</label>

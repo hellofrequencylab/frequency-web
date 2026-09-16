@@ -45,6 +45,8 @@ export interface CalendarEvent {
   entryId?: string | null
   /** A private entry's notes, shown in the staff preview only. */
   notes?: string | null
+  /** A pencil's candidate-date group (ADR-1386); siblings share it. */
+  optionGroup?: string | null
   /** A private entry as the staff form edits it. Present only when `entryId` is. */
   entryInput?: EntryInput | null
 }

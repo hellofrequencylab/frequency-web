@@ -1,6 +1,6 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
-import { formatEventWhen, eventInstant } from '@/lib/time/zone'
+import { formatEventWhen, eventInstant, dayInZone } from '@/lib/time/zone'
 import type { CalendarEvent } from './item'
 import {
   ENTRY_COLS,
@@ -21,7 +21,7 @@ import {
 type Untyped = {
   from: (t: 'space_calendar_entries') => {
     select: (cols: string) => EntryQuery
-    insert: (row: Record<string, unknown>) => { select: (c: string) => { single: () => Promise<{ data: EntryRow | null; error: { message: string } | null }> } }
+    insert: (rows: Record<string, unknown>[]) => { select: (c: string) => PromiseLike<{ data: EntryRow[] | null; error: { message: string } | null }> }
     update: (row: Record<string, unknown>) => EntryQuery
     delete: () => EntryQuery
   }
@@ -33,6 +33,7 @@ type Untyped = {
 type EntryQuery = PromiseLike<{ data: EntryRow[] | null; error: { message: string } | null }> & {
   select: (c: string) => EntryQuery
   eq: (c: string, v: string) => EntryQuery
+  neq: (c: string, v: string) => EntryQuery
   lt: (c: string, v: string) => EntryQuery
   gt: (c: string, v: string) => EntryQuery
   order: (c: string, o: { ascending: boolean }) => EntryQuery
@@ -76,7 +77,8 @@ export async function listStaffCalendarItems(
   opts: { editable: boolean },
 ): Promise<CalendarEvent[]> {
   const rows = await listSpaceCalendarEntries(spaceId, fromDay, toDay)
-  return rows.map((r) => entryToCalendarItem(r, entryFormatters, opts))
+  const now = dayInZone(new Date())
+  return rows.map((r) => entryToCalendarItem(r, entryFormatters, { ...opts, now }))
 }
 
 /** The public "Unavailable" spans for [fromDay, toDay): times only. */
@@ -94,18 +96,39 @@ export async function listPublicUnavailableItems(spaceId: string, fromDay: strin
   }
 }
 
-export async function insertCalendarEntry(
+/** Insert one entry, or a pencil and its candidate dates sharing one option_group. */
+export async function insertCalendarEntries(
   spaceId: string,
-  row: EntryWrite,
+  rows: EntryWrite[],
   createdBy: string,
-): Promise<{ data: EntryRow } | { error: string }> {
+): Promise<{ data: EntryRow[] } | { error: string }> {
+  if (rows.length === 0) return { error: 'Nothing to save.' }
+  const group = rows.length > 1 ? crypto.randomUUID() : null
   const { data, error } = await (await db())
     .from('space_calendar_entries')
-    .insert({ ...row, space_id: spaceId, created_by: createdBy })
+    .insert(rows.map((r) => ({ ...r, space_id: spaceId, created_by: createdBy, option_group: group })))
     .select(ENTRY_COLS)
-    .single()
-  if (error || !data) return { error: 'The entry could not be saved.' }
+  if (error || !data?.length) return { error: 'The entry could not be saved.' }
   return { data }
+}
+
+/** Pick one candidate date of a pencil: keep it, remove its siblings, and clear the group. */
+export async function pickPencilDateRow(spaceId: string, entryId: string): Promise<{ data: true } | { error: string }> {
+  const client = await db()
+  const { data } = await client.from('space_calendar_entries').select('id, option_group').eq('space_id', spaceId).eq('id', entryId)
+  const group = data?.[0]?.option_group
+  if (!group) return { error: 'That pencil has only one date.' }
+  const siblings = await client
+    .from('space_calendar_entries')
+    .delete()
+    .eq('space_id', spaceId)
+    .eq('option_group', group)
+    .neq('id', entryId)
+    .select('id')
+  if (siblings.error) return { error: 'The other dates could not be removed.' }
+  const kept = await client.from('space_calendar_entries').update({ option_group: null }).eq('space_id', spaceId).eq('id', entryId).select('id')
+  if (kept.error) return { error: 'The date could not be kept.' }
+  return { data: true }
 }
 
 export async function updateCalendarEntryRow(

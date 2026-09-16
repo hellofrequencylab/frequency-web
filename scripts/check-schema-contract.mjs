@@ -70,6 +70,9 @@ export const MIN_RPC_CALLS = 60
  *  `kind` is optional (matches any). An entry that matches nothing fails the guard. */
 /** @type {{ file: string, table: string, column?: string | null, kind?: string | null, added: string, reason: string, owner: string }[]} */
 export const ALLOWLIST = [
+  { file: 'lib/calendar/day-notes-store.ts', table: 'space_calendar_day_notes',
+    added: '2026-09-16', owner: 'PROG-CAL1',
+    reason: 'ADR-1386, day notes. Migration 20270345005200 creates the table and applies at merge; retire by regenerating lib/database.types.ts.' },
   { file: 'lib/calendar/entries-store.ts', table: 'space_calendar_entries',
     added: '2026-09-16', owner: 'LIVE-378',
     reason: 'ADR-1385, the private calendar layer. Migration 20270345005200 creates the table and the public projection and applies at merge; retire by regenerating lib/database.types.ts.' },

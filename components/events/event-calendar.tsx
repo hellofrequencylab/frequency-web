@@ -25,6 +25,7 @@ import { CalendarRepeatsStrip } from '@/components/events/calendar-repeats-strip
 import type { CalendarRepeatSeries } from '@/lib/events/calendar-repeats'
 import { calendarLayer, CALENDAR_LAYERS, type CalendarLayerKey } from '@/lib/calendar/registry'
 import { spanDayKeys } from '@/lib/calendar/entries'
+import { notesForDay, type DayNote } from '@/lib/calendar/day-notes'
 import { monthKey } from '@/lib/calendar/month-window'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import { useMonthGestures } from './use-month-gestures'
@@ -89,6 +90,8 @@ export function EventCalendar({
   onCreateAt,
   onEditEntry,
   refreshKey = 0,
+  dayNotes,
+  onPickDate,
 }: {
   events: CalendarEvent[]
   initialYear: number
@@ -111,6 +114,10 @@ export function EventCalendar({
   onEditEntry?: (item: CalendarEvent) => void
   /** Bump to drop every fetched month (after a save changed what they hold). */
   refreshKey?: number
+  /** Quiet per-day labels ("Quiet hours", "Flex day"), ADR-1386. */
+  dayNotes?: DayNote[]
+  /** Staff: keep this candidate date of a pencil and drop its siblings. */
+  onPickDate?: (item: CalendarEvent) => void
 }) {
   const [{ year, month1 }, setMonth] = useState({ year: initialYear, month1: initialMonth1 })
   const [selected, setSelected] = useState<CalendarEvent | null>(null)
@@ -485,6 +492,7 @@ export function EventCalendar({
                   onToggleTz={() => setInViewerTz((v) => !v)}
                   onOpenHost={onSelectEvent}
                   onEditEntry={onEditEntry}
+                  onPickDate={onPickDate}
                 />
               </div>
             ) : (
@@ -529,6 +537,7 @@ export function EventCalendar({
                   const pending = pendingByDay.get(cell.date) ?? []
                   const isToday = cell.date === today
                   const dayNum = Number(cell.date.slice(8, 10))
+                  const labels = dayNotes?.length ? notesForDay(dayNotes, cell.date) : []
                   return (
                     <div
                       key={cell.date}
@@ -559,6 +568,11 @@ export function EventCalendar({
                           {dayNum}
                         </span>
                       </div>
+                      {labels.length > 0 && (
+                        <p className="-mt-0.5 mb-1 truncate px-0.5 text-2xs text-muted" title={labels.join(', ')}>
+                          {labels.join(' · ')}
+                        </p>
+                      )}
                       <div className="flex flex-col gap-1">
                         {cards.slice(0, 3).map((ev, i) => (
                           <button
@@ -654,6 +668,14 @@ export function EventCalendar({
                     }
                   : undefined
               }
+              onPickDate={
+                onPickDate
+                  ? (item) => {
+                      setSelected(null)
+                      onPickDate(item)
+                    }
+                  : undefined
+              }
             />
           </div>
         )}
@@ -688,6 +710,7 @@ function CalendarPreview({
   onClose,
   onOpenHost,
   onEditEntry,
+  onPickDate,
 }: {
   item: CalendarEvent
   inViewerTz: boolean
@@ -696,6 +719,7 @@ function CalendarPreview({
   /** The host-owned popup (the Space page Events block), opened from the preview pane. */
   onOpenHost?: (ev: CalendarEvent) => void
   onEditEntry?: (item: CalendarEvent) => void
+  onPickDate?: (item: CalendarEvent) => void
 }) {
   const isEvent = (item.layer ?? 'events') === 'events'
   const viewerLabel = viewerZoneLabel(item.startInstantIso)
@@ -749,6 +773,11 @@ function CalendarPreview({
           {onClose && (
             <button type="button" onClick={onClose} className={buttonClasses('secondary', 'sm')}>
               Close
+            </button>
+          )}
+          {!isEvent && item.entryId && item.optionGroup && onPickDate && (
+            <button type="button" onClick={() => onPickDate(item)} className={buttonClasses('secondary', 'sm')}>
+              Keep this date
             </button>
           )}
           {!isEvent && item.entryId && onEditEntry && (

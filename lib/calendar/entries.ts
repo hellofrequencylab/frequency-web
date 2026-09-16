@@ -24,10 +24,12 @@ export interface EntryRow {
   status: EntryStatus
   blocks_time: boolean
   visibility: EntryVisibility
+  option_group: string | null
+  hold_expires_at: string | null
 }
 
 export const ENTRY_COLS =
-  'id, space_id, kind, title, notes, location, all_day, starts_at, ends_at, time_zone, status, blocks_time, visibility'
+  'id, space_id, kind, title, notes, location, all_day, starts_at, ends_at, time_zone, status, blocks_time, visibility, option_group, hold_expires_at'
 
 /** The staff form, as plain strings and booleans (what a client sends). */
 export interface EntryInput {
@@ -47,10 +49,17 @@ export interface EntryInput {
   status?: string | null
   blocksTime: boolean
   showPublicly: boolean
+  /** Pencils: YYYY-MM-DD the pencil lapses on, or empty. */
+  holdExpiresOn?: string | null
+  /** Pencils, create only: more candidate start dates, each the same length as the first. */
+  candidateDates?: string[] | null
 }
 
-/** The columns a create or update writes. */
-export type EntryWrite = Omit<EntryRow, 'id' | 'space_id'>
+/** The columns a create or update writes. `option_group` is set by the action, never by the form. */
+export type EntryWrite = Omit<EntryRow, 'id' | 'space_id' | 'option_group'>
+
+/** The most candidate dates one pencil may carry (the first date included). */
+export const MAX_CANDIDATE_DATES = 6
 
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/
@@ -101,7 +110,13 @@ export function parseEntryInput(input: EntryInput): { data: EntryWrite } | { err
 
   const status = (ENTRY_STATUSES as readonly string[]).includes(input.status ?? '')
     ? (input.status as EntryStatus)
-    : 'confirmed'
+    : def.defaultStatus
+  let holdExpiresAt: string | null = null
+  if (def.isPencil && input.holdExpiresOn) {
+    const lapse = dateMs(input.holdExpiresOn)
+    if (lapse === null) return { error: 'Pick a valid date for the pencil to lapse.' }
+    holdExpiresAt = new Date(lapse).toISOString()
+  }
   const timeZone = (input.timeZone ?? '').trim()
   if (!timeZone) return { error: 'The entry needs a time zone.' }
 
@@ -118,8 +133,31 @@ export function parseEntryInput(input: EntryInput): { data: EntryWrite } | { err
       status,
       blocks_time: input.blocksTime,
       visibility: def.canShowPublicly && input.showPublicly ? 'public_unavailable' : 'team',
+      hold_expires_at: holdExpiresAt,
     },
   }
+}
+
+/** The extra candidate dates of a new pencil as whole writes: the same span shifted to each date.
+ *  Deduped, never the first date again, capped at MAX_CANDIDATE_DATES in total. */
+export function candidateWrites(first: EntryWrite, dates: readonly string[] | null | undefined): EntryWrite[] | { error: string } {
+  const startDay = dateMs(first.starts_at.slice(0, 10))!
+  const seen = new Set([first.starts_at.slice(0, 10)])
+  const out: EntryWrite[] = []
+  for (const d of dates ?? []) {
+    if (!d || seen.has(d)) continue
+    const ms = dateMs(d)
+    if (ms === null) return { error: 'One of the other dates is not a valid date.' }
+    seen.add(d)
+    const shift = ms - startDay
+    out.push({
+      ...first,
+      starts_at: new Date(new Date(first.starts_at).getTime() + shift).toISOString(),
+      ends_at: new Date(new Date(first.ends_at).getTime() + shift).toISOString(),
+    })
+  }
+  if (out.length + 1 > MAX_CANDIDATE_DATES) return { error: `A pencil can hold ${MAX_CANDIDATE_DATES} dates at most.` }
+  return out
 }
 
 const pad2 = (n: number) => String(n).padStart(2, '0')
@@ -153,6 +191,8 @@ export function entryToInput(row: EntryRow): EntryInput {
     status: row.status,
     blocksTime: row.blocks_time,
     showPublicly: row.visibility === 'public_unavailable',
+    holdExpiresOn: row.hold_expires_at ? row.hold_expires_at.slice(0, 10) : '',
+    candidateDates: [],
   }
 }
 
@@ -177,7 +217,11 @@ export interface EntryFormatters {
 }
 
 /** A private entry as the staff calendar renders it. */
-export function entryToCalendarItem(row: EntryRow, fmt: EntryFormatters, opts: { editable: boolean }): CalendarEvent {
+export function entryToCalendarItem(
+  row: EntryRow,
+  fmt: EntryFormatters,
+  opts: { editable: boolean; /** YYYY-MM-DD, to flag a lapsed pencil. */ now?: string },
+): CalendarEvent {
   const def = entryKind(row.kind)
   const { dayKey, endDayKey } = entryDaySpan(row)
   const lastDayIso = `${endDayKey}T00:00:00.000Z`
@@ -186,7 +230,13 @@ export function entryToCalendarItem(row: EntryRow, fmt: EntryFormatters, opts: {
       ? `${fmt.dateLabel(row.starts_at, row.time_zone)}, all day`
       : `${fmt.dateLabel(row.starts_at, row.time_zone)} to ${fmt.dateLabel(lastDayIso, row.time_zone)}, all day`
     : `${fmt.whenLabel(row.starts_at, row.time_zone)} to ${fmt.timeLabel(row.ends_at, row.time_zone)}`
-  const badges = [row.status === 'tentative' ? 'Tentative' : null, row.visibility === 'public_unavailable' ? 'Shown publicly' : null]
+  const lapsed = !!row.hold_expires_at && opts.now !== undefined && row.hold_expires_at.slice(0, 10) < opts.now
+  const badges = [
+    row.status === 'tentative' && row.kind !== 'pencil' ? 'Tentative' : null,
+    row.option_group ? 'One of several dates' : null,
+    row.hold_expires_at ? (lapsed ? 'Lapsed' : `Lapses ${row.hold_expires_at.slice(5, 10).replace('-', '/')}`) : null,
+    row.visibility === 'public_unavailable' ? 'Shown publicly' : null,
+  ]
     .filter(Boolean)
     .join(' · ')
   return {
@@ -205,6 +255,7 @@ export function entryToCalendarItem(row: EntryRow, fmt: EntryFormatters, opts: {
     isCancelled: row.status === 'cancelled',
     layer: def?.layer ?? 'private',
     entryId: opts.editable ? row.id : null,
+    optionGroup: row.option_group,
     entryInput: opts.editable ? entryToInput(row) : null,
     notes: row.notes,
   }

@@ -18,6 +18,8 @@ import type { CalendarEvent } from '@/components/events/event-calendar'
 import { listStaffCalendarItems } from '@/lib/calendar/entries-store'
 import { monthGridWindow } from '@/lib/calendar/month-window'
 import { StaffCalendar } from './staff-calendar'
+import { DayNotesField } from './day-notes-field'
+import { listDayNotes } from '@/lib/calendar/day-notes-store'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
 import { EventShareApprovals } from '@/components/events/event-share-approvals'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -124,6 +126,7 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
     ? []
     : await listStaffCalendarItems(space.id, grid.fromDay, grid.toDay, { editable: canManage })
   events.push(...entryItems)
+  const dayNotes = featureLocked ? [] : await listDayNotes(space.id)
 
   // "N upcoming events." — GATHERINGS, not materialised occurrences (LIVE-198 / SERIES-COUNT).
   // Recurrence is materialised (ADR-007), so a weekly series is ~9 rows inside the cron's 60-day
@@ -194,7 +197,10 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
             initialYear={initialYear}
             initialMonth1={initialMonth1}
             canEdit={canManage}
+            dayNotes={dayNotes}
           />
+
+          <DayNotesField slug={space.slug} notes={dayNotes} canEdit={canManage} />
 
           {managedEvents.length > 0 && (
             <div className="pt-2">

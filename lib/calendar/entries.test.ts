@@ -46,7 +46,7 @@ const fmt: EntryFormatters = {
 function row(input: EntryInput, id = '11111111-1111-4111-8111-111111111111'): EntryRow {
   const parsed = parseEntryInput(input)
   if ('error' in parsed) throw new Error(parsed.error)
-  return { id, space_id: 's', ...parsed.data }
+  return { id, space_id: 's', option_group: null, ...parsed.data }
 }
 
 describe('parseEntryInput', () => {
@@ -145,5 +145,38 @@ describe('the registry and the month window', () => {
     expect(monthGridWindow(2026, 9)).toEqual({ fromDay: '2026-08-30', toDay: '2026-10-04' })
     expect(safeMonth(2026, 13)).toBeNull()
     expect(safeMonth('2026', '2')).toEqual({ year: 2026, month1: 2 })
+  })
+})
+
+describe('pencils (ADR-1386)', () => {
+  it('is tentative by default and shifts candidate dates by whole days', async () => {
+    const { candidateWrites } = await import('./entries')
+    const r = row({ ...base, kind: 'pencil', allDay: false, status: null, endDate: '2026-10-12', startDate: '2026-10-12', startTime: '19:00', endTime: '21:00', holdExpiresOn: '2026-10-01' })
+    expect(r.status).toBe('tentative')
+    expect(r.hold_expires_at).toBe('2026-10-01T00:00:00.000Z')
+    const extra = candidateWrites(r, ['2026-10-19', '2026-10-12', '', '2026-10-19'])
+    if ('error' in extra) throw new Error(extra.error)
+    expect(extra.map((e) => [e.starts_at, e.ends_at])).toEqual([['2026-10-19T19:00:00.000Z', '2026-10-19T21:00:00.000Z']])
+    expect(candidateWrites(r, ['2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16', '2026-10-17', '2026-10-18'])).toEqual({
+      error: 'A pencil can hold 6 dates at most.',
+    })
+  })
+})
+
+describe('day notes (ADR-1386)', () => {
+  it('places weekly and dated notes on the right days, within bounds', async () => {
+    const { notesForDay, parseDayNoteInput } = await import('./day-notes')
+    const notes = [
+      { id: '1', label: 'Quiet hours', weekdays: [1], startsOn: '2026-09-22', endsOn: '2027-09-26', visibility: 'public' as const },
+      { id: '2', label: 'Retreat & rental', weekdays: [5, 6], startsOn: null, endsOn: null, visibility: 'public' as const },
+      { id: '3', label: 'Thanksgiving', weekdays: null, startsOn: '2026-11-24', endsOn: '2026-11-25', visibility: 'team' as const },
+    ]
+    expect(notesForDay(notes, '2026-09-28')).toEqual(['Quiet hours']) // a Monday in range
+    expect(notesForDay(notes, '2026-09-21')).toEqual([]) // a Monday before it starts
+    expect(notesForDay(notes, '2026-09-25')).toEqual(['Retreat & rental']) // Friday
+    expect(notesForDay(notes, '2026-11-25')).toEqual(['Thanksgiving'])
+    expect(parseDayNoteInput({ label: 'X', mode: 'weekly', weekdays: [], startsOn: '', endsOn: '', isPublic: true })).toEqual({
+      error: 'Pick at least one day of the week.',
+    })
   })
 })
