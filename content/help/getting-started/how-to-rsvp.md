@@ -41,8 +41,10 @@ There are two, and you can change your answer right up until the gathering ends.
 - **Interested** signals you are curious without claiming a spot. Use it when you
   are not sure yet.
 
-An event shows one way to join. On a ticketed event, your ticket is your Going, so
-the box is headed **Tickets** and there is no separate answer to give.
+On a ticketed event your ticket IS your Going: buying it puts you in the room and
+counts you like anyone else. The box is headed **Tickets**, and the answer switch
+sits below it. Tap **Going** before you have a ticket and it opens the card fields
+rather than recording an answer nobody has paid for.
 Other events run on RSVP even when they have a price: first come, first served,
 with the cost paid at the door or covered by a membership. If the hosting Space's
 membership includes the event, being a member is enough: answer Going and your
@@ -56,7 +58,7 @@ holding a spot until they do. We email you the moment they reply, so there is
 nothing to keep checking. The same rule applies to everyone, whether or not they
 have an account.
 
-If an event is full, Going puts you on the waitlist instead. You keep your place
+On an RSVP event that is full, Going puts you on the waitlist instead. You keep your place
 in line, and if someone drops out the next person moves up automatically.
 
 ## What happens after I RSVP?
