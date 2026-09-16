@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Check, ChevronUp, Ticket } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import CheckoutPanel from '@/components/billing/checkout-panel'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { isError } from '@/lib/action-result'
@@ -280,6 +279,15 @@ export function MembershipJoinCard({
   // The CTA carries the set's only solid fill on the featured plan; every other plan is secondary,
   // so the grid has one obvious answer rather than four competing ones (marketing pricing does the
   // same, `variant={featured ? 'primary' : 'secondary'}`).
+  // A short "best for" line, which every current pricing guide asks for and which this surface
+  // had nowhere to put. DERIVED, not a new field: an operator already writes a description, and
+  // asking for a second one-liner per tier is how a tier editor grows a field nobody fills in.
+  const bestFor = free
+    ? 'For following the house'
+    : tier.annualPriceCents != null
+      ? 'Monthly or yearly'
+      : null
+
   const ctaVariant = featured || free ? 'primary' : 'secondary'
   const ctaLabel = full
     ? 'Join the waitlist'
@@ -402,31 +410,40 @@ export function MembershipJoinCard({
     )
   }
 
-  // ── BAND: the prestige rung, under the grid, on the canvas ──────────────────────────────────
+  // ── BAND: the prestige rung, under the grid, as a dark room ─────────────────────────────────
+  // A prestige tier listing seven bullets is arguing it is worth 2.5x the tier above it, and per
+  // bullet it never is. So it stops arguing. It changes REGISTER instead: the ink ground is the
+  // system's own dark band (globals.css calls it "deep warm near-black ... drawn from Frequency's
+  // black wood-slat interiors"), it carries three lines rather than a list, and it leads with what
+  // the rate does for other people, which is the only reason anyone takes it.
   if (layout === 'band') {
     return (
-      <div className="border-t border-border pt-8">
-        <div className="mx-auto flex max-w-2xl flex-col items-center gap-5 text-center">
+      <div className="overflow-hidden rounded-card bg-ink px-6 py-10 lift-2 ring-focus @md:px-10 @md:py-12">
+        <div className="mx-auto flex max-w-xl flex-col items-center gap-6 text-center">
           <div>
-            <p className="eyebrow text-primary-strong">By invitation, and by choice</p>
-            <h3 className="mt-2 text-page-title font-bold leading-tight text-text">{tier.name}</h3>
+            <p className="eyebrow text-on-ink-subtle">By invitation, and by choice</p>
+            <h3 className="mt-3 font-section text-display-card font-bold leading-tight text-on-ink">
+              {tier.name}
+            </h3>
           </div>
 
           <div className="flex items-baseline gap-1.5">
-            <span className="text-stat-md font-black tabular-nums leading-none text-text">
+            <span className="text-stat-md font-black tabular-nums leading-none text-on-ink">
               {formatPrice(price.cents)}
             </span>
-            <span className="text-body-sm text-muted">{intervalLabel(price.cadence)}</span>
+            <span className="text-body-sm text-on-ink-muted">{intervalLabel(price.cadence)}</span>
           </div>
 
           {tier.description && (
-            <p className="max-w-prose text-body leading-relaxed text-muted">{tier.description}</p>
+            <p className="max-w-prose text-body leading-relaxed text-on-ink-muted">
+              {tier.description}
+            </p>
           )}
 
           {tier.benefits.length > 0 && (
-            <ul className="flex flex-col items-center gap-2">
+            <ul className="flex flex-col items-center gap-3 border-t border-ink-border pt-6">
               {tier.benefits.map((benefit, i) => (
-                <li key={i} className="text-body-sm leading-relaxed text-text">
+                <li key={i} className="text-body leading-relaxed text-on-ink">
                   {benefit}
                 </li>
               ))}
@@ -437,55 +454,65 @@ export function MembershipJoinCard({
             {spotsLine}
             {cta}
             {payDrawer}
-                {footnotes}
+            {footnotes}
           </div>
         </div>
       </div>
     )
   }
 
-  // ── CARD: a paid plan in the grid ───────────────────────────────────────────────────────────
-  // The chrome ladder is the house one: lift-1 + a hairline at rest, lift-2 + a primary border and
-  // ring for the one featured plan. lift-3 is never a plan card; it is reserved for one object per
-  // page.
-  const shell = featured
-    ? 'border-2 border-primary bg-surface p-7 lift-2 ring-4 ring-primary-bg'
-    : 'border border-border bg-surface p-5 lift-1'
-
+  // ── CARD: a paid plan in the grid ───────────────────────────────────
+  // The featured plan carries a PRIMARY HEADER BAND rather than a heavier outline. A border says
+  // "this one is different"; a filled header says "start here", and it survives being scanned at
+  // arm's length, which an outline does not. It also frees the badge from floating on the border,
+  // where it collided with the card above it once the grid started stacking.
+  //
+  // Everything else keeps lift-1 and a hairline. lift-3 is never a plan card: it is reserved for
+  // one object per page.
   return (
-    <div className={`relative flex h-full flex-col rounded-card ring-focus ${shell}`}>
+    <div
+      className={`relative flex h-full flex-col overflow-hidden rounded-card ring-focus ${
+        featured
+          ? 'border-2 border-primary bg-surface lift-2'
+          : 'border border-border bg-surface lift-1'
+      }`}
+    >
       {featured && (
-        <span className="absolute -top-3 left-6">
-          <Badge tone="primary" solid size="sm">
-            Most chosen
-          </Badge>
-        </span>
-      )}
-
-      <h3 className="text-card-title font-bold leading-tight text-text">{tier.name}</h3>
-
-      <div className="mt-3">{priceBlock}</div>
-      {saving && <p className="mt-1.5 text-2xs font-semibold text-success">{saving}</p>}
-      {price.monthlyOnly && (
-        <p className="mt-1.5 text-meta text-muted">Monthly only. This tier has no yearly price.</p>
-      )}
-
-      {tier.description && (
-        <p className="mt-3 text-body-sm leading-relaxed text-muted">{tier.description}</p>
-      )}
-
-      {(benefitList || eventList) && (
-        <div className="mt-5 space-y-2 border-t border-border pt-5">
-          {benefitList}
-          {eventList}
+        <div className="flex items-center justify-between gap-2 bg-primary px-5 py-2.5">
+          <span className="text-body-sm font-bold text-on-primary">Most chosen</span>
+          <Check className="h-4 w-4 shrink-0 text-on-primary" aria-hidden />
         </div>
       )}
 
-      <div className="mt-auto pt-5">
-        {spotsLine}
-        {cta}
-        {payDrawer}
-        {footnotes}
+      <div className={`flex flex-1 flex-col ${featured ? 'p-6' : 'p-5'}`}>
+        <h3 className="font-section text-card-title font-bold leading-tight text-text">
+          {tier.name}
+        </h3>
+        {bestFor && <p className="mt-1 text-meta text-subtle">{bestFor}</p>}
+
+        <div className="mt-3">{priceBlock}</div>
+        {saving && <p className="mt-1.5 text-2xs font-semibold text-success">{saving}</p>}
+        {price.monthlyOnly && (
+          <p className="mt-1.5 text-meta text-muted">Monthly only. This tier has no yearly price.</p>
+        )}
+
+        {tier.description && (
+          <p className="mt-3 text-body-sm leading-relaxed text-muted">{tier.description}</p>
+        )}
+
+        {(benefitList || eventList) && (
+          <div className="mt-5 space-y-2 border-t border-border pt-5">
+            {benefitList}
+            {eventList}
+          </div>
+        )}
+
+        <div className="mt-auto pt-5">
+          {spotsLine}
+          {cta}
+          {payDrawer}
+          {footnotes}
+        </div>
       </div>
     </div>
   )

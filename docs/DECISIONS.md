@@ -43984,6 +43984,59 @@ Space membership is the first of those four to convert.
 
 ---
 
+## ADR-1379: The plans page sells: the upgrade is featured, and the prestige rung is a dark room (2026-09-16)
+
+**Status:** Accepted · **Amends** [ADR-1375](DECISIONS.md) (the featured rule) · **Extends**
+[ADR-1378](DECISIONS.md) (the prestige band) · corroborated by
+`components/spaces/membership-tier-picker.tsx`, `components/spaces/membership-join-card.tsx`
+
+**Context.** Three faults, all visible on the live page and all introduced by earlier passes of this
+same surface.
+
+1. **🔴 The page crowned the CHEAPEST paid plan.** ADR-1375 featured the middle rung, on the
+   standard reading that the middle of three carries the volume. ADR-1378 then lifted the prestige
+   rung OUT of the grid. On a four-tier ladder the grid held two, `Math.floor((2-1)/2)` resolved to
+   index 0, and "Most chosen" landed on the  tier while the  tier sat beside it unmarked. **A
+   rule outsmarted itself the moment another rule moved its inputs**, and neither ADR was wrong on
+   its own.
+2. **The cards were too narrow for their own copy.** This column shares width with the right rail.
+   At the `@md` breakpoint each card landed near 270px and every benefit line wrapped, turning two
+   plans into two tall ribbons.
+3. **The prestige rung argued on bullets and lost.** Rendered as a plain centered block it read as a
+   fourth option that cost 2.5x the one above it, which per bullet is exactly what it is.
+
+**Decision.**
+
+1. **Feature the DEAREST card still in the grid.** Once prestige is lifted out, what the grid holds
+   is the entry rung and the upgrade; the upgrade is what a page like this exists to sell. The rule
+   reads the same whether the grid holds two rungs or five, and it cannot be moved by a neighbouring
+   rule the way a positional middle can.
+2. **The featured plan gets a primary HEADER BAND, not a heavier outline.** A border says "this one
+   is different"; a filled header says "start here", and it survives being scanned at arm's length.
+   It also frees the badge from floating on the card's border, where it collided with the card above
+   once the grid began stacking.
+3. **The grid stays STACKED until roughly 320px a card** (`@2xl`), which is the width the copy was
+   written for. A stacked pair on a narrow column reads better than a cramped row.
+4. **The prestige rung stops arguing and changes register.** It is rendered on `bg-ink` — the
+   system's own dark band, described at its token as "deep warm near-black ... drawn from
+   Frequency's black wood-slat interiors" — with `on-ink` foregrounds, three lines rather than a
+   list, and invitation framing. The research this pass rests on puts it plainly: people pay more
+   for a feeling than for features. A tier that lists seven of them is competing on the axis where
+   it is arithmetically the worst value on the page.
+5. **Each plan carries a short "best for" line**, DERIVED rather than authored. An operator already
+   writes a description; asking for a second one-liner per tier is how a tier editor grows a field
+   nobody fills in.
+
+**Consequences.**
+
+- ✅ `check:contrast` passes on the ink pairing, which matters because it is the one place here
+  where a foreground and its ground are both non-default.
+- ⚠️ **The ink family is documented for "the public site's dark bands ... marketing pages."** This is
+  a member surface, so the usage widens that note deliberately. It is still a sales band, and the
+  `on-ink` tokens exist precisely so the contrast is safe rather than hand-mixed.
+- ⚠️ **The featured rule is still positional**, just positional in a way that cannot be moved by its
+  neighbours. A real `featured` flag on the tier model remains the honest end state, and this
+  function is still the single place that would change.
 ## ADR-1380: a paid ticket is a seat in the room, and the RSVP switch stays on a ticketed event (2026-09-16)
 
 **Status:** Accepted · amends [ADR-826](#adr-826) (one join function per event) and the consequence
@@ -44074,3 +44127,50 @@ match, and the null `from_ticket_id` on the update arm were each asserted agains
 on 2026-09-16, with a control that deliberately asserted the wrong thing and fired as it must. The
 backfill of the one pre-existing settled ticket returned `minted=true, seat_status=going`, and a
 second call returned `minted=false`.
+
+## ADR-1381: Ledger parity is a NAME check, so a reconstructed migration can be wrong and still pass (2026-09-16)
+
+**Status:** Accepted · **Qualifies** [ADR-1007](DECISIONS.md) (repo⇄ledger parity) · **Occasioned
+by** [ADR-1380](DECISIONS.md) · corroborated by `scripts/maintenance/ledger-parity.mjs`
+
+**Context.** Migration `20270345005100` reached production before its file reached `main`, and
+`check:migrations` rule 4 went red on every open PR: 701 repo files against 702 applied rows. The
+gate's message says to recover the SQL from the ledger, which keeps `statements`. 🔴 **That column
+was NULL for this row**, so the only route left was to reconstruct the migration from the live
+catalog — `pg_get_functiondef`, `pg_attribute`, `pg_constraint`, `pg_indexes`, `obj_description`.
+
+That reconstruction was done, it was careful, and **it was incomplete.** It recovered
+`event_rsvps.from_ticket_id`, its foreign key, its index, `record_ticket_seat` and the `released`
+CTE added to `refund_ticket_atomic`. It MISSED two things the author's own file (ADR-1380) carries:
+the rewrite of `enforce_event_rsvp_capacity()` that lets a paid ticket past the waitlist, and
+`event_tickets_live_seat_idx`. The trigger rewrite is the migration's actual subject — it is what
+the name "a paid ticket is a seat in the room" refers to — and the sweep walked past it because the
+function already existed in the tree, so its presence read as agreement.
+
+**The finding, which outlives this incident.** Parity compares a sha256 of the versions and a sha256
+of the version+name pairs. **Nothing compares the SQL.** So the incomplete reconstruction would have
+turned rule 4 green, 702 against 702, both digests equal — and left a tree that replays a *different*
+migration than the one production ran, under a gate that had just certified them identical. A gate
+that can only see names cannot notice a body that is wrong, and the failure it was answering is
+precisely a body that is missing.
+
+**Decision.**
+
+1. **A catalog reconstruction is a last resort, and it is not evidence of completeness.** Reading
+   back the objects you thought to ask about proves those objects match. It says nothing about the
+   objects you did not think to ask about, and a migration is defined by the set, not the members.
+2. **Before reconstructing, look for the author's file on the remote — `git log --all` is not
+   enough.** It searches local refs. The file was on an open PR branch that had never been fetched,
+   so the search that said "this exists nowhere" was reading a smaller world than it appeared to.
+   `git fetch --all` first, or query the host for branches carrying the path.
+3. **When the author's file arrives, take it whole.** It did, in #2661, and the reconstruction was
+   discarded rather than merged beside it. Two files describing one migration is worse than the
+   drift either was meant to close.
+4. **Do NOT "fix" this by teaching rule 4 to compare bodies.** It cannot: the ledger's `statements`
+   is nullable and was null here, which is the condition that created the whole episode. The honest
+   move is to stop treating a green rule 4 as a statement about content, which is what this ADR
+   records.
+
+**Residual.** `statements` being NULL on an applied row is unexplained and is the upstream cause of
+all of this. Nothing in the repo can set it after the fact, and no gate notices it. Recorded rather
+than solved.

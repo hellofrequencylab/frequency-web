@@ -48,7 +48,8 @@
           "ids": [
             "LIVE-186",
             "LIVE-213",
-            "LIVE-367"
+            "LIVE-367",
+            "LIVE-373"
           ]
         },
         {
@@ -13539,6 +13540,42 @@
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const read=(p)=>{if(!fs.existsSync(p))fail(\"missing \"+p);return fs.readFileSync(p,\"utf8\")};const code=(t)=>t.split(\"\\n\").filter((l)=>{const s=l.trim();return !(s.startsWith(\"--\")||s.startsWith(\"//\")||s.startsWith(\"*\")||s.startsWith(\"/*\"))}).join(\"\\n\");const mig=code(read(\"supabase/migrations/20270345005100_a_paid_ticket_is_a_seat_in_the_room.sql\"));if(!/create or replace function public\\.record_ticket_seat\\(/.test(mig))fail(\"record_ticket_seat is gone, so a settled ticket mints no seat and the event page goes back to telling a paying buyer to be the first to RSVP\");const trig=mig.slice(mig.indexOf(\"function public.enforce_event_rsvp_capacity\")).toLowerCase();const exempt=trig.indexOf(\"public.event_tickets\");const coerce=trig.indexOf(\"waitlist\");if(exempt<0||coerce<0||exempt>coerce)fail(\"the capacity trigger no longer LOOKS for a paid ticket before it coerces, so a buyer can be charged and then put on a waitlist for the thing they bought\");if(!/return new;/.test(trig.slice(exempt,coerce)))fail(\"the capacity trigger looks for a paid ticket and then carries on anyway -- a lookup whose result nothing acts on is decoration, and the paying buyer is still coerced onto the waitlist\");if(!/r\\.from_ticket_id\\s*=\\s*f\\.id/.test(mig))fail(\"a refund no longer releases the seat its own ticket minted, so a refunded buyer stays counted as going forever\");const t=code(read(\"lib/billing/tickets.ts\"));if(!/rpc\\((?:\\x22|\\x27)record_ticket_seat(?:\\x22|\\x27)/.test(t))fail(\"the settle path no longer calls record_ticket_seat, so the RPC exists and nothing invokes it -- a paid ticket mints no seat\");const loop=t.slice(t.indexOf(\"for (const row of rows)\"));const seatAt=loop.indexOf(\"seatTicketHolder(\");const endAt=loop.indexOf(\"\\n  }\\n}\");if(seatAt<0||(endAt>=0&&seatAt>endAt))fail(\"the seat is no longer taken inside the loop over the rows the settle actually flipped, so a redelivery that flips nothing could still seat somebody, or a real settle could seat nobody\");if(!/seat !== (?:\\x22|\\x27)going(?:\\x22|\\x27)/.test(t))fail(\"nothing checks that the paid seat landed on going, so a lost capacity exemption would waitlist paying buyers silently -- the fail-safe with no gate that notices it fired\");const w=code(read(\"components/events/ticketed-rsvp-controls.tsx\"));if(!/goingNeedsTicket=\\{doorIsOpen\\}/.test(w)||!/onGoingIntercept=\\{doorIsOpen \\?/.test(w))fail(\"the answer switch no longer routes a ticketless Going press into the checkout, so the press either records an RSVP nobody paid for or does nothing\");if(!/!holdsTicket/.test(w))fail(\"a viewer who already holds a ticket is sent to checkout again, to buy a second ticket for an event they are already going to\");const page=code(read(\"app/(main)/events/[slug]/page.tsx\"));if(!/<TicketedRsvpControls/.test(page))fail(\"the event page no longer renders an RSVP control on a ticketed event, which is the explicit null the owner asked to be removed\");const branch=page.indexOf(\"ticketsMode && myProfileId && !hasEnded ?\");const other=page.indexOf(\"!ticketsMode && myProfileId && !hasEnded ?\");if(branch<0)fail(\"the tickets-mode branch of the answer-switch cascade is gone, so every surrounding branch is guarded !ticketsMode and a ticketed event shows no switch at all\");if(other>=0&&branch>other)fail(\"the tickets-mode branch now sits BELOW the !ticketsMode branches, which fall through to null on a ticketed event, so the switch is unreachable again\");process.exit(0)'",
         "note": "Measures the CONSEQUENCE in eight parts, never the row's title. SQL: the mint RPC exists; the capacity trigger both LOOKS for a paid ticket before it coerces AND returns on finding one; a refund releases on `from_ticket_id`. App: the settle path calls the RPC, inside the loop over the rows it actually flipped (so a redelivery seats nobody and a real settle seats somebody), and checks that the seat landed on `going` -- a fail-safe with a gate that notices it fired. UI: the switch routes a ticketless press into the door, does NOT route a ticket holder there, and the tickets-mode branch sits ABOVE the `!ticketsMode` branches that would otherwise swallow it. 🔴 The trigger clause was re-pointed during mutation testing: its first version asserted only that the lookup appeared before the coercion, and PASSED the mutation that deleted the `return NEW;` between them -- a lookup whose result nothing acts on, which is the shape-not-truth failure AGENTS.md names. Mutation-tested seven ways on 2026-09-16; all seven fail as they must. Comment lines are blanked before every read, for the same reason LIVE-370's probe does it."
+      }
+    },
+    {
+      "id": "LIVE-373",
+      "title": "One new public Circle breaks four BLOCKING visual baselines on every open branch",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "test/e2e/visual.spec.ts",
+        "ref": "observed 2026-09-16, runs 35038257196 onward"
+      },
+      "detail": "WHAT HAPPENED, with the window measured. A Circle was created in production at 23:30:17Z on 2026-09-15. The last green e2e run started 23:27:15Z; the next one, 00:02:11Z, failed, and so did EVERY e2e run on EVERY branch after it, including branches that touch no public code at all. The four failures are always the same: /discover matches baseline, dawn-light and midnight-light, desktop and mobile, in the tier the job labels \"public surfaces (blocking)\".\n\nThe assertion says the cause outright: \"Expected an image 1280px by 7493px, received 1280px by 7672px\" (mobile 9541 -> 9671). The page did not change colour, it GREW, by about one CircleCard row. /discover renders getPublicCircles() against live production data, so the count of public Circles is an input to a committed baseline.\n\nWHY MASKING IS NOT THE ANSWER, already written down. surfaces.ts says it at waitForStable: \"A mask paints over a region; the element keeps its box, so a masked block that arrives late still moves everything under it. The failure is the page HEIGHT, not its pixels.\" The same sentence applies to a row that is genuinely there.\n\nWHY THIS IS P1 RATHER THAN A RE-BASELINE. Re-baselining closes it until the next Circle, and the owner adds Circles as ordinary product work. Between the two, every open PR carries a red blocking job it did not cause, which is the condition under which people start reading a red gate as weather. Three routes, in the order they are worth trying: (1) photograph a surface whose content is fixed rather than the live index, (2) give the shot a fixed viewport clip instead of fullPage so the count below the fold cannot move the assertion, or (3) move /discover to the advisory tier and keep a structural test for what the page must contain. Pick one and write the reason beside it.\n\nIMMEDIATE STATE: cleared on 2026-09-16 by unlisting the Circle that caused it (it was meant to be private and should never have been listed, which is LIVE-374). The suite is green again and the fragility is untouched.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Not started. The four /discover rows failed on every branch from run 35038257196 to 35059005812; green again once the Circle was unlisted.",
+        "checked": "2026-09-16"
+      }
+    },
+    {
+      "id": "LIVE-374",
+      "title": "A Space private Circle was created listed, and appeared on /discover",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/circles/visibility.ts",
+        "ref": "ADR-1015 (the two axes)"
+      },
+      "detail": "THE CIRCLE. Royal Temple asked for \"the primary private Circle\", and it was created with access = space_paid_members and unlisted = false. Those are the two INDEPENDENT axes ADR-1015 deliberately separated: access decides who may enter and see content, unlisted decides whether it appears in discovery. Setting one is not setting the other, and public_circles() filters on status and NOT unlisted without reading access at all -- by design, because a listed closed Circle is the lead-funnel cell the owner asked for.\n\nSo the Circle was doing exactly what a listed closed Circle does: name, about, member count and city on /discover and at /discover/circles/the-circle, with the roster and posts shut. Nothing leaked from INSIDE it. But it was not what was asked for, and it was one of only four Circles on the public index.\n\nFIXED 2026-09-16: unlisted = true on that row alone. public_circles() went 4 -> 3, which also cleared the four blocking visual baselines it had been breaking (LIVE-373).\n\nTHE LESSON, which is why this row exists rather than a silent fix: \"private\" in a request maps to TWO columns, and an agent that sets the access one and stops has half-answered it. Anything creating a Circle from a description should decide both axes explicitly and say which it chose.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "public.circles where slug = the-circle: access = space_paid_members, unlisted = true. public_circles(200) returns 3 rows and no longer includes it.",
+        "checked": "2026-09-16"
       }
     }
   ]
