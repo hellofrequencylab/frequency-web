@@ -8,18 +8,14 @@ import { setActiveSpace } from '@/lib/spaces/active-space'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
-import { listSpaceCalendarEvents, listCalendarEngagement, listEventsForSpace } from '@/lib/events/store'
 import { countSeries, type SeriesRow } from '@/lib/events/series'
 import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
-import { formatEventWhen, eventInstant } from '@/lib/time/zone'
-import { eventDayKey } from '@/lib/events/calendar-grid'
 import { SITE_URL } from '@/lib/site'
 import type { CalendarEvent } from '@/components/events/event-calendar'
-import { listStaffCalendarItems } from '@/lib/calendar/entries-store'
-import { monthGridWindow } from '@/lib/calendar/month-window'
 import { StaffCalendar } from './staff-calendar'
+import { loadAdminCalendar } from '@/lib/calendar/admin-calendar'
+import { formatEventWhen } from '@/lib/time/zone'
 import { DayNotesField } from './day-notes-field'
-import { listDayNotes } from '@/lib/calendar/day-notes-store'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
 import { EventShareApprovals } from '@/components/events/event-share-approvals'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -55,78 +51,11 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
   const initialMonth1 = now.getUTCMonth() + 1
   const nowIso = now.toISOString()
 
-  // The MANAGEMENT set: every event under this space (drafts, past, cancelled included), plus the
-  // co-hosted events other hosts share onto this calendar (view-only here; their editor lives with
-  // their own host). Engagement resolves per-event; the tz lib stays server-side (pre-formatted).
-  // includeUnpublished: this is the OPERATOR's console calendar and it badges drafts on purpose.
-  // It is the one caller that opts out of listEventsForSpace's publication gate (lib/events/store.ts);
-  // every public reader takes the gated default.
-  const ownedRows = featureLocked ? [] : await listEventsForSpace(space.id, { limit: 200, includeUnpublished: true })
-  const ownedIds = new Set(ownedRows.map((r) => r.id))
-  const sharedRows = featureLocked
-    ? []
-    : (await listSpaceCalendarEvents(space.id, { fromDay: `${initialYear - 1}-01-01` })).filter(
-        (r) => !ownedIds.has(r.id),
-      )
-  const engagement =
-    ownedRows.length || sharedRows.length
-      ? await listCalendarEngagement([...ownedRows.map((r) => r.id), ...sharedRows.map((r) => r.id)])
-      : new Map()
-
-  // Only a manager gets the click-to-edit affordance; a staff preview stays read-only.
-  const editHrefFor = (evSlug: string) => (canManage ? `/events/${evSlug}/manage?section=settings` : null)
-
-  const events: CalendarEvent[] = [
-    ...ownedRows.map((ev): CalendarEvent | null => {
-      const dayKey = eventDayKey(ev.starts_at)
-      if (!dayKey) return null
-      const eng = engagement.get(ev.id)
-      const isPast = ev.starts_at < nowIso
-      return {
-        slug: ev.slug,
-        title: ev.title,
-        dayKey,
-        timeLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'time', withZone: false }),
-        whenLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'full' }),
-        startInstantIso: eventInstant(ev.starts_at, ev.time_zone)?.toISOString() ?? null,
-        location: ev.location,
-        goingCount: eng?.going ?? 0,
-        coverUrl: eng?.coverUrl ?? null,
-        coverFocus: eng?.coverFocus ?? null,
-        statusLabel: ev.status === 'draft' ? 'Draft' : isPast ? 'Past' : null,
-        editHref: editHrefFor(ev.slug),
-        isCancelled: !!ev.is_cancelled,
-      }
-    }),
-    ...sharedRows.map((ev): CalendarEvent | null => {
-      const dayKey = eventDayKey(ev.starts_at)
-      if (!dayKey) return null
-      const eng = engagement.get(ev.id)
-      return {
-        slug: ev.slug,
-        title: ev.title,
-        dayKey,
-        timeLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'time', withZone: false }),
-        whenLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'full' }),
-        startInstantIso: eventInstant(ev.starts_at, ev.time_zone)?.toISOString() ?? null,
-        location: ev.location,
-        goingCount: eng?.going ?? 0,
-        coverUrl: eng?.coverUrl ?? null,
-        coverFocus: eng?.coverFocus ?? null,
-        sourceLabel: 'Co-hosted here',
-        isCancelled: !!ev.is_cancelled,
-      }
-    }),
-  ].filter((e): e is CalendarEvent => e !== null)
-
-  // THE PRIVATE LAYER (ADR-1385): this month's Unavailable time and Private entries. Other months load
-  // as the calendar browses. Read on the caller's own session, so RLS decides what a viewer sees.
-  const grid = monthGridWindow(initialYear, initialMonth1)
-  const entryItems = featureLocked
-    ? []
-    : await listStaffCalendarItems(space.id, grid.fromDay, grid.toDay, { editable: canManage })
-  events.push(...entryItems)
-  const dayNotes = featureLocked ? [] : await listDayNotes(space.id)
+  // The team's calendar: every event under this Space, co-hosted events, the private layer and day notes
+  // (lib/calendar/admin-calendar.ts, shared with the Admin mode of the public Calendar tab).
+  const { events, ownedRows, dayNotes } = featureLocked
+    ? { events: [] as CalendarEvent[], ownedRows: [], dayNotes: [] }
+    : await loadAdminCalendar(space.id, { canManage, year: initialYear, month1: initialMonth1, now })
 
   // "N upcoming events." — GATHERINGS, not materialised occurrences (LIVE-198 / SERIES-COUNT).
   // Recurrence is materialised (ADR-007), so a weekly series is ~9 rows inside the cron's 60-day

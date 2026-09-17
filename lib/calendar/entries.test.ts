@@ -180,3 +180,54 @@ describe('day notes (ADR-1386)', () => {
     })
   })
 })
+
+describe('stages and description (ADR-1388)', () => {
+  const pencil = { ...base, kind: 'pencil', allDay: false, startDate: '2026-10-12', endDate: '2026-10-12', startTime: '19:00', endTime: '21:00' }
+
+  it('derives status from the stage, the same pairing the table trigger enforces', async () => {
+    const { ENTRY_STAGES } = await import('./registry')
+    for (const st of ENTRY_STAGES) {
+      const r = row({ ...pencil, stage: st.stage, status: 'confirmed' })
+      expect([r.stage, r.status]).toEqual([st.stage, st.status])
+    }
+    expect(row({ ...pencil, stage: 'nonsense' }).stage).toBe('pencil')
+    expect(row({ ...pencil, stage: null }).stage).toBe('pencil')
+  })
+
+  it('declares the same stages and derived statuses as the migration', async () => {
+    const { ENTRY_STAGES } = await import('./registry')
+    const sql = readFileSync('supabase/migrations/20270345005500_calendar_stages_and_description.sql', 'utf8')
+    const allowed = /check \(stage is null or stage in \(([^)]*)\)\)/.exec(sql)![1]
+    expect(allowed.split(',').map((x) => x.trim().replace(/'/g, '')).sort()).toEqual(ENTRY_STAGES.map((d) => d.stage).sort())
+    for (const d of ENTRY_STAGES.filter((x) => x.stage !== 'planning' && x.stage !== 'production')) {
+      expect(sql).toContain(`when '${d.stage}' then '${d.status}'`)
+    }
+    for (const d of ENTRY_STAGES.filter((x) => x.stage === 'planning' || x.stage === 'production')) expect(d.status).toBe('confirmed')
+    expect(sql).toMatch(/else 'confirmed'/)
+  })
+
+  it('keeps a lapse date only while the event is still a Pencil', () => {
+    expect(row({ ...pencil, stage: 'pencil', holdExpiresOn: '2026-10-01' }).hold_expires_at).toBe('2026-10-01T00:00:00.000Z')
+    expect(row({ ...pencil, stage: 'planning', holdExpiresOn: '2026-10-01' }).hold_expires_at).toBeNull()
+  })
+
+  it('carries a description on an event on its way and on nothing else', () => {
+    expect(row({ ...pencil, description: '  A night of sound.  ' }).description).toBe('A night of sound.')
+    const other = row({ ...base, kind: 'private', stage: 'planning', description: 'ignored' })
+    expect([other.stage, other.description]).toEqual([null, null])
+  })
+
+  it('labels and styles the calendar item by its stage, and round-trips the form', async () => {
+    const { itemChipClass, entryStage } = await import('./registry')
+    const r = row({ ...pencil, stage: 'production', description: 'Come dance.', holdExpiresOn: '2026-10-01' })
+    const item = entryToCalendarItem(r, fmt, { editable: true, now: '2026-12-01' })
+    expect(item.sourceLabel).toBe('Production')
+    expect(item.stage).toBe('production')
+    expect(item.statusLabel ?? '').not.toContain('Lapsed')
+    expect(item.description).toBe('Come dance.')
+    expect(item.entryInput?.stage).toBe('production')
+    expect(item.entryInput?.description).toBe('Come dance.')
+    expect(itemChipClass('pencil', 'production')).toBe(entryStage('production')!.chipClass)
+    expect(itemChipClass('private', null)).not.toBe(entryStage('pencil')!.chipClass)
+  })
+})

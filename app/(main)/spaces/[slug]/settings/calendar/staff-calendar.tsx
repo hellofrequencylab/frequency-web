@@ -10,16 +10,17 @@ import { IconButton } from '@/components/ui/icon-button'
 import { Input, Textarea, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { ENTRY_KINDS, entryKind, type CalendarLayerKey } from '@/lib/calendar/registry'
-import { MAX_CANDIDATE_DATES, type EntryInput } from '@/lib/calendar/entries'
+import { ENTRY_KINDS, ENTRY_STAGES, entryKind, entryStage, type CalendarLayerKey } from '@/lib/calendar/registry'
+import { MAX_CANDIDATE_DATES, MAX_DESCRIPTION, type EntryInput } from '@/lib/calendar/entries'
 import type { DayNote } from '@/lib/calendar/day-notes'
 import { isError } from '@/lib/action-result'
 import { deleteCalendarEntry, findEntryClashes, loadStaffCalendarMonth, pickPencilDate, saveCalendarEntry } from './entry-actions'
 
-// THE STAFF CALENDAR (ADR-1385). The Space's public events and its private layer on one grid, with
-// layer toggles, the vertical wheel paging months, and a drawer to add, edit and delete private
-// entries (Unavailable time and Private entries). Writes go through ./entry-actions, which run on the
-// caller's own session, so the table's RLS is the lock.
+// THE STAFF CALENDAR (ADR-1385, ADR-1388). The Space's public events and its private layer on one grid,
+// with layer toggles, the vertical wheel paging months, and a drawer to add, edit and delete private
+// entries: events on their way (moving through Pencil, Planning, Production, Cancelled), Unavailable time
+// and Private entries. Writes go through ./entry-actions, which run on the caller's own session, so the
+// table's RLS is the lock.
 
 const LAYERS: CalendarLayerKey[] = ['events', 'pencil', 'private', 'unavailable']
 
@@ -38,6 +39,8 @@ function blankInput(kind: string, dayKey: string): EntryInput {
     title: def.kind === 'unavailable' ? 'Unavailable' : '',
     holdExpiresOn: '',
     candidateDates: [],
+    stage: def.isPencil ? 'pencil' : null,
+    description: '',
     notes: '',
     location: '',
     allDay: def.defaults.allDay,
@@ -114,11 +117,13 @@ export function StaffCalendar({
 
   const input = draft?.input
   const def = input ? entryKind(input.kind) : null
+  const stage = def?.isPencil ? (entryStage(input?.stage) ?? ENTRY_STAGES[0]) : null
+  const holding = stage?.stage === 'pencil'
 
   // CLASH WARNINGS (ADR-1386): what this entry would overlap. A warning, never a block.
   const [clashes, setClashes] = useState<string[]>([])
   const clashKey = draft
-    ? JSON.stringify([draft.id, draft.input.kind, draft.input.allDay, draft.input.startDate, draft.input.endDate, draft.input.startTime, draft.input.endTime])
+    ? JSON.stringify([draft.id, draft.input.kind, draft.input.stage, draft.input.allDay, draft.input.startDate, draft.input.endDate, draft.input.startTime, draft.input.endTime])
     : null
   useEffect(() => {
     if (!clashKey || !draft) return
@@ -182,7 +187,7 @@ export function StaffCalendar({
         {input && (
           <form onSubmit={submit} className="space-y-4 rounded-card border border-border bg-surface p-6 lift-3">
             <h2 id="calendar-entry-title" className="text-lead font-bold text-text">
-              {draft?.id ? 'Edit entry' : def?.isPencil ? 'Pencil it in' : 'Add to calendar'}
+              {draft?.id ? (def?.isPencil ? 'Edit event' : 'Edit entry') : def?.isPencil ? 'Pencil it in' : 'Add to calendar'}
             </h2>
 
             <div className="grid gap-1">
@@ -190,7 +195,6 @@ export function StaffCalendar({
               <Select
                 id="entry-kind"
                 value={input.kind}
-                disabled={!!draft?.id}
                 options={ENTRY_KINDS.map((k) => ({ value: k.kind, label: k.label }))}
                 onChange={(e) => {
                   const next = entryKind(e.target.value)
@@ -206,6 +210,7 @@ export function StaffCalendar({
                             blocksTime: next.defaults.blocksTime,
                             showPublicly: next.canShowPublicly ? d.input.showPublicly : false,
                             status: next.defaultStatus,
+                            stage: next.isPencil ? (d.input.stage ?? 'pencil') : null,
                             title: d.input.title === 'Unavailable' && next.kind !== 'unavailable' ? '' : d.input.title,
                           },
                         }
@@ -214,6 +219,20 @@ export function StaffCalendar({
                 }}
               />
             </div>
+
+            {stage && (
+              <div className="grid gap-1">
+                <label htmlFor="entry-stage" className={labelClasses}>Stage</label>
+                <Select
+                  id="entry-stage"
+                  value={stage.stage}
+                  options={ENTRY_STAGES.map((st) => ({ value: st.stage, label: st.label }))}
+                  onChange={(e) => set('stage', e.target.value)}
+                  aria-describedby="entry-stage-hint"
+                />
+                <p id="entry-stage-hint" className="text-meta text-muted">{stage.hint}</p>
+              </div>
+            )}
 
             <div className="grid gap-1">
               <label htmlFor="entry-title" className={labelClasses}>Title</label>
@@ -269,9 +288,9 @@ export function StaffCalendar({
             </div>
             <p className="text-meta text-muted">Times are in {input.timeZone.replace(/_/g, ' ')}.</p>
 
-            {def?.isPencil && !draft?.id && (
+            {holding && (
               <div className="grid gap-1">
-                <span className={labelClasses}>Other possible dates (optional)</span>
+                <span className={labelClasses}>{draft?.id ? 'Add possible dates (optional)' : 'Other possible dates (optional)'}</span>
                 {(input.candidateDates ?? []).map((d, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <Input
@@ -307,7 +326,7 @@ export function StaffCalendar({
               </div>
             )}
 
-            {def?.isPencil && (
+            {holding && (
               <div className="grid gap-1">
                 <label htmlFor="entry-lapse" className={labelClasses}>Lapses on (optional)</label>
                 <Input id="entry-lapse" type="date" value={input.holdExpiresOn ?? ''} onChange={(e) => set('holdExpiresOn', e.target.value)} />
@@ -332,24 +351,51 @@ export function StaffCalendar({
               <Input id="entry-location" maxLength={300} value={input.location ?? ''} onChange={(e) => set('location', e.target.value)} />
             </div>
 
-            <div className="grid gap-1">
-              <label htmlFor="entry-notes" className={labelClasses}>Notes (optional)</label>
-              <Textarea id="entry-notes" rows={3} maxLength={4000} value={input.notes ?? ''} onChange={(e) => set('notes', e.target.value)} />
-            </div>
+            {def?.isPencil && (
+              <div className="grid gap-1">
+                <label htmlFor="entry-description" className={labelClasses}>Description (optional)</label>
+                <Textarea
+                  id="entry-description"
+                  rows={4}
+                  maxLength={MAX_DESCRIPTION}
+                  value={input.description ?? ''}
+                  onChange={(e) => set('description', e.target.value)}
+                  aria-describedby="entry-description-hint"
+                />
+                <p id="entry-description-hint" className="text-meta text-muted">
+                  What people will read about it. This becomes the event description when you publish it.
+                </p>
+              </div>
+            )}
 
             <div className="grid gap-1">
-              <label htmlFor="entry-status" className={labelClasses}>Status</label>
-              <Select
-                id="entry-status"
-                value={input.status ?? 'confirmed'}
-                options={[
-                  { value: 'confirmed', label: 'Confirmed' },
-                  { value: 'tentative', label: 'Tentative' },
-                  { value: 'cancelled', label: 'Cancelled' },
-                ]}
-                onChange={(e) => set('status', e.target.value)}
+              <label htmlFor="entry-notes" className={labelClasses}>Team notes (optional)</label>
+              <Textarea
+                id="entry-notes"
+                rows={3}
+                maxLength={4000}
+                value={input.notes ?? ''}
+                onChange={(e) => set('notes', e.target.value)}
+                aria-describedby="entry-notes-hint"
               />
+              <p id="entry-notes-hint" className="text-meta text-muted">Only your team sees these.</p>
             </div>
+
+            {!def?.isPencil && (
+              <div className="grid gap-1">
+                <label htmlFor="entry-status" className={labelClasses}>Status</label>
+                <Select
+                  id="entry-status"
+                  value={input.status ?? 'confirmed'}
+                  options={[
+                    { value: 'confirmed', label: 'Confirmed' },
+                    { value: 'tentative', label: 'Tentative' },
+                    { value: 'cancelled', label: 'Cancelled' },
+                  ]}
+                  onChange={(e) => set('status', e.target.value)}
+                />
+              </div>
+            )}
 
             <label className="flex items-start justify-between gap-3 text-body-sm text-text">
               <span>

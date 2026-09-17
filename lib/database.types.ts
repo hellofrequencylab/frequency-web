@@ -12686,6 +12686,7 @@ export type Database = {
           blocks_time: boolean
           created_at: string
           created_by: string | null
+          description: string | null
           ends_at: string
           hold_expires_at: string | null
           id: string
@@ -12698,6 +12699,7 @@ export type Database = {
           source_id: string | null
           source_kind: string | null
           space_id: string
+          stage: string | null
           starts_at: string
           status: string
           time_zone: string
@@ -12710,6 +12712,7 @@ export type Database = {
           blocks_time?: boolean
           created_at?: string
           created_by?: string | null
+          description?: string | null
           ends_at: string
           hold_expires_at?: string | null
           id?: string
@@ -12722,6 +12725,7 @@ export type Database = {
           source_id?: string | null
           source_kind?: string | null
           space_id: string
+          stage?: string | null
           starts_at: string
           status?: string
           time_zone?: string
@@ -12734,6 +12738,7 @@ export type Database = {
           blocks_time?: boolean
           created_at?: string
           created_by?: string | null
+          description?: string | null
           ends_at?: string
           hold_expires_at?: string | null
           id?: string
@@ -12746,6 +12751,7 @@ export type Database = {
           source_id?: string | null
           source_kind?: string | null
           space_id?: string
+          stage?: string | null
           starts_at?: string
           status?: string
           time_zone?: string
@@ -16726,6 +16732,10 @@ export type Database = {
           step_key: string
           subjects: number
         }[]
+      }
+      keep_pencil_date: {
+        Args: { p_entry_id: string; p_space_id: string }
+        Returns: number
       }
       log_crew_completion_atomic: {
         Args: {

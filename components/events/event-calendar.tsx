@@ -23,7 +23,7 @@ import { eventCoverFocusStyle } from '@/lib/events/cover-focus'
 import { IconButton } from '@/components/ui/icon-button'
 import { CalendarRepeatsStrip } from '@/components/events/calendar-repeats-strip'
 import type { CalendarRepeatSeries } from '@/lib/events/calendar-repeats'
-import { calendarLayer, CALENDAR_LAYERS, type CalendarLayerKey } from '@/lib/calendar/registry'
+import { CALENDAR_LAYERS, itemChipClass, type CalendarLayerKey } from '@/lib/calendar/registry'
 import { spanDayKeys } from '@/lib/calendar/entries'
 import { notesForDay, type DayNote } from '@/lib/calendar/day-notes'
 import { monthKey } from '@/lib/calendar/month-window'
@@ -456,7 +456,7 @@ export function EventCalendar({
                             <span
                               className={cn(
                                 'flex w-11 shrink-0 flex-col items-center rounded-control py-1',
-                                calendarLayer(ev.layer).chipClass,
+                                itemChipClass(ev.layer, ev.stage),
                               )}
                               aria-hidden
                             >
@@ -582,7 +582,7 @@ export function EventCalendar({
                             title={ev.title}
                             className={cn(
                               'w-full truncate rounded-control px-1.5 py-0.5 text-left text-2xs font-medium transition-colors',
-                              ev.isCancelled ? 'bg-surface-elevated text-muted line-through' : calendarLayer(ev.layer).chipClass,
+                              ev.isCancelled ? 'bg-surface-elevated text-muted line-through' : itemChipClass(ev.layer, ev.stage),
                               activeSeries !== null && ev.seriesKey === activeSeries && 'ring-2 ring-primary/50',
                             )}
                           >
@@ -768,7 +768,18 @@ function CalendarPreview({
             </span>
           </div>
         )}
-        {item.notes && <p className="mt-3 whitespace-pre-line text-body-sm text-text">{item.notes}</p>}
+        {item.description && (
+          <div className="mt-3">
+            {!isEvent && <p className="text-meta font-semibold text-muted">Description</p>}
+            <p className="whitespace-pre-line text-body-sm text-text">{item.description}</p>
+          </div>
+        )}
+        {item.notes && (
+          <div className="mt-3">
+            {!isEvent && <p className="text-meta font-semibold text-muted">Team notes</p>}
+            <p className="whitespace-pre-line text-body-sm text-text">{item.notes}</p>
+          </div>
+        )}
         <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
           {onClose && (
             <button type="button" onClick={onClose} className={buttonClasses('secondary', 'sm')}>

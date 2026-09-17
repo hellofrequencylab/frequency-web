@@ -455,10 +455,11 @@ cleanly by audience and this section pins which is which.
   repeating; it has no curriculum, no enrolment, and no page of its own. The repeating event's own
   page IS the series home, which is why there is no `/series/` route and must not be one.
 
-## Calendar: Unavailable, Private entry, Day note, and Pencil, Plan, Production (ADR-1385/ADR-1386, September 2026, owner-ruled)
+## Calendar: Unavailable, Private entry, Day note, Event, and Pencil, Planning, Production, Cancelled (ADR-1385/1386/1388, September 2026, owner-ruled)
 
 A Space calendar has a public layer (its events) and a private layer its team runs for itself
-(ADR-1385). Planning an event moves through three stages the owner named on 2026-09-16 (ADR-1386).
+(ADR-1385). An event on its way moves through four stages the owner named on 2026-09-16 (ADR-1386, as
+amended by ADR-1388).
 These are the words for all of it. Proper nouns are capitalised in UI copy; the verbs stay sentences.
 
 - **Unavailable** = time the Space is not open, on the private layer (entry kind `unavailable`). It
@@ -475,24 +476,35 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
   it ("Quiet hours" every Monday, "Flex day" on Thursday, "Retreat & rental" Friday and Saturday).
   Team only, never shown on the public calendar (ADR-1387). Never an item, never blocks time. **Not "Tag"** (a Loom and CRM word), **not
   "Label"** as a product noun (it is fine as a form field caption), **not "Theme"** (the design system).
-- **Pencil** (stage 1) = a tentative private date for a potential Production (entry kind `pencil`). It
+- **Event** (the Type, on the staff calendar) = an event on its way: a private calendar entry (internal
+  kind `pencil`) that carries a **Stage** and a **Description**. It is not yet an event in the events
+  system and is never public; publishing it is what creates the event. The staff layer toggle for these
+  reads **"In the works"**. **Description** = what people will read about it, and it becomes the event
+  description on publish. **Team notes** = internal notes only the team sees; never "Notes" alone on
+  this form, so no one mistakes them for the public copy.
+- **Pencil** (stage 1) = a tentative private date for a potential event (stage `pencil`). It
   can carry several candidate dates until one is picked. Team only, never public. Verb: **"Pencil it
   in"**; past tense **"penciled"** (one l, as the shipped staff copy spells it: "Each date is penciled
   in"). A candidate is "a date"; choosing one is **"Keep this date"** (the others are removed). The optional lapse date's
   field reads **"Lapses on"**.
-- **Plan** (stage 2) = the working record behind one or more Pencils and Productions: notes, links,
+- **Planning** (stage 2) = the date is decided and the team is putting it together (stage `planning`).
+  The candidate dates are settled first: a date that is one of several cannot leave Pencil until one is
+  kept.
+- **Plan** (the object, PROG-CAL2, not a stage) = the working record behind one or more events on their way: notes, links,
   files, tasks, people. One Plan may hold many dates and many events. Co-host Spaces may work a Plan
   through an accepted collaboration. Verb: **"Start a plan"**. **Collision guard:** the lowercase
   word "plan" is also the membership **plans page** (ADR-1374) and a member's own plans in prose.
   Capital-P Plan is the planning object only, and on a membership surface the word stays lowercase and
   never names this object.
-- **Production** (stage 3) = the real, published event, created in the existing event Studio from the
-  Plan. It is not a new object: a Production IS an event, and every event rule in this canon applies
-  to it. Verb: **"Make it a Production"**. Once published, member-facing surfaces call it an event; the
+- **Production** (stage 3) = ready to run; publishing it creates the real event in the existing event
+  Studio, prefilled from the entry and its Plan (PROG-CAL3). A published Production IS an event, and
+  every event rule in this canon applies to it. Verb: **"Make it a Production"**. Once published, member-facing surfaces call it an event; the
   word Production belongs to the team's planning surfaces (the board, the plan drawer, the readiness
   bar), because a guest buying a ticket is coming to an event, not to a stage of someone's workflow.
-- **The three together** are written in order, "Pencil, Plan, Production", with commas in prose; an
-  arrow is fine in a diagram. Never abbreviated to "PPP" in UI.
+- **Cancelled** (stage 4) = not happening (stage `cancelled`). It stays on the team calendar, struck
+  through, and never blocks anything. Spelled with two l's, as the rest of the product spells it.
+- **The stages together** are written in order, "Pencil, Planning, Production", with commas in prose;
+  an arrow is fine in a diagram. Never abbreviated to "PPP" in UI.
 
 **Taken words: never use these for any stage or entry above.**
 
@@ -511,7 +523,7 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
   rules) and by scheduled sends (Dispatches, email campaigns). A Plan's dates are "dates", and
   relative task timing is "due N days before", never "a schedule".
 
-**Internal only:** `layer`, `kind`, `entry`, `option_group`, `source_kind`, `blocks_time`,
+**Internal only:** `layer`, `kind`, `pencil` (as a kind), `stage`, `entry`, `option_group`, `source_kind`, `blocks_time`,
 `space_plans`, `plan_id`. Members and staff read the nouns above, not these.
 
 ## Profile pages

@@ -44526,3 +44526,74 @@ never show those; they are internal notes.
 
 The fourth open question (which Space is the Host of a Production spawned from a co-owned plan) stays
 with `PROG-CAL3`.
+
+## ADR-1388: An event on the calendar moves through Pencil, Planning, Production and Cancelled, and carries its Description (2026-09-16)
+
+**Status:** Accepted · **Amends** [ADR-1386](DECISIONS.md) (the stage names; Production is a stage before it
+is an event) · Backlog `LIVE-379` · corroborated by
+`supabase/migrations/20270345005500_calendar_stages_and_description.sql`, `lib/calendar/registry.ts`,
+`lib/calendar/entries.ts`, `app/(main)/spaces/[slug]/settings/calendar/staff-calendar.tsx`
+
+**Context.** The staff drawer locked an entry's Type once it existed, so a penciled date could only ever be
+a Pencil: nothing recorded that a date had been decided, was being produced, or had been called off. Owner,
+2026-09-16, on the Edit entry drawer: "I am unable to change it from Pencil to Planning or any other
+options. Let's go with Pencil, Planning, Production, Cancelled", with a Description that becomes the event
+description.
+
+**Decision.**
+
+1. **Stage is its own column, not a new kind.** An event on its way stays the internal kind `pencil`
+   (staff read it as **Event**) and gains `stage`: `pencil`, `planning`, `production`, `cancelled`.
+   Making each stage a kind would have turned one entry's progress into four unrelated rows in every
+   filter, layer toggle and probe; a stage is how far along ONE thing is.
+2. **The database owns the pairing.** A BEFORE trigger gives a pencil-kind row a stage, strips it from
+   every other kind, and derives `status` from the stage (Pencil tentative, Planning and Production
+   confirmed, Cancelled cancelled). Every reader of `status` (the public projection, booking blocks, clash
+   checks) stays correct without learning stages, and code deployed before the migration kept working
+   while it applied. The app computes the same pairing so the form never disagrees with the row.
+3. **The Type is editable.** Nothing required the lock. The one real hazard is a date that is one of
+   several candidates: changing its type or moving it past Pencil would strand its siblings as Pencils of
+   something already decided, so the action refuses both until a date is kept.
+4. **Pencil-only fields stay Pencil-only.** A lapse date and candidate dates describe a hold, so they exist
+   in the Pencil stage alone; the lapse date is cleared once the event moves on. Dates can now be added
+   while editing, not only at creation.
+5. **Description is public copy; Team notes are not.** `description` (10,000 characters) is what the
+   published event will say, and `PROG-CAL3` prefills the event Spark's Description from it and never from
+   notes. The form relabels notes "Team notes" so the two are never confused.
+6. **Keep this date is atomic.** `public.keep_pencil_date(space, entry)` deletes the siblings and clears the
+   group in one statement, SECURITY INVOKER so the table's RLS still decides and signed-in only. The
+   two-write version could leave a group of one.
+
+**Rejected.** A separate status picker beside the stage (two controls for one fact, and they could
+disagree); deleting a Cancelled entry (the team wants to see what was called off); a Production stage that
+publishes on save (ADR-1386 invariant 1: nothing becomes public without a person pressing publish in the
+Spark).
+
+## ADR-1389: A Space's public Calendar tab has an Admin / Guest mode for its team (2026-09-16)
+
+**Status:** Accepted · **Extends** [ADR-1385](DECISIONS.md) (two layers) and [ADR-1388](DECISIONS.md) ·
+Backlog `LIVE-380` · corroborated by `app/(main)/spaces/[slug]/(profile)/calendar/page.tsx`,
+`lib/calendar/admin-calendar.ts`, `components/spaces/calendar-mode-toggle.tsx`
+
+**Context.** The team's calendar (drafts, events on their way, private entries, Unavailable time, day notes)
+lived only on the Calendar settings console, while the Calendar tab everyone reaches from the Space showed
+published events. Owner, 2026-09-16: a Space owner should see the full admin calendar in the main area, with
+an Admin / Guest toggle at the top to see what a visitor sees; guests and Space members never see the admin
+planning side, only published events.
+
+**Decision.**
+
+1. **Admin is the default for the team, Guest for everyone else.** A viewer who edits the Space and has the
+   Calendar function (or platform staff previewing it, read-only) lands on Admin. Everyone else only ever
+   gets Guest.
+2. **The mode is decided on the server, before any admin read.** It lives in the URL (`?view=guest`); the
+   server loads unpublished events, the private layer and day notes only when the viewer is allowed Admin
+   AND chose it. A member typing any URL gets Guest, and the private layer is additionally locked by RLS.
+   Links rather than client state also make a Guest view reloadable and shareable.
+3. **One loader for the team calendar.** `loadAdminCalendar` is extracted from the settings console and used
+   by both surfaces, so the tab's Admin mode and the console can never disagree. Admin mode renders the same
+   `StaffCalendar`, drawer included; the console keeps the day-note field and the manage table.
+
+**Rejected.** A client-side toggle over data already sent to the browser (it would ship the private layer to
+anyone who could open devtools on a page they reached as a member); a separate admin route (the owner asked
+for it in the main area).
