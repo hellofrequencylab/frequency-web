@@ -43,13 +43,33 @@ export interface HeaderDefaults {
 const LAYOUTS: readonly PageHeroVariant[] = ['overlay', 'identity', 'minimal']
 const OVERLAY_STYLES: readonly HeroOverlayStyle[] = ['none', 'shadow', 'fade']
 
+// ── NO OVERLAY IS THE DEFAULT (owner ruling, 2026-09-17) ────────────────────────────────────────
+//
+// `scrim` and `overlayStyle` shipped as `true` / `'shadow'`: every entity cover was painted with a
+// full ink scrim plus the house amber glow, and the photograph underneath it was decoration rather
+// than the picture. The owner asked for the raw photo instead.
+//
+// ⚠️ THE TWO FIELDS MOVE TOGETHER OR NOT AT ALL. `pickHeaderConfig` derives the style from the
+// boolean when nobody has set one (`scrim ? … 'shadow' : 'none'`), so leaving `scrim: true` here
+// would hand back `'shadow'` again the moment an operator cleared their explicit choice, and the
+// default would read as "none" in this object while behaving as "shadow" in the product.
+//
+// 🔴 THIS IS THE ENTITY-HEADER DEFAULT, NOT A SITE-WIDE ONE, and the distinction is the reason the
+// change sits here rather than on `PageHero.overlayStyle`. The header ELEMENT serves the ~20 detail
+// surfaces that resolve through `resolveHeaderElement` / `resolveDetailHero` (a Circle, a Journey, a
+// Channel, a person, a practice, a partner). The directory and marketing heroes take their props
+// straight from `IndexTemplate`, which never asks this element anything — so flipping PageHero's own
+// default would have restyled the whole marketing site for a ruling about entity covers.
+//
+// An operator who wants the scrim back sets it per surface at /admin/elements; a host who wants it
+// on one Circle still has the None / Shade / Blend control, which beats this (lib/circles/hero.ts).
 export const DEFAULT_HEADER_CONFIG: HeaderElementConfig = {
   layout: 'overlay',
   height: 'large',
   focus: true,
   links: true,
-  scrim: true,
-  overlayStyle: 'shadow',
+  scrim: false,
+  overlayStyle: 'none',
 }
 
 function asLayout(v: unknown): PageHeroVariant | undefined {
@@ -79,7 +99,8 @@ export function pickHeaderConfig(
   const setLayout = asLayout(layers.space?.settings?.layout ?? layers.platform.settings?.layout)
   const setHeight = asHeaderSize(layers.space?.settings?.height ?? layers.platform.settings?.height)
   // scrim (the ink overlay) follows the same precedence as layout/height: an operator-set value wins,
-  // else the surface default (profiles ship overlay-off), else the registry default (on).
+  // else the surface default (profiles ship overlay-off), else DEFAULT_HEADER_CONFIG — which is now
+  // OFF (owner ruling 2026-09-17, see the note on that constant).
   const setScrim = asBool(layers.space?.settings?.scrim ?? layers.platform.settings?.scrim)
   const setOverlayStyle = asOverlayStyle(layers.space?.settings?.overlayStyle ?? layers.platform.settings?.overlayStyle)
   const scrim = setScrim ?? defaults?.scrim ?? DEFAULT_HEADER_CONFIG.scrim
@@ -90,7 +111,8 @@ export function pickHeaderConfig(
     links: resolved.settings.links !== false,
     scrim,
     // overlayStyle: operator-set wins, else the surface default, else derive from the scrim boolean
-    // (off → 'none', on → the registry default 'shadow').
+    // (off → 'none', on → the registry default 'shadow'). With the default scrim now OFF, an
+    // untouched surface lands on 'none' through the right-hand branch.
     overlayStyle: setOverlayStyle ?? defaults?.overlayStyle ?? (scrim ? asOverlayStyle(resolved.settings.overlayStyle) ?? 'shadow' : 'none'),
   }
 }

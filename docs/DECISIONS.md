@@ -44854,3 +44854,56 @@ composer). Putting Leave in the admin rail (invisible to the only viewer who nee
 `cornerLabel` string instead of a slot (the Space Circle's pill is a link). Measuring the About
 collapse on the PARSED output rather than the source, which would make adding `**` to a word change
 whether the "Read more" control appears.
+
+## ADR-1396: The entity header shows the photograph: no overlay by default, the description under the image, QR below (2026-09-17)
+
+**Status:** Accepted · **Amends** [ADR-793](DECISIONS.md) (the unified entity header) and
+[ADR-1136](DECISIONS.md) (one resolver for every entity band) · Backlog `LIVE-387` · corroborated by
+`lib/elements/header.ts`, `components/templates/page-hero.tsx`,
+`app/(main)/journeys/[slug]/page.tsx`, `app/(main)/journeys/[slug]/learn/page.tsx`
+
+**Context.** Owner, 2026-09-17, looking at a Journey page: *"Let's re work the header design a bit.
+Make it so no overlay is the default. Put the description under the image. Move QR button under
+header."*
+
+**Decision.**
+
+1. **No overlay by default.** `DEFAULT_HEADER_CONFIG` ships `scrim: false` / `overlayStyle: 'none'`.
+   An entity cover shows the photograph; the ink scrim and its amber glow are opt-in.
+   ⚠️ **The two fields move together or not at all**: `pickHeaderConfig` derives the style from the
+   boolean when nobody has set one (`scrim ? … 'shadow' : 'none'`), so leaving `scrim: true` would
+   hand `'shadow'` back the moment an operator cleared an explicit choice, and the constant would
+   read "none" while the product behaved as "shadow".
+2. 🔴 **It is the ENTITY-HEADER default, not a site-wide one**, and that scoping is the decision
+   rather than an implementation detail. The change sits on the header ELEMENT, which serves the
+   ~20 detail surfaces resolving through `resolveHeaderElement` / `resolveDetailHero` — a Circle, a
+   Journey, a Channel, a person, a practice, a partner. The **directory and marketing heroes take
+   their props straight from `IndexTemplate`, which never asks this element anything**, so flipping
+   `PageHero.overlayStyle`'s own default would have restyled the whole marketing site to settle a
+   ruling about entity covers. An operator restores the scrim per surface at `/admin/elements`; a
+   host still has the per-Circle None / Shade / Blend control, which beats both.
+3. **The description renders under the image**, for the `identity` variant only. It rode the cover
+   beneath the title, where a two-line summary competed with the photograph for the same pixels in
+   on-ink type that only works over a scrim — and with the scrim now off by default, that copy would
+   have been light text on an arbitrary photograph held up by a halo alone. Below the image it is
+   ordinary page copy at ordinary page tone (`text-muted`, not on-ink), clamped to a readable
+   measure. The `overlay` variant is untouched: that is the directory hero, where the subtitle is a
+   centred promise that belongs on the cover and nobody asked to move it.
+4. **QR & Share moves below the header** on both Journey pages, for the reason ADR-1394 moved the
+   Circle's buttons off its cover: a glassy on-ink control over a raw photograph is exactly the case
+   `HERO_ACTION_CLASS` was holding up, and the band is a plain surface where an ordinary button
+   reads. **The band now always renders**, because sharing is for everyone and hanging the control
+   off the old `canManageJourney || isAuthor` condition would have hidden it from precisely the
+   visitors a share control exists for. The Journey's **enrol CTA stays on the cover**: it is that
+   page's one conversion, and the ruling named the QR button alone.
+
+**Expected visual movement.** Two photographed surfaces resolve through the header element and will
+shift: `/nearby` (`app-nearby`) and `/admin/qr` (`admin-qr`). That is the ruling landing, not a
+regression, and `pr-compare` reporting it is the gate working. The entity detail pages themselves —
+Journeys, Circles, Channels, people — carry **no visual baseline at all**, so nothing automated
+watches the change this ADR is actually about; the preview is the only check that can see it.
+
+**Rejected.** Changing `PageHero`'s own `overlayStyle` default (restyles the marketing site and every
+directory hero for a ruling about entity covers). Moving the subtitle for the `overlay` variant too
+(not asked, and it is a different design job on that variant). Moving the Journey's enrol CTA off the
+cover with the QR button (it is the conversion, and the ruling named QR).

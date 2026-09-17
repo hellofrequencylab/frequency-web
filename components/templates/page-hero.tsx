@@ -235,9 +235,22 @@ export function PageHero({
   const fade = oStyle === 'fade'
   const legible = adaptiveText ? '' : oStyle === 'shadow' ? '' : fade ? ' on-fade-text' : ' on-image-text'
   const titleTone = adaptiveText ? 'text-on-media' : fade ? 'text-text' : 'text-on-ink'
-  const subtitleTone = adaptiveText ? 'text-on-media/85' : fade ? 'text-text/80' : 'text-on-ink/85'
 
+  // ── THE IDENTITY SUBTITLE RENDERS UNDER THE IMAGE (owner ruling, 2026-09-17) ───────────────────
+  //
+  // *"Put the description under the image."* It rode the cover, bottom-left under the title, which
+  // made a two-line description compete with the photograph for the same pixels and forced it into
+  // on-ink type that only works over a scrim. The scrim is off by default as of the same ruling
+  // (DEFAULT_HEADER_CONFIG), so a description on the cover would now be light text on an arbitrary
+  // photo held up by a halo alone. Below the image it is ordinary page copy, in ordinary page tone,
+  // at whatever length the entity actually has.
+  //
+  // IDENTITY ONLY. The `overlay` variant is the directory and marketing hero, where the subtitle is
+  // a centred promise that belongs on the cover and nobody asked to move it; `minimal` renders no
+  // lockup at all. Scoping it here keeps this ruling to the entity headers it was made about.
+  const subtitleBelow = variant === 'identity' && subtitle
   return (
+    <>
     <section className={`relative overflow-hidden rounded-3xl border border-border${adaptiveText ? ' hero-adaptive-text' : ''}`}>
       {/* Cover: a LIVE media node, a real photo, or the neutral gradient placeholder when
           null/absent. The three are one layer, so the scrim, the glow and the lockup below sit on
@@ -314,9 +327,8 @@ export function PageHero({
                 <h1 className={`font-display uppercase leading-[1] text-balance ${titleTone} text-[clamp(1.25rem,3vw,2rem)] break-words`}>
                   {title}
                 </h1>
-                {subtitle && (
-                  <div className={`mt-1.5 max-w-xl text-body-sm leading-relaxed ${subtitleTone}`}>{subtitle}</div>
-                )}
+                {/* The subtitle is NOT here any more: it renders under the cover (see the note by
+                    `subtitleBelow` above). The lockup is the eyebrow and the name. */}
               </div>
             </div>
             {/* Actions ALWAYS right-aligned: `ml-auto` pushes the cluster to the right of the row, and when
@@ -382,5 +394,12 @@ export function PageHero({
       )}
       <div className="light-strip absolute inset-x-0 bottom-0 z-10" aria-hidden />
     </section>
+    {/* The description, under the image. Page tone, not on-ink: it sits on the page background now,
+        so `text-muted` is correct and an on-ink class here would be invisible in light mode.
+        `max-w-2xl` keeps a long entity summary to a readable measure rather than the full band. */}
+    {subtitleBelow && (
+      <div className="mt-3 max-w-2xl text-body-sm leading-relaxed text-muted">{subtitle}</div>
+    )}
+    </>
   )
 }
