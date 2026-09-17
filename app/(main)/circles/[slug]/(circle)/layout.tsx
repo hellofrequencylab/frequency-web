@@ -28,6 +28,7 @@ import {
 import { ClaimCircle } from '@/components/circles/claim-circle'
 import { listPublicPractices } from '@/lib/practices'
 import { circleEventInsider, loadCircleContentFacts } from './tab-facts'
+import { spaceCircleEventScope } from '@/lib/events/circle-upcoming'
 
 // ── THE CIRCLE DETAIL SHELL (PAGE-FRAMEWORK §3, "How templates map to Next.js") ──────────────────
 //
@@ -183,7 +184,11 @@ export default async function CircleDetailLayout({
     myProfileId ? isPaidViewer() : Promise.resolve(false),
     // `insider` keys the memoized events read, and it is derived from the roster (not from caps)
     // so the Events tab can derive the SAME key and hit the memo. See circleEventInsider.
-    loadCircleContentFacts(circle.id, circleEventInsider({ isMember, isHost })),
+    loadCircleContentFacts(
+      circle.id,
+      circleEventInsider({ isMember, isHost }),
+      spaceCircleEventScope(circle),
+    ),
     // The identity band's chrome through the ONE resolver (PROG-P5, ADR-1136): the same ladder as
     // every entity cover — the Circle's own image_url on rung 1, the operator's /circles Settings
     // image behind it — plus the element-resolved variant/height (ADR-793) this layout used to

@@ -246,6 +246,12 @@
   up to 300 members, and can be **turned on or off** but never deleted, moved or handed off. Staff copy
   says "Space Circle"; member-facing pages just show the Circle, named for the Space. **Not "flagship
   circle"**, **not "main circle"**, **not "primary circle"** in UI (`is_space_primary` is internal).
+  It is a Space's **communications hub and info board**, which is what its shape is for
+  ([ADR-1393](DECISIONS.md)): it ships **open but unlisted** (anyone who reaches it may join; it is in
+  no directory, map or search), it lists **its Space's own events** alongside its own, and it carries
+  an **About the Space** board. Its door offers two settings and only two: open, or membership gated.
+  ⚠️ **The cover pill still reads "Circle", not "Space Circle"** — the pill names what the page is and
+  the Space's name rides beside it, because "Space Circle" is the staff word, per the rule above.
 - **"Community" is never the name of a Space-level surface — a Space's community is its Circles**
   ([ADR-1091](DECISIONS.md), OWN-015; [ADR-1013](DECISIONS.md) §3). No Space tab, block label,
   section anchor, or eyebrow is called "Community": the surface that lists a Space's groups says

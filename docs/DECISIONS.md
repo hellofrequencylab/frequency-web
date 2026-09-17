@@ -44711,3 +44711,82 @@ per-mailbox throttles bound it, and a silent duplicate account costs a real memb
 enumeration costs.
 
 **Not done.** Passwords, passkeys and linking a second Google identity to one account stay out of scope.
+
+## ADR-1393: A Space Circle is an open, unlisted hub that carries its Space's calendar and details (2026-09-17)
+
+**Status:** Accepted · **Amends** [ADR-1391](DECISIONS.md) (its default door, and its backfilled
+off state) · Backlog `LIVE-384` · corroborated by
+`supabase/migrations/20270345005700_space_circle_open_door.sql`,
+`supabase/tests/space_circle.test.sql`, `lib/events/circle-upcoming.ts`, `lib/circles/store.ts`,
+`lib/circles/visibility.ts`, `components/widgets/circles/circle-space-info.tsx`
+
+**Context.** ADR-1391 shipped the Space Circle on 2026-09-16 and left its further capabilities open
+for the owner to name. Owner, 2026-09-17: *"That main space circle is their primary group
+communication and info board. The hub where anybody can engage, get updates, find group info,
+events, etc. I want you to niche the two circle types down."*
+
+An audit against production the same day found the two types were **indistinguishable to a member**
+— same four tabs, same ten blocks, same empty states — and three defects behind that:
+
+1. **A Space Circle showed none of its Space's events.** Event selection matched only
+   `scope_id = circle.id` or `scope_circle_id = circle.id`; a Space event carries `space_id` and no
+   circle scope at all. Royal Temple's Space Circle matched **0** events while Royal Temple the Space
+   ran **12**. Its What's On tab did not render, and the rail's events box hid itself, so the hub
+   said "Nothing scheduled yet" beside a full calendar. Also on House of Fates (4), Breathe & Shine
+   (2), Danny Kenduck (2), Bahja Tours (1), Victoria Angel Heart (1).
+2. **No Space detail reached it.** `ensure_space_circle` copies no location, so `circle-meeting` and
+   `circle-map` read NULLs on all 21, and nothing linked back to the Space.
+3. **The door admitted almost nobody.** Every Space Circle defaulted to `space_paid_members`.
+   Across the whole platform there is **one** active `space_memberships` row, so that door admitted
+   one person; the Space's own team seats and its followers were locked out of their own hub. All 21
+   were also empty (0 posts, 0 events) and 20 were `inactive` by ADR-1391's backfill.
+
+**Owner rulings, 2026-09-17.** *"Let's make all space circles public, but not listed in the
+directory. Owners can choose to leave it open to anyone who follows the space to comment, or make it
+membership gated."* The twenty that ADR-1391 turned off are turned **on** (an open door on a room
+nobody can reach is not a hub). Scope is presentation and Space data: membership semantics are
+unchanged and nobody is auto-joined.
+
+**Decision.**
+
+1. **The door is OPEN and the listing is UNLISTED.** Both written explicitly by
+   `ensure_space_circle`, and backfilled onto all 21. Not a new mechanism: `canSeeCircle` has always
+   held that an unlisted OPEN Circle "still resolves by direct link", which is exactly "public, but
+   not listed". `unlisted` is named rather than defaulted because the column defaults to FALSE while
+   every existing Space Circle reads true, and two cohorts with opposite discovery behaviour is how
+   a private hub turns up in the public directory. `LIVE-373` records that ONE new public Circle
+   broke four blocking visual baselines on every branch; twenty-one would be that at scale. The
+   picker narrows to the two doors the owner named (`SPACE_CIRCLE_ACCESS_MODES`), and
+   `setCircleAccessAction` re-checks it, because the database does NOT enforce this one and an offer
+   the action would not accept is the disagreement `CIRCLE_ACCESS_LIMIT_NOTE` exists to prevent.
+2. **A Space Circle carries its Space's calendar** — a third arm in `lib/events/circle-upcoming.ts`
+   matching `events.space_id`, reaching the What's On tab, the rail box and the tab strip's count
+   through one resolver. 🔴 `spaceCircleEventScope` **refuses the root tenant**: every personal
+   Circle is stamped to root, and root carries 33 events, so a fall-through would publish the
+   platform's calendar onto every private room (the LIVE-075 / LIVE-083 class of bug).
+3. **A Space info board**, `circle-space-info`: what the Space is, where it is, and the way back to
+   it. Gated on the same resolver, self-hiding everywhere else. It reads through
+   `getVisibleSpaceBySlug`, **not** the service-role client: a Space has its own visibility and a
+   private or suspended Space can own a Circle whose door is open, so a bypassing read would have
+   published a private Space's description to anyone who could open that Circle. It links the Space
+   ROOT only, because the other Space tabs sit behind operator function switches that can be off,
+   and it never prints `spaces.street` (no Space has one, and a street is the field most likely to
+   be a person's home).
+4. **The Space Circle leads its Space's Circles tab, exempt from axis 1 there.** Axis 1 governs
+   DISCOVERY; a Space's own profile is not discovery, and a Space that cannot reach its own hub from
+   its own page has no hub. Lifecycle is NOT waived, so a hub its Space turns off stays hidden. At
+   most one row per Space can take the carve (a unique partial index). The Space's Home teaser reads
+   the same function, so it leads there too with no further change.
+
+**The rail cap was kept, not raised.** `default-layouts.test.ts` ratchets the circle side rail at
+four boxes. `circle-space-info` renders on no ordinary Circle, so the exemption is asserted against
+`SPACE_CIRCLE_ONLY_MODULE_IDS` rather than by bumping the number, which would let the next
+always-on block in free.
+
+**Rejected.** Auto-joining Space members to the Space Circle (the owner scoped this pass to
+presentation; it changes what "member" means on two surfaces and needs its own migration and
+opt-out). A fifth Info tab on Space Circles only (new stored content and a new editor surface for
+what the rail block already answers). Deriving the space id inside the event reader (root would fall
+through). Reviving an `archived` Space Circle in the turn-on sweep (its Space was wound down).
+
+**Open.** Whether a Space Circle should auto-enrol new Space members is still for the owner to name.

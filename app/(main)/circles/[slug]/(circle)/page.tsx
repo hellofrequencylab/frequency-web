@@ -59,6 +59,8 @@ const FEED_TAB_MODULE_IDS = [
   'circle-challenges',
   'circle-map',
   'circle-meeting',
+  // Space Circles only; self-hides everywhere else (ADR-1393).
+  'circle-space-info',
   'circle-members',
   'circle-events',
   'circle-practice',

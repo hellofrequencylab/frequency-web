@@ -6,6 +6,7 @@ import {
   circleEventVisibilities,
   selectUpcomingForCircle,
   type CircleEventRow,
+  spaceCircleEventScope,
 } from './circle-upcoming'
 
 const CIRCLE = '11111111-2222-4333-8444-555555555555'
@@ -180,5 +181,127 @@ describe('selectUpcomingForCircle', () => {
 
   it('returns an empty list, not a throw, when the circle has nothing (the day-one default)', () => {
     expect(selectUpcomingForCircle([], CIRCLE, NOW)).toEqual({ events: [], hasMore: false })
+  })
+})
+
+// ── ARM 3: A SPACE CIRCLE CARRIES ITS SPACE'S CALENDAR (ADR-1393) ────────────────────────────────
+// The production gap this arm closes: Royal Temple's Space Circle matched 0 events while its Space
+// ran 12, because a Space event carries `space_id` and no circle scope at all.
+describe('the Space Circle arm', () => {
+  const CIRCLE = '11111111-1111-4111-8111-111111111111'
+  const SPACE = '22222222-2222-4222-8222-222222222222'
+  const ROOT = '33333333-3333-4333-8333-333333333333'
+  const OTHER_SPACE = '44444444-4444-4444-8444-444444444444'
+
+  const spaceEvent = (over: Partial<CircleEventRow> = {}): CircleEventRow => ({
+    id: 'e-space',
+    title: 'Sound bath',
+    slug: 'sound-bath',
+    location: null,
+    starts_at: '2026-10-01T18:00:00Z',
+    scope_id: null,
+    scope_type: 'public',
+    scope_circle_id: null,
+    space_id: SPACE,
+    ...over,
+  })
+
+  describe('spaceCircleEventScope', () => {
+    it('gives the space id for a real Space Circle', () => {
+      expect(
+        spaceCircleEventScope({ is_space_primary: true, space_id: SPACE, space: { type: 'business' } }),
+      ).toBe(SPACE)
+    })
+
+    // 🔴 The one that matters: every personal Circle is stamped to root, and root carries the whole
+    // platform's calendar. Root leaking through here publishes it onto every personal Circle.
+    it('refuses the root tenant', () => {
+      expect(
+        spaceCircleEventScope({ is_space_primary: true, space_id: ROOT, space: { type: 'root' } }),
+      ).toBeNull()
+    })
+
+    it('refuses an ordinary Circle that merely sits in a Space', () => {
+      expect(
+        spaceCircleEventScope({ is_space_primary: false, space_id: SPACE, space: { type: 'business' } }),
+      ).toBeNull()
+    })
+
+    it('fails closed on a missing flag, a missing space, and a junk id', () => {
+      expect(spaceCircleEventScope({ space_id: SPACE })).toBeNull()
+      expect(spaceCircleEventScope({ is_space_primary: true, space_id: null })).toBeNull()
+      expect(spaceCircleEventScope({ is_space_primary: true, space_id: 'not-a-uuid' })).toBeNull()
+    })
+  })
+
+  describe('circleEventScopeFilter', () => {
+    it('stays at two arms without a space id', () => {
+      expect(circleEventScopeFilter(CIRCLE)).toBe(
+        `scope_id.eq.${CIRCLE},scope_circle_id.eq.${CIRCLE}`,
+      )
+    })
+
+    it('adds the space arm when given one', () => {
+      expect(circleEventScopeFilter(CIRCLE, SPACE)).toBe(
+        `scope_id.eq.${CIRCLE},scope_circle_id.eq.${CIRCLE},space_id.eq.${SPACE}`,
+      )
+    })
+
+    it('sanitizes the space id the same way it sanitizes the circle id', () => {
+      expect(circleEventScopeFilter(CIRCLE, 'nope; drop table events')).toBe(
+        `scope_id.eq.${CIRCLE},scope_circle_id.eq.${CIRCLE}`,
+      )
+    })
+  })
+
+  describe('belongsToCircle', () => {
+    it('admits a Space event when the space id is passed', () => {
+      expect(belongsToCircle(spaceEvent(), CIRCLE, SPACE)).toBe(true)
+    })
+
+    it('rejects the very same row when no space id is passed (an ordinary Circle)', () => {
+      expect(belongsToCircle(spaceEvent(), CIRCLE)).toBe(false)
+    })
+
+    it("rejects another Space's event", () => {
+      expect(belongsToCircle(spaceEvent({ space_id: OTHER_SPACE }), CIRCLE, SPACE)).toBe(false)
+    })
+  })
+
+  describe('selectUpcomingForCircle', () => {
+    const now = new Date('2026-09-17T00:00:00Z')
+
+    it("lists the Space's calendar on a Space Circle", () => {
+      const { events } = selectUpcomingForCircle([spaceEvent()], CIRCLE, now, 5, SPACE)
+      expect(events.map((e) => e.id)).toEqual(['e-space'])
+    })
+
+    it('lists nothing for the same rows on an ordinary Circle', () => {
+      const { events } = selectUpcomingForCircle([spaceEvent()], CIRCLE, now, 5)
+      expect(events).toEqual([])
+    })
+
+    it('dedupes an event that is both scoped to the Circle and stamped to the Space', () => {
+      const both = spaceEvent({ id: 'e-both', scope_id: CIRCLE, scope_type: 'circle' })
+      const { events } = selectUpcomingForCircle([both, both], CIRCLE, now, 5, SPACE)
+      expect(events.map((e) => e.id)).toEqual(['e-both'])
+    })
+
+    it('merges circle-scoped and space-scoped events into one list, soonest first', () => {
+      const later = spaceEvent({ id: 'e-space-late', starts_at: '2026-10-05T18:00:00Z' })
+      const sooner: CircleEventRow = {
+        id: 'e-circle',
+        title: 'Circle meetup',
+        slug: 'circle-meetup',
+        location: null,
+        starts_at: '2026-09-20T18:00:00Z',
+        scope_id: CIRCLE,
+        scope_type: 'circle',
+        scope_circle_id: null,
+        space_id: null,
+      }
+      const { events } = selectUpcomingForCircle([later, sooner], CIRCLE, now, 5, SPACE)
+      expect(events.map((e) => e.id)).toEqual(['e-circle', 'e-space-late'])
+    })
   })
 })

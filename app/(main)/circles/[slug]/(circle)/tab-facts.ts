@@ -68,8 +68,13 @@ export const loadCircleUpcomingEvents = cache(
   async (
     circleId: string,
     insider: boolean,
+    // Arm 3 (ADR-1393): a SPACE CIRCLE also carries its Space's own calendar. Always resolved by
+    // `spaceCircleEventScope`, never by a caller reading `space_id` for itself, because the root
+    // tenant is a valid `space_id` on every personal Circle and would publish the platform's whole
+    // calendar. Part of the memo key, so the two shapes can never share a cached answer.
+    spaceId: string | null = null,
   ): Promise<{ events: CircleUpcomingEvent[]; hasMore: boolean }> => {
-    const filter = circleEventScopeFilter(circleId)
+    const filter = circleEventScopeFilter(circleId, spaceId)
     if (!filter) return { events: [], hasMore: false }
 
     // ONE clock for the read, the fold and the selection rules. `seriesUpcomingFloor` is midnight
@@ -84,7 +89,7 @@ export const loadCircleUpcomingEvents = cache(
       const { data } = await admin
         .from('events')
         .select(
-          `id, title, slug, location, starts_at, scope_id, scope_type, scope_circle_id, ${SERIES_COLUMNS}`,
+          `id, title, slug, location, starts_at, scope_id, scope_type, scope_circle_id, space_id, ${SERIES_COLUMNS}`,
         )
         // Belongs to THIS Circle: created for it (scope_id) or placed on it (scope_circle_id).
         // Both are equality matches on this circle's own uuid, so the shared sentinel scope_id
@@ -109,6 +114,7 @@ export const loadCircleUpcomingEvents = cache(
         circleId,
         new Date(floor),
         CIRCLE_EVENTS_TAB_LIMIT,
+        spaceId,
       )
       // Two ways there is more to see: more series than the cap, or a read that came back full.
       return { events, hasMore: hasMore || rows.length >= fetchLimit }
@@ -194,9 +200,13 @@ export interface CircleContentFacts {
 export async function loadCircleContentFacts(
   circleId: string,
   insider: boolean,
+  /** Arm 3 (ADR-1393). Pass `spaceCircleEventScope(circle)`; null everywhere else. It has to reach
+   *  the tab strip as well as the tab body, or a Space Circle with only Space events grows no
+   *  What's On tab and the page hides the calendar it was meant to publish. */
+  spaceId: string | null = null,
 ): Promise<CircleContentFacts> {
   const [events, run, practice] = await Promise.all([
-    loadCircleUpcomingEvents(circleId, insider),
+    loadCircleUpcomingEvents(circleId, insider, spaceId),
     loadCircleActiveRun(circleId),
     loadCirclePractice(circleId),
   ])
