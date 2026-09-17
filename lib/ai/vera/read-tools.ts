@@ -4,6 +4,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -15,8 +16,8 @@ async function suggestCircle(interest?: unknown): Promise<string> {
     .from('circles')
     .select('name, slug, neighborhood, member_count, about')
     .eq('is_demo', false)
-    // Never suggest a closed or still-private circle: archived is closed, draft is owner-only.
-    .not('status', 'in', '("archived","draft")')
+    // Only a live circle (forming or active): never archived, draft, or turned off.
+    .in('status', [...LISTABLE_CIRCLE_STATUS])
     // 🔴 Admin client = no RLS (ADR-1015). A suggestion is a discovery surface with a friendlier
     // voice, so it keys on AXIS 1 (`unlisted`). Naming a LISTED closed Circle is correct — Vera
     // routing someone to a Circle they then join or buy into IS the funnel. Naming an UNLISTED one
@@ -42,8 +43,8 @@ async function findHost(topic?: unknown): Promise<string> {
     .select('name, host_id, profiles:host_id (display_name)')
     .eq('is_demo', false)
     .not('host_id', 'is', null)
-    // Never surface a host of a closed (archived) or still-private (draft) circle.
-    .not('status', 'in', '("archived","draft")')
+    // Only the host of a live circle (forming or active).
+    .in('status', [...LISTABLE_CIRCLE_STATUS])
     // Same reason as suggestCircle above: naming the Host of a private circle names the circle.
     .eq('unlisted', false)
     .limit(1)
