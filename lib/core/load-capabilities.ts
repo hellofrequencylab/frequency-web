@@ -120,7 +120,7 @@ export async function getCircleCapabilities(
 
   const { data: circle } = await admin
     .from('circles')
-    .select('host_id, hub_id')
+    .select('host_id, hub_id, space_id, is_space_primary')
     .eq('id', circleId)
     .maybeSingle()
 
@@ -172,6 +172,24 @@ export async function getCircleCapabilities(
       ) {
         viewerManagesParent = true
       }
+    }
+  }
+
+  // THE SPACE CIRCLE (ADR-1391) is the Space's own, so whoever may edit the Space runs it: the owner,
+  // and its admins and editors. Mirrors the event rule below ("if you run the scope, you run its
+  // events"). An ordinary Circle a Space owns keeps its own host ladder, as before.
+  if (!viewerManagesParent && viewer.profileId && circle?.is_space_primary && circle.space_id) {
+    const { data: space } = await admin
+      .from('spaces')
+      .select('id, owner_profile_id')
+      .eq('id', circle.space_id)
+      .maybeSingle()
+    if (space) {
+      const spaceCaps = await getSpaceCapabilities(
+        { id: space.id, ownerProfileId: (space as { owner_profile_id: string | null }).owner_profile_id },
+        viewer.profileId,
+      )
+      viewerManagesParent = spaceCaps.canEditProfile
     }
   }
 

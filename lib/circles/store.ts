@@ -35,6 +35,8 @@ import type { CircleDetail, MemberRow } from './detail-types'
  *  question is at least askable, and `listPublicSpaceCircles` below is the answer nobody has to
  *  re-derive. */
 export interface SpaceCircle {
+  /** The Space Circle (ADR-1391): always attached, hosted by the Space, up to 300 members. */
+  is_space_primary?: boolean | null
   id: string
   slug: string
   name: string
@@ -67,7 +69,7 @@ export interface SpaceCircleWithRun extends SpaceCircle {
 }
 
 const COLS =
-  'id, slug, name, about, type, member_count, member_cap, status, host_id, space_id, created_at, unlisted, access, image_url, neighborhood, topical_channel_id'
+  'id, slug, name, about, type, member_count, member_cap, status, host_id, space_id, created_at, unlisted, access, image_url, neighborhood, topical_channel_id, is_space_primary'
 
 /**
  * The space_id to stamp on a NEW circle: the explicit owning space, else the root space
@@ -296,7 +298,9 @@ export const loadCircleShell = cache(async (slug: string): Promise<CircleShell |
       .select(
         `id, name, slug, about, image_url, type, member_count, member_cap, status, is_demo, resonance_public,
          latitude, longitude, neighborhood, city, sidebar_order, theme, access, space_id, host_id, unlisted,
+         is_space_primary,
          host:profiles!host_id ( id, display_name, handle, avatar_url ),
+         space:spaces!space_id ( slug, name, brand_name, type ),
          hub:hubs!hub_id (
            id, name, slug,
            nexus:nexuses!nexus_id (

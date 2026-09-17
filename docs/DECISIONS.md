@@ -44629,3 +44629,51 @@ attached to.
 
 **Rejected.** Hiding the picker on dates of a series (the owner edits Meld from whichever date is in
 front of them); a client-only fix (the data-loss path is a server write, and old tabs stay open for days).
+
+## ADR-1391: Every Space has a Space Circle, hosted by the Space, always attached, up to 300 members (2026-09-16)
+
+**Status:** Accepted · **Extends** [ADR-842](DECISIONS.md) (a Space's own Circles) and
+[ADR-1092](DECISIONS.md) (Space audiences) · Backlog `LIVE-382` · corroborated by
+`supabase/migrations/20270345005600_space_circle.sql`, `supabase/tests/space_circle.test.sql`,
+`lib/core/load-capabilities.ts`, `app/(main)/circles/[slug]/(circle)/layout.tsx`,
+`components/spaces/space-circle-card.tsx`
+
+**Context.** Owner, 2026-09-16: "Each space should have a primary circle that has extended capabilities.
+Right now Meghan Riley is the host of Royal Temple circle. She's the owner of the space but it should be
+Hosted by Royal Temple. The Circle can be turned off if a space doesn't want it but it's always attached.
+This space circle should have a 300 Member cap." Nothing like it existed: a Space's Circles were
+ordinary Circles stamped with its `space_id`, hosted by whoever made them, capped by
+`circles_cap_check` at 50 in person and 100 online, and a Space's editors had no rights on any of them.
+
+**Owner rulings, 2026-09-16.** Existing Spaces get their Space Circle turned OFF; new Spaces get theirs
+ON. The host line reads only the Space. Joining defaults to Space members only (`space_paid_members`).
+
+**Decision.**
+
+1. **A flag on the Circle, one per Space.** `circles.is_space_primary` with a unique partial index on
+   `space_id`. A flag on the Circle rather than a pointer on the Space, because the cap check has to read
+   it and a check constraint cannot reach another table.
+2. **300 members for the Space Circle only.** `circles_cap_check` allows 300 when the flag is set; every
+   other Circle keeps its 50 / 100 ceiling.
+3. **Always attached, enforced by the database.** `circles_space_primary_guard` refuses deleting a Space
+   Circle while its Space exists, moving it, or unmarking it; a Space deletion still cascades it. The
+   delete, transfer and hand-off actions refuse first with a plain sentence. Off is status `inactive`,
+   which every public reader already hides, and members are kept.
+4. **Every Space gets one, whatever created it.** An AFTER INSERT trigger on `spaces` calls
+   `ensure_space_circle(space, 'active')`, so no creation path has to remember. It names the Circle for
+   the Space, keeps the owner as `host_id` and host member behind the scenes, and defaults joining to
+   Space members only. Backfill: Royal Temple's existing `royal-temple` Circle became its Space Circle;
+   the other 20 Spaces got one turned off.
+5. **Hosted by the Space.** The Circle page reads "Hosted by <Space>" for a Space Circle.
+6. **Extended capabilities, first slice.** Whoever may edit the Space runs its Space Circle (the event
+   rule "if you run the scope, you run its events", applied to the Circle), and a Space Circle never
+   uses a slot of its owner's personal Circle-hosting meter. The Space's Circles console carries a Space
+   Circle card with the On/Off switch; the move, hand-off and Run controls stay on ordinary Circles.
+
+**Rejected.** `spaces.primary_circle_id` (the cap check could not read it); deleting the Circle when a
+Space "turns it off" (the owner said always attached, and members would be lost); leaving the owner as
+the named host (the ask).
+
+**Open.** Which further capabilities a Space Circle should carry beyond the 300 cap and Space-team
+management (for example, listing first on the Space's Circles tab, or automatic membership for new
+Space members) is for the owner to name.

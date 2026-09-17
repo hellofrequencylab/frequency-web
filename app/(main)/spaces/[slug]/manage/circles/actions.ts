@@ -13,7 +13,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { ok, fail, isError, type ActionResult } from '@/lib/action-result'
-import { createBlankCircleDraft } from '@/lib/circles/draft'
+import { createBlankCircleDraft, setSpaceCircleOn } from '@/lib/circles/draft'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { transferCircle, type TransferTarget } from '@/lib/circles/transfer'
 import { listCirclesHostedBy } from '@/lib/circles/store'
@@ -230,5 +230,19 @@ export async function cancelSpaceCircleOfferAction(
   const res = await cancelCircleOffer(offerId, gate.profileId)
   if (!res.ok) return fail(res.reason || 'Could not cancel that handoff.')
   revalidateSpaceCircles(slug)
+  return ok()
+}
+
+/**
+ * Turn the Space Circle on or off (ADR-1391). It is always attached, so "off" is status `inactive`
+ * (hidden from every public reader, members kept) and "on" is `active`. Only the Space team.
+ */
+export async function setSpaceCircleOnAction(slug: string, on: boolean): Promise<ActionResult<void>> {
+  const gate = await requireSpaceEditor(slug)
+  if (typeof gate === 'string') return fail(gate)
+  const circleSlug = await setSpaceCircleOn(gate.spaceId, on)
+  if (!circleSlug) return fail('The Space Circle could not be updated. Try again.')
+  revalidateSpaceCircles(slug)
+  revalidatePath(`/circles/${circleSlug}`)
   return ok()
 }

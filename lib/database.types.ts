@@ -1179,6 +1179,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_demo: boolean
+          is_space_primary: boolean
           latitude: number | null
           longitude: number | null
           member_cap: number
@@ -1210,6 +1211,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_demo?: boolean
+          is_space_primary?: boolean
           latitude?: number | null
           longitude?: number | null
           member_cap?: number
@@ -1241,6 +1243,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_demo?: boolean
+          is_space_primary?: boolean
           latitude?: number | null
           longitude?: number | null
           member_cap?: number
@@ -16491,6 +16494,13 @@ export type Database = {
         }[]
       }
       ensure_calendar_token: { Args: never; Returns: string }
+      ensure_space_circle: {
+        Args: {
+          p_space_id: string
+          p_status: Database["public"]["Enums"]["group_status"]
+        }
+        Returns: string
+      }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       event_calendar_feed: {
         Args: { _token: string }

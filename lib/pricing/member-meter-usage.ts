@@ -100,6 +100,9 @@ export async function memberHostedCircles(profileId: string): Promise<number | n
       .select('id', { count: 'exact', head: true })
       .eq('host_id', profileId)
       .neq('status', 'archived')
+      // A Space Circle is the Space's, not a Circle this member chose to host, so it never uses one of
+      // their personal hosting slots (ADR-1391).
+      .eq('is_space_primary', false)
     return typeof count === 'number' ? count : null
   } catch {
     return null
