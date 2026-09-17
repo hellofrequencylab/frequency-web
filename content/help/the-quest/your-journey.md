@@ -21,9 +21,9 @@ walk it on your own or with your Circle. Every Journey in the Quest is free to s
 Each one is live for about four weeks, and the practices are short, real-world things you
 can actually fit into a day.
 
-Outside the Quest, a Space can run a Journey of its own as a paid program. Those say the
-price on the Journey's page before you start, so you will always know which kind you are
-looking at.
+Outside the Quest, a Space can run a Journey of its own as a paid program. A paid one shows
+its price up front wherever you meet it, on the Journey's own page and on its listing in the
+Market, so you will always know which kind you are looking at before you start.
 
 ## How you finish
 
