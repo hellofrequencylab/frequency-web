@@ -97,7 +97,11 @@ describe('a second press cannot invalidate the first magic link', () => {
   const page = read(PAGE)
 
   it('both forms submit through the pending-aware button, not a bare <button>', () => {
-    expect((page.match(/<SignInSubmit/g) ?? []).length).toBe(2)
+    // Every form on the page (sign in by link, Google, and the ADR-1392 "Create a new account" step)
+    // submits through the pending-aware button: one per form, never fewer.
+    const forms = (page.match(/<form\b/g) ?? []).length
+    expect(forms).toBe(3)
+    expect((page.match(/<SignInSubmit/g) ?? []).length).toBe(forms)
     expect(page, 'a hand-rolled submit button is back on the sign-in form').not.toMatch(
       /<button\s+[^>]*type="submit"/,
     )

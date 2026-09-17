@@ -40,6 +40,10 @@ function safeSeq(raw: FormDataEntryValue | null): string {
 
 const POST_LOGIN_COOKIE = 'fq_post_login'
 
+/** Carries the address from "no account for that email" to the confirm step (ADR-1392). httpOnly and
+ *  short-lived, so the address never rides on a URL. Must match app/sign-in/page.tsx. */
+export const NEW_ACCOUNT_EMAIL_COOKIE = 'fq_new_account_email'
+
 /** Bounce back to the form with a CODE, never a sentence. See ./errors.ts for why. */
 function fail(code: SignInErrorCode): never {
   redirect(`/sign-in?error=${code}`)
@@ -108,13 +112,31 @@ export async function signInWithMagicLink(formData: FormData) {
   // `emailRedirectTo` stays the bare, known-good /auth/callback — see the note at the top of this
   // file. The funnel rides in user metadata instead, which costs the allowlist nothing.
   const seq = safeSeq(formData.get('seq'))
+  // ASK BEFORE CREATING (ADR-1392). The /sign-in form posts `mode=signin`: an address with no account
+  // is NOT silently made into a new one, because that is how a member who joined with Google, or who
+  // mistyped their address, ended up with two and three accounts. They are asked first. Every other
+  // caller (the join induction, the feature funnels) is a signup and keeps creating in one step, and
+  // so does the confirm step itself, which posts `mode=create`.
+  const askFirst = formData.get('mode') === 'signin'
+  if (formData.get('mode') === 'create') (await cookies()).delete(NEW_ACCOUNT_EMAIL_COOKIE)
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
       emailRedirectTo: await getCallbackUrl(),
+      shouldCreateUser: !askFirst,
       ...(seq ? { data: { funnel_seq: seq } } : {}),
     },
   })
+
+  if (error && askFirst && isNoAccountError(error)) {
+    ;(await cookies()).set(NEW_ACCOUNT_EMAIL_COOKIE, (email ?? '').trim().slice(0, 254), {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/sign-in',
+      maxAge: 60 * 15,
+    })
+    redirect('/sign-in?step=new-account')
+  }
 
   if (error) {
     // Supabase's own wording never reaches the page — see ./errors.ts.
@@ -123,6 +145,12 @@ export async function signInWithMagicLink(formData: FormData) {
   }
 
   redirect('/sign-in/confirm')
+}
+
+/** Supabase's answer when `shouldCreateUser` is false and the address has no account: HTTP 422,
+ *  `otp_disabled`, "Signups not allowed for otp" (probed against the live project 2026-09-16). */
+function isNoAccountError(error: { code?: string; message?: string }): boolean {
+  return error.code === 'otp_disabled' || /signups not allowed/i.test(error.message ?? '')
 }
 
 export async function signInWithGoogle(formData: FormData) {
