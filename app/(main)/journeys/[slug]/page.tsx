@@ -2,7 +2,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { Globe, Lock, Link2, Pencil, Sparkles, Flame, Layers, SlidersHorizontal } from 'lucide-react'
-import { DetailTemplate, PageHero, HERO_ACTION_CLASS } from '@/components/templates'
+import { DetailTemplate, PageHero } from '@/components/templates'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { ShareImageProvider } from '@/components/qr/share-image-context'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
@@ -217,23 +217,24 @@ export default async function JourneyPlanPage({
           }
           title={plan.title}
           subtitle={plan.summary || undefined}
+          /* The ENROL CTA stays on the cover: it is this page's one conversion, and the owner's
+             2026-09-17 ruling named the QR button alone. QR & Share moved to the band below. */
           actions={
-            <>
-              <span className={HERO_CTA_WRAP}>
-                <EnrollCta {...enrollProps} layout="inline" />
-              </span>
-              <QrShareDropdown manager={canManageJourney} className={HERO_ACTION_CLASS} />
-            </>
+            <span className={HERO_CTA_WRAP}>
+              <EnrollCta {...enrollProps} layout="inline" />
+            </span>
           }
         />
       }
       title={plan.title}
       band={
         <div className="min-w-0 space-y-2">
-            {/* Author/admin controls read as a normal light row BELOW the header (no longer riding the
-                cover): the scoped Journey rail trigger. */}
-            {(canManageJourney || isAuthor) && (
-              <div className="flex flex-wrap items-center gap-2 pb-1">
+            {/* The control row BELOW the header. It always renders now, because QR & Share lives here
+                (owner ruling, 2026-09-17) and sharing is for everyone: hanging it off the old
+                manager condition would have hidden the share control from exactly the visitors a
+                share control exists for. Manager tools left, share right. */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-1">
+              <div className="flex flex-wrap items-center gap-2">
                 {canManageJourney && (
                   <OpenAdminBarButton
                     scope={{ kind: 'journey', id: plan.id }}
@@ -244,7 +245,10 @@ export default async function JourneyPlanPage({
                   />
                 )}
               </div>
-            )}
+              <div className="shrink-0">
+                <QrShareDropdown manager={canManageJourney} />
+              </div>
+            </div>
             <span className="inline-flex flex-wrap items-center gap-1.5">
               {plan.official && (
                 <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-semibold text-primary-strong">

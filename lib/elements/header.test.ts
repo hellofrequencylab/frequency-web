@@ -39,10 +39,17 @@ describe('pickHeaderConfig (header element config)', () => {
     expect(pickHeaderConfig({ platform: { settings: { scrim: true } }, space: null }, { scrim: false }).scrim).toBe(true)
   })
 
-  it('resolves overlayStyle: default shadow, derived from scrim, surface default, and operator override', () => {
-    expect(pickHeaderConfig(EMPTY).overlayStyle).toBe('shadow')
+  it('resolves overlayStyle: default NONE, derived from scrim, surface default, and operator override', () => {
+    // 🔴 THE DEFAULT IS 'none' (owner ruling 2026-09-17, DEFAULT_HEADER_CONFIG). An untouched entity
+    // header shows the raw photograph; the ink scrim and its amber glow are opt-in now. This line
+    // read 'shadow' until that ruling, and it is the assertion that would catch the default being
+    // flipped back by accident.
+    expect(pickHeaderConfig(EMPTY).overlayStyle).toBe('none')
     // scrim off with no explicit style → 'none'.
     expect(pickHeaderConfig(EMPTY, { scrim: false }).overlayStyle).toBe('none')
+    // ...and the derivation still works the OTHER way, which is what keeps the scrim boolean
+    // meaningful rather than vestigial: turning it back on restores the shadow.
+    expect(pickHeaderConfig(EMPTY, { scrim: true }).overlayStyle).toBe('shadow')
     // a surface default style wins over the scrim derivation.
     expect(pickHeaderConfig(EMPTY, { scrim: false, overlayStyle: 'fade' }).overlayStyle).toBe('fade')
     // an operator master value beats the surface default.
