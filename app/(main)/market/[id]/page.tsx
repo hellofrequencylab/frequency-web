@@ -25,6 +25,8 @@ import { listingMetadata } from '@/lib/listings-shared/listing-seo'
 import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { getHighestOfferCents } from '@/lib/marketplace/listing-offers'
 import { BuyButton } from '../../marketplace/buy-button'
+import { JourneySalesBody } from '@/components/marketplace/journey-sales-body'
+import { getPlanById } from '@/lib/journey-plans'
 import { listActiveVariants } from '@/lib/commerce/variants'
 import { effectiveVariantPriceCents, effectiveVariantStock, isBookableServiceKind, describePrice } from '@/lib/commerce/types'
 import type { ServiceConfig, Price } from '@/lib/commerce/types'
@@ -44,7 +46,20 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   // page body). Free/contact services read plainly; everything else is the base price.
   const priceLabel =
     product.priceCents > 0 ? usd(product.priceCents, product.currency ?? 'usd') : 'Free'
-  return listingMetadata(listingDetailFromProduct(product, { isOwner: false, priceLabel }))
+  const meta = listingMetadata(listingDetailFromProduct(product, { isOwner: false, priceLabel }))
+
+  // ── ONE CANONICAL URL (ADR-1398) ──────────────────────────────────────────────────────────────
+  // A Journey is sold from two places on purpose: its own page is the pitch, this page is the till,
+  // and both now render the same derived body. Two URLs describing one thing cannibalise each other
+  // in search, so this one points at the other. The JOURNEY slug wins because `/journeys/heart-on-fire`
+  // is a readable, permanent URL and `/market/<uuid>` is neither; a re-price also writes a NEW product
+  // row (the price is never edited in place), so the product URL is not even stable across a price
+  // change, while the Journey slug survives it.
+  if (product.journeyPlanId) {
+    const plan = await getPlanById(product.journeyPlanId)
+    if (plan) meta.alternates = { ...(meta.alternates ?? {}), canonical: `/journeys/${plan.plan.slug}` }
+  }
+  return meta
 }
 
 /** Map a service's quote onto the unified buyer Price (Pricing Options P2). `choose` reads the anchor
@@ -268,6 +283,14 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
               <BuyButton productId={product.id} entryPoint="marketplace" />
             )}
           </div>
+
+          {/* ── THE SALES PAGE, for a Journey product (ADR-1398) ──────────────────────────────
+              Derived live from the Journey this product sells: the story, what you'll learn, the
+              phase-by-phase path, how it meets, the guide, the questions. Renders nothing for every
+              other product kind, and nothing at all if the Journey cannot be loaded. It sits BELOW
+              the purchase panel because the buy box belongs high and the persuading belongs under
+              it, and ABOVE reviews because proof reads better after the thing being proved. */}
+          {product.journeyPlanId && <JourneySalesBody planId={product.journeyPlanId} />}
 
           <ProductReviews
             productId={product.id}

@@ -314,6 +314,24 @@ export async function getPlan(
   return { plan, items: (itemRows ?? []) as unknown as JourneyPlanItem[] }
 }
 
+/** The same load as getPlan, keyed by ID rather than slug (ADR-1398). The product page knows a
+ *  Journey only by `commerce_products.journey_plan_id`, and resolving a slug first would be two
+ *  round trips to answer one question. Same columns, same ordering, so the sales blocks cannot see
+ *  a different Journey than the Journey page does. */
+export async function getPlanById(
+  planId: string,
+): Promise<{ plan: JourneyPlan; items: JourneyPlanItem[] } | null> {
+  const { data: planRow } = await db().from('journey_plans').select(PLAN_COLS).eq('id', planId).maybeSingle()
+  const plan = (planRow ?? null) as JourneyPlan | null
+  if (!plan) return null
+  const { data: itemRows } = await db()
+    .from('journey_plan_items')
+    .select(ITEM_COLS)
+    .eq('plan_id', plan.id)
+    .order('sort_order', { ascending: true })
+  return { plan, items: (itemRows ?? []) as unknown as JourneyPlanItem[] }
+}
+
 /** The author of a plan (for ownership checks in server actions). */
 export async function planAuthorId(planId: string): Promise<string | null> {
   const { data } = await db().from('journey_plans').select('author_id').eq('id', planId).maybeSingle()

@@ -235,7 +235,12 @@ export function ListingDetailTemplate({
       </div>
 
       {/* Full-width marketing CTA. */}
-      <ListingMarketingCTA vertical={view.vertical} />
+      {/* 🔴 NOT FOR THE OWNER. This band reads "Sell what you make. Open a storefront in the Market
+          and list your first product." Shown on a listing somebody already owns and has already
+          listed, it is an advert for a thing they have done, sitting under their own live product.
+          The owner reported it on their own $444 listing. Recruiting a seller is its whole purpose,
+          so it keeps rendering for everyone else. */}
+      {!view.isOwner && <ListingMarketingCTA vertical={view.vertical} />}
     </div>
   )
 }
