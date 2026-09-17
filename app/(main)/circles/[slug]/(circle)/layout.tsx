@@ -1,14 +1,15 @@
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { EyeOff, LayoutDashboard, MapPin, PenLine, Settings, Users } from 'lucide-react'
+import { EyeOff, LayoutDashboard, MapPin, Settings, Users } from 'lucide-react'
 import { ProgressTrack } from '@/components/ui/progress-track'
 import { getCachedUser, getMyProfileId } from '@/lib/auth'
 import { leaveCircle } from '../../actions'
 import { JoinCircleButton } from '@/components/circles/join-circle-button'
 import { CircleHandoffBanner } from '@/components/circles/circle-handoff-banner'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
-import { CircleHostMenu } from '@/components/circles/circle-host-menu'
+import { CircleCreateMenu } from '@/components/circles/circle-create-menu'
+import { CircleMemberMenu } from '@/components/circles/circle-member-menu'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { circleCapabilities } from '@/lib/circles/detail-access'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
@@ -19,6 +20,7 @@ import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 import { resolveIdentityHero } from '@/lib/layout/detail-hero'
 import { loadCircleShell } from '@/lib/circles/store'
 import { circleTabs } from '@/lib/circles/tabs'
+import { circleSubheading } from '@/lib/circles/subheading'
 import {
   circleHeroOverlayStyle,
   hasCircleHeroHeight,
@@ -77,10 +79,15 @@ import { spaceCircleEventScope } from '@/lib/events/circle-upcoming'
 //   2. TUNABLE  — variant / height / overlay + the cover ladder resolve through `resolveIdentityHero`
 //                 (ADR-1136, one resolver for every entity band), so /admin/elements
 //                 retunes the band with no deploy, and the operator's saved hero height wins over it.
-//   3. TITLE    — the single page <h1> rides the cover, bottom-left, over the ink scrim, with the
-//                 uppercase "CIRCLE" eyebrow above it. This is the ONLY h1 on the page: the body
-//                 tabs beneath are bodies, not shells (check:headers proves it).
-//   4. SUBTITLE — one quiet on-ink line on the cover: the place.
+//   3. TITLE    — the single page <h1> rides the cover, bottom-left, over the ink scrim. This is
+//                 the ONLY h1 on the page: the body tabs beneath are bodies, not shells
+//                 (check:headers proves it). The uppercase "CIRCLE" eyebrow that used to stack
+//                 above it is now a PILL in the cover's top-left corner (PageHero's `corner` slot),
+//                 on the owner's 2026-09-17 ruling — and on a Space Circle that pill is a link to
+//                 the owning Space.
+//   4. SUBTITLE — one quiet on-ink line on the cover, and it is no longer the place: it is what
+//                 this Circle IS, resolved by `circleSubheading` (lib/circles/subheading.ts). The
+//                 place moved out because the band repeats it three inches lower.
 //   5. BAND     — below the hero, and it is the part that moved. See the next block.
 //   6. BACK     — DetailTemplate's `back` slot, above the band. The breadcrumb and the back link
 //                 coexisted here for a year and the owner reads both as correct; this is not the
@@ -104,8 +111,29 @@ import { spaceCircleEventScope } from '@/lib/events/circle-upcoming'
 // changing its class is how it disappears. Every button in the band takes `buttonClasses()`.
 //
 // Gating is unchanged: Edit and Manage are `circle.editSettings`, the SAME capability the admin
-// rail's circle modules use, resolved once by `circleCapabilities` above. A member sees Post and
-// nothing else; a visitor sees Join.
+// rail's circle modules use, resolved once by `circleCapabilities` above.
+//
+// ── THE ROW WENT FROM FIVE BUTTONS TO TWO (owner ruling, 2026-09-17) ─────────────────────────────
+//
+// *"Remove: Post. Move Create to the header. Make Leave group a subtle setting somewhere else and
+// not a primary button."*
+//
+// It read Post · Edit · Manage · Create · Leave, which is five controls of near-equal weight and
+// two of them primary-amber. A member's row now holds ONE control and a manager's holds three:
+//
+//   member    Create                     (the menu carries New post)
+//   manager   Create · Edit · Manage
+//   visitor   Join                       (or a disabled "Full")
+//
+// POST DID NOT LOSE ITS DOOR, IT MOVED INSIDE CREATE. On the Feed tab the button was a link to a
+// composer already on screen; on Members, What's On and Circle Stats there is no composer, so the
+// button could not simply be deleted. `CircleCreateMenu` leads with "New post", anchored to the
+// same `#circle-post` target, and it is no longer host-only for exactly that reason.
+//
+// LEAVE MOVED TO THE TAB ROW, behind the overflow control beside QR & Share (`CircleMemberMenu`).
+// It could not move to the admin rail with the host tools: the rail is gated on
+// `circle.editSettings`, which a plain member does not hold, so the only viewer who needs Leave is
+// the one viewer who would never find it there.
 //
 // THE OPERATOR'S THREE COVER CONTROLS are native to this shape and need no special handling: hero
 // HEIGHT, cover FOCAL POINT and the cover SCRIM are PageHero's own props, which is what they were
@@ -242,10 +270,12 @@ export default async function CircleDetailLayout({
     ...content,
   })
 
-  // The ONE primary action, resolved to a single answer per viewer. A member's is Post: it lands on
-  // the Feed tab at the composer, which is the thing a Circle is for. Everyone else's is Join.
+  // The ONE primary action, resolved to a single answer per viewer (owner ruling, 2026-09-17).
+  // Someone already inside gets CREATE, the menu that now carries posting; everyone else gets Join.
+  // Post as a button is gone: it was a link to a composer three inches below it on the tab that has
+  // one, and "New post" inside Create is the door from the tabs that do not.
   const canJoin = !isMember && !!myProfileId && !full && !isDraft
-  const primary = isMember || isHost ? 'post' : canJoin ? 'join' : 'none'
+  const primary = isMember || isHost || canManage ? 'create' : canJoin ? 'join' : 'none'
 
   return (
     <div>
@@ -282,9 +312,51 @@ export default async function CircleDetailLayout({
         hero={
           <PageHero
             {...hero}
-            eyebrow="Circle"
+            /* ── THE EYEBROW BECAME A CORNER PILL (owner ruling, 2026-09-17) ──────────────────
+               *"Change the 'CIRCLE' eyebrow to a pill button in the corner. Create a subheading
+               line under the circle name."*
+
+               It was an uppercase accent line stacked directly above the title, which spent a
+               whole line of the lockup on one word and pushed the name down. As a pill in the
+               top-left corner it labels the cover from the opposite end of the band and leaves
+               the lockup to the name and the line under it.
+
+               ON A SPACE CIRCLE THE PILL IS A LINK to the Space that owns it, which is the one
+               piece of navigation a Space's hub always owes its visitor and the reason `corner`
+               is a slot rather than a string. Its label still reads "Circle": NAMING.md is
+               explicit that "Space Circle" is STAFF copy and that a member-facing page just
+               shows the Circle, named for the Space. The pill says what the page is; the Space's
+               name rides beside it. */
+            corner={
+              circle.is_space_primary && circle.space && circle.space.type !== 'root' ? (
+                <Link
+                  href={`/spaces/${circle.space.slug}`}
+                  className="inline-flex items-center gap-1.5 rounded-pill border border-on-ink/25 bg-on-ink/15 px-3 py-1 text-meta font-bold uppercase tracking-eyebrow text-on-ink backdrop-blur-sm transition-colors hover:bg-on-ink/25"
+                >
+                  Circle
+                  <span className="font-semibold normal-case tracking-normal opacity-90">
+                    {circle.space.brand_name || circle.space.name}
+                  </span>
+                </Link>
+              ) : (
+                <span className="inline-flex items-center rounded-pill border border-on-ink/25 bg-on-ink/15 px-3 py-1 text-meta font-bold uppercase tracking-eyebrow text-on-ink backdrop-blur-sm">
+                  Circle
+                </span>
+              )
+            }
             title={circle.name}
-            subtitle={[circle.neighborhood, circle.city].filter(Boolean).join(', ') || undefined}
+            /* The line the pill freed up. What this Circle IS, resolved by one pure rule
+               (lib/circles/subheading.ts); `''` means render no subtitle at all. */
+            subtitle={
+              circleSubheading({
+                about: circle.about,
+                type: circle.type,
+                neighborhood: circle.neighborhood,
+                city: circle.city,
+                isSpaceCircle: circle.is_space_primary === true,
+                spaceName: circle.space?.brand_name || circle.space?.name || null,
+              }) || undefined
+            }
           />
         }
         band={
@@ -351,12 +423,16 @@ export default async function CircleDetailLayout({
               </div>
 
               <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-                {/* The ONE primary. Post for someone already inside, Join for someone who is not. */}
-                {primary === 'post' && (
-                  <Link href={`/circles/${circle.slug}#circle-post`} className={buttonClasses('primary')}>
-                    <PenLine className="h-4 w-4" aria-hidden />
-                    Post
-                  </Link>
+                {/* The ONE primary: Create for someone already inside, Join for someone who is not.
+                    It renders FIRST, so the header's strongest control is the one that makes
+                    something rather than the one that leaves. */}
+                {primary === 'create' && (
+                  <CircleCreateMenu
+                    circleId={circle.id}
+                    circleSlug={circle.slug}
+                    canPost={isMember || isHost}
+                    canManage={canManage}
+                  />
                 )}
 
                 {primary === 'join' && (
@@ -392,20 +468,12 @@ export default async function CircleDetailLayout({
                       <LayoutDashboard className="h-4 w-4" aria-hidden />
                       Manage
                     </Link>
-                    <CircleHostMenu circleId={circle.id} />
                   </>
                 )}
 
-                {/* Leaving is only possible from here, so it cannot move to the admin rail with the
-                    host tools. A host does not get it: they hand the Circle over (ADR-845) rather
-                    than walking out of it. */}
-                {isMember && !isHost && (
-                  <form action={leaveCircle.bind(null, circle.id)}>
-                    <button type="submit" className={buttonClasses('secondary')}>
-                      Leave
-                    </button>
-                  </form>
-                )}
+                {/* Leave is NOT here any more. It moved to the overflow control on the tab row
+                    below (CircleMemberMenu), on the owner's ruling that leaving is a setting rather
+                    than one of the header's primary actions. */}
               </div>
             </div>
 
@@ -444,8 +512,13 @@ export default async function CircleDetailLayout({
               // Holds the left edge so the share control stays right-aligned on a strip-less Circle.
               <span />
             )}
-            <div className="shrink-0 pb-2">
+            <div className="flex shrink-0 items-center gap-1 pb-2">
               <QrShareDropdown manager={canManage} />
+              {/* The quiet home Leave moved to (owner ruling, 2026-09-17). A Host never gets it:
+                  they hand the Circle over (ADR-845) rather than walking out of it. */}
+              {isMember && !isHost && (
+                <CircleMemberMenu leaveAction={leaveCircle.bind(null, circle.id)} />
+              )}
             </div>
           </div>
         }

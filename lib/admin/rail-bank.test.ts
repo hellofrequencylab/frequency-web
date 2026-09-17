@@ -119,7 +119,7 @@ describe('bankForScope', () => {
   })
 
   it('circle → manage console + the host create quick-actions (New event · New announcement) (ADR-515 Phase 4)', () => {
-    // The two create hrefs mirror CircleHostMenu exactly (same circle id the scope carries). Insights
+    // The two create hrefs mirror CircleCreateMenu exactly (same circle id the scope carries). Insights
     // stays INLINE (a circle has no standalone insights page), so it is NOT a bank link.
     const bank = bankForScope({ kind: 'circle', id: 'c1' })
     expect(hrefs(bank)).toEqual([

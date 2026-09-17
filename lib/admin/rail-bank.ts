@@ -95,7 +95,7 @@ function baseBank(scope: AdminScope | null, viewer: BankViewer, slug: string | n
     }
     // A CIRCLE (ADR-515 Phase 4): the thin manage console PLUS the host's two create quick-actions —
     // New event and New announcement — so the "where do I go from here?" bank carries the create paths
-    // the header CircleHostMenu used to own. The hrefs mirror CircleHostMenu exactly (keyed on the same
+    // the header CircleCreateMenu used to own. The hrefs mirror CircleCreateMenu exactly (keyed on the same
     // circle id the scope carries), so they resolve identically. Insights stays INLINE (a circle has no
     // standalone insights page — see ADR-515 Phase 4), so it is not a bank link.
     case 'circle': {
@@ -103,7 +103,7 @@ function baseBank(scope: AdminScope | null, viewer: BankViewer, slug: string | n
       if (!id || !urlSlug) return []
       return [
         // Console is SLUG-keyed; the two create quick-actions are DB-ID-keyed (the create form matches
-        // `?circle=` against circle.id), so they keep scope.id — mirrors CircleHostMenu exactly.
+        // `?circle=` against circle.id), so they keep scope.id — mirrors CircleCreateMenu exactly.
         { label: 'Manage console', icon: SlidersHorizontal, href: `/circles/${urlSlug}/manage` },
         { label: 'New event', icon: CalendarPlus, href: `/events/new?circle=${id}` },
         { label: 'New announcement', icon: Megaphone, href: `/nearby?compose=true&scope=${id}` },

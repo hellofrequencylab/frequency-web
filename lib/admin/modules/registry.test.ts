@@ -269,7 +269,6 @@ describe('admin module registry', () => {
       'circle.crm',
       'circle.engage',
       'circle.insights',
-      'circle.text',
       'circle.transfer',
     ])
     // Hub/Nexus carry their 9-spine editor Apps (ADMIN-RAIL Phase 7) + the ADR-515 Phase 5 Layout

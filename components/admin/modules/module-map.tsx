@@ -6,7 +6,6 @@ const CircleGuidedModule = dynamic(() => import('./circle-guided-module').then((
 const EventGuidedModule = dynamic(() => import('./event-guided-module').then((m) => m.EventGuidedModule))
 const JourneyGuidedModule = dynamic(() => import('./journey-guided-module').then((m) => m.JourneyGuidedModule))
 const CircleSettingsModule = dynamic(() => import('./circle-settings-module').then((m) => m.CircleSettingsModule))
-const CircleTextModule = dynamic(() => import('./circle-text-module').then((m) => m.CircleTextModule))
 const CirclePlaceTimeModule = dynamic(() => import('./circle-place-time-module').then((m) => m.CirclePlaceTimeModule))
 const CirclePeopleModule = dynamic(() => import('./circle-people-module').then((m) => m.CirclePeopleModule))
 const CircleEngageModule = dynamic(() => import('./circle-engage-module').then((m) => m.CircleEngageModule))
@@ -131,7 +130,6 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   // its two actions. The steer dials, the diff, and the put-it-back are written once.
   'circle.guided': CircleGuidedModule,
   'circle.settings': CircleSettingsModule,
-  'circle.text': CircleTextModule,
   'circle.placeAndTime': CirclePlaceTimeModule,
   'circle.people': CirclePeopleModule,
   // ONE Engage box (ADR-846): the shared challenges + this week's practice, stacked.

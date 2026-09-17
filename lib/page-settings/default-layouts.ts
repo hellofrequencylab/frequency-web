@@ -48,8 +48,8 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
   //
   // MAIN leads with the shared challenges (self-hiding, so most circles show nothing there) and
   // then the feed, because a feed has no bottom: anything placed under it is placed nowhere. The
-  // movable Page text block leads the header slot (empty by default → renders nothing until a
-  // circle or the network default sets text); operators can move it anywhere.
+  // header slot is now empty: the movable Page text block that used to lead it was retired on
+  // 2026-09-17 as a duplicate of About (which formats now instead).
   //
   // EVERY id in the circle module set is placed here explicitly, on or off. An unplaced id is
   // auto-appended to the template's FIRST slot, which on 'header-side' is the full-width header —
@@ -57,7 +57,9 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
   '/circles/*': {
     template: 'header-side',
     slots: {
-      header: { order: ['circle-text'], hidden: [], roles: {} },
+      // The header slot is empty: 'circle-text' was retired on 2026-09-17 and About (which now
+      // formats) is rendered by the page itself, above the body.
+      header: { order: [], hidden: [], roles: {} },
       main: { order: ['circle-challenges', 'circle-feed'], hidden: [], roles: {} },
       side: {
         order: [

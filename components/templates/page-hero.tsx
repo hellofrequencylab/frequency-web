@@ -63,6 +63,17 @@ export interface PageHeroProps {
   /** A leading chip beside the title in the `identity` variant: an entity icon or an avatar. Ignored by
    *  the other variants. */
   leading?: React.ReactNode
+  /** A control or badge pinned to the cover's TOP-LEFT corner, clear of the bottom lockup.
+   *
+   *  The Circle header is the first caller (owner ruling, 2026-09-17): its "CIRCLE" eyebrow became
+   *  a pill in the corner, which freed the line under the title for a real subheading. It is a slot
+   *  rather than a `cornerLabel` string so a caller can pin a LINK there — a Space Circle's pill
+   *  points at its Space — without this component learning what a Space is.
+   *
+   *  It sits ABOVE the scrim (`z-20`) and outside every text zone, so adaptive tone sampling never
+   *  drags the name's tone toward a chip in the opposite corner. Rendered for every variant that
+   *  paints a cover; `minimal` included, since a cover with no lockup can still be labelled. */
+  corner?: React.ReactNode
   /** The layout variant (see the file header). Defaults to the shipped centered `overlay`. */
   variant?: PageHeroVariant
   /** Does this hero own the page's `<h1>`? Default TRUE, which is right everywhere the hero IS the
@@ -181,6 +192,7 @@ export function PageHero({
   background,
   coverFocus,
   eyebrow,
+  corner,
   title,
   subtitle,
   search,
@@ -259,6 +271,13 @@ export function PageHero({
           overlayStyle={oStyle}
           overlayColor={overlayColor ?? null}
         />
+      )}
+
+      {/* The corner slot: pinned top-left, above the scrim, outside the lockup and action zones.
+          Padding matches the identity lockup's own inset so the pill lines up with the title's
+          left edge on both phone and desktop. */}
+      {corner && (
+        <div className="absolute left-5 top-5 z-20 sm:left-8 sm:top-8">{corner}</div>
       )}
 
       {variant === 'minimal' ? (

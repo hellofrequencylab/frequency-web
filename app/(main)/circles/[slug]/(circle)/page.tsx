@@ -17,7 +17,6 @@ import { CollapsibleAbout } from '@/components/circles/collapsible-about'
 // '/circles/*' scope, exactly like the Practices detail page.
 import { PageModules } from '@/components/widgets/page-modules'
 import { setCircleContext } from '@/lib/circles/active-circle'
-import { circleTextOverride, resolveCircleText } from '@/lib/circles/circle-text'
 
 // ── THE FEED TAB (the default tab) ──────────────────────────────────────────────────────────────
 // A BODY, not a shell. The identity — cover, title, badges, facts, tabs — belongs to the
@@ -64,8 +63,6 @@ const FEED_TAB_MODULE_IDS = [
   'circle-members',
   'circle-events',
   'circle-practice',
-  'circle-invite',
-  'circle-text',
 ] as const
 
 export async function generateMetadata({
@@ -165,10 +162,6 @@ export default async function CircleHomePage({
   // context type carries it; the block that renders it now lives on the Practice tab.
   const circlePractice = await loadCirclePractice(circle.id)
 
-  // The movable Page-text block's copy: this circle's override, else the network default ('' when
-  // neither is set → the block renders nothing). One platform_settings read (request-memoized) only
-  // when there's no per-circle override.
-  const layoutText = await resolveCircleText(circleTextOverride(circle.sidebar_order))
 
   // Stamp the resolved per-viewer context into the request-scoped holder so the circle's body
   // modules (components/widgets/circles/*) read it without prop-drilling — then <PageModules>
@@ -188,7 +181,6 @@ export default async function CircleHomePage({
     activeStreaks: health.activeStreaks,
     newThisWeek: health.newThisWeek,
     circlePractice,
-    layoutText,
   })
 
   return (
