@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { ImagePlus } from 'lucide-react'
+import { Check, ImagePlus } from 'lucide-react'
 import { Input, labelClasses } from '@/components/ui/field'
-import { RailAutosaveForm, useRailSaveNow } from '@/components/admin/rail/rail-autosave-form'
+import { RailAutosaveForm, useRailSaveNow, useRailSaveSoon, useRailSaveState } from '@/components/admin/rail/rail-autosave-form'
 import { RailManifestFields, type RailManifestFieldsProps } from '@/components/admin/rail/rail-manifest-fields'
 import { RailManifestRepeat } from '@/components/admin/rail/rail-manifest-repeat'
 import { Radio } from '@/components/ui/radio'
+import { Button } from '@/components/ui/button'
 import { seriesWritePlan, type SeriesScope } from '@/lib/events/series-scope'
 import { ticketSellerVerdict } from '@/lib/events/ticket-eligibility'
 import { createClient } from '@/lib/supabase/client'
@@ -551,18 +552,55 @@ function EventSettingsRail({ data, engage }: { data: EventData; engage: EventCor
  * The plan's fields inside the autosave form. A COMPOSITE control fires no native change or blur the
  * form could hear — a tag chip is added by a click, not by typing into the box that keeps the focus
  * — so a tags change commits through the form's own `saveNow`, the way the Journey rail's does.
+ *
+ * 🔴 THE REPEAT PICKER IS THE SAME KIND OF COMPOSITE, AND IT WAS NOT WIRED (LIVE-381). Its switch and
+ * weekday pills are buttons, so turning a repeat on or picking Wednesday fired nothing the form could
+ * hear, and the change only landed when some LATER field happened to save. The owner's workaround was
+ * to scroll to the page layout editor's Save button, which saves a different thing entirely. A repeat
+ * change now commits through `saveSoon` (debounced, because the interval box changes per keystroke),
+ * and an explicit "Update changes" button sits right under the picker for a host who wants to be sure.
  */
 function SettingsFields(props: RailManifestFieldsProps) {
   const saveNow = useRailSaveNow()
+  const saveSoon = useRailSaveSoon()
   const { onChange, fields } = props
+  const handleChange = (path: string, next: string) => {
+    onChange(path, next)
+    const kind = fields.find((f) => f.path === path)?.kind
+    if (kind === 'tags') saveNow()
+    else if (kind === 'repeat') saveSoon()
+  }
+  const repeatAt = fields.findIndex((f) => f.kind === 'repeat')
+  if (repeatAt < 0) return <RailManifestFields {...props} onChange={handleChange} />
   return (
-    <RailManifestFields
-      {...props}
-      onChange={(path, next) => {
-        onChange(path, next)
-        if (fields.find((f) => f.path === path)?.kind === 'tags') saveNow()
-      }}
-    />
+    <>
+      <RailManifestFields {...props} fields={fields.slice(0, repeatAt + 1)} onChange={handleChange} />
+      <RepeatUpdateButton onUpdate={saveNow} />
+      <RailManifestFields {...props} fields={fields.slice(repeatAt + 1)} onChange={handleChange} />
+    </>
+  )
+}
+
+/** "Update changes" under the repeat picker: commits now and says what happened right beside it. */
+function RepeatUpdateButton({ onUpdate }: { onUpdate: () => void }) {
+  const { state, error } = useRailSaveState()
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      {state === 'saving' && <span className="text-meta text-subtle" aria-live="polite">Saving…</span>}
+      {state === 'saved' && (
+        <span className="flex items-center gap-1 text-meta font-medium text-success" aria-live="polite">
+          <Check className="h-3.5 w-3.5" aria-hidden /> Updated
+        </span>
+      )}
+      {state === 'error' && (
+        <span role="alert" className="text-meta font-medium text-danger">
+          {error ?? 'Could not save. Try again.'}
+        </span>
+      )}
+      <Button type="button" variant="secondary" size="sm" onClick={onUpdate} disabled={state === 'saving'}>
+        Update changes
+      </Button>
+    </div>
   )
 }
 

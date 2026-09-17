@@ -128,6 +128,22 @@ export async function getEventAdminData(slug: string) {
   const caps = await getEventCapabilities(event.id)
   if (!caps.has('event.editSettings')) return null
 
+  // 🔴 A DATE OF A SERIES CARRIES NO RULE OF ITS OWN (LIVE-381). The database forbids one
+  // (`events_occurrence_not_recurring`), so this row's recurrence columns are always empty, and the
+  // repeat picker used to open blank on every date of a series: "it doesn't show the setting from last
+  // time". Worse, under "this and all future dates" that blank was posted back as the series' rule. The
+  // rule lives on the ANCHOR, so the picker reads it from there.
+  const series = event.parent_event_id
+    ? ((
+        await admin
+          .from('events')
+          .select('starts_at, recurrence_type, recurrence_rule, recurrence_until')
+          .eq('id', event.parent_event_id)
+          .is('parent_event_id', null)
+          .maybeSingle()
+      ).data as Pick<EventAdminRow, 'starts_at' | 'recurrence_type' | 'recurrence_rule' | 'recurrence_until'> | null)
+    : null
+
   // Cover lives as a storage PATH in the public `event-media` bucket (mirrors
   // event-activity / recap-album; see index-data.ts ~400). Resolve it to a public
   // URL for InlineCover to display — the stored value stays a path.
@@ -196,6 +212,11 @@ export async function getEventAdminData(slug: string) {
 
   return {
     ...event,
+    /** The series' own rule when this row is one date of it (null for an anchor or a one-off). */
+    series_starts_at: series?.starts_at ?? null,
+    series_recurrence_type: series?.recurrence_type ?? null,
+    series_recurrence_rule: series?.recurrence_rule ?? null,
+    series_recurrence_until: series?.recurrence_until ?? null,
     journeyOptions,
     payoutsReady,
     coverUrl,
@@ -513,11 +534,16 @@ export async function updateEventSettings(
   // The series' own start, which is what an "ends on" date is validated against. Validating a
   // series-wide rule against ONE DATE's start would reject an end that is perfectly valid for the
   // series (any date between the anchor and the occurrence the host happens to be looking at).
-  const anchorStartsAt = parentEventId
-    ? (
-        await admin.from('events').select('starts_at').eq('id', parentEventId).maybeSingle()
-      ).data?.starts_at ?? null
+  const anchorRow = parentEventId
+    ? ((
+        await admin
+          .from('events')
+          .select('starts_at, recurrence_type, recurrence_rule, recurrence_until')
+          .eq('id', parentEventId)
+          .maybeSingle()
+      ).data as { starts_at: string | null; recurrence_type: string | null; recurrence_rule: string | null; recurrence_until: string | null } | null)
     : null
+  const anchorStartsAt = anchorRow?.starts_at ?? null
 
   // Recurrence (folded in from Place & Time). ONE field carries the whole answer (ADR-1299): the
   // rail's repeat picker posts an RRULE value plus, when the host chose an end date,
@@ -534,6 +560,26 @@ export async function updateEventSettings(
   const untilIso = submittedRepeat.untilDate ? dateToWallClockIso(submittedRepeat.untilDate) : null
   const recurrenceError = validateRecurrenceUntil(recurrence, startIsoForRec, untilIso)
   if (recurrenceError) throw new Error(recurrenceError)
+
+  // 🔴 A SAVE FROM ONE DATE MUST NOT REWRITE THE SERIES BY ACCIDENT (LIVE-381). Under "this and all
+  // future dates" every autosave of ANY field posted the picker's value as the series' rule, and the
+  // picker on a date used to open blank. A blank rule written to the anchor reads as "stopped
+  // repeating", and the reconcile below then retires every future date nobody is attached to. Two
+  // guards: an unchanged rule is not written or reconciled at all, and a date may not switch the whole
+  // series off (that is done from the series' first date, where the picker is the series' own).
+  const ruleFromDate = plan.ruleTarget !== null && plan.ruleTarget !== id && anchorRow !== null
+  const sameInstant = (a: string | null, b: string | null) =>
+    (a ?? null) === (b ?? null) || (!!a && !!b && new Date(a).getTime() === new Date(b).getTime())
+  const seriesRuleUnchanged =
+    ruleFromDate &&
+    (anchorRow.recurrence_type ?? 'none') === recurrence &&
+    (anchorRow.recurrence_rule ?? null) === (recurrenceRule ?? null) &&
+    sameInstant(anchorRow.recurrence_until, untilIso)
+  if (ruleFromDate && !seriesRuleUnchanged && recurrence === 'none' && (anchorRow.recurrence_type ?? 'none') !== 'none') {
+    throw new Error(
+      'That would stop the whole series repeating and remove its future dates. To stop a series, open its first date and turn Repeat off there.',
+    )
+  }
 
   // Booking window (folded in from Place & Time; no dedicated column): read-merge-write into
   // events.details.rsvpWindow so the poster-harvest keys survive. Both blank clears the window.
@@ -752,7 +798,7 @@ export async function updateEventSettings(
   // "this and all future dates" — it is written there. Everything else they changed stays on the
   // date they opened.
   const rulePush = async (): Promise<void> => {
-    if (plan.ruleTarget === null || plan.ruleTarget === id) return
+    if (plan.ruleTarget === null || plan.ruleTarget === id || seriesRuleUnchanged) return
     const { error: e } = await admin
       .from('events')
       .update({
@@ -783,7 +829,7 @@ export async function updateEventSettings(
   let occurrencesKept = 0
   try {
     await rulePush()
-    if (plan.reconcile) {
+    if (plan.reconcile && !seriesRuleUnchanged) {
       occurrencesKept = (await retireStaleOccurrences(plan.reconcile)).kept
     }
   } catch (e) {
@@ -791,7 +837,7 @@ export async function updateEventSettings(
   }
   void (async () => {
     try {
-      if (plan.reconcile) await generateOccurrencesForAnchor(plan.reconcile)
+      if (plan.reconcile && !seriesRuleUnchanged) await generateOccurrencesForAnchor(plan.reconcile)
       if (plan.propagateForward) await propagateEditsForward(id)
     } catch (e) {
       console.error('[updateEventSettings] occurrence reconciliation:', e)

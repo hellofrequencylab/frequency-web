@@ -135,6 +135,17 @@ describe('the repeat rule belongs to the series, not to the date', () => {
     expect(gated.slice(0, 400)).toContain('recurrence_until: untilIso')
   })
 
+  it('🔴 a save from one date never rewrites or switches off the series by accident (LIVE-381)', () => {
+    // An unchanged rule is neither pushed to the anchor nor reconciled, so autosaving any other field
+    // under "this and all future dates" cannot retire the series' future dates.
+    expect(code).toContain('const seriesRuleUnchanged =')
+    expect(code).toContain('plan.ruleTarget === null || plan.ruleTarget === id || seriesRuleUnchanged')
+    expect(code).toContain('if (plan.reconcile && !seriesRuleUnchanged) {')
+    expect(code).toContain('if (plan.reconcile && !seriesRuleUnchanged) await generateOccurrencesForAnchor')
+    // And a date may not turn the whole series off; that is done from the series' own first date.
+    expect(code).toMatch(/recurrence === 'none' && \(anchorRow\.recurrence_type \?\? 'none'\) !== 'none'\)\s*\{\s*throw new Error/)
+  })
+
   it('writes the rule to its real home instead, fenced so it can only ever hit an anchor', () => {
     expect(code).toContain('const rulePush = async ()')
     expect(code).toContain('plan.ruleTarget === null || plan.ruleTarget === id')
@@ -159,7 +170,8 @@ describe('the repeat rule belongs to the series, not to the date', () => {
     // And the reconcilers are the plan's too, so "this event" reconciles nothing at all.
     expect(code).toContain('await retireStaleOccurrences(plan.reconcile)')
     expect(code).toContain('await generateOccurrencesForAnchor(plan.reconcile)')
-    expect(code).toContain('if (plan.reconcile) {')
+    // Still gated on the plan; LIVE-381 narrowed it further so an unchanged series rule is not reconciled.
+    expect(code).toContain('if (plan.reconcile && !seriesRuleUnchanged) {')
   })
 
   it('🔴 awaits the retirement BEFORE returning, and returns how many dates it kept (LIVE-279)', () => {

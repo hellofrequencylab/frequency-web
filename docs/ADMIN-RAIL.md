@@ -518,6 +518,11 @@ Place & Time**, **event Engage**, **circle Page text**. Kept deliberately separa
   silent field save.
 - **Destructive** actions (delete / archive) keep arm-then-confirm; never autosaved, never banked.
 - **Images** self-save through their own bound actions (`InlineCover`, gallery), as before.
+- **The event repeat picker** autosaves like every field (a debounced `useRailSaveSoon()`, because its
+  switch and weekday pills are buttons the form cannot hear) AND carries one explicit **Update changes**
+  button under it, with its own Saving / Updated / error line from `useRailSaveState()`. Owner request,
+  2026-09-16 ([ADR-1390](DECISIONS.md)): a repeat change reaches dates off screen, so the host gets a
+  button that confirms it landed. It is the only such button in a rail; do not generalise it.
 - **Enum** settings (status, visibility) stay instant-committing `<select>`s; a **microtoggle** (`Toggle`) is
   used only where the choice is genuinely on/off (personal Spotlight enable + publish, channel Active).
 

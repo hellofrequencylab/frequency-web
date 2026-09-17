@@ -302,6 +302,26 @@ describe('the Event rail reads its row and writes its FormData through the key m
     expect(eventRailValues({ ...row, scope_type: 'circle', visibility: null }).visibility).toBe('circle_only')
   })
 
+  it('shows a date of a series the SERIES rule, never its own empty columns (LIVE-381)', () => {
+    // One materialised date: the database forbids it a rule, so its own columns are empty. The admin
+    // read attaches the anchor's rule as series_*, and that is what the picker must open on.
+    const date = {
+      ...row,
+      parent_event_id: 'anchor-1',
+      starts_at: '2026-09-23T09:30:00.000Z',
+      recurrence_type: 'none',
+      recurrence_rule: null,
+      recurrence_until: null,
+      series_starts_at: '2026-09-02T09:30:00.000Z',
+      series_recurrence_type: 'weekly',
+      series_recurrence_rule: 'FREQ=WEEKLY;INTERVAL=2;BYDAY=WE',
+      series_recurrence_until: null,
+    }
+    expect(eventRailValues(date).recurrenceRule).toBe('FREQ=WEEKLY;INTERVAL=2;BYDAY=WE')
+    // A one-off keeps reading its own row.
+    expect(eventRailValues({ ...row, recurrence_type: 'none', recurrence_rule: null, recurrence_until: null }).recurrenceRule).toBe('')
+  })
+
   it('sends every settings key the action reads, each switch as on/off so it can turn OFF, and the pin beside them', () => {
     const values = eventRailValues(row)
     const fd = eventSettingsFormData(values, { lat: 34.45, lng: -119.24 }, eventRepeatRows(row))
