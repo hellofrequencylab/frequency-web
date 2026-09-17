@@ -1,4 +1,4 @@
-import type { CalendarLayerKey } from './registry'
+import type { CalendarLayerKey, EntryStage } from './registry'
 import type { EntryInput } from './entries'
 
 // THE CALENDAR ITEM (Events EC2, widened by ADR-1385). What the month grid, the list and the preview
@@ -47,6 +47,10 @@ export interface CalendarEvent {
   notes?: string | null
   /** A pencil's candidate-date group (ADR-1386); siblings share it. */
   optionGroup?: string | null
+  /** An event on its way: its stage (ADR-1388), which picks the chip style. */
+  stage?: EntryStage | null
+  /** An event on its way: the description it will publish with (staff preview only). */
+  description?: string | null
   /** A private entry as the staff form edits it. Present only when `entryId` is. */
   entryInput?: EntryInput | null
 }

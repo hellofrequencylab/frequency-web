@@ -147,6 +147,7 @@ housing_sun_sign                     public
 interaction_surface_stats            internal
 is_blocked_between                   public
 journey_funnel                       internal
+keep_pencil_date                     authenticated
 lead_entry_points_no_overwrite       public
 log_crew_completion_atomic           internal
 maintain_engagement_on_reaction      public
@@ -226,6 +227,7 @@ set_node_geo                         internal
 set_updated_at                       public
 settle_ticket_atomic                 internal
 similar_library_assets               internal
+space_calendar_entries_stage_sync    internal
 space_public_calendar_feed           internal
 space_public_unavailable             public
 sync_contact_from_profile            internal

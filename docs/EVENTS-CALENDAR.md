@@ -230,6 +230,19 @@ keeps that row and removes its siblings. `hold_expires_at` is an optional lapse 
 flags. Pencilling over an event, Unavailable time or another entry raises a clash warning and is still
 allowed.
 
+**Stages and description** ([ADR-1388](DECISIONS.md)). The staff drawer calls a kind `pencil` entry an
+**Event** and gives it a **Stage**: `pencil`, `planning`, `production` or `cancelled`, declared once in
+`ENTRY_STAGES` (`lib/calendar/registry.ts`) and mirrored by the table's check. The Type is editable after
+creation. A trigger (`space_calendar_entries_stage_sync`) makes the database own the pairing: a pencil-kind
+row always has a stage, any other kind never does, and `status` is derived from the stage (Pencil is
+tentative, Planning and Production are confirmed, Cancelled is cancelled), so every reader of `status`
+stays correct without knowing stages exist. The lapse date and candidate dates only exist in the Pencil
+stage, dates can be added while editing, and a date that is one of several must be kept before it moves
+past Pencil. **Keep this date** is one call, `public.keep_pencil_date(space, entry)`, SECURITY INVOKER so
+RLS still decides. `description` (10,000 characters at most) is the public-facing copy that becomes the
+event description when the entry is published (PROG-CAL3); `notes` stay internal and the form labels them
+Team notes. Grid chips are styled by stage (`itemChipClass`).
+
 **Day notes** (`PROG-CAL1`). `public.space_calendar_day_notes` holds short labels that describe a day
 rather than occupy it: a `weekly` note sets `weekdays` (0 is Sunday) within optional `starts_on` /
 `ends_on` bounds; a `dated` note leaves `weekdays` null and covers `starts_on` through `ends_on`. Day notes

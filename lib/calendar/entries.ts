@@ -1,5 +1,13 @@
 import type { CalendarEvent } from './item'
-import { entryKind, ENTRY_STATUSES, type EntryKind, type EntryStatus, type EntryVisibility } from './registry'
+import {
+  entryKind,
+  entryStage,
+  ENTRY_STATUSES,
+  type EntryKind,
+  type EntryStage,
+  type EntryStatus,
+  type EntryVisibility,
+} from './registry'
 
 // PRIVATE CALENDAR ENTRIES, the pure half (ADR-1385). Form parsing, the row <-> form mapping, the
 // calendar item an entry renders as, and the true instant range a blocking entry removes from
@@ -26,10 +34,14 @@ export interface EntryRow {
   visibility: EntryVisibility
   option_group: string | null
   hold_expires_at: string | null
+  /** An event on its way: how far along it is (ADR-1388). Null on every other kind. */
+  stage: EntryStage | null
+  /** An event on its way: the copy that becomes the published event's description. */
+  description: string | null
 }
 
 export const ENTRY_COLS =
-  'id, space_id, kind, title, notes, location, all_day, starts_at, ends_at, time_zone, status, blocks_time, visibility, option_group, hold_expires_at'
+  'id, space_id, kind, title, notes, location, all_day, starts_at, ends_at, time_zone, status, blocks_time, visibility, option_group, hold_expires_at, stage, description'
 
 /** The staff form, as plain strings and booleans (what a client sends). */
 export interface EntryInput {
@@ -47,11 +59,15 @@ export interface EntryInput {
   endTime?: string | null
   timeZone: string
   status?: string | null
+  /** An event on its way: pencil | planning | production | cancelled. */
+  stage?: string | null
+  /** An event on its way: the public-facing description. */
+  description?: string | null
   blocksTime: boolean
   showPublicly: boolean
   /** Pencils: YYYY-MM-DD the pencil lapses on, or empty. */
   holdExpiresOn?: string | null
-  /** Pencils, create only: more candidate start dates, each the same length as the first. */
+  /** Pencil stage: more candidate start dates, each the same length as this one. */
   candidateDates?: string[] | null
 }
 
@@ -60,6 +76,9 @@ export type EntryWrite = Omit<EntryRow, 'id' | 'space_id' | 'option_group'>
 
 /** The most candidate dates one pencil may carry (the first date included). */
 export const MAX_CANDIDATE_DATES = 6
+
+/** The longest description an event on its way may carry (mirrors the table's check). */
+export const MAX_DESCRIPTION = 10_000
 
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/
@@ -108,11 +127,17 @@ export function parseEntryInput(input: EntryInput): { data: EntryWrite } | { err
     if (endsMs <= startsMs) return { error: 'The end time is before the start time.' }
   }
 
-  const status = (ENTRY_STATUSES as readonly string[]).includes(input.status ?? '')
-    ? (input.status as EntryStatus)
-    : def.defaultStatus
+  // An event on its way carries a stage, and its status follows the stage (the table's trigger enforces
+  // the same pairing, so this only keeps the form and the row in agreement before the write).
+  const stageDef = def.isPencil ? (entryStage(input.stage) ?? entryStage('pencil')) : null
+  const status = stageDef
+    ? stageDef.status
+    : (ENTRY_STATUSES as readonly string[]).includes(input.status ?? '')
+      ? (input.status as EntryStatus)
+      : def.defaultStatus
+  // A lapse date only means something while the date is still a Pencil.
   let holdExpiresAt: string | null = null
-  if (def.isPencil && input.holdExpiresOn) {
+  if (stageDef?.stage === 'pencil' && input.holdExpiresOn) {
     const lapse = dateMs(input.holdExpiresOn)
     if (lapse === null) return { error: 'Pick a valid date for the pencil to lapse.' }
     holdExpiresAt = new Date(lapse).toISOString()
@@ -134,6 +159,8 @@ export function parseEntryInput(input: EntryInput): { data: EntryWrite } | { err
       blocks_time: input.blocksTime,
       visibility: def.canShowPublicly && input.showPublicly ? 'public_unavailable' : 'team',
       hold_expires_at: holdExpiresAt,
+      stage: stageDef?.stage ?? null,
+      description: def.isPencil ? trimOrNull(input.description, MAX_DESCRIPTION) : null,
     },
   }
 }
@@ -189,6 +216,8 @@ export function entryToInput(row: EntryRow): EntryInput {
     endTime: row.all_day ? '17:00' : isoTime(new Date(row.ends_at)),
     timeZone: row.time_zone,
     status: row.status,
+    stage: row.stage ?? (row.kind === 'pencil' ? 'pencil' : null),
+    description: row.description ?? '',
     blocksTime: row.blocks_time,
     showPublicly: row.visibility === 'public_unavailable',
     holdExpiresOn: row.hold_expires_at ? row.hold_expires_at.slice(0, 10) : '',
@@ -230,11 +259,13 @@ export function entryToCalendarItem(
       ? `${fmt.dateLabel(row.starts_at, row.time_zone)}, all day`
       : `${fmt.dateLabel(row.starts_at, row.time_zone)} to ${fmt.dateLabel(lastDayIso, row.time_zone)}, all day`
     : `${fmt.whenLabel(row.starts_at, row.time_zone)} to ${fmt.timeLabel(row.ends_at, row.time_zone)}`
-  const lapsed = !!row.hold_expires_at && opts.now !== undefined && row.hold_expires_at.slice(0, 10) < opts.now
+  const stage = def?.isPencil ? (entryStage(row.stage) ?? entryStage('pencil')) : null
+  const holding = stage?.stage === 'pencil'
+  const lapsed = holding && !!row.hold_expires_at && opts.now !== undefined && row.hold_expires_at.slice(0, 10) < opts.now
   const badges = [
-    row.status === 'tentative' && row.kind !== 'pencil' ? 'Tentative' : null,
-    row.option_group ? 'One of several dates' : null,
-    row.hold_expires_at ? (lapsed ? 'Lapsed' : `Lapses ${row.hold_expires_at.slice(5, 10).replace('-', '/')}`) : null,
+    row.status === 'tentative' && !stage ? 'Tentative' : null,
+    holding && row.option_group ? 'One of several dates' : null,
+    holding && row.hold_expires_at ? (lapsed ? 'Lapsed' : `Lapses ${row.hold_expires_at.slice(5, 10).replace('-', '/')}`) : null,
     row.visibility === 'public_unavailable' ? 'Shown publicly' : null,
   ]
     .filter(Boolean)
@@ -250,14 +281,17 @@ export function entryToCalendarItem(
     location: row.location,
     goingCount: 0,
     coverUrl: null,
-    sourceLabel: def?.label ?? null,
+    // An event on its way is labelled by its stage ("Planning"); other entries by their kind.
+    sourceLabel: stage?.label ?? def?.label ?? null,
     statusLabel: badges || null,
     isCancelled: row.status === 'cancelled',
     layer: def?.layer ?? 'private',
     entryId: opts.editable ? row.id : null,
     optionGroup: row.option_group,
+    stage: stage?.stage ?? null,
     entryInput: opts.editable ? entryToInput(row) : null,
     notes: row.notes,
+    description: row.description,
   }
 }
 

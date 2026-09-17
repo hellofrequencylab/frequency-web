@@ -6,19 +6,22 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
-import { candidateWrites, entryDaySpan, parseEntryInput, type EntryInput } from '@/lib/calendar/entries'
+import { candidateWrites, entryDaySpan, MAX_CANDIDATE_DATES, parseEntryInput, type EntryInput } from '@/lib/calendar/entries'
 import { parseDayNoteInput, type DayNoteInput } from '@/lib/calendar/day-notes'
 import { deleteDayNote, insertDayNote, listDayNotes, updateDayNote } from '@/lib/calendar/day-notes-store'
 import { listSpaceCalendarEvents } from '@/lib/events/store'
 import {
+  countOptionGroup,
   deleteCalendarEntryRow,
+  getCalendarEntryRow,
   insertCalendarEntries,
+  keepPencilDateRow,
   listSpaceCalendarEntries,
   listStaffCalendarItems,
-  pickPencilDateRow,
   updateCalendarEntryRow,
 } from '@/lib/calendar/entries-store'
 import { monthGridWindow, safeMonth } from '@/lib/calendar/month-window'
+import { entryKind, entryStage } from '@/lib/calendar/registry'
 import type { CalendarEvent } from '@/lib/calendar/item'
 
 // THE PRIVATE CALENDAR ACTIONS (ADR-1385). Create, edit and delete a Space's private entries, and read
@@ -54,13 +57,30 @@ export async function saveCalendarEntry(
   if (entryId !== null && !UUID_RE.test(entryId)) return fail('That entry no longer exists.')
   const parsed = parseEntryInput(input)
   if ('error' in parsed) return fail(parsed.error)
+  const w = parsed.data
+  // Candidate dates only exist while an event on its way is still a Pencil.
+  const extra = w.stage === 'pencil' ? candidateWrites(w, input.candidateDates) : []
+  if ('error' in extra) return fail(extra.error)
+
   let res: { data: unknown } | { error: string }
-  if (entryId) {
-    res = await updateCalendarEntryRow(editor.spaceId, entryId, parsed.data)
+  if (!entryId) {
+    res = await insertCalendarEntries(editor.spaceId, [w, ...extra], editor.profileId)
   } else {
-    const extra = parsed.data.kind === 'pencil' ? candidateWrites(parsed.data, input.candidateDates) : []
-    if ('error' in extra) return fail(extra.error)
-    res = await insertCalendarEntries(editor.spaceId, [parsed.data, ...extra], editor.profileId)
+    const current = await getCalendarEntryRow(editor.spaceId, entryId)
+    if (!current) return fail('That entry no longer exists.')
+    const inGroup = current.option_group ? await countOptionGroup(editor.spaceId, current.option_group) : 1
+    // A date that is one of several must be settled before it moves on, or the other dates would be
+    // left behind as stray Pencils of something that is already Planning.
+    if (inGroup > 1 && w.kind !== current.kind) return fail('This is one of several possible dates. Keep one date before you change its type.')
+    if (inGroup > 1 && w.stage !== 'pencil') return fail('This is one of several possible dates. Keep one date before you move it past Pencil.')
+    if (inGroup + extra.length > MAX_CANDIDATE_DATES) return fail(`A pencil can hold ${MAX_CANDIDATE_DATES} dates at most.`)
+    if (extra.length === 0) {
+      res = await updateCalendarEntryRow(editor.spaceId, entryId, w)
+    } else {
+      const group = current.option_group ?? crypto.randomUUID()
+      res = await updateCalendarEntryRow(editor.spaceId, entryId, w, group)
+      if (!('error' in res)) res = await insertCalendarEntries(editor.spaceId, extra, editor.profileId, group)
+    }
   }
   if ('error' in res) return fail(res.error)
   revalidate(slug)
@@ -87,12 +107,12 @@ export async function loadStaffCalendarMonth(slug: string, year: number, month1:
   return listStaffCalendarItems(editor.spaceId, fromDay, toDay, { editable: true })
 }
 
-/** Keep one candidate date of a pencil and remove the others (ADR-1386). */
+/** Keep one candidate date of a pencil and remove the others, atomically (ADR-1386, ADR-1388). */
 export async function pickPencilDate(slug: string, entryId: string): Promise<ActionResult<void>> {
   const editor = await resolveEditor(slug)
   if (!editor) return fail('You do not have access to this calendar.')
   if (!UUID_RE.test(entryId)) return fail('That entry no longer exists.')
-  const res = await pickPencilDateRow(editor.spaceId, entryId)
+  const res = await keepPencilDateRow(editor.spaceId, entryId)
   if ('error' in res) return fail(res.error)
   revalidate(slug)
   return ok()
@@ -106,6 +126,8 @@ export async function findEntryClashes(slug: string, entryId: string | null, inp
   const parsed = parseEntryInput(input)
   if ('error' in parsed) return []
   const w = parsed.data
+  // A cancelled date is not competing for the time, so there is nothing to warn about.
+  if (w.status === 'cancelled') return []
   const { dayKey, endDayKey } = entryDaySpan(w)
   const toDay = new Date(Date.UTC(+endDayKey.slice(0, 4), +endDayKey.slice(5, 7) - 1, +endDayKey.slice(8, 10) + 1))
     .toISOString()
@@ -124,7 +146,7 @@ export async function findEntryClashes(slug: string, entryId: string | null, inp
   }
   for (const en of entries) {
     if (en.id === entryId || en.status === 'cancelled') continue
-    if (overlaps(en.starts_at, en.ends_at)) out.push(`${en.kind === 'unavailable' ? 'Unavailable' : en.kind === 'pencil' ? 'Pencil' : 'Private'}: ${en.title}`)
+    if (overlaps(en.starts_at, en.ends_at)) out.push(`${entryStage(en.stage)?.label ?? entryKind(en.kind)?.label ?? 'Entry'}: ${en.title}`)
   }
   return out.slice(0, 6)
 }

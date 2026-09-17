@@ -4,6 +4,7 @@ import { formatEventWhen, eventInstant, dayInZone } from '@/lib/time/zone'
 import type { CalendarEvent } from './item'
 import {
   ENTRY_COLS,
+  MAX_CANDIDATE_DATES,
   entryToCalendarItem,
   publicUnavailableToItem,
   type EntryFormatters,
@@ -25,10 +26,13 @@ type Untyped = {
     update: (row: Record<string, unknown>) => EntryQuery
     delete: () => EntryQuery
   }
-  rpc: (
-    fn: 'space_public_unavailable',
-    args: { p_space_id: string; p_from_day: string; p_to_day: string },
-  ) => Promise<{ data: Pick<EntryRow, 'starts_at' | 'ends_at' | 'all_day' | 'time_zone'>[] | null; error: unknown }>
+  rpc: {
+    (
+      fn: 'space_public_unavailable',
+      args: { p_space_id: string; p_from_day: string; p_to_day: string },
+    ): Promise<{ data: Pick<EntryRow, 'starts_at' | 'ends_at' | 'all_day' | 'time_zone'>[] | null; error: unknown }>
+    (fn: 'keep_pencil_date', args: { p_space_id: string; p_entry_id: string }): Promise<{ data: number | null; error: unknown }>
+  }
 }
 type EntryQuery = PromiseLike<{ data: EntryRow[] | null; error: { message: string } | null }> & {
   select: (c: string) => EntryQuery
@@ -96,14 +100,46 @@ export async function listPublicUnavailableItems(spaceId: string, fromDay: strin
   }
 }
 
-/** Insert one entry, or a pencil and its candidate dates sharing one option_group. */
+/** One entry of this Space, or null when it does not exist or the caller may not read it. */
+export async function getCalendarEntryRow(spaceId: string, entryId: string): Promise<EntryRow | null> {
+  try {
+    const { data, error } = await (await db())
+      .from('space_calendar_entries')
+      .select(ENTRY_COLS)
+      .eq('space_id', spaceId)
+      .eq('id', entryId)
+      .limit(1)
+    return error || !data?.length ? null : data[0]
+  } catch {
+    return null
+  }
+}
+
+/** How many entries share this candidate-date group (the entry itself included). */
+export async function countOptionGroup(spaceId: string, group: string): Promise<number> {
+  try {
+    const { data, error } = await (await db())
+      .from('space_calendar_entries')
+      .select('id')
+      .eq('space_id', spaceId)
+      .eq('option_group', group)
+      .limit(MAX_CANDIDATE_DATES + 1)
+    return error || !data ? 0 : data.length
+  } catch {
+    return 0
+  }
+}
+
+/** Insert one entry, or a pencil and its candidate dates sharing one option_group. `group` joins the
+ *  rows to an existing group (dates added while editing); otherwise several rows get a fresh one. */
 export async function insertCalendarEntries(
   spaceId: string,
   rows: EntryWrite[],
   createdBy: string,
+  group: string | null = null,
 ): Promise<{ data: EntryRow[] } | { error: string }> {
   if (rows.length === 0) return { error: 'Nothing to save.' }
-  const group = rows.length > 1 ? crypto.randomUUID() : null
+  group = group ?? (rows.length > 1 ? crypto.randomUUID() : null)
   const { data, error } = await (await db())
     .from('space_calendar_entries')
     .insert(rows.map((r) => ({ ...r, space_id: spaceId, created_by: createdBy, option_group: group })))
@@ -112,33 +148,28 @@ export async function insertCalendarEntries(
   return { data }
 }
 
-/** Pick one candidate date of a pencil: keep it, remove its siblings, and clear the group. */
-export async function pickPencilDateRow(spaceId: string, entryId: string): Promise<{ data: true } | { error: string }> {
-  const client = await db()
-  const { data } = await client.from('space_calendar_entries').select('id, option_group').eq('space_id', spaceId).eq('id', entryId)
-  const group = data?.[0]?.option_group
-  if (!group) return { error: 'That pencil has only one date.' }
-  const siblings = await client
-    .from('space_calendar_entries')
-    .delete()
-    .eq('space_id', spaceId)
-    .eq('option_group', group)
-    .neq('id', entryId)
-    .select('id')
-  if (siblings.error) return { error: 'The other dates could not be removed.' }
-  const kept = await client.from('space_calendar_entries').update({ option_group: null }).eq('space_id', spaceId).eq('id', entryId).select('id')
-  if (kept.error) return { error: 'The date could not be kept.' }
-  return { data: true }
+/** Keep one candidate date of a pencil: its siblings are removed and its group cleared in ONE database
+ *  statement (public.keep_pencil_date, SECURITY INVOKER, so RLS still decides). */
+export async function keepPencilDateRow(spaceId: string, entryId: string): Promise<{ data: number } | { error: string }> {
+  try {
+    const { data, error } = await (await db()).rpc('keep_pencil_date', { p_space_id: spaceId, p_entry_id: entryId })
+    if (error) return { error: 'The other dates could not be removed.' }
+    return { data: data ?? 0 }
+  } catch {
+    return { error: 'The other dates could not be removed.' }
+  }
 }
 
 export async function updateCalendarEntryRow(
   spaceId: string,
   entryId: string,
   row: EntryWrite,
+  /** Set when dates added while editing start a candidate group around this entry. */
+  optionGroup?: string,
 ): Promise<{ data: true } | { error: string }> {
   const { data, error } = await (await db())
     .from('space_calendar_entries')
-    .update(row)
+    .update(optionGroup ? { ...row, option_group: optionGroup } : row)
     .eq('space_id', spaceId)
     .eq('id', entryId)
     .select(ENTRY_COLS)
