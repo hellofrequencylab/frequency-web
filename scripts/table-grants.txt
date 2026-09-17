@@ -248,6 +248,7 @@ space_billing_agreements             authenticated
 space_bookings                       authenticated
 space_calendar_day_notes             authenticated
 space_calendar_entries               authenticated
+space_circle_optouts                 authenticated
 space_collaborations                 internal
 space_donation_asks                  authenticated
 space_donations                      internal

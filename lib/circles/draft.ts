@@ -286,16 +286,54 @@ export async function createBlankCircleDraft(input: {
  * this is the whole of "turning it off": hidden from every public reader, members kept. Returns the
  * Circle's slug, or null when the Space has none or the write failed.
  *
+ * Switching it ON also sweeps the Space's members onto the roster (ADR-1395); see the note inside.
+ *
  * 🔴 AUTHZ-DELEGATED: service role. The caller must already have established that the viewer edits
  * this Space (the Space Circles console's `requireSpaceEditor`).
  */
 export async function setSpaceCircleOn(spaceId: string, on: boolean): Promise<string | null> {
-  const { data, error } = await createAdminClient()
+  const admin = createAdminClient()
+  const { data, error } = await admin
     .from('circles')
     .update({ status: on ? 'active' : 'inactive' })
     .eq('space_id', spaceId)
     .eq('is_space_primary', true)
     .select('slug')
   if (error || !data?.length) return null
+
+  // ── SWITCHING IT ON CATCHES UP THE ROSTER (ADR-1395) ──────────────────────────────────────────
+  //
+  // Enrolment is trigger-driven on `space_memberships`, so a member who joined the Space WHILE its
+  // hub was off was never enrolled by anything: the trigger fired, `enrol_in_space_circle` found
+  // the Circle, and the member was added — but a Space that had its hub off for months and gains
+  // members through a path the trigger did not exist for yet (or predates this migration) needs a
+  // catch-up. `sync_space_circle_roster` is that catch-up, and running it here is what makes
+  // turning the hub on open a populated room instead of an empty one.
+  //
+  // ONLY ON THE WAY ON. Turning it OFF keeps its members (ADR-1391) and must not sweep.
+  //
+  // 🔴 A FAILED SWEEP MUST NOT FAIL THE SWITCH. The operator asked for the hub to be on; it is on,
+  // the write above already succeeded, and reporting failure now would tell them the opposite of
+  // what the database says. The sweep is idempotent, so the next switch-on retries it for free —
+  // and it is logged rather than swallowed silently, because a fail-safe nobody can see fired is
+  // an invisible regression (AGENTS.md).
+  if (on) {
+    // The RPC postdates the generated lib/database.types.ts, so it is reached through a localized
+    // method cast, the repo convention for a not-yet-typed RPC (ADR-246, as lib/traits/refresh.ts
+    // and lib/billing/bundle-seats.ts do). The cast is on the CALL, not on the client, so nothing
+    // else in this module loses its types.
+    const { error: sweepError } = await (
+      admin as unknown as {
+        rpc: (fn: string, args: Record<string, unknown>) => Promise<{ error: { message: string } | null }>
+      }
+    ).rpc('sync_space_circle_roster', { p_space_id: spaceId })
+    if (sweepError) {
+      console.error('[setSpaceCircleOn] roster sweep failed', {
+        spaceId,
+        message: sweepError.message,
+      })
+    }
+  }
+
   return data[0].slug
 }
