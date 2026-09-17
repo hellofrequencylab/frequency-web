@@ -432,6 +432,7 @@ export function EnrollCta({
   enrollAction,
   forkAction,
   layout = 'block',
+  offer,
 }: {
   planId: string
   slug: string
@@ -442,6 +443,9 @@ export function EnrollCta({
   forkAction: (formData: FormData) => void | Promise<void>
   /** 'block' = full-width stacked (rail / repeat); 'inline' = compact row (header). */
   layout?: 'block' | 'inline'
+  /** Set when this Journey is sold (ADR-1397): the price, the product page, and the seat line when
+   *  there is one. Absent = free, and the control is exactly what it always was. */
+  offer?: { productId: string; priceLabel: string; seatLine: string | null; soldOut: boolean } | null
 }) {
   const full = layout === 'block' ? 'w-full' : ''
 
@@ -454,18 +458,41 @@ export function EnrollCta({
     )
   }
 
+  // ── A PAID JOURNEY SENDS YOU TO ITS PRODUCT PAGE (ADR-1397) ───────────────────────────────────
+  // Not to a second checkout built here. `/market/<id>` is already the sales page this platform
+  // maintains -- price, reviews, seller verification, SEO metadata, the Buy button and the embedded
+  // card fields -- and a Journey is not special enough to deserve a parallel one that would drift
+  // from it. The Journey's own page stays the pitch; that page is the till.
+  //
+  // The seat line and the sold-out state are DERIVED upstream from real enrolments against the
+  // author's real cap. Nothing here can be told a number by a host.
+  const paidPrimary =
+    offer && !enrolled ? (
+      offer.soldOut ? (
+        <span className={buttonClasses('secondary', 'md', `${full} pointer-events-none opacity-70`)}>
+          Full
+        </span>
+      ) : (
+        <Link href={`/market/${offer.productId}`} className={buttonClasses('primary', 'md', full)}>
+          Get access · {offer.priceLabel}
+        </Link>
+      )
+    ) : null
+
   const primary = enrolled ? (
     <Link href={`/journeys/${slug}/learn`} className={buttonClasses('primary', 'md', full)}>
       <Trophy className="h-4 w-4" /> Continue
     </Link>
   ) : (
-    <form action={enrollAction} className={full}>
-      <input type="hidden" name="planId" value={planId} />
-      <input type="hidden" name="slug" value={slug} />
-      <button type="submit" disabled={!canStart} className={buttonClasses('primary', 'md', full)}>
-        Start Journey
-      </button>
-    </form>
+    paidPrimary ?? (
+      <form action={enrollAction} className={full}>
+        <input type="hidden" name="planId" value={planId} />
+        <input type="hidden" name="slug" value={slug} />
+        <button type="submit" disabled={!canStart} className={buttonClasses('primary', 'md', full)}>
+          Start Journey
+        </button>
+      </form>
+    )
   )
 
   const remix = (
@@ -477,11 +504,19 @@ export function EnrollCta({
     </form>
   )
 
+  // Seats, said only when there are few (lib/journeys/paid.ts seatLine). An early "2 of 12 taken"
+  // reads as nobody wants this, so the line stays quiet until it is genuinely useful.
+  const seats =
+    offer?.seatLine && !enrolled ? (
+      <p className="text-meta text-muted">{offer.seatLine}</p>
+    ) : null
+
   if (layout === 'inline') {
     return (
       <span className="flex flex-wrap items-center gap-2">
         {primary}
         {remix}
+        {seats}
       </span>
     )
   }
@@ -490,6 +525,7 @@ export function EnrollCta({
     <div className="space-y-2">
       {primary}
       {remix}
+      {seats}
     </div>
   )
 }

@@ -44941,3 +44941,88 @@ the platform was already on Royal Temple's roster.
 ladder (already there by ADR-1391 §6). A `left_at` status on `memberships` instead of a decline table
 (the delete is what every existing caller does, and changing that would have meant auditing every
 reader of the roster). Evicting on lapse (see above).
+
+## ADR-1397: A Journey is sold as a product, enrolment becomes the access it grants, and only a paid Space may price one (2026-09-17)
+
+**Status:** Accepted · **Amends** [ADR-152](DECISIONS.md) (Quests and Journeys are free) on one point
+and [ADR-838](DECISIONS.md) (the one Journey resolver) by one capability · **Builds on**
+[ADR-596](DECISIONS.md) (one commerce spine), [ADR-914](DECISIONS.md) (selling is not a tier) and
+[ADR-1294](DECISIONS.md) (you pay when you start charging) · Backlog `LIVE-388` · corroborated by
+`supabase/migrations/20270345005900_journey_product.sql`, `lib/journeys/entry-gate.ts`,
+`lib/journeys/sell-gate.ts`, `lib/journeys/free-enrol-gate.ts`, `lib/commerce/journey-fulfilment.ts`
+
+**Context.** Owner, 2026-09-17: *"help me figure out a best practice way to sell journeys. I want to
+sell Heart on Fire for $444 in the main marketplace, or through the Daniel Tyack space and Royal
+Temple."* And, during the build: *"make it so only paid spaces can create paid journeys."*
+
+**🔴 The finding that reordered the work: there was nothing to sell.** `docs/JOURNEYS.md`, the
+authoritative spec, contains no mention of price, paid, sell, purchase or checkout, and the code
+matched it. `/journeys/<slug>/learn` had exactly ONE gate, `visibility === 'private'`, so any
+signed-in member could read every lesson body, video and exercise of any public Journey without
+enrolling. `journey_enrollments` was a progress record no read path consulted. `journeyHasRoom` and
+`journey_plans.enroll_cap` had been carried since ADR-838 with ZERO callers, so the 12 seats on Heart
+on Fire were decorative. A price on a room with no door is a suggestion.
+
+**Decision.**
+
+1. **Enrolment becomes the access, for EVERY Journey.** `lib/journeys/entry-gate.ts`
+   `canEnterJourney()` is pure and admits four ways in: the enrolled member, the author, a manager
+   (`journey.editSettings`, so platform staff and the owning Space), and nobody else. The owner chose
+   the wide rule over gating only priced Journeys, because the narrow one would have left the
+   platform with no general answer to what enrolling is for. A refusal REDIRECTS to the Journey's own
+   page, which is its sales page; `notFound()` stays reserved for the private case it was always for.
+2. **A Journey is sold as one `commerce_products` row**, `product_kind = 'journey'`, linked by a real
+   `journey_plan_id` column and held to one live row per Journey by a partial unique index. Not a
+   price column on `journey_plans`, because that would make a Journey a sixth money path when
+   NAMING.md fixes the set at five (memberships, bookings, orders, donations, tickets) and would
+   forfeit the sales page, the reviews, the SEO and the seller verification `/market/[id]` already
+   carries. **Not named `program`:** that word is taken by the Chapters feature
+   (`lib/spaces/functions.ts`), and NAMING.md's word for this thing is Journey.
+3. **One canonical record, many storefronts.** `market_published` already decides "the main Market
+   versus only my Shop", and `commerce_orders.source` + `attribution_ref` already carry which
+   storefront sold it. Every platform that sells one program through several fronts (Eventbrite,
+   Maven, Circle) keeps ONE record and ONE seat pool for the same reason: duplicate the product and
+   you duplicate the seat counter, which on twelve seats is an oversell.
+4. **Only a paid Space may price a Journey.** `resolveJourneyAccess` gains `canSell`, so the surfaces
+   read one resolver rather than laddering plans (ADR-838's rule), and `checkJourneySell` is the
+   server chokepoint. A PERSONAL Journey is never sellable at any member tier: taking money means
+   somebody is accountable for delivering, and a Space is what this platform can hold to that (payout
+   account, owner of record, standing, plan). ⚠️ **This gate deliberately does NOT honour the beta
+   grace window** that `checkJourneyPublish` honours. That grace opens ALLOWANCES; this guards who
+   may take money. Honouring it would let every free Space sell for the whole beta, which is the
+   ruling reversed rather than deferred, and a source-shape test pins the absence.
+5. **The free door is the guard that matters.** `adoptPlanAction` is a plain form POST that enrolled
+   anybody in anything for nothing. `checkFreeEnrol` now refuses a priced Journey and a full one on
+   BOTH adopt actions. Hiding the button would have changed only the button.
+6. **Seats bind before the money, never after.** The cap is checked at the free door and at checkout
+   START. A check at fulfilment can only refuse somebody who has already paid. A race that puts one
+   buyer over is settled FOR the buyer and logged, the same call the stock decrement already makes.
+7. **Fulfilment is a sibling of the booking confirm.** `enrolByOrder` runs beside
+   `confirmBookingByOrder` in the settle loop and `revokeJourneyByOrder` beside
+   `cancelBookingByOrder` on a FULL refund only, both idempotent and fail-soft because the money has
+   already moved. `journey_enrollments.order_id` is the provenance that lets a refund find what it
+   paid for; without it a refund returns the money and leaves the access standing. A partial refund
+   revokes nothing (it is a price adjustment), and a FINISHED Journey is never un-finished.
+8. **Scarcity is derived, never authored.** `seatsRemaining` counts real enrolments against the
+   author's real cap, and `seatLine` stays SILENT above five seats left, because "2 of 12 taken"
+   early in a window reads as nobody wants this. No surface reads a number a host typed. The FTC's
+   2022 dark-patterns report names false urgency specifically, and a platform hosting other people's
+   offers carries that risk, so the design that cannot be misused beats a policy asking people not to.
+
+**Rejected.** A `price_cents` column on `journey_plans` (a sixth money path, and no sales page).
+Selling a Journey as an Event ticket (a Journey is not dated, and it fights the naming canon).
+Gating only priced Journeys (leaves enrolment meaning nothing everywhere else, and leaves
+`enroll_cap` inert). Splitting revenue between the authoring Space and the venue automatically
+(`lib/commerce/checkout.ts` refuses multi-seller carts by design; that is `PROG-D8`, wave 8).
+Mutating `price_cents` in place on a re-price (it silently rewrites what past orders were charged);
+re-pricing archives and writes a new row, which is what the partial unique index is shaped for.
+
+**Consequences.** Heart on Fire can be priced from the Daniel Tyack Space, listed in the main Market
+with one flag, and linked from Royal Temple, with one seat pool behind all three. Every existing free
+Journey now requires enrolment to read, which is a real behaviour change and the point of the ruling.
+⚠️ **`commerce_orders` has zero rows in production**: no purchase has ever completed on this
+platform, so the first real charge is also the first real test of the settle path. `LIVE-234` ("prove
+each money loop once in production") is P0 and open for exactly this reason, and a $444 sale is not
+the transaction to discover a settle bug on. A Journeys rail of its own in the Market is deferred:
+`journey` rides the Products rail, because a fourth `MarketGroup` touches eleven files and every
+facet, and that is freight on the change rather than part of it.

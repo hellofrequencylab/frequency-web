@@ -7,6 +7,7 @@ import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { createClient } from '@/lib/supabase/server'
 import { getJourneyPlayerView } from '@/lib/journeys/store'
+import { canEnterJourney } from '@/lib/journeys/entry-gate'
 import { getMemberRunForPlan, getCohortProgress, getSoloEnrollmentStart, getKickoffEvent, getPhaseEvents, type KickoffEvent } from '@/lib/journeys/runs'
 import { HostSchedule } from '@/components/journey/v2/learn/host-schedule'
 import { getPlanAuthor, isPlanAdopted, countActiveAdopters } from '@/lib/journey-plans'
@@ -61,6 +62,30 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   // draft's full lesson bodies + media by hitting /journeys/<slug>/learn directly.
   if (plan.visibility === 'private' && plan.author_id !== profileId) notFound()
 
+  // ── THE DOOR (ADR-1397) ───────────────────────────────────────────────────────────────────────
+  //
+  // 🔴 THIS PAGE USED TO ADMIT ANY SIGNED-IN MEMBER. The visibility check above was the whole gate,
+  // so every lesson body, video and exercise of every public Journey was readable without enrolling,
+  // and `journey_enrollments` was a progress record nothing consulted. Owner ruling 2026-09-17:
+  // EVERY Journey checks enrolment. That is what makes enrolment mean something, what makes
+  // `enroll_cap` real, and what there is to sell.
+  //
+  // Resolved HERE rather than further down because a refusal must cost one pair of reads, not the
+  // whole player. Both facts were already loaded by this page; they have only moved earlier.
+  //
+  // ⚠️ REFUSAL IS A REDIRECT TO THE JOURNEY'S OWN PAGE, which is its sales page: cover, summary,
+  // phase outline, facts and the enrol control all live there. `notFound()` would hide the one page
+  // built to convert this visitor, and it stays reserved for the private case above.
+  const [journeyCaps, adopted] = await Promise.all([
+    getJourneyCapabilities(plan.id),
+    isPlanAdopted(profileId, plan.id),
+  ])
+  const canManageJourney = journeyCaps.has('journey.editSettings')
+  const isAuthor = plan.author_id === profileId
+  if (!canEnterJourney({ viewerProfileId: profileId, authorId: plan.author_id, canManage: canManageJourney, enrolled: adopted })) {
+    redirect(`/journeys/${plan.slug}`)
+  }
+
   // The follow-along extras: the library practice behind each `practice` step, each phase's focus
   // copy, the normalized meeting, and the four-Pillar balance — composed over the existing reads
   // (lib/journeys/learn.ts), plus the author. Loaded in parallel with the Run/cohort resolution.
@@ -76,10 +101,9 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
 
   // The Events each touchpoint gathers around (the Circle Meetup + the Weekend Gathering, ADR-307),
   // resolved to link targets. Null when unset or gone — the block then shows a plain line.
-  const [meetupEvent, gatheringEvent, adopted] = await Promise.all([
+  const [meetupEvent, gatheringEvent] = await Promise.all([
     getLinkedEvent(extras.meeting.eventId),
     getLinkedEvent(extras.meeting.gathering?.eventId ?? null),
-    isPlanAdopted(profileId, view.plan.id),
   ])
 
   // If the member is in a Circle Run of this Journey, show the shared cohort meter.
@@ -130,7 +154,6 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
     /* Runs not enabled yet */
   }
 
-  const isAuthor = view.plan.author_id === profileId
   const PlanIcon = JOURNEY_ICON_MAP[plan.emoji ?? ''] ?? DefaultJourneyIcon
 
   // The standardized admin rail trigger (ADR-515 Phase 6). journey.editSettings resolves to the author,
@@ -138,8 +161,6 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   // reaches the Journey's core editable functions (Settings inline · Builder/Layout · Export · Danger) in
   // place, mirroring how the channel page mounts OpenAdminBarButton. Every module re-gates server-side, so
   // this is UX, never the authority.
-  const journeyCaps = await getJourneyCapabilities(plan.id)
-  const canManageJourney = journeyCaps.has('journey.editSettings')
 
   // Members currently ON this Journey (excluding the author's own adoption), named in the unpublish
   // confirmation so a creator knows how many people taking it down affects. One `head: true` count,

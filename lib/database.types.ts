@@ -1588,6 +1588,7 @@ export type Database = {
           id: string
           images: string[]
           is_demo: boolean
+          journey_plan_id: string | null
           market_published: boolean
           metadata: Json
           owner_kind: string
@@ -1613,6 +1614,7 @@ export type Database = {
           id?: string
           images?: string[]
           is_demo?: boolean
+          journey_plan_id?: string | null
           market_published?: boolean
           metadata?: Json
           owner_kind: string
@@ -1638,6 +1640,7 @@ export type Database = {
           id?: string
           images?: string[]
           is_demo?: boolean
+          journey_plan_id?: string | null
           market_published?: boolean
           metadata?: Json
           owner_kind?: string
@@ -1658,6 +1661,13 @@ export type Database = {
             columns: ["booking_space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commerce_products_journey_plan_id_fkey"
+            columns: ["journey_plan_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
             referencedColumns: ["id"]
           },
           {
@@ -6185,6 +6195,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           id: string
+          order_id: string | null
           plan_id: string
           profile_id: string
           run_id: string | null
@@ -6194,6 +6205,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           id?: string
+          order_id?: string | null
           plan_id: string
           profile_id: string
           run_id?: string | null
@@ -6203,12 +6215,20 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           id?: string
+          order_id?: string | null
           plan_id?: string
           profile_id?: string
           run_id?: string | null
           started_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "journey_enrollments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "commerce_orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "journey_enrollments_plan_id_fkey"
             columns: ["plan_id"]

@@ -6,7 +6,7 @@
 import type { CheckoutUi } from '@/lib/billing/checkout-ui'
 
 export type OwnerKind = 'platform' | 'profile' | 'space'
-export type ProductKind = 'physical' | 'digital' | 'service' | 'booking' | 'ticket'
+export type ProductKind = 'physical' | 'digital' | 'service' | 'booking' | 'ticket' | 'journey'
 /** A physical listing's condition (Phase 0). null = unset (services/bookings/tickets have none).
  *  Role gate (R3): individuals may list 'used' only; Business Spaces + the Store may list either. */
 export type ProductCondition = 'new' | 'used'
@@ -32,6 +32,8 @@ export interface CommerceProduct {
   category: string | null
   status: ProductStatus
   bookingSpaceId: string | null
+  /** The Journey this product sells (ADR-1397), or null. Set iff productKind is 'journey'. */
+  journeyPlanId: string | null
   /** New or Used (Phase 0). null when condition does not apply (services/bookings/tickets). */
   condition: ProductCondition | null
   /** Opt-in to appear in the global Market umbrella (ADR-596). status='active' shows a listing in the
@@ -59,6 +61,7 @@ export interface ProductInput {
   stock?: number | null
   category?: string | null
   bookingSpaceId?: string | null
+  journeyPlanId?: string | null
   /** New or Used (Phase 0). Omit/null when condition does not apply. The create action enforces the
    *  role gate (R3): a 'profile' seller may only pass 'used'. */
   condition?: ProductCondition | null
@@ -176,6 +179,13 @@ export function marketGroupForKind(kind: ProductKind): MarketGroup {
     case 'service':
     case 'booking':
       return 'services'
+    // ⏳ A Journey rides the Products rail for now (ADR-1397). It is a thing you buy outright, which
+    // is what that rail means, and it is not a booking or a ticket. A rail of its own is a real
+    // question -- a Journey browses nothing like a mug -- but a fourth MarketGroup touches eleven
+    // files and every facet, so it is a follow-up rather than freight on the change that makes a
+    // Journey sellable at all. `kindsForGroup('products')` carries the same decision, inverted.
+    case 'journey':
+      return 'products'
     default:
       return 'products'
   }
@@ -190,7 +200,7 @@ export function kindsForGroup(group: MarketGroup): ProductKind[] {
     case 'services':
       return ['service', 'booking']
     default:
-      return ['physical', 'digital']
+      return ['physical', 'digital', 'journey']
   }
 }
 

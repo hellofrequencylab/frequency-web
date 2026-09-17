@@ -17,6 +17,8 @@ import { classifyOrderSource } from './order-source'
 import { effectiveOrderSource } from '@/lib/pricing/network-world'
 import type { OrderSource } from '@/lib/billing/pricing-keys'
 import { confirmBookingByOrder, cancelBookingByOrder } from '@/lib/spaces/booking'
+import { enrolByOrder, revokeJourneyByOrder } from './journey-fulfilment'
+import { getJourneyOffer, isSoldOut } from '@/lib/journeys/paid'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
 import { computeBookingRefundCents } from './cancellation'
@@ -42,10 +44,14 @@ interface ProductRow {
   currency: string
   stock: number | null
   status: string
+  // ADR-1397: the Journey this row sells, so the seat pre-check can find its pool without a
+  // second read per item.
+  product_kind: string
+  journey_plan_id: string | null
 }
 
 const PRODUCT_COLS =
-  'id, owner_kind, owner_profile_id, owner_space_id, entity_id, title, price_cents, currency, stock, status'
+  'id, owner_kind, owner_profile_id, owner_space_id, entity_id, title, price_cents, currency, stock, status, product_kind, journey_plan_id'
 
 /** Member-facing copy for a checkout that could not start. One string so every failure arm agrees. */
 const CHECKOUT_START_FAILED = 'Could not start checkout. Please try again.'
@@ -138,6 +144,22 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
   const products = (data ?? []) as ProductRow[]
   if (products.length !== ids.length) return { error: 'Some items are no longer available.' }
   if (products.some((p) => p.status !== 'active')) return { error: 'Some items are no longer on sale.' }
+
+  // ── Journey seats, checked BEFORE the money (ADR-1397) ────────────────────────────────────────
+  // A seat check at fulfilment can only refuse somebody who has already paid: charged, no access,
+  // and a refund they have to ask for. Refusing here costs nothing. `journey_plans.enroll_cap` is
+  // the ONE pool every door counts against, so the free door and this one cannot disagree about
+  // whether a room is full.
+  //
+  // ⚠️ This is a PRE-CHECK, not a hold. Two buyers can still clear it a millisecond apart and both
+  // pay; that race is settled in favour of the BUYER (enrolByOrder admits them and logs the
+  // oversell) because the alternative is taking somebody's money and refusing the thing. A real
+  // hold belongs with the stock reservation work, not here.
+  const journeyItems = products.filter((p) => p.product_kind === 'journey' && p.journey_plan_id)
+  for (const p of journeyItems) {
+    const offer = await getJourneyOffer(p.journey_plan_id as string)
+    if (offer && isSoldOut(offer)) return { error: 'This Journey is full. Check back soon.' }
+  }
 
   const ownerKey = (p: ProductRow) => `${p.owner_kind}:${p.owner_profile_id ?? ''}:${p.owner_space_id ?? ''}`
   if (new Set(products.map(ownerKey)).size > 1) {
@@ -418,6 +440,13 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     // it. No-op / fail-soft for a normal product order (no linked booking) and pre-migration.
     await confirmBookingByOrder(row.id)
 
+    // Journeys (ADR-1397): a paid order for a Journey grants the enrolment that now IS the access.
+    // Beside the booking confirm because it is the same kind of thing -- the per-kind grant that
+    // turns a settled payment into the thing bought -- and fail-soft for the same reason: the money
+    // has moved, so a throw here would redeliver the webhook rather than fix anything. No-op for an
+    // order that bought no Journey.
+    await enrolByOrder(row.id)
+
     // TELL THE TWO PEOPLE IN THE ORDER (LIVE-344). Runs once per row THIS delivery flipped, so a
     // redelivered webhook flips nothing and sends nothing. Fire-and-forget beside the ledger append,
     // for the same reason: the money has moved, and a failed message must never 500 a settled payment
@@ -654,6 +683,13 @@ async function recordFullCommerceRefund(paymentIntentId: string): Promise<void> 
 
     // Bookable services (Phase 4, ADR-596): release the slot behind a refunded service order. Fail-soft.
     await cancelBookingByOrder(row.id)
+
+    // Journeys (ADR-1397): a FULL refund takes the access back with the money. Deliberately NOT on the
+    // partial-refund path below -- a partial refund is a price adjustment, not a withdrawal, and a
+    // learner who got $50 back should not lose the program. A finished Journey is never un-finished
+    // (revokeJourneyByOrder skips completed enrolments), because a completion and its rewards already
+    // happened and rewriting a member's record to settle a billing question is the worse error.
+    await revokeJourneyByOrder(row.id)
 
     // L6-16 (2026-09-05): give the goods back to the shelf. Tickets free their tier on refund;
     // commerce never re-incremented stock, so a refunded item stayed sold out. LIVE-161: one RPC,

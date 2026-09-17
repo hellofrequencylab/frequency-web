@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
+import { checkFreeEnrol } from '@/lib/journeys/free-enrol-gate'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import {
   updatePlan,
@@ -51,10 +52,14 @@ import { listOperatedSpaces } from '@/lib/spaces/operated'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 
-// Server actions for the Journeys builder (ADR-096; free, ADR-152).
-// Building, editing, publishing to the community library, and adopting/forking
-// anyone's public journey are ALL free — Journeys carry no paywall. FormData-based
-// so the builder works without client JS.
+// Server actions for the Journeys builder (ADR-096). FormData-based so the builder works without
+// client JS.
+//
+// ⚠️ THE "JOURNEYS CARRY NO PAYWALL" LINE THAT STOOD HERE IS RETIRED (ADR-1397, owner ruling
+// 2026-09-17). Building, editing, publishing and forking are still free for everyone; what changed
+// is that a Journey owned by a PAID Space may now carry a price, and the two adopt actions below
+// check it. ADR-152 ("Quests and Journeys are FREE") still governs the Quest's own official
+// Journeys, which carry no price and never will.
 
 /** Caller must be able to EDIT this Journey: its author, a platform operator (admin.access), OR a
  *  manager of the Space it belongs to (team authoring — canEditJourney). Returns the caller's profile
@@ -76,8 +81,13 @@ export async function adoptPlanAction(formData: FormData) {
   const planId = String(formData.get('planId') ?? '')
   const meta = await planMeta(planId)
   if (!meta) return
-  // You can adopt your own journey or any non-private one — all free.
+  // You can adopt your own journey or any non-private one.
   if (meta.author_id !== profileId && meta.visibility === 'private') return
+  // 🔴 The free door refuses a priced Journey and a full one (ADR-1397). This action is a plain form
+  // POST, so it is the check that matters -- hiding the button does nothing for anyone who knows the
+  // endpoint is here.
+  const gate = await checkFreeEnrol(planId, profileId, { isOwner: meta.author_id === profileId })
+  if (!gate.ok) return
   await adoptPlan(profileId, planId)
   revalidateSlug(formData)
 }
@@ -91,6 +101,9 @@ export async function adoptJourney(planId: string): Promise<ActionResult> {
   const meta = await planMeta(planId)
   if (!meta) return fail('Journey not found.')
   if (meta.author_id !== profileId && meta.visibility === 'private') return fail('Not allowed.')
+  // The same gate as the FormData twin: one rule, both doors (ADR-1397). This one can say why.
+  const gate = await checkFreeEnrol(planId, profileId, { isOwner: meta.author_id === profileId })
+  if (!gate.ok) return fail(gate.error)
   await adoptPlan(profileId, planId)
   revalidatePath('/journeys', 'layout')
   return ok()

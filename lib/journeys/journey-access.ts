@@ -92,6 +92,11 @@ export interface JourneyAccess {
   canPublish: boolean
   /** May the viewer run cohorts (Runs) of this Journey? */
   canRunCohorts: boolean
+  /** May the viewer attach a PRICE to this Journey (ADR-1397)? Owner ruling 2026-09-17: only a paid
+   *  Space may sell a Journey. A personal Journey is never sellable at any member tier, and a free
+   *  Space cannot sell one either. Enforcement is server-side at the write path; this is what the
+   *  surfaces read so the control is hidden or upsold rather than offered and then refused. */
+  canSell: boolean
   /** The OWNING context's published-Journey allotment. null = unlimited. */
   publishCap: number | null
   /** The owning context's active-enrollee allotment per Journey. null = unlimited. This is the
@@ -110,6 +115,10 @@ export interface JourneyAccess {
 export const JOURNEY_SIGN_IN_REASON = 'Sign in to build and take Journeys.'
 export const JOURNEY_NOT_YOURS_REASON = 'Only the author or the Space team can change this Journey.'
 
+/** Why a Journey cannot carry a price. Names the fix rather than the wall (CONTENT-VOICE). */
+export const JOURNEY_NOT_SELLABLE_REASON =
+  'Selling a Journey needs a paid Space. Put this Journey under one, and you can set a price.'
+
 /** Copy for a full Journey at the enrollment write path (ADR-838). */
 export const JOURNEY_FULL_MESSAGE =
   'This Journey is full. Check back soon, or ask its author to open more spots.'
@@ -121,6 +130,7 @@ const NO_ACCESS: JourneyAccess = {
   canEdit: false,
   canPublish: false,
   canRunCohorts: false,
+  canSell: false,
   publishCap: 0,
   enrollCap: 0,
   dripAllowed: false,
@@ -133,6 +143,7 @@ const STAFF_ACCESS: JourneyAccess = {
   canEdit: true,
   canPublish: true,
   canRunCohorts: true,
+  canSell: true,
   publishCap: null,
   enrollCap: null,
   dripAllowed: true,
@@ -167,6 +178,7 @@ export function resolveJourneyAccess(
       canEdit,
       canPublish: canEdit,
       canRunCohorts: canEdit && paidSpace,
+      canSell: canEdit && paidSpace,
       publishCap: allowanceAt('space_journey_publish', plan),
       enrollCap: allowanceAt('space_journey', plan),
       dripAllowed: true,
@@ -185,6 +197,13 @@ export function resolveJourneyAccess(
     canEdit,
     canPublish: canEdit,
     canRunCohorts: crewStanding,
+    // A PERSONAL Journey is never sellable, whatever the member's own tier (owner ruling
+    // 2026-09-17: "only paid spaces can create paid journeys"). Taking money for a program means
+    // somebody is accountable for delivering it, and a Space is the thing this platform can hold to
+    // that: it has a payout account, an owner of record, a standing and a plan. A person's own
+    // library Journey has none of those, so the honest upgrade path is "put it under a Space",
+    // not "pay us and sell from your profile".
+    canSell: false,
     publishCap: allowanceAt('journey_publish', realTier),
     enrollCap: allowanceAt('journey_enrollees', realTier),
     dripAllowed: true,

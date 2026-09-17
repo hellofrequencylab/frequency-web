@@ -60,6 +60,7 @@ const KIND_NOUN: Record<ProductKind, string> = {
   service: 'a bookable service',
   booking: 'a bookable service',
   ticket: 'a ticket to an event',
+  journey: 'a guided multi-week program people enrol in',
 }
 
 /** Sanitize a free-text field before it enters the prompt: strip quotes/backticks/newlines and clamp,

@@ -213,6 +213,8 @@ export async function listTicketedEventProjections(
         ownerProfileId: e.host_id ?? null,
         ownerSpaceId: e.space_id ?? null,
         entityId: '',
+        // A projected ticket is an Event wearing a product's shape; it sells no Journey.
+        journeyPlanId: null,
         productKind: 'ticket',
         vertical: 'shop',
         title: e.title,
