@@ -7,6 +7,7 @@ import { getJourneySellData, type JourneySellData } from '@/app/(main)/journeys/
 import { setJourneyPriceAction, unsetJourneyPriceAction } from '@/app/(main)/journeys/[slug]/sell-actions'
 import { buttonClasses } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
+import { Checkbox } from '@/components/ui/checkbox'
 
 // "Sell this Journey" (ADR-1397): the one control that puts a price on a Journey, and the only caller
 // of setJourneyPriceAction. Without it the action was unreachable and the whole selling path was
@@ -106,18 +107,12 @@ export function JourneySellModule() {
             </span>
           </label>
 
-          <label className="flex items-start gap-2">
-            <input
-              type="checkbox"
-              checked={listInMarket}
-              onChange={(e) => setListInMarket(e.target.checked)}
-              className="mt-1"
-            />
-            <span className="text-meta leading-relaxed text-muted">
-              Also list it in the main Market. Leave this off to sell only from this page and your
-              Space&rsquo;s Shop.
-            </span>
-          </label>
+          <Checkbox
+            checked={listInMarket}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setListInMarket(e.target.checked)}
+            label="Also list it in the main Market"
+            hint="Leave this off to sell only from this page and your Space's Shop."
+          />
 
           {/* Seats are the author's existing enroll_cap, shown here because a price makes the number
               matter. It is not editable from this module: it lives in Settings, and two controls for
