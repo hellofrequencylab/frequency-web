@@ -52,6 +52,16 @@ import { setCircleContext } from '@/lib/circles/active-circle'
 // The Feed tab's module set. Order here does not decide layout; the saved '/circles/*' layout
 // still does, and this only filters what it may place. `circle-momentum` is the one deliberate
 // omission — it renders on the Circle Stats tab instead.
+//
+// TWO IDS LEFT THIS LIST ON 2026-09-17 AND NEITHER WAS A BEHAVIOUR CHANGE, which is worth saying
+// because a subset shrinking silently is the thing this comment block exists to prevent:
+//   • `circle-text` was RETIRED with the Page-text block (ADR-1394): it duplicated About, and
+//     About now carries the formatting that was its only advantage.
+//   • `circle-invite` was already a DEAD REFERENCE before that. It was retired from LAYOUT_MODULES
+//     in the Circle rail trim and is absent from `CIRCLE_DETAIL_MODULE_IDS`, so `PageModules` could
+//     never place it however long it sat here. Removing it changes nothing a viewer sees; leaving
+//     it would keep implying there is an invite block on this tab, and there is not (invites live
+//     in the `circle.people` admin module).
 const FEED_TAB_MODULE_IDS = [
   'circle-feed',
   'circle-health',
