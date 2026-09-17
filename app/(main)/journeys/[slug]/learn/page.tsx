@@ -17,7 +17,7 @@ import { PracticeDetail } from '@/components/journey/v2/learn/practice-detail'
 import { AboutThisJourneyHero, MeetingBlock, AuthorBlock } from '@/components/journey/v2/learn/journey-overview'
 import { LeaveJourneyButton } from '@/components/journey/v2/learn/leave-journey-button'
 import { CohortMeter } from '@/components/journey/v2/cohort-meter'
-import { DetailTemplate, PageHero, HERO_ACTION_CLASS } from '@/components/templates'
+import { DetailTemplate, PageHero } from '@/components/templates'
 import { ShareImageProvider } from '@/components/qr/share-image-context'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 import { resolveIdentityHero } from '@/lib/layout/detail-hero'
@@ -203,14 +203,21 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
           }
           title={plan.title}
           subtitle={plan.summary || undefined}
-          actions={<QrShareDropdown manager={canManageJourney} className={HERO_ACTION_CLASS} />}
+          /* QR & Share is NOT here any more (owner ruling, 2026-09-17: "Move QR button under
+             header"). It renders in the band below, with the other controls. Leaving it on the
+             cover got worse in the same pass that turned the ink scrim off by default: a glassy
+             on-ink button over a raw photograph is exactly the case HERO_ACTION_CLASS was holding
+             up, and the band is a plain surface where an ordinary button reads. */
         />
       }
       title={plan.title}
       band={
-        canManageJourney || isAuthor ? (
-          // Author/admin controls read as a normal light row BELOW the header (no longer riding the
-          // cover): the scoped Journey rail trigger + the author's Edit/Publish set.
+        // ── THE BAND ALWAYS RENDERS NOW, because QR & Share is in it and sharing is for everyone
+        //    (owner ruling, 2026-09-17). It used to render only for an author or a manager, so
+        //    hanging the share control off the old condition would have hidden it from exactly the
+        //    visitors a share control exists for. Manager controls left, share right, one line.
+        (
+          <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
             {canManageJourney && (
               <OpenAdminBarButton
@@ -230,8 +237,10 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
               />
             )}
           </div>
-        ) : (
-          <></>
+          <div className="shrink-0">
+            <QrShareDropdown manager={canManageJourney} />
+          </div>
+          </div>
         )
       }
     >
