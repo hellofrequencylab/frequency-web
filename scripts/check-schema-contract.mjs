@@ -78,6 +78,23 @@ export const ALLOWLIST = [
   //
   // When you need an entry here, keep this shape and say which artifact retires it:
   //   { file, kind: 'select' | 'update' | 'insert' | 'rpc', table, column, added, reason, owner }
+  {
+    file: 'lib/circles/draft.ts',
+    kind: 'rpc',
+    // For an rpc finding the FUNCTION name is the `table` field and `column` is null (see
+    // flattenViolations: `{ kind: 'rpc', table: u.fn, column: null }`).
+    table: 'sync_space_circle_roster',
+    column: null,
+    added: '2026-09-17',
+    reason:
+      'ADR-1395 auto-enrolment. The function ships in migration 20270345005800 and is APPLIED to ' +
+      'the live project (verified 2026-09-17: ledger 709 rows), so the schema is ahead of the ' +
+      'checked-in types rather than the reference being wrong. Regenerating lib/database.types.ts ' +
+      'in this PR would pull the whole generated file, and any unrelated drift in it, into a ' +
+      'change about Circle enrolment. Retires on the next regeneration pass, which is also what ' +
+      'lets the localized ADR-246 cast at the call site go.',
+    owner: 'LIVE-386',
+  },
 ]
 
 /** Walk `root` against `typesFile` and return the raw report. Pure: no exit, no console. */
