@@ -3,9 +3,6 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { CirclesClient } from './circles-client'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
-import { getJanitor } from '@/lib/page-editor/guard'
-import { getCircleTextDefault } from '@/lib/circles/circle-text'
-import { CircleTextDefaultEditor } from './circle-text-default-editor'
 
 export default async function AdminCirclesPage({
   searchParams,
@@ -111,11 +108,6 @@ export default async function AdminCirclesPage({
     .eq('is_active', true)
     .order('display_name')
 
-  // The network-wide default for the circle Page-text block is a platform setting (janitor only), so
-  // only resolve + show its editor for a janitor — hosts/guides manage per-circle text on the page.
-  const janitor = await getJanitor()
-  const circleTextDefault = janitor ? await getCircleTextDefault() : ''
-
   return (
     <AdminTemplate
       title="Circles"
@@ -128,14 +120,9 @@ export default async function AdminCirclesPage({
         <CirclesClient circles={circles} hubs={hubs} hosts={hostProfiles ?? []} initialEditId={edit ?? null} />
       </AdminSection>
 
-      {janitor && (
-        <AdminSection
-          title="Circle page text"
-          description="The default text block shown on every circle until a circle sets its own. Place it on the page from the circle Layout editor."
-        >
-          <CircleTextDefaultEditor initial={circleTextDefault} />
-        </AdminSection>
-      )}
+      {/* RETIRED 2026-09-17: the janitor-only "Circle page text" section set a network-wide default
+          for the movable Page text block. The block is gone (a duplicate of About, owner ruling),
+          so a default for it had nothing left to default. Formatting moved to About. */}
     </AdminTemplate>
   )
 }

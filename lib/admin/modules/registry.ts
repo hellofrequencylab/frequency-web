@@ -14,7 +14,7 @@
 // render each module's Component. The catalog + filter are the durable seam.
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Users, MapPin, Trophy, BarChart3, Archive, Palette, UserCircle, Bell, Radar, ShieldCheck, CreditCard, LayoutGrid, MessageCircle, Pencil, Wand2, ArrowRightLeft } from 'lucide-react'
+import { Settings, Building2, Network, CalendarDays, Hash, Sparkles, Users, MapPin, Trophy, BarChart3, Archive, Palette, UserCircle, Bell, Radar, ShieldCheck, CreditCard, LayoutGrid, MessageCircle, Pencil, Wand2, ArrowRightLeft } from 'lucide-react'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 /** The Scope union's discriminant — where a module can attach. */
@@ -227,20 +227,10 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     tier: 'extra',
     priority: 10,
   },
-  {
-    id: 'circle.text',
-    label: 'Page text',
-    desc: 'A free text block you can place anywhere on the page from Layout. Supports bold, italic, and links.',
-    Icon: Type,
-    scopes: ['circle'],
-    requiredCapability: 'circle.editSettings',
-    slot: 'basics',
-    surface: 'sidebar',
-    render: 'inline',
-    order: 15,
-    tier: 'standard',
-    priority: 20,
-  },
+  // RETIRED 2026-09-17 (owner ruling): 'circle.text', the per-circle editor for the movable
+  // "Page text" block. The block it edited is gone (see the retirement note in lib/widgets/modules.ts),
+  // so the editor went with it rather than becoming a control that writes to nothing. Formatting
+  // moved to About, which the circle.settings module already edits.
   // MOVE THIS CIRCLE (the circle-side half of ADR-843). Its OWN row rather than a fold into
   // circle.settings, and the ADR-846 test is why: that fold took a second row on the same
   // AUTHORITY *and the same SUBJECT*. This shares the authority (circle.editSettings) and fails

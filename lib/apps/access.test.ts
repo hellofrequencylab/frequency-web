@@ -38,7 +38,6 @@ describe('gate parity — surfacesFor(editor) reproduces modulesFor', () => {
       'circle.settings',
       'circle.placeAndTime',
       'circle.insights',
-      'circle.text',
       'circle.transfer',
     ])
   })

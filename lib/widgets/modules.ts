@@ -247,7 +247,16 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   //     dropped: the Start a Run control now renders inside the `circle.engage` module, beside the
   //     shared challenges and this week's practice (ADR-846's one-Engage-box shape). Its gate is
   //     unchanged (circle.editSettings), and startJourneyRunAction still re-checks its own.
-  { id: 'circle-text', label: 'Page text', description: 'A free rich-text note you can place anywhere on the page. Set per circle, with a network default.' },
+  // RETIRED 2026-09-17 (owner ruling): 'circle-text', the movable "Page text" block. It was the
+  // SECOND free-text body on a Circle page, and the owner named the duplication: *"There are
+  // duplicate content sections for About and Page Text. I don't want the Page Text section, but I
+  // do want the ability to format the about section content."* The one thing it could do that
+  // `circles.about` could not was FORMAT, so `CollapsibleAbout` now renders the same markdown
+  // subset through the same parser and the block is gone from the page, this catalog and the set
+  // below — which means no saved layout can resurrect it. Its per-circle override lived in
+  // `circles.sidebar_order`; that jsonb is left alone rather than migrated, because it is a bag
+  // shared with other keys and an orphaned one costs nothing.
+
 
   // ── Event detail blocks (/events/<slug>) — the FULL arrangeable interior of one event. The fixed
   // header (cover · title · badges · Edit/Manage) and the mobile action bar stay in the page; every
@@ -602,7 +611,6 @@ const CIRCLE_DETAIL_MODULE_IDS = [
   'circle-map',
   'circle-meeting',
   'circle-space-info',
-  'circle-text',
 ] as const
 
 /** Circle blocks that paint on a SPACE CIRCLE and on nothing else (ADR-1393).

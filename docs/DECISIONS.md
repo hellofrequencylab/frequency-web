@@ -44790,3 +44790,67 @@ what the rail block already answers). Deriving the space id inside the event rea
 through). Reviving an `archived` Space Circle in the turn-on sweep (its Space was wound down).
 
 **Open.** Whether a Space Circle should auto-enrol new Space members is still for the owner to name.
+
+## ADR-1394: The Circle header loses three buttons, About formats and Page text retires, and a greeting strip names who just arrived (2026-09-17)
+
+**Status:** Accepted · **Amends** [ADR-1023](DECISIONS.md) (the header's one primary) and
+[ADR-793](DECISIONS.md) (the entity cover's eyebrow) · **Retires** the `circle-text` layout block ·
+Backlog `LIVE-385` · corroborated by `app/(main)/circles/[slug]/(circle)/layout.tsx`,
+`components/circles/circle-create-menu.tsx`, `components/circles/circle-member-menu.tsx`,
+`components/templates/page-hero.tsx`, `lib/circles/subheading.ts`, `lib/circles/arrivals.ts`,
+`components/circles/collapsible-about.tsx`
+
+**Context.** The design half of the 2026-09-17 Circle pass ([ADR-1393](DECISIONS.md) is the Space
+Circle half). Owner, in four rulings that day:
+
+- *"Remove: Post. Move Create to the header. Make Leave group a subtle setting somewhere else and
+  not a primary button."*
+- *"Change the 'CIRCLE' eyebrow to a pill button in the corner. Create a subheading line under the
+  circle name."*
+- *"There are duplicate content sections for About and Page Text. I don't want the Page Text
+  section, but I do want the ability to format the about section content."*
+- And, for the engagement half: *"Improve functionality for better community engagement."*
+
+**Decision.**
+
+1. **Five header buttons become two.** The row read Post · Edit · Manage · Create · Leave — five
+   controls of near-equal weight, two of them primary-amber. A member's row now holds `Create`; a
+   manager's holds `Create · Edit · Manage`; a visitor still gets `Join`.
+2. **Post did not lose its door, it moved inside Create.** On the Feed tab the button linked to a
+   composer already on screen; on Members, What's On and Circle Stats there is no composer, so it
+   could not simply be deleted. `CircleCreateMenu` (was `CircleHostMenu`) leads with "New post",
+   anchored to the same `#circle-post` target, and is no longer host-only for exactly that reason.
+3. **Leave moved to an overflow control on the tab row.** It could NOT move to the admin rail with
+   the host tools: the rail is gated on `circle.editSettings`, which a plain member does not hold,
+   so the one viewer who needs Leave is the one viewer who would never find it there. The tab row is
+   the only Circle chrome every viewer gets on every tab. A Host still gets no Leave at all: they
+   hand the Circle over ([ADR-845](DECISIONS.md)).
+4. **The cover's eyebrow became a corner pill.** `PageHero` gains a `corner` slot, pinned top-left
+   above the scrim and outside every adaptive-text zone. It is a SLOT rather than a `cornerLabel`
+   string so a caller can pin a link there: on a Space Circle the pill links to the owning Space.
+   Its label still reads "Circle" — `NAMING.md` is explicit that "Space Circle" is staff copy and a
+   member-facing page just shows the Circle, named for the Space.
+5. **The freed line carries a real subheading**, resolved by one pure rule (`circleSubheading`).
+   The slot used to hold the PLACE, which the band repeats three inches lower; it now says what the
+   Circle IS. A Space Circle gets a fixed line naming its function, because `ensure_space_circle`
+   writes no `about` and an about-first order would leave a Space's own hub blank every time.
+6. **Page text is retired; About formats.** `circle-text` is gone from the page, the catalog, the
+   circle module set, the admin rail (`circle.text`) and the janitor-only network default, so no
+   saved layout can resurrect it. `CollapsibleAbout` renders the same `richParagraphs` subset
+   through the same safe-href allowlist, so the capability moved without widening by a character.
+   The orphaned `sidebar_order.text` override is deliberately not migrated: it is a shared jsonb bag
+   and an unread key costs nothing.
+7. **The greeting strip.** A Circle already told a newcomer to introduce themselves and told nobody
+   else to look, so a first post landed in a room where nobody had a reason to reply. The roster the
+   page already loads now also answers who arrived in the last 14 days — to the newcomer ("who else
+   is new") and to everyone already in ("who to greet"). `ARRIVAL_WINDOW_DAYS` is 14 rather than the
+   7 the self-nudge uses, deliberately: 7 days is "are you still finding your feet", 14 is "is there
+   anyone here I have not met", and a Circle that meets weekly needs a window wider than its own
+   cadence. No new query. Empty feed copy is now role-aware, because "no posts yet" is a to-do for a
+   host, an invitation for a member and a bare fact for a visitor.
+
+**Rejected.** Deleting the Post button without a replacement door (three of the four tabs have no
+composer). Putting Leave in the admin rail (invisible to the only viewer who needs it). A
+`cornerLabel` string instead of a slot (the Space Circle's pill is a link). Measuring the About
+collapse on the PARSED output rather than the source, which would make adding `**` to a word change
+whether the "Read more" control appears.

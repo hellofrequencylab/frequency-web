@@ -46,13 +46,16 @@ describe('the circle detail default layout (/circles/*)', () => {
   })
 
   it('exempts only blocks that are genuinely Space-Circle-only', () => {
+    // The exemption cannot become a parking space: every id claiming it has to be a real circle
+    // block, and the list stays short enough to read.
     for (const id of SPACE_CIRCLE_ONLY_MODULE_IDS) expect(ids).toContain(id)
     expect(SPACE_CIRCLE_ONLY_MODULE_IDS.length).toBeLessThanOrEqual(2)
   })
 
   it('orders the rail time-bound, then people, then action, then evergreen', () => {
-    // 1. what is on next (and the way in to RSVP) · 2. who is actually in the room · 3. this week's
-    // practice and its log button · 4. how and where we meet.
+    // 1. what is on next (and the way in to RSVP) · 2. the Space's own details, on a Space Circle
+    // only · 3. who is actually in the room · 4. this week's practice and its log button ·
+    // 5. how and where we meet.
     expect(visible(config, 'side', ids)).toEqual([
       'circle-events',
       'circle-space-info',
@@ -63,6 +66,8 @@ describe('the circle detail default layout (/circles/*)', () => {
   })
 
   it('reads exactly as it always did on an ordinary Circle', () => {
+    // The order an ordinary Circle actually paints, with the Space-only block removed. This is the
+    // assertion the old four-item one was really making, and it must not drift.
     const alwaysOn = visible(config, 'side', ids).filter(
       (id) => !SPACE_CIRCLE_ONLY_MODULE_IDS.includes(id),
     )
