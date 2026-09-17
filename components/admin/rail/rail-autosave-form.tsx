@@ -19,6 +19,25 @@ export function useRailSaveNow(): () => void {
   return useContext(RailSaveNowContext)
 }
 
+// The debounced twin: a composite that changes on every keystroke as well as on clicks (the repeat
+// picker's interval box beside its weekday pills) commits through this, so a burst of edits collapses
+// into one save exactly as typing into a text field does.
+const RailSaveSoonContext = createContext<() => void>(() => {})
+
+/** Commit the enclosing RailAutosaveForm after the text debounce — for a composite that changes often. */
+export function useRailSaveSoon(): () => void {
+  return useContext(RailSaveSoonContext)
+}
+
+// The form's save state, for a control that offers its own explicit "Update changes" and should say
+// what happened beside it rather than only in the cue at the foot of the form.
+const RailSaveStateContext = createContext<{ state: RailSaveState; error: string | null }>({ state: 'idle', error: null })
+
+/** The enclosing RailAutosaveForm's current save state. */
+export function useRailSaveState(): { state: RailSaveState; error: string | null } {
+  return useContext(RailSaveStateContext)
+}
+
 // ── The shared autosave FORM for rail editors (docs/ADMIN-RAIL.md — save-model unification) ────────────
 // A drop-in replacement for the per-module `<form onSubmit>` + Save button. It wires the whole form to
 // `useRailAutosave`: text fields commit on BLUR (debounced), selects/toggles/radios commit INSTANTLY, and
@@ -79,6 +98,7 @@ export function RailAutosaveForm({
     [commit],
   )
   const saveNow = useCallback(() => snapshot(true), [snapshot])
+  const saveSoon = useCallback(() => snapshot(false), [snapshot])
 
   return (
     <form
@@ -92,7 +112,11 @@ export function RailAutosaveForm({
       }}
       className={className ?? 'space-y-4'}
     >
-      <RailSaveNowContext.Provider value={saveNow}>{children}</RailSaveNowContext.Provider>
+      <RailSaveNowContext.Provider value={saveNow}>
+        <RailSaveSoonContext.Provider value={saveSoon}>
+          <RailSaveStateContext.Provider value={{ state, error }}>{children}</RailSaveStateContext.Provider>
+        </RailSaveSoonContext.Provider>
+      </RailSaveNowContext.Provider>
       <div className="pt-1">
         <RailSaveRow state={state} error={error} />
       </div>

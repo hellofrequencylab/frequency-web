@@ -295,13 +295,17 @@ export function isoToDateInput(iso: unknown): string {
  * dialects. It is this reader and its mirror in `updateEventSettings`, and nothing else.
  */
 function repeatDraftFor(row: EventRailRow): string {
+  // A DATE of a series has no rule of its own (the database forbids one), so it shows the SERIES'
+  // rule, which the admin read attaches as `series_*` (LIVE-381). Reading the row's own empty columns
+  // is what opened the picker blank on every date and let a blank be saved back over the series.
+  const own = !str(row.parent_event_id)
   const rule = repeatFor({
-    starts_at: str(row.starts_at) || null,
-    recurrence_type: str(row.recurrence_type) || null,
-    recurrence_rule: str(row.recurrence_rule) || null,
+    starts_at: str(own ? row.starts_at : row.series_starts_at) || null,
+    recurrence_type: str(own ? row.recurrence_type : row.series_recurrence_type) || null,
+    recurrence_rule: str(own ? row.recurrence_rule : row.series_recurrence_rule) || null,
   })
   if (!rule) return ''
-  return formatRepeatDraft(rule, isoToDateInput(row.recurrence_until) || null)
+  return formatRepeatDraft(rule, isoToDateInput(own ? row.recurrence_until : row.series_recurrence_until) || null)
 }
 
 const str = (v: unknown) => (typeof v === 'string' ? v : '')

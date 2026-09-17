@@ -13701,6 +13701,25 @@
       "closed": "2026-09-16"
     },
     {
+      "id": "LIVE-381",
+      "title": "The event repeat picker saves on change, shows the series' rule on every date, and a save from one date cannot wipe the series",
+      "status": "done",
+      "priority": "P0",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "app/(main)/events/admin-actions.ts",
+        "ref": "ADR-1390, owner report 2026-09-16 on Meld at Royal Temple"
+      },
+      "detail": "Owner, 2026-09-16: a repeat change only saved after scrolling to the Save button at the bottom of the block editor, and the picker did not show the saved setting. Asked for an Update changes button on the picker.\n\nFOUND. (1) The repeat switch and weekday pills are buttons, so RailAutosaveForm heard nothing and the change waited for a later field's save. (2) A date of a series has no rule (events_occurrence_not_recurring), and repeatDraftFor read the date's empty columns, so the picker opened blank. (3) DATA LOSS: under this-and-future scope every autosave posted the picker value as the anchor's rule; a blank wrote recurrence_type none onto the anchor and retireStaleOccurrences retired every unattached future date.\n\nFIXED. SettingsFields commits a repeat change through a new debounced useRailSaveSoon and renders an Update changes button under the picker with useRailSaveState feedback. getEventAdminData attaches the anchor's rule as series_*, and repeatDraftFor reads it for a date. updateEventSettings skips the rule push and both reconcilers when a date's submitted rule equals the anchor's, and refuses a date switching the whole series off. HELD BY event-rail-plan.test.ts (a date shows the series rule) and admin-actions.test.ts (the unchanged-rule and switch-off guards).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const act=fs.readFileSync(\"app/(main)/events/admin-actions.ts\",\"utf8\");if(!act.includes(\"const seriesRuleUnchanged =\"))fail(\"an unchanged series rule is still written and reconciled from a date\");if(!act.includes(\"series_recurrence_rule:\"))fail(\"a date still does not receive its series rule\");const plan=fs.readFileSync(\"components/admin/modules/event-rail-plan.ts\",\"utf8\");if(!plan.includes(\"row.series_recurrence_rule\"))fail(\"the picker does not read the series rule for a date\");const mod=fs.readFileSync(\"components/admin/modules/event-settings-module.tsx\",\"utf8\");if(!mod.includes(\"Update changes\")||!/kind === .repeat.\\) saveSoon\\(\\)/.test(mod))fail(\"the repeat picker neither autosaves nor offers Update changes\")'",
+        "note": "Passes when the action guards an unchanged or switched-off series rule from a date, a date receives and reads its series rule, and the rail autosaves repeat changes with an Update changes button. Written 2026-09-16."
+      },
+      "closed": "2026-09-16"
+    },
+    {
       "id": "PROG-CAL1",
       "title": "Calendar phase 1, Pencil: a tentative private date for a potential Production, clash warnings, and day notes",
       "status": "done",

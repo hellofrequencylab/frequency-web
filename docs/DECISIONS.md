@@ -44597,3 +44597,35 @@ planning side, only published events.
 **Rejected.** A client-side toggle over data already sent to the browser (it would ship the private layer to
 anyone who could open devtools on a page they reached as a member); a separate admin route (the owner asked
 for it in the main area).
+
+## ADR-1390: The event repeat picker saves, shows the series' rule on every date, and cannot wipe a series by accident (2026-09-16)
+
+**Status:** Accepted · **Amends** [ADR-1307](DECISIONS.md) (series scope) and docs/ADMIN-RAIL.md §6.2 ·
+Backlog `LIVE-381` · corroborated by `components/admin/modules/event-settings-module.tsx`,
+`components/admin/modules/event-rail-plan.ts`, `app/(main)/events/admin-actions.ts`,
+`components/admin/rail/rail-autosave-form.tsx`
+
+**Context.** Owner, 2026-09-16, on Meld at Royal Temple: a repeat change only seemed to save after
+scrolling to the Save button at the bottom of the block editor, and the picker did not show the setting
+saved last time. Tracing it found three faults. (1) The picker's switch and weekday pills are buttons, so the
+autosave form heard nothing; the change landed only when a later field saved (the Save button the owner
+found belongs to the page layout editor, a different thing). (2) A date of a series has no rule of its own
+(the database forbids one), and the rail read that date's empty columns, so the picker opened blank.
+(3) Under "this and all future dates", every autosave posted the picker's value as the SERIES' rule: a blank
+became "stopped repeating" on the anchor, and the reconcile then retired every future date nobody was
+attached to.
+
+**Decision.**
+
+1. **A repeat change commits** through a debounced `useRailSaveSoon()` (the interval box changes per
+   keystroke), and an **Update changes** button sits under the picker with its own Saving / Updated line.
+   The owner asked for the button; it is the one explicit save in a rail, documented as an exception.
+2. **A date shows the series' rule.** `getEventAdminData` reads the anchor's rule and attaches it as
+   `series_*`; `repeatDraftFor` reads those for a date of a series.
+3. **The server refuses the accident, whatever the client sends.** A save from one date whose rule equals
+   the anchor's is neither written nor reconciled, so autosaving any other field cannot touch the series'
+   dates. A date may not switch the whole series off; that is done from the series' first date, where the
+   picker is the series' own. A stale browser tab is covered by the same guard.
+
+**Rejected.** Hiding the picker on dates of a series (the owner edits Meld from whichever date is in
+front of them); a client-only fix (the data-loss path is a server write, and old tabs stay open for days).
