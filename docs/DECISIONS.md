@@ -44568,3 +44568,32 @@ description.
 disagree); deleting a Cancelled entry (the team wants to see what was called off); a Production stage that
 publishes on save (ADR-1386 invariant 1: nothing becomes public without a person pressing publish in the
 Spark).
+
+## ADR-1389: A Space's public Calendar tab has an Admin / Guest mode for its team (2026-09-16)
+
+**Status:** Accepted · **Extends** [ADR-1385](DECISIONS.md) (two layers) and [ADR-1388](DECISIONS.md) ·
+Backlog `LIVE-380` · corroborated by `app/(main)/spaces/[slug]/(profile)/calendar/page.tsx`,
+`lib/calendar/admin-calendar.ts`, `components/spaces/calendar-mode-toggle.tsx`
+
+**Context.** The team's calendar (drafts, events on their way, private entries, Unavailable time, day notes)
+lived only on the Calendar settings console, while the Calendar tab everyone reaches from the Space showed
+published events. Owner, 2026-09-16: a Space owner should see the full admin calendar in the main area, with
+an Admin / Guest toggle at the top to see what a visitor sees; guests and Space members never see the admin
+planning side, only published events.
+
+**Decision.**
+
+1. **Admin is the default for the team, Guest for everyone else.** A viewer who edits the Space and has the
+   Calendar function (or platform staff previewing it, read-only) lands on Admin. Everyone else only ever
+   gets Guest.
+2. **The mode is decided on the server, before any admin read.** It lives in the URL (`?view=guest`); the
+   server loads unpublished events, the private layer and day notes only when the viewer is allowed Admin
+   AND chose it. A member typing any URL gets Guest, and the private layer is additionally locked by RLS.
+   Links rather than client state also make a Guest view reloadable and shareable.
+3. **One loader for the team calendar.** `loadAdminCalendar` is extracted from the settings console and used
+   by both surfaces, so the tab's Admin mode and the console can never disagree. Admin mode renders the same
+   `StaffCalendar`, drawer included; the console keeps the day-note field and the manage table.
+
+**Rejected.** A client-side toggle over data already sent to the browser (it would ship the private layer to
+anyone who could open devtools on a page they reached as a member); a separate admin route (the owner asked
+for it in the main area).

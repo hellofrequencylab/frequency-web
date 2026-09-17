@@ -13682,6 +13682,25 @@
       "closed": "2026-09-16"
     },
     {
+      "id": "LIVE-380",
+      "title": "A Space's Calendar tab shows its team the full admin calendar, with an Admin / Guest toggle, and shows everyone else only published events",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/spaces/[slug]/(profile)/calendar/page.tsx",
+        "ref": "ADR-1389, owner request 2026-09-16"
+      },
+      "detail": "Owner, 2026-09-16: a Space owner sees the full admin calendar in the main area with an Admin / Guest toggle at the top; guests and Space members never see the admin planning side, only published events.\n\nWHAT SHIPPED. The public Calendar tab decides the mode on the server: a viewer who edits the Space with the Calendar function (or platform staff, read-only) defaults to Admin and renders StaffCalendar over loadAdminCalendar (lib/calendar/admin-calendar.ts, extracted from the settings console so both read one loader); `?view=guest` shows exactly the visitor view. Everyone else always gets the guest view and the server never loads unpublished events, the private layer or day notes for them. The toggle is two links (components/spaces/calendar-mode-toggle.tsx).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const page=fs.readFileSync(\"app/(main)/spaces/[slug]/(profile)/calendar/page.tsx\",\"utf8\");if(!page.includes(\"loadAdminCalendar(\"))fail(\"the tab does not load the team calendar\");if(!page.includes(\"CalendarModeToggle\"))fail(\"no Admin / Guest toggle\");if(!/adminAllowed && view !== .guest./.test(page))fail(\"admin mode is not gated on the viewer before loading\");const cons=fs.readFileSync(\"app/(main)/spaces/[slug]/settings/calendar/page.tsx\",\"utf8\");if(!cons.includes(\"loadAdminCalendar(\"))fail(\"the console and the tab do not share one loader\")'",
+        "note": "Passes when the Calendar tab gates Admin on the viewer before loading, renders the toggle, and shares loadAdminCalendar with the settings console. Written 2026-09-16."
+      },
+      "closed": "2026-09-16"
+    },
+    {
       "id": "PROG-CAL1",
       "title": "Calendar phase 1, Pencil: a tentative private date for a potential Production, clash warnings, and day notes",
       "status": "done",

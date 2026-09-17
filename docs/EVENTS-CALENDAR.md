@@ -186,6 +186,12 @@ else. Its column list is the gate; it must never gain a detail column.
 slot that overlaps is neither offered nor bookable. An existing booking inside the range is never
 touched. The read is service-role and fails safe to no blocks.
 
+**Admin / Guest on the Calendar tab** ([ADR-1389](DECISIONS.md)). A viewer who edits the Space (with
+the Calendar function), or platform staff previewing it, lands on **Admin**: the team calendar from
+`loadAdminCalendar` (`lib/calendar/admin-calendar.ts`, shared with the settings console) in `StaffCalendar`.
+`?view=guest` shows the visitor view. Everyone else only ever gets Guest, and the mode is decided on the
+server before any admin read.
+
 **Loading a month.** The first month renders on the server. Every other month is fetched when the
 viewer browses to it: `loadSpaceCalendarMonth` for the public tab (over `lib/calendar/public-month.ts`,
 which composes `listSpaceCalendarEvents` and the Unavailable projection without reimplementing either
