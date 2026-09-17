@@ -6,6 +6,10 @@ import { createClient } from '@/lib/supabase/server'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { FUNNELS } from '@/lib/funnels/definitions'
 import type { SignInErrorCode } from './errors'
+// 🔴 A 'use server' module may export ONLY async functions: exporting this constant from here failed the
+// production build ("The module has no exports at all"), which tsc and vitest cannot see. It lives in
+// the pure helper instead.
+import { NEW_ACCOUNT_EMAIL_COOKIE } from '@/lib/auth/sign-in-hint'
 
 // Shared passwordless sign-in actions, used by /sign-in and by the beta induction's
 // cinematic welcome (app/join/(induction)/induction.tsx sign-in beat).
@@ -39,10 +43,6 @@ function safeSeq(raw: FormDataEntryValue | null): string {
 }
 
 const POST_LOGIN_COOKIE = 'fq_post_login'
-
-/** Carries the address from "no account for that email" to the confirm step (ADR-1392). httpOnly and
- *  short-lived, so the address never rides on a URL. Must match app/sign-in/page.tsx. */
-export const NEW_ACCOUNT_EMAIL_COOKIE = 'fq_new_account_email'
 
 /** Bounce back to the form with a CODE, never a sentence. See ./errors.ts for why. */
 function fail(code: SignInErrorCode): never {

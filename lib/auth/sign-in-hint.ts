@@ -13,6 +13,10 @@
 // Pure: no Next, no Supabase.
 
 export const SIGN_IN_HINT_COOKIE = 'fq_last_sign_in'
+
+/** Carries the address from "no account for that email" to the confirm step. httpOnly and short-lived,
+ *  so the address never rides on a URL. Read by app/sign-in/page.tsx, written by app/sign-in/actions.ts. */
+export const NEW_ACCOUNT_EMAIL_COOKIE = 'fq_new_account_email'
 /** A year: long enough to still help someone who signs in rarely. */
 export const SIGN_IN_HINT_MAX_AGE = 60 * 60 * 24 * 365
 
