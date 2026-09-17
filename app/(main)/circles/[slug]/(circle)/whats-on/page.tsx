@@ -19,6 +19,7 @@ import {
   loadCirclePractice,
   loadCircleUpcomingEvents,
 } from '../tab-facts'
+import { spaceCircleEventScope } from '@/lib/events/circle-upcoming'
 
 // ── THE PROGRAM TAB ─────────────────────────────────────────────────────────────────────────────
 //
@@ -73,7 +74,11 @@ export default async function CircleWhatsOnPage({
   // memo. See circleEventInsider.
   const [practice, events, run] = await Promise.all([
     loadCirclePractice(circle.id),
-    loadCircleUpcomingEvents(circle.id, circleEventInsider({ isMember, isHost })),
+    loadCircleUpcomingEvents(
+      circle.id,
+      circleEventInsider({ isMember, isHost }),
+      spaceCircleEventScope(circle),
+    ),
     loadCircleActiveRun(circle.id),
   ])
 

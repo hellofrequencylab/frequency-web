@@ -21,6 +21,8 @@ import { setCircleChannel } from '@/lib/channels/programs'
 import { writeCircleCoverFocus, writeCircleHeroHeight } from '@/lib/circles/hero'
 import {
   accessModeOptions,
+  SPACE_CIRCLE_ACCESS_MODES,
+  SPACE_CIRCLE_ACCESS_NOTE,
   asCircleAccess,
   availableAccessModes,
   CIRCLE_ACCESS_LIMIT_NOTE,
@@ -199,7 +201,7 @@ export async function getCircleAdminData(slug: string) {
   const { data: circle } = await admin
     .from('circles')
     .select(
-      'id, slug, name, about, type, member_cap, status, image_url, unlisted, access, space_id, topical_channel_id',
+      'id, slug, name, about, type, member_cap, status, image_url, unlisted, access, space_id, topical_channel_id, is_space_primary',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -229,6 +231,11 @@ export async function getCircleAdminData(slug: string) {
   // `trg_circles_access_shape` refuses the two Space modes on a personal Circle and refuses `tier`
   // below a selling plan — and a mode the trigger refuses reads to a host as a broken save button.
   const access = asCircleAccess(circle.access)
+  // A SPACE CIRCLE narrows further, to the two doors the owner named (ADR-1393): open, or
+  // membership gated. The other four each break what a Space's hub is for — `circle_members` and
+  // `invite` make it unreachable by the people the Space is trying to reach, `space_members` admits
+  // only the staff who already run it, and `tier` sells the front door.
+  const isSpaceCircle = (circle as { is_space_primary?: boolean | null }).is_space_primary === true
 
   return {
     id: circle.id,
@@ -241,9 +248,12 @@ export async function getCircleAdminData(slug: string) {
     image_url: circle.image_url,
     unlisted: circle.unlisted ?? false,
     access,
-    access_modes: accessModeOptions(space, access),
-    /** True when the Space narrows the list, so the control can show the one note that says why. */
-    access_limited: availableAccessModes(space).length < CIRCLE_ACCESS_MODES.length,
+    access_modes: accessModeOptions(space, access, { isSpaceCircle }),
+    /** True when the list is narrowed at all, so the control can show the one note that says why.
+     *  Either the owning Space narrows it (a personal Circle, or a non-selling plan) or this is a
+     *  Space Circle, which carries its own two-door rule. */
+    access_limited:
+      isSpaceCircle || availableAccessModes(space).length < CIRCLE_ACCESS_MODES.length,
     theme,
     topical_channel_id: circle.topical_channel_id ?? null,
     channel_groups: channelGroups,
@@ -376,13 +386,25 @@ export async function setCircleAccessAction(
   const admin = createAdminClient()
   const { data: circle } = await admin
     .from('circles')
-    .select('space_id')
+    .select('space_id, is_space_primary')
     .eq('id', circleId)
     .maybeSingle()
   if (!circle) return { error: 'That circle could not be found.' }
 
   const space = await readOwningSpaceFacts(circle.space_id ?? null)
   if (!availableAccessModes(space).includes(next)) return { error: CIRCLE_ACCESS_LIMIT_NOTE }
+
+  // A SPACE CIRCLE's two doors (ADR-1393), re-checked here for the same reason the line above is
+  // re-checked: the control narrows the list, and a client can post whatever it likes. The database
+  // does NOT enforce this one — `trg_circles_access_shape` only knows about the Space modes and the
+  // `tier` plan floor — so without this arm the picker would offer two doors and the action would
+  // accept six, which is the disagreement `CIRCLE_ACCESS_LIMIT_NOTE` exists to prevent.
+  if (
+    (circle as { is_space_primary?: boolean | null }).is_space_primary === true &&
+    !SPACE_CIRCLE_ACCESS_MODES.includes(next)
+  ) {
+    return { error: SPACE_CIRCLE_ACCESS_NOTE }
+  }
 
   const { error } = await admin
     .from('circles')

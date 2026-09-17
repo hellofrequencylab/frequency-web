@@ -233,6 +233,9 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'circle-events', label: 'Upcoming events', description: 'The next gatherings for this circle. Hides when nothing is booked.' },
   { id: 'circle-map', label: 'Venue map', description: "A map of the circle's public meeting place; hides when there's no location." },
   { id: 'circle-meeting', label: 'How we meet', description: 'How and where the circle meets: in person or online, the area, and the time zone. Hides when there is nothing to say.' },
+  // SPACE CIRCLES ONLY (ADR-1393). It self-hides on every ordinary Circle, so it is safe to leave
+  // in the shared '/circles/*' layout: the 21 Space Circles render it and the rest render nothing.
+  { id: 'circle-space-info', label: 'About the Space', description: "On a Space's own circle: what the Space is, where it is, and the way back to it. Hides on every other circle." },
   { id: 'circle-challenges', label: 'Challenges', description: "The shared challenges the circle is taking on together, with the circle's collective progress. Hides when none are adopted." },
   // RETIRED (Circle rail trim): 'circle-invite' and 'circle-journey-run' were the two HOST WRITE
   // actions sitting in the member-facing side column. Both are gone from the page and from this
@@ -598,8 +601,25 @@ const CIRCLE_DETAIL_MODULE_IDS = [
   'circle-events',
   'circle-map',
   'circle-meeting',
+  'circle-space-info',
   'circle-text',
 ] as const
+
+/** Circle blocks that paint on a SPACE CIRCLE and on nothing else (ADR-1393).
+ *
+ *  A REAL CATEGORY, not a test convenience. The circle side rail carries a deliberate cap of FOUR
+ *  boxes, ratcheted in lib/page-settings/default-layouts.test.ts, and that cap exists because the
+ *  rail crept to seven once and had to be trimmed back by the owner. A block in this list does not
+ *  spend a slot against that cap, because it renders on NO ordinary Circle: all 7 of them show the
+ *  same four boxes they showed before it existed, and only the 21 Space Circles show a fifth.
+ *
+ *  🔴 ADDING AN ID HERE IS A CLAIM, AND IT IS CHECKED AT RUNTIME, NOT JUST IN A COMMENT: the block
+ *  must gate itself on `spaceCircleEventScope` (or an equivalent that refuses the root tenant) and
+ *  return null when it resolves nothing. An always-on block put in this list to dodge the cap would
+ *  be the well-meaning addition the cap was written to stop, so the cap test asserts the exemption
+ *  against THIS list rather than against a number, and a block that is not genuinely Space-only
+ *  fails the block's own render test instead. */
+export const SPACE_CIRCLE_ONLY_MODULE_IDS: readonly string[] = ['circle-space-info']
 
 // Every event DETAIL page (/events/<slug>) shares one layout, keyed at the '/events/*' section
 // scope — the FULL arrangeable interior in default render order. Only the fixed header (cover ·

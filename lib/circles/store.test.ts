@@ -217,6 +217,53 @@ describe('listPublicSpaceCircles (ADR-1094 — the rule, in one place)', () => {
     expect(seen.or).toEqual([])
   })
 
+  // ── THE SPACE CIRCLE CARVE (ADR-1393) ──────────────────────────────────────────────────────────
+  // A Space Circle ships UNLISTED on the owner's ruling ("public, but not listed in the directory"),
+  // so without this carve the one surface that must always show a Space's hub was the one surface
+  // that dropped it.
+  it('shows the Space Circle on its own Space even though it is unlisted', async () => {
+    db.circles = [
+      circle({ id: 'ordinary', created_at: '2026-02-01' }),
+      circle({ id: 'hub', unlisted: true, is_space_primary: true, created_at: '2026-01-01' }),
+    ]
+    const out = await listPublicSpaceCircles(SPACE_A, {})
+    expect(out.map((r) => r.id)).toContain('hub')
+  })
+
+  it('puts the Space Circle first, ahead of newer circles', async () => {
+    db.circles = [
+      circle({ id: 'newest', created_at: '2026-08-01' }),
+      circle({ id: 'hub', unlisted: true, is_space_primary: true, created_at: '2026-01-01' }),
+      circle({ id: 'older', created_at: '2026-04-01' }),
+    ]
+    const out = await listPublicSpaceCircles(SPACE_A, {})
+    expect(out.map((r) => r.id)).toEqual(['hub', 'newest', 'older'])
+  })
+
+  it('does not duplicate a Space Circle that is also listed', async () => {
+    db.circles = [circle({ id: 'hub', unlisted: false, is_space_primary: true })]
+    const out = await listPublicSpaceCircles(SPACE_A, {})
+    expect(out.map((r) => r.id)).toEqual(['hub'])
+  })
+
+  // The carve waives AXIS 1 only. A Space that has turned its hub OFF sets it `inactive`, which is
+  // outside LISTABLE_CIRCLE_STATUS, and an off hub must stay off here like everywhere else.
+  it('still hides a Space Circle its Space has turned off', async () => {
+    db.circles = [
+      circle({ id: 'ordinary' }),
+      circle({ id: 'hub', unlisted: true, is_space_primary: true, status: 'inactive' }),
+    ]
+    const out = await listPublicSpaceCircles(SPACE_A, {})
+    expect(out.map((r) => r.id)).toEqual(['ordinary'])
+  })
+
+  // Isolation is not relaxed by the carve: it is scoped to the same single space_id as the rest.
+  it("never reaches another Space's Space Circle", async () => {
+    db.circles = [circle({ id: 'theirs', space_id: SPACE_B, unlisted: true, is_space_primary: true })]
+    const out = await listPublicSpaceCircles(SPACE_A, {})
+    expect(out).toEqual([])
+  })
+
   // LIVE-093. status is the LIFECYCLE axis, not axis 1 or axis 2, and this reader pinned it to
   // 'active' while every other public reader admitted 'forming' too. The operator create path
   // defaults new rows to 'forming', so the filter hid precisely the Circles an operator had just

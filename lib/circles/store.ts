@@ -441,6 +441,10 @@ export async function listPublicSpaceCircles(
         .select(COLS)
         .eq('space_id', spaceId)
         .in('status', [...LISTABLE_CIRCLE_STATUS])
+        // The Space Circle leads here too, so a manager and a visitor read the same tab in the
+        // same order. PostgREST sorts false before true on a boolean ascending, so
+        // `is_space_primary` DESCENDING is "the Space Circle, then everything else newest first".
+        .order('is_space_primary', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(limit)
       if (error) return []
@@ -459,21 +463,59 @@ export async function listPublicSpaceCircles(
       .order('created_at', { ascending: false })
       .limit(limit)
 
-    const [listed, mine] = await Promise.all([
+    // ── THE SPACE CIRCLE IS EXEMPT FROM AXIS 1 ON ITS OWN SPACE (ADR-1393) ──────────────────────
+    //
+    // A Space Circle is UNLISTED by design: the owner's 2026-09-17 ruling is that it is "public,
+    // but not listed in the directory", so `ensure_space_circle` writes `unlisted = true` and the
+    // query above would drop it from the one surface that must always show it.
+    //
+    // 🔴 THIS IS NOT A HOLE IN AXIS 1. Axis 1 governs DISCOVERY — /circles, the map, search, the
+    // sitemap — which is "show me circles I do not know about". A Space's own Circles tab is not
+    // discovery: the reader is already standing in the Space, looking at what that Space runs, and
+    // the Space Circle is the front door of the very thing they are looking at. Hiding it here
+    // would leave a Space unable to reach its own hub from its own profile, which is the failure
+    // this carve exists to prevent, and it would leave the hub reachable ONLY by a link nobody has
+    // yet sent.
+    //
+    // The carve is as narrow as the fact it turns on: `is_space_primary` is true for at most ONE
+    // row per Space (a unique partial index enforces it), and the read is already scoped to a
+    // single `space_id`, so this can admit exactly one extra circle and never a set. Lifecycle is
+    // NOT waived — a Space Circle its Space has turned off is `inactive`, which is outside
+    // LISTABLE_CIRCLE_STATUS, so an off hub stays off here exactly as it does everywhere else.
+    const spaceCircleQuery = admin
+      .from('circles')
+      .select(COLS)
+      .eq('space_id', spaceId)
+      .eq('is_space_primary', true)
+      .in('status', [...LISTABLE_CIRCLE_STATUS])
+      .limit(1)
+
+    const [listed, spacePrimary, mine] = await Promise.all([
       listedQuery,
+      spaceCircleQuery,
       opts.viewerProfileId ? myCirclesInSpace(admin, spaceId, opts.viewerProfileId, limit) : Promise.resolve([]),
     ])
     if (listed.error) return []
 
     const rows = (listed.data as SpaceCircle[] | null) ?? []
-    if (mine.length === 0) return rows
+    const primary = ((spacePrimary.data as SpaceCircle[] | null) ?? [])[0] ?? null
 
-    // Merge the viewer's own (possibly unlisted) circles in, deduped, newest first, back under the
-    // cap. Sorting here rather than trusting either query's order: the two are separate reads.
+    // Merge the viewer's own (possibly unlisted) circles and the Space Circle in, deduped, newest
+    // first, back under the cap. Sorting here rather than trusting any query's order: they are
+    // separate reads.
     const byId = new Map(rows.map((c) => [c.id, c]))
     for (const c of mine) byId.set(c.id, c)
+    if (primary) byId.set(primary.id, primary)
+
     return [...byId.values()]
-      .sort((a, b) => +new Date(b.created_at ?? 0) - +new Date(a.created_at ?? 0))
+      .sort((a, b) => {
+        // THE SPACE CIRCLE LEADS. It is the Space's hub rather than one room among its rooms, and
+        // a newest-first sort buries it the moment the Space opens a second Circle — which is the
+        // normal case, since every Space Circle was created on the day its Space was.
+        if (a.is_space_primary === true && b.is_space_primary !== true) return -1
+        if (b.is_space_primary === true && a.is_space_primary !== true) return 1
+        return +new Date(b.created_at ?? 0) - +new Date(a.created_at ?? 0)
+      })
       .slice(0, limit)
   } catch {
     return []

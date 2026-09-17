@@ -155,6 +155,31 @@ export function availableAccessModes(
   })
 }
 
+/** THE SPACE CIRCLE'S TWO DOORS (ADR-1393, owner ruling 2026-09-17).
+ *
+ *  A Space Circle is a Space's communications hub, not one room among its rooms, and the owner
+ *  named exactly two models for it: *"Owners can choose to leave it open to anyone who follows the
+ *  space to comment, or make it membership gated."* So its picker offers those two and nothing
+ *  else.
+ *
+ *  The other four are not withheld to be tidy. Each one breaks the thing a Space Circle is for:
+ *  `circle_members` and `invite` make the hub unreachable by the people the Space is trying to
+ *  reach, `space_members` admits the STAFF ladder only (the people who already run the Space), and
+ *  `tier` sells the front door. A Space that wants a paid room can open an ordinary Circle for it,
+ *  which is the type that still offers all six.
+ *
+ *  ⚠️ NARROWING ONLY. This is what the picker OFFERS. The database still enforces axis 2 through
+ *  `trg_circles_access_shape`, and a Space Circle already sitting on another mode keeps it listed
+ *  by the same rule every other current mode is kept (see `accessModeOptions`). */
+export const SPACE_CIRCLE_ACCESS_MODES: readonly CircleAccess[] = ['open', 'space_paid_members']
+
+/** The one sentence the control shows and the save action refuses with when a Space Circle is asked
+ *  for a door it does not have. Written once, next to the list, for the reason stated above
+ *  `CIRCLE_ACCESS_LIMIT_NOTE`: a note and a refusal that disagree teach an operator two different
+ *  rules for the same wall. */
+export const SPACE_CIRCLE_ACCESS_NOTE =
+  'A Space Circle is your Space\'s hub, so it is either open to anyone or limited to your Space members. Open an ordinary circle for a room with a different door.'
+
 /** What a PICKER should list for a Circle that currently sits on `current`.
  *
  *  `availableAccessModes` says what may be SET. That is not the same list: a Circle can already be
@@ -166,9 +191,16 @@ export function availableAccessModes(
 export function accessModeOptions(
   space: { type?: string | null; plan?: string | null } | null,
   current: CircleAccess,
+  opts: { isSpaceCircle?: boolean } = {},
 ): readonly CircleAccess[] {
   const available = availableAccessModes(space)
-  return CIRCLE_ACCESS_MODES.filter((mode) => available.includes(mode) || mode === current)
+  // A Space Circle narrows to the two doors the owner named (ADR-1393). The narrowing composes with
+  // the Space rules above rather than replacing them: a mode has to survive BOTH, so a Space on a
+  // non-selling plan can no more reach `tier` through this arm than through the other.
+  const offered = opts.isSpaceCircle ? SPACE_CIRCLE_ACCESS_MODES : CIRCLE_ACCESS_MODES
+  return CIRCLE_ACCESS_MODES.filter(
+    (mode) => (offered.includes(mode) && available.includes(mode)) || mode === current,
+  )
 }
 
 /** Narrow an arbitrary value (a raw `circles.access`, an untyped admin-client row) to a known

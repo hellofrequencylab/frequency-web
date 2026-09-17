@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { defaultLayoutFor } from './default-layouts'
 import { resolveSlots, type LayoutConfig } from './layout'
-import { moduleIdsForScope } from '@/lib/widgets/modules'
+import { moduleIdsForScope, SPACE_CIRCLE_ONLY_MODULE_IDS } from '@/lib/widgets/modules'
 
 // The coded per-route default layouts. These are what a page renders out of the box, so the rules
 // the owner set for a page's shape are enforced HERE rather than left to a comment: a later edit
@@ -28,14 +28,45 @@ describe('the circle detail default layout (/circles/*)', () => {
   // capped it at three; the owner then named two boxes to keep there (the roster and the events),
   // so the cap is FOUR. It is still a cap, and the point of asserting it is that the rail never
   // creeps back toward seven one well-meaning addition at a time.
-  it('renders AT MOST four modules in the side rail', () => {
-    expect(visible(config, 'side', ids).length).toBeLessThanOrEqual(4)
+  //
+  // ── THE CAP MEASURES THE ALWAYS-ON SET (amended 2026-09-17, ADR-1393) ────────────────────────
+  // `circle-space-info` joined the rail and renders on a SPACE CIRCLE and nothing else: it gates on
+  // `spaceCircleEventScope`, which refuses every ordinary Circle and the root tenant, and returns
+  // null. So all 7 ordinary Circles in production still show exactly the four boxes this cap was
+  // written to hold them to, and only the 21 Space Circles show a fifth.
+  //
+  // The exemption is asserted against SPACE_CIRCLE_ONLY_MODULE_IDS rather than by raising the
+  // number, which is the whole point: raising it to five would let the NEXT always-on block in for
+  // free, and that is precisely the one-addition-at-a-time creep the cap exists to refuse.
+  it('renders AT MOST four ALWAYS-ON modules in the side rail', () => {
+    const alwaysOn = visible(config, 'side', ids).filter(
+      (id) => !SPACE_CIRCLE_ONLY_MODULE_IDS.includes(id),
+    )
+    expect(alwaysOn.length).toBeLessThanOrEqual(4)
+  })
+
+  it('exempts only blocks that are genuinely Space-Circle-only', () => {
+    for (const id of SPACE_CIRCLE_ONLY_MODULE_IDS) expect(ids).toContain(id)
+    expect(SPACE_CIRCLE_ONLY_MODULE_IDS.length).toBeLessThanOrEqual(2)
   })
 
   it('orders the rail time-bound, then people, then action, then evergreen', () => {
     // 1. what is on next (and the way in to RSVP) · 2. who is actually in the room · 3. this week's
     // practice and its log button · 4. how and where we meet.
     expect(visible(config, 'side', ids)).toEqual([
+      'circle-events',
+      'circle-space-info',
+      'circle-members',
+      'circle-practice',
+      'circle-meeting',
+    ])
+  })
+
+  it('reads exactly as it always did on an ordinary Circle', () => {
+    const alwaysOn = visible(config, 'side', ids).filter(
+      (id) => !SPACE_CIRCLE_ONLY_MODULE_IDS.includes(id),
+    )
+    expect(alwaysOn).toEqual([
       'circle-events',
       'circle-members',
       'circle-practice',

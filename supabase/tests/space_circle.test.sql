@@ -1,9 +1,9 @@
 -- THE SPACE CIRCLE (ADR-1391): every real Space always has one primary Circle, hosted by the Space,
 -- up to 300 members. It can be turned off (status inactive) but never deleted or moved while its Space
--- exists, and a Space created by any path gets one.
+-- exists, and a Space created by any path gets one. Its door is OPEN and it is UNLISTED (ADR-1393).
 
 begin;
-select plan(11);
+select plan(12);
 
 -- ── Fixture ──────────────────────────────────────────────────────────────────────────────────
 insert into auth.users (id, email) values
@@ -38,10 +38,20 @@ select is(
   'a new Space''s Circle starts on'
 );
 
+-- THE DOOR (ADR-1393, amending ADR-1391's default). "Public, but not listed in the directory":
+-- anyone who reaches it may join (access 'open'), and it appears in no discovery surface
+-- (unlisted). The pair is what `canSeeCircle` already calls an unlisted-open Circle, and both
+-- halves are written explicitly by ensure_space_circle rather than left to a column default.
 select is(
   (select access from public.circles where space_id = '00000000-0000-4000-c391-000000000001' and is_space_primary),
-  'space_paid_members',
-  'joining defaults to Space members only'
+  'open',
+  'a new Space Circle is open to join'
+);
+
+select is(
+  (select unlisted from public.circles where space_id = '00000000-0000-4000-c391-000000000001' and is_space_primary),
+  true,
+  'a new Space Circle stays out of the directory'
 );
 
 select ok(

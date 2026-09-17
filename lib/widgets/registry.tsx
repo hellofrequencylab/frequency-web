@@ -111,6 +111,7 @@ import { CirclePracticeBlock } from '@/components/widgets/circles/circle-practic
 import { CircleEvents } from '@/components/widgets/circles/circle-events'
 import { CircleMapBlock } from '@/components/widgets/circles/circle-map'
 import { CircleMeeting } from '@/components/widgets/circles/circle-meeting'
+import { CircleSpaceInfo } from '@/components/widgets/circles/circle-space-info'
 import { CircleChallengesBlock } from '@/components/widgets/circles/circle-challenges'
 import { CircleText } from '@/components/widgets/circles/circle-text'
 import { EventDescription } from '@/components/widgets/events/event-description'
@@ -298,6 +299,7 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'circle-events': CircleEvents,
   'circle-map': CircleMapBlock,
   'circle-meeting': CircleMeeting,
+  'circle-space-info': CircleSpaceInfo,
   'circle-challenges': CircleChallengesBlock,
   'circle-text': CircleText,
   // Event detail (/events/<slug>) — the FULL arrangeable interior, every section its own movable

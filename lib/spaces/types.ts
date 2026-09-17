@@ -88,6 +88,9 @@ export interface Space {
    *  or mobile business), and null is the correct value there rather than an invented town: the schema
    *  omits the address block entirely instead of claiming a locality. Read untyped (ADR-246). */
   city?: string | null
+  /** The Space's own description (spaces.about), as the public profile renders it. Read untyped
+   *  (ADR-246). Its second consumer is the Space Circle's info board (ADR-1393). */
+  about?: string | null
   /** The capability map the Space's plan grants ({ "crm": true, … }). Carried loosely as `unknown`
    *  (ADR-246): the entitlement readers (lib/spaces/entitlements.ts) normalize the raw jsonb, so the
    *  Space type does not pin its shape. PROJECTING this fixes the latent CRM gate (it was never read
