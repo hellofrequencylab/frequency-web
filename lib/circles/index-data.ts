@@ -13,7 +13,7 @@ import type { StarterSeed } from '@/lib/circles/starter-projection'
 import type { CircleCardData } from '@/components/circles/circle-card'
 import type { CircleBase } from '@/lib/types/circle'
 import type { PillarSlug } from '@/lib/pillars'
-import { isListedCircle } from '@/lib/circles/visibility'
+import { isListedCircle, LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
 
 // Coded defaults for the operator-editable content (ADR-180) — shared by the page
 // header and the SEO metadata (generateMetadata).
@@ -205,9 +205,11 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
              nexus:nexuses!nexus_id ( id, name, slug, outpost:outposts!outpost_id ( name ) )
            )`,
         )
-        // Archived circles are closed; draft circles are private to their managers (owner-only until
-        // published) — neither belongs in the public discovery set, the map, or the browse rails.
-        .not('status', 'in', '("archived","draft")')
+        // Only a LIVE circle is discoverable: `forming` or `active` (LISTABLE_CIRCLE_STATUS, the one list
+        // every public reader shares). This excluded only archived and draft until 2026-09-16, so an
+        // `inactive` circle (a Space Circle its Space turned off, ADR-1391) was listed as Open. A
+        // member's OWN turned-off circle is not shown here either: off means off.
+        .in('status', [...LISTABLE_CIRCLE_STATUS])
         .order('name', { ascending: true })
         .limit(CIRCLES_FETCH_LIMIT)
       // Demo content: hidden when global demo_mode is off OR the member turned beta content off.
