@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { FUNNELS } from '@/lib/funnels/definitions'
+import {
+  SIGN_IN_HINT_COOKIE,
+  SIGN_IN_HINT_MAX_AGE,
+  encodeSignInHint,
+  lastSignInMethod,
+  maskEmail,
+} from '@/lib/auth/sign-in-hint'
 import { createClient } from '@/lib/supabase/server'
 import { track } from '@/lib/analytics/track'
 import { claimGuestSeatsOnSignIn, type SessionClient } from '@/lib/events/guest-seat-claim'
@@ -76,10 +83,20 @@ export async function GET(request: Request) {
       // user at sign-in (app/sign-in/actions.ts), which is the one carrier that survives the jump
       // between browsers, so it can be read back here. Null means "use the normal destination".
       let funnelLanding: string | null = null
+      // THE LAST-SIGN-IN HINT (ADR-1392): how this person came in, with a masked address, so the
+      // sign-in page can point a returning member at the same door. Null when it cannot be read.
+      let signInHint: string | null = null
 
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
+          const masked = maskEmail(user.email)
+          if (masked) {
+            signInHint = encodeSignInHint({
+              method: lastSignInMethod(user.identities, user.app_metadata?.provider as string | undefined),
+              masked,
+            })
+          }
           const { data: profile } = await supabase
             .from('profiles')
             .select('id')
@@ -168,6 +185,15 @@ export async function GET(request: Request) {
 
       const res = NextResponse.redirect(`${origin}${destination}`)
       res.cookies.delete(POST_LOGIN_COOKIE)
+      if (signInHint) {
+        res.cookies.set(SIGN_IN_HINT_COOKIE, signInHint, {
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: origin.startsWith('https://'),
+          path: '/',
+          maxAge: SIGN_IN_HINT_MAX_AGE,
+        })
+      }
       return res
     }
   }

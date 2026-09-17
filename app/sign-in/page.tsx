@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
+import { decodeSignInHint, signInHintSentence, SIGN_IN_HINT_COOKIE, NEW_ACCOUNT_EMAIL_COOKIE } from '@/lib/auth/sign-in-hint'
 import { PhotoHero } from '@/components/marketing/marketing-ui'
 import { createClient } from '@/lib/supabase/server'
 import { BETA_CTA_HREF } from '@/lib/site'
@@ -18,9 +20,9 @@ export const metadata: Metadata = {
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string; email?: string }>
+  searchParams: Promise<{ error?: string; next?: string; email?: string; step?: string }>
 }) {
-  const { error, next, email } = await searchParams
+  const { error, next, email, step } = await searchParams
 
   // ALREADY SIGNED IN → straight into the app. The header no longer offers a member this page
   // (the auth cluster follows the viewer now), but a bookmark, a stale tab, an old email and the
@@ -56,7 +58,18 @@ export default async function SignInPage({
   // It is a DEFAULT VALUE on an editable field, never a hidden input: whatever arrives here is
   // just text off a query string, and the person typing must stay able to correct or replace it.
   // Shape-checked before it renders so the field cannot be stuffed with arbitrary content.
-  const emailValue = email && email.length <= 254 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) ? email : ''
+  const isEmail = (v: string | undefined | null): v is string =>
+    !!v && v.length <= 254 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)
+  const emailValue = isEmail(email) ? email : ''
+
+  // THE TWO SIGN-IN AIDS (ADR-1392). The HINT says how this device signed in last time, masked, so a
+  // returning member takes the same door. The NEW-ACCOUNT step appears when the address typed has no
+  // account: we ask before creating one, because a silent new account is how members ended up with two.
+  // The address rides an httpOnly cookie from the action, never the URL.
+  const jar = await cookies()
+  const hint = decodeSignInHint(jar.get(SIGN_IN_HINT_COOKIE)?.value)
+  const pendingNewEmail = jar.get(NEW_ACCOUNT_EMAIL_COOKIE)?.value
+  const newAccountEmail = step === 'new-account' && isEmail(pendingNewEmail) ? pendingNewEmail : null
 
   return (
     <PhotoHero
@@ -78,9 +91,43 @@ export default async function SignInPage({
           </div>
         )}
 
+        {newAccountEmail ? (
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-lead font-bold text-text">No account for that email yet</h2>
+              <p className="mt-1 text-body-sm text-muted">
+                We could not find a Frequency account for <span className="font-semibold text-text">{newAccountEmail}</span>.
+              </p>
+            </div>
+            <p className="rounded-control bg-surface-elevated px-3 py-2 text-body-sm text-text">
+              Already a member? You may have joined with Google or a different email. Go back and use that instead,
+              so you keep one account.
+            </p>
+            <form action={signInWithMagicLink} className="space-y-2">
+              <input type="hidden" name="email" value={newAccountEmail} />
+              <input type="hidden" name="mode" value="create" />
+              {nextValue && <input type="hidden" name="next" value={nextValue} />}
+              <SignInSubmit className="w-full py-3 text-body-sm lift-1">Create a new account</SignInSubmit>
+            </form>
+            <Link
+              href={nextValue ? `/sign-in?next=${encodeURIComponent(nextValue)}` : '/sign-in'}
+              className="block text-center text-body-sm font-semibold text-primary-strong hover:underline"
+            >
+              Go back and sign in another way
+            </Link>
+          </div>
+        ) : (
+        <>
+        {hint && (
+          <p className="mb-4 rounded-control bg-surface-elevated px-3 py-2 text-body-sm text-text">
+            {signInHintSentence(hint)}
+          </p>
+        )}
+
         {/* Magic link */}
         <form action={signInWithMagicLink} className="space-y-3">
           {nextValue && <input type="hidden" name="next" value={nextValue} />}
+          <input type="hidden" name="mode" value="signin" />
           <div>
             <label htmlFor="email" className="block text-body-sm font-medium text-text">
               Email address
@@ -128,11 +175,16 @@ export default async function SignInPage({
             says "The door is open". So the form was talking a new member out of the fastest way in.
             Say the true thing, and keep the tour as the option rather than the instruction. */}
         <p className="mt-5 text-center text-meta text-subtle">
-          New here? That same email signs you up.{' '}
+          Already a member? Use the same email or Google account you joined with.
+        </p>
+        <p className="mt-1 text-center text-meta text-subtle">
+          New here? We will check before making you an account.{' '}
           <Link href={BETA_CTA_HREF} className="font-semibold text-primary-strong hover:underline">
             See what you&rsquo;re joining
           </Link>
         </p>
+        </>
+        )}
       </div>
     </PhotoHero>
   )

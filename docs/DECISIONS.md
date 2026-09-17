@@ -44677,3 +44677,37 @@ the named host (the ask).
 **Open.** Which further capabilities a Space Circle should carry beyond the 300 cap and Space-team
 management (for example, listing first on the Space's Circles tab, or automatic membership for new
 Space members) is for the owner to name.
+
+## ADR-1392: Sign-in points a member back to the door they used, and asks before making a new account (2026-09-16)
+
+**Status:** Accepted · **Amends** [ADR-510](DECISIONS.md) (passwordless sign-up) · Backlog `LIVE-383` ·
+corroborated by `app/sign-in/page.tsx`, `app/sign-in/actions.ts`, `app/auth/callback/route.ts`,
+`lib/auth/sign-in-hint.ts`
+
+**Context.** A Space owner ended up with three accounts: her real one (email plus Google), a second made by
+signing in with Google on a different Gmail, and a third made by a mistyped address in the email form that
+was never even opened. Sign-in is two passwordless doors (ADR-071, ADR-082, ADR-510), and any address that
+has never been used silently becomes a new account; the page even said "That same email signs you up".
+Nothing told a returning member which door or address they had used before. The owner asked for the three
+smallest fixes: clearer words, a remembered method, and asking before creating an account.
+
+**Decision.**
+
+1. **Clearer words.** The sign-in card says "Already a member? Use the same email or Google account you
+   joined with." and no longer promises that any email signs you up.
+2. **A remembered door, masked.** `/auth/callback` sets `fq_last_sign_in` (httpOnly, a year): the method
+   of the most recently used identity and a masked address (`m•••@gmail.com`). The page shows "Last time
+   you signed in with Google (m•••@gmail.com)." The full address is never stored; the value is re-validated
+   on read against a strict shape, because a cookie is user-controlled and this text renders on the page.
+3. **Ask before creating.** The `/sign-in` form posts `mode=signin`, which sends the magic link with
+   `shouldCreateUser: false`. An address with no account comes back from Supabase as `otp_disabled`
+   (probed against the live project), and the page shows a "No account for that email yet" step that
+   points a member back to Google or their real address, with an explicit **Create a new account** button.
+   The address travels in a 15-minute httpOnly cookie, never the URL. The join induction and feature funnels
+   are sign-ups and keep creating in one step.
+
+**Trade-off accepted.** Step 3 tells someone whether an address has an account. The existing per-IP and
+per-mailbox throttles bound it, and a silent duplicate account costs a real member more than the
+enumeration costs.
+
+**Not done.** Passwords, passkeys and linking a second Google identity to one account stay out of scope.

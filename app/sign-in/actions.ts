@@ -6,6 +6,10 @@ import { createClient } from '@/lib/supabase/server'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { FUNNELS } from '@/lib/funnels/definitions'
 import type { SignInErrorCode } from './errors'
+// 🔴 A 'use server' module may export ONLY async functions: exporting this constant from here failed the
+// production build ("The module has no exports at all"), which tsc and vitest cannot see. It lives in
+// the pure helper instead.
+import { NEW_ACCOUNT_EMAIL_COOKIE } from '@/lib/auth/sign-in-hint'
 
 // Shared passwordless sign-in actions, used by /sign-in and by the beta induction's
 // cinematic welcome (app/join/(induction)/induction.tsx sign-in beat).
@@ -108,13 +112,31 @@ export async function signInWithMagicLink(formData: FormData) {
   // `emailRedirectTo` stays the bare, known-good /auth/callback — see the note at the top of this
   // file. The funnel rides in user metadata instead, which costs the allowlist nothing.
   const seq = safeSeq(formData.get('seq'))
+  // ASK BEFORE CREATING (ADR-1392). The /sign-in form posts `mode=signin`: an address with no account
+  // is NOT silently made into a new one, because that is how a member who joined with Google, or who
+  // mistyped their address, ended up with two and three accounts. They are asked first. Every other
+  // caller (the join induction, the feature funnels) is a signup and keeps creating in one step, and
+  // so does the confirm step itself, which posts `mode=create`.
+  const askFirst = formData.get('mode') === 'signin'
+  if (formData.get('mode') === 'create') (await cookies()).delete(NEW_ACCOUNT_EMAIL_COOKIE)
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
       emailRedirectTo: await getCallbackUrl(),
+      shouldCreateUser: !askFirst,
       ...(seq ? { data: { funnel_seq: seq } } : {}),
     },
   })
+
+  if (error && askFirst && isNoAccountError(error)) {
+    ;(await cookies()).set(NEW_ACCOUNT_EMAIL_COOKIE, (email ?? '').trim().slice(0, 254), {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/sign-in',
+      maxAge: 60 * 15,
+    })
+    redirect('/sign-in?step=new-account')
+  }
 
   if (error) {
     // Supabase's own wording never reaches the page — see ./errors.ts.
@@ -123,6 +145,12 @@ export async function signInWithMagicLink(formData: FormData) {
   }
 
   redirect('/sign-in/confirm')
+}
+
+/** Supabase's answer when `shouldCreateUser` is false and the address has no account: HTTP 422,
+ *  `otp_disabled`, "Signups not allowed for otp" (probed against the live project 2026-09-16). */
+function isNoAccountError(error: { code?: string; message?: string }): boolean {
+  return error.code === 'otp_disabled' || /signups not allowed/i.test(error.message ?? '')
 }
 
 export async function signInWithGoogle(formData: FormData) {
