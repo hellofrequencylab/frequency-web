@@ -14,7 +14,7 @@
 // render each module's Component. The catalog + filter are the durable seam.
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, Building2, Network, CalendarDays, Hash, Sparkles, Users, MapPin, Trophy, BarChart3, Archive, Palette, UserCircle, Bell, Radar, ShieldCheck, CreditCard, LayoutGrid, MessageCircle, Pencil, Wand2, ArrowRightLeft } from 'lucide-react'
+import { Settings, Building2, Network, CalendarDays, Hash, Sparkles, Users, MapPin, Trophy, BarChart3, Archive, Palette, UserCircle, Bell, Radar, ShieldCheck, CreditCard, LayoutGrid, MessageCircle, Pencil, Wand2, ArrowRightLeft, Tag } from 'lucide-react'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 /** The Scope union's discriminant — where a module can attach. */
@@ -730,6 +730,26 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   // the Journey to travel to another Space or a Hook cohort. It stays INLINE (a mutating client action with
   // no navigable route, so it could never be a link row), but ADR-846 moves it off the lone `reach` slot
   // into the Settings box, so a Journey resolves to the seven-box core shape with no eighth header.
+  // Sell this Journey (ADR-1397). The ONLY caller of setJourneyPriceAction, so without this row the
+  // selling path is unreachable. INLINE (a mutating client control with no route of its own), in the
+  // Settings box beside Export, because a price is a setting of the Journey and not a place to go.
+  // Gated journey.editSettings like every other journey row: the module RENDERS for a free-Space
+  // editor and shows them the upsell line, because hiding it would answer "why can't I sell this?"
+  // with silence. checkJourneySell is the authority on every write.
+  {
+    id: 'journey.sell',
+    label: 'Sell this Journey',
+    desc: 'Set a price so people pay to enrol, and choose whether it shows in the main Market.',
+    Icon: Tag,
+    scopes: ['journey'],
+    requiredCapability: 'journey.editSettings',
+    slot: 'basics',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 25,
+    tier: 'extra',
+    priority: 12,
+  },
   {
     id: 'journey.export',
     label: 'Export',

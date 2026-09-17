@@ -35,6 +35,7 @@ const JourneySettingsModule = dynamic(() => import('./journey-settings-module').
 const JourneyBuilderModule = dynamic(() => import('./journey-builder-module').then((m) => m.JourneyBuilderModule))
 const JourneyExportModule = dynamic(() => import('./journey-export-module').then((m) => m.JourneyExportModule))
 const JourneyDangerModule = dynamic(() => import('./journey-danger-module').then((m) => m.JourneyDangerModule))
+const JourneySellModule = dynamic(() => import('./journey-sell-module').then((m) => m.JourneySellModule))
 const SpaceBasicsModule = dynamic(() => import('./space-basics-module').then((m) => m.SpaceBasicsModule))
 const SpaceBrandingModule = dynamic(() => import('./space-branding-module').then((m) => m.SpaceBrandingModule))
 const SpaceSettingsModule = dynamic(() => import('./space-settings-module').then((m) => m.SpaceSettingsModule))
@@ -174,6 +175,7 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'journey.settings': JourneySettingsModule,
   'journey.builder': JourneyBuilderModule,
   'journey.export': JourneyExportModule,
+  'journey.sell': JourneySellModule,
   'journey.danger': JourneyDangerModule,
   // Space inline config surfaces (inline-first rail, ADR-514). These are the space modules whose
   // `render` is 'inline' — Profile and Settings / Page — each a thin wrapper that self-fetches its

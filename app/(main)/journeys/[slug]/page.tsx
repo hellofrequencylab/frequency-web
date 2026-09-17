@@ -15,6 +15,7 @@ import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons
 import { adoptPlanAction, forkPlanAction } from '../actions'
 import { enabledWidgets } from '@/lib/journey-page-config'
 import { resolveIdentityHero } from '@/lib/layout/detail-hero'
+import { getJourneyOffer, seatLine, isSoldOut } from '@/lib/journeys/paid'
 import {
   StoryBlock,
   OutcomesBlock,
@@ -146,6 +147,22 @@ export default async function JourneyPlanPage({
   const journeyCaps = await getJourneyCapabilities(plan.id)
   const canManageJourney = journeyCaps.has('journey.editSettings')
 
+  // The sellable face of this Journey, when it has one (ADR-1397). Free Journeys read null and the
+  // enrol control is exactly what it has always been.
+  const rawOffer = await getJourneyOffer(plan.id)
+  const offer = rawOffer
+    ? {
+        productId: rawOffer.productId,
+        priceLabel: new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: (rawOffer.currency || 'usd').toUpperCase(),
+          maximumFractionDigits: rawOffer.priceCents % 100 === 0 ? 0 : 2,
+        }).format(rawOffer.priceCents / 100),
+        seatLine: seatLine(rawOffer),
+        soldOut: isSoldOut(rawOffer),
+      }
+    : null
+
   const enrollProps = {
     planId: plan.id,
     slug: plan.slug,
@@ -154,6 +171,7 @@ export default async function JourneyPlanPage({
     isAuthor,
     enrollAction: adoptPlanAction,
     forkAction: forkPlanAction,
+    offer,
   }
 
   // The standardized `header` element (ADR-793), identity layout: the cover + Journey icon + title +

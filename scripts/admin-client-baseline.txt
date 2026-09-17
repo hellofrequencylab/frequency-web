@@ -187,6 +187,22 @@
 # Converging this onto the session client is not an effort question, it would mean giving pricing
 # rules and a redemption ledger client-readable policies. The write re-gates canEditProfile plus the
 # per-Space memberships function gate before it touches a row.
+# Added 2026-09-17 (ADR-1397, selling a Journey). Five files, and the reason is one table:
+#                                     CALLER through getSpaceCapabilities before it answers
+#                                     all: the caller is Stripe, and it must write an enrolment
+#                                     as lib/journeys/publish-gate.ts beside it, and it re-gates the
+#                                     checkJourneySell on every action before it touches anything
+#   anon + authenticated by 20270218000000). It is the seat pool AND the access record, so every
+#   app/(main)/journeys/[slug]/sell-actions.ts  archives + activates the product row; gated by
+#   be asked with the service role. A session client cannot count a table it cannot see, and
+#   converging these would mean giving the enrolment roster client-readable policies, which is the
+#   journey_enrollments is RLS-ON with ZERO policies (migration 20260621000000; grants revoked from
+#   lib/commerce/journey-fulfilment.ts  runs from the Stripe webhook, where there is NO session at
+#   lib/journeys/free-enrol-gate.ts   the same count at the free door, plus the price lookup
+#   lib/journeys/paid.ts              counts live enrolments against enroll_cap for the seat line
+#   lib/journeys/sell-gate.ts         reads journey_plans to resolve the owning Space; same posture
+#   opposite of what selling access needs.
+#   question this feature asks -- how many seats are left, are you in, put this buyer in -- has to
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -338,6 +354,7 @@ app/(main)/journeys/[slug]/edit/actions.ts
 app/(main)/journeys/[slug]/guide/actions.ts
 app/(main)/journeys/[slug]/launch/actions.ts
 app/(main)/journeys/[slug]/launch/page.tsx
+app/(main)/journeys/[slug]/sell-actions.ts
 app/(main)/journeys/actions.ts
 app/(main)/journeys/create-actions.ts
 app/(main)/journeys/run-actions.ts
@@ -593,6 +610,7 @@ lib/circles/templates-data.ts
 lib/circles/transfer.ts
 lib/commerce/checkout.ts
 lib/commerce/disputes.ts
+lib/commerce/journey-fulfilment.ts
 lib/commerce/order-receipt.ts
 lib/commerce/orders.ts
 lib/commerce/products.ts
@@ -738,13 +756,16 @@ lib/journey-plans.ts
 lib/journeys/compose.ts
 lib/journeys/current-leg.ts
 lib/journeys/drip-sends.ts
+lib/journeys/free-enrol-gate.ts
 lib/journeys/grants.ts
 lib/journeys/launch-access.ts
 lib/journeys/learn.ts
+lib/journeys/paid.ts
 lib/journeys/progress.ts
 lib/journeys/publish-gate.ts
 lib/journeys/run-gate.ts
 lib/journeys/runs.ts
+lib/journeys/sell-gate.ts
 lib/keystone/store.ts
 lib/layout/chrome-sources.ts
 lib/layout/content-cascade.ts
@@ -870,6 +891,7 @@ lib/spaces/ai-usage.ts
 lib/spaces/analytics.ts
 lib/spaces/audiences.ts
 lib/spaces/automation.ts
+lib/spaces/benefits-store.ts
 lib/spaces/booking-notify.ts
 lib/spaces/booking.ts
 lib/spaces/broadcast-audience.ts
@@ -899,7 +921,6 @@ lib/spaces/invites.ts
 lib/spaces/managed.ts
 lib/spaces/member-segment-audience.ts
 lib/spaces/membership.ts
-lib/spaces/benefits-store.ts
 lib/spaces/memberships.ts
 lib/spaces/nonprofit-verification.ts
 lib/spaces/operated.ts

@@ -45,7 +45,7 @@ function resolveImage(ref: string): string {
 }
 
 const PRODUCT_COLS =
-  'id, owner_kind, owner_profile_id, owner_space_id, entity_id, product_kind, vertical, title, description, images, price_cents, currency, stock, category, status, booking_space_id, condition, market_published, tags, metadata, is_demo, created_at, updated_at'
+  'id, owner_kind, owner_profile_id, owner_space_id, entity_id, product_kind, vertical, title, description, images, price_cents, currency, stock, category, status, booking_space_id, journey_plan_id, condition, market_published, tags, metadata, is_demo, created_at, updated_at'
 
 function rowToProduct(r: Record<string, unknown>): CommerceProduct {
   return {
@@ -66,6 +66,7 @@ function rowToProduct(r: Record<string, unknown>): CommerceProduct {
     category: (r.category as string) ?? null,
     status: r.status as ProductStatus,
     bookingSpaceId: (r.booking_space_id as string) ?? null,
+    journeyPlanId: (r.journey_plan_id as string) ?? null,
     condition: (r.condition as CommerceProduct['condition']) ?? null,
     marketPublished: !!r.market_published,
     tags: (r.tags as string[]) ?? [],
@@ -131,6 +132,9 @@ export async function createProduct(input: ProductInput): Promise<CommerceProduc
       stock: input.stock ?? null,
       category: input.category ?? null,
       booking_space_id: input.bookingSpaceId ?? null,
+      // The Journey this product sells (ADR-1397). The DB CHECK refuses a 'journey' row with no
+      // plan, and a non-journey row that names one, so a half-written product cannot reach the till.
+      journey_plan_id: input.journeyPlanId ?? null,
       condition: input.condition ?? null,
       market_published: input.marketPublished ?? false,
       // Discovery tags (Etsy-Grade Phase 1). `tags` is not in the generated DB types; db() is the

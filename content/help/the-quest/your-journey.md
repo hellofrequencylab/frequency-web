@@ -17,9 +17,13 @@ Journeys, and they run in sequence, about four weeks each.
 ## Start one
 
 Open **My Quest** and pick the Journey that's open this stretch of the season. You can
-walk it on your own or with your Circle. Starting is always free. Each Journey is live
-for about four weeks, and the practices are short, real-world things you can actually fit
-into a day.
+walk it on your own or with your Circle. Every Journey in the Quest is free to start.
+Each one is live for about four weeks, and the practices are short, real-world things you
+can actually fit into a day.
+
+Outside the Quest, a Space can run a Journey of its own as a paid program. Those say the
+price on the Journey's page before you start, so you will always know which kind you are
+looking at.
 
 ## How you finish
 
