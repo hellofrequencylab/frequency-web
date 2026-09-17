@@ -65,6 +65,7 @@ export const INLINE_MODULE_IDS: ReadonlySet<string> = new Set([
   'journey.settings',
   'journey.builder',
   'journey.export',
+  'journey.sell',
   'journey.danger',
   'space.basics',
   'space.layout',

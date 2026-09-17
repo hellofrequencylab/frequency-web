@@ -3,6 +3,9 @@
 import { getPlan, getVeraReview, normalizeJourneyMeeting } from '@/lib/journey-plans'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import type { PlanStatus, StoredVeraReview } from '@/lib/journey-plans'
+import { getMyProfileId } from '@/lib/auth'
+import { checkJourneySell } from '@/lib/journeys/sell-gate'
+import { getJourneyOffer } from '@/lib/journeys/paid'
 
 // The Journey admin rail's read seam (ADR-515 Phase 6). One getter feeds every journey rail module:
 // Settings (mounted inline), the Builder/Layout affordance (links out), Export, and the Danger zone.
@@ -76,5 +79,56 @@ export async function getJourneyRailData(slug: string): Promise<JourneyRailData 
     coverFocus: plan.cover_focus ?? null,
     status: plan.status,
     review,
+  }
+}
+
+// ── The sell module's read seam (ADR-1397) ───────────────────────────────────────────────────────
+//
+// Separate from getJourneyRailData on purpose: that one answers "may you EDIT this Journey", and
+// selling asks a different question with a different answer. A Space editor on a FREE Space passes
+// journey.editSettings and must still be told, plainly, that pricing needs a paid Space. Folding the
+// two would have made `canSell` look like a flavour of `canEdit`, which is exactly the conflation
+// ADR-838 exists to prevent.
+
+export interface JourneySellData {
+  planId: string
+  slug: string
+  title: string
+  /** May this viewer set a price? False carries `reason`. */
+  canSell: boolean
+  /** Why not, in plain member-facing copy. Null when they can. */
+  reason: string | null
+  /** The live offer, or null when the Journey is free. */
+  offer: { productId: string; priceCents: number; enrolled: number; enrollCap: number | null } | null
+}
+
+export async function getJourneySellData(slug: string): Promise<JourneySellData | null> {
+  const loaded = await getPlan(slug)
+  if (!loaded) return null
+  const { plan } = loaded
+
+  // The rail never renders for someone who cannot edit the Journey at all.
+  const caps = await getJourneyCapabilities(plan.id)
+  if (!caps.has('journey.editSettings')) return null
+
+  const [gate, offer] = await Promise.all([
+    checkJourneySell(plan.id, await getMyProfileId()),
+    getJourneyOffer(plan.id),
+  ])
+
+  return {
+    planId: plan.id,
+    slug: plan.slug,
+    title: plan.title,
+    canSell: gate.ok,
+    reason: gate.ok ? null : gate.error,
+    offer: offer
+      ? {
+          productId: offer.productId,
+          priceCents: offer.priceCents,
+          enrolled: offer.enrolled,
+          enrollCap: offer.enrollCap,
+        }
+      : null,
   }
 }

@@ -45056,7 +45056,14 @@ on Fire were decorative. A price on a room with no door is a suggestion.
    already moved. `journey_enrollments.order_id` is the provenance that lets a refund find what it
    paid for; without it a refund returns the money and leaves the access standing. A partial refund
    revokes nothing (it is a price adjustment), and a FINISHED Journey is never un-finished.
-8. **Scarcity is derived, never authored.** `seatsRemaining` counts real enrolments against the
+8. **One control, and it is the only caller.** `journey.sell` is a row in `ADMIN_MODULES` (a data
+   edit to a registered catalog, never a rail edit, ADR-553) rendering
+   `components/admin/modules/journey-sell-module.tsx` inline in the Journey's Settings box. It is the
+   ONLY caller of `setJourneyPriceAction`: without it the action was unreachable and the selling path
+   was theory. ⚠️ It **renders for a free-Space editor**, who passes `journey.editSettings` and must
+   still be told plainly that pricing needs a paid Space. Hiding the module would answer *"why can't
+   I sell this?"* with silence, which is the worse failure.
+9. **Scarcity is derived, never authored.** `seatsRemaining` counts real enrolments against the
    author's real cap, and `seatLine` stays SILENT above five seats left, because "2 of 12 taken"
    early in a window reads as nobody wants this. No surface reads a number a host typed. The FTC's
    2022 dark-patterns report names false urgency specifically, and a platform hosting other people's

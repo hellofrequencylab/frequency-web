@@ -106,6 +106,7 @@ describe('admin module registry', () => {
       'journey.guided',
       'journey.settings',
       'journey.builder',
+      'journey.sell',
       'journey.export',
       'journey.danger',
     ])
@@ -320,6 +321,7 @@ describe('admin module registry', () => {
       'journey.guided',
       'journey.settings',
       'journey.builder',
+      'journey.sell',
       'journey.export',
       'journey.danger',
     ])
