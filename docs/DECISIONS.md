@@ -44855,6 +44855,93 @@ composer). Putting Leave in the admin rail (invisible to the only viewer who nee
 collapse on the PARSED output rather than the source, which would make adding `**` to a word change
 whether the "Read more" control appears.
 
+## ADR-1395: A Space's members are auto-enrolled into its Space Circle, and leaving it sticks (2026-09-17)
+
+**Status:** Accepted · **Closes the open question in** [ADR-1393](DECISIONS.md) · **Sibling of**
+[ADR-859](DECISIONS.md) (tier-granted circle access, whose provenance pattern this deliberately does
+NOT need) · Backlog `LIVE-386` · corroborated by
+`supabase/migrations/20270345005800_space_circle_auto_enrol.sql`,
+`supabase/tests/space_circle_auto_enrol.sql`, `lib/circles/draft.ts`
+
+**Context.** ADR-1393 left one thing open in as many words: *"Whether a Space Circle should auto-enrol
+new Space members is still for the owner to name."* Owner, 2026-09-17: *"Auto enroll space members
+into the main circle."*
+
+**Which "members".** 🔴 Three tables carry near-identical names and are not the same people;
+`lib/circles/space-entry.ts` and `NAMING.md` both warn about the first two in block comments,
+because the product already shipped one bug from the confusion (ADR-1021's copy promised the payers
+while the mode admitted the staff).
+
+| Table | Who | Enrolled? |
+| :-- | :-- | :-- |
+| `space_memberships` | the Space's MEMBERS, keyed on `member_profile_id` | ✅ yes |
+| `space_members` | the STAFF ladder (viewer…admin) who RUN the Space | ⏳ no, they already reach it |
+| `space_follows` | FOLLOWERS, keyed on `follower_profile_id` | ⏳ no, see below |
+
+`space_memberships` is what the owner's word means: `NAMING.md` defines the `space_paid_members` door
+as "the Space's members in the operator's own language, the people who bought a membership". Staff
+are excluded because they are already there — the Space's owner is its Circle's `host_id` from
+`ensure_space_circle`, and whoever may edit the Space already runs its Circle (ADR-1391 §6).
+Followers are excluded because a follow is an opt-in to updates, not to a room: auto-joining someone
+to a group feed because they tapped Follow reads as spam, and the door has been `open` since
+ADR-1393 so a follower joins in one click whenever they like. Either set joins by widening ONE
+select in `sync_space_circle_roster`.
+
+**Decision.**
+
+1. **A decline memory, `space_circle_optouts`, and it is the feature's precondition rather than a
+   refinement of it.** 🔴 `leaveCircle` DELETES the membership row and leaves no trace, so an
+   enrolment sweep with no memory would re-add everyone who had ever left, and the Leave control
+   ADR-1394 had just moved to the Circle's tab row would become a button that does nothing until the
+   next sweep. A member who cannot leave a room they were put in without asking is the worst outcome
+   this change could have.
+2. **The memory is maintained by a trigger on `memberships`, not by the app**, for the reason
+   ADR-1391 put `ensure_space_circle` on a trigger: so no call site has to remember, including paths
+   nobody has written yet. A DELETE records the decline; an INSERT clears it, so a deliberate rejoin
+   un-declines. **A host REMOVING somebody records one too** — deliberately, because otherwise the
+   next sweep would re-add the person the host just removed and removal would be as broken as
+   leaving. Ordinary Circles are skipped: they have no auto-enrolment to defend against, so
+   recording declines for one would collect rows nothing ever reads.
+3. **Enrolment fires on the transition INTO `active`** (`after insert or update of status on
+   space_memberships`), reading `member_profile_id` — not `profile_id`, the mix-up the database
+   refused ADR-1021's first migration for.
+4. **A full circle must never fail its caller.** `enrol_in_space_circle` runs inside the transaction
+   creating a paid Space membership, and `enforce_circle_member_cap` raises `circle_full` at 300.
+   Letting that propagate would roll back somebody's purchase because a room was full. It is
+   swallowed, as ADR-859 states for its own inserts, along with the benign `23505` of two concurrent
+   sweeps.
+5. **An `inactive` hub still enrols.** ADR-1391 keeps members on a Circle its Space turned off, so a
+   Space that switches its hub on later finds a populated room rather than an empty one. An
+   `archived` one does not: its Space was wound down.
+6. **`sync_space_circle_roster` is the catch-up**, run by the migration's backfill and by
+   `setSpaceCircleOn` when an operator switches the hub on. A failed sweep **logs and does not fail
+   the switch**: the operator asked for the hub to be on, it is on, and reporting failure would tell
+   them the opposite of what the database says. The sweep is idempotent, so the next switch-on
+   retries it for free.
+
+**No revoke: enrolment is one-way,** which is why this needs no provenance column at all — the
+pointed contrast with `memberships.granted_by_tier_id` (ADR-859), which exists precisely so a revoke
+can delete its own rows and nothing else. A lapsed or cancelled membership does not evict anybody:
+the door is `open`, so evicting someone who can rejoin in one click achieves nothing but the insult,
+and ADR-1391 already ruled that turning a hub off keeps its members. An operator who wants a
+members-only room switches the door to `space_paid_members`; that governs who may JOIN, and an
+existing member stays a member exactly as on every other Circle.
+
+**A happy interaction, recorded because it was not designed.** `memberships.joined_at` defaults to
+`now()`, so auto-enrolled members surface in ADR-1394's greeting strip as new arrivals. The strip
+names at most three and counts the rest, so a backfill of two hundred degrades to "Sam, Alex and 197
+others just joined" rather than a wall of avatars.
+
+**Verified against production, 2026-09-17**, in a transaction forced to roll back: enrolment fired
+on an active membership, a second sweep added nobody, leaving recorded the decline, and a sweep after
+leaving added nobody back. The backfill added 0 rows because the single active space membership on
+the platform was already on Royal Temple's roster.
+
+**Rejected.** Enrolling followers (a follow is not a request to be in a room). Enrolling the staff
+ladder (already there by ADR-1391 §6). A `left_at` status on `memberships` instead of a decline table
+(the delete is what every existing caller does, and changing that would have meant auditing every
+reader of the roster). Evicting on lapse (see above).
+
 ## ADR-1396: The entity header shows the photograph: no overlay by default, the description under the image, QR below (2026-09-17)
 
 **Status:** Accepted · **Amends** [ADR-793](DECISIONS.md) (the unified entity header) and

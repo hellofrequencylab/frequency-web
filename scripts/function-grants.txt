@@ -120,6 +120,7 @@ enforce_member_not_suspended         internal
 enforce_membership_tier_circle_link  public
 engagement_event_counts              public
 engagement_prop_counts               public
+enrol_in_space_circle                internal
 ensure_calendar_token                authenticated
 ensure_space_circle                  internal
 event_calendar_feed                  internal
@@ -162,6 +163,7 @@ match_room_messages                  authenticated
 member_engagement_stats              public
 member_interaction_stats             internal
 members_near                         internal
+memberships_space_circle_optout      internal
 merge_profile_meta                   authenticated
 merge_profile_meta_path              authenticated
 merge_practices                      internal
@@ -230,12 +232,14 @@ set_updated_at                       public
 settle_ticket_atomic                 internal
 similar_library_assets               internal
 space_calendar_entries_stage_sync    internal
+space_memberships_enrol_space_circle internal
 space_public_calendar_feed           internal
 space_public_unavailable             public
 spaces_ensure_space_circle           internal
 sync_contact_from_profile            internal
 sync_event_scope_arc                 internal
 sync_post_scope_arc                  internal
+sync_space_circle_roster             internal
 trg_circle_auto_activate             public
 trg_decrement_circle_member_count    public
 trg_decrement_member_count           public

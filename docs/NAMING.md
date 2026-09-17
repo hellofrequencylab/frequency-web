@@ -250,6 +250,11 @@
   ([ADR-1393](DECISIONS.md)): it ships **open but unlisted** (anyone who reaches it may join; it is in
   no directory, map or search), it lists **its Space's own events** alongside its own, and it carries
   an **About the Space** board. Its door offers two settings and only two: open, or membership gated.
+  A Space's **members are enrolled in it automatically** ([ADR-1395](DECISIONS.md)) — `space_memberships`,
+  the people who joined or bought a membership, never the `space_members` staff ladder and never
+  followers. ⚠️ **Enrolment is one-way and leaving is permanent**: a lapsed membership never evicts
+  anybody, and somebody who leaves (or is removed) is never put back, so copy must never promise a
+  member that their Space membership keeps them in the hub.
   ⚠️ **The cover pill still reads "Circle", not "Space Circle"** — the pill names what the page is and
   the Space's name rides beside it, because "Space Circle" is the staff word, per the rule above.
 - **"Community" is never the name of a Space-level surface — a Space's community is its Circles**
