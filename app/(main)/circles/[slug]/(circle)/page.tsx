@@ -17,7 +17,6 @@ import { CollapsibleAbout } from '@/components/circles/collapsible-about'
 // '/circles/*' scope, exactly like the Practices detail page.
 import { PageModules } from '@/components/widgets/page-modules'
 import { setCircleContext } from '@/lib/circles/active-circle'
-import { circleTextOverride, resolveCircleText } from '@/lib/circles/circle-text'
 
 // ── THE FEED TAB (the default tab) ──────────────────────────────────────────────────────────────
 // A BODY, not a shell. The identity — cover, title, badges, facts, tabs — belongs to the
@@ -53,6 +52,16 @@ import { circleTextOverride, resolveCircleText } from '@/lib/circles/circle-text
 // The Feed tab's module set. Order here does not decide layout; the saved '/circles/*' layout
 // still does, and this only filters what it may place. `circle-momentum` is the one deliberate
 // omission — it renders on the Circle Stats tab instead.
+//
+// TWO IDS LEFT THIS LIST ON 2026-09-17 AND NEITHER WAS A BEHAVIOUR CHANGE, which is worth saying
+// because a subset shrinking silently is the thing this comment block exists to prevent:
+//   • `circle-text` was RETIRED with the Page-text block (ADR-1394): it duplicated About, and
+//     About now carries the formatting that was its only advantage.
+//   • `circle-invite` was already a DEAD REFERENCE before that. It was retired from LAYOUT_MODULES
+//     in the Circle rail trim and is absent from `CIRCLE_DETAIL_MODULE_IDS`, so `PageModules` could
+//     never place it however long it sat here. Removing it changes nothing a viewer sees; leaving
+//     it would keep implying there is an invite block on this tab, and there is not (invites live
+//     in the `circle.people` admin module).
 const FEED_TAB_MODULE_IDS = [
   'circle-feed',
   'circle-health',
@@ -64,8 +73,6 @@ const FEED_TAB_MODULE_IDS = [
   'circle-members',
   'circle-events',
   'circle-practice',
-  'circle-invite',
-  'circle-text',
 ] as const
 
 export async function generateMetadata({
@@ -165,10 +172,6 @@ export default async function CircleHomePage({
   // context type carries it; the block that renders it now lives on the Practice tab.
   const circlePractice = await loadCirclePractice(circle.id)
 
-  // The movable Page-text block's copy: this circle's override, else the network default ('' when
-  // neither is set → the block renders nothing). One platform_settings read (request-memoized) only
-  // when there's no per-circle override.
-  const layoutText = await resolveCircleText(circleTextOverride(circle.sidebar_order))
 
   // Stamp the resolved per-viewer context into the request-scoped holder so the circle's body
   // modules (components/widgets/circles/*) read it without prop-drilling — then <PageModules>
@@ -188,7 +191,6 @@ export default async function CircleHomePage({
     activeStreaks: health.activeStreaks,
     newThisWeek: health.newThisWeek,
     circlePractice,
-    layoutText,
   })
 
   return (

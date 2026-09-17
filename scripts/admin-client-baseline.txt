@@ -580,7 +580,6 @@ lib/billing/tips.ts
 lib/blocking.ts
 lib/channels/programs.ts
 lib/circles/challenges.ts
-lib/circles/circle-text-actions.ts
 lib/circles/crm-roster.ts
 lib/circles/draft.ts
 lib/circles/earned.ts

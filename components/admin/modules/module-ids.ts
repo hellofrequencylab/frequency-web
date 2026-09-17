@@ -37,7 +37,6 @@
 export const INLINE_MODULE_IDS: ReadonlySet<string> = new Set([
   'circle.guided',
   'circle.settings',
-  'circle.text',
   'circle.placeAndTime',
   'circle.people',
   'circle.engage',
