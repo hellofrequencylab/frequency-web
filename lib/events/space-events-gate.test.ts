@@ -16,6 +16,10 @@ import { readFileSync } from 'node:fs'
 
 const store = readFileSync('lib/events/store.ts', 'utf8')
 const consoleCalendar = readFileSync('app/(main)/spaces/[slug]/settings/calendar/page.tsx', 'utf8')
+// ADR-1389: the operator console's read moved into ONE shared loader, which the console and the Admin
+// mode of the public Calendar tab both call behind a manager gate.
+const adminLoader = readFileSync('lib/calendar/admin-calendar.ts', 'utf8')
+const calendarTab = readFileSync('app/(main)/spaces/[slug]/(profile)/calendar/page.tsx', 'utf8')
 
 /** Comments stripped: a gate described in a comment is exactly what failed here. */
 const code = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
@@ -39,9 +43,29 @@ describe('listEventsForSpace gates on publication by default', () => {
   })
 })
 
-describe('exactly one caller opts out, and it is the operator console', () => {
-  it('the Space settings calendar asks for unpublished rows explicitly', () => {
-    expect(code(consoleCalendar)).toContain('includeUnpublished: true')
+describe('exactly one caller opts out, and it is the team calendar loader', () => {
+  it('the team calendar loader asks for unpublished rows explicitly, and only managers reach it', () => {
+    expect(code(adminLoader)).toContain('includeUnpublished: true')
+    // The console: gated on managing the Space before it loads.
+    expect(code(consoleCalendar)).toContain('resolveSpaceManageAccess(')
+    expect(code(consoleCalendar)).toContain('loadAdminCalendar(')
+    // The public Calendar tab: the loader runs only inside Admin mode, and Admin mode requires the
+    // viewer to be allowed it. A member who types ?view=admin still gets the guest read.
+    const tab = code(calendarTab)
+    expect(tab).toContain("adminAllowed && view !== 'guest' ? 'admin' : 'guest'")
+    const adminBranch = tab.indexOf("if (mode === 'admin')")
+    expect(adminBranch).toBeGreaterThan(-1)
+    expect(tab.indexOf('loadAdminCalendar(')).toBeGreaterThan(adminBranch)
+    expect(tab).not.toContain('includeUnpublished')
+  })
+
+  it('🔴 nothing else in the app opts out of the publication gate', async () => {
+    const { execSync } = await import('node:child_process')
+    const hits = execSync("git grep -l 'includeUnpublished' -- app lib components", { encoding: 'utf8' })
+      .split('\n')
+      .filter(Boolean)
+      .filter((f) => !f.endsWith('.test.ts') && f !== 'lib/events/store.ts')
+    expect(hits).toEqual(['lib/calendar/admin-calendar.ts'])
   })
 
   it('🔴 no PUBLIC reader asks for unpublished rows', async () => {
