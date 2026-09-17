@@ -45086,3 +45086,66 @@ each money loop once in production") is P0 and open for exactly this reason, and
 the transaction to discover a settle bug on. A Journeys rail of its own in the Market is deferred:
 `journey` rides the Products rail, because a fourth `MarketGroup` touches eleven files and every
 facet, and that is freight on the change rather than part of it.
+
+## ADR-1398: The Journey's sales page is derived, not authored, and the sell control leaves the drawer (2026-09-17)
+
+**Status:** Accepted · **Extends** [ADR-1397](DECISIONS.md) (selling a Journey) · Backlog `LIVE-389` ·
+corroborated by `components/marketplace/journey-sales-body.tsx`, `lib/journey-plans.ts`
+(`getPlanById`), `app/(main)/market/[id]/page.tsx`, `lib/admin/modules/registry.ts`
+
+**Context.** Owner, 2026-09-17, after pricing Heart on Fire at $444 and looking at what a buyer would
+see: *"I found the settings but they were buried way down in a sub menu."* Then: *"Do best practice
+research for a sales page for a course like this"*, and *"I want info from the journey to auto
+propagate the sales page."*
+
+**🔴 Two findings, and neither was the one expected.**
+
+1. **The burial was a band, not a position.** `journey.sell` shipped `tier: 'extra'`, and `extra` is
+   not "further down": it is folded into a COLLAPSED `<details>` "More" at the bottom of the rail,
+   and at `priority: 12` it sat behind Export inside that. Reaching the one control that puts a price
+   on a Journey took four deliberate actions.
+2. **The sales page already existed, on the wrong route.** `/journeys/<slug>` has been a competent
+   sales page for months: `StoryBlock` (the intro), `OutcomesBlock`, `PathBlock` (the phase-by-phase
+   path, first phase open, marked a free preview), `InstructorBlock`, `JourneyFaq`, a sticky
+   `AtAGlanceCard`, and the CTA in three places. `/market/<id>` showed ONE SENTENCE of it. Heart on
+   Fire's `intro` is 250 words of real sales copy — the problem, the four weeks, the philosophy — and
+   its `meeting` already names Royal Temple, Tuesdays 6pm, four three-hour sessions. None of it
+   reached the page a buyer lands on.
+
+**Decision.**
+
+1. **The sell control is `tier: 'standard'`**, third in the top Basics section, expanded on open.
+   `order: 25` is deliberately unchanged: `registry.test.ts` pins the order-sorted id list in two
+   places, and `order` is the catalog sort while `tier`/`priority` are the band and the sort within it.
+2. **A sell chip rides the page band**, beside Publish, showing the price and the seat line or
+   "Set a price". 🔴 On the **learn** page, not the detail page: an author opening `/journeys/<slug>`
+   is REDIRECTED to `/learn`, so a price control on the detail page is invisible to the only person
+   allowed to set a price. It OPENS the rail rather than carrying a second copy of the form, so there
+   is one editor and one authority, following the `JourneyAuthorActions` precedent (quick control on
+   the page, fine-grained editor in the rail).
+3. **The sales body is DERIVED, never copied.** `JourneySalesBody` renders the same blocks from the
+   same rows at request time. `commerce_products` keeps a title, summary and cover, and those are now
+   explicitly ONLY the Market grid card's fallback so a card renders without a join; nothing on the
+   page reads them. Edit the Journey and the sales page has already changed. Rejected: a snapshot with
+   a re-sync button (it goes stale the moment the Journey is edited, and somebody has to notice).
+4. **Both routes render it, one is canonical.** `/market/<id>` emits `rel=canonical` →
+   `/journeys/<slug>`. The Journey slug wins on two grounds: it is readable and permanent, and a
+   re-price writes a NEW product row by design (ADR-1397), so the product URL is not stable across a
+   price change while the Journey slug is.
+5. **It degrades to nothing.** A missing plan, an empty block tree or a null intro each render
+   nothing rather than an empty shell, and the price and Buy button survive a deleted Journey.
+6. **The marketing band stops advertising to the owner.** `ListingMarketingCTA` reads "Sell what you
+   make. Open a storefront and list your first product" and was rendering under the owner's own live
+   $444 listing. Now suppressed for `view.isOwner` on every listing, not just Journeys. Recruiting a
+   seller is its whole purpose, so it still renders for everyone else.
+
+**What the research changed, and what it did not.** The cohort-sales research (one canonical record
+with many entry points; the curriculum before the pitch; proof after the thing being proved; scarcity
+derived, never authored) is satisfied by blocks this repo already had. The one genuinely missing fact
+was the meeting: where it is, when it runs, what a session costs in hours. That is the only new markup
+here, and for Heart on Fire it prints the Royal Temple line without anyone typing it twice.
+
+**Consequences.** A Journey author writes a course and gets a sales page. `getPlanById` is the new
+by-id twin of `getPlan`, added because the product knows its Journey only by id and resolving a slug
+first would be two round trips for one question. Not done: a repeated CTA at the foot of the derived
+body, a guarantee block, and testimonials — all three want authoring surfaces that do not exist yet.

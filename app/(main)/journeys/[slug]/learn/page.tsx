@@ -1,13 +1,14 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { CalendarClock, SlidersHorizontal } from 'lucide-react'
+import { CalendarClock, SlidersHorizontal, Tag } from 'lucide-react'
 import { JourneyAuthorActions } from '@/components/journey/v2/learn/journey-author-actions'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { createClient } from '@/lib/supabase/server'
 import { getJourneyPlayerView } from '@/lib/journeys/store'
 import { canEnterJourney } from '@/lib/journeys/entry-gate'
+import { getJourneyOffer, seatLine } from '@/lib/journeys/paid'
 import { getMemberRunForPlan, getCohortProgress, getSoloEnrollmentStart, getKickoffEvent, getPhaseEvents, type KickoffEvent } from '@/lib/journeys/runs'
 import { HostSchedule } from '@/components/journey/v2/learn/host-schedule'
 import { getPlanAuthor, isPlanAdopted, countActiveAdopters } from '@/lib/journey-plans'
@@ -167,6 +168,25 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   // and only for an author looking at a PUBLISHED Journey — nobody else pays for it.
   const adopterCount = isAuthor && plan.visibility === 'public' ? await countActiveAdopters(plan.id, profileId) : 0
 
+  // ── THE SELL CHIP'S STATE (ADR-1397) ──────────────────────────────────────────────────────────
+  // 🔴 THIS BAND, NOT THE DETAIL PAGE'S. An author opening /journeys/<slug> is REDIRECTED to this
+  // route (page.tsx: isAuthor && !preview), so a price control on the detail page would be invisible
+  // to the one person allowed to set a price. Resolved only for a manager, because nobody else can
+  // act on it and it is a read nobody else should pay for.
+  const sellOffer = canManageJourney ? await getJourneyOffer(plan.id) : null
+  const sellLabel = sellOffer
+    ? [
+        new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: (sellOffer.currency || 'usd').toUpperCase(),
+          maximumFractionDigits: sellOffer.priceCents % 100 === 0 ? 0 : 2,
+        }).format(sellOffer.priceCents / 100),
+        seatLine(sellOffer),
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : 'Set a price'
+
   // Pre-render the rich practice detail ONCE per practice step (server-rendered markdown, no client
   // cost) and the per-step Pillar names — the player looks both up by the selected lesson id (the
   // RSC interleaving pattern: a Server Component handed to a Client Component as a node map).
@@ -247,6 +267,26 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
                 label="Manage"
                 icon={<SlidersHorizontal className="h-4 w-4" />}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              />
+            )}
+            {/* Selling, in the band rather than only in the rail (ADR-1397). The rail row was
+                `tier: 'extra'`, which is a COLLAPSED "More" disclosure at the bottom, and the owner
+                could not find it. It is `standard` now, and this chip is the affordance that says a
+                price exists (or does not) without opening anything. It OPENS the rail rather than
+                carrying a second copy of the form, so there is one editor and one authority.
+                Shown to any manager: if they turn out not to be allowed to sell, the rail says why,
+                which is a better answer than a control that is simply absent. */}
+            {canManageJourney && (
+              <OpenAdminBarButton
+                scope={{ kind: 'journey', id: plan.id }}
+                caps={Array.from(journeyCaps)}
+                label={sellLabel}
+                icon={<Tag className="h-4 w-4" />}
+                className={
+                  sellOffer
+                    ? 'inline-flex items-center gap-1.5 rounded-lg border border-success/40 bg-success-bg px-3 py-1.5 text-body-sm font-semibold text-success transition-colors hover:bg-success-bg/70'
+                    : 'inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text'
+                }
               />
             )}
             {isAuthor && (

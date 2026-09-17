@@ -730,12 +730,21 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   // the Journey to travel to another Space or a Hook cohort. It stays INLINE (a mutating client action with
   // no navigable route, so it could never be a link row), but ADR-846 moves it off the lone `reach` slot
   // into the Settings box, so a Journey resolves to the seven-box core shape with no eighth header.
-  // Sell this Journey (ADR-1397). The ONLY caller of setJourneyPriceAction, so without this row the
-  // selling path is unreachable. INLINE (a mutating client control with no route of its own), in the
-  // Settings box beside Export, because a price is a setting of the Journey and not a place to go.
-  // Gated journey.editSettings like every other journey row: the module RENDERS for a free-Space
-  // editor and shows them the upsell line, because hiding it would answer "why can't I sell this?"
-  // with silence. checkJourneySell is the authority on every write.
+  // Sell this Journey (ADR-1397, promoted 2026-09-17). The ONLY caller of setJourneyPriceAction, so
+  // without this row the selling path is unreachable. INLINE (a mutating client control with no route
+  // of its own). Gated journey.editSettings like every other journey row: the module RENDERS for a
+  // free-Space editor and shows them the upsell line, because hiding it would answer "why can't I
+  // sell this?" with silence. checkJourneySell is the authority on every write.
+  //
+  // 🔴 IT SHIPPED AS `tier: 'extra'` AND THAT BURIED IT. `extra` is not "lower down": it is folded
+  // into a COLLAPSED <details> "More" at the very bottom of the rail (admin-bar-body.tsx), and at
+  // priority 12 it sat behind Export inside that. Reaching the one control that puts a price on a
+  // Journey took: open Manage, scroll past three sections, expand More, scroll past Export. Owner,
+  // looking for it: "I found the settings but they were buried way down in a sub menu."
+  //
+  // `standard` + priority 12 lands it third in the top Basics section, already expanded, no click.
+  // ⚠️ `order: 25` is NOT free to change: registry.test.ts pins the order-sorted id list in two
+  // places. Tier and priority are the band and the sort WITHIN it; order is the catalog sort.
   {
     id: 'journey.sell',
     label: 'Sell this Journey',
@@ -747,7 +756,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 25,
-    tier: 'extra',
+    tier: 'standard',
     priority: 12,
   },
   {
