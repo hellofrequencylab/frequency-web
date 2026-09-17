@@ -321,7 +321,18 @@ export default async function CircleDetailLayout({
                     {circle.member_count} of {circle.member_cap} members
                   </span>
                 </span>
-                {circle.host && (
+                {/* THE SPACE CIRCLE (ADR-1391) is hosted by its Space, not by the person who owns the Space. */}
+                {circle.is_space_primary && circle.space && circle.space.type !== 'root' ? (
+                  <span className="text-body-sm text-muted">
+                    Hosted by{' '}
+                    <Link
+                      href={`/spaces/${circle.space.slug}`}
+                      className="font-medium text-primary-strong hover:underline"
+                    >
+                      {circle.space.brand_name || circle.space.name}
+                    </Link>
+                  </span>
+                ) : circle.host && (
                   <span className="text-body-sm text-muted">
                     Host{' '}
                     <Link

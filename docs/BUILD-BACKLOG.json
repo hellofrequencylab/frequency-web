@@ -13720,6 +13720,25 @@
       "closed": "2026-09-16"
     },
     {
+      "id": "LIVE-382",
+      "title": "Every Space has a Space Circle: hosted by the Space, always attached, on or off, up to 300 members",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "supabase/migrations/20270345005600_space_circle.sql",
+        "ref": "ADR-1391, owner request 2026-09-16"
+      },
+      "detail": "Owner, 2026-09-16: each Space has a primary Circle with extended capabilities, hosted by the Space (Royal Temple, not Meghan Riley), always attached but able to be turned off, with a 300 member cap. Rulings: existing Spaces off, new Spaces on; host line reads only the Space; joining defaults to Space members only.\n\nSHIPPED. circles.is_space_primary (unique per Space); circles_cap_check allows 300 for it; circles_space_primary_guard refuses delete, move or unmark while the Space exists; an AFTER INSERT trigger on spaces calls ensure_space_circle so every creation path gets one; backfill made royal-temple Royal Temple's Space Circle and gave the other 20 Spaces one turned off. The Circle page reads Hosted by <Space>; Space editors manage the Space Circle (getCircleCapabilities); it never uses the owner's personal hosting meter; delete, transfer and hand-off refuse with a sentence; the Space Circles console has a Space Circle card with an On/Off switch (setSpaceCircleOnAction). Applied to production 2026-09-16 and verified in a rolled-back fixture. HELD BY supabase/tests/space_circle.test.sql.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const mig=fs.readFileSync(\"supabase/migrations/20270345005600_space_circle.sql\",\"utf8\");if(!mig.includes(\"is_space_primary and member_cap <= 300\"))fail(\"no 300 cap for the Space Circle\");if(!mig.includes(\"create trigger spaces_ensure_space_circle\"))fail(\"new Spaces do not get a Space Circle\");if(!mig.includes(\"space_circle_is_attached\"))fail(\"the Space Circle is not held attached\");const lay=fs.readFileSync(\"app/(main)/circles/[slug]/(circle)/layout.tsx\",\"utf8\");if(!lay.includes(\"circle.is_space_primary && circle.space\"))fail(\"the Circle page does not name the Space as host\");const caps=fs.readFileSync(\"lib/core/load-capabilities.ts\",\"utf8\");if(!caps.includes(\"circle?.is_space_primary\"))fail(\"Space editors do not manage the Space Circle\");if(!fs.existsSync(\"components/spaces/space-circle-card.tsx\"))fail(\"no On/Off card\")'",
+        "note": "Passes when the migration carries the 300 cap, the new-Space trigger and the attach guard, the Circle page names the Space as host, Space editors manage it, and the console has the On/Off card. Written 2026-09-16."
+      },
+      "closed": "2026-09-16"
+    },
+    {
       "id": "PROG-CAL1",
       "title": "Calendar phase 1, Pencil: a tentative private date for a potential Production, clash warnings, and day notes",
       "status": "done",

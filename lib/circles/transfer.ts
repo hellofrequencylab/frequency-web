@@ -129,10 +129,14 @@ export async function transferCircle(
     const admin = createAdminClient()
     const { data: circle } = await admin
       .from('circles')
-      .select('id, slug, host_id, space_id')
+      .select('id, slug, host_id, space_id, is_space_primary')
       .eq('id', circleId)
       .maybeSingle()
     if (!circle) return { ok: false, reason: 'Circle not found.', slug: null }
+    // The Space Circle never moves (ADR-1391; the database refuses it too).
+    if (circle.is_space_primary) {
+      return { ok: false, reason: 'A Space Circle stays with its Space, so it cannot be moved or handed off.', slug: circle.slug }
+    }
 
     const root = await loadRootSpaceId()
     const sourceSpaceId = circle.space_id && circle.space_id !== root ? circle.space_id : null

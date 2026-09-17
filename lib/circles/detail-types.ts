@@ -20,6 +20,11 @@ export type CircleDetail = {
   neighborhood: string | null
   city: string | null
   host: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
+  /** The Space Circle (ADR-1391): the one primary Circle a Space always has. Its page names the SPACE as
+   *  host; `host` above stays the person who runs it behind the scenes. */
+  is_space_primary?: boolean
+  /** The owning Space, for the Space Circle's host line. Null on a personal (root) Circle. */
+  space?: { slug: string; name: string; brand_name: string | null; type: string } | null
   hub: {
     id: string
     name: string

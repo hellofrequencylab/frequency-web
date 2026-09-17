@@ -280,3 +280,22 @@ export async function createBlankCircleDraft(input: {
 
   return { circleId, slug }
 }
+
+/**
+ * Turn a Space's Space Circle on (`active`) or off (`inactive`), ADR-1391. It is always attached, so
+ * this is the whole of "turning it off": hidden from every public reader, members kept. Returns the
+ * Circle's slug, or null when the Space has none or the write failed.
+ *
+ * 🔴 AUTHZ-DELEGATED: service role. The caller must already have established that the viewer edits
+ * this Space (the Space Circles console's `requireSpaceEditor`).
+ */
+export async function setSpaceCircleOn(spaceId: string, on: boolean): Promise<string | null> {
+  const { data, error } = await createAdminClient()
+    .from('circles')
+    .update({ status: on ? 'active' : 'inactive' })
+    .eq('space_id', spaceId)
+    .eq('is_space_primary', true)
+    .select('slug')
+  if (error || !data?.length) return null
+  return data[0].slug
+}

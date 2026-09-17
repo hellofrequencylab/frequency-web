@@ -88,7 +88,7 @@ async function sourceAuthority(
   circleId: string,
   viewerProfileId: string,
 ): Promise<{
-  circle: { id: string; slug: string; name: string; host_id: string | null; space_id: string | null } | null
+  circle: { id: string; slug: string; name: string; host_id: string | null; space_id: string | null; is_space_primary: boolean } | null
   sourceSpaceId: string | null
   sourceSpaceCanEdit: boolean
   staff: boolean
@@ -96,7 +96,7 @@ async function sourceAuthority(
   const admin = createAdminClient()
   const { data: circle } = await admin
     .from('circles')
-    .select('id, slug, name, host_id, space_id')
+    .select('id, slug, name, host_id, space_id, is_space_primary')
     .eq('id', circleId)
     .maybeSingle()
   if (!circle) return { circle: null, sourceSpaceId: null, sourceSpaceCanEdit: false, staff: false }
@@ -134,6 +134,10 @@ export async function offerCircleToPerson(
       viewerProfileId,
     )
     if (!circle) return { ok: false, reason: 'Circle not found.', circleSlug: null }
+    // A handoff moves the Circle to a person, and the Space Circle never leaves its Space (ADR-1391).
+    if (circle.is_space_primary) {
+      return { ok: false, reason: 'A Space Circle stays with its Space, so it cannot be handed off.', circleSlug: circle.slug }
+    }
 
     // The tier lock's one fact; a read miss is fatal, never permissive (see transfer.ts).
     const links = await tierLinksForCircle(circleId)

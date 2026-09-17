@@ -241,6 +241,11 @@
   ("In Person" / "Online") as a property of one Circle, never as the line between Circles and
   something else. The retired formula, still widely remembered, was "Circles are the local,
   real-world unit; Channels are the global, topical unit" — say **container vs topic axis** instead.
+- **Space Circle** = the one primary Circle every Space always has ([ADR-1391](DECISIONS.md)). It
+  is **hosted by the Space** ("Hosted by Royal Temple"), never by the person who owns the Space, holds
+  up to 300 members, and can be **turned on or off** but never deleted, moved or handed off. Staff copy
+  says "Space Circle"; member-facing pages just show the Circle, named for the Space. **Not "flagship
+  circle"**, **not "main circle"**, **not "primary circle"** in UI (`is_space_primary` is internal).
 - **"Community" is never the name of a Space-level surface — a Space's community is its Circles**
   ([ADR-1091](DECISIONS.md), OWN-015; [ADR-1013](DECISIONS.md) §3). No Space tab, block label,
   section anchor, or eyebrow is called "Community": the surface that lists a Space's groups says

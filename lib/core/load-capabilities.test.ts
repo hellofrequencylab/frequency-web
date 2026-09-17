@@ -152,7 +152,7 @@ describe('a signed-in member', () => {
     expect(caps.has('circle.post')).toBe(true)
     expect(caps.has('circle.editSettings')).toBe(false)
     expect(caps.has('circle.manageRoles')).toBe(false)
-    expect(chainOf(reads('circles')[0])).toEqual(['select("host_id, hub_id")', 'eq("id","c1")', 'maybeSingle()'])
+    expect(chainOf(reads('circles')[0])).toEqual(['select("host_id, hub_id, space_id, is_space_primary")', 'eq("id","c1")', 'maybeSingle()'])
     expect(chainOf(reads('memberships')[0])).toEqual([
       'select("status, volunteer_role")',
       'eq("circle_id","c1")',

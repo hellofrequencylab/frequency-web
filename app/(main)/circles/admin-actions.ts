@@ -666,7 +666,12 @@ export async function deleteCircle(id: string, slug: string): Promise<{ error?: 
   if (!caps.has('circle.editSettings')) throw new Error('Unauthorized')
 
   const admin = createAdminClient()
-  const { data: circle } = await admin.from('circles').select('name').eq('id', id).maybeSingle()
+  const { data: circle } = await admin.from('circles').select('name, is_space_primary').eq('id', id).maybeSingle()
+  // THE SPACE CIRCLE IS ALWAYS ATTACHED (ADR-1391). The database refuses the delete too
+  // (circles_space_primary_guard); this is the sentence a person reads instead of a failure.
+  if ((circle as { is_space_primary?: boolean } | null)?.is_space_primary) {
+    return { error: 'This is your Space Circle, so it stays attached to your Space. Turn it off in the Space settings instead.' }
+  }
 
   // Unlink polymorphic references first (no FK to cascade them). Posts scoped to the
   // circle are unlinked to the public feed; circle-scoped events keep their (now-dead)
