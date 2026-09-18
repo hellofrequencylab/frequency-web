@@ -45225,3 +45225,80 @@ count (scarcity stays derived, ADR-1397 §9).
 ruling already implies — is a separate decision and is not made here. ⚠️ The first real charge is
 still the first real test of the settle path, and it now has two independent ways to land instead of
 one.
+
+## ADR-1400: A Journey is bought where it is pitched, and the public page says what it costs (2026-09-18)
+
+**Status:** Accepted · **Amends** [ADR-1397](DECISIONS.md) §"the Journey's own page stays the pitch;
+that page is the till" and [ADR-1398](DECISIONS.md) §4 (the canonical target) · **Extends**
+[ADR-1399](DECISIONS.md) · corroborated by `components/journey/discovery-widgets.tsx` (`buyControl`),
+`app/(main)/journeys/[slug]/page.tsx`, `app/discover/journeys/[slug]/page.tsx`, `lib/jsonld.ts`
+(`journeyOfferSchema`), `components/journey/journey-sale-wiring.test.ts`
+
+**Context.** Owner, 2026-09-18, after ADR-1399 shipped: *"Wave 1."* The agreed move was to put the
+checkout on the page that does the persuading. Surveying it first turned up a second, larger defect
+nobody had named.
+
+**🔴 The finding: the canonical page advertised a $444 program as free.**
+
+`app/discover/journeys/[slug]/page.tsx` called `getJourneyOffer` **zero times**. It showed no price
+anywhere, its CTA read *"Create a free account"* under the line *"Free to start"*, and its closing
+card said *"Sign up free to start it."* That page is not a minor surface:
+
+1. It **declares itself canonical**, and `/journeys/<slug>` pointed its canonical at it, and
+   ADR-1398 pointed `/market/<id>` at `/journeys/<slug>`. So the chain was
+   `market -> member page -> public page`, each hop naming a URL that disclaimed itself, terminating
+   on the one page that never mentioned money.
+2. It is where **every signed-out visitor lands**. `TWIN_RULES` (`lib/nav/public-twin.ts`) redirects
+   `/journeys/<slug>` there, so every share link, QR and crawler resolves to it.
+
+So the only page that could take payment was `/market/<uuid>` — the one URL that is neither readable
+nor stable, since a re-price archives the product row and writes a new one (ADR-1397).
+
+**Decision.**
+
+1. **The till mounts where the pitch is.** `EnrollCta` gains a `buyControl` slot and the member page
+   hands it a real `BuyButton`. There is still exactly ONE checkout: the same control, the same
+   `createCommerceCheckout`, the same embedded panel ADR-1399 wired. Only the mounting point moved.
+   ADR-1397 was right that a second checkout must not be built and wrong about where the first one
+   belongs — it put a page navigation between a persuaded buyer and the card fields.
+2. **An ABSENT SLOT, never a fork.** A surface that hands in nothing keeps the link-out behaviour
+   byte for byte, which is what the public route wants. 🔴 And `buyControl` is a SLOT rather than an
+   import for a structural reason: `components/journey/` is imported by `app/discover/` too, so
+   importing a member-route client island into it would drag that island into a public marketing
+   route's module graph to serve a branch that route never takes. A source-shape test pins the
+   absence of the import.
+3. **`entryPoint="marketplace"` is PRESERVATION, not a new classification.** The buyer who reaches
+   the Journey page today completes the sale on `/market/<id>`, which passes it (LIVE-219). Omitting
+   it would silently reclassify that same sale `self` and drop the platform's cut to 0% as a side
+   effect of moving a button. `classifyOrderSource` still runs the self-scan and the ADR-913
+   relationship check above it, so an existing follower or member is still 0%.
+4. **The public page states the price**, in the markup and in the structured data. A free Journey's
+   copy is untouched; a paid one names its price, links to the storefront that can take it, and
+   never says free. `journeyOfferSchema` emits a `Product` + `Offer` node BESIDE the existing
+   `HowTo` rather than replacing it: a paid Journey is both a method and something for sale, and
+   switching the @type would throw away the step result a free Journey already earns.
+5. ⚠️ **Price yes, seats no, on that surface.** `revalidate = 3600` means anything there can be an
+   hour stale. A stale price is a number the buyer corrects at checkout; a stale "2 spots left" is
+   manufactured urgency, which is what ADR-1397 §9 and the FTC dark-patterns position refuse.
+   `seatLine` stays on the live surfaces, and a test pins its absence here.
+6. **The canonical chain collapses to one hop.** `/market/<id>` now points straight at
+   `/discover/journeys/<slug>`. ADR-1398 §4 was right that the Journey slug beats a product uuid and
+   wrong about WHICH Journey URL: it chose the member page, which redirects a signed-out visitor
+   away. The public page is readable, permanent, publicly reachable, already self-canonical, and now
+   carries the price — which is what makes it a legitimate target rather than a marketing stub.
+7. **The author can reach the page that charges.** `/journeys/<slug>` redirects an author to
+   `/learn`, so `?preview=1` was the only way in and nothing linked to it. A "Sales page" link now
+   sits beside the sell chip. The chip itself still OPENS THE RAIL (ADR-1398 §2, one editor and one
+   authority); this is the other half, not a replacement.
+
+**Rejected.** Embedding checkout on `/discover/journeys/<slug>` (Stripe on a route cached for an
+hour, and a Journey grants account-bound access, so the account problem only moves later). Sending
+the public buyer to `/sign-in?next=` first (account creation before they ever see a card field is
+the 19-26% abandonment the ADR-1399 research names). Making `/journeys/<slug>` canonical (most of
+its audience is redirected off it). Redirecting `/market/<id>` away entirely (it carries the reviews
+and the Q&A, both keyed to the product row; moving them is its own change).
+
+**Consequences.** A member reads the story and buys without leaving the page. A signed-out visitor
+sees the real price on the page search sends them to, and reaches an embedded checkout in one hop.
+⚠️ Reviews and Q&A still live on `/market/<id>` and are still orphaned by a re-price; that, the
+`JourneyDetailTemplate` layout, and the authorable outcomes/FAQ/testimonial surfaces remain open.

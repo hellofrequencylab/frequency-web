@@ -8,6 +8,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { phaseOpenLabel, cadenceLabel } from './discovery-widgets'
+import { journeyOfferSchema } from '@/lib/jsonld'
 
 const read = (...p: string[]) => readFileSync(path.join(process.cwd(), ...p), 'utf8')
 
@@ -133,5 +134,116 @@ describe('the trust line survives a listing with no contact module', () => {
     // carrying "Checkout is secure on Stripe" plus the Report control never rendered at all.
     const tpl = read('components', 'templates', 'listing-detail-template.tsx')
     expect(tpl).toContain('{!showContact && !claimToken && contactNote && (')
+  })
+})
+
+// ── WAVE 1 (ADR-1400): the till moved onto the page that pitches, and the public page learned
+//    what the Journey costs. Same posture as above: these are WIRING facts between a component and
+//    its callers, which typecheck cannot see.
+
+describe('the till is handed in by the page, not built into the widget', () => {
+  const src = code('components', 'journey', 'discovery-widgets.tsx')
+
+  it('EnrollCta takes a buyControl slot', () => {
+    expect(src).toMatch(/buyControl\?:\s*React\.ReactNode/)
+  })
+
+  it('the paid branch prefers it and still falls back to the product link', () => {
+    // An ABSENT SLOT, never a fork: the public marketing route passes nothing and keeps the link.
+    expect(src).toMatch(/buyControl \?\? \(/)
+    expect(src).toContain('/market/${offer.productId}')
+  })
+
+  it('does NOT import the member-route buy control', () => {
+    // components/journey/ is imported by app/discover/ too. Importing app/(main)/marketplace's
+    // client island here would drag it into a public marketing route's module graph.
+    expect(src).not.toContain('buy-button')
+  })
+})
+
+describe('the member Journey page is the till', () => {
+  const src = code('app', '(main)', 'journeys', '[slug]', 'page.tsx')
+
+  it('mounts a real BuyButton as the buy control', () => {
+    expect(src).toContain('buyControl')
+    expect(src).toMatch(/<BuyButton\b/)
+  })
+
+  it('preserves the marketplace entry point the same sale gets today', () => {
+    // Omitting it would silently reclassify the sale `self` and drop the platform cut to 0% as a
+    // side effect of moving a button: /market/<id> passes it, and that is where this sale used to
+    // be completed.
+    expect(src).toMatch(/entryPoint="marketplace"/)
+  })
+
+  it('lands the buyer in the Journey after paying', () => {
+    expect(src).toContain('/learn`}')
+  })
+})
+
+describe('the public Journey page states the price', () => {
+  const src = code('app', 'discover', 'journeys', '[slug]', 'page.tsx')
+
+  it('reads the offer at all', () => {
+    // 🔴 It called getJourneyOffer ZERO times and advertised a $444 program as free, on the
+    // canonical URL that every share link and every crawler resolves to.
+    expect(src).toContain('getJourneyOffer')
+  })
+
+  it('does not tell a paying visitor the Journey is free', () => {
+    // The free copy still exists for a free Journey; what must not exist is a path where an offer
+    // is present and the free copy still renders.
+    const freeCopy = src.indexOf('Free to start')
+    expect(freeCopy).toBeGreaterThan(-1)
+    expect(src).toMatch(/offer && priceLabel \?/)
+  })
+
+  it('emits the Offer in structured data', () => {
+    expect(src).toContain('journeyOfferSchema')
+  })
+
+  it('never shows a seat line on this cached surface', () => {
+    // revalidate = 3600, so a stale "2 spots left" would be manufactured urgency (ADR-1397 §9).
+    expect(src).not.toContain('seatLine')
+  })
+})
+
+describe('the canonical chain is one hop', () => {
+  it('a Journey product points straight at the public page', () => {
+    // Was market -> /journeys/<slug> -> /discover/journeys/<slug>, each hop naming a URL that
+    // disclaimed itself, ending on a page a signed-out visitor is redirected to and that showed
+    // no price.
+    const src = code('app', '(main)', 'market', '[id]', 'page.tsx')
+    expect(src).toMatch(/canonical: `\/discover\/journeys\/\$\{plan\.plan\.slug\}`/)
+  })
+
+  it('the author can reach the page that charges', () => {
+    // /journeys/<slug> redirects an author back to /learn, so ?preview=1 is the only way in and
+    // nothing linked to it.
+    const src = code('app', '(main)', 'journeys', '[slug]', 'learn', 'page.tsx')
+    expect(src).toContain('?preview=1')
+  })
+})
+
+describe('journeyOfferSchema', () => {
+  const plan = { slug: 'heart-on-fire', title: 'Heart on Fire', summary: 'A four-week course.' }
+
+  it('states the price and currency as schema.org wants them', () => {
+    const node = journeyOfferSchema(plan as never, { priceCents: 44400, currency: 'usd' }, false)
+    expect(node.offers.price).toBe('444.00')
+    expect(node.offers.priceCurrency).toBe('USD')
+    expect(node.offers.availability).toBe('https://schema.org/InStock')
+  })
+
+  it('marks a full Journey sold out', () => {
+    const node = journeyOfferSchema(plan as never, { priceCents: 44400, currency: 'usd' }, true)
+    expect(node.offers.availability).toBe('https://schema.org/SoldOut')
+  })
+
+  it('points at the canonical page, never the product uuid', () => {
+    // A re-price archives the product row and writes a new one, so the product URL is not stable.
+    const node = journeyOfferSchema(plan as never, { priceCents: 1000, currency: 'usd' }, false)
+    expect(node.offers.url).toContain('/discover/journeys/heart-on-fire')
+    expect(node.offers.url).not.toContain('/market/')
   })
 })

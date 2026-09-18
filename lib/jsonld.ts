@@ -420,6 +420,43 @@ export function journeySchema(plan: JourneyPlan, items: JourneyPlanItem[]) {
   }
 }
 
+/**
+ * The Offer on a PRICED Journey, as a Product node beside the HowTo (ADR-1400).
+ *
+ * 🔴 A SEPARATE NODE, not a field on `journeySchema`. That builder emits `HowTo`, which carries no
+ * `offers` in schema.org, and switching its @type to Product to make room would throw away the
+ * step-by-step result a free Journey already earns. A paid Journey is both things: a method AND
+ * something for sale. Emitting two nodes says exactly that, and a free Journey emits only the first.
+ *
+ * `url` is the CANONICAL page, never `/market/<uuid>`: a re-price archives the product row and
+ * writes a new one (ADR-1397), so the product URL is not stable across a price change while the
+ * Journey slug is.
+ */
+export function journeyOfferSchema(
+  plan: JourneyPlan,
+  offer: { priceCents: number; currency: string },
+  soldOut: boolean,
+) {
+  const url = abs(`/discover/journeys/${plan.slug}`)
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: plan.title,
+    ...(plan.summary ? { description: plan.summary } : {}),
+    image: [SITE_OG_IMAGE],
+    url,
+    offers: {
+      '@type': 'Offer',
+      url,
+      price: (offer.priceCents / 100).toFixed(2),
+      priceCurrency: (offer.currency || 'usd').toUpperCase(),
+      availability: soldOut
+        ? 'https://schema.org/SoldOut'
+        : 'https://schema.org/InStock',
+    },
+  }
+}
+
 // ── ItemList (Journey listing) ────────────────────────────────────────────────
 
 export function journeyListSchema(plans: JourneyPlan[], listName: string) {

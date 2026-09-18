@@ -16,6 +16,7 @@ import { adoptPlanAction, forkPlanAction } from '../actions'
 import { enabledWidgets } from '@/lib/journey-page-config'
 import { resolveIdentityHero } from '@/lib/layout/detail-hero'
 import { getJourneyOffer, seatLine, isSoldOut } from '@/lib/journeys/paid'
+import { BuyButton } from '../../marketplace/buy-button'
 import {
   StoryBlock,
   OutcomesBlock,
@@ -163,6 +164,30 @@ export default async function JourneyPlanPage({
       }
     : null
 
+  // ── THE TILL, ON THE PAGE THAT PITCHES (ADR-1400) ───────────────────────────────────────────────
+  // This used to be a <Link> to `/market/<id>`: the member read the story, the curriculum and the
+  // guide, pressed "Get access", and was navigated to a DIFFERENT page with a different header and
+  // a second copy of the same body before they could see a card field. The card fields now open
+  // under the button they pressed. Same `BuyButton`, same `createCommerceCheckout`, same embedded
+  // panel -- only the mounting point moved, so there is still exactly one checkout.
+  //
+  // 🔴 `entryPoint="marketplace"` IS PRESERVATION, NOT A NEW CLASSIFICATION. The buyer who lands
+  // here today completes the sale on `/market/<id>`, which passes it (LIVE-219), so omitting it
+  // would silently reclassify that same sale `self` and drop the platform's cut to 0% as a side
+  // effect of moving a button. `classifyOrderSource` still runs the self-scan and the ADR-913
+  // relationship check ABOVE this, so an existing follower or member is still 0%.
+  const buyControl = offer ? (
+    <BuyButton
+      productId={offer.productId}
+      entryPoint="marketplace"
+      label={`Get access · ${offer.priceLabel}`}
+      priceLabel={offer.priceLabel}
+      doneTitle="You are in."
+      doneBody={`You are enrolled in ${plan.title}. A receipt is on its way to your email.`}
+      doneHref={`/journeys/${plan.slug}/learn`}
+    />
+  ) : null
+
   const enrollProps = {
     planId: plan.id,
     slug: plan.slug,
@@ -172,6 +197,7 @@ export default async function JourneyPlanPage({
     enrollAction: adoptPlanAction,
     forkAction: forkPlanAction,
     offer,
+    buyControl,
   }
 
   // The standardized `header` element (ADR-793), identity layout: the cover + Journey icon + title +
@@ -313,6 +339,7 @@ export default async function JourneyPlanPage({
             enrollAction={adoptPlanAction}
             forkAction={forkPlanAction}
             offer={offer}
+            buyControl={buyControl}
           />
         </aside>
 

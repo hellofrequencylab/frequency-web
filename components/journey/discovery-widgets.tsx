@@ -452,6 +452,7 @@ export function EnrollCta({
   forkAction,
   layout = 'block',
   offer,
+  buyControl,
 }: {
   planId: string
   slug: string
@@ -465,6 +466,21 @@ export function EnrollCta({
   /** Set when this Journey is sold (ADR-1397): the price, the product page, and the seat line when
    *  there is one. Absent = free, and the control is exactly what it always was. */
   offer?: { productId: string; priceLabel: string; seatLine: string | null; soldOut: boolean } | null
+  /**
+   * THE TILL, HANDED IN BY THE PAGE (ADR-1400).
+   *
+   * An ABSENT SLOT, never a fork: a surface that passes nothing keeps the link-to-the-product-page
+   * behaviour byte for byte, which is what the public marketing route still wants (it cannot mount
+   * Stripe on a cached route, and its buyer has no account yet). The member page passes a real
+   * `BuyButton`, so the card fields open under the button the member pressed.
+   *
+   * 🔴 WHY THE PAGE OWNS IT AND NOT THIS COMPONENT. `BuyButton` lives under `app/(main)/`, and this
+   * module is imported by `app/discover/` too. Importing it here would drag a member-route client
+   * island into a public marketing route's module graph to serve a branch that route never takes.
+   * The slot keeps this component entity-blind and route-blind, the way EventDetailTemplate's slots
+   * keep it surface-blind.
+   */
+  buyControl?: React.ReactNode
 }) {
   const full = layout === 'block' ? 'w-full' : ''
 
@@ -477,11 +493,16 @@ export function EnrollCta({
     )
   }
 
-  // ── A PAID JOURNEY SENDS YOU TO ITS PRODUCT PAGE (ADR-1397) ───────────────────────────────────
-  // Not to a second checkout built here. `/market/<id>` is already the sales page this platform
-  // maintains -- price, reviews, seller verification, SEO metadata, the Buy button and the embedded
-  // card fields -- and a Journey is not special enough to deserve a parallel one that would drift
-  // from it. The Journey's own page stays the pitch; that page is the till.
+  // ── A PAID JOURNEY IS BOUGHT WHERE IT IS PITCHED (ADR-1400, amending ADR-1397) ────────────────
+  // ADR-1397 sent the buyer to `/market/<id>` and kept this page as the pitch alone. That was right
+  // about not building a SECOND checkout and wrong about where the first one belongs: it put a page
+  // navigation between the buyer and the card fields, on the page that does the persuading, and
+  // ADR-1398 then made the Journey slug the canonical URL -- so the page search consolidates on was
+  // the one page that could not take money.
+  //
+  // There is still exactly ONE checkout. `buyControl` is the SAME `BuyButton` and the SAME
+  // `createCommerceCheckout` the product page uses; only the place it is mounted moved. A surface
+  // that hands in nothing still links out, unchanged.
   //
   // The seat line and the sold-out state are DERIVED upstream from real enrolments against the
   // author's real cap. Nothing here can be told a number by a host.
@@ -492,9 +513,11 @@ export function EnrollCta({
           Full
         </span>
       ) : (
-        <Link href={`/market/${offer.productId}`} className={buttonClasses('primary', 'md', full)}>
-          Get access · {offer.priceLabel}
-        </Link>
+        buyControl ?? (
+          <Link href={`/market/${offer.productId}`} className={buttonClasses('primary', 'md', full)}>
+            Get access · {offer.priceLabel}
+          </Link>
+        )
       )
     ) : null
 
@@ -564,6 +587,7 @@ export function AtAGlanceCard({
   forkAction,
   cta,
   offer,
+  buyControl,
 }: {
   plan: JourneyPlan
   slug: string
@@ -586,6 +610,8 @@ export function AtAGlanceCard({
    * know what enrolling costs.
    */
   offer?: { productId: string; priceLabel: string; seatLine: string | null; soldOut: boolean } | null
+  /** The till, forwarded to the rail's EnrollCta. See the prop's note on EnrollCta. */
+  buyControl?: React.ReactNode
 }) {
   const time = formatMinutes(facts.totalMinutes)
   const phasesTotal = progress?.phasesTotal || facts.phaseCount
@@ -614,6 +640,7 @@ export function AtAGlanceCard({
               enrollAction={enrollAction}
               forkAction={forkAction}
               offer={offer}
+              buyControl={buyControl}
             />
           ) : null
         )}
