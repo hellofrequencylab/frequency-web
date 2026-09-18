@@ -48,16 +48,24 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     product.priceCents > 0 ? usd(product.priceCents, product.currency ?? 'usd') : 'Free'
   const meta = listingMetadata(listingDetailFromProduct(product, { isOwner: false, priceLabel }))
 
-  // ── ONE CANONICAL URL (ADR-1398) ──────────────────────────────────────────────────────────────
-  // A Journey is sold from two places on purpose: its own page is the pitch, this page is the till,
-  // and both now render the same derived body. Two URLs describing one thing cannibalise each other
-  // in search, so this one points at the other. The JOURNEY slug wins because `/journeys/heart-on-fire`
-  // is a readable, permanent URL and `/market/<uuid>` is neither; a re-price also writes a NEW product
-  // row (the price is never edited in place), so the product URL is not even stable across a price
-  // change, while the Journey slug survives it.
+  // ── ONE CANONICAL URL, AND THE CHAIN COLLAPSED (ADR-1400, amending ADR-1398 §4) ───────────────
+  // ADR-1398 pointed this page at `/journeys/<slug>`, which was right that the Journey slug beats a
+  // product uuid (readable, and permanent across a re-price, which archives the product row and
+  // writes a new one) and wrong about which Journey URL. `/journeys/<slug>` declares ITS canonical
+  // to be `/discover/journeys/<slug>`, so this was a CHAIN: market -> member page -> public page,
+  // each hop pointing at a URL that disclaimed itself. Worse, the member page redirects a
+  // signed-out visitor away (TWIN_RULES), so the URL search was being consolidated onto was one
+  // most of the audience could not load.
+  //
+  // It now points at the end of that chain directly. `/discover/journeys/<slug>` is readable,
+  // permanent, publicly reachable, already self-canonical, and since ADR-1400 it states the price
+  // and carries the Offer in its structured data -- which is what makes it a legitimate target for
+  // a product page rather than a marketing stub.
   if (product.journeyPlanId) {
     const plan = await getPlanById(product.journeyPlanId)
-    if (plan) meta.alternates = { ...(meta.alternates ?? {}), canonical: `/journeys/${plan.plan.slug}` }
+    if (plan) {
+      meta.alternates = { ...(meta.alternates ?? {}), canonical: `/discover/journeys/${plan.plan.slug}` }
+    }
   }
   return meta
 }

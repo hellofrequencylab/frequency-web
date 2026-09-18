@@ -1,7 +1,7 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { CalendarClock, SlidersHorizontal, Tag } from 'lucide-react'
+import { CalendarClock, Eye, SlidersHorizontal, Tag } from 'lucide-react'
 import { JourneyAuthorActions } from '@/components/journey/v2/learn/journey-author-actions'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
@@ -288,6 +288,22 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
                     : 'inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text'
                 }
               />
+            )}
+            {/* ── SEE WHAT A BUYER SEES (ADR-1400) ────────────────────────────────────────────
+                The sell chip above OPENS THE RAIL and keeps doing so: ADR-1398 §2 put one editor
+                and one authority behind it, and this does not touch that. This is the other half
+                the author had no way to reach. `/journeys/<slug>` redirects an author straight
+                back here (page.tsx: isAuthor && !preview), so the ONLY way for the person setting
+                a $444 price to look at the page that charges it is the `?preview=1` escape hatch,
+                and nothing in the product linked to it. It matters more now that the page is the
+                till rather than a pitch that pointed at one. */}
+            {canManageJourney && (
+              <Link
+                href={`/journeys/${slug}?preview=1`}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              >
+                <Eye className="h-4 w-4" aria-hidden /> Sales page
+              </Link>
             )}
             {isAuthor && (
               <JourneyAuthorActions

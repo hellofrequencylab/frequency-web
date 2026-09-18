@@ -25,7 +25,8 @@ import { accentColor, accentTint } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
-import { journeySchema, breadcrumbSchema } from '@/lib/jsonld'
+import { journeySchema, breadcrumbSchema, journeyOfferSchema } from '@/lib/jsonld'
+import { getJourneyOffer, isSoldOut } from '@/lib/journeys/paid'
 
 // Public, indexable detail page for one library Journey. Mirrors the in-app Journey
 // page's header (badge + Pillar + stat chips) + two-column body + sticky "At a glance"
@@ -106,23 +107,73 @@ export default async function DiscoverJourneyPage({
   const facts = journeyFacts(items)
   const topPillar = primaryPillar(items, byId)
 
-  // The marketing-register CTA: sign up free, then start it.
-  const signUpCta = (
-    <div className="space-y-2">
-      <Link href="/sign-in" className={buttonClasses('primary', 'md', 'w-full')}>
-        Create a free account
-      </Link>
-      <p className="text-2xs leading-relaxed text-muted">
-        Free to start. Run it with your Circle or solo.
-      </p>
-    </div>
-  )
+  // ── THIS PAGE HAS TO KNOW WHAT THE JOURNEY COSTS (ADR-1400) ─────────────────────────────────────
+  //
+  // 🔴 IT DID NOT. This route called `getJourneyOffer` zero times, showed no price anywhere, and
+  // told every visitor "Create a free account -- Free to start." It is also the CANONICAL url AND
+  // the page a signed-out visitor is redirected to from `/journeys/<slug>` (TWIN_RULES), so it is
+  // where every share link, every QR and every crawler lands. A $444 program was advertised as free
+  // on the one page most of its buyers would ever see.
+  //
+  // ⚠️ PRICE YES, SEATS NO. `revalidate = 3600` means anything here can be up to an hour stale. A
+  // stale price is a wrong number the buyer corrects at checkout; a stale "2 spots left" is
+  // manufactured urgency, which is exactly what ADR-1397 §9 and the FTC's dark-patterns report
+  // refuse. `seatLine` stays on the live surfaces.
+  const offer = await getJourneyOffer(plan.id)
+  const priceLabel = offer
+    ? new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: (offer.currency || 'usd').toUpperCase(),
+        maximumFractionDigits: offer.priceCents % 100 === 0 ? 0 : 2,
+      }).format(offer.priceCents / 100)
+    : null
+  const soldOut = offer ? isSoldOut(offer) : false
+
+  // The marketing-register CTA. A FREE Journey reads exactly as it always did; a paid one names its
+  // price and sends the buyer to the storefront that can take it, which is public, crawlable and
+  // (since ADR-1399) opens the card fields in place.
+  const signUpCta =
+    offer && priceLabel ? (
+      <div className="space-y-2">
+        {soldOut ? (
+          <span
+            className={buttonClasses('secondary', 'md', 'w-full pointer-events-none opacity-70')}
+          >
+            Full
+          </span>
+        ) : (
+          <Link
+            href={`/market/${offer.productId}`}
+            className={buttonClasses('primary', 'md', 'w-full')}
+          >
+            Get access · {priceLabel}
+          </Link>
+        )}
+        <p className="text-2xs leading-relaxed text-muted">
+          {soldOut
+            ? 'Every seat is taken for this run.'
+            : 'Enrol to unlock every phase. Run it with your Circle or solo.'}
+        </p>
+      </div>
+    ) : (
+      <div className="space-y-2">
+        <Link href="/sign-in" className={buttonClasses('primary', 'md', 'w-full')}>
+          Create a free account
+        </Link>
+        <p className="text-2xs leading-relaxed text-muted">
+          Free to start. Run it with your Circle or solo.
+        </p>
+      </div>
+    )
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-12 sm:py-16">
       <JsonLd
         data={[
           journeySchema(plan, items),
+          // A priced Journey also emits a Product node carrying its Offer, so the canonical page
+          // states the price in structured data and not only in the markup. Absent when free.
+          ...(offer && priceLabel ? [journeyOfferSchema(plan, offer, soldOut)] : []),
           breadcrumbSchema([
             { name: 'Discover', path: '/discover' },
             { name: 'Journeys', path: '/discover/journeys' },
@@ -213,15 +264,30 @@ export default async function DiscoverJourneyPage({
             <InstructorBlock author={author} />
             <JourneyFaq plan={plan} />
 
+            {/* The closing CTA, in the same two registers. The free copy is untouched; the paid copy
+                says what it costs and what enrolling buys, and never the word free. */}
             <div className="rounded-card border border-border bg-surface p-5 text-center lift-1">
-              <p className="mb-1 text-body-lg font-bold text-text">Start this Journey</p>
-              <p className="mx-auto mb-4 max-w-sm text-body-sm leading-relaxed text-muted">
-                Sign up free to start it. Its phases drip one per week, your Circle can run it
-                with you, and finishing earns the completion Gems.
+              <p className="mb-1 text-body-lg font-bold text-text">
+                {offer ? `Join ${plan.title}` : 'Start this Journey'}
               </p>
-              <Link href="/sign-in" className={buttonClasses('primary', 'md')}>
-                Create a free account
-              </Link>
+              <p className="mx-auto mb-4 max-w-sm text-body-sm leading-relaxed text-muted">
+                {offer && priceLabel
+                  ? soldOut
+                    ? 'Every seat is taken for this run. Follow the guide to hear when the next one opens.'
+                    : `Enrolling opens every phase and keeps them open. Your Circle can run it with you, and finishing earns the completion Gems.`
+                  : 'Sign up free to start it. Its phases drip one per week, your Circle can run it with you, and finishing earns the completion Gems.'}
+              </p>
+              {offer && priceLabel ? (
+                soldOut ? null : (
+                  <Link href={`/market/${offer.productId}`} className={buttonClasses('primary', 'md')}>
+                    Get access · {priceLabel}
+                  </Link>
+                )
+              ) : (
+                <Link href="/sign-in" className={buttonClasses('primary', 'md')}>
+                  Create a free account
+                </Link>
+              )}
             </div>
           </div>
         </div>
