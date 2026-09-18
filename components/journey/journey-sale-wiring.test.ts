@@ -101,7 +101,9 @@ describe('the action layer carries what the control needs', () => {
   })
 
   it('fails the settle OPEN on an unwired limiter, because it runs after a charge', () => {
-    expect(src).toMatch(/settle_commerce_order[^)]*whenUnconfigured: 'allow'/s)
+    // No `s` flag: it needs es2018 and this tsconfig targets lower, and a negated class already
+    // crosses newlines, so the flag was never doing anything here.
+    expect(src).toMatch(/settle_commerce_order[^)]*whenUnconfigured: 'allow'/)
   })
 })
 
