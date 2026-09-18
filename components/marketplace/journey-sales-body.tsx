@@ -1,5 +1,6 @@
 import { CalendarClock, MapPin } from 'lucide-react'
 import { getPlanById, getPlanAuthor, normalizeJourneyMeeting } from '@/lib/journey-plans'
+import { getJourneyOffer } from '@/lib/journeys/paid'
 import {
   StoryBlock,
   OutcomesBlock,
@@ -37,6 +38,11 @@ export async function JourneySalesBody({ planId }: { planId: string }) {
   const { plan, items } = loaded
 
   const author = await getPlanAuthor(plan.author_id)
+  // 🔴 THE REAL COUNT. This read `enrolledCount={0}` -- a literal, not a fallback -- so the one
+  // chip on this page that is social proof could never appear on the page where it matters most.
+  // `getJourneyOffer` already counts live enrolments against the author's real cap for the seat
+  // line, so the number is derived exactly like every other fact here and no host can type it.
+  const offer = await getJourneyOffer(plan.id)
   const facts = journeyFacts(items)
   const meeting = normalizeJourneyMeeting(plan.meeting)
   const t = meeting.gathering ?? meeting
@@ -48,7 +54,7 @@ export async function JourneySalesBody({ planId }: { planId: string }) {
 
   return (
     <div className="space-y-8">
-      <JourneyStatChips facts={facts} plan={plan} enrolledCount={0} />
+      <JourneyStatChips facts={facts} plan={plan} enrolledCount={offer?.enrolled ?? 0} />
 
       {/* The long copy. `intro` is the course description AND the sales copy: it opens on the
           problem, says what the four weeks do, and closes on the philosophy. Rendering it here is
@@ -59,7 +65,7 @@ export async function JourneySalesBody({ planId }: { planId: string }) {
 
       {/* The curriculum. Cohort buyers want the calendar before they want the pitch, and PathBlock
           already opens phase one and marks it a free preview. */}
-      <PathBlock items={items} accent={plan.accent} facts={facts} />
+      <PathBlock items={items} accent={plan.accent} facts={facts} dripIntervalDays={plan.drip_interval_days} />
 
       {hasMeeting && (
         <section>

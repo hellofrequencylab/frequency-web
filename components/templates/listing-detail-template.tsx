@@ -66,6 +66,7 @@ export function ListingDetailTemplate({
   contactNote,
   ownerControls,
   claimToken,
+  soloGalleryRow = true,
 }: {
   view: ListingDetailView
   comments: ListingComment[]
@@ -86,13 +87,29 @@ export function ListingDetailTemplate({
   /** A valid claim token (the visitor arrived via /classifieds/<id>?claim=<token> on a seeded,
    *  unclaimed listing). When set, a "Claim listing" box REPLACES the Contact module. */
   claimToken?: string | null
+  /**
+   * Whether a listing carrying ONE photo still gets a gallery row under the hero.
+   *
+   * Default true, because that is the owner directive this gallery was built for: a seller who
+   * uploaded a single photo should still see a gallery row rather than only the hero.
+   *
+   * 🔴 A JOURNEY PASSES FALSE, and the difference is that its photo is not a photo the seller
+   * chose to show twice. `setJourneyPriceAction` writes `images: [cover_image]`, so a Journey
+   * product carries exactly one image BY CONSTRUCTION -- the cover -- and the row below the hero
+   * is therefore always the hero again, back to back, on every Journey that has ever been priced.
+   * A directive about a seller's photo set does not reach a photo set the system generated.
+   */
+  soloGalleryRow?: boolean
 }) {
   const detailPath = listingCanonicalPath(view)
   const editHref = view.action?.kind === 'edit' ? view.action.href : null
   const sellerFirst = view.seller?.displayName.split(/\s+/)[0] || 'the seller'
   // The top gallery shows EVERY photo with the main image first, so a single-photo listing still gets
   // a gallery row (owner directive), not just the hero.
-  const galleryAll = view.primaryImage ? [view.primaryImage, ...view.galleryImages] : view.galleryImages
+  const galleryAll =
+    view.primaryImage && (soloGalleryRow || view.galleryImages.length > 0)
+      ? [view.primaryImage, ...view.galleryImages]
+      : view.galleryImages
   // A non-owner with a resolvable seller may open the Contact dialog (message + optional offer).
   const showContact = !view.isOwner && !!view.sellerProfileId
   const jsonLd = listingJsonLd(view)
@@ -215,6 +232,17 @@ export function ListingDetailTemplate({
               {contactNote && <div className="mt-3">{contactNote}</div>}
             </section>
           ) : null}
+
+          {/* 🔴 THE TRUST LINE HAS TO RENDER WITHOUT THE CONTACT MODULE. `contactNote` carries
+              "Checkout is secure on Stripe..." and the Report control, and it used to render ONLY
+              inside the Contact section above. A Space-owned listing has a null `sellerProfileId`,
+              so `showContact` is false and that section never renders -- which means on every
+              Space-sold listing, a priced Journey included, the buyer saw neither the payment
+              reassurance nor any way to report the listing. The note belongs to the listing, not
+              to the contact dialog. */}
+          {!showContact && !claimToken && contactNote && (
+            <section className="rounded-2xl border border-border bg-surface p-4">{contactNote}</section>
+          )}
 
           <ListingDetailsCard details={view.details} />
 

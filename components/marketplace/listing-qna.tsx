@@ -147,8 +147,13 @@ export function ListingQna({
 
   return (
     <section className="mt-6">
+      {/* 🔴 NOT "Questions". A Journey sales page renders JourneyFaq -- whose own heading is
+          "Questions" -- roughly one screen above this, so the page carried two <h2>Questions</h2>
+          with nothing to tell them apart: one a static FAQ accordion, the other this live composer.
+          Naming the ACT rather than the noun separates them everywhere the two can meet, and reads
+          correctly on a listing that has no FAQ at all. */}
       <h2 className="mb-3 text-body-sm font-bold text-text">
-        Questions
+        Ask a question
         {comments.length > 0 && <span className="ml-2 text-meta font-normal text-subtle">{comments.length}</span>}
       </h2>
 

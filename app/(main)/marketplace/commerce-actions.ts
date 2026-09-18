@@ -2,9 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
+import { rateLimitOk } from '@/lib/rate-limit'
 import { createProduct, setProductStatus, deleteProduct, productOwnerProfileId } from '@/lib/commerce/products'
-import { createCommerceCheckout } from '@/lib/commerce/checkout'
+import { createCommerceCheckout, recordCommerceOrderFromSessionId } from '@/lib/commerce/checkout'
 import { onPageCheckoutAvailable } from '@/lib/billing/stripe-browser'
 import { canListNew } from '@/lib/commerce/selling'
 import { normalizeCategory, normalizeTags } from '@/lib/commerce/categories'
@@ -152,9 +154,20 @@ export async function startCheckoutAction(
    *  to. Without it the fallback re-asks for elements, gets another client secret, finds no `url`
    *  and dead-ends the buyer -- the live 2026-09-15 ticket failure. */
   opts?: { forceHosted?: boolean },
-): Promise<{ url?: string; clientSecret?: string; error?: string }> {
+): Promise<{ url?: string; clientSecret?: string; sessionId?: string; error?: string; signInRequired?: true }> {
   const buyerProfileId = await getMyProfileId()
-  if (!buyerProfileId) return { error: 'Sign in to buy.' }
+  // 🔴 A SIGNED-OUT BUYER GETS A ROUTE, NOT A DEAD STRING. This used to answer `'Sign in to buy.'`
+  // and nothing else: the control printed that sentence under itself and the visitor was left to
+  // find the sign-in page on their own, then find this product again. That is the wall the events
+  // page removed for tickets on exactly the same reasoning (see the signed-out branch of the
+  // tickets cascade in app/(main)/events/[slug]/page.tsx) -- on a paid Journey it is the ENTIRE
+  // signed-out path, in front of the one thing the page exists to do.
+  //
+  // The flag rather than a URL, because only the CLIENT knows which page it is on: this action is
+  // reached from /market/<id>, /store/<id> and (once the till moves) the Journey itself, and a
+  // server action sees no calling path. The control appends its own `?next=`, so the buyer comes
+  // back to the page they were reading rather than to a generic listing.
+  if (!buyerProfileId) return { error: 'Sign in to buy.', signInRequired: true }
   const r = await createCommerceCheckout({
     buyerProfileId,
     items: [{ productId, variantId: variantId ?? null, qty: 1 }],
@@ -165,8 +178,52 @@ export async function startCheckoutAction(
   // `orderId` is for the service-booking caller, not the browser; it is dropped here so a buy
   // control cannot come to depend on an internal row id.
   if (r.error) return { error: r.error }
-  if (r.clientSecret) return { clientSecret: r.clientSecret }
+  // `sessionId` rides ALONGSIDE the secret, never instead of it: it is what lets the control settle
+  // the purchase from its own success handler instead of waiting on the webhook. See
+  // `settleCommerceOrderAction` below.
+  if (r.clientSecret) return { clientSecret: r.clientSecret, sessionId: r.sessionId }
   return { url: r.url }
+}
+
+/**
+ * Settle a commerce order the moment it is paid ON PAGE, without waiting for the webhook.
+ *
+ * 🔴 WHY THIS IS NOT OPTIONAL ON A PRICED JOURNEY. The on-page form confirms with
+ * `redirect: 'if_required'`, so the common card path never navigates and the success URL carrying
+ * `session_id={CHECKOUT_SESSION_ID}` is never visited. Until this existed, the webhook was the only
+ * thing that could flip the order to `paid` -- and for a Journey it is also the only thing that
+ * calls `enrolByOrder`. A late, retried or misconfigured delivery therefore meant a buyer who had
+ * paid $444 and had no access, behind a panel that had already told them they were in.
+ *
+ * The webhook remains the GUARANTEE; this is the fast path that makes the guarantee usually
+ * unnecessary. Both are safe to run: `recordCommerceOrderFromSession` updates
+ * `where status = 'pending'`, so whichever arrives second flips nothing and fulfils nothing.
+ */
+// authz-ok: STRIPE IS THE AUTHORITY, and a session-holder gate would add nothing.
+// `recordCommerceOrderFromSessionId` re-fetches the session FROM STRIPE and refuses anything that
+// is not `metadata.kind === 'commerce_order'` AND `payment_status === 'paid'`, so the most a caller
+// can do with an id that is not theirs is settle a purchase that genuinely happened -- precisely
+// what the webhook does, unprompted, seconds later. Nothing is read back but a boolean, and the
+// per-IP limiter is what stops that boolean being used to enumerate session ids.
+export async function settleCommerceOrderAction(sessionId: string): Promise<{ settled: boolean }> {
+  if (!sessionId || !sessionId.startsWith('cs_')) return { settled: false }
+  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  // ⚠️ `whenUnconfigured: 'allow'`, matching `settleTicketAction`, and for the same reason: this
+  // runs AFTER a successful charge. Denying it protects nothing (the webhook settles the same
+  // session regardless) and only deletes the fast path, silently, wherever the limiter is unwired.
+  // A door that takes money fails closed; a reconcile that runs behind one fails open.
+  if (!(await rateLimitOk('settle_commerce_order', ip, 30, '1 m', { whenUnconfigured: 'allow' }))) {
+    return { settled: false }
+  }
+  try {
+    return { settled: await recordCommerceOrderFromSessionId(sessionId) }
+  } catch (e) {
+    // NEVER fatal to the buyer. They paid; the webhook still owes them the order, and a thrown
+    // reconcile must not turn a successful payment into an error screen. Loud, because a swallowed
+    // failure here is the invisible regression AGENTS.md names.
+    console.error('[commerce] on-page settle failed; the webhook is now the only path', e)
+    return { settled: false }
+  }
 }
 
 // ── Seller (maker) storefront management — owner-gated ────────────────────────────

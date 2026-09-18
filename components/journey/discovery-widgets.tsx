@@ -114,6 +114,21 @@ export function cadenceLabel(dripIntervalDays: number): string {
   return `1 phase / ${d} days`
 }
 
+/** When a phase opens, in the SAME unit its cadence is counted in.
+ *
+ *  🔴 This used to be a hardcoded `Week ${i + 1}`, printed directly under a chip that could read
+ *  "1 phase / day" or "1 phase / 2 weeks". A daily Journey labelled its second phase "Week 2" and
+ *  a fortnightly one labelled its fourth "Week 4" when that phase opens in week seven. The label
+ *  is derived from the same `drip_interval_days` the chip reads, so the two can no longer disagree.
+ */
+export function phaseOpenLabel(index: number, dripIntervalDays: number): string {
+  const d = dripIntervalDays || 7
+  if (d === 1) return `Day ${index + 1}`
+  if (d === 7) return `Week ${index + 1}`
+  if (d % 7 === 0) return `Week ${(index * d) / 7 + 1}`
+  return `Day ${index * d + 1}`
+}
+
 // ── Header chips ──────────────────────────────────────────────────────────────
 
 /** A quiet, tokenized stat chip — structural context, NOT a game tile (the gamified-
@@ -213,12 +228,16 @@ export function PathBlock({
   items,
   accent,
   facts,
+  dripIntervalDays = 7,
 }: {
   items: JourneyPlanItem[]
   pillarsById?: Map<string, Pillar>
   accent: string | null
   /** Pre-derived facts (the page computes once); falls back to deriving from items. */
   facts?: JourneyFacts
+  /** The plan's drip cadence, so a phase's opening label is counted in the unit the cadence chip
+   *  above it uses. Defaults to weekly, which is what the hardcoded label assumed. */
+  dripIntervalDays?: number
 }) {
   const f = facts ?? journeyFacts(items)
   const total = f.lessonCount
@@ -233,7 +252,7 @@ export function PathBlock({
           {f.phases.map((p, i) => {
             const n = f.lessonsPerPhase.get(p.id) ?? 0
             const time = formatMinutes(f.phaseMinutes.get(p.id) ?? null)
-            const cadence = i === 0 ? 'Unlocks at start' : `Week ${i + 1}`
+            const cadence = i === 0 ? 'Unlocks at start' : phaseOpenLabel(i, dripIntervalDays)
             const lessons = p.modules.flatMap((m) => m.lessons)
             return (
               <li key={p.id} className="overflow-hidden rounded-2xl border border-border bg-surface lift-1">
@@ -544,6 +563,7 @@ export function AtAGlanceCard({
   enrollAction,
   forkAction,
   cta,
+  offer,
 }: {
   plan: JourneyPlan
   slug: string
@@ -557,6 +577,15 @@ export function AtAGlanceCard({
   forkAction?: (formData: FormData) => void | Promise<void>
   /** Replace the in-app enroll CTA (e.g. a public "Create a free account" link). */
   cta?: React.ReactNode
+  /**
+   * 🔴 THE SELLABLE FACE, FORWARDED. This card used to take no `offer` at all and build its
+   * `EnrollCta` without one, so on a PRICED Journey the sticky rail -- the page's highest-value
+   * real estate -- rendered the free door's "Start Journey" submit while the hero beside it read
+   * "Get access - $444". `checkFreeEnrol` correctly refuses that POST, and returns nothing the
+   * member can see, so the button simply read as broken. A card that shows the enrol control must
+   * know what enrolling costs.
+   */
+  offer?: { productId: string; priceLabel: string; seatLine: string | null; soldOut: boolean } | null
 }) {
   const time = formatMinutes(facts.totalMinutes)
   const phasesTotal = progress?.phasesTotal || facts.phaseCount
@@ -584,6 +613,7 @@ export function AtAGlanceCard({
               isAuthor={isAuthor}
               enrollAction={enrollAction}
               forkAction={forkAction}
+              offer={offer}
             />
           ) : null
         )}
