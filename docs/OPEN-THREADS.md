@@ -42,18 +42,20 @@
 | B5 | Prune the ~19 documented dead exports | S | Listed in the audit; some are intentional seams (Journey runs, trust), keep those. |
 | B6 | QR-logo SSRF fetch-time IP pinning | S | **✅ done**: `inlineLogo` now resolves the host (DNS) and rejects any private/loopback/metadata IP before fetching, closing the DNS-rebind residual (the ADR-274 literal-IP block only covered the hostname). Shared `isPrivateIp` helper; unit-tested. Residual TOCTOU noted (acceptable for a blind, capped, image-only fetch). |
 | B7 | ~~CSP enforce~~ + nonces | — | **Correction (double-check):** CSP is already **ENFORCED** (ADR-170) with full HSTS + a tight `connect-src` gate. The only soft spot is `script-src 'unsafe-inline'` — `nonces` are a **deliberate tradeoff** (they force every page dynamic, killing static/ISR), so this is **not pursued**. See A-PLUS-ROADMAP §3. |
-| B8 | Extend `check:authz` to `lib/` mutation helpers | M | Complementary to the ADR-275 runtime scoping tests. |
+| B8 | Extend `check:authz` to `lib/` mutation helpers | M | **✅ done on current main** (action + lib + route scans in `scripts/check-authz-guards.mjs`). |
 | B9 | SEO growth surfaces | M | **`/discover/practices` ✅ (ADR-279)** + **browse-by-Pillar ✅ (ADR-281)** — public directory, per-practice `HowTo` detail pages, four crawlable per-Pillar landing pages + filter chips, all in the sitemap. Remaining: practice **slugs** (needs a column + backfill), dynamic OG on marketing pillars, the seeker-track article cluster. |
 
 ## C. ⏳ Seams to activate — built, empty in prod (need flows + a little owner)
 
+Verified against prod (`azsqfeonabsbmemvddqd`) on **2026-09-18**: 58 profiles, 28 circles, 64 events, 22 spaces, 110 posts, **19 public practices**, **1** `financial_transactions` row, **2** `journey_enrollments`, **0** `journey_runs`, **0** `profile_personas`, **0** `trust_signals`.
+
 | # | Thread | State | To light it up |
 |---|---|---|---|
-| C1 | Money ledger | `financial_transactions` = 0 rows | Flows from A3 (real purchases) start recording automatically. |
+| C1 | Money ledger | `financial_transactions` = **1 row** (was 0 in June). Stripe go-live (A3) still owner-gated. | Configure Stripe keys + Connect; prove one paid ticket writes a second row. |
 | C2 | Trust score | `trust_signals`/`trust_scores` = 0 rows; few emitters | Route marketplace/moderation/verification to emit signals + add the SECURITY DEFINER read RPC + recompute job. |
-| C3 | Journeys v2 | `journey_runs`/`journey_enrollments` = 0 rows | Seed a curriculum + launch one Circle cohort to prove the loop. |
+| C3 | Journeys v2 | `journey_runs` = **0**, `journey_enrollments` = **2** | Seed a curriculum + launch one Circle cohort so The Quest has a live run. |
 | C4 | Personas | `profile_personas` = 0 rows | Onboard the first verified business/practitioner; per-persona Stripe binding still stubbed. |
-| C5 | Public practice library | **0 `is_public` practices** in prod | The public `/discover/practices` directory + Pillar pages (ADR-281) + slug detail pages (ADR-282) are crawlable but render empty. **Owner action, no code:** flip practices public via the `is_public` toggle on `/admin/content`. |
+| C5 | Public practice library | **19 `is_public` practices** (was 0 in June). Directory is no longer empty. | Keep publishing; remaining gap is Journey *runs*, not the practice catalog. |
 
 ## D. ✅ Shipped this session (the trail)
 

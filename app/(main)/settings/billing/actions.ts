@@ -8,6 +8,7 @@ import { createBundleCheckout } from '@/lib/billing/bundle-checkout'
 import { createOnboardingLink, createDashboardLink, canReceivePayouts } from '@/lib/billing/connect'
 import { viaStripe } from '@/lib/billing/via-stripe'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { parseInput, z, uuid } from '@/lib/validation'
 
 // Open the Stripe billing portal so a member can update or cancel their subscription.
 export async function openBillingPortal(): Promise<ActionResult<{ url: string }>> {
@@ -47,6 +48,22 @@ export async function startBundleCheckout(
   period: 'monthly' | 'annual' = 'monthly',
   seatProfileIds: string[] = [],
 ): Promise<ActionResult<{ url: string }>> {
+  let seats: string[]
+  let billingPeriod: 'monthly' | 'annual'
+  try {
+    const parsed = parseInput(
+      z.object({
+        period: z.enum(['monthly', 'annual']),
+        seatProfileIds: z.array(uuid),
+      }),
+      { period, seatProfileIds },
+    )
+    billingPeriod = parsed.period
+    seats = parsed.seatProfileIds
+  } catch (err) {
+    return fail(err instanceof Error ? err.message : 'Invalid input')
+  }
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -63,8 +80,8 @@ export async function startBundleCheckout(
   const bundle = await viaStripe('settings/billing startBundleCheckout', () => createBundleCheckout({
     profileId: profile.id,
     email: user.email,
-    period,
-    seatProfileIds,
+    period: billingPeriod,
+    seatProfileIds: seats,
   }))
   if ('error' in bundle) return fail(bundle.error)
   const url = bundle.value

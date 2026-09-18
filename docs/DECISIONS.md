@@ -45372,3 +45372,17 @@ treatment the identity lockup carried. Both are the ruling landing rather than r
 neither is watched by a visual baseline — these pages carry none, so the preview is the only check
 that can see them. Still open: the copied product title/description snapshot and the Shop console
 fields that author it, both Wave 3.
+
+## ADR-1402: Lock the day-key `award_gems_atomic` overload to service_role
+
+**Status:** Accepted · corroborated by `supabase/migrations/20270345006000_award_gems_atomic_lock_day_key_overload.sql`
+**Context:** Migration `20270345001200` added `_day_key` and `_timezone` to `award_gems_atomic`.
+That new signature is a second overload. Postgres grants `EXECUTE` to `PUBLIC` on a new function,
+so the day-key form was callable by `anon` / `authenticated` even though the original 5-arg form
+had been locked to `service_role` (20260929000000). Supabase's security advisor flagged it
+2026-09-18. The app only calls this RPC through `lib/gems.ts` on the admin client.
+**Decision:** Revoke `EXECUTE` from `public`, `anon`, and `authenticated` on both overloads; grant
+`service_role` only. Same additive lockdown as 20261005000000.
+**Consequences:** Direct PostgREST calls to `award_gems_atomic` from a browser session fail.
+Legitimate awards are unchanged. Apply this migration on prod; it is grant-only, no function body
+change.

@@ -47,7 +47,7 @@ const DISCOVER_FAQS = [
     a: 'Yes. Creating an account, joining a Circle, and RSVPing to events is free.',
   },
   {
-    q: 'What is a circle?',
+    q: 'What is a Circle?',
     a: 'A Circle is a small local group of up to 50 people built around a shared Channel, like Movement, Spirituality, or Creative. Small enough to know everyone, big enough to always have plans.',
   },
   {
@@ -122,6 +122,7 @@ export default async function DiscoverHubPage() {
   for (const c of allCircles) {
     if (c.channel_slug) countByChannel.set(c.channel_slug, (countByChannel.get(c.channel_slug) ?? 0) + 1)
   }
+  const liveChannels = channels.filter((ch) => (countByChannel.get(ch.slug) ?? 0) > 0)
 
   return (
     <>
@@ -137,8 +138,8 @@ export default async function DiscoverHubPage() {
 
       {/* ── Hero ──────────────────────────────────────────────── */}
       <PhotoHero
-        image="/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg"
-        alt="A group dancing together outdoors at golden hour, hands in the air, above the ocean in North County San Diego"
+        image="/images/site/meditation-circle-outdoor.jpg"
+        alt="A small circle sitting together outdoors, close enough to know everyone"
         focal="object-center"
         eyebrow="Discover Frequency"
         title="Real community, near you"
@@ -229,7 +230,7 @@ export default async function DiscoverHubPage() {
       </section>
 
       {/* ── Channels ──────────────────────────────────────────── */}
-      {channels.length > 0 && (
+      {liveChannels.length > 0 && (
         <section className="relative overflow-hidden bg-marketing-canvas mk-beat">
           {/* A loose constellation of people, the network a Channel opens onto. */}
           <CircleConstellation
@@ -249,7 +250,7 @@ export default async function DiscoverHubPage() {
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {channels.map((ch) => (
+              {liveChannels.map((ch) => (
                 <ChannelCard key={ch.id} channel={ch} circleCount={countByChannel.get(ch.slug) ?? 0} />
               ))}
             </div>
