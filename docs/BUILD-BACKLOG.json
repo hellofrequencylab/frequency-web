@@ -51,14 +51,21 @@
             "LIVE-367",
             "LIVE-373",
             "LIVE-376",
-            "LIVE-377"
+            "LIVE-377",
+            "LIVE-390",
+            "LIVE-392"
           ]
         },
         {
           "name": "W0c \u00b7 P2 \u2014 small cleanups worth doing whenever a lane is clear, plus the tail of a sequenced repair whose head is higher up the slate (LIVE-293 and LIVE-294 follow LIVE-290 to LIVE-292).",
           "ids": [
             "HYG-075",
-            "LIVE-335"
+            "LIVE-335",
+            "LIVE-391",
+            "LIVE-393",
+            "LIVE-394",
+            "LIVE-395",
+            "LIVE-396"
           ]
         },
         {
@@ -72,7 +79,9 @@
             "HYG-090",
             "HYG-092",
             "LIVE-338",
-            "HYG-094"
+            "HYG-094",
+            "LIVE-397",
+            "LIVE-398"
           ]
         },
         {
@@ -226,7 +235,8 @@
             "OWN-073",
             "OWN-074",
             "OWN-076",
-            "OWN-075"
+            "OWN-075",
+            "LIVE-399"
           ]
         }
       ],
@@ -13971,7 +13981,8 @@
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const h=fs.readFileSync(\"lib/elements/header.ts\",\"utf8\");if(!/scrim: false/.test(h))fail(\"the entity header still defaults to a scrim\");if(!/overlayStyle: \\x27none\\x27/.test(h))fail(\"the entity header still defaults to an overlay\");const hero=fs.readFileSync(\"components/templates/page-hero.tsx\",\"utf8\");if(!hero.includes(\"subtitleBelow\"))fail(\"the description is not rendered under the image\");if(!/variant === \\x27identity\\x27 && subtitle/.test(hero))fail(\"the under-image description is not scoped to the identity variant\");for(const f of [\"app/(main)/journeys/[slug]/page.tsx\",\"app/(main)/journeys/[slug]/learn/page.tsx\"]){  const j=fs.readFileSync(f,\"utf8\");  if(/actions=\\{<QrShareDropdown/.test(j))fail(\"QR is still on the cover in \"+f);  if(!j.includes(\"QrShareDropdown\"))fail(\"QR disappeared entirely from \"+f);  if(j.includes(\"HERO_ACTION_CLASS} />\"))fail(\"QR still wears the on-ink class in \"+f);}const t=fs.readFileSync(\"lib/elements/header.test.ts\",\"utf8\");if(!/pickHeaderConfig\\(EMPTY\\)\\.overlayStyle\\)\\.toBe\\(\\x27none\\x27\\)/.test(t))fail(\"nothing pins the new default\");if(!/scrim: true \\}\\)\\.overlayStyle\\)\\.toBe\\(\\x27shadow\\x27\\)/.test(t))fail(\"the scrim derivation is no longer proven both ways\");'",
-        "note": "Passes when the header element defaults to no scrim and no overlay, PageHero renders the identity subtitle below the cover, both Journey pages carry QR off the cover and off the on-ink class, and the test pins the new default while still proving the scrim derivation both ways. Written 2026-09-17."      }
+        "note": "Passes when the header element defaults to no scrim and no overlay, PageHero renders the identity subtitle below the cover, both Journey pages carry QR off the cover and off the on-ink class, and the test pins the new default while still proving the scrim derivation both ways. Written 2026-09-17."
+      }
     },
     {
       "id": "LIVE-388",
@@ -13984,12 +13995,13 @@
         "file": "lib/journeys/entry-gate.ts",
         "ref": "ADR-1397, owner request 2026-09-17"
       },
-      "detail": "Owner, 2026-09-17: 'help me figure out a best practice way to sell journeys. I want to sell Heart on Fire for $444 in the main marketplace, or through the Daniel Tyack space and Royal Temple.' Then, mid-build: 'make it so only paid spaces can create paid journeys.'\n\n🔴 THERE WAS NOTHING TO SELL. /journeys/<slug>/learn had ONE gate, visibility === 'private', so any signed-in member could read every lesson body of any public Journey without enrolling. journey_enrollments was a progress record no read path consulted, and journeyHasRoom + journey_plans.enroll_cap had zero callers since ADR-838, so Heart on Fire's 12 seats were decorative. docs/JOURNEYS.md mentions price, paid, sell, purchase and checkout exactly zero times.\n\nSHIPPED. (1) canEnterJourney (pure): enrolled, author, or manager; everyone else is REDIRECTED to the Journey's own page, which is its sales page, rather than 404'd. The owner chose the wide rule over gating only priced Journeys. (2) product_kind 'journey' on commerce_products with a real journey_plan_id FK, a CHECK binding the two, and a partial unique index so one Journey has one live product: the canonical-record rule every multi-storefront platform keeps, because a duplicate product is a duplicate seat counter. market_published (already the main-Market opt-in) and commerce_orders.source + attribution_ref (already the storefront stamp) carry 'sell it in the Market or through a Space' with no new concept. (3) canSell joins resolveJourneyAccess (ADR-838's one resolver) and checkJourneySell is the server chokepoint; a personal Journey is never sellable at any tier. The gate does NOT honour the beta grace window that checkJourneyPublish honours, because that grace opens allowances and this guards who may take money; a source-shape test with a positive control pins the absence. (4) checkFreeEnrol refuses a priced or full Journey on BOTH adopt actions, which is the guard that matters: adoptPlanAction is a plain form POST, so hiding the button would have changed only the button. (5) Seats bind at the free door and at checkout START, never at fulfilment, where refusing can only strand somebody who already paid; a race is settled for the buyer and logged. (6) enrolByOrder / revokeJourneyByOrder sit beside confirmBookingByOrder / cancelBookingByOrder, idempotent and fail-soft; journey_enrollments.order_id is the provenance a refund needs. A partial refund revokes nothing and a finished Journey is never un-finished. (7) seatLine is derived from real enrolments against the real cap and stays SILENT above 5 left. (8) The journey.sell rail module is the ONLY caller of setJourneyPriceAction: without it the action was unreachable and the whole selling path was theory. It RENDERS for a free-Space editor and shows them the gate's upsell line, because hiding it would answer 'why can't I sell this?' with silence.\n\n⚠️ commerce_orders has ZERO rows in production: no purchase has ever completed here, so a $444 sale would also be the first real test of the settle path. See LIVE-234 (P0).\n\nHELD BY supabase/tests/journey_product.test.sql (8 assertions on the four schema rules), every one first verified against PRODUCTION in a RAISE-forced rollback: the journey kind is accepted, a journey product naming no plan and a non-journey product naming one are both refused 23514, a second LIVE product on one Journey is refused 23505, archiving frees the slot so a re-price writes a new row, and deleting the order leaves the enrolment standing with order_id NULL.\n\nALSO FIXED HERE: supabase/tests/space_circle_auto_enrol.sql (LIVE-386, written earlier the same day) was missing the .test.sql suffix the db-tests runner globs, so it had NEVER executed while its probe reported it as coverage by reading the file's text. Renamed so it runs.\n\nDEFERRED: a Journeys rail of its own in the Market (journey rides Products; a fourth MarketGroup touches eleven files and every facet).",
+      "detail": "Owner, 2026-09-17: 'help me figure out a best practice way to sell journeys. I want to sell Heart on Fire for $444 in the main marketplace, or through the Daniel Tyack space and Royal Temple.' Then, mid-build: 'make it so only paid spaces can create paid journeys.'\n\n\ud83d\udd34 THERE WAS NOTHING TO SELL. /journeys/<slug>/learn had ONE gate, visibility === 'private', so any signed-in member could read every lesson body of any public Journey without enrolling. journey_enrollments was a progress record no read path consulted, and journeyHasRoom + journey_plans.enroll_cap had zero callers since ADR-838, so Heart on Fire's 12 seats were decorative. docs/JOURNEYS.md mentions price, paid, sell, purchase and checkout exactly zero times.\n\nSHIPPED. (1) canEnterJourney (pure): enrolled, author, or manager; everyone else is REDIRECTED to the Journey's own page, which is its sales page, rather than 404'd. The owner chose the wide rule over gating only priced Journeys. (2) product_kind 'journey' on commerce_products with a real journey_plan_id FK, a CHECK binding the two, and a partial unique index so one Journey has one live product: the canonical-record rule every multi-storefront platform keeps, because a duplicate product is a duplicate seat counter. market_published (already the main-Market opt-in) and commerce_orders.source + attribution_ref (already the storefront stamp) carry 'sell it in the Market or through a Space' with no new concept. (3) canSell joins resolveJourneyAccess (ADR-838's one resolver) and checkJourneySell is the server chokepoint; a personal Journey is never sellable at any tier. The gate does NOT honour the beta grace window that checkJourneyPublish honours, because that grace opens allowances and this guards who may take money; a source-shape test with a positive control pins the absence. (4) checkFreeEnrol refuses a priced or full Journey on BOTH adopt actions, which is the guard that matters: adoptPlanAction is a plain form POST, so hiding the button would have changed only the button. (5) Seats bind at the free door and at checkout START, never at fulfilment, where refusing can only strand somebody who already paid; a race is settled for the buyer and logged. (6) enrolByOrder / revokeJourneyByOrder sit beside confirmBookingByOrder / cancelBookingByOrder, idempotent and fail-soft; journey_enrollments.order_id is the provenance a refund needs. A partial refund revokes nothing and a finished Journey is never un-finished. (7) seatLine is derived from real enrolments against the real cap and stays SILENT above 5 left. (8) The journey.sell rail module is the ONLY caller of setJourneyPriceAction: without it the action was unreachable and the whole selling path was theory. It RENDERS for a free-Space editor and shows them the gate's upsell line, because hiding it would answer 'why can't I sell this?' with silence.\n\n\u26a0\ufe0f commerce_orders has ZERO rows in production: no purchase has ever completed here, so a $444 sale would also be the first real test of the settle path. See LIVE-234 (P0).\n\nHELD BY supabase/tests/journey_product.test.sql (8 assertions on the four schema rules), every one first verified against PRODUCTION in a RAISE-forced rollback: the journey kind is accepted, a journey product naming no plan and a non-journey product naming one are both refused 23514, a second LIVE product on one Journey is refused 23505, archiving frees the slot so a re-price writes a new row, and deleting the order leaves the enrolment standing with order_id NULL.\n\nALSO FIXED HERE: supabase/tests/space_circle_auto_enrol.sql (LIVE-386, written earlier the same day) was missing the .test.sql suffix the db-tests runner globs, so it had NEVER executed while its probe reported it as coverage by reading the file's text. Renamed so it runs.\n\nDEFERRED: a Journeys rail of its own in the Market (journey rides Products; a fourth MarketGroup touches eleven files and every facet).",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const strip=(t)=>t.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\"\").replace(/^\\s*\\/\\/.*$/gm,\"\");const gate=fs.readFileSync(\"lib/journeys/entry-gate.ts\",\"utf8\");if(!/export function canEnterJourney/.test(gate))fail(\"no entry gate\");const learn=strip(fs.readFileSync(\"app/(main)/journeys/[slug]/learn/page.tsx\",\"utf8\"));if(!/if \\(!canEnterJourney\\(/.test(learn))fail(\"the lesson player does not refuse on the entry gate\");if(!/redirect\\(`\\/journeys\\/\\$\\{plan\\.slug\\}`\\)/.test(learn))fail(\"a refused visitor is not sent to the Journey\\x27s own page\");const sell=strip(fs.readFileSync(\"lib/journeys/sell-gate.ts\",\"utf8\"));if(!sell.includes(\"resolveJourneyAccess\"))fail(\"the sell gate ladders plans instead of asking the one resolver\");if(!sell.includes(\"access.canSell\"))fail(\"the sell gate does not read canSell\");if(/featureGatesLive/.test(sell))fail(\"the sell gate honours the beta grace, so every free Space can sell\");const acc=fs.readFileSync(\"lib/journeys/journey-access.ts\",\"utf8\");if(!/canSell: canEdit && paidSpace/.test(acc))fail(\"a free Space can sell\");if(!/canSell: false,/.test(acc))fail(\"a personal Journey is sellable\");const free=fs.readFileSync(\"lib/journeys/free-enrol-gate.ts\",\"utf8\");if(!/export async function checkFreeEnrol/.test(free))fail(\"no free-enrol gate\");if(!free.includes(\"journeyHasRoom\"))fail(\"seats are still unenforced at the free door\");const acts=strip(fs.readFileSync(\"app/(main)/journeys/actions.ts\",\"utf8\"));if((acts.match(/checkFreeEnrol\\(/g)||[]).length<2)fail(\"one of the two adopt actions still enrols for free\");const ck=strip(fs.readFileSync(\"lib/commerce/checkout.ts\",\"utf8\"));if(!ck.includes(\"enrolByOrder(row.id)\"))fail(\"a paid order grants no Journey access\");if(!ck.includes(\"revokeJourneyByOrder(row.id)\"))fail(\"a refund leaves the access standing\");if(!/isSoldOut\\(offer\\)/.test(ck))fail(\"checkout does not check seats before taking money\");const ful=fs.readFileSync(\"lib/commerce/journey-fulfilment.ts\",\"utf8\");if(!/is\\(\\x27completed_at\\x27, null\\)/.test(ful))fail(\"a refund would un-finish a completed Journey\");const mig=fs.readFileSync(\"supabase/migrations/20270345005900_journey_product.sql\",\"utf8\");if(!/\\x27journey\\x27::text/.test(mig))fail(\"product_kind does not admit a journey\");if(!/add column if not exists journey_plan_id/.test(mig))fail(\"no link from a product to its Journey\");if(!mig.includes(\"commerce_products_one_live_per_journey\"))fail(\"more than one product could sell one Journey\");if(!/journey_enrollments[\\s\\S]{0,120}add column if not exists order_id/.test(mig))fail(\"an enrolment carries no order, so a refund cannot find it\");const sql=fs.readFileSync(\"supabase/tests/journey_product.test.sql\",\"utf8\");if(!sql.includes(\"one Journey, one seat pool\"))fail(\"nothing tests that a second live product on one Journey is refused\");if(!sql.includes(\"SET NULL, never CASCADE\"))fail(\"nothing tests that deleting an order leaves the enrolment standing\");const mod=fs.readFileSync(\"components/admin/modules/journey-sell-module.tsx\",\"utf8\");if(!mod.includes(\"setJourneyPriceAction\"))fail(\"nothing calls the pricing action, so a price cannot be set from the UI\");if(!mod.includes(\"data.reason\"))fail(\"a free-Space editor is shown no reason they cannot sell\");const reg=fs.readFileSync(\"lib/admin/modules/registry.ts\",\"utf8\");if(!/id: \\x27journey.sell\\x27/.test(reg))fail(\"the sell control is not in the module catalog, so the rail never draws it\");const ids=fs.readFileSync(\"components/admin/modules/module-ids.ts\",\"utf8\");if(!ids.includes(\"journey.sell\"))fail(\"the sell module has no id, so the rail renders an empty box\");const paid=fs.readFileSync(\"lib/journeys/paid.ts\",\"utf8\");if(!/export const SEATS_VISIBLE_AT/.test(paid))fail(\"the seat threshold is not named\");if(!/if \\(left > SEATS_VISIBLE_AT\\) return null/.test(paid))fail(\"the seat line speaks while there is plenty of room\");'",
         "note": "Passes when the lesson player asks the entry gate and redirects a refused visitor to the Journey's page, the sell gate composes resolveJourneyAccess without the beta grace, a free Space and a personal Journey cannot sell, both adopt actions consult checkFreeEnrol, checkout checks seats before charging and the settle and full-refund paths grant and revoke, the migration carries the kind, the link, the one-live index and the order provenance, the seat line stays quiet above the threshold, and the journey.sell control exists, calls the pricing action, shows the refusal reason, and is registered in both the catalog and the id list. Written 2026-09-17."
-      }    },
+      }
+    },
     {
       "id": "LIVE-389",
       "title": "The Journey's sales page is derived from the Journey, and the sell control leaves the collapsed drawer",
@@ -14006,6 +14018,190 @@
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const strip=(t)=>t.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\"\").replace(/^\\s*\\/\\/.*$/gm,\"\");const reg=fs.readFileSync(\"lib/admin/modules/registry.ts\",\"utf8\");const sell=reg.slice(reg.indexOf(\"id: \\x27journey.sell\\x27\"));const row=sell.slice(0, sell.indexOf(\"},\"));if(/tier: \\x27extra\\x27/.test(row))fail(\"the sell control is back in the collapsed More drawer\");if(!/tier: \\x27standard\\x27/.test(row))fail(\"the sell control is not in the standard band\");if(!/order: 25/.test(row))fail(\"order moved, and registry.test.ts pins the order-sorted id list\");const learn=strip(fs.readFileSync(\"app/(main)/journeys/[slug]/learn/page.tsx\",\"utf8\"));if(!learn.includes(\"sellLabel\"))fail(\"no sell chip on the learn band, where an author is redirected\");if(!learn.includes(\"getJourneyOffer\"))fail(\"the sell chip does not read the live offer\");const body=fs.readFileSync(\"components/marketplace/journey-sales-body.tsx\",\"utf8\");const bodyCode=strip(body);if(!bodyCode.includes(\"getPlanById\"))fail(\"the sales body does not load the Journey\");for(const b of [\"StoryBlock\",\"OutcomesBlock\",\"PathBlock\",\"InstructorBlock\",\"JourneyFaq\"])  if(!new RegExp(\"<\"+b+\"[\\\\s/>]\").test(bodyCode))fail(\"the sales body no longer renders \"+b);if(!bodyCode.includes(\"plan.intro\"))fail(\"the Journey intro is not rendered, so the long copy is gone\");if(/product\\.description|product\\.title/.test(bodyCode))fail(\"the sales body reads the COPIED product row instead of deriving from the Journey\");const mk=strip(fs.readFileSync(\"app/(main)/market/[id]/page.tsx\",\"utf8\"));if(!mk.includes(\"JourneySalesBody\"))fail(\"the product page does not render the derived sales body\");if(!/canonical: `\\/discover\\/journeys\\/\\$\\{plan\\.plan\\.slug\\}`/.test(mk))fail(\"two URLs describe one Journey with no canonical\");const tpl=strip(fs.readFileSync(\"components/templates/listing-detail-template.tsx\",\"utf8\"));if(!/!view\\.isOwner && <ListingMarketingCTA/.test(tpl))fail(\"the start-selling band still renders on the owner\\x27s own listing\");'",
         "note": "Passes when the sell row is in the standard band with its order unchanged, the learn band carries a live-offer sell chip, the sales body loads the Journey and renders all five discovery blocks plus the intro without reading the copied product row, the product page renders it and canonicalises to the Journey slug, and the start-selling band is suppressed for the listing's owner. Written 2026-09-17."
+      }
+    },
+    {
+      "id": "LIVE-390",
+      "title": "A Journey product's title, description and cover are a stale COPY, and they feed search results",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
+      },
+      "detail": "`setJourneyPriceAction` writes `title`, `description` and `images` into `commerce_products` when a price is set (sell-actions.ts:81-83). Nothing refreshes them, so editing the Journey leaves them stale. They are not cosmetic: they feed `/market/<id>`'s h1 and cover, its meta description and og image, its Product JSON-LD, the Market grid card, and the client-side search text. ADR-1398 \u00a73 says the sales page is 'derived, never copied' and the BODY is; the frame around it is not.\n\nAgreed shape (owner, 2026-09-18): derive at the detail page AND in generateMetadata so head and body agree, then keep the snapshot fresh from `updatePlan` (the single writer for title/summary/cover_image) so the grid card keeps rendering with no join. Gotcha: `cover_image` is a raw storage path; the override must resolve it the way `resolveImage` does or it renders a bare path.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const mk=s('app/(main)/market/[id]/page.tsx');if(!/journeyPlan\\.plan\\.(title|summary)/.test(mk))fail('the Market detail page still renders the copied product row instead of deriving title/description from the Journey');const jp=s('lib/journey-plans.ts');if(!/commerce_products/.test(jp))fail('updatePlan does not refresh the product snapshot, so a Journey edit still leaves the Market card and its metadata stale')\"",
+        "note": "Measures the CONSEQUENCE: the detail page deriving from the plan, and updatePlan being the invalidator. Fails while either half is missing."
+      }
+    },
+    {
+      "id": "LIVE-391",
+      "title": "Two authors can edit a Journey product's copy, and one of them will silently lose",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
+      },
+      "detail": "The Space Shop console Catalog tab prefills and saves `title`, `description` and `images` for any product, including a Journey (catalog-tab.tsx:199-208). Once LIVE-390 derives or syncs those from the Journey, a manager's edit here either stops showing or gets overwritten on the next rename. Owner ruling 2026-09-18: LOCK the fields for `product_kind='journey'` and point at the Journey editor, so no save can silently fail to stick. Ships with or immediately after LIVE-390 \u2014 shipping the derive without this leaves a live form whose saves do nothing.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const t=s('app/(main)/spaces/[slug]/settings/shop/catalog-tab.tsx');if(!/journey/i.test(t))fail('the Shop console Catalog tab still offers title/description editing for a Journey product, with no product_kind gate')\"",
+        "note": "Measures the CONSEQUENCE: the console knowing about product_kind='journey' at all. Fails while the form is kind-blind."
+      }
+    },
+    {
+      "id": "LIVE-392",
+      "title": "Every review and every buyer question is orphaned by a re-price",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
+      },
+      "detail": "`commerce_reviews` and `listing_comments` are keyed to `product_id`. Re-pricing a Journey ARCHIVES the product row and writes a new one by design (ADR-1397), so all proof and every answered question detach from the live listing and cannot be recovered by the buyer-facing page. On a $444 cohort programme, proof is the asset that takes longest to build and this discards it on a price change. Fix: key both to `journey_plan_id` for Journey products, or resolve them through the plan.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const r=s('lib/commerce/reviews.ts');if(!/journey_plan_id|planId/.test(r))fail('reviews are still keyed to the product row alone, so a re-price still orphans every review')\"",
+        "note": "Measures the CONSEQUENCE: the review reader knowing about the Journey plan. Fails while reviews can only be found by product id."
+      }
+    },
+    {
+      "id": "LIVE-393",
+      "title": "\"What you'll learn\" just restates the summary, because there is nowhere to author outcomes",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
+      },
+      "detail": "`OutcomesBlock` renders 'By the end you will {lowerFirst(plan.summary)}' \u2014 the same sentence already shown as the promise line in the header. A cohort buyer reads it twice and learns nothing the second time. There is no outcomes field on a Journey to render instead. Shape: a REPEAT group on the Journey's Studio manifest (`railRepeats()` / `RailManifestRepeat`, ADR-1309), so outcomes are authored as an ordered list and every surface derives from it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const o=s('components/journey/discovery-widgets.tsx');const i=o.indexOf('export function OutcomesBlock');if(i<0)fail('OutcomesBlock is gone; re-point this probe');const b=o.slice(i,i+700);if(/summary/.test(b))fail('OutcomesBlock still renders plan.summary, so \\'What you will learn\\' is still the promise line repeated')\"",
+        "note": "Measures the CONSEQUENCE: the block no longer reading `summary`. Fails while outcomes are the summary restated."
+      }
+    },
+    {
+      "id": "LIVE-394",
+      "title": "Every Journey on the platform shows the same four generic questions",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
+      },
+      "detail": "`JourneyFaq` hardcodes 3-4 questions derived only from `drip_interval_days` and `certificate_enabled`. There is no authored FAQ anywhere, so the objection-handling section of a premium sales page is identical across every Journey and answers none of the objections specific to one. ADR-1398's own 'Not done' list names it. Same shape as LIVE-393: a repeat group on the manifest, with the generic four kept as the fallback for a Journey that authors none.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const f=s('components/journey/discovery-widgets.tsx');const i=f.indexOf('export function JourneyFaq');if(i<0)fail('JourneyFaq is gone; re-point this probe');const b=f.slice(i,i+900);if(!/plan\\.faq|faqs\\s*=\\s*\\(|authored/.test(b))fail('JourneyFaq still hardcodes its questions, so every Journey shows the same FAQ')\"",
+        "note": "Measures the CONSEQUENCE: the block reading an authored source. Fails while the list is a literal."
+      }
+    },
+    {
+      "id": "LIVE-395",
+      "title": "A $444 page carries no testimonials and no guarantee",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
+      },
+      "detail": "Named in ADR-1398's 'Not done' list and unaddressed since. Both want authoring surfaces that do not exist. The guarantee is the cheaper half and the more load-bearing: 2026 course refund rates run 18-28%, a named refund window is standard on every comparable offer, and `revokeJourneyByOrder` already performs the mechanics on a full refund \u2014 so the policy has an implementation and no way to state itself. Testimonials are the other half of the proof problem LIVE-392 describes.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const b=s('components/marketplace/journey-sales-body.tsx');if(!/[Gg]uarantee|[Tt]estimonial/.test(b))fail('the sales body carries neither a guarantee block nor testimonials')\"",
+        "note": "Measures the CONSEQUENCE: either block reaching the page a buyer reads. Fails while neither exists."
+      }
+    },
+    {
+      "id": "LIVE-396",
+      "title": "A Journey cannot be bought without an account, and cannot be paid for in instalments",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
+      },
+      "detail": "Two separate barriers, both deferred with reasons in ADR-1399, kept in one row because both are about who can afford to say yes.\n\nGUEST: event tickets have a first-class guest door (`startGuestTicket`), written because 'Sign in to get your ticket' was the entire signed-out path on 14 of 15 events. A Journey grants account-bound access, so its guest door needs account creation at fulfilment \u2014 real work, not a fix. Research puts forced account creation at 19-26% of checkout abandonment.\n\nINSTALMENTS: no instalment, Klarna, Affirm or payment-plan support exists anywhere in the repo. At $444 against a community audience this is the most-cited high-ticket objection.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const a=s('app/(main)/marketplace/commerce-actions.ts');if(!/guestEmail|startGuest/.test(a))fail('commerce checkout still has no guest door, so a Journey cannot be bought without an account');const c=s('lib/commerce/checkout.ts');if(!/instal|payment_plan|klarna|affirm/i.test(c))fail('no instalment path exists on the commerce checkout')\"",
+        "note": "Measures the CONSEQUENCE: a guest identity reaching the commerce creator, and an instalment path existing. Fails while neither does."
+      }
+    },
+    {
+      "id": "LIVE-397",
+      "title": "The Journey page-config widget system is almost entirely inert",
+      "status": "open",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
+      },
+      "detail": "`WIDGET_META` declares 13 widget ids and an author-facing editor toggles them. Exactly TWO are read by anything: `story` and `pillar-balance`, on the member page only. Dead: `social-proof` and `reward-preview` (the chips they nominally control render unconditionally), `path` (required, never consulted), all 8 active-mode ids (no renderer imports the module), widget ORDER (the page collapses the ordered array into a Set, so the editor's reorder buttons cannot move anything), and `settings` (plumbed, never read). An author sees five toggles of which one is locked and two do nothing. Either wire them or retire them; a control that does nothing is worse than an absent one.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const meta=s('lib/journey-page-config.ts');const dead=['social-proof','reward-preview'];const readers=['app/(main)/journeys/[slug]/page.tsx','app/discover/journeys/[slug]/page.tsx','components/marketplace/journey-sales-body.tsx'].map(s).join('\\n');for(const id of dead){if(meta.includes(\\\\\"'\\\\\"+id+\\\\\"'\\\\\")&&!readers.includes(id))fail('widget id '+id+' is still declared and toggleable but read by no surface')}\"",
+        "note": "Measures the CONSEQUENCE: a declared toggle having no reader. Fails while a dead id is still offered to authors."
+      }
+    },
+    {
+      "id": "LIVE-398",
+      "title": "Doc drift around the embedded-checkout seam: a wrong count and a document that does not exist",
+      "status": "open",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
+      },
+      "detail": "Spotted while surveying the checkout seam for ADR-1399, not fixed there because it was not that change's business. Two items: docs/CHECKOUT.md \u00a78 says 'the four subscription creators still redirect, deliberately' \u2014 it is THREE, because Space memberships were converted. And lib/spaces/memberships-actions.ts:84 plus components/spaces/membership-join-card.tsx:140 cite 'CHECKOUT-HANDOFF \u00a73/\u00a74/\u00a76'; there is no docs/CHECKOUT-HANDOFF.md, the document is docs/CHECKOUT.md. LIVE-359's own title ('Eight of the nine...') is also stale at three-of-eight-remaining.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "CHECKOUT-HANDOFF",
+        "paths": [
+          "lib/spaces/memberships-actions.ts",
+          "components/spaces/membership-join-card.tsx"
+        ]
+      }
+    },
+    {
+      "id": "LIVE-399",
+      "title": "Ruling: two authored header settings narrowed when the Journey pages moved onto the template",
+      "status": "open",
+      "priority": "P3",
+      "lane": "owner",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
+      },
+      "ownerAction": "ruling",
+      "detail": "Decide whether either is worth restoring: (a) a Journey's `header_overlay_color` (a per-Journey custom overlay tint) has no home on the standard cover path \u2014 the overlay STYLE still resolves through `entityOverlayStyle`, only the colour is gone; (b) the member header no longer shows the eyebrow (top Pillar name) or the `logo_image` treatment the old identity lockup carried. The Pillar still appears as a status chip. Both were consequences of unifying two disagreeing headers onto one shape (ADR-1401 \u00a73), not oversights. Neither page carries a visual baseline, so nothing automated noticed.\n\nFiled so the narrowing is tracked rather than discovered. If the answer is 'leave them', close this row and the template stays as is.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Raised 2026-09-18 when ADR-1401 migrated both Journey pages onto JourneyDetailTemplate. Not yet put to the owner.",
+        "checked": "2026-09-18"
       }
     }
   ]
