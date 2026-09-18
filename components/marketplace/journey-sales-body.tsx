@@ -32,7 +32,24 @@ import { SectionHeader } from '@/components/ui/section-header'
 // content, and a product whose Journey has been deleted still shows its price and its Buy button.
 // A sales page that cannot load its story is worse than one that is short.
 
-export async function JourneySalesBody({ planId }: { planId: string }) {
+export async function JourneySalesBody({
+  planId,
+  proof,
+}: {
+  planId: string
+  /**
+   * The reviews block, rendered BETWEEN the guide and the questions (ADR-1401).
+   *
+   * Proof reads best after the thing being proved and before the objections it answers, which is
+   * the order every cohort-sales guide converges on. It used to sit AFTER the FAQ, because the
+   * host page appended it below this whole body — so the page ran story, curriculum, guide,
+   * objections, and only then the evidence, with the live Q&A composer after that.
+   *
+   * A SLOT rather than a read: reviews are keyed to the product row, which this component
+   * deliberately knows nothing about (it derives everything from the Journey).
+   */
+  proof?: React.ReactNode
+}) {
   const loaded = await getPlanById(planId)
   if (!loaded) return null
   const { plan, items } = loaded
@@ -90,6 +107,8 @@ export async function JourneySalesBody({ planId }: { planId: string }) {
       )}
 
       <InstructorBlock author={author} />
+
+      {proof}
 
       <JourneyFaq plan={plan} />
     </div>

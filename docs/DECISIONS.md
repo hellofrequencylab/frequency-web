@@ -45302,3 +45302,73 @@ and the Q&A, both keyed to the product row; moving them is its own change).
 sees the real price on the page search sends them to, and reaches an embedded checkout in one hop.
 ⚠️ Reviews and Q&A still live on `/market/<id>` and are still orphaned by a re-price; that, the
 `JourneyDetailTemplate` layout, and the authorable outcomes/FAQ/testimonial surfaces remain open.
+
+## ADR-1401: A Journey page is composed, not hand-rolled, and it carries one enrol control (2026-09-18)
+
+**Status:** Accepted · **Amends** [ADR-1396](DECISIONS.md) §4 (the enrol CTA on the cover) ·
+**Extends** [ADR-1400](DECISIONS.md) · **Follows** the EventDetailTemplate precedent
+(owner directive 2026-07-28) · corroborated by `components/templates/journey-detail-template.tsx`,
+`components/templates/journey-standard-layout.test.ts`, `scripts/check-templates.mjs`
+
+**Context.** Owner, 2026-09-18: *"Wave 2."* The plan was a template, a section reorder, and the dead
+340px column on the Market listing. The survey that preceded it found the drift had already
+happened.
+
+**🔴 The two surfaces had forked, in the most literal way available.** Both Journey pages
+hand-rolled the SAME interior grid around a raw `DetailTemplate`, byte for byte —
+`lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-8`, the same `aside` wrapper, the same
+`min-w-0 max-w-2xl space-y-8` main column. That is precisely the copy-the-JSX failure
+`EventDetailTemplate` was extracted to stop, caught at two surfaces rather than three.
+
+**Decision.**
+
+1. **`JourneyDetailTemplate` is a COMPOSITION over `DetailTemplate`**, the sibling of
+   `EventDetailTemplate` and written to read as one. Named identity slots (`promise`, `shape`,
+   `meets`, `guide`, `belonging`, `reward`, `aside`) in three self-suppressing groups, so a surface
+   can leave a line out but cannot put the guide above the promise. Differences between surfaces are
+   an ABSENT SLOT, never a fork; a drift guard fails the build on `isPublic`/`variant`/`anonymous`.
+   `SHELLS` goes 11 → 12, and the four prose counts that named 11 move with it in the same change.
+2. **The interior takes the module engine's `main-side` geometry verbatim**, so the cross-source pin
+   against `TemplateGrid` is a real guard with a second source rather than a vacuous self-check.
+   ⚠️ **One deliberate difference from `EventInterior`, and only one:** the side column's contents
+   sit in a sticky positioner on lg+. An event's side column is a short stack of facts; a Journey's
+   is a buy box beside long sales copy. The three pinned class strings are untouched, and a test
+   asserts both the sticky wrapper here and its absence there, so the difference reads as a decision
+   rather than drift.
+3. **The template owns the `<h1>`.** The member page took its h1 from a `PageHero` identity lockup
+   inside the cover while the public page took it from `DetailTemplate`: the two surfaces disagreed
+   about what a Journey header is. This picks the events shape, a plain cover band with the title
+   beneath it, which is also the direction [ADR-1396](DECISIONS.md) moved entity headers.
+4. **ONE enrol control per page, and it lives in the side column.** 🔴 This AMENDS ADR-1396 §4,
+   which ruled the enrol CTA stays on the cover. That ruling was made when the CTA was a link. Since
+   ADR-1400 it is a Stripe checkout, and card fields cannot open inside a hero action row — which is
+   what the ~1,300-character `HERO_CTA_WRAP` `!important` override existed to paper over. There were
+   THREE (hero, rail, repeat card), so a priced Journey mounted three checkout islands. The rail is
+   `order-first`, so on a phone the control is still above the sales copy, which is where the ruling
+   wanted it. The closing CTA is now an ANCHOR to that one box: a repeat CTA on a long page is worth
+   having, a second mounted checkout is not. `HERO_CTA_WRAP` is deleted.
+5. **Proof sits between the guide and the objections.** `JourneySalesBody` takes a `proof` slot
+   rendered before `JourneyFaq`. The page ran story, curriculum, guide, objections, and only then the
+   evidence, because the host appended reviews below the whole body. A SLOT rather than a read:
+   reviews are keyed to the product row, which the sales body deliberately knows nothing about.
+6. **The dead 340px column is filled, additively.** `ListingDetailTemplate` takes `asideExtras`,
+   rendered above the contact/details modules. Classifieds and Housing pass nothing and are
+   byte-identical — a test asserts that. A Space-owned listing has a null `sellerProfileId` and a
+   hardcoded-empty `details`, so a priced Journey reserved that column and rendered NOTHING into it
+   for its own owner. It now carries the at-a-glance card and the buy control.
+7. **Two small unifications the survey surfaced.** The "Official" badge used `Sparkles` on one page
+   and `Flame` on the other; it is `Sparkles` on both. `PathBlock` declared a `pillarsById` prop it
+   never read, and both pages were passing it; neither does now.
+
+**Rejected.** Keeping the bespoke 20rem rail (no second source to pin it against, and the honest
+alternative would have been a self-check that always passes). Routing the rail through
+`DetailTemplate`'s own `sidebar` slot (different mobile order, no sticky). Reshaping
+`ListingDetailTemplate` for Journeys (it also serves Classifieds and Housing).
+
+**Consequences.** One layout, two surfaces, one guard. ⚠️ Two authored settings move or narrow: the
+Journey's `header_overlay_color` has no home on the standard cover path (the overlay STYLE still
+resolves, through `entityOverlayStyle`), and the member header loses the eyebrow and the logo
+treatment the identity lockup carried. Both are the ruling landing rather than regressions, and
+neither is watched by a visual baseline — these pages carry none, so the preview is the only check
+that can see them. Still open: the copied product title/description snapshot and the Shop console
+fields that author it, both Wave 3.

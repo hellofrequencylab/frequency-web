@@ -2,7 +2,8 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { Globe, Lock, Link2, Pencil, Sparkles, Flame, Layers, SlidersHorizontal } from 'lucide-react'
-import { DetailTemplate, PageHero } from '@/components/templates'
+import { JourneyDetailTemplate } from '@/components/templates'
+import { buttonClasses } from '@/components/ui/button'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { ShareImageProvider } from '@/components/qr/share-image-context'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
@@ -10,11 +11,11 @@ import { getCallerProfile } from '@/lib/auth'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { getJourneyView, getPlan, getPlanAuthor } from '@/lib/journey-plans'
 import { getPillars, pillarsById as indexPillars } from '@/lib/pillars'
-import { accentColor } from '@/lib/studio/accents'
+import { accentColor, accentTint } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import { adoptPlanAction, forkPlanAction } from '../actions'
 import { enabledWidgets } from '@/lib/journey-page-config'
-import { resolveIdentityHero } from '@/lib/layout/detail-hero'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { getJourneyOffer, seatLine, isSoldOut } from '@/lib/journeys/paid'
 import { BuyButton } from '../../marketplace/buy-button'
 import {
@@ -26,21 +27,12 @@ import {
   JourneyFaq,
   JourneyStatChips,
   AtAGlanceCard,
-  EnrollCta,
   journeyFacts,
   primaryPillar,
 } from '@/components/journey/discovery-widgets'
 
 export const dynamic = 'force-dynamic'
 
-// The header buttons are the ONE glassy on-ink style (HERO_ACTION_CLASS = the Space header's button) so
-// every header matches. QrShareDropdown now takes a `className` (passed directly below). EnrollCta is a
-// shared component that hardcodes its own classes and takes no className, so we still WRAP it in the
-// actions slot: the descendant selectors restyle its CTA link + form buttons to match HERO_ACTION_CLASS.
-// Kept token-for-token in sync with HERO_ACTION_CLASS. Only the HEADER instance is wrapped — the light
-// repeat-CTA card keeps its normal styling.
-const HERO_CTA_WRAP =
-  '[&_a]:!inline-flex [&_a]:!items-center [&_a]:!justify-center [&_a]:!gap-1.5 [&_a]:!rounded-lg [&_a]:!border [&_a]:!border-on-ink/40 [&_a]:!bg-on-ink/10 [&_a]:!px-3 [&_a]:!py-1.5 [&_a]:!text-body-sm [&_a]:!font-semibold [&_a]:!text-on-ink [&_a]:!backdrop-blur-sm [&_a]:hover:!bg-on-ink/20 [&_a]:hover:!text-on-ink [&_button]:!inline-flex [&_button]:!items-center [&_button]:!justify-center [&_button]:!gap-1.5 [&_button]:!rounded-lg [&_button]:!border [&_button]:!border-on-ink/40 [&_button]:!bg-on-ink/10 [&_button]:!px-3 [&_button]:!py-1.5 [&_button]:!text-body-sm [&_button]:!font-semibold [&_button]:!text-on-ink [&_button]:!backdrop-blur-sm [&_button]:hover:!bg-on-ink/20 [&_button]:hover:!text-on-ink'
 
 // The one Journey page (docs/JOURNEYS.md §10). It flips between three faces:
 //   • AUTHOR    → redirects to the v2 editor at /journeys/[slug]/edit (identity + delivery +
@@ -188,17 +180,6 @@ export default async function JourneyPlanPage({
     />
   ) : null
 
-  const enrollProps = {
-    planId: plan.id,
-    slug: plan.slug,
-    enrolled: adopted,
-    canStart,
-    isAuthor,
-    enrollAction: adoptPlanAction,
-    forkAction: forkPlanAction,
-    offer,
-    buyControl,
-  }
 
   // The standardized `header` element (ADR-793), identity layout: the cover + Journey icon + title +
   // one-line summary overlaid immersively (the "liked" Business-page look), instead of the old plain
@@ -212,122 +193,98 @@ export default async function JourneyPlanPage({
   // cover + focal point is rung 1, the operator's /journeys Settings image stands behind it, and
   // variant/height/overlay still resolve through the header element exactly as before.
   const oStyle = plan.header_overlay_style
-  const hero = await resolveIdentityHero(`/journeys/${plan.slug}`, {
+  const hero = await resolveDetailHero(`/journeys/${plan.slug}`, {
     entityImage: plan.cover_image,
     entityFocus: plan.cover_focus,
-    defaults: oStyle === 'none' || oStyle === 'shadow' || oStyle === 'fade' ? { overlayStyle: oStyle } : {},
+    // The AUTHOR'S stored overlay choice still wins, through the option the standard-cover resolver
+    // has for exactly this (the Circle None/Shade/Blend idiom). Only none/shadow/fade are honoured;
+    // anything else falls back to the header element's registry default, as before.
+    entityOverlayStyle: oStyle === 'none' || oStyle === 'shadow' || oStyle === 'fade' ? oStyle : null,
   })
   const page = (
-    <DetailTemplate
-      hero={
-        <PageHero
-          {...hero}
-          overlayColor={plan.header_overlay_color ?? undefined}
-          eyebrow={topPillar ? topPillar.name : 'Journey'}
-          leading={
-            plan.logo_image ? (
-              // eslint-disable-next-line @next/next/no-img-element -- operator logo on a user-controlled host, not a configured next/image domain
-              <img
-                src={plan.logo_image}
-                alt=""
-                className="h-12 w-12 shrink-0 rounded-2xl object-cover shadow ring-1 ring-on-ink/10"
-              />
-            ) : (
-              <span
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-canvas/90 shadow ring-1 ring-on-ink/10 backdrop-blur"
-                style={{ color: accentColor(accent) }}
-              >
-                <PlanIcon className="h-6 w-6" />
-              </span>
-            )
-          }
-          title={plan.title}
-          subtitle={plan.summary || undefined}
-          /* The ENROL CTA stays on the cover: it is this page's one conversion, and the owner's
-             2026-09-17 ruling named the QR button alone. QR & Share moved to the band below. */
-          actions={
-            <span className={HERO_CTA_WRAP}>
-              <EnrollCta {...enrollProps} layout="inline" />
-            </span>
-          }
-        />
+    <JourneyDetailTemplate
+      {...hero}
+      title={
+        <span className="inline-flex items-center gap-3 align-middle">
+          <span
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-card"
+            style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
+          >
+            <PlanIcon className="h-6 w-6" />
+          </span>
+          <span className="min-w-0 break-words">{plan.title}</span>
+        </span>
       }
-      title={plan.title}
-      band={
-        <div className="min-w-0 space-y-2">
-            {/* The control row BELOW the header. It always renders now, because QR & Share lives here
-                (owner ruling, 2026-09-17) and sharing is for everyone: hanging it off the old
-                manager condition would have hidden the share control from exactly the visitors a
-                share control exists for. Manager tools left, share right. */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-1">
-              <div className="flex flex-wrap items-center gap-2">
-                {canManageJourney && (
-                  <OpenAdminBarButton
-                    scope={{ kind: 'journey', id: plan.id }}
-                    caps={Array.from(journeyCaps)}
-                    label="Manage"
-                    icon={<SlidersHorizontal className="h-4 w-4" />}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-                  />
-                )}
-              </div>
-              <div className="shrink-0">
-                <QrShareDropdown manager={canManageJourney} />
-              </div>
-            </div>
-            <span className="inline-flex flex-wrap items-center gap-1.5">
-              {plan.official && (
-                <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-semibold text-primary-strong">
-                  <Sparkles className="h-3 w-3" /> Official
-                </span>
-              )}
-              <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-medium text-muted">
-                <vis.Icon className="h-3 w-3" /> {vis.label}
-              </span>
-              {topPillar && (
-                <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-medium text-primary-strong">
-                  {topPillar.name}
-                </span>
-              )}
+      badges={
+        <span className="inline-flex flex-wrap items-center gap-1.5">
+          {plan.official && (
+            <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-semibold text-primary-strong">
+              <Sparkles className="h-3 w-3" /> Official
             </span>
-            <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-meta">
-              {author && (
-                <Link
-                  href={`/people/${author.handle}`}
-                  className="inline-flex items-center gap-1 text-muted hover:text-text"
-                >
-                  By <span className="font-semibold text-text">{author.displayName}</span>
-                </Link>
-              )}
-              <Link
-                href="/crew"
-                className="inline-flex items-center gap-1 text-primary-strong hover:underline"
-              >
-                <Flame className="h-3 w-3 shrink-0" aria-hidden />
-                Keep your streak in the Quest
-              </Link>
-              <a
-                href="#the-path"
-                className="inline-flex items-center gap-1 text-primary-strong hover:underline"
-              >
-                <Layers className="h-3 w-3 shrink-0" aria-hidden />
-                The path
-              </a>
+          )}
+          <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-medium text-muted">
+            <vis.Icon className="h-3 w-3" /> {vis.label}
+          </span>
+          {topPillar && (
+            <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-medium text-primary-strong">
+              {topPillar.name}
             </span>
-            {/* Stat-chip row — quiet, tokenized facts (gamified-stat law: only gems reads
-                as a reward; the rest is calm context). */}
-            <span className="block pt-0.5">
-              <JourneyStatChips facts={facts} plan={plan} enrolledCount={plan.adopt_count} />
-            </span>
-        </div>
+          )}
+        </span>
       }
-    >
-      {/* Two-column body: a readable main column + an interior STICKY rail (distinct from
-          the global app rail). Below lg the rail stacks RIGHT AFTER the header so the
-          at-a-glance/CTA stays above the long curriculum on mobile. */}
-      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-8">
-        {/* Interior rail — first in source order so it leads on mobile; pinned right on lg+. */}
-        <aside className="mb-6 lg:order-2 lg:mb-0 lg:sticky lg:top-6 lg:self-start">
+      actions={
+        <>
+          {canManageJourney && (
+            <OpenAdminBarButton
+              scope={{ kind: 'journey', id: plan.id }}
+              caps={Array.from(journeyCaps)}
+              label="Manage"
+              icon={<SlidersHorizontal className="h-4 w-4" />}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+            />
+          )}
+          <QrShareDropdown manager={canManageJourney} />
+        </>
+      }
+      identity={{
+        promise: plan.summary ? <p className="leading-relaxed text-text">{plan.summary}</p> : undefined,
+        shape: <JourneyStatChips facts={facts} plan={plan} enrolledCount={plan.adopt_count} />,
+        guide: author ? (
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-meta">
+            <Link href={`/people/${author.handle}`} className="text-muted transition-colors hover:text-text">
+              By <span className="font-semibold text-text">{author.displayName}</span>
+            </Link>
+            <Link href="/crew" className="inline-flex items-center gap-1 text-muted transition-colors hover:text-text">
+              <Flame className="h-3.5 w-3.5" /> Keep your streak in the Quest
+            </Link>
+            <a href="#the-path" className="inline-flex items-center gap-1 text-muted transition-colors hover:text-text">
+              <Layers className="h-3.5 w-3.5" /> The path
+            </a>
+          </span>
+        ) : undefined,
+      }}
+      notices={
+        isAuthor && preview ? (
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-2.5">
+            <span className="text-body-sm text-muted">Preview. How others see your Journey.</span>
+            <Link
+              href={`/journeys/${plan.slug}`}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            >
+              <Pencil className="h-3.5 w-3.5" /> Back to editing
+            </Link>
+          </div>
+        ) : undefined
+      }
+      interiorSide={
+        // 🔴 ONE enrol control on this page, and it lives here (ADR-1401, amending ADR-1396 §4).
+        // There used to be THREE — hero, rail and repeat card — each rendering an EnrollCta, which
+        // since ADR-1400 means each mounting its own Stripe checkout island on a priced Journey.
+        // The cover was the wrong home for it the moment it stopped being a link: card fields
+        // cannot open inside a hero action row, which is what the HERO_CTA_WRAP !important override
+        // existed to paper over. In the side column it is a full-width box, and `order-first` puts
+        // it above the sales copy on a phone anyway, which is where the ruling wanted it.
+        <div id="enrol" className="scroll-mt-6">
           <AtAGlanceCard
             plan={plan}
             slug={plan.slug}
@@ -341,49 +298,41 @@ export default async function JourneyPlanPage({
             offer={offer}
             buyControl={buyControl}
           />
-        </aside>
-
-        {/* Main column — capped to a comfortable reading measure. */}
-        <div className="min-w-0 max-w-2xl space-y-8 lg:order-1">
+        </div>
+      }
+      interiorMain={
+        <div className="max-w-2xl space-y-8">
           {enabled.has('story') && <StoryBlock intro={plan.intro} />}
           <OutcomesBlock summary={plan.summary} />
           <div id="the-path" className="scroll-mt-6">
-            <PathBlock items={items} pillarsById={byId} accent={accent} facts={facts} dripIntervalDays={plan.drip_interval_days} />
+            {/* `pillarsById` is deliberately NOT passed: PathBlock declares the prop and never
+                reads it. Both Journey pages were handing it over for nothing. */}
+            <PathBlock items={items} accent={accent} facts={facts} dripIntervalDays={plan.drip_interval_days} />
           </div>
           {enabled.has('pillar-balance') && <PillarBalanceBlock items={items} pillars={pillars} />}
           <InstructorBlock author={author} />
           <JourneyFaq plan={plan} />
 
-          {/* The repeat CTA closes the page (no bottom dump of rewards/rules). */}
+          {/* The repeat CTA closes the page. It is an ANCHOR to the one enrol box, never a second
+              copy of it: a repeat CTA on a long sales page is worth having, a second mounted
+              checkout is not. */}
           {!isAuthor && (
             <div className="rounded-card border border-border bg-surface p-5 lift-1">
               <p className="mb-3 text-body-sm font-semibold text-text">
                 Start it solo, or run it with your Circle.
               </p>
-              <EnrollCta {...enrollProps} layout="inline" />
+              <a href="#enrol" className={buttonClasses('primary', 'md')}>
+                {offer ? `Get access · ${offer.priceLabel}` : 'Start this Journey'}
+              </a>
             </div>
           )}
         </div>
-      </div>
-    </DetailTemplate>
+      }
+    />
   )
 
   return (
     <>
-      {isAuthor && preview && (
-        <div className="mb-4 flex items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-2.5">
-          <span className="text-body-sm text-muted">Preview. How others see your Journey.</span>
-          <Link
-            href={`/journeys/${plan.slug}`}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-          >
-            <Pencil className="h-3.5 w-3.5" /> Back to editing
-          </Link>
-        </div>
-      )}
-
-      {/* The framework "QR & Share" control (DetailTemplate's PageAdminBar) centers THIS Journey's cover
-          in its share QR — the entity's own image, never the viewer's avatar. */}
       <ShareImageProvider imageUrl={plan.cover_image ?? null}>{page}</ShareImageProvider>
     </>
   )

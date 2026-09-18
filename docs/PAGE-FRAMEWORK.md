@@ -357,7 +357,7 @@ forces a big-bang rewrite.
 > `PageHeading` grammar: **Stream · Index · Detail · Dashboard · Focus · WizardShell · Admin**.
 > `RailGrid` is a column grid you compose *inside* a shell (§8.1.2).
 > ⚠️ Do not re-derive this number from the barrel's export count: the barrel exports 14 value
-> components, and `check-templates.mjs`'s `SHELLS` holds 11 because it answers a different
+> components, and `check-templates.mjs`'s `SHELLS` holds 12 because it answers a different
 > question ("does this page own a layout", so it counts compositions and aliases too). Two of the old nine — `HeaderSidebarTemplate` and
 > `TwoColumnTemplate` — were **deleted**: neither was ever composed by a single page in
 > `app/` or `components/`, so they were a documented canon with no referent. Their shapes

@@ -67,6 +67,7 @@ export function ListingDetailTemplate({
   ownerControls,
   claimToken,
   soloGalleryRow = true,
+  asideExtras,
 }: {
   view: ListingDetailView
   comments: ListingComment[]
@@ -100,6 +101,17 @@ export function ListingDetailTemplate({
    * A directive about a seller's photo set does not reach a photo set the system generated.
    */
   soloGalleryRow?: boolean
+  /**
+   * Extra blocks for the right rail, rendered ABOVE the contact/details modules (ADR-1401).
+   *
+   * 🔴 ADDITIVE, AND THAT IS THE WHOLE DESIGN. Classifieds, Housing and Market goods pass nothing
+   * and are byte-identical. It exists because a Space-owned listing has a null `sellerProfileId`,
+   * so `showContact` is false, and `view.details` is hardcoded empty for products — which left a
+   * priced Journey reserving a 340px column and rendering NOTHING into it for its own owner, and
+   * two lines of trust copy for everyone else. The column is the best real estate on the page; a
+   * sticky buy box belongs there, not a hole.
+   */
+  asideExtras?: React.ReactNode
 }) {
   const detailPath = listingCanonicalPath(view)
   const editHref = view.action?.kind === 'edit' ? view.action.href : null
@@ -203,6 +215,7 @@ export function ListingDetailTemplate({
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+          {asideExtras}
           {claimToken ? (
             /* Arrived via a claim link: the Claim box REPLACES Contact the seller. */
             <section className="rounded-2xl border border-primary/40 bg-primary-bg/40 p-4">
