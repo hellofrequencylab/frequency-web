@@ -18,6 +18,13 @@ export {
   type EventDetailTemplateProps,
   type EventIdentitySlots,
 } from './event-detail-template'
+// The standard block layout for every page-like JOURNEY surface — a composition of DetailTemplate,
+// not a new shell. See components/templates/journey-detail-template.tsx.
+export {
+  JourneyDetailTemplate,
+  type JourneyDetailTemplateProps,
+  type JourneyIdentitySlots,
+} from './journey-detail-template'
 // The standard block layout for every marketplace LISTING detail surface (Classifieds, Housing,
 // Market) — an entity composition over ListingHero + the main/side grid, not a ninth shell.
 // See components/templates/listing-detail-template.tsx.

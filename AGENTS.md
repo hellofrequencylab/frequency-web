@@ -205,9 +205,9 @@ One shell, seven page shells, one chrome map. Full spec:
 [`docs/PAGE-FRAMEWORK.md`](docs/PAGE-FRAMEWORK.md) §3 + §8. ⚠️ **Do not restate a count here — this
 paragraph has now been wrong twice.** It said "five templates" until 2026-09-04 and then "eight"
 until 2026-09-05, and the eight wrongly included `RailGrid`. The authoring menu below is seven;
-`scripts/check-templates.mjs` is the enforced list and is deliberately WIDER (11 names) because it
+`scripts/check-templates.mjs` is the enforced list and is deliberately WIDER (12 names) because it
 answers a different question — "does this page compose anything that owns a layout", so it also
-counts the two entity compositions, `SparkShell`, and two path-reached aliases. Read `SHELLS` there
+counts the three entity compositions, `SparkShell`, and two path-reached aliases. Read `SHELLS` there
 for what CI enforces; read the menu here for what to pick.
 
 - **Pick a shell** from `@/components/templates` by *what the content is*, and fill its
@@ -217,7 +217,7 @@ for what CI enforces; read the menu here for what to pick.
   operator workspace) · **FocusTemplate** (a centered single-task body: compose, edit, settings) ·
   **WizardShell** (a multi-step flow; the Studio's `SparkShell` is its analogue for a Spark) ·
   **AdminTemplate** (the operator workspace).
-  `EventDetailTemplate` and `ListingDetailTemplate` are entity *compositions* over Detail, not
+  `EventDetailTemplate`, `JourneyDetailTemplate` and `ListingDetailTemplate` are entity *compositions* over Detail, not
   shells; `PageHeading` / `PageHero` are shared header grammar, not shells. 🔴 **`RailGrid` is NOT
   a shell** — it is the main-plus-rail column grid, a layout primitive you use *inside* a shell.
   `check-templates.mjs` lists it under `PIECES` ("deliberately NOT shells"), so a page whose only

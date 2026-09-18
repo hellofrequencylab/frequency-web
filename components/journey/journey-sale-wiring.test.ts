@@ -247,3 +247,71 @@ describe('journeyOfferSchema', () => {
     expect(node.offers.url).not.toContain('/market/')
   })
 })
+
+// ── WAVE 2 (ADR-1401): one enrol control per page, proof before the objections, and the dead
+//    340px column on the Market listing filled.
+
+describe('there is exactly one enrol control per page', () => {
+  it('the member page mounts one, in the side column', () => {
+    // There were THREE — hero, rail and repeat card — each rendering an EnrollCta, which since
+    // ADR-1400 means each mounting its own Stripe checkout island on a priced Journey.
+    const src = code('app', '(main)', 'journeys', '[slug]', 'page.tsx')
+    expect(src.match(/buyControl=\{buyControl\}/g) ?? []).toHaveLength(1)
+    expect(src).toContain('interiorSide=')
+  })
+
+  it('the closing CTA is an anchor to that one control, not a second copy', () => {
+    const src = code('app', '(main)', 'journeys', '[slug]', 'page.tsx')
+    expect(src).toContain('id="enrol"')
+    expect(src).toContain('href="#enrol"')
+  })
+
+  it('the hero override that forced a button onto the cover is gone', () => {
+    // HERO_CTA_WRAP was ~1,300 characters of !important descendant selectors, existing only
+    // because EnrollCta takes no className and the cover needed the glassy on-ink treatment.
+    // Comment-stripped, like every other source-shape assertion here: the migration left a note
+    // naming the override it removed, and prose explaining a ban is not the ban being violated.
+    expect(code('app', '(main)', 'journeys', '[slug]', 'page.tsx')).not.toContain('HERO_CTA_WRAP')
+  })
+
+  it('the Market listing puts its buy control in the rail, not twice', () => {
+    const src = code('app', '(main)', 'market', '[id]', 'page.tsx')
+    expect(src).toContain('asideExtras=')
+    // The body panel renders nothing for a Journey; the rail owns it.
+    expect(src).toMatch(/journeyPlan \? null : \(/)
+  })
+})
+
+describe('proof sits between the guide and the objections', () => {
+  it('the sales body takes a proof slot and renders it before the FAQ', () => {
+    const src = code('components', 'marketplace', 'journey-sales-body.tsx')
+    const proof = src.indexOf('{proof}')
+    const guide = src.indexOf('<InstructorBlock')
+    const faq = src.indexOf('<JourneyFaq')
+    expect(proof).toBeGreaterThan(guide)
+    expect(proof).toBeLessThan(faq)
+  })
+
+  it('the Market page fills it with the reviews rather than appending them after', () => {
+    const src = code('app', '(main)', 'market', '[id]', 'page.tsx')
+    expect(src).toMatch(/proof=\{\s*<ProductReviews/)
+  })
+})
+
+describe('the additive rail slot does not reach the other verticals', () => {
+  const tpl = code('components', 'templates', 'listing-detail-template.tsx')
+
+  it('is optional and defaults to rendering nothing', () => {
+    expect(tpl).toContain('asideExtras?: React.ReactNode')
+    expect(tpl).toContain('{asideExtras}')
+  })
+
+  it('Classifieds and Housing pass nothing, so they are unchanged', () => {
+    for (const p of [
+      ['app', '(main)', 'classifieds', '[id]', 'page.tsx'],
+      ['app', '(main)', 'housing', '[id]', 'page.tsx'],
+    ]) {
+      expect(code(...p)).not.toContain('asideExtras')
+    }
+  })
+})

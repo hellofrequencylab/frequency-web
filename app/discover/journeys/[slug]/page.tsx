@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Flame } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { getPublicJourney, listPublicJourneys } from '@/lib/journey-plans'
 import { getPillars, pillarsById } from '@/lib/pillars'
 import {
@@ -17,7 +17,7 @@ import {
   primaryPillar,
 } from '@/components/journey/discovery-widgets'
 import { getPlanAuthor } from '@/lib/journey-plans'
-import { DetailTemplate } from '@/components/templates'
+import { JourneyDetailTemplate } from '@/components/templates'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { ShareButton } from '@/components/discover/share-button'
 import { buttonClasses } from '@/components/ui/button'
@@ -182,7 +182,7 @@ export default async function DiscoverJourneyPage({
         ]}
       />
 
-      <DetailTemplate
+      <JourneyDetailTemplate
         {...hero}
         back={{ href: '/discover/journeys', label: 'Journeys' }}
         title={
@@ -196,27 +196,13 @@ export default async function DiscoverJourneyPage({
             <span className="min-w-0 break-words">{plan.title}</span>
           </span>
         }
-        subtitle={
-          <span className="block space-y-2">
-            {plan.summary && <span className="block leading-relaxed text-text">{plan.summary}</span>}
-            {author && (
-              <Link
-                href={`/people/${author.handle}`}
-                className="inline-flex items-center gap-1 text-meta text-muted hover:text-text"
-              >
-                By <span className="font-semibold text-text">{author.displayName}</span>
-              </Link>
-            )}
-            <span className="block pt-0.5">
-              <JourneyStatChips facts={facts} plan={plan} enrolledCount={plan.adopt_count} />
-            </span>
-          </span>
-        }
         badges={
           <span className="inline-flex flex-wrap items-center gap-1.5">
             {plan.official && (
               <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-semibold text-primary-strong">
-                <Flame className="h-3 w-3" /> Official
+                {/* Sparkles, matching the member page. The two surfaces used different icons for
+                    the same badge (Flame here, Sparkles there) until this template unified them. */}
+                <Sparkles className="h-3 w-3" /> Official
               </span>
             )}
             {topPillar && (
@@ -226,39 +212,53 @@ export default async function DiscoverJourneyPage({
             )}
           </span>
         }
-        actions={
-          <>
-            <ShareButton
-              path={`/discover/journeys/${plan.slug}`}
-              title={`${plan.title} · ${SITE_NAME}`}
-              text={plan.summary ?? `A guided Journey on ${SITE_NAME}.`}
-              label="Share"
-            />
-            <Link href="/sign-in" className={buttonClasses('primary', 'md')}>
-              Create a free account
+        identity={{
+          promise: plan.summary ? (
+            <p className="leading-relaxed text-text">{plan.summary}</p>
+          ) : undefined,
+          shape: <JourneyStatChips facts={facts} plan={plan} enrolledCount={plan.adopt_count} />,
+          guide: author ? (
+            <Link
+              href={`/people/${author.handle}`}
+              className="inline-flex items-center gap-1 text-meta text-muted hover:text-text"
+            >
+              By <span className="font-semibold text-text">{author.displayName}</span>
             </Link>
-          </>
+          ) : undefined,
+        }}
+        actions={
+          /* 🔴 SHARE ONLY. This row used to carry an unconditional "Create a free account" link,
+             which on a PRICED Journey sat directly above a rail reading "Get access · $444" and a
+             closing card saying the same: the header argued with the rest of the page about
+             whether the thing was free. The enrol control belongs in the side column, where it can
+             be the full-width box a buy control needs to be, and where exactly one of them lives. */
+          <ShareButton
+            path={`/discover/journeys/${plan.slug}`}
+            title={`${plan.title} · ${SITE_NAME}`}
+            text={plan.summary ?? `A guided Journey on ${SITE_NAME}.`}
+            label="Share"
+          />
         }
-      >
-        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-8">
-          <aside className="mb-6 lg:order-2 lg:mb-0 lg:sticky lg:top-6 lg:self-start">
-            <AtAGlanceCard
-              plan={plan}
-              slug={plan.slug}
-              facts={facts}
-              enrolled={false}
-              canStart={facts.lessonCount > 0}
-              isAuthor={false}
-              progress={null}
-              cta={signUpCta}
-            />
-          </aside>
-
-          <div className="min-w-0 max-w-2xl space-y-8 lg:order-1">
+        interiorSide={
+          <AtAGlanceCard
+            plan={plan}
+            slug={plan.slug}
+            facts={facts}
+            enrolled={false}
+            canStart={facts.lessonCount > 0}
+            isAuthor={false}
+            progress={null}
+            cta={signUpCta}
+          />
+        }
+        interiorMain={
+          <div className="max-w-2xl space-y-8">
             <StoryBlock intro={plan.intro} />
             <OutcomesBlock summary={plan.summary} />
             <div id="the-path" className="scroll-mt-6">
-              <PathBlock items={items} pillarsById={byId} accent={accent} facts={facts} dripIntervalDays={plan.drip_interval_days} />
+              {/* `pillarsById` is deliberately NOT passed: PathBlock declares the prop and never
+                  reads it. Both Journey pages were handing it over for nothing. */}
+              <PathBlock items={items} accent={accent} facts={facts} dripIntervalDays={plan.drip_interval_days} />
             </div>
             <PillarBalanceBlock items={items} pillars={pillars} />
             <InstructorBlock author={author} />
@@ -290,8 +290,8 @@ export default async function DiscoverJourneyPage({
               )}
             </div>
           </div>
-        </div>
-      </DetailTemplate>
+        }
+      />
     </div>
   )
 }

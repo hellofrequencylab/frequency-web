@@ -10,7 +10,7 @@
 // THE HOLE A NAIVE GREP FALLS INTO. `grep -l "@/components/templates"` is NOT evidence of composing
 // a template. That barrel also exports PIECES — PageHeading, PageHero, WizardProgress, AdminSection,
 // RailGrid — and a page can import a piece, hand-roll its own layout around it, and score compliant.
-// SHELLS below lists the 11 names that OWN A LAYOUT: the 7 authoring shells, the 2 entity
+// SHELLS below lists the 12 names that OWN A LAYOUT: the 7 authoring shells, the 3 entity
 // compositions, SparkShell, and 2 aliases reached by path. That is deliberately WIDER than the
 // authoring menu in AGENTS.md, because this gate answers "does this page own a layout", not
 // "which shell should I pick". (This comment said "the eight real shells" until 2026-09-05, which
@@ -81,6 +81,9 @@ export const SHELLS = [
   'StreamTemplate',
   'DetailTemplate',
   'EventDetailTemplate',
+  // The entity composition for Journeys (a DetailTemplate wrapper, not a twelfth shell). Added with
+  // the two Journey detail pages that stopped hand-rolling the same interior grid twice.
+  'JourneyDetailTemplate',
   'FocusTemplate',
   'WizardShell',
   // The Studio's wizard shell (ADR-986). The direct analogue of WizardShell for a Spark: it owns

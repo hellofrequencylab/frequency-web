@@ -26,6 +26,7 @@ import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { getHighestOfferCents } from '@/lib/marketplace/listing-offers'
 import { BuyButton } from '../../marketplace/buy-button'
 import { JourneySalesBody } from '@/components/marketplace/journey-sales-body'
+import { AtAGlanceCard, journeyFacts } from '@/components/journey/discovery-widgets'
 import { getPlanById } from '@/lib/journey-plans'
 import { listActiveVariants } from '@/lib/commerce/variants'
 import { effectiveVariantPriceCents, effectiveVariantStock, isBookableServiceKind, describePrice } from '@/lib/commerce/types'
@@ -218,6 +219,39 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
       // A Journey product's image set is generated, not curated: it is always exactly the cover,
       // so the solo gallery row under the hero would be the hero again. See the prop's note.
       soloGalleryRow={!journeyPlan}
+      asideExtras={
+        journeyPlan && !isService ? (
+          <AtAGlanceCard
+            plan={journeyPlan.plan}
+            slug={journeyPlan.plan.slug}
+            facts={journeyFacts(journeyPlan.items)}
+            enrolled={false}
+            canStart
+            isAuthor={false}
+            progress={null}
+            cta={
+              isOwner ? (
+                <p className="text-body-sm text-subtle">This is your Journey. Buyers enrol here.</p>
+              ) : soldOut ? (
+                <p className="text-body-sm font-medium text-subtle">Every seat is taken.</p>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-page-title font-bold text-text">{priceLabel}</p>
+                  <BuyButton
+                    productId={product.id}
+                    entryPoint="marketplace"
+                    label="Get access"
+                    priceLabel={priceLabel}
+                    doneTitle="You are in."
+                    doneBody={`You are enrolled in ${journeyPlan.plan.title}. A receipt is on its way to your email.`}
+                    doneHref={`/journeys/${journeyPlan.plan.slug}/learn`}
+                  />
+                </div>
+              )
+            }
+          />
+        ) : undefined
+      }
       comments={comments}
       canComment={!!profileId}
       canModerate={isOwner || operator}
@@ -297,19 +331,12 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
               // carry it — a product WITHOUT variants sells through this plain button, and it is the
               // easier of the two to forget. `/store/[id]` renders the same component with no entry
               // point on purpose; see the note there.
-              <BuyButton
-                productId={product.id}
-                entryPoint="marketplace"
-                priceLabel={priceLabel}
-                {...(journeyPlan
-                  ? {
-                      label: `Get access · ${priceLabel}`,
-                      doneTitle: 'You are in.',
-                      doneBody: `You are enrolled in ${journeyPlan.plan.title}. A receipt is on its way to your email.`,
-                      doneHref: `/journeys/${journeyPlan.plan.slug}/learn`,
-                    }
-                  : {})}
-              />
+              // A Journey's buy control lives in the RAIL (see `asideExtras`), so this panel
+              // renders nothing for one: two mounted checkout islands on one page is the defect
+              // ADR-1401 removed from the Journey page, not a pattern to copy here.
+              journeyPlan ? null : (
+                <BuyButton productId={product.id} entryPoint="marketplace" priceLabel={priceLabel} />
+              )
             )}
           </div>
 
@@ -319,17 +346,37 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
               other product kind, and nothing at all if the Journey cannot be loaded. It sits BELOW
               the purchase panel because the buy box belongs high and the persuading belongs under
               it, and ABOVE reviews because proof reads better after the thing being proved. */}
-          {product.journeyPlanId && <JourneySalesBody planId={product.journeyPlanId} />}
+          {product.journeyPlanId && (
+            <JourneySalesBody
+              planId={product.journeyPlanId}
+              // Proof after the thing being proved and before the objections it answers. Passed in
+              // rather than read: reviews are keyed to the product row, which the sales body
+              // deliberately knows nothing about.
+              proof={
+                <ProductReviews
+                  productId={product.id}
+                  productTitle={product.title}
+                  reviews={reviews}
+                  myReview={myReview}
+                  signedIn={!!profileId}
+                  canReview={!!profileId && !isOwner}
+                  canModerate={operator}
+                />
+              }
+            />
+          )}
 
-          <ProductReviews
-            productId={product.id}
-            productTitle={product.title}
-            reviews={reviews}
-            myReview={myReview}
-            signedIn={!!profileId}
-            canReview={!!profileId && !isOwner}
-            canModerate={operator}
-          />
+          {!product.journeyPlanId && (
+            <ProductReviews
+              productId={product.id}
+              productTitle={product.title}
+              reviews={reviews}
+              myReview={myReview}
+              signedIn={!!profileId}
+              canReview={!!profileId && !isOwner}
+              canModerate={operator}
+            />
+          )}
           {/* Airwaves (ADR-608, P1): any Recordings attached to this product, gated per viewer. Renders
               nothing when none are attached. Behind Suspense so it never blocks the detail. */}
           <Suspense fallback={null}>
