@@ -61,6 +61,20 @@ export interface CommerceCheckoutResult {
   /** Set INSTEAD of `url` when the caller asked for an on-page card form (LIVE-359). Callers branch
    *  on which one arrived, never on which one they asked for -- see `@/lib/billing/checkout-ui`. */
   clientSecret?: string
+  /**
+   * The Checkout Session's id, returned ALONGSIDE `clientSecret` on the elements path.
+   *
+   * 🔴 IT IS WHAT LETS AN ON-PAGE PURCHASE SETTLE WITHOUT THE WEBHOOK. `resolveCheckoutSession` has
+   * always handed this back and `createCommerceCheckout` has always spread it into the result -- it
+   * was simply absent from this interface, so no caller could read it and every on-page commerce
+   * purchase was webhook-only. `confirm({ redirect: 'if_required' })` means the common card path
+   * NEVER navigates, so the `session_id={CHECKOUT_SESSION_ID}` on the success URL is never visited
+   * and the reconcile written as the webhook's backstop is unreachable on exactly the path that
+   * became the default. See `recordCommerceOrderFromSessionId` below.
+   *
+   * Not set on the hosted path, which has a `url` whose landing page already carries the id.
+   */
+  sessionId?: string
   error?: string
   /** The pending order's id (Phase 4: lets a service booking link its hold to the order it will settle). */
   orderId?: string
@@ -463,6 +477,38 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
       buyerEmail: session.customer_details?.email ?? null,
     }).catch(() => {})
   }
+}
+
+/**
+ * The BY-ID twin of `recordCommerceOrderFromSession`, for the on-page settle (the sibling of
+ * `recordTicketFromSessionId` in lib/billing/tickets.ts).
+ *
+ * 🔴 WHY IT EXISTS. The on-page card form confirms with `redirect: 'if_required'`, so the common
+ * card path never navigates and `/orders?ok=1&session_id=...` is never visited. Until this landed
+ * the webhook was the ONLY thing that could flip a commerce order to `paid` -- and for a Journey
+ * that webhook is also the only thing that calls `enrolByOrder`, so a late or misconfigured
+ * delivery meant a buyer who had paid and had no access, behind a panel that had already told them
+ * they were in.
+ *
+ * AUTHORITY IS STRIPE, not the caller. The session is re-fetched from Stripe and refused unless
+ * `metadata.kind === 'commerce_order'` and `payment_status === 'paid'`, so the most anyone can do
+ * with an id that is not theirs is settle a purchase that genuinely happened -- which is precisely
+ * what the webhook does, unprompted, seconds later.
+ *
+ * SAFE TO RUN TWICE. `recordCommerceOrderFromSession` updates `where status = 'pending'`, so
+ * whichever of settle/webhook arrives second matches no rows, fulfils nothing and sends nothing.
+ */
+export async function recordCommerceOrderFromSessionId(sessionId: string): Promise<boolean> {
+  if (!stripe) return false
+  let session: Stripe.Checkout.Session
+  try {
+    session = await stripe.checkout.sessions.retrieve(sessionId)
+  } catch {
+    return false
+  }
+  if (session.metadata?.kind !== 'commerce_order' || session.payment_status !== 'paid') return false
+  await recordCommerceOrderFromSession(session)
+  return true
 }
 
 /** Abandon the pending order behind an EXPIRED or async-failed Checkout session (idempotent): mark it

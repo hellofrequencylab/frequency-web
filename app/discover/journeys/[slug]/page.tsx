@@ -207,7 +207,7 @@ export default async function DiscoverJourneyPage({
             <StoryBlock intro={plan.intro} />
             <OutcomesBlock summary={plan.summary} />
             <div id="the-path" className="scroll-mt-6">
-              <PathBlock items={items} pillarsById={byId} accent={accent} facts={facts} />
+              <PathBlock items={items} pillarsById={byId} accent={accent} facts={facts} dripIntervalDays={plan.drip_interval_days} />
             </div>
             <PillarBalanceBlock items={items} pillars={pillars} />
             <InstructorBlock author={author} />

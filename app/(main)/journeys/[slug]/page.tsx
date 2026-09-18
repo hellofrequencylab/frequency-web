@@ -312,6 +312,7 @@ export default async function JourneyPlanPage({
             progress={null}
             enrollAction={adoptPlanAction}
             forkAction={forkPlanAction}
+            offer={offer}
           />
         </aside>
 
@@ -320,7 +321,7 @@ export default async function JourneyPlanPage({
           {enabled.has('story') && <StoryBlock intro={plan.intro} />}
           <OutcomesBlock summary={plan.summary} />
           <div id="the-path" className="scroll-mt-6">
-            <PathBlock items={items} pillarsById={byId} accent={accent} facts={facts} />
+            <PathBlock items={items} pillarsById={byId} accent={accent} facts={facts} dripIntervalDays={plan.drip_interval_days} />
           </div>
           {enabled.has('pillar-balance') && <PillarBalanceBlock items={items} pillars={pillars} />}
           <InstructorBlock author={author} />

@@ -45149,3 +45149,79 @@ here, and for Heart on Fire it prints the Royal Temple line without anyone typin
 by-id twin of `getPlan`, added because the product knows its Journey only by id and resolving a slug
 first would be two round trips for one question. Not done: a repeated CTA at the foot of the derived
 body, a guarantee block, and testimonials — all three want authoring surfaces that do not exist yet.
+
+## ADR-1399: A paid Journey settles on the page that took the money, and a signed-out buyer gets a route (2026-09-18)
+
+**Status:** Accepted · **Extends** [ADR-1397](DECISIONS.md) (selling a Journey) and
+[ADR-1398](DECISIONS.md) (the derived sales page) · **Builds on** [ADR-1377](DECISIONS.md) (the
+on-page settle) · corroborated by `lib/commerce/checkout.ts` (`recordCommerceOrderFromSessionId`),
+`app/(main)/marketplace/commerce-actions.ts` (`settleCommerceOrderAction`),
+`app/(main)/marketplace/buy-button.tsx`, `components/journey/journey-sale-wiring.test.ts`
+
+**Context.** Owner, 2026-09-18, looking at Heart on Fire priced at $444: *"Right now it's a bunch of
+scattered info."* The survey that followed found the layout complaint sitting on top of two money
+defects and one broken control, none of which are visible in a screenshot.
+
+**🔴 The three findings.**
+
+1. **An on-page purchase had no on-page settle.** `resolveCheckoutSession` has always handed back a
+   `sessionId` and `createCommerceCheckout` has always spread it into its result. It was simply
+   ABSENT FROM `CommerceCheckoutResult`, so no caller could read it, `BuyButton` mounted
+   `CheckoutPanel` with no `onPaid`, and the webhook was the only path. `confirm({ redirect:
+   'if_required' })` means the card path never navigates, so `/orders?ok=1&session_id=...` is never
+   visited and the reconcile written as the webhook's backstop was unreachable on exactly the path
+   that became the default. For a Journey the webhook is also the only caller of `enrolByOrder`, so
+   a late delivery meant a buyer who had paid $444 and had no access, behind a panel that had
+   already told them they were in. ⚠️ `commerce_orders` still has zero rows in production
+   (ADR-1397), so nothing had ever exercised this.
+2. **`'Sign in to buy.'` was a dead string.** No route, no return path. Tickets removed this exact
+   wall for the exact reason recorded in the signed-out branch of the events cascade: it was "the
+   entire signed-out path" on 14 of 15 upcoming events. On a paid Journey it is the whole of it.
+3. **The sticky rail offered the free door on a priced Journey.** `AtAGlanceCard` took no `offer`
+   and built its own `EnrollCta` without one, so the rail rendered "Start Journey" beside a hero
+   reading "Get access · $444". `checkFreeEnrol` correctly refuses that POST and returns nothing
+   the member can see, so the page's highest-value control simply read as broken.
+
+**Decision.**
+
+1. **Commerce settles from its own success handler**, as tickets and Space memberships already do.
+   `recordCommerceOrderFromSessionId` is the by-id twin of `recordCommerceOrderFromSession`, and
+   `settleCommerceOrderAction` is its door. **Authority is Stripe, not the caller**: the session is
+   re-fetched and refused unless `metadata.kind === 'commerce_order'` and `payment_status ===
+   'paid'`, so the most anyone can do with someone else's id is settle a purchase that genuinely
+   happened. The webhook remains the guarantee; this makes the guarantee usually unnecessary. Both
+   are safe to run, because the update is conditional on `status = 'pending'`.
+   ⚠️ The limiter fails **open** (`whenUnconfigured: 'allow'`), the opposite posture to the doors
+   that take money and for the stated reason: this runs AFTER a charge, so denying it protects
+   nothing and only deletes the fast path, silently, wherever the limiter is unwired.
+2. **A signed-out buyer is sent somewhere.** The action returns `signInRequired` and the CONTROL
+   builds the URL, because only the client knows which page it is on: this action is reached from
+   `/market/<id>`, `/store/<id>` and, once the till moves, the Journey itself, and a server action
+   sees no calling path. Not guest checkout: a Journey grants account-bound access, so a guest door
+   needs account creation at fulfilment, which is work, not a fix.
+3. **A card that shows the enrol control must know what enrolling costs.** `offer` is forwarded
+   through `AtAGlanceCard` rather than duplicated, so there stays one `EnrollCta` and one authority.
+4. **A phase is labelled in the unit its cadence is counted in.** `phaseOpenLabel` replaces a
+   hardcoded `Week ${i + 1}` that printed under a chip reading "1 phase / 2 weeks": phase four of a
+   fortnightly Journey opens in week seven and said "Week 4".
+5. **The trust line belongs to the listing, not to the contact dialog.** "Checkout is secure on
+   Stripe" and the Report control rendered ONLY inside a contact section that a Space-owned listing
+   never shows, so a priced Journey offered the buyer neither reassurance nor recourse.
+6. **A generated image set gets no solo gallery row.** The owner directive that a single-photo
+   listing still gets a gallery row is about a photo set a SELLER curated. `setJourneyPriceAction`
+   writes `images: [cover_image]`, so a Journey's set is always exactly the cover and the row below
+   the hero was the hero again, on every Journey ever priced. `soloGalleryRow` scopes the exemption
+   to that case and leaves Classifieds, Housing and Market goods alone.
+7. **The Q&A composer names the ACT.** "Ask a question", because `JourneyFaq`'s own heading is
+   "Questions" and the page carried two `<h2>Questions</h2>` a screen apart with nothing to tell
+   them apart.
+
+**Rejected.** Guest checkout for Journeys now (see 2). Suppressing the solo gallery row for every
+listing (reverses an owner directive to fix a generated-image case). A snapshot of the enrolled
+count (scarcity stays derived, ADR-1397 §9).
+
+**Consequences.** The defects above are fixed where they live, without moving the till. Moving it —
+`/journeys/<slug>` becoming both the pitch and the checkout, which is what ADR-1398 §4's canonical
+ruling already implies — is a separate decision and is not made here. ⚠️ The first real charge is
+still the first real test of the settle path, and it now has two independent ways to land instead of
+one.

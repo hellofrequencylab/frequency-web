@@ -168,6 +168,12 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
     getHighestOfferCents('product', product.id),
   ])
 
+  // A priced Journey buys ACCESS TO A COURSE, not a parcel, so its purchase panel says so: the
+  // amount rides the card form, the confirmation reads "You are in", and closing it lands the buyer
+  // in the Journey rather than back on the page that sold it. The slug is the only extra fact that
+  // needs, and it is read only for a Journey product.
+  const journeyPlan = product.journeyPlanId ? await getPlanById(product.journeyPlanId) : null
+
   // The hero action: only the connect-only "Contact seller" path is a plain link. The Buy button,
   // variant picker, and booking calendar are interactive, so they render in the footer purchase panel.
   const heroAction: ListingAction | null =
@@ -201,6 +207,9 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
   return (
     <ListingDetailTemplate
       view={view}
+      // A Journey product's image set is generated, not curated: it is always exactly the cover,
+      // so the solo gallery row under the hero would be the hero again. See the prop's note.
+      soloGalleryRow={!journeyPlan}
       comments={comments}
       canComment={!!profileId}
       canModerate={isOwner || operator}
@@ -280,7 +289,19 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
               // carry it — a product WITHOUT variants sells through this plain button, and it is the
               // easier of the two to forget. `/store/[id]` renders the same component with no entry
               // point on purpose; see the note there.
-              <BuyButton productId={product.id} entryPoint="marketplace" />
+              <BuyButton
+                productId={product.id}
+                entryPoint="marketplace"
+                priceLabel={priceLabel}
+                {...(journeyPlan
+                  ? {
+                      label: `Get access · ${priceLabel}`,
+                      doneTitle: 'You are in.',
+                      doneBody: `You are enrolled in ${journeyPlan.plan.title}. A receipt is on its way to your email.`,
+                      doneHref: `/journeys/${journeyPlan.plan.slug}/learn`,
+                    }
+                  : {})}
+              />
             )}
           </div>
 
