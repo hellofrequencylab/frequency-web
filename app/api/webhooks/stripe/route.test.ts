@@ -21,6 +21,7 @@ const H = vi.hoisted(() => ({
   // carried (L2-06): the real recorders no-op on anything but 'paid', so "records once" at the
   // route level means "exactly one PAID delivery per recorder".
   sessions: [] as Array<{ recorder: string; id: string; paymentStatus: string | undefined }>,
+  trackCalls: [] as Array<{ event: string; props: Record<string, unknown>; actor: string | null; key?: string }>,
 }))
 
 vi.mock('@/lib/billing/stripe', () => ({
@@ -58,6 +59,16 @@ vi.mock('@/lib/commerce/checkout', () => ({
   recordCommerceOrderFromSession: async (s: Stripe.Checkout.Session) => { seen('order', s) },
   recordCommerceRefundFromCharge: async () => { H.calls.push('orderRefund') },
   abandonCommerceOrderFromSession: async () => { H.calls.push('abandon') },
+}))
+vi.mock('@/lib/analytics/track', () => ({
+  track: async (
+    event: string,
+    props: Record<string, unknown> = {},
+    actor: string | null = null,
+    opts: { idempotencyKey?: string } = {},
+  ) => {
+    H.trackCalls.push({ event, props, actor, key: opts.idempotencyKey })
+  },
 }))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
@@ -128,6 +139,7 @@ beforeEach(() => {
   H.deleteCalls = []
   H.calls = []
   H.sessions = []
+  H.trackCalls = []
 })
 
 describe('stripe webhook — member ordering guard wiring', () => {
@@ -266,6 +278,58 @@ describe('stripe webhook — consolidated payout-channel dispatch', () => {
     H.event = plainEvent('charge.refunded')
     await post()
     expect(H.calls).toEqual(['ticketRefund', 'orderRefund', 'tipRefund'])
+  })
+
+  it('emits commerce.purchase from a paid session, keyed on the session id', async () => {
+    H.event = plainEvent('checkout.session.completed', {
+      id: 'cs_paid_1',
+      mode: 'payment',
+      payment_status: 'paid',
+      amount_total: 800,
+      currency: 'usd',
+      metadata: { kind: 'commerce_order', buyer_profile_id: 'p1', ga_client_id: '123.456' },
+    })
+    const res = await post()
+    expect(res.status).toBe(200)
+    expect(H.trackCalls).toEqual([
+      {
+        event: 'commerce.purchase',
+        props: {
+          kind: 'commerce_order',
+          value: 8,
+          currency: 'usd',
+          transaction_id: 'cs_paid_1',
+          ga_client_id: '123.456',
+        },
+        actor: 'p1',
+        key: 'commerce.purchase:cs_paid_1',
+      },
+      {
+        event: 'shop.order_completed',
+        props: {
+          kind: 'commerce_order',
+          value: 8,
+          currency: 'usd',
+          transaction_id: 'cs_paid_1',
+          ga_client_id: '123.456',
+        },
+        actor: 'p1',
+        key: 'shop.order_completed:cs_paid_1',
+      },
+    ])
+  })
+
+  it('does not emit a purchase on an unpaid completed session', async () => {
+    H.event = plainEvent('checkout.session.completed', {
+      id: 'cs_unpaid_1',
+      mode: 'payment',
+      payment_status: 'unpaid',
+      amount_total: 800,
+      currency: 'usd',
+      metadata: { kind: 'commerce_order', buyer_profile_id: 'p1' },
+    })
+    await post()
+    expect(H.trackCalls).toEqual([])
   })
 
   it('acks an unhandled event type with 200', async () => {

@@ -45717,3 +45717,21 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 
 **Rows.** LIVE-376.
 
+## ADR-1414: A paid Checkout Session is a `commerce.purchase` event (2026-09-19)
+
+**Status:** Accepted · 2026-09-19 · LIVE-348 · corroborated by `lib/analytics/events.ts`, `lib/analytics/purchase.ts`, `lib/analytics/ga-client-id.ts`, `app/api/webhooks/stripe/route.ts`
+
+**Context.** ANALYTICS_EVENTS named sixteen events and none of them were commercial. `track()` drops an unregistered name, so a purchase event invented at the webhook would have vanished. No `track` / `gtag` / `sendGa4Event` call existed on a money path. The shop vertical declared `shop.order.completed` with no writer. Checkout settles on Stripe or an Elements form that does not navigate, so a client-side purchase event cannot fire. The named trap: `sendGa4Event` used the actor profile id as GA `client_id`, which is not a GA client id, so every server-side sale would have been a new user with no source or medium.
+
+**Decision.**
+
+1. **Register, then emit.** `commerce.purchase` and `shop.order_completed` are server-authoritative. `commerce.checkout_started` is the buy click (BuyButton and the ticket controls). The webhook's `recordPaidCheckout` is the one writer for the conversion, keyed `commerce.purchase:<session id>`, and only when `payment_status` is `paid`.
+2. **Carry the `_ga` cookie.** `checkoutGaMetadata()` stamps `ga_client_id` on every Checkout Session creator. `sendGa4Event` prefers that id and maps `commerce.purchase` to the recommended GA4 `purchase` event with `value`, `currency`, and `transaction_id`.
+3. **Do not invent a two-dot taxonomy name.** `shop.order.completed` cannot be registered (`name` is `^[a-z]+\.[a-z_]+$`). The shop vertical now reads `shop.order_completed`, which the webhook writes for `kind: commerce_order`.
+
+**Rejected.** A client-side `purchase` event (impossible on today's checkout). Using the profile id as `client_id` (destroys attribution). Wiring guest-purchase consent here (OWN-061).
+
+**Consequences.** A paid ticket, order, tip, donation, membership, or plan is visible in `engagement_events` and, when GA is configured, joins the browser session that started checkout. A buy click that never settles is still visible as `checkout_started`.
+
+**Rows.** LIVE-348.
+

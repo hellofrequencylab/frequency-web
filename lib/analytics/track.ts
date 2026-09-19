@@ -74,16 +74,27 @@ export async function track(
   // Mirror to GA4 server-side (parity with the client gtag mirror). Fire-and-forget,
   // and gated on the actor's analytics consent (ADR-069): a member who opted out of
   // analytics doesn't have their account-tied usage sent to Google. Anonymous events
-  // carry no account, so they pass through.
-  void mirrorToGa(event, clean, actorProfileId)
+  // carry no account, so they pass through. Guest-purchase consent is OWN-061.
+  //
+  // LIVE-348: `ga_client_id` is the Measurement Protocol client_id, not an event
+  // parameter. Lift it off the prop bag before the mirror so a purchase joins the
+  // browser session that started checkout.
+  const { ga_client_id, ...gaParams } = clean
+  void mirrorToGa(
+    event,
+    gaParams,
+    actorProfileId,
+    typeof ga_client_id === 'string' ? ga_client_id : null,
+  )
 }
 
 async function mirrorToGa(
   event: string,
   props: Record<string, string | number | boolean>,
   actorProfileId: string | null,
+  clientId: string | null,
 ): Promise<void> {
   if (!gaServerEnabled()) return
   if (actorProfileId && !(await hasConsent(actorProfileId, 'analytics'))) return
-  await sendGa4Event(event, props, actorProfileId)
+  await sendGa4Event(event, props, actorProfileId, { clientId })
 }

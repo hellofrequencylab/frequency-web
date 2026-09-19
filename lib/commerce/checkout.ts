@@ -26,6 +26,7 @@ import { canTakePayments } from './selling'
 import { getVariantsByIds } from './variants'
 import { effectiveVariantPriceCents, effectiveVariantStock } from './types'
 import { receiptEmailFor } from '@/lib/billing/receipt-address'
+import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
 import { sendOrderReceipts } from './order-receipt'
 import type { CheckoutInput, CommerceVariant, ServiceConfig } from './types'
 
@@ -299,6 +300,7 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
   // cannot be composed. Best-effort by construction: an unresolvable address omits the field and
   // never refuses a checkout.
   const receiptEmail = await receiptEmailFor(input.buyerProfileId)
+  const gaMeta = await checkoutGaMetadata()
 
   let session: Stripe.Checkout.Session
   try {
@@ -328,7 +330,7 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
         metadata: { kind: 'commerce_order', buyer_profile_id: input.buyerProfileId, order_id: orderId },
       },
       client_reference_id: input.buyerProfileId,
-      metadata: { kind: 'commerce_order', buyer_profile_id: input.buyerProfileId, order_id: orderId },
+      metadata: { kind: 'commerce_order', buyer_profile_id: input.buyerProfileId, order_id: orderId, ...gaMeta },
       ...checkoutReturnFields(ui, {
         successUrl: `${appUrl()}/orders?ok=1&session_id={CHECKOUT_SESSION_ID}`,
         // Cancel back to the surface the buyer was purchasing from, never the free peer board

@@ -46,6 +46,13 @@ export const ANALYTICS_EVENTS: readonly AnalyticsEventDef[] = [
   { name: 'qr.referral_activated', category: 'lifecycle', description: 'A referred member activated and the referrer was credited (props.referrer).', clientEmittable: false },
   { name: 'qr.gift_zap', category: 'engagement', description: 'A member sent a zap via a gift code (props.to).', clientEmittable: false },
   { name: 'qr.code_designed', category: 'feature', description: 'A member saved a code design (props.kind).', clientEmittable: true },
+
+  // ── Commerce (LIVE-348). Purchase is server-only: checkout settles on Stripe or an
+  // Elements form whose success never navigates, so a client-side purchase event cannot fire.
+  // checkout_started is the buy click, the one step that must be client-side.
+  { name: 'commerce.checkout_started', category: 'engagement', description: 'A buyer pressed Buy or Get ticket (props.kind).', clientEmittable: true },
+  { name: 'commerce.purchase', category: 'engagement', description: 'A Checkout Session settled paid (props.kind, props.value, props.currency, props.transaction_id).', clientEmittable: false },
+  { name: 'shop.order_completed', category: 'engagement', description: 'A commerce_order Checkout Session settled paid. Writer for the shop vertical reader.', clientEmittable: false },
 ] as const
 
 const BY_NAME = new Map(ANALYTICS_EVENTS.map((e) => [e.name, e]))

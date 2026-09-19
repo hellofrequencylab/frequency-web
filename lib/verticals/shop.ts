@@ -48,6 +48,6 @@ export const shop: Vertical = {
   ],
   engagement: {
     source: 'shop',
-    eventTypes: ['shop.order.completed'],
+    eventTypes: ['shop.order_completed'],
   },
 }

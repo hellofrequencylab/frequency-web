@@ -13,6 +13,7 @@ import { recordFinancialTransaction, ENTITY_ID } from '@/lib/finance/record'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 import type { BillingPeriod } from './pricing-keys'
 import { receiptEmailFor } from './receipt-address'
+import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
 import { sendMembershipInvoiceReceipt } from './subscription-receipt'
 
 /** The member tier a checkout may be opened for. Crew, and only Crew: the sellable member ladder is
@@ -96,6 +97,7 @@ export async function createMembershipCheckout(opts: {
   // receipt goes. The caller's `email` is whatever the surface happened to hold, so fall back to the
   // member's proven account address rather than minting a customer Stripe can never write to.
   const receiptEmail = opts.email ?? (await receiptEmailFor(opts.profileId))
+  const gaMeta = await checkoutGaMetadata()
 
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
@@ -109,6 +111,7 @@ export async function createMembershipCheckout(opts: {
       tier: opts.tier,
       billing_period: period,
       pwyw_amount_cents: String(chosen),
+      ...gaMeta,
     },
     subscription_data: {
       metadata: {
