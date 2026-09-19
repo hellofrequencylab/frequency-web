@@ -240,7 +240,6 @@
           "ids": [
             "DEF-HARDEN",
             "SCAN-502",
-            "HYG-071",
             "LIVE-313"
           ]
         },
@@ -9977,7 +9976,7 @@
     {
       "id": "HYG-071",
       "title": "shadow-literals counts drop-shadow-*, a filter family the lift-* box-shadows cannot express",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "hygiene",
       "size": "S",
@@ -9985,12 +9984,13 @@
         "file": "scripts/adoption-baselines.json",
         "ref": "shadow-literals"
       },
-      "detail": "FILED 2026-09-08 by the stabilisation audit (ADR-1290). The class pattern is \\\\bshadow-(?:sm|md|lg|xl|2xl)\\\\b and its description names the alternative as \"the DAWN depth language (lift-*)\". It also matches INSIDE drop-shadow-sm / drop-shadow-md, because - is a word boundary.\n\nThat is a false positive with no available fix at the site. drop-shadow is a CSS `filter`; .lift-1/.lift-2/.lift-3 are `box-shadow` (app/globals.css). On a transparent subject -- an emoji glyph, a PNG wordmark -- a box-shadow paints a rectangle behind the object instead of tracing it, so there is no conversion to make and the counted site can only be resolved by deleting the effect. ADR-1290 hit exactly this on components/spotlight/sticker-layer.tsx and removed the shadow to clear the rise; the remaining site is components/layout/marketing-header.tsx:144 (drop-shadow-md on the inverted wordmark), where the effect IS load-bearing.\n\nEXACTLY TWO SITES REPO-WIDE, which is why this is P3 and not a sweep. THE WORK is a pattern correction -- exclude a preceding drop- -- and that changes frozen.basis, so it forces a re-freeze of shadow-literals with direction \"rebased\" and a reason. Do it in the same change as the re-freeze, and do NOT bundle it with a HYG-055 slice: that row's shadow rule is about WHO CHOSE the shadow (17 chrome sites vs 33 member-picked values) and already carries three preconditions; this is a measurement defect underneath it. Re-read both sites before changing the pattern -- if marketing-header has since dropped its filter, the class has one site and the correction is cheaper than the re-freeze.",
+      "detail": "FILED 2026-09-08 by the stabilisation audit (ADR-1290). The class pattern is \\\\bshadow-(?:sm|md|lg|xl|2xl)\\\\b and its description names the alternative as \"the DAWN depth language (lift-*)\". It also matches INSIDE drop-shadow-sm / drop-shadow-md, because - is a word boundary.\n\nThat is a false positive with no available fix at the site. drop-shadow is a CSS `filter`; .lift-1/.lift-2/.lift-3 are `box-shadow` (app/globals.css). On a transparent subject -- an emoji glyph, a PNG wordmark -- a box-shadow paints a rectangle behind the object instead of tracing it, so there is no conversion to make and the counted site can only be resolved by deleting the effect. ADR-1290 hit exactly this on components/spotlight/sticker-layer.tsx and removed the shadow to clear the rise; the remaining site is components/layout/marketing-header.tsx:144 (drop-shadow-md on the inverted wordmark), where the effect IS load-bearing.\n\nEXACTLY TWO SITES REPO-WIDE, which is why this is P3 and not a sweep. THE WORK is a pattern correction -- exclude a preceding drop- -- and that changes frozen.basis, so it forces a re-freeze of shadow-literals with direction \"rebased\" and a reason. Do it in the same change as the re-freeze, and do NOT bundle it with a HYG-055 slice: that row's shadow rule is about WHO CHOSE the shadow (17 chrome sites vs 33 member-picked values) and already carries three preconditions; this is a measurement defect underneath it. Re-read both sites before changing the pattern -- if marketing-header has since dropped its filter, the class has one site and the correction is cheaper than the re-freeze.\n\nCLOSED 2026-09-19 (ADR-1425). PREMISE RE-TESTED FIRST, and it held: the pattern still matched drop-shadow-sm because - is a word boundary; marketing-header.tsx:144 still carries drop-shadow-md on the inverted wordmark; sticker-layer.tsx no longer has a drop-shadow (ADR-1290 already removed it). The pattern is now (?<!drop-)\\\\bshadow-(?:sm|md|lg|xl|2xl)\\\\b. shadow-literals re-froze 48 to 47 as rebased (instrument correction, not a sweep). The marketing-header filter stays. HYG-055 sliceTarget 49 is untouched. The probe feeds the class its own miscount string and requires no match.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const j=require(\"./scripts/adoption-baselines.json\");const e=j.entries.find(x=>x.key===\"shadow-literals\");if(!e){console.error(\"shadow-literals entry is gone\");process.exit(1)}const hit=e.patterns.some(p=>new RegExp(p).test(\"class=\\\"drop-shadow-sm\\\"\"));if(hit){console.error(\"the shadow-literals pattern still matches drop-shadow-sm, a filter the lift-* box-shadows cannot express\");process.exit(1)}process.exit(0)'",
         "note": "Measures the CONSEQUENCE: feed the class's own patterns the exact string that is being miscounted and require that none of them match. Passes only when the pattern has been corrected -- not when the two sites happen to have been deleted, which would leave the defect armed for the next drop-shadow anyone writes. Pure node, no shell pipeline."
-      }
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "HYG-072",

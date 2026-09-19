@@ -407,6 +407,19 @@ describe('check-adoption — the corrected patterns measure what they name', () 
   // The radius sweep retired `rounded-full` in favour of `rounded-pill` — including inside
   // ProgressTrack itself — so this pattern's 0 meant "the class I name no longer exists",
   // not "no bar is hand-rolled".
+  // HYG-071 / ADR-1425. `\bshadow-md\b` matches inside `drop-shadow-md` because `-` is a
+  // word boundary. drop-shadow is a CSS filter; `.lift-*` is box-shadow and cannot replace it
+  // on a transparent wordmark. The lookbehind is the measurement correction, not a sweep.
+  it('shadow-literals does not count drop-shadow-*, a filter the lift-* language cannot express', () => {
+    const re = pattern('shadow-literals')
+    for (const s of ['drop-shadow-sm', 'drop-shadow-md', 'invert drop-shadow-md', 'hover:drop-shadow-lg']) {
+      expect(s.match(re), `${s} is a filter, not a box-shadow literal`).toBeNull()
+    }
+    for (const s of ['shadow-sm', 'shadow-md', 'hover:shadow-lg', 'md:shadow-2xl']) {
+      expect(s.match(re), `${s} is a box-shadow literal`).not.toBeNull()
+    }
+  })
+
   it('adhoc-progress catches a pill track, not only the retired full one', () => {
     const re = pattern('adhoc-progress')
     expect('<div className="rounded-pill bg-border"><div style={{ width: `${p}%` }} /></div>'.match(re)).not.toBeNull()

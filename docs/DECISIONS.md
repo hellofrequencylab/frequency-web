@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1424**.
+tree as of this index: **ADR-1425**.
 
 | Theme | Start here |
 |---|---|
@@ -45880,5 +45880,25 @@ Premise re-tested 2026-09-19 on this tree: no workflow (comments stripped) ran t
 **Consequences.** A Dependabot bump that moves `maplibre-gl` regenerates `public/maplibre/` and the bump PR is green on its own. A bump that does not touch MapLibre is a no-op. Vercel is a GitHub App webhook, not a workflow run; if that check is missing, push any real commit, the same recovery the capture jobs already document.
 
 **Rows.** HYG-090.
+
+## ADR-1425: shadow-literals no longer counts drop-shadow-* (HYG-071)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-071` · corroborated by `scripts/adoption-baselines.json` (`shadow-literals`) and `scripts/check-adoption.test.ts`
+
+**Context.** [ADR-1290](DECISIONS.md) filed this as a measurement defect, not a conversion. `\bshadow-(?:sm|md|lg|xl|2xl)\b` matches inside `drop-shadow-sm` / `drop-shadow-md` because `-` is a word boundary. `drop-shadow` is a CSS `filter`. The DAWN depth language the class names as its alternative (`.lift-1/2/3`) is `box-shadow`, which on a transparent subject paints a rectangle behind the object instead of tracing it. There is no conversion to make.
+
+Premise re-tested 2026-09-19 on this tree: the pattern still matched `class="drop-shadow-sm"`; `components/layout/marketing-header.tsx` still carries `drop-shadow-md` on the inverted wordmark; `components/spotlight/sticker-layer.tsx` no longer has a drop-shadow (ADR-1290 already removed it to clear a rise).
+
+**Decision.**
+
+1. **Correct the pattern, do not delete the effect.** `(?<!drop-)\bshadow-(?:sm|md|lg|xl|2xl)\b`. The marketing-header filter stays: it is load-bearing on a PNG wordmark.
+2. **Re-freeze as `rebased`, not `lowered`.** 48 → 47. The number moved because the question changed, not because a site converted to `lift-*`. `frozen.basis` is the fingerprint of mode + patterns + scope; a pattern edit without a re-freeze fails the provenance gate.
+3. **Do not bundle a HYG-055 slice.** That row's shadow rule is about who chose the shadow. Its `sliceTarget` 49 is untouched.
+
+**Rejected.** Converting the wordmark to `.lift-*` (wrong physics). Deleting the filter to shrink the count (the row named that as the only site-level "fix", and it would change the mark). Changing `sliceTarget` in the same PR (that is HYG-055's scoreboard).
+
+**Consequences.** A future `drop-shadow-md` cannot raise `shadow-literals`. A future `shadow-md` still can. The probe feeds the class `class="drop-shadow-sm"` and requires no match, so deleting the two sites without correcting the pattern cannot close the row.
+
+**Rows.** HYG-071.
 
 
