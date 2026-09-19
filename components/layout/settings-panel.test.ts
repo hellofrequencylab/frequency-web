@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import { orderByBox } from './settings-panel'
 
-// The rail's box nesting (ADR-846). The catalog expresses the 12-box shape through `parent`; this
-// is the ordering that turns it into boxes-with-tools on screen instead of one flat list.
-// Real catalog ids: space.crm owns space.leads/.doors/.shared/.automation/.conversations;
-// space.offerings owns space.booking/.tickets; space.calendar is a box with no children.
+// The rail's box nesting (ADR-846, five boxes after ADR-1432). The catalog expresses the
+// five-box shape through `parent`; this is the ordering that turns it into boxes-with-tools
+// on screen instead of one flat list.
+// Real catalog ids: space.people owns space.crm/.leads/.doors/.shared/.automation/.conversations;
+// space.offerings owns space.booking; space.calendar is a tool under space.content.
 
 describe('orderByBox', () => {
   it('leaves non-Space scopes completely flat', () => {
@@ -16,9 +17,9 @@ describe('orderByBox', () => {
   })
 
   it('pulls a box’s tools up directly beneath it, at depth 1', () => {
-    const out = orderByBox(['space.crm', 'space.calendar', 'space.leads'], true)
+    const out = orderByBox(['space.people', 'space.calendar', 'space.leads'], true)
     expect(out).toEqual([
-      { id: 'space.crm', depth: 0 },
+      { id: 'space.people', depth: 0 },
       { id: 'space.leads', depth: 1 },
       { id: 'space.calendar', depth: 0 },
     ])
@@ -29,7 +30,7 @@ describe('orderByBox', () => {
   })
 
   it('FAIL-SAFE: renders an orphan tool flat rather than dropping it', () => {
-    // space.leads without its space.crm parent in the same section (gated out for this viewer).
+    // space.leads without its space.people parent in the same section (gated out for this viewer).
     const out = orderByBox(['space.calendar', 'space.leads'], true)
     expect(out).toEqual([
       { id: 'space.calendar', depth: 0 },

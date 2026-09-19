@@ -124,14 +124,13 @@ export interface SpaceModule {
    *  (it does NOT gate — gating stays in lib/pricing/gates.ts + the function registry); it makes the plan
    *  story legible on the /manage console. Defaults to `included` when omitted. */
   access?: 'included' | 'freemium' | 'premium'
-  /** BOX CONSOLIDATION (ADR-782, widened by ADR-846): the id of the PARENT box this module folds UNDER, so
-   *  the menu reads as ONE box per area with its tools nested (Reviews under Profile and Settings;
-   *  Collaborators under People; Conversations / Automation / Lead capture / Capture links / Shared under
-   *  CRM; the six commerce services under Offerings and money; Practices / Journeys / Circles / Airwaves /
-   *  Loom under Content; Email design + style under Email). The module stays a first-class catalog row
-   *  (still gated, still deep-linkable, still reachable); it is simply owned by its box rather than
-   *  standing as its own top-level card. A TOP-LEVEL BOX omits this field, and there are exactly THIRTEEN
-   *  of them (ADR-846, amended to thirteen by ADR-1313 when Your reach was un-parented). Nesting is ONE
+  /** BOX CONSOLIDATION (ADR-782, widened by ADR-846, folded to five by ADR-1432 / LIVE-246): the id of
+   *  the PARENT box this module folds UNDER, so the menu reads as ONE box per area with its tools nested
+   *  (Page / Reviews / Plan and billing / Danger under Your page; Team + CRM cluster under Your people;
+   *  Calendar / libraries / Your reach under Gather; Shop + the commerce services under Money; Email
+   *  trio under Reach). The module stays a first-class catalog row (still gated, still deep-linkable,
+   *  still reachable); it is simply owned by its box rather than standing as its own top-level card. A
+   *  TOP-LEVEL BOX omits this field, and there are exactly FIVE of them (CORE-MODEL §5.4). Nesting is ONE
    *  level deep: a parent may never itself carry a `parent`. */
   parent?: string
   /** The free-tier LEVER shown as a sublabel on the console card (ADR-784): the cap a free Space hits or
@@ -152,46 +151,35 @@ const base = (slug: string) => `/spaces/${slug}`
 
 /**
  * THE SPACE MODULE CATALOG (ADR-543, consolidated into TWELVE BOXES by ADR-846, amended to THIRTEEN by
- * ADR-1313).
+ * ADR-1313, folded to FIVE by ADR-1432 / LIVE-246).
  *
- * A Space menu is THIRTEEN top-level boxes, and every other row is a TOOL owned by one of them (`parent`):
- *   1 Profile and Settings · 2 Page · 3 People · 4 CRM · 5 Calendar · 6 Offerings and money · 7 Shop ·
- *   8 Content · 9 Email · 10 QR codes and insights · 11 Plan and billing · 12 Danger zone ·
- *   13 Your reach (ADR-1313 un-parented it from QR codes and insights so it could move tabs without
- *      being orphaned from its box; the lock was a COUNT, not a principle).
+ * A Space menu is FIVE top-level boxes, and every other row is a TOOL owned by one of them (`parent`):
+ *   1 Your page · 2 Your people · 3 Gather · 4 Money · 5 Reach
  *
- * ADR-846 REVERSES the ADR-544b split that gave each of the six commerce services its own top-level row:
- * they are tools inside the Offerings and money box again. Nothing was dropped in the consolidation —
- * every absorbed row is still a first-class, gated, deep-linkable catalog row; it just belongs to a box.
- * The ONE row removed outright is `space.insights`, whose destination differed from `space.reach` only by
- * the `#scans` anchor on the SAME page (the box now reads "QR codes and insights", and the rail bank keeps
- * its own fixed Insights quick-link). Ordered by `order`.
+ * Hub TABS stay a second axis (Resonance / Marketing / Offerings / Programs / Settings). A tool may
+ * nest under a box that lives on a different tab; those divergences are named in space-hub.test.ts.
+ * Nothing was dropped in the fold — every absorbed row is still a first-class, gated, deep-linkable
+ * catalog row; it just belongs to a box. Ordered by `order`.
  */
 export const SPACE_MODULES: readonly SpaceModule[] = [
   // ── The space itself (shell — always on) ─────────────────────────────────────────────────────────────
-  // BOX 1 "Profile and Settings" (ADR-782): the former three shell cards (Identity and Branding · Info
-  // and Connect · Settings) collapsed into this single row. Its deep link is the Manage hub's Profile &
-  // Settings tab, the ONE door to a Space's identity editor since ADR-1336 (LIVE-238): the tab renders
-  // the same forms this row stacks inline on the rail, plus the location and FAQ editors, and the old
-  // /settings/basics URL redirects there. ADR-846 folds Reviews into it too: the rating and review wall
-  // is part of how a space presents itself.
-  { id: 'space.basics', label: 'Profile and Settings', desc: 'Your name, tagline and story, brand and accent, page theme, contact and hours, links, and who can see your space.', Icon: IdCard, family: 'space', hub: 'settings', slot: 'basics', gate: { kind: 'always' }, featureKey: null, render: 'inline', deepLink: (s) => `${base(s)}/manage?section=settings`, order: 15, tier: 'standard', priority: 15, access: 'included' },
-  { id: 'space.layout', label: 'Page', desc: 'Arrange the sections of your page into rows and columns.', Icon: LayoutTemplate, family: 'space', hub: 'none', slot: 'layout', gate: { kind: 'always' }, featureKey: null, render: 'inline', deepLink: (s) => `${base(s)}/manage/layout`, order: 20, tier: 'standard', priority: 20, access: 'included' },
+  // BOX 1 "Your page" (ADR-1432): identity, the public page, reviews, the plan the operator pays, and
+  // Danger. Deep link is the Manage hub's Profile & Settings tab (ADR-1336 / LIVE-238).
+  { id: 'space.basics', label: 'Your page', desc: 'Your name, tagline and story, brand and accent, page theme, contact and hours, links, and who can see your space.', Icon: IdCard, family: 'space', hub: 'settings', slot: 'basics', gate: { kind: 'always' }, featureKey: null, render: 'inline', deepLink: (s) => `${base(s)}/manage?section=settings`, order: 15, tier: 'standard', priority: 15, access: 'included' },
+  { id: 'space.layout', label: 'Page', desc: 'Arrange the sections of your page into rows and columns.', Icon: LayoutTemplate, family: 'space', hub: 'none', slot: 'layout', gate: { kind: 'always' }, featureKey: null, render: 'inline', deepLink: (s) => `${base(s)}/manage/layout`, order: 20, tier: 'standard', priority: 20, access: 'included', parent: 'space.basics' },
 
   // ── Audience & relationships ─────────────────────────────────────────────────────────────────────────
-  // BOX 3 "People" (ADR-846): the team roster and the roles on it. Collaborators (the outside businesses
-  // that operate inside this space) is a TOOL inside it, not a twelfth-of-a-menu row of its own.
-  { id: 'space.people', label: 'People', desc: 'The people on your team and the role each one holds.', Icon: Users, family: 'audience', hub: 'settings', slot: 'people', gate: { kind: 'feature', fn: 'members' }, featureKey: 'members', render: 'panel', deepLink: (s) => `${base(s)}/settings/members`, order: 30, tier: 'primary', priority: 10, access: 'freemium', freeNote: '1 seat free, 3 included on Collective, more per seat' },
-  // BOX 4 "CRM" (ADR-782, widened by ADR-846): the ONE box for the whole pipeline. Conversations,
-  // Automation, Lead capture, Capture links, and Shared with team are TOOLS inside it (each
-  // `parent: 'space.crm'`), so Audience reads as one CRM box with its workspaces nested instead of six
-  // sibling rows. Each stays a first-class module (own gate + deepLink + reachable route).
-  { id: 'space.crm', label: 'CRM', desc: 'Your pipeline, contacts, private notes, and Vera autonomy.', Icon: Briefcase, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'panel', deepLink: (s) => `${base(s)}/crm`, order: 35, tier: 'primary', priority: 15, access: 'freemium', freeNote: '200 contacts free, then unlimited' },
+  // BOX 2 "Your people" (ADR-1432): the team roster AND the CRM cluster. Collaborators stays a tool
+  // here (ADR-1313). CRM itself is a tool, not a sixth box: nesting is one level, so Conversations /
+  // Automation / Leads / Doors / Shared nest directly under this box too. Hub tabs stay split
+  // (Team on Settings, CRM on Resonance); that divergence is named in space-hub.test.ts.
+  { id: 'space.people', label: 'Your people', desc: 'The people on your team and the role each one holds.', Icon: Users, family: 'audience', hub: 'settings', slot: 'people', gate: { kind: 'feature', fn: 'members' }, featureKey: 'members', render: 'panel', deepLink: (s) => `${base(s)}/settings/members`, order: 30, tier: 'primary', priority: 10, access: 'freemium', freeNote: '1 seat free, 3 included on Collective, more per seat' },
+  { id: 'space.crm', label: 'CRM', desc: 'Your pipeline, contacts, private notes, and Vera autonomy.', Icon: Briefcase, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'panel', deepLink: (s) => `${base(s)}/crm`, order: 35, tier: 'primary', priority: 15, access: 'freemium', freeNote: '200 contacts free, then unlimited', parent: 'space.people' },
   // The flat Inbox (ADR-786) is RETIRED (ADR-820): folded into Conversations; /crm/inbox redirects.
   // Conversations (ADR-812): the ticketed workspace over the comms_* spine, scoped to THIS space. Support,
   // outreach, and replies as one assignable, status-tracked thread with a per-thread reply address, so a
   // reply comes straight back to it. Same `crm` gate; sits beside Inbox under Resonance.
-  { id: 'space.conversations', label: 'Conversations', desc: 'One ticketed inbox for your space: assign a thread, reply as your space, and their reply comes back to the same place.', Icon: MessagesSquare, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/conversations`, order: 35.6, tier: 'primary', priority: 15.6, access: 'included', parent: 'space.crm' },
+  { id: 'space.conversations', label: 'Conversations', desc: 'One ticketed inbox for your space: assign a thread, reply as your space, and their reply comes back to the same place.', Icon: MessagesSquare, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/conversations`, order: 35.6, tier: 'primary', priority: 15.6, access: 'included', parent: 'space.people' },
   // Message center (ADR-858) is RETIRED (LIVE-293, owner directive 2026-09-10: "Remove the Message
   // center all together. That is an old idea."). Its DM and Dispatch broadcast lanes were dropped on
   // purpose; its AUDIENCE PICKER moved to Email (space.comms, /settings/email), because targeting all
@@ -199,7 +187,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Space Dispatch publishing moved to the post box (LIVE-295), so composeSpaceDispatch keeps a writer.
   // Automation rides the `crm` feature gate; the surface self-gates on the automation ENTITLEMENT (a paid
   // amplifier) and shows an upgrade notice when the plan lacks it. Nested under CRM on the console.
-  { id: 'space.automation', label: 'Automation', desc: 'Rules and drip sequences over your own contacts.', Icon: Workflow, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/settings/automation`, order: 36, tier: 'primary', priority: 16, access: 'premium', parent: 'space.crm', freeNote: 'On Collective, 1,000 runs/mo included' },
+  { id: 'space.automation', label: 'Automation', desc: 'Rules and drip sequences over your own contacts.', Icon: Workflow, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/settings/automation`, order: 36, tier: 'primary', priority: 16, access: 'premium', parent: 'space.people', freeNote: 'On Collective, 1,000 runs/mo included' },
   // Reviews is a gateable feature keyed on the `reviews` function: the member rating and review wall on the
   // public profile. Default ON (only an explicit `false` hides it); we recommend keeping it on to build trust.
   // A TOOL inside Profile and Settings (ADR-846): the wall is part of how the space presents itself, and its
@@ -207,14 +195,14 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   { id: 'space.reviews', label: 'Reviews', desc: 'The member rating and review wall on your profile.', Icon: Star, family: 'audience', hub: 'settings', slot: 'people', gate: { kind: 'feature', fn: 'reviews' }, featureKey: 'reviews', render: 'link', deepLink: (s) => `${base(s)}/reviews`, order: 37, tier: 'primary', priority: 17, access: 'included', parent: 'space.basics' },
   // Lead capture (CRM Phase 3): contacts captured from Space QR scans, events, and referrals, with the
   // immutable entry point each arrived through. Same `crm` feature gate as the CRM board; nested under CRM.
-  { id: 'space.leads', label: 'Lead capture', desc: 'Contacts captured from QR scans, events, and referrals, and how each one arrived.', Icon: UserPlus, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/leads`, order: 38, tier: 'primary', priority: 18, access: 'freemium', parent: 'space.crm' },
+  { id: 'space.leads', label: 'Lead capture', desc: 'Contacts captured from QR scans, events, and referrals, and how each one arrived.', Icon: UserPlus, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/leads`, order: 38, tier: 'primary', priority: 18, access: 'freemium', parent: 'space.people' },
   // Capture links (CRM Phase 3): make a shareable link for each of the other front doors, a warm intro,
   // an event check-in, a lead magnet, or a card swap. Same `crm` feature gate as the CRM board; nested under CRM.
-  { id: 'space.doors', label: 'Capture links', desc: 'Make a link for a warm intro, an event, a lead magnet, or a card swap.', Icon: Link2, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/doors`, order: 39, tier: 'primary', priority: 19, access: 'freemium', parent: 'space.crm' },
+  { id: 'space.doors', label: 'Capture links', desc: 'Make a link for a warm intro, an event, a lead magnet, or a card swap.', Icon: Link2, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/doors`, order: 39, tier: 'primary', priority: 19, access: 'freemium', parent: 'space.people' },
   // Shared with team (ADR-778): the contact CARDS members chose to share with this Space's team (network
   // 'shared' tier). Nested under CRM on the console; the PAGE itself gates on team membership (broader than
   // the CRM role), and the reader returns card fields only (never notes/tags).
-  { id: 'space.shared', label: 'Shared with team', desc: 'Contact cards your members shared with the team.', Icon: Share2, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/shared`, order: 39.5, tier: 'primary', priority: 19.5, access: 'freemium', parent: 'space.crm' },
+  { id: 'space.shared', label: 'Shared with team', desc: 'Contact cards your members shared with the team.', Icon: Share2, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/shared`, order: 39.5, tier: 'primary', priority: 19.5, access: 'freemium', parent: 'space.people' },
   // Collaborator spaces (ADR-799 B): host separate businesses that operate inside your space, and approve
   // requests to collaborate. Free to host; a link-row out to the /settings/collaborators surface.
   { id: 'space.collaborators', label: 'Collaborators', desc: 'The businesses that operate inside your space, and requests to collaborate.', Icon: Handshake, family: 'audience', hub: 'settings', slot: 'people', gate: { kind: 'feature', fn: 'collaborators' }, featureKey: 'collaborators', render: 'link', deepLink: (s) => `${base(s)}/settings/collaborators`, order: 39.7, tier: 'primary', priority: 19.7, access: 'included', parent: 'space.people' },
@@ -223,13 +211,13 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Calendar (Events EC2/EC3): the space's own events on a month grid + a subscribe link to share. The
   // ONE place an owner reaches "create an event", the calendar view, and the public subscribe feed — so a
   // new business space has calendar options from day one, not only after it already has events.
-  { id: 'space.calendar', label: 'Calendar', desc: 'Your events on a calendar, create a new one, and share a subscribe link.', Icon: CalendarDays, family: 'offerings', hub: 'programs', slot: 'engage', gate: { kind: 'feature', fn: 'events' }, featureKey: 'events', render: 'link', deepLink: (s) => `${base(s)}/settings/calendar`, order: 39.8, tier: 'primary', priority: 29, access: 'included' },
+  { id: 'space.calendar', label: 'Calendar', desc: 'Your events on a calendar, create a new one, and share a subscribe link.', Icon: CalendarDays, family: 'offerings', hub: 'programs', slot: 'engage', gate: { kind: 'feature', fn: 'events' }, featureKey: 'events', render: 'link', deepLink: (s) => `${base(s)}/settings/calendar`, order: 39.8, tier: 'primary', priority: 29, access: 'included', parent: 'space.content' },
   // BOX 6 "Offerings and money" (ADR-846, reversing the ADR-544b split). ONE box for everything the space
   // charges for, opening the adaptive /settings/offerings surface that already stacks whichever services
   // apply. The commerce services stay first-class rows nested inside it, each still opening its own
   // anchored section or `?panel=` workspace. A shell box (gate `always`): the box is the AREA, and the
   // per-service function gates live on the tools inside it.
-  { id: 'space.offerings', label: 'Offerings and money', desc: 'Everything your space charges for: booking, memberships, and donations.', Icon: HandCoins, family: 'offerings', hub: 'none', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings`, order: 39.9, tier: 'primary', priority: 29.5, access: 'included' },
+  { id: 'space.offerings', label: 'Money', desc: 'Everything your space charges for: booking, memberships, and donations.', Icon: HandCoins, family: 'offerings', hub: 'none', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings`, order: 39.9, tier: 'primary', priority: 29.5, access: 'included' },
   { id: 'space.booking', label: 'Booking', desc: 'Set the weekly times members can book, and see the calendar.', Icon: CalendarClock, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'availability' }, featureKey: 'availability', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#availability`, order: 40, tier: 'primary', priority: 30, access: 'freemium', freeNote: '15 bookings/mo free, then unlimited', parent: 'space.offerings' },
   { id: 'space.memberships', label: 'Memberships', desc: 'The tiers members can join, and who has joined.', Icon: BadgeCheck, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'memberships' }, featureKey: 'memberships', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#memberships`, order: 45, tier: 'primary', priority: 31, access: 'freemium', freeNote: '1 membership tier on a free Space · 0% on your own people, always', parent: 'space.offerings' },
   { id: 'space.donations', label: 'Donations', desc: 'The fund, a short description, and the amounts members can pick.', Icon: HeartHandshake, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'donations' }, featureKey: 'donations', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#donations`, order: 50, tier: 'primary', priority: 32, access: 'included', freeNote: '0% on your own people, always', parent: 'space.offerings' },
@@ -249,7 +237,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Manage hub's Content & Programs area, where all five libraries already render as cards. Practices,
   // Journeys, Circles, Airwaves, and Loom Studio are its tools, each still opening its own manager.
   // A shell box (gate `always`): the per-library function gates live on the tools inside it.
-  { id: 'space.content', label: 'Content', desc: 'Everything your space teaches and hosts: practices, journeys, circles, recordings, and images.', Icon: Library, family: 'offerings', hub: 'none', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/manage?section=programs`, order: 55.5, tier: 'primary', priority: 33.4, access: 'included' },
+  { id: 'space.content', label: 'Gather', desc: 'Everything your space teaches and hosts: practices, journeys, circles, recordings, and images.', Icon: Library, family: 'offerings', hub: 'none', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/manage?section=programs`, order: 55.5, tier: 'primary', priority: 33.4, access: 'included' },
   // Practices + Journeys (the practitioner's content). Practices are the daily-log atom (each with its
   // own timer); Journeys compose them into multi week programs (the e-learning upsell: free spaces publish
   // one). Both are `link` rows out to their own space-scoped manager (data-heavy authoring, like Airwaves).
@@ -271,7 +259,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Shop is now a first-class GATEABLE feature keyed on the `shop` function (SpaceFunctionKey), so it can
   // be turned off, role-gated, and entitlement-gated (the `storefront` tier key) like every sibling
   // offering — it is no longer the always-on outlier. Free Spaces can sell; a paid plan lowers fees.
-  { id: 'space.services', label: 'Shop', desc: 'Your catalog, orders, and storefront.', Icon: Store, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'shop' }, featureKey: 'shop', render: 'link', deepLink: (s) => `${base(s)}/settings/shop`, order: 70, tier: 'primary', priority: 40, access: 'freemium', freeNote: 'Full store · 0% on your own people, always' },
+  { id: 'space.services', label: 'Shop', desc: 'Your catalog, orders, and storefront.', Icon: Store, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'shop' }, featureKey: 'shop', render: 'link', deepLink: (s) => `${base(s)}/settings/shop`, order: 70, tier: 'primary', priority: 40, access: 'freemium', freeNote: 'Full store · 0% on your own people, always', parent: 'space.offerings' },
   // Airwaves (ADR-608, P1): the Space's audio/video Recordings library. Upload a Recording into the Loom,
   // manage the catalog, and attach a Recording to any offering, journey, event, or the Space itself.
   { id: 'space.airwaves', label: 'Airwaves', desc: 'Your recordings, and where each one plays.', Icon: Radio, family: 'offerings', hub: 'programs', slot: 'engage', gate: { kind: 'feature', fn: 'airwaves' }, featureKey: 'airwaves', render: 'link', deepLink: (s) => `${base(s)}/settings/airwaves`, order: 72, tier: 'primary', priority: 41, access: 'included', parent: 'space.content' },
@@ -286,7 +274,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // than nested: its destination was the SAME /settings/qr page, differing only by the `#scans` anchor, so
   // it was a second row onto one surface. The scans and growth readout is the lower half of this box's own
   // page, and the rail bank keeps its own fixed Insights quick-link straight to that anchor.
-  { id: 'space.reach', label: 'QR codes and insights', desc: 'Create codes for this space, and see the scans, growth, and how your space is doing.', Icon: QrCode, family: 'reach', hub: 'marketing', slot: 'reach', gate: { kind: 'feature', fn: 'qr' }, featureKey: 'qr', render: 'panel', deepLink: (s) => `${base(s)}/settings/qr`, order: 75, tier: 'primary', priority: 50, placement: 'bank', access: 'freemium', freeNote: '3 codes free, then 500 on Business, unlimited on Collective' },
+  { id: 'space.reach', label: 'Reach', desc: 'Create codes for this space, and see the scans, growth, and how your space is doing.', Icon: QrCode, family: 'reach', hub: 'marketing', slot: 'reach', gate: { kind: 'feature', fn: 'qr' }, featureKey: 'qr', render: 'panel', deepLink: (s) => `${base(s)}/settings/qr`, order: 75, tier: 'primary', priority: 50, placement: 'bank', access: 'freemium', freeNote: '3 codes free, then 500 on Business, unlimited on Collective' },
   // Email is the ONE comms card (ADR-782): Email design (the canvas editor, `space.marketing`) and Email
   // style (the palette, `space.emailstyle`) fold UNDER it on the console — Compose / Design / Style read as
   // one Email surface. Each stays a first-class module (own deepLink + rail row).
@@ -304,19 +292,19 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // ruling accepted. No gate and no feature key: every Space is ranked in the directory whether or not it
   // pays for anything, so every Space can see why. That is the point of the page, and gating it would
   // contradict it.
-  { id: 'space.reachreceipt', label: 'Your reach', desc: 'See what the network sent you, and the next thing that would send more.', Icon: TrendingUp, family: 'reach', hub: 'programs', slot: 'reach', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/settings/reach`, order: 76, tier: 'primary', priority: 51, access: 'included' },
+  { id: 'space.reachreceipt', label: 'Your reach', desc: 'See what the network sent you, and the next thing that would send more.', Icon: TrendingUp, family: 'reach', hub: 'programs', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/settings/reach`, order: 76, tier: 'primary', priority: 51, access: 'included', parent: 'space.content' },
 
-  { id: 'space.comms', label: 'Email', desc: 'Write a campaign, pick who gets it, and send or schedule it.', Icon: Mail, family: 'reach', hub: 'marketing', slot: 'reach', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'panel', deepLink: (s) => `${base(s)}/settings/email`, order: 80, tier: 'primary', priority: 55, placement: 'bank', access: 'freemium', freeNote: '300 sends/mo free, then 5,000/mo on Business, 25,000/mo on Collective' },
+  { id: 'space.comms', label: 'Email', desc: 'Write a campaign, pick who gets it, and send or schedule it.', Icon: Mail, family: 'reach', hub: 'marketing', slot: 'reach', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'panel', deepLink: (s) => `${base(s)}/settings/email`, order: 80, tier: 'primary', priority: 55, placement: 'bank', access: 'freemium', freeNote: '300 sends/mo free, then 5,000/mo on Business, 25,000/mo on Collective', parent: 'space.reach' },
   // Email design (Email in the Business CRM, P1): the FULL on-canvas email editor. Reuses the one Email Studio
   // engine (EmailCanvasEditor) pointed at this Space's own drafts, seeded from the Space brand. Gated on the
   // `email` function; nested under Email on the console. Distinct destination from `space.comms` (the composer).
-  { id: 'space.marketing', label: 'Email design', desc: 'Design a branded email on the canvas, block by block.', Icon: Megaphone, family: 'reach', hub: 'marketing', slot: 'reach', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'link', deepLink: (s) => `${base(s)}/marketing`, order: 81, tier: 'primary', priority: 56, access: 'freemium', parent: 'space.comms' },
+  { id: 'space.marketing', label: 'Email design', desc: 'Design a branded email on the canvas, block by block.', Icon: Megaphone, family: 'reach', hub: 'marketing', slot: 'reach', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'link', deepLink: (s) => `${base(s)}/marketing`, order: 81, tier: 'primary', priority: 56, access: 'freemium', parent: 'space.reach' },
   // Email style (Email in the Business CRM, P1): tune the brand-derived palette a Space's emails default to
   // (spaces.preferences.emailStyle, seeded from the brand accent). Gated on `email`; nested under Email.
-  { id: 'space.emailstyle', label: 'Email style', desc: 'Set the brand colors your emails use by default.', Icon: Paintbrush, family: 'reach', hub: 'marketing', slot: 'reach', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'link', deepLink: (s) => `${base(s)}/settings/email-style`, order: 82, tier: 'extra', priority: 57, access: 'freemium', parent: 'space.comms' },
+  { id: 'space.emailstyle', label: 'Email style', desc: 'Set the brand colors your emails use by default.', Icon: Paintbrush, family: 'reach', hub: 'marketing', slot: 'reach', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'link', deepLink: (s) => `${base(s)}/settings/email-style`, order: 82, tier: 'extra', priority: 57, access: 'freemium', parent: 'space.reach' },
 
   // ── Growth & billing ─────────────────────────────────────────────────────────────────────────────────
-  { id: 'space.billing', label: 'Plan and billing', desc: 'Your plan and pricing, what it unlocks, usage, and billing.', Icon: CreditCard, family: 'growth', hub: 'settings', slot: 'billing', gate: { kind: 'feature', fn: 'billing' }, featureKey: 'billing', render: 'panel', deepLink: (s) => `${base(s)}/settings/billing`, order: 90, tier: 'extra', priority: 30, placement: 'bank', access: 'included' },
+  { id: 'space.billing', label: 'Plan and billing', desc: 'Your plan and pricing, what it unlocks, usage, and billing.', Icon: CreditCard, family: 'growth', hub: 'settings', slot: 'billing', gate: { kind: 'feature', fn: 'billing' }, featureKey: 'billing', render: 'panel', deepLink: (s) => `${base(s)}/settings/billing`, order: 90, tier: 'extra', priority: 30, placement: 'bank', access: 'included', parent: 'space.basics' },
 
   // ── System ───────────────────────────────────────────────────────────────────────────────────────────
   // The "Menu and features" (Module Manager) rail entry was REMOVED (item 7): the bottom More menu no longer
@@ -324,7 +312,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Danger renders as a rail LINK-row (its inline delete lives in the /manage console + Module Manager, which
   // special-case `space.danger` by id — the `render` value drives only the rail, ADR-546b). It has no
   // deepLink, so the rail row falls back to the /manage console (its delete control home). Never banked.
-  { id: 'space.danger', label: 'Danger zone', desc: 'Delete this space. This cannot be undone.', Icon: Trash2, family: 'system', hub: 'settings', slot: 'danger', gate: { kind: 'always' }, featureKey: null, render: 'link', order: 99, tier: 'extra', priority: 99, access: 'included' },
+  { id: 'space.danger', label: 'Danger zone', desc: 'Delete this space. This cannot be undone.', Icon: Trash2, family: 'system', hub: 'settings', slot: 'danger', gate: { kind: 'always' }, featureKey: null, render: 'link', order: 99, tier: 'extra', priority: 99, access: 'included', parent: 'space.basics' },
 ]
 
 /** Module ids that may NEVER be hidden from the menu or turned off: the shell config surfaces (Profile
@@ -397,11 +385,9 @@ export const SPACE_MODULE_FAMILY_LABEL: Record<SpaceModuleFamily, string> = {
   system: 'System',
 }
 
-/** THE THIRTEEN BOXES (ADR-846, amended to thirteen by ADR-1313): the top-level module ids, in catalog
- *  order. DERIVED — a row is a box iff it owns no `parent`, so there is no hand-kept second list to drift.
- *  Everything else is a tool inside a box. Because it is derived, un-parenting a row CHANGES THE COUNT: that
- *  is how Your reach became the thirteenth, and the count moved with a written reason rather than the test
- *  being edited to fit. */
+/** THE FIVE BOXES (ADR-1432 / LIVE-246, folding ADR-846's twelve and ADR-1313's thirteen): the
+ *  top-level module ids, in catalog order. DERIVED — a row is a box iff it owns no `parent`, so there
+ *  is no hand-kept second list to drift. Everything else is a tool inside a box. */
 export const SPACE_MODULE_BOX_IDS: readonly string[] = SPACE_MODULES.filter((m) => !m.parent).map((m) => m.id)
 
 /** The tools a box owns (its `parent` children), in catalog order. Empty for a box with none. PURE. */

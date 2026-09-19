@@ -137,10 +137,24 @@ const EXCLUDED_BOX_TAB: Readonly<Record<string, SpaceHubSection>> = {
 }
 
 /** Rows that deliberately file somewhere other than their box's tab, each with the reason WRITTEN DOWN.
- *  Empty today, and that is the point: a divergence costs a sentence here, so "it just ended up there"
- *  cannot be one. (`space.reachreceipt` is how a divergence is supposed to be resolved — the owner ruled it
- *  moves tabs, so ADR-1313 took its `parent` off rather than granting it an exemption.) */
-const HUB_DIVERGENCE_REASONS: Readonly<Record<string, string>> = {}
+ *  ADR-1432 folded thirteen boxes to five without moving hub tabs (ADR-1313). Team stays on Settings;
+ *  CRM stays on Resonance; Page stays off the hub card grid. Those are the only named exceptions. */
+const HUB_DIVERGENCE_REASONS: Readonly<Record<string, string>> = {
+  'space.layout':
+    'Page editing lives on the admin rail (ADR-1336); Your page owns it on the console, not as a hub card.',
+  'space.crm':
+    'Your people is the Settings-tab Team box; CRM stays on Resonance (ADR-1313).',
+  'space.conversations':
+    'CRM tools stay on Resonance while the Your people box lives on Settings (ADR-1432).',
+  'space.automation':
+    'CRM tools stay on Resonance while the Your people box lives on Settings (ADR-1432).',
+  'space.leads':
+    'CRM tools stay on Resonance while the Your people box lives on Settings (ADR-1432).',
+  'space.doors':
+    'CRM tools stay on Resonance while the Your people box lives on Settings (ADR-1432).',
+  'space.shared':
+    'CRM tools stay on Resonance while the Your people box lives on Settings (ADR-1432).',
+}
 
 /** Every complaint about a tool filed away from its box, as a list of readable strings. PURE + total, so the
  *  controls below can feed it a defective catalog and prove it fires. */
@@ -181,7 +195,9 @@ describe('every tool files under its box (the Automation class, by construction)
     const parented = SPACE_MODULES.filter((m) => m.parent)
     expect(parented.length).toBeGreaterThanOrEqual(18)
     const underExcludedBox = parented.filter((m) => spaceModuleById(m.parent!)!.hub === 'none')
-    expect(underExcludedBox.length).toBe(10)
+    // Gather (content) owns 8 tools; Money (offerings) owns 5. Page is hub:none under Your page (settings),
+    // so it is not in this set.
+    expect(underExcludedBox.length).toBe(13)
     for (const m of underExcludedBox) {
       expect(EXCLUDED_BOX_TAB[m.parent!], `${m.parent} must stand for a tab`).toBeTruthy()
     }
@@ -195,15 +211,15 @@ describe('every tool files under its box (the Automation class, by construction)
   /** One shipped row with fields overridden — a defective catalog without touching the real one. */
   const bend = (id: string, over: Partial<SpaceModule>): SpaceModule => ({ ...spaceModuleById(id)!, ...over })
 
-  it('(a) catches the Automation defect exactly as it shipped, and clears the pair that fixed it', () => {
-    const crm = spaceModuleById('space.crm')!
-    // The defect: Automation hard-coded into the Marketing list, its box left in Resonance.
-    const broken = orphanedFromBox([crm, bend('space.automation', { hub: 'marketing' })])
+  it('(a) catches a tool filed a tab away from its box, and clears the named Settings/Resonance pair', () => {
+    const people = spaceModuleById('space.people')!
+    // Strip named divergences so the control can still fire: Automation on Marketing, box on Settings.
+    const broken = orphanedFromBox([people, bend('space.automation', { hub: 'marketing' })], {})
     expect(broken).toHaveLength(1)
     expect(broken[0]).toContain('space.automation')
-    expect(broken[0]).toContain('space.crm')
-    // The shipped pair, unbent.
-    expect(orphanedFromBox([crm, spaceModuleById('space.automation')!])).toEqual([])
+    expect(broken[0]).toContain('space.people')
+    // The shipped pair, with the named Settings/Resonance divergence.
+    expect(orphanedFromBox([people, spaceModuleById('space.automation')!])).toEqual([])
   })
 
   it('(b) catches a child of an EXCLUDED box filed wrongly (the case a naive skip would wave through)', () => {
@@ -219,16 +235,16 @@ describe('every tool files under its box (the Automation class, by construction)
   })
 
   it('(c) exempts a row only when the divergence is written down', () => {
-    const crm = spaceModuleById('space.crm')!
-    const bent = [crm, bend('space.automation', { hub: 'marketing' })]
-    expect(orphanedFromBox(bent)).toHaveLength(1)
+    const people = spaceModuleById('space.people')!
+    const bent = [people, bend('space.automation', { hub: 'marketing' })]
+    expect(orphanedFromBox(bent, {})).toHaveLength(1)
     expect(orphanedFromBox(bent, { 'space.automation': 'a stated reason' })).toEqual([])
   })
 
   it('(d) refuses a row whose declared tab has no card grid, or whose box has vanished', () => {
-    expect(orphanedFromBox([bend('space.leads', { parent: 'space.gone' })])).toHaveLength(1)
+    expect(orphanedFromBox([bend('space.leads', { parent: 'space.gone' })], {})).toHaveLength(1)
     // A child that declares 'none' is not "excluded", it is unrendered under a box that renders.
-    expect(orphanedFromBox([spaceModuleById('space.crm')!, bend('space.leads', { hub: 'none' })])).toHaveLength(1)
+    expect(orphanedFromBox([spaceModuleById('space.people')!, bend('space.leads', { hub: 'none' })], {})).toHaveLength(1)
   })
 })
 
