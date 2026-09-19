@@ -4,6 +4,9 @@
 > This document is the spec and the rationale. It does **not** record what is done, because prose
 > cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
 
+> ⚠️ **Frozen census (2026-08-17). Do not update status here.** The one list is
+> [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
+
 > **What this is.** A full sweep of every to-do list, plan doc, backlog, audit tail, checkbox and
 > in-code marker in the repo, consolidated into one inventory. It is a **census, not a new plan** —
 > sequencing authority stays with [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md),
@@ -700,8 +703,8 @@ sources beyond `membership_tier` (comp / Lab / staff grants).
 ### 8l. Nav / IA (P7)
 
 Operator dashboards (`/admin` suites → Community Studio / Insights / Platform) · **Practices+Library
-merge** · the `NAV_AREAS` rewrite → a **data-driven Site Navigation admin suite** · reconcile
-"Interests" vs "Topics" · the **"tune in" verb decision** · page-editor polish (visual
+merge** · the `NAV_AREAS` rewrite → a **data-driven Site Navigation admin suite** · ✅ Channel +
+"tune in" locked ([NAMING.md](NAMING.md); do not reopen Interests vs Topics) · page-editor polish (visual
 focal-point/crop picker; `page_revisions` rollback).
 
 ### 8m. Moderation / safety / trust
@@ -786,7 +789,7 @@ Wave 3.
 | **4.1 · Programs** | ⚠️ **RETIRED, needs a re-scope.** See §11 |
 | **BUILD-SEQUENCE §5 open decisions** | (1) legal entities live date — gates the money go-live · (2) which entity sells the paid membership tier (ADR-031) · (3) the inter-entity bridge mechanism (ADR-038) · (4) web's long-term role once mobile leads · (5) **data residency posture** (H3-12) |
 | **BACKLOG §C economy calls** | `awardZaps` auto-promotes to `luminary` past the earned gate · store-redeem TOCTOU race · `lifetime_gems` doubling as the spendable wallet (**note: the rail read is now fixed; this is the remaining semantics question**) · gem-farm posture |
-| **Owner product calls (CHECKLIST, still unanswered)** | "Interests" one word or two · **the "tune in" verb** · reward economy point values per action · **physical merch fulfillment** (the store spends gems today; trading gems for physical goods is a different posture) · **physical rollout & safety** — who may place ghost nodes, partner rules · **web's long-term role once mobile leads** |
+| **Owner product calls (CHECKLIST)** | ✅ Channel + "tune in" locked (NAMING.md / ADR-1403). Remaining: reward amounts · physical merch fulfillment · physical rollout & safety · web's long-term role once mobile leads |
 | **Anonymous sign-ins conflict** | ✅ **Settled 2026-08-17, [ADR-1054](DECISIONS.md).** They stay disabled; `resonance/` stopped requiring them and now declares the capability (default off). Pinned by `supabase/anonymous-sign-ins-policy.test.ts` |
 
 ---

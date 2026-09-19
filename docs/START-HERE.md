@@ -50,7 +50,7 @@ history. When the code and a doc disagree, the code wins; fix the doc in the sam
 - **Naming + voice canon.** `docs/NAMING.md` + `docs/CONTENT-VOICE.md` govern every
   member-facing word (and AI-generated copy). Consult before writing UI copy.
 - **The other locked canons, each machine-enforced.** [PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md)
-  (compose one of the eight page shells; never hand-roll a layout; the right rail shows on every
+  (compose from `@/components/templates`; never hand-roll a layout; the right rail shows on every
   member page), [STUDIO.md](STUDIO.md) (declare a manifest, never build a wizard),
   [MENU-CONTRACT.md](MENU-CONTRACT.md) (add a catalog row, never rewrite the rail), and
   [DEPLOY-SAFETY.md](DEPLOY-SAFETY.md) (a merge is a deploy; four artifact gates run in `postbuild`).

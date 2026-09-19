@@ -250,7 +250,8 @@ action list is a small product decision.
 The drift the audit found (94+ `text-[9/10/11px]`, six radii, gaps 0.5→8) recurred because the
 scale was never written down. It is now. **Compose from the kit; never set these ad hoc.** New
 primitives bake these in: `EntityCard`, `StatCard`, `SectionHeader`, `EmptyState`, `ModuleCard`,
-the three templates.
+the kit. New primitives bake these in: `EntityCard`, `StatCard`, `SectionHeader`,
+`EmptyState`, `ModuleCard`, the page templates in `@/components/templates`.
 
 **Type: roles, not pixels. Never `text-[10/11px]` for content.**
 

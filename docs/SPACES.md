@@ -243,9 +243,8 @@ That is the clean-scaling promise made concrete.
 The Space model rides on seams that must be load-bearing before sub-brands ship. None are a
 rewrite; all are *activation* (BASELINE-ASSESSMENT, ADR-248):
 
-1. ⏳/🔴 **Activate the module/WidgetSlot registry** (ADR-033/248). A Space composes by
-   selecting modules; if the registry isn't wired, every Space hand-wires nav/admin and the
-   promise breaks. **This is the keystone.**
+1. ✅ **Right rail** is `RAIL_PANELS` / `lib/layout/page-chrome.ts` (ADR-033/248).
+   `<WidgetSlot>` in PAGE-FRAMEWORK is a sketch. A Space still composes by modules.
 2. ✅ **Entity partition** (ADR-029/246). `entities` + `financial_transactions` exist, so a
    Space's money has a partitioned home from day one.
 3. 🔴 **Trust signals seam** (ADR-247). Spaces emit trust signals the way they emit

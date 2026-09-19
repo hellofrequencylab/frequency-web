@@ -747,7 +747,9 @@ fully actionable list. This is far smaller than the raw counts suggest: repo-wid
 
 ### 7b. Docs cleanup
 
-202 docs, 67,945 lines, and **five files describe themselves as the single source of truth**.
+202 docs, 67,945 lines, and **five files used to describe themselves as the single source of
+truth.** Front-door repair 2026-09-18: those claims are bannered or rewritten. Status lives in
+[`BUILD-BACKLOG.json`](BUILD-BACKLOG.json). Do not quote the file/line counts as current.
 
 | # | Item | Size | Detail |
 | :--- | :--- | :---: | :--- |

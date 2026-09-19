@@ -30,8 +30,8 @@ from clustering; they are not appointed top-down.
 |---|---|---|
 | **Circle** | `circles` | The atomic unit: a local practice group. `type` is `in-person` (cap 50) or `online` (cap 100). Has location fields (city, neighborhood, lat/lng, timezone). Declares one topical Channel. |
 | **Hub** | `hubs` | A cluster of up to 5 Circles in a locale. `circles.hub_id` is nullable: Circles can exist before a Hub crystallises. |
-| **Nexus** | `nexuses` | A cluster of Hubs (default 2500-member cap): **the top community unit**. `hubs.nexus_id` nullable. |
-| **Outpost** | `outposts` | The **brick-and-mortar home base of a Nexus**: one per Nexus, the seed toward a Lab (NAMING.md §Community structure). Circles meet in homes/public spaces, **never** Outposts. When a **Frequency Lab** (standalone for-profit venue) exists in the Nexus, the Outpost HQ lives there. *(Current code still treats it as the top container; rework in [ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md) §11.)* |
+| **Nexus** | `nexuses` | A cluster of Hubs (default 2500-member cap). Contextual, not a product noun. `hubs.nexus_id` nullable. |
+| **Outpost** | `outposts` | Brick-and-mortar home of a Nexus; seed toward a Lab (NAMING.md). Circles never meet in Outposts. Not one of the four product nouns. |
 | **Nexus region** | `nexus_regions` | Legacy geography tree. Being phased out. |
 
 > **There is ONE "channel" concept: `topical_channels`.** Global topical forums,

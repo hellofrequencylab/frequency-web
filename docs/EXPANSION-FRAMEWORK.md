@@ -102,7 +102,7 @@ The good bones exist; four composition points are still hand-authored. This is t
 | Admin nav as data | ✅ | `app/(main)/admin/sections.ts` `ADMIN_GROUPS` | module-contributed admin links |
 | Engagement ledger | ✅ | `lib/engagement/events.ts` `recordEngagementEvent` (append-only, idempotent) | a `SourceAdapter` front door + trust-signal hook (step 5) |
 | **Page admin dock** | ✅ | `components/layout/page-admin-bar.tsx` selects via `modulesForScopeKind` + an id→component map | done (step 1) |
-| **Right rail** | ✅ | `components/sidebar/rail-registry.tsx` `RAIL_PANELS` WidgetSlot; `right-sidebar.tsx` maps it | done (step 2) |
+| **Right rail** | ✅ | `RAIL_PANELS` / `page-chrome.ts` (not a `WidgetSlot` component) | done |
 | **Capability union** | ✅ | core stays closed; `lib/verticals` resolves namespaced module capabilities | done (step 3) |
 | **Vertical registry** | ✅ | `lib/verticals/registry.ts` descriptor + selectors; Marketplace migrated | done (step 4) |
 | **Engagement emission** | 🔴 | ~15 action files call `processGamificationEvent` inline | route through `recordEngagementEvent` via adapters (step 5) |

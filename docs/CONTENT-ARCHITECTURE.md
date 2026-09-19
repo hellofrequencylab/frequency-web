@@ -47,6 +47,7 @@ We do **not** build a new substrate. `posts` is the unified activity table:
 ## 4. Staged build
 
 1. ✅ **Taxonomy foundation**: `pillars` + `topical_channels.pillar_id` + `circle_topics` + backfill (renamed 2026, see docs/NAMING.md; migrations `20260604010000`, `20260613000010`).
-2. **Pillar reach + browse**: `get_my_tuned_domain_ids` (helper name pending Wave-3 rename); Pillar pages aggregating Topics → Circles/Events/Posts; IA re-label (Pillar = the top level, Channels/Interests underneath).
+2. **Pillar reach + browse**: Pillar pages aggregating Channels → Circles/Events/Posts.
+   Pillar = top taxonomy; Channel underneath. Never Interests.
 3. **Tagging across types**: `event_topics` / `post_topics`; tag UI on create/edit.
 4. **Ranker v1**: upgrade `feed_for_viewer` + `feed-rank.ts` to the transparent score, behind the guardrail.

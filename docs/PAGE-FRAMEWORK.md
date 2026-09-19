@@ -264,7 +264,8 @@ authors have to remember.
 > (`@rail`, `@header` folders) give file-based independent slots with their own
 > streaming/loading. Good for a few fixed slots; the **config-driven
 > `WidgetSlot`** above is better for *dynamic, per-scope, per-role* assignment.
-> Use both: parallel routes for structure, `WidgetSlot` for content.
+> Use both: parallel routes for structure, `RAIL_PANELS` / `page-chrome.ts` for the live
+> rail. Do not import `WidgetSlot`.
 
 ---
 
@@ -330,18 +331,16 @@ bespoke layout.
 > **Update 2026-06-02:** the template migration shipped (PRs #81 to 93, see
 > [REDESIGN-INAPP.md](REDESIGN-INAPP.md)). `Index`/`Stream`/`Detail` templates are live;
 > `DetailTemplate` is adopted by Circle/Channel/Event (step 4 to 5, in progress, Profile/Programs
-> remain). The capability-module/`WidgetSlot` system (steps 1 to 2) is still a future seam, not yet
-> built; the right rail remains hand-wired.
+> remain). The live right rail is `RAIL_PANELS` / `lib/layout/page-chrome.ts`, not
+> `<WidgetSlot>`. The sketch in §4.4 is history. Steps 1–2 below are the original
+> sketch path; do not implement them as written.
 
-1. **Extract** the shared shell pieces that exist informally:
-   `WidgetCard` → `components/widgets/widget-card.tsx`; a `Scope` type;
-   `<WidgetSlot>`.
-2. **Codify** the right rail as a `WidgetSlot name="rightRail"` driven by
-   `layout-config.ts` (it's already a hand-wired version of this).
+1. **Extract** shared chrome (`WidgetCard`). Do **not** introduce a `WidgetSlot` component.
+2. **Codify** the right rail via `page-chrome.ts` / `RAIL_PANELS` (this is what shipped).
 3. **Templatize** Stream and Index as thin shared components; convert `/feed`
    and `/circles` first.
-4. **Introduce the Detail layout** at `circles/[slug]/layout.tsx` (header + tabs +
-   scoped rail); make the rail scope-aware (`global` → `circle`).
+4. **Introduce the Detail layout** at `circles/[slug]/layout.tsx` (header + tabs).
+   The global rail stays on; in-body facts use Detail's `sidebar` slot, not `'scoped'`.
 5. **Roll** the Detail pattern to Topics, Events, Profiles.
 6. Thereafter, **new features are widgets + a config line**: never a new page
    layout.
@@ -999,11 +998,9 @@ how a published draft shadows a coded experience, or an in-app page loses its ch
 
 ## Decisions captured
 
-- **One shell, EIGHT page shells (Stream / Index / Detail / Dashboard / Focus /
-  WizardShell / RailGrid / Admin)**, all on one `PageHeading` grammar; the rail is a
-  declarative `page-chrome.ts` map, not shell-baked conditionals (ADR-1046). See §8.1
-  for the full canon + the count reconciliation (`HeaderSidebarTemplate` and
-  `TwoColumnTemplate` were deleted 2026-08-05 with zero usages).
+- **One shell, a small kit** (Stream, Index, Detail, plus Focus / Dashboard /
+  WizardShell / Admin). `RailGrid` is a layout primitive, not a shell. Do not
+  restate a count. See §8.1.
 - **The right rail shows on EVERY member page** (owner directive 2026-06-20,
   reaffirmed 2026-07-28). `FOCUS_NONE_PREFIXES`, `SCOPED_PREFIXES`, and
   `SCOPED_PATTERNS` are deliberately empty; only the zero-chrome takeovers,
@@ -1015,7 +1012,8 @@ how a published draft shadows a coded experience, or an in-app page loses its ch
   canonical `PageHero`, same global rail — a body choice, not an exemption (§8.5).
 - **Features are widgets**: self-fetching Server Components, scope-aware,
   gate-aware, returning null when empty, wrapped in a uniform `WidgetCard`.
-- **Assignment is one declarative config**; pages only render `<WidgetSlot>`.
+- **Assignment is one declarative config** (`page-chrome.ts` / `RAIL_PANELS`). Do not
+  add a `<WidgetSlot>` import to a page.
 - **Speed is structural**: RSC + per-widget Suspense + parallel fetch + nested
   layouts + dimension-matched skeletons; client JS only at interactive leaves.
 - **Gating (role + milestone, IA-STRATEGY §2) is widget metadata**: the same

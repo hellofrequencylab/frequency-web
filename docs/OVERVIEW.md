@@ -65,8 +65,9 @@ Pipeline: **SOURCE → VERIFY → LEDGER → RULES → REWARD.**
 - **Gems** = internal/web engagement (posts, comments, reactions, logins, RSVPs):
   the **spendable** currency.
 - **Zaps** = external + **in-person** (outreach, invites, in-person event hosting,
-  ghost-node captures, business/NFC programs): **seasonal XP** driving **season
-  ranks** (ghost → echo → signal → beacon → conduit → luminary).
+  ghost-node captures, business/NFC programs): **seasonal XP** driving season
+  ranks ([NAMING.md](NAMING.md): Ghost → Initiate → Adept → Master). The old
+  Echo/Signal/Beacon ladder is retired.
 - **Season rollover:** zaps **convert to gems** at season end (rank-based rate);
   trophy minted; counters reset.
 - **Store:** gems buy **digital badges/cosmetics** and **trade for physical merch**.
