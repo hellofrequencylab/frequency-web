@@ -6,7 +6,11 @@ import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
 import { updateEventCoverFocus, updateEventHeroHeight } from '@/app/(main)/events/admin-actions'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { EVENT_HERO_HEIGHTS, type EventHeroHeight } from '@/lib/events/hero-height'
-import { posterBandAspect } from '@/lib/layout/cover-height'
+import {
+  EVENT_POSTER_DESKTOP_WIDTH_PX,
+  EVENT_POSTER_PHONE_WIDTH_PX,
+  posterBandAspect,
+} from '@/lib/layout/cover-height'
 import { measureCoverAspect } from '@/lib/events/cover-aspect'
 
 // The event HEADER controls — one tidy section that pairs the cover FOCAL POINT (where the cover
@@ -112,26 +116,30 @@ export function EventHeaderControls({
             Horizontal sliders are hidden here (showSliders={false}) — the draggable marker, with
             arrow-key nudging, is the only control, which keeps the rail panel tidy. */}
         {imageUrl ? (
-          <ImageFocalPicker
-            imageUrl={imageUrl}
-            value={focus}
-            onChange={onFocusChange}
-            onImageLoad={onCoverLoad}
-            label="Cover focus"
-            hint="Drag to choose which part of the cover stays in frame. Vertical matters most."
-            showSliders={false}
-            // 🔴 THE PREVIEW IS THE BAND, NOT A STOCK 16/9. Half of the 2026-09-10 report was that
-            // this control promised a crop the page did not perform: it framed the cover at 16/9
-            // while the desktop band contained the whole poster between blurred bars. The band now
-            // crops at every width, so the preview adopts its exact shape at the chosen tier —
-            // `max(posterAspect, 1044 / tierHeight)` — and a cover the band shows whole previews
-            // whole, with nothing to drag, which is the honest answer.
-            //
-            // 1044 is the event page's centre-column width (the same figure poster-band.tsx
-            // measures its 24-cover survey against). The phone band is one rung shorter and
-            // therefore wider; the picker previews the surface it is being dragged on.
-            aspect={posterBandAspect(height, 1044, aspect)}
-          />
+          <div className="space-y-3">
+            {/* LIVE-272 / ADR-1431: both surfaces, not a desktop-only frame. The phone band is one
+                rung shorter, so a 412px width over the DESKTOP height is the wrong shape. Each
+                preview names its surface; one focus drives both. Measure the cover once. */}
+            <ImageFocalPicker
+              imageUrl={imageUrl}
+              value={focus}
+              onChange={onFocusChange}
+              onImageLoad={onCoverLoad}
+              label="Phone"
+              hint=""
+              showSliders={false}
+              aspect={posterBandAspect(height, EVENT_POSTER_PHONE_WIDTH_PX, aspect, 'phone')}
+            />
+            <ImageFocalPicker
+              imageUrl={imageUrl}
+              value={focus}
+              onChange={onFocusChange}
+              label="Desktop"
+              hint="Drag either preview. Both keep the same focus. Vertical matters most."
+              showSliders={false}
+              aspect={posterBandAspect(height, EVENT_POSTER_DESKTOP_WIDTH_PX, aspect, 'desktop')}
+            />
+          </div>
         ) : (
           <p className="text-2xs text-muted">
             Add a header photo above to choose where it sits in frame.
