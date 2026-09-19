@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1437**. 1436 is HYG-068 on another open branch.
+tree as of this index: **ADR-1438**. 1436 is HYG-068 on another open branch.
 
 | Theme | Start here |
 |---|---|
@@ -46116,3 +46116,24 @@ Premise re-tested 2026-09-19: all four files still exported `force-dynamic`. Sto
 **Consequences.** A later page that adds `getCallerProfile` or `export const dynamic = 'force-dynamic'` fails `lib/nav/public-detail-isr.test.ts`. Comments, offers, and exact street address stay on the anonymous shell until a follow-up teaches those slots the viewer. The layout auth read still dynamizes the tree today.
 
 **Rows.** SCAN-637.
+
+## ADR-1438: The share event URL is the ISR public body (SCAN-636)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-636` · product-preserving close of the discover twin's canonical · numbered **1438** because **1436** is HYG-068 and **1437** is SCAN-637 · corroborated by `app/(main)/events/[slug]/page.tsx`, `lib/nav/member-event-rewrite.ts`, and `lib/nav/public-detail-isr.test.ts`
+
+**Context.** `/discover/events/[slug]` is ISR (`revalidate` 3600, `generateStaticParams`, column-safe RPC). Its `generateMetadata` sets canonical to `/events/<slug>`. That URL rendered a 2486-line member page that called `createClient()` and `getUser()` during render. This app does not enable `cacheComponents`, so those dynamic APIs void ISR. Crawlers were told to consolidate onto the slower page. Share and QR already resolve to `/events/<slug>`, so reversing the canonical (option b on the row) would have advertised a different URL than the one people send.
+
+Premise re-tested 2026-09-19: the discover twin still pointed canonical at `/events/${event.slug}`, and the member page still had no `revalidate`.
+
+**Decision.**
+
+1. **Keep `/events/<slug>` as the share URL.** The discover twin still points there.
+2. **The route file is the anonymous public body.** Same RPC, enrichment, and ISR window as the discover twin. No session client, no `searchParams`, no `getMyProfileId`.
+3. **Signed-in members rewrite to `/events/<slug>/full`.** `memberEventRewrite` is pure; `proxy.ts` rewrites after `getUser()`. The browser URL and `x-pathname` stay `/events/<slug>`, so chrome and breadcrumbs do not move. The existing member page lives in `event-member-page.tsx`.
+4. **Do not touch `(main)/layout.tsx`.** That auth read is SCAN-641. The page-level session read is what this row could remove today.
+
+**Rejected.** Reversing the canonical onto `/discover/events/<slug>` without re-pointing share and QR (the slate forbade it). Reading the session in a Suspense hole (needs `cacheComponents`). Rewriting the 2486-line member page into client islands in one PR.
+
+**Consequences.** A later edit that puts `createClient` or `force-dynamic` back on `app/(main)/events/[slug]/page.tsx` fails `lib/nav/public-detail-isr.test.ts`. The layout auth read still dynamizes the tree today. Private and circle-only events stay on the member page for signed-in viewers; a crawler that asks for those slugs `notFound()`s through the public RPC.
+
+**Rows.** SCAN-636.

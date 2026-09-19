@@ -9,7 +9,7 @@ import { SERIES_COLUMNS } from '@/lib/events/series'
 // here at the source level — the house drift-guard archetype (lib/events/options.test.ts).
 
 const indexData = readFileSync('app/(main)/events/index-data.ts', 'utf8')
-const detailPage = readFileSync('app/(main)/events/[slug]/page.tsx', 'utf8')
+const detailPage = readFileSync('app/(main)/events/[slug]/event-member-page.tsx', 'utf8')
 
 describe('the /events index folds repeating series', () => {
   it('is non-trivial (guards a vacuous pass)', () => {

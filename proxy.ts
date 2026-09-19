@@ -9,6 +9,7 @@ import {
 } from '@/lib/attribution/first-touch'
 import { isProfileRef } from '@/lib/qr/public-url'
 import { hasPublicTwin } from '@/lib/nav/public-twin'
+import { memberEventRewrite } from '@/lib/nav/member-event-rewrite'
 import { frontDoorRedirect } from '@/lib/nav/front-door'
 import { referralsEnabled } from '@/lib/platform-flags'
 import { isFunnelSplashPath } from '@/lib/funnels/definitions'
@@ -356,6 +357,21 @@ export async function proxy(request: NextRequest) {
       .getAll()
       .forEach((cookie) => redirectResponse.cookies.set(cookie))
     return redirectResponse
+  }
+
+  // SCAN-636. A signed-in member on the public event URL keeps RSVP, tickets, and
+  // host tools on the existing page. The rewrite is internal: the share URL stays
+  // /events/<slug>, and withPath above stamps that path on x-pathname. Crawlers
+  // and signed-out visitors fall through to the ISR body on page.tsx.
+  const eventMemberPath = memberEventRewrite(pathname, !!user)
+  if (eventMemberPath) {
+    const memberUrl = request.nextUrl.clone()
+    memberUrl.pathname = eventMemberPath
+    const rewriteResponse = NextResponse.rewrite(memberUrl, {
+      request: { headers: withPath(request) },
+    })
+    supabaseResponse.cookies.getAll().forEach((cookie) => rewriteResponse.cookies.set(cookie))
+    return rewriteResponse
   }
 
   return supabaseResponse
