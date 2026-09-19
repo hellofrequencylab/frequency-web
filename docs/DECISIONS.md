@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1412**.
+tree as of this index: **ADR-1413**.
 
 | Theme | Start here |
 |---|---|
@@ -45698,4 +45698,22 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 **Consequences.** `pnpm packets` is the machine front door for fan-out. ADR-1325's loop still runs; only the lane *count* is derived. Branch protection and Vercel remain the merge and artifact gates. This session cannot send Resend.
 
 **Rows.** None. This is process, not a backlog close.
+
+## ADR-1413: A host who runs exactly one Space creates events on that Space (2026-09-19)
+
+**Status:** Accepted · 2026-09-19 · LIVE-376 · corroborated by `lib/events/default-host-space.ts`, `app/(main)/events/new/page.tsx`, `app/(main)/events/event-spark.tsx`
+
+**Context.** A real host (House of Fates) created three events from her own account. All three landed on the root Frequency Space with `host_space_id` null. The owner report was that she did not know how to attach them. Re-tested before the build: the Spark manifest has no host-space field (Host is the printed `organizerName`; `scopeId` is Circles). The create form already offered "Spaces you run" under "Where does it live?" and defaulted to Public. EventSpark only stamped a Space when `defaultGroupId` came from `?space=` or Duplicate. The settings rail already had Venue plus "Hosted by". The report was findability, not a missing control. The `events_default_space_id` trigger is still right for someone with no Space.
+
+**Decision.**
+
+1. **Default, do not guess among many.** `defaultEventHostSpaceId` returns the one non-root Space a host runs. Zero or two-plus stay Public. The create page ranks an explicit `?space=`, Duplicate, or `?circle=` above that rule.
+2. **Say it.** The Spark names the Space on the doors and review. The form hint says the event is part of that Space and that ticket money and the calendar go with it. "Hosted by" tells a personal event how to attach after the fact.
+3. **Do not change the trigger.** Root remains the database default for an insert that names no Space. The app-layer default is the product fix.
+
+**Rejected.** Adding a new Spark/rail field (the picker already existed). Changing `events_default_space_id` (wrong for hosts with no Space, and it is shared with Circles, Practices, Journeys). Auto-picking among several Spaces.
+
+**Consequences.** A House of Fates-shaped host creating from `/events/new` (wizard or form) gets `space_id` and `host_space_id` on their Space without finding a buried control. A host with two Spaces still has to pick. A host with none still lands on the root.
+
+**Rows.** LIVE-376.
 

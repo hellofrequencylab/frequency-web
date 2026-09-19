@@ -841,8 +841,12 @@ export function EventForm({
               </Select>
               <p className="mt-1.5 text-2xs text-muted">
                 {scopeId === PUBLIC_SCOPE
-                  ? 'A standalone event in your area, open to anyone nearby.'
-                  : 'It goes live here right away, since you run it.'}
+                  ? spaceOptions.length > 0
+                    ? 'A standalone event in your area. Pick a Space you run if this gathering belongs to it.'
+                    : 'A standalone event in your area, open to anyone nearby.'
+                  : scopeId.startsWith(SPACE_PREFIX)
+                    ? `This event is part of ${selectedScopeName ?? 'that Space'}. Ticket money and the Space calendar go with it. Change it if that is not right.`
+                    : 'It goes live here right away, since you run it.'}
               </p>
             </>
           )}
