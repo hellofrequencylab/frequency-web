@@ -21,16 +21,18 @@
 //
 // This matters because agent worktrees are the repo's own parallel-build practice
 // (docs/NEXT-GEN-CRM.md "Worktree discipline", docs/EVENTS-AUDIT.md) and a `git worktree` never
-// inherits node_modules. The SessionStart hook installs in the root it is invoked at, so a
-// worktree created for a subagent starts with no install and the very first `pnpm lint` there
-// hits the trap.
+// inherits node_modules. The SessionStart hook used to install only at the script's repo
+// root, so a worktree created for a subagent started with no install and the very first
+// `pnpm lint` there hit the trap.
 //
-// SO: fail FIRST, and say the true thing. This gate cannot make lint quieter -- it only ever
-// refuses to run, and it refuses in exactly the case where the alternative was a crash.
+// ADR-1319 made the refusal legible. ADR-1439 (LIVE-306) made the first `pnpm lint` install
+// this directory when the lockfile is here and local ESLint is missing, then re-check.
+// It still refuses on a failed install or a major mismatch — those are not "never installed".
 
 import { existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { spawnSync } from 'node:child_process'
 
 /**
  * Decide whether the ESLint that PATH is about to hand us is the repo's own.
@@ -95,6 +97,63 @@ export function checkLintToolchain({ cwd, declaredRange, exists, readVersion }) 
   return { ok: true }
 }
 
+/**
+ * The worktree half of LIVE-306. `checkLintToolchain` can only refuse. This one
+ * installs when the directory has this repo's lockfile and no local ESLint, then
+ * re-checks. Injectable so the test can prove both the install and the refuse-after
+ * without touching a real tree.
+ *
+ * @param {object} input
+ * @param {string} input.cwd
+ * @param {string} input.declaredRange
+ * @param {(p: string) => boolean} input.exists
+ * @param {(p: string) => string} input.readVersion
+ * @param {(opts: { cwd: string }) => { ok: boolean, output?: string }} [input.install]
+ * @returns {{ ok: boolean, reason?: string, message?: string, attemptedInstall: boolean }}
+ */
+export function ensureLintToolchain(input) {
+  const first = checkLintToolchain(input)
+  if (first.ok || first.reason !== 'not-installed') {
+    return { ...first, attemptedInstall: false }
+  }
+
+  const lockfile = join(input.cwd, 'pnpm-lock.yaml')
+  if (!input.exists(lockfile)) {
+    return { ...first, attemptedInstall: false }
+  }
+
+  const attempt = (input.install ?? installLintToolchain)({ cwd: input.cwd })
+  if (!attempt.ok) {
+    return {
+      ok: false,
+      reason: 'not-installed',
+      attemptedInstall: true,
+      message: [
+        first.message,
+        ``,
+        `Install was attempted and failed:`,
+        attempt.output || '(no output)',
+      ].join('\n'),
+    }
+  }
+
+  const second = checkLintToolchain(input)
+  return { ...second, attemptedInstall: true }
+}
+
+/** @param {{ cwd: string }} opts */
+export function installLintToolchain({ cwd }) {
+  const run = spawnSync('pnpm', ['install', '--frozen-lockfile'], {
+    cwd,
+    encoding: 'utf8',
+    env: process.env,
+  })
+  return {
+    ok: run.status === 0,
+    output: `${run.stdout ?? ''}${run.stderr ?? ''}`.trim(),
+  }
+}
+
 function readVersionFrom(pkgPath) {
   try {
     return JSON.parse(readFileSync(pkgPath, 'utf8')).version ?? ''
@@ -118,11 +177,12 @@ if (invokedDirectly) {
   const declaredRange =
     JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf8')).devDependencies?.eslint ?? ''
 
-  const result = checkLintToolchain({
+  const result = ensureLintToolchain({
     cwd,
     declaredRange,
     exists: existsSync,
     readVersion: readVersionFrom,
+    install: installLintToolchain,
   })
 
   if (!result.ok) {
@@ -130,5 +190,9 @@ if (invokedDirectly) {
     console.error(result.message)
     console.error('')
     process.exit(1)
+  }
+
+  if (result.attemptedInstall) {
+    console.error(`📦 Installed this directory so pnpm lint uses this repo's ESLint.\n`)
   }
 }

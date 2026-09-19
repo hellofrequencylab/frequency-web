@@ -135,12 +135,17 @@ describe('agent packets (ADR-1412)', () => {
     expect(body.packets.some((p: { id: string }) => p.id === 'LIVE-410')).toBe(false)
   })
 
-  it('CLI --json names the next money packet from the real file, and not a closed LIVE-410', () => {
+  it('CLI --json names no closed LIVE-410 or LIVE-306 on the money lane', () => {
     const { status, stdout, stderr } = run(['--json', '--lane', 'money'])
     expect(status, stderr).toBe(0)
     const body = JSON.parse(stdout)
-    expect(body.next[0].derivedLane).toBe('money')
-    expect(body.next[0].id).not.toBe('LIVE-410')
+    expect(body.packets.some((p: { id: string }) => p.id === 'LIVE-410')).toBe(false)
+    expect(body.packets.some((p: { id: string }) => p.id === 'LIVE-306')).toBe(false)
     expect(body.packets.some((p: { id: string }) => p.id === 'LIVE-376')).toBe(false)
+    if (body.next[0]) {
+      expect(body.next[0].derivedLane).toBe('money')
+      expect(body.next[0].id).not.toBe('LIVE-410')
+      expect(body.next[0].id).not.toBe('LIVE-306')
+    }
   })
 })

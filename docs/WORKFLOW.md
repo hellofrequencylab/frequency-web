@@ -73,8 +73,11 @@ drafts** to approve. Docs: https://code.claude.com/docs/en/claude-code-on-the-we
   `eslint-plugin-react` with `contextOrFilename.getFilename is not a function`, a message that
   names a React rule and nothing about the real cause. Three sessions misread it and the wrong
   diagnosis ("the repo pins the wrong ESLint") reached a briefing before anyone ran
-  `eslint --version`. `prelint` (`scripts/preflight-lint.mjs`) now refuses first and says to run
-  `pnpm install --frozen-lockfile` **in that worktree**. Run it in every new worktree.
+  `eslint --version`. `prelint` (`scripts/preflight-lint.mjs`) still refuses a foreign major.
+  When the directory has this repo's lockfile and no local ESLint, it now runs
+  `pnpm install --frozen-lockfile` first (LIVE-306 / ADR-1439). The SessionStart hook
+  installs at `git rev-parse --show-toplevel`, so a linked worktree gets its own
+  `node_modules` instead of the parent checkout's.
 
 ## Known setup gaps (action needed)
 - **Gmail connector token expired (2026-06-02):** re-authorize before `/support-triage`
