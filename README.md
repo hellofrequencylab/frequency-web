@@ -18,7 +18,7 @@ Realtime, Storage) on Vercel, **Tailwind v4**.
 
 | Home | Audience | Contains |
 |---|---|---|
-| **GitHub** (`/docs`, `AGENTS.md`, this README) | **Developers** | architecture, schema, conventions, the build plan, everything technical |
+| **GitHub** (`/docs`, `AGENTS.md`, this README) | **Developers** | architecture, schema, conventions. Status: `docs/BUILD-BACKLOG.json` |
 | **Public help center** (`content/help/`, served at `/help`) | **Members** | how to use the product, in member language |
 | **Notion** | **Operators, hosts, training** | how to operate/moderate the product, host/admin guides, community policy |
 

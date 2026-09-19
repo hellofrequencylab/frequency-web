@@ -14653,6 +14653,25 @@
       "closed": "2026-09-19"
     },
     {
+      "id": "HYG-103",
+      "title": "AGENTS.md restates locked canons and stale gate readings",
+      "status": "done",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "M",
+      "source": {
+        "file": "AGENTS.md",
+        "ref": "ADR-1445; owner ask 2026-09-19"
+      },
+      "detail": "FILED AND CLOSED 2026-09-19. Claude Code had copied deploy-safety readings, page-framework history, studio essays, checkout, and menu catalogs into AGENTS.md. Those copies drifted. DOCS-PROTOCOL still sent status to DEVELOPMENT-MAP.md. AGENTS.md is now an index: pointer table plus operating law. Status stays in this file. Superseded planning docs stay frozen (check:one-list). ADR-1445.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const a=fs.readFileSync(\"AGENTS.md\",\"utf8\");for (const b of [\"6.27 GB\",\"1027 KB\",\"18 rasterising\",\"PACKED_PER_RAW\",\"456 functions\",\"wrong twice\"]) if (a.includes(b)) fail(\"AGENTS.md restates a stale reading: \"+b);for (const p of [\"docs/DEPLOY-SAFETY.md\",\"docs/PAGE-FRAMEWORK.md\",\"docs/STUDIO.md\",\"docs/CHECKOUT.md\",\"docs/MENU-CONTRACT.md\",\"docs/BUILD-BACKLOG.json\"]) if (!a.includes(p)) fail(\"AGENTS.md lost pointer \"+p);if (!/session index/i.test(a)) fail(\"AGENTS.md no longer calls itself an index\");const proto=fs.readFileSync(\"docs/DOCS-PROTOCOL.md\",\"utf8\");if (proto.includes(\"`DEVELOPMENT-MAP.md` build status\")) fail(\"DOCS-PROTOCOL still writes status to DEVELOPMENT-MAP\");console.log(\"HYG-103 ok\")'",
+        "note": "Fails if AGENTS.md grows a restated artifact reading or loses a canon pointer, or if DOCS-PROTOCOL writes status into DEVELOPMENT-MAP again."
+      },
+      "closed": "2026-09-19"
+    },
+    {
       "id": "OWN-077",
       "title": "Seed one production Journey Run (journey_runs is 0)",
       "status": "open",

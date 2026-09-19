@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1432**. 1444 is OWN-063 on main. 1440 is SCAN-636 on main.
+tree as of this index: **ADR-1445**. 1444 is OWN-063. 1443 is SCAN-641. 1432 is LIVE-246.
 
 | Theme | Start here |
 |---|---|
@@ -46270,3 +46270,22 @@ Premise re-tested 2026-09-19 on this tree:
 **Consequences.** `SPACE_MODULE_BOX_IDS` reads five ids. The Space rail still renders every row (coverage guard unchanged). A later edit that un-parents a sixth box fails LIVE-246's probe and the five-box lock in `space-modules.test.ts`.
 
 **Rows.** LIVE-246.
+
+## ADR-1445: AGENTS.md is an index, not a restatement of the canons (HYG-103)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-103` · numbered **1445** · corroborated by `AGENTS.md`, `docs/DOCS-PROTOCOL.md`, `docs/START-HERE.md`
+
+**Context.** Session rules accumulated by copying the locked canons into `AGENTS.md`: deploy-safety readings, page-framework history, studio rail-plan essays, checkout traps, menu catalog lists. Those copies went stale (ADR-1355 already named the shell-weight kilobyte trail). `DOCS-PROTOCOL.md` still sent status updates to `DEVELOPMENT-MAP.md` and `ROADMAP.md`, which AGENTS.md itself calls superseded. An agent reading two files got two answers.
+
+**Decision.**
+
+1. `AGENTS.md` is a pointer table plus the operating law that is not a separate canon (one list, fail-safes, merge is a deploy, product-first). It names the six `postbuild` gates and does not paste a reading.
+2. Each locked contract stays in its own file. If AGENTS.md and that file disagree, the canon wins and AGENTS.md is shortened.
+3. `DOCS-PROTOCOL.md` and `/sync-docs` route status to `BUILD-BACKLOG.json`. They do not write status into superseded planning docs.
+4. Superseded planning files stay on disk with banners. `check:one-list` still forbids deleting one without re-homing its rows.
+
+**Rejected.** Deleting the frozen planning set. Pasting gate readings back into AGENTS.md "for convenience". A sixth master list of the cleanup.
+
+**Consequences.** Agents open the canon they need. START-HERE is the human orientation. HYG-103's probe fails if AGENTS.md grows a restated artifact reading again.
+
+**Rows.** HYG-103.

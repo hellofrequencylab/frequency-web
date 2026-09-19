@@ -26,7 +26,8 @@ For each change apply [`docs/DOCS-PROTOCOL.md`](../../../docs/DOCS-PROTOCOL.md):
 - If a **decision with rationale** was made, append an ADR to `docs/DECISIONS.md`
   (continue the ADR-NNN numbering; format: Status / Context / Decision / Consequences;
   cross-link the corroborating file or migration).
-- Update `docs/DEVELOPMENT-MAP.md` build status if an item moved.
+- If a build item moved, update the row in `docs/BUILD-BACKLOG.json` so its probe still
+  measures a consequence. Do not write status into `DEVELOPMENT-MAP.md` (superseded).
 - **Ground every claim in code/migrations.** If a doc and the code disagree, fix the doc.
 
 **Only if member-facing behavior changed, member to the help center:**

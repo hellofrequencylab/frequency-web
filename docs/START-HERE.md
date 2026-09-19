@@ -17,8 +17,8 @@ get them. Note `vercel env pull` returns blanks here, so you fill them by hand),
 
 ## 2. Read these, in order
 - **[README.md](../README.md)**: what Frequency is + the 5-layer architecture at a glance.
-- **[AGENTS.md](../AGENTS.md)**: the rules every session runs under. Its §"Which plan is live"
-  is the authority for what follows in this list.
+- **[AGENTS.md](../AGENTS.md)**: the session **index**. It points at the locked canons; it
+  does not restate their readings. §"Which plan is live" is the authority for what follows.
 - **[docs/BUILD-BACKLOG.json](BUILD-BACKLOG.json)** via **`pnpm backlog`**: the ONE list of where
   the work stands. Status never lives in prose; every row says how it is proven.
 - **[docs/UX-MATURITY-PLAN.md](UX-MATURITY-PLAN.md)** + **[docs/BUILD-LIST.md](BUILD-LIST.md)**:
@@ -57,6 +57,6 @@ history. When the code and a doc disagree, the code wins; fix the doc in the sam
   shell; the right rail shows on every member page; `railFor` is the code default and
   operator overrides can beat it), [STUDIO.md](STUDIO.md) (declare a manifest, never build a wizard),
   [MENU-CONTRACT.md](MENU-CONTRACT.md) (add a catalog row, never rewrite the rail), and
-  [DEPLOY-SAFETY.md](DEPLOY-SAFETY.md) (a merge is a deploy; four artifact gates run in `postbuild`).
+  [DEPLOY-SAFETY.md](DEPLOY-SAFETY.md) (a merge is a deploy; the artifact gates run in `postbuild`).
 
 That's it. Start at step 1.

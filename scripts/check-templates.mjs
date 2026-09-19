@@ -12,9 +12,9 @@
 // RailGrid — and a page can import a piece, hand-roll its own layout around it, and score compliant.
 // SHELLS below lists the 12 names that OWN A LAYOUT: the 7 authoring shells, the 3 entity
 // compositions, SparkShell, and 2 aliases reached by path. That is deliberately WIDER than the
-// authoring menu in AGENTS.md, because this gate answers "does this page own a layout", not
+// authoring menu in PAGE-FRAMEWORK.md, because this gate answers "does this page own a layout", not
 // "which shell should I pick". (This comment said "the eight real shells" until 2026-09-05, which
-// was wrong twice over: the list holds 11, and AGENTS.md's eight wrongly counted RailGrid.)
+// was wrong twice over: the list holds 11, and an older AGENTS.md restatement counted RailGrid.)
 // The pieces are named in PIECES purely so a future reader does not "fix" the omission.
 //
 // TWO WAYS TO BE COMPLIANT, and both are legitimate:
