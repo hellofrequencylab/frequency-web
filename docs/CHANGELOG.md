@@ -16,6 +16,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **A Space calendar with nothing published says so in the same empty pattern as the rest of the site**, and it does not claim the month is empty when a cancelled gathering or Unavailable time is already on the grid. Cancelled stays a muted note at the bottom of the day, and the same note under that month in the list. The calendar can be focused: arrows step a month, Escape closes the jump panel.
+
 - **The blocks visitors see on a Journey follow the Advanced layout.** The story, the path, and the pillar balance are the ones you can show, hide, or reorder. That same order now shows on the Journey page, the public page, and the store listing. How many people have started, and the Gems for finishing, stay in the header.
 
 - **A cancelled gathering on a Space calendar is a small note at the bottom of that day**, not a crossed-out chip. Live events stay on the grid. Dates that are only penciled or still in planning stay off the public calendar.

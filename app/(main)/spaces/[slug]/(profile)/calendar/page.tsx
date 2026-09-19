@@ -3,12 +3,11 @@ import { notFound } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
-import { listSpaceCalendarEvents } from '@/lib/events/store'
 import { SITE_URL } from '@/lib/site'
 import { EventCalendar } from '@/components/events/event-calendar'
-import { spaceEventRowsToItems } from '@/lib/calendar/public-month'
-import { guestLiveItems } from '@/lib/calendar/guest-live'
-import { listPublicUnavailableItems } from '@/lib/calendar/entries-store'
+import { EmptyState } from '@/components/ui/empty-state'
+import { loadPublicSpaceWindow } from '@/lib/calendar/public-month'
+import { guestFeedState, guestLiveItems } from '@/lib/calendar/guest-live'
 import { monthGridWindow } from '@/lib/calendar/month-window'
 import { loadSpaceCalendarMonth } from './actions'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
@@ -74,9 +73,8 @@ export default async function SpaceCalendarPage({
   const initialYear = now.getUTCFullYear()
   const initialMonth1 = now.getUTCMonth() + 1
 
-  // The page's own month forward (the gated reader, up to its row limit), plus any time the team chose
-  // to show as Unavailable in this month's grid. Every other month arrives through
-  // loadSpaceCalendarMonth as the visitor browses (ADR-1385), so earlier months are not falsely empty.
+  // The first month uses the same public reader browse uses (loadPublicSpaceWindow). Every other
+  // month arrives through loadSpaceCalendarMonth (ADR-1385), so earlier months are not falsely empty.
   const brandName = space.brandName ?? space.name
   const httpsUrl = `${SITE_URL}/spaces/${slug}/calendar.ics`
   const webcalUrl = httpsUrl.replace(/^https?:\/\//, 'webcal://')
@@ -120,12 +118,11 @@ export default async function SpaceCalendarPage({
     )
   }
 
+  // Same reader as loadSpaceCalendarMonth (browse). guestLiveItems stays on this branch so the
+  // LIVE-419 probe still measures the Guest page, not only the helper behind it.
   const grid = monthGridWindow(initialYear, initialMonth1)
-  const [rows, unavailable] = await Promise.all([
-    listSpaceCalendarEvents(space.id, { fromDay: grid.fromDay, paintCancelled: true }),
-    listPublicUnavailableItems(space.id, grid.fromDay, grid.toDay),
-  ])
-  const events = guestLiveItems([...(await spaceEventRowsToItems(rows)), ...unavailable])
+  const events = guestLiveItems(await loadPublicSpaceWindow(space.id, grid.fromDay, grid.toDay))
+  const feed = guestFeedState(events)
 
   return (
     <div className="space-y-4">
@@ -147,10 +144,12 @@ export default async function SpaceCalendarPage({
         loadMonth={loadSpaceCalendarMonth.bind(null, slug)}
       />
 
-      {rows.length === 0 && (
-        <p className="rounded-card border border-dashed border-border bg-surface px-4 py-6 text-center text-body-sm text-muted">
-          No upcoming events yet. Check back soon, or subscribe to be notified when {brandName} adds one.
-        </p>
+      {feed.isFirstUse && (
+        <EmptyState
+          variant="first-use"
+          title="Nothing on the calendar yet."
+          description={`${brandName} has not published a gathering. Subscribe and new dates will land in your own calendar.`}
+        />
       )}
     </div>
   )

@@ -196,11 +196,13 @@ cancelled. `StaffCalendar` is the date map and the settings drawer, not a second
 `?view=guest` and unsigned members go through `guestLiveItems` (live chips plus the C0 cancelled footer; pencil and planning stay off). The mode is decided on the
 server before any admin read.
 
-**Loading a month.** The first month renders on the server. Every other month is fetched when the
-viewer browses to it: `loadSpaceCalendarMonth` for the public tab (over `lib/calendar/public-month.ts`,
-which composes `listSpaceCalendarEvents` and the Unavailable projection without reimplementing either
-gate) and the staff entry actions for the settings calendar. `lib/calendar/month-window.ts` computes
-the visible grid window, including the spill days either side.
+**Loading a month.** The first month and every browsed month use the same public reader:
+`loadPublicSpaceWindow` (`lib/calendar/public-month.ts`), which composes `listSpaceCalendarEvents`,
+the Unavailable projection, and `guestLiveItems`. The Calendar tab Guest branch still calls
+`guestLiveItems` itself so that contract stays on the page. `guestFeedState` decides the first-use
+empty (kit `EmptyState`): cancelled-only and Unavailable-only feeds keep the grid and do not claim
+the calendar is empty. Staff months stay on the entry actions. `lib/calendar/month-window.ts`
+computes the visible grid window, including the spill days either side.
 
 **Navigation** (`components/events/event-calendar.tsx`, `components/events/use-month-gestures.ts`).
 
@@ -208,11 +210,13 @@ the visible grid window, including the spill days either side.
   then locks until the input has been quiet for 250ms (at most 800ms), which swallows momentum.
 - A vertical wheel pages months only where the mount opts in (`vertical`): the staff calendar. A public
   calendar lives inside a scrolling page and never captures the vertical wheel.
-- PageUp and PageDown step a month; with Shift, a year. A month and year panel jumps anywhere. Today
-  appears when the viewer is off the current month.
-- The list view groups by month. A preview pane pins beside it when the calendar's CONTAINER is wide
-  enough (a container query, because the same component mounts in a page, a panel and a column), and
-  the popup is used otherwise.
+- PageUp and PageDown step a month; with Shift, a year. ArrowLeft and ArrowRight step a month when
+  the calendar itself is focused. Escape closes the month-and-year jump. A month and year panel jumps
+  anywhere. Today appears when the viewer is off the current month.
+- The list view groups by month. Cancelled gatherings sit under that month as the same muted footer
+  the date square uses, not as list chips. A preview pane pins beside it when the calendar's CONTAINER
+  is wide enough (a container query, because the same component mounts in a page, a panel and a
+  column), and the popup is used otherwise.
 
 **Adding a source.** Every calendar item (`lib/calendar/item.ts`) carries a `layer`. A new source, such
 as a plan task's due date, a shift or a booking, is one row in `CALENDAR_LAYERS` plus one adapter that

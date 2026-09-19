@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { guestLiveItems, GUEST_HIDDEN_STAGES, isGuestHiddenStage } from './guest-live'
+import { guestFeedState, guestLiveItems, GUEST_HIDDEN_STAGES, isGuestHiddenStage } from './guest-live'
 import type { CalendarEvent } from './item'
 
 function item(over: Partial<CalendarEvent> = {}): CalendarEvent {
@@ -40,5 +40,13 @@ describe('guestLiveItems (LIVE-414)', () => {
       item({ slug: 'closed', layer: 'unavailable' }),
     ])
     expect(kept.map((e) => e.slug)).toEqual(['show', 'closed'])
+  })
+
+  it('guestFeedState is first-use only when the feed is empty', () => {
+    expect(guestFeedState([]).isFirstUse).toBe(true)
+    expect(guestFeedState([item({ slug: 'live' })]).isFirstUse).toBe(false)
+    expect(guestFeedState([item({ slug: 'off', isCancelled: true })]).isFirstUse).toBe(false)
+    expect(guestFeedState([item({ slug: 'closed', layer: 'unavailable' })]).isFirstUse).toBe(false)
+    expect(guestFeedState([item({ slug: 'off', isCancelled: true })]).cancelledCount).toBe(1)
   })
 })

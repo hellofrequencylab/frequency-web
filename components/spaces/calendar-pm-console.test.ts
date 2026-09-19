@@ -15,4 +15,12 @@ describe('CalendarPmConsole source (LIVE-415 / LIVE-416 / LIVE-417 / LIVE-418)',
     expect(consoleSrc).toContain('planningLane')
     expect(consoleSrc).toContain('productionLane')
   })
+
+  it('Guest empty uses the kit EmptyState over guestFeedState', () => {
+    expect(page).toContain('guestLiveItems')
+    expect(page).toContain('guestFeedState')
+    expect(page).toContain('EmptyState')
+    expect(page).toContain('loadPublicSpaceWindow')
+    expect(page).not.toContain('No upcoming events yet')
+  })
 })

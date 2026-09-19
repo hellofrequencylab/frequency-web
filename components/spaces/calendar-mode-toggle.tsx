@@ -15,7 +15,7 @@ export function CalendarModeToggle({ slug, mode }: { slug: string; mode: Calenda
     { mode: 'guest', label: 'Guest', href: `${base}?view=guest` },
   ]
   return (
-    <nav aria-label="Calendar view for" className="inline-flex items-center rounded-control border border-border p-0.5">
+    <nav aria-label="Admin or Guest calendar" className="inline-flex items-center rounded-control border border-border p-0.5">
       {options.map((o) => (
         <Link
           key={o.mode}
