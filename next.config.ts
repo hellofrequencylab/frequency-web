@@ -389,6 +389,16 @@ const nextConfig: NextConfig = {
       // the bare rule stays explicit to read like the retired routes above.
       { source: '/broadcast', destination: '/nearby', permanent: true },
       { source: '/broadcast/:path*', destination: '/nearby/:path*', permanent: true },
+      // LIVE-242 / ADR-1439: Hubs and Nexuses fold into Space. A Hub or Nexus is a Space
+      // that contains other Spaces. Member URLs were never a nav noun; production held 3 hubs
+      // and 2 nexuses, all forming, none with Circles. Permanent (308): printed QR codes,
+      // help links, and bookmarks cannot be rewritten. The minted Space keeps the same slug
+      // (migration 20270345006200), so /hubs/encinitas-hub lands on that Space. Staff
+      // geography editors stay at /admin/hubs and /admin/nexuses (exact, not :path*).
+      { source: '/hubs', destination: '/spaces', permanent: true },
+      { source: '/hubs/:path*', destination: '/spaces/:path*', permanent: true },
+      { source: '/nexuses', destination: '/spaces', permanent: true },
+      { source: '/nexuses/:path*', destination: '/spaces/:path*', permanent: true },
       // Funnels rename (ADR-1090): the sign-up feature is Funnels and its routes moved to /join.
       // Old links are IN THE WILD and cannot be rewritten — QR codes on posters, shared splash
       // links, and CTAs in sent emails all point at /beta/<slug> and /onboarding/beta — so all

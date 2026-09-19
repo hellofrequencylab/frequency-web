@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Input, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { RailAutosaveForm } from '@/components/admin/rail/rail-autosave-form'
-import { getNexusAdminData, updateNexusSettings } from '@/app/(main)/nexuses/admin-actions'
+import { getNexusAdminData, updateNexusSettings } from '@/lib/hierarchy/nexus-admin'
 
 // In-place "Nexus settings" module (EMBEDDED-ADMIN.md / ADR-133). Renders inside the page admin dock on
 // /nexuses/[slug], and renders nothing unless the server grants nexus.manage. The rail section header is
