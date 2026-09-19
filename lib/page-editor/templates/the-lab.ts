@@ -229,7 +229,7 @@ export const data: Data = {
       },
     },
 
-    // ── The triptych cross-link. ───────────────────────────────────────────────
+    // ── Story cross-link (LIVE-254: Lab + Community peers; Quest alongside). ───
     {
       type: 'PillarNav',
       props: {

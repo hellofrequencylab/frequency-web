@@ -1673,7 +1673,7 @@ export const dawnComponents: Record<string, ComponentConfig> = {
           yearly: '',
           billing: 'Monthly or yearly.',
           trial: '',
-          forWho: 'Members who want the full game, unlimited Vera, and the tools that build a list.',
+          forWho: 'Members who want unlimited Vera, Gems and Vault cash-in, and the tools that build a list.',
           rate: '',
           featured: 'featured',
           ctaLabel: 'Join Crew',
@@ -1723,7 +1723,7 @@ export const dawnComponents: Record<string, ComponentConfig> = {
 
   // ── PillarNav ────────────────────────────────────────────────────────────────
   PillarNav: {
-    label: 'Pillar nav (the triptych)',
+    label: 'Story nav (Lab and Community, Quest alongside)',
     fields: {
       current: {
         type: 'select',

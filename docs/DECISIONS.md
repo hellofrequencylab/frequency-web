@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1407**.
+tree as of this index: **ADR-1408**.
 
 | Theme | Start here |
 |---|---|
@@ -45589,3 +45589,28 @@ the defect).
 **Consequences.** `LIVE-367`'s probe fails unless all three named doors pass `onPaid={` to the
 panel. Membership already settled under LIVE-369. The remaining subscription creators stay hosted
 until their own rows.
+
+## ADR-1408: The Quest is not a top-level marketing pillar (LIVE-254)
+
+**Status:** Accepted · 2026-09-19 · **Amends** [ADR-1344](DECISIONS.md) (four header tabs) · does not amend [ADR-1403](DECISIONS.md) · numbered **1408** because **1407** is on-page tip/gift settle on main (`LIVE-367`) · corroborated by `lib/nav/registry.ts`, `supabase/migrations/20270345006000_public_header_quest_under_community.sql`, `components/marketing/marketing-ui.tsx`
+
+**Context.** LIVE-254 asked to demote `/the-quest` from a top-level pillar. Re-measured 2026-09-19 against `origin/main` before changing anything:
+
+| Claim (filed 2026-09-08) | Reading |
+|---|---|
+| The Quest is 1 of 3 top-level pillars in the live header | Half-expired. LIVE-250 already took the header from six tabs to **four** (Community · Quest · Spaces · About). Quest is still a **tab**, so the defect holds in kind. |
+| Equal sitemap priority 0.8 with Community and Lab | **Expired.** `app/sitemap.ts` already emits `/the-quest` at **0.6**. |
+| PillarNav triptych treats Lab / Quest / Community as peers | ✅ TRUE. |
+| Crew copy sells "the full game" as the reason to pay | ✅ TRUE in `lib/page-editor/templates/pricing.ts` and the PlanBand defaults. |
+
+LIVE-241 (member rail 16 → 7) was **not** built in this change: that count assumes Channels fold into Circles (LIVE-244), which is blocked on a re-ruling. Shipping a fake 7 by hiding Channels would be the shape-not-truth failure. The marketing half does not wait on that ruling.
+
+**Decision.**
+
+1. **Header tabs are three:** The Community, Spaces, About. The Quest's landing, Journeys, Practices and Channels (`/discover/topics`) become rows in The Community panel. Nothing is deleted; CORE-MODEL §4 still holds.
+2. **The live surface is still DB rows**, so the data half is `20270345006000`, same shape as LIVE-250's `20270345004400`. The footer stays six: it is the site map, and `/the-quest` keeps its flat link the way `/the-lab` did.
+3. **PillarNav is a pair plus a side line.** Lab and Community stay numbered peers. The Quest is a sentence underneath ("the light game everyone plays alongside their Circle"), linked unless the reader is already on that page.
+4. **Crew copy stops selling the game as a third of the product.** Gems, Vault cash-in, authoring a Quest, unlimited Vera and the leaderboard stay named as what Crew carries. The phrase "the full game" leaves the pricing template, the PlanBand default, and the What-is-Frequency Crew line. [ADR-1403](DECISIONS.md) already ruled Crew is patronage, not a feature wall; this is the copy following that.
+
+**Consequences.** `lib/nav/registry.source.test.ts` now pins three triggers, `/the-quest` inside The Community panel, and `/the-lab` still inside About. Sitemap 0.6 is pinned in `app/sitemap.test.ts`. Apply the migration on production with the deploy; marketing pages stay static for up to an hour (`revalidate = 3600`).
+
