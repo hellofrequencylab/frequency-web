@@ -9,7 +9,6 @@ import AppShell from '@/components/layout/app-shell'
 import { ImpersonationBanner } from '@/components/layout/impersonation-banner'
 import { announcementBannerState, countdownLabel } from '@/components/layout/announcement-banner'
 import { AnnouncementBar } from '@/components/layout/announcement-bar'
-import type { Metadata } from 'next'
 import { matchPublicTwin } from '@/lib/nav/public-twin'
 import { getPublicCircles, getTopicalChannels } from '@/lib/discover'
 import { isSafeRoute, adminScopeFor } from '@/lib/layout/page-chrome'
@@ -106,33 +105,10 @@ function isAnonPublicEvent(p: string | null): boolean {
   return true
 }
 
-// Per-route SEO overrides (ADR-268): an operator sets a route's title / description /
-// share-image in the on-page Page panel; this applies them as the (main) layout's metadata
-// (a page's own generateMetadata still wins). The current route comes from the `x-pathname`
-// header proxy.ts already sets (ADR-161). FAIL-SAFE: any miss → the code default (no override),
-// so it is harmless before the page_settings migration is applied.
-export async function generateMetadata(): Promise<Metadata> {
-  try {
-    const pathname = (await headers()).get('x-pathname')
-    if (!pathname || !isSafeRoute(pathname)) return {}
-    const s = await loadPageSettings(pathname)
-    if (!s) return {}
-    const md: Metadata = {}
-    if (s.seo_title) md.title = s.seo_title
-    if (s.seo_description) md.description = s.seo_description
-    // Link previews use the compact social-share image, falling back to the wide header.
-    const ogImage = s.og_image_url ?? s.header_image_url
-    if (ogImage) {
-      md.openGraph = {
-        images: [{ url: ogImage }],
-        ...(s.seo_title ? { title: s.seo_title } : {}),
-      }
-    }
-    return md
-  } catch {
-    return {}
-  }
-}
+// Per-route SEO overrides (ADR-268) used to live in generateMetadata here and
+// read x-pathname via headers(). That call voided ISR for every child (SCAN-643).
+// Pages that declare their own generateMetadata still win. Operator page_settings
+// SEO is applied on those pages, not from this layout.
 
 /**
  * The PUBLIC twin of a member detail path, for a signed-out visitor who followed a share link
@@ -190,24 +166,10 @@ export default async function MainLayout({
    */
   wizard: React.ReactNode
 }) {
-  // The ONE server-verified user read of the render (ADR-1244). Every helper in the wave
-  // below that needs the viewer (getCallerProfile, getViewerHats, applyViewAs) reads the same
-  // React-cached value, so this layout no longer pays its own GET /auth/v1/user beside theirs.
-  const user = await getCachedUser()
-
-  // Logged-out visitors hitting an in-app URL go back to the splash (not the
-  // sign-in form) — the splash is the front door for anyone who hasn't signed up.
-  // EXCEPTION: a public networked Space profile is crawlable + shareable, so render it
-  // in the public marketing chrome (logo header + footer) rather than the member shell
-  // (there is no profile to build the shell from). The space layout walls private/missing.
-  // A PUBLIC view (a networked Space profile or a public events page) renders in the slim public
-  // chrome for ANY viewer who can't get the member shell — signed-out, OR signed-in but pre-profile
-  // / mid-induction. That last case is why /events was bouncing to /join: a session
-  // with onboarding incomplete hit the induction redirect even on a public page. The public surface
-  // must never redirect to onboarding; it just shows the page with a Sign in / Join header.
-  const currentPath = (await headers()).get('x-pathname')
-  const isPublicView =
-    isAnonSpaceProfile(currentPath) || isAnonPublicEvent(currentPath) || isAnonPublicDetail(currentPath)
+  // SCAN-643: publicChrome is defined and returned BEFORE getCachedUser so leftover
+  // public views (Space profiles, /events index) skip the auth cookie read.
+  // Sitemap share URLs for events + listings moved to app/(public)/ (no cookies/headers).
+  // detectClientAuth upgrades the header after hydration — same as (marketing).
   const publicChrome = async () => {
     const [headerMenu, footerMenu, menuTimings] = await Promise.all([
       getMenu('header'),
@@ -216,13 +178,7 @@ export default async function MainLayout({
     ])
     return (
       <>
-        {/* `isAuth={!!user}`, not a hardcoded false. This chrome serves TWO viewers (see the note
-            above the branch): a signed-out visitor, and a signed-in member who has no profile row
-            yet or is mid-induction. The second one was being shown "Sign in" on a page they were
-            already signed in to read. `!!user` is the honest answer for both, and for the member
-            it points at /feed — which is where an incomplete session belongs anyway, since the
-            shell forwards it into onboarding from there. */}
-        <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} isAuth={!!user} />
+        <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} detectClientAuth />
         {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top). min-h-dvh
             (not screen) tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
         <main className="min-h-dvh bg-canvas" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
@@ -243,6 +199,15 @@ export default async function MainLayout({
       </>
     )
   }
+
+  // Leftover public views still in this group (Space profiles, /events index).
+  // headers() + getCachedUser still run here; those URLs are SCAN-644 (Space
+  // layout also calls getMyProfileId). Share event + listing URLs left this group.
+  const currentPath = (await headers()).get('x-pathname')
+  const isPublicView =
+    isAnonSpaceProfile(currentPath) || isAnonPublicEvent(currentPath) || isAnonPublicDetail(currentPath)
+
+  const user = await getCachedUser()
 
   if (!user) {
     if (isPublicView) return publicChrome()
