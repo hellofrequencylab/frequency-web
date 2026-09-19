@@ -8,7 +8,7 @@
 > program and its status marks are not maintained. Kept for history and for the items it
 > still names that no current plan has absorbed.
 
-> **[BUILD-SEQUENCE.md](BUILD-SEQUENCE.md) is also history.** Do not start there.
+> **BUILD-SEQUENCE.md was absorbed into [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) (HYG-104) and removed.** Do not start from a June snapshot.
 >
 > **2026-06-28 note (history):** the build was sequenced **hardening-first,
 > mobile-primary, plan-as-if-entities-live** per owner decision ([ADR-439](DECISIONS.md)).
@@ -25,7 +25,7 @@
 > [AGENTS.md](../AGENTS.md) > this history file > Notion. Where this names something
 > not yet built, the code is still the truth.
 >
-> **Execution list:** history pointed at [`BUILD-SEQUENCE.md`](BUILD-SEQUENCE.md).
+> **Execution list:** history pointed at BUILD-SEQUENCE.md, which was absorbed and removed.
 > Do not start there. `pnpm backlog` is the working view.
 > ([`MASTER-PLAN.md`](MASTER-PLAN.md) is ✅ completed history — its 48 items shipped 2026-06-20
 > to 2026-06-21; kept for the record, not for planning.)

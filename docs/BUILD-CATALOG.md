@@ -19,7 +19,7 @@
 >
 > **Authority order:** running code + `supabase/migrations/` > this doc > Notion. This catalog is an
 > *index*: it points back to the source doc for each item and never replaces a track doc. The
-> sequencing front-door stays [BUILD-SEQUENCE.md](BUILD-SEQUENCE.md); the *what/why* stays
+> sequencing front-door was BUILD-SEQUENCE.md (absorbed into [BUILD-BACKLOG.json](BUILD-BACKLOG.json), HYG-104); the *what/why* stays
 > [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md) and [PLATFORM-VISION.md](PLATFORM-VISION.md).
 >
 > **Status legend:** ✅ done · ⏳ partial / v1 · 📐 designed-only · 📋 planned (buildable now) ·
