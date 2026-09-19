@@ -213,7 +213,6 @@
             "PROG-R6",
             "PROG-R7",
             "LIVE-242",
-            "LIVE-246",
             "PROG-R8",
             "PROG-R9",
             "LIVE-260",
@@ -11253,7 +11252,7 @@
     {
       "id": "LIVE-246",
       "title": "Operator console: 34 modules into 5 boxes",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
@@ -11261,11 +11260,13 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "\u00a75"
       },
-      "detail": "Your page (5) / Your people (9) / Gather (9) / Money (7) / Reach (4). The 2026-09-08 survey mapped all 34 SPACE_MODULES rows with NOTHING dropped, so this is a data edit on the registered catalog - lib/admin/modules/space-modules.ts parents only, plus space-hub.ts - not a rail rewrite. MENU-CONTRACT forbids touching the rail render to change what is IN the menu.\n\nFOUR CONTESTED PLACEMENTS need a ruling: space.content (its deepLink is a query param into the hub, not a route - it must become a real page or dissolve into Gather), space.airwaves (Gather or Reach), space.enroll + space.checkin (money-adjacent and gather-adjacent), space.billing (Money, or a settings tail under Your page).",
+      "detail": "Your page (5) / Your people (9) / Gather (9) / Money (7) / Reach (4). The 2026-09-08 survey mapped all 34 SPACE_MODULES rows with NOTHING dropped, so this is a data edit on the registered catalog - lib/admin/modules/space-modules.ts parents only, plus space-hub.ts - not a rail rewrite. MENU-CONTRACT forbids touching the rail render to change what is IN the menu.\n\nFOUR CONTESTED PLACEMENTS need a ruling: space.content (its deepLink is a query param into the hub, not a route - it must become a real page or dissolve into Gather), space.airwaves (Gather or Reach), space.enroll + space.checkin (money-adjacent and gather-adjacent), space.billing (Money, or a settings tail under Your page).\n\nCLOSED 2026-09-19 (ADR-1432). PREMISE RE-TESTED: the catalog is 32 rows, not 34 (LIVE-226 retired enroll / tickets / checkin, so that contest is gone); airwaves already nested under Content; 13 rows were still parentless. Five boxes, ids unchanged: space.basics Your page, space.people Your people, space.content Gather, space.offerings Money, space.reach Reach. Hub tabs did not move (Team on Settings, CRM on Resonance; those seven rows are named in HUB_DIVERGENCE_REASONS). Gather is the Content box (the programs tab IS that box). Billing nests under Your page. Nothing dropped.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/admin/modules/space-modules.ts\",\"utf8\");const rows=(s.match(/id: .space\\.[a-z]+./g)||[]).length;const kids=(s.match(/parent: ./g)||[]).length;const tops=rows-kids;console.error(\"rows \"+rows+\", parentless \"+tops);process.exit(rows===34&&tops===5?0:1)'"
-      }
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/admin/modules/space-modules.ts\",\"utf8\").replace(/\\/\\*[\\s\\S]*?\\*\\//g,\"\").replace(/(^|[\\s;])\\/\\/.*$/gm,\"\");const rows=(s.match(/id: .space\\.[a-z]+./g)||[]).length;const kids=(s.match(/\\bparent: ./g)||[]).length;const tops=rows-kids;console.error(\"rows \"+rows+\", parentless \"+tops);process.exit(rows>=30&&tops===5?0:1)'",
+        "note": "Comment-stripped so a comment that says parent: cannot satisfy it. Floor 30 because LIVE-226 retired three of the original 34; the lock is five parentless boxes, not a frozen row count."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-247",
