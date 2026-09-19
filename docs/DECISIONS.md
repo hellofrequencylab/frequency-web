@@ -9,7 +9,29 @@ true and is **not** already captured in [ARCHITECTURE.md](ARCHITECTURE.md),
 corroborated against the running code / `supabase/migrations/`. Where Notion
 conflicted with code, code wins and the conflict is noted.
 
-Authority order: running code + migrations > repo `docs/` + `ROADMAP.md` > Notion.
+Authority order: running code + `supabase/migrations/` > repo `docs/` > Notion.
+This file is **why**, not **whether it is done**. Status lives in
+[`BUILD-BACKLOG.json`](BUILD-BACKLOG.json). A plan that contradicts an ADR is stale.
+
+## Theme index (2026-09-18)
+
+Search this file for the ADR number. Do not split the file. Latest heading in this
+tree as of this index: **ADR-1403**.
+
+| Theme | Start here |
+|---|---|
+| **Names** | ADR-208 → [NAMING.md](NAMING.md) |
+| **Product + commercial law** | ADR-1294 [CORE-MODEL.md](CORE-MODEL.md). ADR-811 Community Collective. ADR-914 gate the repeat, not the transaction. |
+| **Interior (accepted)** | ADR-1403 → [FOCUS-MODEL.md](FOCUS-MODEL.md). Quest is the Collective's program, not the spine. Does not override ADR-1294. |
+| **What ships next** | ADR-925 [UX-MATURITY-PLAN.md](UX-MATURITY-PLAN.md) · ADR-921 [BUILD-LIST.md](BUILD-LIST.md) · ADR-1043 one list |
+| **Editor / pages** | ADR-974…978 [EDITOR-ARCHITECTURE.md](EDITOR-ARCHITECTURE.md) · [PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md) |
+| **Studio wizards** | ADR-986 [STUDIO.md](STUDIO.md) |
+| **Admin menu** | ADR-553, ADR-927 [MENU-CONTRACT.md](MENU-CONTRACT.md) |
+| **Spaces / tenants** | ADR-249 [SPACES.md](SPACES.md) |
+| **Authz** | ADR-002 service-role client · [ARCHITECTURE.md](ARCHITECTURE.md) |
+| **Deploy / artifact** | ADR-1002, ADR-1003 [DEPLOY-SAFETY.md](DEPLOY-SAFETY.md) |
+| **Checkout** | [CHECKOUT.md](CHECKOUT.md) |
+| **Docs protocol** | [DOCS-PROTOCOL.md](DOCS-PROTOCOL.md) |
 
 ---
 
@@ -37743,10 +37765,9 @@ The funds flow was never written down. It was inferred, repeatedly, and wrongly.
 ⚠️ **The generalisable part, and it is the fourth time this repo has written a version of it.** `OWN-040` produced six wrong diagnoses over sixteen days against a system that was answering honestly the whole time. Five were cheap: they suggested a test, the test failed, the next reading followed. **The expensive one was the one that justified waiting** — an identity document with a plausible real-world ETA, which converted a diagnosis into a two-week park and stopped anyone from trying the thing that turned out to work. A wrong diagnosis you can test costs an hour; a wrong diagnosis that explains why you cannot test costs whatever it claims to be waiting for. The row's own earlier lesson — *when an error carries a URL, open the URL before theorising* — was right and incomplete. **Opening it is not reading it:** the banner this row seized on and the incomplete setup that was actually blocking were on the same page, and the row picked the one that came with a story.
 ## ADR-1292: PROPOSED — the Quest becomes the Collective's own program, individuals never pay, and dues to a community become the second revenue leg (2026-09-08)
 
-**Status:** 🔴 **PROPOSED, not accepted.** Awaiting an owner ruling on six questions
-(`docs/FOCUS-MODEL.md` §10). Filed so the proposal has a decision record rather than a rival plan
-document; the reasoning and the measurements live in [`FOCUS-MODEL.md`](FOCUS-MODEL.md), and status
-lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) (`OWN-066`).
+**Status:** ⚠️ **Ruled by [ADR-1403](DECISIONS.md) (2026-09-18).** Interior and programs
+**accepted**. Commercial law stays [ADR-1294](DECISIONS.md) (CORE-MODEL), not “individuals
+never pay.” The six §10 answers live on ADR-1403. `OWN-066` closes with that ruling.
 
 **Context.** The owner re-stated the product's centre: Frequency is a community collective that gives
 *other* communities the tools to connect and run their thing, the Quest should be the light thing we
@@ -45372,3 +45393,47 @@ treatment the identity lockup carried. Both are the ruling landing rather than r
 neither is watched by a visual baseline — these pages carry none, so the preview is the only check
 that can see them. Still open: the copied product title/description snapshot and the Shop console
 fields that author it, both Wave 3.
+
+## ADR-1402: Lock the day-key `award_gems_atomic` overload to service_role
+
+**Status:** Accepted · corroborated by `supabase/migrations/20260918235156_award_gems_atomic_lock_day_key_overload.sql` (recovered onto `main` in #2683 under the wall-clock ledger stamp; same grant SQL)
+**Context:** Migration `20270345001200` added `_day_key` and `_timezone` to `award_gems_atomic`.
+That new signature is a second overload. Postgres grants `EXECUTE` to `PUBLIC` on a new function,
+so the day-key form was callable by `anon` / `authenticated` even though the original 5-arg form
+had been locked to `service_role` (20260929000000). Supabase's security advisor flagged it
+2026-09-18. The app only calls this RPC through `lib/gems.ts` on the admin client.
+**Decision:** Revoke `EXECUTE` from `public`, `anon`, and `authenticated` on both overloads; grant
+`service_role` only. Same additive lockdown as 20261005000000.
+**Consequences:** Direct PostgREST calls to `award_gems_atomic` from a browser session fail.
+Legitimate awards are unchanged. Apply this migration on prod; it is grant-only, no function body
+change.
+
+## ADR-1403: The Quest is the Collective's program, product beats craft, CORE-MODEL stays commercial law (2026-09-18)
+
+**Status:** Accepted · **Amends** [ADR-1292](DECISIONS.md) · **Does not amend**
+[ADR-1294](DECISIONS.md) · owner, 2026-09-18 · [`FOCUS-MODEL.md`](FOCUS-MODEL.md) ·
+`OWN-066`
+
+**Context.** Two owner answers, in the session that repaired the docs stack:
+
+1. **Build the interior reframe** (FOCUS-MODEL): the app should feel like the Collective, not a personal game.
+2. **Product wins the week** when craft (UX-MATURITY / DAWN / kit) collides with product (Spaces, Circles, Events, Journeys).
+
+**Decision.** Map those onto FOCUS-MODEL §10 without reversing CORE-MODEL.
+
+| # | Question | Ruling |
+|---|---|---|
+| 1 | Does the Quest stop being a top-level spine and become the Collective's own program? | **Yes. Build it.** Collapse the Quest rail, community feed, Journey Runs as the community program. Nothing in the game is deleted. |
+| 2 | Do individuals pay for anything, ever? | **Join free.** Crew stays contribute-what-you-want patronage, not a feature wall. **You pay when you start charging** ([ADR-1294](DECISIONS.md)). Not "individuals never pay." |
+| 3 | May a free Space sell memberships? | **Host free until you charge**, then you pay. Readiness (payout-ready Connect, a Circle to deliver into) still applies. Do not keep a $29 plan as the permission to collect the first dollar if CORE-MODEL already said pay-when-charging. |
+| 4 | Is a Circle Run of a Journey the headline program? | **Yes.** Sequence [ADR-252](DECISIONS.md). |
+| 5 | Build the operator gaps (course, tier gate, directory, space discussion, analytics)? | **Yes, as product**, after the interior and activation, not as a craft detour. |
+| 6 | Extend `beta_grace` past 1 October? | **Not ruled.** Still an owner flag. If the interior is not live by then, extend the window rather than letting Crew gates close on members by accident. |
+
+**When they collide:** product work (CORE-MODEL `PROG-*`, FOCUS-MODEL sequence, Journeys, Spaces, Circles, Events) outranks UX-MATURITY lifts. Status still lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json). P0s still print first.
+
+**Build order (FOCUS-MODEL §9, unchanged):** (1) event attendance as its own record, independent of the Zap ledger; (2) rail / centre button / feed hero; (3) membership wall → readiness; (4) Runs as the operator headline; (5) operator gaps.
+
+**Rejected.** Treating FOCUS-MODEL as a reversal of join-free / pay-when-charging. Starting a sixth plan file. Letting kit work jump product this week.
+
+**Consequences.** `OWN-066` is the ruling row and closes. The code has not moved yet. `QUEST-IA-DEBT`, `HYG-033`, `LIVE-204` are the first product surfaces. Editor E0–E9 stays on its own wave.
