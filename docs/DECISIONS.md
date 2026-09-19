@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1403**.
+tree as of this index: **ADR-1406**.
 
 | Theme | Start here |
 |---|---|
@@ -45471,3 +45471,62 @@ plan (LIVE-392, still open; the uuid redirect keeps old review URLs from 404ing 
 **Consequences.** Shop and Market can both sell the same Journey. The course stays behind enrolment.
 Reviews and Q&A still live on the product row until LIVE-392. The generic Market listing render
 remains as a fallback when the plan is missing.
+
+## ADR-1406: Member nav is as short as the role can use, not as short as seven (2026-09-19)
+
+**Status:** Accepted · 2026-09-19 · Designer (Daniel) · **Amends** [ADR-1294](DECISIONS.md) §4 / §5.1
+(the 16→7 count as a model target) · does not amend [ADR-1403](DECISIONS.md) · does not wait on
+LIVE-254's public-header PR · numbered **1406** because **1405** is claimed on
+`cursor/live-254-quest-pillar-6ba4` only · corroborated by `lib/nav-areas.ts`, `lib/nav/registry.ts`
+(`canSee` = `meetsAccess` ∪ `meetsStaff`), `components/layout/app-shell.tsx` (`itemAccess`)
+
+**Context.** LIVE-241 asked to cut the signed-in member rail from 16 rows to 7 (Feed · Around You ·
+Circles · Events · Members · Messages · The Quest), folding Channels into Circles (LIVE-244) and
+tucking Library, Journal, Practices, Journeys and Vault under a parent. That count assumed a fold
+the 2026-09-15 re-test already refused to build: `/channels` is the live topical Channel surface,
+not the empty legacy `channels` table. Shipping a fake 7 by hiding Channels would be the
+shape-not-truth failure. The public header (LIVE-254) is a separate PR.
+
+The 16 non-admin rail rows today, and the gate each already carries (`defaultAccess`; Admin
+telescopes separately):
+
+| Row | Key | Floor today | Hidden from a signed-in member? |
+|---|---|---|---|
+| Feed | `feed` | visitor | no |
+| Around You | `nearby` | visitor | no |
+| Circles | `circles` | visitor | no |
+| Channels | `channels` | visitor | no |
+| Events | `events` | visitor | no |
+| Message Boards | `messageBoards` | member | no (hidden from visitors) |
+| Members | `people` | member | no |
+| Business Spaces | `my-spaces` | member | no |
+| Market | `market` | visitor | no (matrix/`platform_flags` can still set `none`) |
+| Housing | `housing` | member | no |
+| Frequency Store | `shop` | visitor | often yes: `marketplace_shop_published` via `navAccess` |
+| My Quest | `quest` | member | no |
+| Journeys | `journeys` | member | no |
+| Practices | `practices` | member | no |
+| Library | `library` | member | no |
+| The Vault | `vault` | member | no (`previewBelowAccess` mutes below the floor; it still shows) |
+
+Journal and My Contacts are `railHidden` (account / My Frequency), not role-hidden. The Admin
+section already hides rows the trust ladder and staff axis cannot use. Crew is not a hide on these
+sixteen: the member floor is `member`, not `crew`.
+
+**Decision.** **The list is as short as the role can use, not as short as a magic number.**
+
+1. LIVE-241's 16→7 count is cancelled as a target. Do not hide Channels, Library, Journeys or
+   anything else to hit seven.
+2. Channels stay on the member rail unless a role, access-matrix, or flag gate says the viewer
+   cannot use them. Daniel did not pick the fold.
+3. Minimality is the existing two-axis gate (`meetsAccess` ∪ `meetsStaff`), plus `navAccess` /
+   `area_permissions` / marketplace flags, plus Admin telescoping. A row a role cannot use is
+   hidden; a row they can use stays.
+4. LIVE-254 (public header) remains its own PR. Do not bundle it into this ruling.
+
+**Rejected.** An arbitrary seven-link member rail. Folding Channels into Circles to make the count
+work. A nav rewrite in the same pass as recording this.
+
+**Consequences.** `LIVE-241` and `LIVE-244` close as cancelled-targets, not as shipped folds. The
+member rail can still shrink later, but only by raising a row's floor or a matrix/flag gate so a
+role that cannot use it no longer sees it.
