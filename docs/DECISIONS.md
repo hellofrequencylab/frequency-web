@@ -46027,3 +46027,23 @@ Premise re-tested 2026-09-19 on this tree: the control still passed `posterBandA
 **Consequences.** The rail is taller by one preview. The height picker still moves both frames. A later change that reverts to `posterBandAspect(height, 1044, aspect)` fails the LIVE-272 probe and the band test's naive-width control.
 
 **Rows.** LIVE-272.
+
+## ADR-1433: Public events use the same header /discover uses (SCAN-641)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-641` · corroborated by `app/(main)/layout.tsx` (`publicChrome`) and `app/discover/layout.tsx`
+
+**Context.** SCAN-641, filed 2026-09-19 from the meta-scan: anon `/events/<slug>` and networked Space profiles rendered `MarketingHeader` through `(main)` `publicChrome()`. `/discover/*` rendered `SiteHeader variant="light" authMode="client"`. Two public chromes, two phone sheets, two chances to drift. LIVE-106 was the last time that class cost thirteen destinations.
+
+Premise re-tested 2026-09-19 on this tree: the split was still the split. Discover still used SiteHeader with client auth so ISR is not voided. The `(main)` public branch already called `getCachedUser()`, so it was already dynamic; client auth there is not an ISR win, it is so both trees draw one bar.
+
+**Decision.**
+
+1. **Mount the discover header on the `(main)` public branch.** `ViewerProvider` plus `SiteHeader variant="light" authMode="client"`. That is the header /discover already ships, including the phone sheet LIVE-110 put on it.
+2. **Leave the footer.** This row is the header split. `MarketingFooter` stays on the `(main)` public branch; /discover keeps its own short footer.
+3. **Give the skip link a target.** `id="main"` on the public `<main>`, matching /discover, so SiteHeader's skip-to-content has somewhere to go.
+
+**Rejected.** Extracting a shared PublicChrome layout in this change (the footers still differ, and a shared shell would hide that). Switching /discover onto MarketingHeader (that is the header without search, and it would undo the ISR-preserving client auth). Server auth on the `(main)` public branch (a second dialect of the same bar).
+
+**Consequences.** A signed-out event page and a /discover page now share one header component and one phone sheet. Marketing pages and the help centre keep MarketingHeader: those are the splash and the docs, not the public community browse. SCAN-636 (the event page still living under the dynamic `(main)` tree) stays a separate row.
+
+**Rows.** SCAN-641.

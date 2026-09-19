@@ -72,7 +72,8 @@ import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import { isAnonPublicDetail } from '@/lib/nav/public-detail-routes'
 import { getMyFrequency } from '@/lib/nav/my-frequency'
 import { viewerRoleFor } from '@/components/layout/menu-role'
-import { MarketingHeader } from '@/components/layout/marketing-header'
+import { SiteHeader } from '@/components/layout/site-header'
+import { ViewerProvider } from '@/components/layout/viewer-chrome'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
 
 // A logged-out visitor is normally sent back to the splash, but a NETWORKED Space profile
@@ -93,8 +94,9 @@ function isAnonSpaceProfile(p: string | null): boolean {
 
 // The events index (/events) and an event's detail page (/events/<slug>) are PUBLIC + crawlable
 // (SEO/AIO) — a signed-out visitor sees the event and is prompted to sign in for any action. Like a
-// Space profile, these render in the public marketing chrome (no member rails). The CREATE flow
-// (/events/new) and host MANAGE sub-routes stay members-only (proxy + this gate both exclude them).
+// Space profile, these render in the public SiteHeader chrome (no member rails), the same header
+// /discover uses (SCAN-641). The CREATE flow (/events/new) and host MANAGE sub-routes stay
+// members-only (proxy + this gate both exclude them).
 function isAnonPublicEvent(p: string | null): boolean {
   if (!p) return false
   if (p === '/events') return true
@@ -198,7 +200,7 @@ export default async function MainLayout({
   // Logged-out visitors hitting an in-app URL go back to the splash (not the
   // sign-in form) — the splash is the front door for anyone who hasn't signed up.
   // EXCEPTION: a public networked Space profile is crawlable + shareable, so render it
-  // in the public marketing chrome (logo header + footer) rather than the member shell
+  // in the public SiteHeader chrome (logo header + footer) rather than the member shell
   // (there is no profile to build the shell from). The space layout walls private/missing.
   // A PUBLIC view (a networked Space profile or a public events page) renders in the slim public
   // chrome for ANY viewer who can't get the member shell — signed-out, OR signed-in but pre-profile
@@ -209,23 +211,20 @@ export default async function MainLayout({
   const isPublicView =
     isAnonSpaceProfile(currentPath) || isAnonPublicEvent(currentPath) || isAnonPublicDetail(currentPath)
   const publicChrome = async () => {
-    const [headerMenu, footerMenu, menuTimings] = await Promise.all([
-      getMenu('header'),
-      getMenu('footer'),
-      getMenuSettings(),
-    ])
+    // SiteHeader fetches its own header menu. The footer stays the marketing one: this row is
+    // the header split (SCAN-641), not a footer unification.
+    const footerMenu = await getMenu('footer')
     return (
-      <>
-        {/* `isAuth={!!user}`, not a hardcoded false. This chrome serves TWO viewers (see the note
-            above the branch): a signed-out visitor, and a signed-in member who has no profile row
-            yet or is mid-induction. The second one was being shown "Sign in" on a page they were
-            already signed in to read. `!!user` is the honest answer for both, and for the member
-            it points at /feed — which is where an incomplete session belongs anyway, since the
-            shell forwards it into onboarding from there. */}
-        <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} isAuth={!!user} />
+      <ViewerProvider>
+        {/* Same header /discover uses: light bar, client auth. This tree is already dynamic
+            (getCachedUser above), so authMode=client is not an ISR win here; it is so a
+            signed-out event page and a /discover page draw one bar, one phone sheet, and one
+            chance to drift. ViewerProvider is what that authMode needs. */}
+        <SiteHeader variant="light" authMode="client" />
         {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top). min-h-dvh
-            (not screen) tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
-        <main className="min-h-dvh bg-canvas" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
+            (not screen) tracks the iOS dynamic toolbar so landscape height doesn't glitch.
+            id="main" is the target of SiteHeader's skip link (WCAG 2.4.1), matching /discover. */}
+        <main id="main" tabIndex={-1} className="min-h-dvh bg-canvas" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
           {/* A public page rides in the SAME centered CONTENT COLUMN as the signed-in shell: the member
               three-column grid (empty left/right rail gutters flanking a flex-1 center column inside
               max-w-[105rem]), so a public Space profile is the exact width it is signed in. The public
@@ -240,7 +239,7 @@ export default async function MainLayout({
           </div>
         </main>
         <MarketingFooter menu={footerMenu} />
-      </>
+      </ViewerProvider>
     )
   }
 

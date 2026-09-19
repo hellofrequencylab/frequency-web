@@ -55,7 +55,6 @@
             "SCAN-638",
             "SCAN-639",
             "SCAN-640",
-            "SCAN-641",
             "LIVE-412"
           ],
           "packetsLane": [
@@ -69,7 +68,6 @@
             "SCAN-636",
             "SCAN-637",
             "SCAN-638",
-            "SCAN-641",
             "SCAN-640",
             "LIVE-412"
           ],
@@ -121,7 +119,6 @@
             "name": "Public chrome + kit",
             "owner": "scanAgent",
             "ids": [
-              "SCAN-641",
               "SCAN-640",
               "LIVE-412"
             ]
@@ -191,7 +188,6 @@
         {
           "name": "W0d \u00b7 P3 \u2014 craft: shell split, hex, parked niceties. 12 visitors / 18 pageviews in 31 days: the funnel, not the page speed, is the constraint.",
           "ids": [
-            "SCAN-641",
             "SCAN-640",
             "LIVE-412",
             "LIVE-216",
@@ -14790,7 +14786,7 @@
     {
       "id": "SCAN-641",
       "title": "Public events and /discover use two different headers",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "hygiene",
       "size": "S",
@@ -14798,12 +14794,13 @@
         "file": "app/(main)/layout.tsx",
         "ref": "meta-scan 2026-09-19"
       },
-      "detail": "FOUND 2026-09-19. Anon /events/<slug> and networked Space profiles render MarketingHeader via (main) publicChrome(). /discover/* renders SiteHeader variant=light authMode=client. Two public chromes, two mobile menus, two chances to drift (LIVE-106 was the last time that class cost thirteen destinations). Close by rendering the same header the discover tree uses on the (main) public-chrome branch, or extracting one PublicChrome used by both.",
+      "detail": "FOUND 2026-09-19. Anon /events/<slug> and networked Space profiles render MarketingHeader via (main) publicChrome(). /discover/* renders SiteHeader variant=light authMode=client. Two public chromes, two mobile menus, two chances to drift (LIVE-106 was the last time that class cost thirteen destinations). Close by rendering the same header the discover tree uses on the (main) public-chrome branch, or extracting one PublicChrome used by both.\n\nCLOSED 2026-09-19 (ADR-1433). PREMISE RE-TESTED FIRST: (main) publicChrome still rendered MarketingHeader; /discover still rendered SiteHeader variant=light authMode=client. The (main) public branch now mounts that same SiteHeader inside ViewerProvider, which is what authMode=client needs. Footer stays MarketingFooter: this row is the header split. Skip-to-content now has id=main, matching /discover.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const L=fs.readFileSync(\"app/(main)/layout.tsx\",\"utf8\");const D=fs.readFileSync(\"app/discover/layout.tsx\",\"utf8\");const mainUsesSite=/<SiteHeader/.test(L);const discUsesSite=/<SiteHeader/.test(D);process.exit(discUsesSite&&mainUsesSite?0:1)'",
-        "note": "Fails while the (main) public chrome still uses MarketingHeader instead of SiteHeader."
-      }
+        "note": "Passes when both public trees render SiteHeader. Written 2026-09-19 against the two-header split, not a footer unification."
+      },
+      "closed": "2026-09-19"
     }
   ]
 }
