@@ -12,7 +12,7 @@ Notion **AI Knowledge Base** (so Notion-started sessions follow it too).
 
 | Home | Audience | Holds | Source of truth |
 |---|---|---|---|
-| **GitHub repo** (`docs/`, `DEVELOPMENT-MAP.md`, `ROADMAP.md`) | engineers, agents | schema, migrations, code, APIs, architecture decisions + rationale, env/config, the build plan | **the code** |
+| **GitHub repo** (`docs/`, `AGENTS.md`) | engineers, agents | schema, migrations, code, APIs, architecture decisions + rationale, env/config | **the code**. Status: [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) |
 | **Public help center** (`content/help/`, served at `/help`) | members (end users) | how to **use** the live product, in member language | the relevant git doc |
 | **Notion "Web Platform, Training & Strategy" database** | operators, hosts, non-engineers, training | how to **operate / moderate / understand** the product; worldview & strategy | the relevant git doc |
 
@@ -28,8 +28,9 @@ and carry a pointer back to, the relevant git doc (its **"Source of truth"**).
 
 1. **Technical artifact?** (schema / migration / code / API / config) then update the
    relevant `docs/*.md`. If it is a **decision with rationale**, add an ADR to
-   [`DECISIONS.md`](DECISIONS.md). If a build item moved, update
-   [`DEVELOPMENT-MAP.md`](DEVELOPMENT-MAP.md).
+   [`DECISIONS.md`](DECISIONS.md). If a build item moved, change the row in
+   [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) so its probe matches. Do not edit
+   `DEVELOPMENT-MAP.md` or `ROADMAP.md` for status; those are superseded history.
 2. **Does it change how a MEMBER uses the product?** then add/update the matching
    **help article** in `content/help/` (member voice), and add a human-facing line to
    [`CHANGELOG.md`](CHANGELOG.md) under `## [Unreleased]`. (Spec: HELP-CENTER.md.)
@@ -50,7 +51,7 @@ Most features hit #1 every time, #2 when they are user-facing, and #3 sometimes.
 | New gamification mechanic | `GLOSSARY.md` + `DECISIONS.md` | the relevant **The game** article | **Crew Gamification** page |
 | New user-facing feature flow | `ARCHITECTURE.md` / `DATABASE.md` (+ ADR) | the feature's how-to article (+ CHANGELOG) | the feature's operator page if any |
 | Bug fix / refactor | commit (+ ADR if a decision) | only if behavior members see changed | only if operator behavior changed |
-| Build status change | `DEVELOPMENT-MAP.md` | only if it ships a member feature | **MVP Build List** mirror page |
+| Build status change | `BUILD-BACKLOG.json` (probe + status) | only if it ships a member feature | Notion training page only if operators do something new |
 
 ## Versioning
 
@@ -83,7 +84,7 @@ One spine (git), current-only by default.
 
 - [ ] git: relevant `docs/*.md` updated (`DATABASE` / `ARCHITECTURE` / `GLOSSARY`)
 - [ ] git: ADR added to `DECISIONS.md` **if a decision was made**
-- [ ] git: `DEVELOPMENT-MAP.md` build status updated if an item moved
+- [ ] git: `BUILD-BACKLOG.json` row updated if an item moved (probe still honest)
 - [ ] help: `content/help/` article added/updated **if member behavior changed**, and a
       human-facing line added to `CHANGELOG.md`
 - [ ] Notion: training page updated **only if** operator-facing behavior changed
@@ -96,7 +97,7 @@ This protocol is wired into the repo so the multi-write is low-friction and hard
 - **`AGENTS.md`** carries an inline summary of the router, injected into **every** Claude
   Code session in this repo.
 - **`/sync-docs` skill** (`.claude/skills/sync-docs/`) runs the full multi-home write on
-  demand: it inspects the diff, updates the right `docs/*.md` + ADR + DEVELOPMENT-MAP,
+  demand: it inspects the diff, updates the right `docs/*.md` + ADR + backlog row,
   adds/updates the `content/help/` article + CHANGELOG line, updates or creates the matching
   Notion training page in place, commits, and pushes. Run it after designing/shipping a
   change (or just say "sync the docs").
