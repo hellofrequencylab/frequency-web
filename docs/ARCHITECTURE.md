@@ -106,6 +106,11 @@ database will stop an unauthorized write. It won't.
 > without establishing the caller, checking a capability, or verifying a signed token. A genuinely
 > public action opts out with `// authz-ok: <reason>` or the script's allowlist. That converts the
 > rule above from convention into a gate.
+>
+> **Input shape (ADR-1420).** Authz is the door; `parseInput` in `lib/validation.ts` is the parse
+> at the top of the action. `scripts/check-parse-input.mjs` (`pnpm check:parse-input`) freezes the
+> residual `'use server'` files under `app/(main)/admin` that still skip it. A new file fails
+> unless it parses or carries `// parse-ok: <reason>` on the export; the baseline only shrinks.
 
 **RLS convergence (ADR-042)** moves own-row and public reads back onto the session client so RLS
 enforces them; cross-user aggregate reads stay on the admin client until they get `SECURITY

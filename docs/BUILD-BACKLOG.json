@@ -181,7 +181,6 @@
             "SCAN-638",
             "HYG-100",
             "LIVE-413",
-            "HYG-101",
             "LIVE-411",
             "HYG-075",
             "LIVE-335",
@@ -14627,20 +14626,21 @@
     {
       "id": "HYG-101",
       "title": "Residual admin actions still not parsing through parseInput",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "hygiene",
       "size": "M",
       "source": {
-        "file": "scripts/check-authz-guards.mjs",
-        "ref": "OPEN-THREADS B8 residual, 2026-09-18 survey"
+        "file": "scripts/check-parse-input.mjs",
+        "ref": "OPEN-THREADS B8 residual, ADR-1420"
       },
-      "detail": "FILED 2026-09-19. B8 is done (check:authz scans actions + lib + routes). LIVE-403 closed billing/actions.ts. Residual: on the order of ~77 admin action exports still not using parseInput. Not High \u2014 the authz guard is the door; this is input-shape hygiene. Not P0.",
+      "detail": "FILED 2026-09-19. B8 is done (check:authz scans actions + lib + routes). LIVE-403 closed billing/actions.ts. Residual: on the order of ~77 admin action exports still not using parseInput. Not High \u2014 the authz guard is the door; this is input-shape hygiene. Not P0.\n\nCLOSED 2026-09-19. Premise re-tested first: 77 'use server' files under app/(main)/admin, 2 already parsed (economy + spotlight), 75 residual files, 347 unparsed exports \u2014 the ~77 was the FILE count, not the export count. Converting 347 exports in one PR is the 40-file gate. The close this row named second is the one that shipped: scripts/check-parse-input.mjs freezes the residual set (scripts/parse-input-baseline.txt) as a shrink-only ratchet. A new admin action without parseInput (or // parse-ok:) fails; a baseline file that now parses or is gone fails until it is removed, so a stale path cannot grant amnesty. First wave parsed off the list: payments, sms, community, roles, beta-price grant, nonprofit verifications, Space lifecycle/ownership. 9 files parse; 68 remain frozen. Enforced by scripts/check-parse-input.test.ts (VITEST_ENFORCED). ADR-1420.",
       "verify": {
-        "kind": "manual",
-        "evidence": "2026-09-19: residual named, not counted in this session. Closes when a cmd probe can list admin action files under app/(main)/admin that export mutations without parseInput and that list is empty, or an allowlist is frozen and ratcheted.",
-        "checked": "2026-09-19"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};if(!fs.existsSync(\"scripts/check-parse-input.mjs\"))fail(\"parseInput ratchet is gone\");if(!fs.existsSync(\"scripts/parse-input-baseline.txt\"))fail(\"parseInput baseline is gone\");const {evaluate,scanAdmin,loadBaseline,MIN_SERVER_FILES}=require(\"./scripts/check-parse-input.mjs\");const scanned=scanAdmin();if(scanned.server.length<MIN_SERVER_FILES)fail(\"walk saw too few admin actions\");const r=evaluate({residual:scanned.residual,baseline:loadBaseline(fs.readFileSync(\"scripts/parse-input-baseline.txt\",\"utf8\"))});if(r.code!==0)fail(\"residual set drifted from the freeze: added \"+r.added.join(\",\")+\" graduated \"+r.graduated.join(\",\")+\" stale \"+r.stale.join(\",\"));const src=fs.readFileSync(\"scripts/check-parse-input.mjs\",\"utf8\");if(!src.includes(\"list only shrinks\"))fail(\"the script no longer describes a shrink-only ratchet\");console.log(\"HYG-101 ok\")'",
+        "note": "Passes when the residual admin parseInput set is frozen as a shrink-only ratchet and the committed baseline matches the tree."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "HYG-102",

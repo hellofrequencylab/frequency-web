@@ -8,6 +8,9 @@ import { logAdminAction } from '@/lib/admin/audit'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { addSpaceMember } from '@/lib/spaces/membership'
 import type { SpaceStatus } from '@/lib/spaces/types'
+import { parseInput, z, uuid } from '@/lib/validation'
+
+const spaceStatus = z.enum(['active', 'suspended', 'archived'])
 
 // PLATFORM-ADMIN oversight: Space LIFECYCLE + OWNERSHIP TRANSFER (Entity Management Overhaul EM1-6,
 // the oversight spine; docs/ENTITY-MANAGEMENT-OVERHAUL.md §6). These extend the EXISTING admin
@@ -101,25 +104,30 @@ export async function setSpaceStatus(spaceId: string, to: SpaceStatus): Promise<
     return fail('Not authorized.')
   }
 
-  if (to !== 'active' && to !== 'suspended' && to !== 'archived') return fail('Unknown status.')
-  const id = (spaceId ?? '').trim()
-  if (!id) return fail('We could not find that space.')
+  let parsed: { spaceId: string; to: SpaceStatus }
+  try {
+    parsed = parseInput(z.object({ spaceId: uuid, to: spaceStatus }), { spaceId, to })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Invalid input')
+  }
+  const id = parsed.spaceId
+  const next = parsed.to
 
   const space = await readSpace(id)
   if (!space) return fail('We could not find that space.')
   if (space.type === 'root') return fail('The root space cannot be suspended or archived.')
 
   const from = (space.status ?? 'active') as SpaceStatus
-  if (from === to) return ok()
+  if (from === next) return ok()
 
-  if (!(await updateSpace(id, { status: to }))) return fail('Could not save that change.')
+  if (!(await updateSpace(id, { status: next }))) return fail('Could not save that change.')
 
   await logAdminAction({
     actorId: caller!.id,
-    action: `space.${STATUS_VERB[to]}`,
+    action: `space.${STATUS_VERB[next]}`,
     targetType: 'space',
     targetId: id,
-    detail: { slug: space.slug ?? null, from, to },
+    detail: { slug: space.slug ?? null, from, to: next },
   })
 
   revalidateSpace(id)
@@ -149,10 +157,17 @@ export async function transferSpaceOwnership(
     return fail('Not authorized.')
   }
 
-  const id = (spaceId ?? '').trim()
-  const newOwner = (newOwnerProfileId ?? '').trim()
-  if (!id) return fail('We could not find that space.')
-  if (!newOwner) return fail('Pick the new owner.')
+  let parsed: { spaceId: string; newOwnerProfileId: string }
+  try {
+    parsed = parseInput(z.object({ spaceId: uuid, newOwnerProfileId: uuid }), {
+      spaceId,
+      newOwnerProfileId,
+    })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Pick the new owner.')
+  }
+  const id = parsed.spaceId
+  const newOwner = parsed.newOwnerProfileId
 
   const space = await readSpace(id)
   if (!space) return fail('We could not find that space.')
