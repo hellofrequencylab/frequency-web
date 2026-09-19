@@ -143,8 +143,8 @@ describe('the faces reach the serverless runtime', () => {
 
   it('and does NOT sweep in the faces nothing reads', () => {
     // 🔴 The first version used './public/fonts/*.ttf', which also shipped LiberationSans-Regular
-    // (410,820 bytes) into EVERY lambda in the app. Nothing opens it from disk — flyer-raster.ts
-    // fetches its faces over HTTP — so it was pure weight on every cold start.
+    // (410,820 bytes) into EVERY lambda in the app. LIVE-216 deleted that face with the flyer
+    // builder. Keep the named list so a future glob cannot put a fourth face on every card.
     expect(cfg).not.toContain("'./public/fonts/*.ttf'")
     expect(cfg).not.toContain("'./public/fonts/LiberationSans-Regular.ttf'")
   })
