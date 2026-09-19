@@ -67,7 +67,7 @@ export async function GET() {
     '',
     '## About Frequency',
     '',
-    'Frequency is a Community Collective. We exist to support every community effort and help everyone in it succeed, together. Everything a community needs sits in one place: start a Circle, host Events near you, run The Quest, and grow a Space (your own community, business, or nonprofit).',
+    'Frequency is a Community Collective. We exist to support every community effort and help everyone in it succeed, together. Everything a community needs sits in one place: start a Circle, host Events near you, and grow a Space (your own community, business, or nonprofit). The Quest is the light game everyone plays alongside that.',
     '',
     '### The honest-money model',
     '',

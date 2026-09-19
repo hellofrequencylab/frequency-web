@@ -78,7 +78,7 @@ const pages = (input: PricingGridInput, offerings: Offering[]): { path: string; 
   { path: '/', label: 'Home', desc: `${SITE_NAME}, the Community Collective. The short version of who it is for and how it works.` },
   { path: '/start', label: 'Start here', desc: 'Choose how you want to get involved, then take your first move.' },
   { path: '/the-community', label: 'The Community', desc: 'How you find your people, through Pillars, Channels, and Circles. For builders: host one Circle and we hand you the format and the first-night script.' },
-  { path: '/the-quest', label: 'The Quest', desc: 'The light, in-person game: Zaps, Gems, season ranks, and Journeys.' },
+  { path: '/the-quest', label: 'The Quest', desc: 'The light game everyone plays alongside their Circle: Zaps, Gems, season ranks, and Journeys. Not a third of the offer.' },
   { path: '/the-lab', label: 'The Lab', desc: 'The physical third space, and why a community needs a room.' },
   { path: '/pricing', label: 'Pricing', desc: `Pricing for Spaces and members: people join free, businesses host free, and you pay when you start charging. You keep 100% of your own bookings. ${takeRateStory(input, offerings)} The whole ladder: ${ladderSentence(offerings)}.` },
   { path: '/what-is-frequency', label: 'What is Frequency', desc: `The answer-first explainer of the movement: what ${SITE_NAME} is, how it works (Circles, Events, The Lab), and why it exists.` },

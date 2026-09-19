@@ -481,8 +481,8 @@ export const data: Data = {
       },
     },
 
-    // ── The triptych cross-link ── RECOVERED from the coded body, so The Quest
-    // sits alongside The Lab and The Community the way its siblings already do. ──
+    // ── Story cross-link. The Quest page still carries it so a reader can walk
+    // to The Lab and The Community; it is not marked as a third peer (LIVE-254). ──
     {
       type: 'PillarNav',
       props: {
