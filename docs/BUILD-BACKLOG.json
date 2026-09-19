@@ -51,7 +51,6 @@
           ],
           "leave": [
             "SCAN-637",
-            "SCAN-638",
             "SCAN-639",
             "SCAN-640",
             "LIVE-412"
@@ -65,7 +64,6 @@
           "next": "SCAN-638",
           "order": [
             "SCAN-637",
-            "SCAN-638",
             "SCAN-640",
             "LIVE-412"
           ],
@@ -168,7 +166,6 @@
           "name": "W0c \u00b7 P2 \u2014 FOCUS remainder, gems replay grant, remaining audit security, small cleanups, Journey sales tail.",
           "ids": [
             "LIVE-408",
-            "SCAN-638",
             "HYG-100",
             "LIVE-413",
             "LIVE-411",
@@ -14730,7 +14727,8 @@
     {
       "id": "SCAN-638",
       "title": "Six new unindexed FKs and two auth.uid() initplans landed after the Aug 31 scan",
-      "status": "open",
+      "status": "done",
+      "closed": "2026-09-19",
       "priority": "P2",
       "lane": "hygiene",
       "size": "S",

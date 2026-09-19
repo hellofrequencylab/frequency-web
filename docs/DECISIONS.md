@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1443**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
+tree as of this index: **ADR-1445**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
 
 | Theme | Start here |
 |---|---|
@@ -46224,4 +46224,23 @@ Premise re-tested 2026-09-19 on this tree: the split was still the split. Discov
 **Consequences.** A signed-out event page and a /discover page now share one header component and one phone sheet. Marketing pages and the help centre keep MarketingHeader: those are the splash and the docs, not the public community browse.
 
 **Rows.** SCAN-641.
+
+## ADR-1445: Cover the six new Space FKs and wrap the two read-own initplans (SCAN-638)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-638` · numbered **1445** because **1440** is SCAN-636 on main and HYG-078 on another branch already claimed the next number · corroborated by `supabase/migrations/20270345006500_advisor_space_fk_indexes_and_initplan.sql`
+
+**Context.** The 2026-08-31 advisor pass recorded zero `unindexed_foreign_keys` and zero `auth_rls_initplan`. The 2026-09-19 meta-scan found six new FKs and two read-own policies that landed with Space Circles and entitlements. Premise re-tested 2026-09-19: `entitlement_grants read own` and `space_circle_optouts read own` still called `auth.uid()` bare; no later wrap existed; the six named columns still lacked a leading index. `space_benefit_redemptions_cap_idx` leads with `benefit_id`. The `space_circle_optouts` primary key leads with `space_id`. `spatial_ref_sys` remains PostGIS (OWN-006).
+
+**Decision.**
+
+1. **One later migration, not a rewrite of the creating files.** Fresh `db reset` still plays 20270345002800 and 20270345005800 as applied, then this file corrects them. Prod that already ran those files gets the same correction on apply.
+2. **Wrap `auth.uid()` as `(select auth.uid())` on the two read-own policies.** Predicate otherwise identical. Same initplan form as 20260615200000 / 20261104000000.
+3. **Covering btree on each named FK column.** `entitlement_grants.space_id`, `space_benefit_redemptions.member_profile_id`, `space_calendar_day_notes.created_by`, `space_calendar_entries.created_by`, `space_circle_optouts.profile_id`, `space_donations.ask_id`.
+4. **Do not apply from the authoring session.** Ship the file. After merge: `execute_sql` for the DDL, then insert `supabase_migrations.schema_migrations` at `20270345006500`. Never `apply_migration` or `db push`. Leave `spatial_ref_sys` alone.
+
+**Rejected.** Editing the already-applied creating files as the only close (a fresh DB would be born correct, an already-applied DB would not). `CREATE INDEX CONCURRENTLY` (cannot run inside the migration transaction). Enabling RLS on `spatial_ref_sys`.
+
+**Consequences.** A later policy that drops the wrap fails the SCAN-638 probe. Advisors on production are the index proof after the ledger insert. Version `20270345006300` is reserved by HYG-078 on another branch.
+
+**Rows.** SCAN-638.
 
