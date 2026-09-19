@@ -130,7 +130,7 @@ Taken by the owner on 2026-09-08 and recorded in [ADR-1294](DECISIONS.md). They 
 | 2 | The marketplace | **One umbrella with real sub-tabs** — Classifieds · Housing · Market · Events. It is not four nav areas, and the tab bar was never built. |
 | 3 | The six Collective Spaces | **Grandfather at $49.** Collective merges into Business, which rises $29 → $49 with two seats. |
 | 4 | The Independent tier | **Keep it, hide it from public pricing.** Hand-sold; its four Stripe prices stay live. |
-| 5 | Hubs and Nexuses | **Fold both into Space.** Each reads as "a Space that contains other Spaces". |
+| 5 | Hubs and Nexuses | **Fold both into Space.** Each reads as "a Space that contains other Spaces". Member URLs 308 to Space (LIVE-242 / ADR-1439). Geography tables remain. |
 | 6 | Channels | **Fold into Circles.** A Channel reads as a topic Circle, and there are zero channels. |
 
 ⚠️ **Ruling 2 carries a cost worth naming now rather than discovering later.** Events becomes a

@@ -54,8 +54,6 @@ const PROTECTED_PATHS = [
   '/crew',
   '/on-air',
   '/groups',
-  '/hubs',
-  '/nexuses',
   '/profile',
   '/admin',
   '/onboarding',

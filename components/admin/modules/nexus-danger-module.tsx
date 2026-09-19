@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { Archive } from 'lucide-react'
-import { getNexusAdminData, archiveNexus } from '@/app/(main)/nexuses/admin-actions'
+import { getNexusAdminData, archiveNexus } from '@/lib/hierarchy/nexus-admin'
 
 // In-place "Danger zone" module (ADMIN-RAIL.md Phase 7, the 'danger' spine cell for nexuses). Renders
 // in the page admin dock on /nexuses/[slug]; getNexusAdminData returns null unless the caller holds

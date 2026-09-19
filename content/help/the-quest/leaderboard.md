@@ -4,7 +4,7 @@ description: One shared goal first. Where people stand sits below it, scoped to 
 category: the-quest
 order: 8
 published: 2026-06-09
-updated: 2026-08-13
+updated: 2026-09-19
 audience: member
 featureKeys: [leaderboard, gamification]
 status: published
@@ -23,7 +23,7 @@ Below the shared goal is the individual board. Two controls shape it.
 **Scope** decides who you're compared with. It stays local on purpose: the people you actually practice with, not the whole world. There is no global board.
 
 - **Circle** (the default): people in your circles.
-- **Hub**: everyone across your [hub](/help/groups/hubs), the cluster of nearby Circles.
+- **Nearby Spaces**: everyone across the parent [Space that holds nearby Circles](/help/groups/hubs).
 
 **Track** decides what the board ranks by.
 

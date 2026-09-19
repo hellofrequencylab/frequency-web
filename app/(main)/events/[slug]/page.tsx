@@ -14,7 +14,7 @@ import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { seriesRobots, seriesSeoFactsBySlug, suppressPastNoindex } from '@/lib/events/series-seo'
 import { getSeriesDisplayConfig } from '@/lib/events/series-config'
 
-// Public share URL for an event (SCAN-636 / ADR-1438). Same ISR window and
+// Public share URL for an event (SCAN-636 / ADR-1440). Same ISR window and
 // column-safe RPC as /discover/events/[slug]. Auth during render is a dynamic
 // API and would void that window; signed-in members are rewritten to
 // /events/<slug>/full (event-member-page.tsx) so RSVP and host tools stay

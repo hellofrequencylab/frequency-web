@@ -1,4 +1,4 @@
-import { Check, Sparkles, ShieldCheck, Globe } from 'lucide-react'
+import { Check, ShieldCheck, Globe } from 'lucide-react'
 import { SPACE_PLAN_LABEL, type SpacePlan } from '@/lib/pricing/plans'
 import { spacePlanPriceCents, SPACE_PLAN_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
 import { formatCents } from '@/lib/pricing/display'
@@ -34,17 +34,12 @@ const RUNGS: Rung[] = [
   {
     plan: 'business',
     icon: Check,
-    blurb: 'Own your audience: unlimited contacts, campaigns at volume, email branding, exports, and the full CRM.',
-  },
-  {
-    plan: 'collective',
-    icon: Sparkles,
-    blurb: 'Be the venue: everything in Business, plus team seats, automations, membership tickets, multiple pipelines, and Collaborator hosting.',
+    blurb: 'Run the practice: contacts, campaigns, CRM, tickets, memberships, automations, two seats, and Collaborator hosting.',
   },
   {
     plan: 'nonprofit',
     icon: ShieldCheck,
-    blurb: 'The full Collective toolkit for verified 501(c)(3) organizations.',
+    blurb: 'The full Business toolkit for verified 501(c)(3) organizations.',
   },
 ]
 
@@ -75,11 +70,10 @@ const STATE_CHIP: Record<RungState, { label: string; className: string }> = {
  *  Business's live CTA lives below (always "available"); Collective is "available" once its per-plan
  *  switch is on (else "Coming soon"); Non Profit is by verification. Independent is never "available":
  *  it is sold by hand (LIVE-227), and it only ever reaches this function as the Space's current plan. */
-function rungState(plan: SpacePlan, currentPlan: SpacePlan, sellable: Partial<Record<SpacePlan, boolean>>): RungState {
+function rungState(plan: SpacePlan, currentPlan: SpacePlan): RungState {
   if (plan === currentPlan) return 'current'
   if (plan === 'business') return 'available'
   if (plan === 'nonprofit') return 'verify'
-  if (plan === 'collective' && sellable[plan]) return 'available'
   return 'soon'
 }
 
@@ -141,13 +135,13 @@ export function PlanLadder({
 
       <ul className="mt-4 space-y-2.5">
         {rungs.map((rung) => {
-          const state = rungState(rung.plan, currentPlan, sellable)
+          const state = rungState(rung.plan, currentPlan)
           const chip = STATE_CHIP[state]
           const Icon = rung.icon
           // A FREE Space gets a one-click Choose on the one sellable higher flat rung (Collective).
           // Business keeps its richer CTA below; Non Profit routes through verification, not a direct
           // buy; Independent is sold by hand and is never offered here (LIVE-227).
-          const canChoose = isFree && !!slug && state === 'available' && rung.plan === 'collective'
+          const canChoose = isFree && !!slug && rung.plan === 'business' && !!sellable.business
           return (
             <li
               key={rung.plan}
@@ -169,7 +163,7 @@ export function PlanLadder({
               {canChoose ? (
                 <ChoosePlanButton
                   slug={slug}
-                  plan="collective"
+                  plan="business"
                   label={`Choose ${SPACE_PLAN_LABEL[rung.plan]}`}
                 />
               ) : (

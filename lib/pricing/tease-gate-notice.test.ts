@@ -92,12 +92,12 @@ describe('during the beta grace window: a NOTICE, never a lock tease', () => {
     expect(gate.notice?.invite).toContain('Founding Business badge')
   })
 
-  it('a COLLECTIVE-depth Space key says Collective tools', async () => {
+  it('a Business-depth Space key says Business tools (automation is Business depth, LIVE-228)', async () => {
     duringBeta()
     const { resolveSpaceTeaseGate } = await loadResolvers({})
     const gate = await resolveSpaceTeaseGate({ id: 's-1', entitlements: {} }, 'automation')
-    expect(gate.notice?.title).toBe('You are using Collective tools')
-    expect(gate.notice?.key).toBe('plan:collective')
+    expect(gate.notice?.title).toBe('You are using Business tools')
+    expect(gate.notice?.key).toBe('plan:business')
   })
 })
 

@@ -33,8 +33,8 @@ export interface BankViewer {
 const SECTION_FOR_KIND: Partial<Record<string, string>> = {
   circle: 'circles',
   event: 'events',
-  hub: 'hubs',
-  nexus: 'nexuses',
+  hub: 'spaces',
+  nexus: 'spaces',
   practice: 'practices',
   journey: 'journeys',
 }

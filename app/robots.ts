@@ -39,8 +39,6 @@ const DISALLOW = [
   // gets the 307 to /sign-in, so it belongs here too.
   "/on-air",
   "/groups",
-  "/hubs",
-  "/nexuses",
   "/profile",
   "/admin",
   "/onboarding",

@@ -163,7 +163,7 @@ describe('one source of quantities — PLACEHOLDER_METER_LIMITS is the map every
 
   it('mirrors the LIVE caps the codebase already enforces (never invents a conflict)', () => {
     // QR codes: lib/qr/space-codes.ts PLAN_CODE_CAPS enforces free 3 / business 500 today.
-    expect(PLACEHOLDER_METER_LIMITS.space_qr).toMatchObject({ free: 3, business: 500 })
+    expect(PLACEHOLDER_METER_LIMITS.space_qr).toMatchObject({ free: 3, business: null })
     // Team seats: lib/spaces/seats.ts BASE_SEAT_ALLOWANCE = 1 (the owner's free seat, ADR-799).
     expect(PLACEHOLDER_METER_LIMITS.space_team!.free).toBe(1)
     // Vera: mirrors PRICING_DEFAULTS.vera_free_daily_cap (~10/day, §2).
@@ -187,7 +187,7 @@ describe('label + readout formatting', () => {
   it('the seats ladder says INCLUDED seats and the per-seat add-on, never a wall (ADR-799)', () => {
     const seats = featureMeter('space_team')!
     const top = seats.steps[seats.steps.length - 1]!
-    expect(top.allowanceText).toBe('3 seats included, add more per seat')
+    expect(top.allowanceText).toBe('2 seats included, add more per seat')
   })
 
   it('allowanceReadout renders "X of N used" or the unlimited form; null for a non-metered feature', () => {
@@ -207,12 +207,12 @@ describe('read helpers', () => {
   })
 
   it('currentMeterStepIndex maps a viewer tier to the highest rung at/below it', () => {
-    const crm = featureMeter('space_crm')! // steps: free, business, collective
+    const crm = featureMeter('space_crm')! // steps: free, business
     expect(currentMeterStepIndex(crm, 'free')).toBe(0)
     expect(currentMeterStepIndex(crm, 'business')).toBe(1)
-    expect(currentMeterStepIndex(crm, 'collective')).toBe(2)
-    // Nonprofit ranks above collective (the top rung) → maps to the collective rung.
-    expect(currentMeterStepIndex(crm, 'nonprofit')).toBe(2)
+    // Nonprofit ranks above business → maps to the business rung.
+    expect(currentMeterStepIndex(crm, 'nonprofit')).toBe(1)
+    // Legacy collective label is not a meter rung; it maps through tier rank at read sites that use asSpacePlan.
     // Unknown tier → the free floor.
     expect(currentMeterStepIndex(crm, 'nonsense')).toBe(0)
   })

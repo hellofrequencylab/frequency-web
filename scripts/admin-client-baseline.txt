@@ -350,9 +350,6 @@ app/(main)/feed/report-actions.ts
 app/(main)/founder/founder-actions.ts
 app/(main)/g/[slug]/actions.ts
 app/(main)/g/[slug]/page.tsx
-app/(main)/hubs/[slug]/manage/page.tsx
-app/(main)/hubs/[slug]/page.tsx
-app/(main)/hubs/admin-actions.ts
 app/(main)/impersonate-actions.ts
 app/(main)/journeys/[slug]/edit/actions.ts
 app/(main)/journeys/[slug]/guide/actions.ts
@@ -375,9 +372,6 @@ app/(main)/nearby/[id]/page.tsx
 app/(main)/nearby/actions.ts
 app/(main)/nearby/page.tsx
 app/(main)/network/page.tsx
-app/(main)/nexuses/[slug]/manage/page.tsx
-app/(main)/nexuses/[slug]/page.tsx
-app/(main)/nexuses/admin-actions.ts
 app/(main)/on-air/actions.ts
 app/(main)/on-air/timer-session-actions.ts
 app/(main)/orders/dispute-actions.ts
@@ -751,6 +745,8 @@ lib/funnels/store.ts
 lib/gems.ts
 lib/growth/host-prompts.ts
 lib/growth/nearby-practice.ts
+lib/hierarchy/hub-admin.ts
+lib/hierarchy/nexus-admin.ts
 lib/importer/harvest/media.ts
 lib/importer/harvest/staging-lifecycle.ts
 lib/importer/materialize.ts

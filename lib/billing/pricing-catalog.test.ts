@@ -34,34 +34,29 @@ describe('yearlyFromMonthly (two months free)', () => {
 })
 
 describe('the clean catalog shape (collapsed · ADR-552)', () => {
-  it('holds exactly the six items (Business/Collective/Independent bases, AI add-on, nonprofit seat, operator seat)', () => {
+  it('holds exactly five live items (Business/Independent bases, AI add-on, nonprofit seat, operator seat)', () => {
     expect([...CATALOG_ITEM_KEYS]).toEqual([
       'business_base',
-      'collective_base',
       'independent_base',
       'addon_ai',
       'nonprofit_seat',
       'operator_seat',
     ])
-    expect(catalogItems()).toHaveLength(6)
+    expect(catalogItems()).toHaveLength(5)
   })
 
-  it('Business base: $29 flat, and NO founding rate — there is exactly one beta offer and it is not this one (ADR-1067)', () => {
+  it('Business base: $49 flat, no founding rate (LIVE-228)', () => {
     const biz = catalogItem('business_base')
-    expect(biz.month.listCents).toBe(2900)
-    // founding == list is how an item says "no beta rate". This is the assertion that stops a second
-    // "(Founding rate)" Product being minted: Stripe Prices are immutable, so an unwanted $19 minted
-    // once can only be archived, never edited.
-    expect(biz.month.foundingCents).toBe(2900)
+    expect(biz.month.listCents).toBe(4900)
+    expect(biz.month.foundingCents).toBe(4900)
     expect(biz.year.foundingCents).toBe(biz.year.listCents)
     expect(biz.perSeat).toBe(false)
   })
 
-  it('Collective base: $79 list with a $49 beta founding anchor, not per seat (ADR-811)', () => {
-    const col = catalogItem('collective_base')
-    expect(col.month.foundingCents).toBe(4900) // beta founding
-    expect(col.month.listCents).toBe(7900)
-    expect(col.perSeat).toBe(false)
+  it('collective_base is retired and no longer a catalog item (LIVE-228)', () => {
+    expect(asCatalogItemKey('collective_base')).toBeNull()
+    expect(RETIRED_CATALOG_KEYS).toContain('collective_base_month')
+    expect(RETIRED_CATALOG_KEYS).toContain('collective_base_month_list')
   })
 
   it('Independent base: $249/mo flat white-label, no founding discount (ADR-811)', () => {
@@ -122,12 +117,12 @@ describe('catalog price keys', () => {
     expect(catalogPriceKey('business_base', 'year', true)).toBe('business_base_year_list')
   })
 
-  it('allCatalogPriceKeys = 6 items x 2 intervals x 2 variants = 24 keys', () => {
+  it('allCatalogPriceKeys = 5 items x 2 intervals x 2 variants = 20 keys', () => {
     const keys = allCatalogPriceKeys()
-    expect(keys).toHaveLength(24)
+    expect(keys).toHaveLength(20)
     expect(keys).toContain('business_base_month')
     expect(keys).toContain('business_base_month_list')
-    expect(keys).toContain('collective_base_month')
+    expect(keys).not.toContain('collective_base_month')
     expect(keys).toContain('independent_base_year_list')
     expect(keys).toContain('addon_ai_month')
     expect(keys).toContain('nonprofit_seat_year')

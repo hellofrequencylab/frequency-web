@@ -226,15 +226,16 @@ function seedCode(over: Partial<CodeRow> = {}) {
 describe('codeCapForPlan (pure, fail-small)', () => {
   it('maps known plans', () => {
     expect(codeCapForPlan('free')).toBe(3)
-    expect(codeCapForPlan('business')).toBe(500)
+    // LIVE-228: Business QR is unlimited on the meter (null → UNLIMITED_CODE_CAP).
+    expect(codeCapForPlan('business')).toBe(100_000)
     // The retired ADR-552 labels no longer carry their own stale numbers (`starter` 25, `pro` 100 were
     // still in the hardcoded map years after both tiers were retired). They narrow through asSpacePlan
     // to the tier that replaced them, so they read the ladder everyone else reads (ADR-917).
-    expect(codeCapForPlan('pro')).toBe(500) // -> business
-    expect(codeCapForPlan('practitioner')).toBe(500) // -> business
+    expect(codeCapForPlan('pro')).toBe(100_000) // -> business
+    expect(codeCapForPlan('practitioner')).toBe(100_000) // -> business
     expect(codeCapForPlan('whitelabel')).toBe(codeCapForPlan('independent')) // -> independent
-    // Collective and above are unlimited on the meter, which resolves to the large finite ceiling.
-    expect(codeCapForPlan('collective')).toBeGreaterThan(500)
+    // A stored `collective` label remaps to Business (LIVE-228), so it reads the same unlimited cap.
+    expect(codeCapForPlan('collective')).toBe(codeCapForPlan('business'))
     expect(codeCapForPlan('nonprofit')).toBe(codeCapForPlan('collective'))
   })
   it('falls to the free cap for unset / unknown plans', () => {
@@ -251,11 +252,11 @@ describe('the QR cap reads the ONE quantity map (ADR-917, no second ladder)', ()
     // meters, still carrying `starter` and `pro` years after ADR-552 retired both tiers. If this test
     // fails, a second ladder has come back.
     expect(codeCapForPlan('free')).toBe(PLACEHOLDER_METER_LIMITS.space_qr!.free)
-    expect(codeCapForPlan('business')).toBe(PLACEHOLDER_METER_LIMITS.space_qr!.business)
-    // An unlimited rung is the one value a count cannot compare against, so it resolves to a large
-    // finite ceiling. It must still be strictly above every finite rung.
-    expect(PLACEHOLDER_METER_LIMITS.space_qr!.collective).toBeNull()
-    expect(codeCapForPlan('collective')).toBeGreaterThan(codeCapForPlan('business')!)
+    expect(PLACEHOLDER_METER_LIMITS.space_qr!.business).toBeNull()
+    expect(codeCapForPlan('business')).toBe(100_000)
+    // Collective is not a meter rung after LIVE-228; asSpacePlan maps it onto Business.
+    expect(PLACEHOLDER_METER_LIMITS.space_qr!.collective).toBeUndefined()
+    expect(codeCapForPlan('collective')).toBe(codeCapForPlan('business'))
   })
 })
 

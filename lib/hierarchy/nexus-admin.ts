@@ -47,8 +47,8 @@ export async function updateNexusSettings(id: string, slug: string, fd: FormData
     throw new Error('Those Nexus settings did not save. Try again in a moment.')
   }
 
-  revalidatePath(`/nexuses/${slug}`)
-  revalidatePath('/nexuses')
+  revalidatePath(`/spaces/${slug}`)
+  revalidatePath('/admin/nexuses')
 }
 
 // Field-level patch for the inline tuning layer (ADR-138). Allowlisted; re-checks
@@ -77,8 +77,8 @@ export async function updateNexusField(id: string, slug: string, field: InlineFi
     throw new Error('That Nexus name did not save. Try again in a moment.')
   }
 
-  revalidatePath(`/nexuses/${slug}`)
-  revalidatePath('/nexuses')
+  revalidatePath(`/spaces/${slug}`)
+  revalidatePath('/admin/nexuses')
 }
 
 // ─── People (the 'people' spine module) ────────────────────────────────────────
@@ -229,7 +229,7 @@ export async function archiveNexus(id: string, slug: string): Promise<{ ok: true
     return { error: 'This Nexus could not be archived. Try again in a moment.' }
   }
 
-  revalidatePath(`/nexuses/${slug}`)
-  revalidatePath('/nexuses')
+  revalidatePath(`/spaces/${slug}`)
+  revalidatePath('/admin/nexuses')
   return { ok: true }
 }

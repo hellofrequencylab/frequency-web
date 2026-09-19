@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1438**. 1436 is HYG-068 on another open branch.
+tree as of this index: **ADR-1440**. 1436 is HYG-068 on another open branch. 1437 is SCAN-637 on main. 1438 is LIVE-228 on main. 1439 is LIVE-242 on main.
 
 | Theme | Start here |
 |---|---|
@@ -46117,9 +46117,47 @@ Premise re-tested 2026-09-19: all four files still exported `force-dynamic`. Sto
 
 **Rows.** SCAN-637.
 
-## ADR-1438: The share event URL is the ISR public body (SCAN-636)
+## ADR-1438: Collective merges into Business at $49 (LIVE-228)
 
-**Status:** Accepted · 2026-09-19 · backlog `SCAN-636` · product-preserving close of the discover twin's canonical · numbered **1438** because **1436** is HYG-068 and **1437** is SCAN-637 · corroborated by `app/(main)/events/[slug]/page.tsx`, `lib/nav/member-event-rewrite.ts`, and `lib/nav/public-detail-isr.test.ts`
+**Status:** Accepted · 2026-09-19 · **Implements** [ADR-1294](DECISIONS.md) CORE-MODEL §5 phase 3.1 · **Amends** [ADR-811](DECISIONS.md) (Collective is no longer a Space plan; Frequency remains a Community Collective) · backlog `LIVE-228` · numbered **1438** because **1436** is HYG-068 on another branch and **1437** is SCAN-637 on main · corroborated by `lib/pricing/plans.ts` (`SPACE_PLANS` without `collective`, `LEGACY_PLAN_REMAP.collective → business`) and `lib/billing/pricing-keys.ts` (`business_base` at 4900 cents, `collective_base` retired)
+
+**Context.** ADR-811 sold Business at $29 and Collective at $79 list / $49 founding. CORE-MODEL ruling 3 (2026-09-08): one paid advertised tier at $49 with two seats; the six Collective Spaces grandfather at $49 rather than dropping to free. Re-tested 2026-09-19: `SPACE_PLANS` still named `collective`; `business_base` was still 2900 cents with no founding split; `collective_base` was still a live catalog item. Production had granted those six Spaces; `space_subscription_items` was empty.
+
+**Decision.**
+
+1. **`SPACE_PLANS` is free / business / nonprofit / independent.** A stored `collective` label remaps to `business` at read time. The migration rewrites `spaces.plan` and `space_billing_agreements.plan`.
+2. **Business is $49/seat-plan/mo with two operator seats included.** Catalog `business_base` is `amountsFromMonthly(4900, 4900)`. Yearly is two months free. Business depth is the former Collective key set (automation, team, pipelines, programs).
+3. **`collective_base` is retired.** Kept resolvable on `RETIRED_CATALOG_ITEM_KEYS` so an old Stripe line still reconciles; new checkout loadouts that say `collective` bill `business_base` and stamp `plan=business`.
+4. **Public ladder is Free, Business, Non Profit.** Independent stays hand-sold (LIVE-227). Frequency as a Community Collective is the brand, not a plan chip.
+
+**Rejected.** Dropping the six Spaces to free (the owner ruled against it). Keeping Collective as a live catalog item with founding == list at $49 (two prices for one product). Flipping sell flags from this migration.
+
+**Consequences.** The next catalog sync mints Business at $49/$490 and archives Collective products. A Collective Stripe item still maps to Business entitlements. Non Profit stays $39. Independent stays $249.
+
+**Rows.** LIVE-228.
+
+## ADR-1439: Hubs and Nexuses fold into Space (LIVE-242)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-242` · numbered **1439** because **1436** is HYG-068, **1437** is SCAN-637, and **1438** is LIVE-228 on main · corroborated by `next.config.ts` (`/hubs` and `/nexuses` 308 to `/spaces`), `app/(main)/hubs` and `app/(main)/nexuses` absent, `supabase/migrations/20270345006200_hubs_nexuses_fold_into_spaces.sql`, `spaces.parent_id`
+
+**Context.** CORE-MODEL ruling 5 (2026-09-08): a Hub and a Nexus both read as "a Space that contains other Spaces". Production held 3 hubs and 2 nexuses, all `forming`, with **zero Circles** on any of them. Each noun still shipped a detail page, a manage console, and a LeaderCrmViewer roster titled "Message Members" (ADR-827), duplicating Space at two more scopes. Circle geography still uses `circles.hub_id` / `hubs.nexus_id`.
+
+**Decision.**
+
+1. **Member URLs die.** `/hubs`, `/hubs/:path*`, `/nexuses`, and `/nexuses/:path*` 308 onto `/spaces` with the same slug. Staff geography editors stay at `/admin/hubs` and `/admin/nexuses`.
+2. **A Space may name its parent.** `spaces.parent_id` is a self-FK. Each hub and nexus row gains `space_id` pointing at the Space that now is that noun. The migration mints a Business Space per live row when the slug is free, parents hub Spaces under their Nexus Space, and links when a Space with that slug already exists.
+3. **The Hub and Nexus CRMs leave with the noun.** Message-Members pages under `/hubs/<slug>/crm` and `/nexuses/<slug>/crm` are deleted. A leftover rail link resolves to the Space CRM at `/spaces/<slug>/crm`.
+4. **Place-tree tables stay.** Circles, broadcasts, and Guide/Mentor caps still read `hubs` / `nexuses`. Folding those FKs onto `spaces.id` is a later row, not this one.
+
+**Rejected.** Deleting the geography tables in the same change (Circles still attach through `hub_id`). Leaving redirect-only `page.tsx` stubs under `app/(main)/hubs` (the LIVE-242 probe is the directories' absence; HYG-043 already ruled a consolidation unfinished until the old tree is gone).
+
+**Consequences.** Help, NAMING, and GLOSSARY say the member noun is Space. `hubs` and `nexuses` feature keys retarget `/spaces` so `check:help` still has a live prefix. Done-row probes that required the old pages (HYG-046, HYG-064, SCAN-404) measure the fold instead of exit 79.
+
+**Rows.** LIVE-242.
+
+## ADR-1440: The share event URL is the ISR public body (SCAN-636)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-636` · product-preserving close of the discover twin's canonical · numbered **1440** because **1436** is HYG-068, **1438** is LIVE-228, and **1439** is LIVE-242 · corroborated by `app/(main)/events/[slug]/page.tsx`, `lib/nav/member-event-rewrite.ts`, and `lib/nav/public-detail-isr.test.ts`
 
 **Context.** `/discover/events/[slug]` is ISR (`revalidate` 3600, `generateStaticParams`, column-safe RPC). Its `generateMetadata` sets canonical to `/events/<slug>`. That URL rendered a 2486-line member page that called `createClient()` and `getUser()` during render. This app does not enable `cacheComponents`, so those dynamic APIs void ISR. Crawlers were told to consolidate onto the slower page. Share and QR already resolve to `/events/<slug>`, so reversing the canonical (option b on the row) would have advertised a different URL than the one people send.
 

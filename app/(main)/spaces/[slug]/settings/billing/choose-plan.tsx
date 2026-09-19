@@ -21,9 +21,9 @@ export function ChoosePlanButton({
   label,
 }: {
   slug: string
-  /** The loadout plan to buy. Business runs through its own CTA, so this is the higher flat rung. */
-  plan: 'collective'
-  /** The button label, e.g. "Choose Collective". */
+  /** The loadout plan to buy. After LIVE-228 the self-serve rung is Business. */
+  plan: 'business'
+  /** The button label, e.g. "Choose Business". */
   label: string
 }) {
   const [error, setError] = useState<string | null>(null)

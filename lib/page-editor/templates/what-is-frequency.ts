@@ -243,13 +243,7 @@ export const spec: ArticleSpec = {
           name: 'Business',
           price: `${P.businessList}/mo`,
           note: `${BUSINESS_RATE} network only`,
-          who: 'Own your audience: unlimited contacts, campaigns at volume, and exports.',
-        },
-        {
-          name: 'Collective',
-          price: `${P.collectiveList}/mo`,
-          note: `${SPACE_RATE('collective')} network only`,
-          who: 'Be the venue: team seats, automations, and Collaborator hosting.',
+          who: 'Own your audience: unlimited contacts, campaigns, team seats, automations, and Collaborator hosting.',
         },
         {
           name: 'Non Profit',
@@ -339,7 +333,7 @@ export const spec: ArticleSpec = {
     },
     {
       q: 'How much does Frequency cost?',
-      a: `Connection is free, and so is selling. Joining, Circles, and Events never cost anything, a business never pays for access to people, and every tier can sell tickets and take donations from day one. Frequency keeps 0% of your own bookings, always; we make our money only on a sale the network introduced, at ${NETWORK_RATES}. ${OWN_AUDIENCE_LINE} Plans run Member (free, which creates events, takes RSVPs, and sells tickets at the Member rate), Crew (${CREW_NOTE.foundingLabel}, which buys that rate down and lifts the caps), Business (${P.businessList}), Collective (${P.collectiveList}), Non Profit (${P.nonprofit}), and Independent (${INDEPENDENT_PRICE}). See the full ladder at /pricing.`,
+      a: `Connection is free, and so is selling. Joining, Circles, and Events never cost anything, a business never pays for access to people, and every tier can sell tickets and take donations from day one. Frequency keeps 0% of your own bookings, always; we make our money only on a sale the network introduced, at ${NETWORK_RATES}. ${OWN_AUDIENCE_LINE} Plans run Member (free, which creates events, takes RSVPs, and sells tickets at the Member rate), Crew (${CREW_NOTE.foundingLabel}, which buys that rate down and lifts the caps), Business (${P.businessList}), Non Profit (${P.nonprofit}), and Independent (${INDEPENDENT_PRICE}). See the full ladder at /pricing.`,
     },
     {
       q: 'How does Frequency make money?',

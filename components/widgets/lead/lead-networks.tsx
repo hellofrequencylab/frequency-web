@@ -36,7 +36,7 @@ export async function LeadNetworks(): Promise<React.ReactElement | null> {
         {hubs.map((h) => (
           <EntityCard
             key={h.id}
-            href={`/hubs/${h.slug}`}
+            href={`/spaces/${h.slug}`}
             title={h.name}
             context="Hub"
             meta={

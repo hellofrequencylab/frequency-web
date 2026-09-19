@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Input, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { RailAutosaveForm } from '@/components/admin/rail/rail-autosave-form'
-import { getHubAdminData, updateHubSettings } from '@/app/(main)/hubs/admin-actions'
+import { getHubAdminData, updateHubSettings } from '@/lib/hierarchy/hub-admin'
 
 // In-place "Hub settings" module (EMBEDDED-ADMIN.md / ADR-133). Renders inside the page admin dock on
 // /hubs/[slug], and renders nothing unless the server grants hub.manage. The rail section header is the

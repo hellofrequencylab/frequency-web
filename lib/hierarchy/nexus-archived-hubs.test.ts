@@ -67,7 +67,7 @@ vi.mock('@/lib/core/load-capabilities', () => ({
 }))
 vi.mock('next/cache', () => ({ revalidatePath: () => {} }))
 
-const { getNexusPeopleData, getNexusInsightsData } = await import('@/app/(main)/nexuses/admin-actions')
+const { getNexusPeopleData, getNexusInsightsData } = await import('@/lib/hierarchy/nexus-admin')
 
 beforeEach(() => {
   hubs = [
