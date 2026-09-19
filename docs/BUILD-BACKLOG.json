@@ -53,7 +53,6 @@
             "SCAN-637",
             "SCAN-638",
             "SCAN-639",
-            "SCAN-640",
             "LIVE-412"
           ],
           "packetsLane": [
@@ -66,7 +65,6 @@
           "order": [
             "SCAN-637",
             "SCAN-638",
-            "SCAN-640",
             "LIVE-412"
           ],
           "leave": [
@@ -183,7 +181,6 @@
         {
           "name": "W0d \u00b7 P3 \u2014 craft: shell split, hex, parked niceties. 12 visitors / 18 pageviews in 31 days: the funnel, not the page speed, is the constraint.",
           "ids": [
-            "SCAN-640",
             "LIVE-412",
             "LIVE-221",
             "LIVE-273",
@@ -14767,7 +14764,8 @@
     {
       "id": "SCAN-640",
       "title": "page_settings_events_backup_20260910 is still a public table with no primary key",
-      "status": "open",
+      "status": "done",
+      "closed": "2026-09-19",
       "priority": "P3",
       "lane": "hygiene",
       "size": "XS",
