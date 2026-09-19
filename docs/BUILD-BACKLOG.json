@@ -173,7 +173,6 @@
         {
           "name": "W0c \u00b7 P1/P2 \u2014 calendar C2\u2013C5 (ADR-1445) first, then FOCUS remainder, gems, scan cheap-DB, Journey sales tail.",
           "ids": [
-            "LIVE-417",
             "LIVE-418",
             "LIVE-408",
             "SCAN-643",
@@ -14935,7 +14934,7 @@
         "file": "lib/calendar/entries.ts",
         "ref": "ADR-1388, ADR-1445, ADR-1458"
       },
-      "detail": "Admin PM console lists planning-stage gatherings as their own lane. After C2 (LIVE-416).\n\nWHAT SHIPPED. planningLane (lib/calendar/pm-console.ts) is the Admin Planning lane. CalendarPmConsole renders it above the mixed board. Pencil and Production stay on that board until C2 and C4. Did not declare pencilLane or productionLane. Did not fold Guest through guestLiveItems (LIVE-419).",
+      "detail": "Admin PM console lists planning-stage gatherings as their own lane. After C2 (LIVE-416).\n\nWHAT SHIPPED. planningLane (lib/calendar/pm-console.ts) is the Admin Planning lane. CalendarPmConsole renders it above the mixed board, beside pencilLane (LIVE-416). Production stays on that board until C4. Did not declare productionLane. Did not fold Guest through guestLiveItems (LIVE-419).",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"components/spaces/calendar-pm-console.tsx\",\"utf8\");if(!s.includes(\"planningLane\"))process.exit(1)'",
