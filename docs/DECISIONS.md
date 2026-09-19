@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1441**. 1436 is HYG-068 on another open branch. 1440 is SCAN-636 on main.
+tree as of this index: **ADR-1444**. 1436 is HYG-068 on another open branch. 1440 is SCAN-636 on main.
 
 | Theme | Start here |
 |---|---|
@@ -46176,9 +46176,9 @@ Premise re-tested 2026-09-19: the discover twin still pointed canonical at `/eve
 
 **Rows.** SCAN-636.
 
-## ADR-1441: A repeating event costs one gathering on the personal allowance (OWN-063)
+## ADR-1444: A repeating event costs one gathering on the personal allowance (OWN-063)
 
-**Status:** Accepted · 2026-09-19 · Records the 2026-09-08 OWN-063 ruling · **Implements** the create-path fold · numbered **1441** because **1440** is SCAN-636 on main · corroborated by `memberEventAllowanceOk` in `app/(main)/events/actions.ts` (`SERIES_COLUMNS` + `isUpcomingByInstant` + `countSeries`) and `countUpcomingGatherings` in `lib/pricing/member-meter-usage.ts`
+**Status:** Accepted · 2026-09-19 · Records the 2026-09-08 OWN-063 ruling · **Implements** the create-path fold · numbered **1444** because **1440** is SCAN-636 on main · corroborated by `memberEventAllowanceOk` in `app/(main)/events/actions.ts` (`SERIES_COLUMNS` + `isUpcomingByInstant` + `countSeries`) and `countUpcomingGatherings` in `lib/pricing/member-meter-usage.ts`
 
 **Context.** LIVE-198 folded eleven display counts through `countSeries` so a weekly series reads as one gathering. `memberEventAllowanceOk` counted the same occurrence rows, but it is an entitlement quota, not a dashboard. Folding it loosens a paid cap: a free member who today burns nine slots for one weekly series would burn one. The agent that found it refused to decide (OWN-063). The owner ruled 2026-09-08: the allowance caps GATHERINGS.
 
@@ -46197,3 +46197,4 @@ Premise re-tested 2026-09-19: `memberEventAllowanceOk` still selected no series 
 **Consequences.** A free member can run one series plus another gathering where today each date burned a slot. Crew is still unlimited. Later readers of `memberEventAllowanceOk` beside its LIVE-198 siblings will find the ruling at the call site.
 
 **Rows.** OWN-063.
+
