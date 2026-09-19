@@ -126,11 +126,11 @@ describe('agent packets (ADR-1412)', () => {
     expect(AGENT_PROMPT).toContain('Never stamp wall-clock versions')
   })
 
-  it('CLI --json names SCAN-638 on the scan lane from the real file', () => {
+  it('CLI --json names SCAN-642 on the scan lane from the real file', () => {
     const { status, stdout, stderr } = run(['--json', '--lane', 'scan'])
     expect(status, stderr).toBe(0)
     const body = JSON.parse(stdout)
-    expect(body.next[0].id).toBe('SCAN-638')
+    expect(body.next[0].id).toBe('SCAN-642')
     expect(body.next[0].derivedLane).toBe('scan')
     expect(body.packets.some((p: { id: string }) => p.id === 'LIVE-410')).toBe(false)
     expect(body.packets.some((p: { id: string }) => p.id === 'SCAN-636')).toBe(false)
