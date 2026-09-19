@@ -135,9 +135,15 @@ vi.mock('./selling', () => ({
   canTakePayments: (k: string) => k === 'space' || k === 'platform' || k === 'profile',
 }))
 vi.mock('./variants', () => ({ getVariantsByIds: vi.fn(async () => new Map()) }))
+vi.mock('./journey-fulfilment', () => ({
+  enrolByOrder: vi.fn(async () => {}),
+  revokeJourneyByOrder: vi.fn(async () => {}),
+}))
+vi.mock('./order-receipt', () => ({ sendOrderReceipts: vi.fn(async () => {}) }))
 
 import {
   createCommerceCheckout,
+  recordCommerceOrderFromSession,
   refundCommerceOrder,
   recordCommerceRefund,
   recordCommerceRefundFromCharge,
@@ -484,5 +490,141 @@ describe('createCommerceCheckout — an unreadable seller tier never charges an 
 
     expect(res.url).toBe('https://stripe.test/cs_1')
     expect(stripeFake.checkout.sessions.create).toHaveBeenCalledTimes(1)
+  })
+})
+
+// ── LIVE-346 ────────────────────────────────────────────────────────────────────────────────────
+// Physical goods had no Stripe shipping collection and no in-app address form. The pending order
+// stored `input.shipping ?? {}`. A physical cart now asks Stripe for an address and writes it on
+// settle. Intangible carts stay on-page.
+
+describe('createCommerceCheckout — physical goods collect a Stripe shipping address (LIVE-346)', () => {
+  function handler(product: Record<string, unknown>) {
+    state.setHandler((c) => {
+      if (c.table === 'commerce_products' && c.op === 'select') return { data: [product] }
+      if (c.table === 'commerce_orders' && c.op === 'insert') return { data: { id: 'o1' } }
+      if (c.table === 'commerce_order_items' && c.op === 'insert') return { data: [] }
+      if (c.table === 'commerce_orders' && c.op === 'update') return { data: [{ id: 'o1' }] }
+      return {}
+    })
+  }
+
+  it('asks Stripe for a shipping address on a physical cart and uses hosted checkout even when elements was requested', async () => {
+    handler({ ...PRODUCT, product_kind: 'physical' })
+    const res = await createCommerceCheckout({
+      items: [{ productId: 'p1', qty: 1 }],
+      buyerProfileId: 'buyer-1',
+      ui: 'elements',
+    })
+    expect(res.url).toBe('https://stripe.test/cs_1')
+    expect(res.clientSecret).toBeUndefined()
+    const args = stripeFake.checkout.sessions.create.mock.calls[0][0] as Stripe.Checkout.SessionCreateParams
+    expect(args.shipping_address_collection?.allowed_countries).toContain('US')
+    expect(args.ui_mode).toBeUndefined()
+    expect(args.success_url).toMatch(/session_id=/)
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining('physical goods need a Stripe-validated shipping address'),
+      expect.objectContaining({ orderId: 'o1' }),
+    )
+  })
+
+  it('does not collect shipping on a Journey and still issues an on-page session', async () => {
+    handler({ ...PRODUCT, product_kind: 'journey' })
+    stripeFake.checkout.sessions.create.mockImplementationOnce(async () => ({
+      id: 'cs_1',
+      url: null,
+      client_secret: 'cs_secret_1',
+    }))
+    const res = await createCommerceCheckout({
+      items: [{ productId: 'p1', qty: 1 }],
+      buyerProfileId: 'buyer-1',
+      ui: 'elements',
+    })
+    expect(res.clientSecret).toBe('cs_secret_1')
+    expect(res.url).toBeUndefined()
+    const args = stripeFake.checkout.sessions.create.mock.calls[0][0] as Stripe.Checkout.SessionCreateParams
+    expect(args.shipping_address_collection).toBeUndefined()
+    expect(args.ui_mode).toBe('elements')
+  })
+})
+
+describe('recordCommerceOrderFromSession — persists Stripe shipping (LIVE-346)', () => {
+  it('writes shipping_details onto the paid order', async () => {
+    const shipping = {
+      name: 'Ada Lovelace',
+      address: { line1: '1 Market St', city: 'Austin', country: 'US' },
+    }
+    state.setHandler((c) => {
+      if (c.table === 'commerce_orders' && c.op === 'update') {
+        return {
+          data: [
+            {
+              id: 'o1',
+              owner_kind: 'platform',
+              owner_profile_id: null,
+              owner_space_id: null,
+              entity_id: 'ent-1',
+              amount_cents: 1000,
+              platform_fee_cents: 0,
+              buyer_profile_id: 'buyer-1',
+              currency: 'usd',
+            },
+          ],
+        }
+      }
+      return {}
+    })
+
+    await recordCommerceOrderFromSession({
+      id: 'cs_1',
+      metadata: { kind: 'commerce_order' },
+      payment_status: 'paid',
+      payment_intent: 'pi_1',
+      shipping_details: shipping,
+    } as unknown as Stripe.Checkout.Session)
+
+    const paid = firstCall((c) => c.table === 'commerce_orders' && c.op === 'update')!
+    expect(paid.payload).toMatchObject({
+      status: 'paid',
+      stripe_payment_intent_id: 'pi_1',
+      shipping,
+    })
+  })
+
+  it('leaves shipping alone when Stripe collected none', async () => {
+    state.setHandler((c) => {
+      if (c.table === 'commerce_orders' && c.op === 'update') {
+        return {
+          data: [
+            {
+              id: 'o1',
+              owner_kind: 'platform',
+              owner_profile_id: null,
+              owner_space_id: null,
+              entity_id: 'ent-1',
+              amount_cents: 1000,
+              platform_fee_cents: 0,
+              buyer_profile_id: 'buyer-1',
+              currency: 'usd',
+            },
+          ],
+        }
+      }
+      return {}
+    })
+
+    await recordCommerceOrderFromSession({
+      id: 'cs_1',
+      metadata: { kind: 'commerce_order' },
+      payment_status: 'paid',
+      payment_intent: 'pi_1',
+    } as unknown as Stripe.Checkout.Session)
+
+    const paid = firstCall((c) => c.table === 'commerce_orders' && c.op === 'update')!
+    expect(paid.payload).toEqual({
+      status: 'paid',
+      paid_at: expect.any(String),
+      stripe_payment_intent_id: 'pi_1',
+    })
   })
 })

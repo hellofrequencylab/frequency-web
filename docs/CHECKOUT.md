@@ -192,6 +192,7 @@ buyer who can still pay:
 | Stripe.js will not load (blocked, offline, 10s watchdog) | `onFellBack` → the action again with `forceHosted` → hosted page. |
 | `confirm()` throws | Same escape. |
 | A saved-card parameter is rejected | One retry without it. The convenience is dropped, never the sale. |
+| Physical goods in the cart (LIVE-346) | Hosted Checkout, which collects a validated shipping address. The on-page form has no Address Element. Digital / Journey / booking stay on-page. |
 
 Every rung logs. A silent degrade would read as "on-page checkout is live" while every buyer was
 quietly being redirected.
