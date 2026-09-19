@@ -37,7 +37,7 @@
     ],
     "slate": {
       "ruled": "Owner ruling 2026-08-20 evening: \"Take all tasks out of deferred or parked programs and add them to the priority list. I want all those things built out. The things that we are deferring are white labeling, mobile application, texting.\" Supersedes the same-day \"hold white label and app at the end\" slate: the App Platform now builds; only the three named holds park.\n\n\u2500\u2500 OWNER RULING 2026-08-24: \"I want to save the etsy grade store for last. Second to last is the white label tenant sites with full WYSIWYG editor. I want everything else fully functional and clean before those.\" So DEF-ETSY moves out of W8 into its own final wave W10, and white label (PROG-E10 Sites, PROG-W6 member sites + theme marketplace, PROG-P7 per-Space theming depth) is UNPARKED into W9 immediately before it. deferredByName drops to mobile and texting only.\n\nINTERPRETATION, stated so it can be corrected in one line: the CORE editor phases E0-E9 stay in W4 and were NOT moved to the end. \"White label tenant sites with full WYSIWYG editor\" is read as the tenant-sites DELIVERABLE \u2014 PROG-E10 is literally titled 'Sites, absorbs White Label W1-W5' \u2014 not as the editor platform underneath it. E10 depends on E0-E9; W1's content retirements block E3; E2 projects onto the Loom built in W3. Moving E0-E9 to the end would invert those documented dependencies and would leave 'everything else' with no editor to be built on. If the intent was to move the whole editor program back, only the W4 block moves.\n\n\u2500\u2500 OWNER RULING 2026-08-25: DEF-A2P parks with the others, asked as a direct multiple choice against its real cost (EIN, carrier fee, 2-4 weeks of TCR review). The named holds are now FOUR: DEF-MOBILE, DEF-ETSY, PROG-W6, DEF-A2P. `deferredByName` was drifting in BOTH directions before this edit \u2014 it listed DEF-A2P (whose row read `open`) and omitted DEF-ETSY and PROG-W6 (whose rows both read `parked`). The list and the row statuses now agree, and that agreement is the thing to check when either changes.\n\n\u2500\u2500 OWNER RULING 2026-09-07, and it REVERSES the 2026-08-20 unpark of the App Platform. Asked as \"I want everything signed off except the editor, app platform and Etsy grade shop\", then answered on a follow-up as \"Keep white label and mobile app deferred. Prioritize everything else\", then CORRECTED in the owner's own words: \"I made a mistake. keep the following as deferred until the end. 1. app platform 2. White label platform 3. etsy build.\"\n\nSO THE DEFERRED SET IS FOUR PROGRAMS, in the order the owner listed them: (1) APP PLATFORM \u2014 PROG-A1, PROG-A3, PROG-A4; (2) WHITE LABEL \u2014 PROG-E10 (Sites), PROG-W6 (member sites + theme marketplace), PROG-P7 (per-Space theming depth); (3) ETSY \u2014 DEF-ETSY; (4) MOBILE \u2014 DEF-MOBILE, carried forward from the 2026-08-20 and 2026-08-25 rulings and NOT re-named in the correction, so it is held on the earlier ruling rather than this one. Everything else is on the prioritized list.\n\n\ud83d\udd34 THE EDITOR QUESTION WAS ASKED AND ANSWERED IN THE SAME BREATH. The owner asked: \"when you say editor, is that the full white label editor? if so, add that to the white label section.\" It is not. docs/EDITOR-ARCHITECTURE.md opens by stating what E0-E9 is for \u2014 \"Frequency should author a block ONCE and render it on a member's Spotlight, a Space's profile, a Space's external Site, and an email\" \u2014 so E0-E9 is Frequency's own block editor, the thing every member-facing surface composes from. Only E10 is the white-label deliverable, and it is literally titled \"Sites, absorbs White Label W1-W5\". E10 therefore moves to the white-label group and E0-E9 STAYS ACTIVE in W4. Moving E0-E9 back would leave \"everything else\" with no editor to be built on, which is the opposite of what the ruling asks for.\n\n\u26a0\ufe0f ONE COST TO STATE PLAINLY, because parking a program is not free. PROG-A3 (\"enablement inside RLS\") was the App Platform's only P1 and sat in W2, the foundation wave, beside DEF-HARDEN. Parking it means a disabled module's data stays reachable by direct API until the App Platform builds. Nothing else in the active list depends on it, so this is a stated consequence rather than a blocker \u2014 but it is the one place where \"defer the app platform\" costs a security posture rather than a feature.\n\n\u26a0\ufe0f AND DEF-A2P COMES OFF THE DEFERRED LIST, on the plain reading of \"everything on the list except white label and mobile app\". The correction re-added three programs and did not re-add texting. It is NOT agent-work \u2014 a Standard EIN-backed brand, a carrier fee, and 10-15 days of TCR review \u2014 so it moves to the OWNER lane as an open row with ownerAction \"account\" rather than back into a build wave. If the intent was to keep texting parked, one line moves it back.\n\n\u2500\u2500 OWNER CONFIRMED 2026-09-07, in reply to the reading above: \"go head and add E0-E9 into the backlog production list. keep mobile app deferred\". So the editor reading stands \u2014 E0-E9 is Frequency's own block editor and is on the production list in W4; only E10 sits with white label. Mobile stays in W12. Nothing moved on this confirmation: it ratifies the interpretation rather than changing it, which is the point of having stated it in one paragraph that could be corrected in one line.\n\n\u2500\u2500 OWNER RULING 2026-09-14 (ADR-1325, twelve multiple-choice answers after the build-completion audit): \"Stabilise, rework, then Editor E0; Sites wait for the block contract.\" White label is UNPARKED into the editor sequence: PROG-E10 (Sites) runs after PROG-E3 and before the E4 to E9 depth phases, and PROG-W6 + PROG-P7 close the runway after E9. Multiplayer (E0 task 18) is deferred to the depth phase behind render_path, so E0 is an L. The App Platform (W9) and the Etsy-grade store stay deferred; mobile stays held on the 2026-08-20 ruling. deferredByName drops White label.",
-      "note": "The development order for the whole open queue, waves in sequence, ids in order within a wave. Array order IS the sequence \u2014 W0 first through W12 last, with `owner-timed` kept at the end because it is scheduled by the owner rather than by this order. Owner-lane rows are decisions, not sequenced dev. Status lives only in each row's probe.\n\n\u2500\u2500\u2500\u2500 2026-09-19 META-SCAN HANDOFF (supersedes the same-day SURVEY line). LIVE-254 and OWN-073 closed on owner confirm (#2699). HYG-033 and LIVE-409 are done. Two agents may pull this file. Split the lanes; do not both take LIVE-410.\n\nPRODUCT AGENT (already on the backlog): stay on W0 / W0b. Next code row is LIVE-410 (membership vs Connect readiness). LIVE-376 closed 2026-09-19 (sole-Space default, ADR-1413). LIVE-234 is P0 but owner-gated (OWN-078 must clear test tickets first). Do not pick up cancelled LIVE-241. Do not enable RLS on spatial_ref_sys. Do not start SCAN-636 while you are on product; ADR-1403 product wins the week.\n\nSCAN FOLLOW-THROUGH (this scan's cleanup): start SCAN-636. Do not take LIVE-410, LIVE-376, or LIVE-234.\n\nPhase 0 \u00b7 Product first (W0 / W0b) \u2014 the product agent owns this. LIVE-234 (prove each money loop once; not a reservation) \u00b7 LIVE-410 \u00b7 LIVE-376 \u00b7 then the rest of W0b (LIVE-186, LIVE-213).\n\nPhase 1 \u00b7 Crawl truth (W0c). SCAN-636 THEN SCAN-637. The pattern is already in the tree: app/discover/layout.tsx SiteHeader authMode=client so revalidate is not voided. Product-preserving event fix is (a) on the SCAN-636 row: keep /events/<slug> as the share URL, make the anon path as cheap as discover. Do not reverse the canonical unless share/QR are re-pointed in the same PR. Then SCAN-637: drop force-dynamic on /market /store /housing /classifieds details; personalize behind client auth or Suspense. Skip ahead of LIVE-408 only if that row is not already in another agent's PR.\n\nPhase 2 \u00b7 Cheap DB (W0c). SCAN-638. Draft one migration: covering indexes on the six FKs named in the row, and (select auth.uid()) on entitlement_grants read own and space_circle_optouts read own. Do NOT apply_migration or DDL execute_sql. Do not touch spatial_ref_sys.\n\nPhase 3 \u00b7 Public chrome + kit (W0d), in this order: SCAN-641, SCAN-639, SCAN-640, then LIVE-412. SCAN-641 one public header (SiteHeader on (main) publicChrome). SCAN-639 wire FilterBar or delete it and the kit mention; do not leave two FilterBar names. SCAN-640 drop page_settings_events_backup_20260910 only after a production count (draft-and-approve). LIVE-412 split app-shell. SCAN-502 stays in W2 and needs an owner ruling before any export delete.\n\nPhase 4 \u00b7 Do not start from this scan. Editor E0-E9 and Sites stay slate.phases / W4. App Platform, Etsy, and mobile stay deferredByName. Folding Hubs/Nexuses is LIVE-242.\n\nForbidden on this box: parallel subagents (hangs), pnpm build inside a subagent, a new plan/TODO markdown (one-list), deleting lib modules without SCAN-502's four-search protocol.\n\nRationale: docs/META-SCAN-STATUS.md 2026-09-19 pass. Gates are green; the finds are advertised-URL vs render-path.",
+      "note": "The development order for the whole open queue, waves in sequence, ids in order within a wave. Array order IS the sequence \u2014 W0 first through W12 last, with `owner-timed` kept at the end because it is scheduled by the owner rather than by this order. Owner-lane rows are decisions, not sequenced dev. Status lives only in each row's probe.\n\n\u2500\u2500\u2500\u2500 2026-09-19 META-SCAN HANDOFF (supersedes the same-day SURVEY line). LIVE-254 and OWN-073 closed on owner confirm (#2699). HYG-033 and LIVE-409 are done. Two agents may pull this file. Split the lanes; do not both take LIVE-410.\n\nCALENDAR THREAD (2026-09-19, owner): start LIVE-414 (C0) then LIVE-415 (C1) from W0b, then LIVE-416 through LIVE-419 from W0c. Guest and ordinary-member calendars show live events only. Cancelled is small muted text at the bottom of the date square, not a chip and not hidden. Admin is a mini production-management console (pencil / planning / production lanes), not a second guest month. Frame is ADR-1388 stages and ADR-1389 Admin vs ?view=guest. One row per PR. Do not write a planning file. Do not pick up cancelled LIVE-241. Scan agent leaves LIVE-414 and LIVE-415.\n\nPRODUCT AGENT (already on the backlog): stay on W0 / W0b. Next product code after LIVE-410 is LIVE-414 (calendar C0). LIVE-376 closed 2026-09-19 (sole-Space default, ADR-1413). LIVE-234 is P0 but owner-gated (OWN-078 must clear test tickets first). Do not pick up cancelled LIVE-241. Do not enable RLS on spatial_ref_sys. Do not start SCAN-636 while you are on product; ADR-1403 product wins the week.\n\nSCAN FOLLOW-THROUGH (this scan's cleanup): start SCAN-636. Do not take LIVE-410, LIVE-376, or LIVE-234.\n\nPhase 0 \u00b7 Product first (W0 / W0b) \u2014 the product agent owns this. LIVE-234 (prove each money loop once; not a reservation) \u00b7 LIVE-410 \u00b7 LIVE-376 \u00b7 then the rest of W0b (LIVE-186, LIVE-213).\n\nPhase 1 \u00b7 Crawl truth (W0c). SCAN-636 THEN SCAN-637. The pattern is already in the tree: app/discover/layout.tsx SiteHeader authMode=client so revalidate is not voided. Product-preserving event fix is (a) on the SCAN-636 row: keep /events/<slug> as the share URL, make the anon path as cheap as discover. Do not reverse the canonical unless share/QR are re-pointed in the same PR. Then SCAN-637: drop force-dynamic on /market /store /housing /classifieds details; personalize behind client auth or Suspense. Skip ahead of LIVE-408 only if that row is not already in another agent's PR.\n\nPhase 2 \u00b7 Cheap DB (W0c). SCAN-638. Draft one migration: covering indexes on the six FKs named in the row, and (select auth.uid()) on entitlement_grants read own and space_circle_optouts read own. Do NOT apply_migration or DDL execute_sql. Do not touch spatial_ref_sys.\n\nPhase 3 \u00b7 Public chrome + kit (W0d), in this order: SCAN-641, SCAN-639, SCAN-640, then LIVE-412. SCAN-641 one public header (SiteHeader on (main) publicChrome). SCAN-639 wire FilterBar or delete it and the kit mention; do not leave two FilterBar names. SCAN-640 drop page_settings_events_backup_20260910 only after a production count (draft-and-approve). LIVE-412 split app-shell. SCAN-502 stays in W2 and needs an owner ruling before any export delete.\n\nPhase 4 \u00b7 Do not start from this scan. Editor E0-E9 and Sites stay slate.phases / W4. App Platform, Etsy, and mobile stay deferredByName. Folding Hubs/Nexuses is LIVE-242.\n\nForbidden on this box: parallel subagents (hangs), pnpm build inside a subagent, a new plan/TODO markdown (one-list), deleting lib modules without SCAN-502's four-search protocol.\n\nRationale: docs/META-SCAN-STATUS.md 2026-09-19 pass. Gates are green; the finds are advertised-URL vs render-path.",
       "metaScanCleanup": {
         "dated": "2026-09-19",
         "authority": "Does not replace slate.phases (ADR-1325 production plan). This is the scan follow-through lane plus a split so two agents do not collide.",
@@ -47,7 +47,8 @@
             "W0b"
           ],
           "next": [
-            "LIVE-242"
+            "LIVE-414",
+            "LIVE-415"
           ],
           "leave": [
             "SCAN-637",
@@ -75,6 +76,8 @@
             "LIVE-234",
             "LIVE-186",
             "LIVE-213",
+            "LIVE-414",
+            "LIVE-415",
             "LIVE-408"
           ],
           "packetsLane": [
@@ -90,7 +93,9 @@
               "LIVE-234",
               "LIVE-410",
               "LIVE-186",
-              "LIVE-213"
+              "LIVE-213",
+              "LIVE-414",
+              "LIVE-415"
             ]
           },
           {
@@ -142,7 +147,7 @@
           "RLS on spatial_ref_sys"
         ],
         "packets": {
-          "product": "pnpm packets --lane events  (LIVE-410 closed; money lane next is derived)",
+          "product": "pnpm packets --lane events  (LIVE-410 closed; calendar C0 is LIVE-414)",
           "scan": "pnpm packets --lane scan",
           "doNotShare": [
             "LIVE-376",
@@ -161,13 +166,19 @@
           "name": "W0b \u00b7 P1 \u2014 product-first interior (ADR-1403) ready to work now, then CORE-MODEL walls that are still untrue. Pull from here.",
           "ids": [
             "LIVE-186",
-            "LIVE-213"
+            "LIVE-213",
+            "LIVE-414",
+            "LIVE-415"
           ]
         },
         {
           "name": "W0c \u00b7 P2 \u2014 FOCUS remainder, gems replay grant, remaining audit security, small cleanups, Journey sales tail.",
           "ids": [
             "LIVE-408",
+            "LIVE-416",
+            "LIVE-417",
+            "LIVE-418",
+            "LIVE-419",
             "SCAN-638",
             "HYG-100",
             "LIVE-413",
@@ -9878,7 +9889,7 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1253, the half HYG-029 could not build"
       },
-      "detail": "FILED 2026-09-07 out of HYG-029 (ADR-1253), which adopted the AssetRef seam in the three JSONB-backed entity-block writers and could not touch this half.\n\nspaces.brand_logo_url, spaces.cover_image_url, page_content.hero_image, page_settings.og_image_url, page_settings.header_image_url and profiles.header_image_url are TEXT columns. Their pickers (components/ui/header-image-field.tsx, components/admin/inline/inline-cover.tsx, components/spaces/loom/space-loom-studio.tsx, and the Studio spark field-control, which materialises into entity columns on apply) are handed {url, assetId} by the Loom and store the url alone, so a D3 edit or a version rollback of the asset cannot re-point them and D4 block_usage cannot see them.\n\nTHE ASK IS A RULING, NOT AN ESTIMATE, and the two exits are not the same size. (a) Companion *_asset_id columns beside each url column: a migration per table with the full ADR-1111 ordering discipline, a write on both sides of every save action, and a read that prefers the id. (b) An explicit decision that column caches stay URL-only until D4 usage indexing needs them, in which case this row closes as ruled and the pickers keep writing urls. Do NOT half-adopt by storing JSON in a text column: every reader of those columns is typed string, so a stored object renders as nothing or as [object Object], and the row that forbids this is the one that filed this row.\n\n\u2500\u2500 PREMISE RE-MEASURED 2026-09-08 (premise sweep, ADR-1269) against the live schema and it HOLDS: all six columns are still `text` (spaces.brand_logo_url, spaces.cover_image_url, page_content.hero_image, page_settings.og_image_url, page_settings.header_image_url, profiles.header_image_url) and no `*_asset_id` companion exists on any of them. The ruling is unchanged, and so is the warning against half-adopting by storing JSON in a text column.\n\n\u2500\u2500 \u2705 RULED 2026-09-08 (owner): **add companion `*_asset_id` columns beside each of the six url columns.** The url column stays as the read cache; `asset_id` becomes the truth.\n\nThis is the FULL migration, explicitly NOT the JSON-in-a-text-column half-measure the row already forbids. Six columns get a companion: `spaces.brand_logo_url`, `spaces.cover_image_url`, `page_content.hero_image`, `page_settings.og_image_url`, `page_settings.header_image_url`, `profiles.header_image_url`.\n\nCODE THAT REMAINS (no longer an owner ask), and the ordering discipline is the whole risk here \u2014 ADR-1111 exists because this shape has gone wrong before:\n  1. Add the six nullable `*_asset_id` columns. Nothing reads them yet.\n  2. Teach the four pickers (components/ui/header-image-field.tsx, components/admin/inline/inline-cover.tsx, components/spaces/loom/space-loom-studio.tsx, and the Studio spark field-control) to write BOTH halves of the `{url, assetId}` they are already handed. They currently drop the assetId on the floor.\n  3. Backfill where the asset is resolvable from the url; leave the rest null rather than guessing.\n  4. Only then let readers prefer `asset_id` and fall back to the url.\n\u26a0\ufe0f A nullable companion column with no writer is invisible debt that reads as coverage \u2014 step 2 must land with step 1 or in the very next change, not \"later\". That is the ADR-970 failure in a new costume.",
+      "detail": "FILED 2026-09-07 out of HYG-029 (ADR-1253), which adopted the AssetRef seam in the three JSONB-backed entity-block writers and could not touch this half.\n\nspaces.brand_logo_url, spaces.cover_image_url, page_content.hero_image, page_settings.og_image_url, page_settings.header_image_url and profiles.header_image_url are TEXT columns. Their pickers (components/ui/header-image-field.tsx, components/admin/inline/inline-cover.tsx, components/spaces/loom/space-loom-studio.tsx, and the Studio spark field-control, which materialises into entity columns on apply) are handed {url, assetId} by the Loom and store the url alone, so a D3 edit or a version rollback of the asset cannot re-point them and D4 block_usage cannot see them.\n\nTHE ASK IS A RULING, NOT AN ESTIMATE, and the two exits are not the same size. (a) Companion *_asset_id columns beside each url column: a migration per table with the full ADR-1111 ordering discipline, a write on both sides of every save action, and a read that prefers the id. (b) An explicit decision that column caches stay URL-only until D4 usage indexing needs them, in which case this row closes as ruled and the pickers keep writing urls. Do NOT half-adopt by storing JSON in a text column: every reader of those columns is typed string, so a stored object renders as nothing or as [object Object], and the row that forbids this is the one that filed this row.\n\n\u2500\u2500 PREMISE RE-MEASURED 2026-09-08 (premise sweep, ADR-1269) against the live schema and it HOLDS: all six columns are still `text` (spaces.brand_logo_url, spaces.cover_image_url, page_content.hero_image, page_settings.og_image_url, page_settings.header_image_url, profiles.header_image_url) and no `*_asset_id` companion exists on any of them. The ruling is unchanged, and so is the warning against half-adopting by storing JSON in a text column.\n\n\u2500\u2500 \u2705 RULED 2026-09-08 (owner): **add companion `*_asset_id` columns beside each of the six url columns.** The url column stays as the read cache; `asset_id` becomes the truth.\n\nThis is the FULL migration, explicitly NOT the JSON-in-a-text-column half-measure the row already forbids. Six columns get a companion: `spaces.brand_logo_url`, `spaces.cover_image_url`, `page_content.hero_image`, `page_settings.og_image_url`, `page_settings.header_image_url`, `profiles.header_image_url`.\n\nCODE THAT REMAINS (no longer an owner ask), and the ordering discipline is the whole risk here \u2014 ADR-1111 exists because this shape has gone wrong before:\n  1. Add the six nullable `*_asset_id` columns. Nothing reads them yet.\n  2. Teach the four pickers (components/ui/header-image-field.tsx, components/admin/inline/inline-cover.tsx, components/spaces/loom/space-loom-studio.tsx, and the Studio spark field-control) to write BOTH halves of the `{url, assetId}` they are already handed. They currently drop the assetId on the floor.\n  3. Backfill where the asset is resolvable from the url; leave the rest null rather than guessing.\n  4. Only then let readers prefer `asset_id` and fall back to the url.\n\u26a0\ufe0f A nullable companion column with no writer is invisible debt that reads as coverage \u2014 step 2 must land with step 1 or in the very next change, not \"later\". That is the ADR-970 failure in a new costume.\n\nSCHEMA HALF IN TREE 2026-09-19: production already applied version 20270345006300 (`column_image_asset_ids`). The SQL file is in supabase/migrations so the ledger and the tree match. Do not re-apply the DDL. Writers and readers (`column-image.ts`, pickers, save actions) are still this row.",
       "verify": {
         "kind": "manual",
         "evidence": "2026-09-08: ruling recorded \u2014 companion *_asset_id columns, not the JSON-in-text half-measure. Nothing built: all six are still bare text columns and the four pickers still call onSelect(url) only, dropping the assetId they are handed. Closes when the six companion columns exist, the pickers write both halves, and readers prefer asset_id.",
@@ -14801,6 +14812,114 @@
         "note": "Passes when both public trees render SiteHeader. Written 2026-09-19 against the two-header split, not a footer unification."
       },
       "closed": "2026-09-19"
+    },
+    {
+      "id": "LIVE-414",
+      "title": "Calendar C0: guest and member public calendars are live events only; cancelled is muted footer text in the date square",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/events/event-calendar.tsx",
+        "ref": "owner 2026-09-19 calendar plan; ADR-1445; ADR-1388; ADR-1389"
+      },
+      "detail": "Owner 2026-09-19: the public calendar (Guest toggle and ordinary members) shows LIVE events only. A cancelled gathering is not a chip in the square; it is small muted text at the bottom of that date. Do not hide cancelled entirely. Do not strike through a chip. ADR-1388 stages and ADR-1389 Admin/Guest stay the frame. LIVE-379 and LIVE-380 already shipped the stage column and the Admin/Guest toggle; this row is the public paint. Sequence C0 then C1 then C2-C5 as LIVE-414 through LIVE-419. One row per PR, under 40 files. Do not write a planning file. Start here.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const cal=fs.readFileSync(\"components/events/event-calendar.tsx\",\"utf8\");if(!cal.includes(\"cancelledCellFooter\"))process.exit(1);if(!fs.existsSync(\"lib/calendar/guest-live.ts\"))process.exit(1);const g=fs.readFileSync(\"lib/calendar/guest-live.ts\",\"utf8\");if(!g.includes(\"export function guestLiveItems\"))process.exit(1)'",
+        "note": "Fails until the month cell paints cancelled as cancelledCellFooter and guestLiveItems is the public feed."
+      }
+    },
+    {
+      "id": "LIVE-415",
+      "title": "Calendar C1: the Admin calendar is a mini production-management console",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "app/(main)/spaces/[slug]/(profile)/calendar/page.tsx",
+        "ref": "ADR-1389, ADR-1445"
+      },
+      "detail": "Owner 2026-09-19: Admin is not a second copy of the guest month. It is a small PM console: what is pencilled, in planning, in production, and cancelled, with the month grid as the date map. StaffCalendar today is the settings drawer. C1 is the operator list. Builds after C0 (LIVE-414).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");if(!fs.existsSync(\"components/spaces/calendar-pm-console.tsx\"))process.exit(1);const s=fs.readFileSync(\"app/(main)/spaces/[slug]/(profile)/calendar/page.tsx\",\"utf8\");if(!s.includes(\"CalendarPmConsole\"))process.exit(1)'",
+        "note": "Fails until Admin mounts CalendarPmConsole."
+      }
+    },
+    {
+      "id": "LIVE-416",
+      "title": "Calendar C2: Pencil is a first-class Admin lane (ADR-1388)",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/calendar/entries.ts",
+        "ref": "ADR-1388, ADR-1445"
+      },
+      "detail": "Admin PM console lists pencil holds as their own lane, not mixed into live chips. Candidate dates stay on the grid for the team. Guest never sees them (LIVE-419). After C1 (LIVE-415).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"components/spaces/calendar-pm-console.tsx\",\"utf8\");if(!s.includes(\"pencilLane\"))process.exit(1)'",
+        "note": "Fails until the PM console has a pencilLane."
+      }
+    },
+    {
+      "id": "LIVE-417",
+      "title": "Calendar C3: Planning is a first-class Admin lane (ADR-1388)",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/calendar/entries.ts",
+        "ref": "ADR-1388, ADR-1445"
+      },
+      "detail": "Admin PM console lists planning-stage gatherings as their own lane. After C2 (LIVE-416).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"components/spaces/calendar-pm-console.tsx\",\"utf8\");if(!s.includes(\"planningLane\"))process.exit(1)'",
+        "note": "Fails until the PM console has a planningLane."
+      }
+    },
+    {
+      "id": "LIVE-418",
+      "title": "Calendar C4: Production is a first-class Admin lane (ADR-1388)",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/calendar/entries.ts",
+        "ref": "ADR-1388, ADR-1445"
+      },
+      "detail": "Admin PM console lists production-stage gatherings as their own lane. This is the live show the guest calendar already paints. After C3 (LIVE-417).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"components/spaces/calendar-pm-console.tsx\",\"utf8\");if(!s.includes(\"productionLane\"))process.exit(1)'",
+        "note": "Fails until the PM console has a productionLane."
+      }
+    },
+    {
+      "id": "LIVE-419",
+      "title": "Calendar C5: Guest view never shows pencil or planning; cancelled stays the C0 footer",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/spaces/calendar-mode-toggle.tsx",
+        "ref": "ADR-1389, ADR-1445"
+      },
+      "detail": "Close the Admin/Guest split: `?view=guest` and unsigned members go through guestLiveItems only. Pencil and planning stay off that feed. Cancelled is the C0 footer (LIVE-414), not a guest chip. After C0 and C1.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const p=fs.readFileSync(\"app/(main)/spaces/[slug]/(profile)/calendar/page.tsx\",\"utf8\");if(!p.includes(\"guestLiveItems\"))process.exit(1);const g=fs.readFileSync(\"lib/calendar/guest-live.ts\",\"utf8\");if(!/pencil|planning/.test(g))process.exit(1)'",
+        "note": "Fails until the Guest branch calls guestLiveItems and that helper names pencil/planning so it can exclude them."
+      }
     }
   ]
 }
