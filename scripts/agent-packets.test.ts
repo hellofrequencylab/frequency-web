@@ -103,6 +103,7 @@ describe('agent packets (ADR-1412)', () => {
     const { status, stdout } = run(['--prompt'])
     expect(status).toBe(0)
     expect(stdout).toContain('ManagePullRequest')
+    expect(stdout).toContain('gh pr merge --auto --squash')
     expect(stdout).toContain('execute_sql')
     expect(stdout).toContain('cursor/cloud-agent-workspace-8978')
     expect(stdout).toContain('LIVE-410')
