@@ -53,9 +53,7 @@
             "LIVE-410",
             "LIVE-186",
             "LIVE-213",
-            "LIVE-373",
-            "LIVE-376",
-            "LIVE-377"
+            "LIVE-376"
           ]
         },
         {
@@ -13575,7 +13573,7 @@
     {
       "id": "LIVE-373",
       "title": "One new public Circle breaks four BLOCKING visual baselines on every open branch",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
@@ -13585,9 +13583,9 @@
       },
       "detail": "WHAT HAPPENED, with the window measured. A Circle was created in production at 23:30:17Z on 2026-09-15. The last green e2e run started 23:27:15Z; the next one, 00:02:11Z, failed, and so did EVERY e2e run on EVERY branch after it, including branches that touch no public code at all. The four failures are always the same: /discover matches baseline, dawn-light and midnight-light, desktop and mobile, in the tier the job labels \"public surfaces (blocking)\".\n\nThe assertion says the cause outright: \"Expected an image 1280px by 7493px, received 1280px by 7672px\" (mobile 9541 -> 9671). The page did not change colour, it GREW, by about one CircleCard row. /discover renders getPublicCircles() against live production data, so the count of public Circles is an input to a committed baseline.\n\nWHY MASKING IS NOT THE ANSWER, already written down. surfaces.ts says it at waitForStable: \"A mask paints over a region; the element keeps its box, so a masked block that arrives late still moves everything under it. The failure is the page HEIGHT, not its pixels.\" The same sentence applies to a row that is genuinely there.\n\nWHY THIS IS P1 RATHER THAN A RE-BASELINE. Re-baselining closes it until the next Circle, and the owner adds Circles as ordinary product work. Between the two, every open PR carries a red blocking job it did not cause, which is the condition under which people start reading a red gate as weather. Three routes, in the order they are worth trying: (1) photograph a surface whose content is fixed rather than the live index, (2) give the shot a fixed viewport clip instead of fullPage so the count below the fold cannot move the assertion, or (3) move /discover to the advisory tier and keep a structural test for what the page must contain. Pick one and write the reason beside it.\n\nIMMEDIATE STATE: cleared on 2026-09-16 by unlisting the Circle that caused it (it was meant to be private and should never have been listed, which is LIVE-374). The suite is green again and the fragility is untouched.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Not started. The four /discover rows failed on every branch from run 35038257196 to 35059005812; green again once the Circle was unlisted.",
-        "checked": "2026-09-16"
+        "kind": "cmd",
+        "cmd": "node scripts/check-discover-visual-tier.mjs",
+        "note": "Measures the CONSEQUENCE: /discover visual captures are out of the blocking public loop, tagged @advisory so they ride the continue-on-error tier, and not tagged @shell so a running capture cannot make shell-reporter.ts call the app covered."
       }
     },
     {
@@ -13649,7 +13647,7 @@
     {
       "id": "LIVE-377",
       "title": "guest-seat-claim passes only in UTC, so five tests are red on every non-UTC machine",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "XS",
@@ -13657,12 +13655,13 @@
         "file": "lib/events/guest-seat-claim.test.ts",
         "ref": "measured 2026-09-16"
       },
-      "detail": "MEASURED BOTH WAYS on 2026-09-16, on one machine, one commit, back to back: TZ=UTC gives 16 passed; the same file on the host default (America/Los_Angeles) gives 5 failed, all of them in \"pickSeatLanding -- the landing rule\". CI runs UTC, so the suite is green there and has been all along.\n\nWHAT IT COSTS. A developer outside UTC opens the repo and finds five red tests they did not write, in a file about wall clocks, and cannot tell from the output whether they broke something. Confirming it was pre-existing took a stash, a baseline run and a re-run -- about ten minutes for a test that was never failing in the sense that matters.\n\nThe test pins its own instant (NOW = 2026-08-13T19:00:00-07:00), so the dependency is not the constant; something on the path reads the AMBIENT zone rather than the event\u2019s own, which is the exact distinction one of the five failing cases is named after (\"reads the wall clock through the event own zone, not the server zone\"). Worth reading as a possible product defect and not only a test-setup gap: if the ambient zone leaks in a test, it leaks on a server too.\n\nFix by pinning the zone the suite runs in, or by removing the ambient read the helper makes. Do NOT close this by setting TZ=UTC in the runner config alone if the leak turns out to be in lib/events/guest-seat-claim.ts -- that hides the same bug from the only place it currently shows.\n\nWHY THIS ROW IS MANUAL RATHER THAN PROBED. The faithful probe is \"run this suite under a non-UTC zone and see it fail\", and check:backlog rightly refuses a verify.cmd that does not run under node -- a cost the guard cannot attribute is a cost nobody watches (ADR-970). Wrapping vitest in a node -e to satisfy the letter of that rule would bolt a ten-second test run onto every backlog check for a P2 row, which is the rule being gamed rather than met. The evidence line carries the exact command; re-run it when working the row.",
+      "detail": "MEASURED BOTH WAYS on 2026-09-16, on one machine, one commit, back to back: TZ=UTC gives 16 passed; the same file on the host default (America/Los_Angeles) gives 5 failed, all of them in \"pickSeatLanding -- the landing rule\". CI runs UTC, so the suite is green there and has been all along.\n\nWHAT IT COSTS. A developer outside UTC opens the repo and finds five red tests they did not write, in a file about wall clocks, and cannot tell from the output whether they broke something. Confirming it was pre-existing took a stash, a baseline run and a re-run -- about ten minutes for a test that was never failing in the sense that matters.\n\nThe test pins its own instant (NOW = 2026-08-13T19:00:00-07:00), so the dependency is not the constant; something on the path reads the AMBIENT zone rather than the event\u2019s own, which is the exact distinction one of the five failing cases is named after (\"reads the wall clock through the event own zone, not the server zone\"). Worth reading as a possible product defect and not only a test-setup gap: if the ambient zone leaks in a test, it leaks on a server too.\n\nWHAT SHIPPED. eventInstant treats a naive ISO as UTC parts by appending Z when the string has no offset (ADR-1409). The zone test pins naive === Z. Do NOT close this by setting TZ=UTC in the runner config: that hides the leak on any non-UTC runtime.\n\nThe Pacific-zone vitest run is a human check (scripts/check-live-377-tz.mjs), not the backlog probe: LIVE-034 forbids a verify.cmd that spawns a test runner, and that spawn also fails when PATH has no pnpm.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Measured both ways on one commit, one machine, back to back: TZ=UTC gives 16 passed; TZ=America/Los_Angeles gives 5 failed, all in \"pickSeatLanding -- the landing rule\". Re-measure with: TZ=America/Los_Angeles npx vitest run lib/events/guest-seat-claim.test.ts",
-        "checked": "2026-09-16"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const z=fs.readFileSync(\"lib/time/zone.ts\",\"utf8\");if(!z.includes(\"`${trimmed}Z`\"))fail(\"eventInstant does not stamp a naive ISO as UTC\");if(!z.includes(\"(?:Z|[+-]\"))fail(\"eventInstant does not detect an existing offset\");const t=fs.readFileSync(\"lib/time/zone.test.ts\",\"utf8\");if(!t.includes(\"LIVE-377\"))fail(\"no zone test for the naive-ISO leak\");if(!t.includes(\"2026-08-13T19:00:00\"))fail(\"the zone test does not parse a naive ISO\")'",
+        "note": "Passes when eventInstant stamps a naive ISO as UTC and a zone test pins naive === Z. Written 2026-09-19."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-378",
@@ -14377,7 +14376,7 @@
     {
       "id": "LIVE-409",
       "title": "Remaining CrewGate walls on compose paths (join-free is still untrue in product)",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -14385,7 +14384,7 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "ADR-1403 product first; LIVE-266 closed Circle create only"
       },
-      "detail": "FILED 2026-09-19. LIVE-266 removed CrewGateButton from new-circle-compose. LIVE-267 removed isPaid walls on entry points, codes, and rooms. Still wrapped in CrewGateButton: components/channels/start-chapter-button.tsx, components/studio/practice/new-practice-button.tsx, components/circles/starter-claim.tsx, components/circles/builder/remix-button.tsx, and the Circle Join control in app/(main)/circles/[slug]/(circle)/layout.tsx.\n\nCORE-MODEL / ADR-1403: people join free. A compose wall that is not a metered paid capability is the same class LIVE-266 named. Event compose already dropped the gate (ADR-913).",
+      "detail": "FILED 2026-09-19. LIVE-266 removed CrewGateButton from new-circle-compose. LIVE-267 removed isPaid walls on entry points, codes, and rooms. Still wrapped in CrewGateButton: components/channels/start-chapter-button.tsx, components/studio/practice/new-practice-button.tsx, components/circles/starter-claim.tsx, components/circles/builder/remix-button.tsx, and the Circle Join control in app/(main)/circles/[slug]/(circle)/layout.tsx.\n\nCORE-MODEL / ADR-1403: people join free. A compose wall that is not a metered paid capability is the same class LIVE-266 named. Event compose already dropped the gate (ADR-913).\n\nCLOSED 2026-09-19. Premise re-tested first: circle.create and practice.create are already granted to any signed-in profile (lib/core/capabilities.ts FIRST ONE FREE). The four CrewGateButton wrappers were dormant paywall wiring of the same class LIVE-266 removed from NewCircleCompose. Dropped the wrappers on StartChapterButton, NewPracticeButton, StarterClaim, and RemixButton. Circle Join in the Circle layout is a membership act and was left gated, matching the probe note. Did not touch Journey sales paths or the member rail.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const files=[\"components/channels/start-chapter-button.tsx\",\"components/studio/practice/new-practice-button.tsx\",\"components/circles/starter-claim.tsx\",\"components/circles/builder/remix-button.tsx\"];const left=files.filter(f=>fs.existsSync(f)&&fs.readFileSync(f,\"utf8\").includes(\"CrewGateButton\"));if(left.length){console.error(\"CrewGateButton still on: \"+left.join(\", \"));process.exit(1)}console.log(\"LIVE-409 ok\")'",

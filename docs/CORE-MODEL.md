@@ -63,8 +63,8 @@ in the wrong place, and copy that teaches something else.** Measured:
 
 | Claim | Reality today | Evidence |
 |---|---|---|
-| "People join free" | 🔴 **Starting a Circle shows an upgrade lightbox.** `NewCircleCompose` wraps the CTA in `CrewGateButton` even though `circle.create` is open to any signed-in member. | `components/compose/new-circle-compose.tsx:26-35` vs `lib/core/capabilities.ts:223-226` |
-| | 🔴 Three live walls refuse people now: entry points, marketing codes, message rooms. | `entry-points/actions.ts:50`, `codes/actions.ts:41`, `messages/rooms/actions.ts:29` |
+| "People join free" | Starting a Circle is a signed-in act, not a Crew wall: `NewCircleCompose`, Remix, Claim, and Start a Chapter no longer wrap `CrewGateButton`. `circle.create` is granted to any signed-in member. Circle Join on a Circle page is a membership act, not compose, and still uses `CrewGate`. | `components/compose/new-circle-compose.tsx`, `components/circles/builder/remix-button.tsx`, `lib/core/capabilities.ts` |
+| | Three live `isPaid` walls on entry points, marketing codes, and message rooms were removed (LIVE-267). | `entry-points/actions.ts`, `codes/actions.ts`, `messages/rooms/actions.ts` |
 | "Businesses host free" | ⏳ All 22 tools are universal and default-on, but **five caps read zero**, which is a lock wearing an allowance's clothes. | `lib/pricing/feature-meters.ts:98-142` |
 | "Pay when you charge" | ⏳ The membership charge path exists and works; **two doc comments still say "v1 IS NOT BILLING"**, which is now false and misleading. | `lib/spaces/memberships.ts:10`, `settings/memberships/section.tsx:27` |
 | "Placement is earned" | 🔴 The Spaces directory is sorted **alphabetically**. | `lib/spaces/discovery.ts:135`, `:378-380` |

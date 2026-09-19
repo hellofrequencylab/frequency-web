@@ -614,6 +614,11 @@ size mismatch, and even capture-time CSS (`stylePath`) cannot hold a section tha
 when its query comes back empty. `viewportOnly` was tried and reverted — it is per surface,
 not per project, so it cost eight baselines to buy an occasional recapture (ADR-1042).
 
+**LIVE-373 (2026-09-19):** a new listed Circle grew the page ~180 px and failed the blocking
+visual job on every open branch. The eight `/discover` captures still run full-page, in the
+advisory visual tier (`@advisory`, not `@shell` — `@shell` is the authed-app reporter). A
+diff there is information. Recapture when the design moved, not when a Circle listed.
+
 ## A visual failure that has nothing to do with your diff
 
 `pr-compare` judges the **merge result** against baselines taken from the **branch**. Vercel builds

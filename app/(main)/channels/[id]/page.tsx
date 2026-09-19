@@ -453,8 +453,8 @@ export default async function ChannelPage({
                   )}
                   {isProgramChannel ? (
                     // A program channel's one create verb: Start a Chapter (the
-                    // Remix flow). Same gate as Remix AND as starting a Circle —
-                    // a Chapter is one (ADR-891), so the crew popup applies here too.
+                    // Remix flow). A Chapter is a Circle (ADR-891); compose is
+                    // open to any signed-in member (LIVE-409).
                     <StartChapterButton
                       channelId={channel.id}
                       className={`${HERO_ACTION_CLASS} whitespace-nowrap`}
