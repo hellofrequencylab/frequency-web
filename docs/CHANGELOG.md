@@ -14,6 +14,10 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 - **Business is the one paid Space plan, at $49, with two seats.** Collective is no longer a plan you pick. A Space that was on Collective is now on Business at that same $49. Non Profit and Independent are unchanged. Independent is still sold by hand.
 
+- **A Hub or a Nexus is a Space that contains other Spaces.** Old `/hubs/...` and `/nexuses/...` links open that Space. Staff still edit the geography tables under Admin.
+
+- **Extra operator seats have a public price.** The pricing page and the comparison grid read it from the catalog. Your first seat on a Space is still included.
+
 - **A Space has one create form.** The extra "Running a business?" shortcut is gone. Pick what you run, including a business, on Create a space. Niche doors still land on the matching type.
 
 - **An entry point is a QR code and a short link.** The print flyer is gone. Pick a template, name it, and download the PNG or SVG. Every signup it brings in still credits you.

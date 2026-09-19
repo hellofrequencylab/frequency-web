@@ -63,9 +63,9 @@ describe('the real surfaces flag their article keys (scan2 L4-05)', () => {
     expect(keys).toContain('location')
     expect(keys).toContain('resonance')
   })
-  it('a Hub or Nexus page flags its key through the prefix', () => {
-    expect(affectedFeatureKeys(['app/(main)/hubs/[slug]/page.tsx'], FEATURE_KEYS)).toContain('hubs')
-    expect(affectedFeatureKeys(['app/(main)/nexuses/[slug]/page.tsx'], FEATURE_KEYS)).toContain('nexuses')
+  it('a Hub or Nexus fold flags its key through the Space prefix (LIVE-242)', () => {
+    expect(affectedFeatureKeys(['app/(main)/spaces/[slug]/page.tsx'], FEATURE_KEYS)).toContain('hubs')
+    expect(affectedFeatureKeys(['app/(main)/spaces/[slug]/page.tsx'], FEATURE_KEYS)).toContain('nexuses')
   })
 })
 
