@@ -65,10 +65,12 @@ describe('the announcement bar never reaches a public surface', () => {
     // The bar belongs to the first and not the second, and they live in one file - so the guard is
     // that the only mention sits in the AppShell call, not in the early-return branch above it.
     const layout = read('app/(main)/layout.tsx')
-    const marker = '<MarketingHeader'
+    const marker = '<SiteHeader'
     const twinStart = layout.indexOf(marker)
     expect(twinStart, 'the public-twin branch is gone or restructured; re-derive this guard').toBeGreaterThan(-1)
-    const twinBranch = layout.slice(twinStart, layout.indexOf('</>', twinStart))
+    const twinEnd = layout.indexOf('</ViewerProvider>', twinStart)
+    expect(twinEnd, 'the public-twin ViewerProvider close is gone; re-derive this guard').toBeGreaterThan(twinStart)
+    const twinBranch = layout.slice(twinStart, twinEnd)
     expect(
       twinBranch,
       'the signed-out twin branch mounts the announcement bar. That branch renders for visitors.',
