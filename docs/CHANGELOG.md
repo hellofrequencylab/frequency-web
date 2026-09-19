@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **A cancelled gathering on a Space calendar is a small note at the bottom of that day**, not a crossed-out chip. Live events stay on the grid. Dates that are only penciled or still in planning stay off the public calendar.
+
 - **If you run a Space, Admin on its Calendar tab is the production board.** Pencil, Planning, Production, and Cancelled sit in a list. The month grid is the date map underneath. Guest is still what visitors see.
 
 - **A repeating event counts as one gathering on a free membership**, not one per date. Crew is still unlimited. The message when you are at the free cap no longer says a series is a Crew perk.

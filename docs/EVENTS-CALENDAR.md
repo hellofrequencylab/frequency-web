@@ -70,7 +70,9 @@ zone; a subscribe button that downloads a dead snapshot; burying the grid behind
 - A truncated **event popup** on click (title, when, where) with a **Go to Event** link to
   `/events/<slug>`. Built on the shared `Dialog` primitive.
 - A per-space **Calendar tab** (`app/(main)/spaces/[slug]/(profile)/calendar`), gated on the Space
-  having upcoming events, reading `listSpaceCalendarEvents` (published, non-private, non-cancelled).
+  having upcoming events, reading `listSpaceCalendarEvents` (published, non-private). Cancelled
+  gatherings paint as muted footer text on the date square (LIVE-414); the subscribed `.ics` stays
+  live-only.
 - Mounted the subscribe affordance (`CalendarSubscribeMenu`) pointing at the EC1 public per-space feed
   `/spaces/<slug>/calendar.ics`.
 - Times are pre-formatted server-side (via `formatEventWhen`) so the timezone lib never ships to the

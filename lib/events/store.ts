@@ -98,25 +98,31 @@ export type SpaceCalendarEventRow = SpaceCalendarEvent & {
   is_demo?: boolean | null
 }
 
-/** The PER-SPACE calendar gate, applied on the event's OWN row in every branch (the leak contract):
- *  published + public/unlisted + non-cancelled + not staff-removed + not demo + starting on/after
- *  `fromDay`. This is the exact set the space feed RPC (space_public_calendar_feed, recreated by
- *  20270126000000) enforces in SQL; kept pure here so the store readers and the shared-event UNION
- *  apply the identical gate on each event's OWN row. Pure + unit-tested.
- *
- *  removed_at and is_demo were ADDED 2026-07-29: removeEvent also sets is_cancelled today, so the
- *  hole was masked in practice — but that is one function's courtesy, not a contract, and this feed
- *  is handed to anonymous .ics subscribers. Same defence-in-depth call as ADR-899/903 made for the
- *  discover RPCs. */
-export function passesCalendarGate(e: SpaceCalendarEventRow, fromDayIso: string): boolean {
+/** The PER-SPACE on-page paint gate (LIVE-414): published + public/unlisted + not staff-removed +
+ *  not demo + starting on/after `fromDay`. Cancelled is allowed so the grid can show it as footer
+ *  text. The subscribed `.ics` still uses `passesCalendarGate`. Pure + unit-tested. */
+export function passesCalendarPaintGate(e: SpaceCalendarEventRow, fromDayIso: string): boolean {
   return (
-    !e.is_cancelled &&
     (e.status ?? 'published') === 'published' &&
     (e.visibility === 'public' || e.visibility === 'unlisted') &&
     !e.removed_at &&
     e.is_demo !== true &&
     startsOnOrAfter(e.starts_at, fromDayIso)
   )
+}
+
+/** The PER-SPACE calendar gate, applied on the event's OWN row in every branch (the leak contract):
+ *  the paint gate AND non-cancelled. This is the exact set the space feed RPC
+ *  (space_public_calendar_feed, recreated by 20270126000000) enforces in SQL; kept pure here so the
+ *  store readers and the shared-event UNION apply the identical gate on each event's OWN row.
+ *  Pure + unit-tested.
+ *
+ *  removed_at and is_demo were ADDED 2026-07-29: removeEvent also sets is_cancelled today, so the
+ *  hole was masked in practice — but that is one function's courtesy, not a contract, and this feed
+ *  is handed to anonymous .ics subscribers. Same defence-in-depth call as ADR-899/903 made for the
+ *  discover RPCs. */
+export function passesCalendarGate(e: SpaceCalendarEventRow, fromDayIso: string): boolean {
+  return !e.is_cancelled && passesCalendarPaintGate(e, fromDayIso)
 }
 
 /** Instant compare that survives ISO offset-format differences (`Z` vs `+00:00`): parse both. A
@@ -148,10 +154,12 @@ export function mergeSpaceCalendarRows(
   sharedRows: SpaceCalendarEventRow[],
   fromDayIso: string,
   limit: number,
+  opts: { paintCancelled?: boolean } = {},
 ): SpaceCalendarEvent[] {
+  const gate = opts.paintCancelled ? passesCalendarPaintGate : passesCalendarGate
   const byId = new Map<string, SpaceCalendarEvent>()
   for (const e of [...ownRows, ...sharedRows]) {
-    if (!passesCalendarGate(e, fromDayIso)) continue
+    if (!gate(e, fromDayIso)) continue
     if (!byId.has(e.id)) byId.set(e.id, e)
   }
   return [...byId.values()]
@@ -261,14 +269,15 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * host_space_id), and events accepted-SHARED to the space (EC3). Nothing keys on WHO OWNS the
  * space — see the block above. Same EVENT filters as the EC1 subscribe
  * feed (space_public_calendar_feed, recreated in lockstep by 20270125000000): only PUBLISHED,
- * public/unlisted, non-cancelled events — so the on-page grid and the subscribed .ics show the exact
- * same set, and neither leaks a draft, private, or circle_only event, EVEN via membership. Every
+ * public/unlisted events — so neither leaks a draft, private, or circle_only event, EVEN via
+ * membership. The subscribed .ics stays live-only (passesCalendarGate). The on-page grid may pass
+ * `paintCancelled` so a cancelled gathering can sit as footer text (LIVE-414, ADR-1455). Every
  * non-tenancy row re-applies the gate on its OWN columns (passesCalendarGate) AND its home space's
  * walling: membership is necessary, never sufficient. FAIL-SAFE: [] on any error / missing tenant.
  */
 export async function listSpaceCalendarEvents(
   spaceId: string | null | undefined,
-  opts: { fromDay?: string; limit?: number } = {},
+  opts: { fromDay?: string; limit?: number; paintCancelled?: boolean } = {},
 ): Promise<SpaceCalendarEvent[]> {
   const sid = spaceId ?? (await loadRootSpaceId())
   if (!sid) return []
@@ -348,6 +357,7 @@ export async function listSpaceCalendarEvents(
       gatedAway,
       fromDayIso,
       limit,
+      { paintCancelled: opts.paintCancelled === true },
     )
   } catch {
     return []
