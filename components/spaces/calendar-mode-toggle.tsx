@@ -1,31 +1,34 @@
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import {
+  adminViewHref,
+  CALENDAR_ADMIN_VIEW_DEFS,
+  type CalendarAdminView,
+} from '@/lib/calendar/admin-views'
 
-// ADMIN / GUEST (ADR-1389). The switch a Space's team uses on its public Calendar tab to flip between the
-// full team calendar and exactly what a visitor sees. Links, not client state: the mode lives in the URL
-// (`?view=guest`), so the server only ever loads the private layer for Admin, and a Guest view can be
-// shared or reloaded as it is.
+// ADMIN CALENDAR VIEWS (ADR-1389, ADR-1464). Segmented control in Admin Calendar chrome.
+// Guest and Admin stay the two grids. List, Timeline, and Projects are additional views.
+// Links, not client state: `?view=guest` stays the visitor URL; the server only loads the
+// private layer for operator views.
 
-export type CalendarMode = 'admin' | 'guest'
+export type CalendarMode = CalendarAdminView
 
-export function CalendarModeToggle({ slug, mode }: { slug: string; mode: CalendarMode }) {
-  const base = `/spaces/${slug}/calendar`
-  const options: { mode: CalendarMode; label: string; href: string }[] = [
-    { mode: 'admin', label: 'Admin', href: base },
-    { mode: 'guest', label: 'Guest', href: `${base}?view=guest` },
-  ]
+export function CalendarModeToggle({ slug, mode }: { slug: string; mode: CalendarAdminView }) {
   return (
-    <nav aria-label="Calendar view for" className="inline-flex items-center rounded-control border border-border p-0.5">
-      {options.map((o) => (
+    <nav
+      aria-label="Calendar views"
+      className="inline-flex max-w-full flex-wrap items-center rounded-control border border-border p-0.5"
+    >
+      {CALENDAR_ADMIN_VIEW_DEFS.map((o) => (
         <Link
-          key={o.mode}
-          href={o.href}
+          key={o.view}
+          href={adminViewHref(slug, o.view)}
           scroll={false}
           replace
-          aria-current={mode === o.mode ? 'page' : undefined}
+          aria-current={mode === o.view ? 'page' : undefined}
           className={cn(
             'rounded-control px-3 py-1 text-body-sm font-semibold transition-colors',
-            mode === o.mode ? 'bg-primary text-on-primary' : 'text-muted hover:text-text',
+            mode === o.view ? 'bg-primary text-on-primary' : 'text-muted hover:text-text',
           )}
         >
           {o.label}

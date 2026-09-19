@@ -37,6 +37,8 @@ export type { CalendarEvent } from '@/lib/calendar/item'
 //   · arrows, a Today button that appears once you leave the current month, and a month-and-year
 //     jump behind the month title
 //   · PageUp / PageDown for a month, Shift for a year, anywhere inside the calendar
+//   · ArrowLeft / ArrowRight step a month when the calendar itself is focused
+//   · Escape closes the month-and-year jump
 //   · a sideways trackpad swipe or a touch swipe (and, where the mount opts in, the vertical wheel)
 //     through components/events/use-month-gestures.ts
 // A mount that passes `loadMonth` fetches each month it has not loaded yet, so browsing back or far
@@ -199,10 +201,20 @@ export function EventCalendar({
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement
     if (target.closest('input, textarea, select, [contenteditable="true"]')) return
+    if (e.key === 'Escape' && jumpOpen) {
+      e.preventDefault()
+      setJumpOpen(false)
+      return
+    }
     if (e.key === 'PageDown' || e.key === 'PageUp') {
       e.preventDefault()
       const sign = e.key === 'PageDown' ? 1 : -1
       step(e.shiftKey ? sign * 12 : sign)
+      return
+    }
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.target === e.currentTarget) {
+      e.preventDefault()
+      step(e.key === 'ArrowRight' ? 1 : -1)
     }
   }
 
@@ -297,7 +309,13 @@ export function EventCalendar({
   const showLayerToggles = (layers?.length ?? 0) > 1
 
   return (
-    <div className="@container rounded-card border border-border bg-surface" onKeyDown={onKeyDown}>
+    <div
+      data-calendar-root
+      tabIndex={0}
+      aria-label="Calendar"
+      className="@container rounded-card border border-border bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      onKeyDown={onKeyDown}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
         <div className="relative flex items-center gap-1">
           <button
@@ -438,7 +456,9 @@ export function EventCalendar({
                     {g.label}
                   </h3>
                   <ul className="divide-y divide-border">
-                    {g.items.map((ev) => {
+                    {g.items
+                      .filter((ev) => !ev.isCancelled)
+                      .map((ev) => {
                       const isCurrent = preview !== null && itemKey(ev) === itemKey(preview)
                       const dayNum = Number(ev.dayKey.slice(8, 10))
                       const mon = SHORT_MONTHS[Number(ev.dayKey.slice(5, 7)) - 1]
@@ -464,7 +484,7 @@ export function EventCalendar({
                               <span className="text-body-lg font-bold leading-none tabular-nums">{dayNum}</span>
                             </span>
                             <span className="min-w-0 flex-1">
-                              <span className={cn('block truncate font-semibold', ev.isCancelled ? 'text-muted' : 'text-text')}>
+                              <span className="block truncate font-semibold text-text">
                                 {ev.title}
                               </span>
                               <span className="mt-0.5 block text-meta text-muted">{ev.whenLabel}</span>
@@ -479,6 +499,11 @@ export function EventCalendar({
                       )
                     })}
                   </ul>
+                  {g.items.some((ev) => ev.isCancelled) &&
+                    cancelledCellFooter(
+                      g.items.filter((ev) => ev.isCancelled),
+                      select,
+                    )}
                 </section>
               ))
             )}
@@ -544,7 +569,7 @@ export function EventCalendar({
                     <div
                       key={cell.date}
                       className={cn(
-                        'group flex min-h-[76px] flex-col border-r border-border p-1.5 last:border-r-0 sm:min-h-[104px]',
+                        'group flex min-h-20 flex-col border-r border-border p-1.5 last:border-r-0 sm:min-h-28',
                         !cell.inMonth && 'bg-surface-elevated/40',
                       )}
                     >
@@ -695,7 +720,7 @@ function cancelledCellFooter(items: CalendarEvent[], onSelect: (ev: CalendarEven
             type="button"
             onClick={() => onSelect(ev)}
             title={ev.title}
-            className="w-full truncate text-left text-2xs text-muted"
+            className="w-full truncate rounded-control text-left text-2xs text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <span className="sr-only">Cancelled. </span>
             {ev.title}

@@ -15,6 +15,10 @@ const PENCIL = entryStage('pencil')
 const PLANNING = entryStage('planning')
 const PRODUCTION = entryStage('production')
 
+function LanePurpose({ children }: { children: string }) {
+  return <p data-lane-purpose className="-mt-2 mb-3 text-meta text-muted">{children}</p>
+}
+
 function BoardRows({ items, showBadge }: { items: OperatorListItem[]; showBadge: boolean }) {
   return (
     <ul className="space-y-2">
@@ -56,6 +60,7 @@ export function CalendarPmConsole({
     <div className="space-y-6" data-calendar-pm-console>
       <section aria-labelledby="calendar-pm-pencil" data-pencil-lane>
         <SectionHeader id="calendar-pm-pencil" title={PENCIL?.label ?? 'Pencil'} count={pencils.length} />
+        <LanePurpose>Tentative dates. Keep one before it moves to Planning.</LanePurpose>
         {pencils.length === 0 ? (
           <EmptyState
             variant="first-use"
@@ -92,6 +97,7 @@ export function CalendarPmConsole({
       </section>
       <section aria-labelledby="calendar-pm-board">
         <SectionHeader id="calendar-pm-board" title="The board" count={items.length} />
+        <LanePurpose>Planning and Production stay here until they get their own lanes. Cancelled stays visible.</LanePurpose>
         {items.length === 0 ? (
           <EmptyState
             variant="first-use"

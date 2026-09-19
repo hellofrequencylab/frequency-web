@@ -188,19 +188,27 @@ else. Its column list is the gate; it must never gain a detail column.
 slot that overlaps is neither offered nor bookable. An existing booking inside the range is never
 touched. The read is service-role and fails safe to no blocks.
 
-**Admin / Guest on the Calendar tab** ([ADR-1389](DECISIONS.md), [ADR-1450](DECISIONS.md), [ADR-1454](DECISIONS.md), [ADR-1456](DECISIONS.md), [ADR-1457](DECISIONS.md), [ADR-1458](DECISIONS.md)). A viewer who
-edits the Space (with the Calendar function), or platform staff previewing it, lands on **Admin**: the
-production console (`CalendarPmConsole`) over `loadAdminCalendar` (`lib/calendar/admin-calendar.ts`,
-shared with the settings console). Pencil (`pencilLane`), Planning (`planningLane`), and Production (`productionLane`) are their own lanes. The board lists what is
-cancelled. `StaffCalendar` is the date map and the settings drawer, not a second guest month.
-`?view=guest` and unsigned members go through `guestLiveItems` (live chips plus the C0 cancelled footer; pencil and planning stay off). The mode is decided on the
-server before any admin read.
+**Admin Calendar views** ([ADR-1389](DECISIONS.md), [ADR-1450](DECISIONS.md), [ADR-1454](DECISIONS.md), [ADR-1456](DECISIONS.md), [ADR-1457](DECISIONS.md), [ADR-1458](DECISIONS.md), [ADR-1464](DECISIONS.md)). A viewer who
+edits the Space (with the Calendar function), or platform staff previewing it, lands on **Admin**
+and can switch five views from one segmented control (`CalendarModeToggle`):
 
-**Loading a month.** The first month renders on the server. Every other month is fetched when the
-viewer browses to it: `loadSpaceCalendarMonth` for the public tab (over `lib/calendar/public-month.ts`,
-which composes `listSpaceCalendarEvents` and the Unavailable projection without reimplementing either
-gate) and the staff entry actions for the settings calendar. `lib/calendar/month-window.ts` computes
-the visible grid window, including the spill days either side.
+| View | What it is |
+|---|---|
+| **Guest** | The existing public month (`guestLiveItems`). Live chips plus the C0 cancelled footer. Pencil and planning stay off. `?view=guest`. |
+| **Admin** | The existing production console (`CalendarPmConsole`) over `loadAdminCalendar`. Pencil (`pencilLane`), Planning (`planningLane`), and Production (`productionLane`) are their own lanes. The month is the date map (`StaffCalendar`), not a second guest grid. Default URL. |
+| **List** | A tight gathering index on the left. The right interior is the selected event's stats and management. `?view=list&item=`. |
+| **Timeline** | The month as a linear time scale (days on the X axis, one row per gathering). Not a 7-column month grid. `?view=timeline&y=&m=`. |
+| **Projects** | A kanban over `ENTRY_STAGES` (Pencil, Planning, Production, Cancelled). An event on its way moves stage through the existing entry write. No new table. `?view=projects`. |
+
+Unsigned members always get Guest. The server decides the view before any admin read. C3 and C4 already own `planningLane` / `productionLane` on the Admin board.
+
+**Loading a month.** The first month and every browsed month use the same public reader:
+`loadPublicSpaceWindow` (`lib/calendar/public-month.ts`), which composes `listSpaceCalendarEvents`,
+the Unavailable projection, and `guestLiveItems`. The Calendar tab Guest branch still calls
+`guestLiveItems` itself so that contract stays on the page. `guestFeedState` decides the first-use
+empty (kit `EmptyState`): cancelled-only and Unavailable-only feeds keep the grid and do not claim
+the calendar is empty. Staff months stay on the entry actions. `lib/calendar/month-window.ts`
+computes the visible grid window, including the spill days either side.
 
 **Navigation** (`components/events/event-calendar.tsx`, `components/events/use-month-gestures.ts`).
 
@@ -208,11 +216,13 @@ the visible grid window, including the spill days either side.
   then locks until the input has been quiet for 250ms (at most 800ms), which swallows momentum.
 - A vertical wheel pages months only where the mount opts in (`vertical`): the staff calendar. A public
   calendar lives inside a scrolling page and never captures the vertical wheel.
-- PageUp and PageDown step a month; with Shift, a year. A month and year panel jumps anywhere. Today
-  appears when the viewer is off the current month.
-- The list view groups by month. A preview pane pins beside it when the calendar's CONTAINER is wide
-  enough (a container query, because the same component mounts in a page, a panel and a column), and
-  the popup is used otherwise.
+- PageUp and PageDown step a month; with Shift, a year. ArrowLeft and ArrowRight step a month when
+  the calendar itself is focused. Escape closes the month-and-year jump. A month and year panel jumps
+  anywhere. Today appears when the viewer is off the current month.
+- The list view groups by month. Cancelled gatherings sit under that month as the same muted footer
+  the date square uses, not as list chips. A preview pane pins beside it when the calendar's CONTAINER
+  is wide enough (a container query, because the same component mounts in a page, a panel and a
+  column), and the popup is used otherwise.
 
 **Adding a source.** Every calendar item (`lib/calendar/item.ts`) carries a `layer`. A new source, such
 as a plan task's due date, a shift or a booking, is one row in `CALENDAR_LAYERS` plus one adapter that
