@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1455**. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1451–1453 are claimed on open PRs.
+tree as of this index: **ADR-1466**. 1463 is LIVE-393. 1462 is LIVE-397. 1461 is SCAN-640. 1459 is SCAN-638. 1455 is LIVE-414. 1454 is LIVE-416. 1450 is LIVE-415. 1448 is OWN-058. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1451–1453, 1456–1458, and 1460/1464–1465 are claimed on leftover PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46549,3 +46549,21 @@ Premise re-tested 2026-09-19:
 **Consequences.** A Journey with no authored outcomes no longer shows "What you'll learn". Authors add the list in settings. LIVE-394 (authored FAQ) is still open and can use the same repeat shape.
 
 **Rows.** LIVE-393.
+
+## ADR-1466: Admin Calendar gives Planning its own lane (LIVE-417)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-417` · numbered **1466** (1463 is LIVE-393 on this tree; 1464–1465 were used on closed leftover PRs) · implements C3 of [ADR-1445](DECISIONS.md) · follows [ADR-1454](DECISIONS.md) · corroborated by `lib/calendar/pm-console.ts` (`planningLane`), `components/spaces/calendar-pm-console.tsx`
+
+**Context.** ADR-1454 gave Pencil its own Admin lane. ADR-1445 C3 asked for Planning as a first-class Admin lane: planning-stage gatherings listed on their own, not mixed into Production chips. Premise re-tested 2026-09-19 after #2759: the Pencil lane existed; `planningLane` did not. Guest exclusion is LIVE-419.
+
+**Decision.**
+
+1. **`planningLane` is the Admin Planning lane.** It is `operatorListItems` filtered to `stage === 'planning'`. `CalendarPmConsole` renders that lane under Pencil and above the mixed board.
+2. **The mixed board no longer lists Planning.** Production, Cancelled, live events, and drafts stay there until C4 names Production.
+3. **The date map is unchanged.** This change does not declare `productionLane`, and it does not fold Guest through `guestLiveItems`.
+
+**Rejected.** Closing C4 and C5 in the same PR. Absorbing leftover #2758 (written before C2 landed). Calling Planning a Plan (NAMING.md: Plan is the working record, not the stage).
+
+**Consequences.** LIVE-418 starts the Production lane. LIVE-419 still owns the Guest feed.
+
+**Rows.** LIVE-417.
