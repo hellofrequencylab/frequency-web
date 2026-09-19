@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1444**. 1436 is HYG-068 on another open branch. 1440 is SCAN-636 on main.
+tree as of this index: **ADR-1441**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
 
 | Theme | Start here |
 |---|---|
@@ -39544,6 +39544,9 @@ per-worktree is a property of the harness. `LIVE-306` carries it as `manual`.
 
 **Rows.** LIVE-306 (opened, not closed).
 
+**Amended by [ADR-1441](DECISIONS.md).** The first `pnpm lint` now installs when local ESLint is
+missing; LIVE-306 is closed.
+
 ## ADR-1320: ACCEPTED — the help-autodoc bot must quote what it read, or its finding is demoted (2026-09-10)
 
 **Context.** The bot posts an advisory checklist of help articles a diff may have invalidated. Three
@@ -46176,25 +46179,28 @@ Premise re-tested 2026-09-19: the discover twin still pointed canonical at `/eve
 
 **Rows.** SCAN-636.
 
-## ADR-1444: A repeating event costs one gathering on the personal allowance (OWN-063)
+## ADR-1441: The first `pnpm lint` in a worktree installs this repo's ESLint (LIVE-306)
 
-**Status:** Accepted · 2026-09-19 · Records the 2026-09-08 OWN-063 ruling · **Implements** the create-path fold · numbered **1444** because **1440** is SCAN-636 on main · corroborated by `memberEventAllowanceOk` in `app/(main)/events/actions.ts` (`SERIES_COLUMNS` + `isUpcomingByInstant` + `countSeries`) and `countUpcomingGatherings` in `lib/pricing/member-meter-usage.ts`
+**Status:** Accepted · 2026-09-19 · **Amends** [ADR-1319](DECISIONS.md) (the refusal stays; missing local ESLint now installs first) · backlog `LIVE-306` · numbered **1441** because **1440** is SCAN-636 on main · corroborated by `scripts/preflight-lint.mjs` (`ensureLintToolchain`) and `.claude/hooks/session-start.sh` (`git rev-parse --show-toplevel`)
 
-**Context.** LIVE-198 folded eleven display counts through `countSeries` so a weekly series reads as one gathering. `memberEventAllowanceOk` counted the same occurrence rows, but it is an entitlement quota, not a dashboard. Folding it loosens a paid cap: a free member who today burns nine slots for one weekly series would burn one. The agent that found it refused to decide (OWN-063). The owner ruled 2026-09-08: the allowance caps GATHERINGS.
+**Context.** ADR-1319 made `prelint` refuse when `./node_modules/.bin/eslint` is missing or the wrong major, so a worktree no longer died inside `eslint-plugin-react` with a message that named a React rule. The row stayed open for the environmental half: a `git worktree` never inherits `node_modules`, and SessionStart installed only at the script's repo root.
 
-Premise re-tested 2026-09-19: `memberEventAllowanceOk` still selected no series columns and counted occurrence rows. The matching `event_create` meter still counted rows the same way, so a folded create path would have accepted a series the meter would have shown as nine-of-two.
+Premise re-tested 2026-09-19 on this tree, and it held.
+
+1. `.claude/hooks/session-start.sh` still did `cd "$(dirname "$0")/../.."`. That is the script's checkout, not `git rev-parse --show-toplevel`.
+2. `preflight-lint.mjs` still only refused. It named `pnpm install --frozen-lockfile` and did not run it.
+3. This cloud checkout started with no `node_modules`. The first `pnpm lint` here would have been the same trap.
+
+The harness can still create a bare worktree. That is not repo-observable. What is repo-observable is what `pnpm lint` does next.
 
 **Decision.**
 
-1. **The allowance counts gatherings.** `memberEventAllowanceOk` selects `SERIES_COLUMNS`, filters with `isUpcomingByInstant` (SCAN-610), and folds with `countSeries`. A weekly series costs one.
-2. **The meter matches.** `countUpcomingGatherings` uses the same fold so the readout cannot show nine-of-two for a series the create path would accept.
-3. **`dropCancelled` stays false on the create path.** A cancelled upcoming row still occupies a slot. The change is the series key, not a new cancellation rule.
-4. **The comment names OWN-063 and 2026-09-08.** Folding loosens a paid cap; that is the intended pricing, not a hygiene off-by-N.
-5. **Cap copy drops the series-as-Crew perk.** `EVENT_CREATE_CAP_MESSAGE` no longer says a series is something you join Crew to set up.
+1. **`ensureLintToolchain` installs, then re-checks.** When the directory has `pnpm-lock.yaml` and no local ESLint, `prelint` runs `pnpm install --frozen-lockfile` and checks again. A directory without this repo's lockfile still refuses without spawning.
+2. **A failed install and a major mismatch still refuse.** Wrong-major is not "never installed". Reinstall stays a named human step.
+3. **SessionStart follows the session worktree.** `git rev-parse --show-toplevel` is the install root; the script path is the fallback when cwd is not a git tree.
 
-**Rejected.** Leaving the occurrence count and documenting it (the owner ruled the other way). Folding only the create path and leaving the meter on rows (the UI would lie). Dropping cancelled rows from the create-path count (a new cancellation rule dressed as the fold).
+**Rejected.** Symlinking `node_modules` to the parent checkout (faster, and older worktrees already had that symlink, but a lockfile drift would load the wrong tree). Auto-fixing a major mismatch (that install is stale on purpose until someone deletes it). Teaching the Cursor harness; this PR cannot.
 
-**Consequences.** A free member can run one series plus another gathering where today each date burned a slot. Crew is still unlimited. Later readers of `memberEventAllowanceOk` beside its LIVE-198 siblings will find the ruling at the call site.
+**Consequences.** The first `pnpm lint` in a new worktree installs this repo's ESLint 9, or refuses with the install error, and does not fall through to a global ESLint 10. CI already installs, so the new branch is a no-op there. The probe calls `ensureLintToolchain` with a missing bin and a lockfile and requires `attemptedInstall` plus `ok`.
 
-**Rows.** OWN-063.
-
+**Rows.** LIVE-306.
