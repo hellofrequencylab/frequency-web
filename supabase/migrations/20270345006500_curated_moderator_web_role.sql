@@ -24,11 +24,11 @@ DROP POLICY IF EXISTS "posts: author update or host pins in circle" ON public.po
 CREATE POLICY "posts: author update or host pins in circle"
   ON public.posts FOR UPDATE
   USING (
-    author_id = public.get_my_profile_id()
-    OR public.get_my_web_role() = 'moderator'
+    author_id = private.get_my_profile_id()
+    OR private.get_my_web_role() = 'moderator'
     OR (
-      public.get_my_role() >= 'host'
-      AND scope_id IN (SELECT id FROM public.circles WHERE host_id = public.get_my_profile_id())
+      private.get_my_role() >= 'host'
+      AND scope_id IN (SELECT id FROM public.circles WHERE host_id = private.get_my_profile_id())
     )
   );
 
@@ -36,10 +36,10 @@ DROP POLICY IF EXISTS "posts: author delete or host removes in circle" ON public
 CREATE POLICY "posts: author delete or host removes in circle"
   ON public.posts FOR DELETE
   USING (
-    author_id = public.get_my_profile_id()
-    OR public.get_my_web_role() = 'moderator'
+    author_id = private.get_my_profile_id()
+    OR private.get_my_web_role() = 'moderator'
     OR (
-      public.get_my_role() >= 'host'
-      AND scope_id IN (SELECT id FROM public.circles WHERE host_id = public.get_my_profile_id())
+      private.get_my_role() >= 'host'
+      AND scope_id IN (SELECT id FROM public.circles WHERE host_id = private.get_my_profile_id())
     )
   );
