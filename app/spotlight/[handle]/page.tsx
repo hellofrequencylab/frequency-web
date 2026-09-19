@@ -10,7 +10,7 @@ import { avatarSrc } from '@/lib/images/avatar-focus'
 // PUBLIC, top-level route (outside the auth-gated (main) group) so a signed-out
 // visitor or non-member can open a shared link. Fail-closed: a page that is not
 // explicitly published 404s (no "not public yet" copy to police).
-// SCAN-642 / ADR-1442: sitemap advertises these URLs. force-dynamic here voided
+// SCAN-642 / ADR-1448: sitemap advertises these URLs. force-dynamic here voided
 // ISR the way listing details used to. No cookies() on this page; guestbook
 // writes stay in guestbook-actions.ts.
 export const revalidate = 3600

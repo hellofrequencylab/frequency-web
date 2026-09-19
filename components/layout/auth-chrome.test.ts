@@ -75,6 +75,14 @@ describe('every public surface threads the viewer through', () => {
     }
   })
 
+  it('the (main) public chrome uses the same SiteHeader /discover uses (SCAN-641)', () => {
+    const main = read('../../app/(main)/layout.tsx')
+    const disc = read('../../app/discover/layout.tsx')
+    expect(main).toMatch(/<SiteHeader[\s\S]*authMode="client"/)
+    expect(disc).toMatch(/<SiteHeader[\s\S]*authMode="client"/)
+    expect(main).not.toMatch(/<MarketingHeader/)
+  })
+
   it('never hardcodes a signed-out header', () => {
     // `isAuth={false}` is the (main) public chrome's original defect: that branch serves a
     // signed-out visitor AND a signed-in member who has no profile row yet.
