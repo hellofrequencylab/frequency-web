@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1444**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
+tree as of this index: **ADR-1443**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
 
 | Theme | Start here |
 |---|---|
@@ -46205,25 +46205,23 @@ The harness can still create a bare worktree. That is not repo-observable. What 
 
 **Rows.** LIVE-306.
 
-## ADR-1444: A repeating event costs one gathering on the personal allowance (OWN-063)
+## ADR-1443: Public events use the same header /discover uses (SCAN-641)
 
-**Status:** Accepted · 2026-09-19 · Records the 2026-09-08 OWN-063 ruling · **Implements** the create-path fold · numbered **1444** because **1440** is SCAN-636 on main · corroborated by `memberEventAllowanceOk` in `app/(main)/events/actions.ts` (`SERIES_COLUMNS` + `isUpcomingByInstant` + `countSeries`) and `countUpcomingGatherings` in `lib/pricing/member-meter-usage.ts`
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-641` · numbered **1443** because **1442** is HYG-078 · corroborated by `app/(main)/layout.tsx` (`publicChrome`) and `app/discover/layout.tsx`
 
-**Context.** LIVE-198 folded eleven display counts through `countSeries` so a weekly series reads as one gathering. `memberEventAllowanceOk` counted the same occurrence rows, but it is an entitlement quota, not a dashboard. Folding it loosens a paid cap: a free member who today burns nine slots for one weekly series would burn one. The agent that found it refused to decide (OWN-063). The owner ruled 2026-09-08: the allowance caps GATHERINGS.
+**Context.** SCAN-641, filed 2026-09-19 from the meta-scan: anon `/events/<slug>` and networked Space profiles rendered `MarketingHeader` through `(main)` `publicChrome()`. `/discover/*` rendered `SiteHeader variant="light" authMode="client"`. Two public chromes, two phone sheets, two chances to drift. LIVE-106 was the last time that class cost thirteen destinations.
 
-Premise re-tested 2026-09-19: `memberEventAllowanceOk` still selected no series columns and counted occurrence rows. The matching `event_create` meter still counted rows the same way, so a folded create path would have accepted a series the meter would have shown as nine-of-two.
+Premise re-tested 2026-09-19 on this tree: the split was still the split. Discover still used SiteHeader with client auth so ISR is not voided. The `(main)` public branch already called `getCachedUser()`, so it was already dynamic; client auth there is not an ISR win, it is so both trees draw one bar.
 
 **Decision.**
 
-1. **The allowance counts gatherings.** `memberEventAllowanceOk` selects `SERIES_COLUMNS`, filters with `isUpcomingByInstant` (SCAN-610), and folds with `countSeries`. A weekly series costs one.
-2. **The meter matches.** `countUpcomingGatherings` uses the same fold so the readout cannot show nine-of-two for a series the create path would accept.
-3. **`dropCancelled` stays false on the create path.** A cancelled upcoming row still occupies a slot. The change is the series key, not a new cancellation rule.
-4. **The comment names OWN-063 and 2026-09-08.** Folding loosens a paid cap; that is the intended pricing, not a hygiene off-by-N.
-5. **Cap copy drops the series-as-Crew perk.** `EVENT_CREATE_CAP_MESSAGE` no longer says a series is something you join Crew to set up.
+1. **Mount the discover header on the `(main)` public branch.** `ViewerProvider` plus `SiteHeader variant="light" authMode="client"`. That is the header /discover already ships, including the phone sheet LIVE-110 put on it.
+2. **Leave the footer.** This row is the header split. `MarketingFooter` stays on the `(main)` public branch; /discover keeps its own short footer.
+3. **Give the skip link a target.** `id="main"` on the public `<main>`, matching /discover, so SiteHeader's skip-to-content has somewhere to go.
 
-**Rejected.** Leaving the occurrence count and documenting it (the owner ruled the other way). Folding only the create path and leaving the meter on rows (the UI would lie). Dropping cancelled rows from the create-path count (a new cancellation rule dressed as the fold).
+**Rejected.** Extracting a shared PublicChrome layout in this change (the footers still differ, and a shared shell would hide that). Switching /discover onto MarketingHeader (that is the header without search, and it would undo the ISR-preserving client auth). Server auth on the `(main)` public branch (a second dialect of the same bar).
 
-**Consequences.** A free member can run one series plus another gathering where today each date burned a slot. Crew is still unlimited. Later readers of `memberEventAllowanceOk` beside its LIVE-198 siblings will find the ruling at the call site.
+**Consequences.** A signed-out event page and a /discover page now share one header component and one phone sheet. Marketing pages and the help centre keep MarketingHeader: those are the splash and the docs, not the public community browse.
 
-**Rows.** OWN-063.
+**Rows.** SCAN-641.
 
