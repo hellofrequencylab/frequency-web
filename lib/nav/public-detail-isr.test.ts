@@ -58,7 +58,7 @@ describe('sitemap-advertised listing details stay eligible for ISR', () => {
   it('the (public) share layout never calls a dynamic API', () => {
     const found = DYNAMIC_APIS.filter((d) => d.re.test(codeOf('app/(public)/layout.tsx'))).map((d) => d.name)
     expect(found, 'app/(public)/layout.tsx would void ISR for every share URL').toEqual([])
-    expect(readFileSync('app/(public)/layout.tsx', 'utf8')).toMatch(/detectClientAuth/)
-    expect(readFileSync('app/(public)/layout.tsx', 'utf8')).not.toMatch(/<SiteHeader/)
+    expect(readFileSync('app/(public)/layout.tsx', 'utf8')).toMatch(/authMode="client"/)
+    expect(readFileSync('app/(public)/layout.tsx', 'utf8')).toMatch(/<SiteHeader/)
   })
 })

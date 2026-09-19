@@ -71,8 +71,9 @@ import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import { isAnonPublicDetail } from '@/lib/nav/public-detail-routes'
 import { getMyFrequency } from '@/lib/nav/my-frequency'
 import { viewerRoleFor } from '@/components/layout/menu-role'
-import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
+import { SiteHeader } from '@/components/layout/site-header'
+import { ViewerProvider } from '@/components/layout/viewer-chrome'
 
 // A logged-out visitor is normally sent back to the splash, but a NETWORKED Space profile
 // (/spaces/<slug> + its public tabs) is public + crawlable (SEO/AIO) — those render in the
@@ -171,17 +172,13 @@ export default async function MainLayout({
   // Sitemap share URLs for events + listings moved to app/(public)/ (no cookies/headers).
   // detectClientAuth upgrades the header after hydration — same as (marketing).
   const publicChrome = async () => {
-    const [headerMenu, footerMenu, menuTimings] = await Promise.all([
-      getMenu('header'),
-      getMenu('footer'),
-      getMenuSettings(),
-    ])
+    const footerMenu = await getMenu('footer')
     return (
-      <>
-        <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} detectClientAuth />
+      <ViewerProvider>
+        <SiteHeader variant="light" authMode="client" />
         {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top). min-h-dvh
             (not screen) tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
-        <main className="min-h-dvh bg-canvas" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
+        <main id="main" className="min-h-dvh bg-canvas" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
           {/* A public page rides in the SAME centered CONTENT COLUMN as the signed-in shell: the member
               three-column grid (empty left/right rail gutters flanking a flex-1 center column inside
               max-w-[105rem]), so a public Space profile is the exact width it is signed in. The public
@@ -196,7 +193,7 @@ export default async function MainLayout({
           </div>
         </main>
         <MarketingFooter menu={footerMenu} />
-      </>
+      </ViewerProvider>
     )
   }
 
