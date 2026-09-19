@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1451**. 1463 is LIVE-393 on main. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1452–1453 and 1456–1458 are claimed on other open PRs.
+tree as of this index: **ADR-1457**. 1451 is SCAN-642. 1463 is LIVE-393 on main. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1452–1453, 1456 and 1458 are claimed on other open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46573,20 +46573,38 @@ Premise re-tested 2026-09-19:
 
 **Rows.** SCAN-642, SCAN-643, SCAN-638 (re-pointed).
 
+## ADR-1457: Guest Calendar goes through guestLiveItems (LIVE-419)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-419` · numbered **1457** (1455 is LIVE-414; 1454 is LIVE-416 on main; 1458 is LIVE-417 on #2758; 1456 is LIVE-418 on #2760) · implements C5 of [ADR-1445](DECISIONS.md) · follows [ADR-1455](DECISIONS.md) · corroborated by `app/(main)/spaces/[slug]/(profile)/calendar/page.tsx` (`guestLiveItems`), `lib/calendar/guest-live.ts`
+
+**Context.** ADR-1455 added `guestLiveItems` and the cancelled footer. The Guest page branch still assembled the month from `spaceEventRowsToItems` plus Unavailable without folding through that helper. Month browse already used `loadPublicSpaceWindow`, which does. C5 closes the first-paint hole.
+
+**Decision.**
+
+1. **The Guest branch calls `guestLiveItems`.** `?view=guest` and unsigned members get live chips plus the C0 cancelled footer.
+2. **Pencil and planning stay off that feed.** The helper already names those stages so it can drop them. Private stays off too.
+3. **Admin is unchanged.** This change does not declare `planningLane` or `productionLane`. Pencil already has `pencilLane` from ADR-1454.
+
+**Rejected.** Closing C3–C4 in the same PR. Hiding cancelled (C0 already painted the footer). Rebuilding `guestLiveItems` on a second file.
+
+**Consequences.** Public first paint and month browse now share the same feed. Calendar C0–C5 are the stop for owner confirm. Do not start Editor / Sites / Etsy / App Platform / LIVE-242 from this row. **Amended by [ADR-1468](DECISIONS.md):** Admin now has a Planning lane. Guest is unchanged.
+
+**Rows.** LIVE-419.
+
 ## ADR-1468: Admin Calendar gives Planning its own lane (LIVE-417)
 
-**Status:** Accepted · 2026-09-19 · backlog `LIVE-417` · numbered **1468** (1463 is LIVE-393 on this tree; 1454 is LIVE-416; 1456 is claimed on leftover #2760) · implements C3 of [ADR-1445](DECISIONS.md) · follows [ADR-1454](DECISIONS.md) · corroborated by `lib/calendar/pm-console.ts` (`planningLane`), `components/spaces/calendar-pm-console.tsx`
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-417` · numbered **1468** (1463 is LIVE-393 on this tree; 1454 is LIVE-416; 1457 is LIVE-419 on main; 1456 is claimed on leftover #2760) · implements C3 of [ADR-1445](DECISIONS.md) · follows [ADR-1454](DECISIONS.md) · corroborated by `lib/calendar/pm-console.ts` (`planningLane`), `components/spaces/calendar-pm-console.tsx`
 
-**Context.** ADR-1454 gave Pencil its own Admin lane and left Planning on the mixed board. ADR-1445 C3 asked for Planning as a first-class Admin lane after C2. Premise re-tested 2026-09-19 on `8fbcab55c`: `pencilLane` existed; `planningLane` did not. Leftover #2758 still targeted a pre-C2 tree and was not absorbed.
+**Context.** ADR-1454 gave Pencil its own Admin lane and left Planning on the mixed board. ADR-1445 C3 asked for Planning as a first-class Admin lane after C2. Premise re-tested 2026-09-19 on `8fbcab55c`: `pencilLane` existed; `planningLane` did not. Leftover #2758 still targeted a pre-C2 tree and was not absorbed. LIVE-419 landed on main (#2762) while this PR was open.
 
 **Decision.**
 
 1. **`planningLane` is the Admin Planning lane.** It is `operatorListItems` filtered to `stage === 'planning'`. `CalendarPmConsole` renders that lane between Pencil and the mixed board.
 2. **The mixed board no longer lists Planning.** Production, Cancelled, live events, and drafts stay there until C4 names Production.
-3. **The date map is unchanged.** This change does not declare `productionLane`, and it does not fold Guest through `guestLiveItems`.
+3. **The date map and Guest feed are unchanged.** Guest already goes through `guestLiveItems` (ADR-1457). This change does not declare `productionLane`.
 
-**Rejected.** Closing C4–C5 in the same PR. Absorbing leftover #2758 (it still assumed Pencil lived on the mixed board). Calling Planning a hold (NAMING.md: Hold is the venue-hold noun).
+**Rejected.** Closing C4 in the same PR. Absorbing leftover #2758 (it still assumed Pencil lived on the mixed board). Calling Planning a hold (NAMING.md: Hold is the venue-hold noun).
 
-**Consequences.** LIVE-418 starts the Production lane. LIVE-419 still owns the Guest feed.
+**Consequences.** LIVE-418 starts the Production lane. LIVE-419 is already on main.
 
 **Rows.** LIVE-417.

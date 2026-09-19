@@ -48,8 +48,7 @@
             "W0c"
           ],
           "next": [
-            "LIVE-418",
-            "LIVE-419"
+            "LIVE-418"
           ],
           "leave": [
             "SCAN-637",
@@ -78,8 +77,7 @@
             "LIVE-414",
             "LIVE-415",
             "LIVE-408",
-            "LIVE-418",
-            "LIVE-419"
+            "LIVE-418"
           ],
           "packetsLane": [
             "scan"
@@ -146,7 +144,7 @@
           "RLS on spatial_ref_sys"
         ],
         "packets": {
-          "product": "pnpm packets --lane events  (LIVE-410 closed; calendar C0–C3 closed; next is LIVE-418)",
+          "product": "pnpm packets --lane events  (LIVE-410 closed; calendar C0–C3 and C5 closed; next is LIVE-418)",
           "scan": "pnpm packets --lane scan",
           "doNotShare": [
             "LIVE-376",
@@ -172,7 +170,6 @@
           "name": "W0c \u00b7 P1/P2 \u2014 calendar C2\u2013C5 (ADR-1445) first, then FOCUS remainder, gems, scan cheap-DB, Journey sales tail.",
           "ids": [
             "LIVE-418",
-            "LIVE-419",
             "LIVE-408",
             "SCAN-643",
             "HYG-100",
@@ -14933,7 +14930,7 @@
         "file": "lib/calendar/entries.ts",
         "ref": "ADR-1388, ADR-1445, ADR-1468"
       },
-      "detail": "Admin PM console lists planning-stage gatherings as their own lane. After C2 (LIVE-416).\n\nCLOSED 2026-09-19 (ADR-1468). PREMISE RE-TESTED FIRST: after C2, CalendarPmConsole had pencilLane; planningLane was missing and Planning still sat on the mixed board. planningLane (lib/calendar/pm-console.ts) is operatorListItems filtered to stage === 'planning'. CalendarPmConsole renders that lane between Pencil and the mixed board. Production and Cancelled stay on that board until C4. StaffCalendar is still the date map. Did not declare productionLane. Did not fold Guest through guestLiveItems (LIVE-419). Did not absorb leftover #2758 (pre-C2 tree).",
+      "detail": "Admin PM console lists planning-stage gatherings as their own lane. After C2 (LIVE-416).\n\nCLOSED 2026-09-19 (ADR-1468). PREMISE RE-TESTED FIRST: after C2, CalendarPmConsole had pencilLane; planningLane was missing and Planning still sat on the mixed board. planningLane (lib/calendar/pm-console.ts) is operatorListItems filtered to stage === 'planning'. CalendarPmConsole renders that lane between Pencil and the mixed board. Production and Cancelled stay on that board until C4. StaffCalendar is still the date map. Did not declare productionLane. Guest already goes through guestLiveItems (LIVE-419 / #2762). Did not absorb leftover #2758 (pre-C2 tree).",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"components/spaces/calendar-pm-console.tsx\",\"utf8\");if(!s.includes(\"planningLane\"))process.exit(1)'",
@@ -14962,20 +14959,21 @@
     {
       "id": "LIVE-419",
       "title": "Calendar C5: Guest view never shows pencil or planning; cancelled stays the C0 footer",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "components/spaces/calendar-mode-toggle.tsx",
-        "ref": "ADR-1389, ADR-1445"
+        "ref": "ADR-1389, ADR-1445, ADR-1457"
       },
-      "detail": "Close the Admin/Guest split: `?view=guest` and unsigned members go through guestLiveItems only. Pencil and planning stay off that feed. Cancelled is the C0 footer (LIVE-414), not a guest chip. After C0 and C1.",
+      "detail": "Close the Admin/Guest split: `?view=guest` and unsigned members go through guestLiveItems only. Pencil and planning stay off that feed. Cancelled is the C0 footer (LIVE-414), not a guest chip. After C0 and C1.\n\nWHAT SHIPPED. The Guest branch of the Space Calendar tab calls guestLiveItems. That helper already names pencil and planning so it can drop them. Month browse already went through loadPublicSpaceWindow (LIVE-414). Did not declare pencilLane, planningLane, or productionLane. Stacked on #2753 so guest-live.ts exists; rebase after C0 lands.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const p=fs.readFileSync(\"app/(main)/spaces/[slug]/(profile)/calendar/page.tsx\",\"utf8\");if(!p.includes(\"guestLiveItems\"))process.exit(1);const g=fs.readFileSync(\"lib/calendar/guest-live.ts\",\"utf8\");if(!/pencil|planning/.test(g))process.exit(1)'",
-        "note": "Fails until the Guest branch calls guestLiveItems and that helper names pencil/planning so it can exclude them."
-      }
+        "note": "Passes when the Guest branch calls guestLiveItems and that helper names pencil/planning. Written 2026-09-19."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "HYG-104",
