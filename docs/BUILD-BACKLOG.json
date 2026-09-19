@@ -47,7 +47,6 @@
             "W0b"
           ],
           "next": [
-            "LIVE-414",
             "LIVE-415"
           ],
           "leave": [
@@ -94,7 +93,6 @@
               "LIVE-410",
               "LIVE-186",
               "LIVE-213",
-              "LIVE-414",
               "LIVE-415"
             ]
           },
@@ -147,7 +145,7 @@
           "RLS on spatial_ref_sys"
         ],
         "packets": {
-          "product": "pnpm packets --lane events  (LIVE-410 closed; calendar C0 is LIVE-414)",
+          "product": "pnpm packets --lane events  (LIVE-410 closed; calendar C0 LIVE-414 closed; C1 is LIVE-415)",
           "scan": "pnpm packets --lane scan",
           "doNotShare": [
             "LIVE-376",
@@ -167,7 +165,6 @@
           "ids": [
             "LIVE-186",
             "LIVE-213",
-            "LIVE-414",
             "LIVE-415"
           ]
         },
@@ -14816,20 +14813,21 @@
     {
       "id": "LIVE-414",
       "title": "Calendar C0: guest and member public calendars are live events only; cancelled is muted footer text in the date square",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "components/events/event-calendar.tsx",
-        "ref": "owner 2026-09-19 calendar plan; ADR-1445; ADR-1388; ADR-1389"
+        "ref": "owner 2026-09-19 calendar plan; ADR-1445; ADR-1446; ADR-1388; ADR-1389"
       },
-      "detail": "Owner 2026-09-19: the public calendar (Guest toggle and ordinary members) shows LIVE events only. A cancelled gathering is not a chip in the square; it is small muted text at the bottom of that date. Do not hide cancelled entirely. Do not strike through a chip. ADR-1388 stages and ADR-1389 Admin/Guest stay the frame. LIVE-379 and LIVE-380 already shipped the stage column and the Admin/Guest toggle; this row is the public paint. Sequence C0 then C1 then C2-C5 as LIVE-414 through LIVE-419. One row per PR, under 40 files. Do not write a planning file. Start here.",
+      "detail": "Owner 2026-09-19: the public calendar (Guest toggle and ordinary members) shows LIVE events only. A cancelled gathering is not a chip in the square; it is small muted text at the bottom of that date. Do not hide cancelled entirely. Do not strike through a chip. ADR-1388 stages and ADR-1389 Admin/Guest stay the frame. LIVE-379 and LIVE-380 already shipped the stage column and the Admin/Guest toggle; this row is the public paint. Sequence C0 then C1 then C2-C5 as LIVE-414 through LIVE-419. One row per PR, under 40 files. Do not write a planning file. Start here.\n\nCLOSED 2026-09-19 (ADR-1446). PREMISE RE-TESTED FIRST: EventCalendar still painted cancelled as a struck chip; listSpaceCalendarEvents dropped cancelled via passesCalendarGate so the public grid hid them; lib/calendar/guest-live.ts did not exist. guestLiveItems is now the public feed (live + cancelled footer; pencil and planning excluded). cancelledCellFooter paints muted titles at the bottom of the date square. The on-page reader opts into paintCancelled; ICS stays live-only. Did not wire guestLiveItems into the Guest page branch (LIVE-419). Did not mount CalendarPmConsole (LIVE-415).",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const cal=fs.readFileSync(\"components/events/event-calendar.tsx\",\"utf8\");if(!cal.includes(\"cancelledCellFooter\"))process.exit(1);if(!fs.existsSync(\"lib/calendar/guest-live.ts\"))process.exit(1);const g=fs.readFileSync(\"lib/calendar/guest-live.ts\",\"utf8\");if(!g.includes(\"export function guestLiveItems\"))process.exit(1)'",
         "note": "Fails until the month cell paints cancelled as cancelledCellFooter and guestLiveItems is the public feed."
-      }
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-415",
