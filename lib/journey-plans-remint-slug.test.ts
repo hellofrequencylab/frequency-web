@@ -21,12 +21,17 @@ interface Row {
 let row: Row
 let updatePayload: Record<string, unknown> | null = null
 
-function builder() {
+// ⚠️ THE CAPTURE IS KEYED BY TABLE, and it has to be. `updatePlan` writes TWO tables since
+// LIVE-390: `journey_plans`, and then a mirror of title/summary/cover into the live
+// `commerce_products` row so a rename cannot leave the Market card and its metadata on the old
+// words. A table-blind capture recorded whichever landed LAST, so these assertions silently began
+// reading the mirror's payload instead of the one they are about.
+function builder(table: string) {
   const api: Record<string, unknown> = {
     select: () => api,
     eq: () => api,
     update(p: Record<string, unknown>) {
-      updatePayload = p
+      if (table === 'journey_plans') updatePayload = p
       return api
     },
     // The write terminates on `.eq(...)`, so the builder itself is awaitable.
@@ -41,7 +46,7 @@ function builder() {
 }
 
 vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: () => ({ from: () => builder() }),
+  createAdminClient: () => ({ from: (table: string) => builder(table) }),
 }))
 // updatePlan itself needs neither of these, but the module graph pulls them in at import time.
 vi.mock('@/lib/spaces/store', () => ({ loadRootSpaceId: async () => 'root' }))

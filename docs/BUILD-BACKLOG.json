@@ -52,7 +52,6 @@
             "LIVE-373",
             "LIVE-376",
             "LIVE-377",
-            "LIVE-390",
             "LIVE-392"
           ]
         },
@@ -61,7 +60,6 @@
           "ids": [
             "HYG-075",
             "LIVE-335",
-            "LIVE-391",
             "LIVE-393",
             "LIVE-394",
             "LIVE-395",
@@ -14023,7 +14021,7 @@
     {
       "id": "LIVE-390",
       "title": "A Journey product's title, description and cover are a stale COPY, and they feed search results",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
@@ -14031,17 +14029,17 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
       },
-      "detail": "`setJourneyPriceAction` writes `title`, `description` and `images` into `commerce_products` when a price is set (sell-actions.ts:81-83). Nothing refreshes them, so editing the Journey leaves them stale. They are not cosmetic: they feed `/market/<id>`'s h1 and cover, its meta description and og image, its Product JSON-LD, the Market grid card, and the client-side search text. ADR-1398 \u00a73 says the sales page is 'derived, never copied' and the BODY is; the frame around it is not.\n\nAgreed shape (owner, 2026-09-18): derive at the detail page AND in generateMetadata so head and body agree, then keep the snapshot fresh from `updatePlan` (the single writer for title/summary/cover_image) so the grid card keeps rendering with no join. Gotcha: `cover_image` is a raw storage path; the override must resolve it the way `resolveImage` does or it renders a bare path.",
+      "detail": "`setJourneyPriceAction` writes `title`, `description` and `images` into `commerce_products` when a price is set (sell-actions.ts:81-83). Nothing refreshes them, so editing the Journey leaves them stale. They are not cosmetic: they feed `/market/<id>`'s h1 and cover, its meta description and og image, its Product JSON-LD, the Market grid card, and the client-side search text. ADR-1398 \u00a73 says the sales page is 'derived, never copied' and the BODY is; the frame around it is not.\n\nAgreed shape (owner, 2026-09-18): derive at the detail page AND in generateMetadata so head and body agree, then keep the snapshot fresh from `updatePlan` (the single writer for title/summary/cover_image) so the grid card keeps rendering with no join. Gotcha: `cover_image` is a raw storage path; the override must resolve it the way `resolveImage` does or it renders a bare path.\n\nSHIPPED as a SYNC, not a derive, and the probe moved with it. Deriving at the detail page would have fixed that page and left the Market grid card, the Space Shop tab, Email Studio and the search text still reading the copy \u2014 and pushing the derive down into `listMarketListings` would put a Journey dependency in the generic catalog reader, which is exactly what ADR-1398 \u00a73's 'a card renders without a join' property exists to prevent (MarketItem includes ticket projections with no product row at all). So the snapshot stays and gains the one thing it lacked: an invalidator. `updatePlan` is the SINGLE writer of journey_plans.title/summary/cover_image, so mirroring those three into the live product row there means the copy cannot go stale. Fail-soft and last, after the Journey write has already succeeded; the partial unique index means it touches at most one row.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const mk=s('app/(main)/market/[id]/page.tsx');if(!/journeyPlan\\.plan\\.(title|summary)/.test(mk))fail('the Market detail page still renders the copied product row instead of deriving title/description from the Journey');const jp=s('lib/journey-plans.ts');if(!/commerce_products/.test(jp))fail('updatePlan does not refresh the product snapshot, so a Journey edit still leaves the Market card and its metadata stale')\"",
-        "note": "Measures the CONSEQUENCE: the detail page deriving from the plan, and updatePlan being the invalidator. Fails while either half is missing."
+        "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const jp=s('lib/journey-plans.ts');const i=jp.indexOf('export async function updatePlan');if(i<0)fail('updatePlan is gone; re-point this probe');const body=jp.slice(i,i+9000);if(!/commerce_products/.test(body))fail('updatePlan does not refresh the product snapshot, so renaming a Journey still leaves the Market card, its meta description and its JSON-LD on the old words');if(!/journey_plan_id/.test(body))fail('the refresh does not target the row by journey_plan_id');for(const c of ['title','description','images'])if(!new RegExp('mirror\\\\\\\\.'+c).test(body))fail('the refresh does not carry '+c+', so that column can still go stale')\"",
+        "note": "Measures the CONSEQUENCE: the single writer of those three columns also invalidating the copy that mirrors them. Fails if the mirror is removed or loses a column."
       }
     },
     {
       "id": "LIVE-391",
       "title": "Two authors can edit a Journey product's copy, and one of them will silently lose",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
@@ -14049,7 +14047,7 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
       },
-      "detail": "The Space Shop console Catalog tab prefills and saves `title`, `description` and `images` for any product, including a Journey (catalog-tab.tsx:199-208). Once LIVE-390 derives or syncs those from the Journey, a manager's edit here either stops showing or gets overwritten on the next rename. Owner ruling 2026-09-18: LOCK the fields for `product_kind='journey'` and point at the Journey editor, so no save can silently fail to stick. Ships with or immediately after LIVE-390 \u2014 shipping the derive without this leaves a live form whose saves do nothing.",
+      "detail": "The Space Shop console Catalog tab prefills and saves `title`, `description` and `images` for any product, including a Journey (catalog-tab.tsx:199-208). Once LIVE-390 derives or syncs those from the Journey, a manager's edit here either stops showing or gets overwritten on the next rename. Owner ruling 2026-09-18: LOCK the fields for `product_kind='journey'` and point at the Journey editor, so no save can silently fail to stick. Ships with or immediately after LIVE-390 \u2014 shipping the derive without this leaves a live form whose saves do nothing.\n\nSHIPPED. The Shop console Catalog tab now renders a read-only line for product_kind='journey' in place of the Edit form, saying the name, description and cover come from the Journey and update when it is edited. Shipped in the same change as LIVE-390, because the sync is what would have made those saves stop sticking.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const t=s('app/(main)/spaces/[slug]/settings/shop/catalog-tab.tsx');if(!/journey/i.test(t))fail('the Shop console Catalog tab still offers title/description editing for a Journey product, with no product_kind gate')\"",
