@@ -7,7 +7,7 @@ import { buttonClasses } from '@/components/ui/button'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { ShareImageProvider } from '@/components/qr/share-image-context'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
-import { getCallerProfile } from '@/lib/auth'
+import { getCallerProfile, isPlatformStaff } from '@/lib/auth'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { getJourneyView, getPlan, getPlanAuthor } from '@/lib/journey-plans'
 import { getPillars, pillarsById as indexPillars } from '@/lib/pillars'
@@ -16,8 +16,12 @@ import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons
 import { adoptPlanAction, forkPlanAction } from '../actions'
 import { enabledWidgets } from '@/lib/journey-page-config'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
-import { getJourneyOffer, seatLine, isSoldOut } from '@/lib/journeys/paid'
+import { getJourneyOffer, seatLine, isSoldOut, productIdsForJourneyPlan } from '@/lib/journeys/paid'
 import { BuyButton } from '../../marketplace/buy-button'
+import { getProductReviews, getMyProductReview } from '@/lib/commerce/reviews'
+import { ProductReviews } from '@/components/marketplace/product-reviews'
+import { getListingComments } from '@/lib/marketplace/listing-comments'
+import { ListingQna } from '@/components/marketplace/listing-qna'
 import {
   StoryBlock,
   OutcomesBlock,
@@ -138,6 +142,16 @@ export default async function JourneyPlanPage({
   // The sellable face of this Journey, when it has one (ADR-1397). Free Journeys read null and the
   // enrol control is exactly what it has always been.
   const rawOffer = await getJourneyOffer(plan.id)
+  const lineageIds = await productIdsForJourneyPlan(plan.id)
+  const reviewProductId = rawOffer?.productId ?? lineageIds[0] ?? null
+  const [reviews, myReview, comments, operator] = reviewProductId
+    ? await Promise.all([
+        getProductReviews(reviewProductId),
+        getMyProductReview(reviewProductId, profileId),
+        getListingComments('product', reviewProductId),
+        isPlatformStaff(),
+      ])
+    : [null, null, [], false] as const
   const offer = rawOffer
     ? {
         productId: rawOffer.productId,
@@ -319,7 +333,30 @@ export default async function JourneyPlanPage({
           </div>
           {enabled.has('pillar-balance') && <PillarBalanceBlock items={items} pillars={pillars} />}
           <InstructorBlock author={author} />
+          {reviewProductId && reviews && (
+            <ProductReviews
+              productId={reviewProductId}
+              productTitle={plan.title}
+              reviews={reviews}
+              myReview={myReview}
+              signedIn={!!profileId}
+              canReview={!!profileId && !!rawOffer && !canManageJourney}
+              canModerate={operator}
+            />
+          )}
           <JourneyFaq plan={plan} />
+          {reviewProductId && (
+            <ListingQna
+              targetKind="product"
+              targetId={reviewProductId}
+              revalidatePath={`/journeys/${plan.slug}`}
+              comments={comments}
+              canPost={!!profileId}
+              canModerate={canManageJourney || operator}
+              myProfileId={profileId}
+              isOwner={canManageJourney}
+            />
+          )}
 
           {/* The repeat CTA closes the page. It is an ANCHOR to the one enrol box, never a second
               copy of it: a repeat CTA on a long sales page is worth having, a second mounted

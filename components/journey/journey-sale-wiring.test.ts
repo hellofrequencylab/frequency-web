@@ -245,6 +245,18 @@ describe('journeyOfferSchema', () => {
     expect(node.offers.url).toContain('/discover/journeys/heart-on-fire')
     expect(node.offers.url).not.toContain('/market/')
   })
+
+  it('carries AggregateRating when the Journey has visible reviews', () => {
+    const node = journeyOfferSchema(plan as never, { priceCents: 44400, currency: 'usd' }, false, {
+      ratingValue: 4.8,
+      reviewCount: 12,
+    })
+    expect(node.aggregateRating).toMatchObject({
+      '@type': 'AggregateRating',
+      ratingValue: 4.8,
+      reviewCount: 12,
+    })
+  })
 })
 
 // ── WAVE 2 (ADR-1401): one enrol control per page, proof before the objections, and the dead
@@ -289,6 +301,15 @@ describe('proof sits between the guide and the objections', () => {
     const faq = src.indexOf('<JourneyFaq')
     expect(proof).toBeGreaterThan(guide)
     expect(proof).toBeLessThan(faq)
+  })
+
+  it('the member sales page puts reviews between the guide and the FAQ', () => {
+    const src = code('app', '(main)', 'journeys', '[slug]', 'page.tsx')
+    const guide = src.indexOf('<InstructorBlock')
+    const reviews = src.indexOf('<ProductReviews')
+    const faq = src.indexOf('<JourneyFaq')
+    expect(reviews).toBeGreaterThan(guide)
+    expect(reviews).toBeLessThan(faq)
   })
 
   it('the Market page fills it with the reviews rather than appending them after', () => {

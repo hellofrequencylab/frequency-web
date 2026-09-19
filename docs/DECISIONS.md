@@ -45465,9 +45465,39 @@ public face of the offer.
    and then linking Market from Discover would loop.
 
 **Rejected.** A second product row per storefront (duplicates the seat pool, which ADR-1397 forbade).
-Embedding checkout on the cached public page (ADR-1400 already refused this). Keying reviews to the
-plan (LIVE-392, still open; the uuid redirect keeps old review URLs from 404ing while that ships).
+Embedding checkout on the cached public page (ADR-1400 already refused this).
 
 **Consequences.** Shop and Market can both sell the same Journey. The course stays behind enrolment.
-Reviews and Q&A still live on the product row until LIVE-392. The generic Market listing render
-remains as a fallback when the plan is missing.
+Reviews and Q&A resolve through the Journey plan ([ADR-1405](DECISIONS.md)). The generic Market listing
+render remains as a fallback when the plan is missing.
+
+## ADR-1405: Journey reviews and Q&A follow the plan, not the price row (2026-09-19)
+
+**Status:** Accepted · **Extends** [ADR-1397](DECISIONS.md) (a re-price archives the product) and
+[ADR-1404](DECISIONS.md) (the sales page is the Journey slug) · Backlog `LIVE-392`
+
+**Context.** `commerce_reviews` and `listing_comments` are keyed to a product uuid. Re-pricing a
+Journey archives that row and writes a new one, so every star and every answered question detached
+from the live listing. After ADR-1404 the buyer never even opens `/market/<id>`, so the proof also
+had no home on the page that sells the Journey.
+
+**Decision.**
+
+1. **Resolve through `journey_plan_id`.** Readers ask for every product row attached to the plan,
+   live and archived, and show that set. A non-Journey product is still itself. No new column: the
+   product already carries the plan, and the admin-client readers already bypass the RLS arm that
+   hides reviews on an archived parent.
+2. **An edit stays on the row that exists.** Upserting onto the live uuid after a re-price would
+   mint a second review from the same member. A write finds the member's existing row across the
+   plan and updates it in place.
+3. **The sales page is the wall.** `/journeys/<slug>` carries reviews and Q&A. The public twin
+   shows reviews (read-only) and puts AggregateRating on the Product node so a re-price does not
+   drop structured proof from the canonical URL.
+
+**Rejected.** Adding `journey_plan_id` onto `commerce_reviews` in this change (correct long-term
+uniqueness, but a migration for a reader that already has the join). Guest Q&A on the cached
+public page (ADR-1400: that route is an hour stale and has no till).
+
+**Consequences.** Market cards attribute sibling reviews to the live product id. Settled orders on
+an archived uuid still count as a verified purchase. `LIVE-392` closes when `lib/commerce/reviews.ts`
+knows the plan.

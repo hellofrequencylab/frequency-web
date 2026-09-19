@@ -129,8 +129,9 @@ A **paid Space** can put a price on a Journey from **Sell this Journey** in its 
 **Also list it in the main Market** off to sell only from the Journey page and that Space's Shop.
 Turn it on to show the same offer in the Market too. There is still one price and one set of seats.
 
-People who are not enrolled see the sales page (the story, the outline, the price). They see the
-lessons after they pay or, for a free Journey, after they start it.
+People who are not enrolled see the sales page (the story, the outline, the price, and any
+reviews). They see the lessons after they pay or, for a free Journey, after they start it.
+Changing the price keeps those reviews on the Journey.
 
 ## Run it with a Circle
 
