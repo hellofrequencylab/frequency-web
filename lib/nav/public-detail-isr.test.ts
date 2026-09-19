@@ -1,17 +1,18 @@
 import { describe, it, expect } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 
-// SCAN-637 + SCAN-636: sitemap-advertised public details must not force-dynamic, and must not
-// read auth/cookies during render. One dynamic API in the page voids ISR the way the
-// old /discover header did. The (main) layout auth read is a separate row (SCAN-641).
-// /events/<slug> is the share URL; signed-in members rewrite to event-member-page.tsx.
+// SCAN-637 + SCAN-636 + SCAN-643: sitemap-advertised public details must not
+// force-dynamic, and must not read auth/cookies during render. One dynamic API
+// in the page or a parent layout voids ISR the way the old /discover header did.
+// Share event and listing URLs live under (public). /events/<slug> is the share
+// URL; signed-in members rewrite to event-member-page.tsx.
 
 const PAGES = [
-  'app/(main)/market/[id]/page.tsx',
-  'app/(main)/store/[id]/page.tsx',
-  'app/(main)/housing/[id]/page.tsx',
-  'app/(main)/classifieds/[id]/page.tsx',
-  'app/(main)/events/[slug]/page.tsx',
+  'app/(public)/market/[id]/page.tsx',
+  'app/(public)/store/[id]/page.tsx',
+  'app/(public)/housing/[id]/page.tsx',
+  'app/(public)/classifieds/[id]/page.tsx',
+  'app/(public)/events/[slug]/page.tsx',
   'app/spotlight/[handle]/page.tsx',
 ] as const
 
@@ -44,6 +45,18 @@ describe('sitemap-advertised listing details stay eligible for ISR', () => {
   it.each(PAGES)('%s reaches for no dynamic API', (file) => {
     const found = DYNAMIC_APIS.filter((d) => d.re.test(codeOf(file))).map((d) => d.name)
     expect(found, `${file} would stay force-dynamic`).toEqual([])
+  })
+
+  it('the (public) share layout never calls a dynamic request API', () => {
+    const layout = codeOf('app/(public)/layout.tsx')
+    const chrome = codeOf('components/layout/public-share-chrome.tsx')
+    for (const src of [layout, chrome]) {
+      expect(src).not.toMatch(/\bcookies\s*\(\s*\)/)
+      expect(src).not.toMatch(/\bheaders\s*\(\s*\)/)
+      expect(src).not.toMatch(/\bgetCachedUser\s*\(/)
+    }
+    expect(chrome).toMatch(/<SiteHeader[\s\S]*authMode="client"/)
+    expect(chrome).not.toMatch(/<MarketingHeader/)
   })
 
   it('sitemap lists Spotlight handles through the shared reader, not a local admin query', () => {

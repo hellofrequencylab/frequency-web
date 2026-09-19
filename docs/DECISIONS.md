@@ -46572,3 +46572,22 @@ Premise re-tested 2026-09-19:
 **Consequences.** `pnpm packets --lane scan` starts at SCAN-643. Status stays in `docs/BUILD-BACKLOG.json`. Rationale in `docs/META-SCAN-STATUS.md` 2026-09-19 evening pass.
 
 **Rows.** SCAN-642, SCAN-643, SCAN-638 (re-pointed).
+
+## ADR-1467: Share event and listing URLs leave the member layout (SCAN-643)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-643` · numbered **1467** (1464–1466 are claimed on other open trees; 1463 is LIVE-393 on this tree) · corroborated by `app/(public)/layout.tsx` and `components/layout/public-share-chrome.tsx`
+
+**Context.** SCAN-636 made `/events/<slug>` the ISR public body. SCAN-637 dropped `force-dynamic` on the four listing details. Both still sat under `app/(main)/layout.tsx`, which called `getCachedUser()` (`cookies()`) and `headers()` before `publicChrome()`, and whose `generateMetadata` called `headers()` for page_settings SEO. Without `cacheComponents`, one dynamic API in a parent voids the subtree. Discover already paid to learn this. Premise re-tested 2026-09-19 after SCAN-642 landed: the SCAN-643 probe still failed.
+
+**Decision.**
+
+1. **Move the share URLs.** `/events/<slug>` and `/market|/store|/housing|/classifieds/<id>` live under `app/(public)/`. That layout never calls `cookies()` or `headers()`. Signed-in visitors on an event still rewrite to `/events/<slug>/full`.
+2. **Keep the SCAN-641 header.** `PublicShareChrome` mounts `SiteHeader variant="light" authMode="client"`. Do not close this row by swapping `MarketingHeader`.
+3. **Drop layout `generateMetadata` that reads the request path.** Page-level metadata still wins. Operator page_settings SEO on leftover (main) routes can return on a member-only nested layout later.
+4. **Leave Space profiles.** `spaces/[slug]/layout.tsx` still calls `getMyProfileId`, and a signed-in member keeps the member shell on the same URL. That remainder is `SCAN-644`.
+
+**Rejected.** Absorbing leftover #2743 (conflicting, used MarketingHeader). Treating a source-order shuffle of `publicChrome` as the ISR win without moving the pages. Folding Space profiles into this PR (the /full rewrite is its own row). Reopening SCAN-636.
+
+**Consequences.** `pnpm packets --lane scan` starts at SCAN-644. Status stays in `docs/BUILD-BACKLOG.json`.
+
+**Rows.** SCAN-643, SCAN-644.
