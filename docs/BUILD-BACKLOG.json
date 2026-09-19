@@ -58,6 +58,9 @@
           "name": "W0c \u00b7 P2 \u2014 FOCUS remainder, gems replay grant, remaining audit security, small cleanups, Journey sales tail.",
           "ids": [
             "LIVE-408",
+            "SCAN-636",
+            "SCAN-637",
+            "SCAN-638",
             "HYG-102",
             "HYG-100",
             "LIVE-413",
@@ -85,7 +88,10 @@
             "HYG-092",
             "LIVE-338",
             "HYG-094",
-            "LIVE-397"
+            "LIVE-397",
+            "SCAN-639",
+            "SCAN-640",
+            "SCAN-641"
           ]
         },
         {
@@ -14571,6 +14577,114 @@
         "kind": "manual",
         "evidence": "2026-09-19: pending tests still to delete. Closes when production event_tickets has no pending unpaid test rows the owner does not intend to complete.",
         "checked": "2026-09-19"
+      }
+    },
+    {
+      "id": "SCAN-636",
+      "title": "The ISR event page canonicals onto a fully dynamic 2485-line member route",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "app/discover/events/[slug]/page.tsx",
+        "ref": "meta-scan 2026-09-19"
+      },
+      "detail": "FOUND 2026-09-19. /discover/events/[slug] is ISR (revalidate 3600, generateStaticParams, column-safe RPC). Its generateMetadata sets canonical to /events/<slug>. That canonical lives under app/(main)/layout.tsx, which always awaits getCachedUser() and headers() before the public-chrome branch, then renders a 2485-line page. Discover already learned this lesson (authMode=client so revalidate is not voided). Crawlers are told to consolidate onto the slower page. Close by either (a) giving the anon /events/<slug> path the same static/ISR treatment (split a public body, skip the auth read the way discover does), or (b) reversing the canonical so the ISR twin is the advertised URL and the member URL noindexes. Share/QR currently resolve to /events/<slug>, so (a) is the product-preserving fix.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const d=fs.readFileSync(\"app/discover/events/[slug]/page.tsx\",\"utf8\");const e=fs.readFileSync(\"app/(main)/events/[slug]/page.tsx\",\"utf8\");const twinToMember=/canonical: `\\/events\\/\\$\\{/.test(d);const memberIsr=/export const revalidate/.test(e);process.exit(twinToMember && !memberIsr ? 1 : 0)'",
+        "note": "Fails while the ISR twin still points canonical at a member page with no revalidate. Passes if the canonical moves off /events or the member page itself is ISR."
+      }
+    },
+    {
+      "id": "SCAN-637",
+      "title": "Sitemap-advertised marketplace details are force-dynamic",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "app/(main)/market/[id]/page.tsx",
+        "ref": "meta-scan 2026-09-19"
+      },
+      "detail": "FOUND 2026-09-19. /market/[id], /store/[id], /housing/[id], and /classifieds/[id] are public detail routes (lib/nav/public-detail-routes.ts), emit listing JSON-LD, and are advertised by app/sitemap.ts, and each file still says `export const dynamic = 'force-dynamic'`. They also sit under the (main) layout auth read. Same class as the discover-layout comment that already fixed this for /discover: a dynamic API in the tree voids ISR. Close by dropping force-dynamic on the public read path and moving viewer-personalisation (own review, buy button state) behind client auth or Suspense, the way SiteHeader authMode=client does.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const files=[\"app/(main)/market/[id]/page.tsx\",\"app/(main)/store/[id]/page.tsx\",\"app/(main)/housing/[id]/page.tsx\",\"app/(main)/classifieds/[id]/page.tsx\"];const bad=files.filter(f=>/export const dynamic = .force-dynamic./.test(fs.readFileSync(f,\"utf8\")));process.exit(bad.length?1:0)'",
+        "note": "Fails while any of the four sitemap-advertised listing details still force-dynamic."
+      }
+    },
+    {
+      "id": "SCAN-638",
+      "title": "Six new unindexed FKs and two auth.uid() initplans landed after the Aug 31 scan",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270345002800_entitlement_grants.sql",
+        "ref": "meta-scan 2026-09-19, Supabase performance advisors"
+      },
+      "detail": "FOUND 2026-09-19 against project Frequency Community. The 2026-08-31 scan recorded zero unindexed_foreign_keys and zero auth_rls_initplan. Today: entitlement_grants.space_id, space_benefit_redemptions.member_profile_id, space_calendar_day_notes.created_by, space_calendar_entries.created_by, space_circle_optouts.profile_id, space_donations.ask_id; plus initplan WARN on space_circle_optouts read own and entitlement_grants read own (auth.uid() not wrapped in SELECT). Unused indexes dropped 538 to 392 (pre-launch noise). spatial_ref_sys ERROR is still PostGIS, leave it (OWN-006 / slate note). Close with one migration: covering indexes on those six FKs, and `(select auth.uid())` in the two policies. Draft-and-approve; do not apply from an agent session.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const g=fs.readFileSync(\"supabase/migrations/20270345002800_entitlement_grants.sql\",\"utf8\");const o=fs.readFileSync(\"supabase/migrations/20270345005800_space_circle_auto_enrol.sql\",\"utf8\");const later=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\")&&f>\"20270345005800\").some(f=>/select auth.uid\\(\\)/.test(fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\"))&&/entitlement_grants read own|space_circle_optouts read own/.test(fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\")));const wrapped=/select auth.uid\\(\\)/.test(g)&&/select auth.uid\\(\\)/.test(o);process.exit(wrapped||later?0:1)'",
+        "note": "Fails until the two read-own policies wrap auth.uid() in SELECT, in the creating file or a later migration. Index half is covered by the same PR; advisors are the production proof."
+      }
+    },
+    {
+      "id": "SCAN-639",
+      "title": "Admin FilterBar is specified in the kit and imported by nothing",
+      "status": "open",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "components/admin/filter-bar.tsx",
+        "ref": "meta-scan 2026-09-19"
+      },
+      "detail": "FOUND 2026-09-19. components/admin/filter-bar.tsx exports FilterBar (URL-as-state chips, ADR-233). docs/ADMIN-DESIGN-SYSTEM.md and components/admin/KIT.md name it as a contract next to DataTable. Zero imports of @/components/admin/filter-bar in app/lib/components (the IndexTemplate FilterBar in page-contents.tsx is a different local function). Wire it onto one Index/Queue or delete the file and drop the kit mention. Do not leave a second FilterBar name.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const path=require(\"path\");function*w(d){let es;try{es=fs.readdirSync(d,{withFileTypes:true})}catch{return}for(const e of es){const f=path.join(d,e.name);if(e.isDirectory()){if(e.name!==\"node_modules\"&&!e.name.startsWith(\".\"))yield*w(f)}else yield f}}if(!fs.existsSync(\"components/admin/filter-bar.tsx\"))process.exit(0);let hits=0;for(const root of [\"app\",\"components\",\"lib\"]){for(const f of w(root)){if(!/\\\\.(ts|tsx)$/.test(f)||f.endsWith(\"filter-bar.tsx\")||/\\\\.test\\\\./.test(f))continue;if(/admin\\\\/filter-bar/.test(fs.readFileSync(f,\"utf8\")))hits++}}process.exit(hits>0?0:1)'",
+        "note": "Passes if the file is gone or at least one non-test module imports it."
+      }
+    },
+    {
+      "id": "SCAN-640",
+      "title": "page_settings_events_backup_20260910 is still a public table with no primary key",
+      "status": "open",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "supabase/migrations/20270345003500_page_settings_events_backup_rls.sql",
+        "ref": "meta-scan 2026-09-19"
+      },
+      "detail": "FOUND 2026-09-19. Advisor no_primary_key INFO on public.page_settings_events_backup_20260910, created by the ADR-1316 events page-settings cleanup. RLS was enabled later so it is not an open read. Drop only after a production count is 0 or the rows are archived off-public. Draft-and-approve; do not drop from an agent session.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const files=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\"));const drop=files.some(f=>/drop table if exists public.page_settings_events_backup_20260910/i.test(fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\")));process.exit(drop?0:1)'",
+        "note": "Fails until a later migration drops the backup table."
+      }
+    },
+    {
+      "id": "SCAN-641",
+      "title": "Public events and /discover use two different headers",
+      "status": "open",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/layout.tsx",
+        "ref": "meta-scan 2026-09-19"
+      },
+      "detail": "FOUND 2026-09-19. Anon /events/<slug> and networked Space profiles render MarketingHeader via (main) publicChrome(). /discover/* renders SiteHeader variant=light authMode=client. Two public chromes, two mobile menus, two chances to drift (LIVE-106 was the last time that class cost thirteen destinations). Close by rendering the same header the discover tree uses on the (main) public-chrome branch, or extracting one PublicChrome used by both.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const L=fs.readFileSync(\"app/(main)/layout.tsx\",\"utf8\");const D=fs.readFileSync(\"app/discover/layout.tsx\",\"utf8\");const mainUsesSite=/<SiteHeader/.test(L);const discUsesSite=/<SiteHeader/.test(D);process.exit(discUsesSite&&mainUsesSite?0:1)'",
+        "note": "Fails while the (main) public chrome still uses MarketingHeader instead of SiteHeader."
       }
     }
   ]

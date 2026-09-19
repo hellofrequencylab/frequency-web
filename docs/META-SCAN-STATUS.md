@@ -7,6 +7,68 @@
 > The durable record of the full-repo meta scan: what shipped, and what is still open with the
 > exact fix. Update it as items close. Newest pass first; earlier passes are kept below.
 
+## 2026-09-19 pass (full-repo, 14 days after scan two)
+
+Run against `origin/main` at `17ebd651c` (318 commits since 2026-09-05). Sequential finders, no
+parallel agents (this box hangs). The tree is still the same shape as August: **every quality gate
+that can look is green**, and the new work lives where a gate structurally cannot look.
+
+**Gates on this pass (all exit 0):** `check:seo`, `check:canon`, `check:authz` (1016 admin-client
+exports gated per-export), `check:admin-client` (762 importers, ratchet held), `check:client-boundary`
+(851 client entries, none reach admin.ts), `check:templates` (64 non-shell pages, baseline 64).
+Sitemap/robots/llms.txt/JSON-LD/marketing metadata are coherent. Member-facing copy is on-canon.
+`content/` has zero em dashes.
+
+**Advisors (Frequency Community, 2026-09-19):** security still the known set (PostGIS
+`spatial_ref_sys` ERROR, leave it; deny-all INFO; SECURITY DEFINER executable INFO tracked by
+OWN-006). Performance **moved**: the 2026-08-31 pass had **zero** `unindexed_foreign_keys` and
+**zero** `auth_rls_initplan`. Today: **6 unindexed FKs** and **2 initplan WARNs** on tables that
+landed with Space Circles / entitlements (`SCAN-638`). Unused indexes 538 → 392. One leftover
+backup table (`SCAN-640`).
+
+**The SEO/speed inversion (the finding this pass is for).** `/discover` already paid to stay
+static (`SiteHeader authMode="client"` so `revalidate = 3600` is not voided). The URLs the sitemap
+tells Google to prefer did not get that treatment:
+
+| Surface | What crawlers are told | What the route actually is | Row |
+|---|---|---|---|
+| Event | `/discover/events/<slug>` canonicals to `/events/<slug>` | 2485-line member page under a layout that always `await getCachedUser()` | `SCAN-636` |
+| Market / Store / Housing / Classifieds | sitemap + JSON-LD, public-detail allowlist | `export const dynamic = 'force-dynamic'` | `SCAN-637` |
+
+Same class as the RSVP window: a rule that exists on the cheap twin, and the URL that counts does
+not honour it.
+
+**Orphans / wiring.** One genuine unwired kit piece: `components/admin/filter-bar.tsx` (`SCAN-639`).
+Dead lib exports remain `SCAN-502` (owner ruling). Hubs/Nexuses still exist as thin twins; folding
+them is `LIVE-242`, not a new row. Admin `createAdminClient` without a local `getUser` is **not** a
+finding: `check:authz` already requires a gate per export.
+
+**Docs drift fixed this pass.** `SEO-AEO-PLAN.md` still opened with "Live privacy leak to fix FIRST"
+and claimed `/discover/*` were the only indexable URLs. Both were false against `robots.ts` and
+migration `20240211000000`. Rewritten in place. Status still lives here and in the one list.
+
+**Not a finding (re-verified).** 166 pages without a local `metadata` export are almost all admin /
+wizard / authed; `check:seo` already requires every crawler-reachable static page to declare
+itself. `listingMetadata`'s `status != null` noindex is correct (`status` is null when active).
+Circle "stubs" remain `permanentRedirect`s. FilterBar in `page-contents.tsx` is a different
+component with the same name.
+
+**Still open after this pass, besides the six new rows:** the 116-row working view from this morning
+(P0: LIVE-234 money proof, OWN-073 nine un-emailed admits). Do not start the Editor, white label,
+or Etsy programs from this scan.
+
+### Phased cleanup (execute from the one list)
+
+1. **Stay on product P0/P1.** LIVE-234, OWN-073, LIVE-410, LIVE-376. Speed is not the constraint at
+   12 visitors / 18 pageviews (W0d).
+2. **W0c crawl/perf hygiene.** SCAN-636 (event canonical ISR), SCAN-637 (listing force-dynamic),
+   SCAN-638 (six FK indexes + two `(select auth.uid())` wraps). Draft the SQL; do not apply from
+   an agent session.
+3. **W0d craft.** SCAN-641 one public header, SCAN-639 wire or delete FilterBar, SCAN-640 drop the
+   backup table after a row count, LIVE-412 split app-shell, SCAN-502 export trim (owner ruling).
+4. **Programs stay sequenced.** Editor E0–E9 in W4, Sites/E10 after E3, App Platform and Etsy
+   deferred. Do not open a seventh master list.
+
 ## 2026-08-31 pass (events, spaces, drafts, RSVP — one defect shape, three times)
 
 Run at the owner's request after four events fixes landed (#2318 cover radius, #2319 RSVP window +

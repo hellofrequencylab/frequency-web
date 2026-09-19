@@ -29,22 +29,16 @@ keeping the platform safe:
 |---|---|
 | Location granularity for anon | **City/area only** — derived from the circle's `city`; never expose `events.location`, `circles.neighborhood/latitude/longitude` |
 | Public surfaces | **All four**: public posts/feed, events, circles, topical channels |
-| Architecture | **Dedicated public routes** under `/discover` — separate from the authed `(main)` app to avoid leaking via authed components |
+| Architecture | **Dedicated public routes** under `/discover`, plus self-canonical public URLs that live in `(main)` (`/events/<slug>`, networked `/spaces/<slug>`, marketplace details). `app/robots.ts` is the live crawl map. |
 
-## ⚠️ Live privacy leak to fix FIRST
+## Privacy leak (closed 2026-05-28)
 
-`supabase/migrations/20240204000000_public_landing_reads.sql` (lines 43–49) adds:
-
-```sql
-CREATE POLICY "events: public read future non-cancelled"
-  ON events FOR SELECT TO anon
-  USING (is_cancelled = false AND starts_at >= now());
-```
-
-This grants anon a **full-row** SELECT on every future event, including the
-free-text `location` column. A bot can read every event's location straight from
-the Supabase REST API today. Phase 1 must DROP this policy and replace it with
-column-safe RPCs.
+The anon policy `events: public read future non-cancelled` used to grant a full-row
+SELECT on every future event, including free-text `location`. Phase 1 dropped it
+(`supabase/migrations/20240211000000_public_discover_reads.sql`) and replaced it
+with column-safe `SECURITY DEFINER` RPCs. Do not re-add a broad anon SELECT on
+`events`. The live crawl map is `app/robots.ts` + `app/sitemap.ts`, not this
+historical section.
 
 ## Guiding principle
 
@@ -64,8 +58,10 @@ New public, indexable, redaction-safe pages:
 /discover/events/[slug]   event: title, date, description, city → "Sign in to RSVP / see location"
 ```
 
-Not a duplicate-content risk: the authed app is `robots`-disallowed, so `/discover/*`
-are the only indexable URLs.
+Duplicate-content risk is handled per family, not by a blanket "only /discover":
+`robots.ts` disallows member twins (`/journeys`, `/partners`, `/spaces/directory`) while
+`/events/<slug>` and networked Space profiles are self-canonical. The discover event
+page currently *hints* its canonical at `/events/<slug>` (`SCAN-636`).
 
 ## Phase 1 — Safety + foundation (DO FIRST)
 
