@@ -83,6 +83,11 @@ export type NavArea = {
 // worlds — Community · The Quest · Studio · Platform. `surface` ties each item to the
 // access matrix (the function-level permission view); `defaultAccess` is the live nav
 // visibility gate.
+//
+// ADR-1406 (Daniel, 2026-09-19): this list is as short as the role can use, not as short
+// as a magic number. LIVE-241's 16→7 count is cancelled. Channels stay as a rail row
+// unless a role / matrix / flag gate hides them. Admin already telescopes; member worlds
+// hide on `meetsAccess` ∪ `meetsStaff`, then `navAccess` / `area_permissions`.
 const BASE_NAV_AREAS: readonly NavArea[] = [
   // ── Home anchor (headerless, pinned at the very top above the worlds) ─────────
   // Feed leads the rail in its own label-less group; the shell drops the member's
