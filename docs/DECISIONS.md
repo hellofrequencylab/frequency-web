@@ -16,7 +16,10 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
+tree as of this index: **ADR-1432**. 1444 is OWN-063 on main. 1440 is SCAN-636 on main.
+
 tree as of this index: **ADR-1448**. 1444 is OWN-063 on main. 1440 is SCAN-636 on main.
+>>>>>>> origin/main
 
 | Theme | Start here |
 |---|---|
@@ -46247,6 +46250,66 @@ Premise re-tested 2026-09-19: `memberEventAllowanceOk` still selected no series 
 
 **Rows.** OWN-063.
 
+## ADR-1432: The operator console is five boxes (LIVE-246)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-246` · amends [ADR-846](DECISIONS.md) and [ADR-1313](DECISIONS.md) · corroborates [CORE-MODEL.md](CORE-MODEL.md) §5.4 · corroborated by `lib/admin/modules/space-modules.ts` (`SPACE_MODULE_BOX_IDS`)
+
+**Context.** CORE-MODEL §5.4 asked the operator console to read as five boxes: Your page · Your people · Gather · Money · Reach. ADR-846 had locked twelve boxes and ADR-1313 amended that lock to thirteen when Your reach moved tabs. LIVE-246's 2026-09-08 survey mapped all 34 catalog rows onto those five boxes and named four contested placements. ADR-1294 left those four unruled.
+
+Premise re-tested 2026-09-19 on this tree:
+
+- The catalog is **32 rows**, not 34. LIVE-226 retired `space.enroll`, `space.tickets`, and `space.checkin`. That contest is gone.
+- `space.airwaves` already nested under Content. That contest is gone: Gather owns recordings.
+- Thirteen rows still had no `parent`. The probe (`rows===34 && tops===5`) could not pass.
+
+**Decision.**
+
+1. **Five parentless boxes, ids unchanged.** `space.basics` is Your page. `space.people` is Your people. `space.content` is Gather. `space.offerings` is Money. `space.reach` is Reach. Every other row carries `parent`. Nesting stays one level deep, so CRM's former children nest under Your people, and Email's former children nest under Reach.
+2. **Hub tabs do not move.** Resonance, Marketing, Offerings, Programs, and Settings stay the browse axis ADR-1313 declared. Team stays on Settings; the CRM cluster stays on Resonance. Those seven rows are named in `HUB_DIVERGENCE_REASONS` so a silent tab drift still fails the orphan guard.
+3. **The remaining contests.** Gather *is* the Content box (the programs tab is that box, so its `?section=programs` deep link is not a second page). Plan and billing nests under Your page (same Settings tab, money the operator pays Frequency; Get paid stays under Money). Airwaves stays under Gather.
+
+**Rejected.** Parenting Your reach under Reach while it stays on Programs (the ADR-1313 orphan). Moving Team onto Resonance to avoid a named divergence (undoes the Settings-tab ruling). Deleting any catalog row to hit an old count of 34.
+
+**Consequences.** `SPACE_MODULE_BOX_IDS` reads five ids. The Space rail still renders every row (coverage guard unchanged). A later edit that un-parents a sixth box fails LIVE-246's probe and the five-box lock in `space-modules.test.ts`.
+
+**Rows.** LIVE-246.
+
+## ADR-1445: Public calendars are live-only; Admin is a mini production console (LIVE-414 through LIVE-419)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-414`…`LIVE-419` · extends [ADR-1388](DECISIONS.md) (stages) and [ADR-1389](DECISIONS.md) (Admin / Guest) · does not reopen LIVE-379 or LIVE-380
+
+**Context.** LIVE-379 shipped `stage` (`pencil` | `planning` | `production` | `cancelled`) and LIVE-380 shipped the Calendar tab's Admin / Guest toggle (`?view=guest`). The owner then ruled how those two surfaces should *read*: Guest and ordinary members see live gatherings only; cancelled is not a chip and is not hidden; Admin is not a second guest month. The sequence is filed as C0–C5 on the one list so another thread can start without a planning document (ADR-1043).
+
+**Decision.**
+
+1. **Guest and member public calendars show live events only.** Pencil and planning never appear on that feed. Production is the live show.
+2. **Cancelled is muted footer text in the date square.** Small, at the bottom of that date. Not a chip. Not a strikethrough. Not omitted.
+3. **Admin is a mini production-management console.** Lanes for pencil, planning, production, and cancelled, with the month grid as the date map. `StaffCalendar` stays the settings drawer. The operator list is new (`CalendarPmConsole`).
+4. **Build order is C0 then C1 then C2–C5.** LIVE-414 (public paint + `guestLiveItems` + `cancelledCellFooter`) · LIVE-415 (Admin mounts the console) · LIVE-416 pencil lane · LIVE-417 planning lane · LIVE-418 production lane · LIVE-419 Guest branch calls `guestLiveItems` and that helper names pencil/planning so it can exclude them. One row per PR.
+5. **No new plan file.** Status lives on the one list. Scan work leaves LIVE-414 and LIVE-415. Do not pick up cancelled LIVE-241.
+
+**Rejected.** Hiding cancelled entirely. Painting cancelled as a struck chip. Making Admin a restyle of the guest month. Writing a calendar roadmap markdown beside the rows.
+
+**Consequences.** Another thread starts at LIVE-414. Probes fail until the named symbols exist. Stages and the Admin/Guest toggle stay the LIVE-379 / LIVE-380 contract.
+
+**Rows.** LIVE-414, LIVE-415, LIVE-416, LIVE-417, LIVE-418, LIVE-419.
+
+## ADR-1436: Column-backed images keep a url cache and a Loom id (HYG-068 schema half)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-068` · numbered **1436** (reserved while later ADRs landed on main) · corroborated by `supabase/migrations/20270345006300_column_image_asset_ids.sql`
+
+**Context.** [ADR-1253](DECISIONS.md) adopted `{ assetId, url }` on JSONB-backed image fields. Six TEXT columns could not hold that object. The owner ruled 2026-09-08: companion `*_asset_id` columns, not URL-only caches until D4. Version **06300** because **06100** is Collective and **06200** is Hubs/Nexuses. The DDL was applied to production before the code PR merged; this records the file so the ledger and the tree match.
+
+**Decision.**
+
+1. **Two columns, one picture.** The url column stays the denormalised cache. `*_asset_id` is a nullable FK to `library_assets(id)` with `ON DELETE SET NULL`.
+2. **Writers are still HYG-068.** The columns exist. Pickers and save actions must write both halves in the next change on that row. A nullable companion with no writer is the ADR-970 costume; do not close HYG-068 on the file alone.
+3. **Do not re-apply the DDL.** `IF NOT EXISTS` is already in the file; a second apply is not the recovery.
+
+**Rejected.** JSON-in-a-text-column. Deleting the ledger row to make `check:migrations` pass while production still has the columns.
+
+**Rows.** HYG-068.
+
 ## ADR-1448: The Circle and Event rail banks get a Settings door (OWN-058)
 
 **Status:** Accepted · 2026-09-19 · Records the 2026-09-08 OWN-058 ruling · **Implements** option (a) · numbered **1448** because **1444** is OWN-063 on main, **1445** is SCAN-638, **1446** is SCAN-640, and **1447** is the evening meta-scan inventory · corroborated by `bankForScope` in `lib/admin/rail-bank.ts` and `FROZEN_MENU_DEBT` in `scripts/check-menu.mjs`
@@ -46271,4 +46334,4 @@ Premise re-tested 2026-09-19:
 **Consequences.** A Circle or Event rail bank now has a Settings button that opens the Manage hub Settings tab. Frozen menu debt is 23 rows (6 + 13 + 4). The catalog path (`placement: 'bank'`) is still the retirement plan for `baseBank`.
 
 **Rows.** OWN-058.
-
+>>>>>>> origin/main
