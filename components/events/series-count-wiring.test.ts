@@ -39,6 +39,8 @@ const SITES: Site[] = [
   { path: 'app/(main)/spaces/[slug]/manage/rail-getters.ts', stat: 'the Space manage rail’s Calendar box', viaReader: true },
   { path: 'app/(main)/spaces/[slug]/settings/calendar/page.tsx', stat: 'the Space calendar console’s "N upcoming events."', viaReader: true },
   { path: 'lib/spaces/profile-stats.ts', stat: 'the public Space hero stats (Sessions / Offerings)', viaReader: true },
+  { path: 'lib/pricing/member-meter-usage.ts', stat: 'the personal event_create meter' },
+  { path: 'app/(main)/events/actions.ts', stat: 'the personal event_create create-path allowance' },
 ]
 
 /** The shapes that count ROWS. `head: true` on `events` is the tally that cannot fold at all;
@@ -46,7 +48,7 @@ const SITES: Site[] = [
 // Anchored on the events SELECT ITSELF — `[^)]*` cannot cross out of the argument list, so a
 // `head: true` count on some OTHER table further down the same Promise.all can never satisfy it.
 const HEAD_COUNT = /from\(\s*['"]events['"]\s*\)\s*\.select\(\s*[^)]*head:\s*true/
-const COUNT_CALLS = ['countSeries(', 'countSeriesBy(']
+const COUNT_CALLS = ['countSeries(', 'countSeriesBy(', 'countUpcomingGatherings(']
 
 const read = (path: string) => readFileSync(path, 'utf8')
 /** Comments name the trap each file avoids, so prose must never satisfy an assertion about code. */

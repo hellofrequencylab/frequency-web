@@ -331,7 +331,7 @@ Etsy-grade store, Mobile). Nothing in this proposal competes with them.
 
 **Rows that must be reconciled with any ruling:** `OWN-046` (do member sales
 settle in-app), `OWN-048` (capability bundles and the 22-key function registry — the definition of what
-a Space *is*), `OWN-063` (does a recurring series cost one event allowance or one per date),
+a Space *is*), `OWN-063` (a recurring series costs one event allowance; ruled 2026-09-08),
 `LIVE-204` (front-door wording), `HYG-033` (the mobile tab bar this proposal changes).
 
 ---

@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1432**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
+tree as of this index: **ADR-1432**. 1444 is OWN-063 on main. 1440 is SCAN-636 on main.
 
 | Theme | Start here |
 |---|---|
@@ -46225,6 +46225,28 @@ Premise re-tested 2026-09-19 on this tree: the split was still the split. Discov
 
 **Rows.** SCAN-641.
 
+## ADR-1444: A repeating event costs one gathering on the personal allowance (OWN-063)
+
+**Status:** Accepted · 2026-09-19 · Records the 2026-09-08 OWN-063 ruling · **Implements** the create-path fold · numbered **1444** because **1440** is SCAN-636 on main · corroborated by `memberEventAllowanceOk` in `app/(main)/events/actions.ts` (`SERIES_COLUMNS` + `isUpcomingByInstant` + `countSeries`) and `countUpcomingGatherings` in `lib/pricing/member-meter-usage.ts`
+
+**Context.** LIVE-198 folded eleven display counts through `countSeries` so a weekly series reads as one gathering. `memberEventAllowanceOk` counted the same occurrence rows, but it is an entitlement quota, not a dashboard. Folding it loosens a paid cap: a free member who today burns nine slots for one weekly series would burn one. The agent that found it refused to decide (OWN-063). The owner ruled 2026-09-08: the allowance caps GATHERINGS.
+
+Premise re-tested 2026-09-19: `memberEventAllowanceOk` still selected no series columns and counted occurrence rows. The matching `event_create` meter still counted rows the same way, so a folded create path would have accepted a series the meter would have shown as nine-of-two.
+
+**Decision.**
+
+1. **The allowance counts gatherings.** `memberEventAllowanceOk` selects `SERIES_COLUMNS`, filters with `isUpcomingByInstant` (SCAN-610), and folds with `countSeries`. A weekly series costs one.
+2. **The meter matches.** `countUpcomingGatherings` uses the same fold so the readout cannot show nine-of-two for a series the create path would accept.
+3. **`dropCancelled` stays false on the create path.** A cancelled upcoming row still occupies a slot. The change is the series key, not a new cancellation rule.
+4. **The comment names OWN-063 and 2026-09-08.** Folding loosens a paid cap; that is the intended pricing, not a hygiene off-by-N.
+5. **Cap copy drops the series-as-Crew perk.** `EVENT_CREATE_CAP_MESSAGE` no longer says a series is something you join Crew to set up.
+
+**Rejected.** Leaving the occurrence count and documenting it (the owner ruled the other way). Folding only the create path and leaving the meter on rows (the UI would lie). Dropping cancelled rows from the create-path count (a new cancellation rule dressed as the fold).
+
+**Consequences.** A free member can run one series plus another gathering where today each date burned a slot. Crew is still unlimited. Later readers of `memberEventAllowanceOk` beside its LIVE-198 siblings will find the ruling at the call site.
+
+**Rows.** OWN-063.
+
 ## ADR-1432: The operator console is five boxes (LIVE-246)
 
 **Status:** Accepted · 2026-09-19 · backlog `LIVE-246` · amends [ADR-846](DECISIONS.md) and [ADR-1313](DECISIONS.md) · corroborates [CORE-MODEL.md](CORE-MODEL.md) §5.4 · corroborated by `lib/admin/modules/space-modules.ts` (`SPACE_MODULE_BOX_IDS`)
@@ -46248,4 +46270,3 @@ Premise re-tested 2026-09-19 on this tree:
 **Consequences.** `SPACE_MODULE_BOX_IDS` reads five ids. The Space rail still renders every row (coverage guard unchanged). A later edit that un-parents a sixth box fails LIVE-246's probe and the five-box lock in `space-modules.test.ts`.
 
 **Rows.** LIVE-246.
-
