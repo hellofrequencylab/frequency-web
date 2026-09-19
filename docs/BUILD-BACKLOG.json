@@ -4,7 +4,7 @@
     "title": "The one list",
     "seeded": "2026-08-17",
     "authority": "This file is the ONLY record of what is done. Prose docs explain the work; they do not track it.",
-    "howToRead": "pnpm backlog          \u2014 the working view (P0 first, then each lane by priority)\npnpm backlog --lane owner \u2014 one lane\npnpm check:backlog    \u2014 prove every row against the tree (runs in CI)",
+    "howToRead": "pnpm backlog          \u2014 the working view (P0 first, then each lane by priority)\npnpm backlog --lane owner \u2014 one lane\npnpm check:backlog    \u2014 prove every row against the tree (runs in CI)\npnpm packets          \u2014 next agent-workable packet per derived fan-out lane (ADR-1412); not a second list",
     "rules": [
       "A row's status is proven by its verify probe, not by memory. If they disagree, CI fails.",
       "A probe must measure the CONSEQUENCE in the tree, never restate the row's own title. A probe that passes by existing is the shape-not-truth failure this repo names in four ADRs.",

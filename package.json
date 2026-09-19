@@ -72,6 +72,7 @@
     "check:vocab": "node scripts/check-vocab.mjs",
     "read:build-log": "node scripts/read-build-log.mjs",
     "backlog": "node scripts/check-backlog.mjs --report",
+    "packets": "node scripts/agent-packets.mjs",
     "check:backlog": "node scripts/check-backlog.mjs",
     "check:one-list": "node scripts/check-one-list.mjs",
     "check:adr": "node scripts/check-adr.mjs",
