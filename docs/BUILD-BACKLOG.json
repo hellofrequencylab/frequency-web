@@ -47,8 +47,7 @@
             "W0b"
           ],
           "next": [
-            "LIVE-410",
-            "LIVE-376"
+            "LIVE-410"
           ],
           "leave": [
             "SCAN-636",
@@ -172,8 +171,7 @@
           "ids": [
             "LIVE-410",
             "LIVE-186",
-            "LIVE-213",
-            "LIVE-376"
+            "LIVE-213"
           ]
         },
         {
@@ -13755,7 +13753,7 @@
     {
       "id": "LIVE-376",
       "title": "A host cannot tell how to attach their event to their own Space, so it lands on the root",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
@@ -13763,12 +13761,13 @@
         "file": "lib/studio/entities/event.ts",
         "ref": "owner report 2026-09-16; default set by supabase/migrations/20260712030000_content_space_id_default_root.sql"
       },
-      "detail": "Owner, about a real host on the platform: \"She also did not know how to set her events up to link to her space.\" She owns an active Space (House of Fates), created three events from her own account, and all three came out with space_id = the ROOT Frequency space and host_space_id = null. Nothing was broken and nothing told her anything was wrong.\n\nWHAT THAT COSTS, in the order it bites: the events do not read as the Space\u2019s events; the Space console cannot manage their tickets; and payout attribution falls back to events.host_id instead of resolving through the Space owner (app/(main)/events/[slug]/page.tsx resolves payoutProfileId as hostSpaceOwnerId first, then event.host.id). It happens to land on the same person while the host IS the Space owner, and it stops doing so the moment a Space has a second organiser.\n\n\ud83d\udd34 THE DEFAULT IS THE DEFECT. The events_default_space_id trigger defaults a new event to the root, which is right for someone with no Space and wrong for someone with one. An owner of exactly one active Space almost certainly means that Space, and the creation flow should either default to it or ask. The current flow does neither, and offers no visible way to change it afterwards either.\n\nRE-TEST THE PREMISE BEFORE WORKING IT: check the event Spark manifest and the event settings rail for a host-space field before concluding there is none. The report is that it is not FINDABLE, which a present-but-buried control would also produce, and the fix differs (default plus label, versus add the field).\n\nFIXED BY HAND meanwhile: the three events were repointed to House of Fates on 2026-09-16 (space_id + host_space_id). That is the data, not the cause.",
+      "detail": "Owner, about a real host on the platform: \"She also did not know how to set her events up to link to her space.\" She owns an active Space (House of Fates), created three events from her own account, and all three came out with space_id = the ROOT Frequency space and host_space_id = null. Nothing was broken and nothing told her anything was wrong.\n\nWHAT THAT COSTS, in the order it bites: the events do not read as the Space\u2019s events; the Space console cannot manage their tickets; and payout attribution falls back to events.host_id instead of resolving through the Space owner (app/(main)/events/[slug]/page.tsx resolves payoutProfileId as hostSpaceOwnerId first, then event.host.id). It happens to land on the same person while the host IS the Space owner, and it stops doing so the moment a Space has a second organiser.\n\n\ud83d\udd34 THE DEFAULT IS THE DEFECT. The events_default_space_id trigger defaults a new event to the root, which is right for someone with no Space and wrong for someone with one. An owner of exactly one active Space almost certainly means that Space, and the creation flow should either default to it or ask. The current flow does neither, and offers no visible way to change it afterwards either.\n\nRE-TEST THE PREMISE BEFORE WORKING IT: check the event Spark manifest and the event settings rail for a host-space field before concluding there is none. The report is that it is not FINDABLE, which a present-but-buried control would also produce, and the fix differs (default plus label, versus add the field).\n\nFIXED BY HAND meanwhile: the three events were repointed to House of Fates on 2026-09-16 (space_id + host_space_id). That is the data, not the cause.\n\nCLOSED 2026-09-19. Premise re-tested: Spark has no host-Space field; the manual form already lists Spaces you run under Where it lives, but /events/new without ?space= left the selector empty so the root trigger won. A host of exactly one Space now defaults onto it (lib/events/default-host-scope.ts). The create label names Space. Hosts with two Spaces still must pick, and we do not guess.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Not started. Three events created by the Space owner landed on the root space with host_space_id null; corrected by hand 2026-09-16.",
-        "checked": "2026-09-16"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=m=>{console.error(m);process.exit(1)};const h=fs.readFileSync(\"lib/events/default-host-scope.ts\",\"utf8\");if(!h.includes(\"spaces.length === 1\"))fail(\"no sole-Space default\");const p=fs.readFileSync(\"app/(main)/events/new/page.tsx\",\"utf8\");if(!p.includes(\"defaultEventHostScope\"))fail(\"create page does not use defaultEventHostScope\");const f=fs.readFileSync(\"app/(main)/events/new/event-form.tsx\",\"utf8\");if(!f.includes(\"Spaces you run\"))fail(\"create form lost Spaces you run\");if(!f.includes(\"Which Space or Circle is this for\"))fail(\"create form label is not findable\");console.log(\"LIVE-376 ok\")'",
+        "note": "Passes when a host of exactly one Space defaults onto it, the create page uses that helper, and the form names Space in the scope label."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-377",

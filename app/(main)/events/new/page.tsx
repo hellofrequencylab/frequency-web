@@ -11,6 +11,7 @@ import { listLinkableJourneys, resolveJourneyRef } from '@/lib/events/placement'
 import { canEditJourney } from '@/lib/journeys/authoring'
 import { getConnectReadyMap } from '@/lib/billing/connect'
 import { PAYOUT_SCOPE_SELF } from '@/lib/events/ticket-eligibility'
+import { defaultEventHostScope } from '@/lib/events/default-host-scope'
 
 // Build a prefill from a SOURCE event for the Duplicate flow: clone every field the
 // create form sets EXCEPT the date (the new copy defaults to the active day, PART 2) and
@@ -345,13 +346,14 @@ export default async function NewEventPage({
       ? duplicateInitial.spaceId
       : undefined
 
-  const defaultGroupId = spaces.some((s) => s.id === spaceParam)
-    ? spaceParam
-    : duplicateSpaceId
-      ? duplicateSpaceId
-      : circles.some((c) => c.id === circleParam)
-        ? circleParam
-        : undefined
+  // LIVE-376: a host of exactly one Space means that Space. Deep links and Duplicate still win.
+  const defaultGroupId = defaultEventHostScope({
+    spaceParam,
+    duplicateSpaceId,
+    circleParam,
+    spaces,
+    circles,
+  })
 
   // The viewer's saved home, to DEFAULT the venue autocomplete's location bias before any
   // pin exists (local-first address search — people almost always post events near home).

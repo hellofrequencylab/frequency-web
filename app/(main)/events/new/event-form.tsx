@@ -789,10 +789,10 @@ export function EventForm({
               at: it must be a heading, not a <label htmlFor={undefined}>, which renders a real
               <label> naming nothing. On CREATE it names the select. */}
           {isEdit ? (
-            <p className={`${labelClasses} text-body-sm text-text`}>Where does it live?</p>
+            <p className={`${labelClasses} text-body-sm text-text`}>Which Space or Circle is this for?</p>
           ) : (
             <Label className="text-body-sm text-text" htmlFor="event-scope">
-              Where does it live? <span className="text-danger">*</span>
+              Which Space or Circle is this for? <span className="text-danger">*</span>
             </Label>
           )}
           {isEdit ? (
