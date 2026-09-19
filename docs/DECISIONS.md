@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1464**. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643 on main. 1451 is SCAN-642. 1463 is LIVE-393 on main. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs.
+tree as of this index: **ADR-1466**. 1466 is the app-shell split (LIVE-412). 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643 on main. 1451 is SCAN-642. 1463 is LIVE-393 on main. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1465 is claimed on the open SCAN-644 PR.
 
 | Theme | Start here |
 |---|---|
@@ -46666,3 +46666,22 @@ Premise re-tested 2026-09-19:
 **Consequences.** The Calendar tab chrome is the view switcher. C0–C5 still measure Guest paint and Admin lanes. Help and `EVENTS-CALENDAR.md` describe the five views in place.
 
 **Rows.** None. This is the view-set ruling; status of C0–C5 stays on LIVE-414 through LIVE-419.
+
+## ADR-1466: Split the member shell composer from its chrome islands (LIVE-412)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-412` · numbered **1466** (1464 is the Admin Calendar five-view set on this tree; `1465` is claimed on the open SCAN-644 PR) · corroborates the shell-weight contract in [ADR-1066](DECISIONS.md) · corroborated by `components/layout/app-shell.tsx`, `components/layout/app-shell-nav.ts`, and `components/layout/app-shell-chrome.tsx`
+
+**Context.** `app-shell.tsx` was one ~2628-line client module on every `app/(main)` route. The LIVE-412 probe is a line ratchet (fail above 1800), not a byte budget. There is no `next/dynamic` inside the composer. Raising `check:shell-weight` would hide the same class of leak ADR-1066 exists to catch.
+
+**Decision.**
+
+1. **Keep one composer.** `app-shell.tsx` still owns the sticky header, both rails, fold ticks, the announcement slot, and the `[data-skin]` / `[data-generation]` stamps the source tests pin.
+2. **Nav helpers leave first.** `app-shell-nav.ts` holds section building, menu-to-rail mapping, and the payouts account-item gate. Same functions, same `canSeeMenuItem` / `effectiveMode` calls.
+3. **Chrome islands leave second.** `app-shell-chrome.tsx` holds the theme hook, ProfileCard, AccountDropdown, NavLinkList, the mobile drawer, the tab bar, and MindlessLaunch. The composer still mounts them.
+4. **Do not raise the budget.** The new files stay on the existing static import graph. No new admin body import. No `dynamic()` theatre that would fail the lazy-mount sites by moving the problem.
+
+**Rejected.** A 40-file rewrite of the shell. Putting `next/dynamic` around ProfileCard. Raising the 1800-line ratchet or Arm A bytes to "close" the row.
+
+**Consequences.** `app-shell.tsx` is the composer. Source tests that pin rail geometry stay on that file; tests that pin tab-bar or menu-filter strings now read the island that holds them.
+
+**Rows.** LIVE-412.

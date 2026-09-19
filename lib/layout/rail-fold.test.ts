@@ -183,7 +183,7 @@ describe('the control names the rail out loud', () => {
 // ── The rail menu has no horizontal rules left (owner, 2026-08-05) ─────────────────────────
 
 describe('the group dividers are gone, and SPACE took over their job', () => {
-  const code = readFileSync('components/layout/app-shell.tsx', 'utf8')
+  const code = readFileSync('components/layout/app-shell-chrome.tsx', 'utf8')
 
   it('neither rail draws a hairline between menu groups', () => {
     // The two spellings the owner pointed at: the home anchor's trailing rule in the open rail,
