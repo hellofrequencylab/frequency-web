@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1411**.
+tree as of this index: **ADR-1412**.
 
 | Theme | Start here |
 |---|---|
@@ -29,7 +29,7 @@ tree as of this index: **ADR-1411**.
 | **Admin menu** | ADR-553, ADR-927 [MENU-CONTRACT.md](MENU-CONTRACT.md) |
 | **Spaces / tenants** | ADR-249 [SPACES.md](SPACES.md) |
 | **Authz** | ADR-002 service-role client · [ARCHITECTURE.md](ARCHITECTURE.md) |
-| **Deploy / artifact** | ADR-1002, ADR-1003 [DEPLOY-SAFETY.md](DEPLOY-SAFETY.md) |
+| **Deploy / artifact** | ADR-1002, ADR-1003 [DEPLOY-SAFETY.md](DEPLOY-SAFETY.md) · ADR-1412 production-agent fan-out |
 | **Checkout** | [CHECKOUT.md](CHECKOUT.md) |
 | **Docs protocol** | [DOCS-PROTOCOL.md](DOCS-PROTOCOL.md) |
 
@@ -45676,3 +45676,26 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 **Rejected.** Keeping Community and The Quest as tabs. Renaming Marketplace. Bundling a rail rewrite.
 
 **Consequences.** `CALM_SPINE_ROOTS` is three destination ids (`feed`, `events`, `market`). The Zap split uses `floor(n/2)` so a later count change does not hard-code a seven-slot slice. The seven-slot hard cap in `game-stats-dock.tsx` remains a *touch-target* ceiling, not a label-fit claim.
+
+## ADR-1412: One backlog, many agents: derived lanes, merge is deploy, Cursor automations are Dashboard-created (2026-09-19)
+
+**Status:** Accepted · 2026-09-19 · Designer (Daniel) asked how to fan out production automation phase by phase · **Amends** [ADR-1325](DECISIONS.md) ruling 4 (two lanes) by making parallelism *derived from the one list*, not a second plan · numbered **1412** because **1411** is the five-tab bar on main · corroborated by `scripts/agent-packets.mjs` (`pnpm packets`) and `docs/DEPLOY-SAFETY.md` §12
+
+**Context.** ADR-1325 already locked the ship loop: one row per PR, squash auto-merge on green, six required GitHub contexts, postbuild as the artifact gate, execute_sql plus ledger stamp for schema. Ruling 4 said two worktree lanes. The owner later asked to fan way out. Cursor cloud MCP can *list* agents and *look up* an automation by UUID (`cursor-cloud-get-automation`). It cannot create or enable a Dashboard automation. `gh pr create` is forbidden; agents open PRs with ManagePullRequest. A named workspace (`cursor/cloud-agent-workspace-8978`) already owns Journey sales. `check:one-list` forbids a new plan markdown.
+
+**Decision.**
+
+1. **One list.** `docs/BUILD-BACKLOG.json` remains the only status record. Fan-out lanes are *derived* at runtime (`pnpm packets`) from id, wave, priority, and probe paths. Do not add `docs/AGENT-LANES.json` or a planning markdown.
+2. **Lane ownership.** An agent claims one derived lane and one open row. `pnpm packets` prints the next packet per lane and names files more than one packet would touch. `docs/BUILD-BACKLOG.json` itself is shared: one row per PR, rebase after every merge, never absorb another agent's PR.
+3. **Parallel vs serial.** Independent product areas may run at once (money, events, hygiene, seo) when their extracted paths do not overlap. Serial: same-table migrations; `components/layout/app-shell.tsx` / `lib/nav/registry.ts` / page-chrome; anything that changes a `postbuild` gate; Journey sales while `cursor/cloud-agent-workspace-8978` is live.
+4. **Merge = deploy.** Required CI (`checks`, `analyze`, `lint`, `test`, `Vercel`, `db-tests`) must be green. Never merge red. Never force-push. Auto-squash default. `pr-compare` stays advisory. The production *artifact* is still `postbuild` on Vercel, which CI never runs.
+5. **After merge.** If the PR added `supabase/migrations/*.sql`, apply with Supabase MCP `execute_sql`, then insert `supabase_migrations.schema_migrations` at the file's own 14-digit version. Never `apply_migration`, never `db push`. Re-read the ledger. Run the row's probe on `main`.
+6. **Collision protocol.** Stay off `cursor/cloud-agent-workspace-8978` and its PRs. Do not pick LIVE-241 (16→7 rail, ADR-1406), parked mobile / white-label / Etsy / App Platform. Product-first: LIVE-410 then LIVE-376. LIVE-234 stays owner-walked. LIVE-408 stays a ruling.
+7. **Cursor automation.** Create it in the Cursor Dashboard (recipe in DEPLOY-SAFETY §12). Paste `pnpm packets --prompt` as the instruction. Trigger on a schedule or after merge to `main`. One packet per run.
+
+**Rejected.** A second backlog file. Creating automations via MCP (the API is lookup-only). Auto-merging red. Absorbing foreign PRs. `gh pr create`. Applying schema with `apply_migration`.
+
+**Consequences.** `pnpm packets` is the machine front door for fan-out. ADR-1325's loop still runs; only the lane *count* is derived. Branch protection and Vercel remain the merge and artifact gates. This session cannot send Resend.
+
+**Rows.** None. This is process, not a backlog close.
+

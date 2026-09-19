@@ -18,6 +18,9 @@
 > wave sequencing that interleaves them with the DAWN 2 screen passes. Its §Sequencing table is
 > the near-term order of operations for the redesign.
 
+> **Cloud agents (2026-09-19): [ADR-1412](DECISIONS.md)** — `pnpm packets` derives parallel lanes
+> from this backlog. Recipe: [`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md) §12. Not a second list.
+
 > **Next program (2026-08-10): [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md)**
 > ([ADR-974](DECISIONS.md) · [ADR-975](DECISIONS.md)) — one block model authored once and rendered on
 > a member's Spotlight, a Space's profile, a Space's Site, and email. Phases **E0–E10** below. It

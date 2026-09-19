@@ -132,6 +132,11 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
   with an expiry date, and it is the cheapest thing in the backlog to get wrong**: those three rows
   sat on the owner for a week and each took one tool call.
 
+**Fan-out (ADR-1412).** Run **`pnpm packets`** for the next agent-workable row per derived lane, and
+**`pnpm packets --prompt`** for the reusable cloud-agent prompt. Cursor Dashboard steps live in
+[`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAFETY.md) §12. Stay off `cursor/cloud-agent-workspace-8978`.
+One row per PR. Merge is a production deploy: never merge red.
+
 # Which plan is live — read this before picking up "what's next"
 
 The repo carries years of planning documents, and **five of them describe themselves as the
