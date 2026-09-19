@@ -62,7 +62,6 @@
             "SCAN-636",
             "SCAN-637",
             "SCAN-638",
-            "HYG-102",
             "HYG-100",
             "LIVE-413",
             "HYG-101",
@@ -14350,7 +14349,7 @@
         "file": "supabase/migrations/20260918235156_award_gems_atomic_lock_day_key_overload.sql",
         "ref": "ADR-1402"
       },
-      "detail": "SHIPPED ADR-1402 / migration 20260918235156. Both overloads revoke execute from public, anon, authenticated and grant service_role only. A later CREATE OR REPLACE (20270345001200) can re-grant PUBLIC on greenfield replay; that hygiene is HYG-102, not a reopen of the lockdown.",
+      "detail": "SHIPPED ADR-1402 / migration 20260918235156. Both overloads revoke execute from public, anon, authenticated and grant service_role only. The later CREATE OR REPLACE in 20270345001200 now carries the same revoke (HYG-102 closed), so greenfield replay cannot re-grant PUBLIC.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const s=fs.readFileSync(\"supabase/migrations/20260918235156_award_gems_atomic_lock_day_key_overload.sql\",\"utf8\");if(!/revoke all on function public.award_gems_atomic/.test(s))fail(\"lockdown migration does not revoke award_gems_atomic\");if(!/grant execute on function public.award_gems_atomic/.test(s))fail(\"lockdown migration does not grant service_role\");if(!s.includes(\"from public, anon, authenticated\"))fail(\"revoke list is not public/anon/authenticated\");console.log(\"LIVE-406 ok\")'",
@@ -14526,7 +14525,7 @@
     {
       "id": "HYG-102",
       "title": "Later award_gems CREATE OR REPLACE can re-grant PUBLIC on greenfield replay",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "hygiene",
       "size": "S",
@@ -14534,12 +14533,13 @@
         "file": "supabase/migrations/20270345001200_award_gems_caps_on_the_callers_day.sql",
         "ref": "ADR-1402 leftover"
       },
-      "detail": "FILED 2026-09-19. 20260918235156 locks both overloads (LIVE-406). 20270345001200 is CREATE OR REPLACE of the day-key overload with no REVOKE/GRANT. Postgres CREATE OR REPLACE can restore default PUBLIC execute on a greenfield replay after the lock. P2 hygiene, not P0 \u2014 production already applied the lock after this file in calendar time, but filename order on a fresh clone is 20260918 then 20260929 then 20270345, so replay can reopen the hole.",
+      "detail": "FILED 2026-09-19. 20260918235156 locks both overloads (LIVE-406). 20270345001200 is CREATE OR REPLACE of the day-key overload.\n\nCLOSED 2026-09-19. Premise re-tested first: the only later CREATE OR REPLACE of public.award_gems_atomic without a REVOKE was 20270345001200 (filename order 20260918 lock, then 20260929 5-arg create+lock, then this 7-arg replace). Production already applied the lock after this file in calendar time, so this is the greenfield hole, not a live grant. The replace file now revokes public/anon/authenticated and grants service_role on the 7-arg signature, matching 20260929000000. No new migration and no ledger row. ADR-1402 carries the amendment.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const later=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\")&&f>\"20260918235156\"&&/award_gems/.test(fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\")));const bad=later.filter(f=>{const s=fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\");return /create or replace function public.award_gems_atomic/i.test(s)&&!/revoke all on function public.award_gems_atomic/i.test(s)});if(bad.length){console.error(\"CREATE OR REPLACE without lockdown: \"+bad.join(\", \"));process.exit(1)}console.log(\"HYG-102 ok\")'",
         "note": "Passes when every later award_gems CREATE OR REPLACE also revokes public execute (or no later replace exists)."
-      }
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "OWN-077",

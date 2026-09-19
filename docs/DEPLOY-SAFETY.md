@@ -338,5 +338,5 @@ This is the operator recipe for Cursor cloud agents. Status still lives only in
 
 **Honest limits.** Required GitHub checks still gate merge. Auto-merge on green is WORKFLOW.md default; a red PR must not merge. Vercel `postbuild` is the artifact gate and is invisible to GitHub `test`. Stay off `cursor/cloud-agent-workspace-8978`. This environment has no Resend key. LIVE-234 is an owner walk with a real card.
 
-**Fan-out that is safe today** (re-run `pnpm packets`; these ids move): **money** LIVE-410 (`lib/pricing/gates.ts`) · **events** LIVE-376 (event Spark / rail, maybe a default-space trigger) · **hygiene** HYG-102 (later `award_gems` lockdown). Do not start a fourth agent on Journey sales or on `app-shell.tsx` while another shell PR is open.
+**Fan-out that is safe today** (re-run `pnpm packets`; these ids move): **money** LIVE-410 (`lib/pricing/gates.ts`) · **events** LIVE-376 (event Spark / rail, maybe a default-space trigger) · **hygiene** HYG-101 (residual `parseInput` on admin actions). Do not start a fourth agent on Journey sales or on `app-shell.tsx` while another shell PR is open.
 
