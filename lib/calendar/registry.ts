@@ -13,7 +13,7 @@
 // and the database derives `status` from it (a trigger), so everything that reads `status` stays right.
 
 /** Where a calendar item came from. `events` is the public layer; the rest are private. */
-export type CalendarLayerKey = 'events' | 'pencil' | 'private' | 'unavailable'
+export type CalendarLayerKey = 'events' | 'pencil' | 'private' | 'unavailable' | 'todos'
 
 export interface CalendarLayer {
   key: CalendarLayerKey
@@ -30,6 +30,7 @@ export const CALENDAR_LAYERS: readonly CalendarLayer[] = [
   { key: 'pencil', label: 'In the works', chipClass: 'border border-dashed border-primary/60 text-primary-strong hover:bg-primary/10', private: true },
   { key: 'private', label: 'Private', chipClass: 'bg-info-bg text-info hover:bg-info/20', private: true },
   { key: 'unavailable', label: 'Unavailable', chipClass: 'bg-warning-bg text-warning hover:bg-warning/20', private: true },
+  { key: 'todos', label: 'To-dos', chipClass: 'bg-info-bg text-info hover:bg-info/20', private: true },
 ] as const
 
 export function calendarLayer(key: CalendarLayerKey | null | undefined): CalendarLayer {

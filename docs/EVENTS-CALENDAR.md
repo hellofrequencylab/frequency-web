@@ -188,19 +188,20 @@ else. Its column list is the gate; it must never gain a detail column.
 slot that overlaps is neither offered nor bookable. An existing booking inside the range is never
 touched. The read is service-role and fails safe to no blocks.
 
-**Admin Calendar views** ([ADR-1389](DECISIONS.md), [ADR-1450](DECISIONS.md), [ADR-1454](DECISIONS.md), [ADR-1456](DECISIONS.md), [ADR-1457](DECISIONS.md), [ADR-1458](DECISIONS.md), [ADR-1464](DECISIONS.md)). A viewer who
+**Admin Calendar views** ([ADR-1389](DECISIONS.md), [ADR-1450](DECISIONS.md), [ADR-1454](DECISIONS.md), [ADR-1456](DECISIONS.md), [ADR-1457](DECISIONS.md), [ADR-1458](DECISIONS.md), [ADR-1464](DECISIONS.md), [ADR-1467](DECISIONS.md)). A viewer who
 edits the Space (with the Calendar function), or platform staff previewing it, lands on **Admin**
-and can switch five views from one segmented control (`CalendarModeToggle`):
+(or the last view in the per-Space cookie) and can switch five views from one segmented control
+(`CalendarModeToggle`) inside `CalendarWorkspace`. The switch slides; it does not reload the page.
 
 | View | What it is |
 |---|---|
 | **Guest** | The existing public month (`guestLiveItems`). Live chips plus the C0 cancelled footer. Pencil and planning stay off. `?view=guest`. |
 | **Admin** | The existing production console (`CalendarPmConsole`) over `loadAdminCalendar`. Pencil (`pencilLane`), Planning (`planningLane`), and Production (`productionLane`) are their own lanes. The month is the date map (`StaffCalendar`), not a second guest grid. Default URL. |
-| **List** | A tight gathering index on the left. The right interior is the selected event's stats and management. `?view=list&item=`. |
+| **List** | A condensed gathering index on the left. The right interior is a truncated stats card plus Go to event. Not the event edit screen. `?view=list&item=`. |
 | **Timeline** | The month as a linear time scale (days on the X axis, one row per gathering). Not a 7-column month grid. `?view=timeline&y=&m=`. |
 | **Projects** | A kanban over `ENTRY_STAGES` (Pencil, Planning, Production, Cancelled). An event on its way moves stage through the existing entry write. No new table. `?view=projects`. |
 
-Unsigned members always get Guest. The server decides the view before any admin read. C3 and C4 already own `planningLane` / `productionLane` on the Admin board.
+Operators load Guest and Admin data once so a view switch does not remount. Unsigned members always get Guest and never hit `loadAdminCalendar`. C3 and C4 already own `planningLane` / `productionLane` on the Admin board.
 
 **Loading a month.** The first month and every browsed month use the same public reader:
 `loadPublicSpaceWindow` (`lib/calendar/public-month.ts`), which composes `listSpaceCalendarEvents`,
@@ -271,21 +272,20 @@ public Calendar tab never shows them, and the table's check admits only `visibil
 are the operator quad. The grid asks `notesForDay` (`lib/calendar/day-notes.ts`) for a
 day's labels. A day note never blocks time and is never a calendar item.
 
-**Plan** (`PROG-CAL2`). `space_plans`, owned by the host Space. Calendar entries and events point at a
+**Plan** (`PROG-CAL2`, shipped). `space_plans`, owned by the host Space. Calendar entries and events point at a
 plan; `crm_tasks.plan_id` makes plan tasks part of the one team task inbox (`lib/crm/tasks.ts`). The
 plan drawer opens from any calendar item that belongs to a plan and is composed from a Studio manifest.
-A co-host Space sees a plan only through an accepted collaboration and a share of that plan.
+A co-host Space sees a plan only through an accepted share of that plan.
 
-**Production** (`PROG-CAL3`). "Make it a Production" opens the event Spark (`lib/studio/entities/event.ts`)
+**Production** (`PROG-CAL3`, shipped). "Make it a Production" opens the event Spark (`lib/studio/entities/event.ts`)
 prefilled by a pure mapping from the plan and the chosen Pencil onto the manifest's field keys. The event
 carries `plan_id`, and the Pencil is retired in the same step so the calendar shows one card. The
 readiness bar is derived from the manifest's required fields plus the plan's open tasks. Publishing is
 always the person's own press in the Spark.
 
-**Later phases.** Views (`PROG-CAL4`: stage board, My tasks, due dates as a layer, back-to-back items
-stacked as one block), templates and relative scheduling (`PROG-CAL5`: tasks anchored to the Production
-date, Run it again, repeating Pencils whose explicit exceptions a generator must never normalise), Vera
-proposals (`PROG-CAL6`, never publishing), co-host collaboration and a token-keyed private feed
-(`PROG-CAL7`), and the same spine for non-event projects (`PROG-CAL8`).
+**Views, playbooks, Vera, together, beyond events** (`PROG-CAL4`–`PROG-CAL8`, shipped). A board of Plans by stage
+on Calendar settings; My tasks filterable by plan; to-do dates as the `todos` layer; back-to-back items stacked
+on the grid; playbooks and relative dues; Vera proposals that never publish; a token-keyed private feed at
+`/calendar/private/<token>`; the same Plan spine for Journey, Program, and maintenance targets.
 
 Voice: all calendar copy follows `docs/CONTENT-VOICE.md` (no em/en dashes) + `docs/NAMING.md`.

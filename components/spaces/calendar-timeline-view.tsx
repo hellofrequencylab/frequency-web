@@ -1,27 +1,29 @@
+'use client'
+
 import Link from 'next/link'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SectionHeader } from '@/components/ui/section-header'
 import { buttonClasses } from '@/components/ui/button'
-import { adminViewHref, timelineMonthLabel } from '@/lib/calendar/admin-views'
+import { timelineMonthLabel } from '@/lib/calendar/admin-views'
 import { adjacentMonth } from '@/lib/calendar/month-window'
 import type { TimelineBar, TimelineDay } from '@/lib/calendar/month-timeline'
 import { cn } from '@/lib/utils'
 
-// TIMELINE VIEW (ADR-1464). One month as a linear time scale. Days on the X axis,
-// one row per gathering. Not a 7-column month grid.
+// TIMELINE VIEW (ADR-1464, ADR-1467). One month as a linear time scale. Days on
+// the X axis, one row per gathering. Month steps stay in the client shell.
 
 export function CalendarTimelineView({
-  slug,
   year,
   month1,
   days,
   bars,
+  onMonthChange,
 }: {
-  slug: string
   year: number
   month1: number
   days: TimelineDay[]
   bars: TimelineBar[]
+  onMonthChange: (year: number, month1: number) => void
 }) {
   const prev = adjacentMonth(year, month1, -1)
   const next = adjacentMonth(year, month1, 1)
@@ -32,12 +34,20 @@ export function CalendarTimelineView({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SectionHeader title={timelineMonthLabel(year, month1)} count={bars.length} />
         <nav aria-label="Timeline month" className="flex items-center gap-2">
-          <Link href={adminViewHref(slug, 'timeline', prev)} scroll={false} className={buttonClasses('secondary', 'sm')}>
+          <button
+            type="button"
+            onClick={() => onMonthChange(prev.year, prev.month1)}
+            className={buttonClasses('secondary', 'sm')}
+          >
             Previous
-          </Link>
-          <Link href={adminViewHref(slug, 'timeline', next)} scroll={false} className={buttonClasses('secondary', 'sm')}>
+          </button>
+          <button
+            type="button"
+            onClick={() => onMonthChange(next.year, next.month1)}
+            className={buttonClasses('secondary', 'sm')}
+          >
             Next
-          </Link>
+          </button>
         </nav>
       </div>
 

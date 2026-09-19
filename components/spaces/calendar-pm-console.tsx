@@ -1,3 +1,5 @@
+'use client'
+
 import { RowCard } from '@/components/cards/row-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SectionHeader } from '@/components/ui/section-header'

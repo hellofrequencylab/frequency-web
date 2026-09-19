@@ -76,7 +76,9 @@ describe('agent packets (ADR-1412)', () => {
 
   it('refuses parked 16-to-7 nav and owner-gated rows unless asked', () => {
     expect(PARKED_IDS.has('LIVE-241')).toBe(true)
+    expect(PARKED_IDS.has('LIVE-412')).toBe(true)
     expect(isWorkable({ id: 'LIVE-241', status: 'open', lane: 'live' })).toBe(false)
+    expect(isWorkable({ id: 'LIVE-412', status: 'open', lane: 'hygiene' })).toBe(false)
     expect(isWorkable({ id: 'LIVE-410', status: 'open', lane: 'live' })).toBe(true)
     expect(
       isWorkable({ id: 'LIVE-408', status: 'open', lane: 'live', ownerAction: 'ruling' }),
@@ -143,12 +145,12 @@ describe('agent packets (ADR-1412)', () => {
     expect(AGENT_PROMPT).toContain('Never stamp wall-clock versions')
   })
 
-  it('CLI --json names LIVE-412 on the scan lane once SCAN-644 is closed', () => {
+  it('CLI --json does not name parked LIVE-412 on the scan lane', () => {
     const { status, stdout, stderr } = run(['--json', '--lane', 'scan'])
     expect(status, stderr).toBe(0)
     const body = JSON.parse(stdout)
-    expect(body.next[0].id).toBe('LIVE-412')
-    expect(body.next[0].derivedLane).toBe('scan')
+    expect(body.packets.some((p: { id: string }) => p.id === 'LIVE-412')).toBe(false)
+    if (body.next[0]) expect(body.next[0].id).not.toBe('LIVE-412')
     expect(body.packets.some((p: { id: string }) => p.id === 'LIVE-410')).toBe(false)
     expect(body.packets.some((p: { id: string }) => p.id === 'SCAN-636')).toBe(false)
     expect(body.packets.some((p: { id: string }) => p.id === 'SCAN-638')).toBe(false)
