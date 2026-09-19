@@ -45561,6 +45561,35 @@ work. A nav rewrite in the same pass as recording this.
 member rail can still shrink later, but only by raising a row's floor or a matrix/flag gate so a
 role that cannot use it no longer sees it.
 
+## ADR-1407: Tips and Space gifts settle on the page, the same way tickets already do (2026-09-19)
+
+**Status:** Accepted · **Extends** [ADR-1377](DECISIONS.md) · Backlog `LIVE-367`
+
+**Context.** ADR-1377 closed the on-page settle for the three ticket doors and named the rest as
+the next row. Commerce orders already settled (`settleCommerceOrderAction` on `buy-button`). Tips
+and Space gifts still mounted `CheckoutPanel` without `onPaid`, so a card that never redirected
+promised a receipt only the webhook could send.
+
+**Decision.**
+
+1. **The seam already hands `sessionId` back.** `resolveCheckoutSession` has done so since
+   LIVE-366. `startTip` and `startSpaceDonationCheckout` now pass it through. `TipResult` and
+   `DonationCheckoutResult` name the field so the TypeScript surface matches the runtime.
+2. **Each door has its own settle.** `settleTipAction` calls `recordTipFromSessionId`.
+   `settleDonationAction` calls `recordSpaceDonationFromSessionId`. Same shape as
+   `settleTicketAction`: a `cs_` check, a per-IP limiter that fails open, never fatal.
+3. **Stripe is the authority.** No session-holder gate. A gift does not require an account. The
+   recorder re-fetches the session and refuses anything that is not the right `metadata.kind` and
+   `payment_status === 'paid'`.
+
+**Rejected.** One generic `settleCheckoutAction` (each recorder is a different table and a different
+status vocabulary: donations take `abandoned`, tips take `failed`). Waiting on the webhook (that is
+the defect).
+
+**Consequences.** `LIVE-367`'s probe fails unless all three named doors pass `onPaid={` to the
+panel. Membership already settled under LIVE-369. The remaining subscription creators stay hosted
+until their own rows.
+
 ## ADR-1408: `/discover` visual captures are advisory, because the database sets the page height (2026-09-19)
 
 **Status:** Accepted · **Extends** the visual two-tier split in `test/e2e/visual-tiers.test.ts` · Backlog

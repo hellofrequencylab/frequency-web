@@ -132,7 +132,8 @@ that had already promised a ticket and a receipt.
 `CheckoutPanel` as `onPaid`. The panel **awaits** it before confirming. Both settles are safe to run
 — the settle is one conditional `update … where status = 'pending' returning …`, so whichever
 arrives second flips nothing and sends nothing. The webhook stays the guarantee
-([ADR-1377](DECISIONS.md)).
+([ADR-1377](DECISIONS.md)). Commerce, tips and Space gifts use the same `onPaid` path
+([ADR-1407](DECISIONS.md), `LIVE-367`).
 
 ### 🔴 The compiler cannot help AT ALL on the Stripe side
 
