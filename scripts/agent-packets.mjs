@@ -92,9 +92,9 @@ LOOP.
 5. If the PR added supabase/migrations/*.sql, apply with execute_sql then ledger insert; run pnpm check:migrations --require-ledger when credentials exist.
 6. Validate the row's probe on main. Close the row in BUILD-BACKLOG.json in the SAME PR that makes the probe pass, and prune it from meta.slate.waves.
 
-PRODUCT-FIRST (ADR-1403). LIVE-410 (memberships on the free floor, ADR-1415; Connect still refuses checkout) is closed in this tree. LIVE-376 closed (sole-Space default, ADR-1413). LIVE-306 closed (worktree lint installs, ADR-1441). Prefer remaining money. LIVE-234 is P0 money proof and is owner-walked. LIVE-408 needs an owner ruling. Journey sales (LIVE-392+) is claimed by ${FOREIGN_LANE_CLAIMS.journey}.
+PRODUCT-FIRST (ADR-1403 / ADR-1445). Calendar section first: LIVE-414 then LIVE-415 then LIVE-416–419. LIVE-410 and LIVE-376 are closed. LIVE-234 is P0 money proof, owner-gated (account / OWN-078) — do not demote it and do not pick it. LIVE-408 needs an owner ruling. Journey sales (LIVE-392+) is claimed by ${FOREIGN_LANE_CLAIMS.journey}. Do not start Editor, Sites, Etsy, App Platform, or LIVE-242.
 
-TWO-AGENT SPLIT (2026-09-19, meta.slate.metaScanCleanup). If you are the product agent already on the backlog: take derived lanes money then events. Do not take lane \`scan\` and do not start SCAN-636. If you are the scan follow-through agent: \`pnpm packets --lane scan\` and start SCAN-636. Do not take LIVE-376 or LIVE-234. LIVE-412 is on the scan lane (shell split after SCAN-641), not a free shell packet.
+TWO-AGENT SPLIT (2026-09-19, meta.slate.metaScanCleanup). If you are the product agent: take derived lane \`events\` (calendar C0–C5). Do not take lane \`scan\`. If you are the scan follow-through agent: \`pnpm packets --lane scan\` and start SCAN-638. Leave LIVE-414 through LIVE-419. Do not take LIVE-234. LIVE-412 is on the scan lane (shell split after SCAN-641), not a free shell packet.
 `
 
 export function loadBacklog(root = '.') {
@@ -146,8 +146,10 @@ export function classifyLane(entry) {
     return 'visual'
   }
   if (/sitemap|robots|llms\.txt|jsonld|seo/.test(h) && /LIVE-|HYG-/.test(id)) return 'seo'
-  // Events before money: "tickets" in an attach-to-Space row is not a checkout packet.
-  if (/LIVE-376|host_space_id|event spark|attach their event/.test(id + h)) return 'events'
+  // Calendar C0–C5 (ADR-1445) before leftover attach-to-Space / money rows.
+  if (/^LIVE-41[4-9]$/.test(id) || /LIVE-376|host_space_id|event spark|attach their event/.test(id + h)) {
+    return 'events'
+  }
   if (
     /LIVE-410|LIVE-234|LIVE-367|space_memberships|connect readiness|checkout|stripe|payout|donation|tip-button|minEntitlement/.test(
       id + h,
