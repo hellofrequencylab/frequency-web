@@ -239,8 +239,9 @@ async function memberEventAllowanceOk(
       .eq('host_id', profileId)
       .is('space_id', null)
       .gte('starts_at', new Date(Date.now() - MAX_TZ_OFFSET_MS).toISOString())
-    const upcoming = ((upcomingRows ?? []) as (SeriesRow & { time_zone: string | null })[]).filter((r) =>
-      isUpcomingByInstant(r),
+    const upcoming = ((upcomingRows ?? []) as (SeriesRow & { time_zone: string | null })[]).filter(
+      (r): r is SeriesRow & { time_zone: string | null; starts_at: string } =>
+        r.starts_at != null && isUpcomingByInstant({ starts_at: r.starts_at, time_zone: r.time_zone }),
     )
     const count = countSeries(upcoming, { dropCancelled: false })
     if (await memberWithinLeadershipAllowance('event_create', tier, count)) return { ok: true }
