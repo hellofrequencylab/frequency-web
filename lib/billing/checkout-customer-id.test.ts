@@ -68,28 +68,50 @@ describe('createMembershipCheckout — an unreadable stripe_customer_id (SCAN-53
     state.set({ data: null, error: { message: '57014 statement timeout' } })
 
     const url = await createMembershipCheckout(OPTS)
-
-    // Old behaviour: the unchecked read looked like "no customer yet", a session was created with
-    // customer_email only, and Stripe minted a second customer for an existing subscriber.
     expect(url).toBeNull()
     expect(stripeFake.checkout.sessions.create).not.toHaveBeenCalled()
   })
 
   it('reuses the saved customer on a clean read', async () => {
     state.set({ data: { stripe_customer_id: 'cus_existing' }, error: null })
-    const url = await createMembershipCheckout(OPTS)
-    expect(url).toBe('https://stripe.test/cs_1')
+    const handed = await createMembershipCheckout(OPTS)
+    expect(handed?.url).toBe('https://stripe.test/cs_1')
     const args = stripeFake.checkout.sessions.create.mock.calls[0][0] as Record<string, unknown>
     expect(args.customer).toBe('cus_existing')
   })
 
   it('still opens a first-time checkout on email when the member genuinely has no customer', async () => {
     state.set({ data: null, error: null })
-    const url = await createMembershipCheckout(OPTS)
-    expect(url).toBe('https://stripe.test/cs_1')
+    const handed = await createMembershipCheckout(OPTS)
+    expect(handed?.url).toBe('https://stripe.test/cs_1')
     const args = stripeFake.checkout.sessions.create.mock.calls[0][0] as Record<string, unknown>
     expect(args.customer).toBeUndefined()
     expect(args.customer_email).toBe('m@example.test')
+  })
+
+  it('defaults to hosted redirect fields, and swaps them for elements without touching metadata', async () => {
+    state.set({ data: { stripe_customer_id: 'cus_existing' }, error: null })
+    await createMembershipCheckout(OPTS)
+    const hosted = stripeFake.checkout.sessions.create.mock.calls[0][0] as Record<string, unknown>
+    expect(hosted.success_url).toContain('session_id={CHECKOUT_SESSION_ID}')
+    expect(hosted.cancel_url).toBeTruthy()
+    expect(hosted.ui_mode).toBeUndefined()
+    expect((hosted.subscription_data as { metadata: Record<string, string> }).metadata.profile_id).toBe('m1')
+    expect((hosted.metadata as Record<string, string>).kind).toBeUndefined()
+
+    stripeFake.checkout.sessions.create.mockResolvedValueOnce({
+      id: 'cs_el',
+      url: null,
+      client_secret: 'cs_el_secret',
+    })
+    const onPage = await createMembershipCheckout({ ...OPTS, ui: 'elements' })
+    expect(onPage?.clientSecret).toBe('cs_el_secret')
+    expect(onPage?.url).toBeUndefined()
+    const elements = stripeFake.checkout.sessions.create.mock.calls[1][0] as Record<string, unknown>
+    expect(elements.ui_mode).toBe('elements')
+    expect(elements.return_url).toContain('session_id={CHECKOUT_SESSION_ID}')
+    expect(elements.success_url).toBeUndefined()
+    expect(elements.cancel_url).toBeUndefined()
   })
 })
 

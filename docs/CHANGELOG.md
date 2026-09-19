@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **Joining Crew, buying a household bundle, or picking a Space plan now takes the card on the page.** The form opens under the button you pressed. If it cannot open, you still go to Stripe's checkout.
+
 - **Buying something that ships asks for a delivery address.** Stripe collects and checks it before the charge, so the seller gets a real address. A Journey, a download, or a booking still pays on the page.
 
 - **A free Space can sell a membership.** Set a tier on Offerings. The first paid join still needs payouts set up. Campaigns stay on Business.
