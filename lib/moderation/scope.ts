@@ -10,23 +10,25 @@
 //
 //     posts: author delete or host removes in circle
 //       author_id = get_my_profile_id()
+//       OR get_my_web_role() = 'moderator'
 //       OR (get_my_role() >= 'host'
 //           AND scope_id IN (SELECT id FROM circles WHERE host_id = get_my_profile_id()))
 //
-// (supabase/migrations/20240102000000_hierarchy_v2.sql; the UPDATE policy `posts: author update or
-// host pins in circle` has the identical predicate.) A host moderates the Circles they host, and
-// nothing else. Platform-wide moderation is the STAFF axis, `profiles.web_role in ('admin',
-// 'janitor')` (ADR-208), which no member can grant themselves.
+// (supabase/migrations/20240102000000_hierarchy_v2.sql; widened in 20270345006500. The UPDATE
+// policy `posts: author update or host pins in circle` has the identical predicate.) A host
+// moderates the Circles they host, and nothing else. Platform-wide moderation is staff
+// (`profiles.web_role in ('admin', 'janitor')`, ADR-208) or a granted Platform moderator
+// (`moderator`, OWN-054 / ADR-1466). A member cannot grant themselves either.
 //
 // This module is pure (no React, Next, or Supabase) so the actions can unit-test the decision and
 // the callers stay one query each: fetch the row, fetch the caller's hosted circle ids, ask.
 
-import { atLeastRole, isStaff, type CommunityRole, type WebRole } from '@/lib/core/roles'
+import { atLeastRole, canModeratePlatform, isStaff, type CommunityRole, type WebRole } from '@/lib/core/roles'
 import { staffCan, type CapabilityOverrides, type StaffRole } from '@/lib/core/staff-roles'
 
 // The coarse staff test, re-exported so a moderation call site imports one module. The
 // definition lives in lib/core/roles.ts beside the WebRole type it narrows.
-export { isStaff }
+export { isStaff, canModeratePlatform }
 
 /** The two columns a post-level moderation decision needs. `scope_id` is the canonical scope
  *  column the policies read; a circle-scoped post carries its circle's id there (the typed
@@ -52,7 +54,7 @@ export type PostModerationInput = {
 /**
  * May this caller delete, pin, or unpin this post? Mirrors the two `posts` policies exactly:
  *   1. the author, always;
- *   2. platform staff (web_role admin/janitor), anywhere;
+ *   2. platform staff (web_role admin/janitor) or a granted Platform moderator, anywhere;
  *   3. host+ on the community ladder, ONLY inside a circle the caller hosts.
  * A post with no scope, or scoped to an event or a profile wall, never matches arm 3: the
  * hosted-circle list contains circle ids only, so a non-circle scope cannot be in it.
@@ -60,24 +62,26 @@ export type PostModerationInput = {
 export function canModeratePost(input: PostModerationInput): boolean {
   const { callerId, communityRole, webRole, post, hostedCircleIds } = input
   if (post.author_id === callerId) return true
-  if (isStaff(webRole)) return true
+  if (canModeratePlatform(webRole)) return true
   if (!atLeastRole(communityRole, 'host')) return false
   return post.scope_id != null && hostedCircleIds.includes(post.scope_id)
 }
 
 /**
- * May this caller approve or reject a Library submission (a practice or a journey)? Staff only.
+ * May this caller approve or reject a Library submission (a practice or a journey)? Staff or
+ * a granted Platform moderator.
  * `practices` and `journey_plans` have no UPDATE policy at all (writes are service-role, "gated in
  * the server actions"), so this function IS the gate. There is deliberately no creator arm: the
  * creator submits (`submitToLibrary`) and someone else decides, otherwise review is a formality.
  */
 export function canReviewLibrarySubmission(webRole: WebRole | null | undefined): boolean {
-  return isStaff(webRole)
+  return canModeratePlatform(webRole)
 }
 
 /**
- * May this caller manually award or revoke an achievement? Staff only, on either staff axis:
- * platform staff (web_role), or a team_members staff role that holds the `community` domain at
+ * May this caller manually award or revoke an achievement? Staff (or a granted Platform
+ * moderator) on either staff axis: platform staff (web_role), a curated moderator, or a
+ * team_members staff role that holds the `community` domain at
  * write, which is how `requireAdmin('host', { staff: 'community' })` admits the operator page
  * (app/(main)/admin/gamification/page.tsx). The community ladder does not open this: a badge is
  * platform-wide, and there is no circle to scope a host to.
@@ -87,6 +91,6 @@ export function canAdministerAchievements(input: {
   staffRole: StaffRole | null | undefined
   overrides?: CapabilityOverrides
 }): boolean {
-  if (isStaff(input.webRole)) return true
+  if (canModeratePlatform(input.webRole)) return true
   return staffCan(input.staffRole, 'community', 'write', input.overrides)
 }

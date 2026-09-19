@@ -111,6 +111,7 @@ async function rolesForProfile(profileId: string): Promise<MemberRole[]> {
     }
     if (row.web_role === 'janitor') roles.push({ label: 'Executive Admin', tone: 'danger' })
     else if (row.web_role === 'admin') roles.push({ label: 'Site Admin', tone: 'danger' })
+    else if (row.web_role === 'moderator') roles.push({ label: 'Platform moderator', tone: 'primary' })
     return roles
   } catch {
     return []

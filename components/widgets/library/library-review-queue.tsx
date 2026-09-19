@@ -1,5 +1,5 @@
 import { getCallerProfile } from '@/lib/auth'
-import { isStaff } from '@/lib/core/roles'
+import { canReviewLibrarySubmission } from '@/lib/moderation/scope'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { getPendingReview, typeLabel } from '@/lib/library'
@@ -16,7 +16,7 @@ import { Inbox } from 'lucide-react'
 // a queue whose Approve would refuse.)
 export async function LibraryReviewQueue() {
   const caller = await getCallerProfile()
-  if (!caller || !isStaff(caller.webRole)) return null
+  if (!caller || !canReviewLibrarySubmission(caller.webRole)) return null
 
   const pending = await getPendingReview()
 

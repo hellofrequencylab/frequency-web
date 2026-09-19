@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
-import { isStaff } from '@/lib/core/roles'
+import { canReviewLibrarySubmission } from '@/lib/moderation/scope'
 import { FocusTemplate } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
 
@@ -16,9 +16,11 @@ export const dynamic = 'force-dynamic'
 // (2026-09-05, scan two L7-3: the gate moved from community Host+ to the STAFF axis, web_role
 // admin/janitor, to match reviewContent in library/actions.ts; a self-granted Host no longer sees
 // a queue whose Approve would refuse.)
+// (2026-09-19, OWN-054: a granted Platform moderator uses the same helper. isStaff stays
+// admin/janitor so this page does not become an admin door.)
 export default async function LibraryReviewPage() {
   const caller = await getCallerProfile()
-  if (!caller || !isStaff(caller.webRole)) redirect('/library')
+  if (!caller || !canReviewLibrarySubmission(caller.webRole)) redirect('/library')
 
   return (
     <FocusTemplate

@@ -301,11 +301,13 @@
   - Host = Crew volunteering as a Circle host · Guide = oversees local hosts ·
     Mentor = oversees Guides in a Nexus
   - "host+" = host or above WITHIN community_role only.
-- **web_role: admin (Site Admin) | janitor (Executive Admin) | none**: operational,
+- **web_role: admin (Site Admin) | janitor (Executive Admin) | moderator (Platform moderator) | none**: operational,
   not aspirational. **Locked decision:** web_role is the coarse axis (who may enter
-  admin surfaces, and the janitor-only crown jewels); the **`team_members` staff
-  matrix (ADR-127) stays side-by-side** as the fine-grained per-domain capability
-  layer for scoped staff hires.
+  admin surfaces, and the janitor-only crown jewels). **`moderator` is granted, not
+  staff** (OWN-054 / ADR-1466): it may moderate the feed, the library, and
+  achievements without opening `/admin`, and it is never a side effect of publishing
+  a Circle. The **`team_members` staff matrix (ADR-127) stays side-by-side** as the
+  fine-grained per-domain capability layer for scoped staff hires.
 - **Billing (`membership_tier`)** is a third independent attribute.
 - Design tokens: community ladder apexes on plum; web roles get no rank color;
   season ranks apex on gold.

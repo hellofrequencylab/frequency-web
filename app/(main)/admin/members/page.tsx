@@ -1,6 +1,9 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
+import { getCallerProfile } from '@/lib/auth'
+import { isJanitor } from '@/lib/core/roles'
+import { getStaffMember } from '@/lib/staff'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { Users, ArrowUpRight } from 'lucide-react'
 import { MemberAdmin } from './member-admin'
@@ -64,7 +67,7 @@ async function MembersTab() {
   // `meta` is read server-side ONLY to derive the Spotlight boolean below; it holds
   // PII (acquisition/UTM, streak, persona) and is never passed to the client.
   const select = `
-      id, auth_user_id, display_name, handle, avatar_url, bio, community_role,
+      id, auth_user_id, display_name, handle, avatar_url, bio, community_role, web_role,
       is_active, is_system, created_at, current_season_rank, current_season_zaps, meta,
       nexus_regions!nexus_region_id ( name )
     `
@@ -88,6 +91,7 @@ async function MembersTab() {
     return {
       ...m,
       community_role: m.community_role ?? 'member',
+      web_role: m.web_role ?? 'none',
       regionName: m.nexus_regions?.name ?? null,
       spotlightEnabled: readSpotlightEnabled(meta),
     }
@@ -108,10 +112,16 @@ async function MembersTab() {
     if (m.auth_user_id && emailByAuthId[m.auth_user_id]) emailMap[m.id] = emailByAuthId[m.auth_user_id]
   }
 
+  const [caller, staff] = await Promise.all([
+    getCallerProfile(),
+    getStaffMember().catch(() => null),
+  ])
+  const canGrantModerator = !!caller && (isJanitor(caller.webRole) || staff?.role === 'owner')
+
   return (
     <>
       <p className="mb-4 text-body-sm text-muted">{allMembers.filter((m) => !m.is_system).length} total members</p>
-      <MemberAdmin members={allMembers} emailMap={emailMap} />
+      <MemberAdmin members={allMembers} emailMap={emailMap} canGrantModerator={canGrantModerator} />
     </>
   )
 }

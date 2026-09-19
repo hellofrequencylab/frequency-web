@@ -547,7 +547,7 @@ export const NAV_REGISTRY: readonly NavNode[] = [
 export type NavViewer = {
   role: CommunityRole | null
   /** The coarse web_role floor (reserved for Studio nodes; unused by calm gating today). */
-  webRole?: 'none' | 'admin' | 'janitor' | null
+  webRole?: 'none' | 'admin' | 'janitor' | 'moderator' | null
   staffRole: StaffRole | null
   /** Does the viewer own/run at least one Space? Honored by a node that opts into
    *  gate.requiresOperatedSpaces (the operator "My Spaces" entry). Absent = treated as false. */

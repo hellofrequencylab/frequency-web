@@ -46687,3 +46687,25 @@ Premise re-tested 2026-09-19: the Space root layout still called `getMyProfileId
 **Consequences.** Crawlers on `/spaces/<slug>` and `/spaces/<slug>/podcasts/<show>` no longer pay the `(main)` auth read or the Space layout viewer read. A later edit that puts `getMyProfileId(` back in `app/(main)/spaces/[slug]/layout.tsx` fails the SCAN-644 probe. Private Spaces stay 404 for a null viewer.
 
 **Rows.** SCAN-644.
+
+## ADR-1466: A Platform moderator is granted, and is not staff (OWN-054)
+
+**Status:** Accepted · 2026-09-19 · backlog `OWN-054` · numbered **1466** because **1465** is SCAN-644 on main · corroborated by `lib/core/roles.ts`, `lib/moderation/scope.ts`, and `supabase/migrations/20270345006500_curated_moderator_web_role.sql`
+
+**Context.** Scan two (L7-1..4) found four admin-client actions treating community `host` as a platform moderator. `host` is self-granted by `ensureHostOnOwnership` when someone publishes a Circle. Phase A scoped those actions to author, staff, or a host inside a Circle they host. On 2026-09-08 the owner ruled: mint a curated moderator `web_role`. It arrives by GRANT. Host stays Circle-scoped.
+
+Premise re-tested 2026-09-19: `ensureHostOnOwnership` still self-grants host (`lib/circles/remix.ts`). The four helpers still treated only `isStaff` as platform-wide. `profiles.web_role` still checked `none|admin|janitor`. No grant path wrote `web_role`.
+
+**Decision.**
+
+1. Widen `profiles.web_role` to `none | admin | janitor | moderator`. `asWebRole` admits `moderator`. `isStaff` stays `admin|janitor`.
+2. `canModeratePlatform` is staff or a granted moderator. `canModeratePost`, `canReviewLibrarySubmission`, and `canAdministerAchievements` use it. A host outside their Circles is still refused.
+3. `/library/review` and the Library "Review queue" link ask `canReviewLibrarySubmission`, not `isStaff` and not community host+.
+4. `assignWebRole` is the grant. Janitor or team owner only. Sets or clears `moderator`. Refuses a self-grant and refuses to overwrite `admin`/`janitor`.
+5. Posts UPDATE/DELETE policies gain a `get_my_web_role() = 'moderator'` arm. Do not add `moderator` to the staff `IN ('admin','janitor')` policies elsewhere.
+
+**Rejected.** Treating moderator as staff. Letting publishing a Circle mint the role. Letting operations staff grant it. Adding moderator to CRM, insights, or Space write policies.
+
+**Consequences.** A trusted member can moderate the feed and the library without entering `/admin`. A later widening of `isStaff` to include `moderator` fails the OWN-054 probe. Host-outside-circle stays the negative control.
+
+**Rows.** OWN-054.

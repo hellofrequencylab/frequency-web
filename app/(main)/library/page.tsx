@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Dumbbell, Route, TrendingUp, Users2, Flame, Clock } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
+import { canReviewLibrarySubmission } from '@/lib/moderation/scope'
 import { buttonClasses } from '@/components/ui/button'
 import { IndexTemplate } from '@/components/templates'
 import { EntityCard } from '@/components/cards/entity-card'
@@ -82,14 +82,10 @@ export default async function LibraryPage({
         <div className="flex items-center gap-2">
           {/* The two guided create flows (each route carries its own canCreate gate). */}
           <CreateMenu />
-          {/* The review queue. This comment used to say it was "reachable from admin" and that was
-              simply not true — a repo-wide search for `library/review` returned its own route, a
-              revalidatePath call and widget bookkeeping, and NO link, in admin or anywhere else. So a
-              Host had a working approval queue reachable only by typing the URL. `/admin` was never
-              the right home for it either: that floor is staff-only, while this queue gates on the
-              COMMUNITY ladder (host+), which is the population already standing on this page. The
-              condition below mirrors the review page's own guard exactly. */}
-          {atLeastRole(caller.community_role, 'host') && (
+          {/* The review queue. The page and the Approve action both ask
+              canReviewLibrarySubmission (staff or a granted Platform moderator). A
+              self-granted Host no longer sees a door whose Approve would refuse. */}
+          {canReviewLibrarySubmission(caller.webRole) && (
             <Link href="/library/review" className={buttonClasses('secondary', 'sm')}>
               Review queue
             </Link>
