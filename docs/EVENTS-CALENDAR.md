@@ -70,7 +70,9 @@ zone; a subscribe button that downloads a dead snapshot; burying the grid behind
 - A truncated **event popup** on click (title, when, where) with a **Go to Event** link to
   `/events/<slug>`. Built on the shared `Dialog` primitive.
 - A per-space **Calendar tab** (`app/(main)/spaces/[slug]/(profile)/calendar`), gated on the Space
-  having upcoming events, reading `listSpaceCalendarEvents` (published, non-private, non-cancelled).
+  having upcoming events, reading `listSpaceCalendarEvents` (published, non-private). Cancelled
+  gatherings paint as muted footer text on the date square (LIVE-414); the subscribed `.ics` stays
+  live-only.
 - Mounted the subscribe affordance (`CalendarSubscribeMenu`) pointing at the EC1 public per-space feed
   `/spaces/<slug>/calendar.ics`.
 - Times are pre-formatted server-side (via `formatEventWhen`) so the timezone lib never ships to the
@@ -186,11 +188,11 @@ else. Its column list is the gate; it must never gain a detail column.
 slot that overlaps is neither offered nor bookable. An existing booking inside the range is never
 touched. The read is service-role and fails safe to no blocks.
 
-**Admin / Guest on the Calendar tab** ([ADR-1389](DECISIONS.md), [ADR-1450](DECISIONS.md)). A viewer who
+**Admin / Guest on the Calendar tab** ([ADR-1389](DECISIONS.md), [ADR-1450](DECISIONS.md), [ADR-1454](DECISIONS.md)). A viewer who
 edits the Space (with the Calendar function), or platform staff previewing it, lands on **Admin**: the
 production console (`CalendarPmConsole`) over `loadAdminCalendar` (`lib/calendar/admin-calendar.ts`,
-shared with the settings console). The board lists what is penciled, in planning, in production, and
-cancelled. `StaffCalendar` is the date map and the settings drawer, not a second guest month.
+shared with the settings console). Pencil is its own lane (`pencilLane`). The board lists what is
+in planning, in production, and cancelled. `StaffCalendar` is the date map and the settings drawer, not a second guest month.
 `?view=guest` and unsigned members go through `guestLiveItems` (`lib/calendar/guest-live.ts`): live
 events only. Pencil and planning stay off that feed. Cancelled stays the C0 footer (LIVE-414), not a
 guest chip. The mode is decided on the server before any admin read.

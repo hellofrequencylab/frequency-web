@@ -19,7 +19,7 @@ function item(over: Partial<CalendarEvent> = {}): CalendarEvent {
   }
 }
 
-describe('guestLiveItems (LIVE-419)', () => {
+describe('guestLiveItems (LIVE-414 / LIVE-419)', () => {
   it('keeps live events and cancelled gatherings for the C0 footer', () => {
     const live = item({ slug: 'live', title: 'Open sit' })
     const cancelled = item({ slug: 'off', title: 'Called off', isCancelled: true, stage: 'cancelled' })

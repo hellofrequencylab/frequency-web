@@ -1,9 +1,9 @@
 import type { CalendarEvent } from './item'
 
-// THE PUBLIC / GUEST FEED (LIVE-419, ADR-1445). Guest and ordinary members see live
-// gatherings only. Pencil and planning stay off this feed. Production is the live show.
-// Cancelled stays for the C0 date-square footer (LIVE-414); it is not a guest chip.
-// ICS stays live-only.
+// THE PUBLIC / GUEST FEED (LIVE-414 / LIVE-419, ADR-1445). Guest and ordinary members see live
+// gatherings plus cancelled footer text. Pencil and planning stay off this feed. Production is
+// the live show. Cancelled stays for the C0 date-square footer; it is not a guest chip. ICS
+// stays live-only. The Guest page branch calls this helper (LIVE-419).
 
 /** Stages the guest calendar never shows. Named so the helper can exclude them by the same words. */
 export const GUEST_HIDDEN_STAGES = ['pencil', 'planning'] as const

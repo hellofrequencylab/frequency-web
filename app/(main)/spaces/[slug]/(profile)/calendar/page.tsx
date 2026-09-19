@@ -25,9 +25,9 @@ import { CalendarPmConsole } from '@/components/spaces/calendar-pm-console'
 // calendar app via the public per-space .ics feed (Events EC1). The identity hero + tab chrome come from
 // the (profile) layout; this is the body.
 //
-// ADMIN / GUEST (ADR-1389, amended by ADR-1450). A viewer who manages the Space lands on ADMIN: the
-// production console (CalendarPmConsole). The board lists what is penciled, in planning, in production,
-// and cancelled. StaffCalendar is the date map and the settings drawer, not a second guest month. A
+// ADMIN / GUEST (ADR-1389, amended by ADR-1450 and ADR-1454). A viewer who manages the Space lands on ADMIN: the
+// production console (CalendarPmConsole). Pencil is its own lane. The board lists what is in planning,
+// in production, and cancelled. StaffCalendar is the date map and the settings drawer, not a second guest month. A
 // toggle flips to GUEST, which is exactly what a visitor sees: guestLiveItems, live events only.
 // Pencil and planning stay off that feed. Every other viewer (guests and ordinary members) only
 // ever gets Guest, and the server never loads the private layer for them: the mode is decided
@@ -123,7 +123,7 @@ export default async function SpaceCalendarPage({
 
   const grid = monthGridWindow(initialYear, initialMonth1)
   const [rows, unavailable] = await Promise.all([
-    listSpaceCalendarEvents(space.id, { fromDay: grid.fromDay }),
+    listSpaceCalendarEvents(space.id, { fromDay: grid.fromDay, paintCancelled: true }),
     listPublicUnavailableItems(space.id, grid.fromDay, grid.toDay),
   ])
   const events = guestLiveItems([...(await spaceEventRowsToItems(rows)), ...unavailable])
