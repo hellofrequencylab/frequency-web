@@ -17,7 +17,7 @@ name: db-tests
 # Path-filter ping for PR #2762 after #2741 (required db-tests).
 # Path-filter ping for PR #2762 so the required db-tests check starts.
 # A commit that edits this file starts the required db-tests check (path filter).
-# SCAN-642 rebase onto main: keep the required check on this SHA.
+# LIVE-418 rebase onto main: keep the required check on this SHA.
 
 on:
   workflow_dispatch: {}
