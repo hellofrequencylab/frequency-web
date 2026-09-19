@@ -25,11 +25,9 @@ import { openUpgrade } from './upgrade-launcher'
 // never gated creation. The wall now lives at the price field (lib/events/ticket-eligibility.ts). Do not
 // reintroduce upgrade copy for the act of creating an event.
 export const UPGRADE_COPY: Record<string, { title: string; blurb: string }> = {
-  'create-circle': {
-    title: 'Start a circle with Crew',
-    blurb:
-      'Crew members start the circles. Gather the people you want to see more of and give them a place to land. A circle is how a handful of regulars becomes a community.',
-  },
+  // 🔴 `create-circle` was here and is deliberately gone (LIVE-409). Starting a Circle
+  // (including Remix, Claim, and a Chapter) is open to any signed-in member. An upsell
+  // on the compose door would be a lie. The quantity cap is `circle_host` at publish.
   // 🔴 `create-journey` was here and is deliberately gone (ADR-920). Drafting a Journey joined
   // FIRST ONE FREE (ADR-908/838): any signed-in member builds; the free limit is the
   // journey_publish meter (1) at the publish gate. An upsell on the create door would be a lie.
@@ -40,11 +38,8 @@ export const UPGRADE_COPY: Record<string, { title: string; blurb: string }> = {
   // RATE, not the permission. It was also dead, like `create-event` before it, with no call site
   // anywhere. Do not re-add it. If a future surface needs to talk about the rate, that is an upsell
   // about a NUMBER going down, not a lightbox about a locked door.
-  'create-practice': {
-    title: 'Share practices with Crew',
-    blurb:
-      'Crew members publish the practices. Turn the thing you do every day into one others can pick up, and watch it ripple out across the community.',
-  },
+  // 🔴 `create-practice` was here and is deliberately gone (LIVE-222 / LIVE-409). Authoring
+  // a Practice is open to any signed-in member; the quantity cap is `practice_publish`.
 }
 
 // 🔴 THE DEFAULT NO LONGER SELLS THE QUEST (ADR-1295, owner ruling 2026-09-09, OWN-071). It read
@@ -144,7 +139,8 @@ export function CrewGateButton({
   isCrew: boolean
   label: string
   buttonClassName?: string
-  /** Tailors the upgrade popup copy (key into UPGRADE_COPY, e.g. 'create-circle'). */
+  /** Tailors the upgrade popup copy (key into UPGRADE_COPY). Compose reasons
+   *  (create-circle / create-practice) were retired in LIVE-409. */
   reason?: string
   children?: ReactNode
 }) {
