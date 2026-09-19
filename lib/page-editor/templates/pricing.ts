@@ -80,15 +80,8 @@ const SPACE_TIER_COPY: Record<PricingTier['id'], { inherits: boolean; features: 
     features: [
       'Unlimited contacts and campaigns at volume',
       'The full CRM, email branding, reporting, and exports',
-      'Bookings, tickets, memberships, and your own website',
-    ],
-  },
-  collective: {
-    inherits: true,
-    features: [
-      'Automations and multiple pipelines',
-      'Team seats and roles',
-      'Membership tickets, Collaborator hosting, and shared events',
+      'Bookings, tickets, memberships, automations, and your own website',
+      'Two operator seats, pipelines, and Collaborator hosting',
     ],
   },
   nonprofit: {

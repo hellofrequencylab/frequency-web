@@ -4,7 +4,7 @@ description: For Space owners: turn your model into a Program so members anywher
 category: groups
 order: 5
 published: 2026-07-27
-updated: 2026-08-19
+updated: 2026-09-19
 audience: host
 featureKeys: [channels, circles]
 status: published
@@ -13,7 +13,7 @@ status: published
 Running a **Program** means your model becomes something other people can start
 where they live. You pick one circle you already run, we save its setup as the
 blueprint, and your Program gets its own Channel. From there, members anywhere can
-start a **Chapter** from your blueprint. Running a Program is a **Collective** plan
+start a **Chapter** from your blueprint. Running a Program is a **Business** plan
 feature.
 
 If you're here as a member looking to join or start a Chapter, read
@@ -23,7 +23,7 @@ If you're here as a member looking to join or start a Chapter, read
 
 Two things:
 
-- **A Space on the Collective plan.** Programs are part of Collective. See
+- **A Space on the Business plan.** Programs are part of Business. See
   [plans and pricing](/help/spaces/plans-and-pricing) for what else it carries.
   During the Opening Beta every Space has full access, so you can build one now and
   see how it goes before the plans start doing what they say.

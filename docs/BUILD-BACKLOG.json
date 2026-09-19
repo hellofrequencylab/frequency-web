@@ -47,7 +47,7 @@
             "W0b"
           ],
           "next": [
-            "LIVE-228"
+            "LIVE-242"
           ],
           "leave": [
             "SCAN-636",
@@ -204,7 +204,6 @@
           "ids": [
             "HYG-078",
             "PROG-R4",
-            "LIVE-228",
             "PROG-R5",
             "PROG-R6",
             "PROG-R7",
@@ -2911,7 +2910,7 @@
       "detail": "One sentence from the owner closes this. The seat wall began enforcing on 2026-08-19 (ADR-1087) and its own header was wrong about who spends a seat: it said 'the owner holds no member row', and ALL 19 non-root Spaces hold an ACTIVE space_members row for their own owner_profile_id at role 'admin'. So the owner is counted.\n\nFor Free and Business (allowance 1) that is right either way: the rung is meant to be the owner alone, and teammates start at Collective. For COLLECTIVE (allowance 3) it decides whether the Space gets owner + 2 teammates (today) or owner + 3 (if usedSeats excluded the owner, as the comment claimed). Three Spaces are on Collective and each holds owner + 1, so none is at the wall yet and there is no hurry, only a decision.\n\nThe code was deliberately NOT changed when this was found: either answer is defensible, and moving a paying Space's seat total on the strength of a stale comment is guessing in the expensive direction. The fix, once decided, is one filter in usedSeats or one number in PLACEHOLDER_METER_LIMITS.space_team, plus the comment.\n\n\u2500\u2500 ANSWERED 2026-08-19, owner verbatim: \"Owner + 2, total of 3.\" Today's behaviour is the intended one: the space_team allowance of 3 counts three operator humans INCLUDING the owner's own admin row, so usedSeats stays exactly as written and no code changed. The stale header claim ('the owner holds no member row') was already corrected when the question was filed; the seats.ts header now records the decision instead of the question.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const S='lib/spaces/seats.ts',M='lib/pricing/feature-meters.ts';if(!fs.existsSync(S)||!fs.existsSync(M))process.exit(79);const s=fs.readFileSync(S,'utf8'),m=fs.readFileSync(M,'utf8');const bad=[];if(!/COLLECTIVE IS SETTLED/.test(s))bad.push('seats.ts no longer records the OWN-033 decision');if(/profile_id\\\\s*<>\\\\s*owner_profile_id|neq\\\\(.profile_id.,/.test(s))bad.push('usedSeats now excludes the owner, contradicting the owner decision (owner + 2, total 3)');if(!/space_team:\\\\s*{\\\\s*free:\\\\s*1,\\\\s*business:\\\\s*1,\\\\s*collective:\\\\s*3\\\\s*}/.test(m))bad.push('the space_team ladder moved off free 1 / business 1 / collective 3 without a new decision');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+        "cmd": "node -e \"const fs=require('fs');const S='lib/spaces/seats.ts',M='lib/pricing/feature-meters.ts';if(!fs.existsSync(S)||!fs.existsSync(M))process.exit(79);const s=fs.readFileSync(S,'utf8'),m=fs.readFileSync(M,'utf8');const bad=[];if(!/COLLECTIVE IS SETTLED/.test(s))bad.push('seats.ts no longer records the OWN-033 decision');if(/profile_id\\\\s*<>\\\\s*owner_profile_id|neq\\\\(.profile_id.,/.test(s))bad.push('usedSeats now excludes the owner, contradicting the owner decision (owner + 2, total 3)');if(!/space_team:\\\\s*{\\\\s*free:\\\\s*1,\\\\s*business:\\\\s*2\\\\s*}/.test(m))bad.push('the space_team ladder moved off free 1 / business 2 without a new decision');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
       }
     },
     {
@@ -10659,7 +10658,7 @@
       "detail": "pricing_stripe_prices holds 20 rows; 8 are archived: true - every *_list anchor variant (business_base_month_list, collective_base_year_list, independent_base_month_list, nonprofit_seat_*_list, addon_ai_*_list). catalogPriceKey(..., list=true) at lib/billing/pricing-keys.ts:524-537 still asks for them, so the pricing surface resolves anchors against IDs Stripe has archived. Either re-mint or stop asking. Phase 4 removes the Collective anchors anyway, so do this AFTER the merge to avoid doing it twice.\n\nCLOSED WITHOUT ACTION 2026-09-19 (ADR-1427). PREMISE RE-TESTED FIRST, and it was false. The catalog sync writes archived: list as a map annotation, not Stripe's active (ADR-1062 rule 5); pricing-catalog-sync.test.ts pins that prices.update({ active: false }) is never called. Since ADR-1060 the _list key is what checkout charges (loadoutChargeArm list -> catalogPriceKey(..., true)). resolveStripePriceId never reads row.archived. Stopping the ask would unplug ungranted Space-plan checkout. LIVE-228 still retires the Collective tier; that is unrelated to this flag.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const beta=fs.readFileSync(\"lib/pricing/beta.ts\",\"utf8\");if(!/return catalogPriceKey\\(catalogKey, interval, arm === .list.\\)/.test(beta))fail(\"the list charge arm no longer resolves the _list catalog key\");const products=fs.readFileSync(\"lib/billing/pricing-products.ts\",\"utf8\");if(!/archived:\\s*list/.test(products))fail(\"catalog sync no longer annotates list rows as archived\");if(/prices\\.update\\(\\s*\\{\\s*active:\\s*false/.test(products))fail(\"catalog sync now Stripe-archives a price\");const prices=fs.readFileSync(\"lib/billing/pricing-prices.ts\",\"utf8\");const start=prices.indexOf(\"export async function resolveStripePriceId\");const end=prices.indexOf(\"export async function upsertStripePrice\");if(start<0||end<=start)fail(\"resolveStripePriceId is gone\");if(/\\.archived/.test(prices.slice(start,end)))fail(\"resolveStripePriceId now consults the archived map flag\");const t=fs.readFileSync(\"lib/billing/pricing-catalog-sync.test.ts\",\"utf8\");if(!t.includes(\"HYG-082\"))fail(\"catalog-sync test no longer names HYG-082\");if(!t.includes(\"The one call that could archive a Stripe price is prices.update\"))fail(\"the never-deactivates pin is gone\");console.log(\"HYG-082 ok\")'",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const beta=fs.readFileSync(\"lib/pricing/beta.ts\",\"utf8\");if(!/return catalogPriceKey\\(catalogKey, interval, arm === .list.\\)/.test(beta))fail(\"the list charge arm no longer resolves the _list catalog key\");const products=fs.readFileSync(\"lib/billing/pricing-products.ts\",\"utf8\");if(!/archived:\\s*list/.test(products))fail(\"catalog sync no longer annotates list rows as archived\");if(/prices\\.update\\(\\s*\\{\\s*active:\\s*false/.test(products))fail(\"catalog sync now Stripe-archives a price\");const prices=fs.readFileSync(\"lib/billing/pricing-prices.ts\",\"utf8\");const start=prices.indexOf(\"export async function resolveStripePriceId\");const end=prices.indexOf(\"export async function upsertStripePrice\");if(start<0||end<=start)fail(\"resolveStripePriceId is gone\");if(/\\.archived/.test(prices.slice(start,end)))fail(\"resolveStripePriceId now consults the archived map flag\");const t=fs.readFileSync(\"lib/billing/pricing-catalog-sync.test.ts\",\"utf8\");if(!t.includes(\"HYG-082\"))fail(\"catalog-sync test no longer names HYG-082\");if(!t.includes(\"every price is created active, and the sync never deactivates one (HYG-082)\"))fail(\"the never-deactivates pin is gone\");console.log(\"HYG-082 ok\")'",
         "note": "Passes when the list arm still builds a _list key, the sync still annotates list rows archived without Stripe-deactivating them, resolveStripePriceId still ignores the flag, and the catalog-sync test still names HYG-082. Written 2026-09-19 against the inverted survey, not the title."
       },
       "closed": "2026-09-19"
@@ -10853,7 +10852,7 @@
     {
       "id": "LIVE-228",
       "title": "Merge Collective into Business at $49; grandfather the six granted Spaces",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "L",
@@ -10861,11 +10860,12 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "\u00a75"
       },
-      "detail": "OWNER RULING 2026-09-08: one paid tier at $49 with 2 seats included. Business is $29 today and Collective is $79 list / $49 founding, so this is a 67% raise on Business and a hold at the founding rate for Collective.\n\nProduction on 2026-09-08: spaces.plan = free 15, collective 6, null 1. ZERO Business, zero Nonprofit, zero Independent. space_subscription_items = 0 and space_billing_agreements = 1, so the six Collective Spaces were GRANTED by hand (lib/billing/space-beta-grant.ts), never bought. Nobody has ever been charged, which makes this the cheapest a price change will ever be - but the six still need telling, and the owner ruled they grandfather AT $49 rather than dropping to free.\n\nTouches lib/pricing/plans.ts, pricing-keys.ts (+ RETIRED_CATALOG_ITEM_KEYS for collective_base), one migration, and scripts/check-collective.mjs which pins the six tier names and must be rewritten in the same PR.",
+      "detail": "OWNER RULING 2026-09-08: one paid tier at $49 with 2 seats included. Business is $29 today and Collective is $79 list / $49 founding, so this is a 67% raise on Business and a hold at the founding rate for Collective.\n\nProduction on 2026-09-08: spaces.plan = free 15, collective 6, null 1. ZERO Business, zero Nonprofit, zero Independent. space_subscription_items = 0 and space_billing_agreements = 1, so the six Collective Spaces were GRANTED by hand (lib/billing/space-beta-grant.ts), never bought. Nobody has ever been charged, which makes this the cheapest a price change will ever be - but the six still need telling, and the owner ruled they grandfather AT $49 rather than dropping to free.\n\nTouches lib/pricing/plans.ts, pricing-keys.ts (+ RETIRED_CATALOG_ITEM_KEYS for collective_base), one migration, and scripts/check-collective.mjs which pins the six tier names and must be rewritten in the same PR.\n\nCLOSED 2026-09-19 (ADR-1438). PREMISE RE-TESTED: SPACE_PLANS still named collective; business_base was 2900 cents; collective_base was a live catalog item. CODE: SPACE_PLANS is free/business/nonprofit/independent; asSpacePlan('collective') is business; business_base is amountsFromMonthly(4900, 4900); collective_base is on RETIRED_CATALOG_ITEM_KEYS. Public advertised ladder drops Collective. Migration 20270345006100 rewrites stored collective rows. The sell switches stay operator-flipped.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/pricing/plans.ts\",\"utf8\");const m=s.match(/SPACE_PLANS[^=]*=\\s*\\[([^\\]]*)\\]/);if(!m){console.error(\"SPACE_PLANS not found\");process.exit(1)}if(/collective/.test(m[1])){console.error(\"collective still in SPACE_PLANS\");process.exit(1)}process.exit(0)'"
-      }
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-229",

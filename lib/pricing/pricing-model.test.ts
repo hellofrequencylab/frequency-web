@@ -27,17 +27,13 @@ function hasEmDash(s: string): boolean {
 }
 
 describe('loadout-strip math (computed from the catalog, never hardcoded)', () => {
-  // ADR-811 + ADR-1060: the paid base is Business, and Vera AI (+$20/mo) is the only add-on. The beta
-  // window is CLOSED (owner, 2026-08-17: full price), so the base headlines at its $29 LIST price, which
-  // is the price the checkout now takes. Coaches/healers and community builders turn the add-on on
-  // ($29 + $20 = $49); studios and event hosts run on Business alone ($29). The add-on never carried a
-  // beta anchor (founding == list), so only the base moved.
-  it('matches the doors: +Vera AI personas $49, Business-only personas $29 (list)', () => {
+  // LIVE-228: Business is $49 flat; Vera AI (+$20/mo) is the only add-on.
+  it('matches the doors: +Vera AI personas $69, Business-only personas $49 (list)', () => {
     const expected: Record<string, string> = {
-      'coaches-and-healers': '$49/mo',
-      'community-builders': '$49/mo',
-      studios: '$29/mo',
-      'event-hosts': '$29/mo',
+      'coaches-and-healers': '$69/mo',
+      'community-builders': '$69/mo',
+      studios: '$49/mo',
+      'event-hosts': '$49/mo',
     }
     // Explicitly the closed window, so the row this asserts is the one the owner's decision produces
     // rather than whatever the clock happens to say.
@@ -65,12 +61,10 @@ describe('loadout-strip math (computed from the catalog, never hardcoded)', () =
 describe('pricing table model', () => {
   it('leads with Free Space and carries the whole ADVERTISED ladder (owner, 2026-07 / LIVE-227)', () => {
     const tiers = pricingTiers(true)
-    expect(tiers.map((t) => t.id)).toEqual(['free', 'business', 'collective', 'nonprofit'])
-    // COLLECTIVE is the highlighted Space column: the DAWN 2 pricing reference the owner adopted
-    // (design_handoff/dawn/ui_kits/marketing/pricing.html) crowns Crew + Collective "Best choice",
-    // and no ADR names a different featured plan. Was `business` before the reference landed.
-    expect(tiers.map((t) => [t.id, t.featured])).toContainEqual(['collective', true])
-    expect(tiers.filter((t) => t.featured).map((t) => t.id)).toEqual(['collective'])
+    expect(tiers.map((t) => t.id)).toEqual(['free', 'business', 'nonprofit'])
+    // Business is the highlighted Space column (LIVE-228: the one paid advertised tier at $49).
+    expect(tiers.map((t) => [t.id, t.featured])).toContainEqual(['business', true])
+    expect(tiers.filter((t) => t.featured).map((t) => t.id)).toEqual(['business'])
     // Phase 5 (ADR-916): the columns are DERIVED from pricing-grid spaceOfferings, so the table cannot
     // hold a tier the grid does not, or omit one it does. Independent is on NO public surface (owner
     // ruling 2026-09-08, LIVE-227): it is still sellable, by hand, and its catalog item and Stripe
@@ -88,28 +82,18 @@ describe('pricing table model', () => {
     expect(free.addons).toEqual([])
   })
 
-  it('during beta: Collective reads a $49 beta struck under the $79 list (ADR-811)', () => {
-    const col = pricingTiers(true).find((t) => t.id === 'collective')!
-    expect(tierHeadline(col, 'month')).toBe('$49/mo')
-    expect(tierListAnchor(col, 'month')).toBe('$79')
-  })
-
-  it('during beta: Business reads a plain $29/mo with NO strike — it has no beta rate (ADR-1067)', () => {
+  it('Business reads a plain $49/mo with NO strike (LIVE-228 flat pricing)', () => {
     const biz = pricingTiers(true).find((t) => t.id === 'business')!
-    expect(tierHeadline(biz, 'month')).toBe('$29/mo')
-    expect(biz.price.month.listCents).toBe(2900)
-    // No anchor to strike: a strike here would render $29 crossed out over $29.
+    expect(tierHeadline(biz, 'month')).toBe('$49/mo')
+    expect(biz.price.month.listCents).toBe(4900)
     expect(tierListAnchor(biz, 'month')).toBeNull()
   })
 
-  it('after beta auto-revert: Business + Collective show list only, no strike (ADR-811)', () => {
+  it('after beta auto-revert: Business shows list only, no strike (LIVE-228)', () => {
     const tiers = pricingTiers(false) // beta window closed
     const biz = tiers.find((t) => t.id === 'business')!
-    const col = tiers.find((t) => t.id === 'collective')!
-    expect(tierHeadline(biz, 'month')).toBe('$29/mo')
-    expect(tierListAnchor(biz, 'month')).toBeNull() // no anchor once beta ends
-    expect(tierHeadline(col, 'month')).toBe('$79/mo')
-    expect(tierListAnchor(col, 'month')).toBeNull()
+    expect(tierHeadline(biz, 'month')).toBe('$49/mo')
+    expect(tierListAnchor(biz, 'month')).toBeNull()
   })
 
   it('Non Profit headline reads $39/mo flat regardless of the beta window (ADR-811)', () => {

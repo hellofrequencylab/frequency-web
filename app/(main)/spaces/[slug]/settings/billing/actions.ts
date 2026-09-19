@@ -6,7 +6,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { createSpaceLoadoutCheckout, createSpaceBillingPortal, recordSpacePlanFromSessionId } from '@/lib/billing/space-plan-checkout'
 import { updateOperatorSeats } from '@/lib/billing/operator-seats'
 import { type BillingInterval } from '@/lib/billing/pricing-keys'
-import { asAddonKey } from '@/lib/pricing/plans'
+import { asAddonKey, asSpacePlan } from '@/lib/pricing/plans'
 import { viaStripe } from '@/lib/billing/via-stripe'
 import { onPageCheckoutAvailable } from '@/lib/billing/stripe-browser'
 import { rateLimitOk } from '@/lib/rate-limit'
@@ -72,10 +72,11 @@ export async function setOperatorSeats(slug: string, seats: number): Promise<Act
  *  base plus the optional AI add-on; Independent is the flat standalone white-label base; Nonprofit is
  *  the flat per-mission item. All go through the SAME createSpaceLoadoutCheckout, so interval + seat
  *  count thread identically, and each gates on its own per-plan switch inside the checkout. */
-const LOADOUT_PLANS = ['business', 'collective', 'nonprofit', 'independent'] as const
+const LOADOUT_PLANS = ['business', 'nonprofit', 'independent'] as const
 type LoadoutPlan = (typeof LOADOUT_PLANS)[number]
 function asLoadoutPlan(plan: string | undefined): LoadoutPlan {
-  return (LOADOUT_PLANS as readonly string[]).includes(plan ?? '') ? (plan as LoadoutPlan) : 'business'
+  const key = asSpacePlan(plan)
+  return (LOADOUT_PLANS as readonly string[]).includes(key) ? (key as LoadoutPlan) : 'business'
 }
 
 /** Begin a Stripe Checkout for a multi-item LOADOUT (ADR-460/463). Defaults to the Pro base plus its

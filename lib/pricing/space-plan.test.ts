@@ -67,17 +67,21 @@ beforeEach(() => {
   spaceRow = { id: 'space-1', entitlements: {} }
 })
 
-// Community Collective depth sets (ADR-811). Business = run-your-practice; Collective/Non Profit add
-// automation+multi_pipeline+team; Independent adds branding (whitelabel).
+// LIVE-228: Collective merged into Business at $49. Business carries the full paid depth; Non Profit
+// grants the same set; Independent adds branding (whitelabel).
 const BUSINESS_DEPTH = {
   crm: true,
   'crm.playbooks': true,
   email: true,
   reporting: true,
   space_full_website: true,
+  automation: true,
+  multi_pipeline: true,
+  team: true,
+  program: true,
 }
-const COLLECTIVE_DEPTH = { ...BUSINESS_DEPTH, automation: true, multi_pipeline: true, team: true, program: true }
-const INDEPENDENT_DEPTH = { ...COLLECTIVE_DEPTH, whitelabel: true }
+const COLLECTIVE_DEPTH = BUSINESS_DEPTH
+const INDEPENDENT_DEPTH = { ...BUSINESS_DEPTH, whitelabel: true }
 
 describe('setSpacePlan, set-to-target the billing namespace (ADR-552)', () => {
   it('writes the plan + REPLACES entitlements.billing with the Business depth set', async () => {
@@ -154,15 +158,15 @@ describe('setSpacePlan, set-to-target the billing namespace (ADR-552)', () => {
 })
 
 describe('setSpaceAddons, the AI add-on layers on a tier; toggle-off removes only its keys (ADR-552)', () => {
-  it('Business + AI: the Business depth PLUS the AI resonance keys (no automation/team/branding)', async () => {
+  it('Business + AI: the Business depth PLUS the AI resonance keys (no whitelabel)', async () => {
     const res = await setSpaceAddons('space-1', { plan: 'business', addons: ['ai'] })
     expect(res.ok).toBe(true)
     expect(res.plan).toBe('business')
     const billing = writtenBilling()
     expect(billing.email).toBe(true)
     expect(billing.reporting).toBe(true)
-    // Business does NOT grant the Collective/Independent depth (team, automation, white-label).
-    expect(billing.team).toBeUndefined()
+    // Business grants team/automation; Independent-only branding stays off.
+    expect(billing.team).toBe(true)
     expect(billing.whitelabel).toBeUndefined()
     expect(billing['crm.resonance']).toBe(true)
     expect(billing['crm.resonance_ai']).toBe(true)

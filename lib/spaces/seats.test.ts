@@ -133,15 +133,13 @@ describe('IO reads (FAIL-SAFE)', () => {
 
 describe('the seat base reads the ONE quantity map (ADR-917, no second ladder)', () => {
   it('baseSeatAllowance is the space_team meter allowance for the plan', () => {
-    // `BASE_SEAT_ALLOWANCE = 1` was a flat constant here while the meter promised Collective three
-    // included seats, so a Collective Space that bought the tier for its team got the free base.
+    // LIVE-228: Business includes two seats; legacy `collective` remaps to business at read time.
     expect(baseSeatAllowance('free')).toBe(PLACEHOLDER_METER_LIMITS.space_team!.free)
-    expect(baseSeatAllowance('collective')).toBe(PLACEHOLDER_METER_LIMITS.space_team!.collective)
-    // Non Profit and Independent rank at/above Collective, so they read the Collective rung.
-    expect(baseSeatAllowance('nonprofit')).toBe(baseSeatAllowance('collective'))
-    expect(baseSeatAllowance('independent')).toBe(baseSeatAllowance('collective'))
-    // Business sits below the Collective rung, so it reads the free rung (no included team seats).
-    expect(baseSeatAllowance('business')).toBe(baseSeatAllowance('free'))
+    expect(baseSeatAllowance('business')).toBe(PLACEHOLDER_METER_LIMITS.space_team!.business)
+    expect(baseSeatAllowance('collective')).toBe(baseSeatAllowance('business'))
+    // Non Profit and Independent rank at/above Business, so they read the Business rung.
+    expect(baseSeatAllowance('nonprofit')).toBe(baseSeatAllowance('business'))
+    expect(baseSeatAllowance('independent')).toBe(baseSeatAllowance('business'))
     // Unknown / unset narrows to free (fail-small: never an over-grant), and never to 0.
     expect(baseSeatAllowance(null)).toBe(baseSeatAllowance('free'))
     expect(baseSeatAllowance('enterprise-xl')).toBe(baseSeatAllowance('free'))
@@ -150,7 +148,7 @@ describe('the seat base reads the ONE quantity map (ADR-917, no second ladder)',
 
   it('licensedSeats adds the licensed count on top of the PLAN base, not a flat 1', () => {
     expect(licensedSeats(2, 'free')).toBe(baseSeatAllowance('free') + 2)
-    expect(licensedSeats(2, 'collective')).toBe(baseSeatAllowance('collective') + 2)
+    expect(licensedSeats(2, 'business')).toBe(baseSeatAllowance('business') + 2)
     // An omitted plan keeps the pre-ADR-917 answer exactly (the free base).
     expect(licensedSeats(2)).toBe(licensedSeats(2, 'free'))
   })

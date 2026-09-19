@@ -164,11 +164,8 @@ const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
   },
   business: {
     tagline: 'Own your audience.',
-    forWho: 'Coaches, practitioners, studios, and product businesses running their own book of work.',
-  },
-  collective: {
-    tagline: 'Be the venue.',
-    forWho: 'Growing communities that run a team, automate their follow-up, and host other businesses.',
+    forWho:
+      'Coaches, practitioners, studios, and communities running a book of work, a team, and the events they host.',
   },
   nonprofit: {
     tagline: 'The full toolkit, verified.',
@@ -324,7 +321,7 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
         // The Space ladder's crown (see the `featured` doc above). This was `business` while the DAWN 2
         // reference the owner adopted crowns COLLECTIVE ("Best choice"), which had the page float and
         // the model emphasis disagreeing; the model now matches the adopted reference.
-        featured: plan === 'collective',
+        featured: plan === 'business',
         cta: { label: plan === 'nonprofit' ? 'Get verified' : 'Start a Space', href: '/spaces' },
       }
     }),

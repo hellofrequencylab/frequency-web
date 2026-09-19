@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1439**. 1436 is HYG-068 on another open branch. 1438 is LIVE-228 on another branch.
+tree as of this index: **ADR-1439**. 1436 is HYG-068 on another open branch. 1437 is SCAN-637 on main. 1438 is LIVE-228 on main.
 
 | Theme | Start here |
 |---|---|
@@ -46117,9 +46117,28 @@ Premise re-tested 2026-09-19: all four files still exported `force-dynamic`. Sto
 
 **Rows.** SCAN-637.
 
+## ADR-1438: Collective merges into Business at $49 (LIVE-228)
+
+**Status:** Accepted · 2026-09-19 · **Implements** [ADR-1294](DECISIONS.md) CORE-MODEL §5 phase 3.1 · **Amends** [ADR-811](DECISIONS.md) (Collective is no longer a Space plan; Frequency remains a Community Collective) · backlog `LIVE-228` · numbered **1438** because **1436** is HYG-068 on another branch and **1437** is SCAN-637 on main · corroborated by `lib/pricing/plans.ts` (`SPACE_PLANS` without `collective`, `LEGACY_PLAN_REMAP.collective → business`) and `lib/billing/pricing-keys.ts` (`business_base` at 4900 cents, `collective_base` retired)
+
+**Context.** ADR-811 sold Business at $29 and Collective at $79 list / $49 founding. CORE-MODEL ruling 3 (2026-09-08): one paid advertised tier at $49 with two seats; the six Collective Spaces grandfather at $49 rather than dropping to free. Re-tested 2026-09-19: `SPACE_PLANS` still named `collective`; `business_base` was still 2900 cents with no founding split; `collective_base` was still a live catalog item. Production had granted those six Spaces; `space_subscription_items` was empty.
+
+**Decision.**
+
+1. **`SPACE_PLANS` is free / business / nonprofit / independent.** A stored `collective` label remaps to `business` at read time. The migration rewrites `spaces.plan` and `space_billing_agreements.plan`.
+2. **Business is $49/seat-plan/mo with two operator seats included.** Catalog `business_base` is `amountsFromMonthly(4900, 4900)`. Yearly is two months free. Business depth is the former Collective key set (automation, team, pipelines, programs).
+3. **`collective_base` is retired.** Kept resolvable on `RETIRED_CATALOG_ITEM_KEYS` so an old Stripe line still reconciles; new checkout loadouts that say `collective` bill `business_base` and stamp `plan=business`.
+4. **Public ladder is Free, Business, Non Profit.** Independent stays hand-sold (LIVE-227). Frequency as a Community Collective is the brand, not a plan chip.
+
+**Rejected.** Dropping the six Spaces to free (the owner ruled against it). Keeping Collective as a live catalog item with founding == list at $49 (two prices for one product). Flipping sell flags from this migration.
+
+**Consequences.** The next catalog sync mints Business at $49/$490 and archives Collective products. A Collective Stripe item still maps to Business entitlements. Non Profit stays $39. Independent stays $249.
+
+**Rows.** LIVE-228.
+
 ## ADR-1439: Hubs and Nexuses fold into Space (LIVE-242)
 
-**Status:** Accepted · 2026-09-19 · backlog `LIVE-242` · numbered **1439** because **1436** is HYG-068 and **1438** is LIVE-228 on other branches · corroborated by `next.config.ts` (`/hubs` and `/nexuses` 308 to `/spaces`), `app/(main)/hubs` and `app/(main)/nexuses` absent, `supabase/migrations/20270345006200_hubs_nexuses_fold_into_spaces.sql`, `spaces.parent_id`
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-242` · numbered **1439** because **1436** is HYG-068, **1437** is SCAN-637, and **1438** is LIVE-228 on main · corroborated by `next.config.ts` (`/hubs` and `/nexuses` 308 to `/spaces`), `app/(main)/hubs` and `app/(main)/nexuses` absent, `supabase/migrations/20270345006200_hubs_nexuses_fold_into_spaces.sql`, `spaces.parent_id`
 
 **Context.** CORE-MODEL ruling 5 (2026-09-08): a Hub and a Nexus both read as "a Space that contains other Spaces". Production held 3 hubs and 2 nexuses, all `forming`, with **zero Circles** on any of them. Each noun still shipped a detail page, a manage console, and a LeaderCrmViewer roster titled "Message Members" (ADR-827), duplicating Space at two more scopes. Circle geography still uses `circles.hub_id` / `hubs.nexus_id`.
 

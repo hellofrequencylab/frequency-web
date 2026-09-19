@@ -93,7 +93,6 @@ export async function BillingBody({ slug }: { slug: string }) {
   const [
     values,
     businessSellable,
-    collectiveSellable,
     seatsSellable,
     seatUsage,
     billingIsLive,
@@ -105,7 +104,6 @@ export async function BillingBody({ slug }: { slug: string }) {
   ] = await Promise.all([
     getPricingValues(),
     spaceLoadoutSellable('business'),
-    spaceLoadoutSellable('collective'),
     operatorSeatsSellable(),
     getSeatUsage(space.id),
     billingLive(),
@@ -200,7 +198,7 @@ export async function BillingBody({ slug }: { slug: string }) {
           currentPlan={currentPlan}
           slug={space.slug}
           isFree={!isPaid && !staffViewing}
-          sellable={{ collective: collectiveSellable }}
+          sellable={{ business: businessSellable }}
         />
 
         {/* The honest receipt (Phase 5, ADR-811 §A): the real dollars the network sourced, proving promise

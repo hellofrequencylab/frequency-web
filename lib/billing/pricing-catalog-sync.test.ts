@@ -123,7 +123,7 @@ vi.mock('@/lib/pricing/catalog-config', async (importOriginal) => {
   return { ...orig, loadCatalogConfig: () => Promise.resolve(orig.defaultCatalogConfig()) }
 })
 
-import { syncPricingCatalogToStripe, catalogProductMetaKey, catalogProductLabel, catalogItemHasFoundingRate } from './pricing-products'
+import { syncPricingCatalogToStripe, catalogProductMetaKey, catalogItemHasFoundingRate } from './pricing-products'
 import { catalogItem, catalogPriceKey } from './pricing-keys'
 
 /** THE FROZEN KEY SET. Every key the catalog sync writes, byte for byte, sorted. The operator seat
@@ -139,10 +139,6 @@ const FROZEN_SYNCED_KEYS = [
   'business_base_month_list',
   'business_base_year',
   'business_base_year_list',
-  'collective_base_month',
-  'collective_base_month_list',
-  'collective_base_year',
-  'collective_base_year_list',
   'independent_base_month',
   'independent_base_month_list',
   'independent_base_year',
@@ -179,9 +175,8 @@ describe('the price KEY set is unchanged by the product split (ADR-1062)', () =>
     expect(res.errors).toEqual([])
     expect([...new Set(written.map((r) => r.key))].sort()).toEqual(FROZEN_SYNCED_KEYS)
     // Not a hand-typed list that happens to match: each frozen key is the pure key function's output.
-    expect(catalogPriceKey('collective_base', 'year')).toBe('collective_base_year')
-    expect(catalogPriceKey('collective_base', 'year', true)).toBe('collective_base_year_list')
-    expect(FROZEN_SYNCED_KEYS).toContain(catalogPriceKey('collective_base', 'year'))
+    expect(catalogPriceKey('business_base', 'year')).toBe('business_base_year')
+    expect(catalogPriceKey('business_base', 'year', true)).toBe('business_base_year_list')
     expect(FROZEN_SYNCED_KEYS).toContain(catalogPriceKey('business_base', 'month'))
   })
 
@@ -195,76 +190,47 @@ describe('the price KEY set is unchanged by the product split (ADR-1062)', () =>
 
   it('the PRICE metadata still carries the row key, which the webhook reads back off a subscription item', async () => {
     await syncPricingCatalogToStripe('op-1')
-    const founding = priceById(rowFor('collective_base_month')?.priceId)
-    const list = priceById(rowFor('collective_base_month_list')?.priceId)
-    expect(founding?.metadata.frequency_pricing_key).toBe('collective_base_month')
-    expect(list?.metadata.frequency_pricing_key).toBe('collective_base_month_list')
+    const founding = priceById(rowFor('business_base_month')?.priceId)
+    const list = priceById(rowFor('business_base_month_list')?.priceId)
+    expect(founding?.metadata.frequency_pricing_key).toBe('business_base_month')
+    expect(list?.metadata.frequency_pricing_key).toBe('business_base_month_list')
   })
 })
 
-describe('standard pricing carries no founding rate (the owner decision, ADR-1062)', () => {
-  it('Collective: the $49 founding rates sit on their OWN product, and the standard product holds only $79', async () => {
+describe('standard pricing carries no founding rate (LIVE-228 flat catalog)', () => {
+  it('Business: $49 flat on ONE standard product, no founding split', async () => {
     await syncPricingCatalogToStripe('op-1')
-    const standard = productById(rowFor('collective_base_month_list')?.productId)
-    const founding = productById(rowFor('collective_base_month')?.productId)
-    expect(standard?.name).toBe('Frequency Collective')
-    expect(founding?.name).toBe('Frequency Collective (Founding rate)')
-    expect(founding?.id).not.toBe(standard?.id)
-
-    // The standard product's prices are the list amounts, and ONLY the list amounts.
-    const onStandard = store.prices.filter((p) => p.product === standard?.id)
-    expect(onStandard.map((p) => p.unit_amount).sort((a, b) => a - b)).toEqual([7900, 79000])
-    expect(onStandard.every((p) => p.metadata.variant === 'list')).toBe(true)
-    // The founding product's prices are the beta amounts, and only those.
-    const onFounding = store.prices.filter((p) => p.product === founding?.id)
-    expect(onFounding.map((p) => p.unit_amount).sort((a, b) => a - b)).toEqual([4900, 49000])
-    expect(onFounding.every((p) => p.metadata.variant === 'founding')).toBe(true)
-  })
-
-  it('Business gets NO founding product — the beta offer is Collective\'s alone (ADR-1067)', async () => {
-    await syncPricingCatalogToStripe('op-1')
-    // The owner's instruction: exactly ONE beta offer exists, it is Collective's, it is unlisted, and it
-    // is granted by hand. Business had carried a $19 founding anchor from the old ladder; left in place
-    // it would have minted a second Product and an immutable $19 Price nobody asked for.
     expect(store.products.some((p) => p.metadata.frequency_pricing_key === 'business_base_founding')).toBe(false)
     expect(store.products.some((p) => p.name === 'Frequency Business (Founding rate)')).toBe(false)
-    // Both keys still resolve, both to the ONE standard product at the list amount.
     expect(rowFor('business_base_month')?.productId).toBe(rowFor('business_base_month_list')?.productId)
-    expect(priceById(rowFor('business_base_month')?.priceId)?.unit_amount).toBe(2900)
-    expect(priceById(rowFor('business_base_month_list')?.priceId)?.unit_amount).toBe(2900)
+    expect(priceById(rowFor('business_base_month')?.priceId)?.unit_amount).toBe(4900)
+    expect(priceById(rowFor('business_base_month_list')?.priceId)?.unit_amount).toBe(4900)
   })
 
-  it('COLLECTIVE IS THE ONLY ITEM IN THE WHOLE CATALOG WITH A FOUNDING PRODUCT', async () => {
+  it('NO item in the live catalog mints a founding product (collective_base retired, LIVE-228)', async () => {
     await syncPricingCatalogToStripe('op-1')
     const founding = store.products.filter((p) => p.metadata.frequency_product_line === 'founding')
-    expect(founding.map((p) => p.metadata.frequency_catalog_item)).toEqual(['collective_base'])
+    expect(founding).toHaveLength(0)
   })
 
-  it('a FLAT item gets no founding product at all, because it has no founding rate to separate', async () => {
+  it('every live item is flat: founding == list, one standard product each', async () => {
     await syncPricingCatalogToStripe('op-1')
-    // Independent / Non Profit / Vera AI ship founding == list. Minting a "(Founding rate)" product for
-    // them would invent the very thing the owner asked us to remove.
-    for (const key of ['independent_base', 'nonprofit_seat', 'addon_ai', 'operator_seat'] as const) {
+    for (const key of ['business_base', 'independent_base', 'nonprofit_seat', 'addon_ai', 'operator_seat'] as const) {
       expect(catalogItemHasFoundingRate(catalogItem(key))).toBe(false)
       expect(store.products.some((p) => p.metadata.frequency_pricing_key === `${key}_founding`)).toBe(false)
-      // Both keys still resolve, both to the one standard product.
       expect(rowFor(`${key}_month`)?.productId).toBe(rowFor(`${key}_month_list`)?.productId)
       expect(rowFor(`${key}_month`)?.priceId).toBeTruthy()
     }
-    // ONE founding product in the whole catalog, and it is Collective's (ADR-1067).
-    expect(store.products.filter((p) => p.metadata.frequency_product_line === 'founding')).toHaveLength(1)
+    expect(store.products.filter((p) => p.metadata.frequency_product_line === 'founding')).toHaveLength(0)
   })
 
-  it('the founding product is looked up by its OWN stable metadata key', async () => {
+  it('the standard product is looked up by its stable metadata key', async () => {
     await syncPricingCatalogToStripe('op-1')
-    expect(catalogProductMetaKey('collective_base', 'standard')).toBe('collective_base')
-    expect(catalogProductMetaKey('collective_base', 'founding')).toBe('collective_base_founding')
-    expect(catalogProductLabel(catalogItem('collective_base'), 'founding')).toBe('Frequency Collective (Founding rate)')
-    const founding = store.products.find((p) => p.metadata.frequency_pricing_key === 'collective_base_founding')
-    expect(founding?.metadata.frequency_catalog_item).toBe('collective_base')
-    expect(founding?.metadata.frequency_product_line).toBe('founding')
-    // The standard product's lookup key is UNCHANGED by the split, so a re-sync finds the same object.
-    expect(store.products.some((p) => p.metadata.frequency_pricing_key === 'collective_base')).toBe(true)
+    expect(catalogProductMetaKey('business_base', 'standard')).toBe('business_base')
+    expect(store.products.some((p) => p.metadata.frequency_pricing_key === 'business_base')).toBe(true)
+    expect(store.products.find((p) => p.metadata.frequency_catalog_item === 'business_base')?.name).toBe(
+      'Frequency Business',
+    )
   })
 })
 
@@ -273,27 +239,22 @@ describe('the founding prices stay chargeable (ADR-1061 needs them ACTIVE in Str
     await syncPricingCatalogToStripe('op-1')
     expect(store.prices.every((p) => p.active)).toBe(true)
     expect(calls.priceCreate.every((args) => args.active === undefined)).toBe(true)
-    // The one call that could archive a Stripe price is prices.update({ active: false }). It is never made.
-    // HYG-082: pricing_stripe_prices.archived on a _list row is this map annotation, not Stripe's active.
     expect(calls.priceUpdate).toEqual([])
   })
 
-  it('the `archived` map flag is a row annotation only, and is unchanged by the split', async () => {
+  it('the `archived` map flag is a row annotation only on list rows', async () => {
     await syncPricingCatalogToStripe('op-1')
-    // Same values as before ADR-1062: the founding row false, the list row true. Nothing resolves a price
-    // through this flag (resolveStripePriceId ignores it), so the grant charges the founding id regardless.
-    expect(rowFor('collective_base_year')?.archived).toBe(false)
-    expect(rowFor('collective_base_year_list')?.archived).toBe(true)
+    expect(rowFor('business_base_year')?.archived).toBe(false)
+    expect(rowFor('business_base_year_list')?.archived).toBe(true)
   })
 
-  it('the grant path resolves the beta annual Collective rate to a live price on the founding product', async () => {
+  it('the grant path resolves business_base_year to a live price on the standard product', async () => {
     await syncPricingCatalogToStripe('op-1')
-    // The key ADR-1061 names for @ishasetlumi: collective_base_year = $490, not the $790 list.
-    const row = rowFor('collective_base_year')
+    const row = rowFor('business_base_year')
     const price = priceById(row?.priceId)
     expect(price?.unit_amount).toBe(49000)
     expect(price?.active).toBe(true)
-    expect(productById(row?.productId)?.metadata.frequency_product_line).toBe('founding')
+    expect(productById(row?.productId)?.metadata.frequency_product_line).toBe('standard')
   })
 })
 
@@ -314,22 +275,20 @@ describe('a re-sync is idempotent', () => {
     expect(calls.priceCreate).toEqual([])
     expect(store.products.map((p) => p.id)).toEqual(productsAfterFirst)
     expect(store.prices.map((p) => p.id)).toEqual(pricesAfterFirst)
-    // Same keys, same products, same price ids: the second run is a pure re-resolve.
     expect(written.map((r) => `${r.key}:${r.productId}:${r.priceId}`)).toEqual(rowsAfterFirst)
     expect(second.synced.map((s) => s.key)).toEqual(first.synced.map((s) => s.key))
-    // 6 items (LIVE-229 added the operator seat). Collective is the only founding product:
-    // 6 standard + 1 founding. Each item writes 4 price keys (month/year × founding/list).
-    expect(store.products).toHaveLength(7)
-    expect(store.prices).toHaveLength(24)
+    // 5 live items, each flat: 5 standard products, 20 price keys.
+    expect(store.products).toHaveLength(5)
+    expect(store.prices).toHaveLength(20)
   })
 
   it('a name drift on an existing product is corrected in place, never duplicated', async () => {
     await syncPricingCatalogToStripe('op-1')
-    const founding = store.products.find((p) => p.metadata.frequency_pricing_key === 'collective_base_founding')!
-    founding.name = 'stale name'
+    const standard = store.products.find((p) => p.metadata.frequency_pricing_key === 'business_base')!
+    standard.name = 'stale name'
     calls.productCreate.length = 0
     await syncPricingCatalogToStripe('op-1')
     expect(calls.productCreate).toEqual([])
-    expect(founding.name).toBe('Frequency Collective (Founding rate)')
+    expect(standard.name).toBe('Frequency Business')
   })
 })

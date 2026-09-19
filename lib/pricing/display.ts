@@ -33,7 +33,6 @@ import { yearlyFromMonthly } from '@/lib/billing/pricing-keys'
  *  that ruling, which is a name that invites putting a paid-but-unadvertised plan back on it. */
 export const ADVERTISED_SPACE_PLANS: readonly Exclude<SpacePlan, 'free'>[] = [
   'business',
-  'collective',
   'nonprofit',
 ]
 
