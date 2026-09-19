@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1465**. 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs.
+tree as of this index: **ADR-1467**. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46709,3 +46709,23 @@ Premise re-tested 2026-09-19: `ensureHostOnOwnership` still self-grants host (`l
 **Consequences.** A trusted member can moderate the feed and the library without entering `/admin`. A later widening of `isStaff` to include `moderator` fails the OWN-054 probe. Host-outside-circle stays the negative control.
 
 **Rows.** OWN-054.
+
+## ADR-1467: Calendar views slide in one shell; last view is remembered
+
+**Status:** Accepted · 2026-09-19 · numbered **1467** because **1466** is OWN-054 · extends [ADR-1464](DECISIONS.md) · corroborated by `components/spaces/calendar-workspace.tsx`, `lib/calendar/admin-views.ts`, `app/(main)/spaces/[slug]/(profile)/calendar/page.tsx`
+
+**Context.** ADR-1464 added five views behind a segmented control of Links. Each switch remounted the page. List opened management on the right. Daniel asked for Guest first, a slide between views, a remembered last view, and List as a condensed index plus a truncated stats card, not the event edit screen.
+
+**Decision.**
+
+1. **Guest, Admin, List, Timeline, Projects**, in that order. Default with no query and no cookie is Admin for a manager.
+2. **Operators load Guest and Admin data once.** `adminAllowed` is the gate. Switching a view updates client state, `history.replaceState`, and a per-Space cookie. It does not navigate.
+3. **Unsigned visitors stay Guest-only.** They never call `loadAdminCalendar` and never pass `includeUnpublished`.
+4. **List is index plus a truncated stats card.** The right pane is `EventCoreStatsCards` over going counts already on the item, plus Go to event. It is not Manage and not the edit form.
+5. **Do not start Editor, Sites, or Etsy from this pass.**
+
+**Rejected.** Reloading the Calendar tab to change a view. Loading unpublished rows because `view !== guest`. Opening the event editor in List.
+
+**Consequences.** `?view=` remains a shareable URL. The cookie restores the last operator view on a later visit. Help and `EVENTS-CALENDAR.md` describe the slide and the List card.
+
+**Rows.** None. This is the view-shell ruling on top of ADR-1464.

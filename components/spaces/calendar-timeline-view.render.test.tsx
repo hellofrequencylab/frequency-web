@@ -27,7 +27,6 @@ describe('CalendarTimelineView', () => {
   it('renders a month time scale with one bar, not a week grid heading', () => {
     const el = mount(
       <CalendarTimelineView
-        slug="lab"
         year={2026}
         month1={9}
         days={monthTimelineDays(2026, 9, '2026-09-19')}
@@ -44,6 +43,7 @@ describe('CalendarTimelineView', () => {
             span: 1,
           },
         ]}
+        onMonthChange={() => {}}
       />,
     )
     expect(el.querySelector('[data-calendar-timeline-view]')).not.toBeNull()

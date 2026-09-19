@@ -2,11 +2,21 @@ import { describe, expect, it } from 'vitest'
 import {
   adminViewHref,
   calendarViewBlurb,
+  calendarViewCookieName,
+  CALENDAR_ADMIN_VIEWS,
   parseAdminCalendarView,
+  parseRememberedCalendarView,
   parseTimelineMonth,
+  resolveOperatorCalendarView,
   timelineMonthLabel,
 } from './admin-views'
 import { adjacentMonth, yearHorizonWindow } from './month-window'
+
+describe('CALENDAR_ADMIN_VIEWS', () => {
+  it('starts with Guest, then Admin, List, Timeline, Projects', () => {
+    expect(CALENDAR_ADMIN_VIEWS).toEqual(['guest', 'admin', 'list', 'timeline', 'projects'])
+  })
+})
 
 describe('parseAdminCalendarView', () => {
   it('keeps guest as the visitor URL and defaults unknown to admin', () => {
@@ -18,6 +28,17 @@ describe('parseAdminCalendarView', () => {
     expect(parseAdminCalendarView(undefined)).toBe('admin')
     expect(parseAdminCalendarView('nope')).toBe('admin')
     expect(parseAdminCalendarView(['list', 'guest'])).toBe('list')
+  })
+})
+
+describe('resolveOperatorCalendarView', () => {
+  it('lets the query beat the cookie, and the cookie beat the Admin default', () => {
+    expect(resolveOperatorCalendarView('list', 'guest')).toBe('list')
+    expect(resolveOperatorCalendarView(undefined, 'projects')).toBe('projects')
+    expect(resolveOperatorCalendarView(undefined, 'nope')).toBe('admin')
+    expect(parseRememberedCalendarView('timeline')).toBe('timeline')
+    expect(parseRememberedCalendarView('nope')).toBeNull()
+    expect(calendarViewCookieName('Lab Space!')).toBe('freq-cal-view-labspace')
   })
 })
 
