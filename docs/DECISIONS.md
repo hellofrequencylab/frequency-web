@@ -46270,3 +46270,23 @@ Premise re-tested 2026-09-19 on this tree:
 **Consequences.** `SPACE_MODULE_BOX_IDS` reads five ids. The Space rail still renders every row (coverage guard unchanged). A later edit that un-parents a sixth box fails LIVE-246's probe and the five-box lock in `space-modules.test.ts`.
 
 **Rows.** LIVE-246.
+
+## ADR-1445: Public calendars are live-only; Admin is a mini production console (LIVE-414 through LIVE-419)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-414`…`LIVE-419` · extends [ADR-1388](DECISIONS.md) (stages) and [ADR-1389](DECISIONS.md) (Admin / Guest) · does not reopen LIVE-379 or LIVE-380
+
+**Context.** LIVE-379 shipped `stage` (`pencil` | `planning` | `production` | `cancelled`) and LIVE-380 shipped the Calendar tab's Admin / Guest toggle (`?view=guest`). The owner then ruled how those two surfaces should *read*: Guest and ordinary members see live gatherings only; cancelled is not a chip and is not hidden; Admin is not a second guest month. The sequence is filed as C0–C5 on the one list so another thread can start without a planning document (ADR-1043).
+
+**Decision.**
+
+1. **Guest and member public calendars show live events only.** Pencil and planning never appear on that feed. Production is the live show.
+2. **Cancelled is muted footer text in the date square.** Small, at the bottom of that date. Not a chip. Not a strikethrough. Not omitted.
+3. **Admin is a mini production-management console.** Lanes for pencil, planning, production, and cancelled, with the month grid as the date map. `StaffCalendar` stays the settings drawer. The operator list is new (`CalendarPmConsole`).
+4. **Build order is C0 then C1 then C2–C5.** LIVE-414 (public paint + `guestLiveItems` + `cancelledCellFooter`) · LIVE-415 (Admin mounts the console) · LIVE-416 pencil lane · LIVE-417 planning lane · LIVE-418 production lane · LIVE-419 Guest branch calls `guestLiveItems` and that helper names pencil/planning so it can exclude them. One row per PR.
+5. **No new plan file.** Status lives on the one list. Scan work leaves LIVE-414 and LIVE-415. Do not pick up cancelled LIVE-241.
+
+**Rejected.** Hiding cancelled entirely. Painting cancelled as a struck chip. Making Admin a restyle of the guest month. Writing a calendar roadmap markdown beside the rows.
+
+**Consequences.** Another thread starts at LIVE-414. Probes fail until the named symbols exist. Stages and the Admin/Guest toggle stay the LIVE-379 / LIVE-380 contract.
+
+**Rows.** LIVE-414, LIVE-415, LIVE-416, LIVE-417, LIVE-418, LIVE-419.
