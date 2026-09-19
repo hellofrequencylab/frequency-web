@@ -20,6 +20,9 @@ export interface FilterDef {
   key: string
   label: string
   options: { value: string; label: string }[]
+  /** Shown when the query string omits this key. A queue that defaults to "Open"
+   *  rather than "any" needs this so the select matches the server read. */
+  defaultValue?: string
 }
 
 export function FilterBar({
@@ -68,23 +71,28 @@ export function FilterBar({
             />
           </div>
         )}
-        {filters.map((f) => (
-          <Select
-            key={f.key}
-            value={params.get(f.key) ?? ''}
-            onChange={(e) => setParam(f.key, e.target.value || null)}
-            aria-label={f.label}
-            emptyLabel={f.label}
-            wrapperClassName="inline-block w-max max-w-full"
-            className="font-medium"
-          >
-            {f.options.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </Select>
-        ))}
+        {filters.map((f) => {
+          const selected = params.get(f.key) ?? f.defaultValue ?? ''
+          const narrowed = !!params.get(f.key) && params.get(f.key) !== f.defaultValue
+          return (
+            <Select
+              key={f.key}
+              value={selected}
+              onChange={(e) => setParam(f.key, e.target.value || null)}
+              aria-label={f.label}
+              emptyLabel={f.defaultValue ? undefined : f.label}
+              tone={narrowed ? 'active' : 'default'}
+              wrapperClassName="inline-block w-max max-w-full"
+              className="font-medium"
+            >
+              {f.options.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </Select>
+          )
+        })}
       </div>
       {active.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">

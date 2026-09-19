@@ -70,7 +70,6 @@
             "SCAN-637",
             "SCAN-638",
             "SCAN-641",
-            "SCAN-639",
             "SCAN-640",
             "LIVE-412"
           ],
@@ -123,7 +122,6 @@
             "owner": "scanAgent",
             "ids": [
               "SCAN-641",
-              "SCAN-639",
               "SCAN-640",
               "LIVE-412"
             ]
@@ -194,7 +192,6 @@
           "name": "W0d \u00b7 P3 \u2014 craft: shell split, hex, parked niceties. 12 visitors / 18 pageviews in 31 days: the funnel, not the page speed, is the constraint.",
           "ids": [
             "SCAN-641",
-            "SCAN-639",
             "SCAN-640",
             "LIVE-412",
             "LIVE-216",
@@ -14756,7 +14753,7 @@
     {
       "id": "SCAN-639",
       "title": "Admin FilterBar is specified in the kit and imported by nothing",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "hygiene",
       "size": "XS",
@@ -14764,12 +14761,13 @@
         "file": "components/admin/filter-bar.tsx",
         "ref": "meta-scan 2026-09-19"
       },
-      "detail": "FOUND 2026-09-19. components/admin/filter-bar.tsx exports FilterBar (URL-as-state chips, ADR-233). docs/ADMIN-DESIGN-SYSTEM.md and components/admin/KIT.md name it as a contract next to DataTable. Zero imports of @/components/admin/filter-bar in app/lib/components (the IndexTemplate FilterBar in page-contents.tsx is a different local function). Wire it onto one Index/Queue or delete the file and drop the kit mention. Do not leave a second FilterBar name.",
+      "detail": "FOUND 2026-09-19. components/admin/filter-bar.tsx exports FilterBar (URL-as-state chips, ADR-233). docs/ADMIN-DESIGN-SYSTEM.md and components/admin/KIT.md name it as a contract next to DataTable. Zero imports of @/components/admin/filter-bar in app/lib/components (the IndexTemplate FilterBar in page-contents.tsx is a different local function). Wire it onto one Index/Queue or delete the file and drop the kit mention. Do not leave a second FilterBar name.\n\nCLOSED 2026-09-19 (ADR-1430). PREMISE RE-TESTED FIRST: zero imports of @/components/admin/filter-bar under app/, components/, or lib/. Wired onto the Support queue, which already read status, type, and q; only status had a control, and that chip row wiped the other params. page-contents.tsx local FilterBar renamed LinkChipBar. FilterDef gained defaultValue so Open matches the empty-URL server read.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e 'const fs=require(\"fs\");const path=require(\"path\");function*w(d){let es;try{es=fs.readdirSync(d,{withFileTypes:true})}catch{return}for(const e of es){const f=path.join(d,e.name);if(e.isDirectory()){if(e.name!==\"node_modules\"&&!e.name.startsWith(\".\"))yield*w(f)}else yield f}}if(!fs.existsSync(\"components/admin/filter-bar.tsx\"))process.exit(0);let hits=0;for(const root of [\"app\",\"components\",\"lib\"]){for(const f of w(root)){if(!/\\\\.(ts|tsx)$/.test(f)||f.endsWith(\"filter-bar.tsx\")||/\\\\.test\\\\./.test(f))continue;if(/admin\\\\/filter-bar/.test(fs.readFileSync(f,\"utf8\")))hits++}}process.exit(hits>0?0:1)'",
-        "note": "Passes if the file is gone or at least one non-test module imports it."
-      }
+        "cmd": "node -e \"const fs=require('fs');if(!fs.existsSync('components/admin/filter-bar.tsx'))process.exit(0);const s=fs.readFileSync('app/(main)/admin/support/page.tsx','utf8');if(!s.includes('@/components/admin/filter-bar')){console.error('support queue does not import kit FilterBar');process.exit(1)}process.exit(0)\"",
+        "note": "Passes if the kit file is gone, or the Support queue (the wired Index/Queue) imports it. Rewritten 2026-09-19 because the original walk's JSON-escaped extension regex skipped every .tsx file."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "SCAN-640",

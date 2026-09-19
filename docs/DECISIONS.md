@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1429**.
+tree as of this index: **ADR-1430**.
 
 | Theme | Start here |
 |---|---|
@@ -45984,3 +45984,23 @@ Premise re-tested 2026-09-19 on this tree: `pnpm check:tokens` is already green.
 **Consequences.** HYG-099 closes on the allowlist the gate already had. A new hex in chrome still fails `check:tokens`. A new raster or email file still has to join `ALLOWLIST` with a reason, which is the same review the guard already demanded.
 
 **Rows.** HYG-099.
+
+## ADR-1430: The admin FilterBar lands on the Support queue (SCAN-639)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-639` · corroborated by `app/(main)/admin/support/page.tsx` and `components/admin/filter-bar.tsx`
+
+**Context.** SCAN-639, filed 2026-09-19 from the meta-scan: `components/admin/filter-bar.tsx` is named in the admin kit next to `DataTable` (ADR-233) and imported by nothing. `page-contents.tsx` had a private function of the same name for category link chips. The close was wire it onto one Index/Queue, or delete the file and drop the kit mention.
+
+Premise re-tested 2026-09-19 on this tree: zero imports of `@/components/admin/filter-bar` under `app/`, `components/`, or `lib/` (excluding the file itself). The Support console already read `status`, `type`, and `q` from the query string; only status had a control, and it was a local chip row that wiped the other params.
+
+**Decision.**
+
+1. **Wire, do not delete.** The Support queue is the first consumer. Status, type, and search all go through `FilterBar`. The server still filters; the bar only writes the URL.
+2. **`defaultValue` on a filter that has a real default.** Open (`open_all`) is the queue's empty-URL view. Without a default the select would read as "Status" while the table showed Open tickets.
+3. **Rename the IndexTemplate chip bar.** `page-contents.tsx` now calls that local function `LinkChipBar`. Two jobs, two names.
+
+**Rejected.** Deleting the kit file (the contract is real; the Support page was already the Queue the spec described). Leaving the private `FilterBar` name in `page-contents.tsx` (the row forbade a second FilterBar name). Replacing every admin table in one PR.
+
+**Consequences.** A later sweep that greps for `FilterBar` and finds only the kit plus `LinkChipBar` is reading the same split. Type and subject search were already in `listTickets` and now have a control. SCAN-636 (ISR event canonical) and SCAN-637 (marketplace `force-dynamic`) stay separate; this row is the unwired kit piece.
+
+**Rows.** SCAN-639.
