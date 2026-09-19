@@ -9123,6 +9123,7 @@ export type Database = {
           cta_label: string | null
           description: string | null
           hero_image: string | null
+          hero_image_asset_id: string | null
           route: string
           title: string | null
           updated_at: string
@@ -9134,6 +9135,7 @@ export type Database = {
           cta_label?: string | null
           description?: string | null
           hero_image?: string | null
+          hero_image_asset_id?: string | null
           route: string
           title?: string | null
           updated_at?: string
@@ -9145,12 +9147,20 @@ export type Database = {
           cta_label?: string | null
           description?: string | null
           hero_image?: string | null
+          hero_image_asset_id?: string | null
           route?: string
           title?: string | null
           updated_at?: string
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "page_content_hero_image_asset_id_fkey"
+            columns: ["hero_image_asset_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "page_content_updated_by_fkey"
             columns: ["updated_by"]
@@ -9162,9 +9172,11 @@ export type Database = {
       }
       page_settings: {
         Row: {
+          header_image_asset_id: string | null
           header_image_focal: string | null
           header_image_url: string | null
           layout: Json | null
+          og_image_asset_id: string | null
           og_image_url: string | null
           route: string
           seo_description: string | null
@@ -9176,9 +9188,11 @@ export type Database = {
           visibility_role: string | null
         }
         Insert: {
+          header_image_asset_id?: string | null
           header_image_focal?: string | null
           header_image_url?: string | null
           layout?: Json | null
+          og_image_asset_id?: string | null
           og_image_url?: string | null
           route: string
           seo_description?: string | null
@@ -9190,9 +9204,11 @@ export type Database = {
           visibility_role?: string | null
         }
         Update: {
+          header_image_asset_id?: string | null
           header_image_focal?: string | null
           header_image_url?: string | null
           layout?: Json | null
+          og_image_asset_id?: string | null
           og_image_url?: string | null
           route?: string
           seo_description?: string | null
@@ -9204,6 +9220,20 @@ export type Database = {
           visibility_role?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "page_settings_header_image_asset_id_fkey"
+            columns: ["header_image_asset_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_settings_og_image_asset_id_fkey"
+            columns: ["og_image_asset_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "page_settings_space_id_fkey"
             columns: ["space_id"]
@@ -10766,6 +10796,7 @@ export type Database = {
           gamification_access_override: string | null
           ghost_mode: boolean
           handle: string
+          header_image_asset_id: string | null
           header_image_url: string | null
           home_geocell_lat: number | null
           home_geocell_lng: number | null
@@ -10850,6 +10881,7 @@ export type Database = {
           gamification_access_override?: string | null
           ghost_mode?: boolean
           handle: string
+          header_image_asset_id?: string | null
           header_image_url?: string | null
           home_geocell_lat?: number | null
           home_geocell_lng?: number | null
@@ -10934,6 +10966,7 @@ export type Database = {
           gamification_access_override?: string | null
           ghost_mode?: boolean
           handle?: string
+          header_image_asset_id?: string | null
           header_image_url?: string | null
           home_geocell_lat?: number | null
           home_geocell_lng?: number | null
@@ -10993,6 +11026,13 @@ export type Database = {
           website?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_header_image_asset_id_fkey"
+            columns: ["header_image_asset_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_household_bundle_id_fkey"
             columns: ["household_bundle_id"]
@@ -14370,6 +14410,7 @@ export type Database = {
           beta_price_granted_at: string | null
           beta_price_granted_by: string | null
           brand_accent: string | null
+          brand_logo_asset_id: string | null
           brand_logo_url: string | null
           brand_name: string | null
           city: string | null
@@ -14377,6 +14418,7 @@ export type Database = {
           claimed_at: string | null
           claimed_by: string | null
           country: string | null
+          cover_image_asset_id: string | null
           cover_image_url: string | null
           created_at: string
           domain: string | null
@@ -14421,6 +14463,7 @@ export type Database = {
           beta_price_granted_at?: string | null
           beta_price_granted_by?: string | null
           brand_accent?: string | null
+          brand_logo_asset_id?: string | null
           brand_logo_url?: string | null
           brand_name?: string | null
           city?: string | null
@@ -14428,6 +14471,7 @@ export type Database = {
           claimed_at?: string | null
           claimed_by?: string | null
           country?: string | null
+          cover_image_asset_id?: string | null
           cover_image_url?: string | null
           created_at?: string
           domain?: string | null
@@ -14472,6 +14516,7 @@ export type Database = {
           beta_price_granted_at?: string | null
           beta_price_granted_by?: string | null
           brand_accent?: string | null
+          brand_logo_asset_id?: string | null
           brand_logo_url?: string | null
           brand_name?: string | null
           city?: string | null
@@ -14479,6 +14524,7 @@ export type Database = {
           claimed_at?: string | null
           claimed_by?: string | null
           country?: string | null
+          cover_image_asset_id?: string | null
           cover_image_url?: string | null
           created_at?: string
           domain?: string | null
@@ -14518,6 +14564,20 @@ export type Database = {
           visibility?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "spaces_brand_logo_asset_id_fkey"
+            columns: ["brand_logo_asset_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spaces_cover_image_asset_id_fkey"
+            columns: ["cover_image_asset_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "spaces_beta_price_granted_by_fkey"
             columns: ["beta_price_granted_by"]

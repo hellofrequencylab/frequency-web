@@ -1,5 +1,7 @@
 import { cache } from 'react'
 import { isSafeRoute } from '@/lib/layout/page-chrome'
+import { loadLibraryAssetUrls } from '@/lib/library/asset-urls'
+import { columnImageUrl } from '@/lib/library/column-image'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { parseLayout, layoutScopeChain, pickLayoutConfig, hasLayoutConfig, spaceCacheKey, type LayoutConfig } from './layout'
 import { defaultLayoutFor } from './default-layouts'
@@ -23,10 +25,12 @@ export interface PageSettingsRow {
   route: string
   seo_title: string | null
   seo_description: string | null
-  /** Compact social-share / OG image (link previews). */
+  /** Compact social-share / OG image (link previews). Live Loom url when the companion resolves. */
   og_image_url: string | null
-  /** Wide page header / banner image. */
+  og_image_asset_id: string | null
+  /** Wide page header / banner image. Live Loom url when the companion resolves. */
   header_image_url: string | null
+  header_image_asset_id: string | null
   /** Focal point for the header image as a CSS object-position string ("x% y%"). NULL = centered. */
   header_image_focal: string | null
   status: string
@@ -34,7 +38,7 @@ export interface PageSettingsRow {
   layout: unknown
 }
 
-const SELECT = 'route, seo_title, seo_description, og_image_url, header_image_url, header_image_focal, status, visibility_role, layout'
+const SELECT = 'route, seo_title, seo_description, og_image_url, og_image_asset_id, header_image_url, header_image_asset_id, header_image_focal, status, visibility_role, layout'
 
 /** Resolve the effective tenant for a read: the explicit spaceId, else the root space. */
 async function resolveSpaceId(spaceId?: string | null): Promise<string | null> {
@@ -53,8 +57,13 @@ const loadPageSettingsCached = cache(
         .eq('space_id', spaceId)
         .eq('route', route)
         .maybeSingle()
-      if (error) return null
-      return data ?? null
+      if (error || !data) return null
+      const live = await loadLibraryAssetUrls([data.og_image_asset_id, data.header_image_asset_id])
+      return {
+        ...data,
+        og_image_url: columnImageUrl(data.og_image_url, data.og_image_asset_id, live),
+        header_image_url: columnImageUrl(data.header_image_url, data.header_image_asset_id, live),
+      }
     } catch {
       return null
     }

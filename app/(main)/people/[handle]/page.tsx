@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { loadLibraryAssetUrls } from '@/lib/library/asset-urls'
+import { columnImageUrl } from '@/lib/library/column-image'
 import { MessageMemberButton } from '@/components/messages/message-member-button'
 import { Composer } from '@/components/feed/composer'
 import { ProfileFeed } from '@/components/feed/profile-feed'
@@ -82,8 +84,8 @@ export default async function ProfilePage({
 
   const admin = createAdminClient()
   // One profile read for everything the band needs. header_image_url + meta used to be a
-  // second round-trip; they're folded in here. header_image_url isn't in the generated
-  // types yet (new column) — read it off the row via the cast below, same as before.
+  // second round-trip; they're folded in here. The companion header_image_asset_id is the
+  // Loom truth; the url is the cache (HYG-068).
   const { data: profile } = await admin
     .from('profiles')
     .select(`
@@ -109,6 +111,7 @@ export default async function ProfilePage({
       is_system,
       vcard,
       header_image_url,
+      header_image_asset_id,
       meta,
       nexus_regions!nexus_region_id ( name )
     `)
@@ -131,8 +134,8 @@ export default async function ProfilePage({
     )
   }
 
-  // header_image_url isn't in the generated types yet (new column) — read via cast.
-  const headerImageUrl = (profile as { header_image_url?: string | null }).header_image_url ?? null
+  const live = await loadLibraryAssetUrls([profile.header_image_asset_id])
+  const headerImageUrl = columnImageUrl(profile.header_image_url, profile.header_image_asset_id, live)
   // The member's Website (Settings > Profile), rendered on the facts line as an external link.
   // Until L9-02 the setting saved to profiles.website and nothing read it back. safeWebsite is
   // the one seam: http(s) only (a stored `javascript:` value must never reach an href), a bare

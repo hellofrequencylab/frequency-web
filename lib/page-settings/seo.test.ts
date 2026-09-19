@@ -18,7 +18,15 @@ describe('page-settings SEO validation', () => {
 
   it('normalizes + bounds the fields, trimming and emptying to null', () => {
     const f = normalizeSeo({ title: '  Hello  ', description: '  ', ogImage: ' /og.png ', headerImage: ' /header.png ' })
-    expect(f).toEqual({ seo_title: 'Hello', seo_description: null, og_image_url: '/og.png', header_image_url: '/header.png', header_image_focal: null })
+    expect(f).toEqual({
+      seo_title: 'Hello',
+      seo_description: null,
+      og_image_url: '/og.png',
+      og_image_asset_id: null,
+      header_image_url: '/header.png',
+      header_image_asset_id: null,
+      header_image_focal: null,
+    })
   })
 
   it('rejects the save when the header image URL is unsafe', () => {
@@ -35,6 +43,14 @@ describe('page-settings SEO validation', () => {
     const f = normalizeSeo({ title: 'a'.repeat(500), description: 'b'.repeat(500) })
     expect(f?.seo_title?.length).toBe(120)
     expect(f?.seo_description?.length).toBe(320)
+  })
+
+  it('keeps a companion asset id when the url is set, and drops it when the url is cleared', () => {
+    const id = 'a1b2c3d4-1111-4222-8333-444455556666'
+    expect(normalizeSeo({ ogImage: '/og.png', ogImageAssetId: id })?.og_image_asset_id).toBe(id)
+    expect(normalizeSeo({ headerImage: '/h.png', headerImageAssetId: id })?.header_image_asset_id).toBe(id)
+    expect(normalizeSeo({ ogImage: '', ogImageAssetId: id })?.og_image_asset_id).toBeNull()
+    expect(normalizeSeo({ headerImage: '', headerImageAssetId: id })?.header_image_asset_id).toBeNull()
   })
 
   it('returns null (rejects the whole save) when the og URL is unsafe', () => {

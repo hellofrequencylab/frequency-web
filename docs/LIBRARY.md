@@ -169,12 +169,13 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   neighbouring field carries the ref through rather than flattening it. The entity layout blob has
   no refresh-on-load yet (there is no single load function to hang it on, and the cached url is the
   designed fail-open).
-- **Column-backed image fields stay URL-only, for now.** `spaces.brand_logo_url`,
-  `spaces.cover_image_url`, `page_content.hero_image`, `page_settings.og_image_url`,
-  `page_settings.header_image_url` and `profiles.header_image_url` are text columns, so they cannot
-  hold a ref without companion `*_asset_id` columns or a ruling that column caches stay URL-only
-  until D4's usage index needs them (`HYG-068`). 🔴 Do not half-adopt by storing JSON in a text
-  column: every reader of those columns is typed `string`.
+- **Column-backed image fields keep a url cache and a Loom id** ([ADR-1436](DECISIONS.md), HYG-068).
+  `spaces.brand_logo_url`, `spaces.cover_image_url`, `page_content.hero_image`,
+  `page_settings.og_image_url`, `page_settings.header_image_url` and `profiles.header_image_url` are
+  still TEXT: the url is the denormalised cache and a companion `*_asset_id` is the reference
+  (`lib/library/column-image.ts`). Pickers write both halves; readers prefer `library_assets.url`
+  and fail open to the cache. A paste or a non-catalog upload nulls the companion. 🔴 Do not
+  half-adopt by storing JSON in a text column: every reader of those columns is typed `string`.
 - **One master, many renditions.** Serve web-optimized renditions (thumb/grid/hero/og), never the
   master, in pages and grids. Transforms are on-the-fly against the master.
 - **Non-destructive editing.** Every edit (Recraft op, Vera SVG save, Filerobot recipe) first
