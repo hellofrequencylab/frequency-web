@@ -73,17 +73,16 @@ The `/maintenance` skill's migration-drift check (repo vs applied) is the automa
 - [ ] **Grouped left nav**: Community / Connect, plus Progress (Crew) & Manage
       (Admin) when your role shows them. Check **desktop sidebar AND mobile
       drawer**. Confirm no nav item disappeared for your role.
-- [ ] **"Interests"**: the nav label and the `/channels` page heading now say
-      Interests (route + data unchanged).
+- [x] **"Interests" rename: do not.** [NAMING.md](NAMING.md) keeps **Channel**. Nav and
+      `/channels` stay Channel. (This row used to ask you to relabel to Interests.)
 - [ ] **In-person badge**: `/circles` cards show "📍 In person" only on
       in-person circles; virtual circles are unmarked; capacity line still shows
       "N / M members".
 
 ## 🟢 Product decisions (small, but yours)
-- [ ] **One word or two?** App now says **Interests**; public `/discover` says
-      **Topics**. Reconcile to one, or keep public=Topics / member=Interests.
-- [ ] **The "tune in" verb**: keep it, or switch to "follow/join" now that the
-      noun is Interests.
+- [x] **One word.** Member-facing topical noun is **Channel** ([NAMING.md](NAMING.md)).
+      "Interests" is retired. Public discover may say Channel, never Topics-vs-Interests.
+- [x] **The "tune in" verb:** keep it. NAMING.md locked it for Channels.
 - [ ] **Reward economy** (Phase 3): point values per action; amounts are
       deferred (config later). The **currency model is now baked in**: gems =
       internal/web, zaps = external/in-person, zaps→gems at season end
@@ -105,7 +104,7 @@ The `/maintenance` skill's migration-drift check (repo vs applied) is the automa
 ## 🔧 Next build steps: remaining
 **Shipped since this list was written:** inline circle admin by capability (host +
 janitors + area guides/mentors); profile edit-in-place (owner via settings, janitor
-inline moderator edit); all 3 page templates + Feed/Circles/Interests/Events/
+inline moderator edit); page templates + Feed/Circles/Channels/Events/
 Partners/Directory migrated onto them.
 
 Still pending:
