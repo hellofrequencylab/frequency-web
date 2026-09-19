@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1427**.
+tree as of this index: **ADR-1429**.
 
 | Theme | Start here |
 |---|---|
@@ -45964,3 +45964,23 @@ The "wait for Collective" sequencing was a consequence of the wrong reading: LIV
 **Consequences.** A later sweep that greps `archived = true` and treats the hit as "Stripe will refuse this id" fails the probe instead of shipping a checkout outage. [PRICING.md](PRICING.md) already names the historical wording; this ADR is the HYG-082 close, not a new pricing shape. LIVE-228 still has to drop Collective from `SPACE_PLANS` on its own terms.
 
 **Rows.** HYG-082.
+
+## ADR-1429: Leftover hex lives on the named token-guard allowlist (HYG-099)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-099` · corroborated by `scripts/check-tokens.mjs` (`ALLOWLIST`) and `scripts/check-tokens.test.ts`
+
+**Context.** HYG-099, filed 2026-09-19 from the presentation-canon survey: never hardcode hex in UI; remaining literals are craft, not a product block; do not churn token files without a DAWN sync. The close condition was a dated sweep of `app/` and `components/` (excluding tests, tokens, and generated) at zero, **or** an allowlist named in the probe.
+
+Premise re-tested 2026-09-19 on this tree: `pnpm check:tokens` is already green. The leftovers the survey would have listed are the ones the token guard already enumerates: Satori OG cards (no CSS cascade), map paints, email HTML, token DATA, and pickers. A conversion sweep of those files is the DAWN churn the row forbids. In-app chrome is already a hard failure.
+
+**Decision.**
+
+1. **Name the existing allowlist as the leftover list.** `scripts/check-tokens.mjs` `ALLOWLIST` is the dated sweep. Do not open a second hex inventory.
+2. **Keep the UI gate.** A planted hex in `components/ui/` still fails. Closing the row does not waive chrome.
+3. **Do not retoken OG, maps, or email in this change.** Those media cannot read DAWN custom properties.
+
+**Rejected.** A conversion sweep of allowlisted files (that is the DAWN churn the row forbids). Deleting the allowlist so the next OG card fails CI. Filing a new plan markdown of leftover hex (one-list).
+
+**Consequences.** HYG-099 closes on the allowlist the gate already had. A new hex in chrome still fails `check:tokens`. A new raster or email file still has to join `ALLOWLIST` with a reason, which is the same review the guard already demanded.
+
+**Rows.** HYG-099.
