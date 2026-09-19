@@ -1,0 +1,31 @@
+# Arm GitHub squash auto-merge on ready cursor/* PRs (ADR-1412, WORKFLOW.md rule 4).
+#
+# The cloud agent also calls `gh pr merge --auto --squash` after ManagePullRequest.
+# This workflow is the fail-safe when a run forgets. It does NOT merge red: `--auto`
+# waits for the six required contexts. Draft PRs are skipped.
+#
+# ⚠️ merge = production deploy. Do not widen this to every fork PR.
+
+name: arm-auto-merge
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  arm:
+    if: >
+      github.event.pull_request.draft == false &&
+      startsWith(github.head_ref, 'cursor/') &&
+      github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Arm squash auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: gh pr merge "$PR" --repo "${{ github.repository }}" --auto --squash

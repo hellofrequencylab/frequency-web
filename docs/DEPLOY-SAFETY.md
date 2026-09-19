@@ -315,16 +315,22 @@ chunks. That is not a new trick; it is how dc47b89 proved the bug was real, by f
 This is the operator recipe for Cursor cloud agents. Status still lives only in
 [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json). Do not open a plan file.
 
+You do **not** click Merge. WORKFLOW.md rule 4: the agent arms squash auto-merge on green.
+`gh pr merge --auto --squash` is the arm; required checks are the reviewer. A red PR stays
+open (#2699 is the current example: `test` failed, auto-merge correctly blocked).
+
 **In-repo half (already in this tree):**
 
-1. `pnpm packets` prints the next agent-workable row per *derived* lane (money, events, hygiene, …).
-2. `pnpm packets --prompt` prints the prompt every run must follow.
+1. `pnpm packets` prints the next agent-workable row per *derived* lane (money, events, scan, hygiene, …).
+2. `pnpm packets --prompt` prints the prompt every run must follow, including the auto-merge arm.
 3. `pnpm packets --json` is what an automation should parse.
-4. After a schema PR merges: `execute_sql` for the DDL, then insert
+4. `.github/workflows/arm-auto-merge.yml` arms auto-merge on ready `cursor/*` PRs so a run that
+   forgets the `gh` call still ships.
+5. After a schema PR merges: `execute_sql` for the DDL, then insert
    `supabase_migrations.schema_migrations` at the **file's** version ([DATABASE.md](DATABASE.md)).
    Then `pnpm check:migrations --require-ledger` when credentials exist.
 
-**Cursor Dashboard (MCP cannot create this):** `cursor-cloud-get-automation` is lookup-only.
+**Cursor Dashboard (the remaining human click; MCP cannot create this):** `cursor-cloud-get-automation` is lookup-only. This click *spawns the next agent*. It does not merge.
 
 1. Open [cursor.com](https://cursor.com) → **Dashboard** → **Automations** (or Cloud Agents → Automations).
 2. **New automation**.
@@ -332,11 +338,10 @@ This is the operator recipe for Cursor cloud agents. Status still lives only in
 4. **Repository:** `hellofrequencylab/frequency-web`.
 5. **Trigger:** schedule (hourly is enough) *or* when `main` receives a push. Do not fire on every PR.
 6. **Environment:** the Frequency cloud environment already used by agents (same `environment.json`).
-7. **Prompt:** paste the output of `pnpm packets --prompt`. Optionally prefix `You are assigned lane money.` (or `events`, `hygiene`) so two automations do not grab the same packet.
+7. **Prompt:** paste the output of `pnpm packets --prompt`. Optionally prefix `You are assigned lane money.` (or `events`, `scan`, `hygiene`) so two automations do not grab the same packet.
 8. **Tools:** GitHub (read + ManagePullRequest), Supabase MCP (execute_sql only; never apply_migration), Cursor subscriptions for PR/CI.
 9. **Save** and **Enable**. Copy the automation UUID from the URL if you later want `get-automation`.
 
 **Honest limits.** Required GitHub checks still gate merge. Auto-merge on green is WORKFLOW.md default; a red PR must not merge. Vercel `postbuild` is the artifact gate and is invisible to GitHub `test`. Stay off `cursor/cloud-agent-workspace-8978`. This environment has no Resend key. LIVE-234 is an owner walk with a real card.
 
-**Fan-out that is safe today** (re-run `pnpm packets`; these ids move): **money** LIVE-410 (`lib/pricing/gates.ts`) · **events** LIVE-376 (event Spark / rail, maybe a default-space trigger) · **hygiene** HYG-101 (residual `parseInput` on admin actions). Do not start a fourth agent on Journey sales or on `app-shell.tsx` while another shell PR is open.
-
+**Fan-out that is safe today** (re-run `pnpm packets`; these ids move): **money** LIVE-410 (`lib/pricing/gates.ts`) · **events** LIVE-376 closed (sole-Space default, ADR-1413) · **scan** SCAN-636 (ISR event canonical; then SCAN-637…641 and LIVE-412, `meta.slate.metaScanCleanup`) · **hygiene** HYG-101 (residual `parseInput` on admin actions). Two agents must not both take LIVE-410. Do not start a fifth agent on Journey sales or on `app-shell.tsx` while the scan lane still owns LIVE-412.

@@ -388,6 +388,11 @@ export function EventSpark({
     void stagePhoto(picked)
   }
 
+  const defaultSpace = groups.find((g) => g.kind === 'space' && g.id === defaultGroupId) ?? null
+  const spaceAttachLine = defaultSpace
+    ? `This event will be part of ${defaultSpace.name}. Open the full form if that is not right.`
+    : null
+
   const create = () => {
     if (!draft?.title.trim()) return
     setError(null)
@@ -470,6 +475,11 @@ export function EventSpark({
         >
           {/* The manifest declares `accepts: ['paste', 'image']`: the write-up and the flyer
               photo. The photo is staged here; the EXISTING vision scan reads it on draft. */}
+          {spaceAttachLine && (
+            <p className="rounded-xl border border-border bg-surface px-3 py-2 text-2xs leading-relaxed text-muted">
+              {spaceAttachLine}
+            </p>
+          )}
           <SparkDropzone
             accepts={EVENT_MANIFEST.accepts ?? []}
             sourceText={flyer}
@@ -564,6 +574,11 @@ export function EventSpark({
     >
       {draft && (
         <div className="space-y-3">
+          {spaceAttachLine && (
+            <p className="rounded-xl border border-border bg-surface px-3 py-2 text-2xs leading-relaxed text-muted">
+              {spaceAttachLine}
+            </p>
+          )}
           {REVIEW_FIELDS
             // A price box on a free event is a question with no answer.
             .filter((def) => def.path !== 'priceCents' || !draft.isFree)

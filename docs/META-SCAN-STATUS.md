@@ -54,20 +54,23 @@ Circle "stubs" remain `permanentRedirect`s. FilterBar in `page-contents.tsx` is 
 component with the same name.
 
 **Still open after this pass, besides the six new rows:** the 116-row working view from this morning
-(P0: LIVE-234 money proof, OWN-073 nine un-emailed admits). Do not start the Editor, white label,
+(P0: LIVE-234 money proof. OWN-073 closed 2026-09-19). Do not start the Editor, white label,
 or Etsy programs from this scan.
 
 ### Phased cleanup (execute from the one list)
 
-1. **Stay on product P0/P1.** LIVE-234, OWN-073, LIVE-410, LIVE-376. Speed is not the constraint at
-   12 visitors / 18 pageviews (W0d).
-2. **W0c crawl/perf hygiene.** SCAN-636 (event canonical ISR), SCAN-637 (listing force-dynamic),
-   SCAN-638 (six FK indexes + two `(select auth.uid())` wraps). Draft the SQL; do not apply from
-   an agent session.
-3. **W0d craft.** SCAN-641 one public header, SCAN-639 wire or delete FilterBar, SCAN-640 drop the
-   backup table after a row count, LIVE-412 split app-shell, SCAN-502 export trim (owner ruling).
-4. **Programs stay sequenced.** Editor E0–E9 in W4, Sites/E10 after E3, App Platform and Etsy
-   deferred. Do not open a seventh master list.
+The executable sequence is `docs/BUILD-BACKLOG.json` → `meta.slate.metaScanCleanup` (and the
+matching paragraph in `meta.slate.note`). Two agents split lanes so they do not both take LIVE-410.
+Machine front door: `pnpm packets --lane money` (product) vs `pnpm packets --lane scan` (this
+follow-through). Derived lane `scan` is SCAN-636…641 plus LIVE-412.
+
+| Phase | Owner | Order | Do |
+|---|---|---|---|
+| 0 | product agent | LIVE-234, **LIVE-410**, **LIVE-376**, LIVE-186, LIVE-213 | Product first (ADR-1403). `pnpm packets --lane money` then `--lane events`. LIVE-254 and OWN-073 closed (#2699). Do not start SCAN-636. |
+| 1 | scan follow-through | **SCAN-636**, **SCAN-637** | Crawl truth. Pattern: `SiteHeader authMode="client"`. Keep `/events/<slug>` as the share URL. |
+| 2 | scan follow-through | **SCAN-638** | Draft FK indexes + `(select auth.uid())`. Do not apply SQL. No `spatial_ref_sys`. |
+| 3 | scan follow-through | **SCAN-641**, **SCAN-639**, **SCAN-640**, then LIVE-412 | One public header, FilterBar wire-or-delete, drop backup after a count, then shell split. |
+| 4 | neither | Editor / Sites / Etsy / App Platform / LIVE-242 | Already sequenced in `slate.phases`. Do not start from this scan. |
 
 ## 2026-08-31 pass (events, spaces, drafts, RSVP — one defect shape, three times)
 

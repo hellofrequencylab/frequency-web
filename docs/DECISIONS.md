@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1412**.
+tree as of this index: **ADR-1413**.
 
 | Theme | Start here |
 |---|---|
@@ -45694,15 +45694,33 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 
 1. **One list.** `docs/BUILD-BACKLOG.json` remains the only status record. Fan-out lanes are *derived* at runtime (`pnpm packets`) from id, wave, priority, and probe paths. Do not add `docs/AGENT-LANES.json` or a planning markdown.
 2. **Lane ownership.** An agent claims one derived lane and one open row. `pnpm packets` prints the next packet per lane and names files more than one packet would touch. `docs/BUILD-BACKLOG.json` itself is shared: one row per PR, rebase after every merge, never absorb another agent's PR.
-3. **Parallel vs serial.** Independent product areas may run at once (money, events, hygiene, seo) when their extracted paths do not overlap. Serial: same-table migrations; `components/layout/app-shell.tsx` / `lib/nav/registry.ts` / page-chrome; anything that changes a `postbuild` gate; Journey sales while `cursor/cloud-agent-workspace-8978` is live.
-4. **Merge = deploy.** Required CI (`checks`, `analyze`, `lint`, `test`, `Vercel`, `db-tests`) must be green. Never merge red. Never force-push. Auto-squash default. `pr-compare` stays advisory. The production *artifact* is still `postbuild` on Vercel, which CI never runs.
+3. **Parallel vs serial.** Independent product areas may run at once (money, events, hygiene, seo, scan) when their extracted paths do not overlap. Serial: same-table migrations; `components/layout/app-shell.tsx` / `lib/nav/registry.ts` / page-chrome; anything that changes a `postbuild` gate; Journey sales while `cursor/cloud-agent-workspace-8978` is live. The 2026-09-19 meta-scan follow-through is derived lane `scan` (`SCAN-636`…`SCAN-641` plus `LIVE-412`); it does not replace money/events. Record: `meta.slate.metaScanCleanup`.
+4. **Merge = deploy, and the agent arms it.** Required CI (`checks`, `analyze`, `lint`, `test`, `Vercel`, `db-tests`) must be green. Never merge red. Never force-push. Auto-squash default. `pr-compare` stays advisory. The production *artifact* is still `postbuild` on Vercel, which CI never runs. After ManagePullRequest, the agent runs `gh pr merge --auto --squash` (the one `gh` write this loop uses; `gh pr create` stays forbidden). Asking the owner to click Merge is a process bug. `.github/workflows/arm-auto-merge.yml` arms the same thing on ready `cursor/*` PRs so a forgetful run still ships.
 5. **After merge.** If the PR added `supabase/migrations/*.sql`, apply with Supabase MCP `execute_sql`, then insert `supabase_migrations.schema_migrations` at the file's own 14-digit version. Never `apply_migration`, never `db push`. Re-read the ledger. Run the row's probe on `main`.
-6. **Collision protocol.** Stay off `cursor/cloud-agent-workspace-8978` and its PRs. Do not pick LIVE-241 (16→7 rail, ADR-1406), parked mobile / white-label / Etsy / App Platform. Product-first: LIVE-410 then LIVE-376. LIVE-234 stays owner-walked. LIVE-408 stays a ruling.
-7. **Cursor automation.** Create it in the Cursor Dashboard (recipe in DEPLOY-SAFETY §12). Paste `pnpm packets --prompt` as the instruction. Trigger on a schedule or after merge to `main`. One packet per run.
+6. **Collision protocol.** Stay off `cursor/cloud-agent-workspace-8978` and its PRs. Do not pick LIVE-241 (16→7 rail, ADR-1406), parked mobile / white-label / Etsy / App Platform. Product-first: LIVE-410 then LIVE-376 (`pnpm packets --lane money` / `--lane events`). Scan follow-through: `pnpm packets --lane scan` starting at SCAN-636. Two agents must not both take LIVE-410. LIVE-234 stays owner-walked. LIVE-408 stays a ruling. LIVE-254 and OWN-073 closed 2026-09-19 (#2699).
+7. **Spawn the next run in the Cursor Dashboard.** MCP `get-automation` is lookup-only; nothing in this repo can Enable a Cursor Automation. One Dashboard Enable (recipe in DEPLOY-SAFETY §12) is the remaining human click. Merge is not. Paste `pnpm packets --prompt`. Trigger on a schedule or after merge to `main`. One packet per run.
 
 **Rejected.** A second backlog file. Creating automations via MCP (the API is lookup-only). Auto-merging red. Absorbing foreign PRs. `gh pr create`. Applying schema with `apply_migration`.
 
 **Consequences.** `pnpm packets` is the machine front door for fan-out. ADR-1325's loop still runs; only the lane *count* is derived. Branch protection and Vercel remain the merge and artifact gates. This session cannot send Resend.
 
 **Rows.** None. This is process, not a backlog close.
+
+## ADR-1413: A host who runs exactly one Space creates events on that Space (2026-09-19)
+
+**Status:** Accepted · 2026-09-19 · LIVE-376 · corroborated by `lib/events/default-host-space.ts`, `app/(main)/events/new/page.tsx`, `app/(main)/events/event-spark.tsx`
+
+**Context.** A real host (House of Fates) created three events from her own account. All three landed on the root Frequency Space with `host_space_id` null. The owner report was that she did not know how to attach them. Re-tested before the build: the Spark manifest has no host-space field (Host is the printed `organizerName`; `scopeId` is Circles). The create form already offered "Spaces you run" under "Where does it live?" and defaulted to Public. EventSpark only stamped a Space when `defaultGroupId` came from `?space=` or Duplicate. The settings rail already had Venue plus "Hosted by". The report was findability, not a missing control. The `events_default_space_id` trigger is still right for someone with no Space.
+
+**Decision.**
+
+1. **Default, do not guess among many.** `defaultEventHostSpaceId` returns the one non-root Space a host runs. Zero or two-plus stay Public. The create page ranks an explicit `?space=`, Duplicate, or `?circle=` above that rule.
+2. **Say it.** The Spark names the Space on the doors and review. The form hint says the event is part of that Space and that ticket money and the calendar go with it. "Hosted by" tells a personal event how to attach after the fact.
+3. **Do not change the trigger.** Root remains the database default for an insert that names no Space. The app-layer default is the product fix.
+
+**Rejected.** Adding a new Spark/rail field (the picker already existed). Changing `events_default_space_id` (wrong for hosts with no Space, and it is shared with Circles, Practices, Journeys). Auto-picking among several Spaces.
+
+**Consequences.** A House of Fates-shaped host creating from `/events/new` (wizard or form) gets `space_id` and `host_space_id` on their Space without finding a buried control. A host with two Spaces still has to pick. A host with none still lands on the root.
+
+**Rows.** LIVE-376.
 
