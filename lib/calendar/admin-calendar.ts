@@ -27,9 +27,16 @@ export interface AdminCalendar {
 
 export async function loadAdminCalendar(
   spaceId: string,
-  opts: { canManage: boolean; year: number; month1: number; now: Date },
+  opts: {
+    canManage: boolean
+    year: number
+    month1: number
+    now: Date
+    /** Wider than the visible month for List and Projects. Default is the month grid window. */
+    entryWindow?: { fromDay: string; toDay: string }
+  },
 ): Promise<AdminCalendar> {
-  const { canManage, year, month1, now } = opts
+  const { canManage, year, month1, now, entryWindow } = opts
   const nowIso = now.toISOString()
 
   // includeUnpublished: the team's calendar badges drafts on purpose. Every public reader takes the gated
@@ -57,6 +64,7 @@ export async function loadAdminCalendar(
         slug: ev.slug,
         title: ev.title,
         dayKey,
+        endDayKey: ev.ends_at ? eventDayKey(ev.ends_at) : null,
         timeLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'time', withZone: false }),
         whenLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'full' }),
         startInstantIso: eventInstant(ev.starts_at, ev.time_zone)?.toISOString() ?? null,
@@ -67,6 +75,7 @@ export async function loadAdminCalendar(
         statusLabel: ev.status === 'draft' ? 'Draft' : isPast ? 'Past' : null,
         editHref: editHrefFor(ev.slug),
         isCancelled: !!ev.is_cancelled,
+        eventId: ev.id,
       }
     }),
     ...sharedRows.map((ev): CalendarEvent | null => {
@@ -77,6 +86,7 @@ export async function loadAdminCalendar(
         slug: ev.slug,
         title: ev.title,
         dayKey,
+        endDayKey: ev.ends_at ? eventDayKey(ev.ends_at) : null,
         timeLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'time', withZone: false }),
         whenLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'full' }),
         startInstantIso: eventInstant(ev.starts_at, ev.time_zone)?.toISOString() ?? null,
@@ -86,13 +96,14 @@ export async function loadAdminCalendar(
         coverFocus: eng?.coverFocus ?? null,
         sourceLabel: 'Co-hosted here',
         isCancelled: !!ev.is_cancelled,
+        eventId: ev.id,
       }
     }),
   ].filter((e): e is CalendarEvent => e !== null)
 
   // THE PRIVATE LAYER: this month's entries. Other months load as the calendar browses. Read on the
   // caller's own session, so RLS decides what a viewer sees.
-  const grid = monthGridWindow(year, month1)
+  const grid = entryWindow ?? monthGridWindow(year, month1)
   const [entryItems, dayNotes] = await Promise.all([
     listStaffCalendarItems(spaceId, grid.fromDay, grid.toDay, { editable: canManage }),
     listDayNotes(spaceId),

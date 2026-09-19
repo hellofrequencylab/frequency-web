@@ -127,5 +127,7 @@ describe('CalendarPmConsole render (LIVE-415 / LIVE-416 / LIVE-417)', () => {
     expect(el.textContent).toContain('Nothing in Production.')
     expect(el.textContent).toContain('Nothing on the board yet.')
     expect(el.querySelector('[data-date-map]')).not.toBeNull()
+    expect(el.querySelector('[data-pencil-lane] [data-lane-purpose]')?.textContent).toContain('Tentative dates')
+    expect(el.textContent).toContain('Cancelled stays visible')
   })
 })

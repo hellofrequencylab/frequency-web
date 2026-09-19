@@ -19,3 +19,28 @@ export function guestLiveItems(items: readonly CalendarEvent[]): CalendarEvent[]
     return true
   })
 }
+
+/** What the guest surface should say after guestLiveItems. First-use is only when the feed is empty. */
+export type GuestFeedState = {
+  liveCount: number
+  cancelledCount: number
+  blockedCount: number
+  isFirstUse: boolean
+}
+
+export function guestFeedState(items: readonly CalendarEvent[]): GuestFeedState {
+  let liveCount = 0
+  let cancelledCount = 0
+  let blockedCount = 0
+  for (const item of items) {
+    if (item.layer === 'unavailable') blockedCount += 1
+    else if (item.isCancelled) cancelledCount += 1
+    else liveCount += 1
+  }
+  return {
+    liveCount,
+    cancelledCount,
+    blockedCount,
+    isFirstUse: liveCount === 0 && cancelledCount === 0 && blockedCount === 0,
+  }
+}
