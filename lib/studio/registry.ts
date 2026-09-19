@@ -30,6 +30,7 @@ import { PRACTICE_MANIFEST } from './entities/practice'
 import { PRODUCT_MANIFEST } from './entities/product'
 import { SERVICE_MANIFEST } from './entities/service'
 import { SPACE_MANIFEST } from './entities/space'
+import { SPACE_PLAN_MANIFEST } from './entities/space-plan'
 import {
   BROADCAST_MANIFEST,
   CHANNEL_MANIFEST,
@@ -45,6 +46,7 @@ export const STUDIO_ENTITIES: readonly EntityManifest[] = [
   EVENT_MANIFEST,
   JOURNEY_MANIFEST,
   PRACTICE_MANIFEST,
+  SPACE_PLAN_MANIFEST,
   // The places a member or an operator runs. `business` is the RESEARCHED road (the Seeder, with a
   // provenance ledger and an adversarial verifier); `space` is the member's own road, same product,
   // no research pipeline behind it.

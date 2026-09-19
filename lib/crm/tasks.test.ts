@@ -24,6 +24,8 @@ function task(over: Partial<CrmTask> = {}): CrmTask {
     createdBy: over.createdBy ?? 'me',
     createdAt: over.createdAt ?? '2026-07-10T00:00:00.000Z',
     updatedAt: over.updatedAt ?? '2026-07-10T00:00:00.000Z',
+    planId: over.planId ?? null,
+    dueOffsetDays: over.dueOffsetDays ?? null,
   }
 }
 
@@ -94,6 +96,15 @@ describe('filterTasks', () => {
     expect(out).toHaveLength(4)
     expect(out).not.toBe(tasks)
   })
+  it('by-plan returns that Plan across statuses, empty without a planId', () => {
+    const withPlan = [
+      ...tasks,
+      task({ id: '5', planId: 'p1', status: 'open' }),
+      task({ id: '6', planId: 'p1', status: 'done' }),
+    ]
+    expect(filterTasks(withPlan, 'by-plan', { planId: 'p1' }).map((t) => t.id).sort()).toEqual(['5', '6'])
+    expect(filterTasks(withPlan, 'by-plan', {})).toEqual([])
+  })
 })
 
 describe('sortTasks', () => {
@@ -144,6 +155,8 @@ describe('mapTaskRow', () => {
       created_by: 'p',
       created_at: '2026-07-10T00:00:00.000Z',
       updated_at: '2026-07-10T00:00:00.000Z',
+      plan_id: null,
+      due_offset_days: null,
     })
     expect(mapped.status).toBe('open')
     expect(mapped.contactId).toBe('c')
