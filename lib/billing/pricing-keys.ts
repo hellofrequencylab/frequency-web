@@ -547,7 +547,7 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     // ⚠️ This does NOT touch anyone already locked at $19. A lock is a RECORD on the subscription, read
     // back by space-subscriptions-reconcile.ts and founding-payment.ts, not a lookup into this table —
     // which is why those tests keep their 1900 fixtures.
-    ...amountsFromMonthly(4900, 4900), // list $49, no founding rate (LIVE-228 / ADR-1436)
+    ...amountsFromMonthly(4900, 4900), // list $49, no founding rate (LIVE-228 / ADR-1438)
   },
   addon_ai: {
     key: 'addon_ai',

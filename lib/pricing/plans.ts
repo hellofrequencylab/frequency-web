@@ -16,7 +16,7 @@
 // the readers here; this only computes the keys they read.
 
 /** The Space billing tiers (the spaces.plan label). 'free' = no paid plan. CORE-MODEL §5 / LIVE-228
- *  (ADR-1436) orders these by CAPABILITY (gates.ts PLAN_RANK ranks on this), NOT price:
+ *  (ADR-1438) orders these by CAPABILITY (gates.ts PLAN_RANK ranks on this), NOT price:
  *  `free < business ~ nonprofit ~ independent`. Business ($49, two seats) is the one paid advertised
  *  tier and carries the former Collective depth (automation, team, pipelines, programs). Non Profit
  *  ($39) is that toolkit, verified; Independent (~$249) adds white-label and rides
@@ -51,7 +51,7 @@ const LEGACY_PLAN_REMAP: Record<string, SpacePlan> = {
   organization: 'nonprofit',
   // white-label is now the Independent tier (ADR-811 un-folds it from Business).
   whitelabel: 'independent',
-  // Collective merged into Business at $49 (LIVE-228 / ADR-1436). Stored rows and checkout
+  // Collective merged into Business at $49 (LIVE-228 / ADR-1438). Stored rows and checkout
   // loadouts that still say `collective` resolve here until the migration rewrites them.
   collective: 'business',
 }

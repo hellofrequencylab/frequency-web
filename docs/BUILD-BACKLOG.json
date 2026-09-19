@@ -175,7 +175,6 @@
           "ids": [
             "LIVE-408",
             "SCAN-636",
-            "SCAN-637",
             "SCAN-638",
             "HYG-100",
             "LIVE-413",
@@ -10861,7 +10860,7 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "\u00a75"
       },
-      "detail": "OWNER RULING 2026-09-08: one paid tier at $49 with 2 seats included. Business is $29 today and Collective is $79 list / $49 founding, so this is a 67% raise on Business and a hold at the founding rate for Collective.\n\nProduction on 2026-09-08: spaces.plan = free 15, collective 6, null 1. ZERO Business, zero Nonprofit, zero Independent. space_subscription_items = 0 and space_billing_agreements = 1, so the six Collective Spaces were GRANTED by hand (lib/billing/space-beta-grant.ts), never bought. Nobody has ever been charged, which makes this the cheapest a price change will ever be - but the six still need telling, and the owner ruled they grandfather AT $49 rather than dropping to free.\n\nTouches lib/pricing/plans.ts, pricing-keys.ts (+ RETIRED_CATALOG_ITEM_KEYS for collective_base), one migration, and scripts/check-collective.mjs which pins the six tier names and must be rewritten in the same PR.\n\nCLOSED 2026-09-19 (ADR-1436). PREMISE RE-TESTED: SPACE_PLANS still named collective; business_base was 2900 cents; collective_base was a live catalog item. CODE: SPACE_PLANS is free/business/nonprofit/independent; asSpacePlan('collective') is business; business_base is amountsFromMonthly(4900, 4900); collective_base is on RETIRED_CATALOG_ITEM_KEYS. Public advertised ladder drops Collective. Migration 20270345006100 rewrites stored collective rows. The sell switches stay operator-flipped.",
+      "detail": "OWNER RULING 2026-09-08: one paid tier at $49 with 2 seats included. Business is $29 today and Collective is $79 list / $49 founding, so this is a 67% raise on Business and a hold at the founding rate for Collective.\n\nProduction on 2026-09-08: spaces.plan = free 15, collective 6, null 1. ZERO Business, zero Nonprofit, zero Independent. space_subscription_items = 0 and space_billing_agreements = 1, so the six Collective Spaces were GRANTED by hand (lib/billing/space-beta-grant.ts), never bought. Nobody has ever been charged, which makes this the cheapest a price change will ever be - but the six still need telling, and the owner ruled they grandfather AT $49 rather than dropping to free.\n\nTouches lib/pricing/plans.ts, pricing-keys.ts (+ RETIRED_CATALOG_ITEM_KEYS for collective_base), one migration, and scripts/check-collective.mjs which pins the six tier names and must be rewritten in the same PR.\n\nCLOSED 2026-09-19 (ADR-1438). PREMISE RE-TESTED: SPACE_PLANS still named collective; business_base was 2900 cents; collective_base was a live catalog item. CODE: SPACE_PLANS is free/business/nonprofit/independent; asSpacePlan('collective') is business; business_base is amountsFromMonthly(4900, 4900); collective_base is on RETIRED_CATALOG_ITEM_KEYS. Public advertised ladder drops Collective. Migration 20270345006100 rewrites stored collective rows. The sell switches stay operator-flipped.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/pricing/plans.ts\",\"utf8\");const m=s.match(/SPACE_PLANS[^=]*=\\s*\\[([^\\]]*)\\]/);if(!m){console.error(\"SPACE_PLANS not found\");process.exit(1)}if(/collective/.test(m[1])){console.error(\"collective still in SPACE_PLANS\");process.exit(1)}process.exit(0)'"
@@ -14718,7 +14717,7 @@
     {
       "id": "SCAN-637",
       "title": "Sitemap-advertised marketplace details are force-dynamic",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
@@ -14726,12 +14725,13 @@
         "file": "app/(main)/market/[id]/page.tsx",
         "ref": "meta-scan 2026-09-19"
       },
-      "detail": "FOUND 2026-09-19. /market/[id], /store/[id], /housing/[id], and /classifieds/[id] are public detail routes (lib/nav/public-detail-routes.ts), emit listing JSON-LD, and are advertised by app/sitemap.ts, and each file still says `export const dynamic = 'force-dynamic'`. They also sit under the (main) layout auth read. Same class as the discover-layout comment that already fixed this for /discover: a dynamic API in the tree voids ISR. Close by dropping force-dynamic on the public read path and moving viewer-personalisation (own review, buy button state) behind client auth or Suspense, the way SiteHeader authMode=client does.",
+      "detail": "FOUND 2026-09-19. /market/[id], /store/[id], /housing/[id], and /classifieds/[id] are public detail routes (lib/nav/public-detail-routes.ts), emit listing JSON-LD, and are advertised by app/sitemap.ts, and each file still says `export const dynamic = 'force-dynamic'`. They also sit under the (main) layout auth read. Same class as the discover-layout comment that already fixed this for /discover: a dynamic API in the tree voids ISR. Close by dropping force-dynamic on the public read path and moving viewer-personalisation (own review, buy button state) behind client auth or Suspense, the way SiteHeader authMode=client does.\n\nCLOSED 2026-09-19 (ADR-1437). PREMISE RE-TESTED FIRST: all four files still exported force-dynamic; Store had no session read; Market, housing, and classifieds called getCallerProfile / getMyProfileId / isPlatformStaff. Dropped force-dynamic, asked for revalidate = 3600. Public page is the anonymous listing (non-active notFound). ViewerProvider plus /api/viewer upgrade signedIn on ProductReviews, SaveListingButton, and ListingClaimBox. ?claim= is read with useSearchParams. Did not touch (main)/layout.tsx (SCAN-641).",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const files=[\"app/(main)/market/[id]/page.tsx\",\"app/(main)/store/[id]/page.tsx\",\"app/(main)/housing/[id]/page.tsx\",\"app/(main)/classifieds/[id]/page.tsx\"];const bad=files.filter(f=>/export const dynamic = .force-dynamic./.test(fs.readFileSync(f,\"utf8\")));process.exit(bad.length?1:0)'",
         "note": "Fails while any of the four sitemap-advertised listing details still force-dynamic."
-      }
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "SCAN-638",

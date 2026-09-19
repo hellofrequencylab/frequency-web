@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1436**.
+tree as of this index: **ADR-1438**. 1436 is HYG-068 on another open branch. 1437 is SCAN-637 on main.
 
 | Theme | Start here |
 |---|---|
@@ -46096,9 +46096,30 @@ Re-tested 2026-09-19: `operator_seat` was still `placeholder: true` at 900 cents
 
 **Rows.** LIVE-229.
 
-## ADR-1436: Collective merges into Business at $49 (LIVE-228)
+## ADR-1437: Sitemap listing details drop force-dynamic (SCAN-637)
 
-**Status:** Accepted · 2026-09-19 · **Implements** [ADR-1294](DECISIONS.md) CORE-MODEL §5 phase 3.1 · **Amends** [ADR-811](DECISIONS.md) (Collective is no longer a Space plan; Frequency remains a Community Collective) · backlog `LIVE-228` · corroborated by `lib/pricing/plans.ts` (`SPACE_PLANS` without `collective`, `LEGACY_PLAN_REMAP.collective → business`) and `lib/billing/pricing-keys.ts` (`business_base` at 4900 cents, `collective_base` retired)
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-637` · same class as the /discover header fix in `app/discover/layout.tsx` · numbered **1437** because **1436** is HYG-068 on another branch · corroborated by `app/(main)/market/[id]/page.tsx`, `app/(main)/store/[id]/page.tsx`, `app/(main)/housing/[id]/page.tsx`, `app/(main)/classifieds/[id]/page.tsx`, and `lib/nav/public-detail-isr.test.ts`
+
+**Context.** `/market/[id]`, `/store/[id]`, `/housing/[id]`, and `/classifieds/[id]` are public detail routes (`lib/nav/public-detail-routes.ts`), emit listing JSON-LD, and are advertised by `app/sitemap.ts`. Each file still said `export const dynamic = 'force-dynamic'`. Three of the four also called `getCallerProfile` / `getMyProfileId` / `isPlatformStaff` during render. Auth during render is a dynamic API. This app does not enable `cacheComponents`, so Suspense cannot rescue that. The (main) layout still reads auth for public chrome (SCAN-641); the page-level `force-dynamic` would keep the crawler on a full render after that layout stops.
+
+Premise re-tested 2026-09-19: all four files still exported `force-dynamic`. Store had no session read. Market, housing, and classifieds did.
+
+**Decision.**
+
+1. **Drop `force-dynamic`. Ask for ISR.** `export const revalidate = 3600`, same window as `/discover`.
+2. **The public page is the anonymous listing.** Non-active rows `notFound()`. Owners preview drafts from the edit or Shop console, not from the sitemap URL.
+3. **Viewer personalisation hydrates from `/api/viewer`.** `ViewerProvider` wraps Market, housing, and classifieds. `ProductReviews`, `SaveListingButton`, and `ListingClaimBox` upgrade `signedIn` after mount. A `?claim=` arrival is read with `useSearchParams` so the page does not take `searchParams`.
+4. **Do not touch `(main)/layout.tsx`.** That auth read is SCAN-641.
+
+**Rejected.** Leaving `force-dynamic` until the layout is static (the page would still force the crawler). Reading the session in a Suspense hole (needs `cacheComponents`). Showing owner Manage controls to every visitor.
+
+**Consequences.** A later page that adds `getCallerProfile` or `export const dynamic = 'force-dynamic'` fails `lib/nav/public-detail-isr.test.ts`. Comments, offers, and exact street address stay on the anonymous shell until a follow-up teaches those slots the viewer. The layout auth read still dynamizes the tree today.
+
+**Rows.** SCAN-637.
+
+## ADR-1438: Collective merges into Business at $49 (LIVE-228)
+
+**Status:** Accepted · 2026-09-19 · **Implements** [ADR-1294](DECISIONS.md) CORE-MODEL §5 phase 3.1 · **Amends** [ADR-811](DECISIONS.md) (Collective is no longer a Space plan; Frequency remains a Community Collective) · backlog `LIVE-228` · numbered **1438** because **1436** is HYG-068 on another branch and **1437** is SCAN-637 on main · corroborated by `lib/pricing/plans.ts` (`SPACE_PLANS` without `collective`, `LEGACY_PLAN_REMAP.collective → business`) and `lib/billing/pricing-keys.ts` (`business_base` at 4900 cents, `collective_base` retired)
 
 **Context.** ADR-811 sold Business at $29 and Collective at $79 list / $49 founding. CORE-MODEL ruling 3 (2026-09-08): one paid advertised tier at $49 with two seats; the six Collective Spaces grandfather at $49 rather than dropping to free. Re-tested 2026-09-19: `SPACE_PLANS` still named `collective`; `business_base` was still 2900 cents with no founding split; `collective_base` was still a live catalog item. Production had granted those six Spaces; `space_subscription_items` was empty.
 

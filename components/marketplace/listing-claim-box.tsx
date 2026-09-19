@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2, Zap } from 'lucide-react'
 import { claimListingAction } from '@/app/listings/claim/[token]/actions'
+import { useViewer } from '@/components/layout/viewer-chrome'
 
 // Shown on a seeded listing's public page IN PLACE OF "Contact the seller" when the visitor arrives
 // through a claim link (/classifieds/<id>?claim=<token>). A signed-in visitor claims in place (the
@@ -22,6 +24,8 @@ export function ListingClaimBox({
 }) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const viewer = useViewer()
+  const isSignedIn = viewer.signedIn || signedIn
 
   function claim() {
     if (pending) return
@@ -39,7 +43,7 @@ export function ListingClaimBox({
       {error && (
         <p className="rounded-card border border-danger/40 bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>
       )}
-      {signedIn ? (
+      {isSignedIn ? (
         <button
           type="button"
           onClick={claim}
@@ -58,5 +62,24 @@ export function ListingClaimBox({
         </Link>
       )}
     </div>
+  )
+}
+
+/** Claim box for a `?claim=` arrival on a static listing page. Reads the token on the client so
+ *  the page does not have to take `searchParams` (that opts the route out of ISR). Renders nothing
+ *  when the URL has no token. */
+export function ViewerListingClaim({ detailPath }: { detailPath: string }) {
+  const token = useSearchParams().get('claim')
+  const { signedIn } = useViewer()
+  if (!token) return null
+  return (
+    <section className="rounded-2xl border border-primary/40 bg-primary-bg/40 p-4">
+      <h2 className="mb-3 text-2xs font-semibold uppercase tracking-wide text-primary-strong">Claim this listing</h2>
+      <ListingClaimBox
+        token={token}
+        signedIn={signedIn}
+        signInHref={`/sign-in?next=${encodeURIComponent(`${detailPath}?claim=${token}`)}`}
+      />
+    </section>
   )
 }
