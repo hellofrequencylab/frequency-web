@@ -10,6 +10,10 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ## [Unreleased]
 
+### Added
+
+- **You can list what people will learn on a Journey.** Add the outcomes in settings, one line each. Visitors see that list next to the story, not a repeat of the one-line promise.
+
 ### Changed
 
 - **The blocks visitors see on a Journey follow the Advanced layout.** The story, the path, and the pillar balance are the ones you can show, hide, or reorder. That same order now shows on the Journey page, the public page, and the store listing. How many people have started, and the Gems for finishing, stay in the header.

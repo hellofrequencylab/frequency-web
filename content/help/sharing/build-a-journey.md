@@ -71,6 +71,9 @@ The **title**, **subtitle**, and **cover photo** live in the header, where you c
 Everything else sits in the **settings panel** on the right:
 
 - **Icon, accent, and story.** Give the Journey a face and say why it matters.
+- **What you'll learn.** List the outcomes, one line each. Visitors see that list next to the
+  story on the Journey page, the public page, and the store listing. Leave it empty and the
+  block stays off. Do not restate the one-line promise.
 - **Completion Gems.** What finishing the Journey earns.
 - **Certificate.** Turn on a printable certificate for people who finish.
 - **Phase drip.** How many days between Phase unlocks (weekly by default), so a Circle moving through
