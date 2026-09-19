@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1447**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
+tree as of this index: **ADR-1443**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
 
 | Theme | Start here |
 |---|---|
@@ -46205,25 +46205,23 @@ The harness can still create a bare worktree. That is not repo-observable. What 
 
 **Rows.** LIVE-306.
 
-## ADR-1447: Evening meta-scan — Spotlight ISR and the layout void (SCAN-642, SCAN-643)
+## ADR-1443: Public events use the same header /discover uses (SCAN-641)
 
-**Status:** Accepted · 2026-09-19 · backlog `SCAN-642` · `SCAN-643` · numbered **1447** because **1446** is SCAN-640 is LIVE-306 on main · corroborated by `app/spotlight/[handle]/page.tsx`, `app/(main)/layout.tsx`, `app/discover/layout.tsx`, and production advisor reads on Frequency Community
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-641` · numbered **1443** because **1442** is HYG-078 · corroborated by `app/(main)/layout.tsx` (`publicChrome`) and `app/discover/layout.tsx`
 
-**Context.** The morning 2026-09-19 scan filed SCAN-636…641. Four of those rows, plus LIVE-242, landed the same day. A second pass re-tested premises against `ab1902846` rather than trusting the morning board.
+**Context.** SCAN-641, filed 2026-09-19 from the meta-scan: anon `/events/<slug>` and networked Space profiles rendered `MarketingHeader` through `(main)` `publicChrome()`. `/discover/*` rendered `SiteHeader variant="light" authMode="client"`. Two public chromes, two phone sheets, two chances to drift. LIVE-106 was the last time that class cost thirteen destinations.
 
-1. **SCAN-636 is done and still incomplete.** `#2733` made `/events/<slug>` the ISR public body. ADR-1440 said the `(main)` layout auth read was SCAN-641 and forbade touching the layout in that PR. The page now exports `revalidate = 3600`. The layout still calls `getCachedUser()` (`cookies()`) and `headers()` before `publicChrome()`, and `generateMetadata` calls `headers()`. Without `cacheComponents`, one dynamic API in a parent voids the subtree. Discover already paid to learn this (`authMode="client"`).
-2. **SCAN-638's production premise expired.** Advisors now show zero `unindexed_foreign_keys` and zero `auth_rls_initplan`. The six covering indexes and both `(select auth.uid())` wraps exist in production. The creating migration files still unwrap. The remaining hole is greenfield replay, not a live advisor.
-3. **Spotlight is the SCAN-637 twin outside `(main)`.** `app/sitemap.ts` advertises published `/spotlight/<handle>` URLs. The page is `force-dynamic`, uses the admin client, and does not read cookies. SCAN-641 / SCAN-643 cannot reach it.
+Premise re-tested 2026-09-19 on this tree: the split was still the split. Discover still used SiteHeader with client auth so ISR is not voided. The `(main)` public branch already called `getCachedUser()`, so it was already dynamic; client auth there is not an ISR win, it is so both trees draw one bar.
 
 **Decision.**
 
-1. **Do not reopen SCAN-636.** File `SCAN-643` for the layout void. SCAN-641 stays the header swap (MarketingHeader vs SiteHeader).
-2. **File `SCAN-642`** for Spotlight: drop `force-dynamic`, ask for `revalidate = 3600`. Same class as SCAN-637.
-3. **Re-point SCAN-638** to a later migration that matches production (`IF NOT EXISTS` indexes + wrapped policies). Draft only. Do not apply. Do not enable RLS on `spatial_ref_sys`.
-4. **SCAN-640 stays open.** The backup table holds 21 rows. Count first, drop never from an agent session.
+1. **Mount the discover header on the `(main)` public branch.** `ViewerProvider` plus `SiteHeader variant="light" authMode="client"`. That is the header /discover already ships, including the phone sheet LIVE-110 put on it.
+2. **Leave the footer.** This row is the header split. `MarketingFooter` stays on the `(main)` public branch; /discover keeps its own short footer.
+3. **Give the skip link a target.** `id="main"` on the public `<main>`, matching /discover, so SiteHeader's skip-to-content has somewhere to go.
 
-**Rejected.** Closing SCAN-638 because advisors went quiet (the creating files would recreate the hole). Treating a header-only SCAN-641 close as ISR. Folding Spotlight into the (main) layout row.
+**Rejected.** Extracting a shared PublicChrome layout in this change (the footers still differ, and a shared shell would hide that). Switching /discover onto MarketingHeader (that is the header without search, and it would undo the ISR-preserving client auth). Server auth on the `(main)` public branch (a second dialect of the same bar).
 
-**Consequences.** `pnpm packets --lane scan` starts at SCAN-642. Status stays in `docs/BUILD-BACKLOG.json`. Rationale in `docs/META-SCAN-STATUS.md` 2026-09-19 evening pass.
+**Consequences.** A signed-out event page and a /discover page now share one header component and one phone sheet. Marketing pages and the help centre keep MarketingHeader: those are the splash and the docs, not the public community browse.
 
-**Rows.** SCAN-642, SCAN-643, SCAN-638 (re-pointed).
+**Rows.** SCAN-641.
+
