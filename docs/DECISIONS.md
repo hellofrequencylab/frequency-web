@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1432**.
+tree as of this index: **ADR-1440**. 1436 is HYG-068 on another open branch. 1437 is SCAN-637 on main. 1438 is LIVE-228 on main. 1439 is LIVE-242 on main.
 
 | Theme | Start here |
 |---|---|
@@ -46028,27 +46028,150 @@ Premise re-tested 2026-09-19 on this tree: the control still passed `posterBandA
 
 **Rows.** LIVE-272.
 
-## ADR-1432: The operator console is five boxes (LIVE-246)
+## ADR-1433: Delete the entry-point flyer builder, keep the share-card Bold face (LIVE-216)
 
-**Status:** Accepted · 2026-09-19 · backlog `LIVE-246` · amends [ADR-846](DECISIONS.md) and [ADR-1313](DECISIONS.md) · corroborates [CORE-MODEL.md](CORE-MODEL.md) §5.4 · corroborated by `lib/admin/modules/space-modules.ts` (`SPACE_MODULE_BOX_IDS`)
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-216` · corroborated by `lib/entry-points/templates.ts`, `app/(main)/entry-points/entry-points-client.tsx`, `next.config.ts` `OG_CARD_FONTS`
 
-**Context.** CORE-MODEL §5.4 asked the operator console to read as five boxes: Your page · Your people · Gather · Money · Reach. ADR-846 had locked twelve boxes and ADR-1313 amended that lock to thirteen when Your reach moved tabs. LIVE-246's 2026-09-08 survey mapped all 34 catalog rows onto those five boxes and named four contested placements. ADR-1294 left those four unruled.
+**Context.** OWN-059 item 3 asked the owner what to do with a flyer builder whose download buttons had already been unlinked (`b7c862005`). The owner ruled DELETE on 2026-09-08. The row sat open because no code-lane packet owned the deletion, which is how a ruling becomes a no-op.
 
-Premise re-tested 2026-09-19 on this tree:
+Premise re-tested 2026-09-19: `lib/entry-points/flyer.ts`, `flyer-raster.ts`, and `app/api/entry-points/[slug]/flyer/route.ts` still existed. `LiberationSans-Regular.ttf` (410,820 bytes) was flyer-exclusive. `LiberationSans-Bold.ttf` is the OG share-card disk fallback named in `OG_CARD_FONTS` and asserted by `lib/og/og-fonts.test.ts`. Deleting Bold would break every share card.
 
-- The catalog is **32 rows**, not 34. LIVE-226 retired `space.enroll`, `space.tickets`, and `space.checkin`. That contest is gone.
-- `space.airwaves` already nested under Content. That contest is gone: Gather owns recordings.
-- Thirteen rows still had no `parent`. The probe (`rows===34 && tops===5`) could not pass.
+The source-side weight this row can name without a production artifact: 410 KB of Regular plus about 12 KB of flyer code. `check:build-budget` still has to print the post-deploy delta; CI never builds.
 
 **Decision.**
 
-1. **Five parentless boxes, ids unchanged.** `space.basics` is Your page. `space.people` is Your people. `space.content` is Gather. `space.offerings` is Money. `space.reach` is Reach. Every other row carries `parent`. Nesting stays one level deep, so CRM's former children nest under Your people, and Email's former children nest under Reach.
-2. **Hub tabs do not move.** Resonance, Marketing, Offerings, Programs, and Settings stay the browse axis ADR-1313 declared. Team stays on Settings; the CRM cluster stays on Resonance. Those seven rows are named in `HUB_DIVERGENCE_REASONS` so a silent tab drift still fails the orphan guard.
-3. **The remaining contests.** Gather *is* the Content box (the programs tab is that box, so its `?section=programs` deep link is not a second page). Plan and billing nests under Your page (same Settings tab, money the operator pays Frequency; Get paid stays under Money). Airwaves stays under Gather.
+1. **Delete the flyer composer, rasteriser, route, and Regular face.** Keep the short link and branded QR. The `qr_codes.flyer` jsonb column stays; creates write template defaults so existing rows stay shaped. No migration.
+2. **Keep `LiberationSans-Bold.ttf` and its `OG_CARD_FONTS` entry.** The probe's control half fails if Bold is gone.
+3. **Drop the flyer wasm include** from `outputFileTracingIncludes`. Styled QR PNG still traces `@resvg/resvg-wasm` on `/api/qr`.
 
-**Rejected.** Parenting Your reach under Reach while it stays on Programs (the ADR-1313 orphan). Moving Team onto Resonance to avoid a named divergence (undoes the Settings-tab ruling). Deleting any catalog row to hit an old count of 34.
+**Rejected.** Deleting both Liberation faces (the title's first wording; the correction of 2026-09-08). Leaving the live preview while deleting only the route (the form would still promise a poster nothing serves).
 
-**Consequences.** `SPACE_MODULE_BOX_IDS` reads five ids. The Space rail still renders every row (coverage guard unchanged). A later edit that un-parents a sixth box fails LIVE-246's probe and the five-box lock in `space-modules.test.ts`.
+**Consequences.** `/entry-points` and the Funnels builder produce a named QR and a short link. The flyer API 404s. Share cards still fall back to Bold when Nunito cannot load.
 
-**Rows.** LIVE-246.
+**Rows.** LIVE-216. OWN-059 item 3 is this row; items 1-2 stay owner-timed.
 
+## ADR-1434: One Space, one create door (HYG-080)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-080` · CORE-MODEL §1.4 · corroborated by `lib/spaces/provision.ts` (`createSpace` is the member Space road) and `app/(main)/spaces/new/page.tsx`
+
+**Context.** `/spaces/new/business` was a second create flow for the same noun: name, one line, three links, `createBusinessSpace`, private starter prompts, land on the live page. CORE-MODEL said one noun, one door. The 2026-09-08 sweep called it an orphan. Re-tested 2026-09-09 and again 2026-09-19: it was not an orphan. Three pins held it up, and one was a control, not a reference.
+
+1. `scripts/check-a11y-names.test.ts` read `business-quickstart-form.tsx` from disk as the positive control for the Field→id forwarder chain. Blind, that Textarea was the single placeholder-only control that held the ceiling at 1. Deleting the file without a replacement would make the mutation stop proving anything.
+2. `scripts/check-creates.mjs` registered `createBusinessSpace` in `ENTITY_WRITES` and in `CREATE_ENTRIES`.
+3. `scripts/check-creates.test.ts` asserted that key in `ROUTED_ON_2026_09_07`.
+
+Numbered **1434** because **1426–1433** landed on main while this PR was open.
+
+**Decision.**
+
+1. **Delete the second door.** The page, the form, the card on `/spaces/new`, `createBusinessSpace`, `uniqueSlugFrom`, and `lib/spaces/business-starter.ts` (only that road used them) go. A business is created on `/spaces/new` by picking the business Mode, which niche funnels already deep-link (`/spaces/new?mode=business:*`, ADR-1197).
+2. **Replace the a11y control, do not drop it.** The mutation keeps the Field+Textarea fixture that file carried, and asserts that `components/spaces/space-form.tsx` still publishes `htmlFor={id}` and that `discoverForwarders` still finds it. A fixture-only test would keep passing after Field stopped forwarding.
+3. **Drop the creates pins with the writer.** `ENTITY_WRITES` and `CREATE_ENTRIES` no longer name the road. The Studio `business` manifest and the admin business seeder are a different subject and stay.
+
+**Rejected.** Folding the starter prompts into `createSpace` in the same PR (that is a product add, not the duplicate-door delete). Leaving `createBusinessSpace` as an unreferenced writer. Pointing the mutation at another product file that does not wrap a kit Textarea in space-form Field.
+
+**Consequences.** `/spaces/new/business` 404s. Create a space is one form. The accessible-name ratchet stays at 0 weak names with a control that can still fire.
+
+**Rows.** HYG-080.
+
+## ADR-1435: The operator seat is $12, and the switch is the sell gate (LIVE-229)
+
+**Status:** Accepted · 2026-09-19 · **Implements** [ADR-1294](DECISIONS.md) CORE-MODEL §5 phase 3.2 · **Amends** [ADR-803](DECISIONS.md) (the switch was the mint gate while the amount was a stand-in) · backlog `LIVE-229` · corroborated by `lib/billing/pricing-keys.ts` (`operator_seat` at 1200 cents, no `placeholder`) · numbered **1435** because **1434** is one Space create door on main
+
+**Context.** The seat machinery has been built since ADR-799: catalog item, loadout line, webhook reconciler, seat editor, invite check. The catalog shipped `placeholder: true` at a $9 stand-in so a routine sync could never mint a price the owner had not approved (ADR-362 / ADR-803). CORE-MODEL named $12 as the live amount. On 2026-08-19 the activation switch was flipped while the stand-in was still the code amount, and the first live catalog sync minted four Stripe prices at $9/$90. Stripe prices are immutable; they could only be archived. `setOperatorSeatActive(true)` then refused without an operator override.
+
+Re-tested 2026-09-19: `operator_seat` was still `placeholder: true` at 900 cents. `catalog_operator_seat_active` still defaulted OFF. A real checkout still cannot mint a seat line until an operator syncs the catalog and flips the switch; that proof belongs with LIVE-234.
+
+**Decision.**
+
+1. **The catalog amount is $12/seat/mo, with no founding rate.** `amountsFromMonthly(1200, 1200)`. Yearly is two months free ($120).
+2. **`placeholder` is cleared.** A catalog sync mints the approved amount. The 2026-08-19 defect was minting a stand-in; this amount is the one ADR-811 and ADR-1294 already named.
+3. **`catalog_operator_seat_active` is the sell gate, not the mint gate.** `operatorSeatsSellable` still requires the flag AND a synced Stripe price AND `billingLive()`. The code default stays OFF. An operator flips it at `/admin/pricing` after the price exists.
+4. **The leftover guard stays for a future placeholder.** `setOperatorSeatActive(true)` still refuses if `placeholder` is put back and there is no `catalog.operator_seat` override. Turning OFF is always allowed.
+5. **Public copy reads the catalog.** `/pricing`, the comparison grid, `/llms.txt`, and the CMS pricing template publish the catalog amount instead of "owner-priced".
+
+**Rejected.** Flipping `catalog_operator_seat_active` from a migration (bypasses the audited console action). Defaulting the flag ON in code (production already has a stored row; a default would not move it, and it would hide the sell decision). Closing LIVE-234's Space-subscription loop from this PR (that is a real charge).
+
+**Consequences.** The next catalog sync mints $12/$120. Checkout still hides the seat picker until the operator flips the switch and the price id resolves. A later amount change is a new Stripe price, same as every other catalog item.
+
+**Rows.** LIVE-229.
+
+## ADR-1437: Sitemap listing details drop force-dynamic (SCAN-637)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-637` · same class as the /discover header fix in `app/discover/layout.tsx` · numbered **1437** because **1436** is HYG-068 on another branch · corroborated by `app/(main)/market/[id]/page.tsx`, `app/(main)/store/[id]/page.tsx`, `app/(main)/housing/[id]/page.tsx`, `app/(main)/classifieds/[id]/page.tsx`, and `lib/nav/public-detail-isr.test.ts`
+
+**Context.** `/market/[id]`, `/store/[id]`, `/housing/[id]`, and `/classifieds/[id]` are public detail routes (`lib/nav/public-detail-routes.ts`), emit listing JSON-LD, and are advertised by `app/sitemap.ts`. Each file still said `export const dynamic = 'force-dynamic'`. Three of the four also called `getCallerProfile` / `getMyProfileId` / `isPlatformStaff` during render. Auth during render is a dynamic API. This app does not enable `cacheComponents`, so Suspense cannot rescue that. The (main) layout still reads auth for public chrome (SCAN-641); the page-level `force-dynamic` would keep the crawler on a full render after that layout stops.
+
+Premise re-tested 2026-09-19: all four files still exported `force-dynamic`. Store had no session read. Market, housing, and classifieds did.
+
+**Decision.**
+
+1. **Drop `force-dynamic`. Ask for ISR.** `export const revalidate = 3600`, same window as `/discover`.
+2. **The public page is the anonymous listing.** Non-active rows `notFound()`. Owners preview drafts from the edit or Shop console, not from the sitemap URL.
+3. **Viewer personalisation hydrates from `/api/viewer`.** `ViewerProvider` wraps Market, housing, and classifieds. `ProductReviews`, `SaveListingButton`, and `ListingClaimBox` upgrade `signedIn` after mount. A `?claim=` arrival is read with `useSearchParams` so the page does not take `searchParams`.
+4. **Do not touch `(main)/layout.tsx`.** That auth read is SCAN-641.
+
+**Rejected.** Leaving `force-dynamic` until the layout is static (the page would still force the crawler). Reading the session in a Suspense hole (needs `cacheComponents`). Showing owner Manage controls to every visitor.
+
+**Consequences.** A later page that adds `getCallerProfile` or `export const dynamic = 'force-dynamic'` fails `lib/nav/public-detail-isr.test.ts`. Comments, offers, and exact street address stay on the anonymous shell until a follow-up teaches those slots the viewer. The layout auth read still dynamizes the tree today.
+
+**Rows.** SCAN-637.
+
+## ADR-1438: Collective merges into Business at $49 (LIVE-228)
+
+**Status:** Accepted · 2026-09-19 · **Implements** [ADR-1294](DECISIONS.md) CORE-MODEL §5 phase 3.1 · **Amends** [ADR-811](DECISIONS.md) (Collective is no longer a Space plan; Frequency remains a Community Collective) · backlog `LIVE-228` · numbered **1438** because **1436** is HYG-068 on another branch and **1437** is SCAN-637 on main · corroborated by `lib/pricing/plans.ts` (`SPACE_PLANS` without `collective`, `LEGACY_PLAN_REMAP.collective → business`) and `lib/billing/pricing-keys.ts` (`business_base` at 4900 cents, `collective_base` retired)
+
+**Context.** ADR-811 sold Business at $29 and Collective at $79 list / $49 founding. CORE-MODEL ruling 3 (2026-09-08): one paid advertised tier at $49 with two seats; the six Collective Spaces grandfather at $49 rather than dropping to free. Re-tested 2026-09-19: `SPACE_PLANS` still named `collective`; `business_base` was still 2900 cents with no founding split; `collective_base` was still a live catalog item. Production had granted those six Spaces; `space_subscription_items` was empty.
+
+**Decision.**
+
+1. **`SPACE_PLANS` is free / business / nonprofit / independent.** A stored `collective` label remaps to `business` at read time. The migration rewrites `spaces.plan` and `space_billing_agreements.plan`.
+2. **Business is $49/seat-plan/mo with two operator seats included.** Catalog `business_base` is `amountsFromMonthly(4900, 4900)`. Yearly is two months free. Business depth is the former Collective key set (automation, team, pipelines, programs).
+3. **`collective_base` is retired.** Kept resolvable on `RETIRED_CATALOG_ITEM_KEYS` so an old Stripe line still reconciles; new checkout loadouts that say `collective` bill `business_base` and stamp `plan=business`.
+4. **Public ladder is Free, Business, Non Profit.** Independent stays hand-sold (LIVE-227). Frequency as a Community Collective is the brand, not a plan chip.
+
+**Rejected.** Dropping the six Spaces to free (the owner ruled against it). Keeping Collective as a live catalog item with founding == list at $49 (two prices for one product). Flipping sell flags from this migration.
+
+**Consequences.** The next catalog sync mints Business at $49/$490 and archives Collective products. A Collective Stripe item still maps to Business entitlements. Non Profit stays $39. Independent stays $249.
+
+**Rows.** LIVE-228.
+
+## ADR-1439: Hubs and Nexuses fold into Space (LIVE-242)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-242` · numbered **1439** because **1436** is HYG-068, **1437** is SCAN-637, and **1438** is LIVE-228 on main · corroborated by `next.config.ts` (`/hubs` and `/nexuses` 308 to `/spaces`), `app/(main)/hubs` and `app/(main)/nexuses` absent, `supabase/migrations/20270345006200_hubs_nexuses_fold_into_spaces.sql`, `spaces.parent_id`
+
+**Context.** CORE-MODEL ruling 5 (2026-09-08): a Hub and a Nexus both read as "a Space that contains other Spaces". Production held 3 hubs and 2 nexuses, all `forming`, with **zero Circles** on any of them. Each noun still shipped a detail page, a manage console, and a LeaderCrmViewer roster titled "Message Members" (ADR-827), duplicating Space at two more scopes. Circle geography still uses `circles.hub_id` / `hubs.nexus_id`.
+
+**Decision.**
+
+1. **Member URLs die.** `/hubs`, `/hubs/:path*`, `/nexuses`, and `/nexuses/:path*` 308 onto `/spaces` with the same slug. Staff geography editors stay at `/admin/hubs` and `/admin/nexuses`.
+2. **A Space may name its parent.** `spaces.parent_id` is a self-FK. Each hub and nexus row gains `space_id` pointing at the Space that now is that noun. The migration mints a Business Space per live row when the slug is free, parents hub Spaces under their Nexus Space, and links when a Space with that slug already exists.
+3. **The Hub and Nexus CRMs leave with the noun.** Message-Members pages under `/hubs/<slug>/crm` and `/nexuses/<slug>/crm` are deleted. A leftover rail link resolves to the Space CRM at `/spaces/<slug>/crm`.
+4. **Place-tree tables stay.** Circles, broadcasts, and Guide/Mentor caps still read `hubs` / `nexuses`. Folding those FKs onto `spaces.id` is a later row, not this one.
+
+**Rejected.** Deleting the geography tables in the same change (Circles still attach through `hub_id`). Leaving redirect-only `page.tsx` stubs under `app/(main)/hubs` (the LIVE-242 probe is the directories' absence; HYG-043 already ruled a consolidation unfinished until the old tree is gone).
+
+**Consequences.** Help, NAMING, and GLOSSARY say the member noun is Space. `hubs` and `nexuses` feature keys retarget `/spaces` so `check:help` still has a live prefix. Done-row probes that required the old pages (HYG-046, HYG-064, SCAN-404) measure the fold instead of exit 79.
+
+**Rows.** LIVE-242.
+
+## ADR-1440: The share event URL is the ISR public body (SCAN-636)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-636` · product-preserving close of the discover twin's canonical · numbered **1440** because **1436** is HYG-068, **1438** is LIVE-228, and **1439** is LIVE-242 · corroborated by `app/(main)/events/[slug]/page.tsx`, `lib/nav/member-event-rewrite.ts`, and `lib/nav/public-detail-isr.test.ts`
+
+**Context.** `/discover/events/[slug]` is ISR (`revalidate` 3600, `generateStaticParams`, column-safe RPC). Its `generateMetadata` sets canonical to `/events/<slug>`. That URL rendered a 2486-line member page that called `createClient()` and `getUser()` during render. This app does not enable `cacheComponents`, so those dynamic APIs void ISR. Crawlers were told to consolidate onto the slower page. Share and QR already resolve to `/events/<slug>`, so reversing the canonical (option b on the row) would have advertised a different URL than the one people send.
+
+Premise re-tested 2026-09-19: the discover twin still pointed canonical at `/events/${event.slug}`, and the member page still had no `revalidate`.
+
+**Decision.**
+
+1. **Keep `/events/<slug>` as the share URL.** The discover twin still points there.
+2. **The route file is the anonymous public body.** Same RPC, enrichment, and ISR window as the discover twin. No session client, no `searchParams`, no `getMyProfileId`.
+3. **Signed-in members rewrite to `/events/<slug>/full`.** `memberEventRewrite` is pure; `proxy.ts` rewrites after `getUser()`. The browser URL and `x-pathname` stay `/events/<slug>`, so chrome and breadcrumbs do not move. The existing member page lives in `event-member-page.tsx`.
+4. **Do not touch `(main)/layout.tsx`.** That auth read is SCAN-641. The page-level session read is what this row could remove today.
+
+**Rejected.** Reversing the canonical onto `/discover/events/<slug>` without re-pointing share and QR (the slate forbade it). Reading the session in a Suspense hole (needs `cacheComponents`). Rewriting the 2486-line member page into client islands in one PR.
+
+**Consequences.** A later edit that puts `createClient` or `force-dynamic` back on `app/(main)/events/[slug]/page.tsx` fails `lib/nav/public-detail-isr.test.ts`. The layout auth read still dynamizes the tree today. Private and circle-only events stay on the member page for signed-in viewers; a crawler that asks for those slugs `notFound()`s through the public RPC.
+
+**Rows.** SCAN-636.

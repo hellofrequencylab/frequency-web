@@ -157,9 +157,8 @@ const securityHeaders = [
 // The faces lib/og/load-nunito.ts opens from disk at RUNTIME: the Nunito pair every share card draws
 // with, and LiberationSans-Bold, its same-directory fallback.
 //
-// ⚠️ NAMED, not `./public/fonts/*.ttf`. That glob also swept in LiberationSans-Regular (410,820
-// bytes), which nothing reads from disk — lib/entry-points/flyer-raster.ts fetches its faces over
-// HTTP — so every lambda in the app carried it for nothing.
+// ⚠️ NAMED, not `./public/fonts/*.ttf`. That glob also used to sweep LiberationSans-Regular
+// (410,820 bytes) into every lambda. LIVE-216 deleted that face with the flyer builder.
 const OG_CARD_FONTS = [
   './public/fonts/Nunito-Bold.ttf',
   './public/fonts/Nunito-Black.ttf',
@@ -237,11 +236,9 @@ const nextConfig: NextConfig = {
     // RUNTIME via fs (the package is in serverExternalPackages, so it is never bundled). Next's
     // tracer follows the JS entry but NOT that derived `readFile` path, so without an explicit
     // include the .wasm is absent from the serverless bundle on Vercel — initWasm throws and every
-    // styled PNG export silently degrades to a plain code. Bundle it into the two routes that
-    // rasterize: the styled QR download + the entry-point flyer.
+    // styled PNG export silently degrades to a plain code. Bundle it into the QR download route.
+    // The entry-point flyer route that used to share this include is gone (LIVE-216).
     '/api/qr': ['./node_modules/@resvg/resvg-wasm/index_bg.wasm'],
-    // `*` (not the literal `[slug]`, which globs as a character class) matches the dynamic segment.
-    '/api/entry-points/*/flyer': ['./node_modules/@resvg/resvg-wasm/index_bg.wasm'],
 
   },
   // 877MB of meditation audio that NO server code ever opens (ADR-1003 follow-up).
@@ -392,6 +389,16 @@ const nextConfig: NextConfig = {
       // the bare rule stays explicit to read like the retired routes above.
       { source: '/broadcast', destination: '/nearby', permanent: true },
       { source: '/broadcast/:path*', destination: '/nearby/:path*', permanent: true },
+      // LIVE-242 / ADR-1439: Hubs and Nexuses fold into Space. A Hub or Nexus is a Space
+      // that contains other Spaces. Member URLs were never a nav noun; production held 3 hubs
+      // and 2 nexuses, all forming, none with Circles. Permanent (308): printed QR codes,
+      // help links, and bookmarks cannot be rewritten. The minted Space keeps the same slug
+      // (migration 20270345006200), so /hubs/encinitas-hub lands on that Space. Staff
+      // geography editors stay at /admin/hubs and /admin/nexuses (exact, not :path*).
+      { source: '/hubs', destination: '/spaces', permanent: true },
+      { source: '/hubs/:path*', destination: '/spaces/:path*', permanent: true },
+      { source: '/nexuses', destination: '/spaces', permanent: true },
+      { source: '/nexuses/:path*', destination: '/spaces/:path*', permanent: true },
       // Funnels rename (ADR-1090): the sign-up feature is Funnels and its routes moved to /join.
       // Old links are IN THE WILD and cannot be rewritten — QR codes on posters, shared splash
       // links, and CTAs in sent emails all point at /beta/<slug> and /onboarding/beta — so all

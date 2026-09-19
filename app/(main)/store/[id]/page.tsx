@@ -9,7 +9,10 @@ import { productSchema } from '@/lib/jsonld'
 import { SITE_NAME } from '@/lib/site'
 import { BuyButton } from '../../marketplace/buy-button'
 
-export const dynamic = 'force-dynamic'
+// Public Product JSON-LD page, advertised in app/sitemap.ts. force-dynamic here would keep the
+// crawler on a full render after the (main) public chrome stops reading auth (SCAN-641). Viewer
+// state lives on BuyButton (client). ISR window matches /discover.
+export const revalidate = 3600
 
 function usd(cents: number, currency = 'usd') {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)

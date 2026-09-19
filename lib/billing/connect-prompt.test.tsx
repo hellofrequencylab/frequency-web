@@ -29,7 +29,7 @@ const SELL_PATHS: { channel: string; file: string }[] = [
   { channel: 'bookings', file: 'app/(main)/spaces/[slug]/settings/offerings/offerings-body.tsx' },
   { channel: 'donations', file: 'app/(main)/spaces/[slug]/settings/offerings/offerings-body.tsx' },
   { channel: 'orders', file: 'app/(main)/spaces/[slug]/settings/shop/storefront-tab.tsx' },
-  { channel: 'tickets', file: 'app/(main)/events/[slug]/page.tsx' },
+  { channel: 'tickets', file: 'app/(main)/events/[slug]/event-member-page.tsx' },
 ]
 
 describe('every sell path reaches the one Connect prompt (source shape)', () => {

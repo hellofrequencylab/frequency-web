@@ -58,7 +58,6 @@ import { FEATURE_GATES, meetsGate } from './gates'
 import {
   ADDON_ENTITLEMENT_KEYS,
   BUSINESS_DEPTH_ENTITLEMENT_KEYS,
-  COLLECTIVE_DEPTH_ENTITLEMENT_KEYS,
   INDEPENDENT_DEPTH_ENTITLEMENT_KEYS,
   SPACE_PLANS,
   SPACE_PLAN_LABEL,
@@ -170,7 +169,7 @@ describe('offerings: every sellable tier is on the page', () => {
     // comparison emphasis, and the default-open mobile column all read THIS flag, so this is the one
     // place the crown is decided.
     expect(memberOfferings(input).filter((o) => o.featured).map((o) => o.id)).toEqual(['crew'])
-    expect(spaceOfferings(input).filter((o) => o.featured).map((o) => o.id)).toEqual(['collective'])
+    expect(spaceOfferings(input).filter((o) => o.featured).map((o) => o.id)).toEqual(['business'])
   })
 
   it('applies the operator-set trial to the paid Space plans only', () => {
@@ -184,7 +183,7 @@ describe('offerings: every sellable tier is on the page', () => {
 
   it('yearly is the operator-set two-months-free deal, computed from the config', () => {
     const monthsFree = PRICING_DEFAULTS.annual_discount.months_free
-    for (const plan of ['business', 'collective', 'nonprofit', 'independent'] as const) {
+    for (const plan of ['business', 'nonprofit', 'independent'] as const) {
       const p = PRICING_DEFAULTS.plan[plan]
       expect(p.annual_cents).toBe(p.monthly_cents * (12 - monthsFree))
     }
@@ -203,20 +202,17 @@ describe('offerings: every sellable tier is on the page', () => {
 describe('beta pricing: the crossed-out anchor idiom (ADR-463)', () => {
   const open = { ...input, betaActive: true }
   const closed = { ...input, betaActive: false }
-  /** The two plans the config gives a beta anchor. Derived, so a third one joining them is not missed. */
-  const anchored = (['business', 'collective'] as const).filter(
+  /** Plans with a beta anchor (list_cents > monthly_cents). LIVE-228: none — Business is flat $49. */
+  const anchored = (['business', 'nonprofit'] as const).filter(
     (p) => (PRICING_DEFAULTS.plan[p].list_cents ?? 0) > PRICING_DEFAULTS.plan[p].monthly_cents,
   )
 
-  it('window OPEN: shows COLLECTIVE at its beta rate under a struck list price (ADR-1067)', () => {
+  it('window OPEN: no advertised plan carries a struck anchor (LIVE-228 flat pricing)', () => {
     const byId = Object.fromEntries(spaceOfferings(open).map((o) => [o.id, o]))
-    // Derived from the config, not hand-listed, so a second anchored plan appearing fails HERE.
-    expect(anchored).toEqual(['collective'])
-    for (const plan of anchored) {
-      const price = PRICING_DEFAULTS.plan[plan]
-      expect(byId[plan]!.monthly, plan).toBe(`${formatCents(price.monthly_cents)}/mo`)
-      expect(byId[plan]!.listAnchor, plan).toBe(formatCents(price.list_cents!))
-      expect(byId[plan]!.betaNote, plan).toBe(BETA_RATE_NOTE)
+    expect(anchored).toEqual([])
+    for (const plan of ADVERTISED_SPACE_PLANS) {
+      expect(byId[plan]!.listAnchor, plan).toBeNull()
+      expect(byId[plan]!.betaNote, plan).toBeNull()
     }
   })
 
@@ -271,13 +267,13 @@ describe('beta pricing: the crossed-out anchor idiom (ADR-463)', () => {
       ...open,
       values: {
         ...PRICING_DEFAULTS,
-        plan: { ...PRICING_DEFAULTS.plan, business: { monthly_cents: 2900, annual_cents: 29000 } },
+        plan: { ...PRICING_DEFAULTS.plan, business: { monthly_cents: 4900, annual_cents: 49000 } },
       },
     }
     const business = spaceOfferings(flat).find((o) => o.id === 'business')!
     expect(business.listAnchor).toBeNull()
     expect(business.betaNote).toBeNull()
-    expect(business.monthly).toBe(`${formatCents(2900)}/mo`)
+    expect(business.monthly).toBe(`${formatCents(4900)}/mo`)
   })
 })
 
@@ -303,13 +299,11 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     expect(cellsByColumn(grid, 'crm')).toEqual({
       free: 'Not included',
       business: 'Included',
-      collective: 'Included',
       nonprofit: 'Included',
     })
     expect(cellsByColumn(grid, 'team')).toEqual({
       free: 'Not included',
-      business: 'Not included',
-      collective: 'Included',
+      business: 'Included',
       nonprofit: 'Included',
     })
     // The third separator used to be `whitelabel`, the key that split Independent from Collective.
@@ -318,7 +312,6 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     expect(cellsByColumn(grid, 'space_full_website')).toEqual({
       free: 'Not included',
       business: 'Included',
-      collective: 'Included',
       nonprofit: 'Included',
     })
     expect(grid.groups.flatMap((g) => g.rows).map((r) => r.key)).not.toContain('whitelabel')
@@ -356,11 +349,8 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     const advertisedKeys = new Set(grid.columns.flatMap((c) => planEntitlementKeys(c.tier as SpacePlan)))
     const missing = [...advertisedKeys].filter((k) => !rowKeys.has(k))
     expect(missing, 'every key an advertised tier grants needs a grid row').toEqual([])
-    // NON-VACUITY: the set is real and is exactly Business + Collective depth, not an empty sweep.
-    expect([...advertisedKeys].sort()).toEqual([...new Set([
-      ...BUSINESS_DEPTH_ENTITLEMENT_KEYS,
-      ...COLLECTIVE_DEPTH_ENTITLEMENT_KEYS,
-    ])].sort())
+    // NON-VACUITY: the set is real and is exactly Business depth (LIVE-228 merged Collective in).
+    expect([...advertisedKeys].sort()).toEqual([...new Set([...BUSINESS_DEPTH_ENTITLEMENT_KEYS])].sort())
     // And the one key the advertised ladder does NOT grant is the one that lost its row.
     expect(advertisedKeys.has('whitelabel')).toBe(false)
     expect(INDEPENDENT_DEPTH_ENTITLEMENT_KEYS).toContain('whitelabel')
@@ -395,7 +385,7 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     // ("the rate drops as your plan rises"), and every paid plan stands on the one paid rung (LIVE-230).
     expect(net.free).toBeGreaterThan(net.paid)
     expect(net.paid).toBeGreaterThan(net.nonprofit)
-    for (const plan of ['business', 'collective', 'independent'] as const) {
+    for (const plan of ['business', 'independent'] as const) {
       expect(networkTakeRateBpsForPlan(plan, networkTakeRateFromStored(PRICING_DEFAULTS.take_rate)), plan).toBe(net.paid)
     }
     // The paid rung is the number the whole funnel steers to, so it is stated once, here.
@@ -410,7 +400,7 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     expect(contacts.nonprofit).toBe('Unlimited contacts')
     const sends = cellsByColumn(grid, 'space_email')
     expect(sends.free).toBe('Up to 300 sends/mo')
-    expect(sends.collective).toBe('Up to 25,000 sends/mo')
+    expect(sends.business).toBe('Up to 25,000 sends/mo')
   })
 })
 
@@ -443,10 +433,10 @@ describe('seats and the AI add-on', () => {
     }
   })
 
-  it('does not publish a per-seat price while the seat item is a placeholder', () => {
+  it('publishes the catalog per-seat price once the seat item is live (LIVE-229)', () => {
     const seats = planExtras(input).find((e) => e.key === 'seats')!
-    expect(seats.price).toBe('Owner-priced today')
-    expect(seats.availability).toContain('Collective')
+    expect(seats.price).toBe(`${formatCents(input.catalog.operator_seat.month.foundingCents)}/seat/mo`)
+    expect(seats.availability).toContain('Business')
   })
 
   it('states both extras with a price line and a derived availability line', () => {
@@ -532,25 +522,20 @@ describe('derivation guard: changing a depth key set changes the grid', () => {
   afterEach(() => vi.doUnmock('./plans'))
 
   it('flips a cell when a key moves into a lower tier depth set', async () => {
-    // This used to fold `whitelabel` down into Business. That key's row left the grid with the
-    // Independent tier (LIVE-227), and a derivation guard whose row does not exist proves nothing, so
-    // it now folds `team` down instead: a Collective-depth key, one rung above Business, which is the
-    // same shape of move on a row the page still renders.
     const actual = await vi.importActual<typeof import('./plans')>('./plans')
     vi.doMock('./plans', () => ({
       ...actual,
-      // Team roles folded down into the Business depth: nothing else changes.
+      // Team folded down into free for this derivation proof.
       planEntitlementKeys: (plan: SpacePlan) =>
-        plan === 'business' ? [...actual.BUSINESS_DEPTH_ENTITLEMENT_KEYS, 'team'] : actual.planEntitlementKeys(plan),
+        plan === 'free' ? [...actual.planEntitlementKeys('free'), 'team'] : actual.planEntitlementKeys(plan),
     }))
     const mod = await import('./pricing-grid')
     const moved = mod.spaceFeatureGrid(input)
     const cells = Object.fromEntries(
       moved.columns.map((c, i) => [c.id, row(moved, 'team').cells[i]!.text]),
     )
-    expect(cells.business).toBe('Included')
-    // And the unmocked grid still reads the real answer, so this is the key set talking, not a literal.
-    expect(cellsByColumn(spaceFeatureGrid(input), 'team').business).toBe('Not included')
+    expect(cells.free).toBe('Included')
+    expect(cellsByColumn(spaceFeatureGrid(input), 'team').free).toBe('Not included')
   })
 
   it('flips the AI add-on row to Included when its keys join a tier base', async () => {
@@ -558,15 +543,15 @@ describe('derivation guard: changing a depth key set changes the grid', () => {
     vi.doMock('./plans', () => ({
       ...actual,
       planEntitlementKeys: (plan: SpacePlan) =>
-        plan === 'collective'
-          ? [...actual.COLLECTIVE_DEPTH_ENTITLEMENT_KEYS, ...actual.ADDON_ENTITLEMENT_KEYS.ai]
+        plan === 'business'
+          ? [...actual.BUSINESS_DEPTH_ENTITLEMENT_KEYS, ...actual.ADDON_ENTITLEMENT_KEYS.ai]
           : actual.planEntitlementKeys(plan),
     }))
     const mod = await import('./pricing-grid')
     const moved = mod.spaceFeatureGrid(input)
     const cells = Object.fromEntries(moved.columns.map((c, i) => [c.id, row(moved, 'addon_ai').cells[i]!.text]))
-    expect(cells.collective).toBe('Included')
-    expect(cells.business).toContain('Add-on')
+    expect(cells.business).toBe('Included')
+    expect(cells.nonprofit).toContain('Add-on')
   })
 })
 
@@ -576,17 +561,16 @@ describe('derivation guard: changing a depth key set changes the grid', () => {
 // a feature the product would then refuse. The page resolves the overrides and threads them in.
 
 describe('operator gate overrides move the comparison cell', () => {
-  it('raising space_crm to Collective drops the Business cell to Not included', () => {
-    // The code map gates space_crm at 'business', so the Business column reads Included today.
+  it('raising space_storefront to nonprofit drops the Business cell to Not included', () => {
     expect(cellsByColumn(spaceFeatureGrid(input), 'space_storefront').free).toBe('Included')
     const raised = spaceFeatureGrid({
       ...input,
-      gateOverrides: { space_storefront: { minEntitlement: 'collective' } },
+      gateOverrides: { space_storefront: { minEntitlement: 'nonprofit' } },
     })
     const cells = cellsByColumn(raised, 'space_storefront')
     expect(cells.free).toBe('Not included')
     expect(cells.business).toBe('Not included')
-    expect(cells.collective).toBe('Included')
+    expect(cells.nonprofit).toBe('Included')
     // The unmocked grid still reads the code answer, so this is the override talking.
     expect(cellsByColumn(spaceFeatureGrid(input), 'space_storefront').business).toBe('Included')
   })

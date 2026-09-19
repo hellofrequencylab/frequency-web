@@ -10,7 +10,7 @@ import { sourceWithoutComments } from '@/test/source-shape'
 // the house archetype (components/spaces/staff-preview-banner.test.ts): unwiring this is silent —
 // the page still renders, the ask just disappears.
 
-const page = readFileSync('app/(main)/events/[slug]/page.tsx', 'utf8')
+const page = readFileSync('app/(main)/events/[slug]/event-member-page.tsx', 'utf8')
 // Comment- and import-free (LIVE-167): the call is the needle, never the import line.
 const cta = sourceWithoutComments('app/(main)/events/[slug]/host-request-cta.tsx', { imports: true })
 const actions = readFileSync('app/(main)/events/host-transfer-actions.ts', 'utf8')

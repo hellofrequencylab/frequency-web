@@ -31,9 +31,9 @@ export interface EntryPointInput {
   title: string
   /** Site-relative destination path (a /start lead flow, circle/event, or curated page). */
   destination: string
-  headline: string
-  subhead: string
-  footer: string
+  headline?: string
+  subhead?: string
+  footer?: string
   /** Optional campaign to file this entry point under (admin builder, Phase 2). */
   campaignId?: string
 }
@@ -64,7 +64,8 @@ function clean(input: EntryPointInput): CleanEntry | string {
   if (!isEntryTemplateId(input.templateId)) return 'Pick a template.'
   if (!isValidEntryDestination(input.destination)) return 'Pick where it should point.'
   const template = getEntryTemplate(input.templateId)
-  const slot = (v: string, fallback: string) => (v.trim() ? v.trim().slice(0, 160) : fallback)
+  const slot = (v: string | undefined, fallback: string) =>
+    (v && v.trim() ? v.trim().slice(0, 160) : fallback)
   const style = STYLE_PRESETS.find((p) => p.key === template.stylePreset)?.style ?? DEFAULT_STYLE
   return {
     title,

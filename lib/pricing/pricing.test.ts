@@ -35,14 +35,14 @@ import { formatCents, priceRow, memberTierRows, spacePlanRows } from './display'
 import { catalogConfigByKey, defaultCatalogConfig } from './catalog-config'
 
 describe('space tiers (Community Collective ladder · ADR-811)', () => {
-  it('SPACE_PLANS is free < business < collective ~ nonprofit ~ independent (capability order)', () => {
-    expect([...SPACE_PLANS]).toEqual(['free', 'business', 'collective', 'nonprofit', 'independent'])
+  it('SPACE_PLANS is free < business ~ nonprofit ~ independent (LIVE-228)', () => {
+    expect([...SPACE_PLANS]).toEqual(['free', 'business', 'nonprofit', 'independent'])
   })
 
   it('narrows unknown / null labels to free, and OLD labels to their new tier (transition shim)', () => {
     // The first-class tiers (+ free) pass through unchanged.
     expect(asSpacePlan('business')).toBe('business')
-    expect(asSpacePlan('collective')).toBe('collective')
+    expect(asSpacePlan('collective')).toBe('business')
     expect(asSpacePlan('nonprofit')).toBe('nonprofit')
     expect(asSpacePlan('independent')).toBe('independent')
     expect(asSpacePlan('free')).toBe('free')
@@ -66,21 +66,24 @@ describe('space tiers (Community Collective ladder · ADR-811)', () => {
     for (const plan of SPACE_PLANS) expect(planEntitlementKeys(plan)).not.toContain('crm.autonomy')
   })
 
-  it('Business = run-your-practice depth; Collective/Non Profit add automation+team; Independent adds branding (ADR-811)', () => {
-    const businessDepth = ['crm', 'crm.playbooks', 'email', 'reporting', 'space_full_website']
+  it('Business = former Collective depth; Non Profit matches; Independent adds branding (LIVE-228)', () => {
+    const businessDepth = [
+      'crm',
+      'crm.playbooks',
+      'email',
+      'reporting',
+      'space_full_website',
+      'automation',
+      'multi_pipeline',
+      'team',
+      'program',
+    ]
     expect([...planEntitlementKeys('business')].sort()).toEqual([...businessDepth].sort())
-    // Collective (and Non Profit) = Business PLUS automation + multi_pipeline + team + program (ADR-865).
-    const collectiveDepth = [...businessDepth, 'automation', 'multi_pipeline', 'team', 'program']
-    expect([...planEntitlementKeys('collective')].sort()).toEqual([...collectiveDepth].sort())
-    expect(planEntitlementKeys('nonprofit')).toEqual(planEntitlementKeys('collective'))
-    // Independent = Collective depth PLUS branding (whitelabel), un-folded from Business.
-    expect([...planEntitlementKeys('independent')].sort()).toEqual([...collectiveDepth, 'whitelabel'].sort())
-    // Fences: white-label is NOT in Business/Collective; team is a Collective+ key, not Business.
+    expect([...planEntitlementKeys('nonprofit')].sort()).toEqual([...businessDepth].sort())
+    expect([...planEntitlementKeys('independent')].sort()).toEqual([...businessDepth, 'whitelabel'].sort())
     expect(planEntitlements('business').whitelabel).toBeUndefined()
-    expect(planEntitlements('business').team).toBeUndefined()
-    expect(planEntitlements('collective').team).toBe(true)
+    expect(planEntitlements('business').team).toBe(true)
     expect(planEntitlements('independent').whitelabel).toBe(true)
-    // No tier bundles the AI resonance keys (the metered add-on).
     for (const plan of SPACE_PLANS) {
       expect(planEntitlements(plan)['crm.resonance']).toBeUndefined()
       expect(planEntitlements(plan)['crm.resonance_ai']).toBeUndefined()
@@ -99,7 +102,7 @@ describe('space tiers (Community Collective ladder · ADR-811)', () => {
 
   it('planKeysWithAddons layers the AI add-on keys onto a tier base (the set-to-target source)', () => {
     // Collective + AI: the Collective depth PLUS the resonance keys.
-    const collAi = planKeysWithAddons('collective', ['ai'])
+    const collAi = planKeysWithAddons('business', ['ai'])
     expect(collAi).toContain('email')
     expect(collAi).toContain('team')
     expect(collAi).toContain('crm.resonance')
@@ -330,18 +333,12 @@ describe('seeded defaults are sane (mirror the migration)', () => {
     expect(PRICING_DEFAULTS.trial.days).toBe(14)
   })
 
-  it('plan defaults reflect the Community Collective launch numbers (ADR-811)', () => {
-    // The ANCHOR IDIOM (ADR-463): monthly_cents is what is CHARGED, list_cents is the crossed-out
-    // anchor above it. COLLECTIVE ALONE ships a beta rate (ADR-1067) — one unlisted offer, granted by
-    // hand. Business, Non Profit and Independent are all plain list pricing.
+  it('plan defaults reflect the Community Collective launch numbers (ADR-811, LIVE-228)', () => {
+    // LIVE-228: Business is $49 flat at one advertised tier; no separate Collective plan row.
     const plan = PRICING_DEFAULTS.plan
-    expect(plan.business.monthly_cents).toBe(2900) // $29, charged, no beta rate
-    expect(plan.business.annual_cents).toBe(29000) // $290, two months free
-    // NO anchor at all, rather than an anchor equal to the charge: the model drops list_cents when
-    // there is nothing to strike, which is what stops the card rendering "$29" crossed out over "$29".
+    expect(plan.business.monthly_cents).toBe(4900) // $49, charged, no beta rate
+    expect(plan.business.annual_cents).toBe(49000) // $490, two months free
     expect(plan.business.list_cents).toBeUndefined()
-    expect(plan.collective.monthly_cents).toBe(4900) // $49 beta, charged
-    expect(plan.collective.list_cents).toBe(7900) // $79 list
     expect(plan.nonprofit.monthly_cents).toBe(3900) // $39 flat, verified 501c3, no beta rate
     expect(plan.nonprofit.list_cents).toBeUndefined()
     expect(plan.independent.monthly_cents).toBe(24900) // ~$249 white-label (standalone), no beta rate
@@ -349,13 +346,9 @@ describe('seeded defaults are sane (mirror the migration)', () => {
   })
 
   it('the settings plan prices MATCH the catalog amounts the checkout charges (no two-price drift)', () => {
-    // The page reads the settings layer and the checkout resolves the catalog layer. If these two ever
-    // disagree, /pricing promises a price the checkout will not honor. Business/Collective carry a beta
-    // rate in both; Non Profit/Independent are flat in both.
     const cat = catalogConfigByKey(defaultCatalogConfig())
     const pairs = [
       [PRICING_DEFAULTS.plan.business, cat.business_base],
-      [PRICING_DEFAULTS.plan.collective, cat.collective_base],
       [PRICING_DEFAULTS.plan.nonprofit, cat.nonprofit_seat],
       [PRICING_DEFAULTS.plan.independent, cat.independent_base],
     ] as const
@@ -378,11 +371,11 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     const row = priceRow('business', 'Business', PRICING_DEFAULTS.plan.business)
     expect(row.key).toBe('business')
     expect(row.label).toBe('Business')
-    expect(row.monthly).toBe('$29')
-    expect(row.annual).toBe('$290')
+    expect(row.monthly).toBe('$49')
+    expect(row.annual).toBe('$490')
     expect(row.list).toBeNull() // no strike: there is no beta rate for it to sit under
-    expect(row.monthlyCents).toBe(2900)
-    expect(row.annualCents).toBe(29000)
+    expect(row.monthlyCents).toBe(4900)
+    expect(row.annualCents).toBe(49000)
   })
 
   it('memberTierRows is Crew alone, from the operator values, with no strike (ADR-878)', () => {
@@ -419,14 +412,15 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     // hand rather than published, because the standalone white-label site it is sold on is not
     // finished. It has no display row for exactly that reason, and lib/pricing/display.ts
     // ADVERTISED_SPACE_PLANS is the one list this and every other public surface derives from.
-    expect(rows.map((r) => r.key)).toEqual(['business', 'collective', 'nonprofit'])
-    expect(rows.map((r) => r.label)).toEqual(['Business', 'Collective', 'Non Profit'])
+    expect(rows.map((r) => r.key)).toEqual(['business', 'nonprofit'])
+    expect(rows.map((r) => r.label)).toEqual(['Business', 'Non Profit'])
     expect(rows.some((r) => r.key === 'independent')).toBe(false)
+    expect(rows.some((r) => r.key === 'collective')).toBe(false)
     // every advertised plan carries an annual line (two months free)
-    expect(rows.find((r) => r.key === 'business')?.annual).toBe('$290')
+    expect(rows.find((r) => r.key === 'business')?.annual).toBe('$490')
     expect(rows.find((r) => r.key === 'nonprofit')?.annual).toBe('$390')
-    // an anchor reads only where the config carries one
-    expect(rows.find((r) => r.key === 'collective')?.list).toBe('$79')
+    // Business is flat $49: no list anchor
+    expect(rows.find((r) => r.key === 'business')?.list).toBeNull()
     expect(rows.find((r) => r.key === 'nonprofit')?.list).toBeNull()
     // NON-VACUITY: the tier the row set omits is still fully priced in the config it derives from, so
     // this is a display decision and not a quietly deleted plan.

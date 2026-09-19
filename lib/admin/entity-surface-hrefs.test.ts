@@ -42,8 +42,8 @@ describe('hrefForEntitySurface', () => {
     // two deep-link to the hub; hub + nexus keep their standalone /crm pages.
     expect(hrefForEntitySurface('event.crm', { kind: 'event', id: 'summer-social' })).toBe('/events/summer-social/manage')
     expect(hrefForEntitySurface('circle.crm', { kind: 'circle', id: 'sunrise-sit' })).toBe('/circles/sunrise-sit/manage')
-    expect(hrefForEntitySurface('hub.crm', { kind: 'hub', id: 'north' })).toBe('/hubs/north/crm')
-    expect(hrefForEntitySurface('nexus.crm', { kind: 'nexus', id: 'core' })).toBe('/nexuses/core/crm')
+    expect(hrefForEntitySurface('hub.crm', { kind: 'hub', id: 'north' })).toBe('/spaces/north/crm')
+    expect(hrefForEntitySurface('nexus.crm', { kind: 'nexus', id: 'core' })).toBe('/spaces/core/crm')
   })
 
   it('regression: a slug-corrected scope yields the slug href (a raw DB-id scope would 404)', () => {
@@ -77,8 +77,8 @@ describe('hrefForEntitySurface', () => {
   it('resolves event/hub/nexus core-entity surfaces to their owner manage console (ADR-515 bank seam)', () => {
     // These consoles are full owner workspaces, so a `placement: 'bank'` surface resolves its bank href here.
     expect(hrefForEntitySurface('event.people', { kind: 'event', id: 'x' })).toBe('/events/x/manage')
-    expect(hrefForEntitySurface('hub.insights', { kind: 'hub', id: 'north' })).toBe('/hubs/north/manage')
-    expect(hrefForEntitySurface('nexus.people', { kind: 'nexus', id: 'core' })).toBe('/nexuses/core/manage')
+    expect(hrefForEntitySurface('hub.insights', { kind: 'hub', id: 'north' })).toBe('/spaces/north/manage')
+    expect(hrefForEntitySurface('nexus.people', { kind: 'nexus', id: 'core' })).toBe('/spaces/core/manage')
   })
 
   it('fail-safe: an unknown id, a thin-console entity, or no slug resolves to null (never a dead row)', () => {

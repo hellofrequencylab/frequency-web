@@ -95,8 +95,8 @@ export default async function DispatchDetailPage({ params }: Props) {
   const audience = audienceRes as { name: string; slug: string } | null
   const audienceHref = audience
     ? dispatch.audience_scope === 'circle' ? `/circles/${audience.slug}`
-      : dispatch.audience_scope === 'hub' ? `/hubs/${audience.slug}`
-      : dispatch.audience_scope === 'nexus' ? `/nexuses/${audience.slug}`
+      : dispatch.audience_scope === 'hub' ? `/spaces/${audience.slug}`
+      : dispatch.audience_scope === 'nexus' ? `/spaces/${audience.slug}`
       : null
     : null
   const likeCount  = likesRes.count ?? 0

@@ -62,10 +62,8 @@ vi.mock('./fees', () => ({
   resolvedNetworkRate: () =>
     Promise.resolve({
       free: 1000,
-      business: 500,
-      collective: 300,
+      paid: 500,
       nonprofit: 0,
-      independent: 0,
       memberFree: 1000,
       member: 800,
     }),

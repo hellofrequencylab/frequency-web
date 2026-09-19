@@ -34,9 +34,9 @@ export interface SpaceModeChoice {
 }
 
 /** Derive a slug suggestion from a name: lowercase, spaces -> hyphens, drop unsafe chars.
- *  The shared rule (lib/utils.ts slugify) with the same 40 cap + re-strip the server applies when it
- *  provisions the Space (lib/spaces/provision.ts), so what the form suggests is what the server
- *  would derive; it used to carry its own copy that folded no accents and could end in "-". */
+ *  The shared rule (lib/utils.ts slugify) with a 40 cap and a trailing-hyphen re-strip. The server
+ *  accepts this handle via isSafeSlug + uniqueness (lib/spaces/provision.ts); it does not re-derive
+ *  from the name. The form used to carry its own copy that folded no accents and could end in "-". */
 function slugify(name: string): string {
   return slugifyShared(name).slice(0, 40).replace(/-+$/g, '')
 }

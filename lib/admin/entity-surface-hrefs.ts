@@ -95,11 +95,11 @@ export function hrefForEntitySurface(appId: string, scope: EntitySurfaceScope | 
     // than on the hub's Home, which is what the event.* prefix fallback below would pick.
     if (appId === 'circle.settings') return `/circles/${entitySlug}/manage?section=settings`
     if (appId === 'event.settings') return `/events/${entitySlug}/manage?section=settings`
-    if (appId === 'hub.crm') return `/hubs/${entitySlug}/crm`
-    if (appId === 'nexus.crm') return `/nexuses/${entitySlug}/crm`
+    if (appId === 'hub.crm') return `/spaces/${entitySlug}/crm`
+    if (appId === 'nexus.crm') return `/spaces/${entitySlug}/crm`
     if (appId.startsWith('event.')) return `/events/${entitySlug}/manage`
-    if (appId.startsWith('hub.')) return `/hubs/${entitySlug}/manage`
-    if (appId.startsWith('nexus.')) return `/nexuses/${entitySlug}/manage`
+    if (appId.startsWith('hub.')) return `/spaces/${entitySlug}/manage`
+    if (appId.startsWith('nexus.')) return `/spaces/${entitySlug}/manage`
   }
   return null
 }

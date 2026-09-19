@@ -4,7 +4,7 @@ description: A Circle is a small local group built around one thing you practice
 category: getting-started
 order: 5
 published: 2026-06-23
-updated: 2026-08-12
+updated: 2026-09-19
 audience: member
 featureKeys: [circles, community]
 status: published
@@ -12,7 +12,7 @@ status: published
 
 A **Circle** is a small group of people near you, built around one thing you
 practice, that meets on a standing schedule. It is the basic unit of Frequency:
-the people you actually show up for. Everything else (Channels, Hubs, the Quest)
+the people you actually show up for. Everything else (Channels, Spaces, the Quest)
 exists to get you into a Circle and keep you coming back.
 
 ## What makes it a Circle and not just a group chat?
@@ -39,11 +39,10 @@ actually know each other.
 A Circle is one rung on a simple ladder:
 
 - A **Circle** is your small local group.
-- A **Hub** is a few Circles in the same area, sharing bigger gatherings.
-- A **Nexus** is a whole local network of Hubs.
+- Nearby Circles cluster inside a **Space** that contains other Spaces (Frequency used to call that a Hub, and a cluster of those a Nexus).
+- You live in the Circle. The parent Space is just how Circles find each other as a place grows.
 
-You live in the Circle. The rest is just how Circles find each other as a place
-grows. None of it is appointed from the top; Circles grow new Circles.
+None of it is appointed from the top. Circles grow new Circles. Staff tools still say Hub and Nexus. On the member site they are Spaces. See [Hubs](/help/groups/hubs).
 
 ## Do Circles meet in person or online?
 

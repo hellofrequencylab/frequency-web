@@ -34,8 +34,8 @@ export const FEATURE_KEYS: FeatureKey[] = [
   // ── Community ───────────────────────────────────────────────────────────────
   { key: 'circles', label: 'Circles', area: 'community', routes: ['/circles'], core: true },
   { key: 'memberships', label: 'Joining & leaving circles', area: 'community', routes: ['/circles'], core: true },
-  { key: 'hubs', label: 'Hubs', area: 'community', routes: ['/hubs'], core: true },
-  { key: 'nexuses', label: 'Nexuses', area: 'community', routes: ['/nexuses'], core: false },
+  { key: 'hubs', label: 'Hubs', area: 'community', routes: ['/spaces'], core: true },
+  { key: 'nexuses', label: 'Nexuses', area: 'community', routes: ['/spaces'], core: false },
   { key: 'channels', label: 'Channels', area: 'community', routes: ['/channels'], core: true },
   { key: 'community', label: 'Community basics', area: 'community', routes: ['/feed'], core: true },
 

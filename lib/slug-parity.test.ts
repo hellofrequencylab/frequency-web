@@ -151,14 +151,19 @@ describe('3. the copies that could not be imported here delegate instead (source
     expect(src).not.toContain(RULE_BODY)
   })
 
-  it('the create Space form suggests exactly what lib/spaces/provision.ts will derive', () => {
+  it('the create Space form suggests the handle createSpace will accept', () => {
+    // HYG-080 retired uniqueSlugFrom with the second door. The remaining road does not re-derive
+    // from the name: the form suggests, the server lowercases and checks isSafeSlug + uniqueness.
     const form = sourceWithoutComments('app/(main)/spaces/new/create-space-form.tsx', { imports: true })
     expect(form).toMatch(/\bslugifyShared\(/)
     expect(form).toContain("return slugifyShared(name).slice(0, 40).replace(/-+$/g, '')")
     expect(form).not.toContain(RULE_BODY)
-    // The server side of the same derivation, for the reader: same rule, same cap, same re-strip.
-    const provision = read('lib/spaces/provision.ts')
-    expect(provision).toContain("slugify(name).slice(0, 40).replace(/^-+|-+$/g, '')")
+    const provision = sourceWithoutComments('lib/spaces/provision.ts', { imports: true })
+    expect(provision).toContain("const slug = (input.slug ?? '').trim().toLowerCase()")
+    expect(provision).toContain('if (!isSafeSlug(slug))')
+    expect(provision).not.toContain(RULE_BODY)
+    expect(provision).not.toContain('uniqueSlugFrom')
+    expect(provision).not.toContain('slugify(name)')
   })
 
   it('lib/importer/map.ts and lib/spaces/profile-pages.ts no longer carry the body', () => {

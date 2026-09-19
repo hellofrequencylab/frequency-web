@@ -1,7 +1,7 @@
 // "My Entry Points" — every member's outreach portal (ADR-126, docs/ENTRY-POINTS.md).
-// The simple, no-blank-canvas builder: pick a template, fill a few slots, and out comes
-// a short link + branded QR + a print-ready flyer (vector SVG). Reuses the QR engine +
-// the owner-credit-on-signup pipeline. Dashboard (no-rail) Focus surface.
+// The simple, no-blank-canvas builder: pick a template, name it, and out comes
+// a short link + branded QR. Reuses the QR engine + the owner-credit-on-signup
+// pipeline. Dashboard (no-rail) Focus surface. Flyer builder deleted (LIVE-216).
 //
 // 🔴 FREE FOR ANY SIGNED-IN MEMBER (LIVE-221). This page used to answer a free member
 // with a "Entry points are a Crew feature" upsell instead of the builder. Bringing
@@ -51,7 +51,6 @@ export default async function EntryPointsPage() {
     title: e.title,
     destination: e.destination,
     templateId: e.templateId,
-    flyer: e.flyer,
     scans: e.scans,
     qrSvg: renderStyledQrSvg(shortLinkUrl(e.slug), e.style, 200),
   }))
@@ -62,7 +61,7 @@ export default async function EntryPointsPage() {
     <DashboardTemplate
       eyebrow="Entry points"
       title="Bring people in"
-      description="Pick a template, fill a few details, and get a branded flyer with your QR code. Download the vector or PNG. Every signup it brings in credits you."
+      description="Pick a template, name it, and get a branded QR code plus a short link. Download the PNG or SVG. Every signup it brings in credits you."
       stats={
         <>
           <StatCard label="Entry points" value={entries.length} icon={Megaphone} />

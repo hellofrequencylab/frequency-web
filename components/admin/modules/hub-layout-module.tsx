@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { LayoutGrid, ChevronRight } from 'lucide-react'
 import { moduleById } from '@/lib/admin/modules/registry'
-import { getHubAdminData } from '@/app/(main)/hubs/admin-actions'
+import { getHubAdminData } from '@/lib/hierarchy/hub-admin'
 
 // In-place "Layout" module (ADR-515 Phase 5, the 'layout' spine cell for hubs). Every rail carries a
 // layout chooser (the owner directive), but the hub detail page is HAND-BUILT (fixed sections: identity →
@@ -61,7 +61,7 @@ export function HubLayoutModule() {
       </header>
 
       <Link
-        href={`/hubs/${data.slug}/manage`}
+        href={`/spaces/${data.slug}/manage`}
         className="flex items-center gap-3 rounded-control border border-border bg-surface px-4 py-3 transition-colors hover:border-border-strong hover:bg-surface-elevated"
       >
         <span className="min-w-0 flex-1">
