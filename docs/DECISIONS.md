@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1441**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
+tree as of this index: **ADR-1447**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
 
 | Theme | Start here |
 |---|---|
@@ -46205,9 +46205,9 @@ The harness can still create a bare worktree. That is not repo-observable. What 
 
 **Rows.** LIVE-306.
 
-## ADR-1442: Evening meta-scan — Spotlight ISR and the layout void (SCAN-642, SCAN-643)
+## ADR-1447: Evening meta-scan — Spotlight ISR and the layout void (SCAN-642, SCAN-643)
 
-**Status:** Accepted · 2026-09-19 · backlog `SCAN-642` · `SCAN-643` · numbered **1442** because **1441** is LIVE-306 on main · corroborated by `app/spotlight/[handle]/page.tsx`, `app/(main)/layout.tsx`, `app/discover/layout.tsx`, and production advisor reads on Frequency Community
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-642` · `SCAN-643` · numbered **1447** because **1446** is SCAN-640 is LIVE-306 on main · corroborated by `app/spotlight/[handle]/page.tsx`, `app/(main)/layout.tsx`, `app/discover/layout.tsx`, and production advisor reads on Frequency Community
 
 **Context.** The morning 2026-09-19 scan filed SCAN-636…641. Four of those rows, plus LIVE-242, landed the same day. A second pass re-tested premises against `ab1902846` rather than trusting the morning board.
 
