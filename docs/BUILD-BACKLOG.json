@@ -54,7 +54,6 @@
             "LIVE-410",
             "LIVE-186",
             "LIVE-213",
-            "LIVE-367",
             "LIVE-373",
             "LIVE-376",
             "LIVE-377"
@@ -13478,11 +13477,14 @@
     {
       "id": "LIVE-367",
       "title": "Three on-page money doors confirm a payment that nothing has settled",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "priority": "P1",
-      "source": "Found 2026-09-16 while wiring the settle for the ticket doors (LIVE-366). Named in ADR-1377 as \"the next row\" and in #2656's body; this is that row, filed rather than left in prose.",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1377, ADR-1407"
+      },
       "detail": "LIVE-366 closed this gap for the THREE TICKET DOORS and deliberately did not widen further. The same gap is still open on the other three on-page money surfaces, and it is the identical defect:\n\n  \u00b7 app/(main)/marketplace/buy-button.tsx  (commerce order)\n  \u00b7 app/(main)/people/[handle]/tip-button.tsx  (tip)\n  \u00b7 components/spaces/donations/donate-form.tsx  (Space donation)\n\n\ud83d\udd34 WHY IT MATTERS. `confirm({ redirect: 'if_required' })` keeps the buyer on the page, which means the common card path NEVER navigates -- so the session's `return_url`, carrying `session_id={CHECKOUT_SESSION_ID}` and written as the webhook's backstop, is never visited. The reconcile behind it is unreachable on the path that is now the default. Each of these three shows a confirmation panel saying a receipt is on its way while NOTHING has been asked to send one; the webhook is the only thing that can make that true, and if it is late, retried or misconfigured the buyer is left holding a promise and the seller is never told.\n\nTHE SEAM ALREADY EXISTS AND NEEDS NO NEW MECHANISM. `resolveCheckoutSession` already hands `sessionId` back beside the client secret for every creator, and `CheckoutPanel` already takes an optional `onPaid` that it AWAITS before confirming. `onPaid` was made optional precisely so these three could adopt it one at a time.\n\nWHAT EACH ONE NEEDS is its own settle action, because each has its own recorder: the commerce order, the tip and the Space donation each record differently. Follow `settleTicketAction` (app/(main)/events/[slug]/ticket-actions.ts) for the shape -- kill switch, a `cs_` check, a per-IP limiter that FAILS OPEN, and a catch that is never fatal, because the buyer has already been charged and an error after a successful charge sends them back to pay twice.\n\n\u26a0\ufe0f BEFORE WORKING IT, RE-TEST THE PREMISE on each door: confirm it still mounts `CheckoutPanel` on the elements path rather than having been converted or retired. The probe names the three by path, so a door that moves will make it fail loudly rather than quietly reporting the gap closed.",
       "verify": {
         "kind": "cmd",

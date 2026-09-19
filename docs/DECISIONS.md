@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1407**.
+tree as of this index: **ADR-1408**.
 
 | Theme | Start here |
 |---|---|
@@ -45561,9 +45561,38 @@ work. A nav rewrite in the same pass as recording this.
 member rail can still shrink later, but only by raising a row's floor or a matrix/flag gate so a
 role that cannot use it no longer sees it.
 
-## ADR-1407: The Quest is not a top-level marketing pillar (LIVE-254)
+## ADR-1407: Tips and Space gifts settle on the page, the same way tickets already do (2026-09-19)
 
-**Status:** Accepted · 2026-09-19 · **Amends** [ADR-1344](DECISIONS.md) (four header tabs) · does not amend [ADR-1403](DECISIONS.md) · numbered **1407** because **1405** is Journey reviews on main (`LIVE-392`) and **1406** is member-nav role-minimal on `cursor/member-nav-role-minimal-0700` · corroborated by `lib/nav/registry.ts`, `supabase/migrations/20270345006000_public_header_quest_under_community.sql`, `components/marketing/marketing-ui.tsx`
+**Status:** Accepted · **Extends** [ADR-1377](DECISIONS.md) · Backlog `LIVE-367`
+
+**Context.** ADR-1377 closed the on-page settle for the three ticket doors and named the rest as
+the next row. Commerce orders already settled (`settleCommerceOrderAction` on `buy-button`). Tips
+and Space gifts still mounted `CheckoutPanel` without `onPaid`, so a card that never redirected
+promised a receipt only the webhook could send.
+
+**Decision.**
+
+1. **The seam already hands `sessionId` back.** `resolveCheckoutSession` has done so since
+   LIVE-366. `startTip` and `startSpaceDonationCheckout` now pass it through. `TipResult` and
+   `DonationCheckoutResult` name the field so the TypeScript surface matches the runtime.
+2. **Each door has its own settle.** `settleTipAction` calls `recordTipFromSessionId`.
+   `settleDonationAction` calls `recordSpaceDonationFromSessionId`. Same shape as
+   `settleTicketAction`: a `cs_` check, a per-IP limiter that fails open, never fatal.
+3. **Stripe is the authority.** No session-holder gate. A gift does not require an account. The
+   recorder re-fetches the session and refuses anything that is not the right `metadata.kind` and
+   `payment_status === 'paid'`.
+
+**Rejected.** One generic `settleCheckoutAction` (each recorder is a different table and a different
+status vocabulary: donations take `abandoned`, tips take `failed`). Waiting on the webhook (that is
+the defect).
+
+**Consequences.** `LIVE-367`'s probe fails unless all three named doors pass `onPaid={` to the
+panel. Membership already settled under LIVE-369. The remaining subscription creators stay hosted
+until their own rows.
+
+## ADR-1408: The Quest is not a top-level marketing pillar (LIVE-254)
+
+**Status:** Accepted · 2026-09-19 · **Amends** [ADR-1344](DECISIONS.md) (four header tabs) · does not amend [ADR-1403](DECISIONS.md) · numbered **1408** because **1407** is on-page tip/gift settle on main (`LIVE-367`) · corroborated by `lib/nav/registry.ts`, `supabase/migrations/20270345006000_public_header_quest_under_community.sql`, `components/marketing/marketing-ui.tsx`
 
 **Context.** LIVE-254 asked to demote `/the-quest` from a top-level pillar. Re-measured 2026-09-19 against `origin/main` before changing anything:
 

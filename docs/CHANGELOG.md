@@ -24,6 +24,9 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Fixed
 
+- **A tip or a gift paid on the page is settled on the page**: the receipt no longer waits on a
+  webhook that may be late. The confirmation you see after the card goes through is already true.
+
 - **An event's cover fills the screen on a phone again**: the artwork had been shrinking to fit
   inside the header band, with a soft blur down both sides. It now runs edge to edge, and the
   **Cover focus** control in an event's header settings decides which part of it stays in frame.

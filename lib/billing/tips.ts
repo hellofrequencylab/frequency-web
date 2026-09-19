@@ -47,6 +47,9 @@ export interface TipResult {
   /** Set INSTEAD of `url` when the caller asked for an on-page card form (LIVE-359). Callers branch
    *  on which one arrived, never on which one they asked for -- see `./checkout-ui`. */
   clientSecret?: string
+  /** Rides ALONGSIDE `clientSecret` on the elements path so the control can settle without the
+   *  webhook (LIVE-367). Same field `resolveCheckoutSession` already returns. */
+  sessionId?: string
   error?: string
 }
 
