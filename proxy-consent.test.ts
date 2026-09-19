@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll } from 'vitest'
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
 
 // ── 🔴 THE OTHER HALF OF THE ORDERING ARM (OWN-061, ADR-1370) ───────────────────────────────────
 //
@@ -126,5 +126,35 @@ describe('🔴 NO REGRESSION: nothing changed for a visitor the law does not cov
       url: 'https://frequencylocal.com/p/someone?ref=0f1b2c3d-4e5f-4a6b-8c9d-0e1f2a3b4c5d',
     })
     expect(cookies.get('fq_ref')).toBe('0f1b2c3d-4e5f-4a6b-8c9d-0e1f2a3b4c5d')
+  })
+})
+
+describe('LIVE-220 · the proxy stamps a Market view and not a storefront', () => {
+  const prev = process.env.CRON_SECRET
+  const productId = '11111111-2222-3333-4444-555555555555'
+
+  beforeAll(() => {
+    process.env.CRON_SECRET = 'marketplace-entry-test-secret'
+  })
+  afterAll(() => {
+    process.env.CRON_SECRET = prev
+  })
+
+  it('writes fq_mkt on /market/<id> even when analytics consent is denied', async () => {
+    const cookies = await visit({
+      country: 'DE',
+      consent: 'denied',
+      url: `https://frequencylocal.com/market/${productId}`,
+    })
+    expect(cookies.get('fq_mkt') ?? '').not.toBe('')
+    expect(attributionWrites(cookies)).toEqual([])
+  })
+
+  it('writes nothing on /store/<id>', async () => {
+    const cookies = await visit({
+      country: 'US',
+      url: `https://frequencylocal.com/store/${productId}`,
+    })
+    expect(cookies.get('fq_mkt') ?? '').toBe('')
   })
 })
