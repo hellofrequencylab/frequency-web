@@ -188,8 +188,7 @@
             "LIVE-412",
             "LIVE-221",
             "LIVE-273",
-            "HYG-092",
-            "LIVE-397"
+            "HYG-092"
           ]
         },
         {
@@ -14271,20 +14270,21 @@
     {
       "id": "LIVE-397",
       "title": "The Journey page-config widget system is almost entirely inert",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "hygiene",
       "size": "S",
       "source": {
         "file": "docs/DECISIONS.md",
-        "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
+        "ref": "ADR-1462, ADR-1399, ADR-1400, ADR-1401"
       },
-      "detail": "`WIDGET_META` declares 13 widget ids and an author-facing editor toggles them. Exactly TWO are read by anything: `story` and `pillar-balance`, on the member page only. Dead: `social-proof` and `reward-preview` (the chips they nominally control render unconditionally), `path` (required, never consulted), all 8 active-mode ids (no renderer imports the module), widget ORDER (the page collapses the ordered array into a Set, so the editor's reorder buttons cannot move anything), and `settings` (plumbed, never read). An author sees five toggles of which one is locked and two do nothing. Either wire them or retire them; a control that does nothing is worse than an absent one.",
+      "detail": "SHIPPED ADR-1462. Premise held: social-proof and reward-preview were declared and toggleable, and no visitor surface read them. Those two ids are retired from the catalog (enrolled count and completion Gems stay header chips). DiscoveryBlocks maps enabledWidgets in stored order for story, path, and pillar-balance on the member page, the public discover page, and the marketplace sales body. Path is consulted. Active-mode ids stay in the catalog for normalizePageConfig and are still hidden from the Advanced editor (J5 cutover). settings remain unused.\n\nWHAT SHIPPED. lib/journey-page-config.ts discovery default is story / path / pillar-balance. components/journey/discovery-widgets.tsx DiscoveryBlocks is the one reader. Reorder in Advanced now moves those three blocks.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const meta=s('lib/journey-page-config.ts');const dead=['social-proof','reward-preview'];const readers=['app/(main)/journeys/[slug]/page.tsx','app/discover/journeys/[slug]/page.tsx','components/marketplace/journey-sales-body.tsx'].map(s).join('\\n');for(const id of dead){if(meta.includes(\\\\\"'\\\\\"+id+\\\\\"'\\\\\")&&!readers.includes(id))fail('widget id '+id+' is still declared and toggleable but read by no surface')}\"",
-        "note": "Measures the CONSEQUENCE: a declared toggle having no reader. Fails while a dead id is still offered to authors."
-      }
+        "cmd": "node -e 'const fs=require(\"fs\");const s=p=>fs.readFileSync(p,\"utf8\");const fail=m=>{console.error(m);process.exit(1)};const meta=s(\"lib/journey-page-config.ts\");if(/social-proof|reward-preview/.test(meta))fail(\"retired discovery chip ids are still in the catalog\");const member=s(\"app/(main)/journeys/[slug]/page.tsx\");const disco=s(\"app/discover/journeys/[slug]/page.tsx\");const body=s(\"components/marketplace/journey-sales-body.tsx\");if(!member.includes(\"DiscoveryBlocks\"))fail(\"member page does not render DiscoveryBlocks\");if(!disco.includes(\"DiscoveryBlocks\"))fail(\"discover page does not render DiscoveryBlocks\");if(!body.includes(\"enabledWidgets\"))fail(\"sales body does not read enabledWidgets\");if(!/case .path./.test(body))fail(\"sales body does not consult path\");const w=s(\"components/journey/discovery-widgets.tsx\");if(!w.includes(\"enabledWidgets\"))fail(\"DiscoveryBlocks lost enabledWidgets\");if(!/case .path./.test(w))fail(\"path is not consulted\")'",
+        "note": "Fails while a retired chip id is still offered, or while a visitor face ignores page_config order. Sales body keeps StoryBlock/PathBlock tags for LIVE-389. Written 2026-09-19."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-398",

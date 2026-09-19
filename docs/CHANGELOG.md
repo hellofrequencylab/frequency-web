@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **The blocks visitors see on a Journey follow the Advanced layout.** The story, the path, and the pillar balance are the ones you can show, hide, or reorder. That same order now shows on the Journey page, the public page, and the store listing. How many people have started, and the Gems for finishing, stay in the header.
+
 - **A cancelled gathering on a Space calendar is a small note at the bottom of that day**, not a crossed-out chip. Live events stay on the grid. Dates that are only penciled or still in planning stay off the public calendar.
 
 - **If you run a Space, Admin on its Calendar tab is the production board.** Pencil is its own lane. Planning, Production, and Cancelled stay on the board. The month grid is the date map underneath. Guest is still what visitors see.

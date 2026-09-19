@@ -140,6 +140,25 @@ describe('layout invariants', () => {
     const all = [...DEFAULT_LAYOUT.active, ...DEFAULT_LAYOUT.discovery, ...REQUIRED_WIDGETS.active, ...REQUIRED_WIDGETS.discovery]
     for (const id of all) expect(WIDGET_IDS).toContain(id)
   })
+
+  it('discovery layout is only the blocks a visitor face actually renders', () => {
+    expect([...DEFAULT_LAYOUT.discovery]).toEqual(['story', 'path', 'pillar-balance'])
+    expect(WIDGET_IDS).not.toContain('social-proof')
+    expect(WIDGET_IDS).not.toContain('reward-preview')
+  })
+
+  it('drops retired discovery chip ids from a stored config', () => {
+    const stored = [
+      { id: 'social-proof', enabled: true },
+      { id: 'reward-preview', enabled: false },
+      { id: 'story', enabled: true },
+    ] as PageWidgetConfig[]
+    const out = ids(normalizePageConfig(stored, 'discovery'))
+    expect(out).not.toContain('social-proof' as WidgetId)
+    expect(out).not.toContain('reward-preview' as WidgetId)
+    expect(out[0]).toBe('story')
+    expect(out).toContain('path')
+  })
 })
 
 describe('editorPageConfig — the Studio editor catalog (both faces)', () => {

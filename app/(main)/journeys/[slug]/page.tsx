@@ -14,7 +14,6 @@ import { getPillars, pillarsById as indexPillars } from '@/lib/pillars'
 import { accentColor, accentTint } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import { adoptPlanAction, forkPlanAction } from '../actions'
-import { enabledWidgets } from '@/lib/journey-page-config'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { getJourneyOffer, seatLine, isSoldOut, productIdsForJourneyPlan } from '@/lib/journeys/paid'
 import { BuyButton } from '../../marketplace/buy-button'
@@ -24,10 +23,8 @@ import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { ListingQna } from '@/components/marketplace/listing-qna'
 import type { ListingComment } from '@/lib/marketplace/listing-comments'
 import {
-  StoryBlock,
+  DiscoveryBlocks,
   OutcomesBlock,
-  PathBlock,
-  PillarBalanceBlock,
   InstructorBlock,
   JourneyFaq,
   JourneyStatChips,
@@ -127,10 +124,6 @@ export default async function JourneyPlanPage({
   const facts = journeyFacts(items)
   const topPillar = primaryPillar(items, byId)
   const canStart = facts.lessonCount > 0
-
-  // Which discovery widgets the author enabled (still honours page_config order/toggles for
-  // the optional blocks: story, pillar balance, social proof are opt-out-able).
-  const enabled = new Set(enabledWidgets(plan.page_config, 'discovery').map((w) => w.id))
 
   // The standardized admin rail trigger, mirroring /learn (:183) so the scoped Journey rail is reachable
   // from the detail/root page too, not only the player. journey.editSettings resolves to the author,
@@ -323,14 +316,14 @@ export default async function JourneyPlanPage({
       }
       interiorMain={
         <div className="max-w-2xl space-y-8">
-          {enabled.has('story') && <StoryBlock intro={plan.intro} />}
-          <OutcomesBlock summary={plan.summary} />
-          <div id="the-path" className="scroll-mt-6">
-            {/* `pillarsById` is deliberately NOT passed: PathBlock declares the prop and never
-                reads it. Both Journey pages were handing it over for nothing. */}
-            <PathBlock items={items} accent={accent} facts={facts} dripIntervalDays={plan.drip_interval_days} />
-          </div>
-          {enabled.has('pillar-balance') && <PillarBalanceBlock items={items} pillars={pillars} />}
+          <DiscoveryBlocks
+            plan={plan}
+            items={items}
+            pillars={pillars}
+            facts={facts}
+            accent={accent}
+            afterStory={<OutcomesBlock summary={plan.summary} />}
+          />
           <InstructorBlock author={author} />
           {reviewProductId && reviews && (
             <ProductReviews

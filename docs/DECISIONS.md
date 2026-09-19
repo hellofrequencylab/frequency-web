@@ -46513,3 +46513,21 @@ Premise re-tested 2026-09-19:
 **Consequences.** The SCAN-640 probe passes on the staged file (key or drop). Advisors stay the production proof until the owner applies the version. The Oct 10 drop is still HYG-086's work.
 
 **Rows.** SCAN-640.
+
+## ADR-1462: Discovery page_config is three live blocks (LIVE-397)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-397` · numbered **1462** (1456–1458 and 1460–1461 are claimed on open calendar and scan PRs; 1459 is SCAN-638 on this tree) · corroborated by `lib/journey-page-config.ts`, `components/journey/discovery-widgets.tsx` (`DiscoveryBlocks`)
+
+**Context.** LIVE-397, filed with the Journey sales-page waves: `WIDGET_META` offered five discovery toggles. The member page read two of them (`story`, `pillar-balance`) through a Set, so reorder did nothing. `path` was required and never consulted. `social-proof` and `reward-preview` named header chips that already render unconditionally (enrolled count, completion Gems). The public discover page and the marketplace sales body ignored `page_config` entirely. Premise re-tested 2026-09-19: the original probe still failed on `social-proof`.
+
+**Decision.**
+
+1. **Retire the two chip ids.** Enrolled count and completion Gems stay on `JourneyStatChips`. A toggle that cannot move a body block is worse than no toggle.
+2. **One stack reads `enabledWidgets` in stored order.** `DiscoveryBlocks` renders `story`, `path`, and `pillar-balance`. The member page, `/discover/journeys/[slug]`, and `JourneySalesBody` all mount it. Path is a required widget and is consulted.
+3. **Outcomes stay a sandwich, not a widget.** `afterStory` keeps "What you'll learn" next to the story without minting a fourth toggle. LIVE-393 still owns authored outcomes.
+
+**Rejected.** Wiring the chip ids as fake body blocks so the old catalog could stay. Leaving discover and the sales body on hardcoded order. Closing the eight active-mode ids in this PR (J5 already hid them from Advanced).
+
+**Consequences.** An author who hides the story or reorders pillar balance sees that on every visitor face. Stored `social-proof` / `reward-preview` rows drop on normalize. LIVE-395 (testimonials and guarantee) is still a separate authoring row.
+
+**Rows.** LIVE-397.
