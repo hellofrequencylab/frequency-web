@@ -11,6 +11,7 @@ import { listLinkableJourneys, resolveJourneyRef } from '@/lib/events/placement'
 import { canEditJourney } from '@/lib/journeys/authoring'
 import { getConnectReadyMap } from '@/lib/billing/connect'
 import { PAYOUT_SCOPE_SELF } from '@/lib/events/ticket-eligibility'
+import { defaultEventHostSpaceId } from '@/lib/events/default-host-space'
 
 // Build a prefill from a SOURCE event for the Duplicate flow: clone every field the
 // create form sets EXCEPT the date (the new copy defaults to the active day, PART 2) and
@@ -170,6 +171,7 @@ export default async function NewEventPage({
     .from('spaces')
     .select('id, name, brand_name, owner_profile_id')
     .eq('owner_profile_id', profile.id)
+    .eq('status', 'active')
   const spaceName = (s: { name: string | null; brand_name: string | null }) =>
     s.brand_name ?? s.name ?? 'Space'
   const spaceById = new Map<string, string>()
@@ -204,6 +206,7 @@ export default async function NewEventPage({
       .from('spaces')
       .select('id, name, brand_name, owner_profile_id')
       .in('id', managerSpaceIds)
+      .eq('status', 'active')
     for (const s of (managerSpaces ?? []) as {
       id: string
       name: string | null
@@ -345,13 +348,16 @@ export default async function NewEventPage({
       ? duplicateInitial.spaceId
       : undefined
 
+  // Ranked: an explicit deep link or Duplicate is a choice. When none of those fire, a host
+  // who runs exactly one real Space (LIVE-376) almost certainly means that Space — Public
+  // as the silent default is how House of Fates events landed on the root.
   const defaultGroupId = spaces.some((s) => s.id === spaceParam)
     ? spaceParam
     : duplicateSpaceId
       ? duplicateSpaceId
       : circles.some((c) => c.id === circleParam)
         ? circleParam
-        : undefined
+        : defaultEventHostSpaceId(spaces, { rootId: root })
 
   // The viewer's saved home, to DEFAULT the venue autocomplete's location bias before any
   // pin exists (local-first address search — people almost always post events near home).

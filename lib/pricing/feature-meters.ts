@@ -128,7 +128,7 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   space_collaborators: { free: 1, business: 3, collective: null },
   // Membership tiers a Space may define. Free runs one tier (enough to sell the first membership),
   // Business runs a small ladder, Collective is unlimited (multi-tier pricing is the Collective offer).
-  // 🔴 FREE WAS ZERO WHILE MEMBERSHIPS WERE A WALL (ADR-914). LIVE-410 / ADR-1413 moved the
+  // 🔴 FREE WAS ZERO WHILE MEMBERSHIPS WERE A WALL (ADR-914). LIVE-410 / ADR-1414 moved the
   // `space_memberships` gate to the free floor (ADR-1403 Q3: host free until you charge). A zero
   // here would have been the wall wearing a meter's clothes, the exact LIVE-225 pattern. The gate
   // key (`space_memberships`) and this meter key still differ by name; the floor has to agree with

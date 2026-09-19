@@ -262,7 +262,7 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     ),
   },
   // 🔴 `space_memberships` and `space_membership_tickets` LADDERS USED TO SIT HERE and no longer do
-  // (LIVE-410 / ADR-1413). A ladder answers "which tier UNLOCKS this", and both now sit on the free
+  // (LIVE-410 / ADR-1414). A ladder answers "which tier UNLOCKS this", and both now sit on the free
   // floor the way the storefront does: selling a membership, and including events in it, is open on
   // every plan. Checkout still refuses when Connect is not payout-ready. An operator override that
   // raises either gate can still name the wall through featureWallLabel; there is no unlock rung to

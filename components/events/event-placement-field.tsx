@@ -181,7 +181,7 @@ function HostEntityControl({ eventId, slug }: { eventId: string; slug: string })
       <p className="mt-0.5 text-2xs text-muted">
         {hostSpace
           ? `${hostSpace.name} is the host. Registrations and ticket payments run through it.`
-          : 'You host this personally. Pick a space to run it through the space instead.'}
+          : 'This is a personal event. To attach it to a Space you run, pick the Space here.'}
       </p>
       {options.length > 0 ? (
         <Select

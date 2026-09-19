@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1413**.
+tree as of this index: **ADR-1414**.
 
 | Theme | Start here |
 |---|---|
@@ -45436,7 +45436,7 @@ change.
 
 **Rejected.** Treating FOCUS-MODEL as a reversal of join-free / pay-when-charging. Starting a sixth plan file. Letting kit work jump product this week.
 
-**Consequences.** `OWN-066` is the ruling row and closes. The memberships code half moved in [ADR-1413](DECISIONS.md) (`LIVE-410`): the gate sits on the free floor, Connect readiness still refuses a checkout. `QUEST-IA-DEBT`, `HYG-033`, `LIVE-204` are the first product surfaces. Editor E0–E9 stays on its own wave.
+**Consequences.** `OWN-066` is the ruling row and closes. The memberships code half moved in [ADR-1414](DECISIONS.md) (`LIVE-410`): the gate sits on the free floor, Connect readiness still refuses a checkout. `QUEST-IA-DEBT`, `HYG-033`, `LIVE-204` are the first product surfaces. Editor E0–E9 stays on its own wave.
 
 ## ADR-1404: A Journey has one sales page, and listing areas only point at it (2026-09-19)
 
@@ -45699,11 +45699,29 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 
 **Rows.** None. This is process, not a backlog close.
 
-## ADR-1413: A free Space may sell memberships; Connect readiness is the door (LIVE-410)
+## ADR-1413: A host who runs exactly one Space creates events on that Space (2026-09-19)
+
+**Status:** Accepted · 2026-09-19 · LIVE-376 · corroborated by `lib/events/default-host-space.ts`, `app/(main)/events/new/page.tsx`, `app/(main)/events/event-spark.tsx`
+
+**Context.** A real host (House of Fates) created three events from her own account. All three landed on the root Frequency Space with `host_space_id` null. The owner report was that she did not know how to attach them. Re-tested before the build: the Spark manifest has no host-space field (Host is the printed `organizerName`; `scopeId` is Circles). The create form already offered "Spaces you run" under "Where does it live?" and defaulted to Public. EventSpark only stamped a Space when `defaultGroupId` came from `?space=` or Duplicate. The settings rail already had Venue plus "Hosted by". The report was findability, not a missing control. The `events_default_space_id` trigger is still right for someone with no Space.
+
+**Decision.**
+
+1. **Default, do not guess among many.** `defaultEventHostSpaceId` returns the one non-root Space a host runs. Zero or two-plus stay Public. The create page ranks an explicit `?space=`, Duplicate, or `?circle=` above that rule.
+2. **Say it.** The Spark names the Space on the doors and review. The form hint says the event is part of that Space and that ticket money and the calendar go with it. "Hosted by" tells a personal event how to attach after the fact.
+3. **Do not change the trigger.** Root remains the database default for an insert that names no Space. The app-layer default is the product fix.
+
+**Rejected.** Adding a new Spark/rail field (the picker already existed). Changing `events_default_space_id` (wrong for hosts with no Space, and it is shared with Circles, Practices, Journeys). Auto-picking among several Spaces.
+
+**Consequences.** A House of Fates-shaped host creating from `/events/new` (wizard or form) gets `space_id` and `host_space_id` on their Space without finding a buried control. A host with two Spaces still has to pick. A host with none still lands on the root.
+
+**Rows.** LIVE-376.
+
+## ADR-1414: A free Space may sell memberships; Connect readiness is the door (LIVE-410)
 
 **Status:** Accepted · 2026-09-19 · **Implements** [ADR-1403](DECISIONS.md) Q3 · **Amends** [ADR-914](DECISIONS.md) (memberships as a Business wall) · backlog `LIVE-410` · corroborated by `lib/pricing/gates.ts` (`space_memberships` / `space_membership_tickets` at the free floor) and `lib/pricing/feature-meters.ts` (`space_membership_tiers.free = 1`)
 
-**Context.** ADR-914 put `space_memberships` at Business because a membership is a recurring promise, and helping someone make that promise from an account they might abandon next month is not a feature. FOCUS-MODEL Q3 asked whether that was a readiness concern wearing a pricing gate. ADR-1403 ruled yes: host free until you charge, then you pay. Readiness (payout-ready Connect) still applies. LIVE-231 made the Business wall honest and did not move it. LIVE-233 / LIVE-339 already surface Connect at the first sell attempt. The remaining untruth was the $29 plan as permission to collect the first dollar.
+**Context.** ADR-914 put `space_memberships` at Business because a membership is a recurring promise, and helping someone make that promise from an account they might abandon next month is not a feature. FOCUS-MODEL Q3 asked whether that was a readiness concern wearing a pricing gate. ADR-1403 ruled yes: host free until you charge, then you pay. Readiness (payout-ready Connect) still applies. LIVE-231 made the Business wall honest and did not move it. LIVE-233 / LIVE-339 already surface Connect at the first sell attempt. The remaining untruth was the $29 plan as permission to collect the first dollar. LIVE-376 shipped first on 2026-09-19 and took ADR-1413 for the sole-Space event default, so this decision is ADR-1414.
 
 **Decision.**
 
@@ -45715,4 +45733,6 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 **Rejected.** Deleting the gate (the probe requires the key; an operator override still needs it). Adding a new Circle-to-deliver-into check in this row (ADR-1403 named it; it is not this wall). Raising `space_campaigns`.
 
 **Consequences.** A free Space with the role sees the tier editor. The first paid join still needs a payout-ready Connect account. Campaigns stay at Business.
+
+**Rows.** LIVE-410.
 

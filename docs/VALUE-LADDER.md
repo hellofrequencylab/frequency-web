@@ -242,7 +242,7 @@ Everything else is a meter. A wall is only justified where a quantity cannot exp
 
 | Wall | Floor | Why not a meter |
 |---|---|---|
-| **Sell memberships** | Free (Connect readiness) | Amended [ADR-1413](DECISIONS.md) / LIVE-410. ADR-914 put this at Business as a recurring promise. FOCUS-MODEL Q3 ruled that is a readiness concern wearing a pricing gate: host free until you charge. Checkout still refuses when Connect is not payout-ready. |
+| **Sell memberships** | Free (Connect readiness) | Amended [ADR-1414](DECISIONS.md) / LIVE-410. ADR-914 put this at Business as a recurring promise. FOCUS-MODEL Q3 ruled that is a readiness concern wearing a pricing gate: host free until you charge. Checkout still refuses when Connect is not payout-ready. |
 | **Campaigns + funnels** | Business | "One campaign free" teaches nothing and converts badly. The line is between *messaging your people* (free) and *running an acquisition machine* (paid) |
 | **Revenue splits** | Collective | Automatic money-splitting between businesses is the collective's actual job. Hosting a few partners is Business; sharing revenue with them is the engine |
 
