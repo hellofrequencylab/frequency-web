@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1432**. 1436 is HYG-068 on another open branch. 1437 is SCAN-637 on main. 1438 is LIVE-228 on main. 1439 is LIVE-242 on main.
+tree as of this index: **ADR-1441**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
 
 | Theme | Start here |
 |---|---|
@@ -39544,6 +39544,9 @@ per-worktree is a property of the harness. `LIVE-306` carries it as `manual`.
 
 **Rows.** LIVE-306 (opened, not closed).
 
+**Amended by [ADR-1441](DECISIONS.md).** The first `pnpm lint` now installs when local ESLint is
+missing; LIVE-306 is closed.
+
 ## ADR-1320: ACCEPTED — the help-autodoc bot must quote what it read, or its finding is demoted (2026-09-10)
 
 **Context.** The bot posts an advisory checklist of help articles a diff may have invalidated. Three
@@ -46176,27 +46179,28 @@ Premise re-tested 2026-09-19: the discover twin still pointed canonical at `/eve
 
 **Rows.** SCAN-636.
 
-## ADR-1432: The operator console is five boxes (LIVE-246)
+## ADR-1441: The first `pnpm lint` in a worktree installs this repo's ESLint (LIVE-306)
 
-**Status:** Accepted · 2026-09-19 · backlog `LIVE-246` · amends [ADR-846](DECISIONS.md) and [ADR-1313](DECISIONS.md) · corroborates [CORE-MODEL.md](CORE-MODEL.md) §5.4 · corroborated by `lib/admin/modules/space-modules.ts` (`SPACE_MODULE_BOX_IDS`)
+**Status:** Accepted · 2026-09-19 · **Amends** [ADR-1319](DECISIONS.md) (the refusal stays; missing local ESLint now installs first) · backlog `LIVE-306` · numbered **1441** because **1440** is SCAN-636 on main · corroborated by `scripts/preflight-lint.mjs` (`ensureLintToolchain`) and `.claude/hooks/session-start.sh` (`git rev-parse --show-toplevel`)
 
-**Context.** CORE-MODEL §5.4 asked the operator console to read as five boxes: Your page · Your people · Gather · Money · Reach. ADR-846 had locked twelve boxes and ADR-1313 amended that lock to thirteen when Your reach moved tabs. LIVE-246's 2026-09-08 survey mapped all 34 catalog rows onto those five boxes and named four contested placements. ADR-1294 left those four unruled.
+**Context.** ADR-1319 made `prelint` refuse when `./node_modules/.bin/eslint` is missing or the wrong major, so a worktree no longer died inside `eslint-plugin-react` with a message that named a React rule. The row stayed open for the environmental half: a `git worktree` never inherits `node_modules`, and SessionStart installed only at the script's repo root.
 
-Premise re-tested 2026-09-19 on this tree:
+Premise re-tested 2026-09-19 on this tree, and it held.
 
-- The catalog is **32 rows**, not 34. LIVE-226 retired `space.enroll`, `space.tickets`, and `space.checkin`. That contest is gone.
-- `space.airwaves` already nested under Content. That contest is gone: Gather owns recordings.
-- Thirteen rows still had no `parent`. The probe (`rows===34 && tops===5`) could not pass.
+1. `.claude/hooks/session-start.sh` still did `cd "$(dirname "$0")/../.."`. That is the script's checkout, not `git rev-parse --show-toplevel`.
+2. `preflight-lint.mjs` still only refused. It named `pnpm install --frozen-lockfile` and did not run it.
+3. This cloud checkout started with no `node_modules`. The first `pnpm lint` here would have been the same trap.
+
+The harness can still create a bare worktree. That is not repo-observable. What is repo-observable is what `pnpm lint` does next.
 
 **Decision.**
 
-1. **Five parentless boxes, ids unchanged.** `space.basics` is Your page. `space.people` is Your people. `space.content` is Gather. `space.offerings` is Money. `space.reach` is Reach. Every other row carries `parent`. Nesting stays one level deep, so CRM's former children nest under Your people, and Email's former children nest under Reach.
-2. **Hub tabs do not move.** Resonance, Marketing, Offerings, Programs, and Settings stay the browse axis ADR-1313 declared. Team stays on Settings; the CRM cluster stays on Resonance. Those seven rows are named in `HUB_DIVERGENCE_REASONS` so a silent tab drift still fails the orphan guard.
-3. **The remaining contests.** Gather *is* the Content box (the programs tab is that box, so its `?section=programs` deep link is not a second page). Plan and billing nests under Your page (same Settings tab, money the operator pays Frequency; Get paid stays under Money). Airwaves stays under Gather.
+1. **`ensureLintToolchain` installs, then re-checks.** When the directory has `pnpm-lock.yaml` and no local ESLint, `prelint` runs `pnpm install --frozen-lockfile` and checks again. A directory without this repo's lockfile still refuses without spawning.
+2. **A failed install and a major mismatch still refuse.** Wrong-major is not "never installed". Reinstall stays a named human step.
+3. **SessionStart follows the session worktree.** `git rev-parse --show-toplevel` is the install root; the script path is the fallback when cwd is not a git tree.
 
-**Rejected.** Parenting Your reach under Reach while it stays on Programs (the ADR-1313 orphan). Moving Team onto Resonance to avoid a named divergence (undoes the Settings-tab ruling). Deleting any catalog row to hit an old count of 34.
+**Rejected.** Symlinking `node_modules` to the parent checkout (faster, and older worktrees already had that symlink, but a lockfile drift would load the wrong tree). Auto-fixing a major mismatch (that install is stale on purpose until someone deletes it). Teaching the Cursor harness; this PR cannot.
 
-**Consequences.** `SPACE_MODULE_BOX_IDS` reads five ids. The Space rail still renders every row (coverage guard unchanged). A later edit that un-parents a sixth box fails LIVE-246's probe and the five-box lock in `space-modules.test.ts`.
+**Consequences.** The first `pnpm lint` in a new worktree installs this repo's ESLint 9, or refuses with the install error, and does not fall through to a global ESLint 10. CI already installs, so the new branch is a no-op there. The probe calls `ensureLintToolchain` with a missing bin and a lockfile and requires `attemptedInstall` plus `ok`.
 
-**Rows.** LIVE-246.
-
+**Rows.** LIVE-306.
