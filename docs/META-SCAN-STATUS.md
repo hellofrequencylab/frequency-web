@@ -68,7 +68,7 @@ follow-through). Derived lane `scan` is SCAN-636…641 plus LIVE-412.
 |---|---|---|---|
 | 0 | product agent | LIVE-234, **LIVE-410**, **LIVE-376**, LIVE-186, LIVE-213 | Product first (ADR-1403). `pnpm packets --lane money` then `--lane events`. LIVE-254 and OWN-073 closed (#2699). Do not start SCAN-636. |
 | 1 | scan follow-through | **SCAN-636**, **SCAN-637** | Crawl truth. Pattern: `SiteHeader authMode="client"`. Keep `/events/<slug>` as the share URL. |
-| 2 | scan follow-through | **SCAN-638** | Draft FK indexes + `(select auth.uid())`. Do not apply SQL. No `spatial_ref_sys`. |
+| 2 | scan follow-through | **SCAN-638** | File is `20270345006400_advisor_space_fk_indexes_and_initplan.sql` (ADR-1442). Apply after merge with execute_sql then a schema_migrations insert at that version. No `spatial_ref_sys`. |
 | 3 | scan follow-through | **SCAN-641**, **SCAN-639**, **SCAN-640**, then LIVE-412 | One public header, FilterBar wire-or-delete, drop backup after a count, then shell split. |
 | 4 | neither | Editor / Sites / Etsy / App Platform / LIVE-242 | Already sequenced in `slate.phases`. Do not start from this scan. |
 

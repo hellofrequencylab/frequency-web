@@ -50,8 +50,6 @@
             "LIVE-242"
           ],
           "leave": [
-            "SCAN-637",
-            "SCAN-638",
             "SCAN-639",
             "SCAN-640",
             "SCAN-641",
@@ -63,10 +61,8 @@
           ]
         },
         "scanAgent": {
-          "next": "SCAN-638",
+          "next": "SCAN-641",
           "order": [
-            "SCAN-637",
-            "SCAN-638",
             "SCAN-641",
             "SCAN-640",
             "LIVE-412"
@@ -171,7 +167,6 @@
           "name": "W0c \u00b7 P2 \u2014 FOCUS remainder, gems replay grant, remaining audit security, small cleanups, Journey sales tail.",
           "ids": [
             "LIVE-408",
-            "SCAN-638",
             "HYG-100",
             "LIVE-413",
             "LIVE-411",
@@ -14734,7 +14729,7 @@
     {
       "id": "SCAN-638",
       "title": "Six new unindexed FKs and two auth.uid() initplans landed after the Aug 31 scan",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "hygiene",
       "size": "S",
@@ -14742,12 +14737,13 @@
         "file": "supabase/migrations/20270345002800_entitlement_grants.sql",
         "ref": "meta-scan 2026-09-19, Supabase performance advisors"
       },
-      "detail": "FOUND 2026-09-19 against project Frequency Community. The 2026-08-31 scan recorded zero unindexed_foreign_keys and zero auth_rls_initplan. Today: entitlement_grants.space_id, space_benefit_redemptions.member_profile_id, space_calendar_day_notes.created_by, space_calendar_entries.created_by, space_circle_optouts.profile_id, space_donations.ask_id; plus initplan WARN on space_circle_optouts read own and entitlement_grants read own (auth.uid() not wrapped in SELECT). Unused indexes dropped 538 to 392 (pre-launch noise). spatial_ref_sys ERROR is still PostGIS, leave it (OWN-006 / slate note). Close with one migration: covering indexes on those six FKs, and `(select auth.uid())` in the two policies. Draft-and-approve; do not apply from an agent session.",
+      "detail": "FOUND 2026-09-19 against project Frequency Community. The 2026-08-31 scan recorded zero unindexed_foreign_keys and zero auth_rls_initplan. Today: entitlement_grants.space_id, space_benefit_redemptions.member_profile_id, space_calendar_day_notes.created_by, space_calendar_entries.created_by, space_circle_optouts.profile_id, space_donations.ask_id; plus initplan WARN on space_circle_optouts read own and entitlement_grants read own (auth.uid() not wrapped in SELECT). Unused indexes dropped 538 to 392 (pre-launch noise). spatial_ref_sys ERROR is still PostGIS, leave it (OWN-006 / slate note). Close with one migration: covering indexes on those six FKs, and `(select auth.uid())` in the two policies. Draft-and-approve; do not apply from an agent session.\n\nCLOSED 2026-09-19 (ADR-1442). PREMISE RE-TESTED FIRST: both creating files still called auth.uid() bare; no later wrap existed; the six FK columns still lacked a leading index (space_benefit_redemptions_cap_idx leads with benefit_id; space_circle_optouts PK leads with space_id). Added 20270345006400: recreates the two read-own policies with (select auth.uid()) and covering indexes on the six named columns. Did not touch spatial_ref_sys. Did not apply from this session (no Supabase credentials here). Production apply after merge: execute_sql then schema_migrations insert at 20270345006400.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const g=fs.readFileSync(\"supabase/migrations/20270345002800_entitlement_grants.sql\",\"utf8\");const o=fs.readFileSync(\"supabase/migrations/20270345005800_space_circle_auto_enrol.sql\",\"utf8\");const later=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\")&&f>\"20270345005800\").some(f=>/select auth.uid\\(\\)/.test(fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\"))&&/entitlement_grants read own|space_circle_optouts read own/.test(fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\")));const wrapped=/select auth.uid\\(\\)/.test(g)&&/select auth.uid\\(\\)/.test(o);process.exit(wrapped||later?0:1)'",
         "note": "Fails until the two read-own policies wrap auth.uid() in SELECT, in the creating file or a later migration. Index half is covered by the same PR; advisors are the production proof."
-      }
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "SCAN-639",
