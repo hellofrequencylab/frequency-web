@@ -7,11 +7,11 @@ import { existsSync, readFileSync } from 'node:fs'
 // /events/<slug> is the share URL; signed-in members rewrite to event-member-page.tsx.
 
 const PAGES = [
-  'app/(main)/market/[id]/page.tsx',
-  'app/(main)/store/[id]/page.tsx',
-  'app/(main)/housing/[id]/page.tsx',
-  'app/(main)/classifieds/[id]/page.tsx',
-  'app/(main)/events/[slug]/page.tsx',
+  'app/(public)/market/[id]/page.tsx',
+  'app/(public)/store/[id]/page.tsx',
+  'app/(public)/housing/[id]/page.tsx',
+  'app/(public)/classifieds/[id]/page.tsx',
+  'app/(public)/events/[slug]/page.tsx',
   'app/spotlight/[handle]/page.tsx',
 ] as const
 
@@ -53,5 +53,12 @@ describe('sitemap-advertised listing details stay eligible for ISR', () => {
     const data = readFileSync('lib/spotlight/data.ts', 'utf8')
     expect(data).toMatch(/export async function listPublishedSpotlightHandles/)
     expect(data).toMatch(/meta->spotlight->>published/)
+  })
+
+  it('the (public) share layout never calls a dynamic API', () => {
+    const found = DYNAMIC_APIS.filter((d) => d.re.test(codeOf('app/(public)/layout.tsx'))).map((d) => d.name)
+    expect(found, 'app/(public)/layout.tsx would void ISR for every share URL').toEqual([])
+    expect(readFileSync('app/(public)/layout.tsx', 'utf8')).toMatch(/detectClientAuth/)
+    expect(readFileSync('app/(public)/layout.tsx', 'utf8')).not.toMatch(/<SiteHeader/)
   })
 })

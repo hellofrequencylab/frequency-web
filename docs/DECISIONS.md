@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1458**. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418 on this PR. 1451 is SCAN-642. 1463 is LIVE-393 on main. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1452–1453 are claimed on other open PRs.
+tree as of this index: **ADR-1458**. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643 on this PR. 1451 is SCAN-642. 1463 is LIVE-393 on main. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46626,3 +46626,22 @@ Premise re-tested 2026-09-19:
 **Consequences.** Admin Calendar lists Pencil, Planning, and Production as named lanes. The date map is unchanged. LIVE-419 already owns the Guest feed.
 
 **Rows.** LIVE-418.
+
+## ADR-1452: Share URLs leave the (main) layout (SCAN-643)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-643` · `SCAN-644` · numbered **1452** (1463 is LIVE-393 on this tree; 1462 is LIVE-397; 1461 is SCAN-640; 1459 is SCAN-638; 1451 is claimed on the Spotlight PR) · corroborated by `app/(public)/layout.tsx`, `app/(public)/events/[slug]/page.tsx`, and `app/(main)/spaces/[slug]/layout.tsx`
+
+**Context.** Without `cacheComponents`, `getCachedUser()` / `headers()` in `app/(main)/layout.tsx` void ISR for every sitemap URL under that group. Reordering the public-chrome helper would pass a source-order probe and still call `headers()` on the public path. SCAN-636 already made `/events/<slug>` the ISR public body; the parent layout was the remainder.
+
+**Decision.**
+
+1. Move the share event page and the four listing details into `app/(public)/`. That layout never calls `cookies()` or `headers()`. Auth chrome uses `MarketingHeader detectClientAuth`, not `SiteHeader` (SCAN-641).
+2. Remove `generateMetadata` from the (main) layout so it cannot call `headers()`.
+3. Keep Space profiles in (main). `spaces/[slug]/layout.tsx` calls `getMyProfileId()` so a member can open a private Space. That remainder is `SCAN-644`.
+4. Signed-in members on `/events/<slug>` still rewrite to `/full`. Listing details render the public chrome for every viewer (ViewerProvider already upgrades buy/save).
+
+**Rejected.** Enabling `cacheComponents` for one layout. Swapping SiteHeader in this PR. Passing a null viewer on Space profiles without a member rewrite.
+
+**Consequences.** Crawlers on `/events/<slug>` and `/store|/market|/housing|/classifieds/<id>` no longer pay the (main) auth read. Space sitemap URLs still do, until SCAN-644.
+
+**Rows.** SCAN-643 (closed), SCAN-644 (filed).

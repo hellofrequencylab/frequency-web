@@ -117,7 +117,7 @@ describe('the sales page does not print the same thing twice', () => {
   })
 
   it('a Journey suppresses the solo gallery row that would repeat its cover', () => {
-    const page = read('app', '(main)', 'market', '[id]', 'page.tsx')
+    const page = read('app', '(public)', 'market', '[id]', 'page.tsx')
     expect(page).toContain('soloGalleryRow={!journeyPlan}')
   })
 
@@ -211,7 +211,7 @@ describe('the public Journey page states the price', () => {
 
 describe('the canonical chain is one hop', () => {
   it('a leftover Journey product url hops to the Journey slug', () => {
-    const src = code('app', '(main)', 'market', '[id]', 'page.tsx')
+    const src = code('app', '(public)', 'market', '[id]', 'page.tsx')
     expect(src).toContain('journeyMemberPath')
     expect(src).toMatch(/redirect\(journeyMemberPath\(/)
   })
@@ -286,7 +286,7 @@ describe('there is exactly one enrol control per page', () => {
   })
 
   it('the Market listing puts its buy control in the rail, not twice', () => {
-    const src = code('app', '(main)', 'market', '[id]', 'page.tsx')
+    const src = code('app', '(public)', 'market', '[id]', 'page.tsx')
     expect(src).toContain('asideExtras=')
     // The body panel renders nothing for a Journey; the rail owns it.
     expect(src).toMatch(/journeyPlan \? null : \(/)
@@ -313,7 +313,7 @@ describe('proof sits between the guide and the objections', () => {
   })
 
   it('the Market page fills it with the reviews rather than appending them after', () => {
-    const src = code('app', '(main)', 'market', '[id]', 'page.tsx')
+    const src = code('app', '(public)', 'market', '[id]', 'page.tsx')
     expect(src).toMatch(/proof=\{\s*<ProductReviews/)
   })
 })
@@ -328,8 +328,8 @@ describe('the additive rail slot does not reach the other verticals', () => {
 
   it('Classifieds and Housing pass nothing, so they are unchanged', () => {
     for (const p of [
-      ['app', '(main)', 'classifieds', '[id]', 'page.tsx'],
-      ['app', '(main)', 'housing', '[id]', 'page.tsx'],
+      ['app', '(public)', 'classifieds', '[id]', 'page.tsx'],
+      ['app', '(public)', 'housing', '[id]', 'page.tsx'],
     ]) {
       expect(code(...p)).not.toContain('asideExtras')
     }

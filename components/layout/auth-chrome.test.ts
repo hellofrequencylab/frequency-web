@@ -65,6 +65,7 @@ describe('every public surface threads the viewer through', () => {
     ['app/(marketing)/layout.tsx', '../../app/(marketing)/layout.tsx'],
     ['app/(help)/layout.tsx', '../../app/(help)/layout.tsx'],
     ['app/(main)/layout.tsx', '../../app/(main)/layout.tsx'],
+    ['app/(public)/layout.tsx', '../../app/(public)/layout.tsx'],
     ['app/page.tsx', '../../app/page.tsx'],
   ] as const
 

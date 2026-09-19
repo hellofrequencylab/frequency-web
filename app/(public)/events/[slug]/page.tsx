@@ -18,7 +18,8 @@ import { getSeriesDisplayConfig } from '@/lib/events/series-config'
 // column-safe RPC as /discover/events/[slug]. Auth during render is a dynamic
 // API and would void that window; signed-in members are rewritten to
 // /events/<slug>/full (event-member-page.tsx) so RSVP and host tools stay
-// on the existing page. The (main) layout auth read is SCAN-641.
+// on the existing page. This file lives outside (main) so the share URL
+// is not voided by that layout's cookies()/headers() (SCAN-643).
 export const revalidate = 3600
 
 export async function generateStaticParams() {
