@@ -654,7 +654,42 @@ export async function updatePlan(
   if (patch.certificateEnabled !== undefined) update.certificate_enabled = patch.certificateEnabled
   if (Object.keys(update).length === 0) return WRITE_OK
   const { error } = await db().from('journey_plans').update({ ...update, ...touch() }).eq('id', planId)
-  return error ? writeFailed('updatePlan', planId, error) : WRITE_OK
+  if (error) return writeFailed('updatePlan', planId, error)
+
+  // ── THE PRODUCT SNAPSHOT GETS AN INVALIDATOR (ADR-1398 §3, LIVE-390) ──────────────────────────
+  //
+  // 🔴 WHY A SYNC AND NOT A DERIVE. `setJourneyPriceAction` copies the Journey's title, summary and
+  // cover into `commerce_products` when a price is set, and nothing refreshed them: rename the
+  // Journey and `/market/<id>`'s h1, its META DESCRIPTION, its og image, its Product JSON-LD, the
+  // Market grid card and the client-side search text all kept the old words. That is not a stale
+  // card, it is stale search results.
+  //
+  // The obvious fix is to derive on read, and it is the wrong one HERE: the grid card renders from
+  // `commerce_products` alone so a card can paint without a join (ADR-1398 §3), and `MarketItem`
+  // includes ticket projections that have no product row at all. Deriving would put a Journey
+  // dependency in the generic catalog reader. So the snapshot stays, and gains the one thing it
+  // lacked: something that invalidates it. This is the ONLY writer of those three columns, so the
+  // copy can no longer go stale — a cache with exactly one invalidator, not the "snapshot with a
+  // re-sync button somebody has to notice" that ADR-1398 rejected.
+  //
+  // ⚠️ FAIL-SOFT AND LAST. The Journey write has already succeeded; a product row that does not
+  // exist (a free Journey), or a failed mirror, must never turn a successful rename into an error.
+  // The partial unique index means this touches at most one row.
+  const mirror: Record<string, unknown> = {}
+  if (update.title !== undefined) mirror.title = update.title
+  if (update.summary !== undefined) mirror.description = update.summary
+  if (update.cover_image !== undefined) mirror.images = update.cover_image ? [update.cover_image] : []
+  if (Object.keys(mirror).length > 0) {
+    const { error: mirrorErr } = await db()
+      .from('commerce_products')
+      .update(mirror)
+      .eq('journey_plan_id', planId)
+      .eq('status', 'active')
+    if (mirrorErr) {
+      console.error('[journeys] could not refresh the product snapshot', { planId, error: mirrorErr.message })
+    }
+  }
+  return WRITE_OK
 }
 
 export async function removeItem(planId: string, practiceId: string): Promise<JourneyWriteResult> {

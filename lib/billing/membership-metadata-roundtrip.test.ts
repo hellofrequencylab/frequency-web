@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
-// THE SUBSCRIPTION METADATA ROUND-TRIP (CHECKOUT-HANDOFF §9, the precondition for converting a
+// THE SUBSCRIPTION METADATA ROUND-TRIP (docs/CHECKOUT.md §8, the precondition for converting a
 // subscription creator to on-page checkout).
 //
 // WHY THIS FILE EXISTS. A space membership grants entitlement from metadata, not from a row the
@@ -13,7 +13,7 @@ import path from 'node:path'
 // ships, and then silently stops granting access to someone who paid. There is no error, no failed
 // build, and no row to notice is missing.
 //
-// The handoff names this as the one thing to prove before converting these creators, in those words:
+// That section names this as the one thing to prove before converting these creators, in those words:
 // "prove the metadata round-trips before anything else."
 //
 // WHAT THIS ASSERTS. Every key the MEMBERSHIP arm of the reconciler reads is a key the creator
@@ -23,7 +23,7 @@ import path from 'node:path'
 // WHY IT READS SOURCE TEXT. Calling either side needs a Stripe session, which needs the network and
 // a live key, so a unit test cannot observe the real round-trip. The next best thing is to pin the
 // two halves against each other and fail when they diverge. Comments are stripped before matching,
-// because a key named only in prose is not a key anyone reads (CHECKOUT-HANDOFF §8: match the act,
+// because a key named only in prose is not a key anyone reads (docs/CHECKOUT.md §6: match the act,
 // never the identifier, and blank the comments first).
 
 const ROOT = path.join(__dirname, '..', '..')

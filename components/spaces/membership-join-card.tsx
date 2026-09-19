@@ -98,7 +98,7 @@ export function MembershipJoinCard({
   const searchParams = useSearchParams()
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
-  // ON-PAGE CHECKOUT (CHECKOUT-HANDOFF §4). `open` is SEPARATE from the session on purpose:
+  // ON-PAGE CHECKOUT (docs/CHECKOUT.md §3b). `open` is SEPARATE from the session on purpose:
   // collapsing the drawer keeps it, so re-opening is instant and, more importantly, does not mint a
   // SECOND subscription session for the same member.
   //
@@ -137,7 +137,7 @@ export function MembershipJoinCard({
   // disagree.
   const liveSession = session && session.cadence === price.cadence ? session : null
 
-  /** The LAST line of defence (CHECKOUT-HANDOFF §4). `forceHosted` is load-bearing: without it this
+  /** The LAST line of defence (docs/CHECKOUT.md §4). `forceHosted` is load-bearing: without it this
    *  asks for the same elements session that just failed to mount, finds no url, and dead-ends a
    *  member who is trying to pay. */
   function fallBackToHosted() {
@@ -297,7 +297,7 @@ export function MembershipJoinCard({
         ? `Become a ${tier.name}`
         : `Join ${tier.name}`
 
-  // 1 + 3 (CHECKOUT-HANDOFF §4). The button leads, and it goes QUIET when the drawer is open:
+  // 1 + 3 (docs/CHECKOUT.md §3b). The button leads, and it goes QUIET when the drawer is open:
   // Stripe renders its own primary Pay button inside the panel, and two stacked primary buttons is
   // the screen people call confusing. The quiet one stays LIVE and collapses the drawer, because a
   // greyed control that does nothing is worse than no control at all.
@@ -333,7 +333,7 @@ export function MembershipJoinCard({
       onFellBack={fallBackToHosted}
       // 🔴 WITHOUT THIS a paid membership has exactly ONE way to become real. confirm() with
       // redirect:'if_required' never navigates on the common card path, so the return_url that
-      // carries the webhook's backstop is never visited (CHECKOUT-HANDOFF §6).
+      // carries the webhook's backstop is never visited (docs/CHECKOUT.md §3).
       onPaid={
         liveSession.sessionId
           ? () => settleSpaceMembershipAction(liveSession.sessionId as string)

@@ -8,7 +8,9 @@ A buyer pays **on Frequency**. The card fields open under the button they presse
 resolves in place, and a confirmation replaces the form. Nobody is sent to `checkout.stripe.com`
 unless that is the only way they can pay.
 
-There are nine Checkout Session creators in this repo. They must not be nine integrations.
+There are eight Checkout Session creators in this repo, enumerated by `LIVE-359`'s probe — the
+list to trust, because this line said *nine* until the Supporter contribution was retired. They
+must not be eight integrations.
 
 ---
 
@@ -259,7 +261,10 @@ Three things to know:
 
 ## 8. What is not converted yet
 
-The four **subscription** creators still redirect, deliberately. They stamp
+The **subscription** creators that remain still redirect, deliberately. `LIVE-359`'s probe names
+which ones, and this paragraph deliberately does not: it read *four* from the day Space
+memberships converted (2026-09-15) to the day someone checked (2026-09-19), and a count in prose
+is the thing this repo keeps getting wrong. They stamp
 `subscription_data.metadata`, and `lib/billing/space-subscriptions.ts` reads `space_id` / `member_id`
 / `tier_id` / `plan` back off it to grant entitlement. A dropped or reshaped key there does not fail
 a build — it **silently stops granting access to someone who paid**. Convert them with that in front

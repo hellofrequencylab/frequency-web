@@ -192,6 +192,18 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
                         </form>
                       </div>
 
+                      {/* ── ONE AUTHOR FOR A JOURNEY'S COPY (LIVE-391) ──────────────────────
+                          A Journey product's title, description and cover are DERIVED from the
+                          Journey and re-synced whenever it is edited (updatePlan). Leaving this
+                          form editable would ship a control whose saves silently stop sticking:
+                          a manager types a new title, saves, and the next Journey rename wipes it.
+                          The Journey editor is the one place those words are written. */}
+                      {p.productKind === 'journey' ? (
+                        <p className="mt-3 border-t border-border/60 pt-2 text-body-sm text-subtle">
+                          This listing is a Journey. Its name, description and cover come from the
+                          Journey itself and update whenever you edit it.
+                        </p>
+                      ) : (
                       <details className="mt-3 border-t border-border/60 pt-2">
                         <summary className="cursor-pointer text-body-sm font-medium text-text">Edit</summary>
                         <ItemForm
@@ -213,6 +225,7 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
                           }}
                         />
                       </details>
+                      )}
                     </div>
                   )}
                 </div>
