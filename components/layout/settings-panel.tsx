@@ -184,9 +184,9 @@ export function useIsDesktop(): boolean {
  * Order a section's ids so each BOX is immediately followed by the tools it owns, and stamp the
  * nesting depth the renderer indents by (ADR-846).
  *
- * The catalog expresses the 12-box shape through `parent`; before this, the rail flattened it and an
- * operator still saw every tool as a top-level box. Space scopes only: SPACE_MODULES is the one
- * catalog that uses `parent` (core entities consolidate by moving modules between slots instead).
+ * The catalog expresses the five-box shape through `parent` (ADR-1432); before this, the rail flattened
+ * it and an operator still saw every tool as a top-level box. Space scopes only: SPACE_MODULES is the
+ * one catalog that uses `parent` (core entities consolidate by moving modules between slots instead).
  *
  * FAIL-SAFE: a child whose parent is not in this section (a different slot, or gated out for this
  * viewer) keeps its original position at depth 0 rather than disappearing. Losing a tool would be a
@@ -227,7 +227,7 @@ export interface RailNode {
   node: ReactNode
   /** Nesting depth inside its section (ADR-846). 0 = a BOX; 1 = a tool the box owns, via the
    *  catalog's `parent`. The renderer indents depth 1 under the box above it, which is what turns
-   *  the 12-box catalog shape into 12 visible boxes instead of a flat list. Absent = 0. */
+   *  the five-box catalog shape into five visible boxes instead of a flat list. Absent = 0. */
   depth?: number
 }
 
