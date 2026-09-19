@@ -2,15 +2,16 @@ import { RowCard } from '@/components/cards/row-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SectionHeader } from '@/components/ui/section-header'
 import type { CalendarEvent } from '@/lib/calendar/item'
-import { operatorListItems, pencilLane, type OperatorListItem } from '@/lib/calendar/pm-console'
+import { operatorListItems, pencilLane, planningLane, type OperatorListItem } from '@/lib/calendar/pm-console'
 import { entryStage } from '@/lib/calendar/registry'
 
-// ADMIN PRODUCTION CONSOLE (ADR-1445 C1–C2, ADR-1450, ADR-1454). The operator list on a Space
-// Calendar tab in Admin mode. pencilLane is the first-class Pencil lane. Planning and Production
-// stay on the mixed board until C3 and C4. The month grid is the date map (passed as children,
-// usually StaffCalendar so the settings drawer stays).
+// ADMIN PRODUCTION CONSOLE (ADR-1445 C1–C3, ADR-1450, ADR-1454, ADR-1468). The operator list
+// on a Space Calendar tab in Admin mode. pencilLane and planningLane are first-class lanes.
+// Production stays on the mixed board until C4. The month grid is the date map (passed as
+// children, usually StaffCalendar so the settings drawer stays).
 
 const PENCIL = entryStage('pencil')
+const PLANNING = entryStage('planning')
 
 function BoardRows({ items, showBadge }: { items: OperatorListItem[]; showBadge: boolean }) {
   return (
@@ -44,7 +45,10 @@ export function CalendarPmConsole({
   children: React.ReactNode
 }) {
   const pencils = pencilLane(events)
-  const items = operatorListItems(events).filter((row) => row.stageLabel !== 'Pencil')
+  const planning = planningLane(events)
+  const items = operatorListItems(events).filter(
+    (row) => row.stageLabel !== 'Pencil' && row.stageLabel !== 'Planning',
+  )
   return (
     <div className="space-y-6" data-calendar-pm-console>
       <section aria-labelledby="calendar-pm-pencil" data-pencil-lane>
@@ -59,13 +63,25 @@ export function CalendarPmConsole({
           <BoardRows items={pencils} showBadge={false} />
         )}
       </section>
+      <section aria-labelledby="calendar-pm-planning" data-planning-lane>
+        <SectionHeader id="calendar-pm-planning" title={PLANNING?.label ?? 'Planning'} count={planning.length} />
+        {planning.length === 0 ? (
+          <EmptyState
+            variant="first-use"
+            title="Nothing in Planning."
+            description="When a date is decided, it lands here while the team puts it together."
+          />
+        ) : (
+          <BoardRows items={planning} showBadge={false} />
+        )}
+      </section>
       <section aria-labelledby="calendar-pm-board">
         <SectionHeader id="calendar-pm-board" title="The board" count={items.length} />
         {items.length === 0 ? (
           <EmptyState
             variant="first-use"
             title="Nothing on the board yet."
-            description="Planning, Production, and Cancelled land here. Pencil has its own lane above."
+            description="Production and Cancelled land here. Pencil and Planning have their own lanes above."
           />
         ) : (
           <BoardRows items={items} showBadge />

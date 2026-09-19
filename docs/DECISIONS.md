@@ -46474,7 +46474,7 @@ Premise re-tested 2026-09-19:
 
 **Rejected.** Closing C3–C5 in the same PR. Calling a Pencil a hold (NAMING.md: Hold is the venue-hold noun). Hiding candidate dates from the grid.
 
-**Consequences.** LIVE-417 starts the Planning lane. LIVE-418 starts Production. LIVE-419 still owns the Guest feed.
+**Consequences.** LIVE-417 starts the Planning lane. LIVE-418 starts Production. LIVE-419 still owns the Guest feed. **Amended by [ADR-1468](DECISIONS.md):** the Planning lane now exists.
 
 **Rows.** LIVE-416.
 
@@ -46572,3 +46572,21 @@ Premise re-tested 2026-09-19:
 **Consequences.** `pnpm packets --lane scan` starts at SCAN-643. Status stays in `docs/BUILD-BACKLOG.json`. Rationale in `docs/META-SCAN-STATUS.md` 2026-09-19 evening pass.
 
 **Rows.** SCAN-642, SCAN-643, SCAN-638 (re-pointed).
+
+## ADR-1468: Admin Calendar gives Planning its own lane (LIVE-417)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-417` · numbered **1468** (1463 is LIVE-393 on this tree; 1454 is LIVE-416; 1456 is claimed on leftover #2760) · implements C3 of [ADR-1445](DECISIONS.md) · follows [ADR-1454](DECISIONS.md) · corroborated by `lib/calendar/pm-console.ts` (`planningLane`), `components/spaces/calendar-pm-console.tsx`
+
+**Context.** ADR-1454 gave Pencil its own Admin lane and left Planning on the mixed board. ADR-1445 C3 asked for Planning as a first-class Admin lane after C2. Premise re-tested 2026-09-19 on `8fbcab55c`: `pencilLane` existed; `planningLane` did not. Leftover #2758 still targeted a pre-C2 tree and was not absorbed.
+
+**Decision.**
+
+1. **`planningLane` is the Admin Planning lane.** It is `operatorListItems` filtered to `stage === 'planning'`. `CalendarPmConsole` renders that lane between Pencil and the mixed board.
+2. **The mixed board no longer lists Planning.** Production, Cancelled, live events, and drafts stay there until C4 names Production.
+3. **The date map is unchanged.** This change does not declare `productionLane`, and it does not fold Guest through `guestLiveItems`.
+
+**Rejected.** Closing C4–C5 in the same PR. Absorbing leftover #2758 (it still assumed Pencil lived on the mixed board). Calling Planning a hold (NAMING.md: Hold is the venue-hold noun).
+
+**Consequences.** LIVE-418 starts the Production lane. LIVE-419 still owns the Guest feed.
+
+**Rows.** LIVE-417.

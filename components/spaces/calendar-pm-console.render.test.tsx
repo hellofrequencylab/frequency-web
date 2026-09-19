@@ -38,7 +38,7 @@ const pencil: CalendarEvent = {
   layer: 'pencil',
 }
 
-describe('CalendarPmConsole render (LIVE-415 / LIVE-416)', () => {
+describe('CalendarPmConsole render (LIVE-415 / LIVE-416 / LIVE-417)', () => {
   it('lists a penciled gathering in pencilLane, not mixed into the board', () => {
     const el = mount(
       <CalendarPmConsole events={[pencil]}>
@@ -50,11 +50,12 @@ describe('CalendarPmConsole render (LIVE-415 / LIVE-416)', () => {
     expect(el.querySelector('[data-pencil-lane]')?.textContent).toContain('Pencil')
     expect(el.textContent).toContain('The board')
     expect(el.textContent).toContain('Nothing on the board yet.')
+    expect(el.textContent).toContain('Nothing in Planning.')
     expect(el.querySelector('[data-date-map]')?.textContent).toBe('map')
     expect(el.textContent).not.toContain('Nothing penciled in.')
   })
 
-  it('keeps a planning gathering on the board, not in pencilLane', () => {
+  it('lists a planning gathering in planningLane, not mixed into the board or Pencil', () => {
     const planning: CalendarEvent = { ...pencil, slug: 'entry-2', title: 'Open house', stage: 'planning' }
     const el = mount(
       <CalendarPmConsole events={[pencil, planning]}>
@@ -63,18 +64,40 @@ describe('CalendarPmConsole render (LIVE-415 / LIVE-416)', () => {
     )
     expect(el.querySelector('[data-pencil-lane]')?.textContent).toContain('New moon sit')
     expect(el.querySelector('[data-pencil-lane]')?.textContent).not.toContain('Open house')
-    expect(el.textContent).toContain('Open house')
-    expect(el.textContent).toContain('Planning')
+    expect(el.querySelector('[data-planning-lane]')?.textContent).toContain('Open house')
+    expect(el.querySelector('[data-planning-lane]')?.textContent).toContain('Planning')
+    expect(el.querySelector('[data-planning-lane]')?.textContent).not.toContain('New moon sit')
+    expect(el.textContent).toContain('Nothing on the board yet.')
+    expect(el.textContent).not.toContain('Nothing in Planning.')
+  })
+
+  it('keeps a production gathering on the board, not in planningLane', () => {
+    const live: CalendarEvent = {
+      ...pencil,
+      slug: 'open-house',
+      title: 'Published sit',
+      stage: undefined,
+      layer: 'events',
+    }
+    const el = mount(
+      <CalendarPmConsole events={[pencil, live]}>
+        <div data-date-map>map</div>
+      </CalendarPmConsole>,
+    )
+    expect(el.querySelector('[data-planning-lane]')?.textContent).not.toContain('Published sit')
+    expect(el.textContent).toContain('Published sit')
+    expect(el.textContent).toContain('Production')
     expect(el.textContent).not.toContain('Nothing on the board yet.')
   })
 
-  it('shows the empty pencil lane and board when there is nothing to run', () => {
+  it('shows the empty pencil lane, planning lane, and board when there is nothing to run', () => {
     const el = mount(
       <CalendarPmConsole events={[]}>
         <div data-date-map>map</div>
       </CalendarPmConsole>,
     )
     expect(el.textContent).toContain('Nothing penciled in.')
+    expect(el.textContent).toContain('Nothing in Planning.')
     expect(el.textContent).toContain('Nothing on the board yet.')
     expect(el.querySelector('[data-date-map]')).not.toBeNull()
   })
