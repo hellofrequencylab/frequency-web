@@ -14,7 +14,7 @@ import { sourceWithoutComments } from '@/test/source-shape'
 // Every assertion here FAILS on the pre-mount tree: before this mount the page contained no
 // ClaimRequestCta, no `isClaimable`, and claim-request-cta.tsx did not exist.
 
-const PAGE = 'app/(main)/events/[slug]/page.tsx'
+const PAGE = 'app/(main)/events/[slug]/event-member-page.tsx'
 const CARD = 'app/(main)/events/[slug]/claim-request-cta.tsx'
 const ACTION = 'app/(main)/events/[slug]/claim-actions.ts'
 const STORE = 'lib/events/event-drafts.ts'

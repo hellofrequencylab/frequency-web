@@ -130,7 +130,7 @@ Taken by the owner on 2026-09-08 and recorded in [ADR-1294](DECISIONS.md). They 
 | 2 | The marketplace | **One umbrella with real sub-tabs** — Classifieds · Housing · Market · Events. It is not four nav areas, and the tab bar was never built. |
 | 3 | The six Collective Spaces | **Grandfather at $49.** Collective merges into Business, which rises $29 → $49 with two seats. |
 | 4 | The Independent tier | **Keep it, hide it from public pricing.** Hand-sold; its four Stripe prices stay live. |
-| 5 | Hubs and Nexuses | **Fold both into Space.** Each reads as "a Space that contains other Spaces". |
+| 5 | Hubs and Nexuses | **Fold both into Space.** Each reads as "a Space that contains other Spaces". Member URLs 308 to Space (LIVE-242 / ADR-1439). Geography tables remain. |
 | 6 | Channels | **Fold into Circles.** A Channel reads as a topic Circle, and there are zero channels. |
 
 ⚠️ **Ruling 2 carries a cost worth naming now rather than discovering later.** Events becomes a
@@ -197,7 +197,7 @@ unwritten or unsold by the 2026-09-08 dead-surface sweep, so there are no judgem
 | # | Change | Files | Done when | Verify |
 |---|---|---|---|---|
 | 3.1 | Merge `collective` → `business`; one paid tier at **$49** | `lib/pricing/plans.ts`, `pricing-keys.ts` (+ `RETIRED_CATALOG_ITEM_KEYS` for `collective_base`), 1 migration, `scripts/check-collective.mjs` | `SPACE_PLANS` = free/business/nonprofit/independent | `pricing.test.ts` |
-| 3.2 | Seats live: clear `placeholder`, set **$12**, sync catalog, flip `catalog_operator_seat_active` | `pricing-keys.ts:491`, operator flag | Checkout mints a seat line | one real checkout |
+| 3.2 | Seats at **$12**: catalog amount, not a placeholder. A catalog sync mints the Stripe price; `catalog_operator_seat_active` still gates checkout | `pricing-keys.ts` `operator_seat` | Catalog is $12 and not a placeholder | `catalogItem('operator_seat')` |
 | 3.3 | Take-rate to two numbers: 10% free · 3% paid · 0% non-profit · 0% own audience | `NETWORK_TAKE_RATE_DEFAULT` + the seeded vector migration | Ladder has two rungs | `take-rate-ladder.test.ts` |
 | 3.4 | Memberships stay paid-gated; make the **upsell honest at the point of tier creation** ("charging your members is part of Business") | `settings/memberships/section.tsx` | Superseded by [ADR-1415](DECISIONS.md) / LIVE-410: the wall moved to the free floor; Connect readiness is the door | copy review |
 | 3.5 | Pricing page, grid, FAQ, JSON-LD and llms.txt all derive from the catalog | `/admin/pricing` data edit; `pricing-grid.ts` | No `$`+digit or `N%` literal in marketing source | `marketing-figures.test.ts` |

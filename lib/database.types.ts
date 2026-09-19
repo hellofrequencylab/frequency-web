@@ -5901,6 +5901,7 @@ export type Database = {
           name: string
           nexus_id: string | null
           slug: string
+          space_id: string | null
           status: Database["public"]["Enums"]["group_status"]
         }
         Insert: {
@@ -5911,6 +5912,7 @@ export type Database = {
           name: string
           nexus_id?: string | null
           slug: string
+          space_id?: string | null
           status?: Database["public"]["Enums"]["group_status"]
         }
         Update: {
@@ -5921,6 +5923,7 @@ export type Database = {
           name?: string
           nexus_id?: string | null
           slug?: string
+          space_id?: string | null
           status?: Database["public"]["Enums"]["group_status"]
         }
         Relationships: [
@@ -5936,6 +5939,13 @@ export type Database = {
             columns: ["nexus_id"]
             isOneToOne: false
             referencedRelation: "nexuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hubs_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: true
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -8499,6 +8509,7 @@ export type Database = {
           name: string
           outpost_id: string
           slug: string
+          space_id: string | null
           status: Database["public"]["Enums"]["group_status"]
         }
         Insert: {
@@ -8509,6 +8520,7 @@ export type Database = {
           name: string
           outpost_id: string
           slug: string
+          space_id?: string | null
           status?: Database["public"]["Enums"]["group_status"]
         }
         Update: {
@@ -8519,6 +8531,7 @@ export type Database = {
           name?: string
           outpost_id?: string
           slug?: string
+          space_id?: string | null
           status?: Database["public"]["Enums"]["group_status"]
         }
         Relationships: [
@@ -8534,6 +8547,13 @@ export type Database = {
             columns: ["outpost_id"]
             isOneToOne: false
             referencedRelation: "outposts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nexuses_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: true
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -14441,6 +14461,7 @@ export type Database = {
           name: string
           network_connected: boolean
           owner_profile_id: string | null
+          parent_id: string | null
           plan: string | null
           postal_code: string | null
           preferences: Json
@@ -14494,6 +14515,7 @@ export type Database = {
           name: string
           network_connected?: boolean
           owner_profile_id?: string | null
+          parent_id?: string | null
           plan?: string | null
           postal_code?: string | null
           preferences?: Json
@@ -14547,6 +14569,7 @@ export type Database = {
           name?: string
           network_connected?: boolean
           owner_profile_id?: string | null
+          parent_id?: string | null
           plan?: string | null
           postal_code?: string | null
           preferences?: Json
@@ -14604,6 +14627,13 @@ export type Database = {
             columns: ["owner_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spaces_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]

@@ -63,7 +63,7 @@ describe('deriveTicketOwnership', () => {
 describe('the event page derives ownership through the helper', () => {
   it('the URL-derived promotion is gone and the helper is the derivation', () => {
     // Comment- and import-free (LIVE-167): the call is the needle, never the import line.
-    const PAGE = sourceWithoutComments('app/(main)/events/[slug]/page.tsx', { imports: true })
+    const PAGE = sourceWithoutComments('app/(main)/events/[slug]/event-member-page.tsx', { imports: true })
     // The defect, by its exact shape, and by any shape that assigns ownership from a literal.
     expect(PAGE).not.toMatch(/if \(ticketedCents !== null\) ownsTicket = true/)
     expect(PAGE).not.toMatch(/ownsTicket = true/)

@@ -265,9 +265,9 @@ describe('featureAllowed({ gatesLive })', () => {
     // Collaborator HOSTING opens at Business (basic collaboration, metered to a few collaborators).
     expect(await featureAllowed('space_collaborators', { plan: 'free' }, { gatesLive: true })).toBe(false)
     expect(await featureAllowed('space_collaborators', { plan: 'business' }, { gatesLive: true })).toBe(true)
-    // The Collective rung of the ladder, which `space_revenue_splits` used to demonstrate until
-    // HYG-079 deleted that gate (nothing enforced it, and revenue splitting is not built).
-    expect(await featureAllowed('space_automation', { plan: 'business' }, { gatesLive: true })).toBe(false)
+    // space_automation opens at Business (LIVE-228 merged Collective depth).
+    expect(await featureAllowed('space_automation', { plan: 'free' }, { gatesLive: true })).toBe(false)
+    expect(await featureAllowed('space_automation', { plan: 'business' }, { gatesLive: true })).toBe(true)
     expect(await featureAllowed('space_automation', { plan: 'collective' }, { gatesLive: true })).toBe(true)
   })
 

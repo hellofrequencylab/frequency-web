@@ -208,9 +208,9 @@ export async function syncPricingProductsToStripe(changedBy?: string | null): Pr
 /** Whether a catalog item is an INERT placeholder for the sync (so it mints no Stripe product/price).
  *  An item is inert when its code `placeholder` flag is set AND the operator has not activated it. Only
  *  the operator seat (ADR-799/803) has an activation switch (`catalog_operator_seat_active`); every other
- *  placeholder stays inert regardless. PURE — the sync reads the flag and passes it here. Keeping the
- *  placeholder-skip is the ABSOLUTE INVARIANT (ADR-362): a routine sync never mints a seat price the
- *  owner has not explicitly turned on. */
+ *  placeholder stays inert regardless. LIVE-229 cleared the seat's placeholder, so this returns false
+ *  for `operator_seat` regardless of the switch: a routine sync mints the approved $12. The switch
+ *  still gates checkout (`operatorSeatsSellable`). PURE. */
 export function isCatalogItemInertPlaceholder(item: CatalogItem, operatorSeatActive: boolean): boolean {
   if (!item.placeholder) return false
   if (item.key === 'operator_seat') return !operatorSeatActive
@@ -345,11 +345,9 @@ export async function syncPricingCatalogToStripe(changedBy?: string | null): Pro
   const operatorSeatActive = flags.catalog_operator_seat_active
 
   for (const item of catalogItems()) {
-    // A PLACEHOLDER item (operator_seat, ADR-799) carries a stand-in amount the owner has not approved.
-    // Skip it entirely so the sync mints NO Stripe product/price for it — resolveLoadoutPriceId stays null
-    // and the item is inert until the owner sets the real amount and activates it. Without this, a routine
-    // sync of the live catalog would silently create a chargeable seat price the owner never set. The seat
-    // stays inert until `catalog_operator_seat_active` is flipped on (ADR-803).
+    // Skip a PLACEHOLDER item so the sync mints no Stripe product/price for a stand-in amount.
+    // LIVE-229 cleared `operator_seat.placeholder`, so the seat is no longer skipped here: the
+    // approved $12 mints on a routine sync. `catalog_operator_seat_active` still gates checkout.
     if (isCatalogItemInertPlaceholder(item, operatorSeatActive)) continue
 
     // Sync the OPERATOR-SET amounts (the console's "run this after you change a catalog price" contract),

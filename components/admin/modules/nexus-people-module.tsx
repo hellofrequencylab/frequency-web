@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { getNexusPeopleData, type NexusPeopleData } from '@/app/(main)/nexuses/admin-actions'
+import { getNexusPeopleData, type NexusPeopleData } from '@/lib/hierarchy/nexus-admin'
 
 // In-place "People" module (ADMIN-RAIL.md Phase 7, the 'people' spine cell for nexuses). Renders in
 // the page admin dock on /nexuses/[slug]; the server returns null unless the caller holds nexus.manage.

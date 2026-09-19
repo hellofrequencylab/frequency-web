@@ -46,8 +46,8 @@ export async function updateHubSettings(id: string, slug: string, fd: FormData) 
     throw new Error('Those Hub settings did not save. Try again in a moment.')
   }
 
-  revalidatePath(`/hubs/${slug}`)
-  revalidatePath('/hubs')
+  revalidatePath(`/spaces/${slug}`)
+  revalidatePath('/admin/hubs')
 }
 
 // Field-level patch for the inline tuning layer (ADR-138). Allowlisted; re-checks
@@ -76,8 +76,8 @@ export async function updateHubField(id: string, slug: string, field: InlineFiel
     throw new Error('That Hub name did not save. Try again in a moment.')
   }
 
-  revalidatePath(`/hubs/${slug}`)
-  revalidatePath('/hubs')
+  revalidatePath(`/spaces/${slug}`)
+  revalidatePath('/admin/hubs')
 }
 
 // ─── People (the 'people' spine module) ────────────────────────────────────────
@@ -214,7 +214,7 @@ export async function archiveHub(id: string, slug: string): Promise<{ ok: true }
     return { error: 'This Hub could not be archived. Try again in a moment.' }
   }
 
-  revalidatePath(`/hubs/${slug}`)
-  revalidatePath('/hubs')
+  revalidatePath(`/spaces/${slug}`)
+  revalidatePath('/admin/hubs')
   return { ok: true }
 }

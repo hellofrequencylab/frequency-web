@@ -17,7 +17,7 @@ import { readFileSync } from 'node:fs'
 // generateMetadata keeps its own narrow read above the page body; it is a different request in
 // Next and is not counted here. The count below starts at the page function on purpose.
 
-const PAGE = 'app/(main)/events/[slug]/page.tsx'
+const PAGE = 'app/(main)/events/[slug]/event-member-page.tsx'
 const page = readFileSync(PAGE, 'utf8')
 const bodyStart = page.indexOf('export default async function EventDetailPage')
 const body = page.slice(bodyStart)

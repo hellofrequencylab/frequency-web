@@ -27,12 +27,12 @@ An Outpost is not the top unit.
 | **Event** | `events`, `event_rsvps` | When the room is open. |
 | **Channel** | `topical_channels` | Global topics you tune into. Circles run them locally. **"Interests" is retired.** |
 
-Place scaffolding (not primary nav, not the top product unit):
+Place scaffolding (not primary nav, not the top product unit). Member URLs fold into Space (LIVE-242 / ADR-1439); these tables remain because Circles still attach through `circles.hub_id`.
 
 | Term | Table | Meaning |
 |---|---|---|
-| **Hub** | `hubs` | A cluster of up to 5 Circles in a locale. `circles.hub_id` is nullable: Circles can exist before a Hub crystallises. |
-| **Nexus** | `nexuses` | A cluster of Hubs (default 2500-member cap). Emergent. `hubs.nexus_id` nullable. |
+| **Hub** | `hubs` | Geography cluster of up to 5 Circles. `hubs.space_id` is the Space that now *is* that cluster. |
+| **Nexus** | `nexuses` | Geography cluster of Hubs. `nexuses.space_id` is the containing Space. |
 | **Outpost** | `outposts` | The **brick-and-mortar home base of a Nexus**: one per Nexus, the seed toward a Lab (NAMING.md §Community structure). Circles meet in homes/public spaces, **never** Outposts. When a **Frequency Lab** (standalone for-profit venue) exists in the Nexus, the Outpost HQ lives there. **Not the top unit.** |
 | **Nexus region** | `nexus_regions` | Legacy geography tree. Being phased out. |
 

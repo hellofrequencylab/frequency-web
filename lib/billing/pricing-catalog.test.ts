@@ -23,7 +23,7 @@ describe('yearlyFromMonthly (two months free)', () => {
   it('is exactly 10x the monthly amount', () => {
     expect(yearlyFromMonthly(1900)).toBe(19000) // $19/mo -> $190/yr
     expect(yearlyFromMonthly(2900)).toBe(29000) // $29/mo -> $290/yr
-    expect(yearlyFromMonthly(900)).toBe(9000) // $9 seat -> $90/yr
+    expect(yearlyFromMonthly(1200)).toBe(12000) // $12 seat -> $120/yr
   })
 
   it('is 0 for non-positive / invalid input', () => {
@@ -34,34 +34,29 @@ describe('yearlyFromMonthly (two months free)', () => {
 })
 
 describe('the clean catalog shape (collapsed · ADR-552)', () => {
-  it('holds exactly the six items (Business/Collective/Independent bases, AI add-on, nonprofit seat, operator seat)', () => {
+  it('holds exactly five live items (Business/Independent bases, AI add-on, nonprofit seat, operator seat)', () => {
     expect([...CATALOG_ITEM_KEYS]).toEqual([
       'business_base',
-      'collective_base',
       'independent_base',
       'addon_ai',
       'nonprofit_seat',
       'operator_seat',
     ])
-    expect(catalogItems()).toHaveLength(6)
+    expect(catalogItems()).toHaveLength(5)
   })
 
-  it('Business base: $29 flat, and NO founding rate — there is exactly one beta offer and it is not this one (ADR-1067)', () => {
+  it('Business base: $49 flat, no founding rate (LIVE-228)', () => {
     const biz = catalogItem('business_base')
-    expect(biz.month.listCents).toBe(2900)
-    // founding == list is how an item says "no beta rate". This is the assertion that stops a second
-    // "(Founding rate)" Product being minted: Stripe Prices are immutable, so an unwanted $19 minted
-    // once can only be archived, never edited.
-    expect(biz.month.foundingCents).toBe(2900)
+    expect(biz.month.listCents).toBe(4900)
+    expect(biz.month.foundingCents).toBe(4900)
     expect(biz.year.foundingCents).toBe(biz.year.listCents)
     expect(biz.perSeat).toBe(false)
   })
 
-  it('Collective base: $79 list with a $49 beta founding anchor, not per seat (ADR-811)', () => {
-    const col = catalogItem('collective_base')
-    expect(col.month.foundingCents).toBe(4900) // beta founding
-    expect(col.month.listCents).toBe(7900)
-    expect(col.perSeat).toBe(false)
+  it('collective_base is retired and no longer a catalog item (LIVE-228)', () => {
+    expect(asCatalogItemKey('collective_base')).toBeNull()
+    expect(RETIRED_CATALOG_KEYS).toContain('collective_base_month')
+    expect(RETIRED_CATALOG_KEYS).toContain('collective_base_month_list')
   })
 
   it('Independent base: $249/mo flat white-label, no founding discount (ADR-811)', () => {
@@ -71,10 +66,14 @@ describe('the clean catalog shape (collapsed · ADR-552)', () => {
     expect(ind.perSeat).toBe(false)
   })
 
-  it('Operator seat: a real per-seat add-on (ADR-799), the only perSeat item', () => {
+  it('Operator seat: $12/seat/mo, live, the only perSeat item (ADR-799 / LIVE-229)', () => {
     const seat = catalogItem('operator_seat')
     expect(seat.perSeat).toBe(true)
-    expect(seat.month.foundingCents).toBeGreaterThan(0) // placeholder amount; owner sets the final price
+    expect(seat.placeholder).toBeFalsy()
+    expect(seat.month.listCents).toBe(1200)
+    expect(seat.month.foundingCents).toBe(1200)
+    expect(seat.year.listCents).toBe(12000)
+    expect(seat.year.foundingCents).toBe(12000)
     // It is the ONLY per-seat item; every flat plan/add-on stays perSeat:false.
     expect(catalogItems().filter((i) => i.perSeat).map((i) => i.key)).toEqual(['operator_seat'])
   })
@@ -118,12 +117,12 @@ describe('catalog price keys', () => {
     expect(catalogPriceKey('business_base', 'year', true)).toBe('business_base_year_list')
   })
 
-  it('allCatalogPriceKeys = 6 items x 2 intervals x 2 variants = 24 keys', () => {
+  it('allCatalogPriceKeys = 5 items x 2 intervals x 2 variants = 20 keys', () => {
     const keys = allCatalogPriceKeys()
-    expect(keys).toHaveLength(24)
+    expect(keys).toHaveLength(20)
     expect(keys).toContain('business_base_month')
     expect(keys).toContain('business_base_month_list')
-    expect(keys).toContain('collective_base_month')
+    expect(keys).not.toContain('collective_base_month')
     expect(keys).toContain('independent_base_year_list')
     expect(keys).toContain('addon_ai_month')
     expect(keys).toContain('nonprofit_seat_year')

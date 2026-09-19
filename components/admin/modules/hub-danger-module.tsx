@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { Archive } from 'lucide-react'
-import { getHubAdminData, archiveHub } from '@/app/(main)/hubs/admin-actions'
+import { getHubAdminData, archiveHub } from '@/lib/hierarchy/hub-admin'
 
 // In-place "Danger zone" module (ADMIN-RAIL.md Phase 7, the 'danger' spine cell for hubs). Renders in
 // the page admin dock on /hubs/[slug]; getHubAdminData returns null unless the caller holds hub.manage,

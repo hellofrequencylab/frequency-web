@@ -239,7 +239,6 @@ export function takeRateRungForPlan(plan: SpacePlan | string | null | undefined)
     case 'nonprofit':
       return 'nonprofit'
     case 'business':
-    case 'collective':
     case 'independent':
       return 'paid'
     default:
@@ -433,7 +432,6 @@ export const BILLING_INTERVALS: readonly BillingInterval[] = ['month', 'year']
  *  into the Business tier); see RETIRED_CATALOG_KEYS. */
 export const CATALOG_ITEM_KEYS = [
   'business_base',
-  'collective_base',
   'independent_base',
   'addon_ai',
   'nonprofit_seat',
@@ -549,7 +547,7 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     // ⚠️ This does NOT touch anyone already locked at $19. A lock is a RECORD on the subscription, read
     // back by space-subscriptions-reconcile.ts and founding-payment.ts, not a lookup into this table —
     // which is why those tests keep their 1900 fixtures.
-    ...amountsFromMonthly(2900, 2900), // list $29, no founding rate (ADR-1067)
+    ...amountsFromMonthly(4900, 4900), // list $49, no founding rate (LIVE-228 / ADR-1438)
   },
   addon_ai: {
     key: 'addon_ai',
@@ -560,14 +558,6 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     label: 'Frequency Vera AI (add-on)',
     perSeat: false,
     ...amountsFromMonthly(2000, 2000), // +$20, the sole cross-tier optional add-on (ADR-552/590)
-  },
-  collective_base: {
-    // Collective (ADR-811): everything in Business plus automations, team roles, multiple pipelines, and
-    // hosting collaborators. FOUNDING beta: $49/mo under the $79 list ($490 / $790 yearly, two months free).
-    key: 'collective_base',
-    label: 'Frequency Collective',
-    perSeat: false,
-    ...amountsFromMonthly(7900, 4900), // list $79, founding (beta) $49
   },
   independent_base: {
     // Independent (ADR-811): everything in Collective plus your own brand + custom domain, standalone and
@@ -587,19 +577,21 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     ...amountsFromMonthly(3900, 3900), // $39/mo flat (ADR-811), full Collective toolkit, verified 501c3
   },
   operator_seat: {
-    // OPERATOR SEATS (ADR-799): a genuine per-seat add-on. The owner's seat is free (BASE_SEAT_ALLOWANCE);
-    // each ADDITIONAL operator (editor/moderator/admin) bills one seat at this flat rate, on any paid plan.
-    // This is a SEPARATE per-seat item (perSeat:true) — distinct from the retired per-seat PLAN pricing
-    // (ADR-590) and refining ADR-552's "seats ride the base tier" note per the owner's flat-add-on choice.
-    // PLACEHOLDER (`placeholder:true`): the amount below is a stand-in, and the catalog sync SKIPS it, so NO
-    // Stripe price is minted and resolveLoadoutPriceId stays null (the seat item is dropped from checkout).
-    // This keeps it genuinely inert until the owner sets the real amount AND removes `placeholder` — so a
-    // routine sync of the other items can never mint a live seat price the owner did not approve.
+    // OPERATOR SEATS (ADR-799, LIVE-229 / ADR-1435): a genuine per-seat add-on. The owner's seat is
+    // free (BASE_SEAT_ALLOWANCE); each ADDITIONAL operator (editor/moderator/admin) bills one seat at
+    // this flat rate, on any paid plan. This is a SEPARATE per-seat item (perSeat:true) — distinct from
+    // the retired per-seat PLAN pricing (ADR-590) and refining ADR-552's "seats ride the base tier"
+    // note per the owner's flat-add-on choice.
+    //
+    // LIVE at $12/seat/mo (CORE-MODEL §5 phase 3.2). The catalog amount is the approved price, not a
+    // stand-in: a catalog sync mints the Stripe objects. `catalog_operator_seat_active` still gates
+    // checkout (`operatorSeatsSellable`), so a routine sync can mint the approved price without
+    // offering seats until the operator flips the switch. The 2026-08-19 $9 mint was the stand-in;
+    // this amount is the one ADR-811 / ADR-1294 already named.
     key: 'operator_seat',
     label: 'Operator seat',
     perSeat: true,
-    placeholder: true,
-    ...amountsFromMonthly(900, 900), // PLACEHOLDER $9/seat/mo — owner sets the final amount, then drops the flag
+    ...amountsFromMonthly(1200, 1200), // $12/seat/mo, no founding rate (LIVE-229)
   },
 }
 
@@ -676,7 +668,12 @@ export const RETIRED_ADDON_ITEM_KEYS: readonly string[] = ['addon_marketing', 'a
 
 /** The retired CATALOG item keys on the catalog price-key axis (ADR-552): the former Pro base and
  *  Organization plan (folded into Business), plus the ADR-472 add-on items. Kept resolvable; never synced. */
-const RETIRED_CATALOG_ITEM_KEYS: readonly string[] = ['pro_base', 'organization', ...RETIRED_ADDON_ITEM_KEYS]
+const RETIRED_CATALOG_ITEM_KEYS: readonly string[] = [
+  'pro_base',
+  'organization',
+  'collective_base',
+  ...RETIRED_ADDON_ITEM_KEYS,
+]
 
 /** The retired LEGACY per-plan bases + the periods they offered (ADR-552): practitioner had monthly +
  *  annual; organization + whitelabel were monthly-only. Kept resolvable on the `<plan>_<period>` axis. */

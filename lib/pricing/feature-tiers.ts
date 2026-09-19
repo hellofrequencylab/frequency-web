@@ -56,7 +56,6 @@ export const PLACEHOLDER_PRICING = false
  *  A free Space has no item because $0 is not a Stripe price. PURE. */
 const PLAN_CATALOG_ITEM: Record<Exclude<SpacePlan, 'free'>, CatalogItemKey> = {
   business: 'business_base',
-  collective: 'collective_base',
   nonprofit: 'nonprofit_seat',
   independent: 'independent_base',
 }
@@ -74,7 +73,6 @@ const PLAN_CATALOG_ITEM: Record<Exclude<SpacePlan, 'free'>, CatalogItemKey> = {
 export const SPACE_PLAN_PRICE_CENTS: Record<SpacePlan, CatalogAmounts> = {
   free: { listCents: 0, foundingCents: 0 },
   business: catalogItem(PLAN_CATALOG_ITEM.business).month,
-  collective: catalogItem(PLAN_CATALOG_ITEM.collective).month,
   nonprofit: catalogItem(PLAN_CATALOG_ITEM.nonprofit).month,
   independent: catalogItem(PLAN_CATALOG_ITEM.independent).month,
 }
@@ -85,7 +83,6 @@ export const SPACE_PLAN_PRICE_CENTS: Record<SpacePlan, CatalogAmounts> = {
 export const PLACEHOLDER_SPACE_PRICE_CENTS: Record<SpacePlan, number> = {
   free: SPACE_PLAN_PRICE_CENTS.free.listCents,
   business: SPACE_PLAN_PRICE_CENTS.business.listCents,
-  collective: SPACE_PLAN_PRICE_CENTS.collective.listCents,
   nonprofit: SPACE_PLAN_PRICE_CENTS.nonprofit.listCents,
   independent: SPACE_PLAN_PRICE_CENTS.independent.listCents,
 }
@@ -132,7 +129,7 @@ export function spacePlanPriceCents(plan: SpacePlan, betaActive: boolean = isBet
 
 /** The Space plan rungs the range selector shows, ascending. A clean upgrade path (Non Profit is sold
  *  separately, so it is not a rung here). */
-export const SPACE_LADDER_TIERS: readonly SpacePlan[] = ['free', 'business', 'collective']
+export const SPACE_LADDER_TIERS: readonly SpacePlan[] = ['free', 'business']
 
 /** The personal membership rungs the range selector shows, ascending. Member (free) and Crew: the whole
  *  ladder (ADR-878). */
@@ -240,13 +237,13 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
   // email sends"), which is the exact second source Phase 5 spent its whole budget deleting.
   space_automation: {
     axis: 'plan',
-    minTier: 'collective',
+    minTier: 'business',
     title: 'Automations',
     // @placeholder 1,000 runs/mo mirrors PLACEHOLDER_METER_LIMITS.space_automation (ADR-837).
     rungs: spaceRungs(
       'One pipeline, no automations.',
       'Governed playbooks and multi-step sequences that run the safe, reversible moves for you, with 1,000 runs included each month.',
-      'collective',
+      'business',
     ),
   },
   space_collaborators: {

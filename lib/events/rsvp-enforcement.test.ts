@@ -16,7 +16,7 @@ import path from 'node:path'
 const read = (p: string) => readFileSync(path.join(process.cwd(), p), 'utf8')
 const ACTIONS = read('app/(main)/events/actions.ts')
 // Comment- and import-free (LIVE-167): the page's window needles must hit the calls.
-const PAGE = sourceWithoutComments('app/(main)/events/[slug]/page.tsx', { imports: true })
+const PAGE = sourceWithoutComments('app/(main)/events/[slug]/event-member-page.tsx', { imports: true })
 const SQL = read('supabase/migrations/20270343000000_guest_rsvp_honours_the_booking_window.sql')
 
 describe('the booking window gates the MEMBER paths', () => {

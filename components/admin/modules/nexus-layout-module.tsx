@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { LayoutGrid, ChevronRight } from 'lucide-react'
 import { moduleById } from '@/lib/admin/modules/registry'
-import { getNexusAdminData } from '@/app/(main)/nexuses/admin-actions'
+import { getNexusAdminData } from '@/lib/hierarchy/nexus-admin'
 
 // In-place "Layout" module (ADR-515 Phase 5, the 'layout' spine cell for nexuses). Same treatment as
 // HubLayoutModule: the nexus detail page is hand-built (fixed sections: identity → insight → hubs), not
@@ -60,7 +60,7 @@ export function NexusLayoutModule() {
       </header>
 
       <Link
-        href={`/nexuses/${data.slug}/manage`}
+        href={`/spaces/${data.slug}/manage`}
         className="flex items-center gap-3 rounded-control border border-border bg-surface px-4 py-3 transition-colors hover:border-border-strong hover:bg-surface-elevated"
       >
         <span className="min-w-0 flex-1">

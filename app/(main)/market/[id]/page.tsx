@@ -2,15 +2,14 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { MessageCircle } from 'lucide-react'
-import { getCallerProfile, isPlatformStaff } from '@/lib/auth'
 import { getProduct, getSellerContact } from '@/lib/commerce/products'
 import { canTakePayments } from '@/lib/commerce/selling'
 import { buttonClasses } from '@/components/ui/button'
 import { getSpaceById, getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { readStorefrontConfig } from '@/lib/spaces/storefront'
 import { listOpenSlots, getSpaceBookingTimezone } from '@/lib/spaces/booking'
-import { getProductReviews, getMyProductReview } from '@/lib/commerce/reviews'
+import { getProductReviews } from '@/lib/commerce/reviews'
+import { ViewerProvider } from '@/components/layout/viewer-chrome'
 import { sellerVerifiedForProduct } from '@/lib/commerce/seller-verification'
 import { VerifiedBadge } from '@/components/ui/verified-badge'
 import { ReportButton } from '@/components/marketplace/report-button'
@@ -34,7 +33,10 @@ import { effectiveVariantPriceCents, effectiveVariantStock, isBookableServiceKin
 import type { ServiceConfig, Price } from '@/lib/commerce/types'
 import { PriceInput } from '@/components/commerce/price-input'
 
-export const dynamic = 'force-dynamic'
+// Public Market listing, advertised in app/sitemap.ts. force-dynamic here would keep the
+// crawler on a full render after the (main) public chrome stops reading auth. Own review
+// and buy-button state hydrate from /api/viewer / BuyButton. ISR window matches /discover.
+export const revalidate = 3600
 
 function usd(cents: number, currency = 'usd') {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)
@@ -101,36 +103,23 @@ function servicePriceLabel(priceCents: number, currency: string, svc: ServiceCon
 
 export default async function MarketProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const caller = await getCallerProfile()
-  const profileId = caller?.id ?? null
   const product = await getProduct(id)
-  if (!product) notFound()
+  if (!product || product.status !== 'active') notFound()
   // 'booking' is an alias of 'service' for rendering/booking: both take the calendar picker, never a
   // Buy button, so a product_kind='booking' row can never mis-render as a plain product (F11).
   const isService = isBookableServiceKind(product.productKind)
 
   // A Space-owned listing carries TWO extra publish gates beyond status='active' (which only means
   // "live in the Space's own Shop console"): market_published (opt-in to the global Market) and the
-  // storefront.published flag (the public Shop tab). A non-manager may view it only when it is opted
-  // into the Market OR the Space's storefront is published AND the Space itself is visible. A manager
-  // may always preview. Maker (owner_kind='profile') listings keep the active===public semantic (the
-  // maker funnel sets market_published), so they skip this. (ADR-596, exposure fix.)
-  let isManager = false
+  // storefront.published flag (the public Shop tab). The public page is the anonymous gate only.
+  // Managers preview drafts from the Shop console, not here. Maker listings keep active===public.
   if (product.ownerKind === 'space') {
     const space = product.ownerSpaceId ? await getSpaceById(product.ownerSpaceId) : null
     if (!space) notFound()
-    const manage = await resolveSpaceManageAccess(space, profileId, caller?.webRole)
-    isManager = manage.canManage || manage.staffViewing
-    if (!isManager) {
-      const storefront = readStorefrontConfig(space.preferences)
-      const visible = await getVisibleSpaceBySlug(space.slug, profileId)
-      if (!visible || !(product.marketPublished || storefront.published)) notFound()
-    }
+    const storefront = readStorefrontConfig(space.preferences)
+    const visible = await getVisibleSpaceBySlug(space.slug, null)
+    if (!visible || !(product.marketPublished || storefront.published)) notFound()
   }
-
-  // Owner/manager may preview a non-active (draft) listing; the public sees active only.
-  const isOwner = (!!profileId && product.ownerProfileId === profileId) || isManager
-  if (product.status !== 'active' && !isOwner) notFound()
 
   // ── ONE SALES PAGE (ADR-1404) ────────────────────────────────────────────────────────────────
   // A Journey is not a Market listing with extra copy. Shop and Market are doors. The pitch and
@@ -158,7 +147,9 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
       const s = effectiveVariantStock(v)
       return s != null && s <= 0
     })
-  const soldOut = product.status === 'sold_out' || (hasVariants ? allVariantsSoldOut : product.stock === 0)
+  // Public path is active-only (non-active notFound above). Sold-out is stock/variants,
+  // not the sold_out status that only the owner preview used to see.
+  const soldOut = hasVariants ? allVariantsSoldOut : product.stock === 0
 
   // R2 (Phase 0): only a Business Space Shop or the Frequency Store may take in-app payments. An
   // individual maker listing is CONNECT-ONLY — the buyer messages the seller instead of a Buy button.
@@ -179,11 +170,9 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
 
   // Trust & Safety (Phase 8): the seller verification badge, the reviews block, and the viewer's own
   // review (to prefill). A signed-in non-owner may review; a platform operator may moderate.
-  const [sellerVerified, reviews, myReview, operator, comments, highestOfferCents] = await Promise.all([
+  const [sellerVerified, reviews, comments, highestOfferCents] = await Promise.all([
     sellerVerifiedForProduct(product),
     getProductReviews(product.id),
-    getMyProductReview(product.id, profileId),
-    isPlatformStaff(),
     getListingComments('product', product.id),
     getHighestOfferCents('product', product.id),
   ])
@@ -197,12 +186,12 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
   // The hero action: only the connect-only "Contact seller" path is a plain link. The Buy button,
   // variant picker, and booking calendar are interactive, so they render in the footer purchase panel.
   const heroAction: ListingAction | null =
-    connectOnly && sellerContact && !isOwner
+    connectOnly && sellerContact
       ? { kind: 'contact', label: 'Contact seller', href: `/people/${sellerContact.handle}` }
       : { kind: 'none', label: '', href: '' }
 
   const view = listingDetailFromProduct(product, {
-    isOwner,
+    isOwner: false,
     priceLabel,
     seller: null,
     action: heroAction,
@@ -225,6 +214,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
   })
 
   return (
+    <ViewerProvider>
     <ListingDetailTemplate
       view={view}
       // A Journey product's image set is generated, not curated: it is always exactly the cover,
@@ -241,9 +231,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
             isAuthor={false}
             progress={null}
             cta={
-              isOwner ? (
-                <p className="text-body-sm text-subtle">This is your Journey. Buyers enrol here.</p>
-              ) : soldOut ? (
+              soldOut ? (
                 <p className="text-body-sm font-medium text-subtle">Every seat is taken.</p>
               ) : (
                 <div className="space-y-2">
@@ -263,11 +251,10 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
         ) : undefined
       }
       comments={comments}
-      canComment={!!profileId}
-      canModerate={isOwner || operator}
-      myProfileId={profileId}
+      canComment={false}
+      canModerate={false}
+      myProfileId={null}
       contactNote={
-        !isOwner ? (
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-meta text-subtle">
               {isService
@@ -280,15 +267,11 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
             </p>
             <ReportButton targetKind="product" targetId={product.id} />
           </div>
-        ) : undefined
       }
       footer={
         <>
           <div className="mt-3 rounded-3xl border border-border bg-surface p-5 lift-1">
             {isService ? (
-              isOwner ? (
-                <p className="text-body-sm text-subtle">This is your service. Members pick a time here to book.</p>
-              ) : (
                 <div className="space-y-4">
                   {/* Pricing Options P2: a Choose-your-price service shows the buyer control (suggested
                       anchor + optional floor). DISPLAY only, no charge (booking stays on its existing
@@ -309,15 +292,8 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
                     contactOnly={svc.priceModel === 'contact'}
                   />
                 </div>
-              )
             ) : soldOut ? (
               <p className="text-body-sm font-medium text-subtle">Sold out.</p>
-            ) : isOwner ? (
-              <p className="text-body-sm text-subtle">
-                {connectOnly
-                  ? 'This is your listing. Buyers see a Contact seller button here.'
-                  : 'This is your listing. Buyers see a Buy button here.'}
-              </p>
             ) : connectOnly ? (
               sellerContact ? (
                 <Link href={`/people/${sellerContact.handle}`} className={buttonClasses('primary', 'md')}>
@@ -364,10 +340,10 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
                   productId={product.id}
                   productTitle={product.title}
                   reviews={reviews}
-                  myReview={myReview}
-                  signedIn={!!profileId}
-                  canReview={!!profileId && !isOwner}
-                  canModerate={operator}
+                  myReview={null}
+                  signedIn={false}
+                  canReview={false}
+                  canModerate={false}
                 />
               }
             />
@@ -378,10 +354,10 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
               productId={product.id}
               productTitle={product.title}
               reviews={reviews}
-              myReview={myReview}
-              signedIn={!!profileId}
-              canReview={!!profileId && !isOwner}
-              canModerate={operator}
+              myReview={null}
+              signedIn={false}
+              canReview={false}
+              canModerate={false}
             />
           )}
           {/* Airwaves (ADR-608, P1): any Recordings attached to this product, gated per viewer. Renders
@@ -405,5 +381,6 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
         </div>
       )}
     </ListingDetailTemplate>
+    </ViewerProvider>
   )
 }

@@ -22,7 +22,7 @@ import {
   type SeatConfig,
   type PwywConfig,
 } from '@/lib/pricing/catalog-config'
-import { asCatalogItemKey, TAKE_RATE_RUNGS } from '@/lib/billing/pricing-keys'
+import { asCatalogItemKey, catalogItem, TAKE_RATE_RUNGS } from '@/lib/billing/pricing-keys'
 import { ADDON_KEYS, asAddonKey } from '@/lib/pricing/plans'
 import { setFeatureGateOverride } from '@/lib/pricing/gates'
 import { billingEnabled } from '@/lib/billing/stripe'
@@ -291,28 +291,23 @@ export async function saveFoundingConfig(config: Partial<FoundingConfig>): Promi
   }
 }
 
-/** Set the operator-seat ACTIVATION switch (ADR-803, platform flag `catalog_operator_seat_active`).
- *  OFF (default) keeps the seat an inert placeholder the catalog sync skips; ON drops the placeholder so
- *  the next sync mints the live seat price from the operator-set amount. Janitor-gated; audited in
- *  platform_flag_events via setPlatformFlag. Nothing charges on its own (billingLive() still gates money). */
+/** Set the operator-seat SELL switch (ADR-803 / ADR-1435, platform flag `catalog_operator_seat_active`).
+ *  OFF (default) keeps checkout from offering seats (`operatorSeatsSellable`). ON lets a paying Space
+ *  add seats once the catalog price is synced. Janitor-gated; audited in platform_flag_events via
+ *  setPlatformFlag. Nothing charges on its own (billingLive() still gates money). */
 export async function setOperatorSeatActive(value: boolean): Promise<ActionResult> {
   const ctx = await requireAdmin('janitor')
   // 🔴 THIS SWITCH PUT A LIVE, CHARGEABLE PRICE INTO PRODUCTION AT AN AMOUNT NOBODY SET (2026-08-19).
   //
-  // Turning it ON is exactly what stops `isCatalogItemInertPlaceholder` skipping the seat, so the
-  // next catalog sync mints real Stripe objects for it. The code amount is a documented STAND-IN
-  // ($9/seat, `placeholder: true` in the CATALOG), so activating before an operator amount exists
-  // ships the stand-in as a real price. It did: the seat reached the live account with four prices
-  // at $9/$90, and because Stripe Prices are IMMUTABLE the only repair was to archive them.
+  // The code amount used to be a documented STAND-IN ($9/seat, `placeholder: true`). Turning the
+  // switch ON stopped `isCatalogItemInertPlaceholder` skipping the seat, so the next catalog sync
+  // minted four prices at $9/$90. Stripe Prices are IMMUTABLE; they could only be archived.
   //
-  // The invariant the placeholder skip is supposed to hold (ADR-362/799/803) is "a routine sync never
-  // mints a seat price the owner has not explicitly turned on". The flip made that true in letter and
-  // false in substance: the owner turned on the SWITCH without ever setting the AMOUNT, and nothing
-  // asked. So the guard belongs here, where the two facts can be compared.
-  //
-  // Turning it OFF is always allowed. That direction is the safe one, and refusing it would strand
-  // an already-activated seat.
-  if (value) {
+  // LIVE-229 set the catalog to the approved $12 and cleared the placeholder, so a routine sync now
+  // mints that amount. The switch is the SELL gate, not the mint gate. The leftover guard still
+  // fires if a future edit puts `placeholder` back and there is no operator override: that is the
+  // 2026-08-19 shape, and it must still refuse. Turning OFF is always allowed.
+  if (value && catalogItem('operator_seat').placeholder) {
     const settings = await loadPricingSettings()
     if (settings[catalogConfigKey('operator_seat')] == null) {
       return fail(

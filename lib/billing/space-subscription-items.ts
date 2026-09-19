@@ -60,8 +60,8 @@ export function asItemKey(raw: string | null | undefined): ItemKey | null {
 export function itemKeyForCatalogKey(catalogKey: string | null | undefined): ItemKey | null {
   const key = asCatalogItemKey(catalogKey)
   if (key === 'business_base') return 'business'
-  if (key === 'collective_base') return 'collective' // the network-depth base (ADR-811)
-  if (key === 'independent_base') return 'independent' // the standalone white-label base (ADR-811)
+  if (catalogKey === 'collective_base') return 'business'
+  if (key === 'independent_base') return 'independent'
   if (key) {
     const addon = addonKeyForCatalogItem(key)
     if (addon) return addon
@@ -116,7 +116,7 @@ export function planForItemKeys(itemKeys: readonly ItemKey[]): SpacePlan {
   if (itemKeys.includes('independent')) return 'independent'
   if (itemKeys.includes('organization')) return 'nonprofit' // legacy org folds to nonprofit
   if (itemKeys.includes('nonprofit_seat')) return 'nonprofit'
-  if (itemKeys.includes('collective')) return 'collective'
+  if (itemKeys.includes('collective')) return 'business'
   if (itemKeys.includes('business')) return 'business'
   if (itemKeys.includes('base')) return 'business' // legacy Pro base folds to business
   return 'free'
