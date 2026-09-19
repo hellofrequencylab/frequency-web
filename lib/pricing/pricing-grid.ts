@@ -164,11 +164,8 @@ const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
   },
   business: {
     tagline: 'Own your audience.',
-    forWho: 'Coaches, practitioners, studios, and product businesses running their own book of work.',
-  },
-  collective: {
-    tagline: 'Be the venue.',
-    forWho: 'Growing communities that run a team, automate their follow-up, and host other businesses.',
+    forWho:
+      'Coaches, practitioners, studios, and communities running a book of work, a team, and the events they host.',
   },
   nonprofit: {
     tagline: 'The full toolkit, verified.',
@@ -324,7 +321,7 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
         // The Space ladder's crown (see the `featured` doc above). This was `business` while the DAWN 2
         // reference the owner adopted crowns COLLECTIVE ("Best choice"), which had the page float and
         // the model emphasis disagreeing; the model now matches the adopted reference.
-        featured: plan === 'collective',
+        featured: plan === 'business',
         cta: { label: plan === 'nonprofit' ? 'Get verified' : 'Start a Space', href: '/spaces' },
       }
     }),
@@ -468,8 +465,8 @@ function addonCell(addon: AddonKey, column: GridColumn, input: PricingGridInput)
 }
 
 /** Resolve the extra-operator-seats cell. Seats ride the tiers whose depth includes the `team` key
- *  (ADR-799); the per-seat amount comes from the operator-seat catalog item, and while that item is still
- *  a PLACEHOLDER the cell says so instead of publishing a price nobody has approved. */
+ *  (ADR-799); the per-seat amount comes from the operator-seat catalog item. LIVE-229 cleared the
+ *  placeholder, so a missing catalog row is the only remaining "owner-priced" path. */
 function seatsCell(column: GridColumn, input: PricingGridInput): GridCell {
   if (column.axis !== 'plan') return { kind: 'no', text: 'Not part of a member plan' }
   if (!planEntitlementKeys(column.tier as SpacePlan).includes('team')) {

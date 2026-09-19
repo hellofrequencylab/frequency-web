@@ -305,14 +305,14 @@ describe('llms.txt wiring', () => {
 })
 
 describe('event page robots wiring', () => {
-  const page = readFileSync(join(process.cwd(), 'app/(main)/events/[slug]/page.tsx'), 'utf8')
+  const page = readFileSync(join(process.cwd(), 'app/(main)/events/[slug]/event-member-page.tsx'), 'utf8')
 
   it('reads the series facts off the row generateMetadata already fetched', () => {
     expect(page).toContain('seriesSeoFacts')
     // Matched on comment- and import-free source (scan2 L8-04): the name also sits in a comment and
     // in the import line of the pinned file, so a bare toContain stayed green with the call deleted.
     expect(
-      sourceWithoutComments(join(process.cwd(), 'app/(main)/events/[slug]/page.tsx'), { imports: true }),
+      sourceWithoutComments(join(process.cwd(), 'app/(main)/events/[slug]/event-member-page.tsx'), { imports: true }),
     ).toContain('!suppressPastNoindex(facts)')
     expect(page).toContain('seriesRobots')
   })
@@ -330,6 +330,16 @@ describe('event page robots wiring', () => {
     // (node_modules/next/dist/docs/01-app/03-api-reference/04-functions/generate-metadata.md:1328),
     // so an always-present `robots` key would drop the layout's fields on every event page.
     expect(page).toContain('...(robots ? { robots } : {})')
+  })
+
+  it('applies the same two rules on the public ISR share page', () => {
+    const share = readFileSync(join(process.cwd(), 'app/(main)/events/[slug]/page.tsx'), 'utf8')
+    expect(share).toContain('export const revalidate = 3600')
+    expect(share).toContain('seriesRobots(facts, indexedOccurrences)')
+    expect(
+      sourceWithoutComments(join(process.cwd(), 'app/(main)/events/[slug]/page.tsx'), { imports: true }),
+    ).toContain('!suppressPastNoindex(facts)')
+    expect(share).toContain('canonical: `/events/${event.slug}`')
   })
 
   it('applies the same two rules on the /discover twin', () => {

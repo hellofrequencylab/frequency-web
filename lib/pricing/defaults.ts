@@ -51,7 +51,6 @@ export interface PricingDefaults {
   tier: { crew: TierPrice }
   plan: {
     business: TierPrice
-    collective: TierPrice
     nonprofit: TierPrice
     independent: TierPrice
   }
@@ -124,7 +123,6 @@ export const PRICING_DEFAULTS: PricingDefaults = {
     // subscribes on a beta rate keeps it for as long as it keeps the plan (lib/pricing/beta.ts
     // grandfathering).
     business: planPrice('business_base'),
-    collective: planPrice('collective_base'),
     nonprofit: planPrice('nonprofit_seat'),
     independent: planPrice('independent_base'),
   },

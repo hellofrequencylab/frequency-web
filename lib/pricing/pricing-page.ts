@@ -69,16 +69,12 @@ export function pricingCatalog(): Record<CatalogItemKey, ResolvedCatalogItem> {
  *  FAQ answers, persona pages, funnel beats) interpolates THESE instead of hardcoding "$29"/"$19"/...,
  *  so a catalog change reflows every sentence that quotes a price. PURE data. */
 export interface PriceStrings {
-  /** Business list, and since the beta window closed (ADR-1060) the price a Space is charged, e.g. "$29". */
+  /** Business list, and since the beta window closed (ADR-1060) the price a Space is charged, e.g. "$49". */
   businessList: string
   /** 🔴 THE BETA ANCHOR, WHICH IS NO LONGER CHARGED (ADR-1060). Kept because the window is one editable
    *  constant away from re-opening, but NO copy surface may quote it while `isBetaPricingActive()` is
-   *  false: a sentence that offers "$19 at the Opening Beta price" is an offer the checkout refuses. */
+   *  false: a sentence that offers a founding rate the checkout refuses. */
   businessBeta: string
-  /** The `collective_base` list, and the charged price today, e.g. "$79". */
-  collectiveList: string
-  /** The `collective_base` beta anchor. Same caution as `businessBeta`: not charged while the window is shut. */
-  collectiveBeta: string
   /** Non Profit flat, e.g. "$39". */
   nonprofit: string
   /** The Vera AI add-on monthly, e.g. "$20". */
@@ -93,8 +89,6 @@ export function priceStrings(): PriceStrings {
   return {
     businessList: formatLoadoutCents(cat.business_base.month.listCents),
     businessBeta: formatLoadoutCents(cat.business_base.month.foundingCents),
-    collectiveList: formatLoadoutCents(cat.collective_base.month.listCents),
-    collectiveBeta: formatLoadoutCents(cat.collective_base.month.foundingCents),
     nonprofit: formatLoadoutCents(cat.nonprofit_seat.month.foundingCents),
     veraAi: formatLoadoutCents(cat.addon_ai.month.foundingCents),
     veraAiYear: formatLoadoutCents(cat.addon_ai.year.foundingCents),
@@ -133,7 +127,7 @@ export interface TierAddonCell {
 export interface PricingTier {
   /** A stable id for keys + JSON-LD (`free` / `business` / `collective` / `nonprofit`). Narrower than
    *  SpacePlan on purpose: this is the ADVERTISED ladder, and Independent is not on it (LIVE-227). */
-  id: 'free' | 'business' | 'nonprofit' | 'collective'
+  id: 'free' | 'business' | 'nonprofit'
   /** The display name. */
   name: string
   /** The rung identity in a few words (the card's one-liner, e.g. "Own your audience."). */
@@ -198,7 +192,6 @@ export function offeringLadderLabel(offering: Offering): string {
 /** The catalog item each SPACE tier is priced from. Free has none ($0 is not a Stripe price). PURE. */
 const TIER_ITEM: Record<Exclude<PricingTier['id'], 'free'>, CatalogItemKey> = {
   business: 'business_base',
-  collective: 'collective_base',
   nonprofit: 'nonprofit_seat',
 }
 
@@ -209,9 +202,7 @@ const TIER_ITEM: Record<Exclude<PricingTier['id'], 'free'>, CatalogItemKey> = {
 const TIER_CORE_INCLUDED: Record<PricingTier['id'], string> = {
   free: 'Your storefront and page, host events, post, gather members, sell a membership, and be a Collaborator on other Spaces’ events.',
   business:
-    'Unlimited contacts, campaigns at volume, email branding, and exports: the full CRM, email, reporting, bookings, tickets, and your own website.',
-  collective:
-    'Everything in Business, plus team seats, automations, multiple pipelines, and hosting events with Collaborator Spaces.',
+    'Unlimited contacts, campaigns at volume, email branding, and exports: the full CRM, email, reporting, bookings, tickets, your own website, team seats, automations, multiple pipelines, and hosting events with Collaborator Spaces.',
   nonprofit:
     'The whole paid toolkit for verified nonprofits, with donations built in. Flat, never per seat.',
 }
@@ -220,7 +211,6 @@ const TIER_CORE_INCLUDED: Record<PricingTier['id'], string> = {
 const TIER_CTA: Record<PricingTier['id'], { label: string; href: string }> = {
   free: { label: 'Start free', href: '/spaces' },
   business: { label: 'Start a Space', href: '/spaces' },
-  collective: { label: 'Start a Space', href: '/spaces' },
   nonprofit: { label: 'Get verified', href: '/spaces' },
 }
 
@@ -557,6 +547,7 @@ export function pricingLadderSummary(input: LadderSummaryInput = {}): string[] {
   for (const a of PRICING_ADDONS) {
     lines.push(`- ${a.label} add-on: ${proAddonPrice(a.key, catalog)}, optional on any paid plan.`)
   }
-  lines.push('- Operator seats: add-on seats for your team on any paid plan, owner-priced.')
+  const seatPrice = formatLoadoutCents(catalog.operator_seat.month.foundingCents)
+  lines.push(`- Operator seats: add-on seats for your team on any paid plan, ${seatPrice}/seat/mo.`)
   return lines
 }

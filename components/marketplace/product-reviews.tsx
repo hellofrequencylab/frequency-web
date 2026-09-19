@@ -9,6 +9,8 @@ import { isError } from '@/lib/action-result'
 import type { ProductReviewsData } from '@/lib/commerce/reviews'
 import { Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { useViewer } from '@/components/layout/viewer-chrome'
+import { isStaff } from '@/lib/core/roles'
 
 // The reviews block on a Market listing / Space Shop item (Phase 8). Public read: the rating summary
 // + the review wall. A signed-in member (not the seller) leaves ONE review they can revise
@@ -47,6 +49,11 @@ export function ProductReviews({
   canReview: boolean
   canModerate: boolean
 }) {
+  const viewer = useViewer()
+  const isSignedIn = viewer.signedIn || signedIn
+  const allowReview = isSignedIn && (canReview || viewer.signedIn)
+  const allowModerate = canModerate || isStaff(viewer.webRole)
+
   return (
     <div className="mt-6 space-y-5">
       <h2 className="text-body-lg font-bold text-text">Reviews</h2>
@@ -67,9 +74,9 @@ export function ProductReviews({
       </div>
 
       {/* Write / update a review */}
-      {canReview ? (
+      {allowReview ? (
         <ReviewForm productId={productId} initial={myReview} />
-      ) : !signedIn ? (
+      ) : !isSignedIn ? (
         <div className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface-elevated/50 p-4">
           <p className="text-body-sm text-muted">Sign in to leave a review.</p>
           <Link
@@ -99,7 +106,7 @@ export function ProductReviews({
                 <Stars value={r.rating} />
               </div>
               {r.body && <p className="whitespace-pre-wrap text-body-sm leading-relaxed text-muted">{r.body}</p>}
-              {canModerate && <HideButton id={r.id} />}
+              {allowModerate && <HideButton id={r.id} />}
             </li>
           ))}
         </ul>

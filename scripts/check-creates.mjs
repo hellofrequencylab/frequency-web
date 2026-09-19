@@ -162,7 +162,6 @@ export const ENTITY_WRITES = new Map([
   ['lib/journey-plans.ts::createPlan', { role: 'create', entity: 'journey', why: 'THE member Journey road, behind all four /journeys create actions.' }],
   ['lib/practices.ts::createPractice', { role: 'create', entity: 'practice', why: 'THE member Practice road, behind the spark, the blank draft, and the Space road.' }],
   ['lib/spaces/provision.ts::createSpace', { role: 'create', entity: 'space', why: 'THE member Space road. Writes through the untyped spacesTable() handle.' }],
-  ['lib/spaces/provision.ts::createBusinessSpace', { role: 'create', entity: 'business', why: 'The researched Space road (Business Seeder). Same table, different provenance.' }],
   ['lib/marketplace.ts::createListing', { role: 'create', entity: 'listing', why: 'THE Classifieds listing road (market_listings, ADR-148).' }],
   ['lib/listings/index.ts::createListing', { role: 'create', entity: 'listing', why: 'The connect-only listings base (Housing + General).' }],
   ['lib/commerce/products.ts::createProduct', { role: 'create', entity: 'product / service', why: 'THE Market road for both a product and a service; product_kind discriminates.' }],
@@ -216,9 +215,8 @@ export const CREATE_ENTRIES = new Map([
   ['app/(main)/practices/actions.ts::createPracticeAction', { entity: 'practice', writer: 'lib/practices.ts::createPractice' }],
   ['app/(main)/practices/actions.ts::createPracticeDraftAction', { entity: 'practice', writer: 'lib/practices.ts::createPractice' }],
   ['app/(main)/spaces/[slug]/practices/actions.ts::createSpacePracticeAction', { entity: 'practice', writer: 'lib/practices.ts::createPractice' }],
-  // Space + business
+  // Space
   ['lib/spaces/provision.ts::createSpace', { entity: 'space', writer: 'lib/spaces/provision.ts::createSpace' }],
-  ['lib/spaces/provision.ts::createBusinessSpace', { entity: 'business', writer: 'lib/spaces/provision.ts::createBusinessSpace' }],
   // Listing
   ['app/(main)/classifieds/actions.ts::createListingAction', { entity: 'listing', writer: 'lib/marketplace.ts::createListing' }],
   ['app/(main)/marketplace/actions.ts::createHousingListingAction', { entity: 'listing', writer: 'lib/listings/index.ts::createListing' }],

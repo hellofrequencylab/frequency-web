@@ -80,15 +80,8 @@ const SPACE_TIER_COPY: Record<PricingTier['id'], { inherits: boolean; features: 
     features: [
       'Unlimited contacts and campaigns at volume',
       'The full CRM, email branding, reporting, and exports',
-      'Bookings, tickets, memberships, and your own website',
-    ],
-  },
-  collective: {
-    inherits: true,
-    features: [
-      'Automations and multiple pipelines',
-      'Team seats and roles',
-      'Membership tickets, Collaborator hosting, and shared events',
+      'Bookings, tickets, memberships, automations, and your own website',
+      'Two operator seats, pipelines, and Collaborator hosting',
     ],
   },
   nonprofit: {
@@ -126,9 +119,8 @@ const spaceTierCard = (t: PricingTier, i: number) => {
   }
 }
 
-// The seat add-on reads the same catalog row the /pricing extras card does, through the same
-// placeholder rule: while the owner has not set a real seat price the card says so instead of
-// printing the stand-in amount, and the day LIVE-229 clears the flag this card goes live with no edit.
+// The seat add-on reads the same catalog row the /pricing extras card does. LIVE-229 cleared the
+// placeholder, so this card publishes the catalog amount with no further edit.
 const EXTRAS = planExtras({ values: PRICING_DEFAULTS, catalog: CAT })
 const SEATS = EXTRAS.find((e) => e.key === 'seats')!
 const SEATS_PLACEHOLDER = catalogItem('operator_seat').placeholder === true

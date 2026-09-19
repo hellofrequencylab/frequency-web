@@ -10,7 +10,7 @@
 import { stripe, appUrl } from './stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { billingLive, getPricingValues, loadPricingFlags, type PricingFlagKey } from '@/lib/pricing/settings'
-import { asAddonKey, type AddonKey, type SpacePlan } from '@/lib/pricing/plans'
+import { asAddonKey, asSpacePlan, type AddonKey, type SpacePlan } from '@/lib/pricing/plans'
 import { resolveStripePriceId } from './pricing-prices'
 import {
   asCatalogItemKey,
@@ -46,31 +46,37 @@ export async function spacePlanSellable(plan: SpacePlan | string): Promise<boole
 // ADR-811: the paid loadout tiers map 1:1 onto their per-plan switches. Always GATED on billingLive(),
 // so this is FALSE while billing is OFF. Business/Collective/Independent buy the depth ladder; Nonprofit
 // is the flat per-mission plan. Collective + Independent bill via their own catalog bases (ADR-811).
-type LoadoutPlan = 'business' | 'collective' | 'nonprofit' | 'independent'
+type LoadoutPlan = Exclude<SpacePlan, 'free'>
 const LOADOUT_FLAG: Record<LoadoutPlan, PricingFlagKey> = {
   business: 'plan_business_enabled',
-  collective: 'plan_collective_enabled',
   nonprofit: 'plan_nonprofit_enabled',
   independent: 'plan_independent_enabled',
 }
 
-/** Is a loadout tier (business/collective/nonprofit/independent) sellable right now? billingLive() AND
- *  its mapped per-plan switch. GATED, FAIL-SAFE FALSE. The loadout checkout gates on this. */
-export async function spaceLoadoutSellable(plan: LoadoutPlan): Promise<boolean> {
+function asLoadoutPlan(plan: string): LoadoutPlan | null {
+  const key = asSpacePlan(plan)
+  return key === 'free' ? null : key
+}
+
+/** Is a loadout tier sellable right now? billingLive() AND its mapped per-plan switch.
+ *  A stored `collective` label remaps to Business (LIVE-228). GATED, FAIL-SAFE FALSE. */
+export async function spaceLoadoutSellable(plan: string): Promise<boolean> {
   try {
+    const key = asLoadoutPlan(plan)
+    if (!key) return false
     if (!(await billingLive())) return false
     const flags = await loadPricingFlags()
-    return flags[LOADOUT_FLAG[plan]] === true
+    return flags[LOADOUT_FLAG[key]] === true
   } catch {
     return false
   }
 }
 
 /** Whether OPERATOR SEATS can actually be bought right now (A4/A5): billingLive() AND the seat is
- *  activated (`catalog_operator_seat_active`, ADR-803) AND its founding price is synced to Stripe. Until
- *  all three hold, `operator_seat` is an inert placeholder the loadout checkout skips (isCatalogItemInert
- *  Placeholder / a null price), so the seat picker stays hidden rather than offering a silent no-op.
- *  GATED, FAIL-SAFE FALSE. */
+ *  activated (`catalog_operator_seat_active`, ADR-803 / ADR-1435) AND its founding price is synced to
+ *  Stripe. The catalog amount is live (LIVE-229); this switch is the sell gate. Until all three hold,
+ *  the loadout checkout skips the seat line (a null price or a dark switch), so the picker stays
+ *  hidden rather than offering a silent no-op. GATED, FAIL-SAFE FALSE. */
 export async function operatorSeatsSellable(): Promise<boolean> {
   try {
     if (!(await billingLive())) return false
@@ -132,7 +138,7 @@ export interface SpaceLoadout {
    *  network-depth base (automations, team, collaborators); 'independent' = the standalone white-label
    *  base (off-network); 'nonprofit' = the flat per-mission item. The AI add-on layers on any paid tier.
    *  'free' is not a checkout. */
-  plan: LoadoutPlan
+  plan: string
   /** The active metered add-ons (only AI now, ADR-552). Ignored for nonprofit framing. */
   addons?: readonly (AddonKey | string)[]
   /** Licensed seat count for seat items (Nonprofit seat quantity; tier-level Team seats, Phase D). Min 1. */
@@ -195,7 +201,7 @@ function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; pe
   // Independent is a flat standalone white-label base, OFF the network — no metered add-ons layer on it.
   if (loadout.plan === 'independent') return [{ key: 'independent_base', perSeat: false }, ...operatorSeat]
   // Business + Collective share the depth ladder: a flat base plus the optional AI add-on (and seats).
-  const base: CatalogItemKey = loadout.plan === 'collective' ? 'collective_base' : 'business_base'
+  const base: CatalogItemKey = 'business_base'
   const out: { key: CatalogItemKey; perSeat: boolean }[] = [{ key: base, perSeat: false }]
   const addons = [...new Set((loadout.addons ?? []).map((a) => asAddonKey(typeof a === 'string' ? a : null)).filter((a): a is AddonKey => a !== null))]
   for (const addon of addons) {
@@ -306,14 +312,14 @@ export async function createSpaceLoadoutCheckout(
     if (!priceId) {
       // The base item failing to resolve is fatal (no plan to sell); a missing add-on price just drops
       // that add-on from the loadout rather than blocking the whole checkout.
-      if (key === 'business_base' || key === 'collective_base' || key === 'independent_base' || key === 'nonprofit_seat') return null
+      if (key === 'business_base' || key === 'independent_base' || key === 'nonprofit_seat') return null
       continue
     }
     lineItems.push({ price: priceId, quantity: perSeat ? seatQuantity : 1 })
   }
   if (lineItems.length === 0) return null
 
-  const plan = loadout.plan
+  const plan = asSpacePlan(loadout.plan)
   const metadata = { kind: 'space_plan', space_id: spaceId, plan, billing_interval: interval, ...(await checkoutGaMetadata()) }
   // 14-day per-item trial (operator-editable via pricing settings, default 14). Stripe starts the
   // subscription in `trialing`, which the reconciler treats as active, so the plan is granted during the

@@ -48,7 +48,6 @@ app/(main)/connections/[id]/page.tsx
 app/(main)/connections/page.tsx
 app/(main)/crew/page.tsx
 app/(main)/edit/[slug]/page.tsx
-app/(main)/events/[slug]/page.tsx
 app/(main)/events/new/page.tsx
 app/(main)/events/page.tsx
 app/(main)/housing/page.tsx
