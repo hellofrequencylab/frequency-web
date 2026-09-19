@@ -38,10 +38,12 @@ export interface EntryRow {
   stage: EntryStage | null
   /** An event on its way: the copy that becomes the published event's description. */
   description: string | null
+  /** The Plan this date belongs to (ADR-1386). */
+  plan_id: string | null
 }
 
 export const ENTRY_COLS =
-  'id, space_id, kind, title, notes, location, all_day, starts_at, ends_at, time_zone, status, blocks_time, visibility, option_group, hold_expires_at, stage, description'
+  'id, space_id, kind, title, notes, location, all_day, starts_at, ends_at, time_zone, status, blocks_time, visibility, option_group, hold_expires_at, stage, description, plan_id'
 
 /** The staff form, as plain strings and booleans (what a client sends). */
 export interface EntryInput {
@@ -69,6 +71,8 @@ export interface EntryInput {
   holdExpiresOn?: string | null
   /** Pencil stage: more candidate start dates, each the same length as this one. */
   candidateDates?: string[] | null
+  /** The Plan this date belongs to, if any. */
+  planId?: string | null
 }
 
 /** The columns a create or update writes. `option_group` is set by the action, never by the form. */
@@ -161,6 +165,10 @@ export function parseEntryInput(input: EntryInput): { data: EntryWrite } | { err
       hold_expires_at: holdExpiresAt,
       stage: stageDef?.stage ?? null,
       description: def.isPencil ? trimOrNull(input.description, MAX_DESCRIPTION) : null,
+      plan_id:
+        typeof input.planId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.planId)
+          ? input.planId
+          : null,
     },
   }
 }
@@ -222,6 +230,7 @@ export function entryToInput(row: EntryRow): EntryInput {
     showPublicly: row.visibility === 'public_unavailable',
     holdExpiresOn: row.hold_expires_at ? row.hold_expires_at.slice(0, 10) : '',
     candidateDates: [],
+    planId: row.plan_id,
   }
 }
 
@@ -292,6 +301,7 @@ export function entryToCalendarItem(
     entryInput: opts.editable ? entryToInput(row) : null,
     notes: row.notes,
     description: row.description,
+    planId: row.plan_id,
   }
 }
 

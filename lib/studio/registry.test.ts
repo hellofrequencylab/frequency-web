@@ -106,7 +106,7 @@ describe('catalog-only vs wizard entities', () => {
     const withWizards = STUDIO_ENTITIES.filter((m) => !isCatalogOnly(m)).map((m) => m.entity)
     // Owner decision 2026-08-11: these five get a catalog row so the universal Create affordance is
     // complete, but no guided flow. A name and a description do not need two doors and a mood dial.
-    expect(catalogOnly.sort()).toEqual(['broadcast', 'channel', 'hub', 'nexus', 'room'])
+    expect(catalogOnly.sort()).toEqual(['broadcast', 'channel', 'hub', 'nexus', 'room', 'space-plan'])
     expect(withWizards.length).toBeGreaterThan(0)
   })
 

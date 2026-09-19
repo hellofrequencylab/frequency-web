@@ -22,8 +22,8 @@ export const TASK_STATUSES: readonly TaskStatus[] = ['open', 'done', 'snoozed']
 
 /** The filter buckets the Tasks surface offers (mine / all / overdue / by-contact). Pure `filterTasks`
  *  reads one of these against a caller's viewer id + an optional contact id. */
-export type TaskFilter = 'mine' | 'all' | 'overdue' | 'by-contact'
-export const TASK_FILTERS: readonly TaskFilter[] = ['mine', 'all', 'overdue', 'by-contact']
+export type TaskFilter = 'mine' | 'all' | 'overdue' | 'by-contact' | 'by-plan'
+export const TASK_FILTERS: readonly TaskFilter[] = ['mine', 'all', 'overdue', 'by-contact', 'by-plan']
 
 const MAX_TITLE_LEN = 200
 const MAX_NOTES_LEN = 4_000
@@ -41,6 +41,10 @@ export interface CreateTaskInput {
   dueAt?: string | null
   /** The contact this follow-up is about (optional: a standalone to-do has none). */
   contactId?: string | null
+  /** When set, this follow-up belongs to a Space Plan (ADR-1386). */
+  planId?: string | null
+  /** Days before (negative) or after (positive) the Production date. */
+  dueOffsetDays?: number | null
 }
 
 /** One task row as the app consumes it (camelCase). */
@@ -56,6 +60,8 @@ export interface CrmTask {
   createdBy: string | null
   createdAt: string
   updatedAt: string
+  planId: string | null
+  dueOffsetDays: number | null
 }
 
 /** The snake_case row shape written to `crm_tasks` (what the insert sends). */
@@ -68,6 +74,8 @@ export interface TaskInsert {
   due_at: string | null
   status: TaskStatus
   created_by: string
+  plan_id?: string | null
+  due_offset_days?: number | null
 }
 
 function oneLine(raw: unknown, cap: number): string | null {
@@ -102,6 +110,12 @@ export function buildTaskInsert(input: CreateTaskInput, spaceId?: string | null)
   const contactId =
     typeof input.contactId === 'string' && input.contactId.trim().length ? input.contactId.trim() : null
 
+  const planId =
+    typeof input.planId === 'string' && input.planId.trim().length ? input.planId.trim() : null
+
+  const dueOffset =
+    typeof input.dueOffsetDays === 'number' && Number.isInteger(input.dueOffsetDays) ? input.dueOffsetDays : null
+
   const dueAt =
     typeof input.dueAt === 'string' && !Number.isNaN(Date.parse(input.dueAt))
       ? new Date(input.dueAt).toISOString()
@@ -116,6 +130,8 @@ export function buildTaskInsert(input: CreateTaskInput, spaceId?: string | null)
     due_at: dueAt,
     status: 'open',
     created_by: createdBy,
+    plan_id: planId,
+    due_offset_days: dueOffset,
   }
 }
 
@@ -138,7 +154,7 @@ export function isOverdue(task: Pick<CrmTask, 'status' | 'dueAt'>, now: number =
 export function filterTasks(
   tasks: readonly CrmTask[],
   filter: TaskFilter,
-  opts: { viewerId?: string | null; contactId?: string | null; now?: number } = {},
+  opts: { viewerId?: string | null; contactId?: string | null; planId?: string | null; now?: number } = {},
 ): CrmTask[] {
   const list = tasks ?? []
   const now = opts.now ?? Date.now()
@@ -149,6 +165,8 @@ export function filterTasks(
       return list.filter((t) => isOverdue(t, now))
     case 'by-contact':
       return opts.contactId ? list.filter((t) => t.contactId === opts.contactId) : []
+    case 'by-plan':
+      return opts.planId ? list.filter((t) => t.planId === opts.planId) : []
     case 'all':
     default:
       return [...list]
@@ -203,10 +221,12 @@ type TaskRow = {
   created_by: string | null
   created_at: string
   updated_at: string
+  plan_id: string | null
+  due_offset_days: number | null
 }
 
 const ROW_COLS =
-  'id, space_id, contact_id, assignee_profile_id, title, notes, due_at, status, created_by, created_at, updated_at'
+  'id, space_id, contact_id, assignee_profile_id, title, notes, due_at, status, created_by, created_at, updated_at, plan_id, due_offset_days'
 
 /** The untyped query-builder shape listTasks chains over (crm_tasks is not in generated types yet). */
 interface TaskQuery {
@@ -231,6 +251,8 @@ export function mapTaskRow(r: TaskRow): CrmTask {
     createdBy: r.created_by,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
+    planId: r.plan_id,
+    dueOffsetDays: r.due_offset_days,
   }
 }
 
@@ -290,6 +312,7 @@ export async function updateTaskStatus(
 export interface ListTasksFilter {
   spaceId?: string | null
   contactId?: string | null
+  planId?: string | null
   limit?: number
 }
 
@@ -307,6 +330,7 @@ export async function listTasks(filter: ListTasksFilter = {}): Promise<CrmTask[]
     let q = db.from('crm_tasks').select(ROW_COLS)
     if (filter.spaceId) q = q.eq('space_id', filter.spaceId)
     if (filter.contactId) q = q.eq('contact_id', filter.contactId)
+    if (filter.planId) q = q.eq('plan_id', filter.planId)
     const { data, error } = await q.order('created_at', { ascending: false }).limit(limit)
     if (error || !data) return []
     return data.map(mapTaskRow)
