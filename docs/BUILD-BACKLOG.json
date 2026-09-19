@@ -176,6 +176,7 @@
             "LIVE-418",
             "LIVE-419",
             "SCAN-638",
+            "SCAN-643",
             "HYG-100",
             "LIVE-413",
             "LIVE-411",
@@ -14807,6 +14808,43 @@
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const files=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\"));const drop=files.some(f=>/drop table if exists public.page_settings_events_backup_20260910/i.test(fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\")));process.exit(drop?0:1)'",
         "note": "Fails until a later migration drops the backup table."
+      }
+    },
+    {
+      "id": "SCAN-642",
+      "title": "Sitemap-advertised Spotlight pages are force-dynamic",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "app/spotlight/[handle]/page.tsx",
+        "ref": "meta-scan 2026-09-19 evening"
+      },
+      "detail": "FOUND 2026-09-19 evening. app/sitemap.ts getSpotlightRoutes advertises /spotlight/<handle> for published profiles. app/spotlight/[handle]/page.tsx still says export const dynamic = 'force-dynamic'. The route lives OUTSIDE (main), so SCAN-641 / SCAN-643 cannot fix it. getPublishedSpotlight reads the admin client and does not call cookies(); the page emits Person JSON-LD and a self-canonical. Same class as SCAN-637 (listing details). Close by dropping force-dynamic, asking for revalidate = 3600, and generateStaticParams from published handles (or accepting on-demand ISR). Viewer-personalisation (guestbook sign) already lives in client components. Do not fold this into SCAN-643.\n\nCLOSED 2026-09-19 (ADR-1451). Dropped force-dynamic. Page asks for revalidate = 3600 and generateStaticParams via listPublishedSpotlightHandles (same publish filter as the sitemap). Sitemap getSpotlightRoutes now calls that helper; admin client import left the sitemap. Guestbook writes stay in client actions. Did not touch (main)/layout.tsx (SCAN-643 / SCAN-641).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"app/spotlight/[handle]/page.tsx\",\"utf8\");process.exit(/export const dynamic = .force-dynamic./.test(s)?1:0)'",
+        "note": "Fails while the sitemap-advertised Spotlight page still force-dynamics."
+      },
+      "closed": "2026-09-19"
+    },
+    {
+      "id": "SCAN-643",
+      "title": "The (main) layout still voids SCAN-636 ISR with cookies and headers",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "app/(main)/layout.tsx",
+        "ref": "ADR-1440 consequence; meta-scan 2026-09-19 evening"
+      },
+      "detail": "FOUND 2026-09-19 evening while re-testing SCAN-636 after #2733. app/(main)/events/[slug]/page.tsx now exports revalidate = 3600 and generateStaticParams (probe passes). The parent layout still (1) awaits getCachedUser() which calls cookies() via createClient, (2) awaits headers() for x-pathname before publicChrome, and (3) generateMetadata awaits headers() for page_settings SEO. This app does not enable cacheComponents. One dynamic API in a layout voids the subtree — the same sentence app/discover/layout.tsx already paid to learn. Sitemap-advertised URLs under (main) pay this tax: /events/<slug>, /spaces/<slug>, /store|/market|/housing|/classifieds/<id>, /spaces/<slug>/podcasts/<show>. Close by moving those public routes under a layout that never calls cookies() or headers() (the discover pattern), or by making the (main) public-chrome branch skip both APIs without losing the member-shell redirect. Do not close this by swapping MarketingHeader (that is SCAN-641). Do not reopen SCAN-636.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const L=fs.readFileSync(\"app/(main)/layout.tsx\",\"utf8\");const i=L.indexOf(\"export default async function MainLayout\");const body=i<0?L:L.slice(i);const auth=body.indexOf(\"getCachedUser\");const pub=body.indexOf(\"publicChrome\");const md=/export async function generateMetadata[\\s\\S]*headers\\(\\)/.test(L);process.exit((auth>=0&&(pub<0||auth<pub))||md?1:0)'",
+        "note": "Fails while MainLayout awaits getCachedUser before publicChrome, or generateMetadata calls headers()."
       }
     },
     {

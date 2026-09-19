@@ -72,6 +72,23 @@ export async function getPublishedSpotlight(handle: string): Promise<SpotlightDa
   return loadMemberSpotlight(handle, { requirePublished: true })
 }
 
+/** Published Spotlight handles for sitemap + generateStaticParams (SCAN-642).
+ *  Same publish gate as getPublishedSpotlight: is_active, not system, meta.spotlight.published. */
+export async function listPublishedSpotlightHandles(limit = 1000): Promise<string[]> {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('profiles')
+    .select('handle')
+    .eq('is_active', true)
+    .eq('is_system', false)
+    .filter('meta->spotlight->>published', 'eq', 'true')
+    .limit(limit)
+  if (!Array.isArray(data)) return []
+  return (data as { handle: string | null }[])
+    .map((p) => p.handle)
+    .filter((h): h is string => typeof h === 'string' && h.length > 0)
+}
+
 /**
  * Load a member's profile-block data for the IN-APP profile (`/people/<handle>`), decoupled from the
  * Spotlight publish gate (ADR-522). Every signed-in member's own grid renders here regardless of tier or

@@ -7,6 +7,38 @@
 > The durable record of the full-repo meta scan: what shipped, and what is still open with the
 > exact fix. Update it as items close. Newest pass first; earlier passes are kept below.
 
+## 2026-09-19 evening pass (re-test after four same-day merges)
+
+Run against `origin/main` at `ab1902846` after SCAN-636 (#2733), SCAN-637 (#2731), SCAN-639, LIVE-242 (#2734), and LIVE-306 (#2735). Sequential finders. No new planning markdown.
+
+**Gates (exit 0):** `check:seo`, `check:canon`, `check:templates` (63 non-shell, baseline 63), `check:vocab`, `check:client-boundary` (850 client entries), `check:authz` (1003 admin-client exports gated), `check:admin-client` (757 importers). Member copy on-canon. `content/` still has zero em dashes.
+
+**Advisors (Frequency Community, 2026-09-19 14:59Z):** security unchanged in kind (PostGIS `spatial_ref_sys` ERROR, leave it; 85 deny-all INFO; SECURITY DEFINER executable WARNs tracked by OWN-006). Performance **moved again**: **zero** `unindexed_foreign_keys`, **zero** `auth_rls_initplan`. Unused indexes 392 → 405. Backup table still the one `no_primary_key` INFO (`SCAN-640`, **21 rows**, do not drop).
+
+**Premise re-tests.**
+
+| Row | Morning claim | Evening reading | Action |
+|---|---|---|---|
+| `SCAN-636` | ISR twin canonicals onto a dynamic member page | Page exports `revalidate = 3600`; probe passes; signed-in rewrite to `/full` | Stay done. Remainder is `SCAN-643`. |
+| `SCAN-637` / `SCAN-639` | Listing force-dynamic / unwired FilterBar | Closed on main | Stay done. |
+| `SCAN-638` | Six unindexed FKs + two initplans | Production indexes and wraps exist; creating files still unwrap; advisors clean | Re-point: greenfield migration only. |
+| `LIVE-242` | Fold Hubs/Nexuses | Done (#2734) | Stay done. Do not start from this scan. |
+| `SCAN-640` | Backup table, no PK | 21 rows still in public | Leave open. Draft-and-approve. |
+| `SCAN-641` | Two public headers | Still MarketingHeader vs SiteHeader | Leave open. Header only. |
+
+**New findings that survived refute.**
+
+| Surface | What crawlers are told | What the route actually is | Row |
+|---|---|---|---|
+| Spotlight | sitemap `getSpotlightRoutes` + Person JSON-LD + self-canonical | `revalidate = 3600` + `generateStaticParams` (closed 2026-09-19) | `SCAN-642` done |
+| Event / Space / listing / Show | sitemap + `revalidate` on the event page | `(main)/layout.tsx` calls `cookies()` and `headers()` before public chrome | `SCAN-643` |
+
+**Not a finding.** `/sites/<slug>` is force-dynamic and noindex on purpose (E10 hold). Discover OG `force-dynamic` is the card path. Dead lib exports remain `SCAN-502`. `check:seo` already covers pages without local metadata. Circle "stubs" are still redirects.
+
+**Scorecard (honest gap to 10).** Security 8 (gates green; advisors known; HYG-100 unconfirmed). Wiring 8 (FilterBar closed; layout still dynamizes advertised URLs). SEO/AIO 8 (sitemap coherent; Spotlight is ISR; (main) public URLs still pay the layout tax). Speed 6 (same inversion, narrower now). A11y 8 (gates hold; LIVE-186 flip still owner). Docs 8 (this file + one list updated; BUILD-LIST App Platform prose is still stale vs `deferredByName`).
+
+**Phased cleanup.** `pnpm packets --lane scan`. Order: SCAN-643, SCAN-638 (draft only), SCAN-641, SCAN-640 (after owner archive), LIVE-412. `SCAN-642` closed.
+
 ## 2026-09-19 pass (full-repo, 14 days after scan two)
 
 Run against `origin/main` at `17ebd651c` (318 commits since 2026-09-05). Sequential finders, no

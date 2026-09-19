@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { getPublishedSpotlight } from '@/lib/spotlight/data'
+import { getPublishedSpotlight, listPublishedSpotlightHandles } from '@/lib/spotlight/data'
 import { SpotlightShell } from '@/components/spotlight/spotlight-shell'
 import { MemberProfileModules } from '@/components/widgets/member-profile/member-profile-modules'
 import { JsonLd } from '@/components/json-ld'
@@ -8,9 +8,17 @@ import { personSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { avatarSrc } from '@/lib/images/avatar-focus'
 
 // PUBLIC, top-level route (outside the auth-gated (main) group) so a signed-out
-// visitor or non-member can open a shared link. Per-request + fail-closed: a page
-// that is not explicitly published 404s (no "not public yet" copy to police).
-export const dynamic = 'force-dynamic'
+// visitor or non-member can open a shared link. Fail-closed: a page that is not
+// explicitly published 404s (no "not public yet" copy to police).
+// SCAN-642 / ADR-1451: sitemap advertises these URLs. force-dynamic here voided
+// ISR the way listing details used to. No cookies() on this page; guestbook
+// writes stay in guestbook-actions.ts.
+export const revalidate = 3600
+
+export async function generateStaticParams() {
+  const handles = await listPublishedSpotlightHandles(1000).catch(() => [])
+  return handles.map((handle) => ({ handle }))
+}
 
 export async function generateMetadata({
   params,
