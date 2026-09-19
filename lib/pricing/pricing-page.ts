@@ -557,6 +557,7 @@ export function pricingLadderSummary(input: LadderSummaryInput = {}): string[] {
   for (const a of PRICING_ADDONS) {
     lines.push(`- ${a.label} add-on: ${proAddonPrice(a.key, catalog)}, optional on any paid plan.`)
   }
-  lines.push('- Operator seats: add-on seats for your team on any paid plan, owner-priced.')
+  const seatPrice = formatLoadoutCents(catalog.operator_seat.month.foundingCents)
+  lines.push(`- Operator seats: add-on seats for your team on any paid plan, ${seatPrice}/seat/mo.`)
   return lines
 }

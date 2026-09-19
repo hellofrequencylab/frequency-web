@@ -197,7 +197,7 @@ unwritten or unsold by the 2026-09-08 dead-surface sweep, so there are no judgem
 | # | Change | Files | Done when | Verify |
 |---|---|---|---|---|
 | 3.1 | Merge `collective` → `business`; one paid tier at **$49** | `lib/pricing/plans.ts`, `pricing-keys.ts` (+ `RETIRED_CATALOG_ITEM_KEYS` for `collective_base`), 1 migration, `scripts/check-collective.mjs` | `SPACE_PLANS` = free/business/nonprofit/independent | `pricing.test.ts` |
-| 3.2 | Seats live: clear `placeholder`, set **$12**, sync catalog, flip `catalog_operator_seat_active` | `pricing-keys.ts:491`, operator flag | Checkout mints a seat line | one real checkout |
+| 3.2 | Seats at **$12**: catalog amount, not a placeholder. A catalog sync mints the Stripe price; `catalog_operator_seat_active` still gates checkout | `pricing-keys.ts` `operator_seat` | Catalog is $12 and not a placeholder | `catalogItem('operator_seat')` |
 | 3.3 | Take-rate to two numbers: 10% free · 3% paid · 0% non-profit · 0% own audience | `NETWORK_TAKE_RATE_DEFAULT` + the seeded vector migration | Ladder has two rungs | `take-rate-ladder.test.ts` |
 | 3.4 | Memberships stay paid-gated; make the **upsell honest at the point of tier creation** ("charging your members is part of Business") | `settings/memberships/section.tsx` | Superseded by [ADR-1415](DECISIONS.md) / LIVE-410: the wall moved to the free floor; Connect readiness is the door | copy review |
 | 3.5 | Pricing page, grid, FAQ, JSON-LD and llms.txt all derive from the catalog | `/admin/pricing` data edit; `pricing-grid.ts` | No `$`+digit or `N%` literal in marketing source | `marketing-figures.test.ts` |

@@ -67,10 +67,10 @@ export async function spaceLoadoutSellable(plan: LoadoutPlan): Promise<boolean> 
 }
 
 /** Whether OPERATOR SEATS can actually be bought right now (A4/A5): billingLive() AND the seat is
- *  activated (`catalog_operator_seat_active`, ADR-803) AND its founding price is synced to Stripe. Until
- *  all three hold, `operator_seat` is an inert placeholder the loadout checkout skips (isCatalogItemInert
- *  Placeholder / a null price), so the seat picker stays hidden rather than offering a silent no-op.
- *  GATED, FAIL-SAFE FALSE. */
+ *  activated (`catalog_operator_seat_active`, ADR-803 / ADR-1435) AND its founding price is synced to
+ *  Stripe. The catalog amount is live (LIVE-229); this switch is the sell gate. Until all three hold,
+ *  the loadout checkout skips the seat line (a null price or a dark switch), so the picker stays
+ *  hidden rather than offering a silent no-op. GATED, FAIL-SAFE FALSE. */
 export async function operatorSeatsSellable(): Promise<boolean> {
   try {
     if (!(await billingLive())) return false

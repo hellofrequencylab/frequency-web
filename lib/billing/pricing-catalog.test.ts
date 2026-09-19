@@ -23,7 +23,7 @@ describe('yearlyFromMonthly (two months free)', () => {
   it('is exactly 10x the monthly amount', () => {
     expect(yearlyFromMonthly(1900)).toBe(19000) // $19/mo -> $190/yr
     expect(yearlyFromMonthly(2900)).toBe(29000) // $29/mo -> $290/yr
-    expect(yearlyFromMonthly(900)).toBe(9000) // $9 seat -> $90/yr
+    expect(yearlyFromMonthly(1200)).toBe(12000) // $12 seat -> $120/yr
   })
 
   it('is 0 for non-positive / invalid input', () => {
@@ -71,10 +71,14 @@ describe('the clean catalog shape (collapsed · ADR-552)', () => {
     expect(ind.perSeat).toBe(false)
   })
 
-  it('Operator seat: a real per-seat add-on (ADR-799), the only perSeat item', () => {
+  it('Operator seat: $12/seat/mo, live, the only perSeat item (ADR-799 / LIVE-229)', () => {
     const seat = catalogItem('operator_seat')
     expect(seat.perSeat).toBe(true)
-    expect(seat.month.foundingCents).toBeGreaterThan(0) // placeholder amount; owner sets the final price
+    expect(seat.placeholder).toBeFalsy()
+    expect(seat.month.listCents).toBe(1200)
+    expect(seat.month.foundingCents).toBe(1200)
+    expect(seat.year.listCents).toBe(12000)
+    expect(seat.year.foundingCents).toBe(12000)
     // It is the ONLY per-seat item; every flat plan/add-on stays perSeat:false.
     expect(catalogItems().filter((i) => i.perSeat).map((i) => i.key)).toEqual(['operator_seat'])
   })

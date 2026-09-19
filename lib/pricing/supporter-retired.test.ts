@@ -150,9 +150,12 @@ describe('the Supporter DISPLAY surfaces are gone (ADR-878)', () => {
     expect(CREW_NOTE.line).not.toContain('—') // CONTENT-VOICE: no em dashes
 
     // The answer-engine ladder summary, the citable version of the same ladder.
+    // $12 on the MEMBER rungs is the retired Supporter/Crew anchor. Operator seats are
+    // $12/seat/mo (LIVE-229), so the whole ladder string may contain that figure.
     const ladder = pricingLadderSummary().join('\n')
     expect(ladder).not.toMatch(/Supporter/)
-    expect(ladder).not.toContain('$12')
+    const memberLines = ladder.split('\n').filter((l) => /^- (Member|Crew):/.test(l)).join('\n')
+    expect(memberLines).not.toContain('$12')
     expect(ladder).toContain('- Member: Free.')
     expect(ladder).toContain('- Crew: from $4.99/mo')
   })

@@ -292,12 +292,8 @@ const RAW_METERS: Record<string, RawMeter> = {
     // a Collective capability (`space_team` gates there), so Business runs on the owner alone.
     // Collective: 3 seats INCLUDED (placeholder); more are the ADR-799 per-seat add-on, never a wall.
     //
-    // ⚠️ "add more per seat" is an INTENT, not a live purchase. The `operator_seat` catalog item is
-    // `placeholder: true`, which makes the catalog sync SKIP it, so no Stripe price is minted and the
-    // item is dropped from checkout. Nobody can buy an extra seat today. The line stays because it
-    // describes the model honestly; it becomes true when the owner sets the real amount and clears the
-    // flag. ADR-811 names $12/seat while the placeholder holds $9, so that is a deliberate choice to
-    // make, not a value to inherit by accident.
+    // Extra seats are the ADR-799 per-seat add-on at the catalog amount (LIVE-229, $12/seat/mo).
+    // The catalog sync mints that price; `catalog_operator_seat_active` still gates checkout.
     allowances: PLACEHOLDER_METER_LIMITS.space_team!,
     allowanceTextByTier: {
       free: '1 seat included (the owner)',

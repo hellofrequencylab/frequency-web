@@ -4,7 +4,7 @@ description: What each Space plan is for, what it turns on, and how to pick the 
 category: spaces
 order: 2
 published: 2026-07-27
-updated: 2026-09-14
+updated: 2026-09-19
 audience: member
 featureKeys: [billing]
 status: published
@@ -54,7 +54,8 @@ Every paid plan starts with a free trial. The pricing page shows how long it run
 
 - **Automation**, so your follow-ups run without you
 - **Multiple pipelines**, when one funnel stops being enough
-- **Team seats**, so other people can work in your Space
+- **Team seats**, so other people can work in your Space. Extra seats beyond the ones a plan
+  includes are a priced add-on. The current amount is on the [pricing page](/pricing).
 - **Programs**, where your model becomes something others start Chapters of
 
 **Non Profit** grants the whole paid set at the nonprofit rate once your 501(c)(3) is verified.
