@@ -333,7 +333,7 @@ app/(main)/events/[slug]/manage/crm/actions.ts
 app/(main)/events/[slug]/manage/load.ts
 app/(main)/events/[slug]/manage/page.tsx
 app/(main)/events/[slug]/manage/questionnaire-actions.ts
-app/(main)/events/[slug]/opengraph-image.tsx
+app/(public)/events/[slug]/opengraph-image.tsx
 app/(main)/events/[slug]/social-actions.ts
 app/(main)/events/actions.ts
 app/(main)/events/admin-actions.ts

@@ -22,7 +22,7 @@ const templateCode = template.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/
 // Loading skeletons are in here too: a skeleton IS a claim about the destination's shape, and a
 // hand-rolled one drifts from the page it stands in for (both of these already had).
 const EVENT_PAGES = [
-  'app/(main)/events/[slug]/page.tsx',
+  'app/(public)/events/[slug]/page.tsx',
   'app/(main)/events/[slug]/event-member-page.tsx',
   'app/discover/events/[slug]/page.tsx',
   'app/(main)/events/[slug]/loading.tsx',

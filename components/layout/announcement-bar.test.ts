@@ -49,6 +49,8 @@ const PUBLIC_LAYOUTS = [
   'app/(marketing)/layout.tsx',
   'app/discover/layout.tsx',
   'app/(help)/layout.tsx',
+  'app/(public)/layout.tsx',
+  'components/layout/public-share-chrome.tsx',
 ]
 
 describe('the announcement bar never reaches a public surface', () => {
@@ -60,17 +62,22 @@ describe('the announcement bar never reaches a public surface', () => {
     ).not.toMatch(/AnnouncementBar|SiteAlertBar/)
   })
 
-  it('the signed-out public-twin branch of the member layout does not mount it either', () => {
-    // (main)/layout.tsx serves BOTH the member shell and a logged-out "public twin" of a Space page.
-    // The bar belongs to the first and not the second, and they live in one file - so the guard is
-    // that the only mention sits in the AppShell call, not in the early-return branch above it.
+  it('the signed-out public-twin chrome does not mount it either', () => {
+    // SCAN-643 moved share URLs under app/(public)/. Leftover Space twins still early-return
+    // through publicChrome() → PublicShareChrome. The bar belongs on AppShell only.
+    const chrome = read('components/layout/public-share-chrome.tsx')
+    expect(
+      chrome,
+      'PublicShareChrome mounts the announcement bar. That chrome renders for visitors.',
+    ).not.toMatch(/AnnouncementBar|SiteAlertBar/)
     const layout = read('app/(main)/layout.tsx')
-    const marker = '<SiteHeader'
+    const marker = 'const publicChrome'
     const twinStart = layout.indexOf(marker)
-    expect(twinStart, 'the public-twin branch is gone or restructured; re-derive this guard').toBeGreaterThan(-1)
-    const twinEnd = layout.indexOf('</ViewerProvider>', twinStart)
-    expect(twinEnd, 'the public-twin ViewerProvider close is gone; re-derive this guard').toBeGreaterThan(twinStart)
+    expect(twinStart, 'the publicChrome early-return is gone; re-derive this guard').toBeGreaterThan(-1)
+    const twinEnd = layout.indexOf('const user = await getCachedUser', twinStart)
+    expect(twinEnd, 'the publicChrome / auth split is gone; re-derive this guard').toBeGreaterThan(twinStart)
     const twinBranch = layout.slice(twinStart, twinEnd)
+    expect(twinBranch, 'publicChrome no longer mounts PublicShareChrome').toContain('PublicShareChrome')
     expect(
       twinBranch,
       'the signed-out twin branch mounts the announcement bar. That branch renders for visitors.',
