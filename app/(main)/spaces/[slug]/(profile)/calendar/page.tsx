@@ -25,8 +25,8 @@ import { CalendarPmConsole } from '@/components/spaces/calendar-pm-console'
 // calendar app via the public per-space .ics feed (Events EC1). The identity hero + tab chrome come from
 // the (profile) layout; this is the body.
 //
-// ADMIN / GUEST (ADR-1389, amended by ADR-1450, ADR-1454, and ADR-1457). A viewer who manages the Space lands on
-// ADMIN: the production console (CalendarPmConsole). Pencil is its own lane. The board lists what is in planning,
+// ADMIN / GUEST (ADR-1389, amended by ADR-1450, ADR-1454, ADR-1457, and ADR-1458). A viewer who manages the Space lands on
+// ADMIN: the production console (CalendarPmConsole). Pencil and Planning are their own lanes. The board lists what is
 // in production, and cancelled. A toggle flips to GUEST. Guest and ordinary members go through
 // guestLiveItems: live chips plus the C0 cancelled footer. Pencil and planning stay off that feed.
 // StaffCalendar is the date map and the settings drawer, not a second guest month. The server never
