@@ -47,6 +47,10 @@ const ANNOTATION = /\/\/\s*token-ok:|\/\*\s*token-ok\b/
 // theme/skin registries, accent + cover generators, map markers, raster OG/social images,
 // the theme/email studios + email templates (author raw brand color), QR styling, the Space
 // brand/color pickers, and dataviz/chart color files. Each predicate takes the POSIX relpath.
+//
+// HYG-099 (ADR-1429): this list IS the leftover-hex sweep. Remaining literals are craft
+// (Satori OG, maps, email HTML, token DATA). Do not churn token files without a DAWN sync.
+// In-app chrome still fails a planted hex (scripts/check-tokens.test.ts).
 const ALLOWLIST = [
   // exact files
   (p) => p === 'app/globals.css',
