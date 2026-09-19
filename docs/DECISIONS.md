@@ -46306,3 +46306,20 @@ Premise re-tested 2026-09-19 on this tree:
 **Rejected.** JSON-in-a-text-column. Deleting the ledger row to make `check:migrations` pass while production still has the columns.
 
 **Rows.** HYG-068.
+
+## ADR-1446: Public calendar C0 paints cancelled as footer text (LIVE-414)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-414` · implements [ADR-1445](DECISIONS.md) C0 · extends [ADR-1388](DECISIONS.md) and [ADR-1389](DECISIONS.md) · corroborated by `lib/calendar/guest-live.ts`, `components/events/event-calendar.tsx` (`cancelledCellFooter`), `lib/events/store.ts` (`paintCancelled`)
+
+**Context.** LIVE-379 shipped `stage` and LIVE-380 shipped Admin / Guest. ADR-1445 filed how those surfaces should read. Premise re-tested 2026-09-19: `EventCalendar` still painted cancelled as a struck chip (`line-through`); `passesCalendarGate` dropped cancelled before the public grid could show them; `guestLiveItems` did not exist.
+
+**Decision.**
+
+1. **`guestLiveItems` is the public feed.** It keeps live gatherings and cancelled items. It drops pencil, planning, and private-layer rows. Production is the live show.
+2. **`cancelledCellFooter` is the date-square paint.** Small muted titles at the bottom of that day. Not a chip. Not a strikethrough. Not omitted. The subscribed `.ics` stays live-only.
+3. **The on-page reader opts in.** `listSpaceCalendarEvents(..., { paintCancelled: true })` uses `passesCalendarPaintGate`, which is the live gate without the cancelled drop. Clash checks and the ICS RPC stay on `passesCalendarGate`.
+4. **C1 through C5 stay their own rows.** This change does not mount `CalendarPmConsole` and does not put `guestLiveItems` on the Guest page branch.
+
+**Rejected.** Changing `passesCalendarGate` itself (that would put cancelled gatherings into every subscriber's calendar app). Hiding cancelled. Painting cancelled as a struck chip.
+
+**Rows.** LIVE-414.

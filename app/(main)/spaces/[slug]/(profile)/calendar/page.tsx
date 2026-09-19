@@ -117,7 +117,7 @@ export default async function SpaceCalendarPage({
 
   const grid = monthGridWindow(initialYear, initialMonth1)
   const [rows, unavailable] = await Promise.all([
-    listSpaceCalendarEvents(space.id, { fromDay: grid.fromDay }),
+    listSpaceCalendarEvents(space.id, { fromDay: grid.fromDay, paintCancelled: true }),
     listPublicUnavailableItems(space.id, grid.fromDay, grid.toDay),
   ])
   const events = [...(await spaceEventRowsToItems(rows)), ...unavailable]

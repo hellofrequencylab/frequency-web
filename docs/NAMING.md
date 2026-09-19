@@ -517,8 +517,10 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
   every event rule in this canon applies to it. Verb: **"Make it a Production"**. Once published, member-facing surfaces call it an event; the
   word Production belongs to the team's planning surfaces (the board, the plan drawer, the readiness
   bar), because a guest buying a ticket is coming to an event, not to a stage of someone's workflow.
-- **Cancelled** (stage 4) = not happening (stage `cancelled`). It stays on the team calendar, struck
-  through, and never blocks anything. Spelled with two l's, as the rest of the product spells it.
+- **Cancelled** (stage 4) = not happening (stage `cancelled`). On the public calendar it is small
+  muted text at the bottom of that date, not a chip and not hidden (LIVE-414). On the team calendar
+  it stays visible and never blocks anything. Spelled with two l's, as the rest of the product
+  spells it.
 - **The stages together** are written in order, "Pencil, Planning, Production", with commas in prose;
   an arrow is fine in a diagram. Never abbreviated to "PPP" in UI.
 

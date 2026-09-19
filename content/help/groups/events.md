@@ -57,6 +57,7 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 - Set a home location on your profile and you can also filter by **distance**, showing only gatherings hosted within 10, 25, or 50 km of you. (We use your approximate neighborhood, never your exact address.)
 - When we have a sense of what fits you, a **"For You"** lane suggests gatherings you'd be into, and tells you, plainly, *why*. If we don't have enough to go on yet, you'll just see what's soonest and nearest.
 - Space pages show their upcoming events too, as a list, cards, or a little calendar. Tap one and a small window opens with the basics and the RSVP button, so you can answer right there. **View full event** takes you to the whole page.
+- **A cancelled gathering stays on that Space calendar** as a small note at the bottom of the day. It is not a crossed-out chip, and it is not hidden. Dates the team is still deciding stay off the public calendar.
 
 ## Post an event you found
 

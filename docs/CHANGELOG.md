@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **A cancelled gathering on a Space calendar is a small note at the bottom of that day**, not a crossed-out chip. Live events stay on the grid. Dates that are only penciled or still in planning stay off the public calendar.
+
 - **A repeating event counts as one gathering on a free membership**, not one per date. Crew is still unlimited. The message when you are at the free cap no longer says a series is a Crew perk.
 
 - **Business is the one paid Space plan, at $49, with two seats.** Collective is no longer a plan you pick. A Space that was on Collective is now on Business at that same $49. Non Profit and Independent are unchanged. Independent is still sold by hand.
