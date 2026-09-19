@@ -198,7 +198,15 @@ describe('the privilege rule: rows cross the boundary, viewers never do', () => 
   })
 
   it('the per-viewer menu filter still runs in the renderer, after both caches', () => {
-    const shell = src('components/layout/app-shell.tsx')
+    // LIVE-412: the calls live in the extracted islands. The composer must still
+    // import those modules so the filter cannot run only in the server reader.
+    const shell = [
+      src('components/layout/app-shell.tsx'),
+      src('components/layout/app-shell-model.ts'),
+      src('components/layout/app-shell-account.tsx'),
+    ].join('\n')
+    expect(src('components/layout/app-shell.tsx')).toContain("from './app-shell-model'")
+    expect(src('components/layout/app-shell.tsx')).toContain("from './app-shell-account'")
     expect(count(shell, /\bcanSeeMenuItem\(/g)).toBeGreaterThanOrEqual(3)
     expect(count(shell, /\beffectiveMode\(/g)).toBeGreaterThanOrEqual(1)
     // The reader hands the renderer everything; it does not import the viewer filter.

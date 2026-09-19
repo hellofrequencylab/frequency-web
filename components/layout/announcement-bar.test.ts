@@ -49,6 +49,7 @@ const PUBLIC_LAYOUTS = [
   'app/(marketing)/layout.tsx',
   'app/discover/layout.tsx',
   'app/(help)/layout.tsx',
+  'app/(public)/layout.tsx',
 ]
 
 describe('the announcement bar never reaches a public surface', () => {
@@ -65,10 +66,16 @@ describe('the announcement bar never reaches a public surface', () => {
     // The bar belongs to the first and not the second, and they live in one file - so the guard is
     // that the only mention sits in the AppShell call, not in the early-return branch above it.
     const layout = read('app/(main)/layout.tsx')
-    const marker = '<MarketingHeader'
+    // SCAN-641 / SCAN-643: the leftover public twin is `publicChrome()`, not a
+    // MarketingHeader fragment. Slice that helper — SiteHeader to its closing brace —
+    // so the AppShell `banner=` slot below cannot satisfy this by accident.
+    const marker = 'const publicChrome = async () => {'
     const twinStart = layout.indexOf(marker)
     expect(twinStart, 'the public-twin branch is gone or restructured; re-derive this guard').toBeGreaterThan(-1)
-    const twinBranch = layout.slice(twinStart, layout.indexOf('</>', twinStart))
+    const after = layout.slice(twinStart)
+    const twinEnd = after.indexOf('const currentPath')
+    const twinBranch = twinEnd === -1 ? after : after.slice(0, twinEnd)
+    expect(twinBranch).toContain('<SiteHeader')
     expect(
       twinBranch,
       'the signed-out twin branch mounts the announcement bar. That branch renders for visitors.',
