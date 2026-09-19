@@ -12,11 +12,11 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
-- **The phone tab bar is five destinations.** Menu, Feed, Zap, Events, and Marketplace. Circles and The Quest are in the menu, not on the thumb row.
-
 - **Starting a Circle is open to every signed-in member.** Remix a Starter, claim one near you, or start a Chapter on a program Channel: those buttons no longer open an upgrade popup. Creating a Practice from the library is the same. You still need to be signed in. How many Circles or Practices you can publish stays metered.
 
 - **The Quest is no longer a top-level marketing tab.** The public header is now The Community, Spaces, and About. The Quest still has its page, and you still reach it from The Community menu, the footer, and search. It is the light game everyone plays alongside their Circle, not a third of the story.
+
+- **The phone bar is five taps:** Menu, Feed, Zap, Events, and Marketplace. Circles and The Quest are in the Menu drawer, the same place as the rest of the rail. The Zap button in the middle is unchanged.
 
 - **A Journey keeps its reviews when the price changes**: stars and questions stay on the Journey,
   not on the old product page. Changing the price no longer wipes the proof a buyer already left.

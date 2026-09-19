@@ -171,8 +171,13 @@ describe('nav single-source invariant — the registry feeds every surface', () 
     }
   })
 
-  it('the mobile spine is Feed · Events · Marketplace (Menu and Zap sit beside them)', () => {
-    expect(calmSpine().map((t) => t.node.id)).toEqual(['feed', 'events', 'market'])
-    expect(calmSpine().map((t) => t.label)).toEqual(['Feed', 'Events', 'Marketplace'])
+  it('the signed-in phone bar is Feed · Events · Marketplace (HYG-033)', () => {
+    // Menu and Zap are shell chrome, not registry nodes. Circles and The Quest stay
+    // reachable from the drawer/rail; they are not spine roots.
+    const spine = calmSpine()
+    expect(spine.map((t) => t.node.id)).toEqual(['feed', 'events', 'market'])
+    expect(spine.map((t) => t.label)).toEqual(['Feed', 'Events', 'Marketplace'])
+    expect(spine.map((t) => t.node.id)).not.toContain('circles')
+    expect(spine.map((t) => t.node.id)).not.toContain('quest')
   })
 })
