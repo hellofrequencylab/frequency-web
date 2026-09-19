@@ -4,9 +4,12 @@ import { getCallerProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createBillingPortal } from '@/lib/billing/checkout'
-import { createBundleCheckout } from '@/lib/billing/bundle-checkout'
+import { createBundleCheckout, recordBundleFromSessionId } from '@/lib/billing/bundle-checkout'
 import { createOnboardingLink, createDashboardLink, canReceivePayouts } from '@/lib/billing/connect'
 import { viaStripe } from '@/lib/billing/via-stripe'
+import { onPageCheckoutAvailable } from '@/lib/billing/stripe-browser'
+import { rateLimitOk } from '@/lib/rate-limit'
+import { headers } from 'next/headers'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { parseInput, z, uuid } from '@/lib/validation'
 
@@ -47,7 +50,8 @@ export async function openBillingPortal(): Promise<ActionResult<{ url: string }>
 export async function startBundleCheckout(
   period: 'monthly' | 'annual' = 'monthly',
   seatProfileIds: string[] = [],
-): Promise<ActionResult<{ url: string }>> {
+  opts: { forceHosted?: boolean } = {},
+): Promise<ActionResult<{ url?: string; clientSecret?: string; sessionId?: string }>> {
   let seats: string[]
   let billingPeriod: 'monthly' | 'annual'
   try {
@@ -77,16 +81,48 @@ export async function startBundleCheckout(
     .maybeSingle()
   if (!profile) return fail('Profile not found')
 
+  // Decided on the SERVER, before a session exists, so a deployment with no publishable key never
+  // mints an elements session nothing could render (docs/CHECKOUT.md §3). `forceHosted` is
+  // load-bearing: without it a failed mount asks for the same elements session again, finds no url,
+  // and dead-ends the buyer.
+  const ui = opts.forceHosted ? 'hosted' : onPageCheckoutAvailable() ? 'elements' : 'hosted'
   const bundle = await viaStripe('settings/billing startBundleCheckout', () => createBundleCheckout({
     profileId: profile.id,
     email: user.email,
     period: billingPeriod,
     seatProfileIds: seats,
+    ui,
   }))
   if ('error' in bundle) return fail(bundle.error)
-  const url = bundle.value
-  if (!url) return fail('The bundle isn’t available right now.')
-  return ok({ url })
+  const handed = bundle.value
+  if (!handed) return fail('The bundle isn’t available right now.')
+  if (handed.clientSecret) return ok({ clientSecret: handed.clientSecret, sessionId: handed.sessionId })
+  if (handed.url) return ok({ url: handed.url, sessionId: handed.sessionId })
+  return fail('Could not start checkout.')
+}
+
+// Settle an on-page bundle purchase from its checkout session id (docs/CHECKOUT.md §3).
+// authz-ok: Stripe is the authority. recordBundleFromSessionId re-fetches the session FROM STRIPE
+// and refuses anything that is not kind='household_bundle' and complete, so the most a caller can
+// do with someone else's id is seat a bundle that genuinely happened, which the webhook does
+// unprompted seconds later.
+export async function settleBundleCheckoutAction(
+  sessionId: string,
+): Promise<ActionResult<{ settled: boolean }>> {
+  if (!sessionId || !sessionId.startsWith('cs_')) return fail('Not a checkout session.')
+
+  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (!(await rateLimitOk('settle_bundle_checkout', ip, 30, '1 m', { whenUnconfigured: 'allow' }))) {
+    return fail('Too many attempts. Try again in a minute.')
+  }
+
+  try {
+    const settled = await recordBundleFromSessionId(sessionId)
+    return ok({ settled })
+  } catch (e) {
+    console.error('[household_bundle] on-page settle failed; the webhook is now the only path', e)
+    return ok({ settled: false })
+  }
 }
 
 // ── Connect payouts (ADR-175) ────────────────────────────────────────────────

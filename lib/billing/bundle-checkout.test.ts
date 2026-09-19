@@ -14,7 +14,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 //      exists to prevent.
 
 const H = vi.hoisted(() => ({
-  created: [] as { metadata: Record<string, string>; subscription_data: { metadata: Record<string, string> } }[],
+  created: [] as {
+    metadata: Record<string, string>
+    subscription_data: { metadata: Record<string, string> }
+    ui_mode?: string
+    success_url?: string
+    cancel_url?: string
+    return_url?: string
+  }[],
   sellable: true,
   price: 'price_household_monthly' as string | null,
   config: { seats: 4, monthly_cents: 2400, annual_cents: 24000, tier: 'crew' },
@@ -34,9 +41,16 @@ vi.mock('./stripe', () => ({
         create: (args: {
           metadata: Record<string, string>
           subscription_data: { metadata: Record<string, string> }
+          ui_mode?: string
+          success_url?: string
+          cancel_url?: string
+          return_url?: string
         }) => {
           H.created.push(args)
-          return Promise.resolve({ url: 'https://checkout.stripe.com/session' })
+          if (args.ui_mode === 'elements') {
+            return Promise.resolve({ id: 'cs_el', url: null, client_secret: 'cs_el_secret' })
+          }
+          return Promise.resolve({ id: 'cs_h', url: 'https://checkout.stripe.com/session' })
         },
       },
     },
@@ -109,8 +123,8 @@ describe('createBundleCheckout — the gate', () => {
 
 describe('createBundleCheckout — what the webhook will read back', () => {
   it('stamps the kind, owner, seats and terms on BOTH the session and the subscription', async () => {
-    const url = await createBundleCheckout({ profileId: OWNER, seatProfileIds: [SEAT_A, SEAT_B] })
-    expect(url).toBe('https://checkout.stripe.com/session')
+    const handed = await createBundleCheckout({ profileId: OWNER, seatProfileIds: [SEAT_A, SEAT_B] })
+    expect(handed?.url).toBe('https://checkout.stripe.com/session')
 
     const expected = {
       kind: 'household_bundle',
@@ -161,11 +175,11 @@ describe('createBundleCheckout — default-deny on seats', () => {
   })
 
   it('does not count the buyer twice when they list themselves', async () => {
-    const url = await createBundleCheckout({
+    const handed = await createBundleCheckout({
       profileId: OWNER,
       seatProfileIds: [OWNER, SEAT_A, SEAT_B, SEAT_C],
     })
-    expect(url).toBe('https://checkout.stripe.com/session')
+    expect(handed?.url).toBe('https://checkout.stripe.com/session')
     expect(last().metadata.seat_ids).toBe(`${SEAT_A},${SEAT_B},${SEAT_C}`)
   })
 })
@@ -183,7 +197,27 @@ describe('createBundleCheckout — an unreadable stripe_customer_id (SCAN-539)',
   })
 
   it('still sells on a clean read, reusing the saved customer', async () => {
-    expect(await createBundleCheckout({ profileId: OWNER })).toBe('https://checkout.stripe.com/session')
+    expect((await createBundleCheckout({ profileId: OWNER }))?.url).toBe('https://checkout.stripe.com/session')
     expect(H.created).toHaveLength(1)
+  })
+})
+
+describe('createBundleCheckout — on-page checkout (LIVE-359)', () => {
+  it('defaults to hosted redirect fields', async () => {
+    await createBundleCheckout({ profileId: OWNER })
+    expect(last().success_url).toContain('session_id={CHECKOUT_SESSION_ID}')
+    expect(last().cancel_url).toBeTruthy()
+    expect(last().ui_mode).toBeUndefined()
+  })
+
+  it('issues an elements session without success_url, and still stamps subscription metadata', async () => {
+    const handed = await createBundleCheckout({ profileId: OWNER, ui: 'elements' })
+    expect(handed?.clientSecret).toBe('cs_el_secret')
+    expect(handed?.url).toBeUndefined()
+    expect(last().ui_mode).toBe('elements')
+    expect(last().return_url).toContain('session_id={CHECKOUT_SESSION_ID}')
+    expect(last().success_url).toBeUndefined()
+    expect(last().subscription_data.metadata.kind).toBe('household_bundle')
+    expect(last().subscription_data.metadata.owner_id).toBe(OWNER)
   })
 })

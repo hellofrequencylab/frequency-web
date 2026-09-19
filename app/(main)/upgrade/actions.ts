@@ -1,13 +1,16 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createMembershipCheckout } from '@/lib/billing/checkout'
+import { createMembershipCheckout, recordCrewCheckoutFromSessionId } from '@/lib/billing/checkout'
+import { onPageCheckoutAvailable } from '@/lib/billing/stripe-browser'
 import { billingLive } from '@/lib/pricing/settings'
 import { loadCatalogConfig, isValidPwywAmount } from '@/lib/pricing/catalog-config'
 import { formatCents } from '@/lib/pricing/display'
 import { yearlyFromMonthly } from '@/lib/billing/pricing-keys'
+import { rateLimitOk } from '@/lib/rate-limit'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // Membership is the ENTITLEMENT axis (profiles.membership_tier), orthogonal to the
@@ -83,7 +86,8 @@ export async function toggleMembership(): Promise<ActionResult<{ tier: string }>
 export async function startMembershipCheckout(
   amountCents: number,
   period: 'monthly' | 'annual' = 'monthly',
-): Promise<ActionResult<{ url: string }>> {
+  opts: { forceHosted?: boolean } = {},
+): Promise<ActionResult<{ url?: string; clientSecret?: string; sessionId?: string }>> {
   const supabase = await createClient()
   const {
     data: { user },
@@ -104,15 +108,50 @@ export async function startMembershipCheckout(
   }
   const charged = period === 'annual' ? yearlyFromMonthly(monthly) : monthly
 
-  const url = await createMembershipCheckout({
+  // Decided on the SERVER, before a session exists, so a deployment with no publishable key never
+  // mints an elements session nothing could render (docs/CHECKOUT.md §3). `forceHosted` is the
+  // control's last line of defence and is load-bearing: without it a failed mount asks for the same
+  // elements session again, finds no url, and dead-ends the buyer.
+  const ui = opts.forceHosted ? 'hosted' : onPageCheckoutAvailable() ? 'elements' : 'hosted'
+  const result = await createMembershipCheckout({
     profileId: profile.id,
     email: user.email,
     tier: 'crew',
     period,
     amountCents: charged,
+    ui,
   })
-  if (!url) return fail('Billing isn’t available right now.')
-  return ok({ url })
+  if (!result) return fail('Billing isn’t available right now.')
+  if (result.clientSecret) return ok({ clientSecret: result.clientSecret, sessionId: result.sessionId })
+  if (result.url) return ok({ url: result.url, sessionId: result.sessionId })
+  return fail('Could not start checkout.')
+}
+
+// Settle an on-page Crew join from its checkout session id (docs/CHECKOUT.md §3).
+// authz-ok: a session gate is impossible here, because the id is the only thing the buyer's tab
+// holds and Stripe is the authority. recordCrewCheckoutFromSessionId re-fetches the session from
+// STRIPE and refuses anything that is not a kind-less subscription (SCAN-541) that confirmCheckout
+// would grant, so the most any caller can do with someone else's id is grant Crew that genuinely
+// happened, which the webhook does unprompted seconds later.
+export async function settleMembershipCheckoutAction(
+  sessionId: string,
+): Promise<ActionResult<{ settled: boolean }>> {
+  if (!sessionId || !sessionId.startsWith('cs_')) return fail('Not a checkout session.')
+
+  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (!(await rateLimitOk('settle_membership_checkout', ip, 30, '1 m', { whenUnconfigured: 'allow' }))) {
+    return fail('Too many attempts. Try again in a minute.')
+  }
+
+  try {
+    const settled = await recordCrewCheckoutFromSessionId(sessionId)
+    return ok({ settled })
+  } catch (e) {
+    // NEVER fatal. The member already paid; an error here must not send them to pay twice. The
+    // webhook remains the guarantee.
+    console.error('[membership] on-page settle failed; the webhook is now the only path', e)
+    return ok({ settled: false })
+  }
 }
 
 // PWYW SUPPORTER BADGE (Pricing ladder Phase C, ADR-463 / ADR-495). Supporter is retired as a tier and

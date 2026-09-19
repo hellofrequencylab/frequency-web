@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1415**.
+tree as of this index: **ADR-1418**.
 
 | Theme | Start here |
 |---|---|
@@ -45761,4 +45761,23 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 **Consequences.** Buying a mug or a used listing opens Stripe's hosted page and asks for a delivery address before the charge. Buying a Journey still opens the card form under the button. Sellers read a validated address on the order. An Address Element on the shared form is a later row if physical goods should stay on-page.
 
 **Rows.** LIVE-346.
+
+## ADR-1418: Subscription checkout stays on Frequency (LIVE-359)
+
+**Status:** Accepted · 2026-09-19 · LIVE-359 · corroborated by `lib/billing/checkout.ts`, `lib/billing/bundle-checkout.ts`, `lib/billing/space-plan-checkout.ts`
+
+**Context.** Tickets, tips, Space gifts, commerce, and Space memberships already took a card on Frequency through `lib/billing/checkout-ui.ts`. Crew, the household bundle, and a Space plan still sent the buyer to `checkout.stripe.com`. Re-tested 2026-09-19: LIVE-359's probe named those three; Space membership was already on the seam. Subscriptions were last on purpose: they grant entitlement from `subscription_data.metadata`, which is `Record<string, string>`, so a renamed key type-checks and then silently stops granting access to someone who paid.
+
+**Decision.**
+
+1. **Same seam, default hosted.** Each of the three remaining creators takes `ui?: CheckoutUi`, routes redirect fields through `checkoutReturnFields`, and hands the result through `resolveCheckoutSession`. Callers that do not opt in keep today's redirect.
+2. **Settle from the success handler.** `confirm({ redirect: 'if_required' })` never visits `return_url` on the common card path, so each creator gained a recorder that re-fetches the session from Stripe and reuses the webhook reconciler (`confirmCheckout`, `reconcileBundleSubscription`, `routeSpaceSubscription`).
+3. **Crew stays kind-less.** The member-entitlement allowlist is still `mode === 'subscription' && !metadata.kind` (SCAN-541). Stamping a kind on Crew would stop granting the tier. The other two keep stamping `household_bundle` and `space_plan` on both the session and the subscription.
+4. **A trial Space plan is complete without a charge.** The Space-plan settle accepts `payment_status: 'no_payment_required'` so a 14-day trial is granted on the page, not only when the webhook arrives.
+
+**Rejected.** A raw PaymentIntent (no Checkout Session, so `checkout.session.completed` never fires). A second entitlement writer beside the webhook reconcilers. Adding `kind` to Crew to "make it consistent".
+
+**Consequences.** Joining Crew, buying the household bundle, or taking a Space plan opens the card form under the button when a publishable key is present. A failed mount still reaches hosted Checkout. Entitlement is granted from the same metadata the webhook already read.
+
+**Rows.** LIVE-359.
 

@@ -24,6 +24,8 @@ import { itemKeyForCatalogKey, readLockedPriceId } from './space-subscription-it
 import { isBetaPricingActive, loadoutChargeArm, loadoutChargePriceKey } from '@/lib/pricing/beta'
 import { spaceHasBetaPriceGrant } from './space-beta-grant'
 import { receiptEmailFor } from './receipt-address'
+import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from './checkout-ui'
+import { routeSpaceSubscription } from './space-subscriptions'
 
 /** The per-plan enable flag for a space plan (must be ON, with billing live, to sell it). */
 const PLAN_FLAG: Record<SpacePlanKey, 'plan_business_enabled' | 'plan_nonprofit_enabled'> = {
@@ -203,18 +205,31 @@ function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; pe
   return [...out, ...operatorSeat]
 }
 
+export interface SpaceLoadoutCheckoutResult {
+  url?: string
+  /** An on-page (elements) session's secret. EXACTLY ONE of this and `url` is ever set. */
+  clientSecret?: string
+  /** The session id, so the control can settle from its success handler rather than waiting on the
+   *  webhook. Handed back for BOTH shapes. */
+  sessionId?: string
+}
+
 /** Create a single multi-item subscription Checkout for a Space owner's loadout (Business base + add-ons,
  *  or the flat nonprofit item), monthly or yearly. Charges the FOUNDING price (or the
  *  Space's grandfathered locked price when it holds one), with a 14-day per-item trial and proration.
- *  Returns the session URL, or null when the loadout is not sellable / not synced / the space has no
- *  owner. GATED on spacePlanSellable for the base plan.
+ *  Returns a hosted URL, an on-page client secret, or null when the loadout is not sellable / not
+ *  synced / the space has no owner. GATED on spacePlanSellable for the base plan.
  *  authz-delegated: caller-trusted operator/owner action authorizes the space; this binds the customer
  *  to the resolved space OWNER and stamps the space_id + plan in metadata so the webhook reconciles. */
 export async function createSpaceLoadoutCheckout(
   spaceId: string,
   loadout: SpaceLoadout,
-): Promise<string | null> {
+  opts: { ui?: CheckoutUi } = {},
+): Promise<SpaceLoadoutCheckoutResult | null> {
   if (!stripe) return null
+  // Defaults to hosted, which is what makes this rollout safe surface by surface: every caller that
+  // does not ask for the on-page form keeps today's redirect exactly (docs/CHECKOUT.md §2).
+  const ui: CheckoutUi = opts.ui === 'elements' ? 'elements' : 'hosted'
   const interval: BillingInterval = loadout.interval === 'year' ? 'year' : 'month'
   // The base plan must be sellable (billingLive + the mapped per-plan switch). GATED, FALSE while OFF.
   if (!(await spaceLoadoutSellable(loadout.plan))) return null
@@ -315,9 +330,46 @@ export async function createSpaceLoadoutCheckout(
     client_reference_id: spaceId,
     metadata,
     subscription_data: subscriptionData,
-    success_url: `${appUrl()}/spaces/${space.slug ?? spaceId}/settings/billing?plan=upgraded&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${appUrl()}/spaces/${space.slug ?? spaceId}/settings/billing`,
+    // Hosted takes success_url + cancel_url; an elements session REJECTS both and takes a single
+    // return_url. Hand-writing either pair fails at RUNTIME, in a money path, because the stripe
+    // package ships no type declarations (docs/CHECKOUT.md §3).
+    ...checkoutReturnFields(ui, {
+      successUrl: `${appUrl()}/spaces/${space.slug ?? spaceId}/settings/billing?plan=upgraded&session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${appUrl()}/spaces/${space.slug ?? spaceId}/settings/billing`,
+    }),
     allow_promotion_codes: true,
   })
-  return session.url
+  // 🔴 TRAP 1 (docs/CHECKOUT.md §3): `!session.url` is TRUE FOR EVERY ELEMENTS SESSION. Ask the
+  // resolver, never the URL.
+  const handed = resolveCheckoutSession(session, ui, 'space_plan')
+  if (handed.error) return null
+  return { url: handed.url, clientSecret: handed.clientSecret, sessionId: session.id }
+}
+
+/**
+ * THE SETTLE'S RECORDER (docs/CHECKOUT.md §3). Grant the Space plan from an on-page checkout
+ * session id, in the owner's own tab, rather than waiting on the webhook.
+ *
+ * 🔴 IT REUSES THE WEBHOOK'S OWN RECONCILER. `routeSpaceSubscription` is the function the webhook
+ * calls, it dispatches on the same metadata this session stamped, and it documents itself as
+ * idempotent. A second implementation here is how the two paths come to disagree about what a
+ * paid plan means.
+ *
+ * A 14-day trial session is `complete` with `payment_status: 'no_payment_required'`. Refusing
+ * that would leave an on-page trial with exactly one way to become real: the webhook.
+ */
+export async function recordSpacePlanFromSessionId(sessionId: string): Promise<boolean> {
+  if (!stripe) return false
+  if (!sessionId.startsWith('cs_')) return false
+
+  const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ['subscription'] })
+  if (session.metadata?.kind !== 'space_plan') return false
+  if (session.status !== 'complete') return false
+  if (session.payment_status !== 'paid' && session.payment_status !== 'no_payment_required') return false
+
+  const sub = session.subscription
+  if (!sub || typeof sub === 'string') return false
+
+  await routeSpaceSubscription(sub)
+  return true
 }

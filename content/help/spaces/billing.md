@@ -4,7 +4,7 @@ description: Where your plan, payments, and invoices live, how a cash agreement 
 category: spaces
 order: 3
 published: 2026-07-27
-updated: 2026-09-10
+updated: 2026-09-19
 audience: member
 featureKeys: [billing]
 status: published
@@ -35,7 +35,7 @@ not see billing at all.
 
 ## Changing your plan
 
-Pick the plan you want on the billing page and follow the checkout. A few things worth knowing:
+Pick the plan you want on the billing page. The card fields open under the button you pressed. A few things worth knowing:
 
 - Every paid plan starts with a **14 day free trial**.
 - **Yearly saves two months.** A yearly plan costs ten months of the monthly price.
