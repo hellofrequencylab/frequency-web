@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1446**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main. 1441 is LIVE-306 on main.
+tree as of this index: **ADR-1443**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
 
 | Theme | Start here |
 |---|---|
@@ -46205,22 +46205,23 @@ The harness can still create a bare worktree. That is not repo-observable. What 
 
 **Rows.** LIVE-306.
 
-## ADR-1446: Drop the empty ADR-1316 events page-settings snapshot (SCAN-640)
+## ADR-1443: Public events use the same header /discover uses (SCAN-641)
 
-**Status:** Accepted · 2026-09-19 · backlog `SCAN-640` · numbered **1446** because **1442** is HYG-078, **1443** is SCAN-641, **1444** is OWN-063, and **1445** is SCAN-638 · corroborated by `supabase/migrations/20270345006600_drop_page_settings_events_backup.sql`
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-641` · numbered **1443** because **1442** is HYG-078 · corroborated by `app/(main)/layout.tsx` (`publicChrome`) and `app/discover/layout.tsx`
 
-**Context.** ADR-1316's cleanup script created `page_settings_events_backup_20260910` on 2026-09-10 as the only way back for 21 retired per-page `/events` layout rows. HYG-086 (`20270345003500`) later enabled RLS with no policy, so the table is not an open read. The 2026-09-19 meta-scan still saw advisor `no_primary_key` INFO because the snapshot was `CREATE TABLE AS` with no primary key. HYG-086 dated a drop on or after 2026-10-10. SCAN-640 narrowed that to: drop after a production count is 0 or the rows are archived off-public. Draft-and-approve; do not drop from an agent session.
+**Context.** SCAN-641, filed 2026-09-19 from the meta-scan: anon `/events/<slug>` and networked Space profiles rendered `MarketingHeader` through `(main)` `publicChrome()`. `/discover/*` rendered `SiteHeader variant="light" authMode="client"`. Two public chromes, two phone sheets, two chances to drift. LIVE-106 was the last time that class cost thirteen destinations.
 
-Premise re-tested 2026-09-19 on this tree, and it held. `lib/database.types.ts` still lists the table. `20270345003500` still only enables RLS. No later migration dropped it. Nothing under `app/` or `lib/` reads the name except the generated types.
+Premise re-tested 2026-09-19 on this tree: the split was still the split. Discover still used SiteHeader with client auth so ISR is not voided. The `(main)` public branch already called `getCachedUser()`, so it was already dynamic; client auth there is not an ISR win, it is so both trees draw one bar.
 
 **Decision.**
 
-1. **The drop file is `20270345006600`.** It runs `drop table if exists public.page_settings_events_backup_20260910` so the SCAN-640 probe can see the phrase.
-2. **A non-empty snapshot refuses the apply.** A `DO` block counts the table when it exists and raises if any row remains. An empty table, or a fresh environment that never had it, no-ops then drops-if-exists.
-3. **Do not apply from the agent session.** Production apply is `execute_sql` the file, then an insert into `supabase_migrations.schema_migrations` at version `20270345006600`. Never `apply_migration`. Never `db push`. Types stay until that apply.
+1. **Mount the discover header on the `(main)` public branch.** `ViewerProvider` plus `SiteHeader variant="light" authMode="client"`. That is the header /discover already ships, including the phone sheet LIVE-110 put on it.
+2. **Leave the footer.** This row is the header split. `MarketingFooter` stays on the `(main)` public branch; /discover keeps its own short footer.
+3. **Give the skip link a target.** `id="main"` on the public `<main>`, matching /discover, so SiteHeader's skip-to-content has somewhere to go.
 
-**Rejected.** Adding a primary key to silence the advisor and keeping the table (the probe is the drop). Dropping without a count guard (that would spend the 21-row recovery 21 days early if someone applied on merge). Applying from this session (no credentials, and the row forbade it).
+**Rejected.** Extracting a shared PublicChrome layout in this change (the footers still differ, and a shared shell would hide that). Switching /discover onto MarketingHeader (that is the header without search, and it would undo the ISR-preserving client auth). Server auth on the `(main)` public branch (a second dialect of the same bar).
 
-**Consequences.** `check:migrations` rule 4 reads red on this branch until the file is ledgered. That is ADR-1111, not a defect in the gate. A later apply against leftover rows fails closed and must archive first.
+**Consequences.** A signed-out event page and a /discover page now share one header component and one phone sheet. Marketing pages and the help centre keep MarketingHeader: those are the splash and the docs, not the public community browse.
 
-**Rows.** SCAN-640.
+**Rows.** SCAN-641.
+
