@@ -4,7 +4,13 @@ import { describe, it, expect, vi } from 'vitest'
 // comparison against a real now() is off by the event's zone offset. The event_create meter now
 // decides "still upcoming" by the event's REAL instant (eventInstant), the way the reminder crons do.
 
-const rows: { starts_at: string; time_zone: string | null }[] = []
+const rows: {
+  id: string
+  starts_at: string
+  time_zone: string | null
+  recurrence_type?: string | null
+  parent_event_id?: string | null
+}[] = []
 let readError: { message: string } | null = null
 const gte = vi.fn()
 
@@ -20,7 +26,12 @@ vi.mock('@/lib/supabase/admin', () => ({
 }))
 vi.mock('@/lib/ai/vera/usage-gate', () => ({ veraMessagesToday: vi.fn(async () => 0) }))
 
-import { isUpcomingByInstant, memberActiveEvents, MAX_TZ_OFFSET_MS } from '@/lib/pricing/member-meter-usage'
+import {
+  isUpcomingByInstant,
+  memberActiveEvents,
+  countUpcomingGatherings,
+  MAX_TZ_OFFSET_MS,
+} from '@/lib/pricing/member-meter-usage'
 
 describe('isUpcomingByInstant', () => {
   it('a Los Angeles 7 pm event is still upcoming at 1 pm local, though its raw starts_at is already past', () => {
@@ -54,9 +65,9 @@ describe('memberActiveEvents', () => {
     const now = new Date('2026-09-05T20:00:00Z')
     rows.length = 0
     rows.push(
-      { starts_at: '2026-09-05T19:00:00Z', time_zone: 'America/Los_Angeles' }, // 7 pm LA tonight: counts
-      { starts_at: '2026-09-06T05:00:00Z', time_zone: 'Australia/Sydney' },     // 5 am Sydney = 19:00Z today: over
-      { starts_at: '2026-09-07T10:00:00Z', time_zone: null },                   // two days out: counts
+      { id: 'la', starts_at: '2026-09-05T19:00:00Z', time_zone: 'America/Los_Angeles' }, // 7 pm LA tonight: counts
+      { id: 'syd', starts_at: '2026-09-06T05:00:00Z', time_zone: 'Australia/Sydney' },     // 5 am Sydney = 19:00Z today: over
+      { id: 'later', starts_at: '2026-09-07T10:00:00Z', time_zone: null },                   // two days out: counts
     )
     expect(await memberActiveEvents('host-1', now)).toBe(2)
     expect(gte).toHaveBeenLastCalledWith('starts_at', new Date(now.getTime() - MAX_TZ_OFFSET_MS).toISOString())
@@ -66,5 +77,69 @@ describe('memberActiveEvents', () => {
     readError = { message: 'down' }
     expect(await memberActiveEvents('host-1')).toBeNull()
     readError = null
+  })
+
+  it('a weekly series is one gathering (OWN-063 / 2026-09-08)', async () => {
+    const now = new Date('2026-09-05T20:00:00Z')
+    const start = Date.UTC(2026, 8, 7, 10, 0, 0)
+    rows.length = 0
+    rows.push(
+      {
+        id: 'anchor',
+        starts_at: new Date(start).toISOString(),
+        time_zone: null,
+        recurrence_type: 'weekly',
+        parent_event_id: null,
+      },
+      ...Array.from({ length: 8 }, (_, i) => ({
+        id: `c${i}`,
+        starts_at: new Date(start + (i + 1) * 7 * 864e5).toISOString(),
+        time_zone: null,
+        recurrence_type: 'none' as const,
+        parent_event_id: 'anchor',
+      })),
+    )
+    expect(rows).toHaveLength(9)
+    expect(await memberActiveEvents('host-1', now)).toBe(1)
+  })
+})
+
+describe('countUpcomingGatherings', () => {
+  it('folds nine weekly dates to one after the instant filter', () => {
+    const now = new Date('2026-09-05T20:00:00Z')
+    const start = Date.UTC(2026, 8, 7, 10, 0, 0)
+    const weekly = [
+      {
+        id: 'anchor',
+        starts_at: new Date(start).toISOString(),
+        time_zone: null,
+        recurrence_type: 'weekly',
+        parent_event_id: null,
+      },
+      ...Array.from({ length: 8 }, (_, i) => ({
+        id: `c${i}`,
+        starts_at: new Date(start + (i + 1) * 7 * 864e5).toISOString(),
+        time_zone: null,
+        recurrence_type: 'none',
+        parent_event_id: 'anchor',
+      })),
+    ]
+    expect(countUpcomingGatherings(weekly, now)).toBe(1)
+  })
+
+  it('still counts a cancelled upcoming row when dropCancelled is false (the allowance)', () => {
+    const now = new Date('2026-09-05T20:00:00Z')
+    const rows = [
+      {
+        id: 'one',
+        starts_at: '2026-09-07T10:00:00Z',
+        time_zone: null,
+        recurrence_type: 'none',
+        parent_event_id: null,
+        is_cancelled: true,
+      },
+    ]
+    expect(countUpcomingGatherings(rows, now)).toBe(0)
+    expect(countUpcomingGatherings(rows, now, { dropCancelled: false })).toBe(1)
   })
 })

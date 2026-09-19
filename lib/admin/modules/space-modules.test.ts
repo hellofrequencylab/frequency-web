@@ -44,8 +44,8 @@ describe('SPACE_MODULES catalog', () => {
       expect(m, `${id} should still be its own module`).not.toBeNull()
       expect(m!.parent, `${id} belongs to the Offerings and money box`).toBe('space.offerings')
     }
-    // Shop is its own BOX (a full 3-tab console), not a section of the adaptive offerings surface.
-    expect(spaceModuleById('space.services')!.parent).toBeUndefined()
+    // Shop is a TOOL inside Money (ADR-1432). The 3-tab console stays its deep link.
+    expect(spaceModuleById('space.services')!.parent).toBe('space.offerings')
     const offerings = spaceModuleById('space.offerings')
     expect(offerings, 'the Offerings and money box exists again').not.toBeNull()
     expect(offerings!.deepLink?.('demo')).toBe('/spaces/demo/settings/offerings')
@@ -213,7 +213,7 @@ describe('console consolidation metadata (ADR-782)', () => {
     expect(spaceModuleById('space.branding')).toBeNull()
     expect(spaceModuleById('space.settings')).toBeNull()
     const basics = spaceModuleById('space.basics')!
-    expect(basics.label).toBe('Profile and Settings')
+    expect(basics.label).toBe('Your page')
     // The one settings door (ADR-1336): the hub's Profile & Settings tab, not a standalone editor page.
     expect(basics.deepLink?.('demo')).toBe('/spaces/demo/manage?section=settings')
   })
@@ -233,45 +233,35 @@ describe('console consolidation metadata (ADR-782)', () => {
     }
   })
 
-  it('nests the CRM cluster under CRM and the email trio under Email', () => {
-    for (const id of ['space.conversations', 'space.automation', 'space.leads', 'space.doors', 'space.shared']) {
-      expect(spaceModuleById(id)!.parent).toBe('space.crm')
+  it('nests the CRM cluster under Your people and the email trio under Reach', () => {
+    for (const id of [
+      'space.crm',
+      'space.conversations',
+      'space.automation',
+      'space.leads',
+      'space.doors',
+      'space.shared',
+    ]) {
+      expect(spaceModuleById(id)!.parent).toBe('space.people')
     }
-    for (const id of ['space.marketing', 'space.emailstyle']) {
-      expect(spaceModuleById(id)!.parent).toBe('space.comms')
+    for (const id of ['space.comms', 'space.marketing', 'space.emailstyle']) {
+      expect(spaceModuleById(id)!.parent).toBe('space.reach')
     }
   })
 })
 
-// ADR-846: the TWELVE-BOX consolidation, AMENDED TO THIRTEEN by ADR-1313. A Space menu is thirteen
-// top-level boxes; every other catalog row is a tool owned by exactly one of them. This is the lock on that
-// shape.
-//
-// 🔴 WHY THE COUNT MOVED, in the test that records it. `SPACE_MODULE_BOX_IDS` is DERIVED (`filter((m) =>
-// !m.parent)`), so un-parenting a row changes it. The owner ruled that "Your reach" moves to the Content &
-// Programs tab; its box, QR codes and insights, stays on Marketing. Leaving the `parent` in place would have
-// made it a tool filed a tab away from the box that owns it — the exact orphan class ADR-1313 exists to
-// remove — so the parent came off and the count went to thirteen. The lock was a COUNT, not a principle, and
-// the un-parenting has a reason the count does not. This test is the record of that ruling: it is edited
-// WITH the ADR that authorises it, never to make a diff go green.
-describe('the thirteen boxes (ADR-846, amended by ADR-1313)', () => {
-  it('has exactly thirteen top-level boxes, in the approved order', () => {
+// ADR-1432 / LIVE-246: five boxes. CORE-MODEL §5.4. The count is derived (`filter((m) => !m.parent)`),
+// so this list is the record of the fold, edited WITH the ADR that authorises it.
+describe('the five boxes (ADR-1432)', () => {
+  it('has exactly five top-level boxes, in catalog order', () => {
     expect(SPACE_MODULE_BOX_IDS).toEqual([
-      'space.basics', // 1 Profile and Settings
-      'space.layout', // 2 Page
-      'space.people', // 3 People
-      'space.crm', // 4 CRM
-      'space.calendar', // 5 Calendar
-      'space.offerings', // 6 Offerings and money
-      'space.content', // 8 Content (catalog order puts it before Shop)
-      'space.services', // 7 Shop
-      'space.reach', // 10 QR codes and insights (catalog order puts it before Email)
-      'space.reachreceipt', // 13 Your reach (un-parented by ADR-1313 — the thirteenth)
-      'space.comms', // 9 Email
-      'space.billing', // 11 Plan and billing
-      'space.danger', // 12 Danger zone
+      'space.basics', // 1 Your page
+      'space.people', // 2 Your people
+      'space.offerings', // 4 Money (catalog order puts it before Gather)
+      'space.content', // 3 Gather
+      'space.reach', // 5 Reach
     ])
-    expect(SPACE_MODULE_BOX_IDS).toHaveLength(13)
+    expect(SPACE_MODULE_BOX_IDS).toHaveLength(5)
   })
 
   it('gives every non-box row a box that owns it, one level deep, with no orphan', () => {
@@ -285,24 +275,32 @@ describe('the thirteen boxes (ADR-846, amended by ADR-1313)', () => {
 
   it('files each absorbed tool under the box the consolidation assigned it', () => {
     const expected: Record<string, string> = {
+      'space.layout': 'space.basics',
       'space.reviews': 'space.basics',
+      'space.billing': 'space.basics',
       'space.collaborators': 'space.people',
-      'space.conversations': 'space.crm',
-      'space.leads': 'space.crm',
-      'space.doors': 'space.crm',
-      'space.shared': 'space.crm',
-      'space.automation': 'space.crm',
+      'space.crm': 'space.people',
+      'space.conversations': 'space.people',
+      'space.leads': 'space.people',
+      'space.doors': 'space.people',
+      'space.shared': 'space.people',
+      'space.automation': 'space.people',
       'space.booking': 'space.offerings',
       'space.memberships': 'space.offerings',
       'space.donations': 'space.offerings',
       'space.payments': 'space.offerings',
+      'space.services': 'space.offerings',
+      'space.calendar': 'space.content',
       'space.practices': 'space.content',
       'space.journeys': 'space.content',
       'space.circles': 'space.content',
+      'space.program': 'space.content',
       'space.airwaves': 'space.content',
       'space.loom': 'space.content',
-      'space.marketing': 'space.comms',
-      'space.emailstyle': 'space.comms',
+      'space.reachreceipt': 'space.content',
+      'space.comms': 'space.reach',
+      'space.marketing': 'space.reach',
+      'space.emailstyle': 'space.reach',
     }
     for (const [id, parent] of Object.entries(expected)) {
       expect(spaceModuleById(id)?.parent, `${id} belongs to ${parent}`).toBe(parent)
@@ -323,7 +321,7 @@ describe('the thirteen boxes (ADR-846, amended by ADR-1313)', () => {
     expect(spaceModuleById('space.checkin')).toBeNull()
     // The box it folded into now says so, and still opens the page that carries the scans readout.
     const reach = spaceModuleById('space.reach')!
-    expect(reach.label).toBe('QR codes and insights')
+    expect(reach.label).toBe('Reach')
     expect(reach.deepLink?.('demo')).toBe('/spaces/demo/settings/qr')
   })
 
@@ -332,19 +330,30 @@ describe('the thirteen boxes (ADR-846, amended by ADR-1313)', () => {
       'space.booking',
       'space.memberships',
       'space.donations',
-      'space.payments', // Get paid (ADR-1313): money OUT, beside the three surfaces that bring money in
+      'space.payments',
+      'space.services',
     ])
-    // Your reach left this box in ADR-1313 and became the thirteenth top-level one.
-    expect(spaceModuleChildren('space.reach')).toEqual([])
+    expect(spaceModuleChildren('space.reach').map((m) => m.id)).toEqual([
+      'space.comms',
+      'space.marketing',
+      'space.emailstyle',
+    ])
     expect(spaceModuleChildren('space.content').map((m) => m.id)).toEqual([
+      'space.calendar',
       'space.practices',
       'space.journeys',
       'space.circles',
-      'space.program', // Programs on Channels: the flagship circle grown into a network-wide blueprint
+      'space.program',
       'space.airwaves',
       'space.loom',
+      'space.reachreceipt',
     ])
-    expect(spaceModuleChildren('space.danger')).toEqual([])
+    expect(spaceModuleChildren('space.basics').map((m) => m.id)).toEqual([
+      'space.layout',
+      'space.reviews',
+      'space.billing',
+      'space.danger',
+    ])
   })
 })
 
