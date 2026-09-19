@@ -30,7 +30,7 @@ export interface SpaceMembershipCheckoutResult {
   url?: string
   /** An on-page (elements) session's secret. EXACTLY ONE of this and `url` is ever set: an elements
    *  session has no url, and a hosted one has no secret. Branch on what came back, never on what was
-   *  asked for (CHECKOUT-HANDOFF §4). */
+   *  asked for (docs/CHECKOUT.md §3). */
   clientSecret?: string
   /** The session id, so the control can settle from its success handler rather than waiting on the
    *  webhook. Handed back for BOTH shapes. */
@@ -65,7 +65,7 @@ export async function createSpaceMembershipCheckout(
   if (!(await billingLive())) return { reason: 'billing_off' }
 
   // Defaults to hosted, which is what makes this rollout safe surface by surface: every caller that
-  // does not ask for the on-page form keeps today's redirect exactly (CHECKOUT-HANDOFF §2).
+  // does not ask for the on-page form keeps today's redirect exactly (docs/CHECKOUT.md §2).
   const ui: CheckoutUi = opts.ui === 'elements' ? 'elements' : 'hosted'
 
   try {
@@ -180,14 +180,14 @@ export async function createSpaceMembershipCheckout(
       metadata,
       // Hosted takes success_url + cancel_url; an elements session REJECTS both and takes a single
       // return_url. Hand-writing either pair fails at RUNTIME, in a money path, because the stripe
-      // package ships no type declarations (CHECKOUT-HANDOFF §2).
+      // package ships no type declarations (docs/CHECKOUT.md §3).
       ...checkoutReturnFields(ui, {
         successUrl: `${appUrl()}/spaces/${space.slug ?? spaceId}?membership=joined&session_id={CHECKOUT_SESSION_ID}`,
         cancelUrl: `${appUrl()}/spaces/${space.slug ?? spaceId}`,
       }),
     })
 
-    // 🔴 TRAP 1 (CHECKOUT-HANDOFF §2), and it was live in this file: `!session.url` is TRUE FOR
+    // 🔴 TRAP 1 (docs/CHECKOUT.md §3), and it was live in this file: `!session.url` is TRUE FOR
     // EVERY ELEMENTS SESSION, so the guard that used to sit here would have failed every on-page
     // join while type-checking perfectly. Ask the resolver, never the URL. The resolver also owns
     // the degrade: an elements request Stripe will not honour comes back as the hosted URL rather
@@ -201,7 +201,7 @@ export async function createSpaceMembershipCheckout(
 }
 
 /**
- * THE SETTLE'S RECORDER (CHECKOUT-HANDOFF §6). Grant entitlement for an on-page membership join from
+ * THE SETTLE'S RECORDER (docs/CHECKOUT.md §3). Grant entitlement for an on-page membership join from
  * its checkout session id, in the buyer's own tab, rather than waiting on the webhook.
  *
  * WHY THIS EXISTS AT ALL. `confirm({ redirect: 'if_required' })` is what keeps the buyer on the page,

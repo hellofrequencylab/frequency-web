@@ -78,8 +78,7 @@
             "HYG-092",
             "LIVE-338",
             "HYG-094",
-            "LIVE-397",
-            "LIVE-398"
+            "LIVE-397"
           ]
         },
         {
@@ -13340,7 +13339,7 @@
     },
     {
       "id": "LIVE-359",
-      "title": "Eight of the nine checkout creators still redirect to Stripe",
+      "title": "The subscription checkout creators still redirect to Stripe",
       "status": "open",
       "priority": "P2",
       "lane": "live",
@@ -14165,7 +14164,7 @@
     {
       "id": "LIVE-398",
       "title": "Doc drift around the embedded-checkout seam: a wrong count and a document that does not exist",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "hygiene",
       "size": "S",
@@ -14173,14 +14172,18 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
       },
-      "detail": "Spotted while surveying the checkout seam for ADR-1399, not fixed there because it was not that change's business. Two items: docs/CHECKOUT.md \u00a78 says 'the four subscription creators still redirect, deliberately' \u2014 it is THREE, because Space memberships were converted. And lib/spaces/memberships-actions.ts:84 plus components/spaces/membership-join-card.tsx:140 cite 'CHECKOUT-HANDOFF \u00a73/\u00a74/\u00a76'; there is no docs/CHECKOUT-HANDOFF.md, the document is docs/CHECKOUT.md. LIVE-359's own title ('Eight of the nine...') is also stale at three-of-eight-remaining.",
+      "detail": "CLOSED 2026-09-19. All three items were real when re-measured, and the drift was WIDER than filed: 13 citations of `CHECKOUT-HANDOFF` across FIVE files, not two. `lib/billing/space-membership-checkout.ts` (5) and `lib/billing/membership-metadata-roundtrip.test.ts` (2) carried the rest. `docs/CHECKOUT-HANDOFF.md` has never existed in this repo's history -- `git log --all --diff-filter=A` finds no commit that ever added it -- so every one of the 13 was born pointing at nothing.\n\n\ud83d\udd34 THE SECTION NUMBERS WERE WRONG FROM BIRTH, which is the half a rename alone would have preserved. docs/CHECKOUT.md carried TODAY's numbering at c62f585, the commit that introduced the citations, so these were mis-numbered rather than shifted by a later edit: \u00a76 for the settle (\u00a76 is 'What enforces this'; the reason the settle exists is \u00a73), \u00a74 for the buyer-facing states (\u00a73b), \u00a72 for the `!session.url` trap and for the missing Stripe type declarations (both \u00a73), and \u00a79 for the metadata round-trip (there is no \u00a79; it is \u00a78). All 13 now name `docs/CHECKOUT.md` and the section that actually holds the claim.\n\nTHE COUNTS WENT THE OTHER WAY. \u00a78 does not now say 'three'; it names no number and points at LIVE-359's probe, which enumerates every creator still redirecting. The header's 'nine Checkout Session creators' became eight, the Supporter contribution having been retired in #2655. A count in prose is the failure this repo names in four ADRs -- replacing a wrong count with a right one only resets its clock. LIVE-359's own title carried the same defect and was rewritten to drop its count.\n\nThe probe was widened with the row: it now reads the five directories that hold checkout callers, not the two files the citation happened to be spotted in.",
       "verify": {
         "kind": "grep-absent",
         "pattern": "CHECKOUT-HANDOFF",
         "paths": [
-          "lib/spaces/memberships-actions.ts",
-          "components/spaces/membership-join-card.tsx"
-        ]
+          "lib/billing",
+          "lib/spaces",
+          "components/spaces",
+          "components/billing",
+          "app/(main)/marketplace"
+        ],
+        "note": "Measures the CONSEQUENCE across every checkout caller: no module may cite a document this repo does not contain. Directories rather than the five files that happened to carry it, so a NEW citation of the phantom doc fails too."
       }
     },
     {
