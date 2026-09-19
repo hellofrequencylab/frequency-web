@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1414**.
+tree as of this index: **ADR-1415**.
 
 | Theme | Start here |
 |---|---|
@@ -45436,7 +45436,7 @@ change.
 
 **Rejected.** Treating FOCUS-MODEL as a reversal of join-free / pay-when-charging. Starting a sixth plan file. Letting kit work jump product this week.
 
-**Consequences.** `OWN-066` is the ruling row and closes. The memberships code half moved in [ADR-1414](DECISIONS.md) (`LIVE-410`): the gate sits on the free floor, Connect readiness still refuses a checkout. `QUEST-IA-DEBT`, `HYG-033`, `LIVE-204` are the first product surfaces. Editor E0–E9 stays on its own wave.
+**Consequences.** `OWN-066` is the ruling row and closes. The memberships code half moved in [ADR-1415](DECISIONS.md) (`LIVE-410`): the gate sits on the free floor, Connect readiness still refuses a checkout. `QUEST-IA-DEBT`, `HYG-033`, `LIVE-204` are the first product surfaces. Editor E0–E9 stays on its own wave.
 
 ## ADR-1404: A Journey has one sales page, and listing areas only point at it (2026-09-19)
 
@@ -45717,11 +45717,11 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 
 **Rows.** LIVE-376.
 
-## ADR-1414: A free Space may sell memberships; Connect readiness is the door (LIVE-410)
+## ADR-1415: A free Space may sell memberships; Connect readiness is the door (LIVE-410)
 
 **Status:** Accepted · 2026-09-19 · **Implements** [ADR-1403](DECISIONS.md) Q3 · **Amends** [ADR-914](DECISIONS.md) (memberships as a Business wall) · backlog `LIVE-410` · corroborated by `lib/pricing/gates.ts` (`space_memberships` / `space_membership_tickets` at the free floor) and `lib/pricing/feature-meters.ts` (`space_membership_tiers.free = 1`)
 
-**Context.** ADR-914 put `space_memberships` at Business because a membership is a recurring promise, and helping someone make that promise from an account they might abandon next month is not a feature. FOCUS-MODEL Q3 asked whether that was a readiness concern wearing a pricing gate. ADR-1403 ruled yes: host free until you charge, then you pay. Readiness (payout-ready Connect) still applies. LIVE-231 made the Business wall honest and did not move it. LIVE-233 / LIVE-339 already surface Connect at the first sell attempt. The remaining untruth was the $29 plan as permission to collect the first dollar. LIVE-376 shipped first on 2026-09-19 and took ADR-1413 for the sole-Space event default, so this decision is ADR-1414.
+**Context.** ADR-914 put `space_memberships` at Business because a membership is a recurring promise, and helping someone make that promise from an account they might abandon next month is not a feature. FOCUS-MODEL Q3 asked whether that was a readiness concern wearing a pricing gate. ADR-1403 ruled yes: host free until you charge, then you pay. Readiness (payout-ready Connect) still applies. LIVE-231 made the Business wall honest and did not move it. LIVE-233 / LIVE-339 already surface Connect at the first sell attempt. The remaining untruth was the $29 plan as permission to collect the first dollar. LIVE-376 shipped first on 2026-09-19 and took ADR-1413 for the sole-Space event default. A parallel PR already claimed 1414 for purchase conversion, so this decision is ADR-1415.
 
 **Decision.**
 

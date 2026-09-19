@@ -163,7 +163,7 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // surface with no upgrade path to offer. Whichever of the two ships first declares its wall in the
   // SAME change as the code that enforces it, so the gate and its call site are never more than one
   // file apart.
-  // ── THE REMAINING WALL (ADR-914, amended by ADR-1403 Q3 / ADR-1414 / LIVE-410) ──────────────
+  // ── THE REMAINING WALL (ADR-914, amended by ADR-1403 Q3 / ADR-1415 / LIVE-410) ──────────────
   // Everything else on this ladder is a METER with a real free allowance, because a used feature with
   // a ceiling converts and a locked preview does not. A wall is only justified where a quantity
   // cannot express the difference.

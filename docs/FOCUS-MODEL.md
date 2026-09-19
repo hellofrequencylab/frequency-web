@@ -223,7 +223,7 @@ rule was not applied.
 
 The gate's own comment defended itself well: a monthly membership *"is a promise to another person"*,
 and helping someone make that promise from an account they may abandon next month is not a feature.
-**That is a readiness concern wearing a pricing gate's clothes.** [ADR-1414](DECISIONS.md) moved the
+**That is a readiness concern wearing a pricing gate's clothes.** [ADR-1415](DECISIONS.md) moved the
 code default to the free floor. Checkout still refuses when Connect is not payout-ready. Status for
 the remaining readiness work lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
 
