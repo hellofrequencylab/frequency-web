@@ -16,10 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1432**. 1444 is OWN-063 on main. 1440 is SCAN-636 on main.
-
-tree as of this index: **ADR-1448**. 1444 is OWN-063 on main. 1440 is SCAN-636 on main.
->>>>>>> origin/main
+tree as of this index: **ADR-1448**. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1432 is LIVE-246.
 
 | Theme | Start here |
 |---|---|
@@ -46310,9 +46307,28 @@ Premise re-tested 2026-09-19 on this tree:
 
 **Rows.** HYG-068.
 
+## ADR-1446: AGENTS.md is an index, not a restatement of the canons (HYG-103)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-103` · numbered **1446** (1445 is the calendar C0–C5 ruling on main) · corroborated by `AGENTS.md`, `docs/DOCS-PROTOCOL.md`, `docs/START-HERE.md`
+
+**Context.** Session rules accumulated by copying the locked canons into `AGENTS.md`: deploy-safety readings, page-framework history, studio rail-plan essays, checkout traps, menu catalog lists. Those copies went stale (ADR-1355 already named the shell-weight kilobyte trail). `DOCS-PROTOCOL.md` still sent status updates to `DEVELOPMENT-MAP.md` and `ROADMAP.md`, which AGENTS.md itself calls superseded. An agent reading two files got two answers.
+
+**Decision.**
+
+1. `AGENTS.md` is a pointer table plus the operating law that is not a separate canon (one list, fail-safes, merge is a deploy, product-first). It names the six `postbuild` gates and does not paste a reading.
+2. Each locked contract stays in its own file. If AGENTS.md and that file disagree, the canon wins and AGENTS.md is shortened.
+3. `DOCS-PROTOCOL.md` and `/sync-docs` route status to `BUILD-BACKLOG.json`. They do not write status into superseded planning docs.
+4. Superseded planning files stay on disk with banners. `check:one-list` still forbids deleting one without re-homing its rows.
+
+**Rejected.** Deleting the frozen planning set. Pasting gate readings back into AGENTS.md "for convenience". A sixth master list of the cleanup.
+
+**Consequences.** Agents open the canon they need. START-HERE is the human orientation. HYG-103's probe fails if AGENTS.md grows a restated artifact reading again.
+
+**Rows.** HYG-103.
+
 ## ADR-1448: The Circle and Event rail banks get a Settings door (OWN-058)
 
-**Status:** Accepted · 2026-09-19 · Records the 2026-09-08 OWN-058 ruling · **Implements** option (a) · numbered **1448** because **1444** is OWN-063 on main, **1445** is SCAN-638, **1446** is SCAN-640, and **1447** is the evening meta-scan inventory · corroborated by `bankForScope` in `lib/admin/rail-bank.ts` and `FROZEN_MENU_DEBT` in `scripts/check-menu.mjs`
+**Status:** Accepted · 2026-09-19 · Records the 2026-09-08 OWN-058 ruling · **Implements** option (a) · numbered **1448** because **1446** is HYG-103 on main and **1445** is the calendar C0–C5 ruling · corroborated by `bankForScope` in `lib/admin/rail-bank.ts` and `FROZEN_MENU_DEBT` in `scripts/check-menu.mjs`
 
 **Context.** SCAN-603 made `circle.settings` and `event.settings` resolve through the href builders. Adding a Settings item to the rail bank raised `FROZEN_MENU_DEBT` from 11 to 13, and MENU-CONTRACT said that count may shrink and never grow. Both manage pages already carried an in-page Settings tab. The owner ruled 2026-09-08: add the two rail items and raise the ledger, because the rows are doors to pages that already exist, not new hand-typed menus.
 
@@ -46334,4 +46350,4 @@ Premise re-tested 2026-09-19:
 **Consequences.** A Circle or Event rail bank now has a Settings button that opens the Manage hub Settings tab. Frozen menu debt is 23 rows (6 + 13 + 4). The catalog path (`placement: 'bank'`) is still the retirement plan for `baseBank`.
 
 **Rows.** OWN-058.
->>>>>>> origin/main
+

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Token guard — keeps in-app UI on the DAWN token layer so the header/theme unification
-// doesn't regress into hardcoded style (AGENTS.md §46,63: colors are DAWN tokens only,
+// doesn't regress into hardcoded style (docs/PRESENTATION.md + NAMING: colors are DAWN tokens only,
 // type uses the named scale).
 //
 // Scope: .tsx/.ts under app/, components/ AND lib/. (lib/ was ungoverned until 2026-08-04 and held
@@ -294,7 +294,7 @@ function main() {
       'text-lead / text-page-title). NOT text-xs/sm/base -- those are literals check:adoption now fails\n' +
       'on, and this hint used to recommend exactly the three classes the other gate bans. If a literal is genuinely\n' +
       'required, add `// token-ok: <reason>` on the line (or the line above), or allowlist the file in\n' +
-      'scripts/check-tokens.mjs. See AGENTS.md §46,63.\n',
+      'scripts/check-tokens.mjs. See docs/PRESENTATION.md.\n',
   )
   process.exit(1)
 }

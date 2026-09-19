@@ -1,7 +1,8 @@
 # Workflow & Operations: Frequency web
 
 How this repo is operated through Claude Code (CLI + web). Companion to the routines in
-`.claude/skills/` and the hooks in `.claude/`.
+`.claude/skills/` and the hooks in `.claude/`. Session rules live in [`AGENTS.md`](../AGENTS.md)
+as an **index** of the locked canons, not a second copy of them.
 
 ## Developer workflow (local + on-the-go)
 
