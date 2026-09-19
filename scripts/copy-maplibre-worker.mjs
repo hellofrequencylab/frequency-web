@@ -38,7 +38,8 @@
 // loads, mismatches the bundled library's protocol, and fails in a way that looks like a tile
 // problem. Regenerating from node_modules on every build makes the version skew unrepresentable.
 // scripts/copy-maplibre-worker.test.ts pins the assumptions below so a package layout change
-// fails a test instead of a basemap.
+// fails a test instead of a basemap. A Dependabot bump regenerates the committed pair in
+// .github/workflows/maplibre-worker.yml (HYG-090, ADR-1424).
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
