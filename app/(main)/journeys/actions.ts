@@ -35,6 +35,7 @@ import { getSeasonalQuests } from '@/lib/quests'
 import { checkJourneyPublish } from '@/lib/journeys/publish-gate'
 import { canEditJourney } from '@/lib/journeys/authoring'
 import { normalizeJourneyCoverFocus } from '@/lib/journeys/header'
+import { writeJourneyOutcomes } from '@/lib/journeys/outcomes'
 import { reviewJourneyForLibrary } from '@/lib/ai/journey-review'
 import { planJourneyEdits, type JourneyForEdit } from '@/lib/ai/journey-edit'
 import { JOURNEY_MANIFEST } from '@/lib/studio/entities/journey'
@@ -291,6 +292,20 @@ export async function saveJourneyMeta(
 ): Promise<ActionResult> {
   if (!(await assertOwner(planId))) return fail('Not allowed.')
   const saved = await updatePlan(planId, patch)
+  if (!saved.ok) return fail(saved.error)
+  revalidatePath('/journeys', 'layout')
+  return ok()
+}
+
+/** Authored "What you'll learn" list (LIVE-393). Stored on the story widget's settings so
+ *  Advanced layout saves keep it. Empty list hides the visitor block. */
+export async function setJourneyOutcomes(planId: string, outcomes: string[]): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  const admin = createAdminClient()
+  const { data } = await admin.from('journey_plans').select('page_config').eq('id', planId).maybeSingle()
+  if (!data) return fail('That Journey is gone.')
+  const stored = (data as { page_config: PageWidgetConfig[] | null }).page_config
+  const saved = await updatePlan(planId, { pageConfig: writeJourneyOutcomes(stored, outcomes) })
   if (!saved.ok) return fail(saved.error)
   revalidatePath('/journeys', 'layout')
   return ok()

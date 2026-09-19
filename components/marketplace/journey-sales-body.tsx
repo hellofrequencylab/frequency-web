@@ -4,6 +4,7 @@ import { getPlanById, getPlanAuthor, normalizeJourneyMeeting } from '@/lib/journ
 import { getPillars } from '@/lib/pillars'
 import { getJourneyOffer } from '@/lib/journeys/paid'
 import { enabledWidgets } from '@/lib/journey-page-config'
+import { readJourneyOutcomes } from '@/lib/journeys/outcomes'
 import {
   StoryBlock,
   OutcomesBlock,
@@ -67,6 +68,7 @@ export async function JourneySalesBody({
   const facts = journeyFacts(items)
   const widgets = enabledWidgets(plan.page_config, 'discovery')
   const storyOn = widgets.some((w) => w.id === 'story')
+  const outcomes = readJourneyOutcomes(plan.page_config)
   const meeting = normalizeJourneyMeeting(plan.meeting)
   const t = meeting.gathering ?? meeting
 
@@ -83,14 +85,14 @@ export async function JourneySalesBody({
           Same three blocks LIVE-389 pinned, now mapped from page_config so reorder works.
           `intro` is the course description AND the sales copy. PathBlock still opens phase
           one and marks it a free preview. */}
-      {!storyOn ? <OutcomesBlock summary={plan.summary} /> : null}
+      {!storyOn ? <OutcomesBlock outcomes={outcomes} /> : null}
       {widgets.map((w) => {
         switch (w.id) {
           case 'story':
             return (
               <Fragment key={w.id}>
                 <StoryBlock intro={plan.intro} />
-                <OutcomesBlock summary={plan.summary} />
+                <OutcomesBlock outcomes={outcomes} />
               </Fragment>
             )
           case 'path':

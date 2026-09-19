@@ -46531,3 +46531,21 @@ Premise re-tested 2026-09-19:
 **Consequences.** An author who hides the story or reorders pillar balance sees that on every visitor face. Stored `social-proof` / `reward-preview` rows drop on normalize. LIVE-395 (testimonials and guarantee) is still a separate authoring row.
 
 **Rows.** LIVE-397.
+
+## ADR-1463: Journey outcomes are an authored list, not the promise restated (LIVE-393)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-393` · numbered **1463** (1456–1458 and 1460–1461 are claimed on open calendar and scan PRs; 1459 is SCAN-638; 1462 is LIVE-397 on this tree) · corroborated by `lib/studio/entities/journey.ts` (`outcomes` repeat), `lib/journeys/outcomes.ts`, `components/journey/discovery-widgets.tsx` (`OutcomesBlock`)
+
+**Context.** LIVE-393: `OutcomesBlock` rendered "By the end you'll {lowerFirst(plan.summary)}". That is the same sentence the header already shows as the promise. There was no outcomes field. Premise re-tested 2026-09-19 after LIVE-397: the probe still failed.
+
+**Decision.**
+
+1. **A repeat group on the Journey manifest.** `outcomes` is a bare `string[]` (`REPEAT_ITEM_SELF`), labelled "What you'll learn", in the story section. `railRepeats` / `RailManifestRepeat` is the editor. Cap 12, 200 characters.
+2. **Stored on `page_config` story settings, not a new column.** `settings.outcomes` rides with the story widget so an Advanced layout save keeps it (`editorPageConfig` already preserves settings). The block stays a sandwich, not a fourth discovery toggle (ADR-1462). No schema.
+3. **Every visitor face reads the same list.** Member page, `/discover/journeys/<slug>`, and `JourneySalesBody` pass `readJourneyOutcomes(plan.page_config)`. Empty list hides the block. The promise line stays the promise line.
+
+**Rejected.** A `journey_plans.outcomes` column (needs a prod apply this session does not have credentials for, and a SELECT of a missing column would 500 every Journey page). Falling back to `summary` when the list is empty (that is the bug). Making outcomes a page_config widget id.
+
+**Consequences.** A Journey with no authored outcomes no longer shows "What you'll learn". Authors add the list in settings. LIVE-394 (authored FAQ) is still open and can use the same repeat shape.
+
+**Rows.** LIVE-393.

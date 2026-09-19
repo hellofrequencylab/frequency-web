@@ -10,6 +10,7 @@ import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 import { getCallerProfile, isPlatformStaff } from '@/lib/auth'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { getJourneyView, getPlan, getPlanAuthor } from '@/lib/journey-plans'
+import { readJourneyOutcomes } from '@/lib/journeys/outcomes'
 import { getPillars, pillarsById as indexPillars } from '@/lib/pillars'
 import { accentColor, accentTint } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
@@ -322,7 +323,7 @@ export default async function JourneyPlanPage({
             pillars={pillars}
             facts={facts}
             accent={accent}
-            afterStory={<OutcomesBlock summary={plan.summary} />}
+            afterStory={<OutcomesBlock outcomes={readJourneyOutcomes(plan.page_config)} />}
           />
           <InstructorBlock author={author} />
           {reviewProductId && reviews && (

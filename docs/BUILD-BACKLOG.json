@@ -176,7 +176,6 @@
             "LIVE-411",
             "HYG-075",
             "LIVE-335",
-            "LIVE-393",
             "LIVE-394",
             "LIVE-395",
             "LIVE-396"
@@ -14198,20 +14197,21 @@
     {
       "id": "LIVE-393",
       "title": "\"What you'll learn\" just restates the summary, because there is nowhere to author outcomes",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
       "source": {
         "file": "docs/DECISIONS.md",
-        "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
+        "ref": "ADR-1463, ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
       },
-      "detail": "`OutcomesBlock` renders 'By the end you will {lowerFirst(plan.summary)}' \u2014 the same sentence already shown as the promise line in the header. A cohort buyer reads it twice and learns nothing the second time. There is no outcomes field on a Journey to render instead. Shape: a REPEAT group on the Journey's Studio manifest (`railRepeats()` / `RailManifestRepeat`, ADR-1309), so outcomes are authored as an ordered list and every surface derives from it.",
+      "detail": "CLOSED 2026-09-19 (ADR-1463). PREMISE RE-TESTED FIRST: OutcomesBlock still rendered By the end you'll {summary}. The Journey manifest now declares an outcomes repeat (bare string[], REPEAT_ITEM_SELF). Authors edit it on the settings rail. The list lives on page_config story.settings.outcomes so an Advanced layout save keeps it. Member, discover, and sales body all read readJourneyOutcomes. Empty list hides the block. Did not add a column. Did not fall back to summary.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const o=s('components/journey/discovery-widgets.tsx');const i=o.indexOf('export function OutcomesBlock');if(i<0)fail('OutcomesBlock is gone; re-point this probe');const b=o.slice(i,i+700);if(/summary/.test(b))fail('OutcomesBlock still renders plan.summary, so \\'What you will learn\\' is still the promise line repeated')\"",
         "note": "Measures the CONSEQUENCE: the block no longer reading `summary`. Fails while outcomes are the summary restated."
-      }
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-394",

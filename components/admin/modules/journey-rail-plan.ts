@@ -17,6 +17,7 @@
 //
 // THE ZONES are the rail's save paths:
 //   identity    saveJourneyMeta         the name and the promise, hosted from the inline plane
+//   outcomes    setJourneyOutcomes      What you'll learn (LIVE-393), a repeat on story settings
 //   header      saveJourneyMeta         the cover and logo (self-saving Loom picks) + the overlay
 //   delivery    setJourneyRewards + setJourneyDelivery   one manifest section, two actions
 //   visibility  setJourneyVisibility    its own flow: publish, moderation state, Vera's rank gate
@@ -38,11 +39,17 @@
 
 import { JOURNEY_MANIFEST } from '@/lib/studio/entities/journey'
 import { railForm, type RailForm } from '@/lib/studio/kernel/edit-plan'
-import type { FieldDef } from '@/lib/studio/kernel/manifest'
+import { REPEAT_ITEM_SELF, type FieldDef } from '@/lib/studio/kernel/manifest'
+import type { RepeatRow } from '@/components/admin/rail/rail-field-value'
+import { JOURNEY_OUTCOMES_CAP, normalizeJourneyOutcomes } from '@/lib/journeys/outcomes'
 import type { JourneyMeeting, JourneyTouchpoint } from '@/lib/journeys/meeting'
 
 /** The columns `saveJourneyMeta` writes from the identity form. */
 export const JOURNEY_IDENTITY_WRITES = ['title', 'summary'] as const
+
+/** The repeat `setJourneyOutcomes` persists onto story.settings.outcomes. */
+export const JOURNEY_OUTCOMES_WRITES = ['outcomes'] as const
+export { JOURNEY_OUTCOMES_CAP }
 
 /** The columns `saveJourneyMeta` writes from the header zone. */
 export const JOURNEY_HEADER_WRITES = ['cover_image', 'logo_image', 'header_overlay_style', 'header_overlay_color'] as const
@@ -65,6 +72,7 @@ export const JOURNEY_MEETING_WRITES = [
 
 export interface JourneyRailPlan {
   identity: RailForm
+  outcomes: RailForm
   header: RailForm
   delivery: RailForm
   visibility: RailForm
@@ -74,6 +82,7 @@ export interface JourneyRailPlan {
 
 export const JOURNEY_RAIL: JourneyRailPlan = {
   identity: railForm(JOURNEY_MANIFEST, JOURNEY_IDENTITY_WRITES, { hostInline: true }),
+  outcomes: railForm(JOURNEY_MANIFEST, JOURNEY_OUTCOMES_WRITES),
   header: railForm(JOURNEY_MANIFEST, JOURNEY_HEADER_WRITES),
   delivery: railForm(JOURNEY_MANIFEST, JOURNEY_DELIVERY_WRITES),
   visibility: railForm(JOURNEY_MANIFEST, JOURNEY_VISIBILITY_WRITES),
@@ -210,4 +219,14 @@ function touchpoint(values: JourneyRailValues, prefix: string): JourneyTouchpoin
  *  Gathering is stored as null there, so the rail never has to decide when a Gathering "exists". */
 export function journeyMeetingPatch(values: JourneyRailValues): JourneyMeeting {
   return { ...touchpoint(values, 'meeting'), gathering: touchpoint(values, 'meeting.gathering') }
+}
+
+/** Rail rows for the outcomes repeat. A bare string[] keys each item at REPEAT_ITEM_SELF. */
+export function journeyOutcomesRows(row: Record<string, unknown>): RepeatRow[] {
+  return normalizeJourneyOutcomes(row.outcomes).map((text) => ({ [REPEAT_ITEM_SELF]: text }))
+}
+
+/** The string[] `setJourneyOutcomes` writes. */
+export function journeyOutcomesFromRows(rows: readonly RepeatRow[]): string[] {
+  return normalizeJourneyOutcomes(rows.map((r) => r[REPEAT_ITEM_SELF] ?? ''))
 }

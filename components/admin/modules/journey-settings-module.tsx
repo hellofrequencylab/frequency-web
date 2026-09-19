@@ -7,11 +7,14 @@ import { HeaderImageField } from '@/components/ui/header-image-field'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { RailAutosaveForm, useRailSaveNow } from '@/components/admin/rail/rail-autosave-form'
 import { RailManifestFields, type RailManifestFieldsProps } from '@/components/admin/rail/rail-manifest-fields'
+import { RailManifestRepeat } from '@/components/admin/rail/rail-manifest-repeat'
+import type { RepeatRow } from '@/components/admin/rail/rail-field-value'
 import type { FieldOptions } from '@/components/studio/spark/field/field-control'
 import { PublishCelebration, VeraRankPanel, useJourneyPublishing } from '@/components/journey/v2/journey-settings'
 import { getJourneyRailData, type JourneyRailData } from '@/app/(main)/journeys/admin-actions'
 import {
   saveJourneyMeta,
+  setJourneyOutcomes,
   setJourneyAttributes,
   setJourneyDelivery,
   setJourneyHeaderFocus,
@@ -28,10 +31,13 @@ import {
   JOURNEY_RAIL,
   JOURNEY_HEADER_WRITES,
   JOURNEY_IDENTITY_WRITES,
+  JOURNEY_OUTCOMES_CAP,
   journeyAttributesPatch,
   journeyDeliveryPatch,
   journeyMeetingPatch,
   journeyMetaPatch,
+  journeyOutcomesFromRows,
+  journeyOutcomesRows,
   journeyRailValues,
   journeyRewards,
   type JourneyRailValues,
@@ -45,7 +51,7 @@ import {
 // THE FIELDS COME FROM THE MANIFEST (ADR-1240, ADR-1246). This module declares no field: `JOURNEY_RAIL`
 // is JOURNEY_MANIFEST filtered through the kernel's `railForm()` for the columns each save path writes,
 // so a label, a kind, or a placement changed on the manifest changes here with no edit to this file.
-// The six zones below are the six SAVE PATHS, not six field lists. It used to mount the 700-line
+// The seven zones below are the seven SAVE PATHS, not seven field lists. It used to mount the 700-line
 // JourneySettings editor whole; that editor still serves /journeys/[slug]/edit.
 //
 // HOW A SAVE READS ITS VALUES. The Journey's actions take JSON patches, not FormData, so each form's
@@ -163,6 +169,13 @@ function JourneySettingsRail({ data }: { data: JourneyRailData }) {
     setValues(merged)
   }, [])
 
+  const [outcomeRows, setOutcomeRows] = useState<RepeatRow[]>(() => journeyOutcomesRows(data.row))
+  const outcomeRowsRef = useRef(outcomeRows)
+  const setOutcomes = useCallback((next: RepeatRow[]) => {
+    outcomeRowsRef.current = next
+    setOutcomeRows(next)
+  }, [])
+
   const publishing = useJourneyPublishing({
     planId,
     initialVisibility: values[VISIBILITY.path] as PlanVisibility,
@@ -214,6 +227,7 @@ function JourneySettingsRail({ data }: { data: JourneyRailData }) {
 
   // The forms' actions: each builds its own action's patch from the rail's values.
   const saveIdentity = async () => unwrap(await saveJourneyMeta(planId, journeyMetaPatch(valuesRef.current, JOURNEY_IDENTITY_WRITES)))
+  const saveOutcomes = async () => unwrap(await setJourneyOutcomes(planId, journeyOutcomesFromRows(outcomeRowsRef.current)))
   const saveHeader = async () => unwrap(await saveJourneyMeta(planId, journeyMetaPatch(valuesRef.current, JOURNEY_HEADER_WRITES)))
   const saveDelivery = async () => {
     const v = valuesRef.current
@@ -237,6 +251,19 @@ function JourneySettingsRail({ data }: { data: JourneyRailData }) {
 
       {/* Identity: the inline plane, hosted here until /journeys/[slug] has an inline canvas. */}
       <RailAutosaveForm action={saveIdentity}>{zone(JOURNEY_RAIL.identity.fields)}</RailAutosaveForm>
+
+      {/* What you'll learn: one repeat group, stored on the story widget's settings. */}
+      <RailAutosaveForm action={saveOutcomes}>
+        {JOURNEY_RAIL.outcomes.repeats.map((def) => (
+          <RailManifestRepeat
+            key={def.arrayPath}
+            def={def}
+            rows={outcomeRows}
+            onChange={setOutcomes}
+            max={JOURNEY_OUTCOMES_CAP}
+          />
+        ))}
+      </RailAutosaveForm>
 
       {/* Header: the cover (with its focal point) and the logo self-save on pick; the overlay autosaves. */}
       <div className="space-y-4">
