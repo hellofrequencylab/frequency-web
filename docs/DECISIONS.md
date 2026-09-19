@@ -45799,3 +45799,24 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 
 **Rows.** LIVE-359.
 
+## ADR-1421: The first-run checklist collects a name, not a minted handle (LIVE-349)
+
+**Status:** Accepted · 2026-09-19 · **Implements** the inline-collection half of [ADR-1371](DECISIONS.md) · backlog `LIVE-349` · corroborated by `lib/onboarding/identity.ts` and `lib/onboarding/steps.ts`
+
+**Context.** ADR-1371 admitted account holders whose induction never finished. The seven people it named still appear to the community as the email local-part and a generated handle (`taylor_42a829`), because the first-run checklist had no identity criterion. Admission without collection was half a ruling. Re-tested 2026-09-19: `OnboardingStepKey` was still `'avatar' | 'circle' | 'event' | 'host'`, and `getOnboardingStatus` still did not read `display_name` or `handle`.
+
+The signup trigger (`public.handle_new_auth_user` in `20261013000000_reconcile_signup_trigger.sql`) mints `display_name` from the email local-part and `handle` as that sanitised local-part plus the first 6 hex of `auth.users.id`. Hunting a hex suffix would false-positive a chosen handle that happens to end in six hex digits. Reconstructing the trigger's first try from the profile's own name and auth id is a fact, not an inference.
+
+**Decision.**
+
+1. **Identity is a criterion.** `ONBOARDING_CRITERIA` leads with `identity`. Copy, href, and CTA live in `DEFAULT_ONBOARDING_STEPS` like every other step. The force-complete hatch and the walkthroughs picker pick it up from the same list.
+2. **Done-detection reconstructs the mint.** `identityIsChosen` is true when the stored handle is not `mintedHandleFor(authUserId, displayName)`. Empty name or handle is not chosen. A profile with no auth id (system rows) reads as chosen so Vera does not grow a step.
+3. **Established members stay done.** A real display name fails the equality, so the fifty members who already named themselves do not grow a step overnight.
+4. **Identity is not an operator opt-out.** An authored Next Steps funnel that never tagged `identity` still gets the default identity step prepended. An authored identity slide keeps its order.
+
+**Rejected.** A regex on `_` plus six hex digits. Stamping `meta.identity.minted` in this row (a migration plus a backfill; the reconstruction is the trigger's own formula and needs no schema). Asking the owner to click through `/settings/profile` unaided.
+
+**Consequences.** A member still carrying the minted identity sees "Choose your name" first on the feed guide and in the right rail. Saving a name or a handle at `/settings/profile` completes the step. Collision-fallback handles (random uuid suffix, not the auth id) read as chosen.
+
+**Rows.** LIVE-349.
+
