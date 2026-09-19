@@ -38,7 +38,7 @@ const pencil: CalendarEvent = {
   layer: 'pencil',
 }
 
-describe('CalendarPmConsole render (LIVE-415)', () => {
+describe('CalendarPmConsole render (LIVE-415 / LIVE-417)', () => {
   it('lists a penciled gathering on the board and keeps the date map', () => {
     const el = mount(
       <CalendarPmConsole events={[pencil]}>
@@ -46,6 +46,7 @@ describe('CalendarPmConsole render (LIVE-415)', () => {
       </CalendarPmConsole>,
     )
     expect(el.querySelector('[data-calendar-pm-console]')).not.toBeNull()
+    expect(el.querySelector('[data-planning-lane]')?.textContent).toContain('Nothing in Planning.')
     expect(el.textContent).toContain('The board')
     expect(el.textContent).toContain('New moon sit')
     expect(el.textContent).toContain('Pencil')
@@ -53,12 +54,28 @@ describe('CalendarPmConsole render (LIVE-415)', () => {
     expect(el.textContent).not.toContain('Nothing on the board yet.')
   })
 
-  it('shows the empty board when there is nothing to run', () => {
+  it('lists a planning gathering in planningLane, not mixed into the board', () => {
+    const planning: CalendarEvent = { ...pencil, slug: 'entry-2', title: 'Open house', stage: 'planning' }
+    const el = mount(
+      <CalendarPmConsole events={[pencil, planning]}>
+        <div data-date-map>map</div>
+      </CalendarPmConsole>,
+    )
+    expect(el.querySelector('[data-planning-lane]')?.textContent).toContain('Open house')
+    expect(el.querySelector('[data-planning-lane]')?.textContent).not.toContain('New moon sit')
+    expect(el.textContent).toContain('New moon sit')
+    expect(el.textContent).toContain('Pencil')
+    expect(el.textContent).not.toContain('Nothing in Planning.')
+    expect(el.textContent).not.toContain('Nothing on the board yet.')
+  })
+
+  it('shows the empty planning lane and board when there is nothing to run', () => {
     const el = mount(
       <CalendarPmConsole events={[]}>
         <div data-date-map>map</div>
       </CalendarPmConsole>,
     )
+    expect(el.textContent).toContain('Nothing in Planning.')
     expect(el.textContent).toContain('Nothing on the board yet.')
     expect(el.querySelector('[data-date-map]')).not.toBeNull()
   })

@@ -24,12 +24,12 @@ import { CalendarPmConsole } from '@/components/spaces/calendar-pm-console'
 // calendar app via the public per-space .ics feed (Events EC1). The identity hero + tab chrome come from
 // the (profile) layout; this is the body.
 //
-// ADMIN / GUEST (ADR-1389, amended by ADR-1450). A viewer who manages the Space lands on ADMIN: the
-// production console (CalendarPmConsole). The board lists what is penciled, in planning, in production,
-// and cancelled. StaffCalendar is the date map and the settings drawer, not a second guest month. A
-// toggle flips to GUEST, which is exactly what a visitor sees. Every other viewer (guests and ordinary
-// members) only ever gets Guest, and the server never loads the private layer for them: the mode is
-// decided here, before any admin read.
+// ADMIN / GUEST (ADR-1389, amended by ADR-1450 and ADR-1453). A viewer who manages the Space lands on
+// ADMIN: the production console (CalendarPmConsole). Planning is its own lane. The board lists what is
+// penciled, in production, and cancelled. StaffCalendar is the date map and the settings drawer, not a
+// second guest month. A toggle flips to GUEST, which is exactly what a visitor sees. Every other viewer
+// (guests and ordinary members) only ever gets Guest, and the server never loads the private layer for
+// them: the mode is decided here, before any admin read.
 
 // Its OWN canonical + title. Without this the tab inherits the Space ROOT's metadata and declares
 // itself a duplicate of a page it is not (FINALIZE-PLAN §9.5).
