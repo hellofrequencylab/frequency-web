@@ -111,6 +111,22 @@ export async function getProduct(id: string): Promise<CommerceProduct | null> {
   return data ? rowToProduct(data as Record<string, unknown>) : null
 }
 
+/** The Journey slug a commerce product sells, or null. Used by LIVE-220 so a `/journeys/<slug>`
+ *  stamp can classify that product's checkout without the edge hitting the database. */
+export async function journeySlugForProduct(productId: string): Promise<string | null> {
+  if (!productId) return null
+  const { data: product } = await db()
+    .from('commerce_products')
+    .select('journey_plan_id')
+    .eq('id', productId)
+    .maybeSingle()
+  const planId = (product as { journey_plan_id?: string | null } | null)?.journey_plan_id
+  if (!planId) return null
+  const { data: plan } = await db().from('journey_plans').select('slug').eq('id', planId).maybeSingle()
+  const slug = (plan as { slug?: string | null } | null)?.slug
+  return slug && slug.length > 0 ? slug : null
+}
+
 /** Create a product. owner_kind determines which owner ref is set. Caller (server
  *  action) has already authorized the owner. Commerce settles on the Labs rail. */
 export async function createProduct(input: ProductInput): Promise<CommerceProduct | null> {

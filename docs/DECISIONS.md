@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1418**.
+tree as of this index: **ADR-1424**.
 
 | Theme | Start here |
 |---|---|
@@ -45799,6 +45799,25 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 
 **Rows.** LIVE-359.
 
+## ADR-1419: Marketplace discovery is stamped at render, not passed as a checkout argument (2026-09-19)
+
+**Status:** Accepted · 2026-09-19 · LIVE-220 · corroborated by `lib/commerce/marketplace-entry.ts`, `proxy.ts`, `app/(main)/marketplace/commerce-actions.ts`
+
+**Context.** `startCheckoutAction` is a server action, so every argument is client-supplied. LIVE-219 narrowed `entryPoint` to the literal `'marketplace'`, which stops a crafted call inventing a surface. It does not stop a crafted call omitting one, and omitting lands on the default `self` (0% platform fee). The motivated party is a seller who wants discovery sales classified `self`. `referer` is client-controlled too. Premise re-tested 2026-09-19: the argument was still on the signature.
+
+**Decision.**
+
+1. **Record the view at the edge.** `proxy.ts` stamps an httpOnly signed cookie (`fq_mkt`) when the request is `/market/<id>`, `/journeys/<slug>`, or `/discover/journeys/<slug>`. `/store/<id>` is not a discovery surface and is not stamped.
+2. **Key the stamp to the product (or Journey slug).** A stamp for listing A does not raise listing B. A later Market view accumulates; a storefront visit does not clear an earlier Market stamp for that product.
+3. **Checkout reads the cookie.** `startCheckoutAction` no longer takes `entryPoint`. It verifies the cookie and, when only a Journey slug was stamped, resolves the product's plan slug before classifying.
+4. **Not consent-gated.** This cookie is the take-rate contract, not attribution storage. A declined banner must not reclassify a Market sale as `self`.
+
+**Rejected.** Tightening the client argument (still forgeable by omission). Reading `referer`. Passing a signed token as a new argument (the seller's crafted call can still drop it).
+
+**Consequences.** A buyer who viewed a listing on the Market or a Journey sales page classifies `network` even if client code omits every argument. A seller's own `/store/<id>` link stays `self`. The self-scan and ADR-913 relationship check still run above the stamp, so an existing follower, member, or CRM contact is still 0%.
+
+**Rows.** LIVE-220.
+
 ## ADR-1420: Residual admin actions freeze behind a parseInput ratchet (HYG-101)
 
 **Status:** Accepted · 2026-09-19 · HYG-101 · corroborated by `scripts/check-parse-input.mjs`, `scripts/parse-input-baseline.txt`, `lib/validation.ts`
@@ -45817,4 +45836,86 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 **Consequences.** A new admin action without `parseInput` fails the `test` job. Converting a frozen file is `--update` plus the conversion, and the header stays. Authz is still the door.
 
 **Rows.** HYG-101.
+
+## ADR-1421: The first-run checklist collects a name, not a minted handle (LIVE-349)
+
+**Status:** Accepted · 2026-09-19 · **Implements** the inline-collection half of [ADR-1371](DECISIONS.md) · backlog `LIVE-349` · corroborated by `lib/onboarding/identity.ts` and `lib/onboarding/steps.ts`
+
+**Context.** ADR-1371 admitted account holders whose induction never finished. The seven people it named still appear to the community as the email local-part and a generated handle (`taylor_42a829`), because the first-run checklist had no identity criterion. Admission without collection was half a ruling. Re-tested 2026-09-19: `OnboardingStepKey` was still `'avatar' | 'circle' | 'event' | 'host'`, and `getOnboardingStatus` still did not read `display_name` or `handle`.
+
+The signup trigger (`public.handle_new_auth_user` in `20261013000000_reconcile_signup_trigger.sql`) mints `display_name` from the email local-part and `handle` as that sanitised local-part plus the first 6 hex of `auth.users.id`. Hunting a hex suffix would false-positive a chosen handle that happens to end in six hex digits. Reconstructing the trigger's first try from the profile's own name and auth id is a fact, not an inference.
+
+**Decision.**
+
+1. **Identity is a criterion.** `ONBOARDING_CRITERIA` leads with `identity`. Copy, href, and CTA live in `DEFAULT_ONBOARDING_STEPS` like every other step. The force-complete hatch and the walkthroughs picker pick it up from the same list.
+2. **Done-detection reconstructs the mint.** `identityIsChosen` is true when the stored handle is not `mintedHandleFor(authUserId, displayName)`. Empty name or handle is not chosen. A profile with no auth id (system rows) reads as chosen so Vera does not grow a step.
+3. **Established members stay done.** A real display name fails the equality, so the fifty members who already named themselves do not grow a step overnight.
+4. **Identity is not an operator opt-out.** An authored Next Steps funnel that never tagged `identity` still gets the default identity step prepended. An authored identity slide keeps its order.
+
+**Rejected.** A regex on `_` plus six hex digits. Stamping `meta.identity.minted` in this row (a migration plus a backfill; the reconstruction is the trigger's own formula and needs no schema). Asking the owner to click through `/settings/profile` unaided.
+
+**Consequences.** A member still carrying the minted identity sees "Choose your name" first on the feed guide and in the right rail. Saving a name or a handle at `/settings/profile` completes the step. Collision-fallback handles (random uuid suffix, not the auth id) read as chosen.
+
+**Rows.** LIVE-349.
+
+## ADR-1422: Retirement stands down on an unreadable rule, not on an empty expansion (LIVE-338)
+
+**Status.** Accepted, 2026-09-19. Amends [ADR-1304](DECISIONS.md) rule 3. Row: LIVE-338. Corroborated by `recurrenceRuleUnreadable` and `retireStaleOccurrences` in `lib/event-recurrence.ts`, pinned by `lib/event-recurrence-count-one.test.ts`.
+
+**Context.** ADR-1304's fail-safe is: an anchor that still says it repeats but whose rule expands to nothing is not a series with no dates, it is a rule this code could not read, so retirement stands down. That is the right fear. The reading is wrong. `expandOccurrenceInstants` flattens "could not parse" and "produced no child dates" into one empty array, and `includeAnchor: false` means a `COUNT=1` series (the picker admits 1 to 400) ALWAYS expands to no child dates: the only occurrence is the anchor itself. Reducing a weekly series to one date therefore stood down and left every leftover future child live. The same flattening hides a spent `COUNT=6` that still carries dates from a larger previous count. ADR-1353 left this row open on purpose: its floor change did not touch the retirement expansion.
+
+Premise re-tested 2026-09-19 on this tree: `retireStaleOccurrences` still stood down on `expected.length === 0`. Live COUNT-bounded series were zero on 2026-09-15; this is a reachable hole, not a stranded production series.
+
+**Decision.**
+
+1. **`recurrenceRuleUnreadable` is the stand-down.** False when `recurrence_type` is `none` (switched off is empty on purpose). True when a still-repeating row has no parseable rule, or no parseable `starts_at` (daily can build a rule without a start, so the clock check is load-bearing). A readable COUNT rule that expands to `[]` proceeds.
+2. **The expander's flatten stays.** Materialisation and `.ics` EXDATE still receive `Date[]`. They never deleted on empty, so they do not need the discriminant. Retirement is the only caller that treated empty as unread.
+3. **Attachment-read failures still stand down.** A read that errored is not a read that found nothing. Unchanged from ADR-1304.
+
+**Rejected.** Treating `COUNT=1` as a special case beside the length check (every spent COUNT is empty for children; the bug is the flatten, not the integer). Stamping `recurrence_until` on a spent COUNT series so the existing empty check would not fire (ADR-1348 already refused that: it would emit an invalid RRULE with both UNTIL and COUNT). Injecting a clock into `retireStaleOccurrences` in this row (the IO test freezes `Date`; the arithmetic is already pure in `staleOccurrenceIds`).
+
+**Consequences.** Reducing a series to one date, or to a count already spent, retires unattached leftover future dates the next time the rail saves or the daily cron runs. Dates with an RSVP, ticket, guest or post stay, as ADR-1304 already required. An unparseable start still touches nothing and logs the stand-down.
+
+**Rows.** LIVE-338 (done, this ADR).
+
+## ADR-1423: The always() capture commit stands down when the job never checked out (HYG-094)
+
+**Status:** Accepted · 2026-09-19 · Amends the `always()` commit in [ADR-1351](DECISIONS.md) without removing it · backlog `HYG-094` · corroborated by `.github/workflows/e2e-manual.yml` (`update-baselines` commit step) and `scripts/e2e-preview-gate.test.ts`
+
+**Context.** ADR-1351 made `update-baselines`' commit step `always()` so one flaky surface does not discard the other captures, and told a degraded run apart with `test/e2e/.degraded-capture.jsonl`. ADR-1352 then refused a committing dispatch on a protected ref as the second step, before checkout. `always()` still fires after that refusal. Checkout is skipped. The degraded-capture file is absent, so the marker check no-ops, `git config` runs, and the step dies with `fatal: not in a git directory` (exit 128). Run 34954126861 measured it: two red steps and a log that names git, not the refusal. Not a safety hole: no work tree, so no push. The cost is diagnosis.
+
+`update-a11y`'s identically named step is skipped in the same scenario because it has no `always()`. Copying that would reopen LIVE-333 and throw away partial captures.
+
+**Decision.**
+
+1. **`always()` stays.** Partials still land. The degraded-capture marker still refuses a 5xx run.
+2. **A work-tree test is the third state.** Before the first `git` command: if `.git` is neither a directory nor a file, exit 0. That is "this job never started". A checkout that ran still has a work tree (dir, or a file in a linked worktree) and proceeds.
+3. **The probe measures a mechanism, not a word.** A filesystem test naming `.git`, or a marker under `test/e2e` other than the degraded-capture file, before a `git` command at the start of a line. A message that mentions a refusal does not count.
+
+**Rejected.** Removing `always()`. Copying `update-a11y`. Standing down on the word "refused" in the degraded-capture error (that word is already on the unfixed tree).
+
+**Consequences.** A protected-ref refusal is one red step. A partial capture still commits. A degraded capture still refuses.
+
+**Rows.** HYG-094.
+
+## ADR-1424: Dependabot refreshes the committed MapLibre worker pair (HYG-090)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-090` · corroborated by `.github/workflows/maplibre-worker.yml` and `scripts/copy-maplibre-worker-workflow.test.ts`
+
+**Context.** `scripts/copy-maplibre-worker.mjs` copies MapLibre's worker and shared chunk, unhashed, into `public/maplibre/` so the worker's relative sibling import resolves. `prebuild` / `predev` regenerate the pair, and `scripts/copy-maplibre-worker.test.ts` pins that the committed copy matches the installed package. A Dependabot bump changes the package and not the pair, so the test job fails STALE. Measured on PR #2582 (2026-09-14): Dependabot opened the grouped minor-and-patch bump, then a person ran the script by hand and pushed "The self-hosted MapLibre worker is regenerated for maplibre-gl 6.9.0" onto the bot's branch. The guard is right. The automation was missing.
+
+Premise re-tested 2026-09-19 on this tree: no workflow (comments stripped) ran the copy script. `codeql.yml` mentions it only in a comment, which the probe already ignores.
+
+**Decision.**
+
+1. **A dedicated workflow, not a step in `ci.yml`.** The required `test` job checks out the merge commit and is `contents: read`. Committing needs the PR HEAD and `contents: write`. This file owns the refresh; `ci.yml` keeps judging.
+2. **Gated on Dependabot, same-repo, never `main`.** A human who bumps the package still sees STALE and runs the script. `pull_request_target` is refused.
+3. **Commit only the two files the script writes.** Then, because a `GITHUB_TOKEN` push starts no workflow run (documented on the capture jobs, observed both ways on #2026 and #2086), dispatch `ci.yml`, `codeql.yml`, and `db-tests-fallback.yml` onto the new SHA. `workflow_dispatch` is the documented GITHUB_TOKEN exception. The fallback stamps `db-tests` because a lockfile bump does not match `db-tests.yml`'s path filter.
+4. **Skip the install when `maplibre-gl` did not move.** Grouped Dependabot PRs are the common case. A diff read that fails refuses rather than guessing.
+
+**Rejected.** Copying before tests in `ci.yml` without committing (production `pnpm build` already runs `prebuild`; the committed pair would drift forever, which is the safety net the test exists to keep). Putting `contents: write` on the required `test` job. Trusting the GITHUB_TOKEN push to retrigger CI (the capture jobs have seen both outcomes and tell you not to plan around either).
+
+**Consequences.** A Dependabot bump that moves `maplibre-gl` regenerates `public/maplibre/` and the bump PR is green on its own. A bump that does not touch MapLibre is a no-op. Vercel is a GitHub App webhook, not a workflow run; if that check is missing, push any real commit, the same recovery the capture jobs already document.
+
+**Rows.** HYG-090.
 

@@ -173,15 +173,13 @@ export default async function JourneyPlanPage({
   // under the button they pressed. Same `BuyButton`, same `createCommerceCheckout`, same embedded
   // panel -- only the mounting point moved, so there is still exactly one checkout.
   //
-  // 🔴 `entryPoint="marketplace"` IS PRESERVATION, NOT A NEW CLASSIFICATION. The buyer who lands
-  // here today completes the sale on `/market/<id>`, which passes it (LIVE-219), so omitting it
-  // would silently reclassify that same sale `self` and drop the platform's cut to 0% as a side
-  // effect of moving a button. `classifyOrderSource` still runs the self-scan and the ADR-913
-  // relationship check ABOVE this, so an existing follower or member is still 0%.
+  // LIVE-220: proxy.ts stamps `/journeys/<slug>` as a discovery view. Checkout reads that
+  // cookie, so this page must not pass a client entryPoint. classifyOrderSource still runs
+  // the self-scan and the ADR-913 relationship check ABOVE the stamp, so an existing
+  // follower or member is still 0%.
   const buyControl = offer ? (
     <BuyButton
       productId={offer.productId}
-      entryPoint="marketplace"
       label={`Get access · ${offer.priceLabel}`}
       priceLabel={offer.priceLabel}
       doneTitle="You are in."

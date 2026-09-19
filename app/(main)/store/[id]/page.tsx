@@ -118,12 +118,10 @@ export default async function ShopProductPage({ params }: { params: Promise<{ id
           )}
 
           <div className="mt-5 border-t border-border pt-4">
-            {/* 🔴 NO entryPoint HERE, AND THAT IS THE POINT (LIVE-219). This is the seller's OWN
+            {/* 🔴 THIS PATH IS NEVER STAMPED (LIVE-219 / LIVE-220). This is the seller's OWN
                 storefront — a buyer arrives by a link the seller shared, so Frequency made no
-                introduction and ADR-811 promises 0%. Passing entryPoint="marketplace" to match
-                `/market/[id]` would charge the network rate on a seller's own audience, which is the
-                exact promise the take-rate model is built on. The asymmetry with the Market page is
-                deliberate; do not "tidy" it. */}
+                introduction and ADR-811 promises 0%. proxy.ts stamps `/market/<id>` only.
+                Do not add a marketplace stamp here. */}
             {soldOut ? <p className="text-body-sm font-medium text-subtle">Sold out.</p> : <BuyButton productId={product.id} />}
           </div>
         </div>

@@ -170,11 +170,11 @@ describe('the member Journey page is the till', () => {
     expect(src).toMatch(/<BuyButton\b/)
   })
 
-  it('preserves the marketplace entry point the same sale gets today', () => {
-    // Omitting it would silently reclassify the sale `self` and drop the platform cut to 0% as a
-    // side effect of moving a button: /market/<id> passes it, and that is where this sale used to
-    // be completed.
-    expect(src).toMatch(/entryPoint="marketplace"/)
+  it('does not pass a client entryPoint; proxy.ts stamps the Journey view (LIVE-220)', () => {
+    // A client argument is forgeable by omission. The slug stamp on this path is what keeps the
+    // same sale classified `network` after the till moved here from /market/<id>.
+    expect(src).not.toMatch(/entryPoint=/)
+    expect(src).toMatch(/<BuyButton\b/)
   })
 
   it('lands the buyer in the Journey after paying', () => {

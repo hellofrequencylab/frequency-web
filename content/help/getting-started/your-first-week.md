@@ -4,13 +4,13 @@ description: A quick welcome, then Vera points you to your first Circle, and a s
 category: getting-started
 order: 10
 published: 2026-06-03
-updated: 2026-06-10
+updated: 2026-09-19
 audience: member
 featureKeys: [onboarding]
 status: published
 ---
 
-When you join, a quick welcome gets your name, a photo, and a sense of what you're into: no long forms, no homework. Then **Vera**, your guide, points you toward a Circle worth joining and steps back out of the way. A few gentle tips show up as you explore after that, never all at once, never blocking your way.
+You can land in Frequency before you finish a welcome. If the app still knows you by a generated handle, the getting-started guide on your feed asks for a name first. Pick one at your profile. No long forms, no homework. Then **Vera**, your guide, points you toward a Circle worth joining and steps back out of the way. A few gentle tips show up as you explore after that, never all at once, never blocking your way.
 
 ## Meet Vera
 

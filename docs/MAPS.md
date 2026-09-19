@@ -6,7 +6,8 @@ otherwise, and it falls back to MapLibre on any Google failure. A surface descri
 plot**; it never touches a map library.
 
 Decisions: [ADR-901](DECISIONS.md) (the seam) · [ADR-904](DECISIONS.md) (the loader handshake
-and the diagnostic) · [ADR-1022](DECISIONS.md) (pin click, clustering, fullscreen, pin kinds).
+and the diagnostic) · [ADR-1022](DECISIONS.md) (pin click, clustering, fullscreen, pin kinds) ·
+[ADR-1424](DECISIONS.md) (Dependabot refreshes the committed worker pair).
 This file is the operating reference.
 
 ---
@@ -137,7 +138,9 @@ to it. Verified after: both files `200`, worker starts, zero 4xx.
 `scripts/copy-maplibre-worker.test.ts` pins the assumptions the fix rests on — that maplibre still
 ships both files, that the worker still imports its sibling by an unhashed relative specifier, that
 the sibling has no imports of its own, and that the committed copy matches the installed package.
-A Dependabot bump fails that last one until someone re-runs the script.
+A Dependabot bump that moves `maplibre-gl` regenerates the pair in
+`.github/workflows/maplibre-worker.yml` (HYG-090, ADR-1424). A human bump still fails STALE
+until the script is re-run.
 
 ---
 

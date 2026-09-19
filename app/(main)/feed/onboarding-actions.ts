@@ -11,9 +11,10 @@ import { ONBOARDING_CRITERIA } from '@/lib/onboarding/steps'
 // the step key to profiles.meta.onboarding.forced[]; getOnboardingStatus treats
 // forced steps as done, so the guide advances / graduates.
 
-// The accepted keys come FROM the checklist itself, so a change to the four nouns
-// (LIVE-259 moved them from avatar/circle/practice/log to avatar/circle/event/host)
-// cannot leave this validator behind, silently refusing to force a live step.
+// The accepted keys come FROM the checklist itself, so a change to the criteria
+// (LIVE-259 moved them from avatar/circle/practice/log to avatar/circle/event/host;
+// LIVE-349 added identity) cannot leave this validator behind, silently refusing
+// to force a live step.
 const STEP_KEYS: readonly string[] = ONBOARDING_CRITERIA
 
 export async function forceOnboardingStep(formData: FormData) {

@@ -250,7 +250,6 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
                   <p className="text-page-title font-bold text-text">{priceLabel}</p>
                   <BuyButton
                     productId={product.id}
-                    entryPoint="marketplace"
                     label="Get access"
                     priceLabel={priceLabel}
                     doneTitle="You are in."
@@ -334,19 +333,16 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
                 priceCents={product.priceCents}
                 currency={product.currency}
                 variants={variants}
-                entryPoint="marketplace"
               />
             ) : (
-              // entryPoint="marketplace" (LIVE-219): the Market is the browse surface, so a sale
-              // reached here is one Frequency introduced and classifies `network`. Both branches must
-              // carry it — a product WITHOUT variants sells through this plain button, and it is the
-              // easier of the two to forget. `/store/[id]` renders the same component with no entry
-              // point on purpose; see the note there.
+              // LIVE-220: the Market page is a discovery surface. proxy.ts stamps the product id
+              // on this path; startCheckoutAction reads that cookie. Do not pass an entryPoint
+              // prop — a client argument is what this row retired. `/store/[id]` is never stamped.
               // A Journey's buy control lives in the RAIL (see `asideExtras`), so this panel
               // renders nothing for one: two mounted checkout islands on one page is the defect
               // ADR-1401 removed from the Journey page, not a pattern to copy here.
               journeyPlan ? null : (
-                <BuyButton productId={product.id} entryPoint="marketplace" priceLabel={priceLabel} />
+                <BuyButton productId={product.id} priceLabel={priceLabel} />
               )
             )}
           </div>
