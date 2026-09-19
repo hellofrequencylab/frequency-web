@@ -48,6 +48,16 @@ const planning: CalendarEvent = {
   stage: 'planning',
 }
 
+const production: CalendarEvent = {
+  ...pencil,
+  slug: 'entry-3',
+  title: 'Ready sit',
+  dayKey: '2026-09-25',
+  whenLabel: 'Fri, 2026-09-25, 7:00 PM PDT',
+  startInstantIso: '2026-09-25T19:00:00.000Z',
+  stage: 'production',
+}
+
 describe('CalendarPmConsole render (LIVE-415 / LIVE-416 / LIVE-417)', () => {
   it('lists a penciled gathering in pencilLane, not mixed into the board', () => {
     const el = mount(
@@ -93,6 +103,19 @@ describe('CalendarPmConsole render (LIVE-415 / LIVE-416 / LIVE-417)', () => {
     expect(el.textContent).toContain('Nothing on the board yet.')
   })
 
+  
+  it('lists a production gathering in productionLane, not mixed into the board', () => {
+    const el = mount(
+      <CalendarPmConsole events={[production]}>
+        <div data-date-map>map</div>
+      </CalendarPmConsole>,
+    )
+    expect(el.querySelector('[data-production-lane]')?.textContent).toContain('Ready sit')
+    expect(el.querySelector('[data-production-lane]')?.textContent).toContain('Production')
+    expect(el.textContent).toContain('Nothing on the board yet.')
+    expect(el.textContent).not.toContain('Nothing in Production.')
+  })
+
   it('shows the empty pencil lane, planning lane, and board when there is nothing to run', () => {
     const el = mount(
       <CalendarPmConsole events={[]}>
@@ -101,6 +124,7 @@ describe('CalendarPmConsole render (LIVE-415 / LIVE-416 / LIVE-417)', () => {
     )
     expect(el.textContent).toContain('Nothing penciled in.')
     expect(el.textContent).toContain('Nothing in planning.')
+    expect(el.textContent).toContain('Nothing in Production.')
     expect(el.textContent).toContain('Nothing on the board yet.')
     expect(el.querySelector('[data-date-map]')).not.toBeNull()
   })

@@ -1,11 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-// LIVE-415 / LIVE-416 / LIVE-417 source shape: Admin mounts CalendarPmConsole.
-// C2 owns pencilLane. C3 owns planningLane. C4 owns productionLane, so this file
-// must not close that row by existing.
-
-describe('CalendarPmConsole source (LIVE-415 / LIVE-416 / LIVE-417)', () => {
+describe('CalendarPmConsole source (LIVE-415 / LIVE-416 / LIVE-417 / LIVE-418)', () => {
   const consoleSrc = readFileSync('components/spaces/calendar-pm-console.tsx', 'utf8')
   const page = readFileSync('app/(main)/spaces/[slug]/(profile)/calendar/page.tsx', 'utf8')
 
@@ -14,9 +10,9 @@ describe('CalendarPmConsole source (LIVE-415 / LIVE-416 / LIVE-417)', () => {
     expect(page).toContain('CalendarPmConsole')
   })
 
-  it('declares the C2 pencil lane and the C3 planning lane and leaves C4 undeclared', () => {
+  it('declares the C2–C4 named lanes', () => {
     expect(consoleSrc).toContain('pencilLane')
     expect(consoleSrc).toContain('planningLane')
-    expect(consoleSrc).not.toContain('productionLane')
+    expect(consoleSrc).toContain('productionLane')
   })
 })

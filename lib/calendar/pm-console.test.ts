@@ -9,6 +9,8 @@ import {
   operatorStageLabel,
   pencilLane,
   planningLane,
+  productionLane,
+  isProductionLaneItem,
 } from './pm-console'
 
 function item(partial: Partial<CalendarEvent> & Pick<CalendarEvent, 'slug' | 'title' | 'dayKey'>): CalendarEvent {
@@ -109,6 +111,36 @@ describe('operatorListItems (LIVE-415)', () => {
       'Pencil',
       'Planning',
       'Production',
+    ])
+  })
+
+  it('puts production-stage gatherings and the live show in productionLane', () => {
+    const pencil = item({ slug: 'entry-1', title: 'New moon sit', dayKey: '2026-09-22', stage: 'pencil', layer: 'pencil' })
+    const planning = item({
+      slug: 'entry-2',
+      title: 'Open house',
+      dayKey: '2026-09-24',
+      stage: 'planning',
+      layer: 'pencil',
+    })
+    const production = item({
+      slug: 'entry-3',
+      title: 'Ready sit',
+      dayKey: '2026-09-25',
+      stage: 'production',
+      layer: 'pencil',
+    })
+    const live = item({ slug: 'open-house', title: 'Published sit', dayKey: '2026-09-26' })
+    const draft = item({ slug: 'draft-sit', title: 'Draft sit', dayKey: '2026-09-30', statusLabel: 'Draft' })
+
+    expect(isProductionLaneItem(production)).toBe(true)
+    expect(isProductionLaneItem(live)).toBe(true)
+    expect(isProductionLaneItem(pencil)).toBe(false)
+    expect(isProductionLaneItem(planning)).toBe(false)
+    expect(isProductionLaneItem(draft)).toBe(false)
+    expect(productionLane([pencil, planning, production, live, draft]).map((row) => row.key)).toEqual([
+      'entry-3|2026-09-25',
+      'open-house|2026-09-26',
     ])
   })
 
