@@ -12,6 +12,7 @@ const PAGES = [
   'app/(main)/housing/[id]/page.tsx',
   'app/(main)/classifieds/[id]/page.tsx',
   'app/(main)/events/[slug]/page.tsx',
+  'app/spotlight/[handle]/page.tsx',
 ] as const
 
 const DYNAMIC_APIS = [
@@ -43,5 +44,14 @@ describe('sitemap-advertised listing details stay eligible for ISR', () => {
   it.each(PAGES)('%s reaches for no dynamic API', (file) => {
     const found = DYNAMIC_APIS.filter((d) => d.re.test(codeOf(file))).map((d) => d.name)
     expect(found, `${file} would stay force-dynamic`).toEqual([])
+  })
+
+  it('sitemap lists Spotlight handles through the shared reader, not a local admin query', () => {
+    const sitemap = readFileSync('app/sitemap.ts', 'utf8')
+    expect(sitemap).toMatch(/listPublishedSpotlightHandles/)
+    expect(sitemap).not.toMatch(/createAdminClient/)
+    const data = readFileSync('lib/spotlight/data.ts', 'utf8')
+    expect(data).toMatch(/export async function listPublishedSpotlightHandles/)
+    expect(data).toMatch(/meta->spotlight->>published/)
   })
 })
