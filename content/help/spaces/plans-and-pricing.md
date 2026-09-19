@@ -53,7 +53,7 @@ Every paid plan starts with a free trial. The pricing page shows how long it run
 - **Two operator seats.** Extra seats beyond those are a priced add-on. The current amount is on the [pricing page](/pricing).
 - **Programs**, where your model becomes something others start Chapters of
 
-A Space that used to sit on Collective is now on Business, at the same $49. You do not pick Collective any more.
+A Space that used to sit on Collective is now on Business, at the same list price. You do not pick Collective any more.
 
 **Non Profit** grants the whole paid set at the nonprofit rate once your 501(c)(3) is verified.
 
