@@ -45649,7 +45649,7 @@ main.
 
 ## ADR-1410: `/discover` visual captures are advisory, because the database sets the page height (2026-09-19)
 
-**Status:** Accepted · **Extends** the visual two-tier split in `test/e2e/visual-tiers.test.ts` · Backlog
+**Status:** Accepted · **Amended by** [ADR-1449](DECISIONS.md) · originally the visual two-tier split in `test/e2e/visual-tiers.test.ts` · Backlog
 `LIVE-373`
 
 **Context.** `/discover` photographs live Circles, events and posts. On 2026-09-15 a new listed
@@ -45661,8 +45661,9 @@ reversed it (#2139): it dropped eight below-the-fold baselines to quiet a rare r
 
 1. **Keep the full-page photograph.** The design surface below the fold stays in the picture.
 2. **Move those eight captures to the advisory visual tier.** Tag `visual · discover` with
-   `@visual` + `@advisory`. The blocking grep inverts `@shell|@advisory`. The advisory grep
-   takes `@visual` and (`@shell` or `@advisory`).
+   `@visual` + `@advisory`. The blocking public grep inverts `@shell|@advisory`. The
+   advisory grep is `@visual` AND `@advisory` only (ADR-1449): `@shell` now blocks on its
+   own step and must not share this grep.
 3. **Do not tag it `@shell`.** That tag is what `shell-reporter.ts` counts as the authed app. A
    running anonymous `/discover` capture would make the reporter call the member shell covered.
 4. **a11y and overflow stay on `publicSurfaces()`.** Those assert roles and geometry, not pixels.
@@ -46372,6 +46373,7 @@ Premise re-tested 2026-09-19 against the tree, not the banners:
 
 **Rows.** LIVE-415.
 
+<<<<<<< HEAD
 ## ADR-1448: The Circle and Event rail banks get a Settings door (OWN-058)
 
 **Status:** Accepted · 2026-09-19 · Records the 2026-09-08 OWN-058 ruling · **Implements** option (a) · numbered **1448** because **1450** is LIVE-415 on main (which reserved 1448–1449 for open PRs), **1447** is HYG-104, **1446** is HYG-103, and **1445** is the calendar C0–C5 ruling · corroborated by `bankForScope` in `lib/admin/rail-bank.ts` and `FROZEN_MENU_DEBT` in `scripts/check-menu.mjs`
@@ -46397,3 +46399,27 @@ Premise re-tested 2026-09-19:
 
 **Rows.** OWN-058.
 
+=======
+## ADR-1449: The member-shell visual tier blocks; `/discover` stays advisory (LIVE-313)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-313` · amends [ADR-1410](DECISIONS.md) · numbered **1449** (1447 is HYG-104 on main; 1450 is LIVE-415; 1448 sits on an open branch)
+
+**Context.** #2554 made the `@visual @shell` compare advisory because those captures photograph live production through a real session. LIVE-313 asked for a seeded dataset so the two compare steps could collapse into one blocking job. Premise re-tested 2026-09-19 on this tree:
+
+- `viewportOnly` plus `data-visual-mask` already hold the chrome the shell photographs.
+- Six unrelated PRs that day (`#2722`, `#2720`, `#2713`, `#2709`, `#2705`, `#2704`) ran the member-shell step SUCCESS while the public visual tier was red. A seed is not required for the pixels the masks leave in the picture.
+- `/discover` still cannot join a blocking gate. Its HEIGHT is production Circles, events and posts (LIVE-373). Masks cannot fix a height.
+
+**Decision.**
+
+1. **Three tiers, not two.** Public (`@visual`, not `@shell`, not `@advisory`) blocks. Shell (`@visual` AND `@shell`, invert `@advisory`) blocks. Advisory (`@visual` AND `@advisory`) is `/discover` only and does not block.
+2. **Do not fold `/discover` into the shell grep.** A bare `@shell` grep also selects `a11y.spec.ts` and `overflow.spec.ts`. An `@shell|@advisory` shell grep would make a listed Circle fail every PR.
+3. **Do not seed in this change.** The row's seed was the path back to one job. The chrome already holds a signal. A fixture index remains a later honesty upgrade, not the close.
+4. **The LIVE-313 probe stays the 900-character window after the shell step name.** The advisory `continue-on-error` lives on the live-index step, outside that window.
+
+**Rejected.** Leaving the shell advisory until a seed exists (coverage that reads as a gate). Collapsing `/discover` into the newly-blocking shell (repeats LIVE-373). Treating the public-tier red as this row (it is not).
+
+**Consequences.** A header or rail regression fails a PR. A new listed Circle is information in the advisory report. Recapture `/discover` when the design moved. Numbered **1449** because 1448 sits on an open branch and 1450 is LIVE-415 on main.
+
+**Rows.** LIVE-313.
+>>>>>>> 5e45566df (Let the member-shell visual tier block (LIVE-313))

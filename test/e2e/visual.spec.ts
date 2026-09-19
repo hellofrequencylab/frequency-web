@@ -153,8 +153,9 @@ test.describe('visual', { tag: '@visual' }, () => {
 
 // /discover is public and anonymous, AND it photographs live production data. The blocking
 // public tier cannot tell "someone moved the hero" from "a Circle was listed since Tuesday"
-// (LIVE-373: one new public Circle grew the page ~180 px and failed every branch). Same
-// reason the member shell is advisory: a gate that cannot fire truthfully gets routed around.
+// (LIVE-373: one new public Circle grew the page ~180 px and failed every branch). The
+// member shell earned its block back (LIVE-313); /discover did not, because its HEIGHT is
+// the listed set. A gate that cannot fire truthfully stays advisory.
 // Tagged @advisory, not @shell: @shell is what shell-reporter.ts counts as the authed app, and
 // a running /discover capture would make that reporter call the member shell covered.
 // a11y and overflow still walk publicSurfaces() including /discover; those are geometry and
