@@ -45408,6 +45408,13 @@ had been locked to `service_role` (20260929000000). Supabase's security advisor 
 Legitimate awards are unchanged. Apply this migration on prod; it is grant-only, no function body
 change.
 
+**Amendment 2026-09-19 (HYG-102).** The lock file sorts *before* `20270345001200` on a fresh
+clone. That later `CREATE OR REPLACE` of the day-key overload is a new signature on replay, so
+Postgres would grant `PUBLIC` execute after the lock had already run. The replace file now
+revokes `public` / `anon` / `authenticated` and grants `service_role` in the same statements that
+create the overload. Production already applied the lock after the replace in calendar time; this
+closes the greenfield hole, not a live grant. No new ledger row.
+
 ## ADR-1403: The Quest is the Collective's program, product beats craft, CORE-MODEL stays commercial law (2026-09-18)
 
 **Status:** Accepted · **Amends** [ADR-1292](DECISIONS.md) · **Does not amend**
