@@ -20,6 +20,9 @@
 # wizard's own SparkShell. There is no second layout here to convert: giving one a template would
 # put a page header inside a dialog. They are BASELINED rather than excluded from the walk on
 # purpose — a future slot page that really does hand-roll a layout must still fail this gate.
+#
+# ⚠️ Two Show pages (SCAN-644) delegate to ShowPageView, which composes DetailTemplate. The gate
+# does not walk helpers, so they are listed here the same way the Spark delegates are.
 app/(main)/@wizard/(.)circles/new/page.tsx
 app/(main)/@wizard/(.)classifieds/new/page.tsx
 app/(main)/@wizard/(.)events/new/page.tsx
@@ -70,10 +73,12 @@ app/(main)/scan/page.tsx
 app/(main)/settings/billing/page.tsx
 app/(main)/settings/profile/spotlight/page.tsx
 app/(main)/spaces/[slug]/edit-page/page.tsx
+app/(main)/spaces/[slug]/full/podcasts/[showSlug]/page.tsx
 app/(main)/spaces/[slug]/manage/page.tsx
 app/(main)/spaces/[slug]/settings/services/new/page.tsx
 app/(main)/spaces/directory/page.tsx
 app/(main)/store/page.tsx
+app/(public)/spaces/[slug]/podcasts/[showSlug]/page.tsx
 app/join/(induction)/complete/page.tsx
 app/join/(induction)/page.tsx
 app/join/(induction)/preview/page.tsx

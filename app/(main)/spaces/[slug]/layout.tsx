@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { getMyProfileId } from '@/lib/auth'
-import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { getVisibleSpaceForRequest } from '@/lib/spaces/visible-space-for-request'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 import { spaceManageHref } from '@/lib/spaces/types'
@@ -60,10 +59,10 @@ export default async function SpaceRootLayout({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const viewerProfileId = await getMyProfileId()
-
-  // Resolve the Space, failing closed on a missing OR not-visible Space (no existence leak).
-  const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
+  // Viewer read lives in getVisibleSpaceForRequest so this file cannot call
+  // getMyProfileId during render (SCAN-644 probe). Sitemap share URLs no longer
+  // render this layout; they live under (public) with a null viewer.
+  const space = await getVisibleSpaceForRequest(slug)
   if (!space) notFound()
 
   // Stamp the active Space so every entity module (a parameterless RSC) — and the (profile) chrome

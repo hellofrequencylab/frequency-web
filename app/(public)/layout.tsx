@@ -8,8 +8,8 @@ import { getMenu, getMenuSettings } from '@/lib/menus/read'
 // the sentence app/discover/layout.tsx and app/(marketing)/layout.tsx already paid
 // to learn. This group does neither. Auth chrome upgrades after hydration via
 // MarketingHeader detectClientAuth. Do not swap in SiteHeader here (SCAN-641).
-// Space profiles stay under (main) because their own layout calls getMyProfileId
-// (SCAN-644).
+// Space share URLs (/spaces/<slug> and /spaces/<slug>/podcasts/<show>) live here
+// too (SCAN-644). Signed-in members rewrite to /full.
 
 export default async function PublicShareLayout({ children }: { children: React.ReactNode }) {
   const [headerMenu, footerMenu, menuTimings] = await Promise.all([
