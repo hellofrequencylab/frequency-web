@@ -45574,6 +45574,7 @@ non-UTC machine and green in CI.
 **Decision.** A naive ISO in `eventInstant` is UTC parts. Append `Z` when the string has no offset.
 Do not pin the test process's `TZ`; that would hide a production leak on any non-UTC runtime.
 
-**Consequences.** `LIVE-377`'s probe runs the suite under `TZ=America/Los_Angeles`. Vercel is UTC,
-so this was invisible in production and loud on a laptop. Numbered **1409** so it does not collide
-with ADR-1407 (LIVE-367) or ADR-1408 (LIVE-373) on the sibling PRs that also append after 1406.
+**Consequences.** A naive ISO and a `Z` suffix resolve to the same instant. The backlog probe
+reads that parse; it does not spawn a test runner (LIVE-034). Vercel is UTC, so the leak was
+invisible in production and loud on a laptop. Numbered **1409** because **1406** is member nav
+on main.
