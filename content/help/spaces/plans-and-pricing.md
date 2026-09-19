@@ -26,8 +26,7 @@ moved, and the pricing page cannot.
 | Plan | Who it is for |
 | --- | --- |
 | **Free** | Getting set up, finding your people, running your first events |
-| **Business** | Running your practice: contacts, email, reporting, your full website |
-| **Collective** | Scale and team: everything in Business plus automation, multiple pipelines, seats, and Programs |
+| **Business** | The one paid plan you pick: contacts, email, reporting, your website, automation, two seats, and Programs |
 | **Non Profit** | Verified nonprofits, with the whole paid toolkit at a flat rate |
 
 Every plan is one price, the same whenever you start. There is no beta rate any more: the
@@ -43,20 +42,18 @@ Every paid plan starts with a free trial. The pricing page shows how long it run
 
 ## What the paid plans turn on
 
-**Business** is the run-your-practice set:
+**Business** is the paid toolkit:
 
 - **Space Contacts**, your CRM with stages, cards, and private notes
 - **Email**, with the design canvas and your own palette
 - **Reporting** on how your Space is doing
 - **Your full website**, the multi-page profile instead of a single page
-
-**Collective** adds the scale and collaboration tools:
-
 - **Automation**, so your follow-ups run without you
 - **Multiple pipelines**, when one funnel stops being enough
-- **Team seats**, so other people can work in your Space. Extra seats beyond the ones a plan
-  includes are a priced add-on. The current amount is on the [pricing page](/pricing).
+- **Two operator seats.** Extra seats beyond those are a priced add-on. The current amount is on the [pricing page](/pricing).
 - **Programs**, where your model becomes something others start Chapters of
+
+A Space that used to sit on Collective is now on Business, at the same $49. You do not pick Collective any more.
 
 **Non Profit** grants the whole paid set at the nonprofit rate once your 501(c)(3) is verified.
 
@@ -101,10 +98,8 @@ lands in. See [Get paid](/help/spaces/get-paid).
 ## Picking a plan
 
 - Stay **Free** until you start charging for something. There is no rush, and no clock.
-- Take **Business** when you are running your practice here and want contacts, email, and your own
-  website.
-- Take **Collective** when other people work in your Space with you, or when you want to run a
-  Program others can join.
+- Take **Business** when money is moving, when other people work in your Space, or when you want to
+  run a Program others can join.
 - If you are a verified nonprofit, take **Non Profit** and get the whole paid toolkit at the lower
   rate.
 
