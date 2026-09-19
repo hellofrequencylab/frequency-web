@@ -217,7 +217,7 @@ export type FeatureKey = keyof typeof FEATURE_GATES | (string & {})
 
 /** Does an entitlement label meet a gate's minimum on its ladder? Unknown labels rank lowest
  *  (default-deny). PURE. */
-export function meetsGate(gate: FeatureGate, account: { tier?: EntitlementTier | null; plan?: SpacePlan | null }): boolean {
+export function meetsGate(gate: FeatureGate, account: { tier?: EntitlementTier | null; plan?: SpacePlan | string | null }): boolean {
   if (!gate.enabled) return true // a disabled gate never blocks
   if (gate.axis === 'tier') {
     const have = TIER_RANK[(account.tier ?? 'free') as EntitlementTier] ?? 0
@@ -353,7 +353,7 @@ export async function setFeatureGateOverride(
 /** The account a feature is checked against: the personal billing tier and/or the Space plan. */
 export interface GateAccount {
   tier?: EntitlementTier | null
-  plan?: SpacePlan | null
+  plan?: SpacePlan | string | null
 }
 
 /** Is `feature` ALLOWED for this account? The single entitlements resolver. It reads the DB

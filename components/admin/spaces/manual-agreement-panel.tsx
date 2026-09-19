@@ -52,7 +52,6 @@ export interface AgreementSummary {
 
 const PLAN_OPTIONS = [
   { value: 'business', label: 'Business' },
-  { value: 'collective', label: 'Collective' },
   { value: 'nonprofit', label: 'Non Profit' },
   { value: 'independent', label: 'Independent' },
 ]

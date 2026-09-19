@@ -46,21 +46,27 @@ export async function spacePlanSellable(plan: SpacePlan | string): Promise<boole
 // ADR-811: the paid loadout tiers map 1:1 onto their per-plan switches. Always GATED on billingLive(),
 // so this is FALSE while billing is OFF. Business/Collective/Independent buy the depth ladder; Nonprofit
 // is the flat per-mission plan. Collective + Independent bill via their own catalog bases (ADR-811).
-type LoadoutPlan = 'business' | 'collective' | 'nonprofit' | 'independent'
+type LoadoutPlan = Exclude<SpacePlan, 'free'>
 const LOADOUT_FLAG: Record<LoadoutPlan, PricingFlagKey> = {
   business: 'plan_business_enabled',
-  collective: 'plan_business_enabled',
   nonprofit: 'plan_nonprofit_enabled',
   independent: 'plan_independent_enabled',
 }
 
-/** Is a loadout tier (business/collective/nonprofit/independent) sellable right now? billingLive() AND
- *  its mapped per-plan switch. GATED, FAIL-SAFE FALSE. The loadout checkout gates on this. */
-export async function spaceLoadoutSellable(plan: LoadoutPlan): Promise<boolean> {
+function asLoadoutPlan(plan: string): LoadoutPlan | null {
+  const key = asSpacePlan(plan)
+  return key === 'free' ? null : key
+}
+
+/** Is a loadout tier sellable right now? billingLive() AND its mapped per-plan switch.
+ *  A stored `collective` label remaps to Business (LIVE-228). GATED, FAIL-SAFE FALSE. */
+export async function spaceLoadoutSellable(plan: string): Promise<boolean> {
   try {
+    const key = asLoadoutPlan(plan)
+    if (!key) return false
     if (!(await billingLive())) return false
     const flags = await loadPricingFlags()
-    return flags[LOADOUT_FLAG[plan]] === true
+    return flags[LOADOUT_FLAG[key]] === true
   } catch {
     return false
   }
@@ -132,7 +138,7 @@ export interface SpaceLoadout {
    *  network-depth base (automations, team, collaborators); 'independent' = the standalone white-label
    *  base (off-network); 'nonprofit' = the flat per-mission item. The AI add-on layers on any paid tier.
    *  'free' is not a checkout. */
-  plan: LoadoutPlan
+  plan: string
   /** The active metered add-ons (only AI now, ADR-552). Ignored for nonprofit framing. */
   addons?: readonly (AddonKey | string)[]
   /** Licensed seat count for seat items (Nonprofit seat quantity; tier-level Team seats, Phase D). Min 1. */

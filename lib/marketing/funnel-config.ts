@@ -46,7 +46,6 @@ const P = priceStrings()
 const RATE = {
   free: formatBps(NETWORK_TAKE_RATE_DEFAULT.free),
   business: formatBps(NETWORK_TAKE_RATE_DEFAULT.paid),
-  collective: formatBps(NETWORK_TAKE_RATE_DEFAULT.paid),
 }
 /** The free-tier row's honest descriptor: a free Space sells from day one, at its own network rate. */
 const FREE_ROW_DETAIL = `Sell from day one, ${RATE.free} on network introductions`
