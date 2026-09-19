@@ -38,27 +38,43 @@ const pencil: CalendarEvent = {
   layer: 'pencil',
 }
 
-describe('CalendarPmConsole render (LIVE-415)', () => {
-  it('lists a penciled gathering on the board and keeps the date map', () => {
+describe('CalendarPmConsole render (LIVE-415 / LIVE-416)', () => {
+  it('lists a penciled gathering in pencilLane, not mixed into the board', () => {
     const el = mount(
       <CalendarPmConsole events={[pencil]}>
         <div data-date-map>map</div>
       </CalendarPmConsole>,
     )
     expect(el.querySelector('[data-calendar-pm-console]')).not.toBeNull()
+    expect(el.querySelector('[data-pencil-lane]')?.textContent).toContain('New moon sit')
+    expect(el.querySelector('[data-pencil-lane]')?.textContent).toContain('Pencil')
     expect(el.textContent).toContain('The board')
-    expect(el.textContent).toContain('New moon sit')
-    expect(el.textContent).toContain('Pencil')
+    expect(el.textContent).toContain('Nothing on the board yet.')
     expect(el.querySelector('[data-date-map]')?.textContent).toBe('map')
+    expect(el.textContent).not.toContain('Nothing penciled in.')
+  })
+
+  it('keeps a planning gathering on the board, not in pencilLane', () => {
+    const planning: CalendarEvent = { ...pencil, slug: 'entry-2', title: 'Open house', stage: 'planning' }
+    const el = mount(
+      <CalendarPmConsole events={[pencil, planning]}>
+        <div data-date-map>map</div>
+      </CalendarPmConsole>,
+    )
+    expect(el.querySelector('[data-pencil-lane]')?.textContent).toContain('New moon sit')
+    expect(el.querySelector('[data-pencil-lane]')?.textContent).not.toContain('Open house')
+    expect(el.textContent).toContain('Open house')
+    expect(el.textContent).toContain('Planning')
     expect(el.textContent).not.toContain('Nothing on the board yet.')
   })
 
-  it('shows the empty board when there is nothing to run', () => {
+  it('shows the empty pencil lane and board when there is nothing to run', () => {
     const el = mount(
       <CalendarPmConsole events={[]}>
         <div data-date-map>map</div>
       </CalendarPmConsole>,
     )
+    expect(el.textContent).toContain('Nothing penciled in.')
     expect(el.textContent).toContain('Nothing on the board yet.')
     expect(el.querySelector('[data-date-map]')).not.toBeNull()
   })
