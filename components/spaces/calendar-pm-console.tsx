@@ -5,7 +5,7 @@ import type { CalendarEvent } from '@/lib/calendar/item'
 import { operatorListItems, planningLane, type OperatorListItem } from '@/lib/calendar/pm-console'
 import { entryStage } from '@/lib/calendar/registry'
 
-// ADMIN PRODUCTION CONSOLE (ADR-1445 C1–C3, ADR-1450, ADR-1453). The operator list on a Space
+// ADMIN PRODUCTION CONSOLE (ADR-1445 C1–C3, ADR-1450, ADR-1455). The operator list on a Space
 // Calendar tab in Admin mode. planningLane is the first-class Planning lane. Pencil and Production
 // stay on the mixed board until C2 and C4. The month grid is the date map (passed as children,
 // usually StaffCalendar so the settings drawer stays).

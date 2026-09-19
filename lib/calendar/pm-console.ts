@@ -1,7 +1,7 @@
 import type { CalendarEvent } from './item'
 import { entryStage } from './registry'
 
-// THE ADMIN OPERATOR LIST (ADR-1445 C1–C3, ADR-1450, ADR-1453). What the Calendar tab's Admin
+// THE ADMIN OPERATOR LIST (ADR-1445 C1–C3, ADR-1450, ADR-1455). What the Calendar tab's Admin
 // mode lists above the month. planningLane is the C3 Planning lane. Pencil and Production stay
 // on the mixed board until C2 and C4 (LIVE-416, LIVE-418). Private entries and Unavailable
 // time stay on the date map (StaffCalendar).
@@ -61,7 +61,7 @@ export function isPlanningLaneItem(ev: CalendarEvent): boolean {
   return isOperatorListItem(ev) && ev.stage === 'planning'
 }
 
-// C3 (LIVE-417, ADR-1453). Planning-stage gatherings as their own lane, not mixed into live chips.
+// C3 (LIVE-417, ADR-1455). Planning-stage gatherings as their own lane, not mixed into live chips.
 export function planningLane(events: CalendarEvent[]): OperatorListItem[] {
   return operatorListItems(events.filter((ev) => ev.stage === 'planning'))
 }

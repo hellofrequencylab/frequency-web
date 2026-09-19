@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1453**. 1450 is LIVE-415. 1448 is OWN-058. 1451–1452 are claimed on open PRs. 1447 is HYG-104. 1445 is the calendar C0–C5 ruling.
+tree as of this index: **ADR-1455**. 1450 is LIVE-415. 1448 is OWN-058. 1451–1454 are claimed on open PRs (1453 is LIVE-414 on #2753; 1454 is LIVE-416 on #2756). 1447 is HYG-104. 1445 is the calendar C0–C5 ruling.
 
 | Theme | Start here |
 |---|---|
@@ -46368,7 +46368,7 @@ Premise re-tested 2026-09-19 against the tree, not the banners:
 
 **Rejected.** Restyling the guest month and calling it Admin. Closing C2–C4 in the same PR. Folding Guest through `guestLiveItems` (LIVE-419).
 
-**Consequences.** The Calendar tab's Admin mode leads with the board. The settings console is unchanged. LIVE-416 starts the pencil lane. **Amended by [ADR-1453](DECISIONS.md):** Planning now has its own lane.
+**Consequences.** The Calendar tab's Admin mode leads with the board. The settings console is unchanged. LIVE-416 starts the pencil lane. **Amended by [ADR-1455](DECISIONS.md):** Planning now has its own lane.
 
 **Rows.** LIVE-415.
 
@@ -46397,9 +46397,9 @@ Premise re-tested 2026-09-19:
 
 **Rows.** OWN-058.
 
-## ADR-1453: Admin Calendar gives Planning its own lane (LIVE-417)
+## ADR-1455: Admin Calendar gives Planning its own lane (LIVE-417)
 
-**Status:** Accepted · 2026-09-19 · backlog `LIVE-417` · numbered **1453** (1450 is LIVE-415 on this tree; 1451–1452 are claimed on open PRs) · implements C3 of [ADR-1445](DECISIONS.md) · follows [ADR-1450](DECISIONS.md) · corroborated by `lib/calendar/pm-console.ts` (`planningLane`), `components/spaces/calendar-pm-console.tsx`
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-417` · numbered **1455** (1450 is LIVE-415 on this tree; 1451–1454 are claimed on open PRs: 1453 is LIVE-414 on #2753, 1454 is LIVE-416 on #2756) · implements C3 of [ADR-1445](DECISIONS.md) · follows [ADR-1450](DECISIONS.md) · corroborated by `lib/calendar/pm-console.ts` (`planningLane`), `components/spaces/calendar-pm-console.tsx`
 
 **Context.** ADR-1450 mounted `CalendarPmConsole` with one mixed board. ADR-1445 C3 asked for Planning as a first-class Admin lane: planning-stage gatherings listed on their own, not mixed into live chips. Premise re-tested 2026-09-19 after #2754: the board existed; `planningLane` did not. LIVE-414 (#2753) still owns the public C0 paint. LIVE-416 (#2756) still owns `pencilLane`. Guest exclusion is LIVE-419.
 
