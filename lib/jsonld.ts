@@ -431,13 +431,18 @@ export function journeySchema(plan: JourneyPlan, items: JourneyPlanItem[]) {
  * `url` is the CANONICAL page, never `/market/<uuid>`: a re-price archives the product row and
  * writes a new one (ADR-1397), so the product URL is not stable across a price change while the
  * Journey slug is.
+ *
+ * Ratings resolve through the Journey plan (LIVE-392), so a re-price does not drop the
+ * AggregateRating node that search already indexed against this slug.
  */
 export function journeyOfferSchema(
   plan: JourneyPlan,
   offer: { priceCents: number; currency: string },
   soldOut: boolean,
+  aggregateRating?: { ratingValue: number; reviewCount: number } | null,
 ) {
   const url = abs(`/discover/journeys/${plan.slug}`)
+  const rating = aggregateRatingNode(aggregateRating)
   return {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -454,6 +459,7 @@ export function journeyOfferSchema(
         ? 'https://schema.org/SoldOut'
         : 'https://schema.org/InStock',
     },
+    ...(rating ? { aggregateRating: rating } : {}),
   }
 }
 

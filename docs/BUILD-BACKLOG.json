@@ -51,8 +51,7 @@
             "LIVE-367",
             "LIVE-373",
             "LIVE-376",
-            "LIVE-377",
-            "LIVE-392"
+            "LIVE-377"
           ]
         },
         {
@@ -14056,7 +14055,7 @@
     {
       "id": "LIVE-392",
       "title": "Every review and every buyer question is orphaned by a re-price",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
@@ -14064,7 +14063,7 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
       },
-      "detail": "`commerce_reviews` and `listing_comments` are keyed to `product_id`. Re-pricing a Journey ARCHIVES the product row and writes a new one by design (ADR-1397), so all proof and every answered question detach from the live listing and cannot be recovered by the buyer-facing page. On a $444 cohort programme, proof is the asset that takes longest to build and this discards it on a price change. Fix: key both to `journey_plan_id` for Journey products, or resolve them through the plan.",
+      "detail": "`commerce_reviews` and `listing_comments` are keyed to `product_id`. Re-pricing a Journey ARCHIVES the product row and writes a new one by design (ADR-1397), so all proof and every answered question detach from the live listing and cannot be recovered by the buyer-facing page. On a $444 cohort programme, proof is the asset that takes longest to build and this discards it on a price change. Fix: key both to `journey_plan_id` for Journey products, or resolve them through the plan.\n\nSHIPPED 2026-09-19 as a resolve-through-the-plan (ADR-1405), not a new column. `productIdsSharingJourney` expands a Journey product to every row on that plan; review reads, card ratings, verified-purchase, and listing Q&A all query that set. An edit stays on the existing row so a re-price cannot mint a second review from the same member. The member sales page and the public twin render the wall; AggregateRating rides the canonical Product node.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const r=s('lib/commerce/reviews.ts');if(!/journey_plan_id|planId/.test(r))fail('reviews are still keyed to the product row alone, so a re-price still orphans every review')\"",

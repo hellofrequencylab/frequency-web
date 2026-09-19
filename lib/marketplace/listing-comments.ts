@@ -6,6 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { ListingCommentTargetKind } from '@/lib/listings-shared/detail-view'
+import { productIdsSharingJourney } from '@/lib/journeys/paid'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -33,13 +34,17 @@ export async function getListingComments(
   targetKind: ListingCommentTargetKind,
   targetId: string,
 ): Promise<ListingComment[]> {
-  const { data, error } = await db()
+  let query = db()
     .from('listing_comments')
     .select('id, body, image_url, created_at, author:profiles!profile_id ( id, display_name, handle, avatar_url )')
     .eq('target_kind', targetKind)
-    .eq('target_id', targetId)
-    .order('created_at', { ascending: false })
-    .limit(200)
+  if (targetKind === 'product') {
+    const scope = await productIdsSharingJourney(targetId)
+    query = query.in('target_id', scope.length > 0 ? scope : [targetId])
+  } else {
+    query = query.eq('target_id', targetId)
+  }
+  const { data, error } = await query.order('created_at', { ascending: false }).limit(200)
   if (error) return []
   return ((data ?? []) as unknown as RawRow[]).map((r) => ({
     id: r.id,
