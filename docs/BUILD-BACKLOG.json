@@ -39,29 +39,6 @@
       "ruled": "Owner ruling 2026-08-20 evening: \"Take all tasks out of deferred or parked programs and add them to the priority list. I want all those things built out. The things that we are deferring are white labeling, mobile application, texting.\" Supersedes the same-day \"hold white label and app at the end\" slate: the App Platform now builds; only the three named holds park.\n\n\u2500\u2500 OWNER RULING 2026-08-24: \"I want to save the etsy grade store for last. Second to last is the white label tenant sites with full WYSIWYG editor. I want everything else fully functional and clean before those.\" So DEF-ETSY moves out of W8 into its own final wave W10, and white label (PROG-E10 Sites, PROG-W6 member sites + theme marketplace, PROG-P7 per-Space theming depth) is UNPARKED into W9 immediately before it. deferredByName drops to mobile and texting only.\n\nINTERPRETATION, stated so it can be corrected in one line: the CORE editor phases E0-E9 stay in W4 and were NOT moved to the end. \"White label tenant sites with full WYSIWYG editor\" is read as the tenant-sites DELIVERABLE \u2014 PROG-E10 is literally titled 'Sites, absorbs White Label W1-W5' \u2014 not as the editor platform underneath it. E10 depends on E0-E9; W1's content retirements block E3; E2 projects onto the Loom built in W3. Moving E0-E9 to the end would invert those documented dependencies and would leave 'everything else' with no editor to be built on. If the intent was to move the whole editor program back, only the W4 block moves.\n\n\u2500\u2500 OWNER RULING 2026-08-25: DEF-A2P parks with the others, asked as a direct multiple choice against its real cost (EIN, carrier fee, 2-4 weeks of TCR review). The named holds are now FOUR: DEF-MOBILE, DEF-ETSY, PROG-W6, DEF-A2P. `deferredByName` was drifting in BOTH directions before this edit \u2014 it listed DEF-A2P (whose row read `open`) and omitted DEF-ETSY and PROG-W6 (whose rows both read `parked`). The list and the row statuses now agree, and that agreement is the thing to check when either changes.\n\n\u2500\u2500 OWNER RULING 2026-09-07, and it REVERSES the 2026-08-20 unpark of the App Platform. Asked as \"I want everything signed off except the editor, app platform and Etsy grade shop\", then answered on a follow-up as \"Keep white label and mobile app deferred. Prioritize everything else\", then CORRECTED in the owner's own words: \"I made a mistake. keep the following as deferred until the end. 1. app platform 2. White label platform 3. etsy build.\"\n\nSO THE DEFERRED SET IS FOUR PROGRAMS, in the order the owner listed them: (1) APP PLATFORM \u2014 PROG-A1, PROG-A3, PROG-A4; (2) WHITE LABEL \u2014 PROG-E10 (Sites), PROG-W6 (member sites + theme marketplace), PROG-P7 (per-Space theming depth); (3) ETSY \u2014 DEF-ETSY; (4) MOBILE \u2014 DEF-MOBILE, carried forward from the 2026-08-20 and 2026-08-25 rulings and NOT re-named in the correction, so it is held on the earlier ruling rather than this one. Everything else is on the prioritized list.\n\n\ud83d\udd34 THE EDITOR QUESTION WAS ASKED AND ANSWERED IN THE SAME BREATH. The owner asked: \"when you say editor, is that the full white label editor? if so, add that to the white label section.\" It is not. docs/EDITOR-ARCHITECTURE.md opens by stating what E0-E9 is for \u2014 \"Frequency should author a block ONCE and render it on a member's Spotlight, a Space's profile, a Space's external Site, and an email\" \u2014 so E0-E9 is Frequency's own block editor, the thing every member-facing surface composes from. Only E10 is the white-label deliverable, and it is literally titled \"Sites, absorbs White Label W1-W5\". E10 therefore moves to the white-label group and E0-E9 STAYS ACTIVE in W4. Moving E0-E9 back would leave \"everything else\" with no editor to be built on, which is the opposite of what the ruling asks for.\n\n\u26a0\ufe0f ONE COST TO STATE PLAINLY, because parking a program is not free. PROG-A3 (\"enablement inside RLS\") was the App Platform's only P1 and sat in W2, the foundation wave, beside DEF-HARDEN. Parking it means a disabled module's data stays reachable by direct API until the App Platform builds. Nothing else in the active list depends on it, so this is a stated consequence rather than a blocker \u2014 but it is the one place where \"defer the app platform\" costs a security posture rather than a feature.\n\n\u26a0\ufe0f AND DEF-A2P COMES OFF THE DEFERRED LIST, on the plain reading of \"everything on the list except white label and mobile app\". The correction re-added three programs and did not re-add texting. It is NOT agent-work \u2014 a Standard EIN-backed brand, a carrier fee, and 10-15 days of TCR review \u2014 so it moves to the OWNER lane as an open row with ownerAction \"account\" rather than back into a build wave. If the intent was to keep texting parked, one line moves it back.\n\n\u2500\u2500 OWNER CONFIRMED 2026-09-07, in reply to the reading above: \"go head and add E0-E9 into the backlog production list. keep mobile app deferred\". So the editor reading stands \u2014 E0-E9 is Frequency's own block editor and is on the production list in W4; only E10 sits with white label. Mobile stays in W12. Nothing moved on this confirmation: it ratifies the interpretation rather than changing it, which is the point of having stated it in one paragraph that could be corrected in one line.\n\n\u2500\u2500 OWNER RULING 2026-09-14 (ADR-1325, twelve multiple-choice answers after the build-completion audit): \"Stabilise, rework, then Editor E0; Sites wait for the block contract.\" White label is UNPARKED into the editor sequence: PROG-E10 (Sites) runs after PROG-E3 and before the E4 to E9 depth phases, and PROG-W6 + PROG-P7 close the runway after E9. Multiplayer (E0 task 18) is deferred to the depth phase behind render_path, so E0 is an L. The App Platform (W9) and the Etsy-grade store stay deferred; mobile stays held on the 2026-08-20 ruling. deferredByName drops White label.",
       "note": "The development order for the whole open queue, waves in sequence, ids in order within a wave. Array order IS the sequence \u2014 W0 first through W12 last, with `owner-timed` kept at the end because it is scheduled by the owner rather than by this order. Owner-lane rows are decisions, not sequenced dev. Status lives only in each row's probe.\n\n\u2500\u2500\u2500\u2500 2026-09-19 META-SCAN HANDOFF (supersedes the same-day SURVEY line). LIVE-254 and OWN-073 closed on owner confirm (#2699). HYG-033 and LIVE-409 are done. Two agents may pull this file. Split the lanes; do not both take LIVE-410.\n\nCALENDAR THREAD (2026-09-19, owner): start LIVE-414 (C0) then LIVE-415 (C1) from W0b, then LIVE-416 through LIVE-419 from W0c. Guest and ordinary-member calendars show live events only. Cancelled is small muted text at the bottom of the date square, not a chip and not hidden. Admin is a mini production-management console (pencil / planning / production lanes), not a second guest month. Frame is ADR-1388 stages and ADR-1389 Admin vs ?view=guest. One row per PR. Do not write a planning file. Do not pick up cancelled LIVE-241. Scan agent leaves LIVE-414 and LIVE-415.\n\nPRODUCT AGENT (already on the backlog): stay on W0 / W0b. Next product code after LIVE-410 is LIVE-414 (calendar C0). LIVE-376 closed 2026-09-19 (sole-Space default, ADR-1413). LIVE-234 is P0 but owner-gated (OWN-078 must clear test tickets first). Do not pick up cancelled LIVE-241. Do not enable RLS on spatial_ref_sys. Do not start SCAN-636 while you are on product; ADR-1403 product wins the week.\n\nSCAN FOLLOW-THROUGH (this scan's cleanup): start SCAN-636. Do not take LIVE-410, LIVE-376, or LIVE-234.\n\nPhase 0 \u00b7 Product first (W0 / W0b) \u2014 the product agent owns this. LIVE-234 (prove each money loop once; not a reservation) \u00b7 LIVE-410 \u00b7 LIVE-376 \u00b7 then the rest of W0b (LIVE-186, LIVE-213).\n\nPhase 1 \u00b7 Crawl truth (W0c). SCAN-636 THEN SCAN-637. The pattern is already in the tree: app/discover/layout.tsx SiteHeader authMode=client so revalidate is not voided. Product-preserving event fix is (a) on the SCAN-636 row: keep /events/<slug> as the share URL, make the anon path as cheap as discover. Do not reverse the canonical unless share/QR are re-pointed in the same PR. Then SCAN-637: drop force-dynamic on /market /store /housing /classifieds details; personalize behind client auth or Suspense. Skip ahead of LIVE-408 only if that row is not already in another agent's PR.\n\nPhase 2 \u00b7 Cheap DB (W0c). SCAN-638. Draft one migration: covering indexes on the six FKs named in the row, and (select auth.uid()) on entitlement_grants read own and space_circle_optouts read own. Do NOT apply_migration or DDL execute_sql. Do not touch spatial_ref_sys.\n\nPhase 3 \u00b7 Public chrome + kit (W0d), in this order: SCAN-641, SCAN-639, SCAN-640, then LIVE-412. SCAN-641 one public header (SiteHeader on (main) publicChrome). SCAN-639 wire FilterBar or delete it and the kit mention; do not leave two FilterBar names. SCAN-640 drop page_settings_events_backup_20260910 only after a production count (draft-and-approve). LIVE-412 split app-shell. SCAN-502 stays in W2 and needs an owner ruling before any export delete.\n\nPhase 4 \u00b7 Do not start from this scan. Editor E0-E9 and Sites stay slate.phases / W4. App Platform, Etsy, and mobile stay deferredByName. Folding Hubs/Nexuses is LIVE-242.\n\nForbidden on this box: parallel subagents (hangs), pnpm build inside a subagent, a new plan/TODO markdown (one-list), deleting lib modules without SCAN-502's four-search protocol.\n\nRationale: docs/META-SCAN-STATUS.md 2026-09-19 pass. Gates are green; the finds are advertised-URL vs render-path.",
       "metaScanCleanup": {
-<<<<<<< HEAD
-          "dated": "2026-09-19-evening",
-          "authority": "Does not replace slate.phases (ADR-1325 production plan). This is the scan follow-through lane plus a split so two agents do not collide.",
-          "productAgent": {
-                "waves": [
-                      "W0",
-                      "W0b"
-                ],
-                "next": [
-                      "LIVE-186"
-                ],
-                "leave": [
-                      "SCAN-638",
-                      "SCAN-640",
-                      "SCAN-641",
-                      "SCAN-643",
-                      "LIVE-412"
-                ],
-                "packetsLane": [
-                      "money",
-                      "events"
-                ]
-=======
         "dated": "2026-09-19",
         "authority": "Does not replace slate.phases (ADR-1325 production plan). This is the scan follow-through lane plus a split so two agents do not collide.",
         "productAgent": {
@@ -120,101 +97,45 @@
               "LIVE-414",
               "LIVE-415"
             ]
->>>>>>> origin/main
           },
-          "scanAgent": {
-                "next": "SCAN-643",
-                "order": [
-                      "SCAN-643",
-                      "SCAN-638",
-                      "SCAN-641",
-                      "SCAN-640",
-                      "LIVE-412"
-                ],
-                "leave": [
-                      "LIVE-410",
-                      "LIVE-376",
-                      "LIVE-234",
-                      "LIVE-186",
-                      "LIVE-213",
-                      "LIVE-408"
-                ],
-                "packetsLane": [
-                      "scan"
-                ]
+          {
+            "phase": 1,
+            "name": "Crawl truth",
+            "owner": "scanAgent",
+            "ids": [
+              "SCAN-637"
+            ],
+            "fix": "Same pattern as SiteHeader authMode=client on /discover. Keep /events/<slug> as the share URL."
           },
-          "phases": [
-                {
-                      "phase": 0,
-                      "name": "Product first",
-                      "owner": "productAgent",
-                      "ids": [
-                            "LIVE-234",
-                            "LIVE-410",
-                            "LIVE-186",
-                            "LIVE-213"
-                      ]
-                },
-                {
-                      "phase": 1,
-                      "name": "Crawl truth",
-                      "owner": "scanAgent",
-                      "ids": [
-                            "SCAN-643"
-                      ],
-                      "fix": "SCAN-642 closed. Layout cookies/headers still void SCAN-636 ISR."
-                },
-                {
-                      "phase": 2,
-                      "name": "Cheap DB",
-                      "owner": "scanAgent",
-                      "ids": [
-                            "SCAN-638"
-                      ],
-                      "fix": "Draft migration only. Six FK indexes + (select auth.uid()) on two read-own policies. No spatial_ref_sys."
-                },
-                {
-                      "phase": 3,
-                      "name": "Public chrome + kit",
-                      "owner": "scanAgent",
-                      "ids": [
-                            "SCAN-641",
-                            "SCAN-640",
-                            "LIVE-412"
-                      ]
-                },
-                {
-                      "phase": 4,
-                      "name": "Do not start from this scan",
-                      "owner": "neither",
-                      "ids": [
-                            "PROG-E0",
-                            "PROG-E10",
-                            "DEF-ETSY",
-                            "LIVE-242"
-                      ]
-                }
-          ],
-          "forbidden": [
-                "parallel subagents",
-                "pnpm build inside a subagent",
-                "new plan/TODO markdown",
-                "apply_migration / DDL without owner approval",
-                "delete lib exports without SCAN-502 ruling",
-                "cancelled LIVE-241",
-                "RLS on spatial_ref_sys"
-          ],
-          "packets": {
-                "product": "pnpm packets --lane events  (LIVE-410 closed; money lane next is derived)",
-                "scan": "pnpm packets --lane scan",
-                "doNotShare": [
-                      "LIVE-376",
-                      "one row per PR; rebase after every merge"
-                ]
+          {
+            "phase": 2,
+            "name": "Cheap DB",
+            "owner": "scanAgent",
+            "ids": [
+              "SCAN-638"
+            ],
+            "fix": "Draft migration only. Six FK indexes + (select auth.uid()) on two read-own policies. No spatial_ref_sys."
+          },
+          {
+            "phase": 3,
+            "name": "Public chrome + kit",
+            "owner": "scanAgent",
+            "ids": [
+              "SCAN-640",
+              "LIVE-412"
+            ]
+          },
+          {
+            "phase": 4,
+            "name": "Do not start from this scan",
+            "owner": "neither",
+            "ids": [
+              "PROG-E0",
+              "PROG-E10",
+              "DEF-ETSY",
+              "LIVE-242"
+            ]
           }
-<<<<<<< HEAD
-    },
-=======
         ],
         "forbidden": [
           "parallel subagents",
@@ -234,7 +155,6 @@
           ]
         }
       },
->>>>>>> origin/main
       "waves": [
         {
           "name": "W0 \u00b7 P0 \u2014 costing something today: an incident, a wrong money/consent/permission answer, or a crawl-facing defect the submitted sitemap exposes. EMPTY IS THE GOAL. LIVE-234 is the money proof (one succeeded $44 ticket is not five loops). OWN-073 closed 2026-09-19 (owner emailed). PROG-R5 is no longer here \u2014 Connect is not the lie.",
@@ -260,7 +180,6 @@
             "LIVE-418",
             "LIVE-419",
             "SCAN-638",
-            "SCAN-643",
             "HYG-100",
             "LIVE-413",
             "LIVE-411",
@@ -14821,22 +14740,22 @@
       "closed": "2026-09-19"
     },
     {
-          "id": "SCAN-638",
-          "title": "Six new unindexed FKs and two auth.uid() initplans landed after the Aug 31 scan",
-          "status": "open",
-          "priority": "P2",
-          "lane": "hygiene",
-          "size": "S",
-          "source": {
-                "file": "supabase/migrations/20270345002800_entitlement_grants.sql",
-                "ref": "meta-scan 2026-09-19, Supabase performance advisors"
-          },
-          "detail": "FOUND 2026-09-19 against project Frequency Community. The 2026-08-31 scan recorded zero unindexed_foreign_keys and zero auth_rls_initplan. Today: entitlement_grants.space_id, space_benefit_redemptions.member_profile_id, space_calendar_day_notes.created_by, space_calendar_entries.created_by, space_circle_optouts.profile_id, space_donations.ask_id; plus initplan WARN on space_circle_optouts read own and entitlement_grants read own (auth.uid() not wrapped in SELECT). Unused indexes dropped 538 to 392 (pre-launch noise). spatial_ref_sys ERROR is still PostGIS, leave it (OWN-006 / slate note). Close with one migration: covering indexes on those six FKs, and `(select auth.uid())` in the two policies. Draft-and-approve; do not apply from an agent session.\n\n──── RE-TESTED 2026-09-19 evening (ADR-1082, ADR-1448). PRODUCTION PREMISE EXPIRED. Advisors now show zero unindexed_foreign_keys and zero auth_rls_initplan. execute_sql: all six covering indexes exist; both read-own policies wrap (SELECT auth.uid()). Those index names are absent from supabase/migrations/. Creating files still use bare auth.uid(). Remaining work is a later migration so greenfield replay matches production. Do not apply. No spatial_ref_sys.",
-          "verify": {
-                "kind": "cmd",
-                "cmd": "node -e 'const fs=require(\"fs\");const g=fs.readFileSync(\"supabase/migrations/20270345002800_entitlement_grants.sql\",\"utf8\");const o=fs.readFileSync(\"supabase/migrations/20270345005800_space_circle_auto_enrol.sql\",\"utf8\");const later=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\")&&f>\"20270345005800\").some(f=>/select auth.uid\\(\\)/.test(fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\"))&&/entitlement_grants read own|space_circle_optouts read own/.test(fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\")));const wrapped=/select auth.uid\\(\\)/.test(g)&&/select auth.uid\\(\\)/.test(o);process.exit(wrapped||later?0:1)'",
-                "note": "Fails until the two read-own policies wrap auth.uid() in SELECT, in the creating file or a later migration. Index half is covered by the same PR; advisors are the production proof."
-          }
+      "id": "SCAN-638",
+      "title": "Six new unindexed FKs and two auth.uid() initplans landed after the Aug 31 scan",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270345002800_entitlement_grants.sql",
+        "ref": "meta-scan 2026-09-19, Supabase performance advisors"
+      },
+      "detail": "FOUND 2026-09-19 against project Frequency Community. The 2026-08-31 scan recorded zero unindexed_foreign_keys and zero auth_rls_initplan. Today: entitlement_grants.space_id, space_benefit_redemptions.member_profile_id, space_calendar_day_notes.created_by, space_calendar_entries.created_by, space_circle_optouts.profile_id, space_donations.ask_id; plus initplan WARN on space_circle_optouts read own and entitlement_grants read own (auth.uid() not wrapped in SELECT). Unused indexes dropped 538 to 392 (pre-launch noise). spatial_ref_sys ERROR is still PostGIS, leave it (OWN-006 / slate note). Close with one migration: covering indexes on those six FKs, and `(select auth.uid())` in the two policies. Draft-and-approve; do not apply from an agent session.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const g=fs.readFileSync(\"supabase/migrations/20270345002800_entitlement_grants.sql\",\"utf8\");const o=fs.readFileSync(\"supabase/migrations/20270345005800_space_circle_auto_enrol.sql\",\"utf8\");const later=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\")&&f>\"20270345005800\").some(f=>/select auth.uid\\(\\)/.test(fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\"))&&/entitlement_grants read own|space_circle_optouts read own/.test(fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\")));const wrapped=/select auth.uid\\(\\)/.test(g)&&/select auth.uid\\(\\)/.test(o);process.exit(wrapped||later?0:1)'",
+        "note": "Fails until the two read-own policies wrap auth.uid() in SELECT, in the creating file or a later migration. Index half is covered by the same PR; advisors are the production proof."
+      }
     },
     {
       "id": "SCAN-639",
@@ -14895,43 +14814,6 @@
       "closed": "2026-09-19"
     },
     {
-<<<<<<< HEAD
-          "id": "SCAN-642",
-          "title": "Sitemap-advertised Spotlight pages are force-dynamic",
-          "status": "done",
-          "priority": "P1",
-          "lane": "live",
-          "size": "M",
-          "source": {
-                "file": "app/spotlight/[handle]/page.tsx",
-                "ref": "meta-scan 2026-09-19 evening"
-          },
-          "detail": "FOUND 2026-09-19 evening. app/sitemap.ts getSpotlightRoutes advertises /spotlight/<handle> for published profiles. app/spotlight/[handle]/page.tsx still says export const dynamic = 'force-dynamic'. The route lives OUTSIDE (main), so SCAN-641 / SCAN-643 cannot fix it. getPublishedSpotlight reads the admin client and does not call cookies(); the page emits Person JSON-LD and a self-canonical. Same class as SCAN-637 (listing details). Close by dropping force-dynamic, asking for revalidate = 3600, and generateStaticParams from published handles (or accepting on-demand ISR). Viewer-personalisation (guestbook sign) already lives in client components. Do not fold this into SCAN-643.\n\nCLOSED 2026-09-19 (ADR-1448). Dropped force-dynamic. Page asks for revalidate = 3600 and generateStaticParams via listPublishedSpotlightHandles (same publish filter as the sitemap). Sitemap getSpotlightRoutes now calls that helper; admin client import left the sitemap. Guestbook writes stay in client actions. Did not touch (main)/layout.tsx (SCAN-643 / SCAN-641).",
-          "verify": {
-                "kind": "cmd",
-                "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"app/spotlight/[handle]/page.tsx\",\"utf8\");process.exit(/export const dynamic = .force-dynamic./.test(s)?1:0)'",
-                "note": "Fails while the sitemap-advertised Spotlight page still force-dynamics."
-          },
-          "closed": "2026-09-19"
-    },
-    {
-          "id": "SCAN-643",
-          "title": "The (main) layout still voids SCAN-636 ISR with cookies and headers",
-          "status": "open",
-          "priority": "P1",
-          "lane": "live",
-          "size": "L",
-          "source": {
-                "file": "app/(main)/layout.tsx",
-                "ref": "ADR-1440 consequence; meta-scan 2026-09-19 evening"
-          },
-          "detail": "FOUND 2026-09-19 evening while re-testing SCAN-636 after #2733. app/(main)/events/[slug]/page.tsx now exports revalidate = 3600 and generateStaticParams (probe passes). The parent layout still (1) awaits getCachedUser() which calls cookies() via createClient, (2) awaits headers() for x-pathname before publicChrome, and (3) generateMetadata awaits headers() for page_settings SEO. This app does not enable cacheComponents. One dynamic API in a layout voids the subtree — the same sentence app/discover/layout.tsx already paid to learn. Sitemap-advertised URLs under (main) pay this tax: /events/<slug>, /spaces/<slug>, /store|/market|/housing|/classifieds/<id>, /spaces/<slug>/podcasts/<show>. Close by moving those public routes under a layout that never calls cookies() or headers() (the discover pattern), or by making the (main) public-chrome branch skip both APIs without losing the member-shell redirect. Do not close this by swapping MarketingHeader (that is SCAN-641). Do not reopen SCAN-636.",
-          "verify": {
-                "kind": "cmd",
-                "cmd": "node -e 'const fs=require(\"fs\");const L=fs.readFileSync(\"app/(main)/layout.tsx\",\"utf8\");const i=L.indexOf(\"export default async function MainLayout\");const body=i<0?L:L.slice(i);const auth=body.indexOf(\"getCachedUser\");const pub=body.indexOf(\"publicChrome\");const md=/export async function generateMetadata[\\s\\S]*headers\\(\\)/.test(L);process.exit((auth>=0&&(pub<0||auth<pub))||md?1:0)'",
-                "note": "Fails while MainLayout awaits getCachedUser before publicChrome, or generateMetadata calls headers()."
-          }
-=======
       "id": "LIVE-414",
       "title": "Calendar C0: guest and member public calendars are live events only; cancelled is muted footer text in the date square",
       "status": "open",
@@ -15038,7 +14920,43 @@
         "cmd": "node -e 'const fs=require(\"fs\");const p=fs.readFileSync(\"app/(main)/spaces/[slug]/(profile)/calendar/page.tsx\",\"utf8\");if(!p.includes(\"guestLiveItems\"))process.exit(1);const g=fs.readFileSync(\"lib/calendar/guest-live.ts\",\"utf8\");if(!/pencil|planning/.test(g))process.exit(1)'",
         "note": "Fails until the Guest branch calls guestLiveItems and that helper names pencil/planning so it can exclude them."
       }
->>>>>>> origin/main
+    },
+    {
+      "id": "SCAN-642",
+      "title": "Sitemap-advertised Spotlight pages are force-dynamic",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "app/spotlight/[handle]/page.tsx",
+        "ref": "meta-scan 2026-09-19 evening"
+      },
+      "detail": "FOUND 2026-09-19 evening. app/sitemap.ts getSpotlightRoutes advertises /spotlight/<handle> for published profiles. app/spotlight/[handle]/page.tsx still says export const dynamic = 'force-dynamic'. The route lives OUTSIDE (main), so SCAN-641 / SCAN-643 cannot fix it. getPublishedSpotlight reads the admin client and does not call cookies(); the page emits Person JSON-LD and a self-canonical. Same class as SCAN-637 (listing details). Close by dropping force-dynamic, asking for revalidate = 3600, and generateStaticParams from published handles (or accepting on-demand ISR). Viewer-personalisation (guestbook sign) already lives in client components. Do not fold this into SCAN-643.\n\nCLOSED 2026-09-19 (ADR-1448). Dropped force-dynamic. Page asks for revalidate = 3600 and generateStaticParams via listPublishedSpotlightHandles (same publish filter as the sitemap). Sitemap getSpotlightRoutes now calls that helper; admin client import left the sitemap. Guestbook writes stay in client actions. Did not touch (main)/layout.tsx (SCAN-643 / SCAN-641).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"app/spotlight/[handle]/page.tsx\",\"utf8\");process.exit(/export const dynamic = .force-dynamic./.test(s)?1:0)'",
+        "note": "Fails while the sitemap-advertised Spotlight page still force-dynamics."
+      },
+      "closed": "2026-09-19"
+    },
+    {
+      "id": "SCAN-643",
+      "title": "The (main) layout still voids SCAN-636 ISR with cookies and headers",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "app/(main)/layout.tsx",
+        "ref": "ADR-1440 consequence; meta-scan 2026-09-19 evening"
+      },
+      "detail": "FOUND 2026-09-19 evening while re-testing SCAN-636 after #2733. app/(main)/events/[slug]/page.tsx now exports revalidate = 3600 and generateStaticParams (probe passes). The parent layout still (1) awaits getCachedUser() which calls cookies() via createClient, (2) awaits headers() for x-pathname before publicChrome, and (3) generateMetadata awaits headers() for page_settings SEO. This app does not enable cacheComponents. One dynamic API in a layout voids the subtree — the same sentence app/discover/layout.tsx already paid to learn. Sitemap-advertised URLs under (main) pay this tax: /events/<slug>, /spaces/<slug>, /store|/market|/housing|/classifieds/<id>, /spaces/<slug>/podcasts/<show>. Close by moving those public routes under a layout that never calls cookies() or headers() (the discover pattern), or by making the (main) public-chrome branch skip both APIs without losing the member-shell redirect. Do not close this by swapping MarketingHeader (that is SCAN-641). Do not reopen SCAN-636.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const L=fs.readFileSync(\"app/(main)/layout.tsx\",\"utf8\");const i=L.indexOf(\"export default async function MainLayout\");const body=i<0?L:L.slice(i);const auth=body.indexOf(\"getCachedUser\");const pub=body.indexOf(\"publicChrome\");const md=/export async function generateMetadata[\\s\\S]*headers\\(\\)/.test(L);process.exit((auth>=0&&(pub<0||auth<pub))||md?1:0)'",
+        "note": "Fails while MainLayout awaits getCachedUser before publicChrome, or generateMetadata calls headers()."
+      }
     }
   ]
 }
