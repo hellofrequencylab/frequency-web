@@ -1,0 +1,155 @@
+# Refresh the committed MapLibre worker pair on a Dependabot bump (HYG-090, ADR-1424).
+#
+# ── THE DEFECT, measured. prebuild/predev run scripts/copy-maplibre-worker.mjs so a build
+# ships the worker that matches the installed maplibre-gl, and
+# scripts/copy-maplibre-worker.test.ts pins that the COMMITTED pair under public/maplibre
+# matches too. A Dependabot bump changes the package and not the pair, so the test job fails
+# STALE every time. PR #2582 (2026-09-14) is the reading: Dependabot opened the grouped bump,
+# then a person ran the script by hand and pushed "The self-hosted MapLibre worker is
+# regenerated for maplibre-gl 6.9.0" onto the bot's branch.
+#
+# The guard is right. The automation was missing.
+#
+# ── WHY A WORKFLOW AND NOT A STEP IN ci.yml. The required `test` job checks out the merge
+# commit and has contents: read. Committing needs the PR HEAD and contents: write. Putting
+# write on a required job, or pushing from a merge-commit checkout, is the wrong shape.
+# This file owns the refresh; ci.yml keeps judging.
+#
+# ── WHY THE DISPATCH AFTER THE PUSH. Both capture jobs in e2e-manual.yml push with
+# GITHUB_TOKEN, and GitHub suppresses workflow runs triggered by that token (documented
+# there, observed both ways on #2026 and #2086). A Dependabot PR with required checks
+# cannot absorb a new SHA that posts nothing: the merge waits forever on
+# "Expected — Waiting for status to be reported" (the PR #2107 deadlock). workflow_dispatch
+# is the documented exception that GITHUB_TOKEN MAY fire, so after a commit this job
+# dispatches the producers of the required contexts that Actions owns:
+#   ci.yml        → lint, test, checks
+#   codeql.yml    → analyze
+#   db-tests-fallback.yml → db-tests (this bump does not touch supabase/, so the real
+#                           db-tests.yml path filter will not run; the fallback posts
+#                           the stub on the NEW head SHA, the same job it posts on any
+#                           no-migration PR).
+# Vercel is a GitHub App webhook, not a workflow run, so the token suppression does not
+# apply to it; it sees the push or it does not, and a missing Vercel check is recovered
+# the same way a capture is: push any real commit.
+#
+# ── WHAT THIS MUST NOT DO. pull_request_target (would run untrusted code with write).
+# Push to main (protected; GITHUB_TOKEN is not exempt). Commit anything other than the
+# two files under public/maplibre. Copy on a human PR (the STALE test is the prompt
+# for a person who bumped the package themselves).
+name: maplibre-worker
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'public/maplibre/**'
+      - 'scripts/copy-maplibre-worker.mjs'
+      - '.github/workflows/maplibre-worker.yml'
+
+permissions:
+  contents: write
+  actions: write
+  pull-requests: read
+
+concurrency:
+  group: maplibre-worker-${{ github.event.pull_request.head.ref }}
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    if: >
+      github.actor == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref != 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Did this bump touch maplibre-gl?
+        id: bump
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -uo pipefail
+          diff=$(gh pr diff "$PR") || {
+            echo "::error::could not read the PR diff, so refusing to guess whether maplibre-gl moved."
+            exit 1
+          }
+          if printf '%s' "$diff" | grep -F -- 'maplibre-gl' >/dev/null; then
+            echo "hit=true" >> "$GITHUB_OUTPUT"
+            echo "maplibre-gl moved in this bump; the committed worker pair will be refreshed."
+          else
+            echo "hit=false" >> "$GITHUB_OUTPUT"
+            echo "maplibre-gl did not move; the committed pair is already the right one."
+          fi
+
+      - uses: pnpm/action-setup@v6.0.9
+        if: steps.bump.outputs.hit == 'true'
+
+      - uses: actions/setup-node@v7
+        if: steps.bump.outputs.hit == 'true'
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install
+        if: steps.bump.outputs.hit == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Copy the worker pair from the installed package
+        if: steps.bump.outputs.hit == 'true'
+        run: node scripts/copy-maplibre-worker.mjs
+
+      - name: Commit the refreshed pair
+        id: commit
+        if: steps.bump.outputs.hit == 'true'
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add public/maplibre/maplibre-gl-worker.mjs public/maplibre/maplibre-gl-shared.mjs
+          if git diff --cached --quiet; then
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            echo "The committed pair already matches the installed package."
+            exit 0
+          fi
+          VERSION=$(node -p "require('./node_modules/maplibre-gl/package.json').version")
+          git commit -m "Refresh the self-hosted MapLibre worker for maplibre-gl ${VERSION}"
+          git pull --rebase origin "$BRANCH"
+          git push origin "HEAD:${BRANCH}"
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+          echo "Pushed the regenerated pair. GITHUB_TOKEN starts no CI, so the next step dispatches the required checks onto this SHA."
+
+      - name: Dispatch required checks onto the new SHA
+        if: steps.commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.head_ref }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          pushed_sha=$(git rev-parse HEAD)
+          for i in 1 2 3 4 5 6 7 8; do
+            api_sha=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}" --jq .head.sha)
+            if [ "$api_sha" = "$pushed_sha" ]; then
+              break
+            fi
+            sleep 2
+          done
+          # workflow_dispatch is the GITHUB_TOKEN exception: a push made with the runner token
+          # starts no workflow run, but an explicit dispatch does. ci.yml and codeql.yml already
+          # declare it; db-tests-fallback.yml takes the PR number and stamps db-tests on that
+          # PR's CURRENT head, which is the SHA we just pushed.
+          gh workflow run ci.yml --ref "$BRANCH"
+          gh workflow run codeql.yml --ref "$BRANCH"
+          gh workflow run db-tests-fallback.yml --ref "$BRANCH" -f "pr=${PR}"
+          echo "Dispatched ci, codeql, and db-tests-fallback onto ${BRANCH} (${pushed_sha})."

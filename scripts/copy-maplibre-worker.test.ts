@@ -88,8 +88,9 @@ describe('the MapLibre worker copy rests on assumptions that are still true', ()
     // deploy configured to run `next build` directly would skip that hook — and a missing worker
     // is silent, so the map would go blank with no build error anywhere. Committing them removes
     // the build-order dependency entirely; THIS test removes the staleness risk that creates.
-    // A Dependabot bump to maplibre-gl now fails here until the copy is refreshed:
+    // A human bump to maplibre-gl fails here until the copy is refreshed:
     //   node scripts/copy-maplibre-worker.mjs
+    // A Dependabot bump is refreshed by .github/workflows/maplibre-worker.yml (HYG-090).
     for (const name of WORKER_FILES) {
       const served = join('public', 'maplibre', name)
       expect(existsSync(served), `${served} is missing — run node scripts/copy-maplibre-worker.mjs`).toBe(true)

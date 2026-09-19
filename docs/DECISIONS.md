@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1423**.
+tree as of this index: **ADR-1424**.
 
 | Theme | Start here |
 |---|---|
@@ -45859,5 +45859,26 @@ Premise re-tested 2026-09-19 on this tree: `retireStaleOccurrences` still stood 
 **Consequences.** A protected-ref refusal is one red step. A partial capture still commits. A degraded capture still refuses.
 
 **Rows.** HYG-094.
+
+## ADR-1424: Dependabot refreshes the committed MapLibre worker pair (HYG-090)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-090` · corroborated by `.github/workflows/maplibre-worker.yml` and `scripts/copy-maplibre-worker-workflow.test.ts`
+
+**Context.** `scripts/copy-maplibre-worker.mjs` copies MapLibre's worker and shared chunk, unhashed, into `public/maplibre/` so the worker's relative sibling import resolves. `prebuild` / `predev` regenerate the pair, and `scripts/copy-maplibre-worker.test.ts` pins that the committed copy matches the installed package. A Dependabot bump changes the package and not the pair, so the test job fails STALE. Measured on PR #2582 (2026-09-14): Dependabot opened the grouped minor-and-patch bump, then a person ran the script by hand and pushed "The self-hosted MapLibre worker is regenerated for maplibre-gl 6.9.0" onto the bot's branch. The guard is right. The automation was missing.
+
+Premise re-tested 2026-09-19 on this tree: no workflow (comments stripped) ran the copy script. `codeql.yml` mentions it only in a comment, which the probe already ignores.
+
+**Decision.**
+
+1. **A dedicated workflow, not a step in `ci.yml`.** The required `test` job checks out the merge commit and is `contents: read`. Committing needs the PR HEAD and `contents: write`. This file owns the refresh; `ci.yml` keeps judging.
+2. **Gated on Dependabot, same-repo, never `main`.** A human who bumps the package still sees STALE and runs the script. `pull_request_target` is refused.
+3. **Commit only the two files the script writes.** Then, because a `GITHUB_TOKEN` push starts no workflow run (documented on the capture jobs, observed both ways on #2026 and #2086), dispatch `ci.yml`, `codeql.yml`, and `db-tests-fallback.yml` onto the new SHA. `workflow_dispatch` is the documented GITHUB_TOKEN exception. The fallback stamps `db-tests` because a lockfile bump does not match `db-tests.yml`'s path filter.
+4. **Skip the install when `maplibre-gl` did not move.** Grouped Dependabot PRs are the common case. A diff read that fails refuses rather than guessing.
+
+**Rejected.** Copying before tests in `ci.yml` without committing (production `pnpm build` already runs `prebuild`; the committed pair would drift forever, which is the safety net the test exists to keep). Putting `contents: write` on the required `test` job. Trusting the GITHUB_TOKEN push to retrigger CI (the capture jobs have seen both outcomes and tell you not to plan around either).
+
+**Consequences.** A Dependabot bump that moves `maplibre-gl` regenerates `public/maplibre/` and the bump PR is green on its own. A bump that does not touch MapLibre is a no-op. Vercel is a GitHub App webhook, not a workflow run; if that check is missing, push any real commit, the same recovery the capture jobs already document.
+
+**Rows.** HYG-090.
 
 

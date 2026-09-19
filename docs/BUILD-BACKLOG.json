@@ -204,7 +204,6 @@
             "LIVE-221",
             "LIVE-272",
             "LIVE-273",
-            "HYG-090",
             "HYG-092",
             "LIVE-397"
           ]
@@ -12809,7 +12808,7 @@
     {
       "id": "HYG-090",
       "title": "A Dependabot bump of maplibre-gl fails the test job STALE until a person runs the worker copy and commits the pair",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "hygiene",
       "size": "XS",
@@ -12817,12 +12816,13 @@
         "file": "scripts/copy-maplibre-worker.mjs",
         "ref": "the committed pair under public/maplibre"
       },
-      "detail": "FILED 2026-09-15. prebuild and predev run scripts/copy-maplibre-worker.mjs so a build always ships the worker that matches the installed maplibre-gl, and scripts/copy-maplibre-worker.test.ts pins that the COMMITTED pair under public/maplibre matches too. A Dependabot bump changes the package and not the committed pair, so its PR fails the test job with STALE every time, and someone runs the script by hand and pushes onto the bot's branch (it happened on 2026-09-14). The guard is right; the automation is missing.\n\nTHE FIX: a small workflow (or a step in ci.yml gated on the dependabot actor and a maplibre-gl bump) that runs the copy script and commits the regenerated pair back to the PR branch, so the bump PR is green on its own. Note the GITHUB_TOKEN rule from the recapture work: a push made with the runner's token starts no CI, so the workflow must either use a token that does or re-trigger the run.",
+      "detail": "FILED 2026-09-15. prebuild and predev run scripts/copy-maplibre-worker.mjs so a build always ships the worker that matches the installed maplibre-gl, and scripts/copy-maplibre-worker.test.ts pins that the COMMITTED pair under public/maplibre matches too. A Dependabot bump changes the package and not the committed pair, so its PR fails the test job with STALE every time, and someone runs the script by hand and pushes onto the bot's branch (it happened on 2026-09-14). The guard is right; the automation is missing.\n\nTHE FIX: a small workflow (or a step in ci.yml gated on the dependabot actor and a maplibre-gl bump) that runs the copy script and commits the regenerated pair back to the PR branch, so the bump PR is green on its own. Note the GITHUB_TOKEN rule from the recapture work: a push made with the runner's token starts no CI, so the workflow must either use a token that does or re-trigger the run.\n\nCLOSED 2026-09-19 (ADR-1424). PREMISE RE-TESTED FIRST, and it held: no workflow (comments stripped) ran the copy script; codeql.yml still mentions it only in a comment. PR #2582 (2026-09-14) still carried the human commit that regenerated the pair for maplibre-gl 6.9.0. Shipped a dedicated workflow, not a step in ci.yml: Dependabot, same-repo, never main; copies from the installed package; commits only the two public/maplibre files; then dispatches ci.yml, codeql.yml and db-tests-fallback.yml because a GITHUB_TOKEN push starts no CI. Grouped bumps that do not move maplibre-gl skip the install. Pinned by scripts/copy-maplibre-worker-workflow.test.ts.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const dir=\".github/workflows\";const hit=fs.readdirSync(dir).some(f=>/\\.ya?ml$/.test(f)&&/copy-maplibre-worker\\.mjs/.test(fs.readFileSync(dir+\"/\"+f,\"utf8\").replace(/^\\s*#.*$/gm,\"\")));if(!hit){console.error(\"no workflow runs the maplibre worker copy on a bump\");process.exit(1)}'",
         "note": "Passes once a workflow (comments stripped) runs scripts/copy-maplibre-worker.mjs. codeql.yml mentions the script only in a comment today. Written 2026-09-15."
-      }
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "HYG-091",
