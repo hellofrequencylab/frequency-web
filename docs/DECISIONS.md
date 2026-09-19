@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1442**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
+tree as of this index: **ADR-1443**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
 
 | Theme | Start here |
 |---|---|
@@ -46205,23 +46205,23 @@ The harness can still create a bare worktree. That is not repo-observable. What 
 
 **Rows.** LIVE-306.
 
-## ADR-1442: Drop the unread `gamification_full_supporter` flag (HYG-078)
+## ADR-1443: Public events use the same header /discover uses (SCAN-641)
 
-**Status:** Accepted · 2026-09-19 · Amends [ADR-1106](DECISIONS.md) §2 ("the owner may delete it out of band") by doing the delete · backlog `HYG-078` · numbered **1442** because **1441** is LIVE-306 · corroborated by `supabase/migrations/20270345006400_drop_orphan_gamification_full_supporter_flag.sql` and `RETIRED_FLAG_KEYS` in `lib/platform-flags.test.ts`
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-641` · numbered **1443** because **1442** is HYG-078 · corroborated by `app/(main)/layout.tsx` (`publicChrome`) and `app/discover/layout.tsx`
 
-**Context.** ADR-1106 retired the Supporter *rung* from `EntitlementTier`. The per-role flag `gamification_full_supporter` left `PRICING_FLAG_KEYS` in the same change, because `GAMIFICATION_FLAG` is keyed by that union and no remaining tier can select it. The stored `platform_flags` row was left as an unread orphan: a migration is production state, and that ADR wrote none. HYG-078 is that leftover.
+**Context.** SCAN-641, filed 2026-09-19 from the meta-scan: anon `/events/<slug>` and networked Space profiles rendered `MarketingHeader` through `(main)` `publicChrome()`. `/discover/*` rendered `SiteHeader variant="light" authMode="client"`. Two public chromes, two phone sheets, two chances to drift. LIVE-106 was the last time that class cost thirteen destinations.
 
-Premise re-tested 2026-09-19 on this tree: zero production reads of the key (comments only). `20260723010000_pricing_foundation.sql` still inserted it, so a greenfield replay would recreate the orphan. `tier_supporter_enabled` is still read by the sell-path guard (`memberTierSellable('supporter')` must keep refusing). `lib/billing/supporter.ts` is the PWYW badge charge, a different word.
+Premise re-tested 2026-09-19 on this tree: the split was still the split. Discover still used SiteHeader with client auth so ISR is not voided. The `(main)` public branch already called `getCachedUser()`, so it was already dynamic; client auth there is not an ISR win, it is so both trees draw one bar.
 
 **Decision.**
 
-1. **Stop seeding.** The foundation migration no longer inserts the key. Replay cannot recreate it.
-2. **Delete the stored row.** `20270345006400` deletes `platform_flags` where `key = 'gamification_full_supporter'`. Neighbour asserts keep `gamification_full_crew` and `tier_supporter_enabled`. `platform_flag_events` stays (that is history). Version **06400** because **06100** is Collective, **06200** is Hubs/Nexuses, and **06300** is HYG-068.
-3. **Pin it with the other retired flags.** `RETIRED_FLAG_KEYS` already requires a delete statement and forbids a production read. The orphan joins that list.
+1. **Mount the discover header on the `(main)` public branch.** `ViewerProvider` plus `SiteHeader variant="light" authMode="client"`. That is the header /discover already ships, including the phone sheet LIVE-110 put on it.
+2. **Leave the footer.** This row is the header split. `MarketingFooter` stays on the `(main)` public branch; /discover keeps its own short footer.
+3. **Give the skip link a target.** `id="main"` on the public `<main>`, matching /discover, so SiteHeader's skip-to-content has somewhere to go.
 
-**Rejected.** Deleting `tier_supporter_enabled` (the guard would go vacuous, ADR-970). Touching `lib/billing/supporter.ts` or `profiles.is_supporter` (the badge is live). Leaving the seed and only deleting (greenfield would insert, then delete: noisier, and the row asked both).
+**Rejected.** Extracting a shared PublicChrome layout in this change (the footers still differ, and a shared shell would hide that). Switching /discover onto MarketingHeader (that is the header without search, and it would undo the ISR-preserving client auth). Server auth on the `(main)` public branch (a second dialect of the same bar).
 
-**Consequences.** A later sweep that greps for the key and finds only comments plus the delete file is reading the intended residue. Applying the file is `execute_sql` then a `schema_migrations` insert at version `20270345006400`.
+**Consequences.** A signed-out event page and a /discover page now share one header component and one phone sheet. Marketing pages and the help centre keep MarketingHeader: those are the splash and the docs, not the public community browse.
 
-**Rows.** HYG-078.
+**Rows.** SCAN-641.
 
