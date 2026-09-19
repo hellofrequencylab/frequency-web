@@ -4,11 +4,13 @@ import { formatEventWhen, eventInstant } from '@/lib/time/zone'
 import { eventDayKey } from '@/lib/events/calendar-grid'
 import type { CalendarEvent } from './item'
 import { listPublicUnavailableItems } from './entries-store'
+import { guestLiveItems } from './guest-live'
 
-// THE PUBLIC SPACE CALENDAR, one window at a time (ADR-1385). The public Calendar tab loads its first
-// month on the server and every other month through this, so browsing back or far forward is never an
-// empty grid. It composes the EXISTING gated reader (listSpaceCalendarEvents: tenancy, hosting and
-// shares, each re-gated) and the public Unavailable projection. It never reimplements a gate.
+// THE PUBLIC SPACE CALENDAR, one window at a time (ADR-1385, LIVE-419). The public Calendar tab loads
+// its first month on the server and every other month through this, so browsing back or far forward is
+// never an empty grid. It composes the EXISTING gated reader (listSpaceCalendarEvents: tenancy, hosting
+// and shares, each re-gated), the public Unavailable projection, and guestLiveItems so pencil and
+// planning never appear. It never reimplements a gate.
 
 type SpaceCalendarRow = Awaited<ReturnType<typeof listSpaceCalendarEvents>>[number]
 
@@ -48,5 +50,5 @@ export async function loadPublicSpaceWindow(spaceId: string, fromDay: string, to
     const key = eventDayKey(r.starts_at)
     return !!key && key < toDay
   })
-  return [...(await spaceEventRowsToItems(inWindow)), ...unavailable]
+  return guestLiveItems([...(await spaceEventRowsToItems(inWindow)), ...unavailable])
 }

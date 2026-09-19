@@ -191,8 +191,9 @@ edits the Space (with the Calendar function), or platform staff previewing it, l
 production console (`CalendarPmConsole`) over `loadAdminCalendar` (`lib/calendar/admin-calendar.ts`,
 shared with the settings console). The board lists what is penciled, in planning, in production, and
 cancelled. `StaffCalendar` is the date map and the settings drawer, not a second guest month.
-`?view=guest` shows the visitor view. Everyone else only ever gets Guest, and the mode is decided on the
-server before any admin read.
+`?view=guest` and unsigned members go through `guestLiveItems` (`lib/calendar/guest-live.ts`): live
+events only. Pencil and planning stay off that feed. Cancelled stays the C0 footer (LIVE-414), not a
+guest chip. The mode is decided on the server before any admin read.
 
 **Loading a month.** The first month renders on the server. Every other month is fetched when the
 viewer browses to it: `loadSpaceCalendarMonth` for the public tab (over `lib/calendar/public-month.ts`,

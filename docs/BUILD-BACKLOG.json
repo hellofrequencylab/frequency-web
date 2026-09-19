@@ -177,7 +177,6 @@
             "LIVE-416",
             "LIVE-417",
             "LIVE-418",
-            "LIVE-419",
             "SCAN-638",
             "HYG-100",
             "LIVE-413",
@@ -14925,20 +14924,21 @@
     {
       "id": "LIVE-419",
       "title": "Calendar C5: Guest view never shows pencil or planning; cancelled stays the C0 footer",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "components/spaces/calendar-mode-toggle.tsx",
-        "ref": "ADR-1389, ADR-1445"
+        "ref": "ADR-1389, ADR-1445, ADR-1458"
       },
-      "detail": "Close the Admin/Guest split: `?view=guest` and unsigned members go through guestLiveItems only. Pencil and planning stay off that feed. Cancelled is the C0 footer (LIVE-414), not a guest chip. After C0 and C1.",
+      "detail": "Close the Admin/Guest split: `?view=guest` and unsigned members go through guestLiveItems only. Pencil and planning stay off that feed. Cancelled is the C0 footer (LIVE-414), not a guest chip. After C0 and C1.\n\nCLOSED 2026-09-19 (ADR-1458). PREMISE RE-TESTED FIRST: the Guest branch loaded published events plus public Unavailable and never called guestLiveItems. guest-live.ts did not exist. Pencil and planning live on space_calendar_entries (staff-only), so they were already off the published-event reader, but a later month browse or a staged item on the public window had no named filter. Guest now calls guestLiveItems. The helper names pencil and planning and drops those stages plus the pencil and private layers. loadPublicSpaceWindow uses the same filter. Did not declare pencilLane, planningLane, or productionLane (C2–C4). Did not paint cancelledCellFooter (C0 / LIVE-414).",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const p=fs.readFileSync(\"app/(main)/spaces/[slug]/(profile)/calendar/page.tsx\",\"utf8\");if(!p.includes(\"guestLiveItems\"))process.exit(1);const g=fs.readFileSync(\"lib/calendar/guest-live.ts\",\"utf8\");if(!/pencil|planning/.test(g))process.exit(1)'",
         "note": "Fails until the Guest branch calls guestLiveItems and that helper names pencil/planning so it can exclude them."
-      }
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "HYG-104",

@@ -7,6 +7,7 @@ import { listSpaceCalendarEvents } from '@/lib/events/store'
 import { SITE_URL } from '@/lib/site'
 import { EventCalendar } from '@/components/events/event-calendar'
 import { spaceEventRowsToItems } from '@/lib/calendar/public-month'
+import { guestLiveItems } from '@/lib/calendar/guest-live'
 import { listPublicUnavailableItems } from '@/lib/calendar/entries-store'
 import { monthGridWindow } from '@/lib/calendar/month-window'
 import { loadSpaceCalendarMonth } from './actions'
@@ -27,9 +28,10 @@ import { CalendarPmConsole } from '@/components/spaces/calendar-pm-console'
 // ADMIN / GUEST (ADR-1389, amended by ADR-1450). A viewer who manages the Space lands on ADMIN: the
 // production console (CalendarPmConsole). The board lists what is penciled, in planning, in production,
 // and cancelled. StaffCalendar is the date map and the settings drawer, not a second guest month. A
-// toggle flips to GUEST, which is exactly what a visitor sees. Every other viewer (guests and ordinary
-// members) only ever gets Guest, and the server never loads the private layer for them: the mode is
-// decided here, before any admin read.
+// toggle flips to GUEST, which is exactly what a visitor sees: guestLiveItems, live events only.
+// Pencil and planning stay off that feed. Every other viewer (guests and ordinary members) only
+// ever gets Guest, and the server never loads the private layer for them: the mode is decided
+// here, before any admin read.
 
 // Its OWN canonical + title. Without this the tab inherits the Space ROOT's metadata and declares
 // itself a duplicate of a page it is not (FINALIZE-PLAN §9.5).
@@ -124,7 +126,7 @@ export default async function SpaceCalendarPage({
     listSpaceCalendarEvents(space.id, { fromDay: grid.fromDay }),
     listPublicUnavailableItems(space.id, grid.fromDay, grid.toDay),
   ])
-  const events = [...(await spaceEventRowsToItems(rows)), ...unavailable]
+  const events = guestLiveItems([...(await spaceEventRowsToItems(rows)), ...unavailable])
 
   return (
     <div className="space-y-4">

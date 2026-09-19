@@ -46395,7 +46395,6 @@ Premise re-tested 2026-09-19 against the tree, not the banners:
 
 **Rows.** LIVE-415.
 
-<<<<<<< HEAD
 ## ADR-1448: The Circle and Event rail banks get a Settings door (OWN-058)
 
 **Status:** Accepted · 2026-09-19 · Records the 2026-09-08 OWN-058 ruling · **Implements** option (a) · numbered **1448** because **1450** is LIVE-415 on main (which reserved 1448–1449 for open PRs), **1447** is HYG-104, **1446** is HYG-103, and **1445** is the calendar C0–C5 ruling · corroborated by `bankForScope` in `lib/admin/rail-bank.ts` and `FROZEN_MENU_DEBT` in `scripts/check-menu.mjs`
@@ -46421,7 +46420,6 @@ Premise re-tested 2026-09-19:
 
 **Rows.** OWN-058.
 
-=======
 ## ADR-1449: The member-shell visual tier blocks; `/discover` stays advisory (LIVE-313)
 
 **Status:** Accepted · 2026-09-19 · backlog `LIVE-313` · amends [ADR-1410](DECISIONS.md) · numbered **1449** (1447 is HYG-104 on main; 1450 is LIVE-415; 1448 sits on an open branch)
@@ -46444,4 +46442,23 @@ Premise re-tested 2026-09-19:
 **Consequences.** A header or rail regression fails a PR. A new listed Circle is information in the advisory report. Recapture `/discover` when the design moved. Numbered **1449** because 1448 sits on an open branch and 1450 is LIVE-415 on main.
 
 **Rows.** LIVE-313.
->>>>>>> 5e45566df (Let the member-shell visual tier block (LIVE-313))
+
+## ADR-1458: Guest calendar goes through guestLiveItems (LIVE-419)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-419` · numbered **1458** (1450 is LIVE-415 on this tree; 1451–1457 sit on open calendar and scan PRs) · implements C5 of [ADR-1445](DECISIONS.md) · corroborated by `lib/calendar/guest-live.ts`, `app/(main)/spaces/[slug]/(profile)/calendar/page.tsx`
+
+**Context.** ADR-1445 split C0–C5 so each row is one PR. C1 (LIVE-415) already mounts `CalendarPmConsole`. C0 (LIVE-414) owns `cancelledCellFooter` and is in other PRs. C5 is the Guest branch: `?view=guest` and unsigned members must call `guestLiveItems`, and that helper must name pencil and planning so it can exclude them.
+
+Premise re-tested 2026-09-19 on this tree: the Guest branch composed `listSpaceCalendarEvents` plus public Unavailable and never called a named filter. `guest-live.ts` did not exist. Published-event reads already omit staff entries, so pencil and planning were off the feed by accident of the reader, not by a contract the next month-browse change could keep.
+
+**Decision.**
+
+1. **`guestLiveItems` is the Guest feed.** It drops `stage` pencil and planning, and the pencil and private layers. Production and Unavailable stay. Cancelled stays in the array for the C0 footer; it is not painted here.
+2. **The Guest page branch and `loadPublicSpaceWindow` both call it.** Browsing months uses the same filter as the first render.
+3. **Do not declare C2–C4 lanes.** `pencilLane`, `planningLane`, and `productionLane` stay on LIVE-416 through LIVE-418. Do not paint `cancelledCellFooter` (LIVE-414).
+
+**Rejected.** Putting Guest through the Admin board. Hiding cancelled entirely. Folding C0 paint into this PR.
+
+**Consequences.** A later public-window change that adds staged entries still drops pencil and planning. C0 can add the footer without re-homing the feed.
+
+**Rows.** LIVE-419.
