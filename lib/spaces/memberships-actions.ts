@@ -80,7 +80,7 @@ export async function startSpaceMembershipCheckout(
   const memberId = await getMyProfileId()
   if (!memberId) return fail('Not signed in')
   // Decided on the SERVER, before a session exists, so a deployment with no publishable key never
-  // mints an elements session nothing could render (CHECKOUT-HANDOFF §3). `forceHosted` is the
+  // mints an elements session nothing could render (docs/CHECKOUT.md §3). `forceHosted` is the
   // control's last line of defence and is load-bearing: without it a failed mount asks for the same
   // elements session again, finds no url, and dead-ends the buyer.
   const ui = opts.forceHosted ? 'hosted' : onPageCheckoutAvailable() ? 'elements' : 'hosted'
@@ -93,7 +93,7 @@ export async function startSpaceMembershipCheckout(
 }
 
 /**
- * Settle an on-page membership join from its checkout session id (CHECKOUT-HANDOFF §6).
+ * Settle an on-page membership join from its checkout session id (docs/CHECKOUT.md §3).
  *
  * authz-ok: a session gate is impossible here, because the id is the only thing the buyer's tab
  * holds and the recorder is the authority. recordMembershipFromSessionId re-fetches the session from
