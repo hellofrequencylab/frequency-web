@@ -45396,7 +45396,7 @@ fields that author it, both Wave 3.
 
 ## ADR-1402: Lock the day-key `award_gems_atomic` overload to service_role
 
-**Status:** Accepted · corroborated by `supabase/migrations/20270345006000_award_gems_atomic_lock_day_key_overload.sql`
+**Status:** Accepted · corroborated by `supabase/migrations/20260918235156_award_gems_atomic_lock_day_key_overload.sql` (recovered onto `main` in #2683 under the wall-clock ledger stamp; same grant SQL)
 **Context:** Migration `20270345001200` added `_day_key` and `_timezone` to `award_gems_atomic`.
 That new signature is a second overload. Postgres grants `EXECUTE` to `PUBLIC` on a new function,
 so the day-key form was callable by `anon` / `authenticated` even though the original 5-arg form
