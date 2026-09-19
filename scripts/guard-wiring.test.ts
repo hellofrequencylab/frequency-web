@@ -205,6 +205,11 @@ const VITEST_ENFORCED: Record<string, string> = {
   // flex-1 / flex-col / flex-wrap — the three tokens whose misreading as `display: flex` made the
   // FIRST version of this audit report all six broken files as fine.
   'check:link-truncate': 'scripts/check-link-truncate.test.ts',
+  // Added 2026-09-19 (HYG-101, ADR-1420). Residual admin actions without parseInput,
+  // frozen as a shrink-only baseline. Source-only, so vitest is its home by the rule
+  // above. The sibling test drives every arm against fixtures that must FAIL, plus
+  // the real tree, so the freeze cannot go quietly vacuous.
+  'check:parse-input': 'scripts/check-parse-input.test.ts',
 }
 
 function packageScripts(): Record<string, string> {

@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { logAdminAction } from '@/lib/admin/audit'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { setSpaceBetaPriceGrant, readSpaceBetaPriceGrant } from '@/lib/billing/space-beta-grant'
+import { parseInput, z, uuid } from '@/lib/validation'
 
 // THE PRIVATE BETA PRICE GRANT — the staff write (ADR-1061), behind the "Beta price grant" section
 // on /admin/spaces/[id]. The owner closed the beta window (ADR-1060) but had already offered the
@@ -35,25 +36,32 @@ const ADMIN_PATH = '/admin/spaces'
  */
 export async function setBetaPriceGrantAction(spaceId: string, granted: boolean): Promise<ActionResult> {
   const { profileId } = await requireAdmin('janitor')
-  if (!spaceId) return fail('We could not find that space.')
+  let parsed: { spaceId: string; granted: boolean }
+  try {
+    parsed = parseInput(z.object({ spaceId: uuid, granted: z.boolean() }), { spaceId, granted })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'We could not find that space.')
+  }
+  const id = parsed.spaceId
+  const on = parsed.granted
 
   // Read first, so the audit entry records the transition rather than just the new value, and so a
   // no-op flip is visible as one. A read we could not make does not block the write (the write does
   // its own error reporting); it just leaves `from` unknown in the ledger.
-  const before = await readSpaceBetaPriceGrant(spaceId)
+  const before = await readSpaceBetaPriceGrant(id)
   const from = before.kind === 'ok' ? before.grant.granted : null
 
-  const result = await setSpaceBetaPriceGrant(spaceId, granted, profileId)
+  const result = await setSpaceBetaPriceGrant(id, on, profileId)
   if (!result.ok) return fail(result.error)
 
   await logAdminAction({
     actorId: profileId,
     action: 'space.beta_price_grant',
     targetType: 'space',
-    targetId: spaceId,
-    detail: { from, to: granted },
+    targetId: id,
+    detail: { from, to: on },
   })
-  revalidatePath(`${ADMIN_PATH}/${spaceId}`)
+  revalidatePath(`${ADMIN_PATH}/${id}`)
   revalidatePath(ADMIN_PATH)
   return ok()
 }

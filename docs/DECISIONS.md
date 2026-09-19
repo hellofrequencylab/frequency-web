@@ -45799,3 +45799,22 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 
 **Rows.** LIVE-359.
 
+## ADR-1420: Residual admin actions freeze behind a parseInput ratchet (HYG-101)
+
+**Status:** Accepted · 2026-09-19 · HYG-101 · corroborated by `scripts/check-parse-input.mjs`, `scripts/parse-input-baseline.txt`, `lib/validation.ts`
+
+**Context.** Server actions receive untrusted client input typed only by assumption. `parseInput` is the parse-don't-validate seam (ADR-246 Phase 3). Authz is already gated (`check:authz`). OPEN-THREADS B8 left a residual: admin mutations that still trusted their TypeScript types. Re-tested 2026-09-19: 77 `'use server'` files under `app/(main)/admin`, 2 already parsed, 75 residual files, 347 unparsed exports. The filed "~77" was the file count. Converting every export in one PR trips the 40-file gate and is not the close the row named.
+
+**Decision.**
+
+1. **Freeze, then shrink.** `scripts/check-parse-input.mjs` lists `'use server'` files under `app/(main)/admin` whose exported action bodies never call `parseInput`. That set is frozen in `scripts/parse-input-baseline.txt`. A new residual file fails. A baseline file that now parses, or whose path is gone, fails until it is removed, so a stale path cannot grant amnesty to a future file.
+2. **`// parse-ok:` is per-export.** Same attachment rule as `// authz-ok:`: the comment block directly above the export. A file-level note does not exempt anything.
+3. **Convert the keys first.** Payments, SMS, community feed-reach, the roles grid, the beta price grant, nonprofit verification, and Space lifecycle / ownership now parse. 9 files parse; 68 remain on the freeze.
+4. **Vitest is the home.** `pnpm check:parse-input` stays as the local command. Enforcement is `scripts/check-parse-input.test.ts` in `VITEST_ENFORCED`, because the guard only reads source.
+
+**Rejected.** Closing the row by emptying the list in one PR (347 exports). Growing an allowlist without a shrink-only compare (the stale-path trap named in `check:authz`). Treating a comment that names `parseInput` as a parse.
+
+**Consequences.** A new admin action without `parseInput` fails the `test` job. Converting a frozen file is `--update` plus the conversion, and the header stays. Authz is still the door.
+
+**Rows.** HYG-101.
+

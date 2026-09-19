@@ -1,0 +1,75 @@
+# check:parse-input baseline — admin `'use server'` files that still export a mutation
+# without parseInput (HYG-101, ADR-1420). Frozen residual: a NEW file fails CI unless
+# it parses (or carries `// parse-ok:` on the export). A baseline file that now parses
+# or is gone fails until it is removed, so this list only shrinks and a stale path
+# cannot grant amnesty to a future file. Regenerate with
+# `node scripts/check-parse-input.mjs --update` after converting a file. Do not add
+# entries by hand without a reason the reviewer can see.
+app/(main)/admin/actions.ts
+app/(main)/admin/ai/actions.ts
+app/(main)/admin/appearance/actions.ts
+app/(main)/admin/business-seeder/actions.ts
+app/(main)/admin/circle-templates/actions.ts
+app/(main)/admin/content/actions.ts
+app/(main)/admin/crm/actions.ts
+app/(main)/admin/crm/contacts/actions.ts
+app/(main)/admin/crm/conversations/actions.ts
+app/(main)/admin/crm/leads/actions.ts
+app/(main)/admin/crm/marketing/actions.ts
+app/(main)/admin/crm/members/member-detail-actions.ts
+app/(main)/admin/crm/relationship-actions.ts
+app/(main)/admin/crm/tasks/actions.ts
+app/(main)/admin/crm/today/actions.ts
+app/(main)/admin/dash-order-actions.ts
+app/(main)/admin/demo/actions.ts
+app/(main)/admin/demo/studio/actions.ts
+app/(main)/admin/elements/actions.ts
+app/(main)/admin/email-studio/actions.ts
+app/(main)/admin/email-studio/panel-actions.ts
+app/(main)/admin/email-studio/send-actions.ts
+app/(main)/admin/event-seeder/actions.ts
+app/(main)/admin/events/actions.ts
+app/(main)/admin/events/posted-actions.ts
+app/(main)/admin/events/series-actions.ts
+app/(main)/admin/gamification/reward-actions.ts
+app/(main)/admin/gamification/season-actions.ts
+app/(main)/admin/growth/funnels/actions.ts
+app/(main)/admin/growth/links/actions.ts
+app/(main)/admin/import/actions.ts
+app/(main)/admin/insights/actions.ts
+app/(main)/admin/library/actions.ts
+app/(main)/admin/library/collections-actions.ts
+app/(main)/admin/library/recraft-actions.ts
+app/(main)/admin/library/replace-actions.ts
+app/(main)/admin/library/sequence-actions.ts
+app/(main)/admin/library/vera-actions.ts
+app/(main)/admin/listing-seeder/actions.ts
+app/(main)/admin/marketing/agent/actions.ts
+app/(main)/admin/marketing/automations/actions.ts
+app/(main)/admin/marketing/deliverability/actions.ts
+app/(main)/admin/marketing/funnels/actions.ts
+app/(main)/admin/marketing/funnels/variants/actions.ts
+app/(main)/admin/marketing/messaging/actions.ts
+app/(main)/admin/marketing/messaging/new/actions.ts
+app/(main)/admin/marketing/nurture/actions.ts
+app/(main)/admin/marketplace/actions.ts
+app/(main)/admin/onboarding-controls/actions.ts
+app/(main)/admin/page-layout/actions.ts
+app/(main)/admin/page-layout/app-actions.ts
+app/(main)/admin/personas/actions.ts
+app/(main)/admin/pricing/actions.ts
+app/(main)/admin/qr/actions.ts
+app/(main)/admin/qr/campaign-actions.ts
+app/(main)/admin/qr/link-actions.ts
+app/(main)/admin/qr/marketing-actions.ts
+app/(main)/admin/qr/member-actions.ts
+app/(main)/admin/segments/actions.ts
+app/(main)/admin/spaces/[id]/actions.ts
+app/(main)/admin/spaces/[id]/billing-agreement-actions.ts
+app/(main)/admin/spaces/actions.ts
+app/(main)/admin/spaces/defaults/actions.ts
+app/(main)/admin/store/actions.ts
+app/(main)/admin/studio/actions.ts
+app/(main)/admin/support/actions.ts
+app/(main)/admin/vera/actions.ts
+app/(main)/admin/walkthroughs/actions.ts
