@@ -65,7 +65,6 @@
           "next": "LIVE-412",
           "order": [
             "SCAN-637",
-            "SCAN-640",
             "LIVE-412"
           ],
           "leave": [
@@ -118,7 +117,6 @@
             "name": "Public chrome + kit",
             "owner": "scanAgent",
             "ids": [
-              "SCAN-640",
               "LIVE-412"
             ]
           },
@@ -187,7 +185,6 @@
         {
           "name": "W0d \u00b7 P3 \u2014 craft: shell split, hex, parked niceties. 12 visitors / 18 pageviews in 31 days: the funnel, not the page speed, is the constraint.",
           "ids": [
-            "SCAN-640",
             "LIVE-412",
             "LIVE-221",
             "LIVE-273",
@@ -14792,7 +14789,7 @@
     {
       "id": "SCAN-640",
       "title": "page_settings_events_backup_20260910 is still a public table with no primary key",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "hygiene",
       "size": "XS",
@@ -14800,12 +14797,13 @@
         "file": "supabase/migrations/20270345003500_page_settings_events_backup_rls.sql",
         "ref": "meta-scan 2026-09-19"
       },
-      "detail": "FOUND 2026-09-19. Advisor no_primary_key INFO on public.page_settings_events_backup_20260910, created by the ADR-1316 events page-settings cleanup. RLS was enabled later so it is not an open read. Drop only after a production count is 0 or the rows are archived off-public. Draft-and-approve; do not drop from an agent session.",
+      "detail": "FOUND 2026-09-19. Advisor no_primary_key INFO on public.page_settings_events_backup_20260910, created by the ADR-1316 events page-settings cleanup. RLS was enabled later so it is not an open read. Drop only after a production count is 0 or the rows are archived off-public. Draft-and-approve; do not drop from an agent session.\n\nCLOSED 2026-09-19 (ADR-1461). PREMISE RE-TESTED FIRST: no later migration mentioned the table; no migration added a primary key; HYG-086 still dates the DROP for on or after 2026-10-10 (21 days out). Production count was not readable from this session. Dropping now would throw away the only way back for the 21 retired /events page_settings rows. Re-pointed: staged docs/proposals/SCAN-640-backup-table-primary-key.sql (source key space_id+route, or a surrogate identity if those keys are dirty). Did not drop. Did not apply SQL. Did not leave the file in supabase/migrations/ (ADR-1007). The Oct 10 drop stays on HYG-086.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e 'const fs=require(\"fs\");const files=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\"));const drop=files.some(f=>/drop table if exists public.page_settings_events_backup_20260910/i.test(fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\")));process.exit(drop?0:1)'",
-        "note": "Fails until a later migration drops the backup table."
-      }
+        "cmd": "node -e 'const fs=require(\"fs\");const staged=fs.existsSync(\"docs/proposals/SCAN-640-backup-table-primary-key.sql\");const files=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\"));const hit=files.some(f=>{const s=fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\");return /page_settings_events_backup_20260910/.test(s)&&(/drop table if exists public.page_settings_events_backup_20260910/i.test(s)||/add primary key/i.test(s)||/generated always as identity primary key/i.test(s))});process.exit(staged||hit?0:1)'",
+        "note": "Passes when the PK is staged at docs/proposals (ADR-1056) or a later migration adds a key or drop. Unapplied SQL cannot sit in supabase/migrations/ (ADR-1007)."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "SCAN-641",
