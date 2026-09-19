@@ -167,8 +167,7 @@
           "ids": [
             "LIVE-186",
             "LIVE-213",
-            "LIVE-414",
-            "LIVE-415"
+            "LIVE-414"
           ]
         },
         {
@@ -14853,20 +14852,21 @@
     {
       "id": "LIVE-415",
       "title": "Calendar C1: the Admin calendar is a mini production-management console",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
       "source": {
         "file": "app/(main)/spaces/[slug]/(profile)/calendar/page.tsx",
-        "ref": "ADR-1389, ADR-1445"
+        "ref": "ADR-1389, ADR-1445, ADR-1450"
       },
-      "detail": "Owner 2026-09-19: Admin is not a second copy of the guest month. It is a small PM console: what is pencilled, in planning, in production, and cancelled, with the month grid as the date map. StaffCalendar today is the settings drawer. C1 is the operator list. Builds after C0 (LIVE-414).",
+      "detail": "Owner 2026-09-19: Admin is not a second copy of the guest month. It is a small PM console: what is pencilled, in planning, in production, and cancelled, with the month grid as the date map. StaffCalendar today is the settings drawer. C1 is the operator list. Builds after C0 (LIVE-414).\n\nWHAT SHIPPED. Admin mounts CalendarPmConsole. The board is operatorListItems (lib/calendar/pm-console.ts): Pencil, Planning, Production, Cancelled, plus live and draft events. Private entries and Unavailable stay on the date map. StaffCalendar is the child date map and the settings drawer. C2–C4 own the named lanes.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");if(!fs.existsSync(\"components/spaces/calendar-pm-console.tsx\"))process.exit(1);const s=fs.readFileSync(\"app/(main)/spaces/[slug]/(profile)/calendar/page.tsx\",\"utf8\");if(!s.includes(\"CalendarPmConsole\"))process.exit(1)'",
-        "note": "Fails until Admin mounts CalendarPmConsole."
-      }
+        "note": "Passes when Admin mounts CalendarPmConsole. Written 2026-09-19."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-416",

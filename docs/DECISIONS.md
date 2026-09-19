@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1446**. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1432 is LIVE-246.
+tree as of this index: **ADR-1450**. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling.
 
 | Theme | Start here |
 |---|---|
@@ -44618,8 +44618,10 @@ planning side, only published events.
    AND chose it. A member typing any URL gets Guest, and the private layer is additionally locked by RLS.
    Links rather than client state also make a Guest view reloadable and shareable.
 3. **One loader for the team calendar.** `loadAdminCalendar` is extracted from the settings console and used
-   by both surfaces, so the tab's Admin mode and the console can never disagree. Admin mode renders the same
-   `StaffCalendar`, drawer included; the console keeps the day-note field and the manage table.
+   by both surfaces, so the tab's Admin mode and the console can never disagree. Admin mode used to render the
+   same `StaffCalendar`, drawer included. **Amended by [ADR-1450](DECISIONS.md):** the tab's Admin body is
+   `CalendarPmConsole`; `StaffCalendar` stays the date map and the settings drawer. The console keeps the
+   day-note field and the manage table.
 
 **Rejected.** A client-side toggle over data already sent to the browser (it would ship the private layer to
 anyone who could open devtools on a page they reached as a member); a separate admin route (the owner asked
@@ -46351,3 +46353,21 @@ Premise re-tested 2026-09-19 against the tree, not the banners:
 **Consequences.** `pnpm check:one-list` sees two fewer frozen files. `check:docs-links` no longer resolves either path. Agents that used to open BUILD-SEQUENCE as a front door open `pnpm backlog`. Specs that still name leftover depth or importer work keep those names; they do not become a second list.
 
 **Rows.** HYG-104.
+
+## ADR-1450: Admin Calendar mounts CalendarPmConsole (LIVE-415)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-415` · numbered **1450** (1447 is HYG-104 on main; 1448–1449 are claimed on open PRs) · **Amends** [ADR-1389](DECISIONS.md) (Admin body) · implements C1 of [ADR-1445](DECISIONS.md) · corroborated by `components/spaces/calendar-pm-console.tsx`, `lib/calendar/pm-console.ts`, `app/(main)/spaces/[slug]/(profile)/calendar/page.tsx`
+
+**Context.** ADR-1389 put the same `StaffCalendar` on the Calendar tab's Admin mode as the settings console. ADR-1445 then ruled Admin is a mini production-management console: an operator list of Pencil, Planning, Production, and Cancelled, with the month as the date map. C0 (LIVE-414) is the public paint and is a separate PR. C1 is the Admin mount.
+
+**Decision.**
+
+1. **Admin mounts `CalendarPmConsole`.** The board is `operatorListItems`: staged entries plus live and draft events. Past uncancelled events, Private entries, and Unavailable time stay off the list.
+2. **`StaffCalendar` is the date map.** It remains the child of the console and the settings drawer. It is not the Admin page body.
+3. **C2–C4 own the named lanes.** This change does not declare `pencilLane`, `planningLane`, or `productionLane`.
+
+**Rejected.** Restyling the guest month and calling it Admin. Closing C2–C4 in the same PR. Folding Guest through `guestLiveItems` (LIVE-419).
+
+**Consequences.** The Calendar tab's Admin mode leads with the board. The settings console is unchanged. LIVE-416 starts the pencil lane.
+
+**Rows.** LIVE-415.
