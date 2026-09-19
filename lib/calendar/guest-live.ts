@@ -1,8 +1,8 @@
 import type { CalendarEvent } from './item'
 
-// THE PUBLIC / GUEST FEED (LIVE-414, ADR-1445). Guest and ordinary members see live
-// gatherings plus cancelled footer text. Pencil and planning stay off this feed.
-// Production is the live show. LIVE-419 will point the Guest branch at this helper.
+// THE PUBLIC / GUEST FEED (LIVE-414, LIVE-419, ADR-1445, ADR-1457). Guest and ordinary
+// members see live gatherings plus cancelled footer text. Pencil and planning stay off
+// this feed. Production is the live show. The Calendar tab Guest branch calls guestLiveItems.
 
 /** Stages the guest calendar never shows. Named so C5 can exclude them by the same words. */
 export const GUEST_HIDDEN_STAGES = ['pencil', 'planning'] as const
