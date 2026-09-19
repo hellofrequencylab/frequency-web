@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1445**. 1436 is HYG-068 on another open branch. 1437 is SCAN-637 on main. 1438 is LIVE-228 on main. 1439 is LIVE-242 on main.
+tree as of this index: **ADR-1441**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
 
 | Theme | Start here |
 |---|---|
@@ -39544,6 +39544,9 @@ per-worktree is a property of the harness. `LIVE-306` carries it as `manual`.
 
 **Rows.** LIVE-306 (opened, not closed).
 
+**Amended by [ADR-1441](DECISIONS.md).** The first `pnpm lint` now installs when local ESLint is
+missing; LIVE-306 is closed.
+
 ## ADR-1320: ACCEPTED — the help-autodoc bot must quote what it read, or its finding is demoted (2026-09-10)
 
 **Context.** The bot posts an advisory checklist of help articles a diff may have invalidated. Three
@@ -46176,22 +46179,28 @@ Premise re-tested 2026-09-19: the discover twin still pointed canonical at `/eve
 
 **Rows.** SCAN-636.
 
-## ADR-1445: Cover the six new Space FKs and wrap the two read-own initplans (SCAN-638)
+## ADR-1441: The first `pnpm lint` in a worktree installs this repo's ESLint (LIVE-306)
 
-**Status:** Accepted · 2026-09-19 · backlog `SCAN-638` · numbered **1445** because **1440** is SCAN-636 on main and HYG-078 on another branch already claimed the next number · corroborated by `supabase/migrations/20270345006500_advisor_space_fk_indexes_and_initplan.sql`
+**Status:** Accepted · 2026-09-19 · **Amends** [ADR-1319](DECISIONS.md) (the refusal stays; missing local ESLint now installs first) · backlog `LIVE-306` · numbered **1441** because **1440** is SCAN-636 on main · corroborated by `scripts/preflight-lint.mjs` (`ensureLintToolchain`) and `.claude/hooks/session-start.sh` (`git rev-parse --show-toplevel`)
 
-**Context.** The 2026-08-31 advisor pass recorded zero `unindexed_foreign_keys` and zero `auth_rls_initplan`. The 2026-09-19 meta-scan found six new FKs and two read-own policies that landed with Space Circles and entitlements. Premise re-tested 2026-09-19: `entitlement_grants read own` and `space_circle_optouts read own` still called `auth.uid()` bare; no later wrap existed; the six named columns still lacked a leading index. `space_benefit_redemptions_cap_idx` leads with `benefit_id`. The `space_circle_optouts` primary key leads with `space_id`. `spatial_ref_sys` remains PostGIS (OWN-006).
+**Context.** ADR-1319 made `prelint` refuse when `./node_modules/.bin/eslint` is missing or the wrong major, so a worktree no longer died inside `eslint-plugin-react` with a message that named a React rule. The row stayed open for the environmental half: a `git worktree` never inherits `node_modules`, and SessionStart installed only at the script's repo root.
+
+Premise re-tested 2026-09-19 on this tree, and it held.
+
+1. `.claude/hooks/session-start.sh` still did `cd "$(dirname "$0")/../.."`. That is the script's checkout, not `git rev-parse --show-toplevel`.
+2. `preflight-lint.mjs` still only refused. It named `pnpm install --frozen-lockfile` and did not run it.
+3. This cloud checkout started with no `node_modules`. The first `pnpm lint` here would have been the same trap.
+
+The harness can still create a bare worktree. That is not repo-observable. What is repo-observable is what `pnpm lint` does next.
 
 **Decision.**
 
-1. **One later migration, not a rewrite of the creating files.** Fresh `db reset` still plays 20270345002800 and 20270345005800 as applied, then this file corrects them. Prod that already ran those files gets the same correction on apply.
-2. **Wrap `auth.uid()` as `(select auth.uid())` on the two read-own policies.** Predicate otherwise identical. Same initplan form as 20260615200000 / 20261104000000.
-3. **Covering btree on each named FK column.** `entitlement_grants.space_id`, `space_benefit_redemptions.member_profile_id`, `space_calendar_day_notes.created_by`, `space_calendar_entries.created_by`, `space_circle_optouts.profile_id`, `space_donations.ask_id`.
-4. **Do not apply from the authoring session.** Ship the file. After merge: `execute_sql` for the DDL, then insert `supabase_migrations.schema_migrations` at `20270345006500`. Never `apply_migration` or `db push`. Leave `spatial_ref_sys` alone.
+1. **`ensureLintToolchain` installs, then re-checks.** When the directory has `pnpm-lock.yaml` and no local ESLint, `prelint` runs `pnpm install --frozen-lockfile` and checks again. A directory without this repo's lockfile still refuses without spawning.
+2. **A failed install and a major mismatch still refuse.** Wrong-major is not "never installed". Reinstall stays a named human step.
+3. **SessionStart follows the session worktree.** `git rev-parse --show-toplevel` is the install root; the script path is the fallback when cwd is not a git tree.
 
-**Rejected.** Editing the already-applied creating files as the only close (a fresh DB would be born correct, an already-applied DB would not). `CREATE INDEX CONCURRENTLY` (cannot run inside the migration transaction). Enabling RLS on `spatial_ref_sys`.
+**Rejected.** Symlinking `node_modules` to the parent checkout (faster, and older worktrees already had that symlink, but a lockfile drift would load the wrong tree). Auto-fixing a major mismatch (that install is stale on purpose until someone deletes it). Teaching the Cursor harness; this PR cannot.
 
-**Consequences.** A later policy that drops the wrap fails the SCAN-638 probe. Advisors on production are the index proof after the ledger insert. Version `20270345006300` is reserved by HYG-078 on another branch.
+**Consequences.** The first `pnpm lint` in a new worktree installs this repo's ESLint 9, or refuses with the install error, and does not fall through to a global ESLint 10. CI already installs, so the new branch is a no-op there. The probe calls `ensureLintToolchain` with a missing bin and a lockfile and requires `attemptedInstall` plus `ok`.
 
-**Rows.** SCAN-638.
-
+**Rows.** LIVE-306.

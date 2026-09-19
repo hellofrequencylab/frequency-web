@@ -204,8 +204,7 @@
             "LIVE-260",
             "PROG-R10",
             "LIVE-263",
-            "PROG-R11",
-            "LIVE-306"
+            "PROG-R11"
           ]
         },
         {
@@ -12155,15 +12154,16 @@
     {
       "id": "LIVE-306",
       "title": "An agent worktree starts with no node_modules, so its first pnpm lint runs the wrong ESLint",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "live",
-      "detail": "MEASURED 2026-09-10, and it cost three sessions before anyone ran `eslint --version`.\n\n`pnpm run` prepends exactly ONE entry to PATH: the invoking directory's RELATIVE `./node_modules/.bin`. It does NOT add an ancestor package's bin dir (counted: zero occurrences of the parent repo's). A `git worktree` never inherits node_modules, and .claude/hooks/session-start.sh installs only in the root it is invoked at. So a subagent worktree starts uninstalled, `pnpm lint` falls through to the machine global ESLint 10.1.0 against a repo pinning ^9, and it dies inside eslint-plugin-react with \"contextOrFilename.getFilename is not a function\" - a message naming a React rule and nothing about the cause.\n\n\ud83d\udd34 THE COST WAS NOT THE CRASH, IT WAS THE MISATTRIBUTION. Two agents reported \"the repo pins the wrong ESLint\" and it reached a briefing, and a third repeated it three times including in a PR body, before anyone measured. BOTH readings were true of different directories: in the main checkout `pnpm lint` exits 0 on 4,744 files in 175s. Worktrees are this repo's own documented parallel-agent practice, so this is the default path, not an edge.\n\nTHE REPO HALF IS DONE (ADR-1319): `prelint` now refuses first and names the fix, so the failure is legible instead of a React stack trace. THE ENVIRONMENTAL HALF IS NOT, and it is not repo-observable: whether the harness can install per-worktree is a property of the harness. Until it can, every worktree needs a manual `pnpm install --frozen-lockfile` before lint or tests, which docs/WORKFLOW.md now says.",
+      "detail": "MEASURED 2026-09-10, and it cost three sessions before anyone ran `eslint --version`.\n\n`pnpm run` prepends exactly ONE entry to PATH: the invoking directory's RELATIVE `./node_modules/.bin`. It does NOT add an ancestor package's bin dir (counted: zero occurrences of the parent repo's). A `git worktree` never inherits node_modules, and .claude/hooks/session-start.sh installs only in the root it is invoked at. So a subagent worktree starts uninstalled, `pnpm lint` falls through to the machine global ESLint 10.1.0 against a repo pinning ^9, and it dies inside eslint-plugin-react with \"contextOrFilename.getFilename is not a function\" - a message naming a React rule and nothing about the cause.\n\n\ud83d\udd34 THE COST WAS NOT THE CRASH, IT WAS THE MISATTRIBUTION. Two agents reported \"the repo pins the wrong ESLint\" and it reached a briefing, and a third repeated it three times including in a PR body, before anyone measured. BOTH readings were true of different directories: in the main checkout `pnpm lint` exits 0 on 4,744 files in 175s. Worktrees are this repo's own documented parallel-agent practice, so this is the default path, not an edge.\n\nTHE REPO HALF IS DONE (ADR-1319): `prelint` now refuses first and names the fix, so the failure is legible instead of a React stack trace. THE ENVIRONMENTAL HALF IS NOT, and it is not repo-observable: whether the harness can install per-worktree is a property of the harness. Until it can, every worktree needs a manual `pnpm install --frozen-lockfile` before lint or tests, which docs/WORKFLOW.md now says.\n\nCLOSED 2026-09-19 (ADR-1441). PREMISE RE-TESTED FIRST, and it held: session-start.sh still did `cd` to dirname $0/../.. (the script's repo, not the session worktree); prelint still only refused; this cloud checkout started with no node_modules. The repo half is now the install: ensureLintToolchain runs pnpm install --frozen-lockfile when the lockfile is present and local ESLint is missing, then re-checks. Session-start follows git rev-parse --show-toplevel. A failed install and a major mismatch still refuse. The harness can still create a bare worktree; the first pnpm lint there no longer falls through to a foreign ESLint.",
       "verify": {
-        "kind": "manual",
-        "evidence": "RE-MEASURED 2026-09-15 and the premise HELD. Three worktrees the Agent tool created minutes earlier (06:56:36Z, 06:57:09Z, 06:57:55Z) each had NO node_modules at all, and in one of them `pnpm exec eslint --version` read v10.1.0 against a repo pinning ^9, with `pnpm run prelint` refusing and naming the fix (ADR-1319 working as designed). The seven OLDER worktrees carry a node_modules SYMLINK to the parent repo and read v9.39.4, which is why sampling an old worktree reads as though the harness now installs per-worktree. It does not; something writes the symlink after creation. Measuring an old worktree measures the wrong moment, and that misattribution is this row\u2019s own subject.",
-        "checked": "2026-09-15"
-      }
+        "kind": "cmd",
+        "cmd": "node --input-type=module -e 'import { ensureLintToolchain } from \"./scripts/preflight-lint.mjs\"; import { readFileSync } from \"node:fs\"; import { join } from \"node:path\"; let installed = false; const r = ensureLintToolchain({ cwd: \"/tmp/worktree\", declaredRange: \"^9\", exists: (p) => p.endsWith(\"pnpm-lock.yaml\") || (installed && p.endsWith(join(\"node_modules\", \".bin\", \"eslint\"))), readVersion: () => installed ? \"9.39.4\" : \"\", install: () => { installed = true; return { ok: true, output: \"ok\" }; } }); if (!r.ok || !r.attemptedInstall) { console.error(\"ensureLintToolchain did not install then pass\"); process.exit(1) } const h = readFileSync(\".claude/hooks/session-start.sh\", \"utf8\"); if (!h.includes(\"show-toplevel\")) { console.error(\"session-start still ignores the session worktree\"); process.exit(1) } console.error(\"LIVE-306 ok\")'",
+        "note": "Passes when a missing local ESLint with this repo's lockfile installs and then passes, and session-start follows git show-toplevel. Written 2026-09-19."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-307",
