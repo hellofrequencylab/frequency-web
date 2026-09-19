@@ -101,3 +101,34 @@ export async function journeySlugsByPlanId(planIds: string[]): Promise<Map<strin
   const { data } = await createAdminClient().from('journey_plans').select('id, slug').in('id', ids)
   return new Map(((data ?? []) as { id: string; slug: string }[]).map((row) => [row.id, row.slug]))
 }
+
+/** Every commerce product row ever attached to this Journey, live AND archived.
+ *
+ *  A re-price archives the product and writes a new one (ADR-1397). Reviews and listing Q&A stay
+ *  on the old uuid unless the reader asks for this set (LIVE-392). Empty when the Journey has
+ *  never been priced. */
+export async function productIdsForJourneyPlan(planId: string): Promise<string[]> {
+  if (!planId) return []
+  const { data } = await createAdminClient()
+    .from('commerce_products')
+    .select('id')
+    .eq('journey_plan_id', planId)
+  return ((data ?? []) as { id?: unknown }[]).map((row) => String(row.id)).filter(Boolean)
+}
+
+/** The product ids a review or Q&A thread should cover for this listing.
+ *
+ *  A non-Journey product is itself. A Journey product expands to every row that shares its
+ *  `journey_plan_id`, so a re-price does not drop the proof. Fail-safe to the id that was asked. */
+export async function productIdsSharingJourney(productId: string): Promise<string[]> {
+  if (!productId) return []
+  const { data: row } = await createAdminClient()
+    .from('commerce_products')
+    .select('id, journey_plan_id')
+    .eq('id', productId)
+    .maybeSingle()
+  const planId = (row as { journey_plan_id?: string | null } | null)?.journey_plan_id
+  if (!planId) return [productId]
+  const ids = await productIdsForJourneyPlan(planId)
+  return ids.length > 0 ? ids : [productId]
+}

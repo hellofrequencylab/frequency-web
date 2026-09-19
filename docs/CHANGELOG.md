@@ -12,6 +12,10 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **A Journey keeps its reviews when the price changes**: stars and questions stay on the Journey,
+  not on the old product page. Changing the price no longer wipes the proof a buyer already left.
+  You read them on the Journey itself.
+
 - **A Journey has one sales page now**: cards in a Space Shop and in the Market open the Journey
   itself, not a separate product page. That page is the pitch and the paywall. The course
   (`/learn`) opens after you enrol. A leftover Market link still works; it hops you across.
