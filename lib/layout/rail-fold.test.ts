@@ -183,7 +183,12 @@ describe('the control names the rail out loud', () => {
 // ── The rail menu has no horizontal rules left (owner, 2026-08-05) ─────────────────────────
 
 describe('the group dividers are gone, and SPACE took over their job', () => {
-  const code = readFileSync('components/layout/app-shell.tsx', 'utf8')
+  // LIVE-412: NavLinkList lives in app-shell-nav-list.tsx. The divider contract is the
+  // rail row renderer, so this haystack is the list plus the shell that mounts it.
+  const code = [
+    readFileSync('components/layout/app-shell.tsx', 'utf8'),
+    readFileSync('components/layout/app-shell-nav-list.tsx', 'utf8'),
+  ].join('\n')
 
   it('neither rail draws a hairline between menu groups', () => {
     // The two spellings the owner pointed at: the home anchor's trailing rule in the open rail,
