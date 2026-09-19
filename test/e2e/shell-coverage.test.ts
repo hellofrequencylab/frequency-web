@@ -428,14 +428,13 @@ describe('both e2e workflows hand the ratchets to every step that runs a suite',
   const prGate = readFileSync('.github/workflows/e2e.yml', 'utf8')
   const manual = readFileSync('.github/workflows/e2e-manual.yml', 'utf8')
 
-  it('e2e.yml: all three suite steps read both ratchets, from either tab', () => {
+  it('e2e.yml: all four suite steps read both ratchets, from either tab', () => {
     const steps = suiteSteps(prGate)
-    // Smoke + a11y, then the visual compare's TWO tiers: the blocking public tier and the
-    // advisory member-shell one (2026-09-14, see test/e2e/visual-tiers.test.ts). It was two
-    // until the compare was split. The ratchets matter MORE per tier now, not less: they are
-    // what turns "the shell could not be photographed" into a named skip instead of a silent
-    // pass, and the advisory tier is exactly where a silent pass would never be noticed.
-    expect(steps).toHaveLength(3)
+    // Smoke + a11y, then three visual tiers: blocking public, blocking member-shell
+    // (LIVE-313), and advisory live-index (LIVE-373). The ratchets matter MORE per tier
+    // now, not less: they turn "the shell could not be photographed" into a named skip
+    // instead of a silent pass.
+    expect(steps).toHaveLength(4)
     for (const step of steps) {
       expect(step).toContain('vars.PW_REQUIRE_SHELL || secrets.PW_REQUIRE_SHELL')
       expect(step).toContain('vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR')
