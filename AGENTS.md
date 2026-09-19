@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # How to read this file
 
-This is the **session index**, not a second copy of the canons. Each locked contract lives in one doc. If this file and that doc disagree, **the canon wins**, and this file gets shortened, not restated. Readings, counts, and "what shipped last week" live in PR bodies and `pnpm backlog`, never here ([ADR-1355](docs/DECISIONS.md), [ADR-1445](docs/DECISIONS.md)).
+This is the **session index**, not a second copy of the canons. Each locked contract lives in one doc. If this file and that doc disagree, **the canon wins**, and this file gets shortened, not restated. Readings, counts, and "what shipped last week" live in PR bodies and `pnpm backlog`, never here ([ADR-1355](docs/DECISIONS.md), [ADR-1446](docs/DECISIONS.md)).
 
 Orientation for a human: [`docs/START-HERE.md`](docs/START-HERE.md).
 
