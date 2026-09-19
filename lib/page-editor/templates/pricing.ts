@@ -126,9 +126,8 @@ const spaceTierCard = (t: PricingTier, i: number) => {
   }
 }
 
-// The seat add-on reads the same catalog row the /pricing extras card does, through the same
-// placeholder rule: while the owner has not set a real seat price the card says so instead of
-// printing the stand-in amount, and the day LIVE-229 clears the flag this card goes live with no edit.
+// The seat add-on reads the same catalog row the /pricing extras card does. LIVE-229 cleared the
+// placeholder, so this card publishes the catalog amount with no further edit.
 const EXTRAS = planExtras({ values: PRICING_DEFAULTS, catalog: CAT })
 const SEATS = EXTRAS.find((e) => e.key === 'seats')!
 const SEATS_PLACEHOLDER = catalogItem('operator_seat').placeholder === true

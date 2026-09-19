@@ -45736,3 +45736,25 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 
 **Rows.** LIVE-410.
 
+## ADR-1416: The operator seat is $12, and the switch is the sell gate (LIVE-229)
+
+**Status:** Accepted · 2026-09-19 · **Implements** [ADR-1294](DECISIONS.md) CORE-MODEL §5 phase 3.2 · **Amends** [ADR-803](DECISIONS.md) (the switch was the mint gate while the amount was a stand-in) · backlog `LIVE-229` · corroborated by `lib/billing/pricing-keys.ts` (`operator_seat` at 1200 cents, no `placeholder`)
+
+**Context.** The seat machinery has been built since ADR-799: catalog item, loadout line, webhook reconciler, seat editor, invite check. The catalog shipped `placeholder: true` at a $9 stand-in so a routine sync could never mint a price the owner had not approved (ADR-362 / ADR-803). CORE-MODEL named $12 as the live amount. On 2026-08-19 the activation switch was flipped while the stand-in was still the code amount, and the first live catalog sync minted four Stripe prices at $9/$90. Stripe prices are immutable; they could only be archived. `setOperatorSeatActive(true)` then refused without an operator override.
+
+Re-tested 2026-09-19: `operator_seat` was still `placeholder: true` at 900 cents. `catalog_operator_seat_active` still defaulted OFF. No open PR already took this row. A real checkout still cannot mint a seat line until an operator syncs the catalog and flips the switch; that proof belongs with LIVE-234.
+
+**Decision.**
+
+1. **The catalog amount is $12/seat/mo, with no founding rate.** `amountsFromMonthly(1200, 1200)`. Yearly is two months free ($120).
+2. **`placeholder` is cleared.** A catalog sync mints the approved amount. The 2026-08-19 defect was minting a stand-in; this amount is the one ADR-811 and ADR-1294 already named.
+3. **`catalog_operator_seat_active` is the sell gate, not the mint gate.** `operatorSeatsSellable` still requires the flag AND a synced Stripe price AND `billingLive()`. The code default stays OFF. An operator flips it at `/admin/pricing` after the price exists.
+4. **The leftover guard stays for a future placeholder.** `setOperatorSeatActive(true)` still refuses if `placeholder` is put back and there is no `catalog.operator_seat` override. Turning OFF is always allowed.
+5. **Public copy reads the catalog.** `/pricing`, the comparison grid, `/llms.txt`, and the CMS pricing template publish the catalog amount instead of "owner-priced".
+
+**Rejected.** Flipping `catalog_operator_seat_active` from a migration (bypasses the audited console action). Defaulting the flag ON in code (production already has a stored row; a default would not move it, and it would hide the sell decision). Closing LIVE-234's Space-subscription loop from this PR (that is a real charge).
+
+**Consequences.** The next catalog sync mints $12/$120. Checkout still hides the seat picker until the operator flips the switch and the price id resolves. A later amount change is a new Stripe price, same as every other catalog item.
+
+**Rows.** LIVE-229.
+

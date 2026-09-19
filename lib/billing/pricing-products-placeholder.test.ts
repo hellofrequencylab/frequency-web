@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
 
-// The PURE placeholder-skip resolver behind the catalog sync (ADR-799/803). The catalog sync mints NO
-// Stripe product/price for an inert placeholder (the ABSOLUTE INVARIANT, ADR-362): the operator seat is
-// inert until its activation switch is flipped on. Only the operator seat has an activation switch; every
-// other placeholder stays inert regardless. This is the pure decision the sync feeds the live flag into.
+// The PURE placeholder-skip resolver behind the catalog sync (ADR-799/803 / ADR-1416). The catalog
+// sync mints NO Stripe product/price for an inert placeholder. LIVE-229 cleared the operator seat's
+// placeholder, so that item is never inert; only a future placeholder item (or a fake in these
+// tests) still skips. The seat switch is the sell gate, not the mint gate.
 
 import { isCatalogItemInertPlaceholder } from './pricing-products'
 import { catalogItem } from './pricing-keys'
@@ -16,14 +16,10 @@ describe('isCatalogItemInertPlaceholder', () => {
     expect(isCatalogItemInertPlaceholder(biz, true)).toBe(false)
   })
 
-  it('the operator seat is inert while its activation switch is OFF', () => {
+  it('the operator seat is no longer a placeholder, so a routine sync may mint it (LIVE-229)', () => {
     const seat = catalogItem('operator_seat')
-    expect(seat.placeholder).toBe(true)
-    expect(isCatalogItemInertPlaceholder(seat, false)).toBe(true)
-  })
-
-  it('the operator seat becomes syncable once its activation switch is ON', () => {
-    const seat = catalogItem('operator_seat')
+    expect(seat.placeholder).toBeFalsy()
+    expect(isCatalogItemInertPlaceholder(seat, false)).toBe(false)
     expect(isCatalogItemInertPlaceholder(seat, true)).toBe(false)
   })
 

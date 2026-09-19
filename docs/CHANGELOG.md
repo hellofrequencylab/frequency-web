@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **Extra operator seats have a public price.** The pricing page and the comparison grid read it from the catalog. Your first seat on a Space is still included.
+
 - **A free Space can sell a membership.** Set a tier on Offerings. The first paid join still needs payouts set up. Campaigns stay on Business.
 - **If you run one Space, a new event starts as that Space's event.** The first screen says so, and you can change it. Ticket money and the Space calendar go with it. A personal event can still be attached later under **Hosted by** in the event's settings.
 

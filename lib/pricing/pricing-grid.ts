@@ -468,8 +468,8 @@ function addonCell(addon: AddonKey, column: GridColumn, input: PricingGridInput)
 }
 
 /** Resolve the extra-operator-seats cell. Seats ride the tiers whose depth includes the `team` key
- *  (ADR-799); the per-seat amount comes from the operator-seat catalog item, and while that item is still
- *  a PLACEHOLDER the cell says so instead of publishing a price nobody has approved. */
+ *  (ADR-799); the per-seat amount comes from the operator-seat catalog item. LIVE-229 cleared the
+ *  placeholder, so a missing catalog row is the only remaining "owner-priced" path. */
 function seatsCell(column: GridColumn, input: PricingGridInput): GridCell {
   if (column.axis !== 'plan') return { kind: 'no', text: 'Not part of a member plan' }
   if (!planEntitlementKeys(column.tier as SpacePlan).includes('team')) {

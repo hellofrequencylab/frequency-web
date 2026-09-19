@@ -195,7 +195,8 @@ const FLAG_DEFAULTS: Record<PricingFlagKey, boolean> = {
   gamification_full_member: false,
   gamification_full_crew: true,
   bundle_household_enabled: false,
-  // OFF = the operator seat is a placeholder, inert until an operator activates it (ADR-362/803).
+  // OFF = checkout does not offer seats (`operatorSeatsSellable`). The catalog amount is live
+  // (LIVE-229); this switch is the sell gate, not the mint gate (ADR-803 / ADR-1416).
   catalog_operator_seat_active: false,
 }
 

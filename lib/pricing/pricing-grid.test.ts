@@ -443,9 +443,9 @@ describe('seats and the AI add-on', () => {
     }
   })
 
-  it('does not publish a per-seat price while the seat item is a placeholder', () => {
+  it('publishes the catalog per-seat price once the seat item is live (LIVE-229)', () => {
     const seats = planExtras(input).find((e) => e.key === 'seats')!
-    expect(seats.price).toBe('Owner-priced today')
+    expect(seats.price).toBe(`${formatCents(input.catalog.operator_seat.month.foundingCents)}/seat/mo`)
     expect(seats.availability).toContain('Collective')
   })
 

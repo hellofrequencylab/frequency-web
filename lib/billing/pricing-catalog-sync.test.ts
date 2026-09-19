@@ -126,9 +126,10 @@ vi.mock('@/lib/pricing/catalog-config', async (importOriginal) => {
 import { syncPricingCatalogToStripe, catalogProductMetaKey, catalogProductLabel, catalogItemHasFoundingRate } from './pricing-products'
 import { catalogItem, catalogPriceKey } from './pricing-keys'
 
-/** THE FROZEN KEY SET. Every key the catalog sync writes, byte for byte, sorted. The operator seat is a
- *  placeholder with its activation switch OFF, so it mints nothing (the ADR-362 invariant). If the
- *  product split ever moved a key, this list is what fails. */
+/** THE FROZEN KEY SET. Every key the catalog sync writes, byte for byte, sorted. The operator seat
+ *  is live at $12 (LIVE-229), so it is in this set even while `catalog_operator_seat_active` is OFF:
+ *  the switch now gates checkout, not the mint. If the product split ever moved a key, this list is
+ *  what fails. */
 const FROZEN_SYNCED_KEYS = [
   'addon_ai_month',
   'addon_ai_month_list',
@@ -150,6 +151,10 @@ const FROZEN_SYNCED_KEYS = [
   'nonprofit_seat_month_list',
   'nonprofit_seat_year',
   'nonprofit_seat_year_list',
+  'operator_seat_month',
+  'operator_seat_month_list',
+  'operator_seat_year',
+  'operator_seat_year_list',
 ]
 
 const rowFor = (key: string) => written.find((r) => r.key === key)
@@ -180,10 +185,12 @@ describe('the price KEY set is unchanged by the product split (ADR-1062)', () =>
     expect(FROZEN_SYNCED_KEYS).toContain(catalogPriceKey('business_base', 'month'))
   })
 
-  it('the operator seat mints nothing while its activation switch is OFF (ADR-362/803)', async () => {
+  it('the operator seat mints at $12 even while its sell switch is OFF (LIVE-229)', async () => {
     await syncPricingCatalogToStripe('op-1')
-    expect(written.some((r) => r.key.startsWith('operator_seat'))).toBe(false)
-    expect(store.products.some((p) => p.metadata.frequency_catalog_item === 'operator_seat')).toBe(false)
+    expect(written.some((r) => r.key.startsWith('operator_seat'))).toBe(true)
+    expect(store.products.some((p) => p.metadata.frequency_catalog_item === 'operator_seat')).toBe(true)
+    expect(priceById(rowFor('operator_seat_month')?.priceId)?.unit_amount).toBe(1200)
+    expect(priceById(rowFor('operator_seat_year')?.priceId)?.unit_amount).toBe(12000)
   })
 
   it('the PRICE metadata still carries the row key, which the webhook reads back off a subscription item', async () => {
@@ -237,7 +244,7 @@ describe('standard pricing carries no founding rate (the owner decision, ADR-106
     await syncPricingCatalogToStripe('op-1')
     // Independent / Non Profit / Vera AI ship founding == list. Minting a "(Founding rate)" product for
     // them would invent the very thing the owner asked us to remove.
-    for (const key of ['independent_base', 'nonprofit_seat', 'addon_ai'] as const) {
+    for (const key of ['independent_base', 'nonprofit_seat', 'addon_ai', 'operator_seat'] as const) {
       expect(catalogItemHasFoundingRate(catalogItem(key))).toBe(false)
       expect(store.products.some((p) => p.metadata.frequency_pricing_key === `${key}_founding`)).toBe(false)
       // Both keys still resolve, both to the one standard product.
@@ -309,9 +316,10 @@ describe('a re-sync is idempotent', () => {
     // Same keys, same products, same price ids: the second run is a pure re-resolve.
     expect(written.map((r) => `${r.key}:${r.productId}:${r.priceId}`)).toEqual(rowsAfterFirst)
     expect(second.synced.map((s) => s.key)).toEqual(first.synced.map((s) => s.key))
-    // 5 items x 2 lines... only two items carry a founding rate, so: 5 standard + 2 founding products.
-    expect(store.products).toHaveLength(6)
-    expect(store.prices).toHaveLength(20)
+    // 6 items (LIVE-229 added the operator seat). Collective is the only founding product:
+    // 6 standard + 1 founding. Each item writes 4 price keys (month/year × founding/list).
+    expect(store.products).toHaveLength(7)
+    expect(store.prices).toHaveLength(24)
   })
 
   it('a name drift on an existing product is corrected in place, never duplicated', async () => {

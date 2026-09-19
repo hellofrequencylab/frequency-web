@@ -161,7 +161,7 @@
 > **Free Space** (the first level of
 > Space) · Business $29 (the $19 Opening Beta price is CLOSED, ADR-1060) · Collective $79 (same, the
 > $49 beta price is closed) · Non Profit $39 flat ·
-> the **Vera AI** add-on +$20 (catalog key `addon_ai`) · operator seats owner-priced. **Independent
+> the **Vera AI** add-on +$20 (catalog key `addon_ai`) · operator seats $12/seat/mo (LIVE-229). **Independent
 > (~$249) is NOT listed or sold** (`plan_independent_enabled` OFF; machinery dormant, grandfathered
 > spaces keep resolving). ⚠️ "Opening Beta price" is RETIRED as a copy phrase (ADR-1060): no surface may
 > offer a beta rate, because the checkout no longer charges one.
@@ -331,11 +331,12 @@ self-serve** (the same posture as white-label setup: a high-touch path, not a ch
 and `lib/billing/operator-seats.ts` mutates the line with proration on a Space that already pays.
 Included seats come from the `space_team` meter, never a hardcoded 3.
 
-**The seat price is operator-set, and the switch is guarded.** The catalog item ships as a
-placeholder amount behind the `catalog_operator_seat_active` flag ([ADR-803](DECISIONS.md)), and
-`setOperatorSeatActive(true)` refuses while `pricing_settings` holds no `catalog.operator_seat`
-override. That guard exists because the first live catalog sync minted the $9 stand-in as a real
-Stripe price, and Stripe prices are immutable — they could only be archived, never corrected.
+**The seat price is $12/seat/mo in the catalog ([ADR-1416](DECISIONS.md), LIVE-229).** The
+`placeholder` flag is gone, so a catalog sync mints that amount. `catalog_operator_seat_active`
+still gates checkout (`operatorSeatsSellable`): flip it on after the price exists in Stripe.
+`setOperatorSeatActive(true)` still refuses if a future edit puts `placeholder` back without an
+operator override. That leftover is the 2026-08-19 guard: the first live catalog sync minted the
+$9 stand-in, and Stripe prices are immutable.
 
 ## Feature gates (data, not code branches)
 

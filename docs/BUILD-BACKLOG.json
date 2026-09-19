@@ -47,7 +47,7 @@
             "W0b"
           ],
           "next": [
-            "LIVE-229"
+            "LIVE-228"
           ],
           "leave": [
             "SCAN-636",
@@ -220,7 +220,6 @@
             "HYG-082",
             "PROG-R4",
             "LIVE-228",
-            "LIVE-229",
             "PROG-R5",
             "PROG-R6",
             "PROG-R7",
@@ -10885,7 +10884,7 @@
     {
       "id": "LIVE-229",
       "title": "Take the operator seat live at $12",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -10893,12 +10892,13 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "\u00a75"
       },
-      "detail": "The seat machinery is fully built and deliberately inert: pricing-keys.ts:490 marks operator_seat placeholder: true, so the catalog sync SKIPS it, no Stripe price is minted, and resolveLoadoutPriceId stays null. That is a good safety design - a routine sync can never mint a live seat price the owner did not approve. Clearing it is the deliberate act: set $12, remove placeholder, sync, flip catalog_operator_seat_active. lib/billing/operator-seats.ts, lib/spaces/seats.ts and space-subscription-items.ts already exist for it.",
+      "detail": "The seat machinery is fully built and deliberately inert: pricing-keys.ts:490 marks operator_seat placeholder: true, so the catalog sync SKIPS it, no Stripe price is minted, and resolveLoadoutPriceId stays null. That is a good safety design - a routine sync can never mint a live seat price the owner did not approve. Clearing it is the deliberate act: set $12, remove placeholder, sync, flip catalog_operator_seat_active. lib/billing/operator-seats.ts, lib/spaces/seats.ts and space-subscription-items.ts already exist for it.\n\nCLOSED 2026-09-19 (ADR-1416). PREMISE RE-TESTED: placeholder was still true at 900 cents; catalog_operator_seat_active still defaulted OFF; no open PR held the row. THE CODE HALF: catalog is amountsFromMonthly(1200, 1200) with no placeholder, so a catalog sync mints the approved $12. Public copy (/pricing, the grid, /llms.txt, the CMS template) reads that amount instead of owner-priced. THE SWITCH IS THE SELL GATE, not the mint gate: operatorSeatsSellable still needs catalog_operator_seat_active AND a synced Stripe price AND billingLive. The leftover setOperatorSeatActive guard still refuses if placeholder is put back without an override (the 2026-08-19 shape). A real checkout that mints a seat line is the Space-subscription loop of LIVE-234; this repo cannot produce that row.",
       "verify": {
-        "kind": "manual",
-        "evidence": "One real checkout mints a seat line item. Read space_subscription_items for the seat row.",
-        "checked": "2026-09-08"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"lib/billing/pricing-keys.ts\",\"utf8\");const i=s.indexOf(\"operator_seat:\");if(i<0){console.error(\"operator_seat missing\");process.exit(1)}const block=s.slice(i,s.indexOf(\"\\n}\",i));if(/placeholder:\\s*true/.test(block)){console.error(\"operator_seat is still a placeholder\");process.exit(1)}if(!/amountsFromMonthly\\(1200,\\s*1200\\)/.test(block)){console.error(\"operator_seat is not $12\");process.exit(1)}process.exit(0)'",
+        "note": "Passes when the catalog item is $12/seat/mo and not a placeholder. The sell switch and a real checkout are LIVE-234 / the operator console, not this row."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-230",
