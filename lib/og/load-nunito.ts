@@ -51,8 +51,8 @@ function detach(buf: Buffer): ArrayBuffer {
 // of deploy disk. @vercel/nft cannot resolve a path assembled from a variable, so it falls back to
 // globbing the deepest prefix it CAN resolve — the whole `public/fonts` directory — into every
 // function whose graph reaches this module. Measured off the real `.next` trace: 69 functions each
-// carrying all five files, including LiberationSans-Regular (410,820 bytes, which nothing in this
-// repo ever opens from disk) and the licence text. ADR-1004 is the same failure one layer up, where
+// carrying every file in the directory, including a flyer-only Regular face that no card
+// opens from disk, and the licence text. ADR-1004 is the same failure one layer up, where
 // `join(process.cwd(), ...rubricPath)` swept the repo ROOT into ~300 functions.
 //
 // Written out as literals, nft resolves each read exactly and ships these three faces and nothing

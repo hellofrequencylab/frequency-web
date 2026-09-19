@@ -7,8 +7,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { parseStyle, type QrStyle } from '@/lib/qr/style'
 import { ROLE_HIERARCHY } from '@/lib/core/roles'
-import { getEntryTemplate, type EntryTemplateId } from './templates'
-import type { FlyerSlots } from './flyer'
+import { getEntryTemplate, type EntrySlots, type EntryTemplateId } from './templates'
 
 export interface EntryPoint {
   id: string
@@ -16,7 +15,7 @@ export interface EntryPoint {
   title: string
   destination: string
   templateId: EntryTemplateId
-  flyer: FlyerSlots
+  flyer: EntrySlots
   style: QrStyle
   scans: number
 }
@@ -32,7 +31,7 @@ interface EntryRow {
   scan_count: number | null
 }
 
-function parseFlyer(raw: unknown, templateId: string | null): FlyerSlots {
+function parseFlyer(raw: unknown, templateId: string | null): EntrySlots {
   const def = getEntryTemplate(templateId).slots
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   const str = (v: unknown, fallback: string) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 160) : fallback)

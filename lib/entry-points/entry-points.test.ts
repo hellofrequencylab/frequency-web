@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { listEntryTemplates, getEntryTemplate, isEntryTemplateId } from './templates'
 import { isValidEntryDestination, entryDestinationGroups, leadFlowPath } from './destinations'
-import { buildEntryFlyerSvg } from './flyer'
 
 describe('entry-point templates', () => {
   it('exposes the five goal-typed templates', () => {
@@ -12,6 +11,11 @@ describe('entry-point templates', () => {
     expect(getEntryTemplate(null).id).toBe('event')
     expect(isEntryTemplateId('partner')).toBe(true)
     expect(isEntryTemplateId('nope')).toBe(false)
+  })
+  it('does not declare a flyer layout after LIVE-216', () => {
+    for (const t of listEntryTemplates()) {
+      expect(t).not.toHaveProperty('flyerLayout')
+    }
   })
 })
 
@@ -33,40 +37,5 @@ describe('entry destinations', () => {
     const groups = entryDestinationGroups([])
     expect(groups[0].group).toMatch(/lead flow/i)
     expect(groups[0].items.length).toBeGreaterThan(0)
-  })
-})
-
-describe('flyer composer', () => {
-  it('builds a vector SVG carrying the headline + footer and an embedded QR', () => {
-    const svg = buildEntryFlyerSvg({
-      layout: 'poster',
-      slots: { headline: 'Full Moon Hike', subhead: 'Friday at the bluff', footer: 'Scan to join' },
-      url: 'https://hellofrequency.app/q/abc123',
-      shortLabel: 'hellofrequency.app/q/abc123',
-    })
-    expect(svg.startsWith('<svg')).toBe(true)
-    expect(svg).toContain('FULL MOON HIKE') // headline is uppercased
-    expect(svg).toContain('Scan to join')
-    // The embedded QR contributes <rect> modules.
-    expect(svg).toContain('<rect')
-  })
-  it('wraps a medium subhead across lines without truncating it', () => {
-    const svg = buildEntryFlyerSvg({
-      layout: 'poster',
-      slots: { headline: 'Event', subhead: 'Friday 7pm at Torrey Pines bluff, bring a layer', footer: 'Scan' },
-      url: 'https://hellofrequency.app/q/abc123',
-    })
-    expect(svg).toContain('layer') // last word survives
-    expect(svg).not.toContain('…') // nothing ellipsized at this length
-  })
-
-  it('supports the card layout too', () => {
-    const svg = buildEntryFlyerSvg({
-      layout: 'card',
-      slots: { headline: 'Join me', subhead: 'Real community nearby', footer: 'Scan' },
-      url: 'https://hellofrequency.app/q/xyz789',
-    })
-    expect(svg).toContain('<svg')
-    expect(svg).toContain('JOIN ME')
   })
 })

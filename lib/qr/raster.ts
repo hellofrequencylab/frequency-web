@@ -60,9 +60,9 @@ async function inlineLogo(src: string): Promise<string | null> {
 }
 
 /**
- * Rasterize an arbitrary SVG string to a PNG buffer at `width` px. Shared by the QR
- * renderer (shapes, no fonts needed) and the flyer renderer (passes `fontBuffers` so
- * its text renders — resvg-wasm ships with no fonts). One wasm init for the process.
+ * Rasterize an arbitrary SVG string to a PNG buffer at `width` px. Used by the QR
+ * renderer (shapes, no fonts needed). `fontBuffers` remains so a caller that draws
+ * text can pass faces; resvg-wasm ships with none. One wasm init for the process.
  */
 export async function rasterizeSvg(
   svg: string,

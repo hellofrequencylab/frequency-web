@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1430**.
+tree as of this index: **ADR-1433**.
 
 | Theme | Start here |
 |---|---|
@@ -46027,3 +46027,25 @@ Premise re-tested 2026-09-19 on this tree: the control still passed `posterBandA
 **Consequences.** The rail is taller by one preview. The height picker still moves both frames. A later change that reverts to `posterBandAspect(height, 1044, aspect)` fails the LIVE-272 probe and the band test's naive-width control.
 
 **Rows.** LIVE-272.
+
+## ADR-1433: Delete the entry-point flyer builder, keep the share-card Bold face (LIVE-216)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-216` · corroborated by `lib/entry-points/templates.ts`, `app/(main)/entry-points/entry-points-client.tsx`, `next.config.ts` `OG_CARD_FONTS`
+
+**Context.** OWN-059 item 3 asked the owner what to do with a flyer builder whose download buttons had already been unlinked (`b7c862005`). The owner ruled DELETE on 2026-09-08. The row sat open because no code-lane packet owned the deletion, which is how a ruling becomes a no-op.
+
+Premise re-tested 2026-09-19: `lib/entry-points/flyer.ts`, `flyer-raster.ts`, and `app/api/entry-points/[slug]/flyer/route.ts` still existed. `LiberationSans-Regular.ttf` (410,820 bytes) was flyer-exclusive. `LiberationSans-Bold.ttf` is the OG share-card disk fallback named in `OG_CARD_FONTS` and asserted by `lib/og/og-fonts.test.ts`. Deleting Bold would break every share card.
+
+The source-side weight this row can name without a production artifact: 410 KB of Regular plus about 12 KB of flyer code. `check:build-budget` still has to print the post-deploy delta; CI never builds.
+
+**Decision.**
+
+1. **Delete the flyer composer, rasteriser, route, and Regular face.** Keep the short link and branded QR. The `qr_codes.flyer` jsonb column stays; creates write template defaults so existing rows stay shaped. No migration.
+2. **Keep `LiberationSans-Bold.ttf` and its `OG_CARD_FONTS` entry.** The probe's control half fails if Bold is gone.
+3. **Drop the flyer wasm include** from `outputFileTracingIncludes`. Styled QR PNG still traces `@resvg/resvg-wasm` on `/api/qr`.
+
+**Rejected.** Deleting both Liberation faces (the title's first wording; the correction of 2026-09-08). Leaving the live preview while deleting only the route (the form would still promise a poster nothing serves).
+
+**Consequences.** `/entry-points` and the Funnels builder produce a named QR and a short link. The flyer API 404s. Share cards still fall back to Bold when Nunito cannot load.
+
+**Rows.** LIVE-216. OWN-059 item 3 is this row; items 1-2 stay owner-timed.
