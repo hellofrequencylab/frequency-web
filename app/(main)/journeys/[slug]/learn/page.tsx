@@ -169,10 +169,8 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   const adopterCount = isAuthor && plan.visibility === 'public' ? await countActiveAdopters(plan.id, profileId) : 0
 
   // ── THE SELL CHIP'S STATE (ADR-1397) ──────────────────────────────────────────────────────────
-  // 🔴 THIS BAND, NOT THE DETAIL PAGE'S. An author opening /journeys/<slug> is REDIRECTED to this
-  // route (page.tsx: isAuthor && !preview), so a price control on the detail page would be invisible
-  // to the one person allowed to set a price. Resolved only for a manager, because nobody else can
-  // act on it and it is a read nobody else should pay for.
+  // Also on the sales page now (ADR-1404): authors land there, not here. The chip stays on /learn
+  // so a host already in the course can still price without leaving.
   const sellOffer = canManageJourney ? await getJourneyOffer(plan.id) : null
   const sellLabel = sellOffer
     ? [
@@ -289,17 +287,11 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
                 }
               />
             )}
-            {/* ── SEE WHAT A BUYER SEES (ADR-1400) ────────────────────────────────────────────
-                The sell chip above OPENS THE RAIL and keeps doing so: ADR-1398 §2 put one editor
-                and one authority behind it, and this does not touch that. This is the other half
-                the author had no way to reach. `/journeys/<slug>` redirects an author straight
-                back here (page.tsx: isAuthor && !preview), so the ONLY way for the person setting
-                a $444 price to look at the page that charges it is the `?preview=1` escape hatch,
-                and nothing in the product linked to it. It matters more now that the page is the
-                till rather than a pitch that pointed at one. */}
+            {/* The sales page is the Journey slug (ADR-1404). Authors are no longer redirected
+                off it, so this is a hop, not a ?preview=1 escape hatch. */}
             {canManageJourney && (
               <Link
-                href={`/journeys/${slug}?preview=1`}
+                href={`/journeys/${slug}`}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
               >
                 <Eye className="h-4 w-4" aria-hidden /> Sales page

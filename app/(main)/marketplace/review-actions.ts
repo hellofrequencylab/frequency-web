@@ -5,6 +5,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { getProduct } from '@/lib/commerce/products'
 import { upsertProductReview, hasPurchasedProduct } from '@/lib/commerce/reviews'
 import { isSpaceTeamMember } from '@/lib/spaces/operated'
+import { journeySlugsByPlanId } from '@/lib/journeys/paid'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // Trust & Safety (Phase 8): a member reviews a commerce product (a Market listing or a Space Shop
@@ -50,5 +51,13 @@ export async function submitProductReviewAction(
   if (!saved) return fail('Could not save your review. Try again.')
 
   revalidatePath(`/market/${productId}`)
+  if (product.journeyPlanId) {
+    const slugs = await journeySlugsByPlanId([product.journeyPlanId])
+    const slug = slugs.get(product.journeyPlanId)
+    if (slug) {
+      revalidatePath(`/journeys/${slug}`)
+      revalidatePath(`/discover/journeys/${slug}`)
+    }
+  }
   return ok()
 }

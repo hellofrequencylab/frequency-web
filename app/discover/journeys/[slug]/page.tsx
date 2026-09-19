@@ -27,6 +27,9 @@ import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { journeySchema, breadcrumbSchema, journeyOfferSchema } from '@/lib/jsonld'
 import { getJourneyOffer, isSoldOut } from '@/lib/journeys/paid'
+import { journeyBuySignInPath } from '@/lib/journeys/sales-path'
+import { getProductReviews } from '@/lib/commerce/reviews'
+import { ProductReviews } from '@/components/marketplace/product-reviews'
 
 // Public, indexable detail page for one library Journey. Mirrors the in-app Journey
 // page's header (badge + Pillar + stat chips) + two-column body + sticky "At a glance"
@@ -120,6 +123,11 @@ export default async function DiscoverJourneyPage({
   // manufactured urgency, which is exactly what ADR-1397 §9 and the FTC's dark-patterns report
   // refuse. `seatLine` stays on the live surfaces.
   const offer = await getJourneyOffer(plan.id)
+  const reviews = offer ? await getProductReviews(offer.productId) : null
+  const rating =
+    reviews && reviews.average != null && reviews.count > 0
+      ? { ratingValue: reviews.average, reviewCount: reviews.count }
+      : null
   const priceLabel = offer
     ? new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -143,7 +151,7 @@ export default async function DiscoverJourneyPage({
           </span>
         ) : (
           <Link
-            href={`/market/${offer.productId}`}
+            href={journeyBuySignInPath(plan.slug)}
             className={buttonClasses('primary', 'md', 'w-full')}
           >
             Get access · {priceLabel}
@@ -173,7 +181,7 @@ export default async function DiscoverJourneyPage({
           journeySchema(plan, items),
           // A priced Journey also emits a Product node carrying its Offer, so the canonical page
           // states the price in structured data and not only in the markup. Absent when free.
-          ...(offer && priceLabel ? [journeyOfferSchema(plan, offer, soldOut)] : []),
+          ...(offer && priceLabel ? [journeyOfferSchema(plan, offer, soldOut, rating)] : []),
           breadcrumbSchema([
             { name: 'Discover', path: '/discover' },
             { name: 'Journeys', path: '/discover/journeys' },
@@ -262,6 +270,17 @@ export default async function DiscoverJourneyPage({
             </div>
             <PillarBalanceBlock items={items} pillars={pillars} />
             <InstructorBlock author={author} />
+            {reviews && offer && (
+              <ProductReviews
+                productId={offer.productId}
+                productTitle={plan.title}
+                reviews={reviews}
+                myReview={null}
+                signedIn={false}
+                canReview={false}
+                canModerate={false}
+              />
+            )}
             <JourneyFaq plan={plan} />
 
             {/* The closing CTA, in the same two registers. The free copy is untouched; the paid copy
@@ -279,7 +298,7 @@ export default async function DiscoverJourneyPage({
               </p>
               {offer && priceLabel ? (
                 soldOut ? null : (
-                  <Link href={`/market/${offer.productId}`} className={buttonClasses('primary', 'md')}>
+                  <Link href={journeyBuySignInPath(plan.slug)} className={buttonClasses('primary', 'md')}>
                     Get access · {priceLabel}
                   </Link>
                 )

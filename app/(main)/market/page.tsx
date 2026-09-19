@@ -4,6 +4,7 @@ import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getMyProfileId } from '@/lib/auth'
 import { listMarketListings } from '@/lib/commerce/products'
+import { withJourneySalesHref } from '@/lib/journeys/listing-href'
 import { productRatingsFor } from '@/lib/commerce/reviews'
 import { sellerVerifiedFor } from '@/lib/commerce/seller-verification'
 import { foundingSellersFor } from '@/lib/founding/status'
@@ -56,7 +57,7 @@ export default async function MarketPage({
 
   // One read powers the stats band, the rails, and the grid (grouped in-process). The hero search bar
   // filters every rail instantly on the client (InstantGrid / InstantSection read the shared query).
-  const all = await listMarketListings({ limit: 100 })
+  const all = await withJourneySalesHref(await listMarketListings({ limit: 100 }))
   // Read-only projection (ADR-596 / audit #2): ticketed events surface in the Tickets rail and deep-link
   // to the event ticket flow. Events stay the source of truth (no commerce_products row). Fail-soft to [].
   const ticketProjections = await listTicketedEventProjections({ limit: 60 })

@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1403**.
+tree as of this index: **ADR-1407**.
 
 | Theme | Start here |
 |---|---|
@@ -45438,9 +45438,73 @@ change.
 
 **Consequences.** `OWN-066` is the ruling row and closes. The code has not moved yet. `QUEST-IA-DEBT`, `HYG-033`, `LIVE-204` are the first product surfaces. Editor E0–E9 stays on its own wave.
 
-## ADR-1405: The Quest is not a top-level marketing pillar (LIVE-254)
+## ADR-1404: A Journey has one sales page, and listing areas only point at it (2026-09-19)
 
-**Status:** Accepted · 2026-09-19 · **Amends** [ADR-1344](DECISIONS.md) (four header tabs) · does not amend [ADR-1403](DECISIONS.md) · corroborated by `lib/nav/registry.ts`, `supabase/migrations/20270345006000_public_header_quest_under_community.sql`, `components/marketing/marketing-ui.tsx`
+**Status:** Accepted · **Amends** [ADR-1398](DECISIONS.md) §4 and [ADR-1400](DECISIONS.md) §6 (the
+product URL as a living sales surface) · **Extends** [ADR-1397](DECISIONS.md) (one product, many
+storefronts) · Backlog `LIVE-400` · corroborated by `lib/journeys/sales-path.ts`,
+`lib/journeys/listing-href.ts`, `app/(main)/market/[id]/page.tsx`
+
+**Context.** Owner, 2026-09-19: a Space should sell a Journey on its Shop and in the Market, through
+one sales page that is the paywall, because people could see the course directly. The money path from
+ADR-1397 through ADR-1401 was already there. The confusion was three sales pages (`/market/<uuid>`,
+`/journeys/<slug>`, `/discover/journeys/<slug>`) and an author redirect that opened `/learn` as the
+public face of the offer.
+
+**Decision.**
+
+1. **Listing areas are doors.** Market cards and Space Shop cards attach `href` to
+   `/journeys/<slug>`. Signed-out visitors are handed the public twin by `TWIN_RULES`. A leftover
+   `/market/<uuid>` for a Journey product **redirects** to that slug. Emails and the sitemap do not
+   advertise the uuid as a Journey URL.
+2. **The sales page is the paywall.** A published author stays on `/journeys/<slug>` so they can
+   sell. An enrolled learner who is not the author goes to `/learn`. The path on the sales page is
+   an outline (titles and cadence), not a "Free preview" of the course.
+3. **The public pitch does not send anyone to `/market/<id>`.** A paid visitor on
+   `/discover/journeys/<slug>` signs in with `next` set to the till. Redirecting Market to the slug
+   and then linking Market from Discover would loop.
+
+**Rejected.** A second product row per storefront (duplicates the seat pool, which ADR-1397 forbade).
+Embedding checkout on the cached public page (ADR-1400 already refused this).
+
+**Consequences.** Shop and Market can both sell the same Journey. The course stays behind enrolment.
+Reviews and Q&A resolve through the Journey plan ([ADR-1405](DECISIONS.md)). The generic Market listing
+render remains as a fallback when the plan is missing.
+
+## ADR-1405: Journey reviews and Q&A follow the plan, not the price row (2026-09-19)
+
+**Status:** Accepted · **Extends** [ADR-1397](DECISIONS.md) (a re-price archives the product) and
+[ADR-1404](DECISIONS.md) (the sales page is the Journey slug) · Backlog `LIVE-392`
+
+**Context.** `commerce_reviews` and `listing_comments` are keyed to a product uuid. Re-pricing a
+Journey archives that row and writes a new one, so every star and every answered question detached
+from the live listing. After ADR-1404 the buyer never even opens `/market/<id>`, so the proof also
+had no home on the page that sells the Journey.
+
+**Decision.**
+
+1. **Resolve through `journey_plan_id`.** Readers ask for every product row attached to the plan,
+   live and archived, and show that set. A non-Journey product is still itself. No new column: the
+   product already carries the plan, and the admin-client readers already bypass the RLS arm that
+   hides reviews on an archived parent.
+2. **An edit stays on the row that exists.** Upserting onto the live uuid after a re-price would
+   mint a second review from the same member. A write finds the member's existing row across the
+   plan and updates it in place.
+3. **The sales page is the wall.** `/journeys/<slug>` carries reviews and Q&A. The public twin
+   shows reviews (read-only) and puts AggregateRating on the Product node so a re-price does not
+   drop structured proof from the canonical URL.
+
+**Rejected.** Adding `journey_plan_id` onto `commerce_reviews` in this change (correct long-term
+uniqueness, but a migration for a reader that already has the join). Guest Q&A on the cached
+public page (ADR-1400: that route is an hour stale and has no till).
+
+**Consequences.** Market cards attribute sibling reviews to the live product id. Settled orders on
+an archived uuid still count as a verified purchase. `LIVE-392` closes when `lib/commerce/reviews.ts`
+knows the plan.
+
+## ADR-1407: The Quest is not a top-level marketing pillar (LIVE-254)
+
+**Status:** Accepted · 2026-09-19 · **Amends** [ADR-1344](DECISIONS.md) (four header tabs) · does not amend [ADR-1403](DECISIONS.md) · numbered **1407** because **1405** is Journey reviews on main (`LIVE-392`) and **1406** is member-nav role-minimal on `cursor/member-nav-role-minimal-0700` · corroborated by `lib/nav/registry.ts`, `supabase/migrations/20270345006000_public_header_quest_under_community.sql`, `components/marketing/marketing-ui.tsx`
 
 **Context.** LIVE-254 asked to demote `/the-quest` from a top-level pillar. Re-measured 2026-09-19 against `origin/main` before changing anything:
 

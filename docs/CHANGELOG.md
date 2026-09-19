@@ -14,6 +14,14 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 - **The Quest is no longer a top-level marketing tab.** The public header is now The Community, Spaces, and About. The Quest still has its page, and you still reach it from The Community menu, the footer, and search. It is the light game everyone plays alongside their Circle, not a third of the story.
 
+- **A Journey keeps its reviews when the price changes**: stars and questions stay on the Journey,
+  not on the old product page. Changing the price no longer wipes the proof a buyer already left.
+  You read them on the Journey itself.
+
+- **A Journey has one sales page now**: cards in a Space Shop and in the Market open the Journey
+  itself, not a separate product page. That page is the pitch and the paywall. The course
+  (`/learn`) opens after you enrol. A leftover Market link still works; it hops you across.
+
 ### Fixed
 
 - **An event's cover fills the screen on a phone again**: the artwork had been shrinking to fit
