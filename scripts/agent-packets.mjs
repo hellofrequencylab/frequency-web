@@ -76,6 +76,7 @@ YOUR PACKET. Run \`pnpm packets --lane <LANE>\` (or \`pnpm packets --json\`) and
 DO NOT.
 - Merge to main while required CI is red. main merge is a production deploy.
 - Force-push. Auto-squash is the default (docs/WORKFLOW.md).
+- Ask the owner to click Merge. That is a process bug. Arm GitHub auto-merge yourself.
 - Use \`gh pr create\`. Open or update the PR with ManagePullRequest. Base branch is main.
 - Absorb another agent's PR. Stay off ${OFF_LIMITS_BRANCHES.join(', ')} and its PRs.
 - Pick parked work: 16→7 nav (LIVE-241), mobile, white-label Sites, Etsy, App Platform.
@@ -86,8 +87,8 @@ DO NOT.
 LOOP.
 1. Branch from current main. One backlog row per PR. Keep under the 40-file hard gate (15 is guidance).
 2. Implement until the row's probe would pass. Run that probe and the tests the change touches.
-3. Commit, push, ManagePullRequest. Subscribe to the PR/CI. Wait for required checks: checks, analyze, lint, test, Vercel, db-tests. pr-compare is advisory.
-4. Do not merge red. After merge, read the production build log: postbuild is the artifact truth (six gates). CI never builds.
+3. Commit, push, ManagePullRequest (ready, not draft). Immediately arm squash auto-merge with \`gh pr merge --auto --squash <n>\`. That is the one \`gh\` write this loop uses. Subscribe to the PR/CI. Required checks: checks, analyze, lint, test, Vercel, db-tests. pr-compare is advisory.
+4. Do not merge red; \`--auto\` will not. After GitHub merges, read the production build log: postbuild is the artifact truth (six gates). CI never builds.
 5. If the PR added supabase/migrations/*.sql, apply with execute_sql then ledger insert; run pnpm check:migrations --require-ledger when credentials exist.
 6. Validate the row's probe on main. Close the row in BUILD-BACKLOG.json in the SAME PR that makes the probe pass, and prune it from meta.slate.waves.
 

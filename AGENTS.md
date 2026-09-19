@@ -133,7 +133,9 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
   sat on the owner for a week and each took one tool call.
 
 **Fan-out (ADR-1412).** Run **`pnpm packets`** for the next agent-workable row per derived lane, and
-**`pnpm packets --prompt`** for the reusable cloud-agent prompt. Cursor Dashboard steps live in
+**`pnpm packets --prompt`** for the reusable cloud-agent prompt. After opening a ready PR, arm
+squash auto-merge with `gh pr merge --auto --squash` — do not ask the owner to click Merge.
+Cursor Dashboard Enable (spawn the next run) lives in
 [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAFETY.md) §12. Stay off `cursor/cloud-agent-workspace-8978`.
 One row per PR. Merge is a production deploy: never merge red.
 
