@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1418**.
+tree as of this index: **ADR-1422**.
 
 | Theme | Start here |
 |---|---|
@@ -38537,12 +38537,12 @@ Three rules bound what it can do:
    machine output and becomes a gathering people committed to; retiring one of those is a
    CANCELLATION, with refunds and notifications behind it, which `lib/events/cancellation.ts` owns
    and a host performs deliberately. Those dates are counted and left live.
-3. **Stand down on a rule that expands to nothing.** An anchor that still says it repeats but whose
-   rule produces no dates is not a series with no dates, it is a rule this code could not read.
-   Believing it would delete every future date of a live series. That case touches nothing and says
-   so, in the log and in the returned flag, because a fail-safe nobody notices is an invisible
-   regression. The same stand-down covers a failed attachment read: a read that errored is not a
-   read that found nothing.
+3. **Stand down on a rule that cannot be read.** An unreadable or unparseable rule is not a series
+   with no dates. Believing an empty expansion would delete every future date of a live series.
+   That case touches nothing and says so, in the log and in the returned flag, because a fail-safe
+   nobody notices is an invisible regression. The same stand-down covers a failed attachment read:
+   a read that errored is not a read that found nothing. Amended by [ADR-1422](DECISIONS.md): a
+   spent COUNT=1 series expands to nothing honestly, and that empty is not a stand-down.
 
 The DELETE also carries `.eq('parent_event_id', anchorId)`, which is redundant by construction —
 the id list came from a read of this anchor's children — and is there precisely so a bug in that
@@ -41659,10 +41659,11 @@ surface and nothing to invalidate. The query head is unchanged: such an anchor i
 still consumes one of the `limit` slots, which is honest and currently free, since `limit` defaults to
 2000 against an anchor population of one and the clock is the bound that matters (LIVE-190). Two
 adjacent defects were found while measuring and are recorded rather than folded in, because neither is
-COUNT-specific: `retireStaleOccurrences` stands down on `expected.length === 0`, which a COUNT=1
-series reaches honestly, so that one shape reads as an unreadable rule and its stale future dates are
-never retired; and `computeOccurrenceDates` expands from the anchor with no `from` bound, so for ANY
-live series a hard-deleted PAST occurrence is re-minted on the next run. Each wants its own row.
+COUNT-specific: `retireStaleOccurrences` used to stand down on `expected.length === 0`, which a COUNT=1
+series reaches honestly, so that one shape read as an unreadable rule and its stale future dates were
+never retired ([ADR-1422](DECISIONS.md) / LIVE-338, closed); and `computeOccurrenceDates` expanded from
+the anchor with no `from` bound, so for ANY live series a hard-deleted PAST occurrence was re-minted
+on the next run ([ADR-1353](DECISIONS.md) / LIVE-337, closed). Each kept its own row.
 
 **Rows.** LIVE-271 (done, this ADR).
 
@@ -42253,13 +42254,13 @@ retirement still runs for an exhausted anchor. `computeOccurrenceDates` gained a
 and the existing suite now passes it explicitly rather than leaning on the wall clock — those cases
 use fixed 2027-2029 anchors and would have changed meaning as the year turned.
 
-**Not done here.** `LIVE-338` (`retireStaleOccurrences` stands down on `expected.length === 0`, which
-a spent COUNT=1 series reaches honestly) is a separate open row in the same file and is neither easier
-nor harder for this change: its stand-down reads `expandOccurrenceInstants` on the retirement path,
-which this change leaves unbounded. No gate counts how often the floor suppressed a candidate: doing
-so honestly needs the unbounded expansion computed alongside the bounded one, and on the resting mix
-it would print zero every night on every series, which is the noise ADR-970 warns turns a signal into
-wallpaper.
+**Not done here.** `LIVE-338` (`retireStaleOccurrences` stood down on `expected.length === 0`, which
+a spent COUNT=1 series reaches honestly) was a separate row in the same file. Closed by
+[ADR-1422](DECISIONS.md). This change left the retirement expansion unbounded, and ADR-1422 kept it
+that way: the stand-down now asks whether the rule is unreadable, not whether the child set is empty.
+No gate counts how often the floor suppressed a candidate: doing so honestly needs the unbounded
+expansion computed alongside the bounded one, and on the resting mix it would print zero every night
+on every series, which is the noise ADR-970 warns turns a signal into wallpaper.
 
 **Rows.** LIVE-337 (done, this ADR).
 
@@ -45819,4 +45820,41 @@ The signup trigger (`public.handle_new_auth_user` in `20261013000000_reconcile_s
 **Consequences.** A member still carrying the minted identity sees "Choose your name" first on the feed guide and in the right rail. Saving a name or a handle at `/settings/profile` completes the step. Collision-fallback handles (random uuid suffix, not the auth id) read as chosen.
 
 **Rows.** LIVE-349.
+
+## ADR-1422: A spent COUNT=1 series retires leftover dates; only an unreadable rule stands down (2026-09-19)
+
+**Status:** Accepted · 2026-09-19 · LIVE-338 · corroborated by `lib/event-recurrence.ts`
+(`retirementRuleUnreadable`, `retireStaleOccurrences`) and `lib/event-recurrence-count-retire.test.ts`
+
+**Context.** [ADR-1304](DECISIONS.md) stood down when a repeating anchor expanded to no child dates,
+because that used to mean "this code could not read the rule" and believing it would delete every
+future date of a live series. [ADR-1299](DECISIONS.md)'s picker admits `COUNT=1`. The expander
+excludes the anchor (already a row), so a COUNT=1 series expands to nothing honestly. Flattening
+those two empties stranded leftover future children when a host reduced the count. Re-tested
+2026-09-19: `retireStaleOccurrences` still keyed the stand-down on `expected.length === 0`. Live
+COUNT-bounded series were still zero on 2026-09-15; the defect is reachable from the picker, not a
+live bill.
+
+**Decision.**
+
+1. **`retirementRuleUnreadable` is the stand-down.** No parseable rule, or an unparseable
+   `starts_at`, stands down. An empty expansion of a readable rule proceeds and retires leftover
+   children the way a shortened end date already did.
+2. **`expandOccurrenceInstants` stays a `Date[]`.** The expander already knows the two empties
+   (`repeatFor` null / unparseable start vs spent count). The caller was flattening them. The
+   named predicate is the seam; changing the return type would have retouched every caller for
+   one of them.
+3. **The fail-safe stays loud.** The log and `stoodDown` flag still fire, and they now say
+   unreadable, not "expanded to nothing".
+
+**Rejected.** Treating COUNT=1 as a special case in the stand-down (the honest empty is any
+readable rule whose child set is []). Minting a column for "last COUNT landing" (ADR-1348 already
+refused that for exhaustion). Folding this into ADR-1353 (different decision: a floor vs a
+stand-down).
+
+**Consequences.** Reducing a series to one gathering retires the unattached future dates the old
+count minted. An unparseable start still touches nothing. Turning a series off still retires,
+because `recurrence_type === 'none'` is readable. No migration.
+
+**Rows.** LIVE-338.
 

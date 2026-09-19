@@ -8,6 +8,7 @@ import {
   expandOccurrenceInstants,
   occurrenceRow,
   occurrenceTierRows,
+  retirementRuleUnreadable,
   staleOccurrenceIds,
 } from './event-recurrence'
 
@@ -135,6 +136,67 @@ describe('expandOccurrenceInstants — Date.now()-independent expansion to an ex
         new Date('2030-01-01T00:00:00.000Z'),
       ),
     ).toEqual([])
+  })
+
+  it('a COUNT=1 series expands to nothing because the only landing is the excluded anchor', () => {
+    // This is the honest empty LIVE-338 distinguishes from an unreadable rule. The picker admits
+    // COUNT=1, the expander excludes the anchor (already a row), so the child set is [].
+    expect(
+      expandOccurrenceInstants(
+        {
+          starts_at: '2026-01-07T18:00:00.000Z',
+          recurrence_type: 'weekly',
+          recurrence_until: null,
+          recurrence_rule: 'FREQ=WEEKLY;COUNT=1',
+        },
+        new Date('2099-12-31T00:00:00.000Z'),
+      ),
+    ).toEqual([])
+  })
+})
+
+describe('retirementRuleUnreadable — empty expansion is not unreadable (LIVE-338)', () => {
+  it('a spent COUNT=1 series is readable, even though expansion is empty', () => {
+    expect(
+      retirementRuleUnreadable({
+        starts_at: '2026-01-07T18:00:00.000Z',
+        recurrence_type: 'weekly',
+        recurrence_rule: 'FREQ=WEEKLY;COUNT=1',
+      }),
+    ).toBe(false)
+  })
+
+  it('an unparseable starts_at is unreadable, even when the RRULE parses', () => {
+    expect(
+      retirementRuleUnreadable({
+        starts_at: 'not a date',
+        recurrence_type: 'weekly',
+        recurrence_rule: 'FREQ=WEEKLY;COUNT=6',
+      }),
+    ).toBe(true)
+  })
+
+  it('a repeating row with no rule and no legacy cadence is unreadable', () => {
+    // recurrence_type is a runtime string on the wire; garbage is how a row this code cannot
+    // read arrives. 'none' is the other empty and is NOT unreadable — turning a series off
+    // must retire its leftover dates.
+    expect(
+      retirementRuleUnreadable({
+        starts_at: '2026-01-07T18:00:00.000Z',
+        recurrence_type: 'fortnightly' as 'weekly',
+        recurrence_rule: 'FREQ=FORTNIGHTLY',
+      }),
+    ).toBe(true)
+  })
+
+  it('turning a series off is readable: leftover children must retire', () => {
+    expect(
+      retirementRuleUnreadable({
+        starts_at: '2026-01-07T18:00:00.000Z',
+        recurrence_type: 'none',
+        recurrence_rule: null,
+      }),
+    ).toBe(false)
   })
 })
 
@@ -505,6 +567,10 @@ describe('the retirement is wired where a rule is actually changed', () => {
     const fn = source.slice(source.indexOf('export async function retireStaleOccurrences'))
     expect(fn).toContain(".in('id', removable)")
     expect(fn).toContain(".eq('parent_event_id', anchorId)")
+    // LIVE-338: the stand-down is an unreadable rule, not an empty expansion. A comment
+    // containing the word would satisfy the backlog probe and still leave COUNT=1 stranded.
+    expect(fn).toContain('retirementRuleUnreadable(anchor)')
+    expect(fn).not.toMatch(/expected\.length === 0/)
     // And it never deletes a date somebody is attached to.
     for (const table of ['event_rsvps', 'event_tickets', 'event_guests', 'event_posts']) {
       expect(source).toContain(`'${table}'`)
