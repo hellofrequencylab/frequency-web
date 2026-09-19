@@ -45614,3 +45614,20 @@ LIVE-241 (member rail 16 → 7) was **not** built in this change: that count ass
 
 **Consequences.** `lib/nav/registry.source.test.ts` now pins three triggers, `/the-quest` inside The Community panel, and `/the-lab` still inside About. Sitemap 0.6 is pinned in `app/sitemap.test.ts`. Apply the migration on production with the deploy; marketing pages stay static for up to an hour (`revalidate = 3600`).
 
+## ADR-1409: The signed-in phone bar is five destinations (HYG-033)
+
+**Status:** Accepted · 2026-09-19 · Designer (Daniel) · **Amends** [ADR-120](DECISIONS.md) (the original four-destination bottom bar) · does **not** amend [ADR-1406](DECISIONS.md) (member rail count) · corroborated by `lib/nav/registry.ts` (`CALM_SPINE_ROOTS`, `calmSpine`) and `components/layout/app-shell.tsx` (`MobileTabBar`)
+
+**Context.** The signed-in bottom bar had grown to seven flex-1 slots: Menu · Feed · Community · Zap · Events · The Quest · Marketplace. At 320px those slots summed to the viewport with one pixel of headroom; "Community" and "The Quest" truncated on a 390px capture already in the tree. The 2026-09-08 ruling cut the bar to five. LIVE-241's 16→7 *rail* count is a different surface and was cancelled by ADR-1406; this ADR is only the phone bar.
+
+**Decision.**
+
+1. **The bar is Menu · Feed · Zap · Events · Marketplace.** Circles (labeled Community on the old tab) and The Quest leave the bar. They stay on the member rail and in the Menu drawer. Nothing is deleted.
+2. **Marketplace keeps its umbrella name** ([NAMING.md](NAMING.md)). Do not shorten it to Market to buy pixels.
+3. **Do not fold Channels. Do not cut the rail to seven.** Those are ADR-1406.
+4. **Five slots at 320px are 64px.** The implementing tests assert caption fit against that slot (`components/layout/header-fit.test.ts` plus `test/e2e/overflow.spec.ts` at 320px) so the next longer label cannot silently truncate.
+
+**Rejected.** Keeping Community and The Quest as tabs. Renaming Marketplace. Bundling a rail rewrite.
+
+**Consequences.** `CALM_SPINE_ROOTS` is three destination ids (`feed`, `events`, `market`). The Zap split uses `floor(n/2)` so a later count change does not hard-code a seven-slot slice. The seven-slot hard cap in `game-stats-dock.tsx` remains a *touch-target* ceiling, not a label-fit claim.
+

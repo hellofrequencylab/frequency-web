@@ -29,7 +29,8 @@
 // ── THE WIDTHS, AND WHY 390 ALONE WAS NOT ENOUGH ──────────────────────────────────────────────
 //
 // The `mobile` Playwright project is 390px (iPhone 14). Three of ADR-1035's five defects first
-// bite BELOW that — the tab bar's seven min-content tabs summed to 319px against a 320px screen.
+// bite BELOW that — the old seven-slot tab bar's min-content tabs summed to 319px against a 320px
+// screen (HYG-033 cut that bar to five; 320/5 = 64px, the Marketplace line).
 // A gate that only ever looks at the widest common phone is a gate that meets the bug last. So
 // this spec drives its own widths and does not inherit the project's.
 //
@@ -330,5 +331,44 @@ test.describe('overflow', { tag: '@overflow' }, () => {
         })
       }
     }
+
+    test('signed-in tab captions fit a fifth of 320px (HYG-033)', async ({ page }) => {
+      await applyRenderState(page, state)
+      const feed = appSurfaces().find((s) => s.path === '/feed')
+      test.skip(!feed, '/feed is not in appSurfaces(); the 320px caption check has nowhere to land.')
+      await page.setViewportSize({ width: 320, height: 844 })
+      await page.goto(feed!.path, { waitUntil: 'load' })
+      await assertNotProtectionWall(page)
+      await assertMemberSession(page, feed!)
+      await settle(page)
+
+      const measured = await page.evaluate(() => {
+        const nav = [...document.querySelectorAll('nav')].find((n) => {
+          const c = n.getAttribute('class') ?? ''
+          return c.includes('bottom-0') && c.includes('md:hidden')
+        })
+        if (!nav) return { error: 'no mobile tab bar', labels: [] as { text: string; scroll: number; client: number }[], slots: 0 }
+        const captions = [...nav.querySelectorAll('span.truncate')]
+        return {
+          error: null as string | null,
+          slots: captions.length,
+          labels: captions.map((el) => ({
+            text: (el.textContent ?? '').trim(),
+            scroll: Math.ceil((el as HTMLElement).scrollWidth),
+            client: Math.floor((el as HTMLElement).clientWidth),
+          })),
+        }
+      })
+
+      expect(measured.error, measured.error ?? '').toBeNull()
+      expect(measured.slots, `expected five captions, got ${measured.labels.map((l) => l.text).join(' · ')}`).toBe(5)
+      expect(measured.labels.map((l) => l.text)).toEqual(['Menu', 'Feed', 'Zap', 'Events', 'Marketplace'])
+      for (const label of measured.labels) {
+        expect(
+          label.scroll,
+          `"${label.text}" is ${label.scroll}px of content in a ${label.client}px slot at 320px`,
+        ).toBeLessThanOrEqual(label.client + 1)
+      }
+    })
   })
 })
