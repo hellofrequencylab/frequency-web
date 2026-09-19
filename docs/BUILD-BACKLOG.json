@@ -210,7 +210,6 @@
           "name": "WR \u00b7 the core-model rework (ADR-1294), phases 0-11 in order. Three lines, four nouns. Phases 1-3 are one pass over the same files: the feature gates are inert until the grace window ends on 2026-12-01, which makes this the safe window to move paywalls. Phase 5 is the commercial unlock and phase 11 is the only phase that can say whether any of it worked.",
           "ids": [
             "HYG-078",
-            "HYG-080",
             "HYG-082",
             "PROG-R4",
             "LIVE-228",
@@ -10618,7 +10617,7 @@
     {
       "id": "HYG-080",
       "title": "Delete the second Space-creation door",
-      "status": "blocked",
+      "status": "done",
       "priority": "P2",
       "lane": "hygiene",
       "size": "M",
@@ -10626,11 +10625,13 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "\u00a75"
       },
-      "detail": "app/(main)/spaces/new/business/ (page.tsx + business-quickstart-form.tsx) plus createBusinessSpace. A second creation flow for the same noun, reachable only from /spaces/new itself. One noun, one door.\n\n\ud83d\udd34 BLOCKED 2026-09-09. The orphan premise expired: three pins landed since the survey, and one of them is not a reference but a CONTROL.\n  1. scripts/check-a11y-names.test.ts:443 reads business-quickstart-form.tsx from disk as the POSITIVE CONTROL for the forwarder chain - \"blind, it is the single placeholder-only control that held the ceiling at 1\". Deleting the file needs a REPLACEMENT control, not a line removal, or the mutation test silently stops proving anything.\n  2. check:creates Rule 4 (scripts/check-creates.mjs:165,221) registers createBusinessSpace twice, in ENTITY_WRITES as the business create road and in the governed-call map.\n  3. scripts/check-creates.test.ts:355 asserts lib/spaces/provision.ts::createBusinessSpace POSITIVELY in ROUTED_ON_2026_09_07 - a road that quietly stops calling the layer fails that test.\nNote the action lives in lib/spaces/provision.ts:272, not lib/spaces/create.ts as the row said.\n\nThis is one change that retires the door and all three pins together, including deciding what replaces the a11y control. It is not a phase-1 sweep.",
+      "detail": "app/(main)/spaces/new/business/ (page.tsx + business-quickstart-form.tsx) plus createBusinessSpace. A second creation flow for the same noun, reachable only from /spaces/new itself. One noun, one door.\n\n\ud83d\udd34 BLOCKED 2026-09-09. The orphan premise expired: three pins landed since the survey, and one of them is not a reference but a CONTROL.\n  1. scripts/check-a11y-names.test.ts:443 reads business-quickstart-form.tsx from disk as the POSITIVE CONTROL for the forwarder chain - \"blind, it is the single placeholder-only control that held the ceiling at 1\". Deleting the file needs a REPLACEMENT control, not a line removal, or the mutation test silently stops proving anything.\n  2. check:creates Rule 4 (scripts/check-creates.mjs:165,221) registers createBusinessSpace twice, in ENTITY_WRITES as the business create road and in the governed-call map.\n  3. scripts/check-creates.test.ts:355 asserts lib/spaces/provision.ts::createBusinessSpace POSITIVELY in ROUTED_ON_2026_09_07 - a road that quietly stops calling the layer fails that test.\nNote the action lives in lib/spaces/provision.ts:272, not lib/spaces/create.ts as the row said.\n\nThis is one change that retires the door and all three pins together, including deciding what replaces the a11y control. It is not a phase-1 sweep.\n\nCLOSED 2026-09-19 (ADR-1428). Premise re-tested first: the door was still live (page + form + the card on /spaces/new), createBusinessSpace still provisioned a second road, and the a11y mutation still read the form from disk. The replacement control is the same Field+Textarea shape as a fixture, plus a live assertion that space-form Field still publishes htmlFor={id} and discoverForwarders still finds it \u2014 a fixture-only test would keep passing after Field stopped forwarding. createBusinessSpace, uniqueSlugFrom, and lib/spaces/business-starter.ts (only that road used them) are gone. ENTITY_WRITES and CREATE_ENTRIES no longer name the road; ROUTED_ON_2026_09_07 dropped the positive pin. Niche funnels already land on /spaces/new?mode=business:* (ADR-1197), so a business still has one door. The Studio business manifest and the admin business seeder are not this door and stay.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e 'const fs=require(\"fs\");const p=[\"app/(main)/spaces/new/business\"];const left=p.filter(x=>fs.existsSync(x));if(left.length)console.error(\"still present: \"+left.join(\", \"));process.exit(left.length?1:0)'"
-      }
+        "cmd": "node -e 'const fs=require(\"fs\");const p=[\"app/(main)/spaces/new/business\"];const left=p.filter(x=>fs.existsSync(x));if(left.length){console.error(\"still present: \"+left.join(\", \"));process.exit(1)}const s=fs.readFileSync(\"lib/spaces/provision.ts\",\"utf8\");if(/export async function createBusinessSpace/.test(s)){console.error(\"createBusinessSpace still exported\");process.exit(1)}if(fs.existsSync(\"lib/spaces/business-starter.ts\")){console.error(\"business-starter module still present\");process.exit(1)}console.log(\"HYG-080 ok\")'",
+        "note": "Passes when the second Space-creation door, its writer, and its starter seed are gone. Strengthened 2026-09-19 so a missing folder with a leftover writer cannot close the row."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "HYG-081",

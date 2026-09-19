@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **A Space has one create form.** The extra "Running a business?" shortcut is gone. Pick what you run, including a business, on Create a space. Niche doors still land on the matching type.
+
 - **The getting-started guide asks for a name first.** If Frequency still knows you by the local part of your email and a generated handle, that is the first step. Pick a name at your profile. Members who already chose a name are not asked again.
 
 - **Joining Crew, buying a household bundle, or picking a Space plan now takes the card on the page.** The form opens under the button you pressed. If it cannot open, you still go to Stripe's checkout.

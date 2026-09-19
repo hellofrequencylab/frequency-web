@@ -335,8 +335,9 @@ describe('check-creates · the live repo', () => {
     expect(UNROUTED.has('app/(main)/drafts/actions.ts::confirmDraftAction')).toBe(false)
   })
 
-  // THE RATCHET TURNED ALL THE WAY (ADR-1249, ADR-1262, ADR-1280, HYG-053). All eighteen wizard
-  // roads named on 2026-08-11 route through the governed layer: fifteen on 2026-09-07, Housing on
+  // THE RATCHET TURNED ALL THE WAY (ADR-1249, ADR-1262, ADR-1280, HYG-053). The wizard
+  // roads named on 2026-08-11 route through the governed layer: the 2026-09-07 set (HYG-080
+  // dropped the second Space door from it), Housing on
   // 2026-09-08, and the last two the same day once their rulings were taken. Each is asserted
   // POSITIVELY here, so a road that quietly stops calling the layer fails this test before it can
   // be re-added to UNROUTED; and the allowlist's size is a ceiling that may fall and never rise.
@@ -352,7 +353,6 @@ describe('check-creates · the live repo', () => {
     'app/(main)/practices/actions.ts::createPracticeAction',
     'app/(main)/practices/actions.ts::createPracticeDraftAction',
     'lib/spaces/provision.ts::createSpace',
-    'lib/spaces/provision.ts::createBusinessSpace',
     'app/(main)/classifieds/actions.ts::createListingAction',
     'app/(main)/marketplace/commerce-actions.ts::createMakerProductAction',
     'app/(main)/spaces/[slug]/settings/shop/shop-actions.ts::createSpaceProductAction',
