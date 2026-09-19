@@ -1,34 +1,32 @@
-# Development Map: the single source of truth
+# Development Map (history)
 
-> ⚠️ **Superseded for near-term planning (2026-08-04).** The live plan is
+> ⚠️ **Superseded for near-term planning (2026-08-04).** Not a source of truth and
+> not a front door. The live plan is [AGENTS.md](../AGENTS.md) §"Which plan is live":
 > [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) (ADR-925) with the phase runway in
-> [`BUILD-LIST.md`](BUILD-LIST.md) (ADR-921). This file predates the DAWN / UX-maturity
+> [`BUILD-LIST.md`](BUILD-LIST.md) (ADR-921) and status in
+> [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json). This file predates the DAWN / UX-maturity
 > program and its status marks are not maintained. Kept for history and for the items it
 > still names that no current plan has absorbed.
 
-> **▶ Start at [BUILD-SEQUENCE.md](BUILD-SEQUENCE.md)** — the single front-door that orders every
-> track into one gated wave plan, overlays the Notion timeline, and carries the Idea Inbox. This map
-> stays canonical for the *what/why*; the build sequence holds *what to build next*.
+> **[BUILD-SEQUENCE.md](BUILD-SEQUENCE.md) is also history.** Do not start there.
 >
-> **2026-06-28 — active execution order:** the build is now sequenced **hardening-first,
-> mobile-primary, plan-as-if-entities-live** per owner decision ([ADR-439](DECISIONS.md)). The
-> phased work list lives in [FOUNDATION-HARDENING-PLAN.md](FOUNDATION-HARDENING-PLAN.md). This map
-> stays canonical for the *what/why* of the verticals and the two-entity model; the hardening plan
-> holds the *order we execute in*. Companion build tracks:
+> **2026-06-28 note (history):** the build was sequenced **hardening-first,
+> mobile-primary, plan-as-if-entities-live** per owner decision ([ADR-439](DECISIONS.md)).
+> Those companion tracks are themselves history. Companion build tracks of that era:
 > [GROWTH-OS-BUILD-PLAN.md](GROWTH-OS-BUILD-PLAN.md) (funnel/flywheel/launch layer, ADR-440) and
 > [ENTITY-MANAGEMENT-OVERHAUL.md](ENTITY-MANAGEMENT-OVERHAUL.md) (the unified per-entity + role
 > management console, ADR-441; prerequisite for Growth OS G3).
 
-> **What we're building, in what order.** This is the one canonical plan. It **supersedes
-> and folds in** the two previous trackers, [`ROADMAP.md`](../ROADMAP.md) (product features)
-> and [`BUILD-PHASES.md`](BUILD-PHASES.md) (architecture phases), which are now thin
-> pointers kept for history. Mission → structure → staged build list.
+> **What this file was.** It folded [`ROADMAP.md`](../ROADMAP.md) (product features)
+> and [`BUILD-PHASES.md`](BUILD-PHASES.md) (architecture phases) into one staged map.
+> Those files and this one are now thin history. Mission → structure → staged build list.
 >
-> **Authority order (unchanged):** running code + `supabase/migrations/` > this doc >
-> Notion. Where this names something not yet built, the code is still the truth.
+> **Authority order:** running code + `supabase/migrations/` > live docs named in
+> [AGENTS.md](../AGENTS.md) > this history file > Notion. Where this names something
+> not yet built, the code is still the truth.
 >
-> **Active execution list:** the ordered, one-PR-at-a-time "what to build next" lives in
-> [`BUILD-SEQUENCE.md`](BUILD-SEQUENCE.md). This map holds the staged build and the mission.
+> **Execution list:** history pointed at [`BUILD-SEQUENCE.md`](BUILD-SEQUENCE.md).
+> Do not start there. `pnpm backlog` is the working view.
 > ([`MASTER-PLAN.md`](MASTER-PLAN.md) is ✅ completed history — its 48 items shipped 2026-06-20
 > to 2026-06-21; kept for the record, not for planning.)
 >

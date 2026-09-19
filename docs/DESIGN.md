@@ -152,7 +152,7 @@ or a new meta-framework. All slower and more locked-in than what you run today.
 
 ## Browse-page redesign standard ("calm, warm, scannable")
 
-The browse pages (Circles, Interests, Events, Practices, Programs, Partners, Directory,
+The browse pages (Circles, Channels, Events, Practices, Programs, Partners, Directory,
 Broadcast, Messages, Admin) were structurally fine (templates + tokens) but tactically ad-hoc:
 each hand-rolled its own cards, `text-[10px]/[11px]` fonts, and a page-level "sidebar boxes"
 column that duplicated the list. The standard, applied through Frequency's "a place to be
@@ -175,7 +175,7 @@ human" lens (local, human, not a SaaS dashboard):
 **Circles is the shipped exemplar** of this standard; the other nine pages roll out to match.
 
 > **Update 2026-06-03 (cohesion sweep, PR #106):** the rollout is **shipped**. Broadcasts,
-> Messages, Interests, Practices, Programs, Events, Friends, Partners, Directory all run on
+> Messages, Channels, Practices, Programs, Events, Friends, Partners, Directory all run on
 > `IndexTemplate` + the kit. Two systemic fixes landed at the primitive level: `StatStrip` was
 > **de-boxed** (borderless canvas row, matching Circles, so every page's stat row now reads the same),
 > and a shared **`PersonCard`** (`components/cards/person-card.tsx`, wrapping `EntityCard`) gives
@@ -194,19 +194,23 @@ The other half of "cobbled together" is structural, not visual. Audit: list page
 `IndexTemplate`; the feed uses `StreamTemplate`; but `DetailTemplate` **was used by zero
 pages** (now Circle/Channel/Event), so every single-entity page (a circle, a profile, an
 event) was hand-rolled, and a couple of pages (Practices, Programs) were also ad-hoc. Mixed
-shells = mixed headers, spacing, and action placement = the cobbled feel. Fix: **every page
-lives in one of three shells, and all role logic flows through the capability resolver.**
+shells = mixed headers, spacing, and action placement = the cobbled feel.
 
-### The three shells (best practice per area)
+> ⚠️ **Kit count:** the live kit is **seven shells**, not three and not eight. See
+> [PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md) §8: Stream · Index · Detail · Dashboard ·
+> Focus · WizardShell · Admin. `RailGrid` is not a shell. Interests is retired; say
+> **Channel**.
+
+### The browse / stream / detail shells (best practice per area)
 
 - **IndexTemplate (list / discovery).** title + description + a right-aligned `action` +
-  optional `toolbar` (filters) + body. Use for: Circles, Interests, Events, Partners,
+  optional `toolbar` (filters) + body. Use for: Circles, Channels, Events, Partners,
   Directory, Practices, Programs.
 - **StreamTemplate (the feed).** A composer over a scrolling stream. Use for the feed and
   any "what's happening" surface.
 - **DetailTemplate (single entity).** A context header (title, subtitle, badges, `actions`)
   over a tab row over a body that itself nests an Index or Stream. Use for a Circle,
-  Profile, Event, Interest, Program, or Practice detail. **Adopting this is the single
+  Profile, Event, Channel, Program, or Practice detail. **Adopting this is the single
   biggest unification win**, since it's currently unused.
 
 Rule: pick the shell by page type; never hand-roll a header. The shell owns the title,

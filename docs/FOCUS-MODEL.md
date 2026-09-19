@@ -1,9 +1,10 @@
 # The focus model: what Frequency is for, and where the game sits
 
-> **Status: PROPOSAL, awaiting an owner ruling.** Nothing here is decided.
-> Status for any work it produces lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json), never in this
-> file. Filed 2026-09-08 from an eight-lane repo sweep plus live production reads.
-> Decision record, once ruled: [ADR-1292](DECISIONS.md).
+> **Status: ACCEPTED** as [ADR-1403](DECISIONS.md) (owner, 2026-09-18). Interior of
+> the Collective. Does not override [ADR-1294](DECISIONS.md). Companion:
+> [`CORE-MODEL.md`](CORE-MODEL.md). Status for any work it produces lives in
+> [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json), never in this file. Filed 2026-09-08
+> from an eight-lane repo sweep plus live production reads.
 >
 > **This document explains a reframe. It does not track whether the reframe is done.**
 
@@ -318,7 +319,7 @@ There is one backlog. Nothing here becomes a parallel roadmap.
 | Order | Work | Where it goes | Depends on |
 |---|---|---|---|
 | ~~0~~ | ~~Register the Stripe webhook~~ | ✅ Closed 2026-09-08 (`OWN-050`); live payouts went live the same day | done |
-| **0** | Rule the focus model (§7) and the grace window (§8) | `OWN-066`, `ownerAction: ruling` | owner, before 1 Oct |
+| ~~**0**~~ | ~~Rule the focus model (§7) and the grace window (§8)~~ | ✅ Closed 2026-09-18 (`OWN-066`, [ADR-1403](DECISIONS.md)). `#6` `beta_grace` is still an owner flag. | done |
 | **1** | Give event attendance its own record, independent of the reward ledger | W0b, prerequisite for everything in Move 1 | — |
 | **2** | Rail collapse, centre button, feed hero, shared-bar default | W0b/W2, closes `QUEST-IA-DEBT` (ADR-293) | step 1 |
 | **3** | Membership wall → readiness; member "my memberships" surface; enforce `payment_status` | W8 money lane, pulled forward | step 0 |
@@ -337,7 +338,9 @@ a Space *is*), `OWN-063` (does a recurring series cost one event allowance or on
 
 ## 10. What the owner has to decide
 
-Six rulings. Everything else follows from them.
+**Ruled 2026-09-18.** The six answers live on [ADR-1403](DECISIONS.md). `#6`
+(`beta_grace`) is still an owner flag. The questions are kept so the ruling has
+a referent.
 
 | # | Ruling | Default if unanswered |
 |---|---|---|
