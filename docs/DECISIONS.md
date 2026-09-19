@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1441**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
+tree as of this index: **ADR-1444**. 1443 is SCAN-643. 1442 is the evening scan. 1441 is LIVE-306 on main.
 
 | Theme | Start here |
 |---|---|
@@ -46246,3 +46246,23 @@ The harness can still create a bare worktree. That is not repo-observable. What 
 **Consequences.** Crawlers on `/events/<slug>` and `/store|/market|/housing|/classifieds/<id>` no longer pay the (main) auth read. Space sitemap URLs still do, until SCAN-644.
 
 **Rows.** SCAN-643 (closed), SCAN-644 (filed).
+
+## ADR-1444: The app shell is a composer, not one 2600-line client module (LIVE-412)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-412` · numbered **1444** · corroborated by `components/layout/app-shell.tsx`, `components/layout/app-shell-model.ts`, `components/layout/app-shell-account.tsx`, `components/layout/app-shell-nav-list.tsx`
+
+**Context.** The 2026-09-18 survey filed LIVE-412: `app-shell.tsx` was one ~2632-line `'use client'` module on every `(main)` route. The 1800-line probe is a ratchet, not a quality definition. Raising the budget would hide the same fan-out the shell-weight gates already police.
+
+**Decision.**
+
+1. Extract the account dock (`Profile`, `useTheme`, `ProfileCard`, `AccountDropdown`) to `app-shell-account.tsx`.
+2. Extract `NavLinkList` to `app-shell-nav-list.tsx`.
+3. Extract NAV_AREAS builders, telescope set, and `itemAccess` to `app-shell-model.ts` (no `'use client'`).
+4. Leave the composer in `app-shell.tsx`: mobile drawer, tab bar, header, rails, fold ladder. Keep the 1800-line ratchet.
+5. Source-shape tests that pinned NavLinkList class strings now haystack the list module plus the shell that mounts it. Wiring assertions (`compact={leftStrip}`, fold ladder) stay on the composer.
+
+**Rejected.** Raising the line budget. Deleting unused lib exports (SCAN-502). Moving the mobile drawer in the same PR.
+
+**Consequences.** `app-shell.tsx` is the composer under the ratchet. SCAN-644 remains the next scan-lane row. Do not start Editor / Sites / App Platform from this close.
+
+**Rows.** LIVE-412 (closed).

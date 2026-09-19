@@ -38,7 +38,7 @@ Run against `origin/main` at `ab1902846` after SCAN-636 (#2733), SCAN-637 (#2731
 
 **Scorecard (honest gap to 10).** Security 8 (gates green; advisors known; HYG-100 unconfirmed). Wiring 8 (FilterBar closed; Space layout still dynamizes `/spaces/<slug>`). SEO/AIO 8 (sitemap coherent; Spotlight, events, and listings are ISR-eligible). Speed 7 (layout tax left on Space profiles). A11y 8 (gates hold; LIVE-186 flip still owner). Docs 8 (this file + one list updated; BUILD-LIST App Platform prose is still stale vs `deferredByName`).
 
-**Phased cleanup.** `pnpm packets --lane scan`. Order: SCAN-638 (draft only), SCAN-644, SCAN-641, SCAN-640 (after owner archive), LIVE-412. `SCAN-642` and `SCAN-643` closed.
+**Phased cleanup.** `pnpm packets --lane scan`. Next: **SCAN-644**. SCAN-638 drafted (do not apply). SCAN-641 and LIVE-412 closed. SCAN-640 waits on owner archive (21 rows). `SCAN-642` and `SCAN-643` closed.
 
 ## 2026-09-19 pass (full-repo, 14 days after scan two)
 
