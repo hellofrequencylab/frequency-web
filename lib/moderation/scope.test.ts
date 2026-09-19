@@ -39,6 +39,17 @@ describe('canModeratePost · the three arms of the posts policies', () => {
     }
   })
 
+  it('a granted Platform moderator, anywhere, without being staff', () => {
+    expect(canModeratePost({
+      callerId: ME,
+      communityRole: 'member',
+      webRole: 'moderator',
+      hostedCircleIds: [],
+      post: post(OTHER, THEIR_CIRCLE),
+    })).toBe(true)
+    expect(isStaff('moderator')).toBe(false)
+  })
+
   it('a host INSIDE a circle they host', () => {
     expect(canModeratePost({ ...asHost, post: post(OTHER, MY_CIRCLE) })).toBe(true)
   })
@@ -80,6 +91,9 @@ describe('canReviewLibrarySubmission · staff only, no creator arm', () => {
     expect(canReviewLibrarySubmission('admin')).toBe(true)
     expect(canReviewLibrarySubmission('janitor')).toBe(true)
   })
+  it('admits a granted Platform moderator', () => {
+    expect(canReviewLibrarySubmission('moderator')).toBe(true)
+  })
   it('refuses everyone else, including the absence of a role', () => {
     expect(canReviewLibrarySubmission('none')).toBe(false)
     expect(canReviewLibrarySubmission(null)).toBe(false)
@@ -91,6 +105,9 @@ describe('canAdministerAchievements · either staff axis, never the community la
   it('admits platform staff with no team_members row', () => {
     expect(canAdministerAchievements({ webRole: 'admin', staffRole: null })).toBe(true)
     expect(canAdministerAchievements({ webRole: 'janitor', staffRole: undefined })).toBe(true)
+  })
+  it('admits a granted Platform moderator with no team_members row', () => {
+    expect(canAdministerAchievements({ webRole: 'moderator', staffRole: null })).toBe(true)
   })
   it('admits a team_members role that writes the community domain', () => {
     for (const staffRole of ['owner', 'admin', 'operations', 'support'] as const) {
@@ -114,6 +131,7 @@ describe('isStaff is the lib/core/roles definition, re-exported', () => {
   it('reads the web_role axis only', () => {
     expect(isStaff('admin')).toBe(true)
     expect(isStaff('janitor')).toBe(true)
+    expect(isStaff('moderator')).toBe(false)
     expect(isStaff('none')).toBe(false)
     expect(isStaff(null)).toBe(false)
   })
@@ -170,6 +188,30 @@ describe('feed/actions.ts · deletePost, pinPost, unpinPost ask canModeratePost'
     const pinBlock = src.slice(src.indexOf('export async function pinPost('))
     expect(pinBlock).not.toContain('HOST_PLUS')
     expect(src).not.toContain("query = query.eq('author_id', caller.id)")
+  })
+})
+
+describe('library review surfaces admit a granted moderator, not a host', () => {
+  it('the review page and queue ask canReviewLibrarySubmission', () => {
+    const page = code('app/(main)/library/review/page.tsx')
+    const queue = code('components/widgets/library/library-review-queue.tsx')
+    const index = code('app/(main)/library/page.tsx')
+    expect(page).toContain('canReviewLibrarySubmission(caller.webRole)')
+    expect(queue).toContain('canReviewLibrarySubmission(caller.webRole)')
+    expect(index).toContain('canReviewLibrarySubmission(caller.webRole)')
+    expect(page).not.toMatch(/isStaff\(caller\.webRole\)/)
+    expect(index).not.toMatch(/atLeastRole\(caller\.community_role, 'host'\)/)
+  })
+})
+
+describe('admin/actions.ts · assignWebRole is the grant, and it cannot overwrite staff', () => {
+  it('exports assignWebRole and refuses a staff overwrite in source', () => {
+    const src = code('app/(main)/admin/actions.ts')
+    expect(src).toMatch(/export async function assignWebRole\(/)
+    const body = src.slice(src.indexOf('export async function assignWebRole('))
+    expect(body).toContain("role !== 'moderator'")
+    expect(body).toContain('isStaff(current)')
+    expect(body).toContain('profileId === caller.id')
   })
 })
 

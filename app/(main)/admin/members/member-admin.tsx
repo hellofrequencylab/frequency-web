@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import {
-  assignRole, deactivateMember, reactivateMember,
+  assignRole, assignWebRole, deactivateMember, reactivateMember,
   sendMagicLink, updateMemberProfile, deleteUserAccount,
 } from '../actions'
 import { EconomyPanel } from './economy-panel'
@@ -37,6 +37,8 @@ interface Member {
   avatar_url: string | null
   bio: string | null
   community_role: string
+  /** Coarse web_role. Staff values stay read-only here; none/moderator can be granted. */
+  web_role: string
   is_active: boolean | null
   /** The system voice (Vera, ADR-231): no sign-in, can't be deleted, chip reads Moderator. */
   is_system?: boolean
@@ -52,9 +54,11 @@ interface Member {
 export function MemberAdmin({
   members,
   emailMap,
+  canGrantModerator = false,
 }: {
   members: Member[]
   emailMap: Record<string, string>
+  canGrantModerator?: boolean
 }) {
   // Deep-link support: a profile's "Manage account" link lands here as
   // ?q=<handle>&member=<id> — pre-filter the roster to that member and open their row.
@@ -121,6 +125,7 @@ export function MemberAdmin({
               email={emailMap[m.id] ?? null}
               isExpanded={expandedId === m.id}
               onToggle={() => setExpandedId(expandedId === m.id ? null : m.id)}
+              canGrantModerator={canGrantModerator}
             />
           ))
         )}
@@ -136,11 +141,13 @@ function MemberRow({
   email,
   isExpanded,
   onToggle,
+  canGrantModerator,
 }: {
   member: Member
   email: string | null
   isExpanded: boolean
   onToggle: () => void
+  canGrantModerator: boolean
 }) {
   const [isPending, startTransition] = useTransition()
   const [editMode, setEditMode] = useState(false)
@@ -155,6 +162,18 @@ function MemberRow({
       await assignRole(m.id, role as CommunityRole)
       setStatus(`Role changed to ${role}`)
       setTimeout(() => setStatus(null), 2000)
+    })
+  }
+
+  function handleWebRoleChange(role: string) {
+    startTransition(async () => {
+      try {
+        await assignWebRole(m.id, role === 'moderator' ? 'moderator' : 'none')
+        setStatus(role === 'moderator' ? 'Platform moderator granted' : 'Platform moderator cleared')
+      } catch (err) {
+        setStatus(`Error: ${err instanceof Error ? err.message : String(err)}`)
+      }
+      setTimeout(() => setStatus(null), 3000)
     })
   }
 
@@ -291,6 +310,24 @@ function MemberRow({
               >
                 {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
               </Select>
+              {m.web_role === 'admin' || m.web_role === 'janitor' ? (
+                <p className="mt-2 text-meta text-muted">
+                  {m.web_role === 'janitor' ? 'Executive Admin' : 'Site Admin'}
+                </p>
+              ) : canGrantModerator ? (
+                <Select
+                  aria-label={`Platform role for ${m.display_name}`}
+                  value={m.web_role === 'moderator' ? 'moderator' : 'none'}
+                  onChange={e => handleWebRoleChange(e.target.value)}
+                  disabled={isPending}
+                  className="mt-2 text-meta"
+                >
+                  <option value="none">No platform role</option>
+                  <option value="moderator">Platform moderator</option>
+                </Select>
+              ) : m.web_role === 'moderator' ? (
+                <p className="mt-2 text-meta text-muted">Platform moderator</p>
+              ) : null}
             </div>
           </div>
 

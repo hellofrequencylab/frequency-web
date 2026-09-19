@@ -17,7 +17,7 @@ import { awardZapsForAction } from '@/lib/zaps'
 import { processGamificationEvent } from '@/lib/achievements'
 import { cancelAudit, reinstateAudit } from '@/lib/events/event-lifecycle'
 import { cancelSeries, refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
-import { atLeastRole, isStaff, isJanitor } from '@/lib/core/roles'
+import { asWebRole, atLeastRole, isStaff, isJanitor } from '@/lib/core/roles'
 import { coerceTierZaps } from '@/lib/practices/tiers'
 import { stampCircleSpaceId } from '@/lib/circles/store'
 import { verifyCrewCompletion } from '@/lib/crew/verify'
@@ -105,6 +105,38 @@ export async function assignRole(profileId: string, role: CommunityRole) {
   // Audit the role grant — a crown-jewel platform action (P8). Best-effort.
   await logAdminAction({ actorId: caller.id, action: 'role.assign', targetType: 'profile', targetId: profileId, detail: { role } })
   revalidatePath('/admin')
+}
+
+/** Grant or clear the curated Platform moderator web_role (OWN-054). Janitor or
+ *  team owner only. Never overwrites admin/janitor. Never a self-grant. */
+export async function assignWebRole(profileId: string, role: 'none' | 'moderator') {
+  const caller = await getCallerProfile()
+  const staff = await getStaffMember().catch(() => null)
+  const isSuper = !!caller && (isJanitor(caller.webRole) || staff?.role === 'owner')
+  if (!caller || !isSuper) throw new Error('Unauthorized')
+  if (role !== 'none' && role !== 'moderator') {
+    throw new Error('This grant only sets or clears Platform moderator.')
+  }
+  if (profileId === caller.id) throw new Error('You cannot grant this role to yourself.')
+  const admin = createAdminClient()
+  const { data: prior } = await admin
+    .from('profiles')
+    .select('web_role')
+    .eq('id', profileId)
+    .maybeSingle()
+  const current = asWebRole((prior as { web_role?: string | null } | null)?.web_role)
+  if (isStaff(current)) throw new Error('This grant cannot overwrite a staff web_role.')
+  const { error } = await admin.from('profiles').update({ web_role: role }).eq('id', profileId)
+  if (error) throw new Error(error.message)
+  await logAdminAction({
+    actorId: caller.id,
+    action: 'web_role.assign',
+    targetType: 'profile',
+    targetId: profileId,
+    detail: { role },
+  })
+  revalidatePath('/admin')
+  revalidatePath('/admin/members')
 }
 
 export async function deactivateMember(profileId: string) {

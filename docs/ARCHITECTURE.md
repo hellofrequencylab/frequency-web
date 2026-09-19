@@ -135,7 +135,7 @@ staff-only surfaces. `pnpm check:admin-client` ratchets the set of admin-client 
 | Axis | Column | Values | Means |
 |---|---|---|---|
 | Community trust | `profiles.community_role` | `member < crew < host < guide < mentor` (then the deprecated `admin`, `janitor` rungs) | Who leads Circles / Hubs / Nexuses. "host+" refers to **this** axis only. |
-| Staff | `profiles.web_role` | `none` \| `admin` \| `janitor` | Who may enter admin surfaces and the janitor-only crown jewels. Not a ladder you climb. |
+| Staff | `profiles.web_role` | `none` \| `admin` \| `janitor` \| `moderator` | Staff (`admin`/`janitor`) may enter admin surfaces and the janitor-only crown jewels. `moderator` is a granted Platform moderator (OWN-054), not staff. Not a ladder you climb. |
 
 ⚠️ Two rungs on the community axis are deprecated but **kept in the type and the Postgres enum**
 for ordering parity: `crew` (paid standing moved to the `membership_tier` entitlement, migration

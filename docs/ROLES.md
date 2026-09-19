@@ -268,6 +268,7 @@ so a visitor/member never sees an "Admin" header.
 - **Host / Guide / Mentor (volunteer leaders):** as Member today. Their network-scoped admin is NOT wired yet (see below); they do **not** see the platform Admin section for now.
 - **Admin (web_role):** the Admin section: Home, Programs, Operations, Growth, QR. Not Financials.
 - **Janitor (web_role):** all of Admin + Financials.
+- **Platform moderator (web_role `moderator`):** granted. Feed, library review, and achievement awards, without the Admin section. Not a side effect of hosting a Circle (OWN-054).
 
 Admin Home + the operator areas are gated to **staff admin/janitor** (`platformManage`
 surface). Personal **Settings** is not an admin tool; it lives on the profile card +
