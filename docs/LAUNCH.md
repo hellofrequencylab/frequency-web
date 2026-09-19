@@ -1,5 +1,10 @@
 # Launch runbook (free beta on frequencylocal.com)
 
+> ⚠️ **History, not the live plan.** Snapshot of the free-beta launch on frequencylocal.com.
+> Live plan: [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) + [`BUILD-LIST.md`](BUILD-LIST.md) +
+> [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md) + [`DECISIONS.md`](DECISIONS.md).
+> Status: [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json). Names: [`NAMING.md`](NAMING.md).
+
 The code and database are ready; what remains is **config** (domain + env) and opening
 the beta. The domain switch is env-only in code (`lib/site.ts` reads
 `NEXT_PUBLIC_SITE_URL`), so nothing here needs a code change. Ops doc; git is the home.
@@ -103,7 +108,7 @@ daily, event reminders every 15 min, weekly digest Sundays 14:00 UTC, queue drai
 
 - Sign up as a fresh user; the Getting Started funnel appears (photo, circle, adopt a
   practice, log a practice).
-- Find a circle, or **start one** around an Interest, and set its weekly practice.
+- Find a circle, or **start one** around a Channel, and set its weekly practice.
 - **Log a practice**: see the reward toast; confirm WAM increments on the admin/analytics
   surface.
 - Block then unblock a member; delete a throwaway account.

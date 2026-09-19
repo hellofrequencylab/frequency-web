@@ -4,8 +4,9 @@
 > This document is the spec and the rationale. It does **not** record what is done, because prose
 > cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
 
-**Status:** ✅ Audit + the redesign it produced. The audit stands as written below (it is the
-record of what was wrong); **ADR-953 to ADR-957** are the answers, shipped in the same PR.
+> ⚠️ **Frozen snapshot (2026-08-06). Do not update status, grades, or leftover Interests
+> findings here.** Canon is [NAMING.md](NAMING.md): Channel. Live menu law is
+> [MENU-CONTRACT.md](MENU-CONTRACT.md). Not the live plan.
 
 **The last open item, mobile header sub-links (§2.3 #6), was taken up as `LIVE-106` and shipped
 ([ADR-1118](DECISIONS.md)).** The count quoted here was wrong in the same way the backlog row's
