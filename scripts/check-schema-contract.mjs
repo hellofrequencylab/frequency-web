@@ -95,7 +95,7 @@ export const ALLOWLIST = [
       'lets the localized ADR-246 cast at the call site go.',
     owner: 'LIVE-386',
   },
-  // PROG-CAL2–8. Migration 20270345006500 is in the tree and is not applied from this session
+  // PROG-CAL2–8. Migration 20270345006600 is in the tree and is not applied from this session
   // (no apply_migration). Types regenerate after merge. Retires on the next lib/database.types.ts pass.
   ...[
     { file: 'app/(main)/spaces/[slug]/settings/calendar/plan-actions.ts', table: 'space_plan_shares', column: null, kind: 'table' },
@@ -113,7 +113,7 @@ export const ALLOWLIST = [
     ...row,
     added: '2026-09-19',
     reason:
-      'ADR-1466 Space Plans. Columns and tables ship in 20270345006500 and are not in the checked-in generated types until the migration is applied and types regenerate. Do not apply from an agent session.',
+      'ADR-1466 Space Plans. Columns and tables ship in 20270345006600 and are not in the checked-in generated types until the migration is applied and types regenerate. Do not apply from an agent session.',
     owner: 'PROG-CAL2',
   })),
 ]
