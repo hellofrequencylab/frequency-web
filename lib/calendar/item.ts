@@ -55,4 +55,6 @@ export interface CalendarEvent {
   description?: string | null
   /** A private entry as the staff form edits it. Present only when `entryId` is. */
   entryInput?: EntryInput | null
+  /** The Plan this calendar item belongs to. */
+  planId?: string | null
 }

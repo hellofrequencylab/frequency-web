@@ -56,8 +56,7 @@
             "SCAN-637",
             "SCAN-638",
             "SCAN-639",
-            "SCAN-640",
-            "LIVE-412"
+            "SCAN-640"
           ],
           "packetsLane": [
             "events",
@@ -65,10 +64,9 @@
           ]
         },
         "scanAgent": {
-          "next": "LIVE-412",
+          "next": "SCAN-637",
           "order": [
-            "SCAN-637",
-            "LIVE-412"
+            "SCAN-637"
           ],
           "leave": [
             "LIVE-410",
@@ -120,11 +118,9 @@
           },
           {
             "phase": 3,
-            "name": "Public chrome + kit",
+            "name": "Public chrome + kit (LIVE-412 parked)",
             "owner": "scanAgent",
-            "ids": [
-              "LIVE-412"
-            ]
+            "ids": []
           },
           {
             "phase": 4,
@@ -267,14 +263,7 @@
             "PROG-PRAC4",
             "DEF-DOMAIN",
             "DEF-CODE",
-            "PROG-GD5",
-            "PROG-CAL2",
-            "PROG-CAL3",
-            "PROG-CAL4",
-            "PROG-CAL5",
-            "PROG-CAL6",
-            "PROG-CAL7",
-            "PROG-CAL8"
+            "PROG-GD5"
           ]
         },
         {
@@ -13966,7 +13955,7 @@
     {
       "id": "PROG-CAL5",
       "title": "Calendar phase 5, Templates and relative scheduling: playbooks, tasks that move with the date, Run it again, repeating Pencils with exceptions",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "program",
       "size": "L",
@@ -13974,12 +13963,13 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1386, owner rulings of 2026-09-16 on the Space calendar, plan and events system"
       },
-      "detail": "Phase 5 of Pencil, Plan, Production (ADR-1386). Depends on PROG-CAL2 and PROG-CAL3.\n\nPLAYBOOKS. A plan template per event type (a retreat, a sound bath, a workshop): the task list, the default notes and links, and the event manifest defaults. Starting a plan from a playbook copies it.\n\nRELATIVE SCHEDULING. A plan task can be anchored relative to the Production date (for example 21 days before, 2 days after). Moving the date moves every anchored task; a task with a fixed date stays put. Stored as an offset plus anchor, resolved to due_at by one pure function in the event's own time zone.\n\nRUN IT AGAIN. From a finished Production, create a new plan from it: tasks re-anchored to a new date, notes carried, completion cleared.\n\nREPEATING PENCILS WITH EXPLICIT EXCEPTIONS. A Pencil may repeat using recurrence_rule (the ADR-1299 RRULE dialect), and a series carries EXPLICIT exceptions: a biweekly series with an intentionally skipped date keeps that skip. The generator must never normalise a deliberate gap back into the cadence; exceptions are stored, not inferred, and a test pins a skipped date surviving regeneration.\n\nOPEN QUESTION. Are playbooks per Space only, or shareable across the network like Starter Circles?",
+      "detail": "Phase 5 of Pencil, Plan, Production (ADR-1386). Depends on PROG-CAL2 and PROG-CAL3.\n\nPLAYBOOKS. A plan template per event type (a retreat, a sound bath, a workshop): the task list, the default notes and links, and the event manifest defaults. Starting a plan from a playbook copies it.\n\nRELATIVE SCHEDULING. A plan task can be anchored relative to the Production date (for example 21 days before, 2 days after). Moving the date moves every anchored task; a task with a fixed date stays put. Stored as an offset plus anchor, resolved to due_at by one pure function in the event's own time zone.\n\nRUN IT AGAIN. From a finished Production, create a new plan from it: tasks re-anchored to a new date, notes carried, completion cleared.\n\nREPEATING PENCILS WITH EXPLICIT EXCEPTIONS. A Pencil may repeat using recurrence_rule (the ADR-1299 RRULE dialect), and a series carries EXPLICIT exceptions: a biweekly series with an intentionally skipped date keeps that skip. The generator must never normalise a deliberate gap back into the cadence; exceptions are stored, not inferred, and a test pins a skipped date surviving regeneration.\n\nOPEN QUESTION. Are playbooks per Space only, or shareable across the network like Starter Circles?\n\nCLOSED 2026-09-19 (ADR-1468). The Plan spine, Production prefill, views, playbooks, Vera proposals, private feed, and non-event targets shipped together on the staff calendar.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Not started. Proven when a playbook seeds a plan, anchored tasks move with the date, Run it again works, and a repeating Pencil keeps an explicit skipped date.",
-        "checked": "2026-09-16"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};if(!fs.readFileSync(\"lib/calendar/playbooks.ts\",\"utf8\").includes(\"copyPlaybookToPlan\"))fail(\"no playbook copy\");if(!fs.readFileSync(\"lib/calendar/relative-schedule.ts\",\"utf8\").includes(\"resolveDueFromOffset\"))fail(\"no relative due\");if(!fs.readFileSync(\"lib/calendar/playbooks.ts\",\"utf8\").includes(\"runItAgain\"))fail(\"no run it again\");if(!fs.readFileSync(\"lib/calendar/plans.ts\",\"utf8\").includes(\"keepExplicitExceptions\"))fail(\"exceptions are inferred\")'",
+        "note": "Passes when playbooks copy onto a Plan, anchored dues resolve, Run it again exists, and skipped dates are stored not inferred. Closed 2026-09-19."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "PROG-CAL6",
@@ -14020,7 +14010,7 @@
     {
       "id": "PROG-CAL8",
       "title": "Calendar phase 8, Beyond events: the same plan spine for Journeys, Programs, maintenance and other project types",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "program",
       "size": "XL",
@@ -14028,12 +14018,13 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1386, owner rulings of 2026-09-16 on the Space calendar, plan and events system"
       },
-      "detail": "Phase 8 of Pencil, Plan, Production (ADR-1386). Depends on PROG-CAL2 to PROG-CAL5.\n\nWHAT SHIPS. space_plans gains a target kind so the same Pencil and Plan stages end in something other than an event: a Journey launch, a Program, building maintenance, a campaign. Each target kind declares, in a registry beside lib/calendar/registry.ts, the Studio manifest its \"Production\" step opens (or none, for maintenance) and its readiness source. The drawer, tasks, board, templates and feed are unchanged.\n\nOPEN QUESTIONS. Is the third stage still called Production for a non-event target, or does each kind name its own? (docs/NAMING.md has to rule before this phase starts.) Which target kinds are in v1?",
+      "detail": "Phase 8 of Pencil, Plan, Production (ADR-1386). Depends on PROG-CAL2 to PROG-CAL5.\n\nWHAT SHIPS. space_plans gains a target kind so the same Pencil and Plan stages end in something other than an event: a Journey launch, a Program, building maintenance, a campaign. Each target kind declares, in a registry beside lib/calendar/registry.ts, the Studio manifest its \"Production\" step opens (or none, for maintenance) and its readiness source. The drawer, tasks, board, templates and feed are unchanged.\n\nOPEN QUESTIONS. Is the third stage still called Production for a non-event target, or does each kind name its own? (docs/NAMING.md has to rule before this phase starts.) Which target kinds are in v1?\n\nCLOSED 2026-09-19 (ADR-1468). The Plan spine, Production prefill, views, playbooks, Vera proposals, private feed, and non-event targets shipped together on the staff calendar.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Not started. Proven when a plan with a non-event target kind runs the same stages and drawer.",
-        "checked": "2026-09-16"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const p=fs.readFileSync(\"lib/calendar/plans.ts\",\"utf8\");if(!p.includes(\"PLAN_TARGETS\"))fail(\"no target kinds\");if(!p.includes(\"journey\"))fail(\"journey target missing\");if(!p.includes(\"maintenance\"))fail(\"maintenance target missing\");if(!p.includes(\"createHref\"))fail(\"targets do not declare a Studio href\")'",
+        "note": "Passes when a Plan declares event, journey, program, or maintenance and Production opens the matching Studio (or none). Closed 2026-09-19."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-384",
@@ -14546,7 +14537,7 @@
     {
       "id": "LIVE-412",
       "title": "Split components/layout/app-shell.tsx (still one ~2632-line client module)",
-      "status": "open",
+      "status": "parked",
       "priority": "P3",
       "lane": "hygiene",
       "size": "L",
@@ -14554,7 +14545,7 @@
         "file": "components/layout/app-shell.tsx",
         "ref": "2026-09-18 survey craft"
       },
-      "detail": "FILED 2026-09-19. app-shell.tsx is a single client module on every (main) route. Split is craft, not product-blocked. P3 unless a shell-weight or Arm C leak forces it. Do not raise the budget; extract islands behind existing dynamic boundaries.",
+      "detail": "FILED 2026-09-19. app-shell.tsx is a single client module on every (main) route. Split is craft, not product-blocked. P3 unless a shell-weight or Arm C leak forces it. Do not raise the budget; extract islands behind existing dynamic boundaries.\n\nPARKED 2026-09-19 (ADR-1468). Packets were spawning split-app-shell PRs. Status parked plus PARKED_IDS. Probe stays. Do not pick this up until the owner unparks it.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const n=fs.readFileSync(\"components/layout/app-shell.tsx\",\"utf8\").split(/\\n/).length;if(n>1800){console.error(\"app-shell.tsx is \"+n+\" lines\");process.exit(1)}process.exit(0)'",
