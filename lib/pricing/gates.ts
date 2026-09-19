@@ -122,7 +122,7 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // The WALL that used to be smuggled inside `space_email` is `space_campaigns` below: messaging your
   // own people is free inside the send allowance, running an acquisition machine is paid. Do not
   // re-add either key; a plan ladder for these two lives in feature-meters.ts.
-  space_automation: { axis: 'plan', minEntitlement: 'collective', enabled: true },
+  space_automation: { axis: 'plan', minEntitlement: 'business', enabled: true },
   // 🔴 `space_team` and `space_multi_pipeline` USED TO SIT HERE and are deliberately gone (ADR-917).
   // Both were decorative AND collided with their own meters: zero call sites outside this file, so
   // neither ever refused anyone, while `space_team` simultaneously promised Collective three included
@@ -225,7 +225,7 @@ export function meetsGate(gate: FeatureGate, account: { tier?: EntitlementTier |
     return have >= need
   }
   const have = PLAN_RANK[asSpacePlan(account.plan)] ?? 0
-  const need = PLAN_RANK[gate.minEntitlement as SpacePlan] ?? 0
+  const need = PLAN_RANK[asSpacePlan(gate.minEntitlement)] ?? 0
   return have >= need
 }
 

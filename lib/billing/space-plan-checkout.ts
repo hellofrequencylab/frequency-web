@@ -10,7 +10,7 @@
 import { stripe, appUrl } from './stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { billingLive, getPricingValues, loadPricingFlags, type PricingFlagKey } from '@/lib/pricing/settings'
-import { asAddonKey, type AddonKey, type SpacePlan } from '@/lib/pricing/plans'
+import { asAddonKey, asSpacePlan, type AddonKey, type SpacePlan } from '@/lib/pricing/plans'
 import { resolveStripePriceId } from './pricing-prices'
 import {
   asCatalogItemKey,
@@ -49,7 +49,7 @@ export async function spacePlanSellable(plan: SpacePlan | string): Promise<boole
 type LoadoutPlan = 'business' | 'collective' | 'nonprofit' | 'independent'
 const LOADOUT_FLAG: Record<LoadoutPlan, PricingFlagKey> = {
   business: 'plan_business_enabled',
-  collective: 'plan_collective_enabled',
+  collective: 'plan_business_enabled',
   nonprofit: 'plan_nonprofit_enabled',
   independent: 'plan_independent_enabled',
 }
@@ -195,7 +195,7 @@ function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; pe
   // Independent is a flat standalone white-label base, OFF the network — no metered add-ons layer on it.
   if (loadout.plan === 'independent') return [{ key: 'independent_base', perSeat: false }, ...operatorSeat]
   // Business + Collective share the depth ladder: a flat base plus the optional AI add-on (and seats).
-  const base: CatalogItemKey = loadout.plan === 'collective' ? 'collective_base' : 'business_base'
+  const base: CatalogItemKey = 'business_base'
   const out: { key: CatalogItemKey; perSeat: boolean }[] = [{ key: base, perSeat: false }]
   const addons = [...new Set((loadout.addons ?? []).map((a) => asAddonKey(typeof a === 'string' ? a : null)).filter((a): a is AddonKey => a !== null))]
   for (const addon of addons) {
@@ -306,14 +306,14 @@ export async function createSpaceLoadoutCheckout(
     if (!priceId) {
       // The base item failing to resolve is fatal (no plan to sell); a missing add-on price just drops
       // that add-on from the loadout rather than blocking the whole checkout.
-      if (key === 'business_base' || key === 'collective_base' || key === 'independent_base' || key === 'nonprofit_seat') return null
+      if (key === 'business_base' || key === 'independent_base' || key === 'nonprofit_seat') return null
       continue
     }
     lineItems.push({ price: priceId, quantity: perSeat ? seatQuantity : 1 })
   }
   if (lineItems.length === 0) return null
 
-  const plan = loadout.plan
+  const plan = asSpacePlan(loadout.plan)
   const metadata = { kind: 'space_plan', space_id: spaceId, plan, billing_interval: interval, ...(await checkoutGaMetadata()) }
   // 14-day per-item trial (operator-editable via pricing settings, default 14). Stripe starts the
   // subscription in `trialing`, which the reconciler treats as active, so the plan is granted during the

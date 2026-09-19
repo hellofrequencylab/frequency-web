@@ -47,7 +47,7 @@
             "W0b"
           ],
           "next": [
-            "LIVE-228"
+            "LIVE-242"
           ],
           "leave": [
             "SCAN-636",
@@ -205,7 +205,6 @@
           "ids": [
             "HYG-078",
             "PROG-R4",
-            "LIVE-228",
             "PROG-R5",
             "PROG-R6",
             "PROG-R7",
@@ -10854,7 +10853,7 @@
     {
       "id": "LIVE-228",
       "title": "Merge Collective into Business at $49; grandfather the six granted Spaces",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "L",
@@ -10862,11 +10861,12 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "\u00a75"
       },
-      "detail": "OWNER RULING 2026-09-08: one paid tier at $49 with 2 seats included. Business is $29 today and Collective is $79 list / $49 founding, so this is a 67% raise on Business and a hold at the founding rate for Collective.\n\nProduction on 2026-09-08: spaces.plan = free 15, collective 6, null 1. ZERO Business, zero Nonprofit, zero Independent. space_subscription_items = 0 and space_billing_agreements = 1, so the six Collective Spaces were GRANTED by hand (lib/billing/space-beta-grant.ts), never bought. Nobody has ever been charged, which makes this the cheapest a price change will ever be - but the six still need telling, and the owner ruled they grandfather AT $49 rather than dropping to free.\n\nTouches lib/pricing/plans.ts, pricing-keys.ts (+ RETIRED_CATALOG_ITEM_KEYS for collective_base), one migration, and scripts/check-collective.mjs which pins the six tier names and must be rewritten in the same PR.",
+      "detail": "OWNER RULING 2026-09-08: one paid tier at $49 with 2 seats included. Business is $29 today and Collective is $79 list / $49 founding, so this is a 67% raise on Business and a hold at the founding rate for Collective.\n\nProduction on 2026-09-08: spaces.plan = free 15, collective 6, null 1. ZERO Business, zero Nonprofit, zero Independent. space_subscription_items = 0 and space_billing_agreements = 1, so the six Collective Spaces were GRANTED by hand (lib/billing/space-beta-grant.ts), never bought. Nobody has ever been charged, which makes this the cheapest a price change will ever be - but the six still need telling, and the owner ruled they grandfather AT $49 rather than dropping to free.\n\nTouches lib/pricing/plans.ts, pricing-keys.ts (+ RETIRED_CATALOG_ITEM_KEYS for collective_base), one migration, and scripts/check-collective.mjs which pins the six tier names and must be rewritten in the same PR.\n\nCLOSED 2026-09-19 (ADR-1436). PREMISE RE-TESTED: SPACE_PLANS still named collective; business_base was 2900 cents; collective_base was a live catalog item. CODE: SPACE_PLANS is free/business/nonprofit/independent; asSpacePlan('collective') is business; business_base is amountsFromMonthly(4900, 4900); collective_base is on RETIRED_CATALOG_ITEM_KEYS. Public advertised ladder drops Collective. Migration 20270345006100 rewrites stored collective rows. The sell switches stay operator-flipped.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/pricing/plans.ts\",\"utf8\");const m=s.match(/SPACE_PLANS[^=]*=\\s*\\[([^\\]]*)\\]/);if(!m){console.error(\"SPACE_PLANS not found\");process.exit(1)}if(/collective/.test(m[1])){console.error(\"collective still in SPACE_PLANS\");process.exit(1)}process.exit(0)'"
-      }
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-229",

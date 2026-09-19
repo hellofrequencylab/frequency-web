@@ -15,23 +15,24 @@
 // `spaceHasEntitlement` UNION reader consumes (lib/spaces/entitlements.ts). We do NOT restructure
 // the readers here; this only computes the keys they read.
 
-/** The Space billing tiers (the spaces.plan label). 'free' = no paid plan. The Community Collective model
- *  (ADR-811) orders these by CAPABILITY (gates.ts PLAN_RANK ranks on this), NOT price:
- *  `free < business < collective ~ nonprofit ~ independent`. Business ($29) = run-your-practice depth;
- *  Collective ($79) adds automation + team + collaboration; Non Profit ($39) = the Collective toolkit,
- *  verified; Independent (~$249) = Collective depth + white-label, and rides `network_connected=false`
- *  (standalone / standard SaaS). Non Profit + Independent rank AT/ABOVE Collective so they clear every
- *  collective-floor gate. Legacy `business`/`nonprofit` spaces pass through unchanged (grandfathered). */
-export const SPACE_PLANS = ['free', 'business', 'collective', 'nonprofit', 'independent'] as const
+/** The Space billing tiers (the spaces.plan label). 'free' = no paid plan. CORE-MODEL §5 / LIVE-228
+ *  (ADR-1436) orders these by CAPABILITY (gates.ts PLAN_RANK ranks on this), NOT price:
+ *  `free < business ~ nonprofit ~ independent`. Business ($49, two seats) is the one paid advertised
+ *  tier and carries the former Collective depth (automation, team, pipelines, programs). Non Profit
+ *  ($39) is that toolkit, verified; Independent (~$249) adds white-label and rides
+ *  `network_connected=false`. A stored `collective` label remaps to `business` at read time
+ *  (LEGACY_PLAN_REMAP) so the six granted Spaces keep paying the $49 they were grandfathered at.
+ *  Legacy `pro`/`practitioner` labels still fold in too. */
+export const SPACE_PLANS = ['free', 'business', 'nonprofit', 'independent'] as const
 
 export type SpacePlan = (typeof SPACE_PLANS)[number]
 
 /** Operator-facing label for a Space tier (member/operator copy, plain voice, no em dashes). "Business" and
- *  "Non Profit" are the two public designators; Collective + Independent are the higher tiers (NAMING.md, ADR-811). */
+ *  "Non Profit" are the two public designators; Independent is the unadvertised white-label tier
+ *  (NAMING.md, ADR-811, LIVE-227). Collective is no longer a plan label (LIVE-228). */
 export const SPACE_PLAN_LABEL: Record<SpacePlan, string> = {
   free: 'Free',
   business: 'Business',
-  collective: 'Collective',
   nonprofit: 'Non Profit',
   independent: 'Independent',
 }
@@ -50,6 +51,9 @@ const LEGACY_PLAN_REMAP: Record<string, SpacePlan> = {
   organization: 'nonprofit',
   // white-label is now the Independent tier (ADR-811 un-folds it from Business).
   whitelabel: 'independent',
+  // Collective merged into Business at $49 (LIVE-228 / ADR-1436). Stored rows and checkout
+  // loadouts that still say `collective` resolve here until the migration rewrites them.
+  collective: 'business',
 }
 
 /** Narrow an arbitrary string (e.g. the raw `spaces.plan`) to a known SpacePlan, defaulting to 'free'
@@ -97,21 +101,18 @@ export const BUSINESS_DEPTH_ENTITLEMENT_KEYS: readonly string[] = [
   'email',
   'reporting',
   'space_full_website',
-]
-
-/** Collective ($79) depth = Business depth PLUS the scale + collaboration tools: marketing automation,
- *  multiple pipelines, and team seats. (Collaboration hosting itself is gated by the `space_collaborators`
- *  plan-rank floor in gates.ts at 'collective', not an entitlement key.) Non Profit grants this same set. */
-export const COLLECTIVE_DEPTH_ENTITLEMENT_KEYS: readonly string[] = [
-  ...BUSINESS_DEPTH_ENTITLEMENT_KEYS,
   'automation',
   'multi_pipeline',
   'team',
-  // Programs on Channels (ADR-864/865): running a Program is Collective depth.
+  // Programs on Channels (ADR-864/865): running a Program is paid-Space depth.
   // While billing is OFF the seam stays permissive (the ADR-370 invariant); the
   // one-Program-per-Space unique index caps creation in the meantime.
   'program',
 ]
+
+/** Former Collective depth. LIVE-228 folded it into Business; Non Profit still grants this same set.
+ *  Kept as an alias so Independent can extend it and older callers do not fork a second list. */
+export const COLLECTIVE_DEPTH_ENTITLEMENT_KEYS: readonly string[] = BUSINESS_DEPTH_ENTITLEMENT_KEYS
 
 /** Independent (~$249, white-label, network-disconnected) depth = Collective depth PLUS branding
  *  (`whitelabel`). White-label is UN-FOLDED from Business (ADR-811) into this standalone tier only. */
@@ -157,7 +158,6 @@ export function planKeysWithAddons(plan: SpacePlan, addons: readonly AddonKey[])
 const BASE_PLAN_KEYS: Record<SpacePlan, readonly string[]> = {
   free: [],
   business: BUSINESS_DEPTH_ENTITLEMENT_KEYS,
-  collective: COLLECTIVE_DEPTH_ENTITLEMENT_KEYS,
   nonprofit: COLLECTIVE_DEPTH_ENTITLEMENT_KEYS,
   independent: INDEPENDENT_DEPTH_ENTITLEMENT_KEYS,
 }
@@ -173,7 +173,6 @@ const BASE_PLAN_KEYS: Record<SpacePlan, readonly string[]> = {
 const PLAN_ENTITLEMENT_KEYS: Record<SpacePlan, readonly string[]> = {
   free: [],
   business: BUSINESS_DEPTH_ENTITLEMENT_KEYS,
-  collective: COLLECTIVE_DEPTH_ENTITLEMENT_KEYS,
   nonprofit: COLLECTIVE_DEPTH_ENTITLEMENT_KEYS,
   independent: INDEPENDENT_DEPTH_ENTITLEMENT_KEYS,
 }

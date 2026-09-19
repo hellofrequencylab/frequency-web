@@ -12,7 +12,7 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
-- **Extra operator seats have a public price.** The pricing page and the comparison grid read it from the catalog. Your first seat on a Space is still included.
+- **Business is the one paid Space plan, at $49, with two seats.** Collective is no longer a plan you pick. A Space that was on Collective is now on Business at that same $49. Non Profit and Independent are unchanged. Independent is still sold by hand.
 
 - **A Space has one create form.** The extra "Running a business?" shortcut is gone. Pick what you run, including a business, on Create a space. Niche doors still land on the matching type.
 

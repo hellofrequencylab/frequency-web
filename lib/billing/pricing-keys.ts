@@ -239,7 +239,6 @@ export function takeRateRungForPlan(plan: SpacePlan | string | null | undefined)
     case 'nonprofit':
       return 'nonprofit'
     case 'business':
-    case 'collective':
     case 'independent':
       return 'paid'
     default:
@@ -433,7 +432,6 @@ export const BILLING_INTERVALS: readonly BillingInterval[] = ['month', 'year']
  *  into the Business tier); see RETIRED_CATALOG_KEYS. */
 export const CATALOG_ITEM_KEYS = [
   'business_base',
-  'collective_base',
   'independent_base',
   'addon_ai',
   'nonprofit_seat',
@@ -549,7 +547,7 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     // ⚠️ This does NOT touch anyone already locked at $19. A lock is a RECORD on the subscription, read
     // back by space-subscriptions-reconcile.ts and founding-payment.ts, not a lookup into this table —
     // which is why those tests keep their 1900 fixtures.
-    ...amountsFromMonthly(2900, 2900), // list $29, no founding rate (ADR-1067)
+    ...amountsFromMonthly(4900, 4900), // list $49, no founding rate (LIVE-228 / ADR-1436)
   },
   addon_ai: {
     key: 'addon_ai',
@@ -560,14 +558,6 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     label: 'Frequency Vera AI (add-on)',
     perSeat: false,
     ...amountsFromMonthly(2000, 2000), // +$20, the sole cross-tier optional add-on (ADR-552/590)
-  },
-  collective_base: {
-    // Collective (ADR-811): everything in Business plus automations, team roles, multiple pipelines, and
-    // hosting collaborators. FOUNDING beta: $49/mo under the $79 list ($490 / $790 yearly, two months free).
-    key: 'collective_base',
-    label: 'Frequency Collective',
-    perSeat: false,
-    ...amountsFromMonthly(7900, 4900), // list $79, founding (beta) $49
   },
   independent_base: {
     // Independent (ADR-811): everything in Collective plus your own brand + custom domain, standalone and
@@ -678,7 +668,12 @@ export const RETIRED_ADDON_ITEM_KEYS: readonly string[] = ['addon_marketing', 'a
 
 /** The retired CATALOG item keys on the catalog price-key axis (ADR-552): the former Pro base and
  *  Organization plan (folded into Business), plus the ADR-472 add-on items. Kept resolvable; never synced. */
-const RETIRED_CATALOG_ITEM_KEYS: readonly string[] = ['pro_base', 'organization', ...RETIRED_ADDON_ITEM_KEYS]
+const RETIRED_CATALOG_ITEM_KEYS: readonly string[] = [
+  'pro_base',
+  'organization',
+  'collective_base',
+  ...RETIRED_ADDON_ITEM_KEYS,
+]
 
 /** The retired LEGACY per-plan bases + the periods they offered (ADR-552): practitioner had monthly +
  *  annual; organization + whitelabel were monthly-only. Kept resolvable on the `<plan>_<period>` axis. */

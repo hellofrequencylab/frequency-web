@@ -562,7 +562,7 @@ export const COMMUNITY_FUNNEL: FunnelConfig = {
       q: 'What does it actually cost?',
       a: costAnswer(
         'the memberships you sell',
-        ` When you grow a team and host collaborators, Collective adds that for ${P.collectiveList} a month, at a ${RATE.collective} network rate.`,
+        ` When you grow a team and host collaborators, that is still Business, at ${P.businessList} a month.`,
       ),
     },
     { q: 'Can I take my members with me?', a: 'Yes, any time. Export your whole member list whenever you want.' },

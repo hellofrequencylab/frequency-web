@@ -184,11 +184,11 @@ describe('a granted Space checks out at the founding rate while everyone else pa
     beta.active = false // the window is SHUT, which is the only world the grant exists for
   })
 
-  it('WITHOUT the grant: Business and Collective resolve the LIST key, monthly and yearly', async () => {
+  it('WITHOUT the grant: Business resolves the LIST key; legacy collective loadout bills business_base', async () => {
     await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'month' })
     expect(prices()).toEqual(['price_business_base_month_list'])
     await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'year' })
-    expect(prices()).toEqual(['price_collective_base_year_list'])
+    expect(prices()).toEqual(['price_business_base_year_list'])
   })
 
   it('WITH the grant: the same calls resolve the FOUNDING key instead', async () => {
@@ -196,13 +196,13 @@ describe('a granted Space checks out at the founding rate while everyone else pa
     await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'month' })
     expect(prices()).toEqual(['price_business_base_month'])
     await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'year' })
-    expect(prices()).toEqual(['price_collective_base_year'])
+    expect(prices()).toEqual(['price_business_base_year'])
   })
 
   it('the grant reaches EVERY item in the loadout, not only the base', async () => {
     grant.granted = true
     await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'month', addons: ['ai'] })
-    expect(prices()).toEqual(['price_collective_base_month', 'price_addon_ai_month'])
+    expect(prices()).toEqual(['price_business_base_month', 'price_addon_ai_month'])
   })
 
   it('the grant reaches the YEARLY key too, not only the monthly one', async () => {
@@ -220,13 +220,13 @@ describe('a granted Space checks out at the founding rate while everyone else pa
     }
   })
 
-  it('with the window OPEN the grant changes nothing, because everyone already gets founding', async () => {
+  it('with the window OPEN the grant changes nothing on flat pricing, because founding == list', async () => {
     beta.active = true
     await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'month' })
     const ungranted = prices()
     grant.granted = true
     await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'month' })
-    expect(ungranted).toEqual(['price_collective_base_month'])
+    expect(ungranted).toEqual(['price_business_base_month'])
     expect(prices()).toEqual(ungranted)
   })
 })
