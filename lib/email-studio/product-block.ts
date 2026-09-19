@@ -31,7 +31,7 @@ import 'server-only'
 
 import { getProduct } from '@/lib/commerce/products'
 import { formatPriceCents } from '@/lib/commerce/types'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { journeySlugsByPlanId } from '@/lib/journeys/paid'
 import { journeyPublicPath } from '@/lib/journeys/sales-path'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
@@ -74,12 +74,8 @@ export async function resolveProductRefs(layout: EntityLayout): Promise<EntityLa
 
   let journeySlug: string | null = null
   if (product.productKind === 'journey' && product.journeyPlanId) {
-    const { data } = await createAdminClient()
-      .from('journey_plans')
-      .select('slug')
-      .eq('id', product.journeyPlanId)
-      .maybeSingle()
-    journeySlug = (data as { slug?: string } | null)?.slug ?? null
+    const slugs = await journeySlugsByPlanId([product.journeyPlanId])
+    journeySlug = slugs.get(product.journeyPlanId) ?? null
   }
 
   const price =

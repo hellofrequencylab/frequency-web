@@ -92,3 +92,12 @@ export async function getJourneyOffer(planId: string): Promise<JourneyOffer | nu
     return null
   }
 }
+
+/** Slugs for Journey plan ids, one round trip. Used so Market and Shop cards can point at the
+ *  sales page without each listing file taking its own admin-client import. */
+export async function journeySlugsByPlanId(planIds: string[]): Promise<Map<string, string>> {
+  const ids = [...new Set(planIds.filter(Boolean))]
+  if (ids.length === 0) return new Map()
+  const { data } = await createAdminClient().from('journey_plans').select('id, slug').in('id', ids)
+  return new Map(((data ?? []) as { id: string; slug: string }[]).map((row) => [row.id, row.slug]))
+}
