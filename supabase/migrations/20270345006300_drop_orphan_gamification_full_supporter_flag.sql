@@ -1,5 +1,5 @@
 -- ============================================================================
--- DROP THE ORPHAN gamification_full_supporter FLAG (HYG-078 / ADR-1440)
+-- DROP THE ORPHAN gamification_full_supporter FLAG (HYG-078 / ADR-1441)
 -- ============================================================================
 --
 -- THE DEFECT. platform_flags.gamification_full_supporter is a stored boolean

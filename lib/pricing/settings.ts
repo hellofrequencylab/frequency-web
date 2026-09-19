@@ -166,7 +166,7 @@ export const PRICING_FLAG_KEYS = [
   // NO 'gamification_full_supporter' (owner directive, 2026-08-24). The Supporter RUNG left
   // EntitlementTier, so no tier can select that flag: GAMIFICATION_FLAG is keyed by the union and
   // has two entries. A key kept here would render an operator toggle that gates nothing, which is
-  // the "a dead switch reads as coverage" failure. HYG-078 / ADR-1440 deleted the stored row
+  // the "a dead switch reads as coverage" failure. HYG-078 / ADR-1441 deleted the stored row
   // (20270345006300) and stopped the pricing-foundation seed from recreating it.
   // Household / Circle multi-seat bundle (ADR-370, REMAINING-WORK #6). Default OFF (never sold while OFF).
   'bundle_household_enabled',

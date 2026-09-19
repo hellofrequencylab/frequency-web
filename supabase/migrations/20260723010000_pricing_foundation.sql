@@ -31,7 +31,7 @@
 --     'billing_live', 'tier_crew_enabled', 'tier_supporter_enabled',
 --     'plan_practitioner_enabled', 'plan_business_enabled', 'plan_organization_enabled',
 --     'plan_whitelabel_enabled', 'gamification_full_member', 'gamification_full_crew');
---   gamification_full_supporter was seeded here until HYG-078 / ADR-1440.
+--   gamification_full_supporter was seeded here until HYG-078 / ADR-1441.
 --   20270345006300 deletes the stored row; do not re-insert it.
 
 -- ── 1. profiles: the personal pricing bits (NOT a new tier column) ───────────────────────
@@ -151,6 +151,6 @@ insert into public.platform_flags (key, value) values
   ('gamification_full_crew',      true)    -- crew already gets full today (matches derive default)
 on conflict (key) do nothing;
 -- gamification_full_supporter is not seeded. The Supporter rung left EntitlementTier
--- on 2026-08-24 (ADR-1106); no tier can select that flag. HYG-078 / ADR-1440
+-- on 2026-08-24 (ADR-1106); no tier can select that flag. HYG-078 / ADR-1441
 -- deletes the stored row in 20270345006300. Re-inserting it would revive a switch
 -- nothing reads.

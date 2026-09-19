@@ -46155,9 +46155,9 @@ Premise re-tested 2026-09-19: all four files still exported `force-dynamic`. Sto
 
 **Rows.** LIVE-242.
 
-## ADR-1440: Delete the unread gamification_full_supporter flag (HYG-078)
+## ADR-1441: Delete the unread gamification_full_supporter flag (HYG-078)
 
-**Status:** Accepted · 2026-09-19 · backlog `HYG-078` · **Implements** the deferred delete in [ADR-1106](DECISIONS.md) §2 · numbered **1440** because **1439** is LIVE-242 on this tree · corroborated by `supabase/migrations/20270345006300_drop_orphan_gamification_full_supporter_flag.sql` and `supabase/migrations/20260723010000_pricing_foundation.sql`
+**Status:** Accepted · 2026-09-19 · backlog `HYG-078` · **Implements** the deferred delete in [ADR-1106](DECISIONS.md) §2 · numbered **1441** because **1440** is LIVE-306 on #2735 · corroborated by `supabase/migrations/20270345006300_drop_orphan_gamification_full_supporter_flag.sql` and `supabase/migrations/20260723010000_pricing_foundation.sql`
 
 **Context.** ADR-1106 dropped `gamification_full_supporter` from `PRICING_FLAG_KEYS` when the Supporter rung left `EntitlementTier`. The stored `platform_flags` row was left as an unread orphan: "the owner may delete it out of band." HYG-078 is that delete. Premise re-tested 2026-09-19: no production reader names the key outside a comment, `20260723010000` still inserted it, no later migration deleted it, and `tier_supporter_enabled` plus the pay-what-you-want badge path are still live.
 
