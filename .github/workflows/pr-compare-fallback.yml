@@ -247,11 +247,11 @@ jobs:
 
           api="${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}"
           attempt=1
-          max=5
+          max=8
           delay=2
 
           while : ; do
-            code=$(curl -sS -o /tmp/post.out -w '%{http_code}' -X POST \
+            code=$(curl -sS -D /tmp/post.hdr -o /tmp/post.out -w '%{http_code}' -X POST \
               -H "Authorization: Bearer ${GH_TOKEN}" \
               -H "Accept: application/vnd.github+json" \
               "${api}/statuses/${HEAD_SHA}" \
@@ -264,8 +264,20 @@ jobs:
 
             [ "$code" = "201" ] && break
 
+            rate_limited=0
+            if [ "$code" = "403" ] && grep -q 'rate limit exceeded' /tmp/post.out; then
+              rate_limited=1
+            fi
+
             case "$code" in
               000|429|500|502|503|504) ;;
+              403)
+                if [ "$rate_limited" -ne 1 ]; then
+                  echo "::error::statuses API returned ${code}, which is not transient. Not retrying."
+                  cat /tmp/post.out || true
+                  exit 1
+                fi
+                ;;
               *)
                 echo "::error::statuses API returned ${code}, which is not transient. Not retrying."
                 cat /tmp/post.out || true
@@ -279,8 +291,20 @@ jobs:
               exit 1
             fi
 
-            echo "::warning::statuses API returned ${code} (attempt ${attempt}/${max}). Retrying in ${delay}s."
-            sleep "$delay"
+            if [ "$rate_limited" -eq 1 ]; then
+              reset=$(awk 'tolower($1)=="x-ratelimit-reset:" {print $2}' /tmp/post.hdr | tr -d '\r')
+              now=$(date +%s)
+              wait="$delay"
+              if [ -n "${reset}" ] && [ "${reset}" -gt "$now" ]; then
+                wait=$((reset - now + 2))
+                [ "$wait" -gt 900 ] && wait=900
+              fi
+              echo "::warning::statuses API rate-limited (403, attempt ${attempt}/${max}). Sleeping ${wait}s."
+              sleep "$wait"
+            else
+              echo "::warning::statuses API returned ${code} (attempt ${attempt}/${max}). Retrying in ${delay}s."
+              sleep "$delay"
+            fi
             delay=$((delay * 2))
             attempt=$((attempt + 1))
           done
