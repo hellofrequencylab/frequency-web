@@ -1,4 +1,4 @@
--- LIVE-228 / ADR-1436: Collective merges into Business at $49.
+-- LIVE-228 / ADR-1438: Collective merges into Business at $49.
 --
 -- The six granted Collective Spaces (spaces.plan = 'collective') were never charged. The owner
 -- ruled they grandfather at $49, which is now the Business list price with two seats included.
