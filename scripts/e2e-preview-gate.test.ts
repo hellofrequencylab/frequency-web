@@ -368,6 +368,22 @@ describe('the maintainer capture refuses to commit a degraded run', () => {
     expect(step).toContain('cat test/e2e/.degraded-capture.jsonl')
   })
 
+  it('stands down with exit 0 when the job never checked out (HYG-094)', () => {
+    // always() still fires after the protected-ref guard refuses. Checkout is skipped, so
+    // the first git call used to die with "fatal: not in a git directory". The stand-down
+    // is a filesystem test on .git (dir or file), not a message that mentions a refusal,
+    // and it must run BEFORE git config / git add so a refused dispatch is one red step,
+    // not two.
+    const step = commitStep('update-baselines')
+    expect(step, 'the always() this stand-down exists because of has gone').toContain('if: always()')
+    const standDown = step.indexOf('if [ ! -d .git ] && [ ! -f .git ]; then')
+    const quiet = step.indexOf('exit 0')
+    const firstGit = step.search(/^\s*git /m)
+    expect(standDown, 'the commit step has no work-tree stand-down').toBeGreaterThan(-1)
+    expect(quiet, 'a job that never checked out must exit 0, not 128').toBeGreaterThan(standDown)
+    expect(firstGit, 'the stand-down must come BEFORE the first git command').toBeGreaterThan(quiet)
+  })
+
   it('the a11y commit step is protected by step ORDER, so it must never gain always()', () => {
     // The other half of the reading, and the honest part: this step needs no marker check because
     // GitHub prepends an implicit success() to a step with no `if:`. Asserting the absence is what

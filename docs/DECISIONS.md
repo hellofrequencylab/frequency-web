@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1418**.
+tree as of this index: **ADR-1423**.
 
 | Theme | Start here |
 |---|---|
@@ -45839,5 +45839,25 @@ Premise re-tested 2026-09-19 on this tree: `retireStaleOccurrences` still stood 
 **Consequences.** Reducing a series to one date, or to a count already spent, retires unattached leftover future dates the next time the rail saves or the daily cron runs. Dates with an RSVP, ticket, guest or post stay, as ADR-1304 already required. An unparseable start still touches nothing and logs the stand-down.
 
 **Rows.** LIVE-338 (done, this ADR).
+
+## ADR-1423: The always() capture commit stands down when the job never checked out (HYG-094)
+
+**Status:** Accepted · 2026-09-19 · Amends the `always()` commit in [ADR-1351](DECISIONS.md) without removing it · backlog `HYG-094` · corroborated by `.github/workflows/e2e-manual.yml` (`update-baselines` commit step) and `scripts/e2e-preview-gate.test.ts`
+
+**Context.** ADR-1351 made `update-baselines`' commit step `always()` so one flaky surface does not discard the other captures, and told a degraded run apart with `test/e2e/.degraded-capture.jsonl`. ADR-1352 then refused a committing dispatch on a protected ref as the second step, before checkout. `always()` still fires after that refusal. Checkout is skipped. The degraded-capture file is absent, so the marker check no-ops, `git config` runs, and the step dies with `fatal: not in a git directory` (exit 128). Run 34954126861 measured it: two red steps and a log that names git, not the refusal. Not a safety hole: no work tree, so no push. The cost is diagnosis.
+
+`update-a11y`'s identically named step is skipped in the same scenario because it has no `always()`. Copying that would reopen LIVE-333 and throw away partial captures.
+
+**Decision.**
+
+1. **`always()` stays.** Partials still land. The degraded-capture marker still refuses a 5xx run.
+2. **A work-tree test is the third state.** Before the first `git` command: if `.git` is neither a directory nor a file, exit 0. That is "this job never started". A checkout that ran still has a work tree (dir, or a file in a linked worktree) and proceeds.
+3. **The probe measures a mechanism, not a word.** A filesystem test naming `.git`, or a marker under `test/e2e` other than the degraded-capture file, before a `git` command at the start of a line. A message that mentions a refusal does not count.
+
+**Rejected.** Removing `always()`. Copying `update-a11y`. Standing down on the word "refused" in the degraded-capture error (that word is already on the unfixed tree).
+
+**Consequences.** A protected-ref refusal is one red step. A partial capture still commits. A degraded capture still refuses.
+
+**Rows.** HYG-094.
 
 
