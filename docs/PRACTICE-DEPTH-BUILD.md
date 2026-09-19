@@ -229,8 +229,8 @@ practice and mode they did, on brand. The achieved length carries into tomorrow 
 
 - Reuses `lib/practices/tiers.ts` (ADR-442) for floors/amounts; ADR-443 supersedes the *timed*-
   practice tier source (achieved, not creator-set).
-- Tracked in [BUILD-SEQUENCE](BUILD-SEQUENCE.md) Idea Inbox; IDEA-003 (other game-value setters)
-  remains separate.
+- IDEA-003 (other game-value setters) stays with ADR-442. Do not re-file the June inbox
+  as a new 2026-09 row; status lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
 
 ---
 

@@ -35,8 +35,10 @@ get them. Note `vercel env pull` returns blanks here, so you fill them by hand),
 - **[docs/BASELINE-ASSESSMENT.md](BASELINE-ASSESSMENT.md)**: the 2026-06 systems review
   (ADR-246). Read it for the diagnosis; it is history for status.
 
-`docs/DEVELOPMENT-MAP.md`, `BUILD-SEQUENCE.md`, `BUILD-PHASES.md` and `ROADMAP.md` are superseded
-history. When the code and a doc disagree, the code wins; fix the doc in the same pass.
+`docs/DEVELOPMENT-MAP.md`, `BUILD-PHASES.md` and `ROADMAP.md` are superseded
+history. `BUILD-SEQUENCE` and `MASTER-TODO` were absorbed into
+[`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) (HYG-104) and removed. When the code and a doc
+disagree, the code wins; fix the doc in the same pass.
 
 ## 3. How to ship a change
 `main` is **protected**. Branch, open a PR, get green CI + a Vercel preview, then merge
