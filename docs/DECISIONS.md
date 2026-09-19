@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1455**. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1451–1454 are claimed on open PRs.
+tree as of this index: **ADR-1455**. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1451–1453 are claimed on open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46391,7 +46391,7 @@ Premise re-tested 2026-09-19 against the tree, not the banners:
 
 **Rejected.** Restyling the guest month and calling it Admin. Closing C2–C4 in the same PR. Folding Guest through `guestLiveItems` (LIVE-419).
 
-**Consequences.** The Calendar tab's Admin mode leads with the board. The settings console is unchanged. LIVE-416 starts the pencil lane.
+**Consequences.** The Calendar tab's Admin mode leads with the board. The settings console is unchanged. LIVE-416 starts the pencil lane. **Amended by [ADR-1454](DECISIONS.md):** that lane now exists.
 
 **Rows.** LIVE-415.
 
@@ -46459,3 +46459,21 @@ Premise re-tested 2026-09-19:
 **Rejected.** Changing `passesCalendarGate` itself (that would put cancelled gatherings into every subscriber's calendar app). Hiding cancelled. Painting cancelled as a struck chip.
 
 **Rows.** LIVE-414.
+
+## ADR-1454: Admin Calendar gives Pencil its own lane (LIVE-416)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-416` · numbered **1454** (1455 is LIVE-414; 1450 is LIVE-415 on main; 1448 is OWN-058; 1449–1453 are claimed on open PRs) · implements C2 of [ADR-1445](DECISIONS.md) · follows [ADR-1450](DECISIONS.md) · corroborated by `lib/calendar/pm-console.ts` (`pencilLane`), `components/spaces/calendar-pm-console.tsx`
+
+**Context.** ADR-1450 mounted `CalendarPmConsole` with one mixed board. ADR-1445 C2 asked for Pencil as a first-class Admin lane: pencil-stage gatherings listed on their own, not mixed into live chips. Premise re-tested 2026-09-19 after #2754: the board existed; `pencilLane` did not. Candidate dates already live on `StaffCalendar`. Guest exclusion is LIVE-419.
+
+**Decision.**
+
+1. **`pencilLane` is the Admin Pencil lane.** It is `operatorListItems` filtered to `stage === 'pencil'`. `CalendarPmConsole` renders that lane above the mixed board.
+2. **The mixed board no longer lists Pencil.** Planning, Production, Cancelled, live events, and drafts stay there until C3 and C4 name their own lanes.
+3. **The date map is unchanged.** Candidate dates stay on `StaffCalendar`. This change does not declare `planningLane` or `productionLane`, and it does not fold Guest through `guestLiveItems`.
+
+**Rejected.** Closing C3–C5 in the same PR. Calling a Pencil a hold (NAMING.md: Hold is the venue-hold noun). Hiding candidate dates from the grid.
+
+**Consequences.** LIVE-417 starts the Planning lane. LIVE-418 starts Production. LIVE-419 still owns the Guest feed.
+
+**Rows.** LIVE-416.

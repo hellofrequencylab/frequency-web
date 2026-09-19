@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { CalendarEvent } from './item'
-import { isOperatorListItem, operatorListHref, operatorListItems, operatorStageLabel } from './pm-console'
+import {
+  isOperatorListItem,
+  isPencilLaneItem,
+  operatorListHref,
+  operatorListItems,
+  operatorStageLabel,
+  pencilLane,
+} from './pm-console'
 
 function item(partial: Partial<CalendarEvent> & Pick<CalendarEvent, 'slug' | 'title' | 'dayKey'>): CalendarEvent {
   return {
@@ -54,6 +61,38 @@ describe('operatorListItems (LIVE-415)', () => {
       'Cancelled',
       'Cancelled',
       'Draft',
+    ])
+  })
+
+  it('puts pencil-stage gatherings in pencilLane and leaves the rest on the board', () => {
+    const hold = item({ slug: 'entry-1', title: 'New moon sit', dayKey: '2026-09-22', stage: 'pencil', layer: 'pencil' })
+    const otherDate = item({
+      slug: 'entry-1b',
+      title: 'New moon sit',
+      dayKey: '2026-09-23',
+      stage: 'pencil',
+      layer: 'pencil',
+      optionGroup: 'g1',
+    })
+    const planning = item({
+      slug: 'entry-2',
+      title: 'Open house',
+      dayKey: '2026-09-24',
+      stage: 'planning',
+      layer: 'pencil',
+    })
+    const live = item({ slug: 'open-house', title: 'Published sit', dayKey: '2026-09-25' })
+
+    expect(isPencilLaneItem(hold)).toBe(true)
+    expect(isPencilLaneItem(planning)).toBe(false)
+    expect(pencilLane([hold, otherDate, planning, live]).map((row) => row.key)).toEqual([
+      'entry-1|2026-09-22',
+      'entry-1b|2026-09-23',
+    ])
+    expect(operatorListItems([hold, planning, live]).map((row) => row.stageLabel)).toEqual([
+      'Pencil',
+      'Planning',
+      'Production',
     ])
   })
 
