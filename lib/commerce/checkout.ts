@@ -28,6 +28,7 @@ import { effectiveVariantPriceCents, effectiveVariantStock } from './types'
 import { receiptEmailFor } from '@/lib/billing/receipt-address'
 import { sendOrderReceipts } from './order-receipt'
 import type { CheckoutInput, CommerceVariant, ServiceConfig } from './types'
+import { SHIP_TO_COUNTRIES, cartNeedsShipping, shippingDetailsFromSession } from './shipping'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -151,7 +152,7 @@ async function resolveCharge(seller: ProductRow, grossCents: number, source: Ord
 export async function createCommerceCheckout(input: CheckoutInput): Promise<CommerceCheckoutResult> {
   if (!input.items?.length) return { error: 'Your cart is empty.' }
   if (!stripe) return { error: 'Payments aren’t turned on yet.' }
-  const ui: CheckoutUi = input.ui === 'elements' ? 'elements' : 'hosted'
+  const requestedUi: CheckoutUi = input.ui === 'elements' ? 'elements' : 'hosted'
 
   const ids = [...new Set(input.items.map((i) => i.productId))]
   const { data } = await db().from('commerce_products').select(PRODUCT_COLS).in('id', ids)
@@ -300,6 +301,19 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
   // never refuses a checkout.
   const receiptEmail = await receiptEmailFor(input.buyerProfileId)
 
+  // LIVE-346: a physical cart needs a carrier address. Nothing on the buy path collects one
+  // in-app (startCheckoutAction never passes `shipping`), so Stripe is the validator. The
+  // shared on-page form has no Address Element, so a physical cart uses hosted Checkout —
+  // the only surface that can take the address today. Digital / Journey / booking stay on-page.
+  const needsShipping = cartNeedsShipping(products.map((p) => p.product_kind))
+  const ui: CheckoutUi = needsShipping ? 'hosted' : requestedUi
+  if (needsShipping && requestedUi === 'elements') {
+    console.error(
+      '[commerce] physical goods need a Stripe-validated shipping address; using hosted checkout',
+      { orderId },
+    )
+  }
+
   let session: Stripe.Checkout.Session
   try {
     session = await stripe.checkout.sessions.create({
@@ -312,6 +326,9 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
           product_data: { name: l.title },
         },
       })),
+      ...(needsShipping
+        ? { shipping_address_collection: { allowed_countries: [...SHIP_TO_COUNTRIES] } }
+        : {}),
       // payment_intent_data is now UNCONDITIONAL, because `receipt_email` belongs on it and a
       // PLATFORM (first-party Frequency Store) order has no connected account to carry it. The
       // Connect fields stay conditional exactly as before: a platform charge sets no application
@@ -400,9 +417,19 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
   const paymentIntentId =
     typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id ?? null
 
+  // LIVE-346: the pending row stored `input.shipping ?? {}`, which is empty on every live
+  // buy path. Overwrite it with the address Stripe validated, when one arrived. Leave the
+  // pending value alone when Stripe collected nothing (an intangible cart, or a miss).
+  const collectedShipping = shippingDetailsFromSession(session)
+
   const { data: updated } = await db()
     .from('commerce_orders')
-    .update({ status: 'paid', paid_at: new Date().toISOString(), stripe_payment_intent_id: paymentIntentId })
+    .update({
+      status: 'paid',
+      paid_at: new Date().toISOString(),
+      stripe_payment_intent_id: paymentIntentId,
+      ...(collectedShipping ? { shipping: collectedShipping } : {}),
+    })
     .eq('stripe_checkout_session_id', session.id)
     .eq('status', 'pending')
     // owner_profile_id / owner_space_id ride along for the SELLER's notice (LIVE-344): the row already

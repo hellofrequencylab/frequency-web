@@ -232,7 +232,6 @@
             "LIVE-263",
             "PROG-R11",
             "LIVE-306",
-            "LIVE-346",
             "LIVE-348",
             "LIVE-349",
             "LIVE-359"
@@ -13211,7 +13210,7 @@
     {
       "id": "LIVE-346",
       "title": "The physical-goods checkout never collects or validates a shipping address",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
@@ -13219,12 +13218,13 @@
         "file": "lib/commerce/checkout.ts",
         "ref": "the commerce_order creator"
       },
-      "detail": "FOUND 2026-09-15. The commerce creator sells physical goods and sets no shipping_address_collection. The shipping address comes from an in-app value (input.shipping) that Stripe never sees, never validates and never normalises. If that in-app value is thin or malformed there is no address to hand a carrier, and the failure surfaces after the money has moved.\n\nWORTH DECIDING RATHER THAN DEFAULTING: collecting the address at Stripe gets validation, normalisation and autofill for free, and is one line. Keeping it in-app keeps the checkout shorter, which is the thing the on-page checkout program is trying to optimise for. The honest answer probably depends on whether the in-app address is already required and validated at the point the cart is built \u2014 check that before choosing, because if it is, this is a smaller problem than it looks.\n\nRELATED: billing_address_collection is unset on all nine creators, which OWN-075 needs for tax if that ruling lands on collecting it.",
+      "detail": "FOUND 2026-09-15. The commerce creator sells physical goods and sets no shipping_address_collection. The shipping address comes from an in-app value (input.shipping) that Stripe never sees, never validates and never normalises. If that in-app value is thin or malformed there is no address to hand a carrier, and the failure surfaces after the money has moved.\n\nWORTH DECIDING RATHER THAN DEFAULTING: collecting the address at Stripe gets validation, normalisation and autofill for free, and is one line. Keeping it in-app keeps the checkout shorter, which is the thing the on-page checkout program is trying to optimise for. The honest answer probably depends on whether the in-app address is already required and validated at the point the cart is built \u2014 check that before choosing, because if it is, this is a smaller problem than it looks.\n\nRELATED: billing_address_collection is unset on all nine creators, which OWN-075 needs for tax if that ruling lands on collecting it.\n\nCLOSED 2026-09-19 (ADR-1417). Premise re-tested: startCheckoutAction never passes shipping, and no buy-path form collects an address. The in-app value is always {}. Stripe now collects shipping_address_collection on a physical cart and the settle writes shipping_details onto the order. Digital / Journey / booking / ticket stay on-page. A physical cart forces hosted checkout because the shared CheckoutForm has no Address Element. OWN-075 (tax) is unchanged.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const strip=(s)=>s.replace(/\\u002f\\u002a[\\s\\S]*?\\u002a\\u002f/g,\" \").replace(/^\\s*\\u002f\\u002f.*$/gm,\" \");const read=(p)=>{if(!fs.existsSync(p))fail(\"missing \"+p);return strip(fs.readFileSync(p,\"utf8\"))};const s=read(\"lib/commerce/checkout.ts\");if(s.indexOf(\"shipping_address_collection\")<0&&s.indexOf(\"shipping_details\")<0)fail(\"the physical-goods checkout still collects no shipping address through Stripe, so nothing validates the address a carrier is handed\");process.exit(0)'",
         "note": "Passes when the commerce checkout either collects a shipping address through Stripe or explicitly handles shipping details from the session, with comments stripped first. Measures the consequence \u2014 an address exists that something validated \u2014 not the row title."
-      }
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-348",

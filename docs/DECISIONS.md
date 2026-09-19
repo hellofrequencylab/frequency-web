@@ -45743,3 +45743,22 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 
 **Rows.** LIVE-410.
 
+## ADR-1417: Physical goods collect a shipping address on Stripe Checkout (LIVE-346)
+
+**Status:** Accepted · 2026-09-19 · LIVE-346 · corroborated by `lib/commerce/shipping.ts` and `lib/commerce/checkout.ts`
+
+**Context.** The commerce creator stored `input.shipping ?? {}` on the pending order and never set `shipping_address_collection`. Re-tested 2026-09-19: `startCheckoutAction` never passes `shipping`, and no buy-path form collects an address. Every live physical sale would settle with `{}` and fail only when a carrier was handed nothing. The on-page checkout program wants the buyer to stay on Frequency, but `CheckoutForm` has no Address Element. Tickets, tips, gifts and Journeys do not ship.
+
+**Decision.**
+
+1. **Stripe is the validator.** A cart that includes a physical line (or a legacy row with no kind) sets `shipping_address_collection` on the Checkout Session. Allowed countries are an explicit ISO list in `SHIP_TO_COUNTRIES`.
+2. **Write what Stripe collected.** `recordCommerceOrderFromSession` copies `shipping_details` (or `collected_information.shipping_details`) onto `commerce_orders.shipping` when the session settles. An empty in-app value is no longer the address a seller ships to.
+3. **Physical carts use hosted Checkout.** The shared on-page form cannot take an address today. Forcing hosted is a loud degrade (`[commerce] physical goods need a Stripe-validated shipping address`). Digital, Journey, booking, ticket and service stay on-page.
+4. **Do not collect billing address here.** That is OWN-075 (tax), still a ruling.
+
+**Rejected.** Keeping the empty in-app object as the address of record. Adding Address Element to the entity-blind card form in this row (every ticket and tip would grow a shipping field, or the form would stop being entity-blind). Asking the buyer for an address after the money moved.
+
+**Consequences.** Buying a mug or a used listing opens Stripe's hosted page and asks for a delivery address before the charge. Buying a Journey still opens the card form under the button. Sellers read a validated address on the order. An Address Element on the shared form is a later row if physical goods should stay on-page.
+
+**Rows.** LIVE-346.
+
