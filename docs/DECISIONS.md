@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1440**. 1436 is HYG-068 on another open branch. 1437 is SCAN-637 on main. 1438 is LIVE-228 on main. 1439 is LIVE-242 on main.
+tree as of this index: **ADR-1436**. 1436 is HYG-068 on another open branch. 1437 is SCAN-637 on main. 1438 is LIVE-228 on main. 1439 is LIVE-242 on main.
 
 | Theme | Start here |
 |---|---|
@@ -46175,3 +46175,24 @@ Premise re-tested 2026-09-19: the discover twin still pointed canonical at `/eve
 **Consequences.** A later edit that puts `createClient` or `force-dynamic` back on `app/(main)/events/[slug]/page.tsx` fails `lib/nav/public-detail-isr.test.ts`. The layout auth read still dynamizes the tree today. Private and circle-only events stay on the member page for signed-in viewers; a crawler that asks for those slugs `notFound()`s through the public RPC.
 
 **Rows.** SCAN-636.
+
+## ADR-1436: Column-backed images keep a url cache and a Loom id (HYG-068)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-068` · numbered **1436** (reserved on this row while later ADRs landed on main) · corroborated by `supabase/migrations/20270345006300_column_image_asset_ids.sql` and `lib/library/column-image.ts`
+
+**Context.** [ADR-1253](DECISIONS.md) adopted `{ assetId, url }` on JSONB-backed image fields. Six TEXT columns could not hold that object: stuffing JSON in them would render as nothing. The six are `spaces.brand_logo_url`, `spaces.cover_image_url`, `page_content.hero_image`, `page_settings.og_image_url`, `page_settings.header_image_url`, and `profiles.header_image_url`. Their pickers were already handed `{ url, assetId }` and stored the url alone, so a D3 version rollback could not re-point them. The owner ruled 2026-09-08: companion `*_asset_id` columns, not URL-only caches until D4.
+
+Version **06300** because **06100** is Collective and **06200** is Hubs/Nexuses, both already on main.
+
+**Decision.**
+
+1. **Two columns, one picture.** The url column stays the denormalised cache. `*_asset_id` is a nullable FK to `library_assets(id)` with `ON DELETE SET NULL`, so retiring an asset does not blank the painted url. A paste or a server upload that is not in the catalog writes the url and nulls the companion. Clearing the url clears both.
+2. **One split.** `columnImageFromPick` / `columnImagePatch` / `columnImageUrl` in `lib/library/column-image.ts` are the only mapping. Pickers that persist these six (`HeaderImageField`, `ImageUpload.onChangeAsset`, `InlineCover.setAsset`) emit both halves. Save actions write both. Readers at the mapper (`spaces/store`, `page-settings/store`, `page-content`, the copy cascade, the profile page) prefer `library_assets.url` and fail open to the cache.
+3. **Spark stays a string.** The Studio kernel stores image fields as URL strings, and `createSpace` does not write logo or cover. `LoomImageSlot` uses `onSelectAsset` and still persists the url. The Space branding form, page SEO editor, page hero, and profile header are the writers for these six columns. The Space Loom studio is a library manager, not a column writer.
+
+**Rejected.** JSON-in-a-text-column. Leaving a nullable companion with no writer (the ADR-970 costume). Nulling a companion only when the url is cleared, so a paste could leave a stale id pointing at a different picture.
+
+**Consequences.** A D3 rollback of a catalogued asset re-points these six fields on the next read. A house icon or a pasted URL keeps working as url-only. Journey, Practice, Circle, and Event covers that are not in the six stay url-only.
+
+**Rows.** HYG-068.
+
