@@ -531,9 +531,11 @@ jobs:
       #
       # So the tiers split by what can hold a signal, not by what is convenient:
       #
-      #   PUBLIC (@visual, not @shell) -- marketing, /discover, the header bands. Anonymous,
-      #     content-stable, and green run after run: 105-108 passing across the 2026-09-11
-      #     runs while the shell tier churned. This tier BLOCKS, and it is a real gate.
+      #   PUBLIC (@visual, not @shell) -- marketing and the header bands. Anonymous,
+      #     content-stable, and green run after run. This tier BLOCKS, and it is a real gate.
+      #     /discover left this tier in LIVE-373: its height is production Circles / events /
+      #     posts, so a new listed Circle failed every open branch. It still photographs, in
+      #     the advisory tier, for the same reason the member shell does.
       #
       #   SHELL (@shell) -- member + operator surfaces over live data. Runs, reports, uploads
       #     its diffs, and does NOT block. A diff here is information for a human, because
