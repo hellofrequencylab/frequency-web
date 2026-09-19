@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1432**.
+tree as of this index: **ADR-1433**.
 
 | Theme | Start here |
 |---|---|
@@ -46028,7 +46028,7 @@ Premise re-tested 2026-09-19 on this tree: the control still passed `posterBandA
 
 **Rows.** LIVE-272.
 
-## ADR-1432: Delete the entry-point flyer builder, keep the share-card Bold face (LIVE-216)
+## ADR-1433: Delete the entry-point flyer builder, keep the share-card Bold face (LIVE-216)
 
 **Status:** Accepted · 2026-09-19 · backlog `LIVE-216` · corroborated by `lib/entry-points/templates.ts`, `app/(main)/entry-points/entry-points-client.tsx`, `next.config.ts` `OG_CARD_FONTS`
 

@@ -1,6 +1,6 @@
 'use client'
 
-// The "My Entry Points" builder + list (ADR-126, ADR-1432). Template-first, never a
+// The "My Entry Points" builder + list (ADR-126, ADR-1433). Template-first, never a
 // blank canvas: pick a template, name it, pick where it points, publish. Each entry
 // point gives a short link and a branded QR (PNG/SVG). The flyer builder was ruled
 // deleted (OWN-059 item 3 / LIVE-216).
