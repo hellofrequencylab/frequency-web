@@ -179,7 +179,7 @@ describe('Community (resonance) section coverage', () => {
     // field removes), and Message center arrived from the Offerings catch-all it had been falling into.
     // LIVE-293 then RETIRED Message center: its audience picker moved into Email (space.comms), its DM
     // and Dispatch broadcast lanes were dropped, and space Dispatch publishing moved to the post box
-    // (LIVE-295). The set is now exactly the CRM box plus every tool with `parent: 'space.crm'`.
+    // (LIVE-295). The set is the CRM cluster on Resonance; ADR-1432 nests those rows under Your people.
     expect(resonance.map((m) => m.id).sort()).toEqual(
       [
         'space.automation',
