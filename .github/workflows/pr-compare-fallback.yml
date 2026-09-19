@@ -55,7 +55,10 @@
 # REQUIRED context and so reproduced the very deadlock both files exist to prevent. `--retry` on its
 # own retries only transient problems (timeouts, 408, 429, 5xx); a 403 or a 404 still fails fast,
 # which is the rule the POST step already argues for. Do not add `--retry-all-errors`: it would
-# retry the honest failures too.
+# retry the honest failures too. A 403 on GET /pulls/{n}/files was first read as
+# the token missing `pull-requests: read` (a `permissions:` block replaces the
+# default set). Grant it below. #2767 still 403'd after the grant; #2766 listed
+# files with the same grant. Decide now falls back to /compare (contents: read).
 #
 # 🔴 AND EVERY RETRIED GET WRITES TO A FILE WITH `-o`, WHICH IS NOT COSMETIC. The first version of
 # this fix put `--retry` on the GETs and left them writing to stdout. `--fail-with-body` emits the
@@ -74,6 +77,9 @@ on:
   pull_request:
     branches: [main]
 
+# pull-requests: read is what GET /pulls/{n}/files needs. A permissions: block
+# REPLACES the default set, so contents + statuses alone 403s that GET. The
+# compare fallback needs only contents: read. statuses: write stays for the POST.
 permissions:
   contents: read
   pull-requests: read
@@ -91,37 +97,96 @@ jobs:
     name: pr-compare fallback (docs-only PRs)
     runs-on: ubuntu-latest
     steps:
-      # Depth 1: the only repo files this job reads are e2e.yml and scripts/pixel-paths.mjs. The
-      # changed-file list comes from the API below rather than a `git diff`, so no history is
-      # needed. An earlier draft cloned the full history for that diff, which is a real cost to
-      # pay on every pull request for a job that usually posts nothing.
+      # Depth 2: pull_request checkout is the merge commit. Both parents let
+      # list_git_files read the PR's files when /pulls/{n}/files and /compare
+      # 403 (confirmed 2026-09-19 on #2767: pull-requests: read was not enough).
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 1
+          fetch-depth: 2
 
       - name: Decide whether e2e already owns this PR
         id: decide
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
 
           # The PR's own changed files — exactly the set GitHub applies `paths:` to. Paginated,
           # because a large PR exceeds one page and a truncated list would silently look
           # docs-only and post a green status over a pixel-moving change.
-          page=1
-          : > /tmp/changed.txt
-          while : ; do
-            curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body -o /tmp/page.json \
+          #
+          # Prefer /pulls/{n}/files. If it 403s, /compare is the same three-dot
+          # list and needs only contents: read (the grant this file already had).
+          list_pulls_files() {
+            page=1
+            : > /tmp/changed.txt
+            while : ; do
+              code=$(curl -sS --retry 5 --retry-delay 2 --retry-connrefused \
+                -o /tmp/page.json -w '%{http_code}' \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100&page=${page}") || code=000
+              if [ "$code" != "200" ]; then
+                echo "::warning::GET /pulls/${PR_NUMBER}/files page ${page} returned ${code}."
+                return 1
+              fi
+              count=$(python3 -c 'import json,sys; d=json.load(sys.stdin); print(len(d)); [print(f["filename"]) for f in d]' < /tmp/page.json | tee /tmp/page.txt | head -1)
+              tail -n +2 /tmp/page.txt >> /tmp/changed.txt
+              [ "$count" -lt 100 ] && break
+              page=$((page + 1))
+            done
+          }
+
+          list_compare_files() {
+            : > /tmp/changed.txt
+            code=$(curl -sS --retry 5 --retry-delay 2 --retry-connrefused \
+              -o /tmp/page.json -w '%{http_code}' \
               -H "Authorization: Bearer ${GH_TOKEN}" \
               -H "Accept: application/vnd.github+json" \
-              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files?per_page=100&page=${page}"
-            body=$(cat /tmp/page.json)
-            count=$(printf '%s' "$body" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(len(d)); [print(f["filename"]) for f in d]' | tee /tmp/page.txt | head -1)
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/compare/${BASE_SHA}...${HEAD_SHA}") || code=000
+            if [ "$code" != "200" ]; then
+              echo "::warning::GET /compare/${BASE_SHA}...${HEAD_SHA} returned ${code}."
+              return 1
+            fi
+            python3 -c 'import json,sys; d=json.load(sys.stdin); files=d.get("files") or []; raise SystemExit("compare truncated") if d.get("truncated") or len(files)>=300 else None; print(len(files)); [print(f["filename"]) for f in files]' < /tmp/page.json | tee /tmp/page.txt >/dev/null
             tail -n +2 /tmp/page.txt >> /tmp/changed.txt
-            [ "$count" -lt 100 ] && break
-            page=$((page + 1))
-          done
+          }
+
+          list_git_files() {
+            : > /tmp/changed.txt
+            if git rev-parse --verify --quiet HEAD^1 >/dev/null && git rev-parse --verify --quiet HEAD^2 >/dev/null; then
+              git diff --name-only HEAD^1 HEAD^2 > /tmp/changed.txt
+              echo "::notice::Listed files from merge-commit parents."
+              return 0
+            fi
+            git fetch --no-tags --depth=1 origin "${HEAD_SHA}" || true
+            git fetch --no-tags --depth=1 origin "${BASE_SHA}" || true
+            if ! git merge-base "${BASE_SHA}" "${HEAD_SHA}" >/dev/null 2>&1; then
+              git fetch --no-tags --deepen=50 origin "${HEAD_SHA}" || true
+              git fetch --no-tags --deepen=50 origin "${BASE_SHA}" || true
+            fi
+            if git merge-base "${BASE_SHA}" "${HEAD_SHA}" >/dev/null 2>&1; then
+              git diff --name-only "${BASE_SHA}...${HEAD_SHA}" > /tmp/changed.txt
+              echo "::notice::Listed files from git three-dot ${BASE_SHA}...${HEAD_SHA}."
+              return 0
+            fi
+            echo "::warning::git could not find a merge-base for ${BASE_SHA} and ${HEAD_SHA}."
+            return 1
+          }
+
+          if ! list_pulls_files; then
+            echo "::notice::GET /pulls/${PR_NUMBER}/files failed. Falling back to compare ${BASE_SHA}...${HEAD_SHA}."
+            if ! list_compare_files; then
+              echo "::notice::GET /compare failed. Falling back to git diff."
+              if ! list_git_files; then
+                echo "::error::Neither /pulls/{n}/files nor /compare nor git listed files. Refusing to post a status on a guess."
+                exit 1
+              fi
+            fi
+          fi
 
           echo "Changed files in this pull request:"
           sed 's/^/  /' /tmp/changed.txt
@@ -182,11 +247,11 @@ jobs:
 
           api="${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}"
           attempt=1
-          max=5
+          max=8
           delay=2
 
           while : ; do
-            code=$(curl -sS -o /tmp/post.out -w '%{http_code}' -X POST \
+            code=$(curl -sS -D /tmp/post.hdr -o /tmp/post.out -w '%{http_code}' -X POST \
               -H "Authorization: Bearer ${GH_TOKEN}" \
               -H "Accept: application/vnd.github+json" \
               "${api}/statuses/${HEAD_SHA}" \
@@ -199,8 +264,20 @@ jobs:
 
             [ "$code" = "201" ] && break
 
+            rate_limited=0
+            if [ "$code" = "403" ] && grep -q 'rate limit exceeded' /tmp/post.out; then
+              rate_limited=1
+            fi
+
             case "$code" in
               000|429|500|502|503|504) ;;
+              403)
+                if [ "$rate_limited" -ne 1 ]; then
+                  echo "::error::statuses API returned ${code}, which is not transient. Not retrying."
+                  cat /tmp/post.out || true
+                  exit 1
+                fi
+                ;;
               *)
                 echo "::error::statuses API returned ${code}, which is not transient. Not retrying."
                 cat /tmp/post.out || true
@@ -214,8 +291,20 @@ jobs:
               exit 1
             fi
 
-            echo "::warning::statuses API returned ${code} (attempt ${attempt}/${max}). Retrying in ${delay}s."
-            sleep "$delay"
+            if [ "$rate_limited" -eq 1 ]; then
+              reset=$(awk 'tolower($1)=="x-ratelimit-reset:" {print $2}' /tmp/post.hdr | tr -d '\r')
+              now=$(date +%s)
+              wait="$delay"
+              if [ -n "${reset}" ] && [ "${reset}" -gt "$now" ]; then
+                wait=$((reset - now + 2))
+                [ "$wait" -gt 900 ] && wait=900
+              fi
+              echo "::warning::statuses API rate-limited (403, attempt ${attempt}/${max}). Sleeping ${wait}s."
+              sleep "$wait"
+            else
+              echo "::warning::statuses API returned ${code} (attempt ${attempt}/${max}). Retrying in ${delay}s."
+              sleep "$delay"
+            fi
             delay=$((delay * 2))
             attempt=$((attempt + 1))
           done
