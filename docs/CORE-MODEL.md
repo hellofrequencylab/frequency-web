@@ -103,7 +103,7 @@ loom) · **⏳ 12 partial** · **🔴 3 stubs** (donations, enroll, tickets).
 
 | Surface | Today | Model target |
 |---|---|---|
-| Member rail rows (non-admin) | **16** | **7** |
+| Member rail rows (non-admin) | **16** | as short as the **role can use** ([ADR-1406](DECISIONS.md); the 7-count is cancelled) |
 | Mobile spine tabs | 5 + Menu + a centre "Zap" button | 5 + Menu + a centre **create** button |
 | Space operator console | **34 rows in 12 boxes** | **5 boxes** |
 | Public header | 4 tabs after LIVE-250 (The Quest still a tab) | **3 tabs** (LIVE-254: The Quest grouped under The Community) |
@@ -229,7 +229,7 @@ survey counted the editors and nobody had before.
 
 | # | Change | Files | Done when |
 |---|---|---|---|
-| 5.1 | Member rail **16 → 7**: Feed · Around You · Circles · Events · Members · Messages · The Quest. Market's three rows collapse to one; Channels, Library, Journal, Practices, Journeys, Vault move under their parent. | `lib/nav-areas.ts`, `lib/verticals/*` | 7 member-visible rows |
+| 5.1 | Member rail stays as short as the role can use. LIVE-241's **16 → 7** count is cancelled. Channels stay unless a role/matrix/flag gate hides them ([ADR-1406](DECISIONS.md)). | `lib/nav-areas.ts`, `lib/nav/registry.ts` | no magic-number target; unused rows hide by gate |
 | 5.2 | Mobile centre button creates (post/event/circle) instead of firing `open-capture` | `components/layout/app-shell.tsx:1573-1583` | Button opens the create menu |
 | 5.3 | Feed hero becomes a **community board** (your circles' next gathering, your spaces' activity); `PracticePrompt` and `JourneyBoard` move to the rail | `app/(main)/feed/page.tsx:245-290` | First module above the composer is community |
 | 5.4 | Operator console **12 boxes → 5**: Your page · Your people · Gather · Money · Reach | `lib/admin/modules/space-modules.ts` (parents only), `space-hub.ts` | 5 parentless rows; all 34 still reachable |
