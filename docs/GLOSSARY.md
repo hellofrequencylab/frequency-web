@@ -14,16 +14,26 @@ URLs, and the UI. See [DATABASE.md](DATABASE.md) for the tables behind these.
 
 ## The community hierarchy
 
-Frequency models a **global topical layer** on top of a **place-based tree**.
-Every Circle declares one topic (Channel) and a place. Hubs and Nexuses *emerge*
-from clustering; they are not appointed top-down.
+Four product nouns, plus **Channels** as the topical layer.
+[CORE-MODEL.md](CORE-MODEL.md) is commercial law; [NAMING.md](NAMING.md) wins names.
+Hubs and Nexuses *emerge* from clustering; they are not appointed top-down.
+An Outpost is not the top unit.
 
 | Term | Table | Meaning |
 |---|---|---|
-| **Circle** | `circles` | The atomic unit: a local practice group. `type` is `in-person` (cap 50) or `online` (cap 100). Has location fields (city, neighborhood, lat/lng, timezone). Declares one topical Channel. |
+| **Member** | `profiles` | A person. Free to join. |
+| **Space** | `spaces` | A business's home on Frequency. |
+| **Circle** | `circles` | A room inside a Space, where a group meets. `type` is `in-person` (cap 50) or `online` (cap 100). Has location fields (city, neighborhood, lat/lng, timezone). Declares one topical Channel. |
+| **Event** | `events`, `event_rsvps` | When the room is open. |
+| **Channel** | `topical_channels` | Global topics you tune into. Circles run them locally. **"Interests" is retired.** |
+
+Place scaffolding (not primary nav, not the top product unit):
+
+| Term | Table | Meaning |
+|---|---|---|
 | **Hub** | `hubs` | A cluster of up to 5 Circles in a locale. `circles.hub_id` is nullable: Circles can exist before a Hub crystallises. |
-| **Nexus** | `nexuses` | A cluster of Hubs (default 2500-member cap): **the top community unit**. `hubs.nexus_id` nullable. |
-| **Outpost** | `outposts` | The **brick-and-mortar home base of a Nexus**: one per Nexus, the seed toward a Lab (NAMING.md §Community structure). Circles meet in homes/public spaces, **never** Outposts. When a **Frequency Lab** (standalone for-profit venue) exists in the Nexus, the Outpost HQ lives there. *(Current code still treats it as the top container; rework in [ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md) §11.)* |
+| **Nexus** | `nexuses` | A cluster of Hubs (default 2500-member cap). Emergent. `hubs.nexus_id` nullable. |
+| **Outpost** | `outposts` | The **brick-and-mortar home base of a Nexus**: one per Nexus, the seed toward a Lab (NAMING.md §Community structure). Circles meet in homes/public spaces, **never** Outposts. When a **Frequency Lab** (standalone for-profit venue) exists in the Nexus, the Outpost HQ lives there. **Not the top unit.** |
 | **Nexus region** | `nexus_regions` | Legacy geography tree. Being phased out. |
 
 > **There is ONE "channel" concept: `topical_channels`.** Global topical forums,

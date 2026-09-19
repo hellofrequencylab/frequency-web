@@ -8,7 +8,8 @@
 > don't have to re-derive them from the files.
 
 The reward economy itself (point values, which action earns what) is still a product
-decision; see [START-HERE.md](START-HERE.md) Part B and CHECKLIST. What's built is the
+decision; see [NAMING.md](NAMING.md), [REWARDS-ECONOMY.md](REWARDS-ECONOMY.md), and
+`pnpm backlog`. What's built is the
 *plumbing* that makes earning exactly-once, server-verified, and source-agnostic.
 
 ---
@@ -23,7 +24,7 @@ decision; see [START-HERE.md](START-HERE.md) Part B and CHECKLIST. What's built 
 | `currency.ts` | **REWARD routing.** Maps an engagement `source` → the currency it earns (`gems` vs `zaps`). | Pure, framework-independent |
 
 Everything is **server-only** (it uses `createAdminClient()`). None of it is wired to UI
-yet; it's infrastructure ready for the wiring in START-HERE Part B.
+yet; it's infrastructure ready for the wiring named in the backlog.
 
 ---
 
@@ -102,7 +103,7 @@ Node-type → source mapping lives at the top of the file: `qr → 'qr'`, `nfc �
 
 > **Known gap (tracked):** repeatable nodes need a request-scoped suffix appended to the
 > idempotency key so legitimate repeats aren't collapsed into the first capture. Pass it
-> through `attempt` when that lands (START-HERE Part B3).
+> through `attempt` when that lands (see the backlog).
 
 ---
 

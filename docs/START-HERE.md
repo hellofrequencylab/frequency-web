@@ -1,6 +1,13 @@
 # START HERE: orientation for a new developer
 
-Welcome. This is the front door, about 30 minutes to productive.
+Welcome. About 30 minutes to productive. [AGENTS.md](../AGENTS.md) is the
+authority for which plan is live; this page is orientation, not a rival front
+door.
+
+Four nouns: **Member**, **Space**, **Circle**, **Event**. **Channels** are the
+topical layer. Names: [NAMING.md](NAMING.md). Commercial law:
+[CORE-MODEL.md](CORE-MODEL.md). Interior: [FOCUS-MODEL.md](FOCUS-MODEL.md)
+(accepted, ADR-1403).
 
 ## 1. Run it locally (~10 min)
 Follow **README → "Getting started (developers)"**: `corepack enable`, `pnpm install`,
@@ -46,8 +53,9 @@ history. When the code and a doc disagree, the code wins; fix the doc in the sam
 - **Naming + voice canon.** `docs/NAMING.md` + `docs/CONTENT-VOICE.md` govern every
   member-facing word (and AI-generated copy). Consult before writing UI copy.
 - **The other locked canons, each machine-enforced.** [PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md)
-  (compose one of the eight page shells; never hand-roll a layout; the right rail shows on every
-  member page), [STUDIO.md](STUDIO.md) (declare a manifest, never build a wizard),
+  (compose one of the seven page shells; never hand-roll a layout; `RailGrid` is not a
+  shell; the right rail shows on every member page; `railFor` is the code default and
+  operator overrides can beat it), [STUDIO.md](STUDIO.md) (declare a manifest, never build a wizard),
   [MENU-CONTRACT.md](MENU-CONTRACT.md) (add a catalog row, never rewrite the rail), and
   [DEPLOY-SAFETY.md](DEPLOY-SAFETY.md) (a merge is a deploy; four artifact gates run in `postbuild`).
 
