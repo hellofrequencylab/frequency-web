@@ -10,13 +10,19 @@ const fail = (m) => {
 const vis = readFileSync('test/e2e/visual.spec.ts', 'utf8')
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
 const stable = pkg.scripts['test:e2e:visual:stable'] ?? ''
-const advisory = pkg.scripts['test:e2e:visual:shell'] ?? ''
+const shell = pkg.scripts['test:e2e:visual:shell'] ?? ''
+const advisory = pkg.scripts['test:e2e:visual:advisory'] ?? ''
 
 if (!stable.includes('@shell|@advisory')) {
-  fail(`the blocking visual grep still lets /discover in: ${stable}`)
+  fail(`the blocking public visual grep still lets /discover in: ${stable}`)
 }
 if (!advisory.includes('@advisory')) {
   fail(`the advisory visual grep does not take @advisory: ${advisory}`)
+}
+// LIVE-313 moved the shell step onto a blocking gate. Folding @advisory back into that
+// grep would make /discover block again, which is the LIVE-373 defect.
+if (/\(\?=.*@advisory\)/.test(shell) || /@shell\|@advisory|@advisory\|@shell/.test(shell)) {
+  fail(`the blocking shell grep also takes @advisory, so /discover would fail every PR: ${shell}`)
 }
 if (!vis.includes('visual · discover')) {
   fail('visual.spec.ts has no discover describe')
