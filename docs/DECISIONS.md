@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1410**.
+tree as of this index: **ADR-1411**.
 
 | Theme | Start here |
 |---|---|
@@ -45632,9 +45632,37 @@ reads that parse; it does not spawn a test runner (LIVE-034). Vercel is UTC, so 
 invisible in production and loud on a laptop. Numbered **1409** because **1408** is LIVE-254 on
 main.
 
-## ADR-1410: The signed-in phone bar is five destinations (HYG-033)
+## ADR-1410: `/discover` visual captures are advisory, because the database sets the page height (2026-09-19)
 
-**Status:** Accepted · 2026-09-19 · Designer (Daniel) · **Amends** [ADR-120](DECISIONS.md) (the original four-destination bottom bar) · does **not** amend [ADR-1406](DECISIONS.md) (member rail count) · numbered **1410** because **1409** is naive event timestamps on main (`LIVE-377`) · corroborated by `lib/nav/registry.ts` (`CALM_SPINE_ROOTS`, `calmSpine`) and `components/layout/app-shell.tsx` (`MobileTabBar`)
+**Status:** Accepted · **Extends** the visual two-tier split in `test/e2e/visual-tiers.test.ts` · Backlog
+`LIVE-373`
+
+**Context.** `/discover` photographs live Circles, events and posts. On 2026-09-15 a new listed
+Circle grew the page about 180 px. Every open PR's blocking visual job failed, including branches
+that touched no public code. Masks cannot fix a height. `viewportOnly` was tried and the owner
+reversed it (#2139): it dropped eight below-the-fold baselines to quiet a rare recapture.
+
+**Decision.** Route (3) from the row, not (1) or (2).
+
+1. **Keep the full-page photograph.** The design surface below the fold stays in the picture.
+2. **Move those eight captures to the advisory visual tier.** Tag `visual · discover` with
+   `@visual` + `@advisory`. The blocking grep inverts `@shell|@advisory`. The advisory grep
+   takes `@visual` and (`@shell` or `@advisory`).
+3. **Do not tag it `@shell`.** That tag is what `shell-reporter.ts` counts as the authed app. A
+   running anonymous `/discover` capture would make the reporter call the member shell covered.
+4. **a11y and overflow stay on `publicSurfaces()`.** Those assert roles and geometry, not pixels.
+
+**Rejected.** Re-baselining on every new Circle (the next Circle repeats the outage). Putting
+`/discover` back in `LIVE_DATA_PATHS` / `viewportOnly` (owner reversed that trade). Seeding a
+fixture index in this change (the real fix the shell tier also wants; not this row).
+
+**Consequences.** A listed Circle is information in the advisory report, not a red X on every
+PR. Recapture `/discover` when the design moved. `LIVE-373` closes when the blocking public loop
+no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-377 on main.
+
+## ADR-1411: The signed-in phone bar is five destinations (HYG-033)
+
+**Status:** Accepted · 2026-09-19 · Designer (Daniel) · **Amends** [ADR-120](DECISIONS.md) (the original four-destination bottom bar) · does **not** amend [ADR-1406](DECISIONS.md) (member rail count) · numbered **1411** because **1410** is `/discover` visual captures on main (`LIVE-373`) · corroborated by `lib/nav/registry.ts` (`CALM_SPINE_ROOTS`, `calmSpine`) and `components/layout/app-shell.tsx` (`MobileTabBar`)
 
 **Context.** The signed-in bottom bar had grown to seven flex-1 slots: Menu · Feed · Community · Zap · Events · The Quest · Marketplace. At 320px those slots summed to the viewport with one pixel of headroom; "Community" and "The Quest" truncated on a 390px capture already in the tree. The 2026-09-08 ruling cut the bar to five. LIVE-241's 16→7 *rail* count is a different surface and was cancelled by ADR-1406; this ADR is only the phone bar.
 
