@@ -175,7 +175,6 @@
           "ids": [
             "LIVE-408",
             "SCAN-636",
-            "SCAN-637",
             "SCAN-638",
             "HYG-100",
             "LIVE-413",
@@ -14718,7 +14717,7 @@
     {
       "id": "SCAN-637",
       "title": "Sitemap-advertised marketplace details are force-dynamic",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
@@ -14726,12 +14725,13 @@
         "file": "app/(main)/market/[id]/page.tsx",
         "ref": "meta-scan 2026-09-19"
       },
-      "detail": "FOUND 2026-09-19. /market/[id], /store/[id], /housing/[id], and /classifieds/[id] are public detail routes (lib/nav/public-detail-routes.ts), emit listing JSON-LD, and are advertised by app/sitemap.ts, and each file still says `export const dynamic = 'force-dynamic'`. They also sit under the (main) layout auth read. Same class as the discover-layout comment that already fixed this for /discover: a dynamic API in the tree voids ISR. Close by dropping force-dynamic on the public read path and moving viewer-personalisation (own review, buy button state) behind client auth or Suspense, the way SiteHeader authMode=client does.",
+      "detail": "FOUND 2026-09-19. /market/[id], /store/[id], /housing/[id], and /classifieds/[id] are public detail routes (lib/nav/public-detail-routes.ts), emit listing JSON-LD, and are advertised by app/sitemap.ts, and each file still says `export const dynamic = 'force-dynamic'`. They also sit under the (main) layout auth read. Same class as the discover-layout comment that already fixed this for /discover: a dynamic API in the tree voids ISR. Close by dropping force-dynamic on the public read path and moving viewer-personalisation (own review, buy button state) behind client auth or Suspense, the way SiteHeader authMode=client does.\n\nCLOSED 2026-09-19 (ADR-1437). PREMISE RE-TESTED FIRST: all four files still exported force-dynamic; Store had no session read; Market, housing, and classifieds called getCallerProfile / getMyProfileId / isPlatformStaff. Dropped force-dynamic, asked for revalidate = 3600. Public page is the anonymous listing (non-active notFound). ViewerProvider plus /api/viewer upgrade signedIn on ProductReviews, SaveListingButton, and ListingClaimBox. ?claim= is read with useSearchParams. Did not touch (main)/layout.tsx (SCAN-641).",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const files=[\"app/(main)/market/[id]/page.tsx\",\"app/(main)/store/[id]/page.tsx\",\"app/(main)/housing/[id]/page.tsx\",\"app/(main)/classifieds/[id]/page.tsx\"];const bad=files.filter(f=>/export const dynamic = .force-dynamic./.test(fs.readFileSync(f,\"utf8\")));process.exit(bad.length?1:0)'",
         "note": "Fails while any of the four sitemap-advertised listing details still force-dynamic."
-      }
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "SCAN-638",

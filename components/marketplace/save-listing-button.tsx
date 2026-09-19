@@ -7,6 +7,7 @@ import {
   saveListingAction,
   unsaveListingAction,
 } from '@/app/(main)/housing/[id]/edit/actions'
+import { useViewer } from '@/components/layout/viewer-chrome'
 
 // The heart toggle for a housing listing (favorites, listing_saves). Optimistic: the
 // heart flips instantly and quietly reverts if the server action fails. Signed-out
@@ -32,8 +33,10 @@ export function SaveListingButton({
 }) {
   const [saved, setSaved] = useState(initialSaved)
   const [, start] = useTransition()
+  const viewer = useViewer()
+  const isSignedIn = viewer.signedIn || signedIn
 
-  if (!signedIn) {
+  if (!isSignedIn) {
     return (
       <Link
         href={`/sign-in?next=${encodeURIComponent(signInNext)}`}
