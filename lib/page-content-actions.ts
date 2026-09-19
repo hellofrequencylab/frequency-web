@@ -7,6 +7,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { CONTENT_EDIT_ROUTES, SITE_SCOPE } from '@/lib/layout/editable-content'
 import { isLoomPublicImageUrl } from '@/lib/loom/urls'
+import { loadLibraryAssetUrls } from '@/lib/library/asset-urls'
+import { columnImageUrl } from '@/lib/library/column-image'
 
 // Who may edit page content (ADR-180) — role-specific: admin+ (operators who tune
 // public-facing chrome). Reads return null for anyone below, so the editor renders
@@ -83,14 +85,16 @@ export async function getEditablePageContent(
     description?: string | null
     body?: string | null
     hero_image?: string | null
+    hero_image_asset_id?: string | null
     cta_label?: string | null
     cta_href?: string | null
   } | null
+  const live = await loadLibraryAssetUrls([row?.hero_image_asset_id])
   return {
     title: row?.title ?? '',
     description: row?.description ?? '',
     body: row?.body ?? '',
-    heroImage: row?.hero_image ?? '',
+    heroImage: columnImageUrl(row?.hero_image, row?.hero_image_asset_id, live) ?? '',
     ctaLabel: row?.cta_label ?? '',
     ctaHref: row?.cta_href ?? '',
   }
@@ -134,7 +138,11 @@ export async function savePageContent(route: string, fd: FormData): Promise<Acti
 /** Persist a Loom-picked hero URL for a route (the file is already stored in the Loom, so this just
  *  validates + writes the column). Same admin gate + route guard as savePageContent; the URL must be
  *  a Supabase public object URL so a caller can't inject an arbitrary src. */
-export async function setPageHeroUrl(route: string, url: string): Promise<{ error: string } | void> {
+export async function setPageHeroUrl(
+  route: string,
+  url: string,
+  assetId?: string | null,
+): Promise<{ error: string } | void> {
   const me = await getCallerProfile()
   if (!me || !atLeastRole(me.community_role, MIN_ROLE)) return { error: 'Not allowed.' }
   if (!isEditableRoute(route)) return { error: 'That page isn’t editable.' }
@@ -143,6 +151,7 @@ export async function setPageHeroUrl(route: string, url: string): Promise<{ erro
   const { error } = await db.from('page_content').upsert({
     route,
     hero_image: url,
+    hero_image_asset_id: assetId ?? null,
     updated_by: me.id,
     updated_at: new Date().toISOString(),
   })
@@ -162,6 +171,7 @@ export async function removePageHero(route: string): Promise<void> {
     .upsert({
       route,
       hero_image: null,
+      hero_image_asset_id: null,
       updated_by: me.id,
       updated_at: new Date().toISOString(),
     })

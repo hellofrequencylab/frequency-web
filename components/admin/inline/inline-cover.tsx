@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { ImagePlus, X, Loader2 } from 'lucide-react'
 import { useEditMode } from '@/lib/admin/use-edit-mode'
 import { LoomPicker } from '@/components/loom/loom-picker'
+import type { ColumnImage } from '@/lib/library/column-image'
 
 // Inline cover-image editor for the tuning layer (ADR-138). Out of Edit Mode it
 // just shows the cover (or nothing). In Edit Mode — and only for someone who can
@@ -18,6 +19,7 @@ export function InlineCover({
   alt,
   canEdit = false,
   setUrl,
+  setAsset,
   remove,
   forceEdit = false,
   onChange,
@@ -29,6 +31,9 @@ export function InlineCover({
    *  which validates it and writes the column (re-checking the capability server-side). Without it the
    *  cover is read-only: there is deliberately no file-upload fallback. */
   setUrl?: (url: string) => Promise<{ error: string } | void>
+  /** Column-backed covers (page_content.hero_image) persist the Loom id beside the url. When
+   *  present this is the write; setUrl stays as the url-only fallback for circle/practice covers. */
+  setAsset?: (image: ColumnImage & { url: string }) => Promise<{ error: string } | void>
   remove?: () => Promise<void>
   /** Show the edit controls without requiring page Edit Mode — for surfaces that
    *  are themselves an explicit editor (e.g. the Settings panel hero). */
@@ -55,12 +60,14 @@ export function InlineCover({
   // THROWING — and a throw inside a transition callback is an unhandled rejection, not a message.
   // `onRemove` in particular awaited a `Promise<void>` and then cleared the preview regardless, so
   // a refused delete looked like a successful one until the next load. Both paths now catch.
-  function onPick(picked: string) {
-    if (!setUrl) return
+  function onPick(picked: string, assetId: string | null = null) {
+    if (!setAsset && !setUrl) return
     setErr(null)
     startTransition(async () => {
       try {
-        const res = await setUrl(picked)
+        const res = setAsset
+          ? await setAsset({ url: picked, assetId })
+          : await setUrl!(picked)
         if (res && 'error' in res) { setErr(res.error); return }
         setLocalUrl(picked)
         onChange?.(picked)
@@ -95,7 +102,7 @@ export function InlineCover({
         <button
           type="button"
           onClick={openSource}
-          disabled={pending || !setUrl}
+          disabled={pending || (!setUrl && !setAsset)}
           className="flex h-40 w-full items-center justify-center gap-2 text-body-sm text-muted transition-colors hover:text-text disabled:opacity-50 sm:h-52"
         >
           {pending ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImagePlus className="h-5 w-5" />}
@@ -108,7 +115,7 @@ export function InlineCover({
           <button
             type="button"
             onClick={openSource}
-            disabled={pending || !setUrl}
+            disabled={pending || (!setUrl && !setAsset)}
             className="inline-flex items-center gap-1 rounded-lg bg-surface/90 px-2.5 py-1 text-meta font-medium text-text lift-1 backdrop-blur transition-colors hover:bg-surface disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
@@ -126,11 +133,11 @@ export function InlineCover({
         </div>
       )}
 
-      {setUrl && (
+      {(setUrl || setAsset) && (
         <LoomPicker
           open={pickerOpen}
           onClose={() => setPickerOpen(false)}
-          onSelect={onPick}
+          onSelectAsset={(pick) => onPick(pick.url, pick.assetId ?? null)}
           title="Choose a cover image"
           kinds={['image']}
         />

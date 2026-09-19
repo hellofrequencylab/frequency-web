@@ -27,7 +27,9 @@ export function SeoEditor({ spaceId, pane = 'meta' }: { spaceId?: string; pane?:
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [ogImage, setOgImage] = useState('')
+  const [ogImageAssetId, setOgImageAssetId] = useState<string | null>(null)
   const [headerImage, setHeaderImage] = useState('')
+  const [headerImageAssetId, setHeaderImageAssetId] = useState<string | null>(null)
   const [headerFocal, setHeaderFocal] = useState(DEFAULT_OBJECT_POSITION)
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
@@ -42,7 +44,9 @@ export function SeoEditor({ spaceId, pane = 'meta' }: { spaceId?: string; pane?:
         setTitle(d.seo_title ?? '')
         setDescription(d.seo_description ?? '')
         setOgImage(d.og_image_url ?? '')
+        setOgImageAssetId(d.og_image_asset_id ?? null)
         setHeaderImage(d.header_image_url ?? '')
+        setHeaderImageAssetId(d.header_image_asset_id ?? null)
         setHeaderFocal(d.header_image_focal ?? DEFAULT_OBJECT_POSITION)
         setLoading(false)
       })
@@ -57,7 +61,12 @@ export function SeoEditor({ spaceId, pane = 'meta' }: { spaceId?: string; pane?:
     setSaved(false)
     startTransition(async () => {
       // Each pane saves only the fields it owns; the action merges them over the shared row.
-      const r = await savePageSeo(pathname, { title, description, ogImage, headerImage, headerFocal }, spaceId, pane)
+      const r = await savePageSeo(
+        pathname,
+        { title, description, ogImage, ogImageAssetId, headerImage, headerImageAssetId, headerFocal },
+        spaceId,
+        pane,
+      )
       if (isError(r)) setError(r.error)
       else {
         setSaved(true)
@@ -91,7 +100,14 @@ export function SeoEditor({ spaceId, pane = 'meta' }: { spaceId?: string; pane?:
               label="Header image"
               hint="Wide banner shown on the page. Use 1600×500 (16:5). The whole image scales to the screen and is never cropped, so keep important text or faces inside a wide frame."
               value={headerImage || null}
-              onChange={(v) => setHeaderImage(v ?? '')}
+              onChange={(v) => {
+                setHeaderImage(v ?? '')
+                if (!v) setHeaderImageAssetId(null)
+              }}
+              onChangeAsset={(img) => {
+                setHeaderImage(img.url ?? '')
+                setHeaderImageAssetId(img.assetId)
+              }}
               folder="page-headers"
               disabled={pending}
             />
@@ -124,7 +140,14 @@ export function SeoEditor({ spaceId, pane = 'meta' }: { spaceId?: string; pane?:
               label="Share image"
               hint="Link-preview image for social and messaging. Use 1200×630 (1.91:1), the standard Open Graph size."
               value={ogImage || null}
-              onChange={(v) => setOgImage(v ?? '')}
+              onChange={(v) => {
+                setOgImage(v ?? '')
+                if (!v) setOgImageAssetId(null)
+              }}
+              onChangeAsset={(img) => {
+                setOgImage(img.url ?? '')
+                setOgImageAssetId(img.assetId)
+              }}
               folder="page-shares"
               disabled={pending}
             />

@@ -2,6 +2,8 @@ import 'server-only'
 
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { loadLibraryAssetUrls } from '@/lib/library/asset-urls'
+import { columnImageUrl } from '@/lib/library/column-image'
 import { SITE_SCOPE } from '@/lib/layout/editable-content'
 
 // THE COPY CASCADE — the ONE resolver for operator-editable page copy, inherited down the route
@@ -290,13 +292,14 @@ export const loadCascadeRows = cache(
     try {
       const db = createAdminClient()
       const { data } = await db.from('page_content').select('*').in('route', chain)
+      const live = await loadLibraryAssetUrls((data ?? []).map((row) => row.hero_image_asset_id))
       const out: Record<string, CascadeRow> = {}
       for (const row of data ?? []) {
         out[row.route] = {
           title: row.title,
           description: row.description,
           body: row.body,
-          heroImage: row.hero_image,
+          heroImage: columnImageUrl(row.hero_image, row.hero_image_asset_id, live),
           ctaLabel: row.cta_label,
           ctaHref: row.cta_href,
         }

@@ -9,8 +9,10 @@ export interface SeoInput {
   description?: string | null
   /** Compact social-share / OG image (link previews). */
   ogImage?: string | null
+  ogImageAssetId?: string | null
   /** Wide page header / banner image. */
   headerImage?: string | null
+  headerImageAssetId?: string | null
   /** Focal point for the header image, a CSS object-position string ("x% y%"). */
   headerFocal?: string | null
 }
@@ -19,7 +21,9 @@ export interface SeoFields {
   seo_title: string | null
   seo_description: string | null
   og_image_url: string | null
+  og_image_asset_id: string | null
   header_image_url: string | null
+  header_image_asset_id: string | null
   /** Focal point for the header image ("x% y%"); NULL = centered crop. */
   header_image_focal: string | null
 }
@@ -57,7 +61,9 @@ export function normalizeSeo(input: SeoInput): SeoFields | null {
     seo_title: clamp(input.title, TITLE_MAX),
     seo_description: clamp(input.description, DESC_MAX),
     og_image_url: og || null,
+    og_image_asset_id: og ? (input.ogImageAssetId ?? null) : null,
     header_image_url: header || null,
+    header_image_asset_id: header ? (input.headerImageAssetId ?? null) : null,
     header_image_focal: header ? normalizeObjectPosition(input.headerFocal) : null,
   }
 }
@@ -71,8 +77,8 @@ export type SeoPane = 'basics' | 'meta'
 /** The storable field KEYS each pane owns. The save path normalizes the full input, then
  *  writes back ONLY these keys (merged over the existing row), so the other pane is untouched. */
 export const SEO_PANE_FIELDS: Record<SeoPane, readonly (keyof SeoFields)[]> = {
-  basics: ['seo_title', 'header_image_url', 'header_image_focal'],
-  meta: ['seo_description', 'og_image_url'],
+  basics: ['seo_title', 'header_image_url', 'header_image_asset_id', 'header_image_focal'],
+  meta: ['seo_description', 'og_image_url', 'og_image_asset_id'],
 }
 
 /** Normalize the input, then keep only the fields the given pane owns (or all fields when no

@@ -321,7 +321,10 @@ export function SpaceBrandingForm({
           hint="Wide banner across the top of your page. About 1600 by 500."
           onChange={(v) => {
             setCoverUrl(v)
-            run(() => setSpaceImages(slug, { coverImageUrl: v }))
+          }}
+          onChangeAsset={(img) => {
+            setCoverUrl(img.url)
+            run(() => setSpaceImages(slug, { coverImageUrl: img.url, coverImageAssetId: img.assetId }))
           }}
         />
         {/* The profile image on the left, the header HEIGHT picker beside it: the control that sizes the
@@ -332,7 +335,10 @@ export function SpaceBrandingForm({
               value={logoUrl}
               onChange={(v) => {
                 setLogoUrl(v)
-                run(() => setSpaceImages(slug, { brandLogoUrl: v }))
+              }}
+              onChangeAsset={(img) => {
+                setLogoUrl(img.url)
+                run(() => setSpaceImages(slug, { brandLogoUrl: img.url, brandLogoAssetId: img.assetId }))
               }}
               label="Logo or Profile Image"
               hint="Your profile image. Opens the Loom to pick a photo or an icon, or upload your own. A square reads best."

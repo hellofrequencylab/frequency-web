@@ -46293,19 +46293,21 @@ Premise re-tested 2026-09-19 on this tree:
 
 **Rows.** LIVE-414, LIVE-415, LIVE-416, LIVE-417, LIVE-418, LIVE-419.
 
-## ADR-1436: Column-backed images keep a url cache and a Loom id (HYG-068 schema half)
+## ADR-1436: Column-backed images keep a url cache and a Loom id (HYG-068)
 
-**Status:** Accepted · 2026-09-19 · backlog `HYG-068` · numbered **1436** (reserved while later ADRs landed on main) · corroborated by `supabase/migrations/20270345006300_column_image_asset_ids.sql`
+**Status:** Accepted · 2026-09-19 · backlog `HYG-068` · numbered **1436** (reserved while later ADRs landed on main) · corroborated by `supabase/migrations/20270345006300_column_image_asset_ids.sql`, `lib/library/column-image.ts`
 
 **Context.** [ADR-1253](DECISIONS.md) adopted `{ assetId, url }` on JSONB-backed image fields. Six TEXT columns could not hold that object. The owner ruled 2026-09-08: companion `*_asset_id` columns, not URL-only caches until D4. Version **06300** because **06100** is Collective and **06200** is Hubs/Nexuses. The DDL was applied to production before the code PR merged; this records the file so the ledger and the tree match.
 
 **Decision.**
 
 1. **Two columns, one picture.** The url column stays the denormalised cache. `*_asset_id` is a nullable FK to `library_assets(id)` with `ON DELETE SET NULL`.
-2. **Writers are still HYG-068.** The columns exist. Pickers and save actions must write both halves in the next change on that row. A nullable companion with no writer is the ADR-970 costume; do not close HYG-068 on the file alone.
+2. **Writers write both halves.** Pickers emit `{ url, assetId }`. Save actions persist both columns. A paste or a non-catalog upload nulls the companion so a stale id cannot point at a different picture. Readers prefer `library_assets.url` and fail open to the cache (`lib/library/column-image.ts`). Spark still stores URL strings. The Space Loom studio is a library manager, not a column writer.
 3. **Do not re-apply the DDL.** `IF NOT EXISTS` is already in the file; a second apply is not the recovery.
 
-**Rejected.** JSON-in-a-text-column. Deleting the ledger row to make `check:migrations` pass while production still has the columns.
+**Amendment 2026-09-19 (writers).** Premise re-tested on `0aa2dddeb`: the six companions already existed in `20270345006300` and no `*.ts` / `*.tsx` wrote them. This amendment is that writer/reader half. No new migration.
+
+**Rejected.** JSON-in-a-text-column. Deleting the ledger row to make `check:migrations` pass while production still has the columns. Closing the row on the migration file alone.
 
 **Rows.** HYG-068.
 

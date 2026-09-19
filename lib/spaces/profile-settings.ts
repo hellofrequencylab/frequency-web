@@ -34,6 +34,7 @@ export interface UpdateSpaceProfileInput {
    *  or '' / null to clear. */
   brandAccent?: string | null
   brandLogoUrl?: string | null
+  brandLogoAssetId?: string | null
   about?: string | null
   tagline?: string | null
   visibility?: 'network' | 'private'
@@ -116,8 +117,10 @@ export async function updateSpaceProfile(
         return fail('The logo URL must be an https link or a same-origin path (starting with “/”).')
       }
       patch.brand_logo_url = logo.slice(0, 1000)
+      patch.brand_logo_asset_id = input.brandLogoAssetId ?? null
     } else {
       patch.brand_logo_url = null
+      patch.brand_logo_asset_id = null
     }
   }
 

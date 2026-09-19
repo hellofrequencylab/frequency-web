@@ -122,7 +122,7 @@ export function PageContentModule({ route: routeProp }: { route?: string } = {})
             alt={site ? 'Site default hero image' : 'Page hero image'}
             canEdit
             forceEdit
-            setUrl={setPageHeroUrl.bind(null, route)}
+            setAsset={(pick) => setPageHeroUrl(route, pick.url, pick.assetId)}
             remove={removePageHero.bind(null, route)}
           />
         </div>

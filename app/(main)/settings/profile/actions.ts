@@ -185,6 +185,8 @@ export async function updateProfile(data: {
    *  unverifiable URL to leave the stored value untouched (so a legacy/OAuth avatar is never wiped). */
   avatarUrl: string | null
   headerImageUrl?: string
+  /** Loom id beside the header url (HYG-068). Cleared when the url is cleared or replaced without an id. */
+  headerImageAssetId?: string | null
   /** The header banner FOCAL POINT (CSS object-position "x% y%"), stored on profiles.meta.headerFocal. */
   headerFocal?: string
   /** The avatar FOCAL POINT (CSS object-position "x% y%"), stored on profiles.meta.avatarFocal. */
@@ -242,9 +244,13 @@ export async function updateProfile(data: {
   } else if (avatarUrl) {
     update.avatar_url = avatarUrl
   }
-  // header_image_url + home_* aren't in the generated types yet — set via cast.
+  // Header banner: url is the cache, header_image_asset_id is the Loom truth (HYG-068). A write
+  // that changes the url without an id MUST clear the companion, or the id would point at a
+  // different picture. home_* still ride a cast (not in the generated types yet).
   if (data.headerImageUrl !== undefined) {
-    (update as Record<string, unknown>).header_image_url = data.headerImageUrl.trim() || null
+    const header = data.headerImageUrl.trim() || null
+    update.header_image_url = header
+    update.header_image_asset_id = header ? (data.headerImageAssetId ?? null) : null
   }
   if (data.home && Number.isFinite(data.home.lat) && Number.isFinite(data.home.lng)) {
     const u = update as Record<string, unknown>

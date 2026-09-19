@@ -6,6 +6,7 @@ import { ImageUpload } from '@/components/ui/image-upload'
 import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
+import type { ColumnImage } from '@/lib/library/column-image'
 
 // THE ONE header/cover image control for every editor (Space, Profile, Journey) — the render side of the
 // `header` element's image slot. Extracted from the refined Space branding form so the profile and journey
@@ -22,6 +23,7 @@ import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 export function HeaderImageField({
   value,
   onChange,
+  onChangeAsset,
   focus = DEFAULT_OBJECT_POSITION,
   onFocusChange,
   aspect = 16 / 6,
@@ -38,6 +40,8 @@ export function HeaderImageField({
   value: string | null
   /** Called with the new public URL after a pick/upload, or null when removed. */
   onChange: (value: string | null) => void
+  /** Column-backed parents persist the Loom id beside the url (HYG-068). */
+  onChangeAsset?: (image: ColumnImage) => void
   /** The saved focal point ("x% y%") and its (usually debounced) setter, owned by the parent. */
   focus?: string
   onFocusChange: (value: string) => void
@@ -60,6 +64,11 @@ export function HeaderImageField({
 }) {
   const [pickerOpen, setPickerOpen] = useState(false)
 
+  function emit(url: string | null, assetId: string | null = null) {
+    onChange(url)
+    onChangeAsset?.({ url, assetId: url ? assetId : null })
+  }
+
   // Empty: the shared dropzone, which opens the scoped Loom picker (browse + upload) or accepts a pasted URL.
   if (!value) {
     return (
@@ -67,6 +76,7 @@ export function HeaderImageField({
         <ImageUpload
           value={null}
           onChange={onChange}
+          onChangeAsset={onChangeAsset}
           label={label}
           hint={hint}
           disabled={disabled}
@@ -110,7 +120,7 @@ export function HeaderImageField({
           </button>
           <button
             type="button"
-            onClick={() => onChange(null)}
+            onClick={() => emit(null)}
             disabled={disabled}
             aria-label={`Remove ${label.toLowerCase()}`}
             className="rounded-control bg-canvas/90 p-1 text-subtle lift-1 backdrop-blur transition-colors hover:text-danger disabled:opacity-60 motion-reduce:transition-none"
@@ -122,7 +132,9 @@ export function HeaderImageField({
       <LoomPicker
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
-        onSelect={(url) => onChange(url)}
+        onSelectAsset={(pick) => {
+          emit(pick.url, pick.assetId ?? null)
+        }}
         title={`Choose ${label.toLowerCase()}`}
         scopeKey={scopeKey}
       />
