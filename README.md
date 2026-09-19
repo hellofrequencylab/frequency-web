@@ -80,9 +80,10 @@ The locked canons, each machine-enforced or gated: [NAMING](docs/NAMING.md) +
 [MENU-CONTRACT](docs/MENU-CONTRACT.md) (the admin menu derives from four catalogs), and
 [DEPLOY-SAFETY](docs/DEPLOY-SAFETY.md) (merging `main` deploys to production; the artifact gates).
 
-Everything below this line is context. `DEVELOPMENT-MAP`, `BUILD-SEQUENCE`, `BUILD-PHASES`,
+Everything below this line is context. `DEVELOPMENT-MAP`, `BUILD-PHASES`,
 `ROADMAP`, `CHECKLIST` and `BACKLOG` are **history** with superseded banners: worth reading for
-rationale, never for status. **When the code and a doc disagree, the code wins**, and the doc gets
+rationale, never for status. `BUILD-SEQUENCE` and `MASTER-TODO` were absorbed into
+[`docs/BUILD-BACKLOG.json`](docs/BUILD-BACKLOG.json) (HYG-104) and removed. **When the code and a doc disagree, the code wins**, and the doc gets
 fixed in the same pass.
 
 ### Strategy & target architecture (the frame — read in this order)
@@ -129,8 +130,9 @@ fixed in the same pass.
   what to read in order, and how to ship a change. Not a rival front door;
   [AGENTS.md](AGENTS.md) names the live set.
 - [BUILD-PHASES](docs/BUILD-PHASES.md), [CHECKLIST](docs/CHECKLIST.md),
-  [DEVELOPMENT-MAP](docs/DEVELOPMENT-MAP.md), [BUILD-SEQUENCE](docs/BUILD-SEQUENCE.md) — **history.**
+  [DEVELOPMENT-MAP](docs/DEVELOPMENT-MAP.md) — **history.**
   Each carries a superseded banner; read for items no current plan absorbed, never for status.
+  `BUILD-SEQUENCE` and `MASTER-TODO` were absorbed into the one list (HYG-104) and removed.
 
 ### As-is engineering reference (current codebase)
 - [ARCHITECTURE](docs/ARCHITECTURE.md) — current stack, directory map, the RLS /
@@ -231,7 +233,8 @@ team-grade setup) lives in [docs/WORKFLOW.md](docs/WORKFLOW.md).
 1. Start at `pnpm backlog` ([`docs/BUILD-BACKLOG.json`](docs/BUILD-BACKLOG.json)) for where we
    are and what is built; take the ordered "what to build next" from
    [UX-MATURITY-PLAN](docs/UX-MATURITY-PLAN.md) §Sequencing and [BUILD-LIST](docs/BUILD-LIST.md).
-   (`DEVELOPMENT-MAP.md`, `BUILD-SEQUENCE.md` and `BUILD-PHASES.md` are superseded history.)
+   (`DEVELOPMENT-MAP.md` and `BUILD-PHASES.md` are superseded history.
+   `BUILD-SEQUENCE` and `MASTER-TODO` were absorbed into the one list and removed.)
 2. Each backlog row states **how it will be proven** (its probe) and the **doc that governs it**
    (`source.file`). A probe measures the consequence, never the row's own title.
 3. Close the row in the same PR that lands the work by making its probe pass — never by editing

@@ -57,7 +57,7 @@ Status is the JSON. These four docs explain the work; they do not track it:
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — ADRs. A plan that contradicts an ADR is stale.
 - [`docs/EDITOR-ARCHITECTURE.md`](docs/EDITOR-ARCHITECTURE.md) — editor program E0–E10. Read before any block or page editor.
 
-`BUILD-SEQUENCE`, `MASTER-TODO`, `BUILD-CATALOG`, `A-PLUS-ROADMAP`, `OPEN-THREADS`, `REMAINING-WORK`, `DEVELOPMENT-MAP`, `BACKLOG`, `MASTER-PLAN`, `BUILD-PHASES`, `CHECKLIST`, `PATCH-LIST` are history. Each has a superseded banner. Do not update them for status.
+`BUILD-CATALOG`, `A-PLUS-ROADMAP`, `OPEN-THREADS`, `REMAINING-WORK`, `DEVELOPMENT-MAP`, `BACKLOG`, `MASTER-PLAN`, `BUILD-PHASES`, `CHECKLIST`, `PATCH-LIST` are history. Each has a superseded banner. Do not update them for status. `BUILD-SEQUENCE` and `MASTER-TODO` were absorbed into [`docs/BUILD-BACKLOG.json`](docs/BUILD-BACKLOG.json) (HYG-104) and removed.
 
 When the code and a doc disagree, **the code wins**, and the doc is fixed in the same pass.
 
