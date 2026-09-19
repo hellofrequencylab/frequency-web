@@ -97,13 +97,12 @@ jobs:
     name: pr-compare fallback (docs-only PRs)
     runs-on: ubuntu-latest
     steps:
-      # Depth 1: the only repo files this job reads are e2e.yml and scripts/pixel-paths.mjs. The
-      # changed-file list comes from the API below rather than a `git diff`, so no history is
-      # needed. An earlier draft cloned the full history for that diff, which is a real cost to
-      # pay on every pull request for a job that usually posts nothing.
+      # Depth 2: pull_request checkout is the merge commit. Both parents let
+      # list_git_files read the PR's files when /pulls/{n}/files and /compare
+      # 403 (confirmed 2026-09-19 on #2767: pull-requests: read was not enough).
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 1
+          fetch-depth: 2
 
       - name: Decide whether e2e already owns this PR
         id: decide
@@ -156,11 +155,36 @@ jobs:
             tail -n +2 /tmp/page.txt >> /tmp/changed.txt
           }
 
+          list_git_files() {
+            : > /tmp/changed.txt
+            if git rev-parse --verify --quiet HEAD^1 >/dev/null && git rev-parse --verify --quiet HEAD^2 >/dev/null; then
+              git diff --name-only HEAD^1 HEAD^2 > /tmp/changed.txt
+              echo "::notice::Listed files from merge-commit parents."
+              return 0
+            fi
+            git fetch --no-tags --depth=1 origin "${HEAD_SHA}" || true
+            git fetch --no-tags --depth=1 origin "${BASE_SHA}" || true
+            if ! git merge-base "${BASE_SHA}" "${HEAD_SHA}" >/dev/null 2>&1; then
+              git fetch --no-tags --deepen=50 origin "${HEAD_SHA}" || true
+              git fetch --no-tags --deepen=50 origin "${BASE_SHA}" || true
+            fi
+            if git merge-base "${BASE_SHA}" "${HEAD_SHA}" >/dev/null 2>&1; then
+              git diff --name-only "${BASE_SHA}...${HEAD_SHA}" > /tmp/changed.txt
+              echo "::notice::Listed files from git three-dot ${BASE_SHA}...${HEAD_SHA}."
+              return 0
+            fi
+            echo "::warning::git could not find a merge-base for ${BASE_SHA} and ${HEAD_SHA}."
+            return 1
+          }
+
           if ! list_pulls_files; then
             echo "::notice::GET /pulls/${PR_NUMBER}/files failed. Falling back to compare ${BASE_SHA}...${HEAD_SHA}."
             if ! list_compare_files; then
-              echo "::error::Neither /pulls/{n}/files nor /compare listed files. Refusing to post a status on a guess."
-              exit 1
+              echo "::notice::GET /compare failed. Falling back to git diff."
+              if ! list_git_files; then
+                echo "::error::Neither /pulls/{n}/files nor /compare nor git listed files. Refusing to post a status on a guess."
+                exit 1
+              fi
             fi
           fi
 
