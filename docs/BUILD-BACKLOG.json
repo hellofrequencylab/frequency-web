@@ -92,9 +92,7 @@
             "LIVE-234",
             "PROG-R6",
             "PROG-R7",
-            "LIVE-241",
             "LIVE-242",
-            "LIVE-244",
             "LIVE-246",
             "PROG-R8",
             "LIVE-254",
@@ -11046,21 +11044,22 @@
     },
     {
       "id": "LIVE-241",
-      "title": "Member rail: 16 rows to 7",
-      "status": "open",
+      "title": "Member rail is as short as the role can use (16 to 7 cancelled)",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
       "source": {
         "file": "docs/CORE-MODEL.md",
-        "ref": "\u00a75"
+        "ref": "§5"
       },
-      "detail": "Feed, Around You, Circles, Events, Members, Messages, The Quest. Market's rows collapse into the one Marketplace umbrella (LIVE-243); Channels folds into Circles (LIVE-244); Library, Journal, Practices, Journeys and Vault move under their parent. lib/nav-areas.ts and lib/verticals/*.\n\nThe Quest KEEPS a row. The owner ruling is that the game is demoted from the centre to a side thing we all do together - not removed. Five of sixteen rows is the centre; one is a side thing.",
+      "detail": "CANCELLED AS A COUNT 2026-09-19 (Daniel / Designer; ADR-1406). The 16-to-7 plan is not the law. Member nav stays as short as the role can use, not as short as seven. Do not hide Channels, Library, Journeys or anything else to hit a number.\n\nThe 16 non-admin rail rows (Feed, Around You, Circles, Channels, Events, Message Boards, Members, Business Spaces, Market, Housing, Frequency Store, My Quest, Journeys, Practices, Library, The Vault) already hide through defaultAccess (visitor vs member), Admin telescoping, navAccess / area_permissions, and marketplace flags (the Store is often none while unpublished). Journal and My Contacts are railHidden, not role-hidden. A signed-in member still sees almost all sixteen; that is expected until a row's floor or matrix says they cannot use it.\n\nThe Quest still keeps a row. LIVE-254 (public header) is a separate PR. LIVE-244's fold is refused in the same ruling.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Count member-visible rows in the rendered rail as a free member. Seven.",
-        "checked": "2026-09-08"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const Q=String.fromCharCode(39);const d=fs.readFileSync(\"docs/DECISIONS.md\",\"utf8\");if(!d.includes(\"## ADR-1406\"))fail(\"ADR-1406 is missing, so the 16-to-7 cancel is unrecorded\");if(!/as short as the role can use/.test(d))fail(\"ADR-1406 does not carry the role-availability law\");const c=fs.readFileSync(\"docs/CORE-MODEL.md\",\"utf8\");if(c.includes(\"| Member rail rows (non-admin) | **16** | **7** |\"))fail(\"CORE-MODEL still targets seven member-rail rows\");if(!c.includes(\"role can use\"))fail(\"CORE-MODEL no longer states the role-availability target\");const n=fs.readFileSync(\"lib/nav-areas.ts\",\"utf8\");const key=\"key: \"+Q+\"channels\"+Q;if(!n.includes(key))fail(\"Channels left NAV_AREAS\");const slice=n.slice(n.indexOf(key), n.indexOf(key)+280);if(slice.includes(\"railHidden: true\"))fail(\"Channels is railHidden, which is a fold by another name\");console.log(\"LIVE-241 ok: 16-to-7 cancelled, role-availability is the law, Channels stay on the rail\")'",
+        "note": "Passes when ADR-1406 records the role-availability law, CORE-MODEL no longer targets seven member-rail rows, and Channels remains a visible NAV_AREAS row. Inverted from the old manual \"count seven\" probe, which would have passed a fake 7 that hid Channels."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-242",
@@ -11099,21 +11098,22 @@
     },
     {
       "id": "LIVE-244",
-      "title": "Fold Channels into Circles",
-      "status": "open",
+      "title": "Channels stay on the rail unless a role gate hides them (fold cancelled)",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
       "source": {
         "file": "docs/CORE-MODEL.md",
-        "ref": "\u00a75"
+        "ref": "§5"
       },
-      "detail": "OWNER RULING 2026-09-08. Channels ship an index, a detail page (720 lines), an editor and a 1,400-line console - and the channels table holds ZERO rows. channel_memberships is also empty, has no writer, and app/(main)/channels/actions.test.ts:233 literally asserts the app never writes it. A Channel reads as a topic Circle. Nothing is lost because there are no channels; redirect old links at /circles.\n\nRE-TESTED 2026-09-15 by a lane before working it: DO NOT BUILD AS WRITTEN. The three facts above are true of the RETIRED legacy tables channels and channel_memberships (20240102000000_hierarchy_v2.sql), and no route under app/(main)/channels or app/(main)/admin/channels reads them (actions.test.ts:184,232 and load-channels.test.ts:109-111 pin that). Every Channel surface reads topical_channels: the SEVEN seeded topics of docs/NAMING.md's locked Pillar > Channel > Circle ladder (Spirituality, Movement, Holistic Health, Human Relating, Activism, Creative, Business Support), with topical_channel_memberships written by tune in/out and READ by Messages (room access), Events connectors, People associations and profile associations; circles.topical_channel_id is consumed in 26 files; the Circle manifest's topicalChannelId field points at it; the sitemap emits /channels/<slug> per topic; Programs and Chapters (topical_channels.template_id, lib/channels/programs.ts, the Space program settings, two help articles) hang off it; 30 files outside the Channel directories consume topical_channel*. docs/GLOSSARY.md:29-35 already distinguishes the two. Retiring /channels as a redirect PR would delete the tune-in surface for seven live topics and the Programs feature, which is not \"nothing is lost\". OWNER: re-take ruling 6 (ADR-1294 / CORE-MODEL section 4b row 6) on the corrected measurement, the way the Store ruling was corrected beneath that table. If topical Channels are still to fold into Circles, that is a data-model change (topical_channel_id, the manifest field, Programs, Channel-scoped rooms, the sitemap) with a migration plan, an L not an M. LIVE-241's rail count (16 to 7) assumes this fold and waits on the same ruling. The legacy tables' residue is LIVE-334.",
+      "detail": "RULING 2026-09-19 (Daniel / Designer; ADR-1406): do not fold Channels into Circles. Channels stay unless a role, access-matrix, or flag gate says the viewer cannot use them. He did not pick fold.\n\nThe 2026-09-08 fold assumed the empty legacy `channels` / `channel_memberships` tables. The 2026-09-15 re-test showed every Channel surface reads `topical_channels` (the seven live topics). Retiring `app/(main)/channels` would delete the tune-in surface. LIVE-241's 16-to-7 count assumed this fold and is cancelled with it. Legacy-table residue remains LIVE-334.\n\nOWNER RULING 2026-09-08. Channels ship an index, a detail page (720 lines), an editor and a 1,400-line console - and the channels table holds ZERO rows. channel_memberships is also empty, has no writer, and app/(main)/channels/actions.test.ts:233 literally asserts the app never writes it. A Channel reads as a topic Circle. Nothing is lost because there are no channels; redirect old links at /circles.\n\nRE-TESTED 2026-09-15 by a lane before working it: DO NOT BUILD AS WRITTEN. The three facts above are true of the RETIRED legacy tables channels and channel_memberships (20240102000000_hierarchy_v2.sql), and no route under app/(main)/channels or app/(main)/admin/channels reads them (actions.test.ts:184,232 and load-channels.test.ts:109-111 pin that). Every Channel surface reads topical_channels: the SEVEN seeded topics of docs/NAMING.md's locked Pillar > Channel > Circle ladder (Spirituality, Movement, Holistic Health, Human Relating, Activism, Creative, Business Support), with topical_channel_memberships written by tune in/out and READ by Messages (room access), Events connectors, People associations and profile associations; circles.topical_channel_id is consumed in 26 files; the Circle manifest's topicalChannelId field points at it; the sitemap emits /channels/<slug> per topic; Programs and Chapters (topical_channels.template_id, lib/channels/programs.ts, the Space program settings, two help articles) hang off it; 30 files outside the Channel directories consume topical_channel*. docs/GLOSSARY.md:29-35 already distinguishes the two. Retiring /channels as a redirect PR would delete the tune-in surface for seven live topics and the Programs feature, which is not \"nothing is lost\". OWNER: re-take ruling 6 (ADR-1294 / CORE-MODEL section 4b row 6) on the corrected measurement, the way the Store ruling was corrected beneath that table. If topical Channels are still to fold into Circles, that is a data-model change (topical_channel_id, the manifest field, Programs, Channel-scoped rooms, the sitemap) with a migration plan, an L not an M. LIVE-241's rail count (16 to 7) assumes this fold and waits on the same ruling. The legacy tables' residue is LIVE-334.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e 'const fs=require(\"fs\");const p=[\"app/(main)/channels\"];const left=p.filter(x=>fs.existsSync(x));if(left.length)console.error(\"still present: \"+left.join(\", \"));process.exit(left.length?1:0)'"
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const Q=String.fromCharCode(39);if(!fs.existsSync(\"app/(main)/channels\"))fail(\"app/(main)/channels is gone; the ruling was to keep topical Channels\");const n=fs.readFileSync(\"lib/nav-areas.ts\",\"utf8\");const key=\"key: \"+Q+\"channels\"+Q;if(!n.includes(key))fail(\"no channels nav area\");const slice=n.slice(n.indexOf(key), n.indexOf(key)+280);if(slice.includes(\"railHidden: true\"))fail(\"Channels is railHidden\");const d=fs.readFileSync(\"docs/DECISIONS.md\",\"utf8\");if(!d.includes(\"## ADR-1406\"))fail(\"the Channels-stay ruling is unrecorded\");if(!d.includes(\"Channels stay\"))fail(\"ADR-1406 does not say Channels stay\");console.log(\"LIVE-244 ok: Channels stay unless a role gate hides them\")'",
+        "note": "INVERTED 2026-09-19 from a probe that required app/(main)/channels to be ABSENT. The ruling is to keep topical Channels. Passes when the route still exists, the rail row is not railHidden, and ADR-1406 records Channels stay."
       },
-      "ownerAction": "ruling"
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-245",
@@ -13470,7 +13470,7 @@
       "priority": "P1",
       "source": {
         "file": "docs/DECISIONS.md",
-        "ref": "ADR-1377, ADR-1406"
+        "ref": "ADR-1377, ADR-1407"
       },
       "detail": "LIVE-366 closed this gap for the THREE TICKET DOORS and deliberately did not widen further. The same gap is still open on the other three on-page money surfaces, and it is the identical defect:\n\n  \u00b7 app/(main)/marketplace/buy-button.tsx  (commerce order)\n  \u00b7 app/(main)/people/[handle]/tip-button.tsx  (tip)\n  \u00b7 components/spaces/donations/donate-form.tsx  (Space donation)\n\n\ud83d\udd34 WHY IT MATTERS. `confirm({ redirect: 'if_required' })` keeps the buyer on the page, which means the common card path NEVER navigates -- so the session's `return_url`, carrying `session_id={CHECKOUT_SESSION_ID}` and written as the webhook's backstop, is never visited. The reconcile behind it is unreachable on the path that is now the default. Each of these three shows a confirmation panel saying a receipt is on its way while NOTHING has been asked to send one; the webhook is the only thing that can make that true, and if it is late, retried or misconfigured the buyer is left holding a promise and the seller is never told.\n\nTHE SEAM ALREADY EXISTS AND NEEDS NO NEW MECHANISM. `resolveCheckoutSession` already hands `sessionId` back beside the client secret for every creator, and `CheckoutPanel` already takes an optional `onPaid` that it AWAITS before confirming. `onPaid` was made optional precisely so these three could adopt it one at a time.\n\nWHAT EACH ONE NEEDS is its own settle action, because each has its own recorder: the commerce order, the tip and the Space donation each record differently. Follow `settleTicketAction` (app/(main)/events/[slug]/ticket-actions.ts) for the shape -- kill switch, a `cs_` check, a per-IP limiter that FAILS OPEN, and a catch that is never fatal, because the buyer has already been charged and an error after a successful charge sends them back to pay twice.\n\n\u26a0\ufe0f BEFORE WORKING IT, RE-TEST THE PREMISE on each door: confirm it still mounts `CheckoutPanel` on the elements path rather than having been converted or retired. The probe names the three by path, so a door that moves will make it fail loudly rather than quietly reporting the gap closed.",
       "verify": {

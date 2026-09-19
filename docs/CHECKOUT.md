@@ -133,7 +133,7 @@ that had already promised a ticket and a receipt.
 — the settle is one conditional `update … where status = 'pending' returning …`, so whichever
 arrives second flips nothing and sends nothing. The webhook stays the guarantee
 ([ADR-1377](DECISIONS.md)). Commerce, tips and Space gifts use the same `onPaid` path
-([ADR-1406](DECISIONS.md), `LIVE-367`).
+([ADR-1407](DECISIONS.md), `LIVE-367`).
 
 ### 🔴 The compiler cannot help AT ALL on the Stripe side
 
