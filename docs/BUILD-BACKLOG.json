@@ -171,7 +171,6 @@
           "name": "W0c \u00b7 P2 \u2014 FOCUS remainder, gems replay grant, remaining audit security, small cleanups, Journey sales tail.",
           "ids": [
             "LIVE-408",
-            "LIVE-417",
             "LIVE-418",
             "LIVE-419",
             "SCAN-638",
@@ -14887,20 +14886,21 @@
     {
       "id": "LIVE-417",
       "title": "Calendar C3: Planning is a first-class Admin lane (ADR-1388)",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "lib/calendar/entries.ts",
-        "ref": "ADR-1388, ADR-1445"
+        "ref": "ADR-1388, ADR-1445, ADR-1460"
       },
-      "detail": "Admin PM console lists planning-stage gatherings as their own lane. After C2 (LIVE-416).",
+      "detail": "Admin PM console lists planning-stage gatherings as their own lane. After C2 (LIVE-416).\n\nWHAT SHIPPED. planningLane (lib/calendar/pm-console.ts) is the Admin Planning lane. CalendarPmConsole renders it under Pencil and above the mixed board. Production stays on that board until C4. StaffCalendar is still the date map. Did not declare productionLane. Did not fold Guest through guestLiveItems (LIVE-419).",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"components/spaces/calendar-pm-console.tsx\",\"utf8\");if(!s.includes(\"planningLane\"))process.exit(1)'",
-        "note": "Fails until the PM console has a planningLane."
-      }
+        "note": "Passes when the PM console has a planningLane. Written 2026-09-19."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-418",

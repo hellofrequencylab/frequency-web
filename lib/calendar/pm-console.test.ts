@@ -3,10 +3,12 @@ import type { CalendarEvent } from './item'
 import {
   isOperatorListItem,
   isPencilLaneItem,
+  isPlanningLaneItem,
   operatorListHref,
   operatorListItems,
   operatorStageLabel,
   pencilLane,
+  planningLane,
 } from './pm-console'
 
 function item(partial: Partial<CalendarEvent> & Pick<CalendarEvent, 'slug' | 'title' | 'dayKey'>): CalendarEvent {
@@ -94,6 +96,24 @@ describe('operatorListItems (LIVE-415)', () => {
       'Planning',
       'Production',
     ])
+  })
+
+  it('puts planning-stage gatherings in planningLane and leaves production on the board', () => {
+    const hold = item({ slug: 'entry-1', title: 'New moon sit', dayKey: '2026-09-22', stage: 'pencil', layer: 'pencil' })
+    const planning = item({
+      slug: 'entry-2',
+      title: 'Open house',
+      dayKey: '2026-09-24',
+      stage: 'planning',
+      layer: 'pencil',
+    })
+    const live = item({ slug: 'open-house', title: 'Published sit', dayKey: '2026-09-25' })
+
+    expect(isPlanningLaneItem(planning)).toBe(true)
+    expect(isPlanningLaneItem(hold)).toBe(false)
+    expect(isPlanningLaneItem(live)).toBe(false)
+    expect(planningLane([hold, planning, live]).map((row) => row.key)).toEqual(['entry-2|2026-09-24'])
+    expect(pencilLane([hold, planning, live]).map((row) => row.stageLabel)).toEqual(['Pencil'])
   })
 
   it('links published events and leaves private entries without a page', () => {
