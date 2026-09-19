@@ -123,7 +123,7 @@ vi.mock('@/lib/pricing/catalog-config', async (importOriginal) => {
   return { ...orig, loadCatalogConfig: () => Promise.resolve(orig.defaultCatalogConfig()) }
 })
 
-import { syncPricingCatalogToStripe, catalogProductMetaKey, catalogProductLabel, catalogItemHasFoundingRate } from './pricing-products'
+import { syncPricingCatalogToStripe, catalogProductMetaKey, catalogItemHasFoundingRate } from './pricing-products'
 import { catalogItem, catalogPriceKey } from './pricing-keys'
 
 /** THE FROZEN KEY SET. Every key the catalog sync writes, byte for byte, sorted. The operator seat
