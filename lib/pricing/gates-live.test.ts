@@ -260,7 +260,7 @@ describe('featureAllowed({ gatesLive })', () => {
     expect(await featureAllowed('vera_unlimited', { tier: 'free' }, { gatesLive: true })).toBe(false)
     expect(await featureAllowed('vera_unlimited', { tier: 'crew' }, { gatesLive: true })).toBe(true)
     // plan axis: free < business < collective ~ nonprofit ~ independent
-    expect(await featureAllowed('space_memberships', { plan: 'free' }, { gatesLive: true })).toBe(false)
+    expect(await featureAllowed('space_memberships', { plan: 'free' }, { gatesLive: true })).toBe(true)
     expect(await featureAllowed('space_memberships', { plan: 'business' }, { gatesLive: true })).toBe(true)
     // Collaborator HOSTING opens at Business (basic collaboration, metered to a few collaborators).
     expect(await featureAllowed('space_collaborators', { plan: 'free' }, { gatesLive: true })).toBe(false)

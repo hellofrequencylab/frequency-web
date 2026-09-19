@@ -68,8 +68,10 @@
 >    (`lib/commerce/seller-audience.ts`). Frequency charges for the introduction, never the
 >    relationship.
 > 4. **Tips carry NO platform fee. Zero, on every tier.** Unchanged from ADR-913.
-> 5. **The three walls** are selling memberships (Business), campaigns and funnels (Business), and
->    revenue splits (Collective). Everything else is a meter with a real free allowance.
+> 5. **The remaining wall** is campaigns and funnels (Business). Selling memberships is open on a
+>    free Space once payouts are ready ([ADR-1415](DECISIONS.md), LIVE-410). Revenue splits lost
+>    their gate in HYG-079 because the feature is not built. Everything else is a meter with a real
+>    free allowance.
 
 > ## ✅ Crew is CONTRIBUTE-WHAT-YOU-WANT and the Member/Crew line is "first one free" (ADR-908, 2026-07-29; renamed from "pay what you want" by ADR-1084).
 >

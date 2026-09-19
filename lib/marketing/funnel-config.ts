@@ -16,8 +16,9 @@
 // 🔴 THE ARGUMENT FOR PAYING IS MONEY, NOT MORE (LIVE-255). Every door says the same sentence in its
 // own words: PEOPLE JOIN FREE, BUSINESSES HOST FREE, YOU PAY WHEN YOU START CHARGING. The three
 // capabilities that genuinely need a plan are still named plainly, because naming them is what makes
-// the promise checkable, but they are the CONSEQUENCE of that sentence rather than the pitch: selling
-// memberships (Business), campaigns and funnels (Business), and revenue splits (Collective). Do not
+// the promise checkable, but they are the CONSEQUENCE of that sentence rather than the pitch:
+// campaigns and funnels (Business). Selling memberships is open on a free Space once payouts are
+// ready (LIVE-410). Do not
 // reintroduce a "paid does more / lifts the caps / unlocks" beat here, and that includes a SECTION
 // TITLE: the five step-up cards each read "When you start charging, it does more." until LIVE-255,
 // which is this rule broken by the heading above the copy that obeys it. A card that names a plan
@@ -275,7 +276,7 @@ export const COACHES_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'One honest price.',
-    intro: pricingIntro('When your practice starts selling memberships or running campaigns, that is Business, and the network rate drops with it.'),
+    intro: pricingIntro('When your practice starts running campaigns, that is Business, and the network rate drops with it.'),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
@@ -365,7 +366,7 @@ export const STUDIOS_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'One honest price.',
-    intro: pricingIntro('When your studio starts selling memberships and class packs, that is Business, and the network rate drops with it.'),
+    intro: pricingIntro('When your studio starts running campaigns, that is Business, and the network rate drops with it.'),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
@@ -455,7 +456,7 @@ export const EVENTS_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'One honest price.',
-    intro: pricingIntro('When your events start selling memberships or running campaigns off the ticket list, that is Business, and the network rate drops with it.'),
+    intro: pricingIntro('When your events start running campaigns off the ticket list, that is Business, and the network rate drops with it.'),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
@@ -546,7 +547,7 @@ export const COMMUNITY_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'One honest price.',
-    intro: pricingIntro('When your community starts selling memberships or running campaigns, that is Business, and the network rate drops with it.'),
+    intro: pricingIntro('When your community starts running campaigns, that is Business, and the network rate drops with it.'),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },

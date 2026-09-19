@@ -239,7 +239,7 @@ describe('the gauge as upsell — nearAllowanceLimit + the one shared nudge line
 
   it('never trips on an unlimited tier, a zero allowance, or a non-metered feature', () => {
     expect(nearAllowanceLimit('space_crm', 'business', 1_000_000)).toBe(false) // unlimited
-    expect(nearAllowanceLimit('space_membership_tiers', 'free', 5)).toBe(false) // zero allowance, nothing to fill
+    expect(nearAllowanceLimit('space_membership_tiers', 'free', 5)).toBe(true) // free: 1, usage 5 is over
     expect(nearAllowanceLimit('space_memberships', 'free', 999)).toBe(false) // not metered
     expect(nearAllowanceLimit('made-up', 'free', 999)).toBe(false)
   })

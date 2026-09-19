@@ -47,7 +47,7 @@
             "W0b"
           ],
           "next": [
-            "LIVE-410"
+            "LIVE-229"
           ],
           "leave": [
             "SCAN-636",
@@ -150,10 +150,10 @@
           "RLS on spatial_ref_sys"
         ],
         "packets": {
-          "product": "pnpm packets --lane money  (then --lane events after 410)",
+          "product": "pnpm packets --lane events  (LIVE-410 closed; money lane next is derived)",
           "scan": "pnpm packets --lane scan",
           "doNotShare": [
-            "LIVE-410",
+            "LIVE-376",
             "one row per PR; rebase after every merge"
           ]
         }
@@ -168,7 +168,6 @@
         {
           "name": "W0b \u00b7 P1 \u2014 product-first interior (ADR-1403) ready to work now, then CORE-MODEL walls that are still untrue. Pull from here.",
           "ids": [
-            "LIVE-410",
             "LIVE-186",
             "LIVE-213"
           ]
@@ -14518,7 +14517,7 @@
     {
       "id": "LIVE-410",
       "title": "Selling memberships is gated on Business plan, not Connect readiness",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
@@ -14526,12 +14525,13 @@
         "file": "lib/pricing/gates.ts",
         "ref": "FOCUS-MODEL Q3, ADR-1403, LIVE-231 copy only"
       },
-      "detail": "FILED 2026-09-19. lib/pricing/gates.ts still sets space_memberships minEntitlement business. LIVE-231 made the wall honest (GateNotice, featureWallLabel) and did not move it. ADR-914 / CORE-MODEL: never gate the transaction, gate the repeat \u2014 a membership IS the repeat, but FOCUS-MODEL Q3 asked whether a free Space may sell memberships gated on Connect readiness instead of plan. OWN-066 accepted the focus model; this is the code half that is still untrue in product.\n\nDo not duplicate LIVE-231 (copy). Do not duplicate PROG-R5 (onboarding push).",
+      "detail": "FILED 2026-09-19. lib/pricing/gates.ts still sets space_memberships minEntitlement business. LIVE-231 made the wall honest (GateNotice, featureWallLabel) and did not move it. ADR-914 / CORE-MODEL: never gate the transaction, gate the repeat \u2014 a membership IS the repeat, but FOCUS-MODEL Q3 asked whether a free Space may sell memberships gated on Connect readiness instead of plan. OWN-066 accepted the focus model; this is the code half that is still untrue in product.\n\nDo not duplicate LIVE-231 (copy). Do not duplicate PROG-R5 (onboarding push).\n\nCLOSED 2026-09-19. space_memberships code default is the free floor (same shape as the storefront). Checkout still refuses when Connect is not payout-ready (LIVE-233 / LIVE-339). Did not redo LIVE-231 copy.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"lib/pricing/gates.ts\",\"utf8\");const m=s.match(/space_memberships:\\s*\\{[^}]+\\}/);if(!m){console.error(\"space_memberships gate missing\");process.exit(1)}if(/minEntitlement:\\s*.business./.test(m[0])){console.error(\"space_memberships is still a Business plan wall\");process.exit(1)}process.exit(0)'",
         "note": "Passes when the memberships feature gate is no longer minEntitlement business. Readiness (payouts) may still refuse a checkout; that is LIVE-233/339 territory, not this wall."
-      }
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-411",

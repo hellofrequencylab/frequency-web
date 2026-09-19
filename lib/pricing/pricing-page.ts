@@ -207,11 +207,11 @@ const TIER_ITEM: Record<Exclude<PricingTier['id'], 'free'>, CatalogItemKey> = {
  *  below, so a rewrite of this prose can never move a price and a price change can never leave this
  *  prose stale. The lines that used to carry rate literals ("5% on network-sourced sales") are gone. */
 const TIER_CORE_INCLUDED: Record<PricingTier['id'], string> = {
-  free: 'Your storefront and page, host events, post, gather members, and be a Collaborator on other Spaces’ events.',
+  free: 'Your storefront and page, host events, post, gather members, sell a membership, and be a Collaborator on other Spaces’ events.',
   business:
-    'Unlimited contacts, campaigns at volume, email branding, and exports: the full CRM, email, reporting, bookings, tickets, memberships, and your own website.',
+    'Unlimited contacts, campaigns at volume, email branding, and exports: the full CRM, email, reporting, bookings, tickets, and your own website.',
   collective:
-    'Everything in Business, plus team seats, automations, membership-included tickets, multiple pipelines, and hosting events with Collaborator Spaces.',
+    'Everything in Business, plus team seats, automations, multiple pipelines, and hosting events with Collaborator Spaces.',
   nonprofit:
     'The whole paid toolkit for verified nonprofits, with donations built in. Flat, never per seat.',
 }

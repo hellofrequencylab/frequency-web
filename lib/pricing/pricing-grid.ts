@@ -645,13 +645,11 @@ const SPACE_GROUPS: GroupDef[] = [
         key: 'space_memberships',
         label: 'Memberships',
         detail: 'Your own membership tiers, and the members on them.',
-        // A GATE, not a meter (ADR-914). Selling a membership is one of the three walls, and the
-        // `space_memberships` METER that used to back this row was deleted when the wall replaced it
-        // (capping active members punishes a Space for growing). A meter source that names a deleted
-        // key resolves to `NO` on EVERY column, so this row was telling a prospective Business
-        // customer that memberships are not included at any price — the exact feature the wall sells.
-        // The gate source reads the same map `featureAllowed` enforces, so free reads No and every
-        // paid plan reads Included. The tier COUNT is a separate row's job (space_membership_tiers).
+        // A GATE, not a meter. LIVE-410 moved the floor to free (ADR-1403 Q3), so every plan
+        // reads Included. The `space_memberships` METER that used to back this row was deleted
+        // because capping active members punishes a Space for growing. The tier COUNT is a
+        // separate row's job (space_membership_tiers). Checkout still refuses when Connect is
+        // not payout-ready.
         source: { from: 'gate', feature: 'space_memberships' },
       },
       {
