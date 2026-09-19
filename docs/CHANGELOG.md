@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **The getting-started guide asks for a name first.** If Frequency still knows you by the local part of your email and a generated handle, that is the first step. Pick a name at your profile. Members who already chose a name are not asked again.
+
 - **Joining Crew, buying a household bundle, or picking a Space plan now takes the card on the page.** The form opens under the button you pressed. If it cannot open, you still go to Stripe's checkout.
 
 - **Buying something that ships asks for a delivery address.** Stripe collects and checks it before the charge, so the seller gets a real address. A Journey, a download, or a booking still pays on the page.
