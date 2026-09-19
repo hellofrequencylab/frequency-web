@@ -5,7 +5,13 @@ import { redirect } from 'next/navigation'
 import { cookies, headers } from 'next/headers'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { rateLimitOk } from '@/lib/rate-limit'
-import { createProduct, setProductStatus, deleteProduct, productOwnerProfileId } from '@/lib/commerce/products'
+import {
+  createProduct,
+  setProductStatus,
+  deleteProduct,
+  productOwnerProfileId,
+  journeySlugForProduct,
+} from '@/lib/commerce/products'
 import { createCommerceCheckout, recordCommerceOrderFromSessionId } from '@/lib/commerce/checkout'
 import { onPageCheckoutAvailable } from '@/lib/billing/stripe-browser'
 import { canListNew } from '@/lib/commerce/selling'
@@ -18,7 +24,6 @@ import {
   entryPointFromStamp,
   verifyStamp,
 } from '@/lib/commerce/marketplace-entry'
-import { journeySlugForProduct } from '@/lib/commerce/marketplace-entry-server'
 
 /** Parse a JSON string[] posted in a hidden form field (image paths, tags), tolerating a blank or
  *  malformed value by returning []. Every element is coerced to a trimmed string. */

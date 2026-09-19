@@ -9,7 +9,7 @@
 // Checkout reads the cookie. The client cannot forge it and cannot strip it from JavaScript.
 //
 // PURE and edge-safe: no React, no Next, no Supabase. proxy.ts and the unit tests both import this
-// file. The journey-slug lookup lives in ./marketplace-entry-server.ts so the edge never pulls it.
+// file. The journey-slug lookup lives in ./products.ts so the edge never pulls a database client.
 
 import { createHmac, timingSafeEqual } from 'node:crypto'
 

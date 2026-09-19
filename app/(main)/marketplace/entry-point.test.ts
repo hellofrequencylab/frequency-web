@@ -41,12 +41,12 @@ vi.mock('next/headers', () => ({
 }))
 vi.mock('@/lib/auth', () => ({ getMyProfileId, getCallerProfile: vi.fn() }))
 vi.mock('@/lib/commerce/checkout', () => ({ createCommerceCheckout }))
-vi.mock('@/lib/commerce/marketplace-entry-server', () => ({ journeySlugForProduct }))
 vi.mock('@/lib/commerce/products', () => ({
   createProduct: vi.fn(),
   setProductStatus: vi.fn(),
   deleteProduct: vi.fn(),
   productOwnerProfileId: vi.fn(),
+  journeySlugForProduct,
 }))
 vi.mock('@/lib/ai/listing-copy', () => ({ draftListingCopy: vi.fn() }))
 vi.mock('@/lib/ai/vera/create-entity', () => ({ proposeAndConfirmCreate: vi.fn() }))
