@@ -461,12 +461,82 @@ function daysSince(iso) {
   return Math.floor((Date.now() - then) / 86_400_000)
 }
 
+/** Owner 2026-09-19: calendar C0–C5 is product next. LIVE-414 must list before
+ *  other product-next ids while that row is open. Fixtures without
+ *  meta.slate.metaScanCleanup are unchanged (backlog-contract ballast). */
+function validateSlateCalendarFirst(doc) {
+  const cleanup = doc.meta?.slate?.metaScanCleanup
+  if (!cleanup) return []
+
+  const problems = []
+  const by = new Map((doc.entries ?? []).map((e) => [e.id, e]))
+  const cal = ['LIVE-414', 'LIVE-415', 'LIVE-416', 'LIVE-417', 'LIVE-418', 'LIVE-419']
+  const next = cleanup.productAgent?.next ?? []
+  const waves = doc.meta?.slate?.waves ?? []
+  const w0b = waves.find((w) => String(w.name ?? '').startsWith('W0b'))
+  const w0c = waves.find((w) => String(w.name ?? '').startsWith('W0c'))
+
+  if (by.get('LIVE-414')?.status === 'open') {
+    if (next[0] !== 'LIVE-414') {
+      problems.push(
+        'meta.slate.metaScanCleanup.productAgent.next must list LIVE-414 first while C0 is open (calendar section first)',
+      )
+    }
+    if (next[1] !== 'LIVE-415') {
+      problems.push(
+        'meta.slate.metaScanCleanup.productAgent.next must list LIVE-415 second (C0 then C1 in W0b)',
+      )
+    }
+    const firstOther = next.find((id) => !cal.includes(id))
+    if (firstOther) {
+      problems.push(`productAgent.next lists ${firstOther} beside the calendar ids; keep C0–C5 as the product next list`)
+    }
+    const w0bIds = w0b?.ids ?? []
+    const i414 = w0bIds.indexOf('LIVE-414')
+    if (i414 < 0) {
+      problems.push('W0b must list LIVE-414 while C0 is open')
+    } else {
+      for (const other of ['LIVE-186', 'LIVE-213']) {
+        const io = w0bIds.indexOf(other)
+        if (io >= 0 && io < i414) {
+          problems.push(`W0b lists ${other} before LIVE-414`)
+        }
+      }
+    }
+  }
+
+  const w0cIds = w0c?.ids ?? []
+  const openC2 = ['LIVE-416', 'LIVE-417', 'LIVE-418', 'LIVE-419'].filter((id) => by.get(id)?.status === 'open')
+  if (openC2.length) {
+    const firstCal = Math.min(...openC2.map((id) => w0cIds.indexOf(id)).filter((i) => i >= 0))
+    const firstOtherLive = w0cIds.findIndex((id) => !cal.includes(id) && by.get(id)?.lane === 'live')
+    if (firstCal === Infinity || Number.isNaN(firstCal)) {
+      problems.push('W0c must list open calendar C2–C5 ids (LIVE-416–419)')
+    } else if (firstOtherLive >= 0 && firstOtherLive < firstCal) {
+      problems.push(`W0c lists ${w0cIds[firstOtherLive]} before calendar C2–C5`)
+    }
+  }
+
+  const leave = cleanup.scanAgent?.leave ?? []
+  for (const id of cal) {
+    if (by.get(id)?.status === 'open' && !leave.includes(id)) {
+      problems.push(`scanAgent.leave must include open calendar id ${id}`)
+    }
+  }
+
+  if (by.get('LIVE-234')?.status === 'open' && by.get('LIVE-234')?.priority !== 'P0') {
+    problems.push('LIVE-234 must stay P0 (owner-gated money proof; do not demote it to raise calendar)')
+  }
+
+  return problems
+}
+
 // ── main ──────────────────────────────────────────────────────────────────────────────────────
 
 const doc = load()
 const entries = doc.entries
 
-const structural = validate(entries)
+const structural = [...validate(entries), ...validateSlateCalendarFirst(doc)]
 if (structural.length) {
   console.error(red(`✗ backlog contract: ${structural.length} structural problem(s) in ${FILE}\n`))
   for (const p of structural) console.error(`   ${p}`)

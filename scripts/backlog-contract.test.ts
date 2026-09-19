@@ -343,6 +343,58 @@ describe('check:backlog — the probe/status contract', () => {
     expect(out).toMatch(/manual row\(s\) with evidence older than/)
   })
 
+  it('FAILS when product next lists another live id before LIVE-414 (calendar first)', () => {
+    const entries = [
+      ...ballast(),
+      {
+        id: 'LIVE-414',
+        title: 'Calendar C0',
+        status: 'open',
+        priority: 'P0',
+        lane: 'live',
+        size: 'S',
+        verify: { kind: 'manual', evidence: 'fixture', checked: '2026-09-19' },
+      },
+      {
+        id: 'LIVE-234',
+        title: 'money proof',
+        status: 'open',
+        priority: 'P0',
+        lane: 'live',
+        size: 'S',
+        ownerAction: 'account',
+        verify: { kind: 'manual', evidence: 'fixture', checked: '2026-09-19' },
+      },
+    ]
+    mkdirSync(path.join(dir, 'docs'), { recursive: true })
+    writeFileSync(
+      path.join(dir, 'docs/BUILD-BACKLOG.json'),
+      JSON.stringify(
+        {
+          meta: {
+            slate: {
+              waves: [
+                { name: 'W0 · P0', ids: ['LIVE-234'] },
+                { name: 'W0b · calendar', ids: ['LIVE-186', 'LIVE-414'] },
+                { name: 'W0c · later', ids: ['LIVE-408', 'LIVE-416'] },
+              ],
+              metaScanCleanup: {
+                productAgent: { next: ['LIVE-186', 'LIVE-414'] },
+                scanAgent: { leave: ['LIVE-414'] },
+              },
+            },
+          },
+          entries,
+        },
+        null,
+        2,
+      ),
+    )
+    const { code, out } = run(BACKLOG_GUARD, dir)
+    expect(code, 'a slate that puts another product id before C0 must fail').toBe(1)
+    expect(out).toMatch(/LIVE-414 first/)
+  })
+
   it('FAILS an open row with no priority — the working view is ordered by it (2026-09-06)', () => {
     writeBacklog(dir, [
       ...ballast(),

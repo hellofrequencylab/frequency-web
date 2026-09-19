@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { spawnSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import {
   AGENT_PROMPT,
@@ -30,6 +31,22 @@ describe('agent packets (ADR-1412)', () => {
         id: 'LIVE-376',
         title: 'A host cannot tell how to attach their event to their own Space',
         detail: 'host_space_id',
+        lane: 'live',
+      }),
+    ).toBe('events')
+    expect(
+      classifyLane({
+        id: 'LIVE-414',
+        title: 'Calendar C0: guest and member public calendars are live events only',
+        detail: 'ADR-1445',
+        lane: 'live',
+      }),
+    ).toBe('events')
+    expect(
+      classifyLane({
+        id: 'LIVE-416',
+        title: 'Calendar C2: Pencil is a first-class Admin lane',
+        detail: '',
         lane: 'live',
       }),
     ).toBe('events')
@@ -135,6 +152,34 @@ describe('agent packets (ADR-1412)', () => {
     expect(body.packets.some((p: { id: string }) => p.id === 'LIVE-410')).toBe(false)
     expect(body.packets.some((p: { id: string }) => p.id === 'SCAN-636')).toBe(false)
     expect(body.packets.some((p: { id: string }) => p.id === 'SCAN-638')).toBe(false)
+  })
+
+  it('slate product next lists LIVE-414 before other product ids', () => {
+    const doc = JSON.parse(readFileSync(path.join(process.cwd(), 'docs/BUILD-BACKLOG.json'), 'utf8'))
+    const next = doc.meta?.slate?.metaScanCleanup?.productAgent?.next ?? []
+    const by = Object.fromEntries((doc.entries ?? []).map((e: { id: string; status: string }) => [e.id, e.status]))
+    if (by['LIVE-414'] === 'open') {
+      expect(next[0]).toBe('LIVE-414')
+      expect(next[1]).toBe('LIVE-415')
+    }
+    const w0b = (doc.meta?.slate?.waves ?? []).find((w: { name?: string }) => String(w.name).startsWith('W0b'))
+    const w0bIds = w0b?.ids ?? []
+    if (by['LIVE-414'] === 'open') {
+      expect(w0bIds.indexOf('LIVE-414')).toBeLessThan(w0bIds.indexOf('LIVE-186'))
+    }
+  })
+
+  it('CLI --json names LIVE-414 on the events lane while C0 is open', () => {
+    const { status, stdout, stderr } = run(['--json', '--lane', 'events'])
+    expect(status, stderr).toBe(0)
+    const body = JSON.parse(stdout)
+    const doc = JSON.parse(readFileSync(path.join(process.cwd(), 'docs/BUILD-BACKLOG.json'), 'utf8'))
+    const open = (doc.entries ?? []).some((e: { id: string; status: string }) => e.id === 'LIVE-414' && e.status === 'open')
+    if (open) {
+      expect(body.next[0].id).toBe('LIVE-414')
+      expect(body.next[0].derivedLane).toBe('events')
+    }
+    expect(body.packets.some((p: { id: string }) => p.id === 'LIVE-412')).toBe(false)
   })
 
   it('CLI --json names no closed LIVE-410 or LIVE-306 on the money lane', () => {
