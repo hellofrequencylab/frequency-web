@@ -7,6 +7,7 @@ import { buttonClasses } from '@/components/ui/button'
 import { startCheckoutAction, settleCommerceOrderAction } from './commerce-actions'
 import CheckoutPanel from '@/components/billing/checkout-panel'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
+import { trackClient } from '@/components/analytics/track-provider'
 
 // Buy control for a commerce product (maker / shop). Calls the checkout action and takes the card
 // RIGHT HERE (LIVE-359) or, when the on-page form cannot be offered, hands off to Stripe Checkout;
@@ -50,6 +51,7 @@ export function BuyButton({
 
   async function buy() {
     setError(null)
+    trackClient('commerce.checkout_started', { kind: 'commerce_order' })
     warmStripeBrowser()
     const res = await startCheckoutAction(productId, variantId)
     // 🔴 A SIGNED-OUT BUYER IS SENT SOMEWHERE, not told to go somewhere. The server cannot build

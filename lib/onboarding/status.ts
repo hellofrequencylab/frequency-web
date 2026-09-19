@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getWalkthrough } from '@/lib/walkthroughs'
+import { identityIsChosen } from '@/lib/onboarding/identity'
 import {
   buildOnboardingSteps,
   ONBOARDING_WALKTHROUGH_SLUG,
@@ -12,10 +13,11 @@ import {
 // hero (the persistent onboarding guide) and any sidebar nudge read this, so they
 // can never disagree.
 //
-// The checklist is the model (LIVE-259): a photo, a Circle, an Event, then hosting
-// something of their own. The done-detection below is the code half of that — one
-// real signal per noun, never operator input. It ends on HOSTING because hosting is
-// free, and a member who has hosted once has met every noun the product is made of.
+// The checklist is the model (LIVE-259, LIVE-349): a name that is not the signup mint,
+// a photo, a Circle, an Event, then hosting something of their own. The done-detection
+// below is the code half of that — one real signal per noun, never operator input. It
+// ends on HOSTING because hosting is free, and a member who has hosted once has met
+// every noun the product is made of.
 
 // The step model + default copy now live in lib/onboarding/steps.ts (pure, testable, and
 // shared with the walkthroughs editor). Re-export so existing importers are unaffected.
@@ -41,7 +43,11 @@ export const getOnboardingStatus = cache(async (profileId: string): Promise<Onbo
 
   const [profileRes, membershipRes, rsvpRes, hostCircleRes, hostEventRes, ownSpaceRes, authored] =
     await Promise.all([
-      admin.from('profiles').select('avatar_url, meta').eq('id', profileId).maybeSingle(),
+      admin
+        .from('profiles')
+        .select('avatar_url, display_name, handle, auth_user_id, meta')
+        .eq('id', profileId)
+        .maybeSingle(),
       admin.from('memberships').select('id').eq('profile_id', profileId).eq('status', 'active').limit(1),
       // "Came to an Event" = they said they are coming. A `not_going` RSVP is an answer, not an
       // arrival, so only `going` counts.
@@ -57,8 +63,20 @@ export const getOnboardingStatus = cache(async (profileId: string): Promise<Onbo
     ])
 
   // Done-detection stays in code — never trusts operator input. Keyed by criterion.
+  const profile = profileRes.data as {
+    avatar_url?: string | null
+    display_name?: string | null
+    handle?: string | null
+    auth_user_id?: string | null
+    meta?: unknown
+  } | null
   const done: Record<OnboardingStepKey, boolean> = {
-    avatar: !!profileRes.data?.avatar_url,
+    identity: identityIsChosen({
+      displayName: profile?.display_name,
+      handle: profile?.handle,
+      authUserId: profile?.auth_user_id,
+    }),
+    avatar: !!profile?.avatar_url,
     circle: (membershipRes.data ?? []).length > 0,
     event: (rsvpRes.data ?? []).length > 0,
     host:
@@ -69,7 +87,7 @@ export const getOnboardingStatus = cache(async (profileId: string): Promise<Onbo
 
   // Force-complete overrides: a member can force a step done via the onboarding guide's
   // obscured escape hatch (forceOnboardingStep). Stored in profiles.meta.onboarding.forced[].
-  const meta = (profileRes.data?.meta ?? null) as { onboarding?: { forced?: string[] } } | null
+  const meta = (profile?.meta ?? null) as { onboarding?: { forced?: string[] } } | null
   for (const key of meta?.onboarding?.forced ?? []) {
     if (key in done) done[key as OnboardingStepKey] = true
   }

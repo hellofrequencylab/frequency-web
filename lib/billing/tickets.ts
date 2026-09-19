@@ -76,6 +76,7 @@ import { profileAccountEmail } from '@/lib/profiles/account-email'
 import { payableCents, type MemberBenefit, type AppliedBenefit } from '@/lib/spaces/benefits'
 import { ticketSalesWindowError } from '@/lib/events/sales-window'
 import { eventInstant, resolveZone } from '@/lib/time/zone'
+import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
 
 export const TICKET_MAX_QTY = 10
 
@@ -932,6 +933,7 @@ export async function createTicketCheckout(opts: {
   // TypeScript does not carry the earlier `if (!stripe)` narrowing of an imported binding across
   // one. Same client, named so the narrowing survives.
   const sdk = stripe
+  const gaMeta = await checkoutGaMetadata()
 
   const session = await createAllowingSavedCard(
     (savedCardParams) =>
@@ -974,6 +976,7 @@ export async function createTicketCheckout(opts: {
       ...identityMeta,
       ...(tier ? { ticket_type_id: tier.id } : {}),
       ...benefitMeta,
+      ...gaMeta,
     },
     // Prefills Checkout for the guest and, because Stripe echoes it back on the session, gives the
     // webhook a second reading of the address it is settling against. Absent for a member: their

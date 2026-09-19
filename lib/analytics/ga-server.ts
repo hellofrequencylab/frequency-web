@@ -24,21 +24,29 @@ export function gaServerEnabled(): boolean {
 
 /** GA4 event names must be snake_case — our taxonomy uses dots (qr.scanned). */
 export function gaEventName(event: string): string {
+  // Recommended GA4 event: value + currency + transaction_id only join a purchase
+  // report when the name is `purchase`, not `commerce_purchase`.
+  if (event === 'commerce.purchase') return 'purchase'
   return event.replace(/\./g, '_')
 }
 
 /**
- * Fire one event to GA4 over the Measurement Protocol. `actorProfileId`, when
- * present, becomes both the client_id (so events group) and user_id (cross-device).
+ * Fire one event to GA4 over the Measurement Protocol.
+ *
+ * `opts.clientId` is the `_ga` cookie's client_id when the caller has one
+ * (LIVE-348). A profile id is NOT a GA client id — using it as client_id made
+ * every server-side sale look like a new user with no source or medium.
+ * `actorProfileId` still becomes `user_id` (cross-device) when present.
  * Never throws; returns immediately when GA isn't configured.
  */
 export async function sendGa4Event(
   name: string,
   params: Record<string, string | number | boolean> = {},
   actorProfileId?: string | null,
+  opts?: { clientId?: string | null },
 ): Promise<void> {
   if (!gaServerEnabled()) return
-  const clientId = actorProfileId || globalThis.crypto.randomUUID()
+  const clientId = opts?.clientId || actorProfileId || globalThis.crypto.randomUUID()
   const body: Record<string, unknown> = {
     client_id: clientId,
     non_personalized_ads: true,

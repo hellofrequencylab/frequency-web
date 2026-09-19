@@ -31,6 +31,7 @@ import { recordFinancialTransaction, ENTITY_ID } from '@/lib/finance/record'
 import { notifyTipRecipient } from './tips-notify'
 import { sendTipperReceipt } from './tip-receipt'
 import { receiptEmailFor } from './receipt-address'
+import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
 
 // The amounts live in ./tips-core (dependency-free) so client components can read them
 // without dragging this module's admin client + Stripe SDK into the browser (LIVE-037).
@@ -103,6 +104,7 @@ export async function createTipCheckout(opts: {
   // Stripe's own receipt, as a backstop (LIVE-344). The tipper's first-party record is
   // ./tip-receipt.ts; this is what still arrives when that cannot be composed.
   const tipperReceiptEmail = await receiptEmailFor(opts.fromProfileId)
+  const gaMeta = await checkoutGaMetadata()
 
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
@@ -123,7 +125,7 @@ export async function createTipCheckout(opts: {
       ...(tipperReceiptEmail ? { receipt_email: tipperReceiptEmail } : {}),
       metadata: { kind: 'tip', from_profile_id: opts.fromProfileId, to_profile_id: opts.toProfileId },
     },
-    metadata: { kind: 'tip', from_profile_id: opts.fromProfileId, to_profile_id: opts.toProfileId },
+    metadata: { kind: 'tip', from_profile_id: opts.fromProfileId, to_profile_id: opts.toProfileId, ...gaMeta },
     ...checkoutReturnFields(ui, {
       successUrl: `${appUrl()}/people/${handle ?? ''}?tip=success&session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${appUrl()}/people/${handle ?? ''}`,

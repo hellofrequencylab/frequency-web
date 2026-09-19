@@ -768,6 +768,16 @@ jobs:
         # (or re-run the PR's checks) to get the branch judged on what it now contains.
         if: always()
         run: |
+          # ── JOB-NEVER-STARTED STAND-DOWN (HYG-094, ADR-1423) ────────────────────────────────
+          # always() still fires after the protected-ref guard refuses. Checkout is skipped, so
+          # the first git call used to die with "fatal: not in a git directory" and a refused
+          # dispatch reported two red steps. A work-tree test, not a message that mentions a
+          # refusal: "the capture ran and partly failed" still has a .git (dir or file) and
+          # proceeds to the degraded-capture check. "This job never started" does not.
+          if [ ! -d .git ] && [ ! -f .git ]; then
+            echo "Stand down: no work tree. This job never checked out (protected-ref refusal or skipped capture). Nothing to commit."
+            exit 0
+          fi
           # ── THE DEGRADED-CAPTURE REFUSAL (LIVE-333, ADR-1351) ───────────────────────────────
           # One line per surface the capture refused because the deployment answered it with a
           # 5xx. A non-empty file means the pictures this run took describe an outage, and

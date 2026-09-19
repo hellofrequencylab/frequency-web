@@ -1,25 +1,33 @@
 // The first-run checklist — the activation funnel's content + shape, kept pure (no DB, no
 // server-only) so it can be unit-tested and shared between the status reader
-// (lib/onboarding/status.ts) and the walkthroughs editor. The four CRITERIA are the real
+// (lib/onboarding/status.ts) and the walkthroughs editor. The CRITERIA are the real
 // activation checks the status reader computes against member state; this module owns the
 // default operator copy and the merge that lets an operator-authored walkthrough override
 // that copy/order while the done-detection stays in code.
 //
-// THE CHECKLIST IS THE MODEL (LIVE-259). Four steps, in the order a person actually meets
-// them: a photo, then a Circle, then an Event, then hosting something of their own. It used
-// to run photo → circle → adopt a practice → log a practice, which spent half the funnel
-// inside one noun and never once mentioned an Event or a Space. People join free and
-// businesses host free, so the last step is an invitation, not an upsell.
+// THE CHECKLIST IS THE MODEL (LIVE-259, LIVE-349). Identity first (a name and a handle
+// that are not the signup mint), then a photo, then a Circle, then an Event, then hosting
+// something of their own. It used to run photo → circle → adopt a practice → log a practice,
+// which spent half the funnel inside one noun and never once mentioned an Event or a Space.
+// People join free and businesses host free, so the last step is an invitation, not an upsell.
+// Identity is not optional: an admitted member who never picks a name appears as taylor_42a829.
 
-/** The four activation milestones — these double as the step `key` AND the per-slide
+/** The activation milestones — these double as the step `key` AND the per-slide
  *  `criterion` an operator tags a checklist slide with. The force-complete escape hatch
  *  (forceOnboardingStep) and the feed/sidebar surfaces all key off these exact values. */
-export type OnboardingStepKey = 'avatar' | 'circle' | 'event' | 'host'
+export type OnboardingStepKey = 'identity' | 'avatar' | 'circle' | 'event' | 'host'
 
-export const ONBOARDING_CRITERIA: readonly OnboardingStepKey[] = ['avatar', 'circle', 'event', 'host']
+export const ONBOARDING_CRITERIA: readonly OnboardingStepKey[] = [
+  'identity',
+  'avatar',
+  'circle',
+  'event',
+  'host',
+]
 
 /** Editor-facing labels for the per-slide "Activation step" picker. */
 export const CRITERION_LABELS: Record<OnboardingStepKey, string> = {
+  identity: 'Choose your name',
   avatar: 'Add a profile photo',
   circle: 'Join a Circle',
   event: 'Come to an Event',
@@ -47,6 +55,14 @@ export interface OnboardingStep {
 /** The default copy for each milestone — the shipped funnel and the per-field fallback when
  *  an operator authors a slide but leaves a field blank. `done` is filled in by the reader. */
 export const DEFAULT_ONBOARDING_STEPS: Record<OnboardingStepKey, Omit<OnboardingStep, 'done'>> = {
+  identity: {
+    key: 'identity',
+    label: 'Choose your name',
+    headline: 'Tell people who you are',
+    blurb: 'Pick the name and handle this place will know you by. Takes a minute.',
+    href: '/settings/profile',
+    cta: 'Set your name',
+  },
   avatar: {
     key: 'avatar',
     label: 'Add a profile photo',
@@ -82,7 +98,13 @@ export const DEFAULT_ONBOARDING_STEPS: Record<OnboardingStepKey, Omit<Onboarding
 }
 
 /** The shipped default order (used when no walkthrough authors the checklist). */
-export const DEFAULT_ONBOARDING_ORDER: readonly OnboardingStepKey[] = ['avatar', 'circle', 'event', 'host']
+export const DEFAULT_ONBOARDING_ORDER: readonly OnboardingStepKey[] = [
+  'identity',
+  'avatar',
+  'circle',
+  'event',
+  'host',
+]
 
 /** A single authored slide, reduced to just what the checklist needs. Mirrors WalkthroughStep
  *  but stays dependency-free so this module imports nothing. */
@@ -106,6 +128,9 @@ function isCriterion(v: unknown): v is OnboardingStepKey {
  *     that criterion's default copy, so a half-authored slide still reads well.
  *   - If no slide carries a valid criterion, the full default funnel is used in default
  *     order — exactly the shipped behaviour, so a missing/empty walkthrough changes nothing.
+ *   - Identity is always present. An authored funnel that never tagged it still gets the
+ *     default identity step prepended (LIVE-349): appearing as an email local-part is not
+ *     a copy choice an operator can author away.
  *   - `done` always comes from the code-computed map, never from operator input.
  */
 export function buildOnboardingSteps(
@@ -114,27 +139,33 @@ export function buildOnboardingSteps(
 ): OnboardingStep[] {
   const tagged = (authored ?? []).filter((s) => isCriterion(s.criterion))
 
+  let out: OnboardingStep[]
   if (tagged.length === 0) {
-    return DEFAULT_ONBOARDING_ORDER.map((key) => ({ ...DEFAULT_ONBOARDING_STEPS[key], done: !!done[key] }))
+    out = DEFAULT_ONBOARDING_ORDER.map((key) => ({ ...DEFAULT_ONBOARDING_STEPS[key], done: !!done[key] }))
+  } else {
+    const seen = new Set<OnboardingStepKey>()
+    out = []
+    for (const s of tagged) {
+      const key = s.criterion as OnboardingStepKey
+      if (seen.has(key)) continue
+      seen.add(key)
+      const d = DEFAULT_ONBOARDING_STEPS[key]
+      const title = s.title?.trim()
+      out.push({
+        key,
+        label: title || d.label,
+        headline: title || d.headline,
+        blurb: s.body?.trim() || d.blurb,
+        href: s.ctaHref?.trim() || d.href,
+        cta: s.ctaLabel?.trim() || d.cta,
+        done: !!done[key],
+      })
+    }
   }
-
-  const seen = new Set<OnboardingStepKey>()
-  const out: OnboardingStep[] = []
-  for (const s of tagged) {
-    const key = s.criterion as OnboardingStepKey
-    if (seen.has(key)) continue
-    seen.add(key)
-    const d = DEFAULT_ONBOARDING_STEPS[key]
-    const title = s.title?.trim()
-    out.push({
-      key,
-      label: title || d.label,
-      headline: title || d.headline,
-      blurb: s.body?.trim() || d.blurb,
-      href: s.ctaHref?.trim() || d.href,
-      cta: s.ctaLabel?.trim() || d.cta,
-      done: !!done[key],
-    })
+  // Identity is not an operator opt-out. An authored four-slide funnel that predates
+  // LIVE-349 would otherwise hide the step the seven admitted members still need.
+  if (!out.some((s) => s.key === 'identity')) {
+    out = [{ ...DEFAULT_ONBOARDING_STEPS.identity, done: !!done.identity }, ...out]
   }
   return out
 }

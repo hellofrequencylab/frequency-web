@@ -12,6 +12,7 @@ import PaymentMarks from '@/components/billing/payment-marks'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { compactPrice, ticketCtaLabel } from '@/lib/billing/price-label'
 import { useJoinIntent } from '@/components/events/join-intent'
+import { trackClient } from '@/components/analytics/track-provider'
 
 export type TicketTierView = {
   id: string
@@ -397,6 +398,7 @@ export function TicketButton({
     setOpen(true)
 
     startTransition(async () => {
+      trackClient('commerce.checkout_started', { kind: 'ticket' })
       const r = await startTicket(eventId, {
         qty: 1,
         ticketTypeId: tier?.id ?? null,

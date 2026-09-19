@@ -23,6 +23,7 @@ import { classifyOrderSource } from '@/lib/commerce/order-source'
 import { effectiveOrderSource } from '@/lib/pricing/network-world'
 import { receiptEmailFor } from './receipt-address'
 import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from './checkout-ui'
+import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
 import { routeSpaceSubscription } from './space-subscriptions'
 import type { BillingInterval } from '@/lib/spaces/membership-pricing'
 
@@ -147,6 +148,7 @@ export async function createSpaceMembershipCheckout(
       tier_id: tierId,
       member_id: memberId,
       billing_interval: interval,
+      ...(await checkoutGaMetadata()),
     }
     // STRIPE'S OWN RECEIPT, AS A BACKSTOP (LIVE-344). `receipt_email` is a payment-intent parameter
     // and Stripe rejects it in `mode: 'subscription'`, so on a subscription the equivalent is the

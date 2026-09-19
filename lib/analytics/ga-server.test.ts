@@ -10,6 +10,7 @@ async function loadGaServer() {
 
 afterEach(() => {
   vi.unstubAllEnvs()
+  vi.unstubAllGlobals()
 })
 
 describe('ga-server', () => {
@@ -17,6 +18,10 @@ describe('ga-server', () => {
     expect(gaEventName('qr.scanned')).toBe('qr_scanned')
     expect(gaEventName('qr.referral_signup')).toBe('qr_referral_signup')
     expect(gaEventName('nav.page_view')).toBe('nav_page_view')
+  })
+
+  it('maps commerce.purchase to the recommended GA4 purchase event', () => {
+    expect(gaEventName('commerce.purchase')).toBe('purchase')
   })
 
   it('is inert without configuration (no env in test)', () => {
@@ -67,5 +72,33 @@ describe('gaServerEnabled deployment gate', () => {
     vi.stubEnv('VERCEL_ENV', '')
     const mod = await loadGaServer()
     expect(mod.gaServerEnabled()).toBe(false)
+  })
+})
+
+describe('sendGa4Event uses the browser client id for a purchase', () => {
+  it('prefers opts.clientId over the profile id, and names the event purchase', async () => {
+    vi.stubEnv('NEXT_PUBLIC_GA_MEASUREMENT_ID', 'G-TEST123')
+    vi.stubEnv('GA_API_SECRET', 'secret')
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VERCEL_ENV', 'production')
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', fetchMock)
+    const { sendGa4Event } = await loadGaServer()
+    await sendGa4Event(
+      'commerce.purchase',
+      { value: 8, currency: 'usd', transaction_id: 'cs_1' },
+      'profile-1',
+      { clientId: '123.456' },
+    )
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as { body: string }).body) as {
+      client_id: string
+      user_id: string
+      events: Array<{ name: string; params: Record<string, unknown> }>
+    }
+    expect(body.client_id).toBe('123.456')
+    expect(body.user_id).toBe('profile-1')
+    expect(body.events[0].name).toBe('purchase')
+    expect(body.events[0].params).toEqual({ value: 8, currency: 'usd', transaction_id: 'cs_1' })
   })
 })
