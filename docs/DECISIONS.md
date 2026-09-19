@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1436**. 1436 is HYG-068 on another open branch. 1437 is SCAN-637 on main. 1438 is LIVE-228 on main. 1439 is LIVE-242 on main.
+tree as of this index: **ADR-1441**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
 
 | Theme | Start here |
 |---|---|
@@ -39544,6 +39544,9 @@ per-worktree is a property of the harness. `LIVE-306` carries it as `manual`.
 
 **Rows.** LIVE-306 (opened, not closed).
 
+**Amended by [ADR-1441](DECISIONS.md).** The first `pnpm lint` now installs when local ESLint is
+missing; LIVE-306 is closed.
+
 ## ADR-1320: ACCEPTED — the help-autodoc bot must quote what it read, or its finding is demoted (2026-09-10)
 
 **Context.** The bot posts an advisory checklist of help articles a diff may have invalidated. Three
@@ -46176,23 +46179,28 @@ Premise re-tested 2026-09-19: the discover twin still pointed canonical at `/eve
 
 **Rows.** SCAN-636.
 
-## ADR-1436: Column-backed images keep a url cache and a Loom id (HYG-068)
+## ADR-1441: The first `pnpm lint` in a worktree installs this repo's ESLint (LIVE-306)
 
-**Status:** Accepted · 2026-09-19 · backlog `HYG-068` · numbered **1436** (reserved on this row while later ADRs landed on main) · corroborated by `supabase/migrations/20270345006300_column_image_asset_ids.sql` and `lib/library/column-image.ts`
+**Status:** Accepted · 2026-09-19 · **Amends** [ADR-1319](DECISIONS.md) (the refusal stays; missing local ESLint now installs first) · backlog `LIVE-306` · numbered **1441** because **1440** is SCAN-636 on main · corroborated by `scripts/preflight-lint.mjs` (`ensureLintToolchain`) and `.claude/hooks/session-start.sh` (`git rev-parse --show-toplevel`)
 
-**Context.** [ADR-1253](DECISIONS.md) adopted `{ assetId, url }` on JSONB-backed image fields. Six TEXT columns could not hold that object: stuffing JSON in them would render as nothing. The six are `spaces.brand_logo_url`, `spaces.cover_image_url`, `page_content.hero_image`, `page_settings.og_image_url`, `page_settings.header_image_url`, and `profiles.header_image_url`. Their pickers were already handed `{ url, assetId }` and stored the url alone, so a D3 version rollback could not re-point them. The owner ruled 2026-09-08: companion `*_asset_id` columns, not URL-only caches until D4.
+**Context.** ADR-1319 made `prelint` refuse when `./node_modules/.bin/eslint` is missing or the wrong major, so a worktree no longer died inside `eslint-plugin-react` with a message that named a React rule. The row stayed open for the environmental half: a `git worktree` never inherits `node_modules`, and SessionStart installed only at the script's repo root.
 
-Version **06300** because **06100** is Collective and **06200** is Hubs/Nexuses, both already on main.
+Premise re-tested 2026-09-19 on this tree, and it held.
+
+1. `.claude/hooks/session-start.sh` still did `cd "$(dirname "$0")/../.."`. That is the script's checkout, not `git rev-parse --show-toplevel`.
+2. `preflight-lint.mjs` still only refused. It named `pnpm install --frozen-lockfile` and did not run it.
+3. This cloud checkout started with no `node_modules`. The first `pnpm lint` here would have been the same trap.
+
+The harness can still create a bare worktree. That is not repo-observable. What is repo-observable is what `pnpm lint` does next.
 
 **Decision.**
 
-1. **Two columns, one picture.** The url column stays the denormalised cache. `*_asset_id` is a nullable FK to `library_assets(id)` with `ON DELETE SET NULL`, so retiring an asset does not blank the painted url. A paste or a server upload that is not in the catalog writes the url and nulls the companion. Clearing the url clears both.
-2. **One split.** `columnImageFromPick` / `columnImagePatch` / `columnImageUrl` in `lib/library/column-image.ts` are the only mapping. Pickers that persist these six (`HeaderImageField`, `ImageUpload.onChangeAsset`, `InlineCover.setAsset`) emit both halves. Save actions write both. Readers at the mapper (`spaces/store`, `page-settings/store`, `page-content`, the copy cascade, the profile page) prefer `library_assets.url` and fail open to the cache.
-3. **Spark stays a string.** The Studio kernel stores image fields as URL strings, and `createSpace` does not write logo or cover. `LoomImageSlot` uses `onSelectAsset` and still persists the url. The Space branding form, page SEO editor, page hero, and profile header are the writers for these six columns. The Space Loom studio is a library manager, not a column writer.
+1. **`ensureLintToolchain` installs, then re-checks.** When the directory has `pnpm-lock.yaml` and no local ESLint, `prelint` runs `pnpm install --frozen-lockfile` and checks again. A directory without this repo's lockfile still refuses without spawning.
+2. **A failed install and a major mismatch still refuse.** Wrong-major is not "never installed". Reinstall stays a named human step.
+3. **SessionStart follows the session worktree.** `git rev-parse --show-toplevel` is the install root; the script path is the fallback when cwd is not a git tree.
 
-**Rejected.** JSON-in-a-text-column. Leaving a nullable companion with no writer (the ADR-970 costume). Nulling a companion only when the url is cleared, so a paste could leave a stale id pointing at a different picture.
+**Rejected.** Symlinking `node_modules` to the parent checkout (faster, and older worktrees already had that symlink, but a lockfile drift would load the wrong tree). Auto-fixing a major mismatch (that install is stale on purpose until someone deletes it). Teaching the Cursor harness; this PR cannot.
 
-**Consequences.** A D3 rollback of a catalogued asset re-points these six fields on the next read. A house icon or a pasted URL keeps working as url-only. Journey, Practice, Circle, and Event covers that are not in the six stay url-only.
+**Consequences.** The first `pnpm lint` in a new worktree installs this repo's ESLint 9, or refuses with the install error, and does not fall through to a global ESLint 10. CI already installs, so the new branch is a no-op there. The probe calls `ensureLintToolchain` with a missing bin and a lockfile and requires `attemptedInstall` plus `ok`.
 
-**Rows.** HYG-068.
-
+**Rows.** LIVE-306.

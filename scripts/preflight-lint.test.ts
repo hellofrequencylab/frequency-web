@@ -9,7 +9,7 @@ import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { checkLintToolchain } from './preflight-lint.mjs'
+import { checkLintToolchain, ensureLintToolchain } from './preflight-lint.mjs'
 
 const ROOT = join(import.meta.dirname, '..')
 const SCRIPT = join(ROOT, 'scripts', 'preflight-lint.mjs')
@@ -83,6 +83,99 @@ describe('lint toolchain preflight', () => {
   })
 })
 
+// LIVE-306 — the first `pnpm lint` in a worktree must install, not fall through.
+describe('ensureLintToolchain installs when the directory was never installed', () => {
+  it('installs then passes when the lockfile is present and local ESLint is missing', () => {
+    let installed = false
+    const result = ensureLintToolchain({
+      cwd: '/repo/.claude/worktrees/agent-x',
+      declaredRange: '^9',
+      exists: (p: string) => {
+        if (p.endsWith('pnpm-lock.yaml')) return true
+        return installed && p.endsWith(`${join('node_modules', '.bin', 'eslint')}`)
+      },
+      readVersion: () => (installed ? '9.39.4' : ''),
+      install: () => {
+        installed = true
+        return { ok: true, output: 'ok' }
+      },
+    })
+
+    expect(result.attemptedInstall).toBe(true)
+    expect(result.ok).toBe(true)
+  })
+
+  it('does not spawn install when there is no lockfile', () => {
+    let calls = 0
+    const result = ensureLintToolchain({
+      cwd: '/tmp/not-this-repo',
+      declaredRange: '^9',
+      exists: () => false,
+      readVersion: () => '',
+      install: () => {
+        calls += 1
+        return { ok: true, output: 'should not run' }
+      },
+    })
+
+    expect(calls).toBe(0)
+    expect(result.attemptedInstall).toBe(false)
+    expect(result.ok).toBe(false)
+    expect(result.reason).toBe('not-installed')
+  })
+
+  it('refuses after a failed install and names that it tried', () => {
+    const result = ensureLintToolchain({
+      cwd: '/repo/.claude/worktrees/agent-x',
+      declaredRange: '^9',
+      exists: (p: string) => p.endsWith('pnpm-lock.yaml'),
+      readVersion: () => '',
+      install: () => ({ ok: false, output: 'ERR_PNPM_OUTDATED_LOCKFILE' }),
+    })
+
+    expect(result.attemptedInstall).toBe(true)
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain('Install was attempted and failed')
+    expect(result.message).toContain('ERR_PNPM_OUTDATED_LOCKFILE')
+  })
+
+  it('does not reinstall when the toolchain is already this repo', () => {
+    let calls = 0
+    const result = ensureLintToolchain({
+      cwd: '/repo',
+      declaredRange: '^9',
+      exists: () => true,
+      readVersion: () => '9.39.4',
+      install: () => {
+        calls += 1
+        return { ok: true }
+      },
+    })
+
+    expect(calls).toBe(0)
+    expect(result.attemptedInstall).toBe(false)
+    expect(result.ok).toBe(true)
+  })
+
+  it('does not treat a major mismatch as "never installed"', () => {
+    let calls = 0
+    const result = ensureLintToolchain({
+      cwd: '/repo',
+      declaredRange: '^9',
+      exists: () => true,
+      readVersion: () => '10.1.0',
+      install: () => {
+        calls += 1
+        return { ok: true }
+      },
+    })
+
+    expect(calls).toBe(0)
+    expect(result.attemptedInstall).toBe(false)
+    expect(result.reason).toBe('major-mismatch')
+  })
+})
+
 // SOURCE SHAPE — the guard is only load-bearing if `pnpm lint` actually runs it, and if the
 // ESLint result cache the CI workflow caches is actually written. Both are one word in
 // package.json, and both were absent before this test existed.
@@ -147,5 +240,13 @@ describe('preflight-lint.mjs as a process', () => {
 
   it('exits 0 in this repo, so the gate it fronts is reachable', () => {
     expect(runIn(ROOT).status).toBe(0)
+  })
+})
+
+describe('session-start follows the session worktree, not only the script root', () => {
+  it('resolves the install root with git rev-parse --show-toplevel', () => {
+    const hook = readFileSync(join(ROOT, '.claude/hooks/session-start.sh'), 'utf8')
+    expect(hook).toContain('show-toplevel')
+    expect(hook).toMatch(/session_root=.*rev-parse --show-toplevel/)
   })
 })

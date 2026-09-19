@@ -7,7 +7,12 @@
 # commands available for this repo. Non-blocking: always exits 0.
 set -uo pipefail
 
-root="$(cd "$(dirname "$0")/../.." && pwd)"
+script_root="$(cd "$(dirname "$0")/../.." && pwd)"
+# A linked worktree has its own working tree. Installing only at the script's
+# repo root (LIVE-306) left the worktree without node_modules, so the first
+# `pnpm lint` there hit a foreign ESLint. Prefer the session's toplevel.
+session_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+root="${session_root:-$script_root}"
 cd "$root" || exit 0
 
 echo "🌐 Frequency web — $(node -v 2>/dev/null || echo 'node?') · branch $(git branch --show-current 2>/dev/null)"
