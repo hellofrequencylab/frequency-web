@@ -53,7 +53,6 @@
             "SCAN-638",
             "SCAN-640",
             "SCAN-641",
-            "SCAN-642",
             "SCAN-643",
             "LIVE-412"
           ],
@@ -63,9 +62,8 @@
           ]
         },
         "scanAgent": {
-          "next": "SCAN-642",
+          "next": "SCAN-643",
           "order": [
-            "SCAN-642",
             "SCAN-643",
             "SCAN-638",
             "SCAN-641",
@@ -101,10 +99,9 @@
             "name": "Crawl truth",
             "owner": "scanAgent",
             "ids": [
-              "SCAN-642",
               "SCAN-643"
             ],
-            "fix": "Spotlight force-dynamic is the SCAN-637 twin outside (main). Layout cookies/headers still void SCAN-636 ISR."
+            "fix": "SCAN-642 closed. Layout cookies/headers still void SCAN-636 ISR."
           },
           {
             "phase": 2,
@@ -174,7 +171,6 @@
           "ids": [
             "LIVE-408",
             "SCAN-638",
-            "SCAN-642",
             "SCAN-643",
             "HYG-100",
             "LIVE-413",
@@ -14811,7 +14807,7 @@
     {
       "id": "SCAN-642",
       "title": "Sitemap-advertised Spotlight pages are force-dynamic",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
@@ -14819,12 +14815,13 @@
         "file": "app/spotlight/[handle]/page.tsx",
         "ref": "meta-scan 2026-09-19 evening"
       },
-      "detail": "FOUND 2026-09-19 evening. app/sitemap.ts getSpotlightRoutes advertises /spotlight/<handle> for published profiles. app/spotlight/[handle]/page.tsx still says export const dynamic = 'force-dynamic'. The route lives OUTSIDE (main), so SCAN-641 / SCAN-643 cannot fix it. getPublishedSpotlight reads the admin client and does not call cookies(); the page emits Person JSON-LD and a self-canonical. Same class as SCAN-637 (listing details). Close by dropping force-dynamic, asking for revalidate = 3600, and generateStaticParams from published handles (or accepting on-demand ISR). Viewer-personalisation (guestbook sign) already lives in client components. Do not fold this into SCAN-643.",
+      "detail": "FOUND 2026-09-19 evening. app/sitemap.ts getSpotlightRoutes advertises /spotlight/<handle> for published profiles. app/spotlight/[handle]/page.tsx still says export const dynamic = 'force-dynamic'. The route lives OUTSIDE (main), so SCAN-641 / SCAN-643 cannot fix it. getPublishedSpotlight reads the admin client and does not call cookies(); the page emits Person JSON-LD and a self-canonical. Same class as SCAN-637 (listing details). Close by dropping force-dynamic, asking for revalidate = 3600, and generateStaticParams from published handles (or accepting on-demand ISR). Viewer-personalisation (guestbook sign) already lives in client components. Do not fold this into SCAN-643.\n\nCLOSED 2026-09-19 (ADR-1442). Dropped force-dynamic. Page asks for revalidate = 3600 and generateStaticParams via listPublishedSpotlightHandles (same publish filter as the sitemap). Sitemap getSpotlightRoutes now calls that helper; admin client import left the sitemap. Guestbook writes stay in client actions. Did not touch (main)/layout.tsx (SCAN-643 / SCAN-641).",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"app/spotlight/[handle]/page.tsx\",\"utf8\");process.exit(/export const dynamic = .force-dynamic./.test(s)?1:0)'",
         "note": "Fails while the sitemap-advertised Spotlight page still force-dynamics."
-      }
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "SCAN-643",

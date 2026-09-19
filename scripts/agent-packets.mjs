@@ -94,7 +94,7 @@ LOOP.
 
 PRODUCT-FIRST (ADR-1403). LIVE-410 (memberships on the free floor, ADR-1415; Connect still refuses checkout) is closed in this tree. LIVE-376 closed (sole-Space default, ADR-1413). LIVE-306 closed (worktree lint installs, ADR-1441). Prefer remaining money. LIVE-234 is P0 money proof and is owner-walked. LIVE-408 needs an owner ruling. Journey sales (LIVE-392+) is claimed by ${FOREIGN_LANE_CLAIMS.journey}.
 
-TWO-AGENT SPLIT (2026-09-19 evening, meta.slate.metaScanCleanup). If you are the product agent already on the backlog: take derived lanes money then events. Do not take lane \`scan\`. If you are the scan follow-through agent: \`pnpm packets --lane scan\` and start SCAN-642 (Spotlight ISR). SCAN-636 and SCAN-637 are done. Do not take LIVE-234. LIVE-412 is on the scan lane (shell split after SCAN-641), not a free shell packet.
+TWO-AGENT SPLIT (2026-09-19 evening, meta.slate.metaScanCleanup). If you are the product agent already on the backlog: take derived lanes money then events. Do not take lane \`scan\`. If you are the scan follow-through agent: \`pnpm packets --lane scan\` and start SCAN-643 (layout cookies/headers void ISR). SCAN-636, SCAN-637, and SCAN-642 are done. Do not take LIVE-234. LIVE-412 is on the scan lane (shell split after SCAN-641), not a free shell packet.
 `
 
 export function loadBacklog(root = '.') {

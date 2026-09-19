@@ -25,7 +25,7 @@ import { listListings as listClassifieds } from "@/lib/marketplace";
 import { listPublicShowsBySpace } from "@/lib/airwaves/shows";
 import { DIRECTORY_TYPES } from "@/components/spaces/space-type";
 import { createPublicClient } from "@/lib/supabase/public";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { listPublishedSpotlightHandles } from "@/lib/spotlight/data";
 import { getAllArticles, getAllCategories } from "@/lib/help/content";
 import { getCityCategoryHubs } from "@/app/discover/events/_data";
 import { listDiscoverCities } from "@/app/discover/places/_data";
@@ -43,22 +43,12 @@ import { funnelSlugs } from "@/lib/marketing/funnel-config";
 // the admin client; only the handle crosses out (never meta/contact/geo).
 async function getSpotlightRoutes(): Promise<MetadataRoute.Sitemap> {
   try {
-    const admin = createAdminClient();
-    const { data } = await admin
-      .from("profiles")
-      .select("handle")
-      .eq("is_active", true)
-      .eq("is_system", false)
-      .filter("meta->spotlight->>published", "eq", "true")
-      .limit(1000);
-    if (!Array.isArray(data)) return [];
-    return (data as { handle: string | null }[])
-      .filter((p) => p.handle)
-      .map((p) => ({
-        url: `${SITE_URL}/spotlight/${p.handle}`,
-        changeFrequency: "weekly" as const,
-        priority: 0.5,
-      }));
+    const handles = await listPublishedSpotlightHandles(1000);
+    return handles.map((handle) => ({
+      url: `${SITE_URL}/spotlight/${handle}`,
+      changeFrequency: "weekly" as const,
+      priority: 0.5,
+    }));
   } catch {
     return [];
   }
