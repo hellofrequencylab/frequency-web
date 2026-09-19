@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1408**.
+tree as of this index: **ADR-1409**.
 
 | Theme | Start here |
 |---|---|
@@ -45614,3 +45614,20 @@ LIVE-241 (member rail 16 → 7) was **not** built in this change: that count ass
 
 **Consequences.** `lib/nav/registry.source.test.ts` now pins three triggers, `/the-quest` inside The Community panel, and `/the-lab` still inside About. Sitemap 0.6 is pinned in `app/sitemap.test.ts`. Apply the migration on production with the deploy; marketing pages stay static for up to an hour (`revalidate = 3600`).
 
+## ADR-1409: Naive event timestamps are UTC parts, never the machine zone (2026-09-19)
+
+**Status:** Accepted · Backlog `LIVE-377`
+
+**Context.** Event `starts_at` / `ends_at` store wall-clock as UTC parts (`7:00 PM` →
+`2026-07-01T19:00:00Z`). `eventInstant` already documented that. It then did `new Date(storedIso)`
+on strings that often have **no** `Z`. The ES5 Date parser treats those as local, so a Pacific
+laptop and a UTC server disagree on the same row. Five `pickSeatLanding` tests were red on every
+non-UTC machine and green in CI.
+
+**Decision.** A naive ISO in `eventInstant` is UTC parts. Append `Z` when the string has no offset.
+Do not pin the test process's `TZ`; that would hide a production leak on any non-UTC runtime.
+
+**Consequences.** A naive ISO and a `Z` suffix resolve to the same instant. The backlog probe
+reads that parse; it does not spawn a test runner (LIVE-034). Vercel is UTC, so the leak was
+invisible in production and loud on a laptop. Numbered **1409** because **1408** is LIVE-254 on
+main.
