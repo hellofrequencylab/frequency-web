@@ -65,6 +65,7 @@ import {
   stampEventSpaceId,
   listEventsForSpace,
   passesCalendarGate,
+  passesCalendarPaintGate,
   masterCalendarIncludes,
   mergeSpaceCalendarRows,
   filterSharedByHomeSpace,
@@ -211,6 +212,17 @@ describe('mergeSpaceCalendarRows (EC3 UNION: own + accepted-shared, deduped + ga
     const b = row({ id: 'b', starts_at: '2026-07-06T19:00:00Z' })
     const c = row({ id: 'c', starts_at: '2026-07-07T19:00:00Z' })
     expect(mergeSpaceCalendarRows([a, b], [c], FROM, 2).map((e) => e.id)).toEqual(['a', 'b'])
+  })
+  it('paintCancelled keeps a cancelled published event for the on-page footer, not drafts', () => {
+    const live = row({ id: 'live' })
+    const cancelled = row({ id: 'off', is_cancelled: true })
+    const draft = row({ id: 'draft', status: 'draft', is_cancelled: true })
+    expect(passesCalendarPaintGate(cancelled, FROM)).toBe(true)
+    expect(passesCalendarGate(cancelled, FROM)).toBe(false)
+    expect(mergeSpaceCalendarRows([live, cancelled, draft], [], FROM, 300).map((e) => e.id)).toEqual(['live'])
+    expect(
+      mergeSpaceCalendarRows([live, cancelled, draft], [], FROM, 300, { paintCancelled: true }).map((e) => e.id),
+    ).toEqual(['live', 'off'])
   })
 })
 

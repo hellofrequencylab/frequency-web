@@ -464,7 +464,7 @@ export function EventCalendar({
                               <span className="text-body-lg font-bold leading-none tabular-nums">{dayNum}</span>
                             </span>
                             <span className="min-w-0 flex-1">
-                              <span className={cn('block truncate font-semibold', ev.isCancelled ? 'text-subtle line-through' : 'text-text')}>
+                              <span className={cn('block truncate font-semibold', ev.isCancelled ? 'text-muted' : 'text-text')}>
                                 {ev.title}
                               </span>
                               <span className="mt-0.5 block text-meta text-muted">{ev.whenLabel}</span>
@@ -532,8 +532,10 @@ export function EventCalendar({
               <div key={week[0].date} className="grid grid-cols-7 border-b border-border last:border-b-0">
                 {week.map((cell) => {
                   const dayEvents = byDay.get(cell.date) ?? []
-                  const cards = dayEvents.filter((ev) => !ev.isLaterDate)
-                  const dots = dayEvents.filter((ev) => ev.isLaterDate)
+                  const cancelled = dayEvents.filter((ev) => ev.isCancelled)
+                  const liveEvents = dayEvents.filter((ev) => !ev.isCancelled)
+                  const cards = liveEvents.filter((ev) => !ev.isLaterDate)
+                  const dots = liveEvents.filter((ev) => ev.isLaterDate)
                   const pending = pendingByDay.get(cell.date) ?? []
                   const isToday = cell.date === today
                   const dayNum = Number(cell.date.slice(8, 10))
@@ -542,7 +544,7 @@ export function EventCalendar({
                     <div
                       key={cell.date}
                       className={cn(
-                        'group min-h-[76px] border-r border-border p-1.5 last:border-r-0 sm:min-h-[104px]',
+                        'group flex min-h-[76px] flex-col border-r border-border p-1.5 last:border-r-0 sm:min-h-[104px]',
                         !cell.inMonth && 'bg-surface-elevated/40',
                       )}
                     >
@@ -582,7 +584,7 @@ export function EventCalendar({
                             title={ev.title}
                             className={cn(
                               'w-full truncate rounded-control px-1.5 py-0.5 text-left text-2xs font-medium transition-colors',
-                              ev.isCancelled ? 'bg-surface-elevated text-muted line-through' : itemChipClass(ev.layer, ev.stage),
+                              itemChipClass(ev.layer, ev.stage),
                               activeSeries !== null && ev.seriesKey === activeSeries && 'ring-2 ring-primary/50',
                             )}
                           >
@@ -617,9 +619,7 @@ export function EventCalendar({
                                     'h-1.5 w-1.5 rounded-pill',
                                     activeSeries !== null && ev.seriesKey === activeSeries
                                       ? 'bg-primary ring-2 ring-primary/40'
-                                      : ev.isCancelled
-                                        ? 'bg-subtle'
-                                        : 'bg-primary/60',
+                                      : 'bg-primary/60',
                                   )}
                                 />
                               </button>
@@ -642,6 +642,7 @@ export function EventCalendar({
                           </div>
                         )}
                       </div>
+                      {cancelled.length > 0 && cancelledCellFooter(cancelled, select)}
                     </div>
                   )
                 })}
@@ -681,6 +682,27 @@ export function EventCalendar({
         )}
       </Dialog>
     </div>
+  )
+}
+
+/** Small muted titles at the bottom of a date square. Not a chip. Not struck through. */
+function cancelledCellFooter(items: CalendarEvent[], onSelect: (ev: CalendarEvent) => void) {
+  return (
+    <ul data-calendar-cancelled-footer className="mt-auto flex flex-col gap-0.5 pt-1">
+      {items.map((ev) => (
+        <li key={`${ev.slug}-${ev.dayKey}`}>
+          <button
+            type="button"
+            onClick={() => onSelect(ev)}
+            title={ev.title}
+            className="w-full truncate text-left text-2xs text-muted"
+          >
+            <span className="sr-only">Cancelled. </span>
+            {ev.title}
+          </button>
+        </li>
+      ))}
+    </ul>
   )
 }
 

@@ -122,4 +122,26 @@ describe('the grid cells', () => {
     expect(el.querySelector('button[aria-label^="Thursdays"]')).toBeNull()
     expect([...el.querySelectorAll('button')].filter((b) => b.textContent?.includes('Breathe Connect Expand'))).toHaveLength(2)
   })
+
+  it('paints a cancelled gathering as muted footer text, not a struck chip', () => {
+    const cancelled: CalendarEvent = {
+      slug: 'called-off',
+      title: 'Full moon sit',
+      dayKey: '2026-08-20',
+      timeLabel: '8:00 PM',
+      whenLabel: 'Thu, 2026-08-20, 8:00 PM PDT',
+      startInstantIso: '2026-08-20T20:00:00.000Z',
+      location: null,
+      goingCount: 0,
+      coverUrl: null,
+      isCancelled: true,
+    }
+    const el = mount(<EventCalendar events={[...EVENTS, cancelled]} initialYear={2026} initialMonth1={8} />)
+    const footer = el.querySelector('[data-calendar-cancelled-footer]')
+    expect(footer?.textContent).toContain('Cancelled.')
+    expect(footer?.textContent).toContain('Full moon sit')
+    const chip = [...el.querySelectorAll('button')].find((b) => b.textContent?.includes('Full moon sit') && b.closest('[data-calendar-cancelled-footer]') == null)
+    expect(chip).toBeUndefined()
+    expect(footer?.className).not.toMatch(/line-through/)
+  })
 })

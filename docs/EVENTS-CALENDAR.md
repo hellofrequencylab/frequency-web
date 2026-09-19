@@ -70,7 +70,9 @@ zone; a subscribe button that downloads a dead snapshot; burying the grid behind
 - A truncated **event popup** on click (title, when, where) with a **Go to Event** link to
   `/events/<slug>`. Built on the shared `Dialog` primitive.
 - A per-space **Calendar tab** (`app/(main)/spaces/[slug]/(profile)/calendar`), gated on the Space
-  having upcoming events, reading `listSpaceCalendarEvents` (published, non-private, non-cancelled).
+  having upcoming events, reading `listSpaceCalendarEvents` (published, non-private). Cancelled
+  gatherings paint as muted footer text on the date square (LIVE-414); the subscribed `.ics` stays
+  live-only.
 - Mounted the subscribe affordance (`CalendarSubscribeMenu`) pointing at the EC1 public per-space feed
   `/spaces/<slug>/calendar.ics`.
 - Times are pre-formatted server-side (via `formatEventWhen`) so the timezone lib never ships to the
@@ -191,8 +193,9 @@ edits the Space (with the Calendar function), or platform staff previewing it, l
 production console (`CalendarPmConsole`) over `loadAdminCalendar` (`lib/calendar/admin-calendar.ts`,
 shared with the settings console). The board lists what is penciled, in planning, in production, and
 cancelled. `StaffCalendar` is the date map and the settings drawer, not a second guest month.
-`?view=guest` shows the visitor view. Everyone else only ever gets Guest, and the mode is decided on the
-server before any admin read.
+`?view=guest` shows the visitor view: live events plus cancelled as muted footer text
+(`guestLiveItems`, LIVE-414). Everyone else only ever gets Guest, and the mode is decided on the
+server before any admin read. The Guest page branch still wires `guestLiveItems` in LIVE-419.
 
 **Loading a month.** The first month renders on the server. Every other month is fetched when the
 viewer browses to it: `loadSpaceCalendarMonth` for the public tab (over `lib/calendar/public-month.ts`,
