@@ -72,12 +72,12 @@ describe('check-collective · the planted off-plan reintroduction', () => {
 
   it('a half-wired tier fails: present on one pricing surface and not the others', () => {
     const { dir, write } = makeTree()
-    write('lib/pricing/plans.ts', "export const PLANS = { collective: {} }\n")
+    write('lib/pricing/plans.ts', "export const PLANS = { independent: {} }\n")
     write('lib/pricing/feature-tiers.ts', 'export const TIERS = {}\n')
     write('lib/pricing/settings.ts', 'export const SETTINGS = {}\n')
     const { code, out } = run(dir)
     expect(code).toBe(1)
-    expect(out).toContain('tier "collective" is HALF-WIRED')
+    expect(out).toContain('tier "independent" is HALF-WIRED')
   })
 })
 

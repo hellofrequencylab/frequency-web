@@ -27,7 +27,6 @@ const catalog = catalogConfigByKey(defaultCatalogConfig())
  *  is no longer quoted on a public surface (LIVE-227), so there is no page number to compare. */
 const BASE_ITEM: Record<string, CatalogItemKey> = {
   business: 'business_base',
-  collective: 'collective_base',
   nonprofit: 'nonprofit_seat',
 }
 
@@ -63,28 +62,24 @@ describe('page price == checkout price, on BOTH sides of the cutover', () => {
 })
 
 describe('the beta framing appears exactly while the beta rate does', () => {
-  it('DURING the window: COLLECTIVE alone shows a struck anchor and the beta note (ADR-1067)', () => {
+  it('DURING the window: no advertised plan shows a struck anchor (LIVE-228 flat pricing)', () => {
     const byId = Object.fromEntries(spaceOfferings(input(true)).map((o) => [o.id, o]))
-    expect(byId.collective!.listAnchor).toBe('$79')
-    expect(byId.collective!.monthly).toBe('$49/mo')
-    expect(byId.collective!.betaNote).toContain('Beta rate')
-    // Business used to sit beside it at $19 under $29. There is exactly ONE beta offer now, and even
-    // with the window forced open Business must quote its plain list price with NO strike and NO note
-    // — otherwise the page advertises a rate the owner does not sell.
-    expect(byId.business!.monthly).toBe('$29/mo')
+    expect(byId.business!.monthly).toBe('$49/mo')
     expect(byId.business!.listAnchor).toBeNull()
-    expect(byId.business!.betaNote ?? null).toBeNull()
+    expect(byId.business!.betaNote).toBeNull()
+    expect(byId.nonprofit!.listAnchor).toBeNull()
+    expect(byId.nonprofit!.betaNote).toBeNull()
   })
 
   it('AFTER the cutover: the list IS the price, with NO strike and NO beta note', () => {
     const byId = Object.fromEntries(spaceOfferings(input(false)).map((o) => [o.id, o]))
-    expect(byId.business!.monthly).toBe('$29/mo')
-    expect(byId.business!.yearly).toBe('$290/yr')
+    expect(byId.business!.monthly).toBe('$49/mo')
+    expect(byId.business!.yearly).toBe('$490/yr')
     expect(byId.business!.listAnchor).toBeNull()
     expect(byId.business!.betaNote).toBeNull()
-    expect(byId.collective!.monthly).toBe('$79/mo')
-    expect(byId.collective!.listAnchor).toBeNull()
-    expect(byId.collective!.betaNote).toBeNull()
+    expect(byId.nonprofit!.monthly).toBe('$39/mo')
+    expect(byId.nonprofit!.listAnchor).toBeNull()
+    expect(byId.nonprofit!.betaNote).toBeNull()
   })
 
   it('a plan that never had a beta rate never moves, on either side', () => {

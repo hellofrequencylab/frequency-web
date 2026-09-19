@@ -359,7 +359,7 @@ describe('createManualAgreement', () => {
     const result = await createManualAgreement(input)
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.agreement.plan).toBe('collective')
+      expect(result.agreement.plan).toBe('business')
       expect(result.agreement.amountCents).toBe(49000)
       expect(result.agreement.paidThrough).toBe('2027-07-27')
       expect(result.agreement.status).toBe('active')

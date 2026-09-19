@@ -23,7 +23,7 @@ import { join } from 'node:path'
 // ── The north star: the six tiers are Member / Crew / Business / Collective / Non Profit / Independent
 // (docs/COMMUNITY-COLLECTIVE-STRATEGY.md). The NEW space tiers this rebuild introduces (must be fully
 // wired once they appear anywhere) are: ──
-const NEW_SPACE_TIERS = ['collective', 'independent']
+const NEW_SPACE_TIERS = ['independent']
 
 // ── NON-TRIVIALITY FLOORS (scan2 L8-02, 2026-09-05) ──
 // Phase 0 already fails on a missing north star, but every tripwire below is a WALK, and a walk over
@@ -105,9 +105,10 @@ line('\nPhase 1 · Pricing engine — tier wiring')
       else if (present.length === Object.keys(surfaces).length) ok(`tier "${tier}" wired across the label + display + price surfaces`)
       else fail(`tier "${tier}" is HALF-WIRED — only in: ${present.join(', ')} (add it to the rest, or it will resolve inconsistently)`)
     }
-    // Reprice sanity: Business must not still read as flat $49 in the settings default.
-    const settings = surfaces['settings.ts']
-    if (/business:\s*\{[^}]*\b4900\b/.test(settings)) warn('settings.ts still shows Business at $49 — reprice to $29')
+    const arr = plans.match(/export const SPACE_PLANS = \[([^\]]*)\]/)
+    if (arr && /\bcollective\b/.test(arr[1])) {
+      fail('SPACE_PLANS still names collective as a live plan (LIVE-228 merged it into business)')
+    } else ok('SPACE_PLANS has no live collective plan (legacy remap only)')
   }
 }
 
@@ -182,29 +183,25 @@ line('\nGuardrails · Legacy & off-plan tripwires')
   if (badNoTierNames.length) fail(`"no tier names" asserted as live canon (retired by ADR-811): ${badNoTierNames.join(', ')}`)
   else ok('the retired "no tier names" lock is only referenced as history')
 
-  // Tracked (not a fail): STALE Business-$49 in member-facing prose/UI. Business is $29 now (ADR-811), so a
-  // bare "$49" is stale UNLESS it is the Collective BETA/FOUNDING anchor ($49 under $79) or a test assertion.
-  // Scan BROADLY: the rebrand's surfaces span components + app + the page-editor templates + billing/pricing,
-  // not just lib/marketing (an earlier too-narrow scan let a live "$49" in the funnel graphic slip through).
+  // Tracked (not a fail): STALE Business-$29 in member-facing prose. Business is $49 now (LIVE-228), so a
+  // bare "$29" is leftover ADR-811 copy. $49 is the live Business amount.
   const priceRoots = ['content', 'lib', 'components', 'app']
   const seenHits = new Set()
-  const priceScans = priceRoots.map((root) => grepCount(root, /\$49\b/, ['.md', '.ts', '.tsx']))
+  const priceScans = priceRoots.map((root) => grepCount(root, /\$29\b/, ['.md', '.ts', '.tsx']))
   WALKED.code = priceScans.reduce((sum, s) => sum + s.files, 0)
   const priceHits = priceScans
     .flatMap((s) => s.hits)
     .filter((h) => {
-      if (seenHits.has(h)) return false // dedupe overlapping roots
+      if (seenHits.has(h)) return false
       seenHits.add(h)
       const [file, ln] = h.split(':')
-      if (/\.test\.(ts|tsx)$/.test(file)) return false // tests assert real current values
+      if (/\.test\.(ts|tsx)$/.test(file)) return false
       const txt = read(file); if (!txt) return false
       const context = txt.split('\n').slice(Math.max(0, +ln - 2), +ln + 1).join(' ')
-      // Legitimate ONLY when it is the Collective BETA/FOUNDING price — NOT merely near the brand word
-      // "collective" (which now appears on nearly every pricing sentence and would neuter the check).
-      return !/beta|founding/i.test(context)
+      return !/history|retired|was \$29|from \$29/i.test(context)
     })
   const oldHomeCrew = grepCount('app', /\$10 a month|\$10\/mo/, ['.tsx']).n
-  if (priceHits.length) warn(`${priceHits.length} stale Business "$49" reference(s) in prose: ${priceHits.join(', ')}`); else ok('no stale $49 in marketing prose (Business is $29; Collective beta $49 is expected)')
+  if (priceHits.length) warn(`${priceHits.length} stale Business "$29" reference(s) in prose: ${priceHits.join(', ')}`); else ok('no stale $29 in marketing prose (Business is $49)')
   if (oldHomeCrew > 0) warn(`${oldHomeCrew} hardcoded Crew "$10" reference(s) in app copy (fix in Phase 6)`); else ok('no stale Crew "$10" in app copy')
 }
 

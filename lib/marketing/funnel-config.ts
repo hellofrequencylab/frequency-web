@@ -46,7 +46,6 @@ const P = priceStrings()
 const RATE = {
   free: formatBps(NETWORK_TAKE_RATE_DEFAULT.free),
   business: formatBps(NETWORK_TAKE_RATE_DEFAULT.paid),
-  collective: formatBps(NETWORK_TAKE_RATE_DEFAULT.paid),
 }
 /** The free-tier row's honest descriptor: a free Space sells from day one, at its own network rate. */
 const FREE_ROW_DETAIL = `Sell from day one, ${RATE.free} on network introductions`
@@ -562,7 +561,7 @@ export const COMMUNITY_FUNNEL: FunnelConfig = {
       q: 'What does it actually cost?',
       a: costAnswer(
         'the memberships you sell',
-        ` When you grow a team and host collaborators, Collective adds that for ${P.collectiveList} a month, at a ${RATE.collective} network rate.`,
+        ` When you grow a team and host collaborators, that is still Business, at ${P.businessList} a month.`,
       ),
     },
     { q: 'Can I take my members with me?', a: 'Yes, any time. Export your whole member list whenever you want.' },
