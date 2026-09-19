@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1443**. 1436 is HYG-068 on another open branch. 1437 is SCAN-637 on main. 1438 is LIVE-228 on main. 1439 is LIVE-242 on main.
+tree as of this index: **ADR-1441**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
 
 | Theme | Start here |
 |---|---|
@@ -39544,6 +39544,9 @@ per-worktree is a property of the harness. `LIVE-306` carries it as `manual`.
 
 **Rows.** LIVE-306 (opened, not closed).
 
+**Amended by [ADR-1441](DECISIONS.md).** The first `pnpm lint` now installs when local ESLint is
+missing; LIVE-306 is closed.
+
 ## ADR-1320: ACCEPTED — the help-autodoc bot must quote what it read, or its finding is demoted (2026-09-10)
 
 **Context.** The bot posts an advisory checklist of help articles a diff may have invalidated. Three
@@ -46176,23 +46179,28 @@ Premise re-tested 2026-09-19: the discover twin still pointed canonical at `/eve
 
 **Rows.** SCAN-636.
 
-## ADR-1443: Public events use the same header /discover uses (SCAN-641)
+## ADR-1441: The first `pnpm lint` in a worktree installs this repo's ESLint (LIVE-306)
 
-**Status:** Accepted · 2026-09-19 · backlog `SCAN-641` · numbered **1443** because **1442** is HYG-078 · corroborated by `app/(main)/layout.tsx` (`publicChrome`) and `app/discover/layout.tsx`
+**Status:** Accepted · 2026-09-19 · **Amends** [ADR-1319](DECISIONS.md) (the refusal stays; missing local ESLint now installs first) · backlog `LIVE-306` · numbered **1441** because **1440** is SCAN-636 on main · corroborated by `scripts/preflight-lint.mjs` (`ensureLintToolchain`) and `.claude/hooks/session-start.sh` (`git rev-parse --show-toplevel`)
 
-**Context.** SCAN-641, filed 2026-09-19 from the meta-scan: anon `/events/<slug>` and networked Space profiles rendered `MarketingHeader` through `(main)` `publicChrome()`. `/discover/*` rendered `SiteHeader variant="light" authMode="client"`. Two public chromes, two phone sheets, two chances to drift. LIVE-106 was the last time that class cost thirteen destinations.
+**Context.** ADR-1319 made `prelint` refuse when `./node_modules/.bin/eslint` is missing or the wrong major, so a worktree no longer died inside `eslint-plugin-react` with a message that named a React rule. The row stayed open for the environmental half: a `git worktree` never inherits `node_modules`, and SessionStart installed only at the script's repo root.
 
-Premise re-tested 2026-09-19 on this tree: the split was still the split. Discover still used SiteHeader with client auth so ISR is not voided. The `(main)` public branch already called `getCachedUser()`, so it was already dynamic; client auth there is not an ISR win, it is so both trees draw one bar.
+Premise re-tested 2026-09-19 on this tree, and it held.
+
+1. `.claude/hooks/session-start.sh` still did `cd "$(dirname "$0")/../.."`. That is the script's checkout, not `git rev-parse --show-toplevel`.
+2. `preflight-lint.mjs` still only refused. It named `pnpm install --frozen-lockfile` and did not run it.
+3. This cloud checkout started with no `node_modules`. The first `pnpm lint` here would have been the same trap.
+
+The harness can still create a bare worktree. That is not repo-observable. What is repo-observable is what `pnpm lint` does next.
 
 **Decision.**
 
-1. **Mount the discover header on the `(main)` public branch.** `ViewerProvider` plus `SiteHeader variant="light" authMode="client"`. That is the header /discover already ships, including the phone sheet LIVE-110 put on it.
-2. **Leave the footer.** This row is the header split. `MarketingFooter` stays on the `(main)` public branch; /discover keeps its own short footer.
-3. **Give the skip link a target.** `id="main"` on the public `<main>`, matching /discover, so SiteHeader's skip-to-content has somewhere to go.
+1. **`ensureLintToolchain` installs, then re-checks.** When the directory has `pnpm-lock.yaml` and no local ESLint, `prelint` runs `pnpm install --frozen-lockfile` and checks again. A directory without this repo's lockfile still refuses without spawning.
+2. **A failed install and a major mismatch still refuse.** Wrong-major is not "never installed". Reinstall stays a named human step.
+3. **SessionStart follows the session worktree.** `git rev-parse --show-toplevel` is the install root; the script path is the fallback when cwd is not a git tree.
 
-**Rejected.** Extracting a shared PublicChrome layout in this change (the footers still differ, and a shared shell would hide that). Switching /discover onto MarketingHeader (that is the header without search, and it would undo the ISR-preserving client auth). Server auth on the `(main)` public branch (a second dialect of the same bar).
+**Rejected.** Symlinking `node_modules` to the parent checkout (faster, and older worktrees already had that symlink, but a lockfile drift would load the wrong tree). Auto-fixing a major mismatch (that install is stale on purpose until someone deletes it). Teaching the Cursor harness; this PR cannot.
 
-**Consequences.** A signed-out event page and a /discover page now share one header component and one phone sheet. Marketing pages and the help centre keep MarketingHeader: those are the splash and the docs, not the public community browse.
+**Consequences.** The first `pnpm lint` in a new worktree installs this repo's ESLint 9, or refuses with the install error, and does not fall through to a global ESLint 10. CI already installs, so the new branch is a no-op there. The probe calls `ensureLintToolchain` with a missing bin and a lockfile and requires `attemptedInstall` plus `ok`.
 
-**Rows.** SCAN-641.
-
+**Rows.** LIVE-306.
