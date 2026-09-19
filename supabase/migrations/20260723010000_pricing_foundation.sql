@@ -146,7 +146,16 @@ insert into public.platform_flags (key, value) values
   ('plan_whitelabel_enabled',     false),
   -- Per-role gamification toggles: when ON, that tier gets FULL gamification access even when the
   -- derive-from-tier default would give earn-only. The third flag, operator-overridable per tier.
+  -- Two rungs, two flags. gamification_full_supporter left with the Supporter rung (ADR-1106)
+  -- and is not seeded (HYG-078 / ADR-1442).
   ('gamification_full_member',    false),
-  ('gamification_full_crew',      true),   -- crew already gets full today (matches derive default)
-  ('gamification_full_supporter', true)
+  ('gamification_full_crew',      true)    -- crew already gets full today (matches derive default)
 on conflict (key) do nothing;
+
+-- HYG-078 / ADR-1442. The unread Supporter gamification flag. Greenfield never inserts it
+-- above; this delete covers a replay that somehow still has the row. Production already
+-- applied this file, so the live delete is execute_sql out of band (no new ledger row):
+--   delete from public.platform_flags where key = 'gamification_full_supporter';
+-- platform_flag_events is history and stays.
+delete from public.platform_flags
+ where key = 'gamification_full_supporter';

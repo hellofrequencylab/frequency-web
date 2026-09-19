@@ -314,6 +314,8 @@ const RETIRED_FLAG_KEYS = [
   'plan_practitioner_enabled',
   'plan_organization_enabled',
   'plan_whitelabel_enabled',
+  // HYG-078 / ADR-1442. Unread since the Supporter rung left EntitlementTier (ADR-1106).
+  'gamification_full_supporter',
 ] as const
 
 /** Every key named by a `delete from public.platform_flags ...` statement in any migration.

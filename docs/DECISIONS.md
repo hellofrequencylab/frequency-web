@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1448**. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1432 is LIVE-246.
+tree as of this index: **ADR-1448**. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1432 is LIVE-246.
 
 | Theme | Start here |
 |---|---|
@@ -46206,6 +46206,26 @@ The harness can still create a bare worktree. That is not repo-observable. What 
 **Consequences.** The first `pnpm lint` in a new worktree installs this repo's ESLint 9, or refuses with the install error, and does not fall through to a global ESLint 10. CI already installs, so the new branch is a no-op there. The probe calls `ensureLintToolchain` with a missing bin and a lockfile and requires `attemptedInstall` plus `ok`.
 
 **Rows.** LIVE-306.
+
+## ADR-1442: Drop the unread `gamification_full_supporter` flag (HYG-078)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-078` · numbered **1442** because SCAN-641 reserved this slot · corroborated by `supabase/migrations/20260723010000_pricing_foundation.sql` and `lib/platform-flags.test.ts` (`RETIRED_FLAG_KEYS`)
+
+**Context.** HYG-078, after the original "delete Supporter remnants" story was found false. ADR-458 retired Supporter as a TIER. The pay-what-you-want `profiles.is_supporter` badge is live (`lib/billing/supporter.ts`). `tier_supporter_enabled` stays so `memberTierSellable('supporter')` still has a switch that can refuse. What was left: `platform_flags.gamification_full_supporter`, seeded true by `20260723010000`, dropped from `PRICING_FLAG_KEYS` on 2026-08-24 (ADR-1106), and read by nothing.
+
+Premise re-tested 2026-09-19 on this tree: the seed still inserted the key; every remaining mention is a comment. Three earlier PRs (#2729, #2736, #2742) died on ledger drift or a dirty rebase. #2742 had the right shape and went green; it did not merge.
+
+**Decision.**
+
+1. **Stop seeding it.** `20260723010000` no longer inserts `gamification_full_supporter`. A greenfield replay cannot bring the switch back.
+2. **Delete it in that same already-applied file.** `RETIRED_FLAG_KEYS` requires an uncommented `delete from public.platform_flags` (LIVE-166). Production already ran this file, so the live delete is `execute_sql` of the same statement. No new migration file, and no `schema_migrations` insert. That is the HYG-102 shape: close the greenfield hole in the file that created it.
+3. **Leave the badge and the sell guard.** `tier_supporter_enabled`, `lib/billing/supporter.ts`, and `platform_flag_events` stay.
+
+**Rejected.** A new `20270345006*` file whose only job is the production delete. CI compares repo versions to the ledger (`check:migrations` Rule 4). An unapplied file fails `checks`. `apply_migration` / `db push` remain forbidden.
+
+**Consequences.** Greenfield has no unread Supporter gamification switch. Production still holds the stored row until the named `execute_sql` runs. `/admin/pricing` still shows Member and Crew only. A flag nobody can flip and nothing consults is gone from the seed.
+
+**Rows.** HYG-078.
 
 ## ADR-1443: Public events use the same header /discover uses (SCAN-641)
 
