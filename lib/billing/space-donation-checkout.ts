@@ -35,6 +35,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction, ENTITY_ID } from '@/lib/finance/record'
 import { receiptEmailFor } from './receipt-address'
 import { sendDonationReceipts } from './donation-receipt'
+import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
 
 /** Gift bounds. The floor keeps a gift above the card fee that would eat it; the ceiling is the same
  *  sanity bound the ask editor already clamps a suggested amount to. */
@@ -175,6 +176,7 @@ export async function createSpaceDonationCheckout(opts: {
       space_id: space.id,
       ask_id: ask.id,
       ...(opts.donorProfileId ? { donor_profile_id: opts.donorProfileId } : {}),
+      ...(await checkoutGaMetadata()),
     }
 
     const donorReceiptEmail = await receiptEmailFor(opts.donorProfileId)

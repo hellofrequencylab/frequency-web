@@ -13,6 +13,7 @@ import { PriceInput, type PriceSelection } from '@/components/commerce/price-inp
 import { RateOptions, type FlowRate } from '@/components/events/rate-options'
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/field'
+import { trackClient } from '@/components/analytics/track-provider'
 
 // THE SIGNED-OUT TICKET DOOR. What stood here was the sentence "Sign in to get your ticket." on a
 // priced event, and a "Sign in to RSVP" link on a priced RSVP with tiers. On 14 of 15 upcoming
@@ -257,6 +258,7 @@ export function GuestTicketForm({
         const name = String(data.get('name') || '').trim()
 
         startTransition(async () => {
+          trackClient('commerce.checkout_started', { kind: 'ticket' })
           const result = await startGuestTicket({
             eventId,
             email,

@@ -24,6 +24,7 @@ import { itemKeyForCatalogKey, readLockedPriceId } from './space-subscription-it
 import { isBetaPricingActive, loadoutChargeArm, loadoutChargePriceKey } from '@/lib/pricing/beta'
 import { spaceHasBetaPriceGrant } from './space-beta-grant'
 import { receiptEmailFor } from './receipt-address'
+import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
 import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from './checkout-ui'
 import { routeSpaceSubscription } from './space-subscriptions'
 
@@ -313,7 +314,7 @@ export async function createSpaceLoadoutCheckout(
   if (lineItems.length === 0) return null
 
   const plan = loadout.plan
-  const metadata = { kind: 'space_plan', space_id: spaceId, plan, billing_interval: interval }
+  const metadata = { kind: 'space_plan', space_id: spaceId, plan, billing_interval: interval, ...(await checkoutGaMetadata()) }
   // 14-day per-item trial (operator-editable via pricing settings, default 14). Stripe starts the
   // subscription in `trialing`, which the reconciler treats as active, so the plan is granted during the
   // trial and auto-converts when it ends. Proration is Stripe's default for a multi-item subscription.

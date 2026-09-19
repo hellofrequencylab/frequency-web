@@ -6,6 +6,7 @@ import { Check, CreditCard, Loader2, X } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import CheckoutPanel from '@/components/billing/checkout-panel'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
+import { trackClient } from '@/components/analytics/track-provider'
 import { setRsvpStatus } from '@/app/(main)/events/actions'
 import { startTicket, settleTicketAction } from '@/app/(main)/events/[slug]/ticket-actions'
 import { GuestRsvpForm } from '@/components/events/guest-rsvp-form'
@@ -190,6 +191,7 @@ export function RsvpPaymentFlow({
     startTransition(async () => {
       await setRsvpStatus(eventId, 'going', { slug })
       if (!paymentsReady || !selected || selected.kind !== 'general') return
+      trackClient('commerce.checkout_started', { kind: 'ticket' })
       const r = await startTicket(eventId, {
         qty: 1,
         ticketTypeId: selected.ticketTypeId,

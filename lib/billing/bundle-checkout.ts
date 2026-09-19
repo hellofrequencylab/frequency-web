@@ -21,6 +21,7 @@ import { bundleSellable, getHouseholdBundle } from '@/lib/pricing/settings'
 import { householdBundlePriceKey } from '@/lib/pricing/bundle'
 import { resolveStripePriceId } from './pricing-prices'
 import { receiptEmailFor } from './receipt-address'
+import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
 import { BUNDLE_KIND, BUNDLE_SEAT_IDS_KEY, bundleRoster, reconcileBundleSubscription } from './bundle-seats'
 import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from './checkout-ui'
 import type { BillingPeriod } from './pricing-keys'
@@ -120,6 +121,7 @@ export async function createBundleCheckout(opts: {
   // receipt goes. The caller's `email` is whatever the surface happened to hold, so fall back to the
   // buyer's proven account address rather than minting a customer Stripe can never write to.
   const receiptEmail = opts.email ?? (await receiptEmailFor(opts.profileId))
+  Object.assign(metadata, await checkoutGaMetadata())
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
