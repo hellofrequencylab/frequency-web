@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
 import { getPublicJourney, listPublicJourneys } from '@/lib/journey-plans'
+import { readJourneyOutcomes } from '@/lib/journeys/outcomes'
 import { getPillars, pillarsById } from '@/lib/pillars'
 import {
   DiscoveryBlocks,
@@ -265,7 +266,7 @@ export default async function DiscoverJourneyPage({
               pillars={pillars}
               facts={facts}
               accent={accent}
-              afterStory={<OutcomesBlock summary={plan.summary} />}
+              afterStory={<OutcomesBlock outcomes={readJourneyOutcomes(plan.page_config)} />}
             />
             <InstructorBlock author={author} />
             {reviews && offer && (

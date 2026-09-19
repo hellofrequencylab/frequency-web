@@ -195,6 +195,13 @@ describe('editorPageConfig — the Studio editor catalog (both faces)', () => {
     }
   })
 
+  it('keeps story.settings.outcomes so an Advanced layout save cannot wipe LIVE-393', () => {
+    const out = editorPageConfig([
+      { id: 'story', enabled: true, settings: { outcomes: ['Hold the room'] } },
+    ])
+    expect(out.find((w) => w.id === 'story')?.settings).toEqual({ outcomes: ['Hold the room'] })
+  })
+
   it('honours a non-required disabled flag and drops unknown / duplicate ids', () => {
     const out = editorPageConfig([
       { id: 'streak', enabled: false },

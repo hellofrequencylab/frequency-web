@@ -30,12 +30,14 @@
 //     `daily_minutes`, and each `arc[i]` as one `journey_plan_items` row with
 //     block_type='phase' (title "Week N: <title>", body = focus). They are declared because
 //     they are what the Spark actually asks and what a re-seed actually re-reads.
+//   * `outcomes[]` is the visitor-facing "What you'll learn" list (LIVE-393). It is a bare
+//     string[] stored on `page_config` story.settings.outcomes, not a column.
 //
 // NO LEDGER: a Journey is the author's own work, so `verify: 'none'` and nothing is flagged
 // `commercial` (the kernel rejects a commercial field under verify:'none', by design).
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { EntityManifest } from '@/lib/studio/kernel/manifest'
+import { REPEAT_ITEM_SELF, type EntityManifest } from '@/lib/studio/kernel/manifest'
 
 /** Render a scalar as display text. Mirrors the kernel's own reader. PURE + total. */
 function str(v: unknown): string {
@@ -78,7 +80,7 @@ export const JOURNEY_MANIFEST: EntityManifest = {
   sections: [
     { key: 'brief', title: 'The brief', desc: 'What Vera asks before she drafts. Who it is for, what it covers, and how long it runs.' },
     { key: 'identity', title: 'Identity', desc: 'The name and the face. What people see first on the card.' },
-    { key: 'story', title: 'Promise and overview', desc: 'The one line and the write-up that say what this is and who it is for.' },
+    { key: 'story', title: 'Promise and overview', desc: 'The one line, the write-up, and what people walk away able to do.' },
     { key: 'arc', title: 'The weekly arc', desc: 'One Phase per week, in order. Each week builds on the one before it.' },
     { key: 'discovery', title: 'Discovery', desc: 'How people find it, and what it asks of them each day.' },
     { key: 'delivery', title: 'Delivery and rewards', desc: 'How the weeks unlock, and what finishing is worth.' },
@@ -237,9 +239,10 @@ export const JOURNEY_MANIFEST: EntityManifest = {
     { path: 'official', label: 'Official Journey', kind: 'toggle', section: 'publishing', veraDrafts: false },
   ],
 
-  // The weekly arc is the one genuine repeated child: each week is drafted, edited, and
-  // committed on its own, and each becomes its own Phase row. Expanding it here is what lets a
-  // week be re-drafted without touching its siblings.
+  // Two repeated children. The weekly arc is still the Spark's creation payload (each week
+  // becomes a Phase row). Outcomes are the visitor-facing "What you'll learn" list (LIVE-393):
+  // a bare string[] on the story widget's settings, so the rail can add / remove / reorder
+  // through RailManifestRepeat and every visitor face reads the same list.
   repeats: [
     {
       arrayPath: 'arc',
@@ -252,6 +255,13 @@ export const JOURNEY_MANIFEST: EntityManifest = {
         { path: 'title', label: 'focus', kind: 'text', veraDrafts: true },
         { path: 'focus', label: 'what the week is about', kind: 'longtext', prose: true, veraDrafts: true, omitWhenEmpty: true },
       ],
+    },
+    {
+      arrayPath: 'outcomes',
+      label: "What you'll learn",
+      section: 'story',
+      itemLabel: (_item, index) => `Outcome ${index + 1}`,
+      fields: [{ path: REPEAT_ITEM_SELF, label: 'outcome', kind: 'text', veraDrafts: true }],
     },
   ],
 }

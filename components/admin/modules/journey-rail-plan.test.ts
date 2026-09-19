@@ -10,7 +10,10 @@ import {
   JOURNEY_HEADER_WRITES,
   JOURNEY_IDENTITY_WRITES,
   JOURNEY_MEETING_WRITES,
+  JOURNEY_OUTCOMES_WRITES,
   JOURNEY_VISIBILITY_WRITES,
+  journeyOutcomesFromRows,
+  journeyOutcomesRows,
   journeyAttributesPatch,
   journeyDeliveryPatch,
   journeyMeetingPatch,
@@ -33,8 +36,10 @@ import {
 const TOUCHPOINT = ['format', 'schedule', 'timezone', 'location', 'link', 'notes', 'eventId']
 
 describe('the Journey rail plan', () => {
-  it('renders the same fields the hand-mounted editor rendered, in the same six zones', () => {
+  it('renders the same fields the hand-mounted editor rendered, plus the outcomes repeat', () => {
     expect(JOURNEY_RAIL.identity.fields.map((f) => f.path)).toEqual(['title', 'summary'])
+    expect(JOURNEY_RAIL.outcomes.fields).toEqual([])
+    expect(JOURNEY_RAIL.outcomes.repeats.map((r) => r.arrayPath)).toEqual(['outcomes'])
     expect(JOURNEY_RAIL.header.fields.map((f) => f.path)).toEqual([
       'cover_image',
       'logo_image',
@@ -67,6 +72,7 @@ describe('the Journey rail plan', () => {
   it('writes each column on exactly one save path', () => {
     const all = [
       ...JOURNEY_IDENTITY_WRITES,
+      ...JOURNEY_OUTCOMES_WRITES,
       ...JOURNEY_HEADER_WRITES,
       ...JOURNEY_DELIVERY_WRITES,
       ...JOURNEY_VISIBILITY_WRITES,
@@ -206,6 +212,11 @@ describe('the rail reads the row by manifest path, and writes each action its ow
     })
     expect(journeyMeetingPatch({ ...v, 'meeting.format': 'telepathy' }).format).toBeNull()
   })
+
+  it('round-trips outcomes as RepeatRows keyed at the item itself', () => {
+    expect(journeyOutcomesRows({ outcomes: ['Hold the room', '  '] })).toEqual([{ '': 'Hold the room' }])
+    expect(journeyOutcomesFromRows([{ '': 'Name the feeling' }, { '': '' }])).toEqual(['Name the feeling'])
+  })
 })
 
 describe('the Journey settings module renders the plan, not an editor', () => {
@@ -217,6 +228,8 @@ describe('the Journey settings module renders the plan, not an editor', () => {
     expect(source).toMatch(/JOURNEY_RAIL\.delivery\.fields/)
     expect(source).toMatch(/JOURNEY_RAIL\.attributes\.fields/)
     expect(source).toMatch(/JOURNEY_RAIL\.visibility\.fields/)
+    expect(source).toMatch(/JOURNEY_RAIL\.outcomes\.repeats/)
+    expect(source).toMatch(/<RailManifestRepeat\b/)
   })
 
   it('no longer mounts the hand-drawn editor, and declares no field of its own', () => {

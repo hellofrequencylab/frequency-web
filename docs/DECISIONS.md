@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1464**. 1462 is LIVE-397. 1461 is SCAN-640. 1459 is SCAN-638. 1455 is LIVE-414. 1454 is LIVE-416. 1450 is LIVE-415. 1445 is the calendar C0–C5 ruling. 1451–1453, 1456–1458, and 1460/1463 are claimed on open PRs.
+tree as of this index: **ADR-1464**. 1463 is LIVE-393. 1462 is LIVE-397. 1461 is SCAN-640. 1459 is SCAN-638. 1455 is LIVE-414. 1454 is LIVE-416. 1450 is LIVE-415. 1445 is the calendar C0–C5 ruling. 1451–1453, 1456–1458, and 1460 are claimed on open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46532,9 +46532,27 @@ Premise re-tested 2026-09-19:
 
 **Rows.** LIVE-397.
 
+## ADR-1463: Journey outcomes are an authored list, not the promise restated (LIVE-393)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-393` · numbered **1463** (1456–1458 and 1460–1461 are claimed on open calendar and scan PRs; 1459 is SCAN-638; 1462 is LIVE-397 on this tree) · corroborated by `lib/studio/entities/journey.ts` (`outcomes` repeat), `lib/journeys/outcomes.ts`, `components/journey/discovery-widgets.tsx` (`OutcomesBlock`)
+
+**Context.** LIVE-393: `OutcomesBlock` rendered "By the end you'll {lowerFirst(plan.summary)}". That is the same sentence the header already shows as the promise. There was no outcomes field. Premise re-tested 2026-09-19 after LIVE-397: the probe still failed.
+
+**Decision.**
+
+1. **A repeat group on the Journey manifest.** `outcomes` is a bare `string[]` (`REPEAT_ITEM_SELF`), labelled "What you'll learn", in the story section. `railRepeats` / `RailManifestRepeat` is the editor. Cap 12, 200 characters.
+2. **Stored on `page_config` story settings, not a new column.** `settings.outcomes` rides with the story widget so an Advanced layout save keeps it (`editorPageConfig` already preserves settings). The block stays a sandwich, not a fourth discovery toggle (ADR-1462). No schema.
+3. **Every visitor face reads the same list.** Member page, `/discover/journeys/<slug>`, and `JourneySalesBody` pass `readJourneyOutcomes(plan.page_config)`. Empty list hides the block. The promise line stays the promise line.
+
+**Rejected.** A `journey_plans.outcomes` column (needs a prod apply this session does not have credentials for, and a SELECT of a missing column would 500 every Journey page). Falling back to `summary` when the list is empty (that is the bug). Making outcomes a page_config widget id.
+
+**Consequences.** A Journey with no authored outcomes no longer shows "What you'll learn". Authors add the list in settings. LIVE-394 (authored FAQ) is still open and can use the same repeat shape.
+
+**Rows.** LIVE-393.
+
 ## ADR-1464: The app shell is a composer, not one 2600-line client module (LIVE-412)
 
-**Status:** Accepted · 2026-09-19 · backlog `LIVE-412` · numbered **1464** (1463 is claimed on the LIVE-393 PR; 1462 is LIVE-397 on this tree; 1453 was used on the closed SCAN-643 mix) · corroborated by `components/layout/app-shell.tsx`, `components/layout/app-shell-model.ts`, `components/layout/app-shell-account.tsx`, `components/layout/app-shell-nav-list.tsx`
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-412` · numbered **1464** (1463 is LIVE-393 on this tree; 1462 is LIVE-397; 1453 was used on the closed SCAN-643 mix) · corroborated by `components/layout/app-shell.tsx`, `components/layout/app-shell-model.ts`, `components/layout/app-shell-account.tsx`, `components/layout/app-shell-nav-list.tsx`
 
 **Context.** The 2026-09-18 survey filed LIVE-412: `app-shell.tsx` was one ~2632-line `'use client'` module on every `(main)` route. Premise re-tested 2026-09-19 on `9e2af7bb7`: 2629 lines, SCAN-641 already closed, leftover `#2747` mixed this split with SCAN-643 and was closed unmerged. The 1800-line probe is a ratchet, not a quality definition. Raising the budget would hide the same fan-out the shell-weight gates already police.
 

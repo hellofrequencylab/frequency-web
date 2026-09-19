@@ -204,24 +204,22 @@ export function StoryBlock({ intro }: { intro: string | null }) {
   )
 }
 
-/** What you'll learn — a short outcomes block drawn from the plan summary. */
-export function OutcomesBlock({ summary }: { summary: string | null }) {
-  if (!summary) return null
+/** What you'll learn — the authored outcomes list. Empty means the block stays off. */
+export function OutcomesBlock({ outcomes }: { outcomes: readonly string[] }) {
+  if (outcomes.length === 0) return null
   return (
     <section>
       <SectionHeader title="What you'll learn" />
-      <div className="rounded-2xl border border-border bg-surface p-5">
-        <p className="text-body-sm leading-relaxed text-text">
-          <span className="font-semibold">By the end you&apos;ll</span> {lowerFirst(summary)}
-        </p>
-      </div>
+      <ul className="space-y-2 rounded-2xl border border-border bg-surface p-5">
+        {outcomes.map((line, i) => (
+          <li key={`${i}:${line}`} className="flex items-start gap-2 text-body-sm leading-relaxed text-text">
+            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-pill bg-border-strong" aria-hidden />
+            <span>{line}</span>
+          </li>
+        ))}
+      </ul>
     </section>
   )
-}
-
-function lowerFirst(s: string): string {
-  const t = s.trim()
-  return t ? t[0].toLowerCase() + t.slice(1) : t
 }
 
 /** The Path — expandable accordion Phases, each header showing the lesson count, est
