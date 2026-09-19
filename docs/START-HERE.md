@@ -18,8 +18,10 @@ get them. Note `vercel env pull` returns blanks here, so you fill them by hand),
   the work stands. Status never lives in prose; every row says how it is proven.
 - **[docs/UX-MATURITY-PLAN.md](UX-MATURITY-PLAN.md)** + **[docs/BUILD-LIST.md](BUILD-LIST.md)**:
   what ships next (the §Sequencing table) and the phase runway around it.
-- **[docs/DECISIONS.md](DECISIONS.md)**: the ADR record, the *why*. A plan doc that contradicts
-  an ADR is stale, not authoritative.
+- **[docs/DECISIONS.md](DECISIONS.md)**: the ADR record, the *why*. Theme index at the top.
+  A plan that contradicts an ADR is stale.
+- **[docs/FOCUS-MODEL.md](FOCUS-MODEL.md)**: accepted interior (ADR-1403). Quest is the
+  Collective's program, not the spine. Commercial law stays CORE-MODEL.
 - **[docs/ARCHITECTURE.md](ARCHITECTURE.md)**: current stack, directory map, and the
   **authorization model you must follow** (the admin client bypasses RLS; authz is enforced
   in app code). Read before touching code.

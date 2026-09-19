@@ -1,10 +1,9 @@
 # Build Phases: the working tracker
 
-> **⚠️ SUPERSEDED (2026-05-31) by [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md).** The single
-> plan now lives there, folding this architecture tracker and the product `ROADMAP.md` into
-> one staged map. This file is kept for **history**: it records the Phase 0 to 7 work (much of
-> it ✅) and the old→new mapping is in the Development Map's "Where we are" section. Plan
-> from the Development Map, not this file.
+> **⚠️ SUPERSEDED.** First by [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md) (2026-05-31), then
+> that map itself (2026-08-04). The live plan is [UX-MATURITY-PLAN.md](UX-MATURITY-PLAN.md)
+> + [BUILD-LIST.md](BUILD-LIST.md). Status: [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
+> This file is Phase 0–7 history. Do not plan from it or from the Development Map.
 
 > The executable plan. Each phase has a **goal**, **dependencies** (don't start
 > until met), a **governing doc**, **workstreams** as checkboxes, and a

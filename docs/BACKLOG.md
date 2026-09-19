@@ -1,16 +1,15 @@
 # Master backlog
 
 > ⚠️ **Stale — superseded (2026-06-15).** This list trails reality (many §A–§F items are
-> already shipped). The current master list is **[`BUILD-LIST.md`](BUILD-LIST.md)**, and the
-> reconciled, audited view (docs-vs-code, with grades + valuation) is
-> **[`AUDIT-2026-06-15.md`](AUDIT-2026-06-15.md) §9**. Treat those two as canonical; keep this
-> file only for historical context until it is retired.
+> already shipped). The one list is [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json). The phase
+> runway is [`BUILD-LIST.md`](BUILD-LIST.md). [`AUDIT-2026-06-15.md`](AUDIT-2026-06-15.md) is
+> a frozen snapshot. Keep this file for historical context only.
 
 The single flat, actionable list of outstanding work, spanning engineering
 hygiene, the audit findings, the AI fabric/webmaster, and the product verticals.
 
-- **Vertical/roadmap detail and sequencing:** [`DEVELOPMENT-MAP.md`](DEVELOPMENT-MAP.md)
-  is canonical (ROADMAP.md and BUILD-PHASES.md are superseded; kept for history).
+- **Vertical/roadmap detail:** [`DEVELOPMENT-MAP.md`](DEVELOPMENT-MAP.md) is history.
+  Live plan: [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) + [`BUILD-LIST.md`](BUILD-LIST.md).
 - **Rationale / decisions:** [`DECISIONS.md`](DECISIONS.md).
 - **AI work detail:** [`AI-STRATEGY.md`](AI-STRATEGY.md).
 
@@ -275,7 +274,7 @@ follow-ups it surfaced. Full detail lives in the lettered sections below — thi
   columns · 3 columns); widget blocks (the ADR-270 modules) assignable to different **areas/slots**
   within the chosen template — the layout engine's `{order, hidden, roles}` extended to a per-slot
   `{template, slots}` model behind a back-compat reader (no migration). Built on ADR-270/271.
-- [ ] Reconcile "Interests" (member) vs "Topics" (public) wording + the "tune in" verb. (S)
+- [x] ~~Reconcile "Interests" vs "Topics" + "tune in".~~ **Channel + tune in** (NAMING.md).
 
 ## K. Monetization / money foundation / Vault / verticals
 - [ ] (G) Money foundation: entity partition + entity-tagged `financial_transactions`

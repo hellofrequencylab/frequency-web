@@ -1026,7 +1026,7 @@ re-do of the capture.
   > unified hub (`page.tsx` + `contacts/` + `friends/`), and `app/(main)/settings/` is the
   > one-pager hub (`page.tsx` + `account/` · `appearance/` · `billing/` · `connections/` ·
   > `notifications/` · `profile/`).
-- Polish: soften newcomer breadcrumb · milestone wake-up gating map · reconcile "Interests" vs "Topics" · "tune in" verb decision.
+- Polish: soften newcomer breadcrumb · milestone wake-up gating map. ✅ **Channel + "tune in"** are locked in [NAMING.md](NAMING.md); do not reopen Interests vs Topics.
 
 ## P8 — Infra · Data · Security · Hardening (BACKLOG §A/§B/§C/§D/§I/§O)
 

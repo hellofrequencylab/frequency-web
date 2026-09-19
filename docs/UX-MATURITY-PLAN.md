@@ -452,6 +452,11 @@ INTERACTION-STATES.md, updated per sweep).
 
 The lifts are not a new track; they mount onto the waves already running.
 
+> **Two programs, one backlog.** This table is the near-term **craft** program (DAWN, kit,
+> evidence). Product activation (four nouns, Journey Runs, CORE-MODEL `PROG-*` rows, FOCUS-MODEL
+> interior) is a separate lane. **Owner 2026-09-18 (ADR-1403): when they collide, product wins.**
+> Status for both lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json). P0 rows still print first.
+
 | When | Ships | From lifts |
 |---|---|---|
 | ✅ **Shipped** (was "Now", PR #2014 era) | Block parity + library restyle · ratchet harness + contrast script + research protocol doc + budgets file + state contract doc | 5a · 2a · 3a · 1b-doc · 7a · 8a |
