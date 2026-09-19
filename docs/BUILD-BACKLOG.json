@@ -14214,7 +14214,7 @@
       "size": "M",
       "source": {
         "file": "lib/journeys/sales-path.ts",
-        "ref": "ADR-1402, owner request 2026-09-19"
+        "ref": "ADR-1404, owner request 2026-09-19"
       },
       "detail": "Owner, 2026-09-19: sell a Journey on the Space and in the Market, through one sales page that is the paywall. The money path already existed. Shop and Market opened /market/<uuid>, authors of a published Journey were sent to /learn, and the path on the pitch was labelled Free preview.\\n\\nSHIPPED. Market and Space Shop cards attach href to /journeys/<slug> via withJourneySalesHref. /market/<id> redirects a Journey product to that slug. The public pitch signs a paid visitor in with next set to the till. A published author stays on the sales page. Enrolled learners who are not the author still go to /learn. PathBlock no longer says Free preview.",
       "verify": {

@@ -169,7 +169,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   const adopterCount = isAuthor && plan.visibility === 'public' ? await countActiveAdopters(plan.id, profileId) : 0
 
   // ── THE SELL CHIP'S STATE (ADR-1397) ──────────────────────────────────────────────────────────
-  // Also on the sales page now (ADR-1402): authors land there, not here. The chip stays on /learn
+  // Also on the sales page now (ADR-1404): authors land there, not here. The chip stays on /learn
   // so a host already in the course can still price without leaving.
   const sellOffer = canManageJourney ? await getJourneyOffer(plan.id) : null
   const sellLabel = sellOffer
@@ -287,7 +287,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
                 }
               />
             )}
-            {/* The sales page is the Journey slug (ADR-1402). Authors are no longer redirected
+            {/* The sales page is the Journey slug (ADR-1404). Authors are no longer redirected
                 off it, so this is a hop, not a ?preview=1 escape hatch. */}
             {canManageJourney && (
               <Link

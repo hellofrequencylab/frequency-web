@@ -5,7 +5,7 @@ system around a single idea: **Journeys are group-coaching programs a Circle mov
 together.** It supersedes the prior practice-rhythm/season model entirely (the two-clock
 season engine, the 8-of-13 completion rule, and depth tiers are retired; see §9). Decision
 record: [ADR-252](DECISIONS.md). Selling, the sales page, and the paywall are
-[ADR-1397](DECISIONS.md) through [ADR-1402](DECISIONS.md). Built on a five-angle evidence review of
+[ADR-1397](DECISIONS.md) through [ADR-1404](DECISIONS.md). Built on a five-angle evidence review of
 what makes online learning complete (§10). Code + `supabase/migrations/` remain the ultimate source
 of truth. Status of those rows lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json), not here.
 
@@ -27,7 +27,7 @@ together. The learner front-end is dead-simple; the creator back-end is a breeze
 
 A paid Space may also **sell** a Journey as one product (ADR-1397). Shop and Market are listing
 doors. The sales page is `/journeys/<slug>` (public twin `/discover/journeys/<slug>`). `/learn` is
-the course, and only enrolment, the author, or a manager opens it (ADR-1402).
+the course, and only enrolment, the author, or a manager opens it (ADR-1404).
 
 ---
 

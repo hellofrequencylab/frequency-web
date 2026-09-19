@@ -132,7 +132,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
   const isOwner = (!!profileId && product.ownerProfileId === profileId) || isManager
   if (product.status !== 'active' && !isOwner) notFound()
 
-  // ── ONE SALES PAGE (ADR-1402) ────────────────────────────────────────────────────────────────
+  // ── ONE SALES PAGE (ADR-1404) ────────────────────────────────────────────────────────────────
   // A Journey is not a Market listing with extra copy. Shop and Market are doors. The pitch and
   // the till live on the Journey slug. Leftover `/market/<uuid>` links (emails, old cards, a
   // re-priced row) hop here once, then leave. A missing plan falls through to the generic listing

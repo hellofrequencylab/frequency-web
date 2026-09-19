@@ -1,4 +1,4 @@
-// THE JOURNEY SALES URL (ADR-1402).
+// THE JOURNEY SALES URL (ADR-1404).
 //
 // One offer, many doors, one pitch. Market cards, Space Shop cards, share links and the leftover
 // `/market/<product uuid>` all resolve to the Journey slug. `/learn` is the course, not a listing.

@@ -355,13 +355,20 @@ export function densityClasses(value?: DensityValue): { gap: string; pad: string
 // dropping 'none' from blocks that render text -- a block-model change, not a token swap.
 export function accentize(text?: string, accent?: string, ink = false): React.ReactNode {
   if (!text) return null
-  if (!accent || !text.includes(accent)) return text
+  if (!accent || !text.includes(accent)) return collapseSpaceBeforePunct(text)
   const i = text.indexOf(accent)
   return (
     <>
       {text.slice(0, i)}
       <span className={ink ? 'text-primary' : 'text-primary-strong'}>{accent}</span>
-      {text.slice(i + accent.length)}
+      {collapseSpaceBeforePunct(text.slice(i + accent.length))}
     </>
   )
+}
+
+/** Published headings sometimes store a space before the period or comma after
+ *  the accent word (`build .`, `nouns ,`). Anton italic makes that gap visible.
+ *  Collapse it at render so operator copy does not have to be perfect. */
+function collapseSpaceBeforePunct(text: string): string {
+  return text.replace(/(^|\S)\s+([.,!?;:])/g, '$1$2')
 }

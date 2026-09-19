@@ -315,7 +315,7 @@ describe('the additive rail slot does not reach the other verticals', () => {
   })
 })
 
-// ── WAVE 3 (ADR-1402): one sales page from every listing, course behind enrolment.
+// ── WAVE 3 (ADR-1404): one sales page from every listing, course behind enrolment.
 
 describe('listing areas open the Journey sales page, not a product uuid', () => {
   it('the Space Shop does not force every card onto /market/<id>', () => {

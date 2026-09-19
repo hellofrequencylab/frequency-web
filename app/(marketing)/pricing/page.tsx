@@ -263,7 +263,11 @@ export default async function PricingPage() {
   // has published silently downgrades /pricing from live figures to a snapshot. So there are two
   // rungs, not three, and the ordering says exactly what it means: a human's published words beat the
   // generated page, and nothing else does.
-  const input = await pricingInput()
+  const [input, published, live] = await Promise.all([
+    pricingInput(),
+    getPublishedData('pricing'),
+    getLiveData(createAdminClient()).catch(() => null),
+  ])
   const members = memberOfferings(input)
   const spaces = spaceOfferings(input)
 
@@ -305,9 +309,7 @@ export default async function PricingPage() {
       }),
     )
 
-  const published = await getPublishedData('pricing')
   if (isWellFormed(published)) {
-    const live = await getLiveData(createAdminClient()).catch(() => null)
     return (
       <>
         <JsonLd data={[breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]), ...priceSchema]} />

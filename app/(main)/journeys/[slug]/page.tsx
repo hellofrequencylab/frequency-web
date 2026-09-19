@@ -34,7 +34,7 @@ import {
 export const dynamic = 'force-dynamic'
 
 
-// The one Journey sales page (ADR-1402). Drafts open in the editor. Published Journeys stay
+// The one Journey sales page (ADR-1404). Drafts open in the editor. Published Journeys stay
 // here as the pitch and the till. Enrolled learners (not the author) go to /learn, which is
 // the course. Voice is v2 (Run / Phase / enroll), no em dashes.
 
@@ -100,7 +100,7 @@ export default async function JourneyPlanPage({
   if (!isAuthor && plan.visibility === 'private') notFound()
 
   // ── AUTHOR. A DRAFT still opens in the editor. A published Journey stays on this page: it is
-  //    the sales page (ADR-1402). Sending the author to /learn hid the till from the only person
+  //    the sales page (ADR-1404). Sending the author to /learn hid the till from the only person
   //    who can set a price, and made the course look like the public face of the offer.
   if (isAuthor && !preview && plan.visibility === 'private') {
     redirect(`/journeys/${plan.slug}/edit`)
