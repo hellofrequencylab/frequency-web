@@ -24,9 +24,7 @@
 > **absorbs `A2` and `W1–W5`**, which are re-pointed rather than deleted, and it **must land after**
 > UX-MATURITY Lift 5c/5d because both touch `EDITABLE_PAGES` in opposite directions.
 
-> **The phase runway for the whole platform.** The ONE list of where work stands is
-> [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) (`pnpm backlog`). This file is order and
-> rationale, not a rival execute-from list. Consolidates every
+> **The single, prioritized, execute-from list for the whole platform.** Consolidates every
 > scattered roadmap (BACKLOG · ONBOARDING-BUILD-LIST · DEVELOPMENT-MAP · IA-RESTRUCTURE ·
 > EDIT-PATH-AUDIT · STUDIO-REVIEW · LAUNCH · CHECKLIST) into one ranked list, after the
 > 2026-06-08 five-domain code sweep + the owner's Roles & Permissions redesign.
@@ -1028,7 +1026,7 @@ re-do of the capture.
   > unified hub (`page.tsx` + `contacts/` + `friends/`), and `app/(main)/settings/` is the
   > one-pager hub (`page.tsx` + `account/` · `appearance/` · `billing/` · `connections/` ·
   > `notifications/` · `profile/`).
-- Polish: soften newcomer breadcrumb · milestone wake-up gating map · Channel stays (Interests retired) · "tune in" verb.
+- Polish: soften newcomer breadcrumb · milestone wake-up gating map · reconcile "Interests" vs "Topics" · "tune in" verb decision.
 
 ## P8 — Infra · Data · Security · Hardening (BACKLOG §A/§B/§C/§D/§I/§O)
 

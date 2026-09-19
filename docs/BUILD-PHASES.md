@@ -1,19 +1,21 @@
 # Build Phases: the working tracker
 
-> **⚠️ SUPERSEDED (2026-05-31).** History. Not a plan and not a north star. The live
-> set is [AGENTS.md](../AGENTS.md) §"Which plan is live":
-> [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) +
-> [UX-MATURITY-PLAN.md](UX-MATURITY-PLAN.md) + [BUILD-LIST.md](BUILD-LIST.md).
-> This file records the Phase 0 to 7 work (much of it ✅). Do not plan from here
-> or from [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md).
+> **⚠️ SUPERSEDED (2026-05-31) by [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md).** The single
+> plan now lives there, folding this architecture tracker and the product `ROADMAP.md` into
+> one staged map. This file is kept for **history**: it records the Phase 0 to 7 work (much of
+> it ✅) and the old→new mapping is in the Development Map's "Where we are" section. Plan
+> from the Development Map, not this file.
 
-> Each phase has a **goal**, **dependencies**, a **governing doc**, **workstreams**,
-> and a **definition of done**. Sequenced so the web app keeps working while
+> The executable plan. Each phase has a **goal**, **dependencies** (don't start
+> until met), a **governing doc**, **workstreams** as checkboxes, and a
+> **definition of done**. Sequenced so the web app keeps working while
 > mobile- and gamification-enabling infrastructure accretes: **no big-bang
-> rewrite, no mobile code until Phase 5.** Status does not live here.
+> rewrite, no mobile code until Phase 5.**
 >
-> Capstone rationale: [TECH-STRATEGY](TECH-STRATEGY.md). Checkbox marks in this
-> file are historical notes, not the record of what is done.
+> Capstone rationale: [TECH-STRATEGY](TECH-STRATEGY.md). Update checkbox state in
+> the PR that lands the work (the repo file is source of truth, same convention
+> as [ROADMAP](../ROADMAP.md), which tracks *product features*; this tracks
+> *architecture*).
 
 > **North Star, Weekly Active Members (WAM):** members with ≥1 *verified
 > practice* in a rolling 7 days. **Every phase optimizes for this one number**;
@@ -82,16 +84,18 @@ PAGE-FRAMEWORK.
 
 - [x] Nav grouping: Community / Connect / Progress / Manage sections in
       `app-shell.tsx` (desktop sidebar + mobile drawer); item visibility unchanged.
-- [~] Rename member-facing **Channels → Interests**: **reversed.**
-      [NAMING.md](NAMING.md) keeps **Channel**. Interests is retired. Do not
-      reopen it.
+- [~] Rename member-facing **Channels → Interests**: done on the primary
+      surfaces (nav label + `/channels` page heading/description); route +
+      `topical_channels` table unchanged. **Follow-up (needs visual QA):** sweep
+      any remaining "Channel" copy on cards/`[id]` page, decide the "tune in"
+      verb, and reconcile with the public `/discover` layer which says "Topics".
 - [x] Demote Hubs & Nexuses from member nav → already absent from the primary
       nav (folded under "Circles" in `isActive`); contextual hub/nexus breadcrumb
       links already render on circle cards. Satisfied.
 - [x] In-person **icon designator** (📍 "In person" badge; virtual = unmarked
       default) on `/circles` cards + the circle detail header. Live.
 - [x] **3 templates**: all three shells built and the main pages migrated:
-      **Stream** (`/feed`), **Index** (`/circles`, `/channels` Channels, `/events`,
+      **Stream** (`/feed`), **Index** (`/circles`, `/channels` Interests, `/events`,
       `/partners`, `/people` Directory), **Detail** (`detail-template.tsx`, used by
       single-entity pages). Every primary list/feed page now renders through one
       shell. *(Circle-detail page can adopt the Detail shell in a later pass.)*
@@ -103,16 +107,15 @@ PAGE-FRAMEWORK.
       edit-in-place DONE:** owners edit via settings; janitors get an inline
       moderator edit (name + bio) on any profile, gated by `profile.edit`
       (`moderate-profile-button` + capability-checked `moderateUpdateProfile`).
-      **Scope-aware rail:** history in this phase. Today `SCOPED_*` is empty;
-      `FOCUS_NONE_PREFIXES` is empty; `railFor` defaults `'global'` and operator
-      overrides can beat it ([PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md) §8.2). **Still
-      pending then:** a formal module **slot registry**. `<WidgetSlot>` is still a
-      sketch; the live rail is `RAIL_PANELS`.
+      **Scope-aware rail DONE:** the global rail shows on global/index pages; entity
+      detail pages (circle / profile / interest) render their own scoped rail in the
+      page body, and the global rail is suppressed there (no double-sidebar). **Still
+      pending:** a formal module **slot registry** (current composition is per-page).
 
 **Done when:** every main page renders via one of the 3 templates; inline actions
 appear by capability (host edits inline, member sees content only); a newcomer can
 read the nav without explanation. **Status: DONE** (all live): nav grouping,
-Channel label (Interests rename reversed), in-person badge, 3 templates with pages migrated, inline admin by
+Interests rename, in-person badge, 3 templates with pages migrated, inline admin by
 capability, profile edit-in-place, scope-aware rail. Only a formal module slot
 registry remains as an optional refactor.
 

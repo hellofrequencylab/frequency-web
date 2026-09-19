@@ -12,10 +12,6 @@
 > [BUILD-LIST.md](BUILD-LIST.md). The DAWN sync contract this rides on:
 > `design_handoff/SYNC.md`.
 >
-> **When this program collides with product** (Spaces, Circles, Events, Journeys,
-> CORE-MODEL `PROG-*`, FOCUS-MODEL sequence): **product wins the week**
-> ([ADR-1403](DECISIONS.md)). Status still lives in the backlog. P0s still print first.
->
 > **The bar for "mature" used throughout:** each lift has (1) a definition of done that an
 > outsider could verify, (2) machine enforcement wherever a machine can hold the line —
 > the repo's house pattern (check:tokens, check:menu, the admin-client ratchet), (3) a

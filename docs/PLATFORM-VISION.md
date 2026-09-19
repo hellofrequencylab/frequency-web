@@ -17,10 +17,6 @@
 > **Authority order is unchanged:** running code + `supabase/migrations/` > repo `docs/`
 > > Notion. This is a *target* doc; where it describes things not yet built, the code is
 > still the truth until the migration lands.
->
-> Companions for the live product: [CORE-MODEL.md](CORE-MODEL.md) (commercial law,
-> ADR-1294) and [FOCUS-MODEL.md](FOCUS-MODEL.md) (interior accepted, ADR-1403). This
-> file is the two-entity / flywheel frame. It does not replace them.
 
 ---
 
@@ -225,10 +221,9 @@ build order lives in [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md); the money/commerc
 > **flagship/franchise** tenancy, **donate-a-membership sponsorship**, and **partner-loyalty**
 > seams are specified in **ADR-248**; and every commerce/connection vertical reads the unified
 > **Trust Score** (**ADR-247**, §5) rather than its own rating silo. **Prerequisite:** the
-> module registry (ADR-033) must be *activated* (it's specced but not yet fully wired —
+> module/WidgetSlot registry (ADR-033) must be *activated* (it's specced but not yet wired —
 > see `BASELINE-ASSESSMENT.md`) before these land, or each vertical hand-wires and the clean
-> scaling promise breaks. The live rail is `RAIL_PANELS`, not `<WidgetSlot>` (a
-> [PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md) sketch).
+> scaling promise breaks.
 
 ---
 

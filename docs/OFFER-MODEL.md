@@ -2,9 +2,7 @@
 
 > **Status: PROPOSAL, carrying five owner rulings taken 2026-09-08.** The rest is not decided.
 > Status for any work it produces lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json), never in this
-> file. Companion to [`FOCUS-MODEL.md`](FOCUS-MODEL.md) (interior accepted, ADR-1403) and
-> [`CORE-MODEL.md`](CORE-MODEL.md) (commercial law, ADR-1294). CORE-MODEL supersedes §5 on
-> memberships. This file does not replace them. Decision record:
+> file. Companion to [`FOCUS-MODEL.md`](FOCUS-MODEL.md). Decision record, once ruled:
 > [ADR-1293](DECISIONS.md).
 >
 > **This document explains an offer. It does not track whether the offer is built.**

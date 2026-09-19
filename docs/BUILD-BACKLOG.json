@@ -226,6 +226,7 @@
             "DEF-A2P",
             "OWN-063",
             "HYG-068",
+            "OWN-066",
             "OWN-067",
             "OWN-070",
             "OWN-073",
@@ -10173,7 +10174,7 @@
     {
       "id": "OWN-066",
       "title": "Ruling: the focus model \u2014 does the Quest stop being the spine, do individuals ever pay, and may a free Space sell memberships",
-      "status": "done",
+      "status": "open",
       "priority": "P1",
       "lane": "owner",
       "size": "M",
@@ -10183,12 +10184,11 @@
       },
       "detail": "FILED 2026-09-08 from an eight-lane repo sweep plus live production reads (docs/FOCUS-MODEL.md, ADR-1292 PROPOSED). The owner re-stated the centre of the product: Frequency is a community collective serving OTHER communities, the Quest is the light thing we all do together rather than the spine, a community runs its own program or adopts the Quest as a template, and access is free to individuals with revenue from business Spaces plus members paying memberships toward a circle.\n\nMEASURED, not inferred. (1) ADR-811 already locked the Collective positioning and the marketing site already leads with it: 0 of 13 home blocks mention the game, while inside the app the game holds 5 of 16 rail rows, 1 of 5 mobile tabs, the raised centre button, the whole feed hero and a permanent Vault dock. (2) ADR-252 already ruled Journeys are group-coaching programs a Circle moves through together, and the engine shipped (journey_runs, cohort meter, drip, kickoff event) without ever becoming the operator headline. (3) Member dues are ~85% built and dark: space_membership_tiers -> Connect destination charge -> webhook -> syncTierCircleAccess grants a real memberships row in the linked circle; billing_live and host_payouts_enabled are both true in production. (4) Production is 58 profiles and 21 real Spaces, of which 20 have ZERO circles; 6 of 7 circles and 36 of 67 events belong to the root Frequency space.\n\nTHE CONTRADICTION. lib/pricing/gates.ts:144 sets space_memberships minEntitlement business and gives a free Space zero tiers, so an operator must buy a 29/mo subscription before collecting a dollar from their own members. ADR-914 already ruled the opposite principle everywhere else: never gate the transaction, gate the repeat. The gate comment defends a promise made to another person, which is a READINESS concern wearing a pricing gate.\n\nTHE FUSE. platform_flags beta_grace is 2026-10-01. On that date featureGatesLive() starts enforcing the Crew gates against individuals for the first time, so the ruling has a deadline or the window needs extending.\n\nSIX QUESTIONS (FOCUS-MODEL \u00a710): 1 does the Quest stop being a top-level section and become the Collectives own program; 2 do individuals pay for anything ever; 3 may a free Space sell memberships gated on readiness instead of plan; 4 is a Circle Run of a Journey the headline way a community runs its program; 5 do we build the five operator gaps (sell a course, gate content to a tier, member directory, space-level discussion, completion analytics); 6 extend beta_grace past 1 October while this is decided.\n\nPREREQUISITE recorded here so it is not lost: event attendance has NO independent record. There is no checked_in column and attendance exists only as an idempotent engagement-ledger row written by the same path that pays Zaps (app/(main)/events/actions.ts:1597-1685). Attendance needs its own record BEFORE any reward-visibility change, or check-in history is lost. Blocked-adjacent: OWN-050 closed on 2026-09-08 while this row was being written: the webhook destination was never misconfigured, it had simply never been sent a subscribed event, and one real account.updated now proves URL, signature verification, the deployed handler and the database write end to end. Live payouts also went live the same day (ADR-1291). So the rails are PROVEN rather than blocked; what remains true is that no PAYMENT event has ever arrived, because nothing has ever been sold. That removes the blocker this row was filed against.",
       "verify": {
-        "kind": "grep-present",
-        "pattern": "Status: ACCEPTED.*ADR-1403",
-        "paths": [
-          "docs/FOCUS-MODEL.md"
-        ]
-      }
+        "kind": "manual",
+        "evidence": "2026-09-08: measured live. platform_flags beta_grace = 2026-10-01, billing_live = true, host_payouts_enabled = true. lib/pricing/gates.ts:144 space_memberships minEntitlement business; lib/pricing/feature-meters.ts:129 free = 0 tiers. 20 of 21 non-root spaces have 0 circles. Closes when the six FOCUS-MODEL \u00a710 questions are answered and ADR-1292 moves from PROPOSED to Accepted or Rejected.",
+        "checked": "2026-09-08"
+      },
+      "ownerAction": "ruling"
     },
     {
       "id": "OWN-067",
