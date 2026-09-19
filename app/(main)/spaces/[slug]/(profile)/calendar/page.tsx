@@ -17,17 +17,19 @@ import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { loadAdminCalendar } from '@/lib/calendar/admin-calendar'
 import { StaffCalendar } from '../../settings/calendar/staff-calendar'
 import { CalendarModeToggle, type CalendarMode } from '@/components/spaces/calendar-mode-toggle'
+import { CalendarPmConsole } from '@/components/spaces/calendar-pm-console'
 
 // THE PER-SPACE CALENDAR TAB (Events EC2, ADR-1385). A month grid or list of the Space's events; clicking one opens
 // a truncated popup with a "Go to Event" link. Guests can subscribe the whole Space calendar into any
 // calendar app via the public per-space .ics feed (Events EC1). The identity hero + tab chrome come from
 // the (profile) layout; this is the body.
 //
-// ADMIN / GUEST (ADR-1389). A viewer who manages the Space lands on ADMIN: the full team calendar (drafts,
-// events on their way, private entries, Unavailable time, day notes) with the staff drawer, the same data
-// as the Calendar settings console. A toggle flips to GUEST, which is exactly what a visitor sees. Every
-// other viewer (guests and ordinary members) only ever gets Guest, and the server never loads the private
-// layer for them: the mode is decided here, before any admin read.
+// ADMIN / GUEST (ADR-1389, amended by ADR-1450). A viewer who manages the Space lands on ADMIN: the
+// production console (CalendarPmConsole). The board lists what is penciled, in planning, in production,
+// and cancelled. StaffCalendar is the date map and the settings drawer, not a second guest month. A
+// toggle flips to GUEST, which is exactly what a visitor sees. Every other viewer (guests and ordinary
+// members) only ever gets Guest, and the server never loads the private layer for them: the mode is
+// decided here, before any admin read.
 
 // Its OWN canonical + title. Without this the tab inherits the Space ROOT's metadata and declares
 // itself a duplicate of a page it is not (FINALIZE-PLAN §9.5).
@@ -94,8 +96,8 @@ export default async function SpaceCalendarPage({
           <div>
             <h2 className="text-lead font-bold text-text">Calendar</h2>
             <p className="text-body-sm text-muted">
-              Your team&apos;s calendar: published events, drafts and everything in the works. Switch to Guest to see what
-              visitors see.
+              What is penciled, in planning, in production, and cancelled. The month is the date map. Switch to Guest
+              to see what visitors see.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -103,14 +105,16 @@ export default async function SpaceCalendarPage({
             {subscribe}
           </div>
         </div>
-        <StaffCalendar
-          slug={space.slug}
-          events={admin.events}
-          initialYear={initialYear}
-          initialMonth1={initialMonth1}
-          canEdit={canManage}
-          dayNotes={admin.dayNotes}
-        />
+        <CalendarPmConsole events={admin.events}>
+          <StaffCalendar
+            slug={space.slug}
+            events={admin.events}
+            initialYear={initialYear}
+            initialMonth1={initialMonth1}
+            canEdit={canManage}
+            dayNotes={admin.dayNotes}
+          />
+        </CalendarPmConsole>
       </div>
     )
   }
