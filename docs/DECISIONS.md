@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1433**.
+tree as of this index: **ADR-1434**.
 
 | Theme | Start here |
 |---|---|
@@ -46049,3 +46049,28 @@ The source-side weight this row can name without a production artifact: 410 KB o
 **Consequences.** `/entry-points` and the Funnels builder produce a named QR and a short link. The flyer API 404s. Share cards still fall back to Bold when Nunito cannot load.
 
 **Rows.** LIVE-216. OWN-059 item 3 is this row; items 1-2 stay owner-timed.
+
+## ADR-1434: One Space, one create door (HYG-080)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-080` · CORE-MODEL §1.4 · corroborated by `lib/spaces/provision.ts` (`createSpace` is the member Space road) and `app/(main)/spaces/new/page.tsx`
+
+**Context.** `/spaces/new/business` was a second create flow for the same noun: name, one line, three links, `createBusinessSpace`, private starter prompts, land on the live page. CORE-MODEL said one noun, one door. The 2026-09-08 sweep called it an orphan. Re-tested 2026-09-09 and again 2026-09-19: it was not an orphan. Three pins held it up, and one was a control, not a reference.
+
+1. `scripts/check-a11y-names.test.ts` read `business-quickstart-form.tsx` from disk as the positive control for the Field→id forwarder chain. Blind, that Textarea was the single placeholder-only control that held the ceiling at 1. Deleting the file without a replacement would make the mutation stop proving anything.
+2. `scripts/check-creates.mjs` registered `createBusinessSpace` in `ENTITY_WRITES` and in `CREATE_ENTRIES`.
+3. `scripts/check-creates.test.ts` asserted that key in `ROUTED_ON_2026_09_07`.
+
+Numbered **1434** because **1426–1433** landed on main while this PR was open.
+
+**Decision.**
+
+1. **Delete the second door.** The page, the form, the card on `/spaces/new`, `createBusinessSpace`, `uniqueSlugFrom`, and `lib/spaces/business-starter.ts` (only that road used them) go. A business is created on `/spaces/new` by picking the business Mode, which niche funnels already deep-link (`/spaces/new?mode=business:*`, ADR-1197).
+2. **Replace the a11y control, do not drop it.** The mutation keeps the Field+Textarea fixture that file carried, and asserts that `components/spaces/space-form.tsx` still publishes `htmlFor={id}` and that `discoverForwarders` still finds it. A fixture-only test would keep passing after Field stopped forwarding.
+3. **Drop the creates pins with the writer.** `ENTITY_WRITES` and `CREATE_ENTRIES` no longer name the road. The Studio `business` manifest and the admin business seeder are a different subject and stay.
+
+**Rejected.** Folding the starter prompts into `createSpace` in the same PR (that is a product add, not the duplicate-door delete). Leaving `createBusinessSpace` as an unreferenced writer. Pointing the mutation at another product file that does not wrap a kit Textarea in space-form Field.
+
+**Consequences.** `/spaces/new/business` 404s. Create a space is one form. The accessible-name ratchet stays at 0 weak names with a control that can still fire.
+
+**Rows.** HYG-080.
+
