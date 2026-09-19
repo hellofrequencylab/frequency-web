@@ -504,6 +504,7 @@ export function EnrollCta({
   layout = 'block',
   offer,
   buyControl,
+  tierGate,
 }: {
   planId: string
   slug: string
@@ -533,6 +534,8 @@ export function EnrollCta({
    * keep it surface-blind.
    */
   buyControl?: React.ReactNode
+  /** LIVE-411: this Journey is for one Space membership. Hide the till until they join. */
+  tierGate?: { reason: string; href: string | null } | null
 }) {
   const full = layout === 'block' ? 'w-full' : ''
 
@@ -559,6 +562,29 @@ export function EnrollCta({
   //
   // The seat line and the sold-out state are DERIVED upstream from real enrolments against the
   // author's real cap. Nothing here can be told a number by a host.
+  if (tierGate && !enrolled && !isAuthor) {
+    const join = tierGate.href ? (
+      <Link href={tierGate.href} className={buttonClasses('primary', 'md', full)}>
+        Join the membership
+      </Link>
+    ) : null
+    const reason = <p className="text-meta text-muted">{tierGate.reason}</p>
+    if (layout === 'inline') {
+      return (
+        <span className="flex flex-wrap items-center gap-2">
+          {join}
+          {reason}
+        </span>
+      )
+    }
+    return (
+      <div className="space-y-2">
+        {reason}
+        {join}
+      </div>
+    )
+  }
+
   const paidPrimary =
     offer && !enrolled ? (
       offer.soldOut ? (
@@ -641,6 +667,7 @@ export function AtAGlanceCard({
   cta,
   offer,
   buyControl,
+  tierGate,
 }: {
   plan: JourneyPlan
   slug: string
@@ -665,6 +692,7 @@ export function AtAGlanceCard({
   offer?: { productId: string; priceLabel: string; seatLine: string | null; soldOut: boolean } | null
   /** The till, forwarded to the rail's EnrollCta. See the prop's note on EnrollCta. */
   buyControl?: React.ReactNode
+  tierGate?: { reason: string; href: string | null } | null
 }) {
   const time = formatMinutes(facts.totalMinutes)
   const phasesTotal = progress?.phasesTotal || facts.phaseCount
@@ -694,6 +722,7 @@ export function AtAGlanceCard({
               forkAction={forkAction}
               offer={offer}
               buyControl={buyControl}
+              tierGate={tierGate}
             />
           ) : null
         )}

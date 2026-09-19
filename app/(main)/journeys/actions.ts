@@ -322,6 +322,7 @@ export async function setJourneyAttributes(
     tags?: string[]
     dailyMinutes?: number | null
     enrollCap?: number | null
+    spaceTierId?: string | null
   },
 ): Promise<ActionResult> {
   if (!(await assertOwner(planId))) return fail('Not allowed.')
@@ -332,6 +333,23 @@ export async function setJourneyAttributes(
   if (patch.tags !== undefined) update.tags = patch.tags.map((t) => t.trim().slice(0, 40)).filter(Boolean).slice(0, 12)
   if (patch.dailyMinutes !== undefined) update.daily_minutes = patch.dailyMinutes && patch.dailyMinutes > 0 ? Math.min(600, Math.floor(patch.dailyMinutes)) : null
   if (patch.enrollCap !== undefined) update.enroll_cap = patch.enrollCap && patch.enrollCap > 0 ? Math.min(100000, Math.floor(patch.enrollCap)) : null
+  if (patch.spaceTierId !== undefined) {
+    if (!patch.spaceTierId) {
+      update.space_tier_id = null
+    } else {
+      const spaceId = await planSpaceId(planId)
+      const root = await loadRootSpaceId()
+      if (!spaceId || spaceId === root) {
+        return fail('Attach this Journey to a Space first, then pick a membership.')
+      }
+      const { listMembershipTiers } = await import('@/lib/spaces/memberships')
+      const tiers = await listMembershipTiers(spaceId)
+      if (!tiers.some((t) => t.id === patch.spaceTierId)) {
+        return fail('That membership is not one of this Space.')
+      }
+      update.space_tier_id = patch.spaceTierId
+    }
+  }
   // New columns (migration 20260630000000) aren't in the generated types yet — cast the payload.
   if (Object.keys(update).length) {
     await admin.from('journey_plans').update(update as unknown as Database['public']['Tables']['journey_plans']['Update']).eq('id', planId)

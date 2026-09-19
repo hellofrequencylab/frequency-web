@@ -19,6 +19,7 @@ import type { OrderSource } from '@/lib/billing/pricing-keys'
 import { confirmBookingByOrder, cancelBookingByOrder } from '@/lib/spaces/booking'
 import { enrolByOrder, revokeJourneyByOrder } from './journey-fulfilment'
 import { getJourneyOffer, isSoldOut } from '@/lib/journeys/paid'
+import { checkJourneyTier } from '@/lib/journeys/tier-gate'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
 import { computeBookingRefundCents } from './cancellation'
@@ -175,6 +176,8 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
   for (const p of journeyItems) {
     const offer = await getJourneyOffer(p.journey_plan_id as string)
     if (offer && isSoldOut(offer)) return { error: 'This Journey is full. Check back soon.' }
+    const tier = await checkJourneyTier(p.journey_plan_id as string, input.buyerProfileId)
+    if (!tier.ok) return { error: tier.error }
   }
 
   const ownerKey = (p: ProductRow) => `${p.owner_kind}:${p.owner_profile_id ?? ''}:${p.owner_space_id ?? ''}`

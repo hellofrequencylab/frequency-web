@@ -60,6 +60,11 @@ const booking = vi.hoisted(() => ({
   confirmBookingByOrder: vi.fn(async () => {}),
   cancelBookingByOrder: vi.fn(async () => {}),
 }))
+const tierGate = vi.hoisted(() => ({
+  checkJourneyTier: vi.fn(async (): Promise<{ ok: true } | { ok: false; error: string; href: string | null }> => ({
+    ok: true,
+  })),
+}))
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
@@ -139,6 +144,7 @@ vi.mock('./journey-fulfilment', () => ({
   enrolByOrder: vi.fn(async () => {}),
   revokeJourneyByOrder: vi.fn(async () => {}),
 }))
+vi.mock('@/lib/journeys/tier-gate', () => tierGate)
 vi.mock('./order-receipt', () => ({ sendOrderReceipts: vi.fn(async () => {}) }))
 
 import {
@@ -172,6 +178,7 @@ function hasFilter(c: Call, op: string, k: string, v?: unknown): boolean {
 beforeEach(() => {
   state.reset()
   vi.clearAllMocks()
+  tierGate.checkJourneyTier.mockResolvedValue({ ok: true })
   stripeFake.checkout.sessions.create.mockImplementation(async () => ({ id: 'cs_1', url: 'https://stripe.test/cs_1' }))
   stripeFake.checkout.sessions.expire.mockImplementation(async () => ({}))
   stripeFake.refunds.create.mockImplementation(async () => ({ id: 're_1' }))
@@ -545,6 +552,21 @@ describe('createCommerceCheckout — physical goods collect a Stripe shipping ad
     const args = stripeFake.checkout.sessions.create.mock.calls[0][0] as Stripe.Checkout.SessionCreateParams
     expect(args.shipping_address_collection).toBeUndefined()
     expect(args.ui_mode).toBe('elements')
+  })
+
+  it('refuses a Journey the buyer is not in the required membership for (LIVE-411)', async () => {
+    handler({ ...PRODUCT, product_kind: 'journey', journey_plan_id: 'jp-1' })
+    tierGate.checkJourneyTier.mockResolvedValueOnce({
+      ok: false,
+      error: 'This Journey is for Royal Temple members. Join Patron first.',
+      href: '/spaces/royal-temple',
+    })
+    const res = await createCommerceCheckout({
+      items: [{ productId: 'p1', qty: 1 }],
+      buyerProfileId: 'buyer-1',
+    })
+    expect(res).toEqual({ error: 'This Journey is for Royal Temple members. Join Patron first.' })
+    expect(stripeFake.checkout.sessions.create).not.toHaveBeenCalled()
   })
 })
 

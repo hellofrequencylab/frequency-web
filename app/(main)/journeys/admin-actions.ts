@@ -9,6 +9,8 @@ import { checkJourneySell } from '@/lib/journeys/sell-gate'
 import { getJourneyOffer } from '@/lib/journeys/paid'
 import { resolveSpacePayoutPromptById } from '@/lib/billing/payout-prompt-resolve'
 import type { PayoutPrompt } from '@/lib/billing/payout-prompt'
+import { listMembershipTiers } from '@/lib/spaces/memberships'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 
 // The Journey admin rail's read seam (ADR-515 Phase 6). One getter feeds every journey rail module:
 // Settings (mounted inline), the Builder/Layout affordance (links out), Export, and the Danger zone.
@@ -33,6 +35,8 @@ export interface JourneyRailData {
   status: PlanStatus
   /** Vera's last rank-eligibility review, if this Journey has been published/reviewed. */
   review: StoredVeraReview | null
+  /** Active membership tiers of the owning Space, for the LIVE-411 select. Empty when personal. */
+  spaceTiers: { value: string; label: string }[]
 }
 
 /** Load a Journey's editable settings by slug, but only for a viewer who may edit it
@@ -53,6 +57,7 @@ export async function getJourneyRailData(slug: string): Promise<JourneyRailData 
     tags?: string[]
     daily_minutes?: number | null
     enroll_cap?: number | null
+    space_tier_id?: string | null
   }
 
   const row: Record<string, unknown> = {
@@ -71,9 +76,21 @@ export async function getJourneyRailData(slug: string): Promise<JourneyRailData 
     tags: p.tags ?? [],
     daily_minutes: p.daily_minutes ?? null,
     enroll_cap: p.enroll_cap ?? null,
+    space_tier_id: p.space_tier_id ?? null,
     meeting: normalizeJourneyMeeting(plan.meeting),
     outcomes: readJourneyOutcomes(plan.page_config),
   }
+
+  const root = await loadRootSpaceId()
+  const spaceId = plan.space_id && plan.space_id !== root ? plan.space_id : null
+  const spaceTiers = spaceId
+    ? [
+        { value: '', label: 'Anyone' },
+        ...(await listMembershipTiers(spaceId)).flatMap((t) =>
+          t.id ? [{ value: t.id, label: t.name }] : [],
+        ),
+      ]
+    : [{ value: '', label: 'Anyone (attach a Space first)' }]
 
   return {
     planId: plan.id,
@@ -83,6 +100,7 @@ export async function getJourneyRailData(slug: string): Promise<JourneyRailData 
     coverFocus: plan.cover_focus ?? null,
     status: plan.status,
     review,
+    spaceTiers,
   }
 }
 
