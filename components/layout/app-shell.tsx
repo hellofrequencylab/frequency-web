@@ -1456,13 +1456,14 @@ function MobileLeftDrawer({
 // and the long-tail nav). Keeps full content width: nothing is permanently eaten
 // from the side of an already-narrow phone screen.
 
-// The five calm spine worlds (§5a: Feed · Community · Events · The Quest · Marketplace),
+// The three calm spine worlds (HYG-033: Feed · Events · Marketplace),
 // derived from the ONE registry (lib/nav/registry.ts::calmSpine) — no parallel hardcoded
 // list. They flank the raised Zap center button (the action, below). Each tab carries its
 // backing calm NavNode (href · gate · icon key); icons still come from AREA_ICONS so the
 // bar stays in lockstep with the rail/drawer, and each tab gate-filters through canSee —
-// the same resolver every surface uses. Order here IS bar order (Menu · slots 1-2 · Zap ·
-// slots 3-5). Stats moved to the left drawer; Messages moved to the header.
+// the same resolver every surface uses. Order here IS bar order (Menu · Feed · Zap ·
+// Events · Marketplace). Circles and The Quest live in the drawer. Stats moved to the
+// left drawer; Messages moved to the header.
 
 function MobileTabBar({
   isActive,
@@ -1479,23 +1480,20 @@ function MobileTabBar({
   /** Stripped shells (e.g. Studio) hide the app destinations; only the menu arrow remains. */
   hideAppNav?: boolean
 }) {
-  // The five calm spine worlds from the registry (§5a), gate-filtered through canSee — the
-  // same resolver every surface uses (so a visitor never sees a member-gated tab). Split
-  // around the Zap center button below (slots 1-2 left of Zap · Zap · slots 3-5 right).
+  // The three calm spine worlds from the registry (HYG-033), gate-filtered through canSee —
+  // the same resolver every surface uses (so a visitor never sees a member-gated tab). Split
+  // around the Zap center button below (Feed left of Zap · Zap · Events + Marketplace right).
   const tabs = calmSpine().filter((t) => canSee(t.node, viewer))
 
   // Every item — the two edge buttons AND the destination tabs — is flex-1 with the same
   // icon size + stroke weight, so the row reads as one evenly-spaced, uniform set. Active is
   // shown by COLOR only (not a heavier stroke), so weights never differ across the row.
-  // 🔴 `min-w-0` IS WHAT MAKES `flex-1` MEAN "an equal seventh", and without it the row was
-  // neither equal nor safe. A flex item's default `min-width:auto` floors it at its content
-  // width, and here the content is a LABEL — so each tab was as wide as its own word. Measured
-  // at 360px: Menu/Feed/Zap/Events/Quest 49px, Community 55px, Marketplace 59px, i.e. icons that
-  // are supposed to be evenly spaced were not, "The Quest" wrapped onto two lines while its
-  // neighbours stayed on one, and the seven min-contents summed to 319px against a 320px screen —
-  // one pixel of headroom on the row that carries every destination on a phone. A longer label, a
-  // denser generation preset or a narrower device tips that into an overflowing bar whose last
-  // tab (Marketplace) leaves the screen with no way to scroll to it.
+  // 🔴 `min-w-0` IS WHAT MAKES `flex-1` MEAN "an equal fifth". A flex item's default
+  // `min-width:auto` floors it at its content width, and here the content is a LABEL — so each
+  // tab was as wide as its own word. The seven-slot bar summed to 319px against a 320px screen.
+  // Five slots at 320px are 64px each; Marketplace is the widest remaining label and sits on
+  // that line (HYG-033). Without min-w-0 a longer label still pushes Marketplace off-screen
+  // with no way to scroll to it.
   //
   // The label then needs `truncate` (see below) because `min-w-0` only permits the shrink; it does
   // not tell the text what to do when it happens.
@@ -1543,7 +1541,7 @@ function MobileTabBar({
         <span className="w-full truncate text-center leading-none">Menu</span>
       </button>
 
-      {!hideAppNav && tabs.slice(0, 2).map(renderTab)}
+      {!hideAppNav && tabs.slice(0, 1).map(renderTab)}
 
       {/* Zap — the action button (ADR-230, restored 2026-09-15 by owner ruling; see ADR-1362).
           Member-facing it's Zap; the backend stays Capture (the 'open-capture' event, the
@@ -1594,7 +1592,7 @@ function MobileTabBar({
         </button>
       )}
 
-      {!hideAppNav && tabs.slice(2).map(renderTab)}
+      {!hideAppNav && tabs.slice(1).map(renderTab)}
     </nav>
   )
 }
@@ -2564,7 +2562,7 @@ export default function AppShell({
           (PageAdminBar in <main>), replacing the old right-edge admin drawer. */}
 
       {/* ── Mobile bottom tab bar ─────────────────────────── */}
-      {/* The five calm spine worlds (§5a: Feed · Community · Events · The Quest · Marketplace)
+      {/* The three calm spine worlds (HYG-033: Feed · Events · Marketplace)
           from the registry, flanking the raised Zap center action, with the Menu edge arrow.
           Profile ("You") stays the top-right account avatar in the header (not a tab); stats
           moved into the left drawer; Messages moved to the header. Hidden on a full-viewport

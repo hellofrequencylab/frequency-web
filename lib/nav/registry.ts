@@ -654,15 +654,12 @@ export function paletteDestinations(viewer: NavViewer, query = ''): PaletteDesti
   return [...starts, ...contains].map(toDest)
 }
 
-// ── Calm mobile spine (§5a: the five thumb-zone worlds + Zap center) ─────────────────
-// The mobile tab bar is the five TOP-LEVEL calm worlds (Feed · Community · Events · The
-// Quest · Marketplace), flanking the raised Zap center button (an ACTION, declared in the
-// shell, not a registry node). The bar reads Menu · Feed · Community · [Zap] · Events · The
-// Quest · Marketplace (slots 1-2 sit left of Zap, slots 3-5 right of it). Each spine slot is
-// an EXISTING calm registry node — its href, gate, and icon key carry over verbatim (moving
-// where the tab is declared, never what it permits); only the rendered TAB label is the
-// canon world name, distinct from the node's rail label where §5a shortens it (e.g. the
-// `quest` rail reads "My Quest", the mobile tab reads "The Quest"). Deriving from
+// ── Calm mobile spine (HYG-033: three worlds + Menu + Zap = five destinations) ────────
+// The mobile tab bar is Feed · Events · Marketplace, flanking the raised Zap center
+// button (an ACTION, declared in the shell, not a registry node). The bar reads
+// Menu · Feed · [Zap] · Events · Marketplace. Circles and The Quest stay in the drawer.
+// Each spine slot is an EXISTING calm registry node — its href, gate, and icon key carry
+// over verbatim; only the rendered TAB label is the canon world name. Deriving from
 // NAV_REGISTRY keeps the bar in lockstep with the one source — no parallel hardcoded list —
 // and gate-filters through the same canSee as every surface. Messages left the bar for the
 // header (a badged top-right icon, DM convention); its rail/drawer entry is unchanged.
@@ -675,22 +672,22 @@ export type SpineTab = {
   node: NavNode
 }
 
-/** The five calm spine roots, in bar order: their registry node id → the world label
- *  the tab renders. Ids are existing calm nodes (see nav-areas.ts BASE_NAV_AREAS + the
- *  `market` vertical). The fifth tab is the id-`market` node, which since ADR-868 is the
- *  "Marketplace" commerce umbrella (href /marketplace, the last-visited commerce redirect)
+/** The three calm spine roots, in bar order: their registry node id → the world label
+ *  the tab renders. Menu and Zap sit beside these in the renderer, so the ruled bar is
+ *  five destinations: Menu · Feed · Zap · Events · Marketplace (HYG-033, 2026-09-08).
+ *  Circles and The Quest stay in the drawer, not on the thumb row.
+ *  The last root is the id-`market` node, which since ADR-868 is the "Marketplace"
+ *  commerce umbrella (href /marketplace, the last-visited commerce redirect)
  *  — the tab label follows the node so the bar never says one thing and lands on another.
  *  NAMING canon: "Marketplace" is umbrella-only; the surfaces keep their own names
  *  (Classifieds /classifieds · Market /market · Frequency Store /store · Housing /housing). */
 const CALM_SPINE_ROOTS: readonly { id: string; label: string }[] = [
   { id: 'feed', label: 'Feed' },
-  { id: 'circles', label: 'Community' },
   { id: 'events', label: 'Events' },
-  { id: 'quest', label: 'The Quest' },
   { id: 'market', label: 'Marketplace' },
 ] as const
 
-/** The five calm mobile-spine tabs (§5a), in bar order, each pairing its §5a world label
+/** The calm mobile-spine tabs (HYG-033), in bar order, each pairing its world label
  *  with its backing calm registry node. A root whose node is missing from the registry is
  *  skipped (defensive), so the bar can never reference a destination that no longer exists.
  *  The renderer gate-filters each tab's `node` through canSee and centers the Zap action. */

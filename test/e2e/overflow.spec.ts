@@ -29,7 +29,7 @@
 // ── THE WIDTHS, AND WHY 390 ALONE WAS NOT ENOUGH ──────────────────────────────────────────────
 //
 // The `mobile` Playwright project is 390px (iPhone 14). Three of ADR-1035's five defects first
-// bite BELOW that — the tab bar's seven min-content tabs summed to 319px against a 320px screen.
+// bite BELOW that — the tab bar's min-content tabs once summed to 319px against a 320px screen.
 // A gate that only ever looks at the widest common phone is a gate that meets the bug last. So
 // this spec drives its own widths and does not inherit the project's.
 //

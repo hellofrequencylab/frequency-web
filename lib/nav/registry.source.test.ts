@@ -170,4 +170,9 @@ describe('nav single-source invariant — the registry feeds every surface', () 
       expect(REGISTRY_IDS.has(tab.node.id)).toBe(true)
     }
   })
+
+  it('the mobile spine is Feed · Events · Marketplace (Menu and Zap sit beside them)', () => {
+    expect(calmSpine().map((t) => t.node.id)).toEqual(['feed', 'events', 'market'])
+    expect(calmSpine().map((t) => t.label)).toEqual(['Feed', 'Events', 'Marketplace'])
+  })
 })

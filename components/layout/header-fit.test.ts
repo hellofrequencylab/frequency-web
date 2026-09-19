@@ -245,11 +245,9 @@ describe('AppShell header: the icon cluster holds its width, the brand gives way
   })
 })
 
-describe('MobileTabBar: seven equal sevenths, whatever the labels say', () => {
-  // Before `min-w-0` each tab was floored at its own LABEL's width, so the row was neither equal
-  // nor safe: at 360px the tabs measured 49/49/55/49/49/49/59, "The Quest" wrapped onto two lines
-  // while its neighbours stayed on one, and the seven min-contents summed to 319px against a 320px
-  // screen. One longer label and the last tab (Marketplace) leaves a bar that cannot scroll.
+describe('MobileTabBar: five equal fifths (HYG-033)', () => {
+  // Before `min-w-0` each tab was floored at its own LABEL's width. Seven min-contents summed
+  // to 319px against a 320px screen. The ruled bar is five destinations, 64px each at 320.
   it('lets every tab shrink to its share', () => {
     expect(SHELL).toContain('flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-medium transition-colors')
   })
@@ -268,5 +266,25 @@ describe('MobileTabBar: seven equal sevenths, whatever the labels say', () => {
   it('never lets an icon absorb the shrink — the glyph is what a thumb aims at', () => {
     const icons = SHELL.match(/h-\[22px\] w-\[22px\] shrink-0/g) ?? []
     expect(icons.length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('puts Feed left of Zap and Events + Marketplace right of it', () => {
+    expect(SHELL).toContain('tabs.slice(0, 1).map(renderTab)')
+    expect(SHELL).toContain('tabs.slice(1).map(renderTab)')
+    expect(SHELL).not.toContain('tabs.slice(0, 2)')
+    expect(SHELL).not.toContain('tabs.slice(2)')
+  })
+
+  it('every caption, including Marketplace, fits a fifth of a 320px bar at text-3xs', () => {
+    // text-3xs is 10px (globals.css --text-3xs). 0.58em is a conservative Inter-medium
+    // advance for title case; 11 × 5.8 = 63.8 against a 64px slot. A longer label fails
+    // here instead of silently becoming "Marketpla…".
+    const SLOT = 320 / 5
+    const FONT = 10
+    const EM = 0.58
+    const captions = ['Menu', 'Feed', 'Zap', 'Events', 'Marketplace']
+    for (const label of captions) {
+      expect(label.length * FONT * EM, `${label} overflows a 64px slot`).toBeLessThanOrEqual(SLOT)
+    }
   })
 })
