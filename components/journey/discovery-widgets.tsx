@@ -1,3 +1,4 @@
+import { Fragment, type ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -16,6 +17,7 @@ import {
   UsersRound,
 } from 'lucide-react'
 import type { JourneyPlanItem, JourneyPlan } from '@/lib/journey-plans'
+import { enabledWidgets } from '@/lib/journey-page-config'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { planPillarMap } from '@/lib/journey-plans'
 import { accentColor, accentTint } from '@/lib/studio/accents'
@@ -345,6 +347,62 @@ export function PillarBalanceBlock({
         })}
       </div>
     </section>
+  )
+}
+
+/**
+ * The author-toggled discovery blocks, in stored order (LIVE-397 / ADR-1462).
+ * Story, path, and pillar balance are the only page_config widgets a visitor
+ * face still renders. Enrolled count and completion Gems stay header chips.
+ * `afterStory` is the sales sandwich (outcomes) that is not itself a widget.
+ */
+export function DiscoveryBlocks({
+  plan,
+  items,
+  pillars,
+  facts,
+  accent,
+  afterStory,
+}: {
+  plan: JourneyPlan
+  items: JourneyPlanItem[]
+  pillars: Pillar[]
+  facts: JourneyFacts
+  accent: string | null
+  afterStory?: ReactNode
+}) {
+  const widgets = enabledWidgets(plan.page_config, 'discovery')
+  const storyOn = widgets.some((w) => w.id === 'story')
+  return (
+    <>
+      {!storyOn ? afterStory : null}
+      {widgets.map((w) => {
+        switch (w.id) {
+          case 'story':
+            return (
+              <Fragment key={w.id}>
+                <StoryBlock intro={plan.intro} />
+                {afterStory}
+              </Fragment>
+            )
+          case 'path':
+            return (
+              <div key={w.id} id="the-path" className="scroll-mt-6">
+                <PathBlock
+                  items={items}
+                  accent={accent}
+                  facts={facts}
+                  dripIntervalDays={plan.drip_interval_days}
+                />
+              </div>
+            )
+          case 'pillar-balance':
+            return <PillarBalanceBlock key={w.id} items={items} pillars={pillars} />
+          default:
+            return null
+        }
+      })}
+    </>
   )
 }
 

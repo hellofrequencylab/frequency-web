@@ -363,7 +363,9 @@ findings the design is built on:
 
 > **Author face = the v2 editor** (`/journeys/[slug]/edit`): a Settings panel (identity, completion
 > Gems, certificate toggle, phase-drip interval, visibility/publish) above the Phase → Module →
-> Lesson structure tree, with an **Advanced** section (discovery-page layout + official program).
+> Lesson structure tree, with an **Advanced** section (discovery-page layout of story / path /
+> pillar balance + official program). Enrolled count and completion Gems stay header chips,
+> not layout toggles (ADR-1462).
 > It reuses the owner-checked plan actions (`saveJourneyMeta`, `setJourneyVisibility`,
 > `setJourneyRewards`, `setJourneyDelivery`, `setJourneyPageConfig`, `setJourneyOfficial`). Retired
 > with the season model: `JourneyBuilder`, `CoursePlayer`/`journey-course`, the practice-path

@@ -5,10 +5,8 @@ import { Sparkles } from 'lucide-react'
 import { getPublicJourney, listPublicJourneys } from '@/lib/journey-plans'
 import { getPillars, pillarsById } from '@/lib/pillars'
 import {
-  StoryBlock,
+  DiscoveryBlocks,
   OutcomesBlock,
-  PathBlock,
-  PillarBalanceBlock,
   InstructorBlock,
   JourneyFaq,
   JourneyStatChips,
@@ -261,14 +259,14 @@ export default async function DiscoverJourneyPage({
         }
         interiorMain={
           <div className="max-w-2xl space-y-8">
-            <StoryBlock intro={plan.intro} />
-            <OutcomesBlock summary={plan.summary} />
-            <div id="the-path" className="scroll-mt-6">
-              {/* `pillarsById` is deliberately NOT passed: PathBlock declares the prop and never
-                  reads it. Both Journey pages were handing it over for nothing. */}
-              <PathBlock items={items} accent={accent} facts={facts} dripIntervalDays={plan.drip_interval_days} />
-            </div>
-            <PillarBalanceBlock items={items} pillars={pillars} />
+            <DiscoveryBlocks
+              plan={plan}
+              items={items}
+              pillars={pillars}
+              facts={facts}
+              accent={accent}
+              afterStory={<OutcomesBlock summary={plan.summary} />}
+            />
             <InstructorBlock author={author} />
             {reviews && offer && (
               <ProductReviews

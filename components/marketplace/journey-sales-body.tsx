@@ -1,10 +1,14 @@
 import { CalendarClock, MapPin } from 'lucide-react'
+import { Fragment } from 'react'
 import { getPlanById, getPlanAuthor, normalizeJourneyMeeting } from '@/lib/journey-plans'
+import { getPillars } from '@/lib/pillars'
 import { getJourneyOffer } from '@/lib/journeys/paid'
+import { enabledWidgets } from '@/lib/journey-page-config'
 import {
   StoryBlock,
   OutcomesBlock,
   PathBlock,
+  PillarBalanceBlock,
   InstructorBlock,
   JourneyFaq,
   JourneyStatChips,
@@ -54,13 +58,15 @@ export async function JourneySalesBody({
   if (!loaded) return null
   const { plan, items } = loaded
 
-  const author = await getPlanAuthor(plan.author_id)
+  const [author, pillars] = await Promise.all([getPlanAuthor(plan.author_id), getPillars()])
   // 🔴 THE REAL COUNT. This read `enrolledCount={0}` -- a literal, not a fallback -- so the one
   // chip on this page that is social proof could never appear on the page where it matters most.
   // `getJourneyOffer` already counts live enrolments against the author's real cap for the seat
   // line, so the number is derived exactly like every other fact here and no host can type it.
   const offer = await getJourneyOffer(plan.id)
   const facts = journeyFacts(items)
+  const widgets = enabledWidgets(plan.page_config, 'discovery')
+  const storyOn = widgets.some((w) => w.id === 'story')
   const meeting = normalizeJourneyMeeting(plan.meeting)
   const t = meeting.gathering ?? meeting
 
@@ -73,16 +79,37 @@ export async function JourneySalesBody({
     <div className="space-y-8">
       <JourneyStatChips facts={facts} plan={plan} enrolledCount={offer?.enrolled ?? 0} />
 
-      {/* The long copy. `intro` is the course description AND the sales copy: it opens on the
-          problem, says what the four weeks do, and closes on the philosophy. Rendering it here is
-          the whole of the owner's "auto propagate" ask. */}
-      <StoryBlock intro={plan.intro} />
-
-      <OutcomesBlock summary={plan.summary} />
-
-      {/* The curriculum. Cohort buyers want the calendar before they want the pitch, and PathBlock
-          already opens phase one and marks it a free preview. */}
-      <PathBlock items={items} accent={plan.accent} facts={facts} dripIntervalDays={plan.drip_interval_days} />
+      {/* The long copy and the curriculum follow the author's discovery layout (LIVE-397).
+          Same three blocks LIVE-389 pinned, now mapped from page_config so reorder works.
+          `intro` is the course description AND the sales copy. PathBlock still opens phase
+          one and marks it a free preview. */}
+      {!storyOn ? <OutcomesBlock summary={plan.summary} /> : null}
+      {widgets.map((w) => {
+        switch (w.id) {
+          case 'story':
+            return (
+              <Fragment key={w.id}>
+                <StoryBlock intro={plan.intro} />
+                <OutcomesBlock summary={plan.summary} />
+              </Fragment>
+            )
+          case 'path':
+            return (
+              <div key={w.id} id="the-path" className="scroll-mt-6">
+                <PathBlock
+                  items={items}
+                  accent={plan.accent}
+                  facts={facts}
+                  dripIntervalDays={plan.drip_interval_days}
+                />
+              </div>
+            )
+          case 'pillar-balance':
+            return <PillarBalanceBlock key={w.id} items={items} pillars={pillars} />
+          default:
+            return null
+        }
+      })}
 
       {hasMeeting && (
         <section>
