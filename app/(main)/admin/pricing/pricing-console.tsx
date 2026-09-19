@@ -822,9 +822,10 @@ const PLAN_FLAGS: { key: PricingFlagKey; label: string }[] = [
   { key: 'plan_nonprofit_enabled', label: 'Non Profit' },
   { key: 'plan_independent_enabled', label: 'Independent' },
 ]
-// Two rungs, two rows. The Supporter row went with the rung (owner directive, 2026-08-24):
-// `gamification_full_supporter` left PRICING_FLAG_KEYS because no tier can select it any more, and
-// a toggle that gates nothing is the same mistake the missing Supporter sell switch above avoids.
+// Two rungs, two rows. The Supporter row went with the rung (owner directive, 2026-08-24;
+// HYG-078 / ADR-1442): `gamification_full_supporter` left PRICING_FLAG_KEYS because no tier
+// can select it any more, and a toggle that gates nothing is the same mistake the missing
+// Supporter sell switch above avoids.
 const GAMIFICATION_FLAGS: { key: PricingFlagKey; label: string }[] = [
   { key: 'gamification_full_member', label: 'Member (free)' },
   { key: 'gamification_full_crew', label: 'Crew' },
