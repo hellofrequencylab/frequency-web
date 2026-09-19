@@ -203,7 +203,6 @@
         {
           "name": "WR \u00b7 the core-model rework (ADR-1294), phases 0-11 in order. Three lines, four nouns. Phases 1-3 are one pass over the same files: the feature gates are inert until the grace window ends on 2026-12-01, which makes this the safe window to move paywalls. Phase 5 is the commercial unlock and phase 11 is the only phase that can say whether any of it worked.",
           "ids": [
-            "HYG-078",
             "HYG-080",
             "PROG-R4",
             "LIVE-228",
@@ -10577,7 +10576,7 @@
     {
       "id": "HYG-078",
       "title": "Drop the orphan gamification_full_supporter platform_flags row",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "hygiene",
       "size": "XS",
@@ -10585,12 +10584,13 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "\u00a75"
       },
-      "detail": "NARROWED 2026-09-09 after the original row was found FALSE. The row said \"delete the Supporter tier remnants\". It conflated two different things that share the word: ADR-458 retired Supporter as a TIER, and it became the pay-what-you-want profiles.is_supporter BADGE, which is LIVE. lib/billing/supporter.ts is the PWYW contribution charge and Foundation donation ledger, imported by app/(main)/upgrade/actions.ts:18 and app/api/webhooks/stripe/route.ts:53, and it gained a NEW refund path on 2026-09-05 (migration 20270345000300, ADR-1208). billing_live is true, so that code takes the live branch today. supporter_contributions holds 0 rows because nobody has contributed yet, not because nothing writes it.\n\ntier_supporter_enabled must also STAY: supporter-retired.test.ts:59,92 deliberately loads every flag ON to prove memberTierSellable('supporter') still refuses. Deleting the key would make that guard vacuous, which is the \"gate that can no longer fire honestly\" shape ADR-970 warns about.\n\nWHAT IS ACTUALLY LEFT: platform_flags.gamification_full_supporter is true in production and NO code reads it. lib/pricing/settings.ts:150 records that it was deliberately dropped from PRICING_FLAG_KEYS by owner directive on 2026-08-24. It is a bare data row. Note migration 20260723010000 re-seeds it on replay, so removing the row alone is not enough.",
+      "detail": "NARROWED 2026-09-09 after the original row was found FALSE. The row said \"delete the Supporter tier remnants\". It conflated two different things that share the word: ADR-458 retired Supporter as a TIER, and it became the pay-what-you-want profiles.is_supporter BADGE, which is LIVE. lib/billing/supporter.ts is the PWYW contribution charge and Foundation donation ledger, imported by app/(main)/upgrade/actions.ts:18 and app/api/webhooks/stripe/route.ts:53, and it gained a NEW refund path on 2026-09-05 (migration 20270345000300, ADR-1208). billing_live is true, so that code takes the live branch today. supporter_contributions holds 0 rows because nobody has contributed yet, not because nothing writes it.\n\ntier_supporter_enabled must also STAY: supporter-retired.test.ts:59,92 deliberately loads every flag ON to prove memberTierSellable('supporter') still refuses. Deleting the key would make that guard vacuous, which is the \"gate that can no longer fire honestly\" shape ADR-970 warns about.\n\nWHAT IS ACTUALLY LEFT: platform_flags.gamification_full_supporter is true in production and NO code reads it. lib/pricing/settings.ts:150 records that it was deliberately dropped from PRICING_FLAG_KEYS by owner directive on 2026-08-24. It is a bare data row. Note migration 20260723010000 re-seeds it on replay, so removing the row alone is not enough.\n\nCLOSED 2026-09-19 (ADR-1434). PREMISE RE-TESTED FIRST: no production source reads the key (comments only); 20260723010000 still seeded it; tier_supporter_enabled and the PWYW badge path are live and were left alone. Stopped the seed. 20270345006100 deletes the stored row and asserts gamification_full_crew plus tier_supporter_enabled survive. RETIRED_FLAG_KEYS now names it, so a later re-insert without a delete fails the existing LIVE-166 pin. Probe converted from manual to cmd because the consequence is now in the tree.",
       "verify": {
-        "kind": "manual",
-        "evidence": "platform_flags has no gamification_full_supporter row, and the seeding migration no longer re-creates it. Read the table; the code cannot answer this.",
-        "checked": "2026-09-09"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const strip=(s)=>s.replace(/--.*$/gm,\"\");const seed=strip(fs.readFileSync(\"supabase/migrations/20260723010000_pricing_foundation.sql\",\"utf8\"));if(/gamification_full_supporter/.test(seed))fail(\"pricing_foundation still seeds gamification_full_supporter\");const drop=strip(fs.readFileSync(\"supabase/migrations/20270345006100_drop_orphan_gamification_full_supporter_flag.sql\",\"utf8\"));if(!/delete from public.platform_flags/.test(drop)||!/gamification_full_supporter/.test(drop))fail(\"drop migration does not delete the orphan\");const t=fs.readFileSync(\"lib/platform-flags.test.ts\",\"utf8\");if(t.indexOf(\"gamification_full_supporter\")<0)fail(\"retired-flag pin is gone\");console.log(\"HYG-078 ok\")'",
+        "note": "Passes when the foundation seed no longer inserts the key (comments stripped), a later migration deletes it, and the retired-flag pin still names it. Written 2026-09-19 against the inverted survey, not the title."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "HYG-079",

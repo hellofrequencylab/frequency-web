@@ -14,7 +14,7 @@ import { featureKeyForFunction } from '@/lib/spaces/function-access'
 
 // The seeded flag defaults (mirror lib/pricing/settings.ts FLAG_DEFAULTS): the per-role gamification
 // flags reproduce today's derive-from-tier line (crew full, member earn_only). Two rungs, two flags —
-// gamification_full_supporter left the list with the Supporter rung on 2026-08-24.
+// the Supporter per-role flag left the list with the rung on 2026-08-24 (HYG-078 dropped the row).
 const SEEDED_FLAGS = {
   gamification_full_member: false,
   gamification_full_crew: true,

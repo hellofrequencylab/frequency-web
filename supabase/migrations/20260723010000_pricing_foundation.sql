@@ -30,8 +30,9 @@
 --   delete from public.platform_flags where key in (
 --     'billing_live', 'tier_crew_enabled', 'tier_supporter_enabled',
 --     'plan_practitioner_enabled', 'plan_business_enabled', 'plan_organization_enabled',
---     'plan_whitelabel_enabled', 'gamification_full_member', 'gamification_full_crew',
---     'gamification_full_supporter');
+--     'plan_whitelabel_enabled', 'gamification_full_member', 'gamification_full_crew');
+--   gamification_full_supporter was seeded here until HYG-078 / ADR-1434
+--   (20270345006100 deletes the stored row; do not re-insert it).
 
 -- ── 1. profiles: the personal pricing bits (NOT a new tier column) ───────────────────────
 -- gamification_access_override: nullable. NULL = derive from membership_tier (member = earn_only,
@@ -147,6 +148,9 @@ insert into public.platform_flags (key, value) values
   -- Per-role gamification toggles: when ON, that tier gets FULL gamification access even when the
   -- derive-from-tier default would give earn-only. The third flag, operator-overridable per tier.
   ('gamification_full_member',    false),
-  ('gamification_full_crew',      true),   -- crew already gets full today (matches derive default)
-  ('gamification_full_supporter', true)
+  ('gamification_full_crew',      true)    -- crew already gets full today (matches derive default)
 on conflict (key) do nothing;
+-- gamification_full_supporter is not seeded. The Supporter rung left EntitlementTier
+-- on 2026-08-24 (ADR-1106); no tier can select that flag. HYG-078 / ADR-1434
+-- deletes the stored row in 20270345006100. Re-inserting it would revive a switch
+-- that gates nothing.

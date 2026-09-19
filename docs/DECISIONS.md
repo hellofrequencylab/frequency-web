@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1433**.
+tree as of this index: **ADR-1434**.
 
 | Theme | Start here |
 |---|---|
@@ -46049,3 +46049,24 @@ The source-side weight this row can name without a production artifact: 410 KB o
 **Consequences.** `/entry-points` and the Funnels builder produce a named QR and a short link. The flyer API 404s. Share cards still fall back to Bold when Nunito cannot load.
 
 **Rows.** LIVE-216. OWN-059 item 3 is this row; items 1-2 stay owner-timed.
+
+## ADR-1434: Drop the unread `gamification_full_supporter` flag (HYG-078)
+
+**Status:** Accepted · 2026-09-19 · Amends [ADR-1106](DECISIONS.md) §2 ("the owner may delete it out of band") by doing the delete · backlog `HYG-078` · corroborated by `supabase/migrations/20270345006100_drop_orphan_gamification_full_supporter_flag.sql` and `RETIRED_FLAG_KEYS` in `lib/platform-flags.test.ts`
+
+**Context.** ADR-1106 retired the Supporter *rung* from `EntitlementTier`. The per-role flag `gamification_full_supporter` left `PRICING_FLAG_KEYS` in the same change, because `GAMIFICATION_FLAG` is keyed by that union and no remaining tier can select it. The stored `platform_flags` row was left as an unread orphan: a migration is production state, and that ADR wrote none. HYG-078 is that leftover.
+
+Premise re-tested 2026-09-19 on this tree: zero production reads of the key (comments only). `20260723010000_pricing_foundation.sql` still inserted it, so a greenfield replay would recreate the orphan. `tier_supporter_enabled` is still read by the sell-path guard (`memberTierSellable('supporter')` must keep refusing). `lib/billing/supporter.ts` is the PWYW badge charge, a different word.
+
+**Decision.**
+
+1. **Stop seeding.** The foundation migration no longer inserts the key. Replay cannot recreate it.
+2. **Delete the stored row.** `20270345006100` deletes `platform_flags` where `key = 'gamification_full_supporter'`. Neighbour asserts keep `gamification_full_crew` and `tier_supporter_enabled`. `platform_flag_events` stays (that is history).
+3. **Pin it with the other retired flags.** `RETIRED_FLAG_KEYS` already requires a delete statement and forbids a production read. The orphan joins that list.
+
+**Rejected.** Deleting `tier_supporter_enabled` (the guard would go vacuous, ADR-970). Touching `lib/billing/supporter.ts` or `profiles.is_supporter` (the badge is live). Leaving the seed and only deleting (greenfield would insert, then delete: noisier, and the row asked both).
+
+**Consequences.** A later sweep that greps for the key and finds only comments plus the delete file is reading the intended residue. Applying the file is `execute_sql` then a `schema_migrations` insert at version `20270345006100`, never `apply_migration`.
+
+**Rows.** HYG-078.
+
