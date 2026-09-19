@@ -14827,7 +14827,7 @@
       "id": "SCAN-643",
       "title": "The (main) layout still voids SCAN-636 ISR with cookies and headers",
       "status": "open",
-      "priority": "P2",
+      "priority": "P1",
       "lane": "live",
       "size": "L",
       "source": {
