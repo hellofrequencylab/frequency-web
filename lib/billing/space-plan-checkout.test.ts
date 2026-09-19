@@ -21,7 +21,15 @@ const { created, beta, flags, grant, lock, db } = vi.hoisted(() => ({
     ownerCustomerId: 'cus_owner' as string | null,
     ownerReadError: null as { message: string } | null,
   },
-  created: [] as { line_items: { price: string; quantity: number }[]; metadata: Record<string, string> }[],
+  created: [] as {
+    line_items: { price: string; quantity: number }[]
+    metadata: Record<string, string>
+    ui_mode?: string
+    success_url?: string
+    cancel_url?: string
+    return_url?: string
+    subscription_data?: { metadata: Record<string, string> }
+  }[],
   beta: { active: true },
   /** ADR-1061: does THIS Space carry the private per-Space beta price grant? */
   grant: { granted: false },
@@ -43,9 +51,20 @@ vi.mock('./stripe', () => ({
   stripe: {
     checkout: {
       sessions: {
-        create: (args: { line_items: { price: string; quantity: number }[]; metadata: Record<string, string> }) => {
+        create: (args: {
+          line_items: { price: string; quantity: number }[]
+          metadata: Record<string, string>
+          ui_mode?: string
+          success_url?: string
+          cancel_url?: string
+          return_url?: string
+          subscription_data?: { metadata: Record<string, string> }
+        }) => {
           created.push(args)
-          return Promise.resolve({ url: 'https://checkout.stripe.com/session' })
+          if (args.ui_mode === 'elements') {
+            return Promise.resolve({ id: 'cs_el', url: null, client_secret: 'cs_el_secret' })
+          }
+          return Promise.resolve({ id: 'cs_h', url: 'https://checkout.stripe.com/session' })
         },
       },
     },
@@ -230,7 +249,34 @@ describe('createSpaceLoadoutCheckout — an unreadable owner stripe_customer_id 
 
   it('still sells on a clean owner read, reusing the owner customer', async () => {
     db.spaceCustomerId = null
-    expect(await createSpaceLoadoutCheckout('space-1', loadout)).toBe('https://checkout.stripe.com/session')
+    expect((await createSpaceLoadoutCheckout('space-1', loadout))?.url).toBe(
+      'https://checkout.stripe.com/session',
+    )
     expect(created).toHaveLength(1)
+  })
+})
+
+describe('createSpaceLoadoutCheckout — on-page checkout (LIVE-359)', () => {
+  const loadout = { plan: 'business' as const, interval: 'month' as const }
+
+  it('defaults to hosted redirect fields', async () => {
+    await createSpaceLoadoutCheckout('space-1', loadout)
+    expect(created.at(-1)!.success_url).toContain('session_id={CHECKOUT_SESSION_ID}')
+    expect(created.at(-1)!.cancel_url).toBeTruthy()
+    expect(created.at(-1)!.ui_mode).toBeUndefined()
+  })
+
+  it('issues an elements session without success_url, and still stamps subscription metadata', async () => {
+    const handed = await createSpaceLoadoutCheckout('space-1', loadout, { ui: 'elements' })
+    expect(handed?.clientSecret).toBe('cs_el_secret')
+    expect(handed?.url).toBeUndefined()
+    expect(created.at(-1)!.ui_mode).toBe('elements')
+    expect(created.at(-1)!.return_url).toContain('session_id={CHECKOUT_SESSION_ID}')
+    expect(created.at(-1)!.success_url).toBeUndefined()
+    expect(created.at(-1)!.subscription_data?.metadata).toMatchObject({
+      kind: 'space_plan',
+      space_id: 'space-1',
+      plan: 'business',
+    })
   })
 })

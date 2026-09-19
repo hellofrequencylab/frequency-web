@@ -98,8 +98,8 @@ vi.mock('@/lib/supabase/admin', () => ({
 
 import { setSpaceStatus, transferSpaceOwnership } from './lifecycle-actions'
 
-const SPACE_ID = 'space-0000-4000-a000-00000000spc'
-const NEW_OWNER = 'newowner-0000-4000-a000-000000new'
+const SPACE_ID = '11111111-1111-4111-a111-111111111111'
+const NEW_OWNER = '22222222-2222-4222-a222-222222222222'
 
 function seedSpace(over: Partial<Row> = {}): void {
   store.space = {
@@ -107,7 +107,7 @@ function seedSpace(over: Partial<Row> = {}): void {
     type: 'practitioner',
     slug: 'river-yoga',
     status: 'active',
-    owner_profile_id: 'oldowner-0000-4000-a000-000000old',
+    owner_profile_id: '33333333-3333-4333-a333-333333333333',
     name: 'River Yoga',
     ...over,
   }
@@ -230,7 +230,7 @@ describe('transferSpaceOwnership — validation', () => {
 
 describe('transferSpaceOwnership — consistency (the core invariant)', () => {
   it('updates owner_profile_id, seats the new owner as admin, and audits before/after', async () => {
-    seedSpace({ owner_profile_id: 'oldowner-0000-4000-a000-000000old' })
+    seedSpace({ owner_profile_id: '33333333-3333-4333-a333-333333333333' })
     const result = await transferSpaceOwnership(SPACE_ID, NEW_OWNER)
     expect('error' in result).toBe(false)
 
@@ -253,7 +253,7 @@ describe('transferSpaceOwnership — consistency (the core invariant)', () => {
         action: 'space.ownership_transfer',
         targetType: 'space',
         targetId: SPACE_ID,
-        detail: expect.objectContaining({ from: 'oldowner-0000-4000-a000-000000old', to: NEW_OWNER, seatedAsAdmin: true }),
+        detail: expect.objectContaining({ from: '33333333-3333-4333-a333-333333333333', to: NEW_OWNER, seatedAsAdmin: true }),
       }),
     )
   })

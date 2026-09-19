@@ -1,18 +1,22 @@
 // Entry-point templates — the predefined, goal-typed recipes (ADR-126,
-// docs/ENTRY-POINTS.md). Each template is what a crew member picks: it sets a
-// default destination, a flyer layout, a QR style preset, and the slot copy. The
-// crew never sees a blank canvas — they fill a few slots in one of these.
+// docs/ENTRY-POINTS.md, ADR-1433). Each template is what a member picks: it sets a
+// default destination, a QR style preset, and the slot copy stored on the row.
+// The member never sees a blank canvas — they pick one of these and name it.
 //
 // Code-first (the lib/onboarding/lead-flows.ts pattern); a DB-override layer can come
-// later without changing callers. Client-safe: no server imports (the builder UI and
-// the flyer composer both read this).
-
-import type { FlyerLayout } from './flyer'
+// later without changing callers. Client-safe: no server imports.
 
 export type EntryTemplateId = 'event' | 'circle' | 'invite' | 'waitlist' | 'partner'
 
 /** The kind of destination a template points at — drives the builder's picker. */
 export type DestinationKind = 'lead_flow' | 'place' | 'custom'
+
+/** Copy stored on qr_codes.flyer. The flyer builder is gone (LIVE-216); the column stays. */
+export interface EntrySlots {
+  headline: string
+  subhead: string
+  footer: string
+}
 
 export interface EntryTemplate {
   id: EntryTemplateId
@@ -24,24 +28,21 @@ export interface EntryTemplate {
   destinationKind: DestinationKind
   /** Default destination path (a /start lead flow, or a place/url). Editable. */
   defaultDestination: string
-  /** Flyer layout key (lib/entry-points/flyer.ts). */
-  flyerLayout: FlyerLayout
   /** QR style preset key (lib/qr/style.ts STYLE_PRESETS). */
   stylePreset: string
-  /** Default flyer slot copy — the starting point a crew member edits. */
-  slots: { headline: string; subhead: string; footer: string }
+  /** Default slot copy written onto qr_codes.flyer so existing rows stay shaped. */
+  slots: EntrySlots
 }
 
 export const ENTRY_TEMPLATES: Record<EntryTemplateId, EntryTemplate> = {
   // ── Fill a local gathering — point at the in-person lead flow (persona-routed). ──
   event: {
     id: 'event',
-    label: 'Event flyer',
-    blurb: 'A poster for a local event. Scan to RSVP and join.',
+    label: 'Event invite',
+    blurb: 'A QR for a local event. Scan to RSVP and join.',
     emoji: '📅',
     destinationKind: 'lead_flow',
     defaultDestination: '/start/event',
-    flyerLayout: 'poster',
     stylePreset: 'sunset',
     slots: {
       headline: 'You’re invited',
@@ -57,7 +58,6 @@ export const ENTRY_TEMPLATES: Record<EntryTemplateId, EntryTemplate> = {
     emoji: '⭕',
     destinationKind: 'place',
     defaultDestination: '/start/welcome',
-    flyerLayout: 'card',
     stylePreset: 'forest',
     slots: {
       headline: 'Find your people',
@@ -73,7 +73,6 @@ export const ENTRY_TEMPLATES: Record<EntryTemplateId, EntryTemplate> = {
     emoji: '🤝',
     destinationKind: 'lead_flow',
     defaultDestination: '/start/welcome',
-    flyerLayout: 'card',
     stylePreset: 'ocean',
     slots: {
       headline: 'Come join me on Frequency',
@@ -89,7 +88,6 @@ export const ENTRY_TEMPLATES: Record<EntryTemplateId, EntryTemplate> = {
     emoji: '✉️',
     destinationKind: 'lead_flow',
     defaultDestination: '/start/welcome',
-    flyerLayout: 'poster',
     stylePreset: 'midnight',
     slots: {
       headline: 'Be one of the first',
@@ -105,7 +103,6 @@ export const ENTRY_TEMPLATES: Record<EntryTemplateId, EntryTemplate> = {
     emoji: '🏪',
     destinationKind: 'lead_flow',
     defaultDestination: '/start/partner',
-    flyerLayout: 'card',
     stylePreset: 'gold',
     slots: {
       headline: 'Make your place the place',
@@ -121,7 +118,7 @@ export function isEntryTemplateId(value: string | null | undefined): value is En
   return !!value && value in ENTRY_TEMPLATES
 }
 
-/** Resolve a template by id, falling back to the event flyer. */
+/** Resolve a template by id, falling back to the event invite. */
 export function getEntryTemplate(id: string | null | undefined): EntryTemplate {
   return isEntryTemplateId(id) ? ENTRY_TEMPLATES[id] : ENTRY_TEMPLATES.event
 }

@@ -113,25 +113,51 @@ function heightTokenRem(token: string): number {
   throw new Error(`unparsed height utility: ${token}`)
 }
 
-/** The DESKTOP (`sm` and up) pixel height of a poster band at a tier, at this app's 17px root.
+/** Which half of the poster ladder a preview is aiming. Phone tokens are the first class in
+ *  POSTER_HEIGHT_CLASS; desktop is the `sm:` class. LIVE-272: passing a phone WIDTH into a desktop
+ *  HEIGHT is the wrong frame (412/374, not 412/221). */
+export type PosterBandSurface = 'desktop' | 'phone'
+
+/** The event page's centre-column width. The focal picker and the 24-cover survey share this
+ *  figure so a retune moves both. */
+export const EVENT_POSTER_DESKTOP_WIDTH_PX = 1044
+
+/** A typical phone viewport. The ladder comment already names a 412px band at 221px (standard). */
+export const EVENT_POSTER_PHONE_WIDTH_PX = 412
+
+/** The pixel height of a poster band at a tier on one surface, at this app's 17px root.
  *  Read off the ladder's own class string, so there is no second copy of the numbers to drift. */
-export function posterHeightPx(height: CoverHeight): number {
+export function posterBandHeightPx(
+  height: CoverHeight,
+  surface: PosterBandSurface = 'desktop',
+): number {
   const tokens = POSTER_HEIGHT_CLASS[height].split(/\s+/)
-  const sm = tokens.find((t) => t.startsWith('sm:')) ?? tokens[0]
-  return Math.round(heightTokenRem(sm) * ROOT_PX)
+  const token =
+    surface === 'phone'
+      ? (tokens.find((t) => !t.includes(':')) ?? tokens[0])
+      : (tokens.find((t) => t.startsWith('sm:')) ?? tokens[0])
+  return Math.round(heightTokenRem(token) * ROOT_PX)
+}
+
+/** The DESKTOP (`sm` and up) pixel height of a poster band at a tier. Alias of
+ *  `posterBandHeightPx(height, 'desktop')` so existing callers stay one argument. */
+export function posterHeightPx(height: CoverHeight): number {
+  return posterBandHeightPx(height, 'desktop')
 }
 
 /** The width:height aspect of the poster band as it will actually render — the shape a focal-crop
  *  preview must adopt. `widthPx` is the band's real render width in its surface (the event page's
- *  1044px centre column); `sourceAspect` is the poster's own measured ratio
- *  (events.theme.coverAspect) or null when it carries none. Pure + total: an unusable ratio is
- *  treated as absent, exactly as the band treats it. */
+ *  1044px centre column on desktop, 412px on a phone); `sourceAspect` is the poster's own measured
+ *  ratio (events.theme.coverAspect) or null when it carries none. `surface` picks which height
+ *  token the width is divided by. Pure + total: an unusable ratio is treated as absent, exactly as
+ *  the band treats it. */
 export function posterBandAspect(
   height: CoverHeight,
   widthPx: number,
   sourceAspect?: number | null,
+  surface: PosterBandSurface = 'desktop',
 ): number {
-  const tierAspect = widthPx / posterHeightPx(height)
+  const tierAspect = widthPx / posterBandHeightPx(height, surface)
   const usable =
     typeof sourceAspect === 'number' && Number.isFinite(sourceAspect) && sourceAspect > 0
   return usable ? Math.max(sourceAspect as number, tierAspect) : tierAspect

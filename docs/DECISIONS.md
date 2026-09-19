@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1415**.
+tree as of this index: **ADR-1435**.
 
 | Theme | Start here |
 |---|---|
@@ -38365,6 +38365,9 @@ change to a marquee page, and not this.
 the reversal, recorded in the row, not rot. The band paints one image instead of two, which is a
 decode saved on the surface least able to afford one.
 
+Amended by [ADR-1431](DECISIONS.md): the picker now previews both surfaces. The phone frame has to
+read the phone height token; a second width over the desktop height is the wrong shape.
+
 ---
 
 ## ADR-1301: ACCEPTED, LANES SUPERSEDED BY ADR-1302 — the event identity region is full width, outside the action column (2026-09-10)
@@ -45408,6 +45411,13 @@ had been locked to `service_role` (20260929000000). Supabase's security advisor 
 Legitimate awards are unchanged. Apply this migration on prod; it is grant-only, no function body
 change.
 
+**Amendment 2026-09-19 (HYG-102).** The lock file sorts *before* `20270345001200` on a fresh
+clone. That later `CREATE OR REPLACE` of the day-key overload is a new signature on replay, so
+Postgres would grant `PUBLIC` execute after the lock had already run. The replace file now
+revokes `public` / `anon` / `authenticated` and grants `service_role` in the same statements that
+create the overload. Production already applied the lock after the replace in calendar time; this
+closes the greenfield hole, not a live grant. No new ledger row.
+
 ## ADR-1403: The Quest is the Collective's program, product beats craft, CORE-MODEL stays commercial law (2026-09-18)
 
 **Status:** Accepted · **Amends** [ADR-1292](DECISIONS.md) · **Does not amend**
@@ -45717,6 +45727,24 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 
 **Rows.** LIVE-376.
 
+## ADR-1414: A paid Checkout Session is a `commerce.purchase` event (2026-09-19)
+
+**Status:** Accepted · 2026-09-19 · LIVE-348 · corroborated by `lib/analytics/events.ts`, `lib/analytics/purchase.ts`, `lib/analytics/ga-client-id.ts`, `app/api/webhooks/stripe/route.ts`
+
+**Context.** ANALYTICS_EVENTS named sixteen events and none of them were commercial. `track()` drops an unregistered name, so a purchase event invented at the webhook would have vanished. No `track` / `gtag` / `sendGa4Event` call existed on a money path. The shop vertical declared `shop.order.completed` with no writer. Checkout settles on Stripe or an Elements form that does not navigate, so a client-side purchase event cannot fire. The named trap: `sendGa4Event` used the actor profile id as GA `client_id`, which is not a GA client id, so every server-side sale would have been a new user with no source or medium.
+
+**Decision.**
+
+1. **Register, then emit.** `commerce.purchase` and `shop.order_completed` are server-authoritative. `commerce.checkout_started` is the buy click (BuyButton and the ticket controls). The webhook's `recordPaidCheckout` is the one writer for the conversion, keyed `commerce.purchase:<session id>`, and only when `payment_status` is `paid`.
+2. **Carry the `_ga` cookie.** `checkoutGaMetadata()` stamps `ga_client_id` on every Checkout Session creator. `sendGa4Event` prefers that id and maps `commerce.purchase` to the recommended GA4 `purchase` event with `value`, `currency`, and `transaction_id`.
+3. **Do not invent a two-dot taxonomy name.** `shop.order.completed` cannot be registered (`name` is `^[a-z]+\.[a-z_]+$`). The shop vertical now reads `shop.order_completed`, which the webhook writes for `kind: commerce_order`.
+
+**Rejected.** A client-side `purchase` event (impossible on today's checkout). Using the profile id as `client_id` (destroys attribution). Wiring guest-purchase consent here (OWN-061).
+
+**Consequences.** A paid ticket, order, tip, donation, membership, or plan is visible in `engagement_events` and, when GA is configured, joins the browser session that started checkout. A buy click that never settles is still visible as `checkout_started`.
+
+**Rows.** LIVE-348.
+
 ## ADR-1415: A free Space may sell memberships; Connect readiness is the door (LIVE-410)
 
 **Status:** Accepted · 2026-09-19 · **Implements** [ADR-1403](DECISIONS.md) Q3 · **Amends** [ADR-914](DECISIONS.md) (memberships as a Business wall) · backlog `LIVE-410` · corroborated by `lib/pricing/gates.ts` (`space_memberships` / `space_membership_tickets` at the free floor) and `lib/pricing/feature-meters.ts` (`space_membership_tiers.free = 1`)
@@ -45736,13 +45764,323 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 
 **Rows.** LIVE-410.
 
-## ADR-1416: The operator seat is $12, and the switch is the sell gate (LIVE-229)
+## ADR-1417: Physical goods collect a shipping address on Stripe Checkout (LIVE-346)
 
-**Status:** Accepted · 2026-09-19 · **Implements** [ADR-1294](DECISIONS.md) CORE-MODEL §5 phase 3.2 · **Amends** [ADR-803](DECISIONS.md) (the switch was the mint gate while the amount was a stand-in) · backlog `LIVE-229` · corroborated by `lib/billing/pricing-keys.ts` (`operator_seat` at 1200 cents, no `placeholder`)
+**Status:** Accepted · 2026-09-19 · LIVE-346 · corroborated by `lib/commerce/shipping.ts` and `lib/commerce/checkout.ts`
+
+**Context.** The commerce creator stored `input.shipping ?? {}` on the pending order and never set `shipping_address_collection`. Re-tested 2026-09-19: `startCheckoutAction` never passes `shipping`, and no buy-path form collects an address. Every live physical sale would settle with `{}` and fail only when a carrier was handed nothing. The on-page checkout program wants the buyer to stay on Frequency, but `CheckoutForm` has no Address Element. Tickets, tips, gifts and Journeys do not ship.
+
+**Decision.**
+
+1. **Stripe is the validator.** A cart that includes a physical line (or a legacy row with no kind) sets `shipping_address_collection` on the Checkout Session. Allowed countries are an explicit ISO list in `SHIP_TO_COUNTRIES`.
+2. **Write what Stripe collected.** `recordCommerceOrderFromSession` copies `shipping_details` (or `collected_information.shipping_details`) onto `commerce_orders.shipping` when the session settles. An empty in-app value is no longer the address a seller ships to.
+3. **Physical carts use hosted Checkout.** The shared on-page form cannot take an address today. Forcing hosted is a loud degrade (`[commerce] physical goods need a Stripe-validated shipping address`). Digital, Journey, booking, ticket and service stay on-page.
+4. **Do not collect billing address here.** That is OWN-075 (tax), still a ruling.
+
+**Rejected.** Keeping the empty in-app object as the address of record. Adding Address Element to the entity-blind card form in this row (every ticket and tip would grow a shipping field, or the form would stop being entity-blind). Asking the buyer for an address after the money moved.
+
+**Consequences.** Buying a mug or a used listing opens Stripe's hosted page and asks for a delivery address before the charge. Buying a Journey still opens the card form under the button. Sellers read a validated address on the order. An Address Element on the shared form is a later row if physical goods should stay on-page.
+
+**Rows.** LIVE-346.
+
+## ADR-1418: Subscription checkout stays on Frequency (LIVE-359)
+
+**Status:** Accepted · 2026-09-19 · LIVE-359 · corroborated by `lib/billing/checkout.ts`, `lib/billing/bundle-checkout.ts`, `lib/billing/space-plan-checkout.ts`
+
+**Context.** Tickets, tips, Space gifts, commerce, and Space memberships already took a card on Frequency through `lib/billing/checkout-ui.ts`. Crew, the household bundle, and a Space plan still sent the buyer to `checkout.stripe.com`. Re-tested 2026-09-19: LIVE-359's probe named those three; Space membership was already on the seam. Subscriptions were last on purpose: they grant entitlement from `subscription_data.metadata`, which is `Record<string, string>`, so a renamed key type-checks and then silently stops granting access to someone who paid.
+
+**Decision.**
+
+1. **Same seam, default hosted.** Each of the three remaining creators takes `ui?: CheckoutUi`, routes redirect fields through `checkoutReturnFields`, and hands the result through `resolveCheckoutSession`. Callers that do not opt in keep today's redirect.
+2. **Settle from the success handler.** `confirm({ redirect: 'if_required' })` never visits `return_url` on the common card path, so each creator gained a recorder that re-fetches the session from Stripe and reuses the webhook reconciler (`confirmCheckout`, `reconcileBundleSubscription`, `routeSpaceSubscription`).
+3. **Crew stays kind-less.** The member-entitlement allowlist is still `mode === 'subscription' && !metadata.kind` (SCAN-541). Stamping a kind on Crew would stop granting the tier. The other two keep stamping `household_bundle` and `space_plan` on both the session and the subscription.
+4. **A trial Space plan is complete without a charge.** The Space-plan settle accepts `payment_status: 'no_payment_required'` so a 14-day trial is granted on the page, not only when the webhook arrives.
+
+**Rejected.** A raw PaymentIntent (no Checkout Session, so `checkout.session.completed` never fires). A second entitlement writer beside the webhook reconcilers. Adding `kind` to Crew to "make it consistent".
+
+**Consequences.** Joining Crew, buying the household bundle, or taking a Space plan opens the card form under the button when a publishable key is present. A failed mount still reaches hosted Checkout. Entitlement is granted from the same metadata the webhook already read.
+
+**Rows.** LIVE-359.
+
+## ADR-1419: Marketplace discovery is stamped at render, not passed as a checkout argument (2026-09-19)
+
+**Status:** Accepted · 2026-09-19 · LIVE-220 · corroborated by `lib/commerce/marketplace-entry.ts`, `proxy.ts`, `app/(main)/marketplace/commerce-actions.ts`
+
+**Context.** `startCheckoutAction` is a server action, so every argument is client-supplied. LIVE-219 narrowed `entryPoint` to the literal `'marketplace'`, which stops a crafted call inventing a surface. It does not stop a crafted call omitting one, and omitting lands on the default `self` (0% platform fee). The motivated party is a seller who wants discovery sales classified `self`. `referer` is client-controlled too. Premise re-tested 2026-09-19: the argument was still on the signature.
+
+**Decision.**
+
+1. **Record the view at the edge.** `proxy.ts` stamps an httpOnly signed cookie (`fq_mkt`) when the request is `/market/<id>`, `/journeys/<slug>`, or `/discover/journeys/<slug>`. `/store/<id>` is not a discovery surface and is not stamped.
+2. **Key the stamp to the product (or Journey slug).** A stamp for listing A does not raise listing B. A later Market view accumulates; a storefront visit does not clear an earlier Market stamp for that product.
+3. **Checkout reads the cookie.** `startCheckoutAction` no longer takes `entryPoint`. It verifies the cookie and, when only a Journey slug was stamped, resolves the product's plan slug before classifying.
+4. **Not consent-gated.** This cookie is the take-rate contract, not attribution storage. A declined banner must not reclassify a Market sale as `self`.
+
+**Rejected.** Tightening the client argument (still forgeable by omission). Reading `referer`. Passing a signed token as a new argument (the seller's crafted call can still drop it).
+
+**Consequences.** A buyer who viewed a listing on the Market or a Journey sales page classifies `network` even if client code omits every argument. A seller's own `/store/<id>` link stays `self`. The self-scan and ADR-913 relationship check still run above the stamp, so an existing follower, member, or CRM contact is still 0%.
+
+**Rows.** LIVE-220.
+
+## ADR-1420: Residual admin actions freeze behind a parseInput ratchet (HYG-101)
+
+**Status:** Accepted · 2026-09-19 · HYG-101 · corroborated by `scripts/check-parse-input.mjs`, `scripts/parse-input-baseline.txt`, `lib/validation.ts`
+
+**Context.** Server actions receive untrusted client input typed only by assumption. `parseInput` is the parse-don't-validate seam (ADR-246 Phase 3). Authz is already gated (`check:authz`). OPEN-THREADS B8 left a residual: admin mutations that still trusted their TypeScript types. Re-tested 2026-09-19: 77 `'use server'` files under `app/(main)/admin`, 2 already parsed, 75 residual files, 347 unparsed exports. The filed "~77" was the file count. Converting every export in one PR trips the 40-file gate and is not the close the row named.
+
+**Decision.**
+
+1. **Freeze, then shrink.** `scripts/check-parse-input.mjs` lists `'use server'` files under `app/(main)/admin` whose exported action bodies never call `parseInput`. That set is frozen in `scripts/parse-input-baseline.txt`. A new residual file fails. A baseline file that now parses, or whose path is gone, fails until it is removed, so a stale path cannot grant amnesty to a future file.
+2. **`// parse-ok:` is per-export.** Same attachment rule as `// authz-ok:`: the comment block directly above the export. A file-level note does not exempt anything.
+3. **Convert the keys first.** Payments, SMS, community feed-reach, the roles grid, the beta price grant, nonprofit verification, and Space lifecycle / ownership now parse. 9 files parse; 68 remain on the freeze.
+4. **Vitest is the home.** `pnpm check:parse-input` stays as the local command. Enforcement is `scripts/check-parse-input.test.ts` in `VITEST_ENFORCED`, because the guard only reads source.
+
+**Rejected.** Closing the row by emptying the list in one PR (347 exports). Growing an allowlist without a shrink-only compare (the stale-path trap named in `check:authz`). Treating a comment that names `parseInput` as a parse.
+
+**Consequences.** A new admin action without `parseInput` fails the `test` job. Converting a frozen file is `--update` plus the conversion, and the header stays. Authz is still the door.
+
+**Rows.** HYG-101.
+
+## ADR-1421: The first-run checklist collects a name, not a minted handle (LIVE-349)
+
+**Status:** Accepted · 2026-09-19 · **Implements** the inline-collection half of [ADR-1371](DECISIONS.md) · backlog `LIVE-349` · corroborated by `lib/onboarding/identity.ts` and `lib/onboarding/steps.ts`
+
+**Context.** ADR-1371 admitted account holders whose induction never finished. The seven people it named still appear to the community as the email local-part and a generated handle (`taylor_42a829`), because the first-run checklist had no identity criterion. Admission without collection was half a ruling. Re-tested 2026-09-19: `OnboardingStepKey` was still `'avatar' | 'circle' | 'event' | 'host'`, and `getOnboardingStatus` still did not read `display_name` or `handle`.
+
+The signup trigger (`public.handle_new_auth_user` in `20261013000000_reconcile_signup_trigger.sql`) mints `display_name` from the email local-part and `handle` as that sanitised local-part plus the first 6 hex of `auth.users.id`. Hunting a hex suffix would false-positive a chosen handle that happens to end in six hex digits. Reconstructing the trigger's first try from the profile's own name and auth id is a fact, not an inference.
+
+**Decision.**
+
+1. **Identity is a criterion.** `ONBOARDING_CRITERIA` leads with `identity`. Copy, href, and CTA live in `DEFAULT_ONBOARDING_STEPS` like every other step. The force-complete hatch and the walkthroughs picker pick it up from the same list.
+2. **Done-detection reconstructs the mint.** `identityIsChosen` is true when the stored handle is not `mintedHandleFor(authUserId, displayName)`. Empty name or handle is not chosen. A profile with no auth id (system rows) reads as chosen so Vera does not grow a step.
+3. **Established members stay done.** A real display name fails the equality, so the fifty members who already named themselves do not grow a step overnight.
+4. **Identity is not an operator opt-out.** An authored Next Steps funnel that never tagged `identity` still gets the default identity step prepended. An authored identity slide keeps its order.
+
+**Rejected.** A regex on `_` plus six hex digits. Stamping `meta.identity.minted` in this row (a migration plus a backfill; the reconstruction is the trigger's own formula and needs no schema). Asking the owner to click through `/settings/profile` unaided.
+
+**Consequences.** A member still carrying the minted identity sees "Choose your name" first on the feed guide and in the right rail. Saving a name or a handle at `/settings/profile` completes the step. Collision-fallback handles (random uuid suffix, not the auth id) read as chosen.
+
+**Rows.** LIVE-349.
+
+## ADR-1422: Retirement stands down on an unreadable rule, not on an empty expansion (LIVE-338)
+
+**Status.** Accepted, 2026-09-19. Amends [ADR-1304](DECISIONS.md) rule 3. Row: LIVE-338. Corroborated by `recurrenceRuleUnreadable` and `retireStaleOccurrences` in `lib/event-recurrence.ts`, pinned by `lib/event-recurrence-count-one.test.ts`.
+
+**Context.** ADR-1304's fail-safe is: an anchor that still says it repeats but whose rule expands to nothing is not a series with no dates, it is a rule this code could not read, so retirement stands down. That is the right fear. The reading is wrong. `expandOccurrenceInstants` flattens "could not parse" and "produced no child dates" into one empty array, and `includeAnchor: false` means a `COUNT=1` series (the picker admits 1 to 400) ALWAYS expands to no child dates: the only occurrence is the anchor itself. Reducing a weekly series to one date therefore stood down and left every leftover future child live. The same flattening hides a spent `COUNT=6` that still carries dates from a larger previous count. ADR-1353 left this row open on purpose: its floor change did not touch the retirement expansion.
+
+Premise re-tested 2026-09-19 on this tree: `retireStaleOccurrences` still stood down on `expected.length === 0`. Live COUNT-bounded series were zero on 2026-09-15; this is a reachable hole, not a stranded production series.
+
+**Decision.**
+
+1. **`recurrenceRuleUnreadable` is the stand-down.** False when `recurrence_type` is `none` (switched off is empty on purpose). True when a still-repeating row has no parseable rule, or no parseable `starts_at` (daily can build a rule without a start, so the clock check is load-bearing). A readable COUNT rule that expands to `[]` proceeds.
+2. **The expander's flatten stays.** Materialisation and `.ics` EXDATE still receive `Date[]`. They never deleted on empty, so they do not need the discriminant. Retirement is the only caller that treated empty as unread.
+3. **Attachment-read failures still stand down.** A read that errored is not a read that found nothing. Unchanged from ADR-1304.
+
+**Rejected.** Treating `COUNT=1` as a special case beside the length check (every spent COUNT is empty for children; the bug is the flatten, not the integer). Stamping `recurrence_until` on a spent COUNT series so the existing empty check would not fire (ADR-1348 already refused that: it would emit an invalid RRULE with both UNTIL and COUNT). Injecting a clock into `retireStaleOccurrences` in this row (the IO test freezes `Date`; the arithmetic is already pure in `staleOccurrenceIds`).
+
+**Consequences.** Reducing a series to one date, or to a count already spent, retires unattached leftover future dates the next time the rail saves or the daily cron runs. Dates with an RSVP, ticket, guest or post stay, as ADR-1304 already required. An unparseable start still touches nothing and logs the stand-down.
+
+**Rows.** LIVE-338 (done, this ADR).
+
+## ADR-1423: The always() capture commit stands down when the job never checked out (HYG-094)
+
+**Status:** Accepted · 2026-09-19 · Amends the `always()` commit in [ADR-1351](DECISIONS.md) without removing it · backlog `HYG-094` · corroborated by `.github/workflows/e2e-manual.yml` (`update-baselines` commit step) and `scripts/e2e-preview-gate.test.ts`
+
+**Context.** ADR-1351 made `update-baselines`' commit step `always()` so one flaky surface does not discard the other captures, and told a degraded run apart with `test/e2e/.degraded-capture.jsonl`. ADR-1352 then refused a committing dispatch on a protected ref as the second step, before checkout. `always()` still fires after that refusal. Checkout is skipped. The degraded-capture file is absent, so the marker check no-ops, `git config` runs, and the step dies with `fatal: not in a git directory` (exit 128). Run 34954126861 measured it: two red steps and a log that names git, not the refusal. Not a safety hole: no work tree, so no push. The cost is diagnosis.
+
+`update-a11y`'s identically named step is skipped in the same scenario because it has no `always()`. Copying that would reopen LIVE-333 and throw away partial captures.
+
+**Decision.**
+
+1. **`always()` stays.** Partials still land. The degraded-capture marker still refuses a 5xx run.
+2. **A work-tree test is the third state.** Before the first `git` command: if `.git` is neither a directory nor a file, exit 0. That is "this job never started". A checkout that ran still has a work tree (dir, or a file in a linked worktree) and proceeds.
+3. **The probe measures a mechanism, not a word.** A filesystem test naming `.git`, or a marker under `test/e2e` other than the degraded-capture file, before a `git` command at the start of a line. A message that mentions a refusal does not count.
+
+**Rejected.** Removing `always()`. Copying `update-a11y`. Standing down on the word "refused" in the degraded-capture error (that word is already on the unfixed tree).
+
+**Consequences.** A protected-ref refusal is one red step. A partial capture still commits. A degraded capture still refuses.
+
+**Rows.** HYG-094.
+
+## ADR-1424: Dependabot refreshes the committed MapLibre worker pair (HYG-090)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-090` · corroborated by `.github/workflows/maplibre-worker.yml` and `scripts/copy-maplibre-worker-workflow.test.ts`
+
+**Context.** `scripts/copy-maplibre-worker.mjs` copies MapLibre's worker and shared chunk, unhashed, into `public/maplibre/` so the worker's relative sibling import resolves. `prebuild` / `predev` regenerate the pair, and `scripts/copy-maplibre-worker.test.ts` pins that the committed copy matches the installed package. A Dependabot bump changes the package and not the pair, so the test job fails STALE. Measured on PR #2582 (2026-09-14): Dependabot opened the grouped minor-and-patch bump, then a person ran the script by hand and pushed "The self-hosted MapLibre worker is regenerated for maplibre-gl 6.9.0" onto the bot's branch. The guard is right. The automation was missing.
+
+Premise re-tested 2026-09-19 on this tree: no workflow (comments stripped) ran the copy script. `codeql.yml` mentions it only in a comment, which the probe already ignores.
+
+**Decision.**
+
+1. **A dedicated workflow, not a step in `ci.yml`.** The required `test` job checks out the merge commit and is `contents: read`. Committing needs the PR HEAD and `contents: write`. This file owns the refresh; `ci.yml` keeps judging.
+2. **Gated on Dependabot, same-repo, never `main`.** A human who bumps the package still sees STALE and runs the script. `pull_request_target` is refused.
+3. **Commit only the two files the script writes.** Then, because a `GITHUB_TOKEN` push starts no workflow run (documented on the capture jobs, observed both ways on #2026 and #2086), dispatch `ci.yml`, `codeql.yml`, and `db-tests-fallback.yml` onto the new SHA. `workflow_dispatch` is the documented GITHUB_TOKEN exception. The fallback stamps `db-tests` because a lockfile bump does not match `db-tests.yml`'s path filter.
+4. **Skip the install when `maplibre-gl` did not move.** Grouped Dependabot PRs are the common case. A diff read that fails refuses rather than guessing.
+
+**Rejected.** Copying before tests in `ci.yml` without committing (production `pnpm build` already runs `prebuild`; the committed pair would drift forever, which is the safety net the test exists to keep). Putting `contents: write` on the required `test` job. Trusting the GITHUB_TOKEN push to retrigger CI (the capture jobs have seen both outcomes and tell you not to plan around either).
+
+**Consequences.** A Dependabot bump that moves `maplibre-gl` regenerates `public/maplibre/` and the bump PR is green on its own. A bump that does not touch MapLibre is a no-op. Vercel is a GitHub App webhook, not a workflow run; if that check is missing, push any real commit, the same recovery the capture jobs already document.
+
+**Rows.** HYG-090.
+
+## ADR-1425: shadow-literals no longer counts drop-shadow-* (HYG-071)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-071` · corroborated by `scripts/adoption-baselines.json` (`shadow-literals`) and `scripts/check-adoption.test.ts`
+
+**Context.** [ADR-1290](DECISIONS.md) filed this as a measurement defect, not a conversion. `\bshadow-(?:sm|md|lg|xl|2xl)\b` matches inside `drop-shadow-sm` / `drop-shadow-md` because `-` is a word boundary. `drop-shadow` is a CSS `filter`. The DAWN depth language the class names as its alternative (`.lift-1/2/3`) is `box-shadow`, which on a transparent subject paints a rectangle behind the object instead of tracing it. There is no conversion to make.
+
+Premise re-tested 2026-09-19 on this tree: the pattern still matched `class="drop-shadow-sm"`; `components/layout/marketing-header.tsx` still carries `drop-shadow-md` on the inverted wordmark; `components/spotlight/sticker-layer.tsx` no longer has a drop-shadow (ADR-1290 already removed it to clear a rise).
+
+**Decision.**
+
+1. **Correct the pattern, do not delete the effect.** `(?<!drop-)\bshadow-(?:sm|md|lg|xl|2xl)\b`. The marketing-header filter stays: it is load-bearing on a PNG wordmark.
+2. **Re-freeze as `rebased`, not `lowered`.** 48 → 47. The number moved because the question changed, not because a site converted to `lift-*`. `frozen.basis` is the fingerprint of mode + patterns + scope; a pattern edit without a re-freeze fails the provenance gate.
+3. **Do not bundle a HYG-055 slice.** That row's shadow rule is about who chose the shadow. Its `sliceTarget` 49 is untouched.
+
+**Rejected.** Converting the wordmark to `.lift-*` (wrong physics). Deleting the filter to shrink the count (the row named that as the only site-level "fix", and it would change the mark). Changing `sliceTarget` in the same PR (that is HYG-055's scoreboard).
+
+**Consequences.** A future `drop-shadow-md` cannot raise `shadow-literals`. A future `shadow-md` still can. The probe feeds the class `class="drop-shadow-sm"` and requires no match, so deleting the two sites without correcting the pattern cannot close the row.
+
+**Rows.** HYG-071.
+
+## ADR-1427: `pricing_stripe_prices.archived` is not a Stripe archive (HYG-082)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-082` · restates [ADR-1062](DECISIONS.md) rule 5 after a survey misread it · corroborated by `lib/billing/pricing-products.ts` (`archived: list`), `lib/pricing/beta.ts` (`loadoutChargePriceKey`), `lib/billing/pricing-prices.ts` (`resolveStripePriceId`), and `lib/billing/pricing-catalog-sync.test.ts`
+
+**Context.** HYG-082, filed 2026-09-08 from the core-model survey: `pricing_stripe_prices` holds 20 rows, 8 with `archived: true` (every `*_list` anchor), and `catalogPriceKey(..., list=true)` still asks for them, "so the pricing surface resolves anchors against IDs Stripe has archived." The proposed work was re-mint or stop asking, sequenced after Collective (LIVE-228) so the Collective list keys would not be cleaned twice.
+
+Premise re-tested 2026-09-19 on this tree, and the row is false.
+
+1. The catalog sync writes `archived: list` as a **map annotation**. It is Stripe's `active` in neither direction. ADR-1062 rule 5 already said so, and the catalog-sync test pins that `prices.update({ active: false })` is never called. Twenty prices, all created active.
+2. Since [ADR-1060](DECISIONS.md) the **`_list` key is what checkout charges**. `loadoutChargeArm` returns `list` when there is no lock and no grant; `loadoutChargePriceKey` then asks `catalogPriceKey(item, interval, true)`. Stopping that ask would unplug every ungranted Space-plan checkout, which is the live path.
+3. `resolveStripePriceId` never reads `row.archived`. A list row with the flag set still resolves. That is why checkout can charge a row the survey called archived.
+
+The "wait for Collective" sequencing was a consequence of the wrong reading: LIVE-228 retires the Collective **tier**, not a Stripe archive.
+
+**Decision.**
+
+1. **Keep asking for `_list` keys.** They are the charged catalog keys. Founding keys stay for the grant and for a lock.
+2. **Do not Stripe-archive a catalog price to "fix" the map flag.** A Price archived in Stripe cannot join a new subscription, which is exactly what the list arm (everyone) and the founding arm (the grant) both need.
+3. **Close HYG-082 without a catalog rewrite.** The probe now pins the three facts the survey inverted: the list arm still builds a `_list` key, the sync still annotates list rows `archived: true` without calling `prices.update({ active: false })`, and `resolveStripePriceId` still ignores the flag.
+
+**Rejected.** Stopping `catalogPriceKey(..., true)` (that is the charge). Flipping the map flag so list rows read `archived: false` (ADR-1062 already refused that as an unrelated semantic edit with no gate). Waiting for LIVE-228 (the Collective merge does not change what `archived` means).
+
+**Consequences.** A later sweep that greps `archived = true` and treats the hit as "Stripe will refuse this id" fails the probe instead of shipping a checkout outage. [PRICING.md](PRICING.md) already names the historical wording; this ADR is the HYG-082 close, not a new pricing shape. LIVE-228 still has to drop Collective from `SPACE_PLANS` on its own terms.
+
+**Rows.** HYG-082.
+
+## ADR-1429: Leftover hex lives on the named token-guard allowlist (HYG-099)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-099` · corroborated by `scripts/check-tokens.mjs` (`ALLOWLIST`) and `scripts/check-tokens.test.ts`
+
+**Context.** HYG-099, filed 2026-09-19 from the presentation-canon survey: never hardcode hex in UI; remaining literals are craft, not a product block; do not churn token files without a DAWN sync. The close condition was a dated sweep of `app/` and `components/` (excluding tests, tokens, and generated) at zero, **or** an allowlist named in the probe.
+
+Premise re-tested 2026-09-19 on this tree: `pnpm check:tokens` is already green. The leftovers the survey would have listed are the ones the token guard already enumerates: Satori OG cards (no CSS cascade), map paints, email HTML, token DATA, and pickers. A conversion sweep of those files is the DAWN churn the row forbids. In-app chrome is already a hard failure.
+
+**Decision.**
+
+1. **Name the existing allowlist as the leftover list.** `scripts/check-tokens.mjs` `ALLOWLIST` is the dated sweep. Do not open a second hex inventory.
+2. **Keep the UI gate.** A planted hex in `components/ui/` still fails. Closing the row does not waive chrome.
+3. **Do not retoken OG, maps, or email in this change.** Those media cannot read DAWN custom properties.
+
+**Rejected.** A conversion sweep of allowlisted files (that is the DAWN churn the row forbids). Deleting the allowlist so the next OG card fails CI. Filing a new plan markdown of leftover hex (one-list).
+
+**Consequences.** HYG-099 closes on the allowlist the gate already had. A new hex in chrome still fails `check:tokens`. A new raster or email file still has to join `ALLOWLIST` with a reason, which is the same review the guard already demanded.
+
+**Rows.** HYG-099.
+
+## ADR-1430: The admin FilterBar lands on the Support queue (SCAN-639)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-639` · corroborated by `app/(main)/admin/support/page.tsx` and `components/admin/filter-bar.tsx`
+
+**Context.** SCAN-639, filed 2026-09-19 from the meta-scan: `components/admin/filter-bar.tsx` is named in the admin kit next to `DataTable` (ADR-233) and imported by nothing. `page-contents.tsx` had a private function of the same name for category link chips. The close was wire it onto one Index/Queue, or delete the file and drop the kit mention.
+
+Premise re-tested 2026-09-19 on this tree: zero imports of `@/components/admin/filter-bar` under `app/`, `components/`, or `lib/` (excluding the file itself). The Support console already read `status`, `type`, and `q` from the query string; only status had a control, and it was a local chip row that wiped the other params.
+
+**Decision.**
+
+1. **Wire, do not delete.** The Support queue is the first consumer. Status, type, and search all go through `FilterBar`. The server still filters; the bar only writes the URL.
+2. **`defaultValue` on a filter that has a real default.** Open (`open_all`) is the queue's empty-URL view. Without a default the select would read as "Status" while the table showed Open tickets.
+3. **Rename the IndexTemplate chip bar.** `page-contents.tsx` now calls that local function `LinkChipBar`. Two jobs, two names.
+
+**Rejected.** Deleting the kit file (the contract is real; the Support page was already the Queue the spec described). Leaving the private `FilterBar` name in `page-contents.tsx` (the row forbade a second FilterBar name). Replacing every admin table in one PR.
+
+**Consequences.** A later sweep that greps for `FilterBar` and finds only the kit plus `LinkChipBar` is reading the same split. Type and subject search were already in `listTickets` and now have a control. SCAN-636 (ISR event canonical) and SCAN-637 (marketplace `force-dynamic`) stay separate; this row is the unwired kit piece.
+
+**Rows.** SCAN-639.
+
+## ADR-1431: The event cover picker previews phone and desktop (LIVE-272)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-272` · amends [ADR-1300](DECISIONS.md) · corroborated by `lib/layout/cover-height.ts` (`posterBandHeightPx`, `EVENT_POSTER_PHONE_WIDTH_PX`) and `components/admin/modules/event-header-controls.tsx`
+
+**Context.** ADR-1300 taught the focal picker to preview the real band instead of a stock 16/9. The control still passed one width: 1044, the event page's centre column. The phone band is one rung shorter below `sm`, so a standard-tier phone paints 412x221 (1.86:1) against the desktop's 1044x374 (2.79:1). A host who framed tightly against the desktop preview could lose more or less of the artwork on a phone than the control showed.
+
+Premise re-tested 2026-09-19 on this tree: the control still passed `posterBandAspect(height, 1044, aspect)`. The row said the second frame was one more call because the function already took a width. That was half wrong. `posterBandAspect` always divided by the desktop (`sm:`) height token, so `posterBandAspect('standard', 412)` is 412/374, not 412/221.
+
+**Decision.**
+
+1. **Show both frames on one focus.** Phone and desktop pickers share the same `object-position`. Dragging either updates both. A toggle would hide the difference this row exists to show.
+2. **The phone frame uses the phone height token.** `posterBandHeightPx(tier, 'phone')` reads the first class in `POSTER_HEIGHT_CLASS`. Width alone is not a surface.
+3. **Name the two widths.** `EVENT_POSTER_DESKTOP_WIDTH_PX` (1044) and `EVENT_POSTER_PHONE_WIDTH_PX` (412) live next to the ladder so a retune moves the preview with the survey.
+
+**Rejected.** A width toggle (hides the mismatch). Passing 412 with the desktop height (the naive second call). Two focal points (the page has one `coverFocus`).
+
+**Consequences.** The rail is taller by one preview. The height picker still moves both frames. A later change that reverts to `posterBandAspect(height, 1044, aspect)` fails the LIVE-272 probe and the band test's naive-width control.
+
+**Rows.** LIVE-272.
+
+## ADR-1433: Delete the entry-point flyer builder, keep the share-card Bold face (LIVE-216)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-216` · corroborated by `lib/entry-points/templates.ts`, `app/(main)/entry-points/entry-points-client.tsx`, `next.config.ts` `OG_CARD_FONTS`
+
+**Context.** OWN-059 item 3 asked the owner what to do with a flyer builder whose download buttons had already been unlinked (`b7c862005`). The owner ruled DELETE on 2026-09-08. The row sat open because no code-lane packet owned the deletion, which is how a ruling becomes a no-op.
+
+Premise re-tested 2026-09-19: `lib/entry-points/flyer.ts`, `flyer-raster.ts`, and `app/api/entry-points/[slug]/flyer/route.ts` still existed. `LiberationSans-Regular.ttf` (410,820 bytes) was flyer-exclusive. `LiberationSans-Bold.ttf` is the OG share-card disk fallback named in `OG_CARD_FONTS` and asserted by `lib/og/og-fonts.test.ts`. Deleting Bold would break every share card.
+
+The source-side weight this row can name without a production artifact: 410 KB of Regular plus about 12 KB of flyer code. `check:build-budget` still has to print the post-deploy delta; CI never builds.
+
+**Decision.**
+
+1. **Delete the flyer composer, rasteriser, route, and Regular face.** Keep the short link and branded QR. The `qr_codes.flyer` jsonb column stays; creates write template defaults so existing rows stay shaped. No migration.
+2. **Keep `LiberationSans-Bold.ttf` and its `OG_CARD_FONTS` entry.** The probe's control half fails if Bold is gone.
+3. **Drop the flyer wasm include** from `outputFileTracingIncludes`. Styled QR PNG still traces `@resvg/resvg-wasm` on `/api/qr`.
+
+**Rejected.** Deleting both Liberation faces (the title's first wording; the correction of 2026-09-08). Leaving the live preview while deleting only the route (the form would still promise a poster nothing serves).
+
+**Consequences.** `/entry-points` and the Funnels builder produce a named QR and a short link. The flyer API 404s. Share cards still fall back to Bold when Nunito cannot load.
+
+**Rows.** LIVE-216. OWN-059 item 3 is this row; items 1-2 stay owner-timed.
+
+## ADR-1434: One Space, one create door (HYG-080)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-080` · CORE-MODEL §1.4 · corroborated by `lib/spaces/provision.ts` (`createSpace` is the member Space road) and `app/(main)/spaces/new/page.tsx`
+
+**Context.** `/spaces/new/business` was a second create flow for the same noun: name, one line, three links, `createBusinessSpace`, private starter prompts, land on the live page. CORE-MODEL said one noun, one door. The 2026-09-08 sweep called it an orphan. Re-tested 2026-09-09 and again 2026-09-19: it was not an orphan. Three pins held it up, and one was a control, not a reference.
+
+1. `scripts/check-a11y-names.test.ts` read `business-quickstart-form.tsx` from disk as the positive control for the Field→id forwarder chain. Blind, that Textarea was the single placeholder-only control that held the ceiling at 1. Deleting the file without a replacement would make the mutation stop proving anything.
+2. `scripts/check-creates.mjs` registered `createBusinessSpace` in `ENTITY_WRITES` and in `CREATE_ENTRIES`.
+3. `scripts/check-creates.test.ts` asserted that key in `ROUTED_ON_2026_09_07`.
+
+Numbered **1434** because **1426–1433** landed on main while this PR was open.
+
+**Decision.**
+
+1. **Delete the second door.** The page, the form, the card on `/spaces/new`, `createBusinessSpace`, `uniqueSlugFrom`, and `lib/spaces/business-starter.ts` (only that road used them) go. A business is created on `/spaces/new` by picking the business Mode, which niche funnels already deep-link (`/spaces/new?mode=business:*`, ADR-1197).
+2. **Replace the a11y control, do not drop it.** The mutation keeps the Field+Textarea fixture that file carried, and asserts that `components/spaces/space-form.tsx` still publishes `htmlFor={id}` and that `discoverForwarders` still finds it. A fixture-only test would keep passing after Field stopped forwarding.
+3. **Drop the creates pins with the writer.** `ENTITY_WRITES` and `CREATE_ENTRIES` no longer name the road. The Studio `business` manifest and the admin business seeder are a different subject and stay.
+
+**Rejected.** Folding the starter prompts into `createSpace` in the same PR (that is a product add, not the duplicate-door delete). Leaving `createBusinessSpace` as an unreferenced writer. Pointing the mutation at another product file that does not wrap a kit Textarea in space-form Field.
+
+**Consequences.** `/spaces/new/business` 404s. Create a space is one form. The accessible-name ratchet stays at 0 weak names with a control that can still fire.
+
+**Rows.** HYG-080.
+
+## ADR-1435: The operator seat is $12, and the switch is the sell gate (LIVE-229)
+
+**Status:** Accepted · 2026-09-19 · **Implements** [ADR-1294](DECISIONS.md) CORE-MODEL §5 phase 3.2 · **Amends** [ADR-803](DECISIONS.md) (the switch was the mint gate while the amount was a stand-in) · backlog `LIVE-229` · corroborated by `lib/billing/pricing-keys.ts` (`operator_seat` at 1200 cents, no `placeholder`) · numbered **1435** because **1434** is one Space create door on main
 
 **Context.** The seat machinery has been built since ADR-799: catalog item, loadout line, webhook reconciler, seat editor, invite check. The catalog shipped `placeholder: true` at a $9 stand-in so a routine sync could never mint a price the owner had not approved (ADR-362 / ADR-803). CORE-MODEL named $12 as the live amount. On 2026-08-19 the activation switch was flipped while the stand-in was still the code amount, and the first live catalog sync minted four Stripe prices at $9/$90. Stripe prices are immutable; they could only be archived. `setOperatorSeatActive(true)` then refused without an operator override.
 
-Re-tested 2026-09-19: `operator_seat` was still `placeholder: true` at 900 cents. `catalog_operator_seat_active` still defaulted OFF. No open PR already took this row. A real checkout still cannot mint a seat line until an operator syncs the catalog and flips the switch; that proof belongs with LIVE-234.
+Re-tested 2026-09-19: `operator_seat` was still `placeholder: true` at 900 cents. `catalog_operator_seat_active` still defaulted OFF. A real checkout still cannot mint a seat line until an operator syncs the catalog and flips the switch; that proof belongs with LIVE-234.
 
 **Decision.**
 
@@ -45757,4 +46095,3 @@ Re-tested 2026-09-19: `operator_seat` was still `placeholder: true` at 900 cents
 **Consequences.** The next catalog sync mints $12/$120. Checkout still hides the seat picker until the operator flips the switch and the price id resolves. A later amount change is a new Stripe price, same as every other catalog item.
 
 **Rows.** LIVE-229.
-

@@ -14,6 +14,16 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 - **Extra operator seats have a public price.** The pricing page and the comparison grid read it from the catalog. Your first seat on a Space is still included.
 
+- **A Space has one create form.** The extra "Running a business?" shortcut is gone. Pick what you run, including a business, on Create a space. Niche doors still land on the matching type.
+
+- **An entry point is a QR code and a short link.** The print flyer is gone. Pick a template, name it, and download the PNG or SVG. Every signup it brings in still credits you.
+
+- **The getting-started guide asks for a name first.** If Frequency still knows you by the local part of your email and a generated handle, that is the first step. Pick a name at your profile. Members who already chose a name are not asked again.
+
+- **Joining Crew, buying a household bundle, or picking a Space plan now takes the card on the page.** The form opens under the button you pressed. If it cannot open, you still go to Stripe's checkout.
+
+- **Buying something that ships asks for a delivery address.** Stripe collects and checks it before the charge, so the seller gets a real address. A Journey, a download, or a booking still pays on the page.
+
 - **A free Space can sell a membership.** Set a tier on Offerings. The first paid join still needs payouts set up. Campaigns stay on Business.
 - **If you run one Space, a new event starts as that Space's event.** The first screen says so, and you can change it. Ticket money and the Space calendar go with it. A personal event can still be attached later under **Hosted by** in the event's settings.
 
@@ -32,6 +42,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   (`/learn`) opens after you enrol. A leftover Market link still works; it hops you across.
 
 ### Fixed
+
+- **Changing a repeating event to one date no longer leaves the extra dates on the calendar.** Future dates nobody has joined are taken down. Dates people already RSVP'd to or bought a ticket for stay.
 
 - **A tip or a gift paid on the page is settled on the page**: the receipt no longer waits on a
   webhook that may be late. The confirmation you see after the card goes through is already true.

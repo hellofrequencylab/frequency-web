@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-// The PURE placeholder-skip resolver behind the catalog sync (ADR-799/803 / ADR-1416). The catalog
+// The PURE placeholder-skip resolver behind the catalog sync (ADR-799/803 / ADR-1435). The catalog
 // sync mints NO Stripe product/price for an inert placeholder. LIVE-229 cleared the operator seat's
 // placeholder, so that item is never inert; only a future placeholder item (or a fake in these
 // tests) still skips. The seat switch is the sell gate, not the mint gate.

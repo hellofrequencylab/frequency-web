@@ -291,7 +291,7 @@ export async function saveFoundingConfig(config: Partial<FoundingConfig>): Promi
   }
 }
 
-/** Set the operator-seat SELL switch (ADR-803 / ADR-1416, platform flag `catalog_operator_seat_active`).
+/** Set the operator-seat SELL switch (ADR-803 / ADR-1435, platform flag `catalog_operator_seat_active`).
  *  OFF (default) keeps checkout from offering seats (`operatorSeatsSellable`). ON lets a paying Space
  *  add seats once the catalog price is synced. Janitor-gated; audited in platform_flag_events via
  *  setPlatformFlag. Nothing charges on its own (billingLive() still gates money). */

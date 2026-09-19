@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
 import { ANALYTICS_EVENTS, isTrackedEvent, isClientEvent } from './events'
 import { sanitizeProps } from './track'
 
@@ -28,6 +29,28 @@ describe('analytics taxonomy', () => {
     expect(isClientEvent('practice.adopted')).toBe(false) // server-authoritative
     expect(isClientEvent('circle.joined')).toBe(false)
     expect(isClientEvent('unknown.event')).toBe(false)
+  })
+
+  // LIVE-348. track() silently drops an unregistered name. Purchase is server-only so a
+  // client POST cannot mint a conversion; the buy click is the one client-emittable step.
+  it('registers commerce.purchase as server-only and checkout_started as client-emittable', () => {
+    expect(isTrackedEvent('commerce.purchase')).toBe(true)
+    expect(isClientEvent('commerce.purchase')).toBe(false)
+    expect(isTrackedEvent('commerce.checkout_started')).toBe(true)
+    expect(isClientEvent('commerce.checkout_started')).toBe(true)
+    expect(isTrackedEvent('shop.order_completed')).toBe(true)
+    expect(isClientEvent('shop.order_completed')).toBe(false)
+  })
+
+  it('the buy click emits commerce.checkout_started on BuyButton and ticket controls', () => {
+    const files = [
+      'app/(main)/marketplace/buy-button.tsx',
+      'app/(main)/events/[slug]/ticket-button.tsx',
+      'components/events/rsvp-payment-flow.tsx',
+      'components/events/guest-ticket-form.tsx',
+    ]
+    const missing = files.filter((f) => !readFileSync(f, 'utf8').includes("trackClient('commerce.checkout_started'"))
+    expect(missing).toEqual([])
   })
 })
 

@@ -587,7 +587,7 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     ...amountsFromMonthly(3900, 3900), // $39/mo flat (ADR-811), full Collective toolkit, verified 501c3
   },
   operator_seat: {
-    // OPERATOR SEATS (ADR-799, LIVE-229 / ADR-1416): a genuine per-seat add-on. The owner's seat is
+    // OPERATOR SEATS (ADR-799, LIVE-229 / ADR-1435): a genuine per-seat add-on. The owner's seat is
     // free (BASE_SEAT_ALLOWANCE); each ADDITIONAL operator (editor/moderator/admin) bills one seat at
     // this flat rate, on any paid plan. This is a SEPARATE per-seat item (perSeat:true) — distinct from
     // the retired per-seat PLAN pricing (ADR-590) and refining ADR-552's "seats ride the base tier"

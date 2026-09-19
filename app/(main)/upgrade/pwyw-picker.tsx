@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Zap, Loader2 } from 'lucide-react'
+import { Zap, Loader2, ChevronUp } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
-import { startMembershipCheckout } from './actions'
+import { startMembershipCheckout, settleMembershipCheckoutAction } from './actions'
 import { isError } from '@/lib/action-result'
 import { Input } from '@/components/ui/field'
+import CheckoutPanel from '@/components/billing/checkout-panel'
+import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 
 // THE CREW PAY-WHAT-YOU-WANT PICKER (ADR-908).
 //
@@ -52,16 +54,49 @@ export function PwywPicker({
   const [annual, setAnnual] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  // ON-PAGE CHECKOUT (docs/CHECKOUT.md §3b). `open` is SEPARATE from the session on purpose:
+  // collapsing the drawer keeps it, so re-opening is instant and does not mint a SECOND
+  // subscription session for the same pick.
+  const [session, setSession] = useState<{
+    pick: string
+    clientSecret: string
+    sessionId: string | null
+  } | null>(null)
+  const [open, setOpen] = useState(false)
 
   const usingCustom = custom.trim() !== ''
   const customCents = usingCustom ? Math.round(Number(custom.replace(/[^0-9.]/g, '')) * 100) : NaN
   const chosen = usingCustom ? customCents : amount
   const valid = Number.isFinite(chosen) && chosen >= minCents
+  const charged = valid ? (annual ? chosen * 10 : chosen) : 0
+  const pickKey = `${chosen}-${annual ? 'annual' : 'monthly'}`
+  const liveSession = session && session.pick === pickKey ? session : null
+
+  /** The LAST line of defence (docs/CHECKOUT.md §4). `forceHosted` is load-bearing: without it this
+   *  asks for the same elements session that just failed to mount, finds no url, and dead-ends a
+   *  member who is trying to pay. */
+  function fallBackToHosted() {
+    setSession(null)
+    setError('Opening secure checkout…')
+    if (!valid) return
+    startTransition(async () => {
+      const r = await startMembershipCheckout(chosen, annual ? 'annual' : 'monthly', {
+        forceHosted: true,
+      })
+      if (!isError(r) && r.data.url) window.location.href = r.data.url
+      else setError('Could not start checkout. Please try again.')
+    })
+  }
 
   function go() {
     setError(null)
     if (!valid) {
       setError(`Please choose ${priceLabel(minCents)} a month or more.`)
+      return
+    }
+    // Already have a session for THIS pick: re-open it rather than minting a second subscription.
+    if (liveSession) {
+      setOpen(true)
       return
     }
     // The soft ceiling: confirm rather than refuse, so a real gift is never blocked.
@@ -70,9 +105,20 @@ export function PwywPicker({
       if (!window.confirm(`That is ${monthly} a month, every month. Is that what you meant?`)) return
     }
     startTransition(async () => {
+      warmStripeBrowser()
       const r = await startMembershipCheckout(chosen, annual ? 'annual' : 'monthly')
-      if (isError(r)) setError(r.error)
-      else window.location.href = r.data.url
+      if (isError(r)) {
+        setError(r.error)
+      } else if (r.data.clientSecret) {
+        setSession({
+          pick: pickKey,
+          clientSecret: r.data.clientSecret,
+          sessionId: r.data.sessionId ?? null,
+        })
+        setOpen(true)
+      } else if (r.data.url) {
+        window.location.href = r.data.url
+      }
     })
   }
 
@@ -147,13 +193,37 @@ export function PwywPicker({
       />
 
       <button
-        onClick={go}
+        onClick={open ? () => setOpen(false) : go}
+        onPointerEnter={warmStripeBrowser}
+        onFocus={warmStripeBrowser}
+        onTouchStart={warmStripeBrowser}
         disabled={isPending}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-body-sm font-bold text-on-primary shadow-lg shadow-primary/20 transition-colors hover:bg-primary-hover disabled:opacity-60"
+        aria-expanded={open}
+        className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-body-sm font-bold transition-colors disabled:opacity-60 ${
+          open
+            ? 'bg-surface-elevated text-text'
+            : 'bg-primary text-on-primary shadow-lg shadow-primary/20 hover:bg-primary-hover'
+        }`}
       >
-        {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-        {isPending ? 'Redirecting to checkout…' : 'Join the Crew'}
+        {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : open ? <ChevronUp className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
+        {isPending ? 'Opening checkout…' : 'Join the Crew'}
       </button>
+
+      {open && liveSession && (
+        <CheckoutPanel
+          clientSecret={liveSession.clientSecret}
+          priceLabel={priceLabel(charged)}
+          onFellBack={fallBackToHosted}
+          onPaid={
+            liveSession.sessionId
+              ? () => settleMembershipCheckoutAction(liveSession.sessionId as string)
+              : undefined
+          }
+          onClose={() => window.location.reload()}
+          doneTitle="You are in the Crew."
+          doneBody="A receipt is on its way to your email."
+        />
+      )}
 
       <p className="text-center text-meta text-muted">
         Change what you give any time, or stop. No penalty either way.

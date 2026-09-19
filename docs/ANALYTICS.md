@@ -198,6 +198,9 @@ Every key action in the member journey emits a named event. Initial set:
 | `invite.sent` / `invite.accepted` | invite lifecycle | channel |
 | `session.active` | meaningful session start | — |
 | `qr.referral_activated` | a referred member activates and the referrer is credited | referrer |
+| `commerce.checkout_started` | a buyer pressed Buy or Get ticket | kind |
+| `commerce.purchase` | a Checkout Session settled paid (webhook) | kind, value, currency, transaction_id |
+| `shop.order_completed` | a commerce_order session settled paid (writer for the shop vertical) | kind, value, currency, transaction_id |
 
 (Extends as features land; the taxonomy lives in one module so it's reviewable. The table above is
 the prose copy; `lib/analytics/events.ts` is the module, and it is the source of truth when the two

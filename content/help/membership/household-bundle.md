@@ -4,7 +4,7 @@ description: One payment, several seats. How to invite people, what a seat gets 
 category: membership
 order: 3
 published: 2026-08-12
-updated: 2026-08-13
+updated: 2026-09-19
 audience: member
 featureKeys: [vault, memberships]
 status: published
@@ -22,6 +22,11 @@ Everyone on a seat gets the same member access your plan includes, for as long a
 bundle is paid. Their account stays their own: their own profile, their own Circles,
 their own practice history, their own streak. A seat is not a shared login. It is their
 membership, paid for by you.
+
+## Buying a bundle
+
+Open **Settings**, then **Billing**. The card fields open under the button you
+pressed. After you pay, you invite the others from the same page.
 
 ## Inviting people
 

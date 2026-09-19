@@ -471,10 +471,10 @@ export function anchorIsDormant(anchor: Pick<Anchor, 'is_cancelled' | 'removed_a
  *  so for that shape this agrees with the filter rather than adding to it).
  *
  *  FALSE IS THE FAIL-SAFE ANSWER, and every uncertain case takes it. A rule this code cannot read
- *  is not an ended series (it is a malformed RRULE, and `retireStaleOccurrences` stands down on the
- *  same reading); neither is an unparseable `starts_at` or an unparseable end. Saying "exhausted"
- *  on any of those would stop a LIVE series materialising, which is a correctness failure traded
- *  for a saved read. */
+ *  is not an ended series (it is a malformed RRULE, and `recurrenceRuleUnreadable` is the same
+ *  reading `retireStaleOccurrences` stands down on); neither is an unparseable `starts_at` or an
+ *  unparseable end. Saying "exhausted" on any of those would stop a LIVE series materialising,
+ *  which is a correctness failure traded for a saved read. */
 export function anchorIsExhausted(
   anchor: Pick<Anchor, 'starts_at' | 'recurrence_type' | 'recurrence_until' | 'recurrence_rule'>,
   now: Date = new Date(),
@@ -841,16 +841,39 @@ export type RetireResult = {
 const NOTHING: RetireResult = { retired: 0, kept: 0, stoodDown: false }
 
 /**
+ * True when the retirement pass must STAND DOWN: the anchor still claims to repeat, but this
+ * code cannot read a rule or a start. Distinct from an empty expansion (LIVE-338). A spent
+ * COUNT=1 series expands to no child dates honestly; an unparseable weekly start does not.
+ */
+export function recurrenceRuleUnreadable(
+  anchor: Pick<Anchor, 'starts_at' | 'recurrence_type' | 'recurrence_rule'>,
+): boolean {
+  // A series switched off is empty on purpose. Retirement should take the leftover dates, not
+  // treat "does not repeat" as a rule it failed to parse.
+  if (anchor.recurrence_type === 'none') return false
+  const rule = repeatFor({
+    starts_at: anchor.starts_at,
+    recurrence_type: anchor.recurrence_type,
+    recurrence_rule: anchor.recurrence_rule ?? null,
+  })
+  if (!rule) return true
+  if (!anchor.starts_at || Number.isNaN(new Date(anchor.starts_at).getTime())) return true
+  return false
+}
+
+/**
  * Retire the future occurrences of `anchorId` that its CURRENT rule does not produce.
  *
  * Best-effort by contract, exactly like `propagateAnchorEditsToOccurrences`: the caller has already
  * saved the anchor, and a failure here must never fail that save.
  *
  * 🔴 THE FAIL-SAFE, AND THE GATE THAT NOTICES IT FIRED. An anchor that still says it repeats but
- * whose rule expands to NOTHING is not a series with no dates, it is a rule this code could not
- * read — a malformed RRULE, an unparseable `starts_at`. Believing it would delete every future
- * date of a live series. So that case stands down without touching a row and says so, in the log
- * and in the returned flag, because a silent fail-safe is an invisible regression.
+ * whose rule this code cannot READ is not a series with no dates. Believing an empty expansion
+ * in that case would delete every future date of a live series. A spent COUNT series is the
+ * opposite (LIVE-338): the expander produced nothing honestly, and leftover future children are
+ * the dates ADR-1304 exists to retire. The stand-down is `recurrenceRuleUnreadable`, not
+ * `expected.length === 0`. It says so in the log and in the returned flag, because a silent
+ * fail-safe is an invisible regression.
  */
 export async function retireStaleOccurrences(anchorId: string): Promise<RetireResult> {
   const admin = createAdminClient()
@@ -889,16 +912,16 @@ export async function retireStaleOccurrences(anchorId: string): Promise<RetireRe
     (max, c) => (c.starts_at && new Date(c.starts_at) > max ? new Date(c.starts_at) : max),
     horizon,
   )
-  const expected = expandOccurrenceInstants(anchor, furthest)
-
-  if (anchor.recurrence_type !== 'none' && expected.length === 0) {
+  if (recurrenceRuleUnreadable(anchor)) {
     console.warn(
-      '[retireStaleOccurrences] STOOD DOWN: anchor still repeats but its rule expanded to nothing',
+      '[retireStaleOccurrences] STOOD DOWN: unreadable rule (not an empty expansion)',
       logToken(anchorId),
       sanitizeForLog(anchor.recurrence_rule ?? anchor.recurrence_type),
     )
     return { ...NOTHING, stoodDown: true }
   }
+
+  const expected = expandOccurrenceInstants(anchor, furthest)
 
   const stale = staleOccurrenceIds(children, expected, now)
   if (!stale.length) return NOTHING

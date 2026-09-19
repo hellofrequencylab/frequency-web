@@ -74,3 +74,19 @@ describe('the tree is clean under the tightened rules', () => {
     expect(runCheck()).toEqual([])
   })
 })
+
+describe('HYG-099: leftover hex is enumerated, not ungoverned', () => {
+  // The survey close condition was "remaining hex at zero, OR an allowlist is named".
+  // Raster OG and map paints are the named leftover craft; in-app chrome is still gated.
+  it('Satori OG cards may carry hex because they cannot read CSS tokens', () => {
+    expect(kinds('backgroundColor: "#6366f1"', 'app/discover/events/[slug]/opengraph-image.tsx')).toEqual([])
+  })
+
+  it('map paints may carry hex', () => {
+    expect(kinds('paint: { "circle-color": "#E2912F" }', 'components/discover/discover-map.tsx')).toEqual([])
+  })
+
+  it('in-app chrome still fails a planted hex', () => {
+    expect(kinds('style={{ color: "#E2912F" }}', 'components/ui/button.tsx')).toEqual(['#E2912F'])
+  })
+})

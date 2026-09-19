@@ -23,6 +23,10 @@ const ACTIONS: { call: string; definition: string }[] = [
   { call: 'startTip(', definition: path.join('people', '[handle]', 'tip-actions.ts') },
   { call: 'startSpaceDonationCheckout(', definition: path.join('lib', 'billing', 'donation-actions.ts') },
   { call: 'startCheckoutAction(', definition: path.join('marketplace', 'commerce-actions.ts') },
+  { call: 'startMembershipCheckout(', definition: path.join('upgrade', 'actions.ts') },
+  { call: 'startBundleCheckout(', definition: path.join('settings', 'billing', 'actions.ts') },
+  { call: 'startSpaceLoadoutCheckout(', definition: path.join('spaces', '[slug]', 'settings', 'billing', 'actions.ts') },
+  { call: 'startSpaceMembershipCheckout(', definition: path.join('spaces', 'memberships-actions.ts') },
 ]
 
 /** The creators themselves. A module that ASKS for elements mode must read what elements returns. */
@@ -31,6 +35,10 @@ const CREATORS = [
   'createTipCheckout(',
   'createSpaceDonationCheckout(',
   'createCommerceCheckout(',
+  'createMembershipCheckout(',
+  'createBundleCheckout(',
+  'createSpaceLoadoutCheckout(',
+  'createSpaceMembershipCheckout(',
 ]
 
 function walk(dir: string, out: string[] = []): string[] {
@@ -71,7 +79,7 @@ describe('every on-page checkout caller handles both session shapes', () => {
   it('found callers at all — a walk that finds nothing would pass vacuously', () => {
     // The floor. Without it this whole file reports a clean bill of health on an empty list,
     // which is the failure mode AGENTS.md names in four ADRs.
-    expect(callers.length, 'no on-page checkout callers found; the walk or an action name is wrong').toBeGreaterThan(3)
+    expect(callers.length, 'no on-page checkout callers found; the walk or an action name is wrong').toBeGreaterThan(6)
   })
 
   it('covers every action in the table — a renamed action must not silently drop out', () => {

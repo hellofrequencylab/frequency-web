@@ -22,6 +22,11 @@ import {
   parseConsentChoice,
   requiresPriorConsent,
 } from '@/lib/consent/cookie-consent'
+import {
+  MARKETPLACE_ENTRY_COOKIE,
+  MARKETPLACE_ENTRY_MAX_AGE,
+  stampMarketplaceView,
+} from '@/lib/commerce/marketplace-entry'
 
 // The referral attribution cookie — the referrer's profile id, consumed once at
 // onboarding by applyReferralAttribution (lib/qr/referral.ts). Name + attributes MUST
@@ -158,6 +163,26 @@ export async function proxy(request: NextRequest) {
     choice: parseConsentChoice(request.cookies.get(CONSENT_COOKIE)?.value),
     priorConsentRegion,
   })
+
+  // ── MARKETPLACE DISCOVERY STAMP (LIVE-220, ADR-1419) ──────────────────────────────────────────
+  //
+  // A server action cannot see the calling path, and a client argument is forgeable by omission.
+  // The Market and Journey sales pages are discovery surfaces at RENDER time. Stamp the product
+  // (or Journey slug) here, httpOnly, signed. Checkout reads it. `/store/<id>` is not a
+  // discovery surface and is not stamped. Not consent-gated: this is the take-rate contract,
+  // not attribution storage. A declined banner must not reclassify a Market sale as `self`.
+  const marketplaceStamp = stampMarketplaceView(
+    pathname,
+    request.cookies.get(MARKETPLACE_ENTRY_COOKIE)?.value,
+  )
+  if (marketplaceStamp) {
+    supabaseResponse.cookies.set(MARKETPLACE_ENTRY_COOKIE, marketplaceStamp, {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: MARKETPLACE_ENTRY_MAX_AGE,
+    })
+  }
 
   // First-touch attribution (ADR-095): record HOW an anonymous visitor first
   // arrived — campaign, referrer, landing page — once, immutably, so it survives

@@ -39,10 +39,13 @@ describe('the offer card is mounted and calls the deliberate action', () => {
     expect(section).toContain('<BuyBundleButtons hasAnnual=')
   })
 
-  it('the control calls startBundleCheckout and redirects to the Stripe URL', () => {
+  it('the control calls startBundleCheckout, reads both session shapes, and can force hosted', () => {
     expect(controls).toMatch(/\bstartBundleCheckout\(/)
-    expect(controls).toContain('await startBundleCheckout(period)')
+    expect(controls).toContain('await startBundleCheckout(next)')
+    expect(controls).toContain('r.data.clientSecret')
     expect(controls).toContain('window.location.href = r.data.url')
+    expect(controls).toContain('forceHosted: true')
+    expect(controls).toContain('<CheckoutPanel')
   })
 
   // The literal used to be `await createBundleCheckout(`. The await moved onto the viaStripe

@@ -183,7 +183,7 @@ because handing it out is the point.
 locks. A solo practitioner pays $49 and has automation, CRM, email, memberships and a shop. A
 six-person studio pays $97 for the same tools and the room to use them.
 
-**$12 is the catalog amount (LIVE-229 / [ADR-1416](DECISIONS.md)).** Seats are **fully built**: the
+**$12 is the catalog amount (LIVE-229 / [ADR-1435](DECISIONS.md)).** Seats are **fully built**: the
 checkout line, the webhook reconciler, the seat editor and the invite check all exist. A catalog
 sync mints the $12 Stripe price. `catalog_operator_seat_active` still gates checkout.
 

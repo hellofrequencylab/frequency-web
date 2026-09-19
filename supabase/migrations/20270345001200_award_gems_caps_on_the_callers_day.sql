@@ -89,3 +89,12 @@ begin
   return jsonb_build_object('awarded', true, 'capped', false);
 end;
 $function$;
+
+-- HYG-102 / ADR-1402 leftover. CREATE OR REPLACE of a NEW signature grants EXECUTE to PUBLIC.
+-- Filename order on a fresh clone is 20260918235156 (the lock) then this file, so replay would
+-- reopen the hole the lock closed. Keep the revoke next to the replace. The 5-arg form is
+-- locked in 20260929000000 and is not this signature.
+revoke all on function public.award_gems_atomic(uuid, text, integer, integer, jsonb, text, text)
+  from public, anon, authenticated;
+grant execute on function public.award_gems_atomic(uuid, text, integer, integer, jsonb, text, text)
+  to service_role;

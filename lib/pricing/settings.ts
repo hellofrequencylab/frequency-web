@@ -196,7 +196,7 @@ const FLAG_DEFAULTS: Record<PricingFlagKey, boolean> = {
   gamification_full_crew: true,
   bundle_household_enabled: false,
   // OFF = checkout does not offer seats (`operatorSeatsSellable`). The catalog amount is live
-  // (LIVE-229); this switch is the sell gate, not the mint gate (ADR-803 / ADR-1416).
+  // (LIVE-229); this switch is the sell gate, not the mint gate (ADR-803 / ADR-1435).
   catalog_operator_seat_active: false,
 }
 

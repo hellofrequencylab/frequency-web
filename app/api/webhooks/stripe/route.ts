@@ -67,6 +67,8 @@ import {
   recordCommerceRefundFromCharge,
   abandonCommerceOrderFromSession,
 } from '@/lib/commerce/checkout'
+import { track } from '@/lib/analytics/track'
+import { purchaseConversionFromSession } from '@/lib/analytics/purchase'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -188,6 +190,20 @@ export async function POST(req: Request) {
     // `async_payment_succeeded` consume) is what stops a delayed-payment donation from being the
     // recorder someone forgets.
     await recordSpaceDonationFromSession(s)
+    // LIVE-348: the conversion. Recorded here, not on the buy click, because checkout
+    // settles on Stripe (or an Elements form that never navigates). Idempotent per
+    // session id so completed + async_payment_succeeded cannot double-count.
+    const conversion = purchaseConversionFromSession(s)
+    if (conversion) {
+      await track(conversion.event, conversion.props, conversion.actorProfileId, {
+        idempotencyKey: conversion.idempotencyKey,
+      })
+      if (conversion.shopEvent) {
+        await track(conversion.shopEvent, conversion.props, conversion.actorProfileId, {
+          idempotencyKey: `${conversion.shopEvent}:${s.id}`,
+        })
+      }
+    }
   }
 
   // A transient handler failure must NOT leave the claim row behind (the next Stripe retry
