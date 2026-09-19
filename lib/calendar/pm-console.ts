@@ -1,10 +1,10 @@
 import type { CalendarEvent } from './item'
 import { entryStage } from './registry'
 
-// THE ADMIN OPERATOR LIST (ADR-1445 C1, ADR-1450). What the Calendar tab's Admin mode lists
-// above the month: Pencil, Planning, Production, and Cancelled. Private entries and Unavailable
-// time stay on the date map (StaffCalendar). C2–C4 split this list into named lanes; this file
-// must not invent those identifiers.
+// THE ADMIN OPERATOR LIST (ADR-1445 C1–C4, ADR-1450, ADR-1456). What the Calendar tab's Admin
+// mode lists above the month. productionLane is the C4 Production lane, the live show the guest
+// calendar already paints. Pencil and Planning stay on the mixed board until C2 and C3
+// (LIVE-416, LIVE-417). Private entries and Unavailable time stay on the date map (StaffCalendar).
 
 export type OperatorListItem = {
   key: string
@@ -55,4 +55,13 @@ export function operatorListItems(events: CalendarEvent[]): OperatorListItem[] {
       href: operatorListHref(ev),
       isCancelled: ev.isCancelled || ev.stage === 'cancelled',
     }))
+}
+
+export function isProductionLaneItem(ev: CalendarEvent): boolean {
+  return isOperatorListItem(ev) && operatorStageLabel(ev) === 'Production'
+}
+
+// C4 (LIVE-418, ADR-1456). Production-stage gatherings and published events as their own lane.
+export function productionLane(events: CalendarEvent[]): OperatorListItem[] {
+  return operatorListItems(events.filter((ev) => operatorStageLabel(ev) === 'Production'))
 }

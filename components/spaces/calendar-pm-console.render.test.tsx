@@ -38,7 +38,7 @@ const pencil: CalendarEvent = {
   layer: 'pencil',
 }
 
-describe('CalendarPmConsole render (LIVE-415)', () => {
+describe('CalendarPmConsole render (LIVE-415 / LIVE-418)', () => {
   it('lists a penciled gathering on the board and keeps the date map', () => {
     const el = mount(
       <CalendarPmConsole events={[pencil]}>
@@ -46,6 +46,7 @@ describe('CalendarPmConsole render (LIVE-415)', () => {
       </CalendarPmConsole>,
     )
     expect(el.querySelector('[data-calendar-pm-console]')).not.toBeNull()
+    expect(el.querySelector('[data-production-lane]')?.textContent).toContain('Nothing in Production.')
     expect(el.textContent).toContain('The board')
     expect(el.textContent).toContain('New moon sit')
     expect(el.textContent).toContain('Pencil')
@@ -53,12 +54,40 @@ describe('CalendarPmConsole render (LIVE-415)', () => {
     expect(el.textContent).not.toContain('Nothing on the board yet.')
   })
 
-  it('shows the empty board when there is nothing to run', () => {
+  it('lists a published gathering in productionLane, not mixed into the board', () => {
+    const live: CalendarEvent = {
+      slug: 'open-house',
+      title: 'Open house',
+      dayKey: '2026-09-24',
+      timeLabel: '7:00 PM',
+      whenLabel: 'Thu, 2026-09-24, 7:00 PM PDT',
+      startInstantIso: '2026-09-24T19:00:00.000Z',
+      location: null,
+      goingCount: 0,
+      coverUrl: null,
+      isCancelled: false,
+      layer: 'events',
+    }
+    const el = mount(
+      <CalendarPmConsole events={[pencil, live]}>
+        <div data-date-map>map</div>
+      </CalendarPmConsole>,
+    )
+    expect(el.querySelector('[data-production-lane]')?.textContent).toContain('Open house')
+    expect(el.querySelector('[data-production-lane]')?.textContent).not.toContain('New moon sit')
+    expect(el.textContent).toContain('New moon sit')
+    expect(el.textContent).toContain('Pencil')
+    expect(el.textContent).not.toContain('Nothing in Production.')
+    expect(el.textContent).not.toContain('Nothing on the board yet.')
+  })
+
+  it('shows the empty production lane and board when there is nothing to run', () => {
     const el = mount(
       <CalendarPmConsole events={[]}>
         <div data-date-map>map</div>
       </CalendarPmConsole>,
     )
+    expect(el.textContent).toContain('Nothing in Production.')
     expect(el.textContent).toContain('Nothing on the board yet.')
     expect(el.querySelector('[data-date-map]')).not.toBeNull()
   })

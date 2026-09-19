@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { CalendarEvent } from './item'
-import { isOperatorListItem, operatorListHref, operatorListItems, operatorStageLabel } from './pm-console'
+import {
+  isOperatorListItem,
+  isProductionLaneItem,
+  operatorListHref,
+  operatorListItems,
+  operatorStageLabel,
+  productionLane,
+} from './pm-console'
 
 function item(partial: Partial<CalendarEvent> & Pick<CalendarEvent, 'slug' | 'title' | 'dayKey'>): CalendarEvent {
   return {
@@ -54,6 +61,39 @@ describe('operatorListItems (LIVE-415)', () => {
       'Cancelled',
       'Cancelled',
       'Draft',
+    ])
+  })
+
+  it('puts published and production-stage gatherings in productionLane and leaves the rest on the board', () => {
+    const live = item({ slug: 'open-house', title: 'Open house', dayKey: '2026-09-24' })
+    const staged = item({
+      slug: 'entry-prod',
+      title: 'Autumn sit',
+      dayKey: '2026-09-26',
+      stage: 'production',
+      layer: 'events',
+    })
+    const pencil = item({ slug: 'entry-1', title: 'New moon sit', dayKey: '2026-09-22', stage: 'pencil', layer: 'pencil' })
+    const planning = item({
+      slug: 'entry-2',
+      title: 'Planning sit',
+      dayKey: '2026-09-23',
+      stage: 'planning',
+      layer: 'pencil',
+    })
+
+    expect(isProductionLaneItem(live)).toBe(true)
+    expect(isProductionLaneItem(staged)).toBe(true)
+    expect(isProductionLaneItem(pencil)).toBe(false)
+    expect(isProductionLaneItem(planning)).toBe(false)
+    expect(productionLane([pencil, planning, live, staged]).map((row) => row.key)).toEqual([
+      'open-house|2026-09-24',
+      'entry-prod|2026-09-26',
+    ])
+    expect(operatorListItems([pencil, live, planning]).map((row) => row.stageLabel)).toEqual([
+      'Pencil',
+      'Planning',
+      'Production',
     ])
   })
 

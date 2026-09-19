@@ -176,7 +176,6 @@
             "LIVE-408",
             "LIVE-416",
             "LIVE-417",
-            "LIVE-418",
             "LIVE-419",
             "SCAN-638",
             "HYG-100",
@@ -14907,20 +14906,21 @@
     {
       "id": "LIVE-418",
       "title": "Calendar C4: Production is a first-class Admin lane (ADR-1388)",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "lib/calendar/entries.ts",
-        "ref": "ADR-1388, ADR-1445"
+        "ref": "ADR-1388, ADR-1445, ADR-1456"
       },
-      "detail": "Admin PM console lists production-stage gatherings as their own lane. This is the live show the guest calendar already paints. After C3 (LIVE-417).",
+      "detail": "Admin PM console lists production-stage gatherings as their own lane. This is the live show the guest calendar already paints. After C3 (LIVE-417).\n\nWHAT SHIPPED. productionLane (lib/calendar/pm-console.ts) is the Admin Production lane: stage === production plus published events whose operator label is Production. CalendarPmConsole renders it above the mixed board. Pencil and Planning stay on that board until C2 and C3. StaffCalendar is still the date map. Did not declare pencilLane or planningLane. Did not fold Guest through guestLiveItems (LIVE-419). LIVE-414 (#2753) still owns the public C0 paint.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"components/spaces/calendar-pm-console.tsx\",\"utf8\");if(!s.includes(\"productionLane\"))process.exit(1)'",
-        "note": "Fails until the PM console has a productionLane."
-      }
+        "note": "Passes when the PM console has a productionLane. Written 2026-09-19."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-419",

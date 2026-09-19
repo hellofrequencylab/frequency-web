@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1448**. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1432 is LIVE-246.
+tree as of this index: **ADR-1456**. 1450 is LIVE-415. 1449 is LIVE-313. 1448 is OWN-058. 1442 is HYG-078. 1451–1455 and 1457–1458 are claimed on open PRs. 1447 is HYG-104. 1445 is the calendar C0–C5 ruling.
 
 | Theme | Start here |
 |---|---|
@@ -46389,11 +46389,10 @@ Premise re-tested 2026-09-19 against the tree, not the banners:
 
 **Rejected.** Restyling the guest month and calling it Admin. Closing C2–C4 in the same PR. Folding Guest through `guestLiveItems` (LIVE-419).
 
-**Consequences.** The Calendar tab's Admin mode leads with the board. The settings console is unchanged. LIVE-416 starts the pencil lane.
+**Consequences.** The Calendar tab's Admin mode leads with the board. The settings console is unchanged. LIVE-416 starts the pencil lane. **Amended by [ADR-1456](DECISIONS.md):** Production now has its own lane.
 
 **Rows.** LIVE-415.
 
-<<<<<<< HEAD
 ## ADR-1448: The Circle and Event rail banks get a Settings door (OWN-058)
 
 **Status:** Accepted · 2026-09-19 · Records the 2026-09-08 OWN-058 ruling · **Implements** option (a) · numbered **1448** because **1450** is LIVE-415 on main (which reserved 1448–1449 for open PRs), **1447** is HYG-104, **1446** is HYG-103, and **1445** is the calendar C0–C5 ruling · corroborated by `bankForScope` in `lib/admin/rail-bank.ts` and `FROZEN_MENU_DEBT` in `scripts/check-menu.mjs`
@@ -46419,7 +46418,6 @@ Premise re-tested 2026-09-19:
 
 **Rows.** OWN-058.
 
-=======
 ## ADR-1449: The member-shell visual tier blocks; `/discover` stays advisory (LIVE-313)
 
 **Status:** Accepted · 2026-09-19 · backlog `LIVE-313` · amends [ADR-1410](DECISIONS.md) · numbered **1449** (1447 is HYG-104 on main; 1450 is LIVE-415; 1448 sits on an open branch)
@@ -46442,4 +46440,21 @@ Premise re-tested 2026-09-19:
 **Consequences.** A header or rail regression fails a PR. A new listed Circle is information in the advisory report. Recapture `/discover` when the design moved. Numbered **1449** because 1448 sits on an open branch and 1450 is LIVE-415 on main.
 
 **Rows.** LIVE-313.
->>>>>>> 5e45566df (Let the member-shell visual tier block (LIVE-313))
+
+## ADR-1456: Admin Calendar gives Production its own lane (LIVE-418)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-418` · numbered **1456** (1450 is LIVE-415 on this tree; 1451–1455 are claimed on open PRs: 1453 is LIVE-414 on #2753, 1454 is LIVE-416 on #2756, 1455 is LIVE-417 on #2758) · implements C4 of [ADR-1445](DECISIONS.md) · follows [ADR-1450](DECISIONS.md) · corroborated by `lib/calendar/pm-console.ts` (`productionLane`), `components/spaces/calendar-pm-console.tsx`
+
+**Context.** ADR-1450 mounted `CalendarPmConsole` with one mixed board. ADR-1445 C4 asked for Production as a first-class Admin lane: the live show the guest calendar already paints, listed on its own, not mixed into Pencil and Planning. Premise re-tested 2026-09-19 after #2754: the board existed; `productionLane` did not. LIVE-414 (#2753) still owns the public C0 paint. LIVE-416 (#2756) still owns `pencilLane`. LIVE-417 (#2758) still owns `planningLane`. Guest exclusion is LIVE-419.
+
+**Decision.**
+
+1. **`productionLane` is the Admin Production lane.** It is `operatorListItems` filtered to `operatorStageLabel === 'Production'`: `stage === 'production'` plus published events that already carry that label. `CalendarPmConsole` renders that lane above the mixed board.
+2. **The mixed board no longer lists Production.** Pencil, Planning, Cancelled, and drafts stay there until C2 and C3 name their own lanes.
+3. **The date map is unchanged.** This change does not declare `pencilLane` or `planningLane`, and it does not fold Guest through `guestLiveItems`.
+
+**Rejected.** Closing C2, C3, or C5 in the same PR. Calling Production an Event on the Admin board (NAMING.md: Production is the team word; guests see an event). Hiding live dates from the grid.
+
+**Consequences.** LIVE-416 still owns Pencil. LIVE-417 still owns Planning. LIVE-419 still owns the Guest feed.
+
+**Rows.** LIVE-418.
