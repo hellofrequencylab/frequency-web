@@ -46480,3 +46480,22 @@ Premise re-tested 2026-09-19:
 **Rejected.** Changing `passesCalendarGate` itself (that would put cancelled gatherings into every subscriber's calendar app). Hiding cancelled. Painting cancelled as a struck chip.
 
 **Rows.** LIVE-414.
+
+## ADR-1452: Share URLs leave the (main) layout (SCAN-643)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-643` · `SCAN-644` · numbered **1452** (1450 is LIVE-415 on main; 1451 is the evening scan) · corroborated by `app/(public)/layout.tsx`, `app/(public)/events/[slug]/page.tsx`, and `app/(main)/spaces/[slug]/layout.tsx`
+
+**Context.** ADR-1451 filed SCAN-643: without `cacheComponents`, `getCachedUser()` / `headers()` in `app/(main)/layout.tsx` void ISR for every sitemap URL under that group. Reordering the public-chrome helper would pass a source-order probe and still call `headers()` on the public path.
+
+**Decision.**
+
+1. Move the share event page and the four listing details into `app/(public)/`. That layout never calls `cookies()` or `headers()`. Auth chrome uses `MarketingHeader detectClientAuth`, not `SiteHeader` (SCAN-641).
+2. Remove `generateMetadata` from the (main) layout so it cannot call `headers()`.
+3. Keep Space profiles in (main). `spaces/[slug]/layout.tsx` calls `getMyProfileId()` so a member can open a private Space. That remainder is `SCAN-644`.
+4. Signed-in members on `/events/<slug>` still rewrite to `/full`. Listing details render the public chrome for every viewer (ViewerProvider already upgrades buy/save).
+
+**Rejected.** Enabling `cacheComponents` for one layout. Swapping SiteHeader in this PR. Passing a null viewer on Space profiles without a member rewrite.
+
+**Consequences.** Crawlers on `/events/<slug>` and `/store|/market|/housing|/classifieds/<id>` no longer pay the (main) auth read. Space sitemap URLs still do, until SCAN-644.
+
+**Rows.** SCAN-643 (closed), SCAN-644 (filed).

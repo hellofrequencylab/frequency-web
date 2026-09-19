@@ -125,8 +125,8 @@ describe('LIVE-220 · the cookie stamp reaches createCommerceCheckout', () => {
 })
 
 describe('LIVE-220 · which surfaces declare the entry point', () => {
-  const market = read('app', '(main)', 'market', '[id]', 'page.tsx')
-  const store = read('app', '(main)', 'store', '[id]', 'page.tsx')
+  const market = read('app', '(public)', 'market', '[id]', 'page.tsx')
+  const store = read('app', '(public)', 'store', '[id]', 'page.tsx')
   const picker = read('components', 'marketplace', 'variant-picker.tsx')
   const journey = read('app', '(main)', 'journeys', '[slug]', 'page.tsx')
 

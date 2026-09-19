@@ -31,13 +31,14 @@ Run against `origin/main` at `ab1902846` after SCAN-636 (#2733), SCAN-637 (#2731
 | Surface | What crawlers are told | What the route actually is | Row |
 |---|---|---|---|
 | Spotlight | sitemap `getSpotlightRoutes` + Person JSON-LD + self-canonical | `revalidate = 3600` + `generateStaticParams` (closed 2026-09-19) | `SCAN-642` done |
-| Event / Space / listing / Show | sitemap + `revalidate` on the event page | `(main)/layout.tsx` calls `cookies()` and `headers()` before public chrome | `SCAN-643` |
+| Event + listings | sitemap + `revalidate` | now under `app/(public)/` (no cookies/headers) | `SCAN-643` done |
+| Space profiles / Shows | sitemap `/spaces/<slug>` | Space root layout still calls `getMyProfileId` | `SCAN-644` |
 
 **Not a finding.** `/sites/<slug>` is force-dynamic and noindex on purpose (E10 hold). Discover OG `force-dynamic` is the card path. Dead lib exports remain `SCAN-502`. `check:seo` already covers pages without local metadata. Circle "stubs" are still redirects.
 
-**Scorecard (honest gap to 10).** Security 8 (gates green; advisors known; HYG-100 unconfirmed). Wiring 8 (FilterBar closed; layout still dynamizes advertised URLs). SEO/AIO 8 (sitemap coherent; Spotlight is ISR; (main) public URLs still pay the layout tax). Speed 6 (same inversion, narrower now). A11y 8 (gates hold; LIVE-186 flip still owner). Docs 8 (this file + one list updated; BUILD-LIST App Platform prose is still stale vs `deferredByName`).
+**Scorecard (honest gap to 10).** Security 8 (gates green; advisors known; HYG-100 unconfirmed). Wiring 8 (FilterBar closed; Space layout still dynamizes `/spaces/<slug>`). SEO/AIO 8 (sitemap coherent; Spotlight, events, and listings are ISR-eligible). Speed 7 (layout tax left on Space profiles). A11y 8 (gates hold; LIVE-186 flip still owner). Docs 8 (this file + one list updated; BUILD-LIST App Platform prose is still stale vs `deferredByName`).
 
-**Phased cleanup.** `pnpm packets --lane scan`. Order: SCAN-643, SCAN-638 (draft only), SCAN-641, SCAN-640 (after owner archive), LIVE-412. `SCAN-642` closed.
+**Phased cleanup.** `pnpm packets --lane scan`. Order: SCAN-638 (draft only), SCAN-644, SCAN-641, SCAN-640 (after owner archive), LIVE-412. `SCAN-642` and `SCAN-643` closed.
 
 ## 2026-09-19 pass (full-repo, 14 days after scan two)
 
