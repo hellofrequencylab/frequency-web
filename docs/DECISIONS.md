@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1455**. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1451–1454 are claimed on open PRs.
+tree as of this index: **ADR-1459**. 1455 is LIVE-414. 1450 is LIVE-415. 1449 is LIVE-313. 1448 is OWN-058. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1451–1454 and 1456–1458 are claimed on open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46459,3 +46459,21 @@ Premise re-tested 2026-09-19:
 **Rejected.** Changing `passesCalendarGate` itself (that would put cancelled gatherings into every subscriber's calendar app). Hiding cancelled. Painting cancelled as a struck chip.
 
 **Rows.** LIVE-414.
+
+## ADR-1459: Cover the six new FKs and wrap the two read-own initplans (SCAN-638)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-638` · numbered **1459** (1455 is LIVE-414 on this tree; 1456–1458 are claimed on open calendar PRs) · same class as [ADR-308](DECISIONS.md) / `20260923000000_advisor_sweep_initplan_fk_indexes.sql` · corroborated by `supabase/migrations/20270345006400_scan_638_fk_indexes_and_initplan.sql`
+
+**Context.** The 2026-08-31 scan had zero `unindexed_foreign_keys` and zero `auth_rls_initplan`. The 2026-09-19 pass found six new FKs and two initplan WARNs on tables that landed with entitlements, donations, the private calendar layer, and Space Circle opt-outs. Premise re-tested 2026-09-19 on this tree: neither creating file wraps `auth.uid()` in `(select auth.uid())`, no later migration recreates those two policies, and none of the six FK columns leads an index. `spatial_ref_sys` is still PostGIS (OWN-006); this change does not touch it.
+
+**Decision.**
+
+1. **One later migration, not a rewrite of the applied files.** Recreate `entitlement_grants read own` and `space_circle_optouts read own` with `(select auth.uid())`. The predicate is the same. Evaluation moves to an initplan.
+2. **Covering indexes on the six named FKs.** Full indexes on the NOT NULL columns (`entitlement_grants.space_id`, `space_benefit_redemptions.member_profile_id`, `space_circle_optouts.profile_id`). Partial indexes on the nullable attribution columns (`space_calendar_day_notes.created_by`, `space_calendar_entries.created_by`, `space_donations.ask_id`), matching `20270318000000`.
+3. **Draft in the tree. Do not apply from an agent session.** The row and the 2026-09-19 slate both forbid `apply_migration` and DDL `execute_sql`. The owner applies later: `execute_sql`, then insert `supabase_migrations.schema_migrations` at version `20270345006400`.
+
+**Rejected.** Editing the already-applied creating files (replay would diverge from production). Dropping unused indexes (538 → 392 is pre-launch noise, not this row). Enabling RLS on `spatial_ref_sys`. Applying the DDL from this session.
+
+**Consequences.** The SCAN-638 probe passes on the later file. Advisors stay the production proof until the owner applies the version. A future `migration up` would apply this file; that is the apply, not this PR.
+
+**Rows.** SCAN-638.
