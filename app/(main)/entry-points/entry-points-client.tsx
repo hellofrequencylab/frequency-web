@@ -1,17 +1,15 @@
 'use client'
 
-// The crew "My Entry Points" builder + list (ADR-126). Template-first, never a blank
-// canvas: pick a template, fill a few slots, watch the flyer build live, publish.
-// Each entry point gives a short link, a branded QR (PNG/SVG), and a vector flyer.
+// The "My Entry Points" builder + list (ADR-126, ADR-1433). Template-first, never a
+// blank canvas: pick a template, name it, pick where it points, publish. Each entry
+// point gives a short link and a branded QR (PNG/SVG). The flyer builder was ruled
+// deleted (OWN-059 item 3 / LIVE-216).
 
-import { useMemo, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Pencil, Trash2, Download, Copy, Check, ArrowLeft } from 'lucide-react'
-import { shortLinkUrl } from '@/lib/qr/links'
 import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
-import { STYLE_PRESETS, DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
-import { buildEntryFlyerSvg, type FlyerSlots } from '@/lib/entry-points/flyer'
 import {
   listEntryTemplates,
   getEntryTemplate,
@@ -29,13 +27,8 @@ export interface EntryCard {
   title: string
   destination: string
   templateId: EntryTemplateId
-  flyer: FlyerSlots
   scans: number
   qrSvg: string
-}
-
-function presetStyle(key: string): QrStyle {
-  return STYLE_PRESETS.find((p) => p.key === key)?.style ?? DEFAULT_STYLE
 }
 
 function destinationLabel(groups: DestinationGroup[], value: string): string {
@@ -66,7 +59,6 @@ export function EntryPointsManager({
 
   return (
     <div className="space-y-6">
-      {/* Create */}
       <section className="rounded-card border border-border bg-surface lift-1">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-body-sm font-bold text-text">New entry point</h2>
@@ -96,7 +88,6 @@ export function EntryPointsManager({
         )}
       </section>
 
-      {/* List */}
       <section className="space-y-3">
         {cards.length === 0 && !creating && (
           <p className="rounded-card border border-dashed border-border bg-surface px-4 py-8 text-center text-body-sm text-muted">
@@ -143,9 +134,6 @@ function TemplatePicker({ templates, onPick, onCancel }: { templates?: EntryTemp
 interface FormState {
   title: string
   destination: string
-  headline: string
-  subhead: string
-  footer: string
 }
 
 export function EntryForm({
@@ -167,32 +155,15 @@ export function EntryForm({
   const firstDestination = destinationGroups[0]?.items[0]?.value ?? template.defaultDestination
   const [form, setForm] = useState<FormState>(
     card
-      ? { title: card.title, destination: card.destination, ...card.flyer }
+      ? { title: card.title, destination: card.destination }
       : {
           title: '',
           destination: template.defaultDestination || firstDestination,
-          headline: template.slots.headline,
-          subhead: template.slots.subhead,
-          footer: template.slots.footer,
         },
   )
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-
-  // Live flyer preview — exactly what downloads, scaled down.
-  const previewSvg = useMemo(
-    () =>
-      buildEntryFlyerSvg({
-        layout: template.flyerLayout,
-        slots: { headline: form.headline, subhead: form.subhead, footer: form.footer },
-        qrStyle: card ? undefined : presetStyle(template.stylePreset),
-        url: card?.url ?? shortLinkUrl('preview'),
-        shortLabel: (card?.url ?? shortLinkUrl('your-link')).replace(/^https?:\/\//, ''),
-        size: 360,
-      }),
-    [template, form, card],
-  )
 
   function set<K extends keyof FormState>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }))
@@ -200,7 +171,12 @@ export function EntryForm({
   }
 
   function submit() {
-    const input: EntryPointInput = { templateId: template.id, ...form, ...(campaignId ? { campaignId } : {}) }
+    const input: EntryPointInput = {
+      templateId: template.id,
+      ...form,
+      ...template.slots,
+      ...(campaignId ? { campaignId } : {}),
+    }
     start(async () => {
       const r = card ? await updateEntryPoint(card.id, input) : await createEntryPoint(input)
       if ('error' in r) {
@@ -215,65 +191,42 @@ export function EntryForm({
   const labelCls = 'block text-meta font-medium text-subtle mb-1'
 
   return (
-    <div className="grid gap-5 md:grid-cols-[1fr_auto]">
-      <div className="space-y-3">
-        {onBack && (
-          <button onClick={onBack} className="inline-flex items-center gap-1 text-meta font-medium text-muted hover:text-text">
-            <ArrowLeft className="h-3 w-3" /> {template.label} · change
-          </button>
-        )}
-        <label className="block">
-          <span className={labelCls}>Name (just for you)</span>
-          <Input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. Coffee-shop flyer" />
-        </label>
-        <label className="block">
-          <span className={labelCls}>Where it points</span>
-          <Select value={form.destination} onChange={(e) => set('destination', e.target.value)}>
-            {destinationGroups.map((g) => (
-              <optgroup key={g.group} label={g.group}>
-                {g.items.map((i) => (
-                  <option key={i.value} value={i.value}>{i.label}</option>
-                ))}
-              </optgroup>
-            ))}
-          </Select>
-        </label>
-        <label className="block">
-          <span className={labelCls}>Headline</span>
-          <Input value={form.headline} onChange={(e) => set('headline', e.target.value)} maxLength={80} />
-        </label>
-        <label className="block">
-          <span className={labelCls}>Subhead</span>
-          <Input value={form.subhead} onChange={(e) => set('subhead', e.target.value)} maxLength={120} />
-        </label>
-        <label className="block">
-          <span className={labelCls}>Call to action</span>
-          <Input value={form.footer} onChange={(e) => set('footer', e.target.value)} maxLength={40} />
-        </label>
+    <div className="space-y-3">
+      {onBack && (
+        <button onClick={onBack} className="inline-flex items-center gap-1 text-meta font-medium text-muted hover:text-text">
+          <ArrowLeft className="h-3 w-3" /> {template.label} · change
+        </button>
+      )}
+      <label className="block">
+        <span className={labelCls}>Name (just for you)</span>
+        <Input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. Saturday market table" />
+      </label>
+      <label className="block">
+        <span className={labelCls}>Where it points</span>
+        <Select value={form.destination} onChange={(e) => set('destination', e.target.value)}>
+          {destinationGroups.map((g) => (
+            <optgroup key={g.group} label={g.group}>
+              {g.items.map((i) => (
+                <option key={i.value} value={i.value}>{i.label}</option>
+              ))}
+            </optgroup>
+          ))}
+        </Select>
+      </label>
 
-        {error && <p className="text-meta text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
 
-        <div className="flex items-center gap-2 pt-1">
-          <Button
-            size="sm"
-            onClick={submit}
-            disabled={pending}
-          >
-            {pending ? 'Saving…' : card ? 'Save changes' : 'Create entry point'}
-          </Button>
-          <button onClick={onDone} className="rounded-control px-3 py-1.5 text-meta font-semibold text-muted hover:text-text">
-            Cancel
-          </button>
-        </div>
-      </div>
-
-      {/* Live flyer preview. */}
-      <div className="shrink-0">
-        <p className={labelCls}>Flyer preview</p>
-        <div
-          className="w-[200px] overflow-hidden rounded-card border border-border [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
-          dangerouslySetInnerHTML={{ __html: previewSvg }}
-        />
+      <div className="flex items-center gap-2 pt-1">
+        <Button
+          size="sm"
+          onClick={submit}
+          disabled={pending}
+        >
+          {pending ? 'Saving…' : card ? 'Save changes' : 'Create entry point'}
+        </Button>
+        <button onClick={onDone} className="rounded-control px-3 py-1.5 text-meta font-semibold text-muted hover:text-text">
+          Cancel
+        </button>
       </div>
     </div>
   )
@@ -309,7 +262,7 @@ export function EntryRow({ card, destinationGroups }: { card: EntryCard; destina
     <div className="rounded-card border border-border bg-surface p-3 lift-1">
       <div className="flex gap-3">
         <div
-          // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
+          // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
           className="h-20 w-20 shrink-0 rounded-lg border border-border bg-white p-1 [&>svg]:h-full [&>svg]:w-full"
           dangerouslySetInnerHTML={{ __html: card.qrSvg }}
         />
@@ -322,16 +275,6 @@ export function EntryRow({ card, destinationGroups }: { card: EntryCard; destina
             <span className="font-semibold text-text">{card.scans}</span> scan{card.scans === 1 ? '' : 's'}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            {/* Flyer downloads are turned off here; QR PNG/SVG + link stay. ⚠️ NOT for the
-                reason this comment used to give. It cited BACKLOG.md § "Entry-point flyer
-                designer", a doc retired 2026-06-15, and lib/entry-points/flyer.ts blamed a
-                missing rasterizer font — that font shipped in 349733c4f, one day BEFORE
-                b7c862005 removed these buttons. So the builder and BOTH downloads
-                (/api/entry-points/<slug>/flyer, ?format=svg|png, owner-gated) work today and
-                are simply unlinked. What is actually pending is a product ruling — ship the
-                fixed-template flyer as-is, or replace it with the flyer designer that
-                deferral wanted — carried as OWN-059 in docs/BUILD-BACKLOG.json. Restoring
-                them is two <a> tags; see that row before you do. */}
             <a href={`${qrApi}&format=png&download=${encodeURIComponent(card.slug)}`} className={action}>
               <Download className="h-3 w-3" /> QR PNG
             </a>

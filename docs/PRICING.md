@@ -459,7 +459,9 @@ amount is the real price charged today (Pro $19). **Yearly = two months free = 1
 key plus `_list` (`pro_base_month_list`), synced `archived=true`. ⚠️ Two clauses of that sentence are
 now historical: since [ADR-1060](DECISIONS.md) the **`_list` key is the one checkout charges**, and the
 `archived` flag is a row annotation nothing reads to decide a charge (`resolveStripePriceId` ignores it),
-so it no longer says "not sold". The key STRINGS are unchanged and are frozen by
+so it no longer says "not sold". HYG-082 closed 2026-09-19 (ADR-1427) after a survey re-read that flag
+as Stripe-archived; stopping the `_list` ask would unplug list checkout, so the row closed without a
+catalog rewrite. The key STRINGS are unchanged and are frozen by
 `lib/billing/pricing-catalog-sync.test.ts`. Retired legacy keys (`practitioner_*`, `business_*`, `whitelabel_*`) are **kept
 resolvable but archived, never deleted** (`RETIRED_CATALOG_KEYS`), so a grandfathered locked price id
 still resolves. (`supporter_*` was retired here too until the 2026-07 overhaul un-retired it, ADR-818.)

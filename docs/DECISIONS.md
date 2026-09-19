@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1428**.
+tree as of this index: **ADR-1434**.
 
 | Theme | Start here |
 |---|---|
@@ -38365,6 +38365,9 @@ change to a marquee page, and not this.
 the reversal, recorded in the row, not rot. The band paints one image instead of two, which is a
 decode saved on the surface least able to afford one.
 
+Amended by [ADR-1431](DECISIONS.md): the picker now previews both surfaces. The phone frame has to
+read the phone height token; a second width over the desktop height is the wrong shape.
+
 ---
 
 ## ADR-1301: ACCEPTED, LANES SUPERSEDED BY ADR-1302 — the event identity region is full width, outside the action column (2026-09-10)
@@ -45939,7 +45942,115 @@ Premise re-tested 2026-09-19 on this tree: the pattern still matched `class="dro
 
 **Rows.** HYG-071.
 
-## ADR-1428: One Space, one create door (HYG-080)
+## ADR-1427: `pricing_stripe_prices.archived` is not a Stripe archive (HYG-082)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-082` · restates [ADR-1062](DECISIONS.md) rule 5 after a survey misread it · corroborated by `lib/billing/pricing-products.ts` (`archived: list`), `lib/pricing/beta.ts` (`loadoutChargePriceKey`), `lib/billing/pricing-prices.ts` (`resolveStripePriceId`), and `lib/billing/pricing-catalog-sync.test.ts`
+
+**Context.** HYG-082, filed 2026-09-08 from the core-model survey: `pricing_stripe_prices` holds 20 rows, 8 with `archived: true` (every `*_list` anchor), and `catalogPriceKey(..., list=true)` still asks for them, "so the pricing surface resolves anchors against IDs Stripe has archived." The proposed work was re-mint or stop asking, sequenced after Collective (LIVE-228) so the Collective list keys would not be cleaned twice.
+
+Premise re-tested 2026-09-19 on this tree, and the row is false.
+
+1. The catalog sync writes `archived: list` as a **map annotation**. It is Stripe's `active` in neither direction. ADR-1062 rule 5 already said so, and the catalog-sync test pins that `prices.update({ active: false })` is never called. Twenty prices, all created active.
+2. Since [ADR-1060](DECISIONS.md) the **`_list` key is what checkout charges**. `loadoutChargeArm` returns `list` when there is no lock and no grant; `loadoutChargePriceKey` then asks `catalogPriceKey(item, interval, true)`. Stopping that ask would unplug every ungranted Space-plan checkout, which is the live path.
+3. `resolveStripePriceId` never reads `row.archived`. A list row with the flag set still resolves. That is why checkout can charge a row the survey called archived.
+
+The "wait for Collective" sequencing was a consequence of the wrong reading: LIVE-228 retires the Collective **tier**, not a Stripe archive.
+
+**Decision.**
+
+1. **Keep asking for `_list` keys.** They are the charged catalog keys. Founding keys stay for the grant and for a lock.
+2. **Do not Stripe-archive a catalog price to "fix" the map flag.** A Price archived in Stripe cannot join a new subscription, which is exactly what the list arm (everyone) and the founding arm (the grant) both need.
+3. **Close HYG-082 without a catalog rewrite.** The probe now pins the three facts the survey inverted: the list arm still builds a `_list` key, the sync still annotates list rows `archived: true` without calling `prices.update({ active: false })`, and `resolveStripePriceId` still ignores the flag.
+
+**Rejected.** Stopping `catalogPriceKey(..., true)` (that is the charge). Flipping the map flag so list rows read `archived: false` (ADR-1062 already refused that as an unrelated semantic edit with no gate). Waiting for LIVE-228 (the Collective merge does not change what `archived` means).
+
+**Consequences.** A later sweep that greps `archived = true` and treats the hit as "Stripe will refuse this id" fails the probe instead of shipping a checkout outage. [PRICING.md](PRICING.md) already names the historical wording; this ADR is the HYG-082 close, not a new pricing shape. LIVE-228 still has to drop Collective from `SPACE_PLANS` on its own terms.
+
+**Rows.** HYG-082.
+
+## ADR-1429: Leftover hex lives on the named token-guard allowlist (HYG-099)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-099` · corroborated by `scripts/check-tokens.mjs` (`ALLOWLIST`) and `scripts/check-tokens.test.ts`
+
+**Context.** HYG-099, filed 2026-09-19 from the presentation-canon survey: never hardcode hex in UI; remaining literals are craft, not a product block; do not churn token files without a DAWN sync. The close condition was a dated sweep of `app/` and `components/` (excluding tests, tokens, and generated) at zero, **or** an allowlist named in the probe.
+
+Premise re-tested 2026-09-19 on this tree: `pnpm check:tokens` is already green. The leftovers the survey would have listed are the ones the token guard already enumerates: Satori OG cards (no CSS cascade), map paints, email HTML, token DATA, and pickers. A conversion sweep of those files is the DAWN churn the row forbids. In-app chrome is already a hard failure.
+
+**Decision.**
+
+1. **Name the existing allowlist as the leftover list.** `scripts/check-tokens.mjs` `ALLOWLIST` is the dated sweep. Do not open a second hex inventory.
+2. **Keep the UI gate.** A planted hex in `components/ui/` still fails. Closing the row does not waive chrome.
+3. **Do not retoken OG, maps, or email in this change.** Those media cannot read DAWN custom properties.
+
+**Rejected.** A conversion sweep of allowlisted files (that is the DAWN churn the row forbids). Deleting the allowlist so the next OG card fails CI. Filing a new plan markdown of leftover hex (one-list).
+
+**Consequences.** HYG-099 closes on the allowlist the gate already had. A new hex in chrome still fails `check:tokens`. A new raster or email file still has to join `ALLOWLIST` with a reason, which is the same review the guard already demanded.
+
+**Rows.** HYG-099.
+
+## ADR-1430: The admin FilterBar lands on the Support queue (SCAN-639)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-639` · corroborated by `app/(main)/admin/support/page.tsx` and `components/admin/filter-bar.tsx`
+
+**Context.** SCAN-639, filed 2026-09-19 from the meta-scan: `components/admin/filter-bar.tsx` is named in the admin kit next to `DataTable` (ADR-233) and imported by nothing. `page-contents.tsx` had a private function of the same name for category link chips. The close was wire it onto one Index/Queue, or delete the file and drop the kit mention.
+
+Premise re-tested 2026-09-19 on this tree: zero imports of `@/components/admin/filter-bar` under `app/`, `components/`, or `lib/` (excluding the file itself). The Support console already read `status`, `type`, and `q` from the query string; only status had a control, and it was a local chip row that wiped the other params.
+
+**Decision.**
+
+1. **Wire, do not delete.** The Support queue is the first consumer. Status, type, and search all go through `FilterBar`. The server still filters; the bar only writes the URL.
+2. **`defaultValue` on a filter that has a real default.** Open (`open_all`) is the queue's empty-URL view. Without a default the select would read as "Status" while the table showed Open tickets.
+3. **Rename the IndexTemplate chip bar.** `page-contents.tsx` now calls that local function `LinkChipBar`. Two jobs, two names.
+
+**Rejected.** Deleting the kit file (the contract is real; the Support page was already the Queue the spec described). Leaving the private `FilterBar` name in `page-contents.tsx` (the row forbade a second FilterBar name). Replacing every admin table in one PR.
+
+**Consequences.** A later sweep that greps for `FilterBar` and finds only the kit plus `LinkChipBar` is reading the same split. Type and subject search were already in `listTickets` and now have a control. SCAN-636 (ISR event canonical) and SCAN-637 (marketplace `force-dynamic`) stay separate; this row is the unwired kit piece.
+
+**Rows.** SCAN-639.
+
+## ADR-1431: The event cover picker previews phone and desktop (LIVE-272)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-272` · amends [ADR-1300](DECISIONS.md) · corroborated by `lib/layout/cover-height.ts` (`posterBandHeightPx`, `EVENT_POSTER_PHONE_WIDTH_PX`) and `components/admin/modules/event-header-controls.tsx`
+
+**Context.** ADR-1300 taught the focal picker to preview the real band instead of a stock 16/9. The control still passed one width: 1044, the event page's centre column. The phone band is one rung shorter below `sm`, so a standard-tier phone paints 412x221 (1.86:1) against the desktop's 1044x374 (2.79:1). A host who framed tightly against the desktop preview could lose more or less of the artwork on a phone than the control showed.
+
+Premise re-tested 2026-09-19 on this tree: the control still passed `posterBandAspect(height, 1044, aspect)`. The row said the second frame was one more call because the function already took a width. That was half wrong. `posterBandAspect` always divided by the desktop (`sm:`) height token, so `posterBandAspect('standard', 412)` is 412/374, not 412/221.
+
+**Decision.**
+
+1. **Show both frames on one focus.** Phone and desktop pickers share the same `object-position`. Dragging either updates both. A toggle would hide the difference this row exists to show.
+2. **The phone frame uses the phone height token.** `posterBandHeightPx(tier, 'phone')` reads the first class in `POSTER_HEIGHT_CLASS`. Width alone is not a surface.
+3. **Name the two widths.** `EVENT_POSTER_DESKTOP_WIDTH_PX` (1044) and `EVENT_POSTER_PHONE_WIDTH_PX` (412) live next to the ladder so a retune moves the preview with the survey.
+
+**Rejected.** A width toggle (hides the mismatch). Passing 412 with the desktop height (the naive second call). Two focal points (the page has one `coverFocus`).
+
+**Consequences.** The rail is taller by one preview. The height picker still moves both frames. A later change that reverts to `posterBandAspect(height, 1044, aspect)` fails the LIVE-272 probe and the band test's naive-width control.
+
+**Rows.** LIVE-272.
+
+## ADR-1433: Delete the entry-point flyer builder, keep the share-card Bold face (LIVE-216)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-216` · corroborated by `lib/entry-points/templates.ts`, `app/(main)/entry-points/entry-points-client.tsx`, `next.config.ts` `OG_CARD_FONTS`
+
+**Context.** OWN-059 item 3 asked the owner what to do with a flyer builder whose download buttons had already been unlinked (`b7c862005`). The owner ruled DELETE on 2026-09-08. The row sat open because no code-lane packet owned the deletion, which is how a ruling becomes a no-op.
+
+Premise re-tested 2026-09-19: `lib/entry-points/flyer.ts`, `flyer-raster.ts`, and `app/api/entry-points/[slug]/flyer/route.ts` still existed. `LiberationSans-Regular.ttf` (410,820 bytes) was flyer-exclusive. `LiberationSans-Bold.ttf` is the OG share-card disk fallback named in `OG_CARD_FONTS` and asserted by `lib/og/og-fonts.test.ts`. Deleting Bold would break every share card.
+
+The source-side weight this row can name without a production artifact: 410 KB of Regular plus about 12 KB of flyer code. `check:build-budget` still has to print the post-deploy delta; CI never builds.
+
+**Decision.**
+
+1. **Delete the flyer composer, rasteriser, route, and Regular face.** Keep the short link and branded QR. The `qr_codes.flyer` jsonb column stays; creates write template defaults so existing rows stay shaped. No migration.
+2. **Keep `LiberationSans-Bold.ttf` and its `OG_CARD_FONTS` entry.** The probe's control half fails if Bold is gone.
+3. **Drop the flyer wasm include** from `outputFileTracingIncludes`. Styled QR PNG still traces `@resvg/resvg-wasm` on `/api/qr`.
+
+**Rejected.** Deleting both Liberation faces (the title's first wording; the correction of 2026-09-08). Leaving the live preview while deleting only the route (the form would still promise a poster nothing serves).
+
+**Consequences.** `/entry-points` and the Funnels builder produce a named QR and a short link. The flyer API 404s. Share cards still fall back to Bold when Nunito cannot load.
+
+**Rows.** LIVE-216. OWN-059 item 3 is this row; items 1-2 stay owner-timed.
+
+## ADR-1434: One Space, one create door (HYG-080)
 
 **Status:** Accepted · 2026-09-19 · backlog `HYG-080` · CORE-MODEL §1.4 · corroborated by `lib/spaces/provision.ts` (`createSpace` is the member Space road) and `app/(main)/spaces/new/page.tsx`
 
@@ -45949,7 +46060,7 @@ Premise re-tested 2026-09-19 on this tree: the pattern still matched `class="dro
 2. `scripts/check-creates.mjs` registered `createBusinessSpace` in `ENTITY_WRITES` and in `CREATE_ENTRIES`.
 3. `scripts/check-creates.test.ts` asserted that key in `ROUTED_ON_2026_09_07`.
 
-Numbered **1428** because **1426** is LIVE-216 (flyer builder) and **1427** is HYG-082 on open PRs.
+Numbered **1434** because **1426–1433** landed on main while this PR was open.
 
 **Decision.**
 

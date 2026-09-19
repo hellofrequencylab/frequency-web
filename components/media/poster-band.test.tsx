@@ -4,7 +4,10 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { PosterBand } from './poster-band'
 import {
   coverHeightClass,
+  EVENT_POSTER_DESKTOP_WIDTH_PX,
+  EVENT_POSTER_PHONE_WIDTH_PX,
   posterBandAspect,
+  posterBandHeightPx,
   posterHeightClass,
   posterHeightPx,
   posterMaxHeightClass,
@@ -517,10 +520,40 @@ describe('the crop preview is the same shape as the band it previews', () => {
     expect(posterBandAspect('standard', 1044, null)).toBeCloseTo(1044 / 374, 6)
   })
 
-  it('the event header control actually passes it — a preview that is not wired is not a preview', () => {
+  it('the phone band is one rung shorter, so a phone WIDTH over a desktop HEIGHT is the wrong frame', () => {
+    // LIVE-272: the naive "second call" (width 412, desktop height 374) is 1.10:1, not the
+    // 412x221 (1.86:1) the page paints. The surface argument is the load-bearing half.
+    expect(posterBandHeightPx('standard', 'phone')).toBe(221)
+    expect(posterBandHeightPx('standard', 'desktop')).toBe(374)
+    expect(posterHeightPx('standard')).toBe(374)
+    expect(EVENT_POSTER_DESKTOP_WIDTH_PX).toBe(1044)
+    expect(
+      posterBandAspect('standard', EVENT_POSTER_DESKTOP_WIDTH_PX, null, 'desktop'),
+    ).toBeCloseTo(EVENT_POSTER_DESKTOP_WIDTH_PX / 374, 6)
+    expect(
+      posterBandAspect('standard', EVENT_POSTER_PHONE_WIDTH_PX, null, 'phone'),
+    ).toBeCloseTo(EVENT_POSTER_PHONE_WIDTH_PX / 221, 6)
+    expect(
+      posterBandAspect('standard', EVENT_POSTER_PHONE_WIDTH_PX, null, 'desktop'),
+    ).toBeCloseTo(EVENT_POSTER_PHONE_WIDTH_PX / 374, 6)
+    expect(
+      Math.abs(
+        posterBandAspect('standard', EVENT_POSTER_PHONE_WIDTH_PX, null, 'phone') -
+          posterBandAspect('standard', EVENT_POSTER_PHONE_WIDTH_PX, null, 'desktop'),
+      ),
+    ).toBeGreaterThan(0.5)
+  })
+
+  it('the event header control previews both surfaces — a desktop-only frame is not a preview', () => {
     const controls = readFileSync('components/admin/modules/event-header-controls.tsx', 'utf8')
     expect(controls).toContain("from '@/lib/layout/cover-height'")
-    expect(controls).toContain('aspect={posterBandAspect(height, 1044, aspect)}')
+    expect(controls).toContain('EVENT_POSTER_PHONE_WIDTH_PX')
+    expect(controls).toContain('EVENT_POSTER_DESKTOP_WIDTH_PX')
+    expect(controls).toContain("posterBandAspect(height, EVENT_POSTER_PHONE_WIDTH_PX, aspect, 'phone')")
+    expect(controls).toContain(
+      "posterBandAspect(height, EVENT_POSTER_DESKTOP_WIDTH_PX, aspect, 'desktop')",
+    )
+    expect(controls).not.toContain('posterBandAspect(height, 1044, aspect)')
     // The measured shape has to be STATE, or a swapped cover re-measures into a ref and the
     // preview keeps the old frame until something else re-renders the panel.
     expect(controls).toContain('setAspect(measured)')

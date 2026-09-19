@@ -67,13 +67,16 @@ export function PageContents(
     | { sections: PageContentsSection[] }
     | { links: PageContentsLink[]; rightSlot?: React.ReactNode; divider?: boolean },
 ) {
-  if ('links' in props) return <FilterBar links={props.links} rightSlot={props.rightSlot} divider={props.divider} />
+  if ('links' in props) return <LinkChipBar links={props.links} rightSlot={props.rightSlot} divider={props.divider} />
   return <ScrollSpyBar sections={props.sections} />
 }
 
-// ── Filter / drill-down mode ──────────────────────────────────────────────────
+// ── Category chips (not the admin FilterBar) ──────────────────────────────────
+// SCAN-639: the kit FilterBar sits beside DataTable in the admin kit. This local
+// bar is a sticky row of category LINKS. Same noun, different job, so it does
+// not share the exported name.
 
-function FilterBar({
+function LinkChipBar({
   links,
   rightSlot,
   divider,

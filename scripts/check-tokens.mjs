@@ -47,6 +47,10 @@ const ANNOTATION = /\/\/\s*token-ok:|\/\*\s*token-ok\b/
 // theme/skin registries, accent + cover generators, map markers, raster OG/social images,
 // the theme/email studios + email templates (author raw brand color), QR styling, the Space
 // brand/color pickers, and dataviz/chart color files. Each predicate takes the POSIX relpath.
+//
+// HYG-099 (ADR-1429): this list IS the leftover-hex sweep. Remaining literals are craft
+// (Satori OG, maps, email HTML, token DATA). Do not churn token files without a DAWN sync.
+// In-app chrome still fails a planted hex (scripts/check-tokens.test.ts).
 const ALLOWLIST = [
   // exact files
   (p) => p === 'app/globals.css',
@@ -127,7 +131,6 @@ const ALLOWLIST = [
   //     flyer, canvas/SVG exports. A canvas fillStyle cannot read a CSS variable.
   (p) => p.startsWith('lib/og/'),
   (p) => p.startsWith('lib/qr/'),
-  (p) => p === 'lib/entry-points/brand.ts',
   (p) => p === 'lib/library/export-svg.ts',
   // (3) COLOR AS DATA — token sources, member-supplied color validators, and derived-contrast
   //     helpers. The hex here is the VALUE being validated/stored/computed, not applied style.
