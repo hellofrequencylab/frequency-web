@@ -11,6 +11,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { isJanitor } from '@/lib/core/roles'
 import { fail, type ActionResult } from '@/lib/action-result'
 import { approveVerification, rejectVerification } from '@/lib/spaces/nonprofit-verification'
+import { parseInput, z, uuid, requiredText } from '@/lib/validation'
 
 /** Platform-staff (janitor axis) gate, matching /admin/pricing + /admin/payments. Returns the caller id
  *  or a human-readable error. */
@@ -25,7 +26,13 @@ async function requireReviewer(): Promise<{ id: string } | string> {
 export async function approveNonprofitVerification(id: string): Promise<ActionResult> {
   const who = await requireReviewer()
   if (typeof who === 'string') return fail(who)
-  const res = await approveVerification(id, who.id)
+  let parsed: { id: string }
+  try {
+    parsed = parseInput(z.object({ id: uuid }), { id })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Invalid input')
+  }
+  const res = await approveVerification(parsed.id, who.id)
   revalidatePath('/admin/nonprofit-verifications')
   return res
 }
@@ -34,7 +41,13 @@ export async function approveNonprofitVerification(id: string): Promise<ActionRe
 export async function rejectNonprofitVerification(id: string, note: string): Promise<ActionResult> {
   const who = await requireReviewer()
   if (typeof who === 'string') return fail(who)
-  const res = await rejectVerification(id, who.id, note)
+  let parsed: { id: string; note: string }
+  try {
+    parsed = parseInput(z.object({ id: uuid, note: requiredText('A reason is required') }), { id, note })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Invalid input')
+  }
+  const res = await rejectVerification(parsed.id, who.id, parsed.note)
   revalidatePath('/admin/nonprofit-verifications')
   return res
 }

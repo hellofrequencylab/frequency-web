@@ -1,28 +1,49 @@
-import Link from 'next/link'
 import { LifeBuoy } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
+import { FilterBar } from '@/components/admin/filter-bar'
 import { SupportTable } from './support-table'
 import { listTickets, ticketStatusCounts } from '@/lib/support/store'
-import { type TicketStatus } from '@/lib/support/types'
+import {
+  TYPE_LABELS,
+  STATUS_LABELS,
+  TICKET_TYPES,
+  type TicketStatus,
+  type TicketType,
+} from '@/lib/support/types'
 
 export const dynamic = 'force-dynamic'
 
-const FILTERS: { key: string; label: string }[] = [
-  { key: 'open_all', label: 'Open' },
-  { key: 'all', label: 'All' },
-  { key: 'open', label: 'New' },
-  { key: 'in_progress', label: 'In progress' },
-  { key: 'waiting', label: 'Waiting' },
-  { key: 'resolved', label: 'Resolved' },
-  { key: 'closed', label: 'Closed' },
-]
+const STATUS_KEYS = ['open_all', 'all', ...Object.keys(STATUS_LABELS)] as const
+
+function parseStatus(raw: string | undefined): TicketStatus | 'all' | 'open_all' {
+  if (!raw || raw === 'open_all') return 'open_all'
+  if (raw === 'all') return 'all'
+  if (raw in STATUS_LABELS) return raw as TicketStatus
+  return 'open_all'
+}
+
+function parseType(raw: string | undefined): TicketType | undefined {
+  if (raw && (TICKET_TYPES as readonly string[]).includes(raw)) return raw as TicketType
+  return undefined
+}
+
+function statusOptionLabel(key: string, counts: Record<string, number>, openCount: number): string {
+  if (key === 'open_all') return `Open (${openCount})`
+  if (key === 'all') return 'All'
+  if (key === 'open') return `New (${counts.open ?? 0})`
+  const base = STATUS_LABELS[key as TicketStatus] ?? key
+  return `${base} (${counts[key] ?? 0})`
+}
 
 // Support console (ADR-159) — the staff triage queue. Wired to the reporter's profile
 // (and from there, the CRM). Gate (ADR-223): community host+ OR a staff role with the
 // `members` domain (write) — Support/Operations do member assist (docs/ROLES.md
 // §System 3). The floor matches the sections.ts link gate exactly (host + `members`).
+//
+// SCAN-639: filters go through the kit FilterBar (ADR-233), not a local chip row.
+// The page already read `status`, `type`, and `q`; type and search had no control.
 export default async function AdminSupportPage({
   searchParams,
 }: {
@@ -30,9 +51,12 @@ export default async function AdminSupportPage({
 }) {
   await requireAdmin('host', { staff: 'members' })
 
-  const { status = 'open_all', type, q } = await searchParams
+  const raw = await searchParams
+  const status = parseStatus(raw.status)
+  const type = parseType(raw.type)
+  const q = raw.q
   const [tickets, counts] = await Promise.all([
-    listTickets({ status: status as TicketStatus | 'all' | 'open_all', type: type as never, q }),
+    listTickets({ status, type, q }),
     ticketStatusCounts(),
   ])
 
@@ -46,37 +70,41 @@ export default async function AdminSupportPage({
       description="Bug reports and support requests from members. Triage, reply, and track them to resolution."
       width="wide"
     >
-      <AdminSection>
-        {/* Status filter chips (URL-as-state) */}
-        <div className="flex flex-wrap gap-1.5">
-          {FILTERS.map((f) => {
-            const active = status === f.key
-            const count = f.key === 'open_all' ? openCount : f.key === 'all' ? undefined : counts[f.key]
-            return (
-              <Link
-                key={f.key}
-                href={`/admin/support?status=${f.key}`}
-                aria-current={active ? 'true' : undefined}
-                className={`inline-flex items-center gap-1.5 rounded-pill px-3 py-1 text-meta font-semibold transition-colors motion-reduce:transition-none ${
-                  active ? 'bg-primary text-on-primary' : 'border border-border bg-surface text-muted hover:bg-surface-elevated'
-                }`}
-              >
-                {f.label}
-                {count != null && <span className={active ? 'opacity-80' : 'text-subtle'}>{count}</span>}
-              </Link>
-            )
-          })}
-        </div>
-      </AdminSection>
-
       <AdminSection title={`${tickets.length} ticket${tickets.length === 1 ? '' : 's'}`}>
+        <FilterBar
+          search="q"
+          searchPlaceholder="Search tickets"
+          filters={[
+            {
+              key: 'status',
+              label: 'Status',
+              defaultValue: 'open_all',
+              options: STATUS_KEYS.map((key) => ({
+                value: key,
+                label: statusOptionLabel(key, counts, openCount),
+              })),
+            },
+            {
+              key: 'type',
+              label: 'Type',
+              options: TICKET_TYPES.map((value) => ({
+                value,
+                label: TYPE_LABELS[value],
+              })),
+            },
+          ]}
+        />
         <SupportTable
           tickets={tickets}
           empty={
             <EmptyState
               variant={status === 'all' ? 'first-use' : 'no-results'}
               title={status === 'all' ? 'No tickets yet' : 'Nothing in this view'}
-              description={status === 'all' ? 'Member bug reports and support requests will appear here.' : 'Try the “All” filter to widen the search.'}
+              description={
+                status === 'all'
+                  ? 'Member bug reports and support requests will appear here.'
+                  : 'Try All to see every ticket.'
+              }
             />
           }
         />

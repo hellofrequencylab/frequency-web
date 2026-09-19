@@ -211,7 +211,7 @@ separate, reviewed step).
 
 - **Surface:** `/entry-points` (crew-gated, Focus/Dashboard) + an "Entry points" item in the account menu (crew+). Non-crew see a Crew upsell.
 - **Build flow:** `lib/entry-points/templates.ts` (5 goal-typed templates) → pick one → fill name / destination → publish.
-- **Outputs:** a `/q/<slug>` short link and a branded **QR** (PNG + SVG via `/api/qr`). The print flyer (`lib/entry-points/flyer.ts`, `/api/entry-points/<slug>/flyer`) was ruled deleted on 2026-09-08 and removed in LIVE-216 ([ADR-1426](DECISIONS.md)). `LiberationSans-Bold.ttf` stays as the OG share-card fallback.
+- **Outputs:** a `/q/<slug>` short link and a branded **QR** (PNG + SVG via `/api/qr`). The print flyer (`lib/entry-points/flyer.ts`, `/api/entry-points/<slug>/flyer`) was ruled deleted on 2026-09-08 and removed in LIVE-216 ([ADR-1432](DECISIONS.md)). `LiberationSans-Bold.ttf` stays as the OG share-card fallback.
 - **Destinations:** `lib/entry-points/destinations.ts` — persona lead flows (`/start/<flow>`), the member's own circles/events, or curated public pages; validated to a known safe path (no open redirect).
 - **Data:** entry points are owner-owned `qr_codes` with `template_id` set (`purpose` NULL ⇒ many per owner) + a `flyer` jsonb; migration `20260606000000_entry_points.sql` (additive; **written, not applied**) also adds the `entry_campaigns` table (Phase 2) and the `entry_point_created` / `referral_activated` zap config.
 - **Points:** `entry_point_created` (20 zaps, **capped to the first 5** per member, exactly-once via the engagement ledger) on create; the existing `invite_accepted` (40) credits the owner on a converted signup — **free**, because the `/q` resolver already drops `fq_ref` for any owner-owned code.

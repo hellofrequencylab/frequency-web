@@ -132,6 +132,8 @@ the contract; keep them server-friendly (no client hooks unless interaction requ
 - `FilterBar`: URL-as-state filter row (`{ filters, search? }`: selects + search +
   removable chips) above a `DataTable`; writes to the query string (a Client island that
   passes NO functions, so a Server page can render it). The page reads the params.
+  Optional `defaultValue` on a filter when a missing query key is still a real default
+  (Support queue Open). Do not confuse with IndexTemplate category chips.
 - `StatusChip`: `{ tone: 'success'|'warning'|'danger'|'info'|'neutral', children }`.
   Pill, tokenized. The ONE status vocabulary (retire per-page `*_STYLES` dicts).
 - `Badge`: count badge (neutral, tabular).

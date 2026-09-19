@@ -1,5 +1,5 @@
 // Entry-point templates — the predefined, goal-typed recipes (ADR-126,
-// docs/ENTRY-POINTS.md, ADR-1426). Each template is what a member picks: it sets a
+// docs/ENTRY-POINTS.md, ADR-1432). Each template is what a member picks: it sets a
 // default destination, a QR style preset, and the slot copy stored on the row.
 // The member never sees a blank canvas — they pick one of these and name it.
 //
