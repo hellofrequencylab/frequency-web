@@ -125,14 +125,25 @@ export async function setSpaceBusinessInfo(slug: string, patch: ProfileDataPatch
  */
 export async function setSpaceImages(
   slug: string,
-  images: { coverImageUrl?: string | null; brandLogoUrl?: string | null },
+  images: {
+    coverImageUrl?: string | null
+    coverImageAssetId?: string | null
+    brandLogoUrl?: string | null
+    brandLogoAssetId?: string | null
+  },
 ): Promise<ActionResult> {
   const auth = await authorizeEditor(slug)
   if (!auth) return fail('You do not have access to edit this page.')
 
   const patch: Record<string, unknown> = {}
-  if ('coverImageUrl' in images) patch.cover_image_url = images.coverImageUrl?.trim() || null
-  if ('brandLogoUrl' in images) patch.brand_logo_url = images.brandLogoUrl?.trim() || null
+  if ('coverImageUrl' in images) {
+    patch.cover_image_url = images.coverImageUrl?.trim() || null
+    patch.cover_image_asset_id = images.coverImageUrl?.trim() ? (images.coverImageAssetId ?? null) : null
+  }
+  if ('brandLogoUrl' in images) {
+    patch.brand_logo_url = images.brandLogoUrl?.trim() || null
+    patch.brand_logo_asset_id = images.brandLogoUrl?.trim() ? (images.brandLogoAssetId ?? null) : null
+  }
   if (Object.keys(patch).length === 0) return ok()
 
   const db = createAdminClient() as unknown as {

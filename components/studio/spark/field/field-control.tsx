@@ -535,7 +535,7 @@ function LoomImageSlot({
           scopeKey={scopeKey}
           kinds={['image']}
           multiple={multiple}
-          onSelect={(url) => onChange(url as string & string[])}
+          onSelectAsset={(pick) => onChange(pick.url as string & string[])}
           onSelectMany={(urls) => onChange([...list, ...urls] as string & string[])}
         />
       )}

@@ -105,7 +105,10 @@ describe('the uploadFn branch respects the control\'s mode', () => {
   it('delegates the value decision instead of assuming a URL', () => {
     expect(control).not.toMatch(/function valueFromServerUpload\b/)
     expect(control).toContain('const next = valueFromServerUpload(mode, res, Date.now())')
-    expect(control).toContain('onChange(next.value)')
+    // HYG-068 routes the same value through emit() so a parent can persist the Loom id
+    // beside the url. emit still calls onChange; it must not skip the mode-aware value.
+    expect(control).toContain('emit(next.value, null)')
+    expect(control).toContain('onChange(url)')
   })
 
   it('the URL-assuming line is gone', () => {

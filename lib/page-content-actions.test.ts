@@ -66,11 +66,19 @@ describe("the site rung '*' is writable, under the same gate as a page row (PROG
     caller.mockResolvedValue(admin)
     const url = 'https://x.supabase.co/storage/v1/object/public/loom/site.jpg'
     expect(await setPageHeroUrl(SITE_SCOPE, url)).toBeUndefined()
-    expect(upsert.mock.calls[0][0]).toMatchObject({ route: SITE_SCOPE, hero_image: url })
+    expect(upsert.mock.calls[0][0]).toMatchObject({ route: SITE_SCOPE, hero_image: url, hero_image_asset_id: null })
     await removePageHero(SITE_SCOPE)
-    expect(upsert.mock.calls[1][0]).toMatchObject({ route: SITE_SCOPE, hero_image: null })
+    expect(upsert.mock.calls[1][0]).toMatchObject({ route: SITE_SCOPE, hero_image: null, hero_image_asset_id: null })
     expect(revalidatePath).toHaveBeenCalledTimes(2)
     expect(revalidatePath).toHaveBeenLastCalledWith('/', 'layout')
+  })
+
+  it('writes the Loom id beside the hero url', async () => {
+    caller.mockResolvedValue(admin)
+    const url = 'https://x.supabase.co/storage/v1/object/public/loom/site.jpg'
+    const id = 'a1b2c3d4-1111-4222-8333-444455556666'
+    expect(await setPageHeroUrl(SITE_SCOPE, url, id)).toBeUndefined()
+    expect(upsert.mock.calls[0][0]).toMatchObject({ hero_image: url, hero_image_asset_id: id })
   })
 
   it('the site row reads back through the same editor read', async () => {

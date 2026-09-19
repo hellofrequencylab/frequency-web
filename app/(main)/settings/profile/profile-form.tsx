@@ -35,6 +35,8 @@ export function ProfileForm({
     /** The saved avatar FOCAL POINT (CSS object-position "x% y%"). Defaults to centered. */
     avatarFocal: string
     headerImageUrl: string
+    /** Loom id beside the header url (HYG-068). Null when the banner is a paste or an older upload. */
+    headerImageAssetId: string | null
     /** The saved header banner FOCAL POINT (CSS object-position "x% y%"). Defaults to centered. */
     headerFocal: string
     /** The header overlay style ('none' | 'shadow' | 'fade') and its optional color. */
@@ -67,6 +69,7 @@ export function ProfileForm({
   const [avatarFocus,   setAvatarFocus]   = useState(initial.avatarFocal || DEFAULT_OBJECT_POSITION)
   const avatarFocusTimer                  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [headerUrl,     setHeaderUrl]     = useState(initial.headerImageUrl)
+  const [headerAssetId, setHeaderAssetId] = useState<string | null>(initial.headerImageAssetId)
   // Header FOCUS — where the header banner sits in its cropped hero window (a CSS object-position).
   // The SAME reusable control the Space + event rails use (ImageFocalPicker): the marker moves live
   // while a drag DEBOUNCES the write via the dedicated setProfileHeaderFocus action (so a drag does
@@ -174,6 +177,7 @@ export function ProfileForm({
           avatarUrl:      avatarUrl ? avatarUrl : null,
           avatarFocal:    avatarFocus,
           headerImageUrl: headerUrl,
+          headerImageAssetId: headerAssetId,
           headerFocal:    headerFocus,
           headerOverlayStyle: overlayStyle,
           headerOverlayColor: overlayColor || null,
@@ -235,7 +239,14 @@ export function ProfileForm({
         <p className={lbl}>Header image</p>
         <HeaderImageField
           value={headerUrl || null}
-          onChange={(url) => setHeaderUrl(url ?? '')}
+          onChange={(url) => {
+            setHeaderUrl(url ?? '')
+            if (!url) setHeaderAssetId(null)
+          }}
+          onChangeAsset={(img) => {
+            setHeaderUrl(img.url ?? '')
+            setHeaderAssetId(img.assetId)
+          }}
           focus={headerFocus}
           onFocusChange={onHeaderFocusChange}
           aspect={heroAspect('standard')}

@@ -28,6 +28,8 @@ import {
 } from '@/lib/profile/spotlight-flags'
 import { readProfileHeaderFocus, readProfileAvatarFocus, readProfileOverlayStyle, readProfileOverlayColor } from '@/lib/profile/header-focus'
 import { avatarSrc } from '@/lib/images/avatar-focus'
+import { loadLibraryAssetUrls } from '@/lib/library/asset-urls'
+import { columnImageUrl } from '@/lib/library/column-image'
 import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
 import { validateSpotlightBackground, validateSpotlightStickers } from '@/lib/spotlight/blocks/validate'
 import type { SpotlightBackground, SpotlightStickers } from '@/lib/spotlight/blocks/schema'
@@ -54,6 +56,7 @@ interface ProfileRailData {
     avatarUrl: string
     avatarFocal: string
     headerImageUrl: string
+    headerImageAssetId: string | null
     headerFocal: string
     overlayStyle: string
     overlayColor: string
@@ -80,7 +83,7 @@ export async function getProfileRailData(): Promise<ProfileRailData | null> {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, display_name, handle, bio, avatar_url, phone, city, website, meta, profile_theme')
+    .select('id, display_name, handle, bio, avatar_url, phone, city, website, meta, profile_theme, header_image_url, header_image_asset_id')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!profile) return null
@@ -89,13 +92,8 @@ export async function getProfileRailData(): Promise<ProfileRailData | null> {
   const spotlightPublished = readSpotlightPublished((profile as { meta?: unknown }).meta)
   const canEnableSpotlight = (await getProfileCapabilities(profile.id as string)).has('spotlight.enable')
 
-  // header_image_url isn't in the generated types yet (new column) — read via cast, like the page.
-  const { data: hdr } = await supabase
-    .from('profiles')
-    .select('header_image_url')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  const headerImageUrl = (hdr as { header_image_url?: string | null } | null)?.header_image_url ?? ''
+  const live = await loadLibraryAssetUrls([profile.header_image_asset_id])
+  const headerImageUrl = columnImageUrl(profile.header_image_url, profile.header_image_asset_id, live) ?? ''
 
   return {
     userId: user.id,
@@ -108,6 +106,7 @@ export async function getProfileRailData(): Promise<ProfileRailData | null> {
       avatarUrl: profile.avatar_url ? avatarSrc(profile.avatar_url) : '',
       avatarFocal: readProfileAvatarFocus((profile as { meta?: unknown }).meta),
       headerImageUrl,
+      headerImageAssetId: profile.header_image_asset_id ?? null,
       headerFocal: readProfileHeaderFocus((profile as { meta?: unknown }).meta),
       overlayStyle: readProfileOverlayStyle((profile as { meta?: unknown }).meta),
       overlayColor: readProfileOverlayColor((profile as { meta?: unknown }).meta) ?? '',

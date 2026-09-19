@@ -8,6 +8,7 @@ import { LoomPicker } from '@/components/loom/loom-picker'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import { valueFromServerUpload, type ServerUploadResult } from '@/lib/library/upload-result'
+import type { ColumnImage } from '@/lib/library/column-image'
 
 // One reusable header/cover photo control for every Studio popup editor (Journey, Practice,
 // Circle, Event). Uploads the chosen file to a public Supabase Storage bucket under the signer's
@@ -36,6 +37,7 @@ const ALLOWED_MIME_MESSAGE = 'That file type is not supported. Use a JPEG, PNG, 
 export function ImageUpload({
   value,
   onChange,
+  onChangeAsset,
   label = 'Header image',
   hint,
   folder = 'covers',
@@ -52,6 +54,8 @@ export function ImageUpload({
   value: string | null
   /** Called with the new public URL (mode 'url') or storage path (mode 'path'), or null when cleared. */
   onChange: (value: string | null) => void
+  /** Column-backed parents persist the Loom id beside the url (HYG-068). */
+  onChangeAsset?: (image: ColumnImage) => void
   label?: string
   hint?: string
   /** Path segment that groups these uploads, e.g. 'journey-covers'. */
@@ -80,6 +84,11 @@ export function ImageUpload({
    *  ['image','icon'] so the popup offers both Images and Icons; a plain photo passes ['image']. */
   kinds?: string[]
 }) {
+  function emit(url: string | null, assetId: string | null = null) {
+    onChange(url)
+    onChangeAsset?.({ url, assetId: url ? assetId : null })
+  }
+
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -155,7 +164,7 @@ export function ImageUpload({
           setError(`Upload failed: ${next.error}`)
           return
         }
-        onChange(next.value)
+        emit(next.value, null)
         return
       }
 
@@ -179,13 +188,13 @@ export function ImageUpload({
       }
 
       if (mode === 'path') {
-        onChange(path)
+        emit(path, null)
       } else {
         const {
           data: { publicUrl },
         } = supabase.storage.from(bucket).getPublicUrl(path)
         // Cache-bust so a replace shows immediately.
-        onChange(`${publicUrl}?t=${Date.now()}`)
+        emit(`${publicUrl}?t=${Date.now()}`, null)
       }
     } finally {
       // ALWAYS clear the spinner, whatever happened above (including a thrown server action).
@@ -222,7 +231,7 @@ export function ImageUpload({
             </button>
             <button
               type="button"
-              onClick={() => onChange(null)}
+              onClick={() => emit(null)}
               disabled={disabled || busy}
               aria-label="Remove image"
               className="rounded-control bg-canvas/90 p-1 text-subtle lift-1 backdrop-blur transition-colors hover:text-danger disabled:opacity-60"
@@ -247,7 +256,7 @@ export function ImageUpload({
         <LoomPicker
           open={pickerOpen}
           onClose={() => setPickerOpen(false)}
-          onSelect={(url) => onChange(url)}
+          onSelectAsset={(pick) => emit(pick.url, pick.assetId ?? null)}
           title={`Choose ${label.toLowerCase()}`}
           scopeKey={scopeKey}
           kinds={kinds}
@@ -259,7 +268,7 @@ export function ImageUpload({
           type="url"
           aria-label={`${label} URL`}
           value={value ?? ''}
-          onChange={(e) => onChange(e.target.value.trim() || null)}
+          onChange={(e) => emit(e.target.value.trim() || null, null)}
           disabled={disabled || busy}
           placeholder="or paste an image URL"
           className="w-full rounded-control border border-border bg-canvas px-3 py-1.5 text-meta text-text outline-none focus:border-primary placeholder:text-subtle disabled:opacity-60"

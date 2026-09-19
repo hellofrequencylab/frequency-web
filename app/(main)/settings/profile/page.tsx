@@ -12,6 +12,8 @@ import { ProfileQrCard } from '@/components/settings/profile-qr-card'
 import { readSpotlightEnabled, readSpotlightPublished } from '@/lib/profile/spotlight-flags'
 import { readProfileHeaderFocus, readProfileAvatarFocus, readProfileOverlayStyle, readProfileOverlayColor } from '@/lib/profile/header-focus'
 import { avatarSrc } from '@/lib/images/avatar-focus'
+import { loadLibraryAssetUrls } from '@/lib/library/asset-urls'
+import { columnImageUrl } from '@/lib/library/column-image'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 import { resolveTierTeaseGate } from '@/lib/pricing/tease-gate'
 import { getOnboardingStatus } from '@/lib/onboarding/status'
@@ -27,7 +29,7 @@ export default async function ProfileSettingsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, display_name, handle, bio, avatar_url, phone, city, website, meta, profile_theme, home_timezone, email_signature')
+    .select('id, display_name, handle, bio, avatar_url, phone, city, website, meta, profile_theme, home_timezone, email_signature, header_image_url, header_image_asset_id')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -48,13 +50,8 @@ export default async function ProfileSettingsPage() {
   const qrLink = connect ? shortLinkUrl(connect.slug) : ''
   const qrSvg = connect ? renderStyledQrSvg(qrLink, parseStyle(connect.style), 320) : null
 
-  // header_image_url isn't in the generated types yet (new column) — read via cast.
-  const { data: hdr } = await (supabase)
-    .from('profiles')
-    .select('header_image_url')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  const headerImageUrl = (hdr as { header_image_url?: string | null } | null)?.header_image_url ?? ''
+  const live = await loadLibraryAssetUrls([profile.header_image_asset_id])
+  const headerImageUrl = columnImageUrl(profile.header_image_url, profile.header_image_asset_id, live) ?? ''
 
   // First-visit orientation: members often land here straight from the "Add a photo"
   // activation step, so surface where they are in getting set up (same status the feed
@@ -102,6 +99,7 @@ export default async function ProfileSettingsPage() {
           avatarUrl:   profile.avatar_url ? avatarSrc(profile.avatar_url) : '',
           avatarFocal: readProfileAvatarFocus((profile as { meta?: unknown }).meta),
           headerImageUrl,
+          headerImageAssetId: profile.header_image_asset_id ?? null,
           headerFocal: readProfileHeaderFocus((profile as { meta?: unknown }).meta),
           overlayStyle: readProfileOverlayStyle((profile as { meta?: unknown }).meta),
           overlayColor: readProfileOverlayColor((profile as { meta?: unknown }).meta) ?? '',

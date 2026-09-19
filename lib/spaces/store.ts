@@ -6,6 +6,8 @@
 
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { loadLibraryAssetUrls } from '@/lib/library/asset-urls'
+import { columnImageUrl } from '@/lib/library/column-image'
 import { normalizeSpaceType } from './types'
 import type { Space, SpaceStatus } from './types'
 
@@ -16,7 +18,7 @@ import type { Space, SpaceStatus } from './types'
 // read undefined and the per-Space CRM board was locked for everyone. `feature_roles` is not in the
 // generated DB types yet, so it rides the untyped select tail (the ADR-246 pattern, like `visibility`).
 const COLS =
-  'id, slug, name, type, status, entity_id, skin, domain, network_connected, enabled_verticals, owner_profile_id, brand_name, brand_logo_url, brand_accent, entitlements, plan'
+  'id, slug, name, type, status, entity_id, skin, domain, network_connected, enabled_verticals, owner_profile_id, brand_name, brand_logo_url, brand_logo_asset_id, brand_accent, entitlements, plan'
 
 // `feature_roles` is appended to every select via this tail so a single change covers all readers; it
 // is reached untyped (ADR-246) because the column is not in the generated types yet. `mode_variant` +
@@ -28,7 +30,7 @@ const COLS =
 // `about` joins the tail for the Space Circle's info board (ADR-1393), which needed the Space's own
 // description on the Circle page. Same untyped-tail rules as its neighbours: FREE content framing,
 // never a gate, null-safe when absent.
-const COLS_FULL = `${COLS}, feature_roles, mode_variant, preferences, cover_image_url, tagline, city, about`
+const COLS_FULL = `${COLS}, feature_roles, mode_variant, preferences, cover_image_url, cover_image_asset_id, tagline, city, about`
 
 type SpaceRow = {
   about?: string | null
@@ -45,6 +47,7 @@ type SpaceRow = {
   owner_profile_id: string | null
   brand_name: string | null
   brand_logo_url: string | null
+  brand_logo_asset_id?: string | null
   brand_accent: string | null
   entitlements: unknown
   feature_roles?: unknown
@@ -52,11 +55,12 @@ type SpaceRow = {
   mode_variant?: string | null
   preferences?: unknown
   cover_image_url?: string | null
+  cover_image_asset_id?: string | null
   tagline?: string | null
   city?: string | null
 }
 
-function mapSpace(r: SpaceRow): Space {
+function mapSpace(r: SpaceRow, live: ReadonlyMap<string, string> = new Map()): Space {
   return {
     id: r.id,
     slug: r.slug,
@@ -70,7 +74,7 @@ function mapSpace(r: SpaceRow): Space {
     enabledVerticals: r.enabled_verticals ?? [],
     ownerProfileId: r.owner_profile_id,
     brandName: r.brand_name,
-    brandLogoUrl: r.brand_logo_url,
+    brandLogoUrl: columnImageUrl(r.brand_logo_url, r.brand_logo_asset_id, live),
     brandAccent: r.brand_accent,
     // Projected for the entitlement + per-function gates (lib/spaces/entitlements.ts + functions.ts).
     // Both arrive as raw jsonb and are normalized in those pure readers, so the Space carries them
@@ -88,12 +92,25 @@ function mapSpace(r: SpaceRow): Space {
     preferences: r.preferences ?? {},
     // Phase 4 shared identity: the cover banner + tagline. FREE framing, never a gate; null-safe when
     // the column is absent (pre-migration) so every existing read behaves identically.
-    coverImageUrl: r.cover_image_url ?? null,
+    coverImageUrl: columnImageUrl(r.cover_image_url, r.cover_image_asset_id, live),
     tagline: r.tagline ?? null,
     // Feeds addressLocality on the public profile's LocalBusiness node, and nothing else.
     city: r.city ?? null,
     about: r.about ?? null,
   }
+}
+
+async function mapSpaces(rows: SpaceRow[]): Promise<Space[]> {
+  const live = await loadLibraryAssetUrls(
+    rows.flatMap((r) => [r.brand_logo_asset_id, r.cover_image_asset_id]),
+  )
+  return rows.map((r) => mapSpace(r, live))
+}
+
+async function mapOneSpace(row: SpaceRow | null): Promise<Space | null> {
+  if (!row) return null
+  const [space] = await mapSpaces([row])
+  return space ?? null
 }
 
 /** The Space serving a host (custom domain/subdomain), or null if none matches. */
@@ -107,7 +124,7 @@ export async function getSpaceByDomain(domain: string): Promise<Space | null> {
     .eq('domain', host)
     .eq('status', 'active')
     .maybeSingle()) as { data: SpaceRow | null }
-  return data ? mapSpace(data) : null
+  return mapOneSpace(data)
 }
 
 /** The Space with this slug, or null. REQUEST-CACHED (React.cache) keyed on the normalized slug so
@@ -125,7 +142,7 @@ export const getSpaceBySlug = cache(async (slug: string): Promise<Space | null> 
     .eq('slug', norm)
     .maybeSingle()) as { data: (SpaceRow & { visibility?: string | null }) | null }
   if (!data) return null
-  return mapSpace(data)
+  return mapOneSpace(data)
 })
 
 /** A Space's `visibility` ('network' | 'private'), defaulting to 'network' when the column is
@@ -184,7 +201,7 @@ export async function getSpaceById(id: string): Promise<Space | null> {
     .select(COLS_FULL)
     .eq('id', id)
     .maybeSingle()) as { data: SpaceRow | null }
-  return data ? mapSpace(data) : null
+  return mapOneSpace(data)
 }
 
 /** Every Space, name-ordered — the operator admin list. Admin-client read (all statuses). */
@@ -193,7 +210,7 @@ export async function listSpaces(): Promise<Space[]> {
     .from('spaces')
     .select(COLS_FULL)
     .order('name', { ascending: true })) as { data: SpaceRow[] | null }
-  return (data ?? []).map(mapSpace)
+  return mapSpaces(data ?? [])
 }
 
 /** The canonical root Space (the Frequency app itself). */
@@ -205,7 +222,7 @@ export async function getRootSpace(): Promise<Space | null> {
     .eq('type', 'root')
     .eq('status', 'active')
     .maybeSingle()) as { data: SpaceRow | null }
-  return data ? mapSpace(data) : null
+  return mapOneSpace(data)
 }
 
 /**

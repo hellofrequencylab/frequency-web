@@ -1,6 +1,8 @@
 import { cache } from 'react'
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { loadLibraryAssetUrls } from '@/lib/library/asset-urls'
+import { columnImageUrl } from '@/lib/library/column-image'
 import { loadPageSettings } from '@/lib/page-settings/store'
 import { resolveContentCascade } from '@/lib/layout/content-cascade'
 
@@ -62,10 +64,11 @@ export const getPageContent = cache(async (route: string): Promise<PageContent |
       .eq('route', route)
       .maybeSingle()
     if (!row) return null
+    const live = await loadLibraryAssetUrls([row.hero_image_asset_id])
     return {
       title: row.title ?? '',
       description: row.description ?? '',
-      heroImage: row.hero_image ?? null,
+      heroImage: columnImageUrl(row.hero_image, row.hero_image_asset_id, live),
       ctaLabel: row.cta_label ?? null,
       ctaHref: row.cta_href ?? null,
       body: row.body ?? null,
