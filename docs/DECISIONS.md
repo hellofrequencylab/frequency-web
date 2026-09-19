@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1457**. 1451 is SCAN-642. 1463 is LIVE-393 on main. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1452–1453, 1456 and 1458 are claimed on other open PRs.
+tree as of this index: **ADR-1458**. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418 on this PR. 1451 is SCAN-642. 1463 is LIVE-393 on main. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1452–1453 are claimed on other open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46550,6 +46550,24 @@ Premise re-tested 2026-09-19:
 
 **Rows.** LIVE-393.
 
+## ADR-1458: Admin Calendar gives Planning its own lane (LIVE-417)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-417` · numbered **1458** (1457 is LIVE-419 on main; 1455 is LIVE-414 on main; 1454 is LIVE-416 on main; 1450 is LIVE-415; 1449 is LIVE-313; 1448 is OWN-058) · implements C3 of [ADR-1445](DECISIONS.md) · follows [ADR-1450](DECISIONS.md) and [ADR-1454](DECISIONS.md) · corroborated by `lib/calendar/pm-console.ts` (`planningLane`), `components/spaces/calendar-pm-console.tsx`
+
+**Context.** ADR-1450 mounted `CalendarPmConsole` with one mixed board. ADR-1454 gave Pencil its own lane. ADR-1445 C3 asked for Planning as a first-class Admin lane: planning-stage gatherings listed on their own, not mixed into live chips. Premise re-tested 2026-09-19 after #2756: `pencilLane` existed; `planningLane` did not. Guest exclusion is LIVE-419.
+
+**Decision.**
+
+1. **`planningLane` is the Admin Planning lane.** It is `operatorListItems` filtered to `stage === 'planning'`. `CalendarPmConsole` renders that lane above the mixed board, beside Pencil.
+2. **The mixed board no longer lists Planning.** Production, Cancelled, live events, and drafts stay there until C4 names Production. Pencil stays in `pencilLane`.
+3. **The date map is unchanged.** This change does not declare `productionLane`. Guest already folds through `guestLiveItems` (ADR-1457).
+
+**Rejected.** Closing C4 in the same commit. Calling Planning a Plan (NAMING.md: Plan is the working-record noun). Folding Pencil back onto the board.
+
+**Consequences.** LIVE-418 starts Production. LIVE-419 already owns the Guest feed.
+
+**Rows.** LIVE-417.
+
 ## ADR-1451: Evening meta-scan — Spotlight ISR and the layout void (SCAN-642, SCAN-643)
 
 **Status:** Accepted · 2026-09-19 · backlog `SCAN-642` · `SCAN-643` · numbered **1451** (1450 is LIVE-415 on main; 1448 is OWN-058; 1447 is HYG-104) · corroborated by `app/spotlight/[handle]/page.tsx` (`revalidate = 3600`, `generateStaticParams`) and `lib/spotlight/data.ts` (`listPublishedSpotlightHandles`)
@@ -46590,3 +46608,21 @@ Premise re-tested 2026-09-19:
 **Consequences.** Public first paint and month browse now share the same feed. Calendar C0–C5 are the stop for owner confirm. Do not start Editor / Sites / Etsy / App Platform / LIVE-242 from this row.
 
 **Rows.** LIVE-419.
+
+## ADR-1456: Admin Calendar lists Production as its own lane (LIVE-418)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-418` · numbered **1456** (1458 is LIVE-417; 1457 is LIVE-419; 1455 is LIVE-414; 1454 is LIVE-416; 1450 is LIVE-415) · implements C4 of [ADR-1445](DECISIONS.md) · **Amends** [ADR-1450](DECISIONS.md) (the mixed board) · corroborated by `productionLane` in `lib/calendar/pm-console.ts` and `components/spaces/calendar-pm-console.tsx`
+
+**Context.** ADR-1450 mounted `CalendarPmConsole` as one mixed board. ADR-1445 C4 asked for Production as a first-class Admin lane: the live show the guest calendar already paints. C2 and C3 already landed `pencilLane` and `planningLane`. This change adds `productionLane` beside them.
+
+**Decision.**
+
+1. **`productionLane` is the live show.** It is `operatorListItems` whose stage label is Production: an explicit `stage === 'production'` gathering, and a published event that has no stage (the unlabeled live show). Drafts, cancelled gatherings, Pencil, and Planning stay off it.
+2. **`CalendarPmConsole` renders that lane above the mixed board** and drops Production from the mixed list. Pencil and Planning stay in their lanes. Cancelled stays on the board.
+3. **C5 is already on main.** Guest folds through `guestLiveItems` (ADR-1457). This change does not reopen it.
+
+**Rejected.** Mixing the live show back into the board under a Production badge. Closing Pencil or Planning in the same PR.
+
+**Consequences.** Admin Calendar lists Pencil, Planning, and Production as named lanes. The date map is unchanged. LIVE-419 already owns the Guest feed.
+
+**Rows.** LIVE-418.

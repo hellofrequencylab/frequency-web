@@ -1,10 +1,9 @@
 import type { CalendarEvent } from './item'
 import { entryStage } from './registry'
 
-// THE ADMIN OPERATOR LIST (ADR-1445 C1–C2, ADR-1450, ADR-1454). What the Calendar tab's Admin
-// mode lists above the month. pencilLane is the C2 Pencil lane. Planning and Production stay
-// on the mixed board until C3 and C4 (LIVE-417, LIVE-418). Private entries and Unavailable
-// time stay on the date map (StaffCalendar).
+// THE ADMIN OPERATOR LIST (ADR-1445 C1–C4, ADR-1450, ADR-1454, ADR-1458, ADR-1456).
+// pencilLane is C2. planningLane is C3. productionLane is C4. Cancelled stays on
+// the mixed board. Private entries and Unavailable time stay on the date map.
 
 export type OperatorListItem = {
   key: string
@@ -61,8 +60,22 @@ export function isPencilLaneItem(ev: CalendarEvent): boolean {
   return isOperatorListItem(ev) && ev.stage === 'pencil'
 }
 
-// C2 (LIVE-416, ADR-1454). Pencil-stage gatherings as their own lane, not mixed into live chips.
-// Candidate dates stay on the date map. Guest never sees these (LIVE-419).
+export function isPlanningLaneItem(ev: CalendarEvent): boolean {
+  return isOperatorListItem(ev) && ev.stage === 'planning'
+}
+
+export function isProductionLaneItem(ev: CalendarEvent): boolean {
+  return isOperatorListItem(ev) && operatorStageLabel(ev) === 'Production'
+}
+
 export function pencilLane(events: CalendarEvent[]): OperatorListItem[] {
   return operatorListItems(events.filter((ev) => ev.stage === 'pencil'))
+}
+
+export function planningLane(events: CalendarEvent[]): OperatorListItem[] {
+  return operatorListItems(events.filter((ev) => ev.stage === 'planning'))
+}
+
+export function productionLane(events: CalendarEvent[]): OperatorListItem[] {
+  return operatorListItems(events.filter(isProductionLaneItem))
 }
