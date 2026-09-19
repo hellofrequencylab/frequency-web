@@ -62,10 +62,9 @@
           ]
         },
         "scanAgent": {
-          "next": "SCAN-638",
+          "next": "LIVE-412",
           "order": [
             "SCAN-637",
-            "SCAN-638",
             "SCAN-640",
             "LIVE-412"
           ],
@@ -174,7 +173,6 @@
             "LIVE-417",
             "LIVE-418",
             "LIVE-419",
-            "SCAN-638",
             "HYG-100",
             "LIVE-413",
             "LIVE-411",
