@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **If you run a Space, Admin on its Calendar tab is the production board.** Pencil, Planning, Production, and Cancelled sit in a list. The month grid is the date map underneath. Guest is still what visitors see.
+
 - **A repeating event counts as one gathering on a free membership**, not one per date. Crew is still unlimited. The message when you are at the free cap no longer says a series is a Crew perk.
 
 - **Business is the one paid Space plan, at $49, with two seats.** Collective is no longer a plan you pick. A Space that was on Collective is now on Business at that same $49. Non Profit and Independent are unchanged. Independent is still sold by hand.
