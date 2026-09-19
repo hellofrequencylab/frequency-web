@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { ArrowRight, Loader2 } from 'lucide-react'
-import { startSpaceDonationCheckout } from '@/lib/billing/donation-actions'
+import { startSpaceDonationCheckout, settleDonationAction } from '@/lib/billing/donation-actions'
 import CheckoutPanel from '@/components/billing/checkout-panel'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { isError } from '@/lib/action-result'
@@ -43,6 +43,7 @@ export function DonateForm({
   const [custom, setCustom] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
   // The custom field wins whenever it holds anything, so a donor who types over a chip gets what they
@@ -56,6 +57,7 @@ export function DonateForm({
    */
   function fallBackToHosted() {
     setClientSecret(null)
+    setSessionId(null)
     setError('Opening secure checkout…')
     start(async () => {
       const result = await startSpaceDonationCheckout(spaceId, cents ?? 0, null, { forceHosted: true })
@@ -80,8 +82,10 @@ export function DonateForm({
       // Branch on what CAME BACK, never on what was asked for: the server declines the on-page
       // path whenever it cannot be honoured, and the url branch catches that without this
       // control needing to know why.
-      if (result.data.clientSecret) setClientSecret(result.data.clientSecret)
-      else if (result.data.url) window.location.href = result.data.url
+      if (result.data.clientSecret) {
+        setSessionId(result.data.sessionId ?? null)
+        setClientSecret(result.data.clientSecret)
+      } else if (result.data.url) window.location.href = result.data.url
     })
   }
 
@@ -165,6 +169,11 @@ export function DonateForm({
           clientSecret={clientSecret}
           priceLabel={formatPriceCents(cents ?? 0)}
           onFellBack={fallBackToHosted}
+          // 🔴 SETTLE FROM OUR OWN SUCCESS HANDLER. `confirm({ redirect: 'if_required' })` means
+          // the card path never navigates, so the success URL's reconcile never runs and the
+          // webhook was the only thing that could flip this gift to `succeeded`. The panel waits
+          // for this before it says the gift is done, so the confirmation is true when it appears.
+          onPaid={sessionId ? () => settleDonationAction(sessionId) : undefined}
           // Closing after a completed payment reloads so the page shows what was just bought:
           // the ticket row, the updated count, the RSVP state. `location.reload()` rather than
           // router.refresh() because the purchase changes server-rendered state well outside

@@ -69,7 +69,8 @@ export type NavLink = { label: string; href: string; desc?: string }
 // /discover/journeys and /discover/topics. That test used to check a list nothing
 // rendered; it now checks the list every header draws.
 
-// The FOUR public header tabs, in nav order: The Community, The Quest, Spaces, About.
+// The public header tabs, in nav order. LIVE-250 took this from six to four; LIVE-254
+// grouped The Quest under The Community, so the TABS are The Community, Spaces, About.
 // DERIVED from the ONE nav registry (lib/nav) — the public header TRIGGER nodes, in order
 // — so this list, the header tabs (PUBLIC_MEGA_NAV), and the footer (MARKETING_NAV) all
 // project a single source and cannot drift. Build / Practice / Spread were FOLDED into the
@@ -77,11 +78,9 @@ export type NavLink = { label: string; href: string; desc?: string }
 // friendship-as-an-adult, …) + /help stay off the nav. Each trigger node's `href` is its
 // canonical tab landing, so the mapping is a straight projection.
 //
-// ⚠️ THIS WAS SIX UNTIL LIVE-250 (docs/CORE-MODEL.md §4): Home left (the wordmark already
-// links `/`) and The Lab became a row in the About panel. The flat marketing footer
-// (MARKETING_NAV) is still SIX and is not a mirror of this list any more — the footer is
-// the site map. lib/nav/registry.ts carries the derivation; do not restate the count here
-// as a second place to get it wrong.
+// The flat marketing footer (MARKETING_NAV) is still SIX and is not a mirror of this list
+// — the footer is the site map. lib/nav/registry.ts carries the derivation; do not restate
+// the count here as a second place to get it wrong.
 export const PRIMARY_NAV: NavLink[] = headerTriggers().map(({ node }) => ({
   label: node.label,
   href: node.href,
@@ -100,12 +99,12 @@ export const SITE_NAV: NavLink[] = PRIMARY_NAV;
 // encoded still holds and now has exactly one spelling, above.
 
 // ── The public mega menu (the header nav) ─────────────────────────────────────
-// The header is a MEGA MENU: the four tabs are the top-level triggers, and each can
+// The header is a MEGA MENU: the three tabs are the top-level triggers, and each can
 // open a dropdown of sub-pages. A panel with `items` (one column of sub-pages) or
 // `sections` (multi-column) renders as a disclosure trigger; a panel with only `href`
-// renders as a plain link. Since LIVE-250 all four tabs open dropdowns — the two plain
-// links, Home and The Lab, were the two that left — but the plain-link branch below is
-// kept, because it is what a future tab with no sub-pages needs. This is the FALLBACK
+// renders as a plain link. LIVE-250 grouped Home and The Lab; LIVE-254 grouped The Quest
+// into The Community. The plain-link branch below is kept, because it is what a future
+// tab with no sub-pages needs. This is the FALLBACK
 // for the DB-backed `header` surface (lib/menus): operators edit the LIVE menu in
 // /admin/menu, adding pages and categories, and the live seed mirrors this shape.
 // Copy carries no em or en dashes.
@@ -123,8 +122,8 @@ export type PublicMegaMenu = {
   featured?: MegaNavFeatured;
 };
 
-// The four tabs as mega-menu triggers, in nav order. Every one opens a dropdown of
-// sub-pages today (LIVE-250). DERIVED from the ONE nav registry
+// The three tabs as mega-menu triggers, in nav order. Every one opens a dropdown of
+// sub-pages today (LIVE-250, then LIVE-254). DERIVED from the ONE nav registry
 // (lib/nav → surface:'header' nodes: each parentless trigger + its parented sub-links),
 // so this fallback, the DB `header` seed, and the live menu all project a single source
 // and cannot drift. A trigger with sub-links becomes a dropdown panel (its `items`); a

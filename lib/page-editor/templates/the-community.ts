@@ -378,13 +378,9 @@ export const data: Data = {
       },
     },
 
-    // ── The triptych cross-link ── RECOVERED from the coded body (LIVE-100), which
-    // closed with <PillarNav current="/the-community" />. It sits in the SAME seat its two
-    // siblings use, between the FAQ and the ink close (the-lab.ts, the-quest.ts), and on
-    // the same `surface` tone: the triptych is a way OUT of the page, so it belongs after
-    // the last question is answered and before the one ask. It does not disturb the
-    // documented rhythm — the single ink beat (`tc-guru`) is still the only dark band
-    // before the ink close, and the FAQ it follows is already `surface`. ─────────────────
+    // ── Story cross-link (LIVE-100 seat, LIVE-254 shape). Lab and Community are the
+    // pair; The Quest rides underneath rather than as a numbered third. Same seat
+    // between the FAQ and the ink close. ─────────────────────────────────────────────
     {
       type: 'PillarNav',
       props: {
