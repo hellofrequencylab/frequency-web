@@ -10569,7 +10569,8 @@
     {
       "id": "HYG-078",
       "title": "Drop the orphan gamification_full_supporter platform_flags row",
-      "status": "open",
+      "status": "done",
+      "closed": "2026-09-19",
       "priority": "P3",
       "lane": "hygiene",
       "size": "XS",

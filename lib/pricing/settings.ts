@@ -164,7 +164,7 @@ export const PRICING_FLAG_KEYS = [
   'gamification_full_member',
   'gamification_full_crew',
   // NO 'gamification_full_supporter' (owner directive, 2026-08-24; dropped 2026-09-19,
-  // HYG-078 / ADR-1434, migration 20270345006100). The Supporter RUNG left
+  // HYG-078 / ADR-1442, migration 20270345006400). The Supporter RUNG left
   // EntitlementTier, so no tier can select that flag: GAMIFICATION_FLAG is keyed by the union and
   // has two entries. A key kept here would render an operator toggle that gates nothing, which is
   // the "a dead switch reads as coverage" failure.

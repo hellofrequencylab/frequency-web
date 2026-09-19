@@ -267,7 +267,7 @@ route tree by the copy cascade with the reserved site row `'*'` set from `/admin
 >   so OFF even with keys), per-tier/plan `*_enabled` (all OFF), and per-role `gamification_full_*`
 >   (member OFF, crew ON to match today's derive-from-tier default). `gamification_full_supporter`
 >   was seeded here too; it left the code on 2026-08-24 with the Supporter tier, and
->   `20270345006100` deletes the stored row (HYG-078, [ADR-1434](DECISIONS.md)).
+>   `20270345006400` deletes the stored row (HYG-078, [ADR-1442](DECISIONS.md)).
 
 > **Pricing P2 — Stripe products/prices + subscriptions (ADR-363, [docs/PRICING.md](PRICING.md);
 > migration `20260723020000_pricing_stripe.sql`). STILL SHIPS OFF — no charge / no live Stripe call
