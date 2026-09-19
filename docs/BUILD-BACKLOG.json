@@ -52,8 +52,7 @@
           "leave": [
             "SCAN-638",
             "SCAN-640",
-            "SCAN-644",
-            "LIVE-412"
+            "SCAN-644"
           ],
           "packetsLane": [
             "money",
@@ -65,8 +64,7 @@
           "order": [
             "SCAN-638",
             "SCAN-644",
-            "SCAN-640",
-            "LIVE-412"
+            "SCAN-640"
           ],
           "leave": [
             "LIVE-410",
@@ -116,9 +114,9 @@
             "name": "Public chrome + kit",
             "owner": "scanAgent",
             "ids": [
-              "SCAN-640",
-              "LIVE-412"
-            ]
+              "SCAN-640"
+            ],
+            "fix": "SCAN-641 closed. SCAN-640 waits on owner archive (21 rows). LIVE-412 closed (shell split)."
           },
           {
             "phase": 4,
@@ -189,7 +187,6 @@
           "name": "W0d \u00b7 P3 \u2014 craft: shell split, hex, parked niceties. 12 visitors / 18 pageviews in 31 days: the funnel, not the page speed, is the constraint.",
           "ids": [
             "SCAN-640",
-            "LIVE-412",
             "LIVE-221",
             "LIVE-273",
             "HYG-092",
@@ -14547,7 +14544,7 @@
     {
       "id": "LIVE-412",
       "title": "Split components/layout/app-shell.tsx (still one ~2632-line client module)",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "hygiene",
       "size": "L",
@@ -14555,12 +14552,13 @@
         "file": "components/layout/app-shell.tsx",
         "ref": "2026-09-18 survey craft"
       },
-      "detail": "FILED 2026-09-19. app-shell.tsx is a single client module on every (main) route. Split is craft, not product-blocked. P3 unless a shell-weight or Arm C leak forces it. Do not raise the budget; extract islands behind existing dynamic boundaries.",
+      "detail": "FILED 2026-09-19. app-shell.tsx is a single client module on every (main) route. Split is craft, not product-blocked. P3 unless a shell-weight or Arm C leak forces it. Do not raise the budget; extract islands behind existing dynamic boundaries.\n\nCLOSED 2026-09-19. Account dock + theme hook + Profile type live in app-shell-account.tsx; NavLinkList in app-shell-nav-list.tsx; NAV_AREAS builders and itemAccess in app-shell-model.ts. The shell file is the composer (drawer, tab bar, header, rails). Source-shape tests that pinned NavLinkList strings now haystack the list module. Do not raise the 1800-line ratchet.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const n=fs.readFileSync(\"components/layout/app-shell.tsx\",\"utf8\").split(/\\n/).length;if(n>1800){console.error(\"app-shell.tsx is \"+n+\" lines\");process.exit(1)}process.exit(0)'",
         "note": "Ratchet, not the definition of done: fails while the shell is still a 1800+ line client module. Extraction quality is the PR, this number is the alarm."
-      }
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-413",
