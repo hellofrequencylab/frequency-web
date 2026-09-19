@@ -1,8 +1,10 @@
-# Frequency: the whole picture (north star)
+# Frequency: the whole picture
 
-> Front-door synthesis of what we're building and why. For the *ordered build/
-> deploy path* use [START-HERE.md](START-HERE.md); for the phase tracker use
-> [BUILD-PHASES.md](BUILD-PHASES.md).
+> Synthesis of what we're building and why. Not a north star and not the plan.
+> [AGENTS.md](../AGENTS.md) names the live set; [START-HERE.md](START-HERE.md) is
+> orientation. Four nouns: **Member**, **Space**, **Circle**, **Event**.
+> **Channels** are the topical layer ([NAMING.md](NAMING.md),
+> [CORE-MODEL.md](CORE-MODEL.md), [FOCUS-MODEL.md](FOCUS-MODEL.md)).
 
 ## Mission (locked 2026-05-31)
 
@@ -31,20 +33,22 @@ cheat-resistant, **(3)** a codebase whose value lives in portable layers, not
 trapped in React/Next.
 
 ## 1. Information architecture: the spatial model
-Nested scopes, biggest to smallest: **Outpost (place/city) → Nexus (regional) →
-Hub (local org) → Circle (the unit).**
-- **Circles** are where members live: a group practicing one thing. **Virtual is
+Product nouns first: **Member · Space · Circle · Event**. **Channels** are the
+global topics a Circle practices. An Outpost is a Nexus home base, not the top
+unit. Place scaffolding (Hub, Nexus, Outpost) is contextual, not primary nav.
+- **Circles** are where members meet: a group practicing one Channel. **Virtual is
   the default; in-person is the additive designator** (📍), with capacity/scarcity cues.
-- **Interests** (renamed from "Channels"): global topics you *tune into*; Circles
-  run them locally.
+- **Channels** (never "Interests"): global topics you *tune into*; Circles run
+  them locally.
 - **Hubs & Nexuses** are **contextual, not primary nav**, reached via breadcrumbs.
-- **Nav groups:** Feed · Community (Circles, Interests, Events, Broadcast) · Connect
+- **Nav groups:** Feed · Community (Circles, Channels, Events, Broadcast) · Connect
   (Messages, Friends, Directory) · Progress (Crew) · Manage (Admin).
 
-## 2. Page framework: one shell, three templates
+## 2. Page framework: one shell, seven templates
 - **One app shell:** nav + content + a **scope-aware right rail**.
-- **Three templates:** **Stream** (feed-like), **Index** (lists/discovery),
-  **Detail** (single entity: context header + tabs + body). Templates nest.
+- **Seven shells:** **Stream**, **Index**, **Detail**, **Dashboard**, **Focus**,
+  **WizardShell**, **Admin**. `RailGrid` is not a shell. `WidgetSlot` is a sketch.
+  See [PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md) §8.
 - **Modules + slots:** reusable cards in slots, so uniformity is structural.
 
 ## 3. Inline, capability-driven admin (no separate admin world)

@@ -35,8 +35,9 @@
 > fixed are recorded as such in §9 so nobody re-audits them.
 >
 > Companion plans: [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) (ADR-925) stays the design-maturity
-> program and [`BUILD-LIST.md`](BUILD-LIST.md) (ADR-921) stays the phase runway. **This document is
-> the finish line for the current build** and, where it disagrees with either, this one is newer.
+> program and [`BUILD-LIST.md`](BUILD-LIST.md) (ADR-921) stays the phase runway. **When this
+> document disagrees with an ADR or the backlog, those win.** [AGENTS.md](../AGENTS.md)
+> names the live set.
 > The ratchet JSON remains the scoreboard: `scripts/adoption-baselines.json`. Decision record:
 > [ADR-960](DECISIONS.md).
 
@@ -745,7 +746,8 @@ fully actionable list. This is far smaller than the raw counts suggest: repo-wid
 
 ### 7b. Docs cleanup
 
-202 docs, 67,945 lines, and **five files describe themselves as the single source of truth**.
+202 docs, 67,945 lines, and **five files described themselves as the single source of truth**
+(that claim is retired; [AGENTS.md](../AGENTS.md) names the live set).
 
 | # | Item | Size | Detail |
 | :--- | :--- | :---: | :--- |

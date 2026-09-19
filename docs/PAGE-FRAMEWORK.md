@@ -235,13 +235,19 @@ export const RAIL = {
 page edits. Removing/ reordering = edit the list. This is the scalability
 property.
 
-### 4.4 The only thing pages call: `<WidgetSlot>`
+### 4.4 Sketch (not live): `<WidgetSlot>`
+
+The assignment sketch below is **not shipped**. Pages do not call `<WidgetSlot>`.
+The live right rail is `RAIL_PANELS` in `components/sidebar/rail-registry.tsx`,
+mapped by `right-sidebar.tsx`. Interior modules use `<PageModules>` (§8). Treat
+this section as the original sketch for a future seam.
+
 ```tsx
 <WidgetSlot name="rightRail" scope={scope} role={role} milestones={ms} />
 ```
-`WidgetSlot` looks up the assigned ids for `(name, scope.kind)`, filters by
+`WidgetSlot` would look up the assigned ids for `(name, scope.kind)`, filter by
 `gate` (role + milestone: locked widgets render a lock card, see IA-STRATEGY
-§2), and renders each widget **inside its own `<Suspense>`** with a
+§2), and render each widget **inside its own `<Suspense>`** with a
 dimension-matched skeleton.
 
 ### 4.5 Uniform chrome
@@ -253,8 +259,8 @@ authors have to remember.
 > **Native alternative for a couple of stable slots:** Next.js **Parallel Routes**
 > (`@rail`, `@header` folders) give file-based independent slots with their own
 > streaming/loading. Good for a few fixed slots; the **config-driven
-> `WidgetSlot`** above is better for *dynamic, per-scope, per-role* assignment.
-> Use both: parallel routes for structure, `WidgetSlot` for content.
+> `WidgetSlot`** sketch above is the idea for *dynamic, per-scope, per-role*
+> assignment if that seam ships. Parallel routes can still own structure.
 
 ---
 
@@ -376,10 +382,9 @@ forces a big-bang rewrite.
 | **Dashboard** | `DashboardTemplate` | a metric-led operator/steward workspace: Marketing, CRM, Crew home | `eyebrow·title·description·actions·stats` + sections |
 | **Focus** | `FocusTemplate` | a centered, single-task surface: compose/edit forms, Settings, single-conversion + scan-confirm. **Centered body, rail still on** (§8.2) | `eyebrow·title·description·actions·back·width` |
 | **WizardShell** | `WizardShell` | a centered **multi-step flow**: onboarding, Space provisioning (`app/onboarding/form.tsx`) | step progress (`WizardProgress`) + body + footer actions |
-| **RailGrid** | `RailGrid` | a browse surface pairing a narrow filter/folder rail with a fluid card grid (Loom Studio) — **mobile-first**: the rail is a mini menu on phones (always beside the grid, never stacked above it) and widens on larger screens | `menu` · `children` |
 | **Admin** | `AdminTemplate` | the rail-less `/admin/*` workspace under its own two-layer nav | `AdminSection`s |
 
-All eight share **one header grammar** (`PageHeading`): the same type scale, eyebrow,
+All seven share **one header grammar** (`PageHeading`): the same type scale, eyebrow,
 description, and action slot, so titles read identically everywhere. Detail keeps a
 richer context band (identity + badges + tab row) but on the same scale. `AdminTemplate`
 is the admin equivalent of Dashboard (a rail-less sibling under `/admin/*`'s own
@@ -393,7 +398,13 @@ cards), `StatCard` (KPI tile with delta/drill-down), `SectionHeader`, `EmptyStat
 
 Some entities have a *shape* worth standardising, not just a shell. An entity composition
 **wraps** a shell — it never re-declares a header, an `<h1>`, or a divider — and adds the parts the
-shell has no opinion about. It is **not** a ninth shell; the count above stays eight.
+shell has no opinion about. It is **not** an eighth shell; the count above stays seven.
+
+#### 8.1.2 RailGrid is not a shell
+
+`RailGrid` is a column-grid **piece** (`scripts/check-templates.mjs` `PIECES`).
+Compose it inside a shell. A page whose only layout import is `RailGrid` fails
+the template gate.
 
 | Composition | Import | Wraps | Locks |
 |---|---|---|---|
@@ -989,11 +1000,12 @@ how a published draft shadows a coded experience, or an in-app page loses its ch
 
 ## Decisions captured
 
-- **One shell, EIGHT page shells (Stream / Index / Detail / Dashboard / Focus /
-  WizardShell / RailGrid / Admin)**, all on one `PageHeading` grammar; the rail is a
-  declarative `page-chrome.ts` map, not shell-baked conditionals (ADR-1046). See §8.1
-  for the full canon + the count reconciliation (`HeaderSidebarTemplate` and
-  `TwoColumnTemplate` were deleted 2026-08-05 with zero usages).
+- **One shell, SEVEN page shells (Stream / Index / Detail / Dashboard / Focus /
+  WizardShell / Admin)**, all on one `PageHeading` grammar; the rail is a
+  declarative `page-chrome.ts` map, not shell-baked conditionals (ADR-1046).
+  `RailGrid` is not a shell. See §8.1 for the full canon + the count
+  reconciliation (`HeaderSidebarTemplate` and `TwoColumnTemplate` were deleted
+  2026-08-05 with zero usages).
 - **The right rail shows on EVERY member page** (owner directive 2026-06-20,
   reaffirmed 2026-07-28). `FOCUS_NONE_PREFIXES`, `SCOPED_PREFIXES`, and
   `SCOPED_PATTERNS` are deliberately empty; only the zero-chrome takeovers,
@@ -1005,7 +1017,8 @@ how a published draft shadows a coded experience, or an in-app page loses its ch
   canonical `PageHero`, same global rail — a body choice, not an exemption (§8.5).
 - **Features are widgets**: self-fetching Server Components, scope-aware,
   gate-aware, returning null when empty, wrapped in a uniform `WidgetCard`.
-- **Assignment is one declarative config**; pages only render `<WidgetSlot>`.
+- **Assignment is one declarative config**; pages compose a shell + `<PageModules>`.
+  `<WidgetSlot>` remains a sketch. The live rail is `RAIL_PANELS`.
 - **Speed is structural**: RSC + per-widget Suspense + parallel fetch + nested
   layouts + dimension-matched skeletons; client JS only at interactive leaves.
 - **Gating (role + milestone, IA-STRATEGY §2) is widget metadata**: the same

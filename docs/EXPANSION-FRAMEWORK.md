@@ -47,7 +47,7 @@ Vertical = {
   entity        // 'foundation' | 'labs' | 'partner'   (the money partition, PLATFORM-VISION §1)
   nav?          // a NavArea + icon → merged into NAV_AREAS (no edit to nav-areas.ts)
   adminModules? // AdminModule[]    → merged into ADMIN_MODULES (the page admin dock renders them)
-  railPanels?   // Widget[]         → merged into the rail WidgetSlot registry
+  railPanels?   // Widget[]         → merged into RAIL_PANELS (not a WidgetSlot)
   capabilities? // [{ scopeKind, resolve }] → composed into the capability resolver
   engagement?   // { source, eventTypes, verify?, toTrustSignal? } → a source adapter on the ledger
 }
@@ -102,7 +102,7 @@ The good bones exist; four composition points are still hand-authored. This is t
 | Admin nav as data | ✅ | `app/(main)/admin/sections.ts` `ADMIN_GROUPS` | module-contributed admin links |
 | Engagement ledger | ✅ | `lib/engagement/events.ts` `recordEngagementEvent` (append-only, idempotent) | a `SourceAdapter` front door + trust-signal hook (step 5) |
 | **Page admin dock** | ✅ | `components/layout/page-admin-bar.tsx` selects via `modulesForScopeKind` + an id→component map | done (step 1) |
-| **Right rail** | ✅ | `components/sidebar/rail-registry.tsx` `RAIL_PANELS` WidgetSlot; `right-sidebar.tsx` maps it | done (step 2) |
+| **Right rail** | ✅ | `components/sidebar/rail-registry.tsx` `RAIL_PANELS`; `right-sidebar.tsx` maps it. `<WidgetSlot>` is a PAGE-FRAMEWORK sketch, not this seam. | done (step 2) |
 | **Capability union** | ✅ | core stays closed; `lib/verticals` resolves namespaced module capabilities | done (step 3) |
 | **Vertical registry** | ✅ | `lib/verticals/registry.ts` descriptor + selectors; Marketplace migrated | done (step 4) |
 | **Engagement emission** | 🔴 | ~15 action files call `processGamificationEvent` inline | route through `recordEngagementEvent` via adapters (step 5) |
@@ -124,8 +124,9 @@ hand-wiring, defeating the framework.
 1. ✅ **Wire the admin dock to the registry.** `page-admin-bar.tsx` selects modules via
    `modulesForScopeKind` (client surface, no resolved caps; each module re-gates server-side) + an
    id→component map at the render boundary (keeps the catalog pure). Replaces the pathname regex.
-2. ✅ **Generalize the rail switch into a `WidgetSlot` registry** — `components/sidebar/rail-registry.tsx`
-   `RAIL_PANELS` ({ needsCircles, gate, render }); `right-sidebar.tsx` maps it instead of branching.
+2. ✅ **Generalize the rail switch into `RAIL_PANELS`** — `components/sidebar/rail-registry.tsx`
+   ({ needsCircles, gate, render }); `right-sidebar.tsx` maps it instead of branching.
+   Not `<WidgetSlot>`.
 3. ✅ **Make capabilities extensible** — the core resolver stays pure and closed; `lib/verticals`
    resolves namespaced module capabilities for a vertical's own scope kind, unioned across verticals.
 4. ✅ **`lib/verticals/registry.ts` + `index.ts`** — the `Vertical` descriptor + static `VERTICALS`

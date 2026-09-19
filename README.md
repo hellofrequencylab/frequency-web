@@ -1,10 +1,13 @@
 # Frequency
 
-A platform for **place-based, in-person community practice** — local **Circles**
-that gather around shared **Interests**, growing into neighborhood **Hubs** and
-area **Nexuses**, with a gamified, physical-world engagement layer (QR / NFC /
-geolocation). **Mobile-first** (the app is the primary doorway; the web is the
-secondary surface and the SEO/discovery front).
+A platform for place-based, in-person community practice. Four nouns:
+**Member**, **Space**, **Circle**, **Event**. **Channels** are the topical
+layer people tune into. Hubs and Nexuses emerge from Circles; they are not
+primary nav. An Outpost is a Nexus home base, not the top unit.
+
+**Mobile-first** (the app is the primary doorway; the web is the secondary
+surface and the SEO/discovery front), with a physical-world engagement layer
+(QR / NFC / geolocation).
 
 Current build: **Next.js 16** (App Router / RSC) + **Supabase** (Postgres, Auth,
 Realtime, Storage) on Vercel, **Tailwind v4**.
@@ -67,11 +70,12 @@ is its authority; this section mirrors it:
 | **Where does the work stand?** | [`docs/BUILD-BACKLOG.json`](docs/BUILD-BACKLOG.json) — the ONE list. Run **`pnpm backlog`** for the working view. Status never lives in prose ([ADR-1043](docs/DECISIONS.md)). |
 | **What ships next?** | [UX-MATURITY-PLAN](docs/UX-MATURITY-PLAN.md) (ADR-925; its §Sequencing table) + [BUILD-LIST](docs/BUILD-LIST.md) (ADR-921; the phase runway, including the parked phases). |
 | **Why was it decided?** | [DECISIONS](docs/DECISIONS.md) — the ADR record. A plan doc that contradicts an ADR is stale, not authoritative. |
+| **What are the product nouns?** | [NAMING](docs/NAMING.md) wins names. [CORE-MODEL](docs/CORE-MODEL.md) is commercial law (ADR-1294). [FOCUS-MODEL](docs/FOCUS-MODEL.md) is the accepted interior (ADR-1403). Four nouns: Member, Space, Circle, Event. Channels are the topical layer. |
 | **The editor, blocks, block registry** | [EDITOR-ARCHITECTURE](docs/EDITOR-ARCHITECTURE.md) (ADR-974…978), phases E0–E10. Read it before touching any of them. |
 
 The locked canons, each machine-enforced or gated: [NAMING](docs/NAMING.md) +
 [CONTENT-VOICE](docs/CONTENT-VOICE.md) (every word a human reads),
-[PAGE-FRAMEWORK](docs/PAGE-FRAMEWORK.md) (one shell, eight page shells, one chrome map),
+[PAGE-FRAMEWORK](docs/PAGE-FRAMEWORK.md) (one shell, seven page shells, one chrome map; `RailGrid` is not a shell; `WidgetSlot` is a sketch; `railFor` is the code default and operator overrides can beat it),
 [STUDIO](docs/STUDIO.md) (creation wizards derive from a manifest),
 [MENU-CONTRACT](docs/MENU-CONTRACT.md) (the admin menu derives from four catalogs), and
 [DEPLOY-SAFETY](docs/DEPLOY-SAFETY.md) (merging `main` deploys to production; the artifact gates).
@@ -86,14 +90,16 @@ fixed in the same pass.
    community graph spanning a nonprofit (Foundation) + for-profit (Labs), one shared game,
    money hard-partitioned by entity, verticals (Programs/Marketplace/Collective/affiliate/
    donations/Lab Spaces) as
-   modules, the geographic flywheel. Governs ADR-029→036. Read this first for the *why*.
-1. [IA-STRATEGY](docs/IA-STRATEGY.md) — information architecture: Circle + Interest
-   as the only member-facing words; Hubs/Nexuses contextual; in-person designator;
-   role + milestone "wake-up" gating. (Labs/demand-proving are out of website scope.)
-2. [PAGE-FRAMEWORK](docs/PAGE-FRAMEWORK.md) — one shell, eight page shells
-   (Stream / Index / Detail / Dashboard / Focus / WizardShell / RailGrid / Admin, §8),
+   modules, the geographic flywheel. Governs ADR-029→036. Companions for the live
+   product: [CORE-MODEL](docs/CORE-MODEL.md) and [FOCUS-MODEL](docs/FOCUS-MODEL.md).
+1. [IA-STRATEGY](docs/IA-STRATEGY.md) — information architecture: Circle + Channel
+   as the belonging words (Interests is retired); Hubs/Nexuses contextual; in-person
+   designator; role + milestone "wake-up" gating. (Labs/demand-proving are out of
+   website scope.)
+2. [PAGE-FRAMEWORK](docs/PAGE-FRAMEWORK.md) — one shell, seven page shells
+   (Stream / Index / Detail / Dashboard / Focus / WizardShell / Admin, §8),
    composable modules + slots, and the on-page operator **Settings panel** (ADR-180/182).
-   *(Reads "widget" = module card UI — see its terminology note.)*
+   `RailGrid` is not a shell. `WidgetSlot` is a sketch.
 3. [SCALE-ARCHITECTURE](docs/SCALE-ARCHITECTURE.md) — the 5-layer lock-in-resistant
    model, RSC/PPR rendering, Postgres scaling seams, future-proofing.
 4. [CAPABILITIES-AND-MOBILE](docs/CAPABILITIES-AND-MOBILE.md) — one capability
@@ -116,10 +122,12 @@ fixed in the same pass.
   its gate and its number; the §Sequencing table is the order.
 - [**BUILD-LIST**](docs/BUILD-LIST.md) — **the phase runway** around it, including the phases the
   owner has deliberately parked. Its rows defer status to the backlog.
-- [**OVERVIEW**](docs/OVERVIEW.md) — **north star.** The whole picture: IA,
-  page framework, gamification, and the lock-in-resistant architecture.
+- [**OVERVIEW**](docs/OVERVIEW.md) — **synthesis** of IA, page framework,
+  gamification, and the lock-in-resistant architecture. Not a north star and not
+  the plan.
 - [**START-HERE**](docs/START-HERE.md) — **new-developer orientation.** Run it locally,
-  what to read in order, and how to ship a change. Open this first.
+  what to read in order, and how to ship a change. Not a rival front door;
+  [AGENTS.md](AGENTS.md) names the live set.
 - [BUILD-PHASES](docs/BUILD-PHASES.md), [CHECKLIST](docs/CHECKLIST.md),
   [DEVELOPMENT-MAP](docs/DEVELOPMENT-MAP.md), [BUILD-SEQUENCE](docs/BUILD-SEQUENCE.md) — **history.**
   Each carries a superseded banner; read for items no current plan absorbed, never for status.
@@ -238,7 +246,7 @@ team-grade setup) lives in [docs/WORKFLOW.md](docs/WORKFLOW.md).
 
 Mirror, don't duplicate, the Git docs — translate them into human language:
 
-- **Welcome / What is Frequency** — Circles, Interests, how it grows.
+- **Welcome / What is Frequency** — Member, Space, Circle, Event, Channels.
 - **Member guide** — joining/finding a Circle, events, the wake-up onboarding,
   earning (gems/zaps), QR/NFC/ghost-node basics.
 - **Host guide** — running a Circle, assigning tasks, broadcasts, inline admin.
