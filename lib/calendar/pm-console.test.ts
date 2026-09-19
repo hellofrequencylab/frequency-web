@@ -3,10 +3,12 @@ import type { CalendarEvent } from './item'
 import {
   isOperatorListItem,
   isPencilLaneItem,
+  isProductionLaneItem,
   operatorListHref,
   operatorListItems,
   operatorStageLabel,
   pencilLane,
+  productionLane,
 } from './pm-console'
 
 function item(partial: Partial<CalendarEvent> & Pick<CalendarEvent, 'slug' | 'title' | 'dayKey'>): CalendarEvent {
@@ -85,9 +87,14 @@ describe('operatorListItems (LIVE-415)', () => {
 
     expect(isPencilLaneItem(hold)).toBe(true)
     expect(isPencilLaneItem(planning)).toBe(false)
+    expect(isProductionLaneItem(live)).toBe(true)
+    expect(isProductionLaneItem(planning)).toBe(false)
     expect(pencilLane([hold, otherDate, planning, live]).map((row) => row.key)).toEqual([
       'entry-1|2026-09-22',
       'entry-1b|2026-09-23',
+    ])
+    expect(productionLane([hold, otherDate, planning, live]).map((row) => row.key)).toEqual([
+      'open-house|2026-09-25',
     ])
     expect(operatorListItems([hold, planning, live]).map((row) => row.stageLabel)).toEqual([
       'Pencil',

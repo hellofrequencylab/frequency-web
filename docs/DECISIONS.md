@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1457**. 1451 is SCAN-642. 1463 is LIVE-393 on main. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1452–1453, 1456 and 1458 are claimed on other open PRs.
+tree as of this index: **ADR-1469**. 1451 is SCAN-642. 1463 is LIVE-393 on main. 1457 is LIVE-419. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1452–1453, 1456 and 1458 are claimed on leftover calendar PRs. 1468 is LIVE-417 on #2775.
 
 | Theme | Start here |
 |---|---|
@@ -46590,3 +46590,21 @@ Premise re-tested 2026-09-19:
 **Consequences.** Public first paint and month browse now share the same feed. Calendar C0–C5 are the stop for owner confirm. Do not start Editor / Sites / Etsy / App Platform / LIVE-242 from this row.
 
 **Rows.** LIVE-419.
+
+## ADR-1469: Admin Calendar gives Production its own lane (LIVE-418)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-418` · numbered **1469** (1457 is LIVE-419 on main; 1468 is LIVE-417 on #2775; 1456 remains claimed on leftover #2760) · implements C4 of [ADR-1445](DECISIONS.md) · follows [ADR-1454](DECISIONS.md) · corroborated by `lib/calendar/pm-console.ts` (`productionLane`), `components/spaces/calendar-pm-console.tsx`
+
+**Context.** ADR-1454 gave Pencil its own Admin lane. ADR-1445 C4 asked for Production the same way: the live show, listed on its own, not mixed into Planning and Cancelled. Premise re-tested 2026-09-19 after #2762: `pencilLane` existed; `productionLane` did not. Guest already paints that live show through `guestLiveItems` (LIVE-419). Leftover #2760 is a pre-C2 C4 attempt and is not absorbed.
+
+**Decision.**
+
+1. **`productionLane` is the Admin Production lane.** It is `operatorListItems` whose stage label is Production: `stage === 'production'` entries and published live events. `CalendarPmConsole` renders that lane under Pencil and above the mixed board.
+2. **The mixed board no longer lists Production.** Planning, Cancelled, and drafts stay there until C3 names Planning.
+3. **The date map is unchanged.** This change does not declare `planningLane`.
+
+**Rejected.** Closing C3 in the same PR. Absorbing leftover #2760.
+
+**Consequences.** LIVE-417 still owns the Planning lane (#2775). Calendar C0–C5 remain the stop for owner confirm.
+
+**Rows.** LIVE-418.
