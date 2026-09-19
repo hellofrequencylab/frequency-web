@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1451**. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1432 is LIVE-246.
+tree as of this index: **ADR-1455**. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1451–1453 are claimed on open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46314,19 +46314,21 @@ Premise re-tested 2026-09-19 on this tree:
 
 **Rows.** LIVE-414, LIVE-415, LIVE-416, LIVE-417, LIVE-418, LIVE-419.
 
-## ADR-1436: Column-backed images keep a url cache and a Loom id (HYG-068 schema half)
+## ADR-1436: Column-backed images keep a url cache and a Loom id (HYG-068)
 
-**Status:** Accepted · 2026-09-19 · backlog `HYG-068` · numbered **1436** (reserved while later ADRs landed on main) · corroborated by `supabase/migrations/20270345006300_column_image_asset_ids.sql`
+**Status:** Accepted · 2026-09-19 · backlog `HYG-068` · numbered **1436** (reserved while later ADRs landed on main) · corroborated by `supabase/migrations/20270345006300_column_image_asset_ids.sql`, `lib/library/column-image.ts`
 
 **Context.** [ADR-1253](DECISIONS.md) adopted `{ assetId, url }` on JSONB-backed image fields. Six TEXT columns could not hold that object. The owner ruled 2026-09-08: companion `*_asset_id` columns, not URL-only caches until D4. Version **06300** because **06100** is Collective and **06200** is Hubs/Nexuses. The DDL was applied to production before the code PR merged; this records the file so the ledger and the tree match.
 
 **Decision.**
 
 1. **Two columns, one picture.** The url column stays the denormalised cache. `*_asset_id` is a nullable FK to `library_assets(id)` with `ON DELETE SET NULL`.
-2. **Writers are still HYG-068.** The columns exist. Pickers and save actions must write both halves in the next change on that row. A nullable companion with no writer is the ADR-970 costume; do not close HYG-068 on the file alone.
+2. **Writers write both halves.** Pickers emit `{ url, assetId }`. Save actions persist both columns. A paste or a non-catalog upload nulls the companion so a stale id cannot point at a different picture. Readers prefer `library_assets.url` and fail open to the cache (`lib/library/column-image.ts`). Spark still stores URL strings. The Space Loom studio is a library manager, not a column writer.
 3. **Do not re-apply the DDL.** `IF NOT EXISTS` is already in the file; a second apply is not the recovery.
 
-**Rejected.** JSON-in-a-text-column. Deleting the ledger row to make `check:migrations` pass while production still has the columns.
+**Amendment 2026-09-19 (writers).** Premise re-tested on `0aa2dddeb`: the six companions already existed in `20270345006300` and no `*.ts` / `*.tsx` wrote them. This amendment is that writer/reader half. No new migration.
+
+**Rejected.** JSON-in-a-text-column. Deleting the ledger row to make `check:migrations` pass while production still has the columns. Closing the row on the migration file alone.
 
 **Rows.** HYG-068.
 
@@ -46389,7 +46391,7 @@ Premise re-tested 2026-09-19 against the tree, not the banners:
 
 **Rejected.** Restyling the guest month and calling it Admin. Closing C2–C4 in the same PR. Folding Guest through `guestLiveItems` (LIVE-419).
 
-**Consequences.** The Calendar tab's Admin mode leads with the board. The settings console is unchanged. LIVE-416 starts the pencil lane.
+**Consequences.** The Calendar tab's Admin mode leads with the board. The settings console is unchanged. LIVE-416 starts the pencil lane. **Amended by [ADR-1454](DECISIONS.md):** that lane now exists.
 
 **Rows.** LIVE-415.
 
@@ -46441,6 +46443,41 @@ Premise re-tested 2026-09-19:
 
 **Rows.** LIVE-313.
 
+## ADR-1455: Public calendar C0 paints cancelled as footer text (LIVE-414)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-414` · numbered **1455** (1446 is HYG-103 on main; 1447 is HYG-104; 1448 is OWN-058; 1450 is LIVE-415; 1449–1454 are claimed on open PRs) · implements [ADR-1445](DECISIONS.md) C0 · extends [ADR-1388](DECISIONS.md) and [ADR-1389](DECISIONS.md) · corroborated by `lib/calendar/guest-live.ts`, `components/events/event-calendar.tsx` (`cancelledCellFooter`), `lib/events/store.ts` (`paintCancelled`)
+
+**Context.** LIVE-379 shipped `stage` and LIVE-380 shipped Admin / Guest. ADR-1445 filed how those surfaces should read. Premise re-tested 2026-09-19: `EventCalendar` still painted cancelled as a struck chip (`line-through`); `passesCalendarGate` dropped cancelled before the public grid could show them; `guestLiveItems` did not exist.
+
+**Decision.**
+
+1. **`guestLiveItems` is the public feed.** It keeps live gatherings and cancelled items. It drops pencil, planning, and private-layer rows. Production is the live show.
+2. **`cancelledCellFooter` is the date-square paint.** Small muted titles at the bottom of that day. Not a chip. Not a strikethrough. Not omitted. The subscribed `.ics` stays live-only.
+3. **The on-page reader opts in.** `listSpaceCalendarEvents(..., { paintCancelled: true })` uses `passesCalendarPaintGate`, which is the live gate without the cancelled drop. Clash checks and the ICS RPC stay on `passesCalendarGate`.
+4. **C1 through C5 stay their own rows.** This change does not mount `CalendarPmConsole` and does not put `guestLiveItems` on the Guest page branch.
+
+**Rejected.** Changing `passesCalendarGate` itself (that would put cancelled gatherings into every subscriber's calendar app). Hiding cancelled. Painting cancelled as a struck chip.
+
+**Rows.** LIVE-414.
+
+## ADR-1454: Admin Calendar gives Pencil its own lane (LIVE-416)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-416` · numbered **1454** (1455 is LIVE-414; 1450 is LIVE-415 on main; 1448 is OWN-058; 1449–1453 are claimed on open PRs) · implements C2 of [ADR-1445](DECISIONS.md) · follows [ADR-1450](DECISIONS.md) · corroborated by `lib/calendar/pm-console.ts` (`pencilLane`), `components/spaces/calendar-pm-console.tsx`
+
+**Context.** ADR-1450 mounted `CalendarPmConsole` with one mixed board. ADR-1445 C2 asked for Pencil as a first-class Admin lane: pencil-stage gatherings listed on their own, not mixed into live chips. Premise re-tested 2026-09-19 after #2754: the board existed; `pencilLane` did not. Candidate dates already live on `StaffCalendar`. Guest exclusion is LIVE-419.
+
+**Decision.**
+
+1. **`pencilLane` is the Admin Pencil lane.** It is `operatorListItems` filtered to `stage === 'pencil'`. `CalendarPmConsole` renders that lane above the mixed board.
+2. **The mixed board no longer lists Pencil.** Planning, Production, Cancelled, live events, and drafts stay there until C3 and C4 name their own lanes.
+3. **The date map is unchanged.** Candidate dates stay on `StaffCalendar`. This change does not declare `planningLane` or `productionLane`, and it does not fold Guest through `guestLiveItems`.
+
+**Rejected.** Closing C3–C5 in the same PR. Calling a Pencil a hold (NAMING.md: Hold is the venue-hold noun). Hiding candidate dates from the grid.
+
+**Consequences.** LIVE-417 starts the Planning lane. LIVE-418 starts Production. LIVE-419 still owns the Guest feed.
+
+**Rows.** LIVE-416.
+
 ## ADR-1451: Evening meta-scan — Spotlight ISR and the layout void (SCAN-642, SCAN-643)
 
 **Status:** Accepted · 2026-09-19 · backlog `SCAN-642` · `SCAN-643` · numbered **1451** (1450 is LIVE-415 on main; 1448 is OWN-058; 1447 is HYG-104) · corroborated by `app/spotlight/[handle]/page.tsx` (`revalidate = 3600`, `generateStaticParams`) and `lib/spotlight/data.ts` (`listPublishedSpotlightHandles`)
@@ -46463,23 +46500,6 @@ Premise re-tested 2026-09-19:
 **Consequences.** `pnpm packets --lane scan` starts at SCAN-643. Status stays in `docs/BUILD-BACKLOG.json`. Rationale in `docs/META-SCAN-STATUS.md` 2026-09-19 evening pass.
 
 **Rows.** SCAN-642, SCAN-643, SCAN-638 (re-pointed).
-
-## ADR-1455: Public calendar C0 paints cancelled as footer text (LIVE-414)
-
-**Status:** Accepted · 2026-09-19 · backlog `LIVE-414` · numbered **1455** (1446 is HYG-103 on main; 1447 is HYG-104; 1448 is OWN-058; 1450 is LIVE-415; 1449–1454 are claimed on open PRs) · implements [ADR-1445](DECISIONS.md) C0 · extends [ADR-1388](DECISIONS.md) and [ADR-1389](DECISIONS.md) · corroborated by `lib/calendar/guest-live.ts`, `components/events/event-calendar.tsx` (`cancelledCellFooter`), `lib/events/store.ts` (`paintCancelled`)
-
-**Context.** LIVE-379 shipped `stage` and LIVE-380 shipped Admin / Guest. ADR-1445 filed how those surfaces should read. Premise re-tested 2026-09-19: `EventCalendar` still painted cancelled as a struck chip (`line-through`); `passesCalendarGate` dropped cancelled before the public grid could show them; `guestLiveItems` did not exist.
-
-**Decision.**
-
-1. **`guestLiveItems` is the public feed.** It keeps live gatherings and cancelled items. It drops pencil, planning, and private-layer rows. Production is the live show.
-2. **`cancelledCellFooter` is the date-square paint.** Small muted titles at the bottom of that day. Not a chip. Not a strikethrough. Not omitted. The subscribed `.ics` stays live-only.
-3. **The on-page reader opts in.** `listSpaceCalendarEvents(..., { paintCancelled: true })` uses `passesCalendarPaintGate`, which is the live gate without the cancelled drop. Clash checks and the ICS RPC stay on `passesCalendarGate`.
-4. **C1 through C5 stay their own rows.** This change does not mount `CalendarPmConsole` and does not put `guestLiveItems` on the Guest page branch.
-
-**Rejected.** Changing `passesCalendarGate` itself (that would put cancelled gatherings into every subscriber's calendar app). Hiding cancelled. Painting cancelled as a struck chip.
-
-**Rows.** LIVE-414.
 
 ## ADR-1452: Share URLs leave the (main) layout (SCAN-643)
 
