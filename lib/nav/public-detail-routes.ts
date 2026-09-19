@@ -1,4 +1,7 @@
-// PUBLIC DETAIL PAGES that live inside the (main) route group but are advertised in app/sitemap.ts.
+// PUBLIC DETAIL PAGES advertised in app/sitemap.ts. Listing and event share
+// URLs now live under app/(public)/ (SCAN-643). This list still gates leftover
+// (main) public chrome: Space podcast shows, plus any path the layout still
+// has to recognize so it does not 307 a crawler to `/`.
 //
 // app/(main)/layout.tsx redirects an anonymous visitor to `/` for any path it does not recognise as
 // public. That rule and the sitemap are written in different files for different reasons, and they

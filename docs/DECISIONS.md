@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1457**. 1451 is SCAN-642. 1463 is LIVE-393 on main. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1452–1453, 1456 and 1458 are claimed on other open PRs.
+tree as of this index: **ADR-1467**. 1457 is LIVE-419 on main. 1451 is SCAN-642. 1463 is LIVE-393 on main. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1452–1453, 1456 and 1458 are claimed on other open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46590,3 +46590,22 @@ Premise re-tested 2026-09-19:
 **Consequences.** Public first paint and month browse now share the same feed. Calendar C0–C5 are the stop for owner confirm. Do not start Editor / Sites / Etsy / App Platform / LIVE-242 from this row.
 
 **Rows.** LIVE-419.
+
+## ADR-1467: Share event and listing URLs leave the member layout (SCAN-643)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-643` · numbered **1467** (1457 is LIVE-419 on main; 1464–1466 are claimed on other open trees; 1463 is LIVE-393 on this tree) · corroborated by `app/(public)/layout.tsx` and `components/layout/public-share-chrome.tsx`
+
+**Context.** SCAN-636 made `/events/<slug>` the ISR public body. SCAN-637 dropped `force-dynamic` on the four listing details. Both still sat under `app/(main)/layout.tsx`, which called `getCachedUser()` (`cookies()`) and `headers()` before `publicChrome()`, and whose `generateMetadata` called `headers()` for page_settings SEO. Without `cacheComponents`, one dynamic API in a parent voids the subtree. Discover already paid to learn this. Premise re-tested 2026-09-19 after SCAN-642 landed: the SCAN-643 probe still failed.
+
+**Decision.**
+
+1. **Move the share URLs.** `/events/<slug>` and `/market|/store|/housing|/classifieds/<id>` live under `app/(public)/`. That layout never calls `cookies()` or `headers()`. Signed-in visitors on an event still rewrite to `/events/<slug>/full`.
+2. **Keep the SCAN-641 header.** `PublicShareChrome` mounts `SiteHeader variant="light" authMode="client"`. Do not close this row by swapping `MarketingHeader`.
+3. **Drop layout `generateMetadata` that reads the request path.** Page-level metadata still wins. Operator page_settings SEO on leftover (main) routes can return on a member-only nested layout later.
+4. **Leave Space profiles.** `spaces/[slug]/layout.tsx` still calls `getMyProfileId`, and a signed-in member keeps the member shell on the same URL. That remainder is `SCAN-644`.
+
+**Rejected.** Absorbing leftover #2743 (conflicting, used MarketingHeader). Treating a source-order shuffle of `publicChrome` as the ISR win without moving the pages. Folding Space profiles into this PR (the /full rewrite is its own row). Reopening SCAN-636.
+
+**Consequences.** `pnpm packets --lane scan` starts at SCAN-644. Status stays in `docs/BUILD-BACKLOG.json`.
+
+**Rows.** SCAN-643, SCAN-644.

@@ -297,7 +297,7 @@ describe('every path read out of public/ is a literal, so the tracer never globs
     // legitimately read hero.jpg by a LITERAL path in the route file, which is why this arm names
     // the routes it covers instead of sweeping every opengraph-image.tsx.)
     for (const path of [
-      'app/(main)/events/[slug]/opengraph-image.tsx',
+      'app/(public)/events/[slug]/opengraph-image.tsx',
       'app/discover/events/[slug]/opengraph-image.tsx',
     ]) {
       const route = FILES.find((f) => f.path === path)

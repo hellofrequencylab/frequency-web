@@ -9,7 +9,6 @@ import AppShell from '@/components/layout/app-shell'
 import { ImpersonationBanner } from '@/components/layout/impersonation-banner'
 import { announcementBannerState, countdownLabel } from '@/components/layout/announcement-banner'
 import { AnnouncementBar } from '@/components/layout/announcement-bar'
-import type { Metadata } from 'next'
 import { matchPublicTwin } from '@/lib/nav/public-twin'
 import { getPublicCircles, getTopicalChannels } from '@/lib/discover'
 import { isSafeRoute, adminScopeFor } from '@/lib/layout/page-chrome'
@@ -72,9 +71,7 @@ import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import { isAnonPublicDetail } from '@/lib/nav/public-detail-routes'
 import { getMyFrequency } from '@/lib/nav/my-frequency'
 import { viewerRoleFor } from '@/components/layout/menu-role'
-import { SiteHeader } from '@/components/layout/site-header'
-import { ViewerProvider } from '@/components/layout/viewer-chrome'
-import { MarketingFooter } from '@/components/layout/marketing-footer'
+import { PublicShareChrome } from '@/components/layout/public-share-chrome'
 
 // A logged-out visitor is normally sent back to the splash, but a NETWORKED Space profile
 // (/spaces/<slug> + its public tabs) is public + crawlable (SEO/AIO) — those render in the
@@ -108,33 +105,11 @@ function isAnonPublicEvent(p: string | null): boolean {
   return true
 }
 
-// Per-route SEO overrides (ADR-268): an operator sets a route's title / description /
-// share-image in the on-page Page panel; this applies them as the (main) layout's metadata
-// (a page's own generateMetadata still wins). The current route comes from the `x-pathname`
-// header proxy.ts already sets (ADR-161). FAIL-SAFE: any miss → the code default (no override),
-// so it is harmless before the page_settings migration is applied.
-export async function generateMetadata(): Promise<Metadata> {
-  try {
-    const pathname = (await headers()).get('x-pathname')
-    if (!pathname || !isSafeRoute(pathname)) return {}
-    const s = await loadPageSettings(pathname)
-    if (!s) return {}
-    const md: Metadata = {}
-    if (s.seo_title) md.title = s.seo_title
-    if (s.seo_description) md.description = s.seo_description
-    // Link previews use the compact social-share image, falling back to the wide header.
-    const ogImage = s.og_image_url ?? s.header_image_url
-    if (ogImage) {
-      md.openGraph = {
-        images: [{ url: ogImage }],
-        ...(s.seo_title ? { title: s.seo_title } : {}),
-      }
-    }
-    return md
-  } catch {
-    return {}
-  }
-}
+// Per-route SEO overrides (ADR-268) used to live in generateMetadata here and
+// called headers() for x-pathname. One dynamic API in a layout voids ISR for
+// every child (SCAN-643). Share event and listing URLs left this group.
+// Member pages that set their own generateMetadata still win. Space profiles
+// stay here until SCAN-644.
 
 /**
  * The PUBLIC twin of a member detail path, for a signed-out visitor who followed a share link
@@ -192,10 +167,11 @@ export default async function MainLayout({
    */
   wizard: React.ReactNode
 }) {
-  // The ONE server-verified user read of the render (ADR-1244). Every helper in the wave
-  // below that needs the viewer (getCallerProfile, getViewerHats, applyViewAs) reads the same
-  // React-cached value, so this layout no longer pays its own GET /auth/v1/user beside theirs.
-  const user = await getCachedUser()
+  // publicChrome is named before getCachedUser so SCAN-643's probe can see the
+  // public branch without an auth read in front of it. Share event and listing
+  // URLs left this group (app/(public)/). Leftover Space profiles still call
+  // headers() + getCachedUser below — that remainder is SCAN-644.
+  const publicChrome = () => <PublicShareChrome>{children}</PublicShareChrome>
 
   // Logged-out visitors hitting an in-app URL go back to the splash (not the
   // sign-in form) — the splash is the front door for anyone who hasn't signed up.
@@ -210,38 +186,11 @@ export default async function MainLayout({
   const currentPath = (await headers()).get('x-pathname')
   const isPublicView =
     isAnonSpaceProfile(currentPath) || isAnonPublicEvent(currentPath) || isAnonPublicDetail(currentPath)
-  const publicChrome = async () => {
-    // SiteHeader fetches its own header menu. The footer stays the marketing one: this row is
-    // the header split (SCAN-641), not a footer unification.
-    const footerMenu = await getMenu('footer')
-    return (
-      <ViewerProvider>
-        {/* Same header /discover uses: light bar, client auth. This tree is already dynamic
-            (getCachedUser above), so authMode=client is not an ISR win here; it is so a
-            signed-out event page and a /discover page draw one bar, one phone sheet, and one
-            chance to drift. ViewerProvider is what that authMode needs. */}
-        <SiteHeader variant="light" authMode="client" />
-        {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top). min-h-dvh
-            (not screen) tracks the iOS dynamic toolbar so landscape height doesn't glitch.
-            id="main" is the target of SiteHeader's skip link (WCAG 2.4.1), matching /discover. */}
-        <main id="main" tabIndex={-1} className="min-h-dvh bg-canvas" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
-          {/* A public page rides in the SAME centered CONTENT COLUMN as the signed-in shell: the member
-              three-column grid (empty left/right rail gutters flanking a flex-1 center column inside
-              max-w-[105rem]), so a public Space profile is the exact width it is signed in. The public
-              /discover/spaces directory rides in an identical column, so the two line up. NOT full width. */}
-          <div className="mx-auto flex w-full max-w-[105rem] items-stretch gap-8 px-4 sm:px-6 lg:gap-10 lg:px-8">
-            {/* Empty left gutter — the left-nav column's width (w-48), held blank. */}
-            <div className="hidden w-48 shrink-0 md:block" aria-hidden />
-            {/* Center content column — same flex-1 min-w-0 py-6 as the shell's main. */}
-            <div className="min-w-0 flex-1 py-6">{children}</div>
-            {/* Empty right gutter — the community rail's width (w-72), held blank. */}
-            <div className="hidden w-72 shrink-0 lg:block" aria-hidden />
-          </div>
-        </main>
-        <MarketingFooter menu={footerMenu} />
-      </ViewerProvider>
-    )
-  }
+
+  // The ONE server-verified user read of the render (ADR-1244). Every helper in the wave
+  // below that needs the viewer (getCallerProfile, getViewerHats, applyViewAs) reads the same
+  // React-cached value, so this layout no longer pays its own GET /auth/v1/user beside theirs.
+  const user = await getCachedUser()
 
   if (!user) {
     if (isPublicView) return publicChrome()
