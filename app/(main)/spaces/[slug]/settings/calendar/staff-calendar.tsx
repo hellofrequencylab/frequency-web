@@ -13,8 +13,11 @@ import { Switch } from '@/components/ui/switch'
 import { ENTRY_KINDS, ENTRY_STAGES, entryKind, entryStage, type CalendarLayerKey } from '@/lib/calendar/registry'
 import { MAX_CANDIDATE_DATES, MAX_DESCRIPTION, type EntryInput } from '@/lib/calendar/entries'
 import type { DayNote } from '@/lib/calendar/day-notes'
+import type { SpacePlan } from '@/lib/calendar/plans'
 import { isError } from '@/lib/action-result'
 import { deleteCalendarEntry, findEntryClashes, loadStaffCalendarMonth, pickPencilDate, saveCalendarEntry } from './entry-actions'
+import { joinEntryToPlan, startPlanFromEntry } from './plan-actions'
+import { PlanDrawer } from './plan-drawer'
 
 // THE STAFF CALENDAR (ADR-1385, ADR-1388). The Space's public events and its private layer on one grid,
 // with layer toggles, the vertical wheel paging months, and a drawer to add, edit and delete private
@@ -22,7 +25,7 @@ import { deleteCalendarEntry, findEntryClashes, loadStaffCalendarMonth, pickPenc
 // and Private entries. Writes go through ./entry-actions, which run on the caller's own session, so the
 // table's RLS is the lock.
 
-const LAYERS: CalendarLayerKey[] = ['events', 'pencil', 'private', 'unavailable']
+const LAYERS: CalendarLayerKey[] = ['events', 'pencil', 'private', 'unavailable', 'todos']
 
 function browserZone(): string {
   try {
@@ -52,27 +55,33 @@ function blankInput(kind: string, dayKey: string): EntryInput {
     status: def.defaultStatus,
     blocksTime: def.defaults.blocksTime,
     showPublicly: false,
+    planId: null,
   }
 }
 
 export function StaffCalendar({
   slug,
+  spaceId,
   events,
   initialYear,
   initialMonth1,
   canEdit,
   dayNotes,
+  plans = [],
 }: {
   slug: string
+  spaceId: string
   events: CalendarEvent[]
   initialYear: number
   initialMonth1: number
   /** False for a platform staff preview: the calendar is read-only. */
   canEdit: boolean
   dayNotes?: DayNote[]
+  plans?: SpacePlan[]
 }) {
   const router = useRouter()
   const [draft, setDraft] = useState<{ id: string | null; input: EntryInput } | null>(null)
+  const [openPlan, setOpenPlan] = useState<SpacePlan | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [pending, startTransition] = useTransition()
@@ -421,6 +430,63 @@ export function StaffCalendar({
               </p>
             )}
 
+            {canEdit && def?.isPencil && (
+              <div className="flex flex-wrap gap-2">
+                {draft?.id && !input.planId && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() =>
+                      startTransition(async () => {
+                        const res = await startPlanFromEntry(slug, draft.id!, input.title || 'Untitled Plan')
+                        if (isError(res)) setError(res.error)
+                        else done()
+                      })
+                    }
+                  >
+                    Start a Plan
+                  </Button>
+                )}
+                {draft?.id && input.planId && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      const plan = plans.find((p) => p.id === input.planId) ?? null
+                      setOpenPlan(plan)
+                    }}
+                  >
+                    Open Plan
+                  </Button>
+                )}
+                {draft?.id && input.planId && (
+                  <Button asChild size="sm" variant="ghost">
+                    <a href={`/events/new?space=${spaceId}&plan=${input.planId}&pencil=${draft.id}`}>
+                      Make it a Production
+                    </a>
+                  </Button>
+                )}
+                {draft?.id && !input.planId && plans.length > 0 && (
+                  <Select
+                    aria-label="Join an existing Plan"
+                    value=""
+                    options={[{ value: '', label: 'Join a Plan' }, ...plans.map((p) => ({ value: p.id, label: p.title }))]}
+                    onChange={(e) => {
+                      const planId = e.target.value
+                      if (!planId || !draft.id) return
+                      startTransition(async () => {
+                        const res = await joinEntryToPlan(slug, draft.id!, planId)
+                        if (isError(res)) setError(res.error)
+                        else done()
+                      })
+                    }}
+                  />
+                )}
+              </div>
+            )}
+
             <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
               {draft?.id ? (
                 <Button type="button" variant="dangerOutline" size="sm" onClick={remove} disabled={pending}>
@@ -441,6 +507,13 @@ export function StaffCalendar({
           </form>
         )}
       </Dialog>
+      <PlanDrawer
+        slug={slug}
+        plan={openPlan}
+        entryId={draft?.id}
+        open={openPlan !== null}
+        onClose={() => setOpenPlan(null)}
+      />
     </div>
   )
 }

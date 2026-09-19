@@ -12,6 +12,9 @@ import { canEditJourney } from '@/lib/journeys/authoring'
 import { getConnectReadyMap } from '@/lib/billing/connect'
 import { PAYOUT_SCOPE_SELF } from '@/lib/events/ticket-eligibility'
 import { defaultEventHostSpaceId } from '@/lib/events/default-host-space'
+import { getSpacePlan } from '@/lib/calendar/plans-store'
+import { getCalendarEntryRow } from '@/lib/calendar/entries-store'
+import { productionPrefill } from '@/lib/calendar/production-prefill'
 
 // Build a prefill from a SOURCE event for the Duplicate flow: clone every field the
 // create form sets EXCEPT the date (the new copy defaults to the active day, PART 2) and
@@ -104,13 +107,15 @@ async function buildDuplicateInitial(sourceId: string): Promise<DuplicatePrefill
 export default async function NewEventPage({
   searchParams,
 }: {
-  searchParams: Promise<{ circle?: string; space?: string; duplicate?: string; journey?: string }>
+  searchParams: Promise<{ circle?: string; space?: string; duplicate?: string; journey?: string; plan?: string; pencil?: string }>
 }) {
   const {
     circle: circleParam,
     space: spaceParam,
     duplicate: duplicateParam,
     journey: journeyParam,
+    plan: planParam,
+    pencil: pencilParam,
   } = await searchParams
   const supabase = await createClient()
   const {
@@ -379,10 +384,37 @@ export default async function NewEventPage({
 
   // The manual form's prefill. A `?journey=` deep link seeds the Journey field the same way
   // `?circle=` seeds the scope; a Duplicate prefill keeps everything it already carried.
+  const planPrefill = await (async (): Promise<Partial<EventFormInitial> | null> => {
+    const planId = typeof planParam === 'string' ? planParam : ''
+    const pencilId = typeof pencilParam === 'string' ? pencilParam : ''
+    const spaceId = typeof spaceParam === 'string' ? spaceParam : ''
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuid.test(planId) || !uuid.test(spaceId)) return null
+    const plan = await getSpacePlan(spaceId, planId)
+    if (!plan) return null
+    if (uuid.test(pencilId)) {
+      const entry = await getCalendarEntryRow(spaceId, pencilId)
+      if (entry) {
+        const mapped = productionPrefill(plan, entry)
+        return {
+          title: mapped.title,
+          description: mapped.description,
+          location: mapped.location,
+          startsAt: mapped.startsAt,
+          endsAt: mapped.endsAt,
+          planId: mapped.planId,
+          pencilId: mapped.sourceEntryId,
+        }
+      }
+    }
+    return { title: plan.title, planId: plan.id }
+  })()
+
   const formInitial: Partial<EventFormInitial> | undefined =
-    duplicateInitial || defaultJourneyId
+    duplicateInitial || defaultJourneyId || planPrefill
       ? {
           ...(duplicateInitial?.initial ?? {}),
+          ...(planPrefill ?? {}),
           ...(defaultJourneyId ? { journeyId: defaultJourneyId } : {}),
         }
       : undefined
@@ -428,7 +460,7 @@ export default async function NewEventPage({
         journeys={journeyOptions}
         defaultGroupId={defaultGroupId}
         initial={formInitial}
-        startInManual={!!duplicateInitial}
+        startInManual={!!duplicateInitial || !!planPrefill}
         home={viewerHome}
         payoutsReadyByScope={payoutsReadyByScope}
         payoutSelfByScope={payoutSelfByScope}

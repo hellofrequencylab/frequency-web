@@ -24,6 +24,7 @@ import { monthGridWindow, safeMonth } from '@/lib/calendar/month-window'
 import { canAcceptProjectMove } from '@/lib/calendar/project-board'
 import { entryKind, entryStage } from '@/lib/calendar/registry'
 import type { CalendarEvent } from '@/lib/calendar/item'
+import { listDueDateItems } from '@/lib/calendar/due-dates-store'
 
 // THE PRIVATE CALENDAR ACTIONS (ADR-1385). Create, edit and delete a Space's private entries, and read
 // one month of them. Gated twice: here (the caller edits this Space and it has the Calendar function)
@@ -105,7 +106,11 @@ export async function loadStaffCalendarMonth(slug: string, year: number, month1:
   const editor = await resolveEditor(slug)
   if (!editor) return []
   const { fromDay, toDay } = monthGridWindow(month.year, month.month1)
-  return listStaffCalendarItems(editor.spaceId, fromDay, toDay, { editable: true })
+  const [items, dueItems] = await Promise.all([
+    listStaffCalendarItems(editor.spaceId, fromDay, toDay, { editable: true }),
+    listDueDateItems(editor.spaceId, fromDay, toDay),
+  ])
+  return [...items, ...dueItems]
 }
 
 /** Keep one candidate date of a pencil and remove the others, atomically (ADR-1386, ADR-1388). */

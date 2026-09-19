@@ -441,6 +441,7 @@ app/api/wallet/google/route.ts
 app/api/webhooks/resend/route.ts
 app/api/webhooks/stripe/route.ts
 app/api/zap-prompt/route.ts
+app/calendar/private/[token]/route.ts
 app/events/[slug]/event.ics/route.ts
 app/events/calendar.ics/route.ts
 app/events/calendar/[token]/route.ts

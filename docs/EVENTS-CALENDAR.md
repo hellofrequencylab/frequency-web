@@ -272,21 +272,20 @@ public Calendar tab never shows them, and the table's check admits only `visibil
 are the operator quad. The grid asks `notesForDay` (`lib/calendar/day-notes.ts`) for a
 day's labels. A day note never blocks time and is never a calendar item.
 
-**Plan** (`PROG-CAL2`). `space_plans`, owned by the host Space. Calendar entries and events point at a
+**Plan** (`PROG-CAL2`, shipped). `space_plans`, owned by the host Space. Calendar entries and events point at a
 plan; `crm_tasks.plan_id` makes plan tasks part of the one team task inbox (`lib/crm/tasks.ts`). The
 plan drawer opens from any calendar item that belongs to a plan and is composed from a Studio manifest.
-A co-host Space sees a plan only through an accepted collaboration and a share of that plan.
+A co-host Space sees a plan only through an accepted share of that plan.
 
-**Production** (`PROG-CAL3`). "Make it a Production" opens the event Spark (`lib/studio/entities/event.ts`)
+**Production** (`PROG-CAL3`, shipped). "Make it a Production" opens the event Spark (`lib/studio/entities/event.ts`)
 prefilled by a pure mapping from the plan and the chosen Pencil onto the manifest's field keys. The event
 carries `plan_id`, and the Pencil is retired in the same step so the calendar shows one card. The
 readiness bar is derived from the manifest's required fields plus the plan's open tasks. Publishing is
 always the person's own press in the Spark.
 
-**Later phases.** Views (`PROG-CAL4`: stage board, My tasks, due dates as a layer, back-to-back items
-stacked as one block), templates and relative scheduling (`PROG-CAL5`: tasks anchored to the Production
-date, Run it again, repeating Pencils whose explicit exceptions a generator must never normalise), Vera
-proposals (`PROG-CAL6`, never publishing), co-host collaboration and a token-keyed private feed
-(`PROG-CAL7`), and the same spine for non-event projects (`PROG-CAL8`).
+**Views, playbooks, Vera, together, beyond events** (`PROG-CAL4`–`PROG-CAL8`, shipped). A board of Plans by stage
+on Calendar settings; My tasks filterable by plan; to-do dates as the `todos` layer; back-to-back items stacked
+on the grid; playbooks and relative dues; Vera proposals that never publish; a token-keyed private feed at
+`/calendar/private/<token>`; the same Plan spine for Journey, Program, and maintenance targets.
 
 Voice: all calendar copy follows `docs/CONTENT-VOICE.md` (no em/en dashes) + `docs/NAMING.md`.
