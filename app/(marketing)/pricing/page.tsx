@@ -193,7 +193,7 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
     },
     {
       q: 'Can I run a Space for free?',
-      a: `Yes, and anyone can. A free Space is a real Space, not a trial: your storefront, your page, events, posts, members, a shop, and a place for your people to gather. It sells tickets and takes donations from day one, at ${networkRate(spaces[0]!)}. You do not need Crew to run one. No card, no clock.`,
+      a: `Yes, and anyone can. A free Space is a real Space, not a trial: your storefront, your page, events, posts, members, a shop, and a place for your people to gather. It sells tickets, takes donations, and sells memberships from day one once payouts are ready, at ${networkRate(spaces[0]!)}. You do not need Crew to run one. No card, no clock.`,
     },
     {
       q: 'What actually needs a paid plan?',

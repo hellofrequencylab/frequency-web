@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { ArrowRight, Loader2, Lock, Minus, Plus } from 'lucide-react'
+import { ArrowRight, Loader2, Lock, Minus, Plus, ChevronUp } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { IconButton } from '@/components/ui/icon-button'
-import { startSpaceLoadoutCheckout } from './actions'
+import { startSpaceLoadoutCheckout, settleSpaceLoadoutAction } from './actions'
+import CheckoutPanel from '@/components/billing/checkout-panel'
+import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 
 // GO BUSINESS CTA (client · ADR-552). The single upgrade action on the billing surface: a free Space
 // goes Business (the one paid tier; paid is a usage state within Business, not a separate plan name). It
@@ -43,17 +45,54 @@ export function GoBusinessCta({
   const [error, setError] = useState<string | null>(null)
   const [extraSeats, setExtraSeats] = useState(0)
   const [pending, start] = useTransition()
+  const [session, setSession] = useState<{
+    seats: number
+    clientSecret: string
+    sessionId: string | null
+  } | null>(null)
+  const [open, setOpen] = useState(false)
+  const liveSession = session && session.seats === extraSeats ? session : null
+
+  function fallBackToHosted() {
+    setSession(null)
+    setError('Opening secure checkout…')
+    const seatQuantity = seatsSellable && extraSeats > 0 ? extraSeats : undefined
+    start(async () => {
+      const res = await startSpaceLoadoutCheckout(slug, {
+        plan: 'business',
+        interval: 'month',
+        seatQuantity,
+        forceHosted: true,
+      })
+      if (!isError(res) && res.data.url) window.location.href = res.data.url
+      else setError('Could not start checkout. Please try again.')
+    })
+  }
 
   function goBusiness() {
     if (!sellable) return
     setError(null)
+    if (liveSession) {
+      setOpen(true)
+      return
+    }
     start(async () => {
+      warmStripeBrowser()
       // seatQuantity is the LICENSED count (the owner's own seat is the free base, so the picker adds
       // EXTRA operators). Only sent when seats are sellable; otherwise the seat item stays inert.
       const seatQuantity = seatsSellable && extraSeats > 0 ? extraSeats : undefined
       const res = await startSpaceLoadoutCheckout(slug, { plan: 'business', interval: 'month', seatQuantity })
       if (isError(res)) setError(res.error)
-      else window.location.href = res.data.url
+      else if (res.data.clientSecret) {
+        setSession({
+          seats: extraSeats,
+          clientSecret: res.data.clientSecret,
+          sessionId: res.data.sessionId ?? null,
+        })
+        setOpen(true)
+      } else if (res.data.url) {
+        window.location.href = res.data.url
+      }
     })
   }
 
@@ -110,12 +149,22 @@ export function GoBusinessCta({
           {sellable ? (
             <button
               type="button"
-              onClick={goBusiness}
+              onClick={open ? () => setOpen(false) : goBusiness}
+              onPointerEnter={warmStripeBrowser}
+              onFocus={warmStripeBrowser}
+              onTouchStart={warmStripeBrowser}
               disabled={pending}
+              aria-expanded={open}
               className="flex w-full items-center justify-center gap-2 rounded-control bg-primary px-4 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
             >
-              {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ArrowRight className="h-4 w-4" aria-hidden />}
-              {pending ? 'Redirecting' : 'Go Business'}
+              {pending ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : open ? (
+                <ChevronUp className="h-4 w-4" aria-hidden />
+              ) : (
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              )}
+              {pending ? 'Opening checkout' : 'Go Business'}
             </button>
           ) : (
             <div
@@ -130,6 +179,22 @@ export function GoBusinessCta({
           )}
         </div>
       </div>
+      {open && liveSession && (
+        <div className="mt-4">
+          <CheckoutPanel
+            clientSecret={liveSession.clientSecret}
+            onFellBack={fallBackToHosted}
+            onPaid={
+              liveSession.sessionId
+                ? () => settleSpaceLoadoutAction(liveSession.sessionId as string)
+                : undefined
+            }
+            onClose={() => window.location.reload()}
+            doneTitle="You are on Business."
+            doneBody="A receipt is on its way to your email."
+          />
+        </div>
+      )}
       {error && (
         <p className="mt-3 text-2xs font-medium text-danger" role="alert">
           {error}

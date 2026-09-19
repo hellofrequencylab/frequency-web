@@ -22,7 +22,8 @@ import { householdBundlePriceKey } from '@/lib/pricing/bundle'
 import { resolveStripePriceId } from './pricing-prices'
 import { receiptEmailFor } from './receipt-address'
 import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
-import { BUNDLE_KIND, BUNDLE_SEAT_IDS_KEY, bundleRoster } from './bundle-seats'
+import { BUNDLE_KIND, BUNDLE_SEAT_IDS_KEY, bundleRoster, reconcileBundleSubscription } from './bundle-seats'
+import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from './checkout-ui'
 import type { BillingPeriod } from './pricing-keys'
 
 /** Stripe caps a metadata VALUE at 500 characters. A uuid plus its separator is 37, so this ceiling is
@@ -30,9 +31,18 @@ import type { BillingPeriod } from './pricing-keys'
  *  the failure mode is a truncated roster: money taken for seats the webhook can never read back. */
 const METADATA_VALUE_MAX = 500
 
+export interface BundleCheckoutResult {
+  url?: string
+  /** An on-page (elements) session's secret. EXACTLY ONE of this and `url` is ever set. */
+  clientSecret?: string
+  /** The session id, so the control can settle from its success handler rather than waiting on the
+   *  webhook. Handed back for BOTH shapes. */
+  sessionId?: string
+}
+
 /** Create a subscription Checkout session for a member to buy the Household / Circle bundle; returns
- *  the URL, or null when the bundle isn't sellable / not synced to Stripe / the requested seats don't
- *  fit. GATED on bundleSellable.
+ *  a hosted URL, an on-page client secret, or null when the bundle isn't sellable / not synced to
+ *  Stripe / the requested seats don't fit. GATED on bundleSellable.
  *
  *  `seatProfileIds` are the OTHER members this bundle seats (the buyer is always seated and never needs
  *  to be listed). They are stamped into the metadata so the webhook seats exactly them; passing none is
@@ -49,8 +59,12 @@ export async function createBundleCheckout(opts: {
   email?: string | null
   period?: BillingPeriod
   seatProfileIds?: readonly string[]
-}): Promise<string | null> {
+  ui?: CheckoutUi
+}): Promise<BundleCheckoutResult | null> {
   if (!stripe) return null
+  // Defaults to hosted, which is what makes this rollout safe surface by surface: every caller that
+  // does not ask for the on-page form keeps today's redirect exactly (docs/CHECKOUT.md §2).
+  const ui: CheckoutUi = opts.ui === 'elements' ? 'elements' : 'hosted'
   const period: BillingPeriod = opts.period ?? 'monthly'
   if (!(await bundleSellable())) return null
 
@@ -117,9 +131,44 @@ export async function createBundleCheckout(opts: {
     // The SUBSCRIPTION carries the same metadata, because seating runs off the subscription events
     // (created / updated / deleted), never off the session.
     subscription_data: { metadata },
-    success_url: `${appUrl()}/settings/billing?bundle=1&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${appUrl()}/upgrade`,
+    // Hosted takes success_url + cancel_url; an elements session REJECTS both and takes a single
+    // return_url. Hand-writing either pair fails at RUNTIME, in a money path, because the stripe
+    // package ships no type declarations (docs/CHECKOUT.md §3).
+    ...checkoutReturnFields(ui, {
+      successUrl: `${appUrl()}/settings/billing?bundle=1&session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${appUrl()}/upgrade`,
+    }),
     allow_promotion_codes: true,
   })
-  return session.url
+  // 🔴 TRAP 1 (docs/CHECKOUT.md §3): `!session.url` is TRUE FOR EVERY ELEMENTS SESSION. Ask the
+  // resolver, never the URL.
+  const handed = resolveCheckoutSession(session, ui, 'household_bundle')
+  if (handed.error) return null
+  return { url: handed.url, clientSecret: handed.clientSecret, sessionId: session.id }
+}
+
+/**
+ * THE SETTLE'S RECORDER (docs/CHECKOUT.md §3). Seat the household from an on-page checkout session
+ * id, in the buyer's own tab, rather than waiting on the webhook.
+ *
+ * 🔴 IT REUSES THE WEBHOOK'S OWN RECONCILER. `reconcileBundleSubscription` is the function the
+ * webhook calls. A second implementation here is how the two paths come to disagree about who a
+ * paid bundle seats.
+ */
+export async function recordBundleFromSessionId(sessionId: string): Promise<boolean> {
+  if (!stripe) return false
+  if (!sessionId.startsWith('cs_')) return false
+
+  const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ['subscription'] })
+  if (session.metadata?.kind !== BUNDLE_KIND) return false
+  if (session.status !== 'complete') return false
+  // A trial-free bundle is `paid`. `no_payment_required` is the trial shape other subscription
+  // creators use; refuse nothing Stripe already marked complete.
+  if (session.payment_status !== 'paid' && session.payment_status !== 'no_payment_required') return false
+
+  const sub = session.subscription
+  if (!sub || typeof sub === 'string') return false
+
+  const result = await reconcileBundleSubscription(sub, session.created)
+  return result.handled === true
 }

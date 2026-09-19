@@ -12,6 +12,11 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **Joining Crew, buying a household bundle, or picking a Space plan now takes the card on the page.** The form opens under the button you pressed. If it cannot open, you still go to Stripe's checkout.
+
+- **Buying something that ships asks for a delivery address.** Stripe collects and checks it before the charge, so the seller gets a real address. A Journey, a download, or a booking still pays on the page.
+
+- **A free Space can sell a membership.** Set a tier on Offerings. The first paid join still needs payouts set up. Campaigns stay on Business.
 - **If you run one Space, a new event starts as that Space's event.** The first screen says so, and you can change it. Ticket money and the Space calendar go with it. A personal event can still be attached later under **Hosted by** in the event's settings.
 
 - **Starting a Circle is open to every signed-in member.** Remix a Starter, claim one near you, or start a Chapter on a program Channel: those buttons no longer open an upgrade popup. Creating a Practice from the library is the same. You still need to be signed in. How many Circles or Practices you can publish stays metered.

@@ -15,13 +15,26 @@ import type { BillingPeriod } from './pricing-keys'
 import { receiptEmailFor } from './receipt-address'
 import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
 import { sendMembershipInvoiceReceipt } from './subscription-receipt'
+import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from './checkout-ui'
 
 /** The member tier a checkout may be opened for. Crew, and only Crew: the sellable member ladder is
  *  Member (free) and Crew (ADR-878). Narrowing this here is what makes a Supporter purchase
  *  unrepresentable rather than merely unreachable. */
 type PaidTier = 'crew'
 
-/** Create a subscription Checkout session for Crew; returns the URL.
+export interface MembershipCheckoutResult {
+  url?: string
+  /** An on-page (elements) session's secret. EXACTLY ONE of this and `url` is ever set: an elements
+   *  session has no url, and a hosted one has no secret. Branch on what came back, never on what was
+   *  asked for (docs/CHECKOUT.md §3). */
+  clientSecret?: string
+  /** The session id, so the control can settle from its success handler rather than waiting on the
+   *  webhook. Handed back for BOTH shapes. */
+  sessionId?: string
+}
+
+/** Create a subscription Checkout session for Crew; returns a hosted URL, an on-page client secret,
+ *  or null when the checkout cannot start.
  *
  *  🔴 CREW IS PAY WHAT YOU WANT, so `amountCents` is REQUIRED. The session always bills an INLINE
  *  recurring price at exactly the amount the member picked. There is no catalog price to resolve, no
@@ -46,8 +59,12 @@ export async function createMembershipCheckout(opts: {
   period?: BillingPeriod
   /** The member's chosen PWYW amount in cents (already validated against the operator floor). */
   amountCents: number
-}): Promise<string | null> {
+  ui?: CheckoutUi
+}): Promise<MembershipCheckoutResult | null> {
   if (!stripe) return null
+  // Defaults to hosted, which is what makes this rollout safe surface by surface: every caller that
+  // does not ask for the on-page form keeps today's redirect exactly (docs/CHECKOUT.md §2).
+  const ui: CheckoutUi = opts.ui === 'elements' ? 'elements' : 'hosted'
 
   const period: BillingPeriod = opts.period ?? 'monthly'
   const chosen =
@@ -121,11 +138,50 @@ export async function createMembershipCheckout(opts: {
         pwyw_amount_cents: String(chosen),
       },
     },
-    success_url: `${appUrl()}/settings/billing?upgraded=1&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${appUrl()}/upgrade`,
+    // Hosted takes success_url + cancel_url; an elements session REJECTS both and takes a single
+    // return_url. Hand-writing either pair fails at RUNTIME, in a money path, because the stripe
+    // package ships no type declarations (docs/CHECKOUT.md §3).
+    ...checkoutReturnFields(ui, {
+      successUrl: `${appUrl()}/settings/billing?upgraded=1&session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${appUrl()}/upgrade`,
+    }),
     allow_promotion_codes: true,
   })
-  return session.url
+  // 🔴 TRAP 1 (docs/CHECKOUT.md §3): `!session.url` is TRUE FOR EVERY ELEMENTS SESSION. Ask the
+  // resolver, never the URL. The resolver also owns the degrade: an elements request Stripe will
+  // not honour comes back as the hosted URL rather than an error, so the buyer always has a way
+  // to pay.
+  const handed = resolveCheckoutSession(session, ui, 'membership')
+  if (handed.error) return null
+  return { url: handed.url, clientSecret: handed.clientSecret, sessionId: session.id }
+}
+
+/**
+ * THE SETTLE'S RECORDER (docs/CHECKOUT.md §3). Grant Crew from an on-page checkout session id, in
+ * the buyer's own tab, rather than waiting on the webhook.
+ *
+ * 🔴 THIS PATH MUST STAY KIND-LESS. The member-entitlement allowlist is
+ * `s.mode === 'subscription' && !s.metadata?.kind` (SCAN-541). Stamping a `kind` here would stop
+ * granting Crew to someone who paid, with no error anywhere. confirmCheckout is the same function
+ * the success-redirect already uses, so the two paths cannot drift.
+ */
+export async function recordCrewCheckoutFromSessionId(sessionId: string): Promise<boolean> {
+  if (!stripe) return false
+  if (!sessionId.startsWith('cs_')) return false
+
+  let session: Stripe.Checkout.Session
+  try {
+    session = await stripe.checkout.sessions.retrieve(sessionId)
+  } catch {
+    return false
+  }
+  // The allowlist, restated positively: Crew is the one subscription that emits NO kind.
+  if (session.mode !== 'subscription' || session.metadata?.kind) return false
+  const profileId = session.metadata?.profile_id ?? session.client_reference_id
+  if (!profileId) return false
+
+  const tier = await confirmCheckout(sessionId, profileId)
+  return tier === 'crew'
 }
 
 /**

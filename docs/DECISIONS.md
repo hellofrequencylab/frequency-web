@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1413**.
+tree as of this index: **ADR-1418**.
 
 | Theme | Start here |
 |---|---|
@@ -45408,6 +45408,13 @@ had been locked to `service_role` (20260929000000). Supabase's security advisor 
 Legitimate awards are unchanged. Apply this migration on prod; it is grant-only, no function body
 change.
 
+**Amendment 2026-09-19 (HYG-102).** The lock file sorts *before* `20270345001200` on a fresh
+clone. That later `CREATE OR REPLACE` of the day-key overload is a new signature on replay, so
+Postgres would grant `PUBLIC` execute after the lock had already run. The replace file now
+revokes `public` / `anon` / `authenticated` and grants `service_role` in the same statements that
+create the overload. Production already applied the lock after the replace in calendar time; this
+closes the greenfield hole, not a live grant. No new ledger row.
+
 ## ADR-1403: The Quest is the Collective's program, product beats craft, CORE-MODEL stays commercial law (2026-09-18)
 
 **Status:** Accepted · **Amends** [ADR-1292](DECISIONS.md) · **Does not amend**
@@ -45436,7 +45443,7 @@ change.
 
 **Rejected.** Treating FOCUS-MODEL as a reversal of join-free / pay-when-charging. Starting a sixth plan file. Letting kit work jump product this week.
 
-**Consequences.** `OWN-066` is the ruling row and closes. The code has not moved yet. `QUEST-IA-DEBT`, `HYG-033`, `LIVE-204` are the first product surfaces. Editor E0–E9 stays on its own wave.
+**Consequences.** `OWN-066` is the ruling row and closes. The memberships code half moved in [ADR-1415](DECISIONS.md) (`LIVE-410`): the gate sits on the free floor, Connect readiness still refuses a checkout. `QUEST-IA-DEBT`, `HYG-033`, `LIVE-204` are the first product surfaces. Editor E0–E9 stays on its own wave.
 
 ## ADR-1404: A Journey has one sales page, and listing areas only point at it (2026-09-19)
 
@@ -45734,4 +45741,61 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 **Consequences.** A paid ticket, order, tip, donation, membership, or plan is visible in `engagement_events` and, when GA is configured, joins the browser session that started checkout. A buy click that never settles is still visible as `checkout_started`.
 
 **Rows.** LIVE-348.
+
+## ADR-1415: A free Space may sell memberships; Connect readiness is the door (LIVE-410)
+
+**Status:** Accepted · 2026-09-19 · **Implements** [ADR-1403](DECISIONS.md) Q3 · **Amends** [ADR-914](DECISIONS.md) (memberships as a Business wall) · backlog `LIVE-410` · corroborated by `lib/pricing/gates.ts` (`space_memberships` / `space_membership_tickets` at the free floor) and `lib/pricing/feature-meters.ts` (`space_membership_tiers.free = 1`)
+
+**Context.** ADR-914 put `space_memberships` at Business because a membership is a recurring promise, and helping someone make that promise from an account they might abandon next month is not a feature. FOCUS-MODEL Q3 asked whether that was a readiness concern wearing a pricing gate. ADR-1403 ruled yes: host free until you charge, then you pay. Readiness (payout-ready Connect) still applies. LIVE-231 made the Business wall honest and did not move it. LIVE-233 / LIVE-339 already surface Connect at the first sell attempt. The remaining untruth was the $29 plan as permission to collect the first dollar. LIVE-376 shipped first on 2026-09-19 and took ADR-1413 for the sole-Space event default. A parallel PR already claimed 1414 for purchase conversion, so this decision is ADR-1415.
+
+**Decision.**
+
+1. **The code default is the free floor.** `FEATURE_GATES.space_memberships` and `space_membership_tickets` sit at `minEntitlement: 'free'`, the same shape as the storefront. Members-only tickets move with the membership they sell, so the two cannot part again.
+2. **The tier meter agrees.** `space_membership_tiers` free allowance is 1, not 0. A zero here was the wall wearing a meter's clothes (LIVE-225). Active members stay unmetered.
+3. **Checkout still refuses when Connect is not payout-ready.** That is LIVE-233 / LIVE-339 territory, not this wall. An operator can still raise the gate from `/admin/pricing`; the write seam and the settings notice both read the merged map.
+4. **Copy follows the gate.** `paidWalls()` already drops a free-floor key, so `/pricing`, `/llms.txt`, and `/llms-full.txt` stop naming memberships as a paid wall. The remaining named wall is campaigns and funnels.
+
+**Rejected.** Deleting the gate (the probe requires the key; an operator override still needs it). Adding a new Circle-to-deliver-into check in this row (ADR-1403 named it; it is not this wall). Raising `space_campaigns`.
+
+**Consequences.** A free Space with the role sees the tier editor. The first paid join still needs a payout-ready Connect account. Campaigns stay at Business.
+
+**Rows.** LIVE-410.
+
+## ADR-1417: Physical goods collect a shipping address on Stripe Checkout (LIVE-346)
+
+**Status:** Accepted · 2026-09-19 · LIVE-346 · corroborated by `lib/commerce/shipping.ts` and `lib/commerce/checkout.ts`
+
+**Context.** The commerce creator stored `input.shipping ?? {}` on the pending order and never set `shipping_address_collection`. Re-tested 2026-09-19: `startCheckoutAction` never passes `shipping`, and no buy-path form collects an address. Every live physical sale would settle with `{}` and fail only when a carrier was handed nothing. The on-page checkout program wants the buyer to stay on Frequency, but `CheckoutForm` has no Address Element. Tickets, tips, gifts and Journeys do not ship.
+
+**Decision.**
+
+1. **Stripe is the validator.** A cart that includes a physical line (or a legacy row with no kind) sets `shipping_address_collection` on the Checkout Session. Allowed countries are an explicit ISO list in `SHIP_TO_COUNTRIES`.
+2. **Write what Stripe collected.** `recordCommerceOrderFromSession` copies `shipping_details` (or `collected_information.shipping_details`) onto `commerce_orders.shipping` when the session settles. An empty in-app value is no longer the address a seller ships to.
+3. **Physical carts use hosted Checkout.** The shared on-page form cannot take an address today. Forcing hosted is a loud degrade (`[commerce] physical goods need a Stripe-validated shipping address`). Digital, Journey, booking, ticket and service stay on-page.
+4. **Do not collect billing address here.** That is OWN-075 (tax), still a ruling.
+
+**Rejected.** Keeping the empty in-app object as the address of record. Adding Address Element to the entity-blind card form in this row (every ticket and tip would grow a shipping field, or the form would stop being entity-blind). Asking the buyer for an address after the money moved.
+
+**Consequences.** Buying a mug or a used listing opens Stripe's hosted page and asks for a delivery address before the charge. Buying a Journey still opens the card form under the button. Sellers read a validated address on the order. An Address Element on the shared form is a later row if physical goods should stay on-page.
+
+**Rows.** LIVE-346.
+
+## ADR-1418: Subscription checkout stays on Frequency (LIVE-359)
+
+**Status:** Accepted · 2026-09-19 · LIVE-359 · corroborated by `lib/billing/checkout.ts`, `lib/billing/bundle-checkout.ts`, `lib/billing/space-plan-checkout.ts`
+
+**Context.** Tickets, tips, Space gifts, commerce, and Space memberships already took a card on Frequency through `lib/billing/checkout-ui.ts`. Crew, the household bundle, and a Space plan still sent the buyer to `checkout.stripe.com`. Re-tested 2026-09-19: LIVE-359's probe named those three; Space membership was already on the seam. Subscriptions were last on purpose: they grant entitlement from `subscription_data.metadata`, which is `Record<string, string>`, so a renamed key type-checks and then silently stops granting access to someone who paid.
+
+**Decision.**
+
+1. **Same seam, default hosted.** Each of the three remaining creators takes `ui?: CheckoutUi`, routes redirect fields through `checkoutReturnFields`, and hands the result through `resolveCheckoutSession`. Callers that do not opt in keep today's redirect.
+2. **Settle from the success handler.** `confirm({ redirect: 'if_required' })` never visits `return_url` on the common card path, so each creator gained a recorder that re-fetches the session from Stripe and reuses the webhook reconciler (`confirmCheckout`, `reconcileBundleSubscription`, `routeSpaceSubscription`).
+3. **Crew stays kind-less.** The member-entitlement allowlist is still `mode === 'subscription' && !metadata.kind` (SCAN-541). Stamping a kind on Crew would stop granting the tier. The other two keep stamping `household_bundle` and `space_plan` on both the session and the subscription.
+4. **A trial Space plan is complete without a charge.** The Space-plan settle accepts `payment_status: 'no_payment_required'` so a 14-day trial is granted on the page, not only when the webhook arrives.
+
+**Rejected.** A raw PaymentIntent (no Checkout Session, so `checkout.session.completed` never fires). A second entitlement writer beside the webhook reconcilers. Adding `kind` to Crew to "make it consistent".
+
+**Consequences.** Joining Crew, buying the household bundle, or taking a Space plan opens the card form under the button when a publishable key is present. A failed mount still reaches hosted Checkout. Entitlement is granted from the same metadata the webhook already read.
+
+**Rows.** LIVE-359.
 

@@ -4,7 +4,7 @@ description: Swap and share with neighbors, plus housing, the community Market, 
 category: connecting
 order: 5
 published: 2026-06-06
-updated: 2026-09-14
+updated: 2026-09-19
 audience: member
 featureKeys: [marketplace]
 status: published
@@ -58,6 +58,8 @@ reach the person and arrange the rest offline.
   product, then manage it and set up payouts from **My storefront**.
 - The **Frequency Store** is Frequency's own store for merch, event passes, and retreats.
 - Anything you buy shows up under **My orders** in your account menu.
+- If the thing you buy has to be shipped, checkout asks for a delivery address and checks it
+  before the charge. A Journey or a download stays on the page and does not ask.
 
 ## On a listing
 

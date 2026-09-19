@@ -25,8 +25,9 @@
 //      customer's own transaction (Gate 4).
 //   ⛔ lib/crm/lead-capture.ts ensureSpaceMemberContact() — this materializes the CRM row for someone
 //      who ALREADY JOINED the Space. Refusing it does not prevent the join; it just leaves a member
-//      the owner cannot see or email, which is data corruption dressed as a limit. The membership
-//      itself is walled at Business (`space_memberships`), so this is not an unmetered growth path.
+  //      the owner cannot see or email, which is data corruption dressed as a limit. The membership
+  //      itself is open on free (`space_memberships`, LIVE-410) and the contact write is still not a
+  //      growth path: the member already joined.
 //
 // Every OTHER `contacts` insert in the repo (the beta waitlist, /start, onboarding, the opt-in funnel,
 // event guest capture, support chat, the personal scan bridge, and the importer's `platform` target)

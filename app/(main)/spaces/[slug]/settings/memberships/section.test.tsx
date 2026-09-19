@@ -3,15 +3,16 @@ import { readFileSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { Space } from '@/lib/spaces/types'
 
-// THE WALL IS SAID OUT LOUD AT THE POINT OF TIER CREATION (LIVE-231, docs/CORE-MODEL.md §5 phase 4).
-// Rendered through the real MembershipsSection with its IO faked, so the assertion is on what a Space
-// below the Business wall reads, not on a prop. Three branches:
-//   * a FREE Space with the gates live reads the honest sentence (what charging members is part of, by
-//     the wall's name; why; the one door to billing) and gets NO tier editor and NO padlock;
-//   * a Space ABOVE the wall gets the editor and never sees the sentence (unchanged);
+// LIVE-410 moved the memberships gate to the free floor (ADR-1403 Q3). A free Space with the
+// role now sees the tier editor, the same way a Business Space always did. The GateNotice from
+// LIVE-231 stays in source for an operator override that raises the wall; it is not what a free
+// Space reads on the code default. Three branches:
+//   * a FREE Space with the gates live gets the editor (the new product truth);
+//   * a Space ABOVE any remaining wall gets the editor (unchanged);
 //   * a free Space while the gates are NOT live gets the editor (the beta grace window, unchanged).
-// Then two source-shape facts the backlog probe measures: no Lock glyph is imported anywhere on the
-// tier-creation path, and the wall's name reaches the sentence through featureWallLabel, not a literal.
+// Then two source-shape facts the LIVE-231 probe still measures: no Lock glyph is imported
+// anywhere on the tier-creation path, and the wall's name reaches the sentence through
+// featureWallLabel, not a literal.
 
 const state = {
   gatesLive: true,
@@ -63,6 +64,10 @@ vi.mock('@/components/spaces/membership-owner-list', () => ({ MembershipOwnerLis
 vi.mock('@/components/spaces/membership-event-access', () => ({ MembershipEventAccess: () => null }))
 vi.mock('@/components/spaces/membership-circle-access', () => ({ MembershipCircleAccess: () => null }))
 vi.mock('@/components/pricing/meter-upsell', () => ({ MeterUpsell: () => null }))
+vi.mock('@/lib/spaces/benefits-store', () => ({ listSpaceBenefits: async () => [] }))
+vi.mock('@/components/spaces/membership-benefits-form', () => ({
+  MembershipBenefitsForm: () => null,
+}))
 
 import { MembershipsSection } from './section'
 import { SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
@@ -85,47 +90,17 @@ async function render(plan: Space['plan'], staffViewing = false): Promise<string
 
 const SENTENCE = `Charging your members is part of ${SPACE_PLAN_LABEL.business}`
 
-describe('a free Space at the point of tier creation', () => {
-  it('reads the honest sentence, why, and the one door to billing, with no editor and no padlock', async () => {
+describe('a free Space at the point of tier creation (LIVE-410)', () => {
+  it('gets the editor on the code default, with no Business wall and no padlock', async () => {
     state.gatesLive = true
     state.tiers = []
     state.canManageMembers = true
     const html = await render('free')
-    expect(html).toContain(SENTENCE)
-    // WHY: the repeat is what the wall gates (ADR-914), said in plain words.
-    expect(html).toContain('they pay every month')
-    expect(html).toContain('Tickets, donations, and your shop stay open on every plan.')
-    // The door is the billing surface every meter upsell already links to, under the same CTA.
-    expect(html).toContain('href="/spaces/moon-studio/settings/billing"')
-    expect(html).toContain('>See plans<')
-    // No editor to fill in, and no lock anywhere in the markup (lucide stamps `lucide-lock` on the glyph).
-    expect(html).not.toContain('data-tier-editor')
-    expect(html).not.toMatch(/lucide-lock/)
-    // The house gate vocabulary, not a bespoke box.
-    expect(html).toContain('data-kind="gated"')
-    // Voice: no em dashes in what the Space reads.
-    expect(html).not.toContain('—')
-  })
-
-  it('a viewer who cannot change the plan is pointed at an admin, not at billing', async () => {
-    state.gatesLive = true
-    state.tiers = []
-    state.canManageMembers = false
-    const html = await render('free')
-    expect(html).toContain(SENTENCE)
-    expect(html).toContain('Ask an admin about the plan for this space.')
-    expect(html).not.toContain('settings/billing')
-    state.canManageMembers = true
-  })
-
-  it('a downgraded Space with tiers still listed keeps the editor under the notice, so it can clear them', async () => {
-    state.gatesLive = true
-    state.tiers = [{ id: 't1', name: 'Supporter' }]
-    const html = await render('free')
-    expect(html).toContain(SENTENCE)
     expect(html).toContain('data-tier-editor')
+    expect(html).not.toContain(SENTENCE)
+    expect(html).not.toContain('data-kind="gated"')
     expect(html).not.toMatch(/lucide-lock/)
-    state.tiers = []
+    expect(html).not.toContain('—')
   })
 })
 
@@ -139,7 +114,7 @@ describe('above the wall, and while the gates are not live, nothing changed', ()
     expect(html).not.toContain('data-kind="gated"')
   })
 
-  it('a Non Profit Space clears the Business floor', async () => {
+  it('a Non Profit Space clears the floor', async () => {
     state.gatesLive = true
     const html = await render('nonprofit')
     expect(html).toContain('data-tier-editor')

@@ -192,6 +192,7 @@ buyer who can still pay:
 | Stripe.js will not load (blocked, offline, 10s watchdog) | `onFellBack` → the action again with `forceHosted` → hosted page. |
 | `confirm()` throws | Same escape. |
 | A saved-card parameter is rejected | One retry without it. The convenience is dropped, never the sale. |
+| Physical goods in the cart (LIVE-346) | Hosted Checkout, which collects a validated shipping address. The on-page form has no Address Element. Digital / Journey / booking stay on-page. |
 
 Every rung logs. A silent degrade would read as "on-page checkout is live" while every buyer was
 quietly being redirected.
@@ -223,7 +224,7 @@ attached one.
 | `lib/billing/checkout-kind-contract.test.ts` | A creator with no `metadata.kind`, or a kind with no recorder |
 | `lib/billing/receipt-address.test.ts` | A creator that resolves no address for the payer |
 | `lib/billing/take-rate-ladder.test.ts` | A fee-receipt write that could fail a live sale |
-| `LIVE-359`'s probe | Names every creator still redirecting |
+| `LIVE-359`'s probe | A creator that does not route both halves through `checkout-ui` |
 | `app/(main)/events/[slug]/ticket-button.states.test.tsx` | The eight states, by DOCUMENT POSITION: marks above the button · no price in the label · a session reused across a collapse · a session surviving a tier change |
 | `components/billing/checkout-panel.settle.test.tsx` | A confirmation shown before the settle resolves · a thrown settle reaching the buyer · a confirmation with no close control |
 | `app/(main)/events/[slug]/ticket-actions.settle.test.ts` | A settle with no kill switch, no shape check, no limiter, or one that turns a reconcile failure into an error after a charge |
@@ -260,13 +261,8 @@ Three things to know:
 
 ---
 
-## 8. What is not converted yet
+## 8. What the subscription creators must not drop
 
-The **subscription** creators that remain still redirect, deliberately. `LIVE-359`'s probe names
-which ones, and this paragraph deliberately does not: it read *four* from the day Space
-memberships converted (2026-09-15) to the day someone checked (2026-09-19), and a count in prose
-is the thing this repo keeps getting wrong. They stamp
-`subscription_data.metadata`, and `lib/billing/space-subscriptions.ts` reads `space_id` / `member_id`
-/ `tier_id` / `plan` back off it to grant entitlement. A dropped or reshaped key there does not fail
-a build — it **silently stops granting access to someone who paid**. Convert them with that in front
-of you, and prove the metadata round-trips before anything else.
+All eight Checkout Session creators now route through the seam in §2. `LIVE-359`'s probe is the list to trust. The remaining risk is not a missing form, it is a renamed metadata key.
+
+Crew is the one creator that must emit **no** `kind`: the member-entitlement allowlist is `mode === 'subscription' && !metadata.kind` (SCAN-541). The Space plan and household bundle stamp `kind` on both the session and `subscription_data.metadata`, because `lib/billing/space-subscriptions.ts` and `lib/billing/bundle-seats.ts` read those keys to grant access. A dropped or reshaped key there does not fail a build. It silently stops granting access to someone who paid. The round-trip tests in `lib/billing/membership-metadata-roundtrip.test.ts` and `lib/billing/subscription-onpage.test.ts` are the gate.
