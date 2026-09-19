@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1450**. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling.
+tree as of this index: **ADR-1448**. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1432 is LIVE-246.
 
 | Theme | Start here |
 |---|---|
@@ -46371,3 +46371,29 @@ Premise re-tested 2026-09-19 against the tree, not the banners:
 **Consequences.** The Calendar tab's Admin mode leads with the board. The settings console is unchanged. LIVE-416 starts the pencil lane.
 
 **Rows.** LIVE-415.
+
+## ADR-1448: The Circle and Event rail banks get a Settings door (OWN-058)
+
+**Status:** Accepted · 2026-09-19 · Records the 2026-09-08 OWN-058 ruling · **Implements** option (a) · numbered **1448** because **1450** is LIVE-415 on main (which reserved 1448–1449 for open PRs), **1447** is HYG-104, **1446** is HYG-103, and **1445** is the calendar C0–C5 ruling · corroborated by `bankForScope` in `lib/admin/rail-bank.ts` and `FROZEN_MENU_DEBT` in `scripts/check-menu.mjs`
+
+**Context.** SCAN-603 made `circle.settings` and `event.settings` resolve through the href builders. Adding a Settings item to the rail bank raised `FROZEN_MENU_DEBT` from 11 to 13, and MENU-CONTRACT said that count may shrink and never grow. Both manage pages already carried an in-page Settings tab. The owner ruled 2026-09-08: add the two rail items and raise the ledger, because the rows are doors to pages that already exist, not new hand-typed menus.
+
+Premise re-tested 2026-09-19:
+
+1. `FROZEN_MENU_DEBT` for `lib/admin/rail-bank.ts` was still 11 (21 across the three frozen files).
+2. The standalone `/circles/<slug>/settings` and `/events/<slug>/settings` pages are gone. LIVE-237 retired them. `next.config.ts` 308s those URLs onto the Manage hub Settings tab.
+3. `hrefForEntitySurface` already resolved `circle.settings` / `event.settings` to that tab.
+4. The Circle bank still listed Manage console, New event, New announcement. The Event bank still listed Manage dashboard.
+
+**Decision.**
+
+1. **Option (a).** The Circle and Event banks gain a Settings door. The href comes from `hrefForEntitySurface`, so a later destination change is one map edit.
+2. **Raise `FROZEN_MENU_DEBT` 11 → 13.** The reason sits on the constant: this raise is the 2026-09-08 owner ruling, and it admits two doors, not a new menu. A later raise needs a new dated ruling.
+3. **Do not mint `circle.edit` / `event.edit` link rows.** That was option (b). The Settings tab is the editor.
+
+**Rejected.** Leaving the editors URL-only (option c: a host who does not know the tab still has no door). Raising the ledger without writing the ruling on the constant (the next agent would argue the ratchet up again).
+
+**Consequences.** A Circle or Event rail bank now has a Settings button that opens the Manage hub Settings tab. Frozen menu debt is 23 rows (6 + 13 + 4). The catalog path (`placement: 'bank'`) is still the retirement plan for `baseBank`.
+
+**Rows.** OWN-058.
+

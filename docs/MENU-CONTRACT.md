@@ -128,7 +128,7 @@ to any of them fails CI exactly as a new hand‑rolled menu would.
 | Site | Rows | Why it is still here | To retire it |
 | --- | --- | --- | --- |
 | `components/layout/settings-panel.tsx` — `allExtraItems` | 6 | Circle Quest, Page content, the Layout tuner (circle/event/practice) and the event Danger zone are mounted by hand into the rail. ADR‑886 already named this the wrong pattern ("Events mount `EventDangerZone` directly in `settings-panel.tsx` as an inline extra … `hub.danger`, `nexus.danger` and `journey.danger` all render from `ADMIN_MODULES` instead, and that is the pattern this follows"). | One `ADMIN_MODULES` row each, component moved into `MODULE_COMPONENTS`. **Owner call needed** on the three Layout rows: one component parameterised by page noun, gated on three different capabilities. |
-| `lib/admin/rail-bank.ts` — `baseBank` | 11 | A `switch` over `scope.kind` returning literal quick‑link arrays for space / global+profile / circle / event / hub+nexus+practice / journey / channel. The second per‑scope menu ADR‑927 found. | Mint the rows with `placement: 'bank'` (ADR‑515 designed the path; ⚠️ **eight rows now carry `placement: 'bank'`** — this cell said "nothing opts in yet" until 2026-09-05, and `scripts/check-menu.mjs` had already corrected the same sentence on 2026-09-04) and delete `baseBank`. **Owner call needed**: it changes which quick links each scope shows, and several hrefs are DB‑id‑keyed rather than slug‑keyed. |
+| `lib/admin/rail-bank.ts` — `baseBank` | 13 | A `switch` over `scope.kind` returning literal quick‑link arrays for space / global+profile / circle / event / hub+nexus+practice / journey / channel. The second per‑scope menu ADR‑927 found. **OWN-058 (ruled 2026-09-08) raised 11 → 13** to admit the Circle and Event Settings doors; those modules already resolve through `hrefForEntitySurface`, and LIVE-237 retired the standalone `/settings` pages onto the Manage hub Settings tab. | Mint the rows with `placement: 'bank'` (ADR‑515 designed the path; ⚠️ **eight rows now carry `placement: 'bank'`** — this cell said "nothing opts in yet" until 2026-09-05, and `scripts/check-menu.mjs` had already corrected the same sentence on 2026-09-04) and delete `baseBank`. **Owner call needed**: it changes which quick links each scope shows, and several hrefs are DB‑id‑keyed rather than slug‑keyed. |
 | `components/admin/modules/channel-settings-module.tsx` | 4 | Four hand‑typed links to the Channel Manage hub sections, duplicating `CHANNEL_HUB_SECTIONS`. Inside a catalog module body, so the *row* traces to a catalog row — but the list can drift from the hub it mirrors. | Render them from `CHANNEL_HUB_SECTIONS`. Mechanical; no product decision. |
 
 ## How to extend it (the supported ways)
@@ -142,7 +142,7 @@ to any of them fails CI exactly as a new hand‑rolled menu would.
   `<CATALOG>.map(...)` lane so it flows through the one contract. Update the tables above in the same pass.
 - **Something the guard flags that genuinely is not a menu:** classify the file in `NOT_A_MENU` **naming
   the system it belongs to**, or put `// menu-ok: <reason>` on the declaration line. Never grow
-  `FROZEN_MENU_DEBT` — that list only shrinks.
+  `FROZEN_MENU_DEBT` — that list only shrinks, except the OWN-058 raise recorded in §Frozen debt.
 
 ## Do not
 
@@ -152,4 +152,5 @@ to any of them fails CI exactly as a new hand‑rolled menu would.
   directly — edit the catalog.
 - Do not rewrite the rail to "fix" a menu; the rail is the stable render, the catalog is the data.
 - Do not raise a `FROZEN_MENU_DEBT` count to make a change fit. Migrate the site, or bring the product
-  decision to the owner.
+  decision to the owner. The one recorded raise is OWN-058 (2026-09-08): Circle and Event Settings
+  doors, 11 → 13. A later raise needs a new dated ruling.
