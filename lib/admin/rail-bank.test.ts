@@ -18,6 +18,7 @@ describe('bankForScope', () => {
     const bank = bankForScope({ kind: 'circle', id: dbId }, {}, [], slug)
     const h = hrefs(bank)
     expect(h).toContain(`/circles/${slug}/manage`) // console → SLUG (not the uuid)
+    expect(h).toContain(`/circles/${slug}/manage?section=settings`) // OWN-058 Settings tab
     expect(h).not.toContain(`/circles/${dbId}/manage`)
     expect(h).toContain(`/events/new?circle=${dbId}`) // create → DB id (create form matches circle.id)
     expect(h).toContain(`/nearby?compose=true&scope=${dbId}`)
@@ -124,18 +125,19 @@ describe('bankForScope', () => {
     const bank = bankForScope({ kind: 'circle', id: 'c1' })
     expect(hrefs(bank)).toEqual([
       '/circles/c1/manage',
+      '/circles/c1/manage?section=settings',
       '/events/new?circle=c1',
       '/nearby?compose=true&scope=c1',
     ])
-    expect(bank.map((l) => l.label)).toEqual(['Manage console', 'New event', 'New announcement'])
+    expect(bank.map((l) => l.label)).toEqual(['Manage console', 'Settings', 'New event', 'New announcement'])
     // None of the create/nav quick-actions is a destructive href.
     expect(bank.every((l) => !/danger|delete/i.test(l.href))).toBe(true)
   })
 
   it('event → the host Manage dashboard (the console that carries roster/approvals/analytics) (ADR-515 Phase 4)', () => {
     const bank = bankForScope({ kind: 'event', id: 'x' })
-    expect(hrefs(bank)).toEqual(['/events/x/manage'])
-    expect(bank[0].label).toBe('Manage dashboard')
+    expect(hrefs(bank)).toEqual(['/events/x/manage', '/events/x/manage?section=settings'])
+    expect(bank.map((l) => l.label)).toEqual(['Manage dashboard', 'Settings'])
     expect(bank.length).toBeGreaterThanOrEqual(1)
   })
 

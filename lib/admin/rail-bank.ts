@@ -12,6 +12,7 @@
 
 import type { LucideIcon } from 'lucide-react'
 import { Settings, SlidersHorizontal, Users, BarChart3, CreditCard, ShieldCheck, LayoutDashboard, CalendarPlus, Megaphone, Hash, ShieldAlert, PencilRuler } from 'lucide-react'
+import { hrefForEntitySurface } from '@/lib/admin/entity-surface-hrefs'
 import { hrefForSurface } from '@/lib/spaces/surface-hrefs'
 import type { AdminScope } from '@/lib/layout/page-chrome'
 
@@ -105,6 +106,9 @@ function baseBank(scope: AdminScope | null, viewer: BankViewer, slug: string | n
         // Console is SLUG-keyed; the two create quick-actions are DB-ID-keyed (the create form matches
         // `?circle=` against circle.id), so they keep scope.id — mirrors CircleCreateMenu exactly.
         { label: 'Manage console', icon: SlidersHorizontal, href: `/circles/${urlSlug}/manage` },
+        // OWN-058 (ruled 2026-09-08): a Settings door in the bank. LIVE-237 retired the standalone
+        // /settings page; hrefForEntitySurface lands on the Manage hub Settings tab.
+        { label: 'Settings', icon: Settings, href: hrefForEntitySurface('circle.settings', { kind: 'circle', id: urlSlug }) ?? `/circles/${urlSlug}/manage?section=settings` },
         { label: 'New event', icon: CalendarPlus, href: `/events/new?circle=${id}` },
         { label: 'New announcement', icon: Megaphone, href: `/nearby?compose=true&scope=${id}` },
       ]
@@ -115,7 +119,11 @@ function baseBank(scope: AdminScope | null, viewer: BankViewer, slug: string | n
     // is the canonical "open the dashboard" affordance the People module used to deep-link to inline.
     case 'event': {
       if (!urlSlug) return []
-      return [{ label: 'Manage dashboard', icon: LayoutDashboard, href: `/events/${urlSlug}/manage` }]
+      return [
+        { label: 'Manage dashboard', icon: LayoutDashboard, href: `/events/${urlSlug}/manage` },
+        // OWN-058 (ruled 2026-09-08): a Settings door in the bank. Same LIVE-237 tab as the Circle.
+        { label: 'Settings', icon: Settings, href: hrefForEntitySurface('event.settings', { kind: 'event', id: urlSlug }) ?? `/events/${urlSlug}/manage?section=settings` },
+      ]
     }
     // A core entity with a full owner console: one Manage link into `/{section}/<slug>/manage`. Hub +
     // nexus consoles are thin, so their bank is just that console (their insights/relevant hubs live
@@ -137,7 +145,7 @@ function baseBank(scope: AdminScope | null, viewer: BankViewer, slug: string | n
     // rendered the practice.settings module in a page frame, and that module already sits in this
     // rail, so the page retired and the one link opens the builder. Practices are id-keyed, so the
     // slug-or-id rule above reads the same. ONE row literal for both kinds on purpose: check:menu
-    // counts these as frozen debt, which may shrink and never grow.
+    // counts these as frozen debt, which may shrink and never grow (OWN-058 is the one recorded raise).
     case 'practice':
     case 'journey': {
       const section = SECTION_FOR_KIND[scope.kind]
