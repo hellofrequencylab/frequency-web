@@ -429,7 +429,6 @@ app/api/cron/lifecycle-triggers/route.ts
 app/api/cron/onboarding-throughput/route.ts
 app/api/cron/publish-scheduled/route.ts
 app/api/cron/weekly-digest/route.ts
-app/api/entry-points/[slug]/flyer/route.ts
 app/api/observe/route.ts
 app/api/qr/route.ts
 app/api/search-handles/route.ts

@@ -34,7 +34,6 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
     title: e.title,
     destination: e.destination,
     templateId: e.templateId,
-    flyer: e.flyer,
     scans: e.scans,
     qrSvg: renderStyledQrSvg(shortLinkUrl(e.slug), e.style, 200),
   }))

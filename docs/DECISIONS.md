@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1430**.
+tree as of this index: **ADR-1435**.
 
 | Theme | Start here |
 |---|---|
@@ -46028,13 +46028,35 @@ Premise re-tested 2026-09-19 on this tree: the control still passed `posterBandA
 
 **Rows.** LIVE-272.
 
-## ADR-1433: Public events use the same header /discover uses (SCAN-641)
+## ADR-1433: Delete the entry-point flyer builder, keep the share-card Bold face (LIVE-216)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-216` · corroborated by `lib/entry-points/templates.ts`, `app/(main)/entry-points/entry-points-client.tsx`, `next.config.ts` `OG_CARD_FONTS`
+
+**Context.** OWN-059 item 3 asked the owner what to do with a flyer builder whose download buttons had already been unlinked (`b7c862005`). The owner ruled DELETE on 2026-09-08. The row sat open because no code-lane packet owned the deletion, which is how a ruling becomes a no-op.
+
+Premise re-tested 2026-09-19: `lib/entry-points/flyer.ts`, `flyer-raster.ts`, and `app/api/entry-points/[slug]/flyer/route.ts` still existed. `LiberationSans-Regular.ttf` (410,820 bytes) was flyer-exclusive. `LiberationSans-Bold.ttf` is the OG share-card disk fallback named in `OG_CARD_FONTS` and asserted by `lib/og/og-fonts.test.ts`. Deleting Bold would break every share card.
+
+The source-side weight this row can name without a production artifact: 410 KB of Regular plus about 12 KB of flyer code. `check:build-budget` still has to print the post-deploy delta; CI never builds.
+
+**Decision.**
+
+1. **Delete the flyer composer, rasteriser, route, and Regular face.** Keep the short link and branded QR. The `qr_codes.flyer` jsonb column stays; creates write template defaults so existing rows stay shaped. No migration.
+2. **Keep `LiberationSans-Bold.ttf` and its `OG_CARD_FONTS` entry.** The probe's control half fails if Bold is gone.
+3. **Drop the flyer wasm include** from `outputFileTracingIncludes`. Styled QR PNG still traces `@resvg/resvg-wasm` on `/api/qr`.
+
+**Rejected.** Deleting both Liberation faces (the title's first wording; the correction of 2026-09-08). Leaving the live preview while deleting only the route (the form would still promise a poster nothing serves).
+
+**Consequences.** `/entry-points` and the Funnels builder produce a named QR and a short link. The flyer API 404s. Share cards still fall back to Bold when Nunito cannot load.
+
+**Rows.** LIVE-216. OWN-059 item 3 is this row; items 1-2 stay owner-timed.
+
+## ADR-1435: Public events use the same header /discover uses (SCAN-641)
 
 **Status:** Accepted · 2026-09-19 · backlog `SCAN-641` · corroborated by `app/(main)/layout.tsx` (`publicChrome`) and `app/discover/layout.tsx`
 
 **Context.** SCAN-641, filed 2026-09-19 from the meta-scan: anon `/events/<slug>` and networked Space profiles rendered `MarketingHeader` through `(main)` `publicChrome()`. `/discover/*` rendered `SiteHeader variant="light" authMode="client"`. Two public chromes, two phone sheets, two chances to drift. LIVE-106 was the last time that class cost thirteen destinations.
 
-Premise re-tested 2026-09-19 on this tree: the split was still the split. Discover still used SiteHeader with client auth so ISR is not voided. The `(main)` public branch already called `getCachedUser()`, so it was already dynamic; client auth there is not an ISR win, it is so both trees draw one bar.
+Premise re-tested 2026-09-19 on this tree: the split was still the split. Discover still used SiteHeader with client auth so ISR is not voided. The `(main)` public branch already called `getCachedUser()`, so it was already dynamic; client auth there is not an ISR win, it is so both trees draw one bar. LIVE-216 took ADR-1433 on main the same day; HYG-078 #2729 holds 1434, so this row is 1435.
 
 **Decision.**
 

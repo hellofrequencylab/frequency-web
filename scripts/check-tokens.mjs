@@ -131,7 +131,6 @@ const ALLOWLIST = [
   //     flyer, canvas/SVG exports. A canvas fillStyle cannot read a CSS variable.
   (p) => p.startsWith('lib/og/'),
   (p) => p.startsWith('lib/qr/'),
-  (p) => p === 'lib/entry-points/brand.ts',
   (p) => p === 'lib/library/export-svg.ts',
   // (3) COLOR AS DATA — token sources, member-supplied color validators, and derived-contrast
   //     helpers. The hex here is the VALUE being validated/stored/computed, not applied style.
