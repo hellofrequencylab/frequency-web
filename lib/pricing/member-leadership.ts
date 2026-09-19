@@ -89,4 +89,4 @@ export const CIRCLE_HOST_CAP_MESSAGE =
   'You are hosting the Circle your free membership includes. Join Crew to host more.'
 
 export const EVENT_CREATE_CAP_MESSAGE =
-  'You have as many events running as your free membership includes. Join Crew to run more, and to set up a series.'
+  'You have as many events running as your free membership includes. Join Crew to run more.'

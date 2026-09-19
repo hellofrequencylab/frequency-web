@@ -145,4 +145,4 @@ Keep it real. The reward is for people who actually RSVP, show up, or join, neve
 
 - New to a Circle? An event is the easiest way in: say you're coming, then just show up.
 - You'll see events from the Circles you've joined, plus public local events happening in your area.
-- Want to host? Any member can create an event. If you run one Space, it starts as that Space's event. You can still make a public local gathering, or put it inside a Circle you host. Featuring another business on your event as a Collaborator is a Business Space feature.
+- Want to host? Any member can create an event. If you run one Space, it starts as that Space's event. You can still make a public local gathering, or put it inside a Circle you host. A repeating event counts as one gathering on a free membership, not one per date. Featuring another business on your event as a Collaborator is a Business Space feature.
