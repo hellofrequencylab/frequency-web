@@ -3,8 +3,13 @@
 > **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
 > This document is the spec and the rationale. It does **not** record what is done, because prose
 > cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+>
+> ⚠️ **Not the live execution list (2026-09-18).** White-label / Spaces rationale lives here.
+> What ships next is [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) + [`BUILD-LIST.md`](BUILD-LIST.md) +
+> [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md). Product nouns: [`CORE-MODEL.md`](CORE-MODEL.md).
+> Do not read the next paragraph as "do this now."
 
-> **The single re-prioritized critical path** that unifies the Multi-Tenant White-Label spec
+> **A 2026-06 unification of** the Multi-Tenant White-Label spec
 > (owner, 2026-06-29), the Entity Management Overhaul ([ADR-441](DECISIONS.md)), the Spaces
 > architecture ([ADR-249](DECISIONS.md)/[SPACES.md](SPACES.md)), the Hook harvest, Foundation
 > Hardening ([ADR-439/440](DECISIONS.md)), Growth OS ([GROWTH-OS-BUILD-PLAN.md](GROWTH-OS-BUILD-PLAN.md)),

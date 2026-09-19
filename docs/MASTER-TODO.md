@@ -5,12 +5,15 @@
 > [`BUILD-LIST.md`](BUILD-LIST.md) (ADR-921). This file predates the DAWN / UX-maturity
 > program and its status marks are not maintained. Kept for history and for the items it
 > still names that no current plan has absorbed.
+>
+> **"This is the one list" below is retired.** The one list is [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
+> Live plan: [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) + [`BUILD-LIST.md`](BUILD-LIST.md) +
+> [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md). Snapshot dated 2026-07-07.
 
 > **This is the one list.** It supersedes the scattered "open" tails in
 > [`META-SCAN-STATUS.md`](META-SCAN-STATUS.md), [`PATCH-LIST.md`](PATCH-LIST.md),
 > [`REDESIGN-STATUS.md`](REDESIGN-STATUS.md), and the in-code `TODO(...)` markers. Those docs
-> stay as the historical record of what shipped; **new planning happens here.** Update a row as it
-> closes (✅), and move genuinely-new subjects to their own ADR when they warrant one.
+> stay as the historical record of what shipped; **do not add new planning here.** Snapshot only.
 >
 > Legend: ✅ done · ⏳ open (code) · 🔵 owner action (no code — dashboard/env/config) · 🟡 polish.
 > Standing directives on every code item: bug/wiring/abandoned-code check on each surface touched ·

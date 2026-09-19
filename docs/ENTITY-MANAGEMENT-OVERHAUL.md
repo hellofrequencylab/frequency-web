@@ -1,5 +1,11 @@
 # Entity Management Overhaul — one console for every entity and role
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> ⚠️ **Not the live execution list (2026-09-18).** What ships next is
+> [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) + [`BUILD-LIST.md`](BUILD-LIST.md) +
+> [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md). Decisions: [`DECISIONS.md`](DECISIONS.md).
+> This file is the 2026-06-29 console spec (ADR-441). Do not open it for "what to build next."
+
 > **A unified, design-framework-native management system for every entity (Circle · Hub ·
 > Nexus · Event · Practice · Space) and every role.** Overhauls the current state where each
 > entity type is managed differently and per-entity *owners* have no real management console.

@@ -1,10 +1,10 @@
 # A+ roadmap: every domain to A+
 
-> ⚠️ **Superseded for near-term planning (2026-08-04).** The live plan is
-> [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) (ADR-925) with the phase runway in
-> [`BUILD-LIST.md`](BUILD-LIST.md) (ADR-921). This file predates the DAWN / UX-maturity
-> program and its status marks are not maintained. Kept for history and for the items it
-> still names that no current plan has absorbed.
+> ⚠️ **Superseded for near-term planning (2026-08-04). Not the live plan.** The live plan is
+> [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) + [`BUILD-LIST.md`](BUILD-LIST.md) +
+> [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md) + [`DECISIONS.md`](DECISIONS.md).
+> Status: [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json). This file predates the DAWN / UX-maturity
+> program and its status marks are not maintained. Kept for history.
 
 > The plan to take every element of the platform to **A+**, with **nothing dropped**. Built by
 > re-verifying the `docs/AUDIT-2026-06-15.md` grades against the *current* code (several audit
@@ -16,9 +16,9 @@
 > Stripe/ops access, real traction, owner data (e.g. The Lab's address), content, or CI infra.
 > Those are tagged 🧑/🏗️ and called out in §10 so they're tracked, not pretended-done.
 >
-> **Active execution list:** the ordered, one-PR-at-a-time work items live in
-> [`MASTER-PLAN.md`](MASTER-PLAN.md). This roadmap holds the grade targets and rationale; the
-> master plan holds what ships next.
+> **Active execution list (retired):** [`MASTER-PLAN.md`](MASTER-PLAN.md) is completed
+> history. What ships next is [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) +
+> [`BUILD-LIST.md`](BUILD-LIST.md). Status: [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
 
 ## 1. Scoreboard (re-verified 2026-06-15, post-session)
 
