@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1451**. 1463 is LIVE-393 on main. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1452–1453 and 1456–1458 are claimed on other open PRs.
+tree as of this index: **ADR-1457**. 1451 is SCAN-642. 1463 is LIVE-393 on main. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1452–1453, 1456 and 1458 are claimed on other open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46572,3 +46572,21 @@ Premise re-tested 2026-09-19:
 **Consequences.** `pnpm packets --lane scan` starts at SCAN-643. Status stays in `docs/BUILD-BACKLOG.json`. Rationale in `docs/META-SCAN-STATUS.md` 2026-09-19 evening pass.
 
 **Rows.** SCAN-642, SCAN-643, SCAN-638 (re-pointed).
+
+## ADR-1457: Guest Calendar goes through guestLiveItems (LIVE-419)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-419` · numbered **1457** (1455 is LIVE-414; 1454 is LIVE-416 on main; 1458 is LIVE-417 on #2758; 1456 is LIVE-418 on #2760) · implements C5 of [ADR-1445](DECISIONS.md) · follows [ADR-1455](DECISIONS.md) · corroborated by `app/(main)/spaces/[slug]/(profile)/calendar/page.tsx` (`guestLiveItems`), `lib/calendar/guest-live.ts`
+
+**Context.** ADR-1455 added `guestLiveItems` and the cancelled footer. The Guest page branch still assembled the month from `spaceEventRowsToItems` plus Unavailable without folding through that helper. Month browse already used `loadPublicSpaceWindow`, which does. C5 closes the first-paint hole.
+
+**Decision.**
+
+1. **The Guest branch calls `guestLiveItems`.** `?view=guest` and unsigned members get live chips plus the C0 cancelled footer.
+2. **Pencil and planning stay off that feed.** The helper already names those stages so it can drop them. Private stays off too.
+3. **Admin is unchanged.** This change does not declare `planningLane` or `productionLane`. Pencil already has `pencilLane` from ADR-1454.
+
+**Rejected.** Closing C3–C4 in the same PR. Hiding cancelled (C0 already painted the footer). Rebuilding `guestLiveItems` on a second file.
+
+**Consequences.** Public first paint and month browse now share the same feed. Calendar C0–C5 are the stop for owner confirm. Do not start Editor / Sites / Etsy / App Platform / LIVE-242 from this row.
+
+**Rows.** LIVE-419.

@@ -175,7 +175,6 @@
           "ids": [
             "LIVE-417",
             "LIVE-418",
-            "LIVE-419",
             "LIVE-408",
             "SCAN-643",
             "HYG-100",
@@ -14964,20 +14963,21 @@
     {
       "id": "LIVE-419",
       "title": "Calendar C5: Guest view never shows pencil or planning; cancelled stays the C0 footer",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "components/spaces/calendar-mode-toggle.tsx",
-        "ref": "ADR-1389, ADR-1445"
+        "ref": "ADR-1389, ADR-1445, ADR-1457"
       },
-      "detail": "Close the Admin/Guest split: `?view=guest` and unsigned members go through guestLiveItems only. Pencil and planning stay off that feed. Cancelled is the C0 footer (LIVE-414), not a guest chip. After C0 and C1.",
+      "detail": "Close the Admin/Guest split: `?view=guest` and unsigned members go through guestLiveItems only. Pencil and planning stay off that feed. Cancelled is the C0 footer (LIVE-414), not a guest chip. After C0 and C1.\n\nWHAT SHIPPED. The Guest branch of the Space Calendar tab calls guestLiveItems. That helper already names pencil and planning so it can drop them. Month browse already went through loadPublicSpaceWindow (LIVE-414). Did not declare pencilLane, planningLane, or productionLane. Stacked on #2753 so guest-live.ts exists; rebase after C0 lands.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const p=fs.readFileSync(\"app/(main)/spaces/[slug]/(profile)/calendar/page.tsx\",\"utf8\");if(!p.includes(\"guestLiveItems\"))process.exit(1);const g=fs.readFileSync(\"lib/calendar/guest-live.ts\",\"utf8\");if(!/pencil|planning/.test(g))process.exit(1)'",
-        "note": "Fails until the Guest branch calls guestLiveItems and that helper names pencil/planning so it can exclude them."
-      }
+        "note": "Passes when the Guest branch calls guestLiveItems and that helper names pencil/planning. Written 2026-09-19."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "HYG-104",
