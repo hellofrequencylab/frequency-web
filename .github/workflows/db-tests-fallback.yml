@@ -210,13 +210,7 @@ jobs:
               echo "::warning::GET /compare/${BASE_SHA}...${HEAD_SHA} returned ${code}."
               return 1
             fi
-            python3 -c 'import json,sys
-d=json.load(sys.stdin)
-files=d.get("files") or []
-if d.get("truncated") or len(files) >= 300:
-    raise SystemExit("compare response is truncated; refusing to guess the file list")
-print(len(files))
-[print(f["filename"]) for f in files]' < /tmp/page.json | tee /tmp/page.txt >/dev/null
+            python3 -c 'import json,sys; d=json.load(sys.stdin); files=d.get("files") or []; raise SystemExit("compare truncated") if d.get("truncated") or len(files)>=300 else None; print(len(files)); [print(f["filename"]) for f in files]' < /tmp/page.json | tee /tmp/page.txt >/dev/null
             tail -n +2 /tmp/page.txt >> /tmp/changed.txt
           }
 
