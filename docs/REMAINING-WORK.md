@@ -4,8 +4,7 @@
 > [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) (ADR-925) with the phase runway in
 > [`BUILD-LIST.md`](BUILD-LIST.md) (ADR-921). This file predates the DAWN / UX-maturity
 > program and its status marks are not maintained. Kept for history and for the items it
-> still names that no current plan has absorbed. Status: [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
-> **Not a live deferred-work list.** Snapshot of tails after Pricing + CRM shipped.
+> still names that no current plan has absorbed.
 
 **What it is:** the consolidated, honestly-marked list of work deliberately deferred after the
 Pricing (ADR-362/363/364) and My Contacts CRM (ADR-361) builds shipped, plus the still-designed-only

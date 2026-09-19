@@ -3,10 +3,6 @@
 > **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
 > This document is the spec and the rationale. It does **not** record what is done, because prose
 > cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
->
-> ⚠️ **Not the live execution list (2026-09-18).** What ships next is
-> [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) + [`BUILD-LIST.md`](BUILD-LIST.md).
-> This file is the 2026-06-28 Growth OS spec (ADR-440). Do not open it for "what to build next."
 
 > **The cohesive, step-by-step build plan for Frequency's growth + launch layer.** Locked by
 > owner decision **2026-06-28**: build the whole growth machine structurally, as config-driven

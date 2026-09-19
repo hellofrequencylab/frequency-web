@@ -8,10 +8,6 @@
 > Pairs with [GLOSSARY.md](GLOSSARY.md) (domain terms). It used to pair with `ROADMAP.md`, which is
 > superseded; the live plan is [UX-MATURITY-PLAN.md](UX-MATURITY-PLAN.md) + [BUILD-LIST.md](BUILD-LIST.md).
 
-> **Names:** [NAMING.md](NAMING.md) always wins. The member-facing topical noun is
-> **Channel**. **"Interests" is retired.** §6 once decided the opposite; that ruling
-> is reversed. Product nouns: [CORE-MODEL.md](CORE-MODEL.md).
->
 > **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** (run `pnpm backlog`). The ✅ SHIPPED marks below are dated notes of what landed when, not the record of what is done; the chrome and shell rules they describe are locked in [PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md).
 
 ---
@@ -83,7 +79,8 @@ a person holds, never by inflating one role enum.
 ### The member rail: five worlds (anchored by Home)
 ```
 ◆ HOME        Feed
-◆ COMMUNITY   Circles · Channels · Events        (Channel = the topical noun; Interests retired)
+◆ COMMUNITY   Circles · Channels · Events        (Channels = the primary topical level;
+                                                   Interests live WITHIN a Channel)
 ◆ PRACTICE    Practices · Journeys · Programs     (the North-Star / WAM engine, its own world)
 ◆ CONNECT     Messages · Friends · Directory
 ◆ THE QUEST   Dashboard · Store & Vault           (preview for non-crew → full at crew/paid)
@@ -125,7 +122,7 @@ to the right entity (Labs). No new trust tier. Same model for practitioners, aff
 - Trust role **`admin` → `operator`** (so it never blurs with the separate staff `admin`).
 - **`Vault` folds into `Store & Vault`** (one Quest item).
 - **Personal utilities → account menu** (Settings/Billing/Notifications/My Code/Help leave the rail).
-- **`Channels` is the member-facing topical noun** ([NAMING.md](NAMING.md)). "Interests" is retired; do not nest a second topical label inside Channel.
+- **`Channels` stays the primary topical level; Interests nest within** (no rename).
 - **Broadcasts/Dispatches** unified: member-facing "Broadcasts," the verb is "Dispatch."
 - **Orphans:** Help → account menu + footer; `/crew/quests` redirect retired; `/g` `/n` `/edit` are
   internal (documented, out of nav).
@@ -163,8 +160,8 @@ Groups"; grouping is the single biggest cognitive-load reducer in a sidebar).
 | Tier | Question it answers | Features |
 |---|---|---|
 | **Activity** (me, now) | "What's happening for me?" | Feed, Messages, Notifications, my Events |
-| **Belonging** (where I participate) | "Where do I show up?" | **Circles**, **Channels**, Events |
-| **Discovery** (find more) | "What else is out there?" | Directory / People, Discover (map), browse Channels |
+| **Belonging** (where I participate) | "Where do I show up?" | **Circles**, **Interests**, Events |
+| **Discovery** (find more) | "What else is out there?" | Directory / People, Discover (map), browse Interests |
 | *Structure / leadership* (role-gated) | *"How is this run?"* | *Hubs, Nexuses, Broadcast, Crew, Admin* |
 
 ### Proposed left-nav grouping
@@ -174,7 +171,7 @@ Groups"; grouping is the single biggest cognitive-load reducer in a sidebar).
 
   MY COMMUNITY
   Circles                      ← local groups (always virtual; some meet in person)
-  Channels                     ← topics you practice (NAMING.md; never "Interests")
+  Interests                    ← topics you practice (was "Channels")
   Events
 
   CONNECT
@@ -372,19 +369,25 @@ Events, Members, Leaderboard, Progress, a good base. Shape it into a deliberate
 
 ---
 
-## 6. Naming: "Interests" is retired (reversed)
+## 6. Naming: "Channels" → "Interests" (decided)
 
-This section originally decided a member-facing rename **Channels → Interests**.
-**That ruling is reversed.** [NAMING.md](NAMING.md) (ADR-208) is canon:
+"Channel" was overloaded two ways: internally (`topical_channels` vs legacy
+`channels`) and externally (Discord/Slack/YouTube all mean "chat room /
+broadcaster"). **Decision: the member-facing label is "Interests."**
 
-- **Member-facing noun: Channel** (`topical_channels`). Verb: "tune in."
-- **"Interest" / "Interests" is retired** as a word for these. Do not relabel
-  `/channels`, nav, or onboarding to Interests.
-- The schema overload this section was written about is gone: the legacy
-  `channels` table was dropped, empty, on 2026-09-15 ([ADR-1349](DECISIONS.md)).
-  `/admin/channels` manages `topical_channels`.
-
-Keep this heading so old links still land on the reversal, not a second canon.
+- **Member-facing "Interests"** = the global topics a circle practices, the
+  `topical_channels` rows an operator curates at `/admin/channels`. Warm,
+  personal framing that reads naturally in the wake-up/onboarding flow ("pick
+  your interests").
+- **The legacy `channels` concept is retired outright**, not just hidden from
+  member view: the table was dropped, empty, on 2026-09-15
+  ([ADR-1349](DECISIONS.md)), and `/admin/channels` manages `topical_channels`.
+  The overload this section was written about no longer exists in the schema.
+- **Migration surface:** nav label, the `/channels` route (consider redirecting
+  `/channels` → `/interests` or just relabeling the nav while keeping the route
+  short-term), page headings, and onboarding copy. The DB table
+  `topical_channels` can keep its name: this is a *presentation* rename, not a
+  schema one, so it's low-risk.
 
 ---
 
@@ -400,7 +403,7 @@ Keep this heading so old links still land on the reversal, not a second canon.
 | 5 | Interior context shell: header + tabs + scoped right rail | M | Next.js nested layouts; `RightSidebar(circleIds)` |
 | 6 | Make `RightSidebar` scope-aware (global / circle / channel) | M | `RightSidebar` already takes `circleIds` |
 | 7 | Add Announcements + community-stats cards to the pulse rail | S | right-sidebar widgets |
-| 8 | ~~Relabel Channels → Interests~~ **Do not.** NAMING.md keeps Channel. | — | reversed |
+| 8 | Relabel member-facing "Channels" → "Interests" (presentation only) | S | nav + `/channels` route + copy |
 
 Start with 1 to 3 + 8 (pure clarity wins, low risk), then 4 to 7 (the structural
 backbone). 3a (the growth loop) is the highest-leverage *product* idea here.
@@ -410,7 +413,8 @@ it's what makes the hierarchy spread instead of just exist.
 
 ## Decisions locked (this session)
 
-- **Belonging words = Circle + Channel.** "Interests" is retired ([NAMING.md](NAMING.md)).
+- **Belonging words = Circle + Interest.** "Channels" is relabeled **Interests**
+  (presentation rename; `topical_channels` table keeps its name).
 - **Hubs & Nexuses = contextual only**: out of member nav, shown as the
   *emergent outcome* of circles splitting (§3a) + in Admin.
 - **Virtual is the default; in-person is an additive icon designator** with a
@@ -452,13 +456,13 @@ local commitment → embodied gathering.
 > (weekly) → Hub (neighborhood meetup) → Nexus (quarterly gala). This is why the
 > fractal UI (§4) is right: it mirrors a fractal *org*, not just a layout taste.
 
-### B. Virtual: the topic engine (Channels = catalog + spawn point)
+### B. Virtual: the topic engine (Interests = catalog + spawn point)
 
-- **Channels are virtual and global**: everyone, no place required.
-- Each Channel holds three things: **virtual discussion**, a **program**
+- **Interests/Topics are virtual and global**: everyone, no place required.
+- Each Interest holds three things: **virtual discussion**, a **program**
   (curriculum / practices / meetup templates), and a **roster of circles**
   practicing it.
-- **Program lives as a template at the Channel level; it is *dispensed into* a
+- **Program lives as a template at the Interest level; it is *dispensed into* a
   circle on adoption.** Topic = master/library; Circle = running instance. (Ties
   to ROADMAP P2.11 `circle_weekly_practice` + P2.12 practice library.)
 - **"Add to Circle" / adopt** opens a *new* circle pre-loaded with that program,
@@ -466,8 +470,8 @@ local commitment → embodied gathering.
 
 ### C. The crossover arc: the onboarding/"wake-up" spine
 
-1. Sign up → **pick Channels** (pure virtual).
-2. **Join a circle** *or* **adopt a Channel's program** (→ become host, spawn a
+1. Sign up → **pick Interests** (pure virtual).
+2. **Join a circle** *or* **adopt an Interest's program** (→ become host, spawn a
    circle).
 3. Circle runs its program; attend first session.
 4. **Go in-person**: meet at the neighborhood **Lab**.
@@ -480,7 +484,7 @@ Each step reveals the next tier. This *is* the milestone-gating model (§2). The
 ### D. Two ways a circle is born (unifies the growth loop §3a)
 
 1. **Split**: a circle hits its (tighter, in-person) cap → seeds a child circle.
-2. **Adopt**: someone takes a Channel's program → opens a new circle around it.
+2. **Adopt**: someone takes an Interest's program → opens a new circle around it.
 
 Both produce circles; circles cluster into Hubs; Hubs into Nexuses. Growth is
 **bottom-up**; Hubs/Nexuses are the *emergent result*, surfaced to members as
@@ -497,7 +501,7 @@ website does **not** build it, gate on it, or model demand-proving.
 
 ### E. Discovery & entry (the browse-first onboarding)
 
-- **Browse-first onboarding.** A newcomer explores **Channels** and is
+- **Browse-first onboarding.** A newcomer explores **Topics/Interests** and is
   prompted to either **join a circle** or **start a circle** straight from a
   topic: low-commitment entry, exactly the progressive-disclosure pattern.
 - **Find circles by need.** `/circles` should let members **filter by multiple
@@ -512,20 +516,20 @@ website does **not** build it, gate on it, or model demand-proving.
 
 - ✅ **Hubs/Nexuses contextual-only**: *strengthened.* Members meet them as *the
   Lab*, *the neighborhood meetup*, *the quarterly gala*: places and events.
-- ✅ **Virtual default, in-person additive**: holds. Virtual-only = Channel +
+- ✅ **Virtual default, in-person additive**: holds. Virtual-only = Interest +
   virtual space; in-person additionally anchors to a Lab and joins the ladder.
 - ✅ **Growth loop (§3a)**: enriched with a second spawn path and a clear
   endpoint (Hub/Nexus gatherings).
 - ✅ **Fractal layout (§4)**: now justified by org reality, not UI taste.
 - ✅ **Milestone gating (§2)**: gets its concrete spine: the crossover arc (C).
-- ✅ **§6 naming**: reversed. Channel is canon; Interests is retired. A Channel
-  is also the program catalog + circle spawn point.
+- ✅ **Interests rename (§6)**: fits; Interests now also = program catalog +
+  circle spawn point.
 
 ### Open structural questions (resolve before building)
 
 1. **Hub- and Nexus-scoped events** (meetups, galas): do `events.scope_type`
    values support hub/nexus? If not, that's the gap the gathering ladder requires.
-2. **Program model**: confirm Channel-level template → circle-level instance
+2. **Program model**: confirm Interest-level template → circle-level instance
    (P2.11/P2.12). "Add to Circle" = instantiate program + set adopter as host.
 3. **Mentor copy**: describe as oversight/support of guides (non-operational),
    in plain secular language, without changing authz.

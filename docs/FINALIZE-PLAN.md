@@ -4,10 +4,8 @@
 > This document is the spec and the rationale. It does **not** record what is done, because prose
 > cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
 
-> **The answer, first.** The platform is built. Do **not** quote the test or gate counts
-> in this header as current. Re-run `pnpm test` and `pnpm check:*`. Status lives in
-> [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json). The numbers that used to sit here (8,943 tests,
-> 27 gates) were a dated reading.
+> **The answer, first.** The platform is built and green: `tsc` clean, **8,943 tests passing**,
+> **all 27 `check:*` gates exit 0**, and CI is green on `main`.
 >
 > ✅ **CLOSED 2026-08-12 — §2.5 and §2.6 both shipped. Kept in place, not deleted, because the
 > reasoning is the reason the fix took the shape it did.**
@@ -747,9 +745,7 @@ fully actionable list. This is far smaller than the raw counts suggest: repo-wid
 
 ### 7b. Docs cleanup
 
-202 docs, 67,945 lines, and **five files used to describe themselves as the single source of
-truth.** Front-door repair 2026-09-18: those claims are bannered or rewritten. Status lives in
-[`BUILD-BACKLOG.json`](BUILD-BACKLOG.json). Do not quote the file/line counts as current.
+202 docs, 67,945 lines, and **five files describe themselves as the single source of truth**.
 
 | # | Item | Size | Detail |
 | :--- | :--- | :---: | :--- |

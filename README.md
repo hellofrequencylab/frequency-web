@@ -1,12 +1,10 @@
 # Frequency
 
-Frequency is a Community Collective. **Members** join free. **Spaces** (a
-business's home on Frequency) host free. You pay when you start charging.
-**Circles** are the rooms where a group meets. **Events** are when those rooms
-are open. Topics are **Channels** (never "Interests"). **The Quest** is the
-game that drives people offline. The **web app is the proving ground**; mobile
-comes later on the same contract. Full law: [CORE-MODEL](docs/CORE-MODEL.md)
-and [NAMING](docs/NAMING.md).
+A platform for **place-based, in-person community practice** — local **Circles**
+that gather around shared **Interests**, growing into neighborhood **Hubs** and
+area **Nexuses**, with a gamified, physical-world engagement layer (QR / NFC /
+geolocation). **Mobile-first** (the app is the primary doorway; the web is the
+secondary surface and the SEO/discovery front).
 
 Current build: **Next.js 16** (App Router / RSC) + **Supabase** (Postgres, Auth,
 Realtime, Storage) on Vercel, **Tailwind v4**.
@@ -73,7 +71,7 @@ is its authority; this section mirrors it:
 
 The locked canons, each machine-enforced or gated: [NAMING](docs/NAMING.md) +
 [CONTENT-VOICE](docs/CONTENT-VOICE.md) (every word a human reads),
-[PAGE-FRAMEWORK](docs/PAGE-FRAMEWORK.md) (one shell, the kit in `@/components/templates`, one chrome map),
+[PAGE-FRAMEWORK](docs/PAGE-FRAMEWORK.md) (one shell, eight page shells, one chrome map),
 [STUDIO](docs/STUDIO.md) (creation wizards derive from a manifest),
 [MENU-CONTRACT](docs/MENU-CONTRACT.md) (the admin menu derives from four catalogs), and
 [DEPLOY-SAFETY](docs/DEPLOY-SAFETY.md) (merging `main` deploys to production; the artifact gates).

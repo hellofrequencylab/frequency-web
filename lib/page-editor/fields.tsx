@@ -370,5 +370,5 @@ export function accentize(text?: string, accent?: string, ink = false): React.Re
  *  the accent word (`build .`, `nouns ,`). Anton italic makes that gap visible.
  *  Collapse it at render so operator copy does not have to be perfect. */
 function collapseSpaceBeforePunct(text: string): string {
-  return text.replace(/(\S)\s+([.,!?;:])/g, '$1$2')
+  return text.replace(/(^|\S)\s+([.,!?;:])/g, '$1$2')
 }

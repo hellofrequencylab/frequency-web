@@ -1,11 +1,12 @@
 # Build Phases: the working tracker
 
-> **⚠️ SUPERSEDED.** First by [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md) (2026-05-31), then
-> that map itself (2026-08-04). The live plan is [UX-MATURITY-PLAN.md](UX-MATURITY-PLAN.md)
-> + [BUILD-LIST.md](BUILD-LIST.md). Status: [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
-> This file is Phase 0–7 history. Do not plan from it or from the Development Map.
+> **⚠️ SUPERSEDED (2026-05-31) by [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md).** The single
+> plan now lives there, folding this architecture tracker and the product `ROADMAP.md` into
+> one staged map. This file is kept for **history**: it records the Phase 0 to 7 work (much of
+> it ✅) and the old→new mapping is in the Development Map's "Where we are" section. Plan
+> from the Development Map, not this file.
 
-> **This was the executable plan** (history). Each phase had a **goal**, **dependencies**,
+> The executable plan. Each phase has a **goal**, **dependencies** (don't start
 > until met), a **governing doc**, **workstreams** as checkboxes, and a
 > **definition of done**. Sequenced so the web app keeps working while
 > mobile- and gamification-enabling infrastructure accretes: **no big-bang
@@ -83,17 +84,21 @@ PAGE-FRAMEWORK.
 
 - [x] Nav grouping: Community / Connect / Progress / Manage sections in
       `app-shell.tsx` (desktop sidebar + mobile drawer); item visibility unchanged.
-- [x] ~~Rename member-facing Channels → Interests.~~ **Reversed.** [NAMING.md](NAMING.md) keeps
-      **Channel**. "tune in" is locked. Do not reconcile to Topics/Interests.
+- [~] Rename member-facing **Channels → Interests**: done on the primary
+      surfaces (nav label + `/channels` page heading/description); route +
+      `topical_channels` table unchanged. **Follow-up (needs visual QA):** sweep
+      any remaining "Channel" copy on cards/`[id]` page, decide the "tune in"
+      verb, and reconcile with the public `/discover` layer which says "Topics".
 - [x] Demote Hubs & Nexuses from member nav → already absent from the primary
       nav (folded under "Circles" in `isActive`); contextual hub/nexus breadcrumb
       links already render on circle cards. Satisfied.
 - [x] In-person **icon designator** (📍 "In person" badge; virtual = unmarked
       default) on `/circles` cards + the circle detail header. Live.
-- [x] **Page templates**: Stream / Index / Detail shipped on the main browse
-      surfaces (`/feed`, `/circles`, `/channels`, `/events`, …). Later shells
-      (Focus, Dashboard, Wizard, Admin) joined the kit. Do not treat "3 templates"
-      as current law. See [PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md).
+- [x] **3 templates**: all three shells built and the main pages migrated:
+      **Stream** (`/feed`), **Index** (`/circles`, `/channels` Interests, `/events`,
+      `/partners`, `/people` Directory), **Detail** (`detail-template.tsx`, used by
+      single-entity pages). Every primary list/feed page now renders through one
+      shell. *(Circle-detail page can adopt the Detail shell in a later pass.)*
 - [~] **Module + slot + inline actions**: shared module chrome
       (`components/modules/module-card.tsx`) + capability gating
       (`components/ui/can.tsx`). **Inline admin WIRED + verified live:** the circle
@@ -102,16 +107,17 @@ PAGE-FRAMEWORK.
       edit-in-place DONE:** owners edit via settings; janitors get an inline
       moderator edit (name + bio) on any profile, gated by `profile.edit`
       (`moderate-profile-button` + capability-checked `moderateUpdateProfile`).
-      **Scope-aware rail:** later reversed. The global community rail shows on every
-      member page ([PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md) §8.2). **Still
-      pending as of this history file:** a formal module **slot registry** is not
-      the live rail API (`RAIL_PANELS` / `page-chrome.ts` is).
+      **Scope-aware rail DONE:** the global rail shows on global/index pages; entity
+      detail pages (circle / profile / interest) render their own scoped rail in the
+      page body, and the global rail is suppressed there (no double-sidebar). **Still
+      pending:** a formal module **slot registry** (current composition is per-page).
 
 **Done when:** every main page renders via one of the 3 templates; inline actions
 appear by capability (host edits inline, member sees content only); a newcomer can
-read the nav without explanation. **Status: DONE as of this history file**, except
-the Interests rename which NAMING.md reversed (Channel + tune in). The live rail is
-global, not scoped. A WidgetSlot registry is not the live API.
+read the nav without explanation. **Status: DONE** (all live): nav grouping,
+Interests rename, in-person badge, 3 templates with pages migrated, inline admin by
+capability, profile edit-in-place, scope-aware rail. Only a formal module slot
+registry remains as an optional refactor.
 
 ---
 

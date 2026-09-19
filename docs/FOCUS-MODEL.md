@@ -1,14 +1,9 @@
 # The focus model: what Frequency is for, and where the game sits
 
-> **Status: ACCEPTED (interior + programs), 2026-09-18.** Owner: build it. Decision record:
-> [ADR-1403](DECISIONS.md) (amends [ADR-1292](DECISIONS.md)). Status for the work lives in
-> [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json), never in this file.
->
-> **Commercial law stays [`CORE-MODEL.md`](CORE-MODEL.md) (ADR-1294):** join free, host free,
-> pay when charging. This file does **not** mean “individuals never pay.” Crew remains
-> contribute-what-you-want patronage.
->
-> **When craft and product collide, product wins** (same ruling).
+> **Status: PROPOSAL, awaiting an owner ruling.** Nothing here is decided.
+> Status for any work it produces lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json), never in this
+> file. Filed 2026-09-08 from an eight-lane repo sweep plus live production reads.
+> Decision record, once ruled: [ADR-1292](DECISIONS.md).
 >
 > **This document explains a reframe. It does not track whether the reframe is done.**
 
@@ -323,7 +318,7 @@ There is one backlog. Nothing here becomes a parallel roadmap.
 | Order | Work | Where it goes | Depends on |
 |---|---|---|---|
 | ~~0~~ | ~~Register the Stripe webhook~~ | ✅ Closed 2026-09-08 (`OWN-050`); live payouts went live the same day | done |
-| **0** | ✅ Ruled 2026-09-18 (ADR-1403). Interior + programs yes; CORE-MODEL stays commercial law. `beta_grace` still owner. | `OWN-066` | done |
+| **0** | Rule the focus model (§7) and the grace window (§8) | `OWN-066`, `ownerAction: ruling` | owner, before 1 Oct |
 | **1** | Give event attendance its own record, independent of the reward ledger | W0b, prerequisite for everything in Move 1 | — |
 | **2** | Rail collapse, centre button, feed hero, shared-bar default | W0b/W2, closes `QUEST-IA-DEBT` (ADR-293) | step 1 |
 | **3** | Membership wall → readiness; member "my memberships" surface; enforce `payment_status` | W8 money lane, pulled forward | step 0 |
@@ -340,18 +335,18 @@ a Space *is*), `OWN-063` (does a recurring series cost one event allowance or on
 
 ---
 
-## 10. What the owner decided (2026-09-18)
+## 10. What the owner has to decide
 
 Six rulings. Everything else follows from them.
 
-| # | Ruling | Answer |
+| # | Ruling | Default if unanswered |
 |---|---|---|
-| 1 | Does the Quest stop being a top-level section and become the Collective's own program? | **Yes. Build it.** (ADR-1403) |
-| 2 | Do individuals pay for anything, ever? | **Join free. Pay when you charge.** CORE-MODEL, not “never pay.” |
-| 3 | May a **free** Space sell memberships, gated on readiness instead of plan? | **Host free until you charge.** Readiness still applies. |
-| 4 | Is a Circle Run of a Journey the headline way a community runs its program? | **Yes.** |
-| 5 | Do we build the five operator gaps (sell a course, gate to a tier, member directory, space discussion, analytics)? | **Yes, as product**, after interior + activation. |
-| 6 | Extend `beta_grace` past 1 October while this is decided? | **Not ruled.** Extend rather than surprise-gate members if the interior is not live. |
+| 1 | Does the Quest stop being a top-level section and become the Collective's own program? | It stays the spine, by inertia |
+| 2 | Do individuals pay for anything, ever? | The gates close on 1 October |
+| 3 | May a **free** Space sell memberships, gated on readiness instead of plan? | No, and the dues engine stays walled |
+| 4 | Is a Circle Run of a Journey the headline way a community runs its program? | ADR-252 stays unsequenced |
+| 5 | Do we build the five operator gaps (sell a course, gate to a tier, member directory, space discussion, analytics)? | Operators keep hitting them |
+| 6 | Extend `beta_grace` past 1 October while this is decided? | It expires |
 
 ---
 

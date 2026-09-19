@@ -1,11 +1,5 @@
 # Tech Strategy: recommended stack, decisions & phased plan
 
-> ⚠️ **Not the live execution list (2026-09-18).** Status lives in
-> [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json). Names: [`NAMING.md`](NAMING.md).
-> Product law: [`CORE-MODEL.md`](CORE-MODEL.md). The **web app is the proving ground**;
-> mobile comes later on the same contract. "Mobile is the primary doorway" below is
-> the 2026-05 vision, not the current front-door sentence.
->
 > The capstone. The owner's vision: **mobile is the primary doorway** (web is
 > secondary), an **addictive, gamified** experience (Instagram/TikTok-style
 > return loops), with **physical-world gamification layers**: QR codes, NFC
@@ -137,9 +131,9 @@ code until Phase 5.**
   service-role/app-authz code where an RPC fits. Generalize the `/discover` model.
 
 ### Phase 1: Web IA & framework *(strategy docs 1 to 2)*
-- Ship the IA cleanup: nav grouping, **Channel** as the topical noun (NAMING.md;
-  do not rename to Interests), demote Hubs/Nexuses, in-person designator + tighter cap.
-- Implement the **page-template kit + module/slot composition** + **scope-aware** rail
+- Ship the IA cleanup: nav grouping, **Interests** rename, demote Hubs/Nexuses,
+  in-person designator + tighter cap.
+- Implement the **3 templates + module/slot composition** + **scope-aware** rail
   + **inline action slots** (capability-driven). This makes web coherent *and*
   exercises the contract/capability layers mobile will reuse.
 

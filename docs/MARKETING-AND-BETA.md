@@ -21,7 +21,7 @@ own chrome (not the member shell).
 |---|---|---|
 | `/` (splash) | `app/page.tsx` | Logged-OUT → vision splash; logged-IN → redirect `/feed` |
 | `/the-lab` | `app/(marketing)/the-lab/page.tsx` | Venue vision (narrative only, no demand-proving) |
-| `/how-it-works` | `app/(marketing)/how-it-works/page.tsx` | Channels / Circles model |
+| `/how-it-works` | `app/(marketing)/how-it-works/page.tsx` | Interests / Circles model |
 | `/about` | `app/(marketing)/about/page.tsx` | Moonlight origin story |
 | `/beta`, `/beta/confirm` | `app/(marketing)/beta/*` | Waitlist: **PARKED** for the future gated phase (§2); not the live CTA target |
 | `/discover` | (existing) | Public read-only community browse |

@@ -4,8 +4,7 @@
 > [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json), never in this file. Filed 2026-09-08 from sixteen
 > research lanes plus live production reads. Supersedes the shape in
 > [`OFFER-MODEL.md`](OFFER-MODEL.md) §5 on one point (memberships stay paid-gated) and corrects one
-> argument in it (see §2). Companion (interior accepted, ADR-1403; does not override this file):
-> [`FOCUS-MODEL.md`](FOCUS-MODEL.md).
+> argument in it (see §2). Companion: [`FOCUS-MODEL.md`](FOCUS-MODEL.md).
 >
 > **This document explains a model and the work to make it true. It does not track whether the work
 > is done.** The row-level state is `PROG-R0`…`PROG-R11` and their children in the backlog.

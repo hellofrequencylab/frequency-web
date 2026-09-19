@@ -28,15 +28,15 @@ We do **not** build a new substrate. `posts` is the unified activity table:
 - **`pillars`** (Mind / Body / Spirit / Expression) = the four-way **game taxonomy** ("Domains"
   retired; table renamed in migration `20260613000010`). Presentational (name, description,
   accent, cover) so the 4 landing pages render from data. **A Pillar is not a Channel.**
-- **`topical_channels`** = the topical **Channel** (NAMING.md; never Interests or Topics), sorting
+- **`topical_channels`** = the topical **forum feature** (the **Interests / Topics**), sorting
   under a Pillar via `pillar_id` (renamed from `domain_id`, same migration). `category` is legacy.
   The member verb is **"tune in."**
 - **`circle_topics`** adds multi-topic tagging (circles keep `topical_channel_id` as the *primary*
   topic). `event_topics` / `post_topics` to follow.
 
-**Naming:** **Pillar** = a `pillars` row (Mind/Body/Spirit/Expression). **Channel** = a
-`topical_channel` row. Since 2026-09-15 that is the ONLY channel table — the hierarchy-v2
-`channels` pair was dropped, empty ([ADR-1349](DECISIONS.md)).
+**Naming:** **Pillar** = a `pillars` row (the Mind/Body/Spirit/Expression top level) · **Channel /
+Interest / Topic** = a `topical_channel` (the topical forum), and since 2026-09-15 the ONLY
+"channel" table — the hierarchy-v2 `channels` pair was dropped, empty ([ADR-1349](DECISIONS.md)).
 
 ## 3. Ranking: "an algorithm you get to choose"
 
@@ -47,7 +47,6 @@ We do **not** build a new substrate. `posts` is the unified activity table:
 ## 4. Staged build
 
 1. ✅ **Taxonomy foundation**: `pillars` + `topical_channels.pillar_id` + `circle_topics` + backfill (renamed 2026, see docs/NAMING.md; migrations `20260604010000`, `20260613000010`).
-2. **Pillar reach + browse**: Pillar pages aggregating Channels → Circles/Events/Posts.
-   Pillar = top taxonomy; Channel underneath. Never Interests.
+2. **Pillar reach + browse**: `get_my_tuned_domain_ids` (helper name pending Wave-3 rename); Pillar pages aggregating Topics → Circles/Events/Posts; IA re-label (Pillar = the top level, Channels/Interests underneath).
 3. **Tagging across types**: `event_topics` / `post_topics`; tag UI on create/edit.
 4. **Ranker v1**: upgrade `feed_for_viewer` + `feed-rank.ts` to the transparent score, behind the guardrail.

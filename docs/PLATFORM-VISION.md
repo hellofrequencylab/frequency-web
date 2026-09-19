@@ -7,9 +7,8 @@
 > Marketplace, The Collective, affiliate, donations, Lab Spaces) plugs in later **without a
 > rewrite**.
 >
-> Status: **strategy / decision doc.** Product nouns and commercial law:
-> [CORE-MODEL.md](CORE-MODEL.md) (ADR-1294). Interior: [FOCUS-MODEL.md](FOCUS-MODEL.md)
-> (ADR-1403). Status of work: [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
+> Status: **strategy / decision doc.** It governs a new wave of ADRs (ADR-029→036) and
+> reconciles the [ROADMAP](../ROADMAP.md) "Deliberately NOT building" list (see §8).
 > Extends, does not replace, [TECH-STRATEGY](TECH-STRATEGY.md),
 > [SCALE-ARCHITECTURE](SCALE-ARCHITECTURE.md),
 > [CAPABILITIES-AND-MOBILE](CAPABILITIES-AND-MOBILE.md), and
@@ -222,9 +221,9 @@ build order lives in [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md); the money/commerc
 > **flagship/franchise** tenancy, **donate-a-membership sponsorship**, and **partner-loyalty**
 > seams are specified in **ADR-248**; and every commerce/connection vertical reads the unified
 > **Trust Score** (**ADR-247**, §5) rather than its own rating silo. **Prerequisite:** the
-> module registry and the live rail (`RAIL_PANELS` / `page-chrome.ts`) must be
-> load-bearing before these land, or each vertical hand-wires and the clean
-> scaling promise breaks. `<WidgetSlot>` in PAGE-FRAMEWORK is a sketch, not the API.
+> module/WidgetSlot registry (ADR-033) must be *activated* (it's specced but not yet wired —
+> see `BASELINE-ASSESSMENT.md`) before these land, or each vertical hand-wires and the clean
+> scaling promise breaks.
 
 ---
 

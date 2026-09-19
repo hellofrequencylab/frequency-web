@@ -12,16 +12,12 @@ get them. Note `vercel env pull` returns blanks here, so you fill them by hand),
 - **[README.md](../README.md)**: what Frequency is + the 5-layer architecture at a glance.
 - **[AGENTS.md](../AGENTS.md)**: the rules every session runs under. Its §"Which plan is live"
   is the authority for what follows in this list.
-- **[docs/NAMING.md](NAMING.md)** + **[docs/CORE-MODEL.md](CORE-MODEL.md)**: locked nouns and
-  commercial law. Always beat older vision files (OVERVIEW, IA-STRATEGY §6, DEVELOPMENT-MAP).
 - **[docs/BUILD-BACKLOG.json](BUILD-BACKLOG.json)** via **`pnpm backlog`**: the ONE list of where
   the work stands. Status never lives in prose; every row says how it is proven.
 - **[docs/UX-MATURITY-PLAN.md](UX-MATURITY-PLAN.md)** + **[docs/BUILD-LIST.md](BUILD-LIST.md)**:
   what ships next (the §Sequencing table) and the phase runway around it.
-- **[docs/DECISIONS.md](DECISIONS.md)**: the ADR record, the *why*. Theme index at the top.
-  A plan that contradicts an ADR is stale.
-- **[docs/FOCUS-MODEL.md](FOCUS-MODEL.md)**: accepted interior (ADR-1403). Quest is the
-  Collective's program, not the spine. Commercial law stays CORE-MODEL.
+- **[docs/DECISIONS.md](DECISIONS.md)**: the ADR record, the *why*. A plan doc that contradicts
+  an ADR is stale, not authoritative.
 - **[docs/ARCHITECTURE.md](ARCHITECTURE.md)**: current stack, directory map, and the
   **authorization model you must follow** (the admin client bypasses RLS; authz is enforced
   in app code). Read before touching code.
@@ -50,7 +46,7 @@ history. When the code and a doc disagree, the code wins; fix the doc in the sam
 - **Naming + voice canon.** `docs/NAMING.md` + `docs/CONTENT-VOICE.md` govern every
   member-facing word (and AI-generated copy). Consult before writing UI copy.
 - **The other locked canons, each machine-enforced.** [PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md)
-  (compose from `@/components/templates`; never hand-roll a layout; the right rail shows on every
+  (compose one of the eight page shells; never hand-roll a layout; the right rail shows on every
   member page), [STUDIO.md](STUDIO.md) (declare a manifest, never build a wizard),
   [MENU-CONTRACT.md](MENU-CONTRACT.md) (add a catalog row, never rewrite the rail), and
   [DEPLOY-SAFETY.md](DEPLOY-SAFETY.md) (a merge is a deploy; four artifact gates run in `postbuild`).
