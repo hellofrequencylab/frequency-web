@@ -103,7 +103,7 @@ daily, event reminders every 15 min, weekly digest Sundays 14:00 UTC, queue drai
 
 - Sign up as a fresh user; the Getting Started funnel appears (photo, circle, adopt a
   practice, log a practice).
-- Find a circle, or **start one** around an Interest, and set its weekly practice.
+- Find a circle, or **start one** around a Channel, and set its weekly practice.
 - **Log a practice**: see the reward toast; confirm WAM increments on the admin/analytics
   surface.
 - Block then unblock a member; delete a throwaway account.

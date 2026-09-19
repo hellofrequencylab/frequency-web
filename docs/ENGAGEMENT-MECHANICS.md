@@ -7,9 +7,10 @@
 > `supabase/migrations/` remain the source of truth; this just maps the moving parts so you
 > don't have to re-derive them from the files.
 
-The reward economy itself (point values, which action earns what) is still a product
-decision; see [START-HERE.md](START-HERE.md) Part B and CHECKLIST. What's built is the
-*plumbing* that makes earning exactly-once, server-verified, and source-agnostic.
+The reward economy itself (point values, which action earns what) is a product
+decision locked in [NAMING.md](NAMING.md) and [CORE-MODEL.md](CORE-MODEL.md); see
+[START-HERE.md](START-HERE.md). What's built is the *plumbing* that makes earning
+exactly-once, server-verified, and source-agnostic.
 
 ---
 

@@ -5,6 +5,12 @@
 > file. Filed 2026-09-08 from an eight-lane repo sweep plus live production reads.
 > Decision record, once ruled: [ADR-1292](DECISIONS.md).
 >
+> **This document does not override [`CORE-MODEL.md`](CORE-MODEL.md) (ADR-1294), which is
+> accepted.** CORE-MODEL is commercial and product law: four nouns, join free, host free,
+> pay when charging, memberships stay paid. Where this proposal says "individuals never
+> pay" or asks to reframe the interior, treat it as an open ruling, not a build order.
+> Owner action: **accept, reject, or park.** Until then, do not sequence work from this file.
+>
 > **This document explains a reframe. It does not track whether the reframe is done.**
 
 ---

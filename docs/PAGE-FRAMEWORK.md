@@ -61,11 +61,16 @@ logic, learned once, reused at every level.
 
 ---
 
-## 3. Three page templates (the "every page fits" guarantee)
+## 3. Page templates (the "every page fits" guarantee)
 
-Every page is one of three shapes, chosen by *what the content is*, not by
-feature. A page never invents its own layout: it picks a template and fills
-slots.
+> Do **not** restate a template count in other docs. This section started as three
+> archetypes (Stream, Index, Detail). Dashboard, Focus, WizardShell, and Admin
+> joined later. `RailGrid` is a layout primitive, not a shell. The authoring menu
+> lives in `AGENTS.md`; the enforced list is `scripts/check-templates.mjs`. Pick a
+> shell from `@/components/templates` by *what the content is*.
+
+A page never invents its own layout: it picks a template and fills slots. The
+original three archetypes:
 
 ### Template A: **Stream** (a flow of items)
 One primary column of a vertical card stream + right rail.
@@ -235,7 +240,12 @@ export const RAIL = {
 page edits. Removing/ reordering = edit the list. This is the scalability
 property.
 
-### 4.4 The only thing pages call: `<WidgetSlot>`
+### 4.4 Sketch: `<WidgetSlot>` (not the live rail API)
+
+> The live right rail is `RAIL_PANELS` / `lib/layout/page-chrome.ts`, not this component.
+> Treat the sketch below as the original assignment idea. Do not add a `WidgetSlot`
+> import to a page because this section shows one.
+
 ```tsx
 <WidgetSlot name="rightRail" scope={scope} role={role} milestones={ms} />
 ```

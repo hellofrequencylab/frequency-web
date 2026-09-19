@@ -12,6 +12,8 @@ get them. Note `vercel env pull` returns blanks here, so you fill them by hand),
 - **[README.md](../README.md)**: what Frequency is + the 5-layer architecture at a glance.
 - **[AGENTS.md](../AGENTS.md)**: the rules every session runs under. Its §"Which plan is live"
   is the authority for what follows in this list.
+- **[docs/NAMING.md](NAMING.md)** + **[docs/CORE-MODEL.md](CORE-MODEL.md)**: locked nouns and
+  commercial law. Always beat older vision files (OVERVIEW, IA-STRATEGY §6, DEVELOPMENT-MAP).
 - **[docs/BUILD-BACKLOG.json](BUILD-BACKLOG.json)** via **`pnpm backlog`**: the ONE list of where
   the work stands. Status never lives in prose; every row says how it is proven.
 - **[docs/UX-MATURITY-PLAN.md](UX-MATURITY-PLAN.md)** + **[docs/BUILD-LIST.md](BUILD-LIST.md)**:

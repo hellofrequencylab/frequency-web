@@ -1,22 +1,21 @@
-# Frequency: the whole picture (north star)
+# Frequency: the whole picture (early synthesis)
 
-> Front-door synthesis of what we're building and why. For the *ordered build/
-> deploy path* use [START-HERE.md](START-HERE.md); for the phase tracker use
-> [BUILD-PHASES.md](BUILD-PHASES.md).
+> ⚠️ **Not the north star.** Product law is [CORE-MODEL.md](CORE-MODEL.md) (ADR-1294)
+> and [NAMING.md](NAMING.md). Status lives in [BUILD-BACKLOG.json](BUILD-BACKLOG.json).
+> The live plan is [AGENTS.md](../AGENTS.md) §"Which plan is live". Orientation:
+> [START-HERE.md](START-HERE.md). [BUILD-PHASES.md](BUILD-PHASES.md) is history.
+> Where this file disagrees with those, ignore this file.
 
-## Mission (locked 2026-05-31)
+## Mission (updated 2026-09-18 to match CORE-MODEL)
 
-> **Shared interests into real-world community: a free global mission, a game that
-> drives people offline, and physical spaces where it lives.**
+> **People join free. Businesses host free. You pay when you start charging.**
 
-Frequency turns shared interests into real-world community, ending the isolation of
-connection lived only through a screen. A free, worldwide **Foundation** gives anyone a
-place to gather around what they love; a game rewards the things that actually build
-community: showing up, inviting strangers, backing local life; and **Labs** builds the
-physical third spaces, sustained by commerce, where it all takes root. One community, one
-game, two engines. We measure success not by screen time but by the people who actually
-practiced together this week (the North Star: Weekly Active Members, see
-[BUILD-PHASES.md](BUILD-PHASES.md)).
+Frequency is a Community Collective: one graph, two money entities (Foundation + Labs),
+one game. **Members** join free. **Spaces** host free. **Circles** are the rooms.
+**Events** are when those rooms are open. Topics are **Channels**. **The Quest** rewards
+showing up, inviting, and backing local life. We measure success by people who actually
+practiced together this week (Weekly Active Members), not by screen time. Full model:
+[CORE-MODEL.md](CORE-MODEL.md) and [PLATFORM-VISION.md](PLATFORM-VISION.md).
 
 ## The thesis
 The gamification isn't decoration; it's the engine that **drives offline action** (showing
@@ -30,22 +29,20 @@ explanation, **(2)** a gamification/engagement backbone that's extensible and
 cheat-resistant, **(3)** a codebase whose value lives in portable layers, not
 trapped in React/Next.
 
-## 1. Information architecture: the spatial model
-Nested scopes, biggest to smallest: **Outpost (place/city) → Nexus (regional) →
-Hub (local org) → Circle (the unit).**
-- **Circles** are where members live: a group practicing one thing. **Virtual is
-  the default; in-person is the additive designator** (📍), with capacity/scarcity cues.
-- **Interests** (renamed from "Channels"): global topics you *tune into*; Circles
-  run them locally.
-- **Hubs & Nexuses** are **contextual, not primary nav**, reached via breadcrumbs.
-- **Nav groups:** Feed · Community (Circles, Interests, Events, Broadcast) · Connect
-  (Messages, Friends, Directory) · Progress (Crew) · Manage (Admin).
+## 1. Information architecture: the four nouns
+Product nouns ([CORE-MODEL.md](CORE-MODEL.md)): **Member · Space · Circle · Event.**
+Topics are **Channels** ([NAMING.md](NAMING.md)); "Interests" is retired.
+Hub, Nexus, and Outpost are the place-clustering tree, contextual, not primary nav.
+The member rail is five worlds (Home · Practice · Community · The Quest · Manage).
+See [IA-STRATEGY.md](IA-STRATEGY.md) for the spine; ignore any "Interests" wording
+still in the older sections of that file.
 
-## 2. Page framework: one shell, three templates
-- **One app shell:** nav + content + a **scope-aware right rail**.
-- **Three templates:** **Stream** (feed-like), **Index** (lists/discovery),
-  **Detail** (single entity: context header + tabs + body). Templates nest.
-- **Modules + slots:** reusable cards in slots, so uniformity is structural.
+## 2. Page framework: one shell, a small kit
+- **One app shell:** nav + content + the global right rail.
+- **Pick a shell** from `@/components/templates` by what the content is (Stream,
+  Index, Detail, plus Focus / Dashboard / Wizard / Admin). Do not restate a count.
+  Full spec: [PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md).
+- **Modules:** capability-composed cards, not a static widget board.
 
 ## 3. Inline, capability-driven admin (no separate admin world)
 The *same* page shows different affordances based on **what you can do**: a host
@@ -95,10 +92,5 @@ tokens) · **DB as source of truth** (migrations). **PostGIS** for real geograph
 **Phase 5 mobile** (Expo/RN) is a thin client over the proven contract, not a rewrite.
 
 ## Status (high level)
-- **Phase 0 (foundations):** ✅ done.
-- **Phase 1 (page structure):** quick wins shipped; inline-admin/template **wiring
-  parked** for when the app's running (layout, needs visual QA).
-- **Phase 2 (authz contract):** view-builders started; RLS read migration remains.
-- **Phase 3 (gamification):** ✅ backbone complete; UI wiring + realtime + reward
-  *amounts* remain.
-- **Phase 4 (scale):** later, metric-driven. **Phase 5 (mobile):** later, on the contract.
+Do not use this section. Run `pnpm backlog`. The phase checklist below is 2026-05
+history.

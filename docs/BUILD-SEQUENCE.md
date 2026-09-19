@@ -2,14 +2,9 @@
 
 > ⚠️ **Superseded for near-term planning (2026-08-04).** The live plan is
 > [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) (ADR-925) with the phase runway in
-> [`BUILD-LIST.md`](BUILD-LIST.md) (ADR-921). This file predates the DAWN / UX-maturity
-> program and its status marks are not maintained. Kept for history and for the items it
-> still names that no current plan has absorbed.
-
-> **Open this first.** One page that says what to build next, what gates it, and where the detail
-> lives. It orders every execution track into one gated wave plan, overlays the launch timeline,
-> flags what still needs a deep plan, and has an **Idea Inbox** so new ideas get captured and
-> indexed into the build list instead of getting lost.
+> [`BUILD-LIST.md`](BUILD-LIST.md) (ADR-921). Status lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
+> **Do not open this file first.** It predates the DAWN / UX-maturity program. Kept for history
+> and for items no current plan has absorbed.
 >
 > **Authority order:** running code + `supabase/migrations/` > this doc > Notion. This doc holds the
 > *order we execute in*; the track docs hold the *detail*; [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md)

@@ -10,9 +10,17 @@ URLs, and the UI. See [DATABASE.md](DATABASE.md) for the tables behind these.
 > canon words map to them; where it once *defined* a name, it now points to NAMING.md.
 > If a term here and NAMING.md ever disagree, NAMING.md wins.
 
-> ⚠️ **Code paths in this glossary are partly stale** (checked 2026-09-04): six of the twelve `lib/` modules it names (`lib/practice-shelf.ts`, `lib/practice-streaks-job.ts`, `lib/coop-pulse.ts`, `lib/awards/witnessed.ts`, `lib/journey-arc.ts`, `lib/journey-coop.ts`) are no longer in the tree. Trust the term, verify the path; [`ARCHITECTURE.md`](ARCHITECTURE.md) is the doc held to the tree by `pnpm check:arch-doc`. Status of any work lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
+> ⚠️ **Code paths in this glossary are partly stale** (re-checked 2026-09-18): six named
+> `lib/` modules (`practice-shelf`, `practice-streaks-job`, `coop-pulse`, `awards/witnessed`,
+> `journey-arc`, `journey-coop`) are **not in the tree**. Trust the term, verify the path;
+> [`ARCHITECTURE.md`](ARCHITECTURE.md) is held to the tree by `pnpm check:arch-doc`.
 
 ## The community hierarchy
+
+> **Product nouns are four** ([CORE-MODEL.md](CORE-MODEL.md), ADR-1294): **Member,
+> Space, Circle, Event.** If a feature cannot belong to one of those, it is a
+> candidate for retirement. The Hub / Nexus / Outpost / Lab rows below are the
+> **place-clustering tree**, not a second product model.
 
 Frequency models a **global topical layer** on top of a **place-based tree**.
 Every Circle declares one topic (Channel) and a place. Hubs and Nexuses *emerge*
@@ -154,17 +162,15 @@ pays gems. The single source of truth is `currencyForCriteria` /
   depth tier. The explicit per-log VALUE is **`reward_zaps`** when set (the Quest library
   values by CADENCE: Daily 10 / 3x-week 15 / Weekly 25, ADR-303); `practiceZapValue()`
   resolves value-then-fallback for both the award path and every display.
-- **Practice Shelf**: the profile module of per-practice awards (ADR-219): the
-  consistency ladder (In Motion 2w / Groove 4w / Deep Groove 8w / **Full Cycle** 13w,
-  only Full Cycle pays, +50⚡ once per practice) and the depth ladder (10/25/50/100
-  Deep). Cache: `practice_streaks`; truth derives from `practice_logs`
-  (`lib/practice-shelf.ts`, nightly `lib/practice-streaks-job.ts`).
+- **Practice Shelf: RETIRED** (Rewards Economy v3, ADR-305). NAMING.md. Do not
+  point new code at `lib/practice-shelf.ts` or `lib/practice-streaks-job.ts` (removed).
 - **Co-op Pulse**: +3⚡ when 3+ active members of one circle each log the same adopted
-  Journey the same day (nightly `lib/coop-pulse.ts`; once per member/journey/date).
-  Feeds Carrier Wave and the circle-level **Co-op Synchrony** award.
+  Journey the same day (once per member/journey/date). `lib/coop-pulse.ts` was removed;
+  trust NAMING.md + migrations, not that path.
 - **Witnessed awards**: peer-granted (`witnessed_grants`, ADR-219): *Carried the Room*
   (circle Host → a member of their circle) and *Strong Signal* (any member), each once
-  per season per granter; displayed with the granted-by name (`lib/awards/witnessed.ts`).
+  per season per granter. `lib/awards/witnessed.ts` was removed; verify in the tree
+  before copying the path.
 - **Quests & Journeys**: hierarchy **Quest → Journey → Practice** (canon; see NAMING.md
   and [THE-QUEST.md](THE-QUEST.md)). A **Quest** (`quests`) is a season's official, free
   container of exactly **three Journeys** (Mind, Body, Spirit, run sequentially ~4 weeks each);
@@ -198,10 +204,10 @@ pays gems. The single source of truth is `currencyForCriteria` /
   "streak" and "season," never "rhythm/quest clock." A Journey completes when the member has
   logged its Practices on 14-16 distinct days inside its ~4-week window **and** completed its
   Expression Challenge. Derived from `practice_logs`, no progress table
-  (`lib/journey-arc.ts`, ADR-197). Completion fires the Trophy + rank advance + Zap/Gem grants
+  (ADR-197; `lib/journey-arc.ts` was removed). Completion fires the Trophy + rank advance + Zap/Gem grants
   via `reward_grants` (ADR-200).
 - **Co-op**: circle co-op completion: ≥3 active circle members on the same Journey
-  (`lib/journey-coop.ts`, ADR-199; renamed 2026, see docs/NAMING.md). **Distinct from
+  (ADR-199; `lib/journey-coop.ts` was removed; renamed 2026, see docs/NAMING.md). **Distinct from
   Resonance**: Resonance is the Connection-Layer tie strength (ADR-186), a separate concept.
 - **Circle Current**: a circle's collective, non-competitive seasonal standing (replaces
   the prior term, renamed 2026, see docs/NAMING.md; internal column `circles.season_current`, ledger `circle_current_transactions`,

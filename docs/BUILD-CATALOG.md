@@ -5,6 +5,9 @@
 > [`BUILD-LIST.md`](BUILD-LIST.md) (ADR-921). This file predates the DAWN / UX-maturity
 > program and its status marks are not maintained. Kept for history and for the items it
 > still names that no current plan has absorbed.
+>
+> **The "anti-loss index / everything not yet shipped" voice below is retired.** Snapshot
+> dated 2026-06-30. Status: [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
 
 > **The answer, first.** This is the single anti-loss index of **everything not yet shipped**,
 > reconciled from a six-way sweep (2026-06-30) across the backlog reservoirs, the five audits, the

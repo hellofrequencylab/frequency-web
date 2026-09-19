@@ -16,9 +16,9 @@
 > Stripe/ops access, real traction, owner data (e.g. The Lab's address), content, or CI infra.
 > Those are tagged 🧑/🏗️ and called out in §10 so they're tracked, not pretended-done.
 >
-> **Active execution list:** the ordered, one-PR-at-a-time work items live in
-> [`MASTER-PLAN.md`](MASTER-PLAN.md). This roadmap holds the grade targets and rationale; the
-> master plan holds what ships next.
+> **Active execution list (retired):** [`MASTER-PLAN.md`](MASTER-PLAN.md) is completed
+> history. What ships next is [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) +
+> [`BUILD-LIST.md`](BUILD-LIST.md). Status: [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
 
 ## 1. Scoreboard (re-verified 2026-06-15, post-session)
 
