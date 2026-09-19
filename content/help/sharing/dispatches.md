@@ -4,7 +4,7 @@ description: Wider announcements from Hosts and leadership.
 category: sharing
 order: 2
 published: 2026-06-03
-updated: 2026-08-12
+updated: 2026-09-19
 audience: member
 role: host
 featureKeys: [broadcast]
@@ -37,4 +37,4 @@ join**. It's the community counterpart to your Quest dashboard.
 
 Sending a Dispatch is a Host-and-above ability: it's meant for the people running Circles and stewarding the community, so it stays signal, not noise. Everyone else shares through ordinary [posts](/help/sharing/posts).
 
-You can only send a Dispatch to a Circle, Hub, or region you lead. A **Global** ("Everyone") Dispatch, one that reaches every member site-wide, is reserved for the staff and operations team, to keep it rare and meaningful.
+You can only send a Dispatch to a Circle or Space you lead. A **Global** ("Everyone") Dispatch, one that reaches every member site-wide, is reserved for the staff and operations team, to keep it rare and meaningful.

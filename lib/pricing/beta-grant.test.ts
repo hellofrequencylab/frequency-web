@@ -92,15 +92,8 @@ describe('loadoutChargePriceKey — the arm resolves a REAL, DIFFERENT Stripe pr
 
   it('a granted Space resolves the FOUNDING key and an ungranted one the _list key, monthly and yearly', () => {
     for (const interval of ['month', 'year'] as const) {
-      expect(loadoutChargePriceKey('collective_base', interval, armFor(true))).toBe(
-        `collective_base_${interval}`,
-      )
-      expect(loadoutChargePriceKey('collective_base', interval, armFor(false))).toBe(
-        `collective_base_${interval}_list`,
-      )
-      expect(loadoutChargePriceKey('business_base', interval, armFor(true))).toBe(
-        `business_base_${interval}`,
-      )
+      // business_base is flat; both keys resolve but carry the same amount (LIVE-228).
+      expect(loadoutChargePriceKey('business_base', interval, armFor(true))).toBe(`business_base_${interval}`)
       expect(loadoutChargePriceKey('business_base', interval, armFor(false))).toBe(
         `business_base_${interval}_list`,
       )
@@ -108,15 +101,11 @@ describe('loadoutChargePriceKey — the arm resolves a REAL, DIFFERENT Stripe pr
   })
 
   it('those two keys carry the two amounts the owner actually promised and publishes', () => {
-    // The grant is only worth something if the founding key is a LOWER number than the list key.
-    expect(catalogAmounts('collective_base', 'month').foundingCents).toBe(4900) // promised
-    expect(catalogAmounts('collective_base', 'month').listCents).toBe(7900) // published
-    expect(catalogAmounts('collective_base', 'year').foundingCents).toBe(49000) // two months free
-    expect(catalogAmounts('collective_base', 'year').listCents).toBe(79000)
-    // Business carries NO beta rate (ADR-1067): both keys mean the same money, so a grant on a
-    // Business Space cannot mis-price it downward.
-    expect(catalogAmounts('business_base', 'month').foundingCents).toBe(2900)
-    expect(catalogAmounts('business_base', 'month').listCents).toBe(2900)
+    // LIVE-228: Business is $49 flat; a grant cannot mis-price it downward.
+    expect(catalogAmounts('business_base', 'month').foundingCents).toBe(4900)
+    expect(catalogAmounts('business_base', 'month').listCents).toBe(4900)
+    expect(catalogAmounts('business_base', 'year').foundingCents).toBe(49000)
+    expect(catalogAmounts('business_base', 'year').listCents).toBe(49000)
   })
 
   it('a flat item (no beta anchor) resolves two keys that mean the same money, so a grant cannot mis-price it', () => {
@@ -223,7 +212,7 @@ describe('the public grid is IDENTICAL with and without a granted Space', () => 
     expect(spacePlanRows.length).toBe(2) // (values, betaActive)
   })
 
-  it('a granted Space is charged $49 while the page still prints $79, in the same run', () => {
+  it('a granted Space is charged the founding key while the page still prints $49 flat, in the same run', () => {
     // The two halves side by side, so neither can be true on its own.
     expect(loadoutChargeArm({ lockedPriceId: null, betaActive: WINDOW_SHUT, spaceHasBetaGrant: true })).toBe(
       'founding',
@@ -231,44 +220,31 @@ describe('the public grid is IDENTICAL with and without a granted Space', () => 
     const byId = Object.fromEntries(
       spaceOfferings({ values: PRICING_DEFAULTS, catalog, betaActive: WINDOW_SHUT }).map((o) => [o.id, o]),
     )
-    expect(byId.collective!.monthly).toBe('$79/mo')
-    expect(byId.collective!.monthlyCents).toBe(7900)
-    expect(byId.collective!.listAnchor).toBeNull()
-    expect(byId.collective!.betaNote).toBeNull()
-    expect(byId.business!.monthly).toBe('$29/mo')
+    expect(byId.business!.monthly).toBe('$49/mo')
+    expect(byId.business!.monthlyCents).toBe(4900)
+    expect(byId.business!.listAnchor).toBeNull()
     expect(byId.business!.betaNote).toBeNull()
   })
 
   it('every Space-plan price a visitor is quoted is the LIST price, exactly and only', () => {
     const { labels, cents } = spacePlanQuotes(WINDOW_SHUT)
-    // The whole public quote, pinned. A beta amount reaching any of these three surfaces adds a member
-    // to one of these sets, and an exact match is the only assertion a "helpful" partial leak cannot
-    // slip past.
-    // Independent's $249 / $2,490 used to head this list. It is gone because the tier is no longer
-    // advertised (owner ruling 2026-09-08, LIVE-227), not because its price changed: the catalog item
-    // and its Stripe prices are untouched, and a hand-sold Space is still charged from them. The tier
-    // simply reaches no public surface any more, so it quotes nothing here.
     expect(labels).toEqual([
-      '$29', // Business — the list price, and the ONLY Business number a visitor sees
-      '$29/mo',
-      '$290',
-      '$290/yr',
       '$39', // Non Profit, flat, never had a beta rate
       '$39/mo',
       '$390',
       '$390/yr',
-      '$79', // Collective — the list price, and the ONLY Collective number a visitor sees
-      '$79/mo',
-      '$790',
-      '$790/yr',
+      '$49', // Business — the list price, and the ONLY Business number a visitor sees
+      '$49/mo',
+      '$490',
+      '$490/yr',
       'Free',
     ])
-    expect(cents).toEqual([0, 2900, 3900, 7900, 29000, 39000, 79000])
-    // The founding amounts a GRANTED Space is charged, absent from both sets.
-    for (const amount of ['$19/mo', '$190/yr', '$49/mo', '$490/yr', '$19', '$49']) {
+    expect(cents).toEqual([0, 3900, 4900, 39000, 49000])
+    // The founding amounts a GRANTED Space might be charged, absent from both sets when flat.
+    for (const amount of ['$29/mo', '$290/yr', '$79/mo', '$790/yr', '$29', '$79']) {
       expect(labels, `${amount} is quoted on a public surface`).not.toContain(amount)
     }
-    for (const c of [1900, 19000, 4900, 49000]) {
+    for (const c of [2900, 29000, 7900, 79000]) {
       expect(cents, `${c} cents is quoted on a public surface`).not.toContain(c)
     }
   })
@@ -278,16 +254,12 @@ describe('the public grid is IDENTICAL with and without a granted Space', () => 
     expect(readableTexts(WINDOW_SHUT).filter((t) => t.includes('Beta rate'))).toEqual([])
   })
 
-  it('NON-VACUITY: those leak tests really can fail — with the WINDOW open the same surfaces show $49', () => {
-    // If the beta amounts were unreachable from these surfaces for some unrelated reason, the
-    // assertions above would pass by accident forever. Opening the window puts them right back on the
-    // page, which proves the surfaces are genuinely capable of printing them and that the
-    // closed-window run above is a real measurement of a real risk.
+  it('NON-VACUITY: flat pricing means no beta anchor appears even with the WINDOW open', () => {
     const { labels, cents } = spacePlanQuotes(true)
     expect(labels).toContain('$49/mo')
     expect(labels).toContain('$490/yr')
     expect(cents).toContain(4900)
-    expect(readableTexts(true).some((t) => t.includes('Beta rate'))).toBe(true)
+    expect(readableTexts(true).some((t) => t.includes('Beta rate'))).toBe(false)
   })
 
   it('the surface is byte-identical across a granted and an ungranted world', () => {
@@ -312,7 +284,7 @@ describe('the public grid is IDENTICAL with and without a granted Space', () => 
 describe('the lock supersedes the grant, which is why the grant needs no expiry', () => {
   it('once a granted Space subscribes, its lock is what re-bills — the grant is never consulted again', () => {
     // The reconciler records the charged price id as the lock. From then on arm 1 wins.
-    const lockedFromTheGrantedCheckout = 'price_collective_base_month_founding'
+    const lockedFromTheGrantedCheckout = 'price_business_base_month'
     expect(
       loadoutChargeArm({
         lockedPriceId: lockedFromTheGrantedCheckout,
@@ -336,7 +308,7 @@ describe('the lock supersedes the grant, which is why the grant needs no expiry'
     // lock after the fact except a new subscription.
     expect(
       loadoutChargeArm({
-        lockedPriceId: 'price_collective_base_month_list',
+        lockedPriceId: 'price_business_base_month_list',
         betaActive: WINDOW_SHUT,
         spaceHasBetaGrant: true,
       }),

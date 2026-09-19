@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
-import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
-import { getListingWithOwner, getListingClaimToken, listSavedListingIds } from '@/lib/listings'
+import { getListingWithOwner } from '@/lib/listings'
 import {
   accessibilityLabel,
   amenityLabel,
@@ -11,18 +11,19 @@ import {
   propertyTypeLabel,
   resolveAddressDisplay,
 } from '@/lib/listings/housing'
-import { resolveListingClaim } from '@/lib/listing-seeder/claim'
-import { buttonClasses } from '@/components/ui/button'
 import { ReportButton } from '@/components/marketplace/report-button'
 import { SaveListingButton } from '@/components/marketplace/save-listing-button'
-import { ListingClaimLink } from '@/components/marketplace/listing-claim-link'
 import { ListingDetailTemplate } from '@/components/templates/listing-detail-template'
 import { listingDetailFromHousing } from '@/lib/listings-shared/detail-view'
 import { listingMetadata, type HousingSeoFacts } from '@/lib/listings-shared/listing-seo'
 import { getListingComments } from '@/lib/marketplace/listing-comments'
-import { setListingStatusAction, deleteListingAction } from '@/app/(main)/marketplace/actions'
+import { ViewerProvider } from '@/components/layout/viewer-chrome'
+import { ViewerListingClaim } from '@/components/marketplace/listing-claim-box'
 
-export const dynamic = 'force-dynamic'
+// Public housing detail, advertised in app/sitemap.ts. Auth during render is a dynamic API
+// and would void ISR. Owners still edit at /housing/[id]/edit. The save heart and a ?claim=
+// arrival hydrate from /api/viewer.
+export const revalidate = 3600
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
@@ -60,46 +61,16 @@ function longDate(iso: string | null): string | null {
 
 export default async function HousingDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ claim?: string; claimed?: string }>
 }) {
   const { id } = await params
-  const { claim: claimParam } = await searchParams
-  const [profileId, isStaff, listing] = await Promise.all([
-    getMyProfileId(),
-    isPlatformStaff(),
-    getListingWithOwner(id),
-  ])
-  if (!listing || listing.vertical !== 'housing') notFound()
+  const listing = await getListingWithOwner(id)
+  if (!listing || listing.vertical !== 'housing' || listing.status !== 'active') notFound()
 
-  const isOwner = !!profileId && listing.ownerProfileId === profileId
-  if (!isOwner && !isStaff && listing.status !== 'active') notFound()
-
-  // Claim link: a visitor arriving with ?claim=<token> that resolves to THIS still-unclaimed listing
-  // sees a "Claim listing" box instead of Contact the host. resolveListingClaim returns null for a
-  // used/unknown token or an already-claimed row, so the token self-validates and reveals nothing.
-  // (Mirrors app/(main)/classifieds/[id]/page.tsx; the claim spine already covers the housing vertical.)
-  let claimToken: string | null = null
-  if (claimParam) {
-    const resolved = await resolveListingClaim(claimParam)
-    if (resolved && resolved.listingId === id) claimToken = claimParam
-  }
-
-  // Operator (admin/janitor) shortcut: for a SEEDED, still-unclaimed housing listing, surface the
-  // shareable claim link in the Manage box so they can send it to the real host. getListingClaimToken
-  // returns null once claimed or for a member-created row, so this disappears exactly when it should.
-  let claimShareUrl: string | undefined
-  if (isStaff && listing.seededUnclaimed) {
-    const token = await getListingClaimToken(id)
-    if (token) claimShareUrl = `/housing/${id}?claim=${token}`
-  }
-
-  const [detail, comments, savedIds] = await Promise.all([
+  const [detail, comments] = await Promise.all([
     getHousingDetail(id),
     getListingComments('listing', id),
-    profileId ? listSavedListingIds(profileId, [id]) : Promise.resolve(new Set<string>()),
   ])
 
   // The housing-only structured facts for the Accommodation JSON-LD (rooms, size, pets,
@@ -115,13 +86,9 @@ export default async function HousingDetailPage({
       }
     : undefined
 
-  // Owners get the Edit action (hero overlay + Manage rail link, both rendered by the
-  // shared template off `action.kind === 'edit'`), pointing at the [id]/edit route.
+  // The public page is the listing, not the editor. Owners still edit at /housing/[id]/edit.
   const view = {
-    ...listingDetailFromHousing(listing, detail, { isOwner }),
-    ...(isOwner
-      ? { action: { kind: 'edit' as const, label: 'Edit listing', href: `/housing/${id}/edit` } }
-      : {}),
+    ...listingDetailFromHousing(listing, detail, { isOwner: false }),
     housingFacts,
   }
   const firstName = listing.owner?.displayName.split(' ')[0] ?? 'the host'
@@ -136,7 +103,7 @@ export default async function HousingDetailPage({
         city: listing.city,
         neighborhood: listing.neighborhood,
         addressLine: detail.addressLine,
-        signedIn: !!profileId,
+        signedIn: false,
       })
     : null
 
@@ -168,14 +135,17 @@ export default async function HousingDetailPage({
   if (detail?.bathroomsShared) rules.push('Shared bathroom')
 
   return (
+    <ViewerProvider>
+    <Suspense fallback={null}>
+      <ViewerListingClaim detailPath={`/housing/${id}`} />
+    </Suspense>
     <ListingDetailTemplate
       view={view}
       comments={comments}
-      canComment={!!profileId}
-      canModerate={isOwner || isStaff}
-      myProfileId={profileId}
+      canComment={false}
+      canModerate={false}
+      myProfileId={null}
       contactNote={
-        !isOwner ? (
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-meta text-subtle">
               No payment happens in the app. Message {firstName} to arrange a viewing and the rest offline.
@@ -183,45 +153,13 @@ export default async function HousingDetailPage({
             <div className="flex items-center gap-3">
               <SaveListingButton
                 listingId={listing.id}
-                initialSaved={savedIds.has(listing.id)}
-                signedIn={!!profileId}
+                initialSaved={false}
+                signedIn={false}
                 signInNext={`/housing/${listing.id}`}
               />
               <ReportButton targetKind="listing" targetId={listing.id} />
             </div>
           </div>
-        ) : undefined
-      }
-      claimToken={claimToken}
-      ownerControls={
-        isOwner || claimShareUrl ? (
-          <div className="space-y-3">
-            {isOwner && (
-              <div className="flex flex-wrap gap-2">
-                {listing.status === 'active' ? (
-                  <form action={setListingStatusAction.bind(null, listing.id, 'closed')}>
-                    <button type="submit" className={buttonClasses('ghost', 'sm')}>
-                      Close listing
-                    </button>
-                  </form>
-                ) : (
-                  <form action={setListingStatusAction.bind(null, listing.id, 'active')}>
-                    <button type="submit" className={buttonClasses('ghost', 'sm')}>
-                      Reopen listing
-                    </button>
-                  </form>
-                )}
-                <form action={deleteListingAction.bind(null, listing.id)}>
-                  <button type="submit" className={buttonClasses('ghost', 'sm')}>
-                    Delete
-                  </button>
-                </form>
-              </div>
-            )}
-            {/* Platform staff on a seeded, unclaimed listing: the shareable claim link to send the host. */}
-            {claimShareUrl && <ListingClaimLink claimShareUrl={claimShareUrl} />}
-          </div>
-        ) : undefined
       }
     >
       {facts.length > 0 && (
@@ -274,5 +212,6 @@ export default async function HousingDetailPage({
         </div>
       )}
     </ListingDetailTemplate>
+    </ViewerProvider>
   )
 }

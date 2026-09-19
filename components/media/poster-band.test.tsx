@@ -46,7 +46,7 @@ import {
 // defect put back.
 
 const band = readFileSync('components/media/poster-band.tsx', 'utf8')
-const eventPage = readFileSync('app/(main)/events/[slug]/page.tsx', 'utf8')
+const eventPage = readFileSync('app/(main)/events/[slug]/event-member-page.tsx', 'utf8')
 const TIERS: CoverHeight[] = ['short', 'standard', 'tall']
 
 /** What `object-cover` actually shows of a WxH source in a bandW x bandH box, as area. */

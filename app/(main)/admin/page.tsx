@@ -902,7 +902,7 @@ async function MentorPanel({ profileId, canManage }: { profileId: string; canMan
                   return (
                     <CircleRow
                       key={hub.id}
-                      href={`/hubs/${hub.slug}`}
+                      href={`/spaces/${hub.slug}`}
                       name={hub.name}
                       status={hub.status}
                       meta={`${hub.circles.length} circles · ${hubTotal} members${hub.guide ? ` · Guide: ${hub.guide.display_name}` : ''}`}

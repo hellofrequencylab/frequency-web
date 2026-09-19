@@ -182,8 +182,7 @@ describe('the walls are the ones the strategy names, and nothing has crept in', 
     expect(PLACEHOLDER_METER_LIMITS.space_member_benefits?.free).toBeGreaterThan(0)
     expect(PLACEHOLDER_METER_LIMITS.space_membership_tiers?.free).toBeGreaterThan(0)
     expect(FEATURE_GATES).not.toHaveProperty('space_member_benefits')
-    expect(PLACEHOLDER_METER_LIMITS.space_member_benefits?.business).toBeGreaterThan(0)
-    expect(PLACEHOLDER_METER_LIMITS.space_member_benefits?.collective).toBeNull()
+    expect(PLACEHOLDER_METER_LIMITS.space_member_benefits?.business).toBeNull()
   })
 
   it('campaigns are a wall at Business, and sends stay metered', () => {

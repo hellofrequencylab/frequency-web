@@ -15,7 +15,7 @@
 // the already-gated billing body.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { SPACE_PLANS, type SpacePlan } from '@/lib/pricing/plans'
+import { SPACE_PLANS, asSpacePlan, type SpacePlan } from '@/lib/pricing/plans'
 import {
   addInterval,
   bucketAgreementsDue,
@@ -158,7 +158,7 @@ export type AgreementResult = { ok: true; agreement: ManualAgreement } | { ok: f
  *  same Space (pre-check plus the 23505 from the partial unique index, for the race). Does NOT
  *  touch spaces.plan: the plan column stays the access authority, set separately. */
 export async function createManualAgreement(input: CreateAgreementInput): Promise<AgreementResult> {
-  const plan = input.plan as SpacePlan
+  const plan = asSpacePlan(input.plan)
   if (!(SPACE_PLANS as readonly string[]).includes(plan) || plan === 'free') {
     return { ok: false, error: 'Pick a paid plan for the agreement.' }
   }

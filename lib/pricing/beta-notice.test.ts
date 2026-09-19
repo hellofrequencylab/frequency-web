@@ -45,11 +45,8 @@ describe('targetForGate (a feature names the tier its REAL gate sits on)', () =>
     expect(targetForGate(FEATURE_GATES.space_campaigns)).toEqual({ axis: 'plan', tier: 'business' })
   })
 
-  it('a Collective feature resolves to the Collective tier', () => {
-    // `space_sms` and `space_revenue_splits` were the other two examples here until HYG-079 deleted
-    // both gates (neither feature is built, and neither gate had a call site), leaving automation as
-    // the only Collective floor on the map.
-    expect(targetForGate(FEATURE_GATES.space_automation)).toEqual({ axis: 'plan', tier: 'collective' })
+  it('a Business-depth automation feature resolves to the Business tier (LIVE-228)', () => {
+    expect(targetForGate(FEATURE_GATES.space_automation)).toEqual({ axis: 'plan', tier: 'business' })
   })
 
   it('collaborator HOSTING resolves to Business, its new opening rung', () => {
@@ -80,9 +77,8 @@ describe('targetForGate (a feature names the tier its REAL gate sits on)', () =>
   })
 
   it('follows an OPERATOR OVERRIDE rather than the code default (the gate is the source)', () => {
-    // An operator raises the memberships floor to Collective: the notice must say Collective.
-    const gate = mergeGate('space_memberships', { space_memberships: { minEntitlement: 'collective' } })
-    expect(targetForGate(gate)).toEqual({ axis: 'plan', tier: 'collective' })
+    const gate = mergeGate('space_memberships', { space_memberships: { minEntitlement: 'nonprofit' } })
+    expect(targetForGate(gate)).toEqual({ axis: 'plan', tier: 'nonprofit' })
   })
 })
 
@@ -105,10 +101,10 @@ describe('targetForEntitlementKey (the LOWEST plan whose depth set grants it)', 
     expect(targetForEntitlementKey('reporting')).toEqual({ axis: 'plan', tier: 'business' })
   })
 
-  it('a Collective-depth key resolves to Collective, not to the higher plans that also grant it', () => {
-    expect(targetForEntitlementKey('automation')).toEqual({ axis: 'plan', tier: 'collective' })
-    expect(targetForEntitlementKey('team')).toEqual({ axis: 'plan', tier: 'collective' })
-    expect(targetForEntitlementKey('program')).toEqual({ axis: 'plan', tier: 'collective' })
+  it('a Business-depth key resolves to Business, not to the higher plans that also grant it', () => {
+    expect(targetForEntitlementKey('automation')).toEqual({ axis: 'plan', tier: 'business' })
+    expect(targetForEntitlementKey('team')).toEqual({ axis: 'plan', tier: 'business' })
+    expect(targetForEntitlementKey('program')).toEqual({ axis: 'plan', tier: 'business' })
   })
 
   it('an Independent-only key resolves to Independent', () => {
@@ -130,7 +126,7 @@ describe('betaNoticeKey (dismissal is per TIER, never per feature)', () => {
 
   it('the two Space tiers keep separate keys', () => {
     expect(betaNoticeKey({ axis: 'plan', tier: 'business' })).toBe('plan:business')
-    expect(betaNoticeKey({ axis: 'plan', tier: 'collective' })).toBe('plan:collective')
+    expect(betaNoticeKey({ axis: 'plan', tier: 'nonprofit' })).toBe('plan:nonprofit')
   })
 })
 
@@ -172,15 +168,15 @@ describe('shouldShowBetaNotice', () => {
 
 describe('betaNoticeCopy (what a member actually reads)', () => {
   const business: BetaNoticeTarget = { axis: 'plan', tier: 'business' }
-  const collective: BetaNoticeTarget = { axis: 'plan', tier: 'collective' }
+  const nonprofit: BetaNoticeTarget = { axis: 'plan', tier: 'nonprofit' }
   const crew: BetaNoticeTarget = { axis: 'tier', tier: 'crew' }
 
   it('names the Business tier honestly', () => {
     expect(betaNoticeCopy(business, SEPT)!.title).toBe('You are using Business tools')
   })
 
-  it('names the Collective tier honestly', () => {
-    expect(betaNoticeCopy(collective, SEPT)!.title).toBe('You are using Collective tools')
+  it('names the Non Profit tier honestly', () => {
+    expect(betaNoticeCopy(nonprofit, SEPT)!.title).toBe('You are using Non Profit tools')
   })
 
   it('names the member tier by its canon label', () => {
@@ -188,16 +184,16 @@ describe('betaNoticeCopy (what a member actually reads)', () => {
   })
 
   it('states when memberships start, formatted FROM the operator window', () => {
-    expect(betaNoticeCopy(collective, SEPT)!.body).toBe(
+    expect(betaNoticeCopy(business, SEPT)!.body).toBe(
       'Memberships start September 1. Everything stays open until then.',
     )
     // Move the window and the sentence moves with it: nothing is pinned to a date literal.
     const october = betaGraceEndsAtMs('2026-10-15')
-    expect(betaNoticeCopy(collective, october)!.body).toContain('October 15')
+    expect(betaNoticeCopy(business, october)!.body).toContain('October 15')
   })
 
   it('invites a Space to the Founding Business badge, and a member to the Founder badge', () => {
-    expect(betaNoticeCopy(collective, SEPT)!.invite).toBe(
+    expect(betaNoticeCopy(business, SEPT)!.invite).toBe(
       'Take the yearly plan before September 1 to add the Founding Business badge to your Space.',
     )
     expect(betaNoticeCopy(crew, SEPT)!.invite).toBe(
@@ -211,21 +207,21 @@ describe('betaNoticeCopy (what a member actually reads)', () => {
     // window, so while it kept saying "hold the beta rate" it was offering a price the checkout had
     // already stopped charging. Asserted on the rendered copy, for every target, so the sentence
     // cannot quietly come back.
-    for (const t of [business, collective, crew]) {
+    for (const t of [business, nonprofit, crew]) {
       const copy = betaNoticeCopy(t, SEPT)!
       expect(`${copy.title} ${copy.body} ${copy.invite} ${copy.cta}`).not.toMatch(/beta rate|beta price/i)
     }
   })
 
   it('points at the pricing page and carries the per-tier dismissal key', () => {
-    const copy = betaNoticeCopy(collective, SEPT)!
+    const copy = betaNoticeCopy(business, SEPT)!
     expect(copy.href).toBe(BETA_NOTICE_HREF)
     expect(copy.href).toBe('/pricing')
-    expect(copy.key).toBe('plan:collective')
+    expect(copy.key).toBe('plan:business')
   })
 
   it('NEVER claims something is locked, blocked, or unavailable (nothing is, during grace)', () => {
-    const targets: BetaNoticeTarget[] = [business, collective, crew, { axis: 'plan', tier: 'nonprofit' }]
+    const targets: BetaNoticeTarget[] = [business, nonprofit, crew]
     for (const t of targets) {
       const copy = betaNoticeCopy(t, SEPT)!
       const all = [copy.title, copy.body, copy.invite, copy.cta].join(' ').toLowerCase()
@@ -236,14 +232,14 @@ describe('betaNoticeCopy (what a member actually reads)', () => {
   })
 
   it('carries no em dash anywhere (CONTENT-VOICE hard rule)', () => {
-    const copy = betaNoticeCopy(collective, SEPT)!
+    const copy = betaNoticeCopy(business, SEPT)!
     expect([copy.title, copy.body, copy.invite, copy.cta].join(' ')).not.toContain('—')
   })
 
   it('says NOTHING when the window has no readable date (no honest sentence without one)', () => {
-    expect(betaNoticeCopy(collective, null)).toBeNull()
-    expect(betaNoticeCopy(collective, undefined)).toBeNull()
-    expect(betaNoticeCopy(collective, Number.NaN)).toBeNull()
+    expect(betaNoticeCopy(business, null)).toBeNull()
+    expect(betaNoticeCopy(business, undefined)).toBeNull()
+    expect(betaNoticeCopy(business, Number.NaN)).toBeNull()
   })
 })
 

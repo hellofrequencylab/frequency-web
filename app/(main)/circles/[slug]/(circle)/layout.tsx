@@ -484,7 +484,7 @@ export default async function CircleDetailLayout({
                 <MapPin className="h-4 w-4 shrink-0" aria-hidden />
                 <span className="truncate">
                   {circle.hub.nexus?.outpost?.name && <>{circle.hub.nexus.outpost.name} · </>}
-                  <Link href={`/hubs/${circle.hub.slug}`} className="hover:text-primary-strong hover:underline">
+                  <Link href={`/spaces/${circle.hub.slug}`} className="hover:text-primary-strong hover:underline">
                     {circle.hub.name}
                   </Link>
                 </span>

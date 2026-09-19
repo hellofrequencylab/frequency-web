@@ -437,19 +437,38 @@ describe('check:a11y-names — forwarding, against the REAL tree', () => {
     expect(result.forwarders.get('components/spaces/space-form.tsx::Field')).toBe('id')
   })
 
-  it('🔴 MUTATION — the live call site is really named this way, not by luck', () => {
-    // Audit the real business-quickstart file twice: once with the forwarder map the run builds,
-    // once blind. Blind, it is the single placeholder-only control that held the ceiling at 1.
-    const file = 'app/(main)/spaces/new/business/business-quickstart-form.tsx'
-    const src = readFileSync(file, 'utf8')
+  it('🔴 MUTATION — a Field-wrapped kit control is named by the live forwarder, not by luck', () => {
+    // HYG-080 retired the second Space door, which was the only product call site that wrapped a
+    // kit Textarea in space-form Field. The fixture is that same shape (ADR-1126). Blind, it is
+    // the single placeholder-only control that held the ceiling at 1. Seeing, Field→id names it.
+    //
+    // The live half of the proof is that Field still publishes htmlFor={id} on disk AND
+    // discoverForwarders still finds it. A fixture-only test would keep passing after Field
+    // stopped forwarding, which is the silent-stop this control exists to prevent.
+    const fieldFile = 'components/spaces/space-form.tsx'
+    const fieldSrc = readFileSync(fieldFile, 'utf8')
+    expect(fieldSrc).toMatch(/htmlFor=\{id\}/)
+    expect(result.forwarders.get(`${fieldFile}::Field`)).toBe('id')
+
+    const src = [
+      'import { Field } from "@/components/spaces/space-form"',
+      'import { Textarea } from "@/components/ui/field"',
+      '<Field id="biz-what" label="What do you do?">',
+      '  <Textarea',
+      '    id="biz-what"',
+      '    placeholder="I teach beginner-friendly yoga and breathwork for busy people."',
+      '    rows={2}',
+      '  />',
+      '</Field>',
+    ].join('\n')
     const kitKinds = new Map([
       ['Input', 'input'],
       ['Textarea', 'textarea'],
     ])
-    const blind = auditNames(src, { kitKinds, forwarderProps: new Map() }, file)
-    expect(blind.weak.map((w: { line: number }) => w.line)).toEqual([50])
+    const blind = auditNames(src, { kitKinds, forwarderProps: new Map() }, 'fixture.tsx')
+    expect(blind.weak).toHaveLength(1)
 
-    const seeing = auditNames(src, { kitKinds, forwarderProps: new Map([['Field', 'id']]) }, file)
+    const seeing = auditNames(src, { kitKinds, forwarderProps: new Map([['Field', 'id']]) }, 'fixture.tsx')
     expect(seeing.weak).toHaveLength(0)
     expect(seeing.judged).toBe(blind.judged)
   })

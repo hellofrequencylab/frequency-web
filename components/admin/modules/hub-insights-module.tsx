@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { getHubInsightsData, type HubInsightsData } from '@/app/(main)/hubs/admin-actions'
+import { getHubInsightsData, type HubInsightsData } from '@/lib/hierarchy/hub-admin'
 
 // In-place "Insights" module (ADMIN-RAIL.md Phase 7, the 'insights' spine cell for hubs). Renders in
 // the page admin dock on /hubs/[slug]; the server returns null unless the caller holds hub.manage.

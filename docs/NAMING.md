@@ -234,7 +234,7 @@
 
 ## Community structure
 
-- **Circle → Hub → Nexus** (unchanged tree, caps unchanged).
+- **Circle → Hub → Nexus** (place-tree tables still exist). Member URLs fold into Space: a Hub or Nexus is a Space that contains other Spaces ([ADR-1439](DECISIONS.md), LIVE-242). Staff geography editors stay at `/admin/hubs` and `/admin/nexuses`.
 - **Circle** = the community CONTAINER, **local or online** ([ADR-1013](DECISIONS.md), amending
   ADR-088). It has a roster, a feed, and a door. ⚠️ A Circle is **not** defined by meeting in person:
   a Circle that meets on a call is still a Circle, and `circles.type` carries that distinction

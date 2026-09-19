@@ -36,7 +36,6 @@ import { asSpacePlan, type SpacePlan } from '@/lib/pricing/plans'
 const PLAN_PLAYBOOK_ACTION_CEILING: Record<SpacePlan, number | null> = {
   free: 50,
   business: null,
-  collective: null,
   nonprofit: null,
   independent: null,
 }
