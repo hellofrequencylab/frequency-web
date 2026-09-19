@@ -28,7 +28,7 @@ const ROOT = path.join(import.meta.dirname, '..')
 const HERO_SURFACES = [
   // The event page hero. Walks `eventHeroCandidates` itself because it already holds batch-signed
   // poster URLs; the ORDER still comes from the shared authority.
-  'app/(main)/events/[slug]/page.tsx',
+  'app/(main)/events/[slug]/event-member-page.tsx',
   // The per-event social share / SEO card — the surface that broke.
   'app/(main)/events/[slug]/opengraph-image.tsx',
   // The seeded-event claim card.

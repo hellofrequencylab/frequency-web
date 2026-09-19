@@ -12,7 +12,7 @@ import { doorNoteFor, DOOR_REASONS, type DoorReason } from './door-note'
 // and renders it (the WIRING). A map nobody mounts is the orphaned-action shape claim-wiring.test
 // exists to catch.
 
-const PAGE = 'app/(main)/events/[slug]/page.tsx'
+const PAGE = 'app/(main)/events/[slug]/event-member-page.tsx'
 const ROUTE = 'app/q/[slug]/route.ts'
 const ACTIONS = 'app/(main)/events/actions.ts'
 

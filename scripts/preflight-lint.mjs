@@ -25,7 +25,7 @@
 // root, so a worktree created for a subagent started with no install and the very first
 // `pnpm lint` there hit the trap.
 //
-// ADR-1319 made the refusal legible. ADR-1440 (LIVE-306) made the first `pnpm lint` install
+// ADR-1319 made the refusal legible. ADR-1441 (LIVE-306) made the first `pnpm lint` install
 // this directory when the lockfile is here and local ESLint is missing, then re-check.
 // It still refuses on a failed install or a major mismatch — those are not "never installed".
 

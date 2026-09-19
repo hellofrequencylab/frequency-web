@@ -131,7 +131,7 @@ describe('the header carries the whole feature, and the old homes are empty', ()
   const gone = (rel: string) => expect(existsSync(join(process.cwd(), rel)), `${rel} still exists`).toBe(false)
 
   it('the event page renders the surface and no longer renders the standalone reward strip', () => {
-    const page = read('app/(main)/events/[slug]/page.tsx')
+    const page = read('app/(main)/events/[slug]/event-member-page.tsx')
     expect(page).toContain('<EventCheckInSurface')
     expect(page).not.toContain('<EventRewardStrip')
     expect(page).not.toContain("from '@/components/events/event-reward-strip'")
@@ -142,7 +142,7 @@ describe('the header carries the whole feature, and the old homes are empty', ()
 
   it('the Join box no longer carries a second live check-in control', () => {
     // Two buttons for one idempotent action is not a bug, it is the scatter this change removes.
-    const page = read('app/(main)/events/[slug]/page.tsx')
+    const page = read('app/(main)/events/[slug]/event-member-page.tsx')
     expect(page).not.toContain('<EventCheckInButton')
     expect(page).not.toContain("from './check-in-button'")
     gone('app/(main)/events/[slug]/check-in-button.tsx')
