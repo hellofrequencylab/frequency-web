@@ -1,15 +1,17 @@
 import { describe, it, expect } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 
-// SCAN-637: sitemap-advertised marketplace details must not force-dynamic, and must not
+// SCAN-637 + SCAN-636: sitemap-advertised public details must not force-dynamic, and must not
 // read auth/cookies during render. One dynamic API in the page voids ISR the way the
 // old /discover header did. The (main) layout auth read is a separate row (SCAN-641).
+// /events/<slug> is the share URL; signed-in members rewrite to event-member-page.tsx.
 
 const PAGES = [
   'app/(main)/market/[id]/page.tsx',
   'app/(main)/store/[id]/page.tsx',
   'app/(main)/housing/[id]/page.tsx',
   'app/(main)/classifieds/[id]/page.tsx',
+  'app/(main)/events/[slug]/page.tsx',
 ] as const
 
 const DYNAMIC_APIS = [
@@ -17,6 +19,7 @@ const DYNAMIC_APIS = [
   { name: 'getCallerProfile', re: /\bgetCallerProfile\s*\(/ },
   { name: 'getMyProfileId', re: /\bgetMyProfileId\s*\(/ },
   { name: 'isPlatformStaff', re: /\bisPlatformStaff\s*\(/ },
+  { name: 'createClient', re: /\bcreateClient\s*\(/ },
   { name: 'cookies()', re: /\bcookies\s*\(\s*\)/ },
   { name: 'headers()', re: /\bheaders\s*\(\s*\)/ },
 ]

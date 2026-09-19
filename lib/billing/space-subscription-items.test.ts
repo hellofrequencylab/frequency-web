@@ -61,13 +61,11 @@ describe('planForItemKeys (collapsed · ADR-552; collective/independent · ADR-8
     expect(planForItemKeys([])).toBe('free')
   })
 
-  // ADR-881: these two bases are SELLABLE and the loadout checkout mints their items, but the
-  // ladder had no case for them, so a paid Collective subscription reconciled to 'free' and
-  // setSpaceAddons wrote free-tier entitlements over a Space paying $49/mo.
-  it('a paid Collective base resolves to collective, never to free', () => {
-    expect(planForItemKeys(['collective'])).toBe('collective')
-    expect(planForItemKeys(['collective', 'ai'])).toBe('collective')
-    expect(planForItemKeys(['collective', 'operator_seat'])).toBe('collective')
+  // LIVE-228: legacy collective item keys fold into business; loadout checkout bills business_base.
+  it('a paid Collective base resolves to business, never to free', () => {
+    expect(planForItemKeys(['collective'])).toBe('business')
+    expect(planForItemKeys(['collective', 'ai'])).toBe('business')
+    expect(planForItemKeys(['collective', 'operator_seat'])).toBe('business')
   })
 
   it('a paid Independent base resolves to independent and outranks every other base', () => {
@@ -77,9 +75,9 @@ describe('planForItemKeys (collapsed · ADR-552; collective/independent · ADR-8
     expect(planForItemKeys(['independent', 'organization'])).toBe('independent')
   })
 
-  it('collective outranks business, and nonprofit still outranks collective', () => {
-    expect(planForItemKeys(['collective', 'business'])).toBe('collective')
-    expect(planForItemKeys(['collective', 'base'])).toBe('collective')
+  it('collective folds to business, and nonprofit still outranks business', () => {
+    expect(planForItemKeys(['collective', 'business'])).toBe('business')
+    expect(planForItemKeys(['collective', 'base'])).toBe('business')
     expect(planForItemKeys(['organization', 'collective'])).toBe('nonprofit')
     expect(planForItemKeys(['nonprofit_seat', 'collective'])).toBe('nonprofit')
   })

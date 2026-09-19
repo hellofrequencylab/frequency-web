@@ -54,9 +54,6 @@ const SETTING_DEFAULTS: Record<string, unknown> = {
   // No 'tier.supporter' default (ADR-878): Supporter is off the sellable ladder, so there is no member
   // price for it to seed. Same treatment, same reason.
   'plan.business': PRICING_DEFAULTS.plan.business,
-  // Collective + Independent are first-class sellable tiers (ADR-811), so they carry a default row here
-  // like every other plan; an absent DB row still resolves through getPricingValues' per-key fallback.
-  'plan.collective': PRICING_DEFAULTS.plan.collective,
   'plan.independent': PRICING_DEFAULTS.plan.independent,
   'plan.nonprofit': PRICING_DEFAULTS.plan.nonprofit,
   take_rate: PRICING_DEFAULTS.take_rate,
@@ -136,7 +133,6 @@ export async function getPricingValues(): Promise<PricingDefaults> {
     },
     plan: {
       business: pick('plan.business', PRICING_DEFAULTS.plan.business),
-      collective: pick('plan.collective', PRICING_DEFAULTS.plan.collective),
       nonprofit: pick('plan.nonprofit', PRICING_DEFAULTS.plan.nonprofit),
       independent: pick('plan.independent', PRICING_DEFAULTS.plan.independent),
     },

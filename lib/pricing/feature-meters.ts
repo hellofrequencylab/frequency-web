@@ -99,62 +99,22 @@ export type MeterPeriod = 'month' | 'day' | null
  *                                     Crew 25 is a placeholder "higher cap" (was unlimited pre-838).
  *   - journey_enrollees 10 free     — mirrors space_journey's free 10 on the personal axis (ADR-838). */
 export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>> = {
-  space_crm: { free: 200, business: null, collective: null },
-  space_email: { free: 300, business: 5_000, collective: 25_000 },
+  space_crm: { free: 200, business: null },
+  space_email: { free: 300, business: 25_000 },
   space_bookings: { free: 15, business: null },
   space_journey: { free: 10, business: null },
   space_journey_publish: { free: 1, business: null },
   space_tickets: { free: 50, business: null },
-  space_qr: { free: 3, business: 500, collective: null },
-  space_automation: { free: 50, collective: 1_000 },
-  // Business is stated EXPLICITLY at 1 rather than inheriting the free rung. It resolved to 1 either
-  // way (currentMeterStepIndex falls back to the highest rung at/below the tier), but a Business
-  // operator reading the ladder saw a gap where their own tier should be and had to know that rule to
-  // work out what they get. `space_team` gates at 'collective', so adding teammates genuinely starts
-  // there: Business runs on the owner's seat alone, and that is now said rather than implied.
-  space_team: { free: 1, business: 1, collective: 3 },
-  space_multi_pipeline: { free: 1, collective: null },
+  space_qr: { free: 3, business: null },
+  space_automation: { free: 50, business: 1_000 },
+  space_team: { free: 1, business: 2 },
+  space_multi_pipeline: { free: 1, business: null },
   space_vera: { free: 10, business: 200 },
   space_crm_playbooks: { free: 100, business: 5_000 },
   space_crm_resonance_ai: { free: 10, business: 2_000 },
-  // Collaboration is a LADDER, not a wall: a free Space hosts ONE collaborator, Business hosts a few,
-  // Collective hosts unlimited (the collaboration engine). Mirrors the gate floor at 'business' in
-  // gates.ts.
-  // 🔴 FREE WAS ZERO UNTIL LIVE-225, and a zero cap is a wall wearing a meter's clothes: it renders as
-  // a ladder, counts like a ladder, and refuses like a door. "Preview only" also converts exactly as
-  // badly as a locked preview, which is the thing ADR-914 spent its budget removing. One hosted
-  // collaborator is the FIRST ONE FREE shape the personal axis already uses: enough to do the thing
-  // once and find out it works, and the second one is what a plan buys.
-  space_collaborators: { free: 1, business: 3, collective: null },
-  // Membership tiers a Space may define. Free runs one tier (enough to sell the first membership),
-  // Business runs a small ladder, Collective is unlimited (multi-tier pricing is the Collective offer).
-  // 🔴 FREE WAS ZERO WHILE MEMBERSHIPS WERE A WALL (ADR-914). LIVE-410 / ADR-1415 moved the
-  // `space_memberships` gate to the free floor (ADR-1403 Q3: host free until you charge). A zero
-  // here would have been the wall wearing a meter's clothes, the exact LIVE-225 pattern. The gate
-  // key (`space_memberships`) and this meter key still differ by name; the floor has to agree with
-  // the gate or the two promises part again.
-  space_membership_tiers: { free: 1, business: 3, collective: null },
-  // Member benefits a Space may DEFINE (ADR-1372): a priced modifier (percent off, amount off, fixed
-  // price, included) assigned to any number of membership tiers. The quantity metered is how many
-  // distinct benefits exist in the Space, not how many tiers carry each one, because a benefit is
-  // written once and assigned across tiers (space_tier_benefits).
-  //   · FREE 1, reachable now that a free Space may define one tier (LIVE-410). The first draft
-  //     set 0 because the membership wall left no tier to assign a benefit to. That wall moved.
-  //   · BUSINESS 6 is two per tier against the 3 tiers space_membership_tiers carries at Business,
-  //     which covers the shape a Business Space actually runs (a standing members rate plus one
-  //     capped guest pass per tier) without reaching the full program.
-  //   · COLLECTIVE unlimited, matching its tier row: designing the benefit program is the Collective
-  //     offer, so the dial it pays for is the one that stops counting.
-  // 🔴 ON THE KEY vs THE TABLE. The note above records that `space_memberships` (gate) and
-  // `space_membership_tiers` (meter) differ by name, which is what let a gate/meter collision slip
-  // past a guard that compares keys. This row keeps the convention coherent the other way: the meter
-  // key IS the table name (public.space_member_benefits), and it is deliberately NOT a gate key, so
-  // there is no second opinion hiding behind a rename. Memberships are no longer a plan wall
-  // (LIVE-410); the remaining named wall is space_campaigns.
-  //
-  // FREE IS 1 (LIVE-225), and LIVE-410 made that 1 reachable: a free Space now has a tier to assign
-  // the benefit to. A second zero would re-open the pattern LIVE-225 closed.
-  space_member_benefits: { free: 1, business: 6, collective: null },
+  space_collaborators: { free: 1, business: null },
+  space_membership_tiers: { free: 1, business: null },
+  space_member_benefits: { free: 1, business: null },
   vera_unlimited: { free: 10, crew: null },
   // FIRST ONE FREE — the personal leadership allowances. A free Member leads at one of each; Crew leads
   // at scale. Nothing here is a wall: a free Member still hosts a real Circle and is still made a Host
@@ -288,17 +248,15 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Team seats',
     unit: 'seats',
     period: null,
-    // Free + Business: 1 seat, the owner's (BASE_SEAT_ALLOWANCE, ADR-799 / §2) — adding teammates is
-    // a Collective capability (`space_team` gates there), so Business runs on the owner alone.
-    // Collective: 3 seats INCLUDED (placeholder); more are the ADR-799 per-seat add-on, never a wall.
+    // Free: 1 seat, the owner's. Business: 2 included (LIVE-228 / LIVE-229). Extra seats are the
+    // ADR-799 per-seat add-on. Collective is not a published rung after LIVE-228.
     //
     // Extra seats are the ADR-799 per-seat add-on at the catalog amount (LIVE-229, $12/seat/mo).
     // The catalog sync mints that price; `catalog_operator_seat_active` still gates checkout.
     allowances: PLACEHOLDER_METER_LIMITS.space_team!,
     allowanceTextByTier: {
       free: '1 seat included (the owner)',
-      business: '1 seat included (the owner)',
-      collective: '3 seats included, add more per seat',
+      business: '2 seats included, add more per seat',
     },
   },
   space_multi_pipeline: {
@@ -323,8 +281,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     allowances: PLACEHOLDER_METER_LIMITS.space_collaborators!,
     allowanceTextByTier: {
       free: 'Host 1 collaborator, and be a Collaborator on other Spaces for free',
-      business: 'Host up to 3 collaborators',
-      collective: 'Host unlimited collaborators',
+      business: 'Host unlimited collaborators',
     },
   },
   space_membership_tiers: {

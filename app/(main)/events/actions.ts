@@ -202,7 +202,7 @@ async function geocodeEventOnCreate(eventId: string, fd: FormData): Promise<void
 // price their event and connect their bank in either order.
 
 /**
- * The personal `event_create` allowance check (ADR-908, ADR-1440). Counts the member's
+ * The personal `event_create` allowance check (ADR-908, ADR-1441). Counts the member's
  * UPCOMING personal gatherings (host_id = them, no Space placement) against their tier.
  *
  * OWN-063 / 2026-09-08: the owner ruled this allowance caps GATHERINGS. A weekly series

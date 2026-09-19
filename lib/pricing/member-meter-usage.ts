@@ -24,7 +24,7 @@
 //     lib/journeys/publish-gate.ts counts.
 //   - vera_unlimited   reuses veraMessagesToday, the same ai_usage read the live cap enforces against.
 //   - event_create     states both cancellation columns the way lib/events/follower-reminders.ts does,
-//     then folds materialised dates to gatherings (OWN-063 / 2026-09-08, ADR-1440), matching the
+//     then folds materialised dates to gatherings (OWN-063 / 2026-09-08, ADR-1441), matching the
 //     create-path allowance in app/(main)/events/actions.ts.
 
 import { createAdminClient } from '@/lib/supabase/admin'

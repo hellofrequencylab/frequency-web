@@ -238,7 +238,7 @@ const input = (values = PRICING_DEFAULTS): PricingGridInput => ({ values, catalo
 
 describe('one source: the code defaults are READ from the catalog and the rate vector', () => {
   it('every Space price default is the catalog amount the checkout bills', () => {
-    const item = { business: 'business_base', collective: 'collective_base', nonprofit: 'nonprofit_seat', independent: 'independent_base' } as const
+    const item = { business: 'business_base', nonprofit: 'nonprofit_seat', independent: 'independent_base' } as const
     for (const [plan, key] of Object.entries(item)) {
       const { month, year } = catalogItem(key)
       const price = PRICING_DEFAULTS.plan[plan as keyof typeof item]

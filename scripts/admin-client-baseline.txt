@@ -122,6 +122,10 @@
 # (event, seat) pair. It cannot converge onto the session client because the seat a host marks is
 # not the host's own row: a guest RSVP and a guest ticket have no profile at all, so no session
 # policy on either table could reach them for an update. Writes the two columns and nothing else.
+# app/(main)/events/[slug]/event-member-page.tsx (moved 2026-09-19, SCAN-636): NOT a new RLS
+# bypass. The signed-in event body was lifted out of app/(main)/events/[slug]/page.tsx so the
+# public share URL can ISR; the service-role reads (RSVP, tickets, host tools) moved with it.
+# The public page no longer imports the admin client. File count is flat.
 # lib/feed/community-board.ts (added 2026-09-15, LIVE-248): the feed's first module, reading the
 # next gathering in the member's Circles and the newest posts in their Spaces. Same posture as the
 # four lib/feed/* readers and components/sidebar/rail-panels.tsx already in this list, and the
@@ -316,6 +320,7 @@ app/(main)/crew/store/actions.ts
 app/(main)/edit/actions.ts
 app/(main)/entry-points/actions.ts
 app/(main)/entry-points/page.tsx
+app/(main)/events/[slug]/event-member-page.tsx
 app/(main)/events/[slug]/manage/actions.ts
 app/(main)/events/[slug]/manage/attendance-actions.ts
 app/(main)/events/[slug]/manage/broadcast-actions.ts
@@ -325,7 +330,6 @@ app/(main)/events/[slug]/manage/load.ts
 app/(main)/events/[slug]/manage/page.tsx
 app/(main)/events/[slug]/manage/questionnaire-actions.ts
 app/(main)/events/[slug]/opengraph-image.tsx
-app/(main)/events/[slug]/page.tsx
 app/(main)/events/[slug]/social-actions.ts
 app/(main)/events/actions.ts
 app/(main)/events/admin-actions.ts
@@ -346,9 +350,6 @@ app/(main)/feed/report-actions.ts
 app/(main)/founder/founder-actions.ts
 app/(main)/g/[slug]/actions.ts
 app/(main)/g/[slug]/page.tsx
-app/(main)/hubs/[slug]/manage/page.tsx
-app/(main)/hubs/[slug]/page.tsx
-app/(main)/hubs/admin-actions.ts
 app/(main)/impersonate-actions.ts
 app/(main)/journeys/[slug]/edit/actions.ts
 app/(main)/journeys/[slug]/guide/actions.ts
@@ -371,9 +372,6 @@ app/(main)/nearby/[id]/page.tsx
 app/(main)/nearby/actions.ts
 app/(main)/nearby/page.tsx
 app/(main)/network/page.tsx
-app/(main)/nexuses/[slug]/manage/page.tsx
-app/(main)/nexuses/[slug]/page.tsx
-app/(main)/nexuses/admin-actions.ts
 app/(main)/on-air/actions.ts
 app/(main)/on-air/timer-session-actions.ts
 app/(main)/orders/dispute-actions.ts
@@ -747,6 +745,8 @@ lib/funnels/store.ts
 lib/gems.ts
 lib/growth/host-prompts.ts
 lib/growth/nearby-practice.ts
+lib/hierarchy/hub-admin.ts
+lib/hierarchy/nexus-admin.ts
 lib/importer/harvest/media.ts
 lib/importer/harvest/staging-lifecycle.ts
 lib/importer/materialize.ts

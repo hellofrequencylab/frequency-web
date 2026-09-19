@@ -79,8 +79,6 @@ const REDIRECTORS: Array<[string, string]> = [
   ['the circle CRM', readFileSync('app/(main)/circles/[slug]/crm/actions.ts', 'utf8')],
   ['the event manage action', readFileSync('app/(main)/events/[slug]/manage/actions.ts', 'utf8')],
   ['the event CRM', readFileSync('app/(main)/events/[slug]/manage/crm/actions.ts', 'utf8')],
-  ['the hub CRM', readFileSync('app/(main)/hubs/[slug]/crm/actions.ts', 'utf8')],
-  ['the nexus CRM', readFileSync('app/(main)/nexuses/[slug]/crm/actions.ts', 'utf8')],
 ]
 
 describe('the DM route retires behind a flag, not a deletion', () => {

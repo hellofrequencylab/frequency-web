@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1440**. 1436 is HYG-068, 1438 is SCAN-636, and 1439 is LIVE-306 on other open branches.
+tree as of this index: **ADR-1441**. 1436 is HYG-068 on another open branch. 1440 is SCAN-636 on main.
 
 | Theme | Start here |
 |---|---|
@@ -46117,24 +46117,83 @@ Premise re-tested 2026-09-19: all four files still exported `force-dynamic`. Sto
 
 **Rows.** SCAN-637.
 
-## ADR-1440: A recurring series costs one event allowance (OWN-063)
+## ADR-1438: Collective merges into Business at $49 (LIVE-228)
 
-**Status:** Accepted · 2026-09-19 · **Records** the 2026-09-08 owner ruling on `OWN-063` · **Implements** the create-path fold · numbered **1440** because **1438** and **1439** are on other branches · corroborated by `app/(main)/events/actions.ts` (`memberEventAllowanceOk` via `countSeries`) and `lib/pricing/member-meter-usage.ts` (`countUpcomingGatherings`)
+**Status:** Accepted · 2026-09-19 · **Implements** [ADR-1294](DECISIONS.md) CORE-MODEL §5 phase 3.1 · **Amends** [ADR-811](DECISIONS.md) (Collective is no longer a Space plan; Frequency remains a Community Collective) · backlog `LIVE-228` · numbered **1438** because **1436** is HYG-068 on another branch and **1437** is SCAN-637 on main · corroborated by `lib/pricing/plans.ts` (`SPACE_PLANS` without `collective`, `LEGACY_PLAN_REMAP.collective → business`) and `lib/billing/pricing-keys.ts` (`business_base` at 4900 cents, `collective_base` retired)
 
-**Context.** Recurrence is materialised (ADR-007): a weekly series inside the 60-day horizon is about nine `events` rows. LIVE-198 folded eleven display counts through `countSeries` so a dashboard that said "9 upcoming" became "1 gathering". `memberEventAllowanceOk` was split out because it is an entitlement quota, not a dashboard. Folding it loosens a paid cap: a free member at `event_create` 2 could then run one series plus another gathering where each date used to burn a slot. The agent that found it refused to decide.
-
-Ruled 2026-09-08: the allowance caps gatherings. A weekly series costs one. Premise re-tested 2026-09-19: the function still counted occurrence rows and selected no series columns.
+**Context.** ADR-811 sold Business at $29 and Collective at $79 list / $49 founding. CORE-MODEL ruling 3 (2026-09-08): one paid advertised tier at $49 with two seats; the six Collective Spaces grandfather at $49 rather than dropping to free. Re-tested 2026-09-19: `SPACE_PLANS` still named `collective`; `business_base` was still 2900 cents with no founding split; `collective_base` was still a live catalog item. Production had granted those six Spaces; `space_subscription_items` was empty.
 
 **Decision.**
 
-1. **Count gatherings.** `memberEventAllowanceOk` selects `SERIES_COLUMNS`, keeps the instant filter (`isUpcomingByInstant`, SCAN-610), and folds through `countSeries`. A weekly series occupies one of the two free slots.
-2. **The meter matches the cap.** `memberActiveEvents` uses the same helper, so the upgrade readout cannot show "9 of 2" for one series the create path would accept.
-3. **Cancelled rows still occupy a slot on the create path.** `dropCancelled: false` keeps that behaviour. The fold is the series key, not a new cancellation rule.
-4. **Say so at the call site.** The comment names `OWN-063` and 2026-09-08 so the next reader does not treat this as a hygiene off-by-N.
-5. **Cap copy drops the series perk.** "Join Crew to run more, and to set up a series" became false the moment a series cost one. Crew is still unlimited.
+1. **`SPACE_PLANS` is free / business / nonprofit / independent.** A stored `collective` label remaps to `business` at read time. The migration rewrites `spaces.plan` and `space_billing_agreements.plan`.
+2. **Business is $49/seat-plan/mo with two operator seats included.** Catalog `business_base` is `amountsFromMonthly(4900, 4900)`. Yearly is two months free. Business depth is the former Collective key set (automation, team, pipelines, programs).
+3. **`collective_base` is retired.** Kept resolvable on `RETIRED_CATALOG_ITEM_KEYS` so an old Stripe line still reconciles; new checkout loadouts that say `collective` bill `business_base` and stamp `plan=business`.
+4. **Public ladder is Free, Business, Non Profit.** Independent stays hand-sold (LIVE-227). Frequency as a Community Collective is the brand, not a plan chip.
 
-**Rejected.** Leaving the create path on occurrence rows (the ruling already said that was the bug). Folding cancelled rows out of the allowance (a different pricing change). Treating Space-placed events as personal (they already skip this check).
+**Rejected.** Dropping the six Spaces to free (the owner ruled against it). Keeping Collective as a live catalog item with founding == list at $49 (two prices for one product). Flipping sell flags from this migration.
 
-**Consequences.** A free member can run two gatherings, and one of them may repeat. The two SQL counts LIVE-206 still cannot fold (`circle_momentum`, `public_events`) stay on that row. `EVENT_CREATE_CAP_MESSAGE` no longer names a series as a Crew-only perk.
+**Consequences.** The next catalog sync mints Business at $49/$490 and archives Collective products. A Collective Stripe item still maps to Business entitlements. Non Profit stays $39. Independent stays $249.
+
+**Rows.** LIVE-228.
+
+## ADR-1439: Hubs and Nexuses fold into Space (LIVE-242)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-242` · numbered **1439** because **1436** is HYG-068, **1437** is SCAN-637, and **1438** is LIVE-228 on main · corroborated by `next.config.ts` (`/hubs` and `/nexuses` 308 to `/spaces`), `app/(main)/hubs` and `app/(main)/nexuses` absent, `supabase/migrations/20270345006200_hubs_nexuses_fold_into_spaces.sql`, `spaces.parent_id`
+
+**Context.** CORE-MODEL ruling 5 (2026-09-08): a Hub and a Nexus both read as "a Space that contains other Spaces". Production held 3 hubs and 2 nexuses, all `forming`, with **zero Circles** on any of them. Each noun still shipped a detail page, a manage console, and a LeaderCrmViewer roster titled "Message Members" (ADR-827), duplicating Space at two more scopes. Circle geography still uses `circles.hub_id` / `hubs.nexus_id`.
+
+**Decision.**
+
+1. **Member URLs die.** `/hubs`, `/hubs/:path*`, `/nexuses`, and `/nexuses/:path*` 308 onto `/spaces` with the same slug. Staff geography editors stay at `/admin/hubs` and `/admin/nexuses`.
+2. **A Space may name its parent.** `spaces.parent_id` is a self-FK. Each hub and nexus row gains `space_id` pointing at the Space that now is that noun. The migration mints a Business Space per live row when the slug is free, parents hub Spaces under their Nexus Space, and links when a Space with that slug already exists.
+3. **The Hub and Nexus CRMs leave with the noun.** Message-Members pages under `/hubs/<slug>/crm` and `/nexuses/<slug>/crm` are deleted. A leftover rail link resolves to the Space CRM at `/spaces/<slug>/crm`.
+4. **Place-tree tables stay.** Circles, broadcasts, and Guide/Mentor caps still read `hubs` / `nexuses`. Folding those FKs onto `spaces.id` is a later row, not this one.
+
+**Rejected.** Deleting the geography tables in the same change (Circles still attach through `hub_id`). Leaving redirect-only `page.tsx` stubs under `app/(main)/hubs` (the LIVE-242 probe is the directories' absence; HYG-043 already ruled a consolidation unfinished until the old tree is gone).
+
+**Consequences.** Help, NAMING, and GLOSSARY say the member noun is Space. `hubs` and `nexuses` feature keys retarget `/spaces` so `check:help` still has a live prefix. Done-row probes that required the old pages (HYG-046, HYG-064, SCAN-404) measure the fold instead of exit 79.
+
+**Rows.** LIVE-242.
+
+## ADR-1440: The share event URL is the ISR public body (SCAN-636)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-636` · product-preserving close of the discover twin's canonical · numbered **1440** because **1436** is HYG-068, **1438** is LIVE-228, and **1439** is LIVE-242 · corroborated by `app/(main)/events/[slug]/page.tsx`, `lib/nav/member-event-rewrite.ts`, and `lib/nav/public-detail-isr.test.ts`
+
+**Context.** `/discover/events/[slug]` is ISR (`revalidate` 3600, `generateStaticParams`, column-safe RPC). Its `generateMetadata` sets canonical to `/events/<slug>`. That URL rendered a 2486-line member page that called `createClient()` and `getUser()` during render. This app does not enable `cacheComponents`, so those dynamic APIs void ISR. Crawlers were told to consolidate onto the slower page. Share and QR already resolve to `/events/<slug>`, so reversing the canonical (option b on the row) would have advertised a different URL than the one people send.
+
+Premise re-tested 2026-09-19: the discover twin still pointed canonical at `/events/${event.slug}`, and the member page still had no `revalidate`.
+
+**Decision.**
+
+1. **Keep `/events/<slug>` as the share URL.** The discover twin still points there.
+2. **The route file is the anonymous public body.** Same RPC, enrichment, and ISR window as the discover twin. No session client, no `searchParams`, no `getMyProfileId`.
+3. **Signed-in members rewrite to `/events/<slug>/full`.** `memberEventRewrite` is pure; `proxy.ts` rewrites after `getUser()`. The browser URL and `x-pathname` stay `/events/<slug>`, so chrome and breadcrumbs do not move. The existing member page lives in `event-member-page.tsx`.
+4. **Do not touch `(main)/layout.tsx`.** That auth read is SCAN-641. The page-level session read is what this row could remove today.
+
+**Rejected.** Reversing the canonical onto `/discover/events/<slug>` without re-pointing share and QR (the slate forbade it). Reading the session in a Suspense hole (needs `cacheComponents`). Rewriting the 2486-line member page into client islands in one PR.
+
+**Consequences.** A later edit that puts `createClient` or `force-dynamic` back on `app/(main)/events/[slug]/page.tsx` fails `lib/nav/public-detail-isr.test.ts`. The layout auth read still dynamizes the tree today. Private and circle-only events stay on the member page for signed-in viewers; a crawler that asks for those slugs `notFound()`s through the public RPC.
+
+**Rows.** SCAN-636.
+
+## ADR-1441: A repeating event costs one gathering on the personal allowance (OWN-063)
+
+**Status:** Accepted · 2026-09-19 · Records the 2026-09-08 OWN-063 ruling · **Implements** the create-path fold · numbered **1441** because **1440** is SCAN-636 on main · corroborated by `memberEventAllowanceOk` in `app/(main)/events/actions.ts` (`SERIES_COLUMNS` + `isUpcomingByInstant` + `countSeries`) and `countUpcomingGatherings` in `lib/pricing/member-meter-usage.ts`
+
+**Context.** LIVE-198 folded eleven display counts through `countSeries` so a weekly series reads as one gathering. `memberEventAllowanceOk` counted the same occurrence rows, but it is an entitlement quota, not a dashboard. Folding it loosens a paid cap: a free member who today burns nine slots for one weekly series would burn one. The agent that found it refused to decide (OWN-063). The owner ruled 2026-09-08: the allowance caps GATHERINGS.
+
+Premise re-tested 2026-09-19: `memberEventAllowanceOk` still selected no series columns and counted occurrence rows. The matching `event_create` meter still counted rows the same way, so a folded create path would have accepted a series the meter would have shown as nine-of-two.
+
+**Decision.**
+
+1. **The allowance counts gatherings.** `memberEventAllowanceOk` selects `SERIES_COLUMNS`, filters with `isUpcomingByInstant` (SCAN-610), and folds with `countSeries`. A weekly series costs one.
+2. **The meter matches.** `countUpcomingGatherings` uses the same fold so the readout cannot show nine-of-two for a series the create path would accept.
+3. **`dropCancelled` stays false on the create path.** A cancelled upcoming row still occupies a slot. The change is the series key, not a new cancellation rule.
+4. **The comment names OWN-063 and 2026-09-08.** Folding loosens a paid cap; that is the intended pricing, not a hygiene off-by-N.
+5. **Cap copy drops the series-as-Crew perk.** `EVENT_CREATE_CAP_MESSAGE` no longer says a series is something you join Crew to set up.
+
+**Rejected.** Leaving the occurrence count and documenting it (the owner ruled the other way). Folding only the create path and leaving the meter on rows (the UI would lie). Dropping cancelled rows from the create-path count (a new cancellation rule dressed as the fold).
+
+**Consequences.** A free member can run one series plus another gathering where today each date burned a slot. Crew is still unlimited. Later readers of `memberEventAllowanceOk` beside its LIVE-198 siblings will find the ruling at the call site.
 
 **Rows.** OWN-063.

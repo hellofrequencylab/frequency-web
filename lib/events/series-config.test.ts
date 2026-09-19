@@ -199,7 +199,7 @@ describe('saveSeriesDisplayConfig', () => {
 // (source-level, house archetype — a knob nothing reads is the exact failure the draft shipped)
 
 const indexData = readFileSync('app/(main)/events/index-data.ts', 'utf8')
-const detailPage = readFileSync('app/(main)/events/[slug]/page.tsx', 'utf8')
+const detailPage = readFileSync('app/(main)/events/[slug]/event-member-page.tsx', 'utf8')
 const adminPage = readFileSync('app/(main)/admin/events/page.tsx', 'utf8')
 const adminAction = readFileSync('app/(main)/admin/events/series-actions.ts', 'utf8')
 const configSrc = readFileSync('lib/events/series-config.ts', 'utf8')

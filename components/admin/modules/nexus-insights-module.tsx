@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { getNexusInsightsData, type NexusInsightsData } from '@/app/(main)/nexuses/admin-actions'
+import { getNexusInsightsData, type NexusInsightsData } from '@/lib/hierarchy/nexus-admin'
 import { ProgressTrack } from '@/components/ui/progress-track'
 
 // In-place "Insights" module (ADMIN-RAIL.md Phase 7, the 'insights' spine cell for nexuses). Renders

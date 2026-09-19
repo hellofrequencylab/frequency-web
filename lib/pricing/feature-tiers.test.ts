@@ -43,7 +43,6 @@ import { SPACE_PLANS, type SpacePlan } from './plans'
  *  mapping the module makes rather than importing the module's own private copy of it. */
 const PLAN_ITEM: Record<Exclude<SpacePlan, 'free'>, CatalogItemKey> = {
   business: 'business_base',
-  collective: 'collective_base',
   nonprofit: 'nonprofit_seat',
   independent: 'independent_base',
 }
@@ -154,13 +153,10 @@ describe('placeholder pricing — nothing charges (the go-live switch)', () => {
       expect(tierPriceCents('plan', plan, true), plan).toBe(amounts.foundingCents)
       expect(tierPriceCents('plan', plan, false), plan).toBe(amounts.listCents)
     }
-    // COLLECTIVE is the only plan with a beta rate (ADR-1067): exactly one unlisted offer, granted by
-    // hand. Business used to carry $19 under its $29 list; it is flat now, and this asserts BOTH halves
-    // so the day a second beta rate reappears, it reappears deliberately.
-    expect(SPACE_PLAN_PRICE_CENTS.collective.foundingCents).toBeLessThan(
-      SPACE_PLAN_PRICE_CENTS.collective.listCents,
-    )
+    // LIVE-228: every plan is flat (founding == list); no beta anchor on any tier.
     expect(SPACE_PLAN_PRICE_CENTS.business.foundingCents).toBe(SPACE_PLAN_PRICE_CENTS.business.listCents)
+    expect(SPACE_PLAN_PRICE_CENTS.nonprofit.foundingCents).toBe(SPACE_PLAN_PRICE_CENTS.nonprofit.listCents)
+    expect(SPACE_PLAN_PRICE_CENTS.business.listCents).toBe(4900)
   })
 
   it('a ladder rung quotes the price the checkout charges TODAY, matching /pricing', () => {
@@ -193,6 +189,7 @@ describe('ladder unlock copy cannot drift from the meter it describes', () => {
 
   it('every quantity in an unlock line is a real allowance on that feature meter', () => {
     for (const key of FEATURE_TIER_KEYS) {
+      if (key === 'space_collaborators') continue // business rung is unlimited (null); unlock copy is qualitative
       const meter = featureMeter(key)
       if (!meter) continue
       const allowances = new Set(
