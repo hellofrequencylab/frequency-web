@@ -64,10 +64,13 @@ on:
         required: true
         type: string
 
-# pull-requests: read is what Resolve and Decide need (GET /pulls/{n} and /files). A
-# permissions: block REPLACES the default set, so contents + statuses alone 403s those
-# GETs in ~10s and the required db-tests context is never posted. statuses: write stays
-# for the POST. Nothing else.
+# pull-requests: read is what the dispatch Resolve GET /pulls/{n} needs. A
+# permissions: block REPLACES the default set, so contents + statuses alone 403s
+# that GET. The event path does not call it — the payload already has state,
+# head and base (confirmed 2026-09-19: #2767 still 403'd GET /pulls after this
+# grant, then #2766 listed /files with the same grant; treat 403 as flake, not
+# as proof the scope is absent). statuses: write stays for the POST. contents:
+# read is what the compare fallback needs if /files 403s.
 permissions:
   contents: read
   pull-requests: read
@@ -92,15 +95,19 @@ jobs:
         with:
           fetch-depth: 1
 
-      # Resolve the pull request ONCE, from the API, for both paths.
+      # Resolve the pull request ONCE. Event path reads the payload. Dispatch
+      # path reads the API.
       #
-      # 🔴 THE HEAD SHA MUST COME FROM THE API, NOT FROM THE DISPATCH REF. On the event path
-      # `github.event.pull_request.head.sha` is the PR's head and is correct. On the dispatch path
-      # there is no such context, and the obvious substitute — `github.sha`, the ref the workflow was
-      # dispatched on — is NOT the same thing: dispatching on a branch whose tip has moved, or on a
-      # ref that is not the PR's head at all, would post a status onto a commit the PR does not
-      # point at. The context would then be absent where the merge looks for it, which is the very
-      # deadlock this file exists to break. So the dispatch path asks the API what the PR's head is.
+      # 🔴 THE HEAD SHA MUST NOT COME FROM THE DISPATCH REF. On the event path
+      # `github.event.pull_request.head.sha` is the PR's head and is correct — use
+      # it, do not spend GET /pulls/{n} on a fact the event already carried.
+      # #2767 (this file's first grant) 403'd that GET in 11s and never posted
+      # the required `db-tests` context. On the dispatch path there is no such
+      # context, and the obvious substitute — `github.sha`, the ref the workflow
+      # was dispatched on — is NOT the same thing: dispatching on a branch whose
+      # tip has moved, or on a ref that is not the PR's head at all, would post a
+      # status onto a commit the PR does not point at. So the dispatch path asks
+      # the API what the PR's head is.
       #
       # It also refuses a PR that is not OPEN. A dispatch naming a merged or closed PR has no
       # business writing a status, and a typo'd number is far likelier than a legitimate one.
@@ -109,21 +116,33 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
+          EVENT_STATE: ${{ github.event.pull_request.state }}
+          EVENT_HEAD: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE: ${{ github.event.pull_request.base.ref }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
           case "$PR_NUMBER" in
             ''|*[!0-9]*) echo "::error::pr input must be a number, got '${PR_NUMBER}'."; exit 1 ;;
           esac
 
-          curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body -o /tmp/pr.json \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}"
-          pr=$(cat /tmp/pr.json)
+          if [ -n "${EVENT_HEAD}" ]; then
+            state="${EVENT_STATE}"
+            head="${EVENT_HEAD}"
+            base="${EVENT_BASE}"
+            base_sha="${EVENT_BASE_SHA}"
+          else
+            curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body -o /tmp/pr.json \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}"
+            pr=$(cat /tmp/pr.json)
 
-          state=$(printf '%s' "$pr" | python3 -c 'import json,sys; print(json.load(sys.stdin)["state"])')
-          head=$(printf '%s' "$pr" | python3 -c 'import json,sys; print(json.load(sys.stdin)["head"]["sha"])')
-          base=$(printf '%s' "$pr" | python3 -c 'import json,sys; print(json.load(sys.stdin)["base"]["ref"])')
+            state=$(printf '%s' "$pr" | python3 -c 'import json,sys; print(json.load(sys.stdin)["state"])')
+            head=$(printf '%s' "$pr" | python3 -c 'import json,sys; print(json.load(sys.stdin)["head"]["sha"])')
+            base=$(printf '%s' "$pr" | python3 -c 'import json,sys; print(json.load(sys.stdin)["base"]["ref"])')
+            base_sha=$(printf '%s' "$pr" | python3 -c 'import json,sys; print(json.load(sys.stdin)["base"]["sha"])')
+          fi
 
           if [ "$state" != "open" ]; then
             echo "::error::PR #${PR_NUMBER} is ${state}, not open. Refusing to post a status on it."
@@ -138,6 +157,7 @@ jobs:
 
           echo "number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
           echo "head=${head}" >> "$GITHUB_OUTPUT"
+          echo "base_sha=${base_sha}" >> "$GITHUB_OUTPUT"
           echo "::notice::PR #${PR_NUMBER} is open against ${base}; head is ${head}."
 
       - name: Decide whether db-tests already owns this PR
@@ -145,25 +165,68 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
+          HEAD_SHA: ${{ steps.pr.outputs.head }}
+          BASE_SHA: ${{ steps.pr.outputs.base_sha }}
         run: |
           set -euo pipefail
 
           # The PR's own changed files — exactly the set GitHub applies `paths:` to. Paginated,
           # because a large PR exceeds one page and a truncated list would silently look
           # migration-free and post a green status over a schema change.
-          page=1
-          : > /tmp/changed.txt
-          while : ; do
-            curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body -o /tmp/page.json \
+          #
+          # 🔴 GET /pulls/{n}/files 403'd on this PR after pull-requests: read was
+          # granted. Prefer that endpoint (it is the paths: set). If it 403s, the
+          # compare API is the same three-dot list and needs only contents: read.
+          list_pulls_files() {
+            page=1
+            : > /tmp/changed.txt
+            while : ; do
+              code=$(curl -sS --retry 5 --retry-delay 2 --retry-connrefused \
+                -o /tmp/page.json -w '%{http_code}' \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100&page=${page}") || code=000
+              if [ "$code" != "200" ]; then
+                echo "::warning::GET /pulls/${PR_NUMBER}/files page ${page} returned ${code}."
+                return 1
+              fi
+              count=$(python3 -c 'import json,sys; d=json.load(sys.stdin); print(len(d)); [print(f["filename"]) for f in d]' < /tmp/page.json | tee /tmp/page.txt | head -1)
+              tail -n +2 /tmp/page.txt >> /tmp/changed.txt
+              [ "$count" -lt 100 ] && break
+              page=$((page + 1))
+            done
+          }
+
+          list_compare_files() {
+            # Compare is one payload, not a paginated list. 300 files is the
+            # cap; truncated means we cannot honestly decide.
+            : > /tmp/changed.txt
+            code=$(curl -sS --retry 5 --retry-delay 2 --retry-connrefused \
+              -o /tmp/page.json -w '%{http_code}' \
               -H "Authorization: Bearer ${GH_TOKEN}" \
               -H "Accept: application/vnd.github+json" \
-              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100&page=${page}"
-            body=$(cat /tmp/page.json)
-            count=$(printf '%s' "$body" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(len(d)); [print(f["filename"]) for f in d]' | tee /tmp/page.txt | head -1)
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/compare/${BASE_SHA}...${HEAD_SHA}") || code=000
+            if [ "$code" != "200" ]; then
+              echo "::warning::GET /compare/${BASE_SHA}...${HEAD_SHA} returned ${code}."
+              return 1
+            fi
+            python3 -c 'import json,sys
+d=json.load(sys.stdin)
+files=d.get("files") or []
+if d.get("truncated") or len(files) >= 300:
+    raise SystemExit("compare response is truncated; refusing to guess the file list")
+print(len(files))
+[print(f["filename"]) for f in files]' < /tmp/page.json | tee /tmp/page.txt >/dev/null
             tail -n +2 /tmp/page.txt >> /tmp/changed.txt
-            [ "$count" -lt 100 ] && break
-            page=$((page + 1))
-          done
+          }
+
+          if ! list_pulls_files; then
+            echo "::notice::GET /pulls/${PR_NUMBER}/files failed. Falling back to compare ${BASE_SHA}...${HEAD_SHA}."
+            if ! list_compare_files; then
+              echo "::error::Neither /pulls/{n}/files nor /compare listed files. Refusing to post a status on a guess."
+              exit 1
+            fi
+          fi
 
           echo "Changed files in this pull request:"
           sed 's/^/  /' /tmp/changed.txt

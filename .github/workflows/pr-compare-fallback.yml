@@ -55,8 +55,10 @@
 # REQUIRED context and so reproduced the very deadlock both files exist to prevent. `--retry` on its
 # own retries only transient problems (timeouts, 408, 429, 5xx); a 403 or a 404 still fails fast,
 # which is the rule the POST step already argues for. Do not add `--retry-all-errors`: it would
-# retry the honest failures too. A 403 on GET /pulls/{n}/files is the token missing
-# `pull-requests: read` (a `permissions:` block replaces the default set). Grant it below.
+# retry the honest failures too. A 403 on GET /pulls/{n}/files was first read as
+# the token missing `pull-requests: read` (a `permissions:` block replaces the
+# default set). Grant it below. #2767 still 403'd after the grant; #2766 listed
+# files with the same grant. Decide now falls back to /compare (contents: read).
 #
 # 🔴 AND EVERY RETRIED GET WRITES TO A FILE WITH `-o`, WHICH IS NOT COSMETIC. The first version of
 # this fix put `--retry` on the GETs and left them writing to stdout. `--fail-with-body` emits the
@@ -75,9 +77,9 @@ on:
   pull_request:
     branches: [main]
 
-# pull-requests: read is what the decide step's GET /pulls/{n}/files needs. A permissions:
-# block REPLACES the default set, so contents + statuses alone 403s that GET and this job
-# never posts. statuses: write stays for the POST. Nothing else.
+# pull-requests: read is what GET /pulls/{n}/files needs. A permissions: block
+# REPLACES the default set, so contents + statuses alone 403s that GET. The
+# compare fallback needs only contents: read. statuses: write stays for the POST.
 permissions:
   contents: read
   pull-requests: read
@@ -107,25 +109,66 @@ jobs:
         id: decide
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
 
           # The PR's own changed files — exactly the set GitHub applies `paths:` to. Paginated,
           # because a large PR exceeds one page and a truncated list would silently look
           # docs-only and post a green status over a pixel-moving change.
-          page=1
-          : > /tmp/changed.txt
-          while : ; do
-            curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body -o /tmp/page.json \
+          #
+          # Prefer /pulls/{n}/files. If it 403s, /compare is the same three-dot
+          # list and needs only contents: read (the grant this file already had).
+          list_pulls_files() {
+            page=1
+            : > /tmp/changed.txt
+            while : ; do
+              code=$(curl -sS --retry 5 --retry-delay 2 --retry-connrefused \
+                -o /tmp/page.json -w '%{http_code}' \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100&page=${page}") || code=000
+              if [ "$code" != "200" ]; then
+                echo "::warning::GET /pulls/${PR_NUMBER}/files page ${page} returned ${code}."
+                return 1
+              fi
+              count=$(python3 -c 'import json,sys; d=json.load(sys.stdin); print(len(d)); [print(f["filename"]) for f in d]' < /tmp/page.json | tee /tmp/page.txt | head -1)
+              tail -n +2 /tmp/page.txt >> /tmp/changed.txt
+              [ "$count" -lt 100 ] && break
+              page=$((page + 1))
+            done
+          }
+
+          list_compare_files() {
+            : > /tmp/changed.txt
+            code=$(curl -sS --retry 5 --retry-delay 2 --retry-connrefused \
+              -o /tmp/page.json -w '%{http_code}' \
               -H "Authorization: Bearer ${GH_TOKEN}" \
               -H "Accept: application/vnd.github+json" \
-              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files?per_page=100&page=${page}"
-            body=$(cat /tmp/page.json)
-            count=$(printf '%s' "$body" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(len(d)); [print(f["filename"]) for f in d]' | tee /tmp/page.txt | head -1)
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/compare/${BASE_SHA}...${HEAD_SHA}") || code=000
+            if [ "$code" != "200" ]; then
+              echo "::warning::GET /compare/${BASE_SHA}...${HEAD_SHA} returned ${code}."
+              return 1
+            fi
+            python3 -c 'import json,sys
+d=json.load(sys.stdin)
+files=d.get("files") or []
+if d.get("truncated") or len(files) >= 300:
+    raise SystemExit("compare response is truncated; refusing to guess the file list")
+print(len(files))
+[print(f["filename"]) for f in files]' < /tmp/page.json | tee /tmp/page.txt >/dev/null
             tail -n +2 /tmp/page.txt >> /tmp/changed.txt
-            [ "$count" -lt 100 ] && break
-            page=$((page + 1))
-          done
+          }
+
+          if ! list_pulls_files; then
+            echo "::notice::GET /pulls/${PR_NUMBER}/files failed. Falling back to compare ${BASE_SHA}...${HEAD_SHA}."
+            if ! list_compare_files; then
+              echo "::error::Neither /pulls/{n}/files nor /compare listed files. Refusing to post a status on a guess."
+              exit 1
+            fi
+          fi
 
           echo "Changed files in this pull request:"
           sed 's/^/  /' /tmp/changed.txt
