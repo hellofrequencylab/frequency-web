@@ -77,8 +77,12 @@ Everything else sits in the **settings panel** on the right:
   it together stays in step. Everyone taking the Journey gets a note when their next phase opens.
 - **Run between dates.** An optional start and end, so a Journey can open on a date and close on one.
   Leave them empty and it simply stays open.
-- **Who can see it**, the advanced bits, and a **Danger zone** if you ever need to delete the Journey.
-  Guides and Mentors can mark a Journey **official** and attach it to a Season here.
+- **What visitors see.** Under Advanced you can show, hide, and reorder the story, the path, and
+  the pillar balance. The path always stays on. How many people have started, and the Gems for
+  finishing, stay in the header.
+- **Who can see it**, the rest of the advanced bits, and a **Danger zone** if you ever need to
+  delete the Journey. Guides and Mentors can mark a Journey **official** and attach it to a Season
+  here.
 
 ## Publish or keep it
 
