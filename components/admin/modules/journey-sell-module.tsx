@@ -121,8 +121,8 @@ export function JourneySellModule() {
             <p className="text-meta leading-relaxed text-muted">
               {data.offer.enrolled} enrolled
               {data.offer.enrollCap ? ` of ${data.offer.enrollCap} seats` : ''}.{' '}
-              <Link href={`/market/${data.offer.productId}`} className="font-medium text-primary-strong hover:underline">
-                View the product page
+              <Link href={`/journeys/${data.slug}`} className="font-medium text-primary-strong hover:underline">
+                View the sales page
               </Link>
             </p>
           )}

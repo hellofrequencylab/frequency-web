@@ -14204,6 +14204,24 @@
         "evidence": "Raised 2026-09-18 when ADR-1401 migrated both Journey pages onto JourneyDetailTemplate. Not yet put to the owner.",
         "checked": "2026-09-18"
       }
+    },
+    {
+      "id": "LIVE-400",
+      "title": "A Journey has one sales page, and listing areas only point at it",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/journeys/sales-path.ts",
+        "ref": "ADR-1402, owner request 2026-09-19"
+      },
+      "detail": "Owner, 2026-09-19: sell a Journey on the Space and in the Market, through one sales page that is the paywall. The money path already existed. Shop and Market opened /market/<uuid>, authors of a published Journey were sent to /learn, and the path on the pitch was labelled Free preview.\\n\\nSHIPPED. Market and Space Shop cards attach href to /journeys/<slug> via withJourneySalesHref. /market/<id> redirects a Journey product to that slug. The public pitch signs a paid visitor in with next set to the till. A published author stays on the sales page. Enrolled learners who are not the author still go to /learn. PathBlock no longer says Free preview.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const strip=(t)=>t.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\"\").replace(/^\\s*\\/\\/.*$/gm,\"\");const mk=strip(fs.readFileSync(\"app/(main)/market/[id]/page.tsx\",\"utf8\"));if(!/redirect\\(journeyMemberPath\\(/.test(mk))fail(\"a Journey product still renders a second sales page on /market/<id>\");const shop=strip(fs.readFileSync(\"app/(main)/spaces/[slug]/(profile)/shop/page.tsx\",\"utf8\"));if(shop.includes(\"/market/${p.id}\"))fail(\"the Space Shop still sends every card to /market/<id>\");if(!shop.includes(\"withJourneySalesHref\"))fail(\"the Space Shop does not attach the Journey sales path\");const market=strip(fs.readFileSync(\"app/(main)/market/page.tsx\",\"utf8\"));if(!market.includes(\"withJourneySalesHref\"))fail(\"the Market grid does not attach the Journey sales path\");const page=strip(fs.readFileSync(\"app/(main)/journeys/[slug]/page.tsx\",\"utf8\"));if(page.includes(\"plan.visibility === \\x27public\\x27 ? `/journeys/${plan.slug}/learn`\"))fail(\"a published author is still sent to /learn\");if(!page.includes(\"if (adopted && !preview && !isAuthor)\"))fail(\"an enrolled learner is no longer sent to /learn\");const widgets=strip(fs.readFileSync(\"components/journey/discovery-widgets.tsx\",\"utf8\"));if(widgets.includes(\"Free preview\"))fail(\"the path is still labelled a free preview of the course\");const pub=strip(fs.readFileSync(\"app/discover/journeys/[slug]/page.tsx\",\"utf8\"));if(!pub.includes(\"journeyBuySignInPath\"))fail(\"the public pitch still sends a paid visitor to /market/<id>\");'",
+        "note": "Measures the consequence: listing areas point at the Journey slug, leftover Market uuids redirect, authors stay on the sales page, learners still reach /learn, and the path is an outline. Written 2026-09-19."
+      }
     }
   ]
 }

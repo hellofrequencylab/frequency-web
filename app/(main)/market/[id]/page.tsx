@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { MessageCircle } from 'lucide-react'
 import { getCallerProfile, isPlatformStaff } from '@/lib/auth'
 import { getProduct, getSellerContact } from '@/lib/commerce/products'
@@ -28,6 +28,7 @@ import { BuyButton } from '../../marketplace/buy-button'
 import { JourneySalesBody } from '@/components/marketplace/journey-sales-body'
 import { AtAGlanceCard, journeyFacts } from '@/components/journey/discovery-widgets'
 import { getPlanById } from '@/lib/journey-plans'
+import { journeyMemberPath } from '@/lib/journeys/sales-path'
 import { listActiveVariants } from '@/lib/commerce/variants'
 import { effectiveVariantPriceCents, effectiveVariantStock, isBookableServiceKind, describePrice } from '@/lib/commerce/types'
 import type { ServiceConfig, Price } from '@/lib/commerce/types'
@@ -130,6 +131,16 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
   // Owner/manager may preview a non-active (draft) listing; the public sees active only.
   const isOwner = (!!profileId && product.ownerProfileId === profileId) || isManager
   if (product.status !== 'active' && !isOwner) notFound()
+
+  // ── ONE SALES PAGE (ADR-1402) ────────────────────────────────────────────────────────────────
+  // A Journey is not a Market listing with extra copy. Shop and Market are doors. The pitch and
+  // the till live on the Journey slug. Leftover `/market/<uuid>` links (emails, old cards, a
+  // re-priced row) hop here once, then leave. A missing plan falls through to the generic listing
+  // so a deleted Journey does not 404 a paid receipt.
+  if (product.journeyPlanId) {
+    const plan = await getPlanById(product.journeyPlanId)
+    if (plan?.plan.slug) redirect(journeyMemberPath(plan.plan.slug))
+  }
 
   const svc = ((product.metadata as Record<string, unknown>)?.service ?? {}) as ServiceConfig
 

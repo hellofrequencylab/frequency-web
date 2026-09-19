@@ -31,6 +31,8 @@ import 'server-only'
 
 import { getProduct } from '@/lib/commerce/products'
 import { formatPriceCents } from '@/lib/commerce/types'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { journeyPublicPath } from '@/lib/journeys/sales-path'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
 // ── 1. Product card resolution ─────────────────────────────────────────────────────────────────────────────
@@ -40,8 +42,9 @@ import type { EntityLayout } from '@/lib/entity-blocks/layout'
 // needlessly drags the whole navigation tree into every email compile. Same value, no heavy edge.
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://frequencylocal.com'
 
-/** The public app link for a commerce product (routes to the Market detail page). */
-export function productUrl(id: string): string {
+/** The public app link for a commerce product. A Journey uses its sales page, not `/market/<id>`. */
+export function productUrl(id: string, journeySlug?: string | null): string {
+  if (journeySlug) return `${SITE_URL}${journeyPublicPath(journeySlug)}`
   return `${SITE_URL}/market/${id}`
 }
 
@@ -69,6 +72,16 @@ export async function resolveProductRefs(layout: EntityLayout): Promise<EntityLa
   }
   if (!product) return layout // graceful: keep the last-known snapshot
 
+  let journeySlug: string | null = null
+  if (product.productKind === 'journey' && product.journeyPlanId) {
+    const { data } = await createAdminClient()
+      .from('journey_plans')
+      .select('slug')
+      .eq('id', product.journeyPlanId)
+      .maybeSingle()
+    journeySlug = (data as { slug?: string } | null)?.slug ?? null
+  }
+
   const price =
     typeof product.priceCents === 'number' && Number.isFinite(product.priceCents)
       ? formatPriceCents(product.priceCents)
@@ -81,7 +94,7 @@ export async function resolveProductRefs(layout: EntityLayout): Promise<EntityLa
     title: product.title || (typeof bag.title === 'string' ? bag.title : ''),
     price,
     image: product.images[0] ?? (typeof bag.image === 'string' ? bag.image : ''),
-    url: productUrl(product.id),
+    url: productUrl(product.id, journeySlug),
   }
   return { ...layout, content: { ...(src as Record<string, Record<string, unknown>>), productCard: resolved } }
 }
