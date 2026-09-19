@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1441**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
+tree as of this index: **ADR-1432**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
 
 | Theme | Start here |
 |---|---|
@@ -46204,3 +46204,28 @@ The harness can still create a bare worktree. That is not repo-observable. What 
 **Consequences.** The first `pnpm lint` in a new worktree installs this repo's ESLint 9, or refuses with the install error, and does not fall through to a global ESLint 10. CI already installs, so the new branch is a no-op there. The probe calls `ensureLintToolchain` with a missing bin and a lockfile and requires `attemptedInstall` plus `ok`.
 
 **Rows.** LIVE-306.
+
+## ADR-1432: The operator console is five boxes (LIVE-246)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-246` · amends [ADR-846](DECISIONS.md) and [ADR-1313](DECISIONS.md) · corroborates [CORE-MODEL.md](CORE-MODEL.md) §5.4 · corroborated by `lib/admin/modules/space-modules.ts` (`SPACE_MODULE_BOX_IDS`)
+
+**Context.** CORE-MODEL §5.4 asked the operator console to read as five boxes: Your page · Your people · Gather · Money · Reach. ADR-846 had locked twelve boxes and ADR-1313 amended that lock to thirteen when Your reach moved tabs. LIVE-246's 2026-09-08 survey mapped all 34 catalog rows onto those five boxes and named four contested placements. ADR-1294 left those four unruled.
+
+Premise re-tested 2026-09-19 on this tree:
+
+- The catalog is **32 rows**, not 34. LIVE-226 retired `space.enroll`, `space.tickets`, and `space.checkin`. That contest is gone.
+- `space.airwaves` already nested under Content. That contest is gone: Gather owns recordings.
+- Thirteen rows still had no `parent`. The probe (`rows===34 && tops===5`) could not pass.
+
+**Decision.**
+
+1. **Five parentless boxes, ids unchanged.** `space.basics` is Your page. `space.people` is Your people. `space.content` is Gather. `space.offerings` is Money. `space.reach` is Reach. Every other row carries `parent`. Nesting stays one level deep, so CRM's former children nest under Your people, and Email's former children nest under Reach.
+2. **Hub tabs do not move.** Resonance, Marketing, Offerings, Programs, and Settings stay the browse axis ADR-1313 declared. Team stays on Settings; the CRM cluster stays on Resonance. Those seven rows are named in `HUB_DIVERGENCE_REASONS` so a silent tab drift still fails the orphan guard.
+3. **The remaining contests.** Gather *is* the Content box (the programs tab is that box, so its `?section=programs` deep link is not a second page). Plan and billing nests under Your page (same Settings tab, money the operator pays Frequency; Get paid stays under Money). Airwaves stays under Gather.
+
+**Rejected.** Parenting Your reach under Reach while it stays on Programs (the ADR-1313 orphan). Moving Team onto Resonance to avoid a named divergence (undoes the Settings-tab ruling). Deleting any catalog row to hit an old count of 34.
+
+**Consequences.** `SPACE_MODULE_BOX_IDS` reads five ids. The Space rail still renders every row (coverage guard unchanged). A later edit that un-parents a sixth box fails LIVE-246's probe and the five-box lock in `space-modules.test.ts`.
+
+**Rows.** LIVE-246.
+
