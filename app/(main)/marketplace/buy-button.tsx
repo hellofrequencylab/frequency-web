@@ -15,7 +15,6 @@ import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 export function BuyButton({
   productId,
   variantId,
-  entryPoint,
   label = 'Buy now',
   disabled = false,
   priceLabel,
@@ -26,12 +25,11 @@ export function BuyButton({
   productId: string
   /** Optional selected variant (Etsy-Grade Phase 2). Passed through to checkout. */
   variantId?: string | null
-  /** Set to 'marketplace' by the Market browse surfaces ONLY (LIVE-219) — the places where Frequency
-   *  made the introduction, so the order classifies `network` and the tier's take rate applies.
-   *  Omitted on `/store/[id]`, a seller's own storefront link, which stays `self` at 0%.
-   *  This never overrides the promise: `classifyOrderSource` runs the self-scan and the ADR-913
-   *  relationship check ABOVE the entry point, so an existing follower/member/CRM contact is still 0%. */
-  entryPoint?: 'marketplace' | null
+  /** Discovery classification is not a prop (LIVE-220). `proxy.ts` stamps an httpOnly cookie
+   *  on `/market/<id>` and `/journeys/<slug>`; checkout reads that. `/store/[id]` is never
+   *  stamped, so a seller's own link stays `self` at 0%. `classifyOrderSource` still runs the
+   *  self-scan and the ADR-913 relationship check ABOVE the stamp, so an existing
+   *  follower/member/CRM contact is still 0%. */
   label?: string
   disabled?: boolean
   /** Shown on the card form so the amount stays beside the fields the buyer is filling in. */
@@ -53,7 +51,7 @@ export function BuyButton({
   async function buy() {
     setError(null)
     warmStripeBrowser()
-    const res = await startCheckoutAction(productId, variantId, entryPoint ?? null)
+    const res = await startCheckoutAction(productId, variantId)
     // 🔴 A SIGNED-OUT BUYER IS SENT SOMEWHERE, not told to go somewhere. The server cannot build
     // this URL -- it sees no calling path -- so the return leg is appended here, from the page the
     // buyer is actually reading. Without it this branch printed "Sign in to buy." and stopped,
@@ -82,7 +80,7 @@ export function BuyButton({
     setSessionId(null)
     setError('Opening secure checkout…')
     start(async () => {
-      const res = await startCheckoutAction(productId, variantId, entryPoint ?? null, {
+      const res = await startCheckoutAction(productId, variantId, {
         forceHosted: true,
       })
       if (res.url) window.location.href = res.url

@@ -25,6 +25,7 @@ must not be eight integrations.
 | **The creator** | `lib/billing/*.ts`, `lib/commerce/checkout.ts` | Prices the thing, records its pending row, asks the seam for a session. |
 | **The action** | a `'use server'` module per surface | Decides whether the browser can mount a form, and hands back exactly one of two shapes. |
 | **The control** | the buy button | Branches on what ARRIVED, renders the panel, and can always escape to hosted. |
+| **Discovery stamp** | `lib/commerce/marketplace-entry.ts` via `proxy.ts` | The Market / Journey view, recorded at render so checkout can classify `network` without a client argument ([ADR-1419](DECISIONS.md), `LIVE-220`). |
 
 ---
 

@@ -45781,3 +45781,22 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 
 **Rows.** LIVE-359.
 
+## ADR-1419: Marketplace discovery is stamped at render, not passed as a checkout argument (2026-09-19)
+
+**Status:** Accepted · 2026-09-19 · LIVE-220 · corroborated by `lib/commerce/marketplace-entry.ts`, `proxy.ts`, `app/(main)/marketplace/commerce-actions.ts`
+
+**Context.** `startCheckoutAction` is a server action, so every argument is client-supplied. LIVE-219 narrowed `entryPoint` to the literal `'marketplace'`, which stops a crafted call inventing a surface. It does not stop a crafted call omitting one, and omitting lands on the default `self` (0% platform fee). The motivated party is a seller who wants discovery sales classified `self`. `referer` is client-controlled too. Premise re-tested 2026-09-19: the argument was still on the signature.
+
+**Decision.**
+
+1. **Record the view at the edge.** `proxy.ts` stamps an httpOnly signed cookie (`fq_mkt`) when the request is `/market/<id>`, `/journeys/<slug>`, or `/discover/journeys/<slug>`. `/store/<id>` is not a discovery surface and is not stamped.
+2. **Key the stamp to the product (or Journey slug).** A stamp for listing A does not raise listing B. A later Market view accumulates; a storefront visit does not clear an earlier Market stamp for that product.
+3. **Checkout reads the cookie.** `startCheckoutAction` no longer takes `entryPoint`. It verifies the cookie and, when only a Journey slug was stamped, resolves the product's plan slug before classifying.
+4. **Not consent-gated.** This cookie is the take-rate contract, not attribution storage. A declined banner must not reclassify a Market sale as `self`.
+
+**Rejected.** Tightening the client argument (still forgeable by omission). Reading `referer`. Passing a signed token as a new argument (the seller's crafted call can still drop it).
+
+**Consequences.** A buyer who viewed a listing on the Market or a Journey sales page classifies `network` even if client code omits every argument. A seller's own `/store/<id>` link stays `self`. The self-scan and ADR-913 relationship check still run above the stamp, so an existing follower, member, or CRM contact is still 0%.
+
+**Rows.** LIVE-220.
+

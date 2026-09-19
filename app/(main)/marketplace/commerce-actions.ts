@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { createProduct, setProductStatus, deleteProduct, productOwnerProfileId } from '@/lib/commerce/products'
@@ -13,6 +13,12 @@ import { normalizeCategory, normalizeTags } from '@/lib/commerce/categories'
 import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import type { ProductKind, ProductStatus } from '@/lib/commerce/types'
+import {
+  MARKETPLACE_ENTRY_COOKIE,
+  entryPointFromStamp,
+  verifyStamp,
+} from '@/lib/commerce/marketplace-entry'
+import { journeySlugForProduct } from '@/lib/commerce/marketplace-entry-server'
 
 /** Parse a JSON string[] posted in a hidden form field (image paths, tags), tolerating a blank or
  *  malformed value by returning []. Every element is coerced to a trimmed string. */
@@ -134,22 +140,14 @@ export async function draftMakerProductCopyAction(input: {
 /** Start a one-item checkout for a product (optionally a specific variant). Returns the Stripe Checkout
  *  URL, or a friendly error (payments off / seller not payout-ready). The BuyButton navigates.
  *
- *  `entryPoint` is the DISCOVERY signal (LIVE-219). Only the Market — the browse surface where
- *  Frequency made the introduction — passes it; `/store/[id]` is the seller's own storefront link and
- *  deliberately passes nothing, so it keeps the default `self` classification and its 0% fee. Without
- *  this argument every cold Buy-button sale classified `self` and took a 0% platform fee (ADR-811 §A).
- *
- *  ⚠️ NARROWED HERE RATHER THAN PASSED THROUGH, because this is a SERVER ACTION and every argument is
- *  client-supplied. Accepting the caller's string verbatim would let a crafted call name any entry
- *  point; the literal check means a client can only choose between 'marketplace' (which RAISES the
- *  platform's cut) and nothing. Nothing is exactly what every client can already send today, so this
- *  cannot classify an order lower than the status quo — it can only fail to raise it. Deriving the
- *  surface server-side is not available: a server action sees no calling path, and `referer` is
- *  client-controlled too. A tamper-proof signal needs the entry point recorded at page render. */
+ *  The DISCOVERY signal is not an argument (LIVE-220, ADR-1419). `proxy.ts` stamps an httpOnly
+ *  cookie when the Market or Journey sales page renders; we read that cookie here. `/store/[id]`
+ *  is never stamped, so a seller's own link stays `self` at 0% (ADR-811). A crafted call that
+ *  omits a client `entryPoint` used to force that 0% default; it cannot, now, if the buyer
+ *  actually viewed the listing on a discovery surface. */
 export async function startCheckoutAction(
   productId: string,
   variantId?: string | null,
-  entryPoint?: 'marketplace' | null,
   /** 🔴 Set by a caller whose on-page form already FAILED, to demand a session it can redirect
    *  to. Without it the fallback re-asks for elements, gets another client secret, finds no `url`
    *  and dead-ends the buyer -- the live 2026-09-15 ticket failure. */
@@ -168,10 +166,15 @@ export async function startCheckoutAction(
   // server action sees no calling path. The control appends its own `?next=`, so the buyer comes
   // back to the page they were reading rather than to a generic listing.
   if (!buyerProfileId) return { error: 'Sign in to buy.', signInRequired: true }
+  const stamp = verifyStamp((await cookies()).get(MARKETPLACE_ENTRY_COOKIE)?.value)
+  let journeySlug: string | null = null
+  if (stamp && !stamp.p.includes(productId) && stamp.j.length > 0) {
+    journeySlug = await journeySlugForProduct(productId)
+  }
   const r = await createCommerceCheckout({
     buyerProfileId,
     items: [{ productId, variantId: variantId ?? null, qty: 1 }],
-    entryPoint: entryPoint === 'marketplace' ? 'marketplace' : null,
+    entryPoint: entryPointFromStamp(stamp, productId, journeySlug),
     // Ask for the on-page form only when the browser can actually mount it (LIVE-359).
     ui: opts?.forceHosted ? 'hosted' : onPageCheckoutAvailable() ? 'elements' : 'hosted',
   })
