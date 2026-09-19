@@ -4,7 +4,7 @@ description: Find gatherings, RSVP, and add them to your calendar.
 category: groups
 order: 3
 published: 2026-06-03
-updated: 2026-09-10
+updated: 2026-09-19
 audience: member
 role: host
 featureKeys: [events]
@@ -129,7 +129,7 @@ Keep it real. The reward is for people who actually RSVP, show up, or join, neve
 - **Manage screen.** One dashboard for your whole event, organized in tabs. Home opens with your numbers at a glance, a "Message everyone" box that reaches your whole guest list at once (by email, in-app message, or a Dispatch, with texting on the way), and a message center where you can look up any attendee and message them directly. Guests holds the full list, the waitlist, and approvals; the other tabs cover your questionnaire (with export), tickets, updates, and the event's settings. You reach it from the event page or the event's editor.
 - **Cohosts.** Add a cohost and they can help run the event right alongside you, including messaging the guest list while the event is on. After the event ends, a cohost on a personal account can still see the whole list and every stat, and can invite everyone to their next event. Messaging the list about anything else takes a Business Space.
 - **Collaborators.** Share your event with another Business Space and, once a steward there approves, your event shows on their calendar too and their Space is featured on your event page. Hosting with Collaborators is part of the Collective plan; being one is free for any Business Space.
-- **Host as your Space.** Create an event from your Space's calendar and the Space is the host: the event page carries its name, and registrations and ticket payments run through it. You can switch any of your events between you and a Space you help run from the event's settings, under "Hosted by." Before a Space-hosted event can sell a ticket, the Space owner needs a payout account, which they set up in **Manage, then Get paid** (see [Get paid](/help/spaces/get-paid)).
+- **Host as your Space.** If you run exactly one Space, a new event starts as part of that Space: the event page carries its name, and registrations and ticket payments run through it. The first screen says so. Open the full form if that is not right. Creating from your Space's calendar does the same thing. You can switch any of your events between you and a Space you help run from the event's settings, under "Hosted by." Before a Space-hosted event can sell a ticket, the Space owner needs a payout account, which they set up in **Manage, then Get paid** (see [Get paid](/help/spaces/get-paid)).
 - **Tickets for your members.** On the Collective plan, a Space-hosted event can reserve a ticket for its own members, or for one membership tier, under "Who can buy" in the ticket editor. Make it free next to a public paid ticket and your membership includes the event. You can also set this for every upcoming event at once from your Space's Memberships settings, under Event access.
 - **How people join.** In the event's settings, pick one: **RSVP** (first come, first served; any prices show as information, paid at the door or covered by membership) or **Tickets** (buying is how people attend). Automatic picks tickets when the event is priced.
 - **Where your event shows up.** Two settings, doing two different jobs. **"Who can see this"** is who is allowed in: "Anyone" makes it public, "Anyone with the link" keeps it link-only, and the Circle and invite options keep it close. **"List this event publicly"** is separate: leave it on and your public event shows up when people browse events, turn it off and it stays public and fully shareable, it just is not in the listings. A public event hosted by a Circle now shows up in browse too, the same as any other public event.
@@ -145,4 +145,4 @@ Keep it real. The reward is for people who actually RSVP, show up, or join, neve
 
 - New to a Circle? An event is the easiest way in: say you're coming, then just show up.
 - You'll see events from the Circles you've joined, plus public local events happening in your area.
-- Want to host? Any member can create an event, as a public local gathering or inside a Circle you host. Featuring another business on your event as a Collaborator is a Business Space feature.
+- Want to host? Any member can create an event. If you run one Space, it starts as that Space's event. You can still make a public local gathering, or put it inside a Circle you host. Featuring another business on your event as a Collaborator is a Business Space feature.
