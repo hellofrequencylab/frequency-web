@@ -122,7 +122,7 @@ function studioNodes(): NavNode[] {
 // it makes sense). Order, labels, hrefs, descriptions, icons, and gates are preserved
 // EXACTLY; the projections in defaults.ts / site.ts rebuild the old shapes byte-for-byte.
 
-/** The FOUR public header tabs as `surface:'header'` TRIGGER nodes, in nav order.
+/** The THREE public header tabs as `surface:'header'` TRIGGER nodes, in nav order.
  *  A trigger with sub-links (`items`) opens a dropdown — its sub-links are separate
  *  header nodes parented on the trigger's id; a trigger with no sub-links is a plain
  *  link. The trigger `label` is the tab name; `href` is the tab's CANONICAL landing
@@ -130,21 +130,21 @@ function studioNodes(): NavNode[] {
  *  SITE_NAV derive from ONE source. `blurb` carries the sub-link description (`desc`).
  *  Visitor-gated (public marketing).
  *
- *  ── SIX TABS BECAME FOUR (docs/CORE-MODEL.md §4, ADR-1294; LIVE-250) ─────────────────
- *  The target is stated as a number, so the DERIVATION matters more than the number: the
- *  six tabs were four dropdown panels plus two plain links, and the two plain links are
- *  the two that go. **Nothing is removed. Things are grouped** (CORE-MODEL §4).
+ *  ── SIX TABS BECAME FOUR (LIVE-250), THEN THREE (LIVE-254) ───────────────────────────
+ *  LIVE-250 grouped Home (wordmark) and The Lab (About panel). LIVE-254 groups The Quest
+ *  into The Community panel: the game is the side thing we all do together, not a third
+ *  of the story. **Nothing is removed. Things are grouped** (CORE-MODEL §4).
  *
  *    • `Home` was a tab pointing at `/`, which the wordmark beside it already links
- *      (components/layout/marketing-header.tsx, `href={authed ? '/feed' : '/'}`). A tab
- *      that duplicates the brand mark costs a slot and buys nothing.
- *    • `The Lab` is not one of the four nouns, so it becomes a ROW in the About panel —
- *      the story-of-Frequency panel it reads with — and keeps its own footer link, its
- *      sitemap entry (priority 0.8) and its llms.txt line untouched.
+ *      (components/layout/marketing-header.tsx, `href={authed ? '/feed' : '/'}`).
+ *    • `The Lab` is a ROW in the About panel and keeps its footer link, sitemap 0.8,
+ *      and llms.txt line.
+ *    • `The Quest` is a ROW in The Community panel. The page stays, the footer stays
+ *      (the footer is the site map), sitemap priority is 0.6 (below the two story
+ *      pages at 0.8). The live rows move with
+ *      `supabase/migrations/20270345006000_public_header_quest_under_community.sql`.
  *
- *  The four that remain are the four that already carried panels: The Community, The
- *  Quest, Spaces, About. `/` therefore no longer appears in the header AT ALL, which is
- *  why `registry.source.test.ts` measures the wordmark's href rather than assuming it.
+ *  The three that remain as TABS: The Community, Spaces, About.
  *
  *  🔴 EVERY DROPDOWN TRIGGER LEADS WITH ITS OWN LANDING ROW. A trigger that opens a panel
  *  gets no href of its own, so a landing page that is not also a row in its own panel has
@@ -152,8 +152,7 @@ function studioNodes(): NavNode[] {
  *
  *  ⚠️ THE LIVE HEADER IS DB ROWS, NOT THIS LIST. `menu_items` / `menu_categories` carry an
  *  operator-editable copy of this surface and `lib/menus/read.ts` prefers it, so editing
- *  these seeds alone moves NOTHING in production. The live rows move with the paired data
- *  migration (`supabase/migrations/20270345004400_public_header_four_tabs.sql`). */
+ *  these seeds alone moves NOTHING in production. */
 type HeaderTriggerSeed = {
   id: string
   label: string
@@ -180,14 +179,10 @@ const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
       { label: 'Circles', href: '/discover/circles', desc: 'Small groups around an interest' },
       { label: 'Events', href: '/discover/events', desc: 'Gatherings you can show up to' },
       { label: 'Partners', href: '/discover/partners', desc: 'Shops, studios, and makers in the network' },
-    ],
-  },
-  {
-    id: 'the-quest',
-    label: 'The Quest',
-    href: '/the-quest',
-    items: [
-      { label: 'The Quest', href: '/the-quest', desc: 'The practice game: streaks, Zaps, and the Vault' },
+      // LIVE-254: The Quest left the tab bar. Grouped here, not deleted. The game is
+      // the side thing we all do together; Journeys / Practices / Channels (topics)
+      // ride with it so the old Quest panel is still one click from Community.
+      { label: 'The Quest', href: '/the-quest', desc: 'The light game everyone plays alongside their Circle' },
       { label: 'Journeys', href: '/discover/journeys', desc: 'Guided practices for a season' },
       { label: 'Practices', href: '/discover/practices', desc: 'Browse the practices you can run' },
       { label: 'Channels', href: '/discover/topics', desc: 'Browse by what you practice' },
@@ -659,18 +654,15 @@ export function paletteDestinations(viewer: NavViewer, query = ''): PaletteDesti
   return [...starts, ...contains].map(toDest)
 }
 
-// ── Calm mobile spine (§5a: the five thumb-zone worlds + Zap center) ─────────────────
-// The mobile tab bar is the five TOP-LEVEL calm worlds (Feed · Community · Events · The
-// Quest · Marketplace), flanking the raised Zap center button (an ACTION, declared in the
-// shell, not a registry node). The bar reads Menu · Feed · Community · [Zap] · Events · The
-// Quest · Marketplace (slots 1-2 sit left of Zap, slots 3-5 right of it). Each spine slot is
-// an EXISTING calm registry node — its href, gate, and icon key carry over verbatim (moving
-// where the tab is declared, never what it permits); only the rendered TAB label is the
-// canon world name, distinct from the node's rail label where §5a shortens it (e.g. the
-// `quest` rail reads "My Quest", the mobile tab reads "The Quest"). Deriving from
-// NAV_REGISTRY keeps the bar in lockstep with the one source — no parallel hardcoded list —
-// and gate-filters through the same canSee as every surface. Messages left the bar for the
-// header (a badged top-right icon, DM convention); its rail/drawer entry is unchanged.
+// ── Calm mobile spine (HYG-033: three destinations + Menu + Zap) ─────────────────────
+// The signed-in phone bar is five thumb targets: Menu · Feed · Zap · Events · Marketplace.
+// Community (Circles) and The Quest left the bar for the drawer / rail; they are not
+// deleted. The raised Zap center button is an ACTION declared in the shell, not a registry
+// node. The three destination slots are EXISTING calm registry nodes — href, gate, and icon
+// key carry over verbatim. The rendered TAB label is the NAMING.md canon (Marketplace is
+// the commerce umbrella; the surfaces keep Classifieds / Market / Frequency Store / Housing).
+// Deriving from NAV_REGISTRY keeps the bar in lockstep with the one source. Messages stay
+// in the header; the member rail count is ADR-1406 (not this cut).
 
 /** One mobile-bar tab: the §5a world name + the calm registry node it projects. */
 export type SpineTab = {
@@ -680,22 +672,17 @@ export type SpineTab = {
   node: NavNode
 }
 
-/** The five calm spine roots, in bar order: their registry node id → the world label
- *  the tab renders. Ids are existing calm nodes (see nav-areas.ts BASE_NAV_AREAS + the
- *  `market` vertical). The fifth tab is the id-`market` node, which since ADR-868 is the
- *  "Marketplace" commerce umbrella (href /marketplace, the last-visited commerce redirect)
- *  — the tab label follows the node so the bar never says one thing and lands on another.
- *  NAMING canon: "Marketplace" is umbrella-only; the surfaces keep their own names
- *  (Classifieds /classifieds · Market /market · Frequency Store /store · Housing /housing). */
+/** Destination tabs in bar order (Feed left of Zap; Events and Marketplace right).
+ *  Ids are existing calm nodes. `market` is the ADR-868 Marketplace umbrella
+ *  (`/marketplace`); the tab label follows the node. Circles and The Quest are
+ *  drawer/rail destinations, not spine roots (HYG-033). */
 const CALM_SPINE_ROOTS: readonly { id: string; label: string }[] = [
   { id: 'feed', label: 'Feed' },
-  { id: 'circles', label: 'Community' },
   { id: 'events', label: 'Events' },
-  { id: 'quest', label: 'The Quest' },
   { id: 'market', label: 'Marketplace' },
 ] as const
 
-/** The five calm mobile-spine tabs (§5a), in bar order, each pairing its §5a world label
+/** The calm mobile-spine destination tabs, in bar order, each pairing its world label
  *  with its backing calm registry node. A root whose node is missing from the registry is
  *  skipped (defensive), so the bar can never reference a destination that no longer exists.
  *  The renderer gate-filters each tab's `node` through canSee and centers the Zap action. */
@@ -740,7 +727,7 @@ export function headerTriggers(): HeaderTrigger[] {
 // footer is the column-grouped (parented) nodes rendered on member pages. Splitting on
 // `parent` keeps each footer projecting only its own nodes — no cross-contamination.
 
-/** The flat marketing footer links (the six primary pages — NOT the four header tabs;
+/** The flat marketing footer links (the six primary pages — NOT the three header tabs;
  *  see FOOTER_LINK_SEEDS), in registry order. The
  *  parentless `surface:'footer'` nodes only, so the member sitemap columns never leak
  *  into MARKETING_NAV or the DB footer seed. */

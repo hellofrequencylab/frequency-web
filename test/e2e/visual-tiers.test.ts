@@ -6,9 +6,10 @@ import path from 'node:path'
 //
 // `pr-compare` runs the @visual suite in two tiers (.github/workflows/e2e.yml):
 //
-//   PUBLIC (@visual, not @shell)  blocks. Anonymous, content-stable surfaces.
-//   SHELL  (@visual AND @shell)   advisory. Member + operator surfaces photographed against
-//                                 LIVE PRODUCTION DATA, which moves on its own.
+//   PUBLIC (@visual, not @shell, not @advisory)  blocks. Anonymous, content-stable surfaces.
+//   ADVISORY (@visual AND (@shell OR @advisory))  does not block. Member + operator (@shell)
+//                                 plus /discover (@advisory). Photographed against live
+//                                 production data, which moves on its own.
 //
 // The split exists because the shell tier cannot tell "someone moved the header" from "the
 // Space gained a member since Tuesday". surfaces.ts records the measurement: the Space console
@@ -36,20 +37,20 @@ const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
 const e2eYml = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'e2e.yml'), 'utf8')
 
 describe('the visual compare is split into a blocking tier and an advisory tier', () => {
-  it('the blocking tier takes @visual and excludes @shell', () => {
+  it('the blocking tier takes @visual and excludes both advisory tags', () => {
     const s = pkg.scripts['test:e2e:visual:stable']
     expect(s, 'test:e2e:visual:stable is missing').toBeTruthy()
     expect(s).toContain('--grep @visual')
-    expect(s).toContain('--grep-invert @shell')
+    // LIVE-373: invert BOTH @shell (member/operator) AND @advisory (/discover live index).
+    // A lone invert of @shell would leave /discover blocking, which is the defect.
+    expect(s).toMatch(/--grep-invert\s+"@shell\|@advisory"/)
   })
 
-  it('the advisory tier requires BOTH tags, never a bare @shell', () => {
+  it('the advisory tier requires @visual AND (@shell OR @advisory), never a bare @shell', () => {
     const s = pkg.scripts['test:e2e:visual:shell']
     expect(s, 'test:e2e:visual:shell is missing').toBeTruthy()
-    // Both lookaheads, in either order, are what makes this visual-only.
     expect(s).toMatch(/\(\?=\.\*@visual\)/)
-    expect(s).toMatch(/\(\?=\.\*@shell\)/)
-    // The exact wrong spelling, named so the diff that reintroduces it fails here.
+    expect(s).toMatch(/@shell\|@advisory|@advisory\|@shell/)
     expect(
       /--grep\s+"?@shell"?\s*$/.test(s),
       'a bare `--grep @shell` also selects a11y.spec.ts and overflow.spec.ts, which must keep blocking',
@@ -57,15 +58,10 @@ describe('the visual compare is split into a blocking tier and an advisory tier'
   })
 
   it('every @visual test lands in exactly one tier', () => {
-    // The two greps partition the tag: one takes @visual minus @shell, the other takes the
-    // intersection. Nothing can be in both, and nothing tagged @visual can be in neither.
     const stable = pkg.scripts['test:e2e:visual:stable']
     const shell = pkg.scripts['test:e2e:visual:shell']
-    expect(stable).toContain('--grep-invert @shell')
-    expect(shell).toMatch(/\(\?=\.\*@shell\)/)
-    // Measured with `playwright test --list` on 2026-09-14: 102 blocking + 60 advisory = 162,
-    // which is every @visual test. The counts are not asserted (they move with surfaces), but
-    // the partition is, and it is what keeps the sum whole.
+    expect(stable).toMatch(/--grep-invert\s+"@shell\|@advisory"/)
+    expect(shell).toMatch(/@shell\|@advisory|@advisory\|@shell/)
   })
 })
 
@@ -113,5 +109,23 @@ describe('the positive control: @shell is genuinely shared, so the bare grep rea
     // never be advisory.
     expect(a11y).not.toContain("'@visual'")
     expect(overflow).not.toContain("'@visual'")
+  })
+
+  it('LIVE-373: /discover visual captures ride the advisory tier, not the blocking public loop', () => {
+    const vis = fs.readFileSync(path.join(ROOT, 'test', 'e2e', 'visual.spec.ts'), 'utf8')
+    const discover = vis.match(
+      /test\.describe\('visual · discover',\s*\{\s*tag:\s*\[([^\]]+)\]/,
+    )
+    expect(discover, 'visual.spec.ts no longer has a discover describe').toBeTruthy()
+    expect(discover![1]).toContain('@visual')
+    expect(discover![1]).toContain('@advisory')
+    expect(
+      discover![1].includes('@shell'),
+      '@shell would make shell-reporter.ts treat a running /discover capture as the app shell',
+    ).toBe(false)
+    expect(
+      vis.includes("publicSurfaces().filter((s) => s.path !== '/discover')"),
+      'the blocking public loop still photographs /discover, so a new listed Circle fails every PR',
+    ).toBe(true)
   })
 })

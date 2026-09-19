@@ -1,13 +1,13 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
-import { Globe, Lock, Link2, Pencil, Sparkles, Flame, Layers, SlidersHorizontal } from 'lucide-react'
+import { Globe, Lock, Link2, Pencil, Sparkles, Flame, Layers, SlidersHorizontal, Tag } from 'lucide-react'
 import { JourneyDetailTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { ShareImageProvider } from '@/components/qr/share-image-context'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
-import { getCallerProfile } from '@/lib/auth'
+import { getCallerProfile, isPlatformStaff } from '@/lib/auth'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { getJourneyView, getPlan, getPlanAuthor } from '@/lib/journey-plans'
 import { getPillars, pillarsById as indexPillars } from '@/lib/pillars'
@@ -16,8 +16,13 @@ import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons
 import { adoptPlanAction, forkPlanAction } from '../actions'
 import { enabledWidgets } from '@/lib/journey-page-config'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
-import { getJourneyOffer, seatLine, isSoldOut } from '@/lib/journeys/paid'
+import { getJourneyOffer, seatLine, isSoldOut, productIdsForJourneyPlan } from '@/lib/journeys/paid'
 import { BuyButton } from '../../marketplace/buy-button'
+import { getProductReviews, getMyProductReview } from '@/lib/commerce/reviews'
+import { ProductReviews } from '@/components/marketplace/product-reviews'
+import { getListingComments } from '@/lib/marketplace/listing-comments'
+import { ListingQna } from '@/components/marketplace/listing-qna'
+import type { ListingComment } from '@/lib/marketplace/listing-comments'
 import {
   StoryBlock,
   OutcomesBlock,
@@ -34,15 +39,9 @@ import {
 export const dynamic = 'force-dynamic'
 
 
-// The one Journey page (docs/JOURNEYS.md §10). It flips between three faces:
-//   • AUTHOR    → redirects to the v2 editor at /journeys/[slug]/edit (identity + delivery +
-//                 publish settings and the Phase → Module → Lesson structure tree, ADR-252 J5).
-//   • DISCOVERY → not enrolled / visitor: an info-rich header (badge + Pillar + stat chips +
-//                 a persistent CTA), a two-column body (story · outcomes · the path accordion ·
-//                 pillar balance · instructor · FAQ) and an interior sticky "At a glance" rail.
-//   • ACTIVE    → enrolled: redirects to the v2 lesson player at /journeys/[slug]/learn.
-// The retired season engine + the bottom CTA/reward dump are gone; the facts ride the header
-// and the rail (no bottom dump). Voice is v2 (Run / Phase / enroll), no em dashes.
+// The one Journey sales page (ADR-1404). Drafts open in the editor. Published Journeys stay
+// here as the pitch and the till. Enrolled learners (not the author) go to /learn, which is
+// the course. Voice is v2 (Run / Phase / enroll), no em dashes.
 
 const VISIBILITY = {
   public: { Icon: Globe, label: 'Public' },
@@ -105,11 +104,11 @@ export default async function JourneyPlanPage({
   const isAuthor = !!profileId && plan.author_id === profileId
   if (!isAuthor && plan.visibility === 'private') notFound()
 
-  // ── AUTHOR. Once the Journey is PUBLISHED it opens in VIEW mode (the course page, which carries
-  //    the "Edit Journey" + "Published" controls) — owner's button-convention pass. A DRAFT still
-  //    opens straight in the v2 editor (identity + delivery + the Phase -> Module -> Lesson tree). ──
-  if (isAuthor && !preview) {
-    redirect(plan.visibility === 'public' ? `/journeys/${plan.slug}/learn` : `/journeys/${plan.slug}/edit`)
+  // ── AUTHOR. A DRAFT still opens in the editor. A published Journey stays on this page: it is
+  //    the sales page (ADR-1404). Sending the author to /learn hid the till from the only person
+  //    who can set a price, and made the course look like the public face of the offer.
+  if (isAuthor && !preview && plan.visibility === 'private') {
+    redirect(`/journeys/${plan.slug}/edit`)
   }
 
   const [pillars, author] = await Promise.all([getPillars(), getPlanAuthor(plan.author_id)])
@@ -118,9 +117,10 @@ export default async function JourneyPlanPage({
   const accent = plan.accent
   const PlanIcon = JOURNEY_ICON_MAP[plan.emoji ?? ''] ?? DefaultJourneyIcon
 
-  // ACTIVE → the v2 lesson player (ADR-252, J5). An enrolled learner goes straight to the
-  // player; a previewing author stays on the discovery view.
-  if (adopted && !preview) redirect(`/journeys/${plan.slug}/learn`)
+  // ACTIVE → the lesson player. An enrolled learner goes to /learn. An author stays on the pitch
+  // so they can sell; they reach the course with Continue. `?preview=1` keeps an enrolled member
+  // on the sales page when they asked to see it.
+  if (adopted && !preview && !isAuthor) redirect(`/journeys/${plan.slug}/learn`)
 
   // Derive the at-a-glance facts ONCE; the header chips, the path accordion, and the rail
   // "what's included" list all read from this (so the numbers can never drift).
@@ -143,6 +143,16 @@ export default async function JourneyPlanPage({
   // The sellable face of this Journey, when it has one (ADR-1397). Free Journeys read null and the
   // enrol control is exactly what it has always been.
   const rawOffer = await getJourneyOffer(plan.id)
+  const lineageIds = await productIdsForJourneyPlan(plan.id)
+  const reviewProductId = rawOffer?.productId ?? lineageIds[0] ?? null
+  const [reviews, myReview, comments, operator] = reviewProductId
+    ? await Promise.all([
+        getProductReviews(reviewProductId),
+        getMyProductReview(reviewProductId, profileId),
+        getListingComments('product', reviewProductId),
+        isPlatformStaff(),
+      ])
+    : [null, null, [] as ListingComment[], false]
   const offer = rawOffer
     ? {
         productId: rawOffer.productId,
@@ -243,6 +253,19 @@ export default async function JourneyPlanPage({
               className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
             />
           )}
+          {canManageJourney && (
+            <OpenAdminBarButton
+              scope={{ kind: 'journey', id: plan.id }}
+              caps={Array.from(journeyCaps)}
+              label={offer ? `${offer.priceLabel}${offer.seatLine ? ` · ${offer.seatLine}` : ''}` : 'Set a price'}
+              icon={<Tag className="h-4 w-4" />}
+              className={
+                offer
+                  ? 'inline-flex items-center gap-1.5 rounded-lg border border-success/40 bg-success-bg px-3 py-1.5 text-body-sm font-semibold text-success transition-colors hover:bg-success-bg/70'
+                  : 'inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text'
+              }
+            />
+          )}
           <QrShareDropdown manager={canManageJourney} />
         </>
       }
@@ -268,7 +291,7 @@ export default async function JourneyPlanPage({
           <div className="mb-4 flex items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-2.5">
             <span className="text-body-sm text-muted">Preview. How others see your Journey.</span>
             <Link
-              href={`/journeys/${plan.slug}`}
+              href={`/journeys/${plan.slug}/edit`}
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               <Pencil className="h-3.5 w-3.5" /> Back to editing
@@ -311,7 +334,30 @@ export default async function JourneyPlanPage({
           </div>
           {enabled.has('pillar-balance') && <PillarBalanceBlock items={items} pillars={pillars} />}
           <InstructorBlock author={author} />
+          {reviewProductId && reviews && (
+            <ProductReviews
+              productId={reviewProductId}
+              productTitle={plan.title}
+              reviews={reviews}
+              myReview={myReview}
+              signedIn={!!profileId}
+              canReview={!!profileId && !!rawOffer && !canManageJourney}
+              canModerate={operator}
+            />
+          )}
           <JourneyFaq plan={plan} />
+          {reviewProductId && (
+            <ListingQna
+              targetKind="product"
+              targetId={reviewProductId}
+              revalidatePath={`/journeys/${plan.slug}`}
+              comments={comments}
+              canPost={!!profileId}
+              canModerate={canManageJourney || operator}
+              myProfileId={profileId}
+              isOwner={canManageJourney}
+            />
+          )}
 
           {/* The repeat CTA closes the page. It is an ANCHOR to the one enrol box, never a second
               copy of it: a repeat CTA on a long sales page is worth having, a second mounted

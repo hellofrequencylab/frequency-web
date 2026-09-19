@@ -71,10 +71,8 @@ export default async function PracticesPage({
   const caps = await getGlobalCapabilities()
   const isAdmin = caps.has('admin.access')
   const showHidden = isAdmin && sp.hidden === '1'
-  // Authoring a library practice is a Crew act (ADR-109/ADR-414): real Crew (or a steward/
-  // staff) may create; a plain Member may adopt/claim/log but never create. The entry point
-  // now shows for EVERY signed-in member — non-Crew get the free-beta upgrade popup (the
-  // `practice.create` capability reads the REAL tier, so the popup fires during the beta).
+  // Authoring a library practice is open to any signed-in member (LIVE-222 / LIVE-409).
+  // The quantity cap is `practice_publish` at go-live, never a Crew wall on this button.
   const signedIn = !!caller
   const canCreatePractice = caps.has('practice.create')
 

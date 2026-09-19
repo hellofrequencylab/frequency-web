@@ -283,9 +283,11 @@ export function publicSurfaces(): readonly Surface[] {
  * 🔴 `/discover` WAS THE ONLY ENTRY IT EVER HELD (#2139), AND THE OWNER REVERSED THAT TRADE.
  * The flag is read per SURFACE, not per project, so it cost the below-the-fold baseline on
  * desktop AND mobile — eight PNGs, the topic bands, the circle grid and the footer among them —
- * to quiet a failure the record says is rare: the full-page baseline captured 2026-08-11 held
- * through 46 commits and three days of `pr-compare` before it moved. Paying eight baselines
- * permanently for that is the wrong side of the trade.
+ * to quiet a failure the record says is rare.
+ *
+ * LIVE-373 took the other door of the same trade: /discover still photographs full-page, but
+ * those eight captures are @advisory (non-blocking). viewportOnly stays empty. A new listed Circle
+ * must not fail the blocking public tier.
  *
  * ⚠️ THE CAUSE THE FIRST NOTE GAVE WAS WRONG, and it is worth correcting here because it is the
  * kind of wrong that makes the next reader reach for the same flag. It blamed `revalidate = 3600`

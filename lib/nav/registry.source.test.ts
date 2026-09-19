@@ -38,19 +38,14 @@ describe('nav single-source invariant — the registry feeds every surface', () 
     }
   })
 
-  it('the public header is FOUR tabs, and every footer link is still reachable from it', () => {
-    // ── WHY THIS CASE CHANGED SHAPE (LIVE-250, docs/CORE-MODEL.md §4) ──────────────────────
-    // It used to assert `triggers.length === 6` AND that every flat footer link was itself a
-    // TRIGGER href. The first half is now four. The second half was the valuable one — it is
-    // the LIVE-107 guard, "a primary page with no path from the header" — but pairing it
-    // tab-for-tab with the footer overstated it: a page reached as a ROW inside a panel is
-    // reached, and `/` is reached by the wordmark. So the reachability half is kept and
-    // widened to what it always meant, and the count is the model's number.
+  it('the public header is THREE tabs, and every footer link is still reachable from it', () => {
+    // LIVE-250 took six to four (Home left, The Lab grouped into About). LIVE-254 takes
+    // four to three: The Quest is no longer a top-level pillar. Reachability stays the
+    // LIVE-107 half — a page reached as a ROW inside a panel is reached, and `/` is
+    // reached by the wordmark.
     const triggers = headerTriggers()
-    // The four: The Community, The Quest, Spaces, About. Home left (the wordmark links `/`),
-    // and The Lab became a row in the About panel.
-    expect(triggers.length).toBe(4)
-    expect(triggers.map((t) => t.node.label)).toEqual(['The Community', 'The Quest', 'Spaces', 'About'])
+    expect(triggers.length).toBe(3)
+    expect(triggers.map((t) => t.node.label)).toEqual(['The Community', 'Spaces', 'About'])
 
     // Every destination the header offers: a trigger's own landing, or any row in any panel.
     const headerHrefs = new Set(nodesForSurface('header').map((n) => n.href))
@@ -71,18 +66,22 @@ describe('nav single-source invariant — the registry feeds every surface', () 
     }
   })
 
-  it('the two tabs that left are still reachable, which is what "grouped, not deleted" means', () => {
-    // CORE-MODEL §4: "Nothing is removed. Things are grouped." The cheap way to hit a tab count
-    // is to delete two destinations, so the count above is paired with this.
+  it('the tabs that left are still reachable, which is what "grouped, not deleted" means', () => {
+    // CORE-MODEL §4: "Nothing is removed. Things are grouped." The cheap way to hit a tab
+    // count is to delete destinations, so the count above is paired with this.
     const headerHrefs = nodesForSurface('header').map((n) => n.href)
     expect(headerHrefs, '/the-lab lost its path from the header').toContain('/the-lab')
-    // And it landed in the About panel specifically, not loose at the top level.
+    expect(headerHrefs, '/the-quest lost its path from the header').toContain('/the-quest')
     const about = headerTriggers().find((t) => t.node.label === 'About')
     expect(about?.items.map((i) => i.href)).toContain('/the-lab')
-    // Both keep their flat-footer link, which is the site map's job.
+    const community = headerTriggers().find((t) => t.node.label === 'The Community')
+    expect(community?.items.map((i) => i.href)).toContain('/the-quest')
+    // The Quest is not a trigger. That is the whole LIVE-254 point.
+    expect(headerTriggers().map((t) => t.node.href)).not.toContain('/the-quest')
     const footer = marketingFooterLinks().map((n) => n.href)
     expect(footer).toContain('/')
     expect(footer).toContain('/the-lab')
+    expect(footer).toContain('/the-quest')
   })
 
   it('every DROPDOWN trigger leads with its own landing, or that page has no path from the header', () => {
@@ -170,5 +169,15 @@ describe('nav single-source invariant — the registry feeds every surface', () 
       expect(tab.node.mode).toBe('calm')
       expect(REGISTRY_IDS.has(tab.node.id)).toBe(true)
     }
+  })
+
+  it('the signed-in phone bar is Feed · Events · Marketplace (HYG-033)', () => {
+    // Menu and Zap are shell chrome, not registry nodes. Circles and The Quest stay
+    // reachable from the drawer/rail; they are not spine roots.
+    const spine = calmSpine()
+    expect(spine.map((t) => t.node.id)).toEqual(['feed', 'events', 'market'])
+    expect(spine.map((t) => t.label)).toEqual(['Feed', 'Events', 'Marketplace'])
+    expect(spine.map((t) => t.node.id)).not.toContain('circles')
+    expect(spine.map((t) => t.node.id)).not.toContain('quest')
   })
 })

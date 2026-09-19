@@ -10,6 +10,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { productIdsSharingJourney } from '@/lib/journeys/paid'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -41,22 +42,28 @@ const EMPTY: ProductReviewsData = { average: null, count: 0, latest: [] }
 export async function getProductReviews(productId: string): Promise<ProductReviewsData> {
   if (!productId) return EMPTY
   try {
+    const scope = await productIdsSharingJourney(productId)
     const { data } = await db()
       .from('commerce_reviews')
       .select(
-        'id, rating, body, verified_purchase, created_at, reviewer:profiles!reviewer_profile_id ( display_name, avatar_url )',
+        'id, rating, body, verified_purchase, created_at, reviewer_profile_id, reviewer:profiles!reviewer_profile_id ( display_name, avatar_url )',
       )
-      .eq('product_id', productId)
+      .in('product_id', scope)
       .eq('status', 'visible')
       .order('created_at', { ascending: false })
       .limit(REVIEWS_CAP)
     const rows = (data ?? []) as Record<string, unknown>[]
     if (rows.length === 0) return EMPTY
-    const ratings = rows.map((r) => Number(r.rating) || 0)
-    const average = Math.round((ratings.reduce((a, b) => a + b, 0) / rows.length) * 10) / 10
-    const latest: ProductReviewItem[] = rows.map((r) => {
+    // One review per member: a re-price can leave a historical pair until the next edit. The wall
+    // keeps the newest.
+    const seen = new Set<string>()
+    const latest: ProductReviewItem[] = []
+    for (const r of rows) {
+      const key = String(r.reviewer_profile_id || r.id)
+      if (seen.has(key)) continue
+      seen.add(key)
       const author = r.reviewer as { display_name?: unknown; avatar_url?: unknown } | null
-      return {
+      latest.push({
         id: String(r.id),
         rating: Number(r.rating) || 0,
         body: typeof r.body === 'string' ? r.body : '',
@@ -68,9 +75,12 @@ export async function getProductReviews(productId: string): Promise<ProductRevie
               avatarUrl: (author.avatar_url as string) ?? null,
             }
           : null,
-      }
-    })
-    return { average, count: rows.length, latest }
+      })
+    }
+    if (latest.length === 0) return EMPTY
+    const ratings = latest.map((r) => r.rating)
+    const average = Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10
+    return { average, count: latest.length, latest }
   } catch {
     return EMPTY
   }
@@ -84,11 +94,14 @@ export async function getMyProductReview(
 ): Promise<{ rating: number; body: string } | null> {
   if (!productId || !viewerId) return null
   try {
+    const scope = await productIdsSharingJourney(productId)
     const { data } = await db()
       .from('commerce_reviews')
       .select('rating, body')
-      .eq('product_id', productId)
+      .in('product_id', scope)
       .eq('reviewer_profile_id', viewerId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
       .maybeSingle()
     if (!data) return null
     const row = data as Record<string, unknown>
@@ -111,19 +124,58 @@ export async function productRatingsFor(productIds: string[]): Promise<Map<strin
   const ids = Array.from(new Set(productIds.filter(Boolean)))
   if (ids.length === 0) return out
   try {
+    const { data: products } = await db()
+      .from('commerce_products')
+      .select('id, journey_plan_id')
+      .in('id', ids)
+    const planIds = [
+      ...new Set(
+        ((products ?? []) as { journey_plan_id?: string | null }[])
+          .map((p) => p.journey_plan_id)
+          .filter((id): id is string => !!id),
+      ),
+    ]
+    const planToRequested = new Map<string, string>()
+    for (const p of (products ?? []) as { id?: unknown; journey_plan_id?: string | null }[]) {
+      if (p.journey_plan_id) planToRequested.set(p.journey_plan_id, String(p.id))
+    }
+    const productToCanonical = new Map<string, string>()
+    for (const id of ids) productToCanonical.set(id, id)
+    let scope = ids
+    if (planIds.length > 0) {
+      const { data: siblings } = await db()
+        .from('commerce_products')
+        .select('id, journey_plan_id')
+        .in('journey_plan_id', planIds)
+      for (const s of (siblings ?? []) as { id?: unknown; journey_plan_id?: string | null }[]) {
+        const canon = s.journey_plan_id ? planToRequested.get(s.journey_plan_id) : undefined
+        if (canon) productToCanonical.set(String(s.id), canon)
+      }
+      scope = [...new Set([...ids, ...((siblings ?? []) as { id?: unknown }[]).map((s) => String(s.id))])]
+    }
     const { data } = await db()
       .from('commerce_reviews')
-      .select('product_id, rating')
-      .in('product_id', ids)
+      .select('product_id, rating, reviewer_profile_id')
+      .in('product_id', scope)
       .eq('status', 'visible')
     const sums = new Map<string, { sum: number; count: number }>()
-    for (const r of (data ?? []) as { product_id?: unknown; rating?: unknown }[]) {
-      const pid = String(r.product_id)
+    const seen = new Set<string>()
+    for (const r of (data ?? []) as {
+      product_id?: unknown
+      rating?: unknown
+      reviewer_profile_id?: unknown
+    }[]) {
+      const canon = productToCanonical.get(String(r.product_id))
+      if (!canon) continue
+      const reviewer = String(r.reviewer_profile_id || `${r.product_id}:${r.rating}`)
+      const dedupe = `${canon}:${reviewer}`
+      if (seen.has(dedupe)) continue
+      seen.add(dedupe)
       const rating = Number(r.rating) || 0
-      const acc = sums.get(pid) ?? { sum: 0, count: 0 }
+      const acc = sums.get(canon) ?? { sum: 0, count: 0 }
       acc.sum += rating
       acc.count += 1
-      sums.set(pid, acc)
+      sums.set(canon, acc)
     }
     for (const [pid, { sum, count }] of sums) {
       if (count > 0) out.set(pid, { average: Math.round((sum / count) * 10) / 10, count })
@@ -142,10 +194,11 @@ export async function productRatingsFor(productIds: string[]): Promise<Map<strin
 export async function hasPurchasedProduct(profileId: string, productId: string): Promise<boolean> {
   if (!profileId || !productId) return false
   try {
+    const scope = await productIdsSharingJourney(productId)
     const { data } = await db()
       .from('commerce_order_items')
       .select('id, order:commerce_orders!inner ( buyer_profile_id, status )')
-      .eq('product_id', productId)
+      .in('product_id', scope)
       .eq('order.buyer_profile_id', profileId)
       .in('order.status', ['paid', 'fulfilled'])
       .limit(1)
@@ -179,31 +232,43 @@ export async function upsertProductReview(input: {
   // defaulting to 'visible' reverses moderation, and defaulting to 'hidden' would silently bury a
   // first-time reviewer's honest review with no signal to them. `false` is the caller's existing
   // "could not save, try again" arm, so a transient blip is retryable and nothing is lost.
+  const scope = await productIdsSharingJourney(input.productId)
+  const ids = scope.length > 0 ? scope : [input.productId]
   const { data, error } = await db()
     .from('commerce_reviews')
-    .select('status')
-    .eq('product_id', input.productId)
+    .select('status, product_id')
+    .in('product_id', ids)
     .eq('reviewer_profile_id', input.reviewerProfileId)
-    .maybeSingle()
+    .order('updated_at', { ascending: false })
+    .limit(1)
   if (error) {
     console.error('[reviews] prior moderation status unreadable, refusing upsert:', error.message)
     return false
   }
-  const status = (data as { status?: string } | null)?.status === 'hidden' ? 'hidden' : 'visible'
+  const existing = (Array.isArray(data) ? data[0] : data) as { status?: string; product_id?: string } | null
+  const status = existing?.status === 'hidden' ? 'hidden' : 'visible'
+  const payload = {
+    product_id: existing?.product_id || input.productId,
+    reviewer_profile_id: input.reviewerProfileId,
+    rating,
+    body: input.body.trim().slice(0, 2000),
+    verified_purchase: input.verifiedPurchase,
+    status,
+    updated_at: new Date().toISOString(),
+  }
+  // Stay on the row that already exists, even if it hangs off an archived product. Moving it onto
+  // the live uuid would leave a second review from the same member after the next re-price.
+  if (existing?.product_id) {
+    const { error: updateErr } = await db()
+      .from('commerce_reviews')
+      .update(payload)
+      .eq('product_id', existing.product_id)
+      .eq('reviewer_profile_id', input.reviewerProfileId)
+    return !updateErr
+  }
   const { error: upsertErr } = await db()
     .from('commerce_reviews')
-    .upsert(
-      {
-        product_id: input.productId,
-        reviewer_profile_id: input.reviewerProfileId,
-        rating,
-        body: input.body.trim().slice(0, 2000),
-        verified_purchase: input.verifiedPurchase,
-        status,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'product_id,reviewer_profile_id' },
-    )
+    .upsert(payload, { onConflict: 'product_id,reviewer_profile_id' })
   return !upsertErr
 }
 

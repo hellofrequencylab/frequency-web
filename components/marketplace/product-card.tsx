@@ -64,7 +64,7 @@ export function ProductCard({
   const linkHref = href ?? product.href ?? `/market/${product.id}`
   const soldOut = product.status === 'sold_out' || product.stock === 0
   const group = marketGroupForKind(product.productKind)
-  const { label: groupLabel } = GROUP_META[group]
+  const groupLabel = product.productKind === 'journey' ? 'Journey' : GROUP_META[group].label
   const duration = group === 'services' ? serviceDuration(product) : null
 
   return (

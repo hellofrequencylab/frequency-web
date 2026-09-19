@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1403**.
+tree as of this index: **ADR-1411**.
 
 | Theme | Start here |
 |---|---|
@@ -45437,3 +45437,242 @@ change.
 **Rejected.** Treating FOCUS-MODEL as a reversal of join-free / pay-when-charging. Starting a sixth plan file. Letting kit work jump product this week.
 
 **Consequences.** `OWN-066` is the ruling row and closes. The code has not moved yet. `QUEST-IA-DEBT`, `HYG-033`, `LIVE-204` are the first product surfaces. Editor E0–E9 stays on its own wave.
+
+## ADR-1404: A Journey has one sales page, and listing areas only point at it (2026-09-19)
+
+**Status:** Accepted · **Amends** [ADR-1398](DECISIONS.md) §4 and [ADR-1400](DECISIONS.md) §6 (the
+product URL as a living sales surface) · **Extends** [ADR-1397](DECISIONS.md) (one product, many
+storefronts) · Backlog `LIVE-400` · corroborated by `lib/journeys/sales-path.ts`,
+`lib/journeys/listing-href.ts`, `app/(main)/market/[id]/page.tsx`
+
+**Context.** Owner, 2026-09-19: a Space should sell a Journey on its Shop and in the Market, through
+one sales page that is the paywall, because people could see the course directly. The money path from
+ADR-1397 through ADR-1401 was already there. The confusion was three sales pages (`/market/<uuid>`,
+`/journeys/<slug>`, `/discover/journeys/<slug>`) and an author redirect that opened `/learn` as the
+public face of the offer.
+
+**Decision.**
+
+1. **Listing areas are doors.** Market cards and Space Shop cards attach `href` to
+   `/journeys/<slug>`. Signed-out visitors are handed the public twin by `TWIN_RULES`. A leftover
+   `/market/<uuid>` for a Journey product **redirects** to that slug. Emails and the sitemap do not
+   advertise the uuid as a Journey URL.
+2. **The sales page is the paywall.** A published author stays on `/journeys/<slug>` so they can
+   sell. An enrolled learner who is not the author goes to `/learn`. The path on the sales page is
+   an outline (titles and cadence), not a "Free preview" of the course.
+3. **The public pitch does not send anyone to `/market/<id>`.** A paid visitor on
+   `/discover/journeys/<slug>` signs in with `next` set to the till. Redirecting Market to the slug
+   and then linking Market from Discover would loop.
+
+**Rejected.** A second product row per storefront (duplicates the seat pool, which ADR-1397 forbade).
+Embedding checkout on the cached public page (ADR-1400 already refused this).
+
+**Consequences.** Shop and Market can both sell the same Journey. The course stays behind enrolment.
+Reviews and Q&A resolve through the Journey plan ([ADR-1405](DECISIONS.md)). The generic Market listing
+render remains as a fallback when the plan is missing.
+
+## ADR-1405: Journey reviews and Q&A follow the plan, not the price row (2026-09-19)
+
+**Status:** Accepted · **Extends** [ADR-1397](DECISIONS.md) (a re-price archives the product) and
+[ADR-1404](DECISIONS.md) (the sales page is the Journey slug) · Backlog `LIVE-392`
+
+**Context.** `commerce_reviews` and `listing_comments` are keyed to a product uuid. Re-pricing a
+Journey archives that row and writes a new one, so every star and every answered question detached
+from the live listing. After ADR-1404 the buyer never even opens `/market/<id>`, so the proof also
+had no home on the page that sells the Journey.
+
+**Decision.**
+
+1. **Resolve through `journey_plan_id`.** Readers ask for every product row attached to the plan,
+   live and archived, and show that set. A non-Journey product is still itself. No new column: the
+   product already carries the plan, and the admin-client readers already bypass the RLS arm that
+   hides reviews on an archived parent.
+2. **An edit stays on the row that exists.** Upserting onto the live uuid after a re-price would
+   mint a second review from the same member. A write finds the member's existing row across the
+   plan and updates it in place.
+3. **The sales page is the wall.** `/journeys/<slug>` carries reviews and Q&A. The public twin
+   shows reviews (read-only) and puts AggregateRating on the Product node so a re-price does not
+   drop structured proof from the canonical URL.
+
+**Rejected.** Adding `journey_plan_id` onto `commerce_reviews` in this change (correct long-term
+uniqueness, but a migration for a reader that already has the join). Guest Q&A on the cached
+public page (ADR-1400: that route is an hour stale and has no till).
+
+**Consequences.** Market cards attribute sibling reviews to the live product id. Settled orders on
+an archived uuid still count as a verified purchase. `LIVE-392` closes when `lib/commerce/reviews.ts`
+knows the plan.
+
+## ADR-1406: Member nav is as short as the role can use, not as short as seven (2026-09-19)
+
+**Status:** Accepted · 2026-09-19 · Designer (Daniel) · **Amends** [ADR-1294](DECISIONS.md) §4 / §5.1
+(the 16→7 count as a model target) · does not amend [ADR-1403](DECISIONS.md) · does not wait on
+LIVE-254's public-header PR · numbered **1406** because **1405** is Journey reviews on main
+(`LIVE-392`) · corroborated by `lib/nav-areas.ts`, `lib/nav/registry.ts`
+(`canSee` = `meetsAccess` ∪ `meetsStaff`), `components/layout/app-shell.tsx` (`itemAccess`)
+
+**Context.** LIVE-241 asked to cut the signed-in member rail from 16 rows to 7 (Feed · Around You ·
+Circles · Events · Members · Messages · The Quest), folding Channels into Circles (LIVE-244) and
+tucking Library, Journal, Practices, Journeys and Vault under a parent. That count assumed a fold
+the 2026-09-15 re-test already refused to build: `/channels` is the live topical Channel surface,
+not the empty legacy `channels` table. Shipping a fake 7 by hiding Channels would be the
+shape-not-truth failure. The public header (LIVE-254) is a separate PR.
+
+The 16 non-admin rail rows today, and the gate each already carries (`defaultAccess`; Admin
+telescopes separately):
+
+| Row | Key | Floor today | Hidden from a signed-in member? |
+|---|---|---|---|
+| Feed | `feed` | visitor | no |
+| Around You | `nearby` | visitor | no |
+| Circles | `circles` | visitor | no |
+| Channels | `channels` | visitor | no |
+| Events | `events` | visitor | no |
+| Message Boards | `messageBoards` | member | no (hidden from visitors) |
+| Members | `people` | member | no |
+| Business Spaces | `my-spaces` | member | no |
+| Market | `market` | visitor | no (matrix/`platform_flags` can still set `none`) |
+| Housing | `housing` | member | no |
+| Frequency Store | `shop` | visitor | often yes: `marketplace_shop_published` via `navAccess` |
+| My Quest | `quest` | member | no |
+| Journeys | `journeys` | member | no |
+| Practices | `practices` | member | no |
+| Library | `library` | member | no |
+| The Vault | `vault` | member | no (`previewBelowAccess` mutes below the floor; it still shows) |
+
+Journal and My Contacts are `railHidden` (account / My Frequency), not role-hidden. The Admin
+section already hides rows the trust ladder and staff axis cannot use. Crew is not a hide on these
+sixteen: the member floor is `member`, not `crew`.
+
+**Decision.** **The list is as short as the role can use, not as short as a magic number.**
+
+1. LIVE-241's 16→7 count is cancelled as a target. Do not hide Channels, Library, Journeys or
+   anything else to hit seven.
+2. Channels stay on the member rail unless a role, access-matrix, or flag gate says the viewer
+   cannot use them. Daniel did not pick the fold.
+3. Minimality is the existing two-axis gate (`meetsAccess` ∪ `meetsStaff`), plus `navAccess` /
+   `area_permissions` / marketplace flags, plus Admin telescoping. A row a role cannot use is
+   hidden; a row they can use stays.
+4. LIVE-254 (public header) remains its own PR. Do not bundle it into this ruling.
+
+**Rejected.** An arbitrary seven-link member rail. Folding Channels into Circles to make the count
+work. A nav rewrite in the same pass as recording this.
+
+**Consequences.** `LIVE-241` and `LIVE-244` close as cancelled-targets, not as shipped folds. The
+member rail can still shrink later, but only by raising a row's floor or a matrix/flag gate so a
+role that cannot use it no longer sees it.
+
+## ADR-1407: Tips and Space gifts settle on the page, the same way tickets already do (2026-09-19)
+
+**Status:** Accepted · **Extends** [ADR-1377](DECISIONS.md) · Backlog `LIVE-367`
+
+**Context.** ADR-1377 closed the on-page settle for the three ticket doors and named the rest as
+the next row. Commerce orders already settled (`settleCommerceOrderAction` on `buy-button`). Tips
+and Space gifts still mounted `CheckoutPanel` without `onPaid`, so a card that never redirected
+promised a receipt only the webhook could send.
+
+**Decision.**
+
+1. **The seam already hands `sessionId` back.** `resolveCheckoutSession` has done so since
+   LIVE-366. `startTip` and `startSpaceDonationCheckout` now pass it through. `TipResult` and
+   `DonationCheckoutResult` name the field so the TypeScript surface matches the runtime.
+2. **Each door has its own settle.** `settleTipAction` calls `recordTipFromSessionId`.
+   `settleDonationAction` calls `recordSpaceDonationFromSessionId`. Same shape as
+   `settleTicketAction`: a `cs_` check, a per-IP limiter that fails open, never fatal.
+3. **Stripe is the authority.** No session-holder gate. A gift does not require an account. The
+   recorder re-fetches the session and refuses anything that is not the right `metadata.kind` and
+   `payment_status === 'paid'`.
+
+**Rejected.** One generic `settleCheckoutAction` (each recorder is a different table and a different
+status vocabulary: donations take `abandoned`, tips take `failed`). Waiting on the webhook (that is
+the defect).
+
+**Consequences.** `LIVE-367`'s probe fails unless all three named doors pass `onPaid={` to the
+panel. Membership already settled under LIVE-369. The remaining subscription creators stay hosted
+until their own rows.
+
+## ADR-1408: The Quest is not a top-level marketing pillar (LIVE-254)
+
+**Status:** Accepted · 2026-09-19 · **Amends** [ADR-1344](DECISIONS.md) (four header tabs) · does not amend [ADR-1403](DECISIONS.md) · numbered **1408** because **1407** is on-page tip/gift settle on main (`LIVE-367`) · corroborated by `lib/nav/registry.ts`, `supabase/migrations/20270345006000_public_header_quest_under_community.sql`, `components/marketing/marketing-ui.tsx`
+
+**Context.** LIVE-254 asked to demote `/the-quest` from a top-level pillar. Re-measured 2026-09-19 against `origin/main` before changing anything:
+
+| Claim (filed 2026-09-08) | Reading |
+|---|---|
+| The Quest is 1 of 3 top-level pillars in the live header | Half-expired. LIVE-250 already took the header from six tabs to **four** (Community · Quest · Spaces · About). Quest is still a **tab**, so the defect holds in kind. |
+| Equal sitemap priority 0.8 with Community and Lab | **Expired.** `app/sitemap.ts` already emits `/the-quest` at **0.6**. |
+| PillarNav triptych treats Lab / Quest / Community as peers | ✅ TRUE. |
+| Crew copy sells "the full game" as the reason to pay | ✅ TRUE in `lib/page-editor/templates/pricing.ts` and the PlanBand defaults. |
+
+LIVE-241 (member rail 16 → 7) was **not** built in this change: that count assumes Channels fold into Circles (LIVE-244), which is blocked on a re-ruling. Shipping a fake 7 by hiding Channels would be the shape-not-truth failure. The marketing half does not wait on that ruling.
+
+**Decision.**
+
+1. **Header tabs are three:** The Community, Spaces, About. The Quest's landing, Journeys, Practices and Channels (`/discover/topics`) become rows in The Community panel. Nothing is deleted; CORE-MODEL §4 still holds.
+2. **The live surface is still DB rows**, so the data half is `20270345006000`, same shape as LIVE-250's `20270345004400`. The footer stays six: it is the site map, and `/the-quest` keeps its flat link the way `/the-lab` did.
+3. **PillarNav is a pair plus a side line.** Lab and Community stay numbered peers. The Quest is a sentence underneath ("the light game everyone plays alongside their Circle"), linked unless the reader is already on that page.
+4. **Crew copy stops selling the game as a third of the product.** Gems, Vault cash-in, authoring a Quest, unlimited Vera and the leaderboard stay named as what Crew carries. The phrase "the full game" leaves the pricing template, the PlanBand default, and the What-is-Frequency Crew line. [ADR-1403](DECISIONS.md) already ruled Crew is patronage, not a feature wall; this is the copy following that.
+
+**Consequences.** `lib/nav/registry.source.test.ts` now pins three triggers, `/the-quest` inside The Community panel, and `/the-lab` still inside About. Sitemap 0.6 is pinned in `app/sitemap.test.ts`. Apply the migration on production with the deploy; marketing pages stay static for up to an hour (`revalidate = 3600`).
+
+## ADR-1409: Naive event timestamps are UTC parts, never the machine zone (2026-09-19)
+
+**Status:** Accepted · Backlog `LIVE-377`
+
+**Context.** Event `starts_at` / `ends_at` store wall-clock as UTC parts (`7:00 PM` →
+`2026-07-01T19:00:00Z`). `eventInstant` already documented that. It then did `new Date(storedIso)`
+on strings that often have **no** `Z`. The ES5 Date parser treats those as local, so a Pacific
+laptop and a UTC server disagree on the same row. Five `pickSeatLanding` tests were red on every
+non-UTC machine and green in CI.
+
+**Decision.** A naive ISO in `eventInstant` is UTC parts. Append `Z` when the string has no offset.
+Do not pin the test process's `TZ`; that would hide a production leak on any non-UTC runtime.
+
+**Consequences.** A naive ISO and a `Z` suffix resolve to the same instant. The backlog probe
+reads that parse; it does not spawn a test runner (LIVE-034). Vercel is UTC, so the leak was
+invisible in production and loud on a laptop. Numbered **1409** because **1408** is LIVE-254 on
+main.
+
+## ADR-1410: `/discover` visual captures are advisory, because the database sets the page height (2026-09-19)
+
+**Status:** Accepted · **Extends** the visual two-tier split in `test/e2e/visual-tiers.test.ts` · Backlog
+`LIVE-373`
+
+**Context.** `/discover` photographs live Circles, events and posts. On 2026-09-15 a new listed
+Circle grew the page about 180 px. Every open PR's blocking visual job failed, including branches
+that touched no public code. Masks cannot fix a height. `viewportOnly` was tried and the owner
+reversed it (#2139): it dropped eight below-the-fold baselines to quiet a rare recapture.
+
+**Decision.** Route (3) from the row, not (1) or (2).
+
+1. **Keep the full-page photograph.** The design surface below the fold stays in the picture.
+2. **Move those eight captures to the advisory visual tier.** Tag `visual · discover` with
+   `@visual` + `@advisory`. The blocking grep inverts `@shell|@advisory`. The advisory grep
+   takes `@visual` and (`@shell` or `@advisory`).
+3. **Do not tag it `@shell`.** That tag is what `shell-reporter.ts` counts as the authed app. A
+   running anonymous `/discover` capture would make the reporter call the member shell covered.
+4. **a11y and overflow stay on `publicSurfaces()`.** Those assert roles and geometry, not pixels.
+
+**Rejected.** Re-baselining on every new Circle (the next Circle repeats the outage). Putting
+`/discover` back in `LIVE_DATA_PATHS` / `viewportOnly` (owner reversed that trade). Seeding a
+fixture index in this change (the real fix the shell tier also wants; not this row).
+
+**Consequences.** A listed Circle is information in the advisory report, not a red X on every
+PR. Recapture `/discover` when the design moved. `LIVE-373` closes when the blocking public loop
+no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-377 on main.
+
+## ADR-1411: The signed-in phone bar is five destinations (HYG-033)
+
+**Status:** Accepted · 2026-09-19 · Designer (Daniel) · **Amends** [ADR-120](DECISIONS.md) (the original four-destination bottom bar) · does **not** amend [ADR-1406](DECISIONS.md) (member rail count) · numbered **1411** because **1410** is `/discover` visual captures on main (`LIVE-373`) · corroborated by `lib/nav/registry.ts` (`CALM_SPINE_ROOTS`, `calmSpine`) and `components/layout/app-shell.tsx` (`MobileTabBar`)
+
+**Context.** The signed-in bottom bar had grown to seven flex-1 slots: Menu · Feed · Community · Zap · Events · The Quest · Marketplace. At 320px those slots summed to the viewport with one pixel of headroom; "Community" and "The Quest" truncated on a 390px capture already in the tree. The 2026-09-08 ruling cut the bar to five. LIVE-241's 16→7 *rail* count is a different surface and was cancelled by ADR-1406; this ADR is only the phone bar.
+
+**Decision.**
+
+1. **The bar is Menu · Feed · Zap · Events · Marketplace.** Circles (labeled Community on the old tab) and The Quest leave the bar. They stay on the member rail and in the Menu drawer. Nothing is deleted.
+2. **Marketplace keeps its umbrella name** ([NAMING.md](NAMING.md)). Do not shorten it to Market to buy pixels.
+3. **Do not fold Channels. Do not cut the rail to seven.** Those are ADR-1406.
+4. **Five slots at 320px are 64px.** The implementing tests assert caption fit against that slot (`components/layout/header-fit.test.ts` plus `test/e2e/overflow.spec.ts` at 320px) so the next longer label cannot silently truncate.
+
+**Rejected.** Keeping Community and The Quest as tabs. Renaming Marketplace. Bundling a rail rewrite.
+
+**Consequences.** `CALM_SPINE_ROOTS` is three destination ids (`feed`, `events`, `market`). The Zap split uses `floor(n/2)` so a later count change does not hard-code a seven-slot slice. The seven-slot hard cap in `game-stats-dock.tsx` remains a *touch-target* ceiling, not a label-fit claim.

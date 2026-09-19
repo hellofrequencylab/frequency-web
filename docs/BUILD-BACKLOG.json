@@ -37,27 +37,33 @@
     ],
     "slate": {
       "ruled": "Owner ruling 2026-08-20 evening: \"Take all tasks out of deferred or parked programs and add them to the priority list. I want all those things built out. The things that we are deferring are white labeling, mobile application, texting.\" Supersedes the same-day \"hold white label and app at the end\" slate: the App Platform now builds; only the three named holds park.\n\n\u2500\u2500 OWNER RULING 2026-08-24: \"I want to save the etsy grade store for last. Second to last is the white label tenant sites with full WYSIWYG editor. I want everything else fully functional and clean before those.\" So DEF-ETSY moves out of W8 into its own final wave W10, and white label (PROG-E10 Sites, PROG-W6 member sites + theme marketplace, PROG-P7 per-Space theming depth) is UNPARKED into W9 immediately before it. deferredByName drops to mobile and texting only.\n\nINTERPRETATION, stated so it can be corrected in one line: the CORE editor phases E0-E9 stay in W4 and were NOT moved to the end. \"White label tenant sites with full WYSIWYG editor\" is read as the tenant-sites DELIVERABLE \u2014 PROG-E10 is literally titled 'Sites, absorbs White Label W1-W5' \u2014 not as the editor platform underneath it. E10 depends on E0-E9; W1's content retirements block E3; E2 projects onto the Loom built in W3. Moving E0-E9 to the end would invert those documented dependencies and would leave 'everything else' with no editor to be built on. If the intent was to move the whole editor program back, only the W4 block moves.\n\n\u2500\u2500 OWNER RULING 2026-08-25: DEF-A2P parks with the others, asked as a direct multiple choice against its real cost (EIN, carrier fee, 2-4 weeks of TCR review). The named holds are now FOUR: DEF-MOBILE, DEF-ETSY, PROG-W6, DEF-A2P. `deferredByName` was drifting in BOTH directions before this edit \u2014 it listed DEF-A2P (whose row read `open`) and omitted DEF-ETSY and PROG-W6 (whose rows both read `parked`). The list and the row statuses now agree, and that agreement is the thing to check when either changes.\n\n\u2500\u2500 OWNER RULING 2026-09-07, and it REVERSES the 2026-08-20 unpark of the App Platform. Asked as \"I want everything signed off except the editor, app platform and Etsy grade shop\", then answered on a follow-up as \"Keep white label and mobile app deferred. Prioritize everything else\", then CORRECTED in the owner's own words: \"I made a mistake. keep the following as deferred until the end. 1. app platform 2. White label platform 3. etsy build.\"\n\nSO THE DEFERRED SET IS FOUR PROGRAMS, in the order the owner listed them: (1) APP PLATFORM \u2014 PROG-A1, PROG-A3, PROG-A4; (2) WHITE LABEL \u2014 PROG-E10 (Sites), PROG-W6 (member sites + theme marketplace), PROG-P7 (per-Space theming depth); (3) ETSY \u2014 DEF-ETSY; (4) MOBILE \u2014 DEF-MOBILE, carried forward from the 2026-08-20 and 2026-08-25 rulings and NOT re-named in the correction, so it is held on the earlier ruling rather than this one. Everything else is on the prioritized list.\n\n\ud83d\udd34 THE EDITOR QUESTION WAS ASKED AND ANSWERED IN THE SAME BREATH. The owner asked: \"when you say editor, is that the full white label editor? if so, add that to the white label section.\" It is not. docs/EDITOR-ARCHITECTURE.md opens by stating what E0-E9 is for \u2014 \"Frequency should author a block ONCE and render it on a member's Spotlight, a Space's profile, a Space's external Site, and an email\" \u2014 so E0-E9 is Frequency's own block editor, the thing every member-facing surface composes from. Only E10 is the white-label deliverable, and it is literally titled \"Sites, absorbs White Label W1-W5\". E10 therefore moves to the white-label group and E0-E9 STAYS ACTIVE in W4. Moving E0-E9 back would leave \"everything else\" with no editor to be built on, which is the opposite of what the ruling asks for.\n\n\u26a0\ufe0f ONE COST TO STATE PLAINLY, because parking a program is not free. PROG-A3 (\"enablement inside RLS\") was the App Platform's only P1 and sat in W2, the foundation wave, beside DEF-HARDEN. Parking it means a disabled module's data stays reachable by direct API until the App Platform builds. Nothing else in the active list depends on it, so this is a stated consequence rather than a blocker \u2014 but it is the one place where \"defer the app platform\" costs a security posture rather than a feature.\n\n\u26a0\ufe0f AND DEF-A2P COMES OFF THE DEFERRED LIST, on the plain reading of \"everything on the list except white label and mobile app\". The correction re-added three programs and did not re-add texting. It is NOT agent-work \u2014 a Standard EIN-backed brand, a carrier fee, and 10-15 days of TCR review \u2014 so it moves to the OWNER lane as an open row with ownerAction \"account\" rather than back into a build wave. If the intent was to keep texting parked, one line moves it back.\n\n\u2500\u2500 OWNER CONFIRMED 2026-09-07, in reply to the reading above: \"go head and add E0-E9 into the backlog production list. keep mobile app deferred\". So the editor reading stands \u2014 E0-E9 is Frequency's own block editor and is on the production list in W4; only E10 sits with white label. Mobile stays in W12. Nothing moved on this confirmation: it ratifies the interpretation rather than changing it, which is the point of having stated it in one paragraph that could be corrected in one line.\n\n\u2500\u2500 OWNER RULING 2026-09-14 (ADR-1325, twelve multiple-choice answers after the build-completion audit): \"Stabilise, rework, then Editor E0; Sites wait for the block contract.\" White label is UNPARKED into the editor sequence: PROG-E10 (Sites) runs after PROG-E3 and before the E4 to E9 depth phases, and PROG-W6 + PROG-P7 close the runway after E9. Multiplayer (E0 task 18) is deferred to the depth phase behind render_path, so E0 is an L. The App Platform (W9) and the Etsy-grade store stay deferred; mobile stays held on the 2026-08-20 ruling. deferredByName drops White label.",
-      "note": "The development order for the whole open queue, waves in sequence, ids in order within a wave. Array order IS the sequence \u2014 W0 first through W10 last, with `owner-timed` kept at the end because it is scheduled by the owner rather than by this order. Owner-lane rows are decisions, not sequenced dev. Status lives only in each row's probe; this object is the sequence.",
+      "note": "The development order for the whole open queue, waves in sequence, ids in order within a wave. Array order IS the sequence \u2014 W0 first through W12 last, with `owner-timed` kept at the end because it is scheduled by the owner rather than by this order. Owner-lane rows are decisions, not sequenced dev. Status lives only in each row's probe; this object is the sequence.\n\n\u2500\u2500 2026-09-19 SURVEY: next agent builds HYG-033 (five-tab bar) after LIVE-254 merges; then LIVE-409 CrewGate compose walls and LIVE-410 membership vs readiness. Do not pick up cancelled LIVE-241 16\u21927. Do not enable RLS on spatial_ref_sys.",
       "waves": [
         {
-          "name": "W0 \u00b7 P0 \u2014 costing something today: an incident, a wrong money/consent/permission answer, or a crawl-facing defect the submitted sitemap exposes. EMPTY IS THE GOAL. It is not empty: LIVE-290 is a live money defect (half the spaces on the platform have a working Stripe account and no surface that says so). OWN-050 is the other P0 and is a console action, in owner-timed.",
-          "ids": []
-        },
-        {
-          "name": "W0b \u00b7 P1 \u2014 repairs ready to work now, and the instruments that keep the gates honest. This is the wave to pull from when you want the next thing to do.",
+          "name": "W0 \u00b7 P0 \u2014 costing something today: an incident, a wrong money/consent/permission answer, or a crawl-facing defect the submitted sitemap exposes. EMPTY IS THE GOAL. LIVE-234 is the money proof (one succeeded $44 ticket is not five loops). OWN-073 sits in owner-timed: nine support-admitted members still un-emailed. PROG-R5 is no longer here \u2014 Connect is not the lie.",
           "ids": [
-            "LIVE-186",
-            "LIVE-213",
-            "LIVE-367",
-            "LIVE-373",
-            "LIVE-376",
-            "LIVE-377",
-            "LIVE-392"
+            "LIVE-234"
           ]
         },
         {
-          "name": "W0c \u00b7 P2 \u2014 small cleanups worth doing whenever a lane is clear, plus the tail of a sequenced repair whose head is higher up the slate (LIVE-293 and LIVE-294 follow LIVE-290 to LIVE-292).",
+          "name": "W0b \u00b7 P1 \u2014 product-first interior (ADR-1403) ready to work now, then CORE-MODEL walls that are still untrue. Pull from here.",
           "ids": [
+            "LIVE-254",
+            "LIVE-410",
+            "LIVE-186",
+            "LIVE-213",
+            "LIVE-376"
+          ]
+        },
+        {
+          "name": "W0c \u00b7 P2 \u2014 FOCUS remainder, gems replay grant, remaining audit security, small cleanups, Journey sales tail.",
+          "ids": [
+            "LIVE-408",
+            "HYG-102",
+            "HYG-100",
+            "LIVE-413",
+            "HYG-101",
+            "LIVE-411",
             "HYG-075",
             "LIVE-335",
             "LIVE-393",
@@ -67,8 +73,10 @@
           ]
         },
         {
-          "name": "W0d \u00b7 P3 \u2014 the perf set and the deferred niceties. 12 visitors / 18 pageviews in 31 days: the funnel, not the page speed, is the constraint, and these are priced against that rather than against merit.",
+          "name": "W0d \u00b7 P3 \u2014 craft: shell split, hex, parked niceties. 12 visitors / 18 pageviews in 31 days: the funnel, not the page speed, is the constraint.",
           "ids": [
+            "LIVE-412",
+            "HYG-099",
             "LIVE-216",
             "LIVE-220",
             "LIVE-221",
@@ -91,15 +99,11 @@
             "LIVE-228",
             "LIVE-229",
             "PROG-R5",
-            "LIVE-234",
             "PROG-R6",
             "PROG-R7",
-            "LIVE-241",
             "LIVE-242",
-            "LIVE-244",
             "LIVE-246",
             "PROG-R8",
-            "LIVE-254",
             "PROG-R9",
             "LIVE-260",
             "PROG-R10",
@@ -214,7 +218,6 @@
             "OWN-048",
             "LIVE-060",
             "OWN-011",
-            "HYG-033",
             "OWN-052",
             "OWN-054",
             "OWN-058",
@@ -232,7 +235,9 @@
             "OWN-074",
             "OWN-076",
             "OWN-075",
-            "LIVE-399"
+            "LIVE-399",
+            "OWN-077",
+            "OWN-078"
           ]
         }
       ],
@@ -269,7 +274,7 @@
           "P2": "Scheduled build-out: the programme phases in their wave order, the perf set (no traffic yet justifies auth reordering), feature depth, and record hygiene.",
           "P3": "Housekeeping with no member-facing consequence, the perf set (12 visitors / 18 pageviews in 31 days: the funnel is the constraint, not the page), and work gated on something that has to happen first \u2014 an owner-dispatched run, a traffic threshold, a bundle that does not exist yet. NOT the deferred programs: those are `parked`, which is a status, not a priority. This line named mobile / texting / Etsy / white-label until 2026-09-07, which confused a hold with a ranking."
         },
-        "set": "2026-09-06, the backlog audit (every open row read, the done rows swept for unfiled residue, the docs and code swept for deferred work). Re-rank when a row changes lane or a premise is re-tested; do not let a P0 sit because its wave is later."
+        "set": "2026-09-19, survey compile: P0 is LIVE-234 + OWN-073 only; PROG-R5 is P2; HYG-033 is P1 live code; FOCUS remainder P2; craft P3. Re-rank when a row changes lane or a premise is re-tested; do not let a P0 sit because its wave is later."
       },
       "phases": {
         "note": "THE PHASED PRODUCTION PLAN (ADR-1325, 2026-09-14). Phases are the owner-facing shape of the same sequence the waves encode; a wave is the unit check:backlog proves, a phase is the unit that exits. A phase exits only on all five: every row done with its probe passing; CI green on main at the last merge; the production deploy READY with all six postbuild gates printed; visual baselines recaptured for every surface the phase moved; a round-report ADR naming every CI failure the phase saw and its mitigation. The loop that works each row (pick, branch, build to the probe, validate, push, arm auto-merge, repair on red, verify the deploy, record) is ADR-1325 \u00a7\"The loop\". Lanes: two by ruling 4, widened by owner instruction on 2026-09-14 (\"fan way out\") to as many worktree lanes as there are independent rows, one row per PR, merge one at a time when two touch the same surface.",
@@ -5669,20 +5674,20 @@
     },
     {
       "id": "HYG-033",
-      "status": "open",
-      "priority": "P2",
+      "status": "done",
+      "priority": "P1",
       "lane": "hygiene",
       "size": "S",
       "source": {
         "file": "docs/DECISIONS.md",
-        "ref": "mobile display-surface audit, 2026-08-31"
+        "ref": "ADR-1411"
       },
-      "title": "Two of the seven mobile tab-bar labels truncate at every supported width, and three do at 320px",
-      "detail": "Visible in the phone capture as 'Communi...' and 'Marketpl...'. The bar carries seven flex-1 slots (Menu, Feed, Community, Zap, Events, The Quest, Marketplace). At a 412px viewport each slot is 58.9px; the label renders at text-3xs = 0.625rem = 10.625px at this app's 17px root, so 'Marketplace' needs roughly 64px and 'Community' roughly 57px. At 320px \u2014 the narrowest width the contract commits to \u2014 each slot is 45.7px and 'The Quest' truncates too.\n\nWHAT THE EXISTING CONTRACT DOES AND DOES NOT SAY. components/sidebar/game-stats-dock.tsx already calls seven 'a HARD CAP, not a preference' \u2014 but it caps on TOUCH TARGET (45.7px at 320px, above the 44px WCAG 2.5.5 floor), and nothing anywhere checks that the LABEL fits the slot it was given. app-shell.tsx adds `truncate` plus a full aria-label, which is a correct mitigation for a screen reader and does nothing for a sighted thumb: the caption is how a member tells Marketplace from The Quest.\n\nCurrent published guidance is 3-5 primary destinations with short, untruncated labels, and explicitly names 'Notifi.../Transac...' as the failure mode. Cutting to five is an IA decision about which destinations leave the bar (the drawer already carries the long tail), and renaming is governed by docs/NAMING.md \u2014 so this is an owner row, not a mechanical one.\n\n\u2500\u2500 PREMISE RE-TESTED 2026-09-08 (premise sweep, ADR-1269) and it HOLDS unchanged: the bar in components/layout/app-shell.tsx still runs seven `min-w-0 flex-1` slots at `text-3xs`, each label a `w-full truncate` span under a full `aria-label`, with the five destinations coming from `calmSpine()`. Nothing checks that the label fits the slot it was given. Still an IA decision about which destinations leave the bar, so still an owner row.\n\n\ud83d\udd34 CORRECTION 2026-09-08, WHILE WORKING HYG-057 (ADR-1270): a NEIGHBOURING ROW BLAMED THE WRONG WIDTH, and this row should not inherit it. HYG-057 said this was \"a truncation only a 320px capture would have caught\". It is not. Crop the bottom 70px of the committed test/e2e/__screenshots__/visual.spec.ts/app-feed--dawn-light-mobile.png \u2014 a 390-wide baseline that has been in the tree since the shell was first photographed \u2014 and the bar reads `Menu \u00b7 Feed \u00b7 Communi\u2026 \u00b7 Zap \u00b7 Events \u00b7 The QuestMarketpL\u2026`. Two labels cut and two more colliding with no gap, AT THE WIDTH THE SUITE ALREADY PHOTOGRAPHS. The arithmetic in this row already said so (390/7 = 55.7px a slot against ~64px for 'Marketplace'); nobody had looked at the picture.\n\nWHY NO CAMERA CAUGHT IT, which is the part worth keeping: a baseline does not catch a DEFECT, it catches a CHANGE. The truncation was present when the reference was taken, so it IS the reference, and the gate holds the product to it faithfully. A 320px capture would have frozen the same defect one label worse. Nothing in the visual suite was ever going to report this \u2014 the instrument for \"a label does not fit the slot it was given\" is a MEASUREMENT, the shape overflow.spec.ts already has and does not yet apply to text fit.\n\nWHAT 320 STILL ADDS, so the correction does not overshoot: at 45.7px a slot a third label ('The Quest') truncates and the collision worsens, and since ADR-1270 that width is photographed. It will catch the NEXT change there. It was never going to catch this one.\n\nThis row is otherwise unchanged and stays an owner row: which destinations leave the bar is still an IA decision, and renaming is still governed by docs/NAMING.md.\n\n\u2500\u2500 \u2705 RULED 2026-09-08 (owner): **cut the mobile tab bar to FIVE destinations \u2014 remove Community and The Quest.** Both keep their place in the drawer, which already carries the long tail.\n\nThe bar becomes: **Menu \u00b7 Feed \u00b7 Zap \u00b7 Events \u00b7 Marketplace.**\n\n\u26a0\ufe0f ONE THING THE RULING DOES NOT FIX, FLAGGED AT THE TIME AND RECORDED HERE SO THE IMPLEMENTING PR MEASURES IT RATHER THAN ASSUMING IT. Removing Community and The Quest removes the two labels that truncate at 412px, so the owner's own capture is resolved. **Marketplace is the one that stays and is still the widest.** At five slots: 412/5 = 82.4px per slot against roughly 64px of label \u2014 comfortable. At **320px**, the narrowest width the contract commits to, 320/5 = **64.0px** against that same ~64px \u2014 exactly on the line, with zero margin for a wider glyph or a locale. The five-slot cut is necessary and is not by itself proof that Marketplace fits everywhere.\n\nCODE THAT REMAINS (no longer an owner ask): the IA change in `calmSpine()` / components/layout/app-shell.tsx, and \u2014 because this row exists precisely because nothing measured label fit \u2014 a check that asserts the rendered label width against the slot width at 320px, so the next label change cannot silently truncate again. The seven-slot \"HARD CAP\" comment in components/sidebar/game-stats-dock.tsx caps TOUCH TARGET and did not catch this; it should say so beside the new five.",
+      "title": "Mobile tab bar is five destinations: Menu, Feed, Zap, Events, Marketplace",
+      "detail": "RULED 2026-09-08: cut the mobile tab bar to FIVE destinations \u2014 remove Community and The Quest to the drawer. The bar becomes Menu \u00b7 Feed \u00b7 Zap \u00b7 Events \u00b7 Marketplace.\n\n\u2500\u2500 FIXED 2026-09-19 as ADR-1411, after LIVE-254 (#2690) merged. ADR-1410 on main is `/discover` visual captures (LIVE-373). `CALM_SPINE_ROOTS` is feed, events, market. Circles and The Quest stay on the rail and in the Menu drawer. The 16\u21927 member-rail count is still cancelled (ADR-1406); this row never owned it. Caption fit at 320px (64px slots) is pinned in header-fit.test.ts and overflow.spec.ts.",
       "verify": {
-        "kind": "manual",
-        "evidence": "2026-09-08: ruling recorded \u2014 five destinations, Community and The Quest removed to the drawer. Not built: the bar still carries seven flex-1 slots. Arithmetic for the ruled state, to be checked by the implementing PR rather than assumed: 412/5 = 82.4px per slot, 320/5 = 64.0px, against ~64px for \"Marketplace\" at --text-3xs (0.625rem at the 106.25% density root). Marketplace is on the line at 320px. Closes when the bar renders five AND a width assertion at 320px exists.",
-        "checked": "2026-09-08"
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const r=fs.readFileSync(\"lib/nav/registry.ts\",\"utf8\");const m=r.match(/CALM_SPINE_ROOTS[\\s\\S]*?as const/);if(!m)fail(\"CALM_SPINE_ROOTS missing\");const block=m[0];if(/id: .circles./.test(block)||/id: .quest./.test(block))fail(\"Community or The Quest is still a calm-spine root; the ruled bar is Menu Feed Zap Events Marketplace\");for(const id of [\"feed\",\"events\",\"market\"])if(!(new RegExp(\"id: .\"+id+\".\")).test(block))fail(\"calm spine lost \"+id);console.log(\"HYG-033 ok: Community and The Quest are off the mobile spine\")'",
+        "note": "Measures the ruling, not the truncation arithmetic: Community and The Quest gone from CALM_SPINE_ROOTS, Feed/Events/Marketplace remain. Re-pointed 2026-09-19 from a stale manual owner row (ruled 2026-09-08, never built)."
       }
     },
     {
@@ -9892,7 +9897,7 @@
       },
       "closed": "2026-09-15"
     },
-    {
+        {
       "id": "LIVE-215",
       "title": "The webhook verifies against ONE signing secret, so connected-account events can never be received",
       "status": "done",
@@ -9903,7 +9908,7 @@
         "file": "app/api/webhooks/stripe/route.ts",
         "ref": "constructEvent, line 75"
       },
-      "detail": "FILED 2026-09-08 out of OWN-050, which measured the Stripe destination and found the gap this row names.\n\napp/api/webhooks/stripe/route.ts:75 verifies with `stripe.webhooks.constructEvent(body, sig, STRIPE_WEBHOOK_SECRET)` \u2014 ONE secret, a single string from lib/billing/stripe.ts:36. The live destination is scoped `Events from: Your account`.\n\nWHY THAT IS A REAL GAP AND NOT A STYLE POINT. Every money path in this repo is a Connect DESTINATION CHARGE (`transfer_data.destination` + an application fee: lib/billing/tickets.ts:406, lib/billing/tips.ts:95, lib/billing/space-membership-checkout.ts:111, lib/commerce/checkout.ts:270), so the charge, the checkout session, the subscription and the invoice all live on the PLATFORM account. Nine of the ten subscribed events fire there and are correctly configured.\n\n`account.updated` is the exception. A connected account's capability changes fire on the CONNECTED account, and a \"Your account\" destination never receives them. So the route's first switch case \u2014 `persistAccount` mirroring a host's capability flags onto their profile \u2014 has never had an event to run on, and cannot.\n\n\ud83d\udd34 THE CONSEQUENCE, which is silent and gets worse with adoption. `syncConnectedAccount()` (lib/billing/connect.ts:255) re-reads the account on the `?payouts=return` redirect, so onboarding state is captured correctly \u2014 that is how the owner's three flags went true on 2026-09-08. Nothing re-reads AFTER that. When Stripe later disables a host's payouts (an expiring identity document, a failed re-verification, a dispute threshold), the product keeps `stripe_payouts_enabled = true` forever and keeps offering that host's payout surfaces. With one connected account this is invisible. It stops being invisible on the first live host whose capabilities change after onboarding, and the failure is the worst shape available: the member sees a working button and the money does not move.\n\n\u26a0\ufe0f THE OBVIOUS FIX IS THE TRAP. Adding a second destination scoped to connected accounts issues a SECOND `whsec_`, and one secret cannot verify both \u2014 so the second destination would 400 on every delivery, and `Failed` would climb on a dashboard nobody watches. **The code change comes first.** Accept a LIST: read `STRIPE_WEBHOOK_SECRET` plus an additional secret, try each in turn, and treat a signature that matches none as the 400 it already is. Then add the destination.\n\n\ud83d\udccc THE GATE THIS NEEDS, per AGENTS.md \u2014 every fail-safe needs a gate that notices it fired. A second secret that is configured but never matches is indistinguishable from one that is never used, because no connected account has changed. The test must assert that a payload signed with the SECOND secret verifies, not merely that the code compiles with two.\n\n\u2500\u2500 \ud83d\udd34 ENLARGED 2026-09-08 BEFORE ANY OF IT WAS BUILT, which is the cheapest moment to find this. The Events tab on the platform account shows the Connect onboarding emitting **v2 Core Events** \u2014 `v2.core.account.created`, `v2.core.account[configuration.merchant].capability_status_updated`, `v2.core.account[identity].updated` and five more \u2014 for `acct_1UDVOCBIVqeEdnCr`.\n\nThe route switches on `case 'account.updated'`, a **v1** type. So the second signing secret and a connected-account destination, which is all this row originally scoped, would still leave `persistAccount` unreachable: the events being emitted for this account are on a surface the handler does not speak.\n\n**ESTABLISH THIS BEFORE BUILDING EITHER HALF:** does Stripe also emit v1 `account.updated` for accounts created through `accounts.create({type:'express'})` (lib/billing/connect.ts:210), or is v2 now the only surface for their lifecycle? The answer decides whether this row is \"accept two secrets\" or \"accept two secrets AND handle v2 event shapes\", which are different sizes. Do not size or start it until that is known.\n\n\u2500\u2500 CLOSED 2026-09-14. THE PREMISE WAS RE-TESTED FIRST, as the row asked. Stripe still emits v1 `account.updated` for connected accounts, and a Connect-scoped destination is the surface that delivers it. Source: https://docs.stripe.com/connect/webhooks, which says \"Connected accounts events include account.updated events for both v1 and v2 Accounts\" and, on the split the row observed, \"v2 Account objects trigger both v1 and v2 Events, which can have different scopes. For events triggered by connected accounts, v2 Events use the Your account scope, while v1 Events use the Connected accounts scope, even when triggered by the same v2 Account.\" So the `v2.core.account[...]` events seen on the platform Events tab on 2026-09-08 are the platform-scope twin of the same lifecycle, not a replacement for it: the v1 `account.updated` the handler switches on is emitted for the same account, on the Connected accounts scope, which the live destination (\"Your account\") does not subscribe to. The row is therefore \"accept two secrets\", not \"accept two secrets AND handle the v2 shape\". (docs.stripe.com is blocked by the agent egress proxy; the sentences were read through web search against that URL.)\n\nWHAT SHIPPED. lib/billing/stripe.ts reads STRIPE_CONNECT_WEBHOOK_SECRET (optional) beside STRIPE_WEBHOOK_SECRET and exports STRIPE_WEBHOOK_SECRETS, platform first, Connect second, blanks dropped. app/api/webhooks/stripe/route.ts verifies through `verifiedEvent()`, which tries each configured secret in order with `stripe.webhooks.constructEvent` and returns the first event that verifies; a miss on every secret is the same 400 it always was, and an empty list is still the 503. THE GATE: app/api/webhooks/stripe/route-secrets.test.ts runs the REAL Stripe SDK behind the route and asserts that a payload signed with the SECOND secret verifies and reaches persistAccount with the connected account id, that the FIRST still verifies, that a payload signed with neither is a 400 that writes no claim, and that a valid signature over a tampered body is a 400. lib/billing/stripe.test.ts pins the list order and blank-dropping. .env.example and docs/LAUNCH.md name the variable.\n\nOWNER STEP THAT REMAINS (not a code row): add the second destination in the Stripe dashboard at the same URL with Events from: Connected accounts, subscribed to account.updated, and set STRIPE_CONNECT_WEBHOOK_SECRET in Vercel to its whsec_. The order the row insisted on holds: the code that accepts two secrets is merged first, so the new destination never 400s.",
+      "detail": "FILED 2026-09-08 out of OWN-050, which measured the Stripe destination and found the gap this row names.\n\napp/api/webhooks/stripe/route.ts:75 verifies with `stripe.webhooks.constructEvent(body, sig, STRIPE_WEBHOOK_SECRET)` \u2014 ONE secret, a single string from lib/billing/stripe.ts:36. The live destination is scoped `Events from: Your account`.\n\nWHY THAT IS A REAL GAP AND NOT A STYLE POINT. Every money path in this repo is a Connect DESTINATION CHARGE (`transfer_data.destination` + an application fee: lib/billing/tickets.ts:406, lib/billing/tips.ts:95, lib/billing/space-membership-checkout.ts:111, lib/commerce/checkout.ts:270), so the charge, the checkout session, the subscription and the invoice all live on the PLATFORM account. Nine of the ten subscribed events fire there and are correctly configured.\n\n`account.updated` is the exception. A connected account's capability changes fire on the CONNECTED account, and a \"Your account\" destination never receives them. So the route's first switch case \u2014 `persistAccount` mirroring a host's capability flags onto their profile \u2014 has never had an event to run on, and cannot.\n\n\ud83d\udd34 THE CONSEQUENCE, which is silent and gets worse with adoption. `syncConnectedAccount()` (lib/billing/connect.ts:255) re-reads the account on the `?payouts=return` redirect, so onboarding state is captured correctly \u2014 that is how the owner's three flags went true on 2026-09-08. Nothing re-reads AFTER that. When Stripe later disables a host's payouts (an expiring identity document, a failed re-verification, a dispute threshold), the product keeps `stripe_payouts_enabled = true` forever and keeps offering that host's payout surfaces. With one connected account this is invisible. It stops being invisible on the first live host whose capabilities change after onboarding, and the failure is the worst shape available: the member sees a working button and the money does not move.\n\n\u26a0\ufe0f THE OBVIOUS FIX IS THE TRAP. Adding a second destination scoped to connected accounts issues a SECOND `whsec_`, and one secret cannot verify both \u2014 so the second destination would 400 on every delivery, and `Failed` would climb on a dashboard nobody watches. **The code change comes first.** Accept a LIST: read `STRIPE_WEBHOOK_SECRET` plus an additional secret, try each in turn, and treat a signature that matches none as the 400 it already is. Then add the destination.\n\n\ud83d\udccc THE GATE THIS NEEDS, per AGENTS.md \u2014 every fail-safe needs a gate that notices it fired. A second secret that is configured but never matches is indistinguishable from one that is never used, because no connected account has changed. The test must assert that a payload signed with the SECOND secret verifies, not merely that the code compiles with two.\n\n\u2500\u2500 \ud83d\udd34 ENLARGED 2026-09-08 BEFORE ANY OF IT WAS BUILT, which is the cheapest moment to find this. The Events tab on the platform account shows the Connect onboarding emitting **v2 Core Events** \u2014 `v2.core.account.created`, `v2.core.account[configuration.merchant].capability_status_updated`, `v2.core.account[identity].updated` and five more \u2014 for `acct_1UDVOCBIVqeEdnCr`.\n\nThe route switches on `case 'account.updated'`, a **v1** type. So the second signing secret and a connected-account destination, which is all this row originally scoped, would still leave `persistAccount` unreachable: the events being emitted for this account are on a surface the handler does not speak.\n\n**ESTABLISH THIS BEFORE BUILDING EITHER HALF:** does Stripe also emit v1 `account.updated` for accounts created through `accounts.create({type:'express'})` (lib/billing/connect.ts:210), or is v2 now the only surface for their lifecycle? The answer decides whether this row is \"accept two secrets\" or \"accept two secrets AND handle v2 event shapes\", which are different sizes. Do not size or start it until that is known.\n\n\u2500\u2500 CLOSED 2026-09-14. THE PREMISE WAS RE-TESTED FIRST, as the row asked. Stripe still emits v1 `account.updated` for connected accounts, and a Connect-scoped destination is the surface that delivers it. Source: https://docs.stripe.com/connect/webhooks, which says \"Connected accounts events include account.updated events for both v1 and v2 Accounts\" and, on the split the row observed, \"v2 Account objects trigger both v1 and v2 Events, which can have different scopes. For events triggered by connected accounts, v2 Events use the Your account scope, while v1 Events use the Connected accounts scope, even when triggered by the same v2 Account.\" So the `v2.core.account[...]` events seen on the platform Events tab on 2026-09-08 are the platform-scope twin of the same lifecycle, not a replacement for it: the v1 `account.updated` the handler switches on is emitted for the same account, on the Connected accounts scope, which the live destination (\"Your account\") does not subscribe to. The row is therefore \"accept two secrets\", not \"accept two secrets AND handle the v2 shape\". (docs.stripe.com is blocked by the agent egress proxy; the sentences were read through web search against that URL.)\n\nWHAT SHIPPED. lib/billing/stripe.ts reads STRIPE_CONNECT_WEBHOOK_SECRET (optional) beside STRIPE_WEBHOOK_SECRET and exports STRIPE_WEBHOOK_SECRETS, platform first, Connect second, blanks dropped. app/api/webhooks/stripe/route.ts verifies through `verifiedEvent()`, which tries each configured secret in order with `stripe.webhooks.constructEvent` and returns the first event that verifies; a miss on every secret is the same 400 it always was, and an empty list is still the 503. THE GATE: app/api/webhooks/stripe/route-secrets.test.ts runs the REAL Stripe SDK behind the route and asserts that a payload signed with the SECOND secret verifies and reaches persistAccount with the connected account id, that the FIRST still verifies, that a payload signed with neither is a 400 that writes no claim, and that a valid signature over a tampered body is a 400. lib/billing/stripe.test.ts pins the list order and blank-dropping. .env.example and docs/LAUNCH.md name the variable.\n\nOWNER STEP THAT REMAINS (not a code row): add the second destination in the Stripe dashboard at the same URL with Events from: Connected accounts, subscribed to account.updated, and set STRIPE_CONNECT_WEBHOOK_SECRET in Vercel to its whsec_. The order the row insisted on holds: the code that accepts two secrets is merged first, so the new destination never 400s.\n\n\u2500\u2500 SURVEY 2026-09-19 (Stripe/VAPID glance). VAPID closed on OWN-020 (production /api/status monitoring.push=true). Platform webhook proven on OWN-050. Dual-secret verifier shipped here. Remaining dashboard step (Connected-accounts destination + STRIPE_CONNECT_WEBHOOK_SECRET) is still named in this row and is not a second open P0.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/api/webhooks/stripe/route.ts\";if(!fs.existsSync(p))process.exit(79);const s=fs.readFileSync(p,\"utf8\");const body=s.split(\"\\n\").filter((l)=>!/^\\s*(\\/\\/|\\*|\\/\\*)/.test(l)).join(\"\\n\");\n// The consequence: the verifier must try MORE THAN ONE secret. A single scalar passed straight\n// into constructEvent is exactly the state this row describes, so that shape is the failure.\nconst single=/constructEvent\\([^)]*,\\s*STRIPE_WEBHOOK_SECRET\\s*\\)/.test(body);\nif(single)throw new Error(\"app/api/webhooks/stripe/route.ts still verifies against a single STRIPE_WEBHOOK_SECRET, so a connected-account destination cannot be added without failing every delivery (account.updated is undeliverable today)\");'",
@@ -10319,22 +10324,22 @@
         "checked": "2026-09-08"
       }
     },
-    {
+        {
       "id": "PROG-R5",
       "title": "Rework phase 5: the Connect onboarding push",
       "status": "open",
-      "priority": "P0",
+      "priority": "P2",
       "lane": "program",
       "size": "M",
       "source": {
         "file": "docs/CORE-MODEL.md",
         "ref": "\u00a75"
       },
-      "detail": "Highest commercial leverage in the plan, and the reason it is P0 rather than P1: nothing has EVER been charged on this platform. Production on 2026-09-08 read 0 commerce_orders, 0 event_tickets, 0 space_subscription_items, 0 financial_transactions. Five money loops are built and none has completed once. Surfacing Stripe Connect onboarding at the first sell attempt unblocks all five with one push.\n\nPREMISE RE-TESTED 2026-09-15 against production (the ADR-1082 rule), and it SPLIT: the symptom held exactly, the diagnosis had expired. Still true, unchanged from 2026-09-08: commerce_orders 0, event_tickets 0, space_subscription_items 0, financial_transactions 0, stripe_webhook_events 1. No longer true: onboarding is not the blocker. host_payouts_enabled and billing_live both read true; 2 of 58 profiles hold a Stripe account and BOTH are fully onboarded (charges + payouts enabled), against \"1 with an account, 0 onboarded\" when the row was written; and one Space carries two paid membership tiers ($10 and $5) behind a fully payout-ready owner, so the membership loop is unblocked END TO END in production and has still never completed. A second Space has a $44 tier behind an owner with no account at all, which is the reader the prompt is now for.\n\nSO THE ROW'S STATED FIX IS ALREADY SHIPPED AND DID NOT PRODUCE A SALE. Of the four children, LIVE-233 (surface onboarding), LIVE-235 (donation checkout) and LIVE-236 (per-Space email writer) are closed, and LIVE-339 closed the one seam LIVE-233 left open plus a misdirect it exposed (ADR-1357). The only child left is LIVE-234, five non-zero row counts, which needs a real purchase and cannot be satisfied by this repository at all. This row therefore stays OPEN on LIVE-234 and is NOT a code row any more: do not pick it up expecting to build something. 'Nothing has ever been charged' is still true and is no longer evidence that onboarding is why.",
+      "detail": "Highest commercial leverage in the plan, and the reason it is P0 rather than P1: nothing has EVER been charged on this platform. Production on 2026-09-08 read 0 commerce_orders, 0 event_tickets, 0 space_subscription_items, 0 financial_transactions. Five money loops are built and none has completed once. Surfacing Stripe Connect onboarding at the first sell attempt unblocks all five with one push.\n\nPREMISE RE-TESTED 2026-09-15 against production (the ADR-1082 rule), and it SPLIT: the symptom held exactly, the diagnosis had expired. Still true, unchanged from 2026-09-08: commerce_orders 0, event_tickets 0, space_subscription_items 0, financial_transactions 0, stripe_webhook_events 1. No longer true: onboarding is not the blocker. host_payouts_enabled and billing_live both read true; 2 of 58 profiles hold a Stripe account and BOTH are fully onboarded (charges + payouts enabled), against \"1 with an account, 0 onboarded\" when the row was written; and one Space carries two paid membership tiers ($10 and $5) behind a fully payout-ready owner, so the membership loop is unblocked END TO END in production and has still never completed. A second Space has a $44 tier behind an owner with no account at all, which is the reader the prompt is now for.\n\nSO THE ROW'S STATED FIX IS ALREADY SHIPPED AND DID NOT PRODUCE A SALE. Of the four children, LIVE-233 (surface onboarding), LIVE-235 (donation checkout) and LIVE-236 (per-Space email writer) are closed, and LIVE-339 closed the one seam LIVE-233 left open plus a misdirect it exposed (ADR-1357). The only child left is LIVE-234, five non-zero row counts, which needs a real purchase and cannot be satisfied by this repository at all. This row therefore stays OPEN on LIVE-234 and is NOT a code row any more: do not pick it up expecting to build something. 'Nothing has ever been charged' is still true and is no longer evidence that onboarding is why.\n\n\u2500\u2500 SURVEY 2026-09-19. P0 DROPPED. The Connect onboarding lie is expired (this row already said so on 2026-09-15): host_payouts_enabled and billing_live are true, onboarded hosts exist, and one House of Fates $44 ticket later succeeded. P0 for money is LIVE-234 (prove the loops). This phase is sequenced commercial push, not an incident.",
       "verify": {
         "kind": "manual",
-        "evidence": "Program phase; proven by its child rows. Three of four are closed (LIVE-233, LIVE-235, LIVE-236) plus LIVE-339; the open one is LIVE-234, which needs a purchase in production, not a commit. Re-measured 2026-09-15: the four money counters all still 0, but host_payouts_enabled true and 2/58 profiles fully onboarded, so onboarding is no longer the blocker and the row's own diagnosis has expired (ADR-1357). Sequence in docs/CORE-MODEL.md \u00a75 phase 5.",
-        "checked": "2026-09-15"
+        "evidence": "Program phase; proven by its child rows. Onboarding children closed. Open child is LIVE-234 (a purchase, not a commit). Re-priced P2 on 2026-09-19 because Connect is not the blocker. Sequence in docs/CORE-MODEL.md \u00a75 phase 5.",
+        "checked": "2026-09-19"
       }
     },
     {
@@ -10409,7 +10414,7 @@
         "checked": "2026-09-08"
       }
     },
-    {
+        {
       "id": "PROG-R10",
       "title": "Rework phase 10: placement is earned",
       "status": "open",
@@ -10420,7 +10425,7 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "\u00a75"
       },
-      "detail": "The most valuable exposure surface a business has - the Space directory - is sorted ALPHABETICALLY (lib/spaces/discovery.ts:135, applied :378-380). Meanwhile nothing on the platform can be bought into rank anywhere: no plan, tier, entitlement or Stripe field appears in any ORDER BY, score or inclusion filter. That is a real asset and it must stay true: earned exposure means EARNED, never sold.",
+      "detail": "The most valuable exposure surface a business has - the Space directory - is sorted ALPHABETICALLY (lib/spaces/discovery.ts:135, applied :378-380). Meanwhile nothing on the platform can be bought into rank anywhere: no plan, tier, entitlement or Stripe field appears in any ORDER BY, score or inclusion filter. That is a real asset and it must stay true: earned exposure means EARNED, never sold.\n\n\u2500\u2500 SURVEY 2026-09-19. Do not re-file \"directory is A\u2013Z\". LIVE-262 shipped DEFAULT_SPACE_SORT standing with name as tie-break. Remaining in this phase is the nightly rollup (LIVE-263) and keeping commercial tokens out of the score.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase; proven by its child rows. Sequence in docs/CORE-MODEL.md \u00a75 phase 10.",
@@ -10919,7 +10924,7 @@
       },
       "closed": "2026-09-15"
     },
-    {
+        {
       "id": "LIVE-234",
       "title": "Prove each money loop once in production",
       "status": "open",
@@ -10930,11 +10935,11 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "\u00a75"
       },
-      "detail": "Nothing has ever been charged. Production 2026-09-08: commerce_orders 0, event_tickets 0, space_subscription_items 0, financial_transactions 0, tips 0, creator_tips 0, store_redemptions 0, supporter_contributions 0. stripe_webhook_events holds exactly 1 row.\n\nFive non-zero row counts is the whole probe: a membership reaching active, a booking with a deposit, one order, one donation, one Space subscription. Until then every revenue number in this model is arithmetic, not evidence.  OWNER ASK MADE VISIBLE 2026-09-15 (ADR-1356). This row sat in the `live` lane with a `manual` probe, so check:backlog never demanded an `ownerAction` -- the guard only requires one on a row whose LANE is `owner`. The consequence is the exact failure AGENTS.md names: the ask was hiding in a live row's detail instead of being printed beside the OWNER section, and it read as an agent-workable P0 in every scan of the board. No agent can move it: the probe is five non-zero row counts produced by five REAL Stripe charges, which needs a human with a payment method. `account` is the nearest of the five keys (account|config|content|ruling|waiting) and it is an imperfect fit -- none of them names \"perform a real end-to-end transaction\", which is worth a glance at the taxonomy rather than a sixth key added on one row's evidence. The CODE half of this is PROG-R5, which is genuinely agent-workable and whose own detail says surfacing Connect onboarding at the first sell attempt unblocks all five loops with one push.\n\n\u2500\u2500 PROBE CORRECTED 2026-09-15 after it was nearly satisfied by nothing. The owner opened a real cs_live_ checkout for a $44 ticket to Toni Hypnotic Sound, did not complete it, and the session expired 30 minutes later on schedule. That left event_tickets holding exactly one row \u2014 pending, unpaid, worth nothing \u2014 and the row evidence as written (five tables NON-ZERO) would have read that as the ticket loop closing. It also incidentally proved two things worth keeping: reserve_ticket_atomic writes the pending row correctly with the right 3% fee, and the webhook received, signature-verified and recorded a SECOND event type (checkout.session.expired, stripe_webhook_events 1 to 2). The loop is real up to the Pay button; nothing has been charged.",
+      "detail": "Nothing has ever been charged. Production 2026-09-08: commerce_orders 0, event_tickets 0, space_subscription_items 0, financial_transactions 0, tips 0, creator_tips 0, store_redemptions 0, supporter_contributions 0. stripe_webhook_events holds exactly 1 row.\n\nFive non-zero row counts is the whole probe: a membership reaching active, a booking with a deposit, one order, one donation, one Space subscription. Until then every revenue number in this model is arithmetic, not evidence.  OWNER ASK MADE VISIBLE 2026-09-15 (ADR-1356). This row sat in the `live` lane with a `manual` probe, so check:backlog never demanded an `ownerAction` -- the guard only requires one on a row whose LANE is `owner`. The consequence is the exact failure AGENTS.md names: the ask was hiding in a live row's detail instead of being printed beside the OWNER section, and it read as an agent-workable P0 in every scan of the board. No agent can move it: the probe is five non-zero row counts produced by five REAL Stripe charges, which needs a human with a payment method. `account` is the nearest of the five keys (account|config|content|ruling|waiting) and it is an imperfect fit -- none of them names \"perform a real end-to-end transaction\", which is worth a glance at the taxonomy rather than a sixth key added on one row's evidence. The CODE half of this is PROG-R5, which is genuinely agent-workable and whose own detail says surfacing Connect onboarding at the first sell attempt unblocks all five loops with one push.\n\n\u2500\u2500 PROBE CORRECTED 2026-09-15 after it was nearly satisfied by nothing. The owner opened a real cs_live_ checkout for a $44 ticket to Toni Hypnotic Sound, did not complete it, and the session expired 30 minutes later on schedule. That left event_tickets holding exactly one row \u2014 pending, unpaid, worth nothing \u2014 and the row evidence as written (five tables NON-ZERO) would have read that as the ticket loop closing. It also incidentally proved two things worth keeping: reserve_ticket_atomic writes the pending row correctly with the right 3% fee, and the webhook received, signature-verified and recorded a SECOND event type (checkout.session.expired, stripe_webhook_events 1 to 2). The loop is real up to the Pay button; nothing has been charged.\n\n\u2500\u2500 SURVEY 2026-09-19. One House of Fates $44 ticket DID succeed. Count succeeded only. Pending/unpaid test reservations still sit in event_tickets and must not close a loop; delete them is OWN-078 (owner SQL). Remaining loops (membership, booking deposit, order, donation, Space subscription) still need a settled row each. Cloud agents cannot complete real charges.",
       "verify": {
         "kind": "manual",
-        "evidence": "SQL: five tables non-zero, counting ONLY settled rows. Read them, do not infer from Stripe dashboard. \ud83d\udd34 COUNT STATUS, NOT ROWS: event_tickets must be counted where status = succeeded, not count(*). On 2026-09-15 an abandoned checkout left a pending, never-paid $44 reservation in event_tickets, so a bare count(*) reads 1 against zero dollars and this row looks half-closed on a sale that never happened. financial_transactions is the honest cross-check: it is written only on settle, so a non-zero event_tickets beside a zero financial_transactions means a reservation, not a purchase.",
-        "checked": "2026-09-15"
+        "evidence": "SQL: five tables non-zero, counting ONLY settled rows. event_tickets where status = succeeded (not count(*)). 2026-09-19 survey: one House of Fates $44 succeeded ticket exists; abandoned pending test rows also exist (OWN-078). financial_transactions is the honest cross-check. Cloud could not delete pending tests.",
+        "checked": "2026-09-19"
       },
       "ownerAction": "account"
     },
@@ -11048,21 +11053,22 @@
     },
     {
       "id": "LIVE-241",
-      "title": "Member rail: 16 rows to 7",
-      "status": "open",
+      "title": "Member rail is as short as the role can use (16 to 7 cancelled)",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
       "source": {
         "file": "docs/CORE-MODEL.md",
-        "ref": "\u00a75"
+        "ref": "§5"
       },
-      "detail": "Feed, Around You, Circles, Events, Members, Messages, The Quest. Market's rows collapse into the one Marketplace umbrella (LIVE-243); Channels folds into Circles (LIVE-244); Library, Journal, Practices, Journeys and Vault move under their parent. lib/nav-areas.ts and lib/verticals/*.\n\nThe Quest KEEPS a row. The owner ruling is that the game is demoted from the centre to a side thing we all do together - not removed. Five of sixteen rows is the centre; one is a side thing.",
+      "detail": "CANCELLED AS A COUNT 2026-09-19 (Daniel / Designer; ADR-1406). The 16-to-7 plan is not the law. Member nav stays as short as the role can use, not as short as seven. Do not hide Channels, Library, Journeys or anything else to hit a number.\n\nThe 16 non-admin rail rows (Feed, Around You, Circles, Channels, Events, Message Boards, Members, Business Spaces, Market, Housing, Frequency Store, My Quest, Journeys, Practices, Library, The Vault) already hide through defaultAccess (visitor vs member), Admin telescoping, navAccess / area_permissions, and marketplace flags (the Store is often none while unpublished). Journal and My Contacts are railHidden, not role-hidden. A signed-in member still sees almost all sixteen; that is expected until a row's floor or matrix says they cannot use it.\n\nThe Quest still keeps a row. LIVE-254 (public header) is a separate PR. LIVE-244's fold is refused in the same ruling.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Count member-visible rows in the rendered rail as a free member. Seven.",
-        "checked": "2026-09-08"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const Q=String.fromCharCode(39);const d=fs.readFileSync(\"docs/DECISIONS.md\",\"utf8\");if(!d.includes(\"## ADR-1406\"))fail(\"ADR-1406 is missing, so the 16-to-7 cancel is unrecorded\");if(!/as short as the role can use/.test(d))fail(\"ADR-1406 does not carry the role-availability law\");const c=fs.readFileSync(\"docs/CORE-MODEL.md\",\"utf8\");if(c.includes(\"| Member rail rows (non-admin) | **16** | **7** |\"))fail(\"CORE-MODEL still targets seven member-rail rows\");if(!c.includes(\"role can use\"))fail(\"CORE-MODEL no longer states the role-availability target\");const n=fs.readFileSync(\"lib/nav-areas.ts\",\"utf8\");const key=\"key: \"+Q+\"channels\"+Q;if(!n.includes(key))fail(\"Channels left NAV_AREAS\");const slice=n.slice(n.indexOf(key), n.indexOf(key)+280);if(slice.includes(\"railHidden: true\"))fail(\"Channels is railHidden, which is a fold by another name\");console.log(\"LIVE-241 ok: 16-to-7 cancelled, role-availability is the law, Channels stay on the rail\")'",
+        "note": "Passes when ADR-1406 records the role-availability law, CORE-MODEL no longer targets seven member-rail rows, and Channels remains a visible NAV_AREAS row. Inverted from the old manual \"count seven\" probe, which would have passed a fake 7 that hid Channels."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-242",
@@ -11101,21 +11107,22 @@
     },
     {
       "id": "LIVE-244",
-      "title": "Fold Channels into Circles",
-      "status": "open",
+      "title": "Channels stay on the rail unless a role gate hides them (fold cancelled)",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
       "source": {
         "file": "docs/CORE-MODEL.md",
-        "ref": "\u00a75"
+        "ref": "§5"
       },
-      "detail": "OWNER RULING 2026-09-08. Channels ship an index, a detail page (720 lines), an editor and a 1,400-line console - and the channels table holds ZERO rows. channel_memberships is also empty, has no writer, and app/(main)/channels/actions.test.ts:233 literally asserts the app never writes it. A Channel reads as a topic Circle. Nothing is lost because there are no channels; redirect old links at /circles.\n\nRE-TESTED 2026-09-15 by a lane before working it: DO NOT BUILD AS WRITTEN. The three facts above are true of the RETIRED legacy tables channels and channel_memberships (20240102000000_hierarchy_v2.sql), and no route under app/(main)/channels or app/(main)/admin/channels reads them (actions.test.ts:184,232 and load-channels.test.ts:109-111 pin that). Every Channel surface reads topical_channels: the SEVEN seeded topics of docs/NAMING.md's locked Pillar > Channel > Circle ladder (Spirituality, Movement, Holistic Health, Human Relating, Activism, Creative, Business Support), with topical_channel_memberships written by tune in/out and READ by Messages (room access), Events connectors, People associations and profile associations; circles.topical_channel_id is consumed in 26 files; the Circle manifest's topicalChannelId field points at it; the sitemap emits /channels/<slug> per topic; Programs and Chapters (topical_channels.template_id, lib/channels/programs.ts, the Space program settings, two help articles) hang off it; 30 files outside the Channel directories consume topical_channel*. docs/GLOSSARY.md:29-35 already distinguishes the two. Retiring /channels as a redirect PR would delete the tune-in surface for seven live topics and the Programs feature, which is not \"nothing is lost\". OWNER: re-take ruling 6 (ADR-1294 / CORE-MODEL section 4b row 6) on the corrected measurement, the way the Store ruling was corrected beneath that table. If topical Channels are still to fold into Circles, that is a data-model change (topical_channel_id, the manifest field, Programs, Channel-scoped rooms, the sitemap) with a migration plan, an L not an M. LIVE-241's rail count (16 to 7) assumes this fold and waits on the same ruling. The legacy tables' residue is LIVE-334.",
+      "detail": "RULING 2026-09-19 (Daniel / Designer; ADR-1406): do not fold Channels into Circles. Channels stay unless a role, access-matrix, or flag gate says the viewer cannot use them. He did not pick fold.\n\nThe 2026-09-08 fold assumed the empty legacy `channels` / `channel_memberships` tables. The 2026-09-15 re-test showed every Channel surface reads `topical_channels` (the seven live topics). Retiring `app/(main)/channels` would delete the tune-in surface. LIVE-241's 16-to-7 count assumed this fold and is cancelled with it. Legacy-table residue remains LIVE-334.\n\nOWNER RULING 2026-09-08. Channels ship an index, a detail page (720 lines), an editor and a 1,400-line console - and the channels table holds ZERO rows. channel_memberships is also empty, has no writer, and app/(main)/channels/actions.test.ts:233 literally asserts the app never writes it. A Channel reads as a topic Circle. Nothing is lost because there are no channels; redirect old links at /circles.\n\nRE-TESTED 2026-09-15 by a lane before working it: DO NOT BUILD AS WRITTEN. The three facts above are true of the RETIRED legacy tables channels and channel_memberships (20240102000000_hierarchy_v2.sql), and no route under app/(main)/channels or app/(main)/admin/channels reads them (actions.test.ts:184,232 and load-channels.test.ts:109-111 pin that). Every Channel surface reads topical_channels: the SEVEN seeded topics of docs/NAMING.md's locked Pillar > Channel > Circle ladder (Spirituality, Movement, Holistic Health, Human Relating, Activism, Creative, Business Support), with topical_channel_memberships written by tune in/out and READ by Messages (room access), Events connectors, People associations and profile associations; circles.topical_channel_id is consumed in 26 files; the Circle manifest's topicalChannelId field points at it; the sitemap emits /channels/<slug> per topic; Programs and Chapters (topical_channels.template_id, lib/channels/programs.ts, the Space program settings, two help articles) hang off it; 30 files outside the Channel directories consume topical_channel*. docs/GLOSSARY.md:29-35 already distinguishes the two. Retiring /channels as a redirect PR would delete the tune-in surface for seven live topics and the Programs feature, which is not \"nothing is lost\". OWNER: re-take ruling 6 (ADR-1294 / CORE-MODEL section 4b row 6) on the corrected measurement, the way the Store ruling was corrected beneath that table. If topical Channels are still to fold into Circles, that is a data-model change (topical_channel_id, the manifest field, Programs, Channel-scoped rooms, the sitemap) with a migration plan, an L not an M. LIVE-241's rail count (16 to 7) assumes this fold and waits on the same ruling. The legacy tables' residue is LIVE-334.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e 'const fs=require(\"fs\");const p=[\"app/(main)/channels\"];const left=p.filter(x=>fs.existsSync(x));if(left.length)console.error(\"still present: \"+left.join(\", \"));process.exit(left.length?1:0)'"
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const Q=String.fromCharCode(39);if(!fs.existsSync(\"app/(main)/channels\"))fail(\"app/(main)/channels is gone; the ruling was to keep topical Channels\");const n=fs.readFileSync(\"lib/nav-areas.ts\",\"utf8\");const key=\"key: \"+Q+\"channels\"+Q;if(!n.includes(key))fail(\"no channels nav area\");const slice=n.slice(n.indexOf(key), n.indexOf(key)+280);if(slice.includes(\"railHidden: true\"))fail(\"Channels is railHidden\");const d=fs.readFileSync(\"docs/DECISIONS.md\",\"utf8\");if(!d.includes(\"## ADR-1406\"))fail(\"the Channels-stay ruling is unrecorded\");if(!d.includes(\"Channels stay\"))fail(\"ADR-1406 does not say Channels stay\");console.log(\"LIVE-244 ok: Channels stay unless a role gate hides them\")'",
+        "note": "INVERTED 2026-09-19 from a probe that required app/(main)/channels to be ABSENT. The ruling is to keep topical Channels. Passes when the route still exists, the rail row is not railHidden, and ADR-1406 records Channels stay."
       },
-      "ownerAction": "ruling"
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-245",
@@ -11282,22 +11289,22 @@
       },
       "closed": "2026-09-15"
     },
-    {
+        {
       "id": "LIVE-254",
       "title": "Demote /the-quest from a top-level pillar",
       "status": "open",
-      "priority": "P2",
+      "priority": "P1",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "docs/CORE-MODEL.md",
         "ref": "\u00a75"
       },
-      "detail": "The Quest is 1 of 3 top-level pillars in BOTH live nav menus (header and footer, from the menu_items table), holds sitemap priority 0.8 equal to /the-community and /the-lab, and appears in a PillarNav triptych cross-linking Lab / Quest / Community as peers. It is also sold as a Crew feature (\"adds the full game, with Gems, Vault cash-in, your own Quest to author\").\n\nThe page, its two nav entries, its sitemap priority and its role in the Crew upsell move together. The Quest survives as the side thing we all do together; it stops being a third of the story.",
+      "detail": "The Quest is 1 of 3 top-level pillars in BOTH live nav menus (header and footer, from the menu_items table), holds sitemap priority 0.8 equal to /the-community and /the-lab, and appears in a PillarNav triptych cross-linking Lab / Quest / Community as peers. It is also sold as a Crew feature (\"adds the full game, with Gems, Vault cash-in, your own Quest to author\").\n\nThe page, its two nav entries, its sitemap priority and its role in the Crew upsell move together. The Quest survives as the side thing we all do together; it stops being a third of the story.\n\n\u2500\u2500 SURVEY 2026-09-19. PR #2690 may still be open. Do not mark done until that merge; the probe is a live menu_items read. Interior leftovers that #2690 does not own (feed hero, Zap centre button) are LIVE-408.",
       "verify": {
         "kind": "manual",
-        "evidence": "Read menu_items: The Quest is not a top-level pillar in the header or footer menu.",
-        "checked": "2026-09-08"
+        "evidence": "Read menu_items: The Quest is not a top-level pillar in the header or footer menu. 2026-09-19: #2690 not treated as merged; leave open.",
+        "checked": "2026-09-19"
       }
     },
     {
@@ -12170,7 +12177,7 @@
         "checked": "2026-09-15"
       }
     },
-    {
+        {
       "id": "OWN-073",
       "title": "Tell the nine support-admitted members they are in, and offer them a display name",
       "status": "open",
@@ -12182,11 +12189,11 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1324 (the induction resume) and the 2026-09-14 handoff"
       },
-      "detail": "FILED 2026-09-14 from the induction-lockout handoff. All nine accounts carrying meta.admitted_by_support (stamped 11 Sep) are admitted, moved free to crew, and verified working. Nothing and nobody has told them. The member who reported it has been locked out since 15 July, last tried on 11 September, and her account has worked since that afternoon.\n\nTWO THINGS, one owner, no code. (1) One message to the reporter, and one to each of the other eight if you choose. (2) Admitting them skipped profile setup, so each appears to the community under the local part of their email and a generated handle until they edit both in settings; an optional nudge. meta.admitted_by_support makes the nine queryable in one line.",
+      "detail": "FILED 2026-09-14 from the induction-lockout handoff. All nine accounts carrying meta.admitted_by_support (stamped 11 Sep) are admitted, moved free to crew, and verified working. Nothing and nobody has told them. The member who reported it has been locked out since 15 July, last tried on 11 September, and her account has worked since that afternoon.\n\nTWO THINGS, one owner, no code. (1) One message to the reporter, and one to each of the other eight if you choose. (2) Admitting them skipped profile setup, so each appears to the community under the local part of their email and a generated handle until they edit both in settings; an optional nudge. meta.admitted_by_support makes the nine queryable in one line.\n\n\u2500\u2500 SURVEY 2026-09-19. Still unsent. A cloud agent cannot send the nine emails; this stays P0 owner content.",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-14: not yet sent. Closes when the reporter has been told; the identity nudge is optional and does not hold the row.",
-        "checked": "2026-09-14"
+        "evidence": "2026-09-19: not yet sent (cloud could not send). Closes when the reporter has been told; the identity nudge is optional and does not hold the row.",
+        "checked": "2026-09-19"
       }
     },
     {
@@ -13466,11 +13473,14 @@
     {
       "id": "LIVE-367",
       "title": "Three on-page money doors confirm a payment that nothing has settled",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "priority": "P1",
-      "source": "Found 2026-09-16 while wiring the settle for the ticket doors (LIVE-366). Named in ADR-1377 as \"the next row\" and in #2656's body; this is that row, filed rather than left in prose.",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1377, ADR-1407"
+      },
       "detail": "LIVE-366 closed this gap for the THREE TICKET DOORS and deliberately did not widen further. The same gap is still open on the other three on-page money surfaces, and it is the identical defect:\n\n  \u00b7 app/(main)/marketplace/buy-button.tsx  (commerce order)\n  \u00b7 app/(main)/people/[handle]/tip-button.tsx  (tip)\n  \u00b7 components/spaces/donations/donate-form.tsx  (Space donation)\n\n\ud83d\udd34 WHY IT MATTERS. `confirm({ redirect: 'if_required' })` keeps the buyer on the page, which means the common card path NEVER navigates -- so the session's `return_url`, carrying `session_id={CHECKOUT_SESSION_ID}` and written as the webhook's backstop, is never visited. The reconcile behind it is unreachable on the path that is now the default. Each of these three shows a confirmation panel saying a receipt is on its way while NOTHING has been asked to send one; the webhook is the only thing that can make that true, and if it is late, retried or misconfigured the buyer is left holding a promise and the seller is never told.\n\nTHE SEAM ALREADY EXISTS AND NEEDS NO NEW MECHANISM. `resolveCheckoutSession` already hands `sessionId` back beside the client secret for every creator, and `CheckoutPanel` already takes an optional `onPaid` that it AWAITS before confirming. `onPaid` was made optional precisely so these three could adopt it one at a time.\n\nWHAT EACH ONE NEEDS is its own settle action, because each has its own recorder: the commerce order, the tip and the Space donation each record differently. Follow `settleTicketAction` (app/(main)/events/[slug]/ticket-actions.ts) for the shape -- kill switch, a `cs_` check, a per-IP limiter that FAILS OPEN, and a catch that is never fatal, because the buyer has already been charged and an error after a successful charge sends them back to pay twice.\n\n\u26a0\ufe0f BEFORE WORKING IT, RE-TEST THE PREMISE on each door: confirm it still mounts `CheckoutPanel` on the elements path rather than having been converted or retired. The probe names the three by path, so a door that moves will make it fail loudly rather than quietly reporting the gap closed.",
       "verify": {
         "kind": "cmd",
@@ -13561,7 +13571,7 @@
     {
       "id": "LIVE-373",
       "title": "One new public Circle breaks four BLOCKING visual baselines on every open branch",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
@@ -13571,9 +13581,9 @@
       },
       "detail": "WHAT HAPPENED, with the window measured. A Circle was created in production at 23:30:17Z on 2026-09-15. The last green e2e run started 23:27:15Z; the next one, 00:02:11Z, failed, and so did EVERY e2e run on EVERY branch after it, including branches that touch no public code at all. The four failures are always the same: /discover matches baseline, dawn-light and midnight-light, desktop and mobile, in the tier the job labels \"public surfaces (blocking)\".\n\nThe assertion says the cause outright: \"Expected an image 1280px by 7493px, received 1280px by 7672px\" (mobile 9541 -> 9671). The page did not change colour, it GREW, by about one CircleCard row. /discover renders getPublicCircles() against live production data, so the count of public Circles is an input to a committed baseline.\n\nWHY MASKING IS NOT THE ANSWER, already written down. surfaces.ts says it at waitForStable: \"A mask paints over a region; the element keeps its box, so a masked block that arrives late still moves everything under it. The failure is the page HEIGHT, not its pixels.\" The same sentence applies to a row that is genuinely there.\n\nWHY THIS IS P1 RATHER THAN A RE-BASELINE. Re-baselining closes it until the next Circle, and the owner adds Circles as ordinary product work. Between the two, every open PR carries a red blocking job it did not cause, which is the condition under which people start reading a red gate as weather. Three routes, in the order they are worth trying: (1) photograph a surface whose content is fixed rather than the live index, (2) give the shot a fixed viewport clip instead of fullPage so the count below the fold cannot move the assertion, or (3) move /discover to the advisory tier and keep a structural test for what the page must contain. Pick one and write the reason beside it.\n\nIMMEDIATE STATE: cleared on 2026-09-16 by unlisting the Circle that caused it (it was meant to be private and should never have been listed, which is LIVE-374). The suite is green again and the fragility is untouched.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Not started. The four /discover rows failed on every branch from run 35038257196 to 35059005812; green again once the Circle was unlisted.",
-        "checked": "2026-09-16"
+        "kind": "cmd",
+        "cmd": "node scripts/check-discover-visual-tier.mjs",
+        "note": "Measures the CONSEQUENCE: /discover visual captures are out of the blocking public loop, tagged @advisory so they ride the continue-on-error tier, and not tagged @shell so a running capture cannot make shell-reporter.ts call the app covered."
       }
     },
     {
@@ -13635,7 +13645,7 @@
     {
       "id": "LIVE-377",
       "title": "guest-seat-claim passes only in UTC, so five tests are red on every non-UTC machine",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "XS",
@@ -13643,12 +13653,13 @@
         "file": "lib/events/guest-seat-claim.test.ts",
         "ref": "measured 2026-09-16"
       },
-      "detail": "MEASURED BOTH WAYS on 2026-09-16, on one machine, one commit, back to back: TZ=UTC gives 16 passed; the same file on the host default (America/Los_Angeles) gives 5 failed, all of them in \"pickSeatLanding -- the landing rule\". CI runs UTC, so the suite is green there and has been all along.\n\nWHAT IT COSTS. A developer outside UTC opens the repo and finds five red tests they did not write, in a file about wall clocks, and cannot tell from the output whether they broke something. Confirming it was pre-existing took a stash, a baseline run and a re-run -- about ten minutes for a test that was never failing in the sense that matters.\n\nThe test pins its own instant (NOW = 2026-08-13T19:00:00-07:00), so the dependency is not the constant; something on the path reads the AMBIENT zone rather than the event\u2019s own, which is the exact distinction one of the five failing cases is named after (\"reads the wall clock through the event own zone, not the server zone\"). Worth reading as a possible product defect and not only a test-setup gap: if the ambient zone leaks in a test, it leaks on a server too.\n\nFix by pinning the zone the suite runs in, or by removing the ambient read the helper makes. Do NOT close this by setting TZ=UTC in the runner config alone if the leak turns out to be in lib/events/guest-seat-claim.ts -- that hides the same bug from the only place it currently shows.\n\nWHY THIS ROW IS MANUAL RATHER THAN PROBED. The faithful probe is \"run this suite under a non-UTC zone and see it fail\", and check:backlog rightly refuses a verify.cmd that does not run under node -- a cost the guard cannot attribute is a cost nobody watches (ADR-970). Wrapping vitest in a node -e to satisfy the letter of that rule would bolt a ten-second test run onto every backlog check for a P2 row, which is the rule being gamed rather than met. The evidence line carries the exact command; re-run it when working the row.",
+      "detail": "MEASURED BOTH WAYS on 2026-09-16, on one machine, one commit, back to back: TZ=UTC gives 16 passed; the same file on the host default (America/Los_Angeles) gives 5 failed, all of them in \"pickSeatLanding -- the landing rule\". CI runs UTC, so the suite is green there and has been all along.\n\nWHAT IT COSTS. A developer outside UTC opens the repo and finds five red tests they did not write, in a file about wall clocks, and cannot tell from the output whether they broke something. Confirming it was pre-existing took a stash, a baseline run and a re-run -- about ten minutes for a test that was never failing in the sense that matters.\n\nThe test pins its own instant (NOW = 2026-08-13T19:00:00-07:00), so the dependency is not the constant; something on the path reads the AMBIENT zone rather than the event\u2019s own, which is the exact distinction one of the five failing cases is named after (\"reads the wall clock through the event own zone, not the server zone\"). Worth reading as a possible product defect and not only a test-setup gap: if the ambient zone leaks in a test, it leaks on a server too.\n\nWHAT SHIPPED. eventInstant treats a naive ISO as UTC parts by appending Z when the string has no offset (ADR-1409). The zone test pins naive === Z. Do NOT close this by setting TZ=UTC in the runner config: that hides the leak on any non-UTC runtime.\n\nThe Pacific-zone vitest run is a human check (scripts/check-live-377-tz.mjs), not the backlog probe: LIVE-034 forbids a verify.cmd that spawns a test runner, and that spawn also fails when PATH has no pnpm.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Measured both ways on one commit, one machine, back to back: TZ=UTC gives 16 passed; TZ=America/Los_Angeles gives 5 failed, all in \"pickSeatLanding -- the landing rule\". Re-measure with: TZ=America/Los_Angeles npx vitest run lib/events/guest-seat-claim.test.ts",
-        "checked": "2026-09-16"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const z=fs.readFileSync(\"lib/time/zone.ts\",\"utf8\");if(!z.includes(\"`${trimmed}Z`\"))fail(\"eventInstant does not stamp a naive ISO as UTC\");if(!z.includes(\"(?:Z|[+-]\"))fail(\"eventInstant does not detect an existing offset\");const t=fs.readFileSync(\"lib/time/zone.test.ts\",\"utf8\");if(!t.includes(\"LIVE-377\"))fail(\"no zone test for the naive-ISO leak\");if(!t.includes(\"2026-08-13T19:00:00\"))fail(\"the zone test does not parse a naive ISO\")'",
+        "note": "Passes when eventInstant stamps a naive ISO as UTC and a zone test pins naive === Z. Written 2026-09-19."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-378",
@@ -14056,7 +14067,7 @@
     {
       "id": "LIVE-392",
       "title": "Every review and every buyer question is orphaned by a re-price",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
@@ -14064,7 +14075,7 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
       },
-      "detail": "`commerce_reviews` and `listing_comments` are keyed to `product_id`. Re-pricing a Journey ARCHIVES the product row and writes a new one by design (ADR-1397), so all proof and every answered question detach from the live listing and cannot be recovered by the buyer-facing page. On a $444 cohort programme, proof is the asset that takes longest to build and this discards it on a price change. Fix: key both to `journey_plan_id` for Journey products, or resolve them through the plan.",
+      "detail": "`commerce_reviews` and `listing_comments` are keyed to `product_id`. Re-pricing a Journey ARCHIVES the product row and writes a new one by design (ADR-1397), so all proof and every answered question detach from the live listing and cannot be recovered by the buyer-facing page. On a $444 cohort programme, proof is the asset that takes longest to build and this discards it on a price change. Fix: key both to `journey_plan_id` for Journey products, or resolve them through the plan.\n\nSHIPPED 2026-09-19 as a resolve-through-the-plan (ADR-1405), not a new column. `productIdsSharingJourney` expands a Journey product to every row on that plan; review reads, card ratings, verified-purchase, and listing Q&A all query that set. An edit stays on the existing row so a re-price cannot mint a second review from the same member. The member sales page and the public twin render the wall; AggregateRating rides the canonical Product node.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const r=s('lib/commerce/reviews.ts');if(!/journey_plan_id|planId/.test(r))fail('reviews are still keyed to the product row alone, so a re-price still orphans every review')\"",
@@ -14203,6 +14214,363 @@
         "kind": "manual",
         "evidence": "Raised 2026-09-18 when ADR-1401 migrated both Journey pages onto JourneyDetailTemplate. Not yet put to the owner.",
         "checked": "2026-09-18"
+      }
+    },
+    {
+      "id": "LIVE-400",
+      "title": "A Journey has one sales page, and listing areas only point at it",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/journeys/sales-path.ts",
+        "ref": "ADR-1404, owner request 2026-09-19"
+      },
+      "detail": "Owner, 2026-09-19: sell a Journey on the Space and in the Market, through one sales page that is the paywall. The money path already existed. Shop and Market opened /market/<uuid>, authors of a published Journey were sent to /learn, and the path on the pitch was labelled Free preview.\\n\\nSHIPPED. Market and Space Shop cards attach href to /journeys/<slug> via withJourneySalesHref. /market/<id> redirects a Journey product to that slug. The public pitch signs a paid visitor in with next set to the till. A published author stays on the sales page. Enrolled learners who are not the author still go to /learn. PathBlock no longer says Free preview.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const strip=(t)=>t.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\"\").replace(/^\\s*\\/\\/.*$/gm,\"\");const mk=strip(fs.readFileSync(\"app/(main)/market/[id]/page.tsx\",\"utf8\"));if(!/redirect\\(journeyMemberPath\\(/.test(mk))fail(\"a Journey product still renders a second sales page on /market/<id>\");const shop=strip(fs.readFileSync(\"app/(main)/spaces/[slug]/(profile)/shop/page.tsx\",\"utf8\"));if(shop.includes(\"/market/${p.id}\"))fail(\"the Space Shop still sends every card to /market/<id>\");if(!shop.includes(\"withJourneySalesHref\"))fail(\"the Space Shop does not attach the Journey sales path\");const market=strip(fs.readFileSync(\"app/(main)/market/page.tsx\",\"utf8\"));if(!market.includes(\"withJourneySalesHref\"))fail(\"the Market grid does not attach the Journey sales path\");const page=strip(fs.readFileSync(\"app/(main)/journeys/[slug]/page.tsx\",\"utf8\"));if(page.includes(\"plan.visibility === \\x27public\\x27 ? `/journeys/${plan.slug}/learn`\"))fail(\"a published author is still sent to /learn\");if(!page.includes(\"if (adopted && !preview && !isAuthor)\"))fail(\"an enrolled learner is no longer sent to /learn\");const widgets=strip(fs.readFileSync(\"components/journey/discovery-widgets.tsx\",\"utf8\"));if(widgets.includes(\"Free preview\"))fail(\"the path is still labelled a free preview of the course\");const pub=strip(fs.readFileSync(\"app/discover/journeys/[slug]/page.tsx\",\"utf8\"));if(!pub.includes(\"journeyBuySignInPath\"))fail(\"the public pitch still sends a paid visitor to /market/<id>\");'",
+        "note": "Measures the consequence: listing areas point at the Journey slug, leftover Market uuids redirect, authors stay on the sales page, learners still reach /learn, and the path is an outline. Written 2026-09-19."
+      }
+    },
+    {
+      "id": "LIVE-401",
+      "title": "Discover hides empty Channels and leads with a photo hero",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/discover/page.tsx",
+        "ref": "#2685, 2026-09-18 survey"
+      },
+      "detail": "SHIPPED #2685. Discover listed Channel tiles with zero Circles. app/discover/page.tsx now filters liveChannels (count > 0) before rendering the Channel strip, and the page leads with PhotoHero. app/discover/topics/page.tsx empty copy is \"No Channels yet. Check back soon.\"",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const p=fs.readFileSync(\"app/discover/page.tsx\",\"utf8\");if(!p.includes(\"liveChannels\"))fail(\"Discover does not filter live Channels\");if(!/PhotoHero/.test(p))fail(\"Discover has no PhotoHero\");const t=fs.readFileSync(\"app/discover/topics/page.tsx\",\"utf8\");if(!t.includes(\"No Channels yet\"))fail(\"topics empty copy is gone\");console.log(\"LIVE-401 ok\")'",
+        "note": "Passes when Discover only maps Channels that have Circles, the hero is PhotoHero, and topics says No Channels yet."
+      },
+      "closed": "2026-09-19"
+    },
+    {
+      "id": "LIVE-402",
+      "title": "accentize no longer paints punctuation, and pricing catalog loads in one round trip",
+      "status": "done",
+      "priority": "P3",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/page-editor/fields.accentize.test.tsx",
+        "ref": "2026-09-18 survey"
+      },
+      "detail": "SHIPPED. accentize was wrapping commas and full stops in the accent colour. lib/page-editor/fields.accentize.test.tsx pins punctuation staying unaccented. lib/billing/pricing-products.ts loads catalog and flags with Promise.all.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const t=fs.readFileSync(\"lib/page-editor/fields.accentize.test.tsx\",\"utf8\");if(!t.includes(\"accentize punctuation\"))fail(\"no punctuation pin on accentize\");const p=fs.readFileSync(\"lib/billing/pricing-products.ts\",\"utf8\");if(!p.includes(\"Promise.all([loadCatalogConfig(), loadPricingFlags()])\"))fail(\"pricing catalog still serialises catalog then flags\");console.log(\"LIVE-402 ok\")'",
+        "note": "Passes when the punctuation test exists and pricing-products batches catalog+flags."
+      },
+      "closed": "2026-09-19"
+    },
+    {
+      "id": "LIVE-403",
+      "title": "Billing settings actions parse through parseInput (OPEN-THREADS B8 residue on this file)",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/(main)/settings/billing/actions.ts",
+        "ref": "OPEN-THREADS B8, 2026-09-18 survey"
+      },
+      "detail": "SHIPPED. app/(main)/settings/billing/actions.ts imports parseInput from lib/validation and uses it. OPEN-THREADS B8 (extend check:authz to lib/ mutation helpers) is done on current main. Residual ungated admin actions are HYG-101, not this file.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "parseInput",
+        "paths": [
+          "app/(main)/settings/billing/actions.ts"
+        ]
+      },
+      "closed": "2026-09-19"
+    },
+    {
+      "id": "LIVE-404",
+      "title": "History planning docs carry a superseded banner in the first 25 lines",
+      "status": "done",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/OPEN-THREADS.md",
+        "ref": "#2687, 2026-09-18 survey"
+      },
+      "detail": "SHIPPED #2687. OPEN-THREADS.md and BUILD-SEQUENCE.md open with a superseded / history banner and point status at BUILD-BACKLOG.json. check:one-list already freezes the planning-doc set; this row records the banner half of that survey item.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};for(const f of [\"docs/OPEN-THREADS.md\",\"docs/BUILD-SEQUENCE.md\"]){const head=fs.readFileSync(f,\"utf8\").split(/\\n/).slice(0,25).join(\"\\n\");if(!/Superseded|history/i.test(head))fail(f+\" first 25 lines have no history banner\");if(!/BUILD-BACKLOG/.test(head))fail(f+\" does not point status at the one list\")}console.log(\"LIVE-404 ok\")'",
+        "note": "Passes when both history docs banner themselves in the first 25 lines and name BUILD-BACKLOG.json."
+      },
+      "closed": "2026-09-19"
+    },
+    {
+      "id": "LIVE-405",
+      "title": "Live voice and OWN-066 land as ADR-1403 (focus model accepted)",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/FOCUS-MODEL.md",
+        "ref": "#2688, ADR-1403, OWN-066"
+      },
+      "detail": "SHIPPED #2688 + OWN-066. docs/FOCUS-MODEL.md Status: ACCEPTED as ADR-1403. docs/START-HERE.md cites ADR-1403. docs/CONTENT-VOICE.md still carries the camp-counselor live voice. Product-first interior work that the ruling produced is LIVE-254, HYG-033, LIVE-408\u2013411 \u2014 not this docs close.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "Status: ACCEPTED.*ADR-1403",
+        "paths": [
+          "docs/FOCUS-MODEL.md"
+        ]
+      },
+      "closed": "2026-09-19"
+    },
+    {
+      "id": "LIVE-406",
+      "title": "award_gems_atomic is locked to service_role (ADR-1402)",
+      "status": "done",
+      "priority": "P0",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20260918235156_award_gems_atomic_lock_day_key_overload.sql",
+        "ref": "ADR-1402"
+      },
+      "detail": "SHIPPED ADR-1402 / migration 20260918235156. Both overloads revoke execute from public, anon, authenticated and grant service_role only. A later CREATE OR REPLACE (20270345001200) can re-grant PUBLIC on greenfield replay; that hygiene is HYG-102, not a reopen of the lockdown.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const s=fs.readFileSync(\"supabase/migrations/20260918235156_award_gems_atomic_lock_day_key_overload.sql\",\"utf8\");if(!/revoke all on function public.award_gems_atomic/.test(s))fail(\"lockdown migration does not revoke award_gems_atomic\");if(!/grant execute on function public.award_gems_atomic/.test(s))fail(\"lockdown migration does not grant service_role\");if(!s.includes(\"from public, anon, authenticated\"))fail(\"revoke list is not public/anon/authenticated\");console.log(\"LIVE-406 ok\")'",
+        "note": "Passes when the recovered lockdown migration revokes public/anon/authenticated and grants service_role."
+      },
+      "closed": "2026-09-19"
+    },
+    {
+      "id": "LIVE-408",
+      "title": "FOCUS interior remainder: feed hero and teaching vs streak, after the Quest leaves the public header",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/FOCUS-MODEL.md",
+        "ref": "ADR-1403, ADR-1362 reverse"
+      },
+      "ownerAction": "ruling",
+      "detail": "FILED 2026-09-19 from the survey. ADR-1403 is accepted (OWN-066 / LIVE-405). LIVE-254 takes The Quest off the public header (#2690). What that PR does not own, and what LIVE-247/248 already tried and the owner reversed (ADR-1362): the feed hero is still the practice/game board, and the raised centre button is still Zap. Teaching-on vs the streak box is the same interior contradiction: the first module above the composer still teaches a personal game.\n\nDo not re-ship the Create sheet or hide the bolt without a new ruling. This row is the remainder after LIVE-254, priced P2 because the reverse is the current product law for Zap/hero, not a defect to undo on inference.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-19: LIVE-247/248 probes pin the reversed state (Zap centre, practice board on /feed). Closes when a NEW owner ruling on hero + teaching vs streak is recorded and shipped, or when the owner explicitly leaves ADR-1362 as the last word and this row is cancelled.",
+        "checked": "2026-09-19"
+      }
+    },
+    {
+      "id": "LIVE-409",
+      "title": "Remaining CrewGate walls on compose paths (join-free is still untrue in product)",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "ADR-1403 product first; LIVE-266 closed Circle create only"
+      },
+      "detail": "FILED 2026-09-19. LIVE-266 removed CrewGateButton from new-circle-compose. LIVE-267 removed isPaid walls on entry points, codes, and rooms. Still wrapped in CrewGateButton: components/channels/start-chapter-button.tsx, components/studio/practice/new-practice-button.tsx, components/circles/starter-claim.tsx, components/circles/builder/remix-button.tsx, and the Circle Join control in app/(main)/circles/[slug]/(circle)/layout.tsx.\n\nCORE-MODEL / ADR-1403: people join free. A compose wall that is not a metered paid capability is the same class LIVE-266 named. Event compose already dropped the gate (ADR-913).\n\nCLOSED 2026-09-19. Premise re-tested first: circle.create and practice.create are already granted to any signed-in profile (lib/core/capabilities.ts FIRST ONE FREE). The four CrewGateButton wrappers were dormant paywall wiring of the same class LIVE-266 removed from NewCircleCompose. Dropped the wrappers on StartChapterButton, NewPracticeButton, StarterClaim, and RemixButton. Circle Join in the Circle layout is a membership act and was left gated, matching the probe note. Did not touch Journey sales paths or the member rail.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const files=[\"components/channels/start-chapter-button.tsx\",\"components/studio/practice/new-practice-button.tsx\",\"components/circles/starter-claim.tsx\",\"components/circles/builder/remix-button.tsx\"];const left=files.filter(f=>fs.existsSync(f)&&fs.readFileSync(f,\"utf8\").includes(\"CrewGateButton\"));if(left.length){console.error(\"CrewGateButton still on: \"+left.join(\", \"));process.exit(1)}console.log(\"LIVE-409 ok\")'",
+        "note": "Passes when the four remaining compose wrappers no longer import CrewGateButton. Circle Join in the layout is a membership act, not compose, and is not this probe."
+      }
+    },
+    {
+      "id": "LIVE-410",
+      "title": "Selling memberships is gated on Business plan, not Connect readiness",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/pricing/gates.ts",
+        "ref": "FOCUS-MODEL Q3, ADR-1403, LIVE-231 copy only"
+      },
+      "detail": "FILED 2026-09-19. lib/pricing/gates.ts still sets space_memberships minEntitlement business. LIVE-231 made the wall honest (GateNotice, featureWallLabel) and did not move it. ADR-914 / CORE-MODEL: never gate the transaction, gate the repeat \u2014 a membership IS the repeat, but FOCUS-MODEL Q3 asked whether a free Space may sell memberships gated on Connect readiness instead of plan. OWN-066 accepted the focus model; this is the code half that is still untrue in product.\n\nDo not duplicate LIVE-231 (copy). Do not duplicate PROG-R5 (onboarding push).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"lib/pricing/gates.ts\",\"utf8\");const m=s.match(/space_memberships:\\s*\\{[^}]+\\}/);if(!m){console.error(\"space_memberships gate missing\");process.exit(1)}if(/minEntitlement:\\s*.business./.test(m[0])){console.error(\"space_memberships is still a Business plan wall\");process.exit(1)}process.exit(0)'",
+        "note": "Passes when the memberships feature gate is no longer minEntitlement business. Readiness (payouts) may still refuse a checkout; that is LIVE-233/339 territory, not this wall."
+      }
+    },
+    {
+      "id": "LIVE-411",
+      "title": "Five operator gaps after the interior: course, tier gate, directory, discussion, analytics",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "docs/FOCUS-MODEL.md",
+        "ref": "ADR-1403 Q5; survey 2026-09-19"
+      },
+      "detail": "FILED 2026-09-19. FOCUS-MODEL Q5: sell a course, gate content to a tier, member directory, space-level discussion, completion analytics. Sequence AFTER interior (LIVE-254, HYG-033, LIVE-409, LIVE-410). Not a build this week. Keep as one sequenced row so five operator asks do not each become a parallel P1.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-19: not started, correctly sequenced behind interior. Closes when each of the five has its own child row with a passing probe, or a ruling drops one.",
+        "checked": "2026-09-19"
+      }
+    },
+    {
+      "id": "LIVE-412",
+      "title": "Split components/layout/app-shell.tsx (still one ~2632-line client module)",
+      "status": "open",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "L",
+      "source": {
+        "file": "components/layout/app-shell.tsx",
+        "ref": "2026-09-18 survey craft"
+      },
+      "detail": "FILED 2026-09-19. app-shell.tsx is a single client module on every (main) route. Split is craft, not product-blocked. P3 unless a shell-weight or Arm C leak forces it. Do not raise the budget; extract islands behind existing dynamic boundaries.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const n=fs.readFileSync(\"components/layout/app-shell.tsx\",\"utf8\").split(/\\n/).length;if(n>1800){console.error(\"app-shell.tsx is \"+n+\" lines\");process.exit(1)}process.exit(0)'",
+        "note": "Ratchet, not the definition of done: fails while the shell is still a 1800+ line client module. Extraction quality is the PR, this number is the alarm."
+      }
+    },
+    {
+      "id": "LIVE-413",
+      "title": "Signed-in walk of member surfaces after the 2026-09-18 survey",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "ownerAction": "account",
+      "source": {
+        "file": "docs/BUILD-BACKLOG.json",
+        "ref": "2026-09-18 survey audit medium"
+      },
+      "detail": "FILED 2026-09-19. The survey listed a signed-in walk as still open: feed, Circles, Events, Marketplace, a Space, a Journey sales page, compose, billing. Manual because it needs a working account on production or a seeded preview. Findings become child rows, not a new plan doc.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-19: not walked this session. Closes when a dated walk notes pass/fail per surface and files defects as backlog rows.",
+        "checked": "2026-09-19"
+      }
+    },
+    {
+      "id": "HYG-099",
+      "title": "Hardcoded hex leftovers vs DAWN tokens",
+      "status": "open",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "M",
+      "source": {
+        "file": "docs/PRESENTATION.md",
+        "ref": "2026-09-18 survey; never hardcode hex in UI"
+      },
+      "detail": "FILED 2026-09-19. Presentation canon: never hardcode hex in UI. Remaining literals are craft, not a product block. P3. Do not churn token files without a DAWN sync.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-19: not swept this session. Closes when a dated sweep lists remaining hex in app/ components/ (excluding tests, tokens, and generated) at zero, or an allowlist is named in the probe.",
+        "checked": "2026-09-19"
+      }
+    },
+    {
+      "id": "HYG-100",
+      "title": "RLS deny policies on money, trust, and Vera tables \u2014 confirm they fail closed",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "M",
+      "ownerAction": "account",
+      "source": {
+        "file": "docs/OPEN-THREADS.md",
+        "ref": "2026-09-18 survey security; A6 spatial_ref_sys is skip"
+      },
+      "detail": "FILED 2026-09-19. Audit medium: prove RLS deny on money/trust/Vera. Do NOT add an \"enable RLS on spatial_ref_sys\" row \u2014 OPEN-THREADS A6 already says skip (PostGIS system table). Manual because a real deny needs a role that is not service_role against production or a local stack.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-19: not re-run this session. Closes when a dated SQL or pgTAP read shows anon/authenticated cannot select/insert the named money, trust_scores, and Vera tables, and spatial_ref_sys is left alone.",
+        "checked": "2026-09-19"
+      }
+    },
+    {
+      "id": "HYG-101",
+      "title": "Residual admin actions still not parsing through parseInput",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "M",
+      "source": {
+        "file": "scripts/check-authz-guards.mjs",
+        "ref": "OPEN-THREADS B8 residual, 2026-09-18 survey"
+      },
+      "detail": "FILED 2026-09-19. B8 is done (check:authz scans actions + lib + routes). LIVE-403 closed billing/actions.ts. Residual: on the order of ~77 admin action exports still not using parseInput. Not High \u2014 the authz guard is the door; this is input-shape hygiene. Not P0.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-19: residual named, not counted in this session. Closes when a cmd probe can list admin action files under app/(main)/admin that export mutations without parseInput and that list is empty, or an allowlist is frozen and ratcheted.",
+        "checked": "2026-09-19"
+      }
+    },
+    {
+      "id": "HYG-102",
+      "title": "Later award_gems CREATE OR REPLACE can re-grant PUBLIC on greenfield replay",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270345001200_award_gems_caps_on_the_callers_day.sql",
+        "ref": "ADR-1402 leftover"
+      },
+      "detail": "FILED 2026-09-19. 20260918235156 locks both overloads (LIVE-406). 20270345001200 is CREATE OR REPLACE of the day-key overload with no REVOKE/GRANT. Postgres CREATE OR REPLACE can restore default PUBLIC execute on a greenfield replay after the lock. P2 hygiene, not P0 \u2014 production already applied the lock after this file in calendar time, but filename order on a fresh clone is 20260918 then 20260929 then 20270345, so replay can reopen the hole.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const later=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\")&&f>\"20260918235156\"&&/award_gems/.test(fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\")));const bad=later.filter(f=>{const s=fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\");return /create or replace function public.award_gems_atomic/i.test(s)&&!/revoke all on function public.award_gems_atomic/i.test(s)});if(bad.length){console.error(\"CREATE OR REPLACE without lockdown: \"+bad.join(\", \"));process.exit(1)}console.log(\"HYG-102 ok\")'",
+        "note": "Passes when every later award_gems CREATE OR REPLACE also revokes public execute (or no later replace exists)."
+      }
+    },
+    {
+      "id": "OWN-077",
+      "title": "Seed one production Journey Run (journey_runs is 0)",
+      "status": "open",
+      "priority": "P2",
+      "lane": "owner",
+      "size": "S",
+      "ownerAction": "content",
+      "source": {
+        "file": "docs/FOCUS-MODEL.md",
+        "ref": "ADR-252 engine; survey 2026-09-19"
+      },
+      "detail": "FILED 2026-09-19. Not the Journey sales page (LIVE-400 / #2686). Production journey_runs = 0, so the cohort meter, drip, and kickoff event have never had a real Circle Run. Owner seeds or runs one Journey with a Circle. Cloud cannot insert production cohort rows.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-19: journey_runs still described as 0 from the survey. Closes when count(*) on journey_runs is non-zero in production.",
+        "checked": "2026-09-19"
+      }
+    },
+    {
+      "id": "OWN-078",
+      "title": "Delete pending test event_tickets so LIVE-234 cannot close on a reservation",
+      "status": "open",
+      "priority": "P3",
+      "lane": "owner",
+      "size": "XS",
+      "ownerAction": "account",
+      "source": {
+        "file": "docs/BUILD-BACKLOG.json",
+        "ref": "LIVE-234, 2026-09-19 survey"
+      },
+      "detail": "FILED 2026-09-19. Abandoned / pending unpaid test ticket rows remain in event_tickets. A bare count(*) once almost closed LIVE-234 on a $44 session that never paid. Owner SQL: delete or void pending test reservations. Keep the House of Fates succeeded $44 row. Cloud could not run this SQL.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-19: pending tests still to delete. Closes when production event_tickets has no pending unpaid test rows the owner does not intend to complete.",
+        "checked": "2026-09-19"
       }
     }
   ]

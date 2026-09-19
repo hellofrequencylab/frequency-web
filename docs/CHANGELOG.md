@@ -10,7 +10,26 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ## [Unreleased]
 
+### Changed
+
+- **Starting a Circle is open to every signed-in member.** Remix a Starter, claim one near you, or start a Chapter on a program Channel: those buttons no longer open an upgrade popup. Creating a Practice from the library is the same. You still need to be signed in. How many Circles or Practices you can publish stays metered.
+
+- **The Quest is no longer a top-level marketing tab.** The public header is now The Community, Spaces, and About. The Quest still has its page, and you still reach it from The Community menu, the footer, and search. It is the light game everyone plays alongside their Circle, not a third of the story.
+
+- **The phone bar is five taps:** Menu, Feed, Zap, Events, and Marketplace. Circles and The Quest are in the Menu drawer, the same place as the rest of the rail. The Zap button in the middle is unchanged.
+
+- **A Journey keeps its reviews when the price changes**: stars and questions stay on the Journey,
+  not on the old product page. Changing the price no longer wipes the proof a buyer already left.
+  You read them on the Journey itself.
+
+- **A Journey has one sales page now**: cards in a Space Shop and in the Market open the Journey
+  itself, not a separate product page. That page is the pitch and the paywall. The course
+  (`/learn`) opens after you enrol. A leftover Market link still works; it hops you across.
+
 ### Fixed
+
+- **A tip or a gift paid on the page is settled on the page**: the receipt no longer waits on a
+  webhook that may be late. The confirmation you see after the card goes through is already true.
 
 - **An event's cover fills the screen on a phone again**: the artwork had been shrinking to fit
   inside the header band, with a soft blur down both sides. It now runs edge to edge, and the

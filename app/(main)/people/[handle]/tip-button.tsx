@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Heart, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/field'
-import { startTip } from './tip-actions'
+import { startTip, settleTipAction } from './tip-actions'
 import CheckoutPanel from '@/components/billing/checkout-panel'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { TIP_PRESETS_CENTS, TIP_MIN_CENTS, TIP_MAX_CENTS } from '@/lib/billing/tips-core'
@@ -20,6 +20,7 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
   const [message, setMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   // Custom field (in dollars) wins when non-empty.
@@ -38,6 +39,7 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
    */
   function fallBackToHosted() {
     setClientSecret(null)
+    setSessionId(null)
     setError('Opening secure checkout…')
     startTransition(async () => {
       const r = await startTip(toProfileId, effectiveCents, message.trim() || undefined, {
@@ -63,6 +65,7 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
         // ON-PAGE: the card form opens under the composer. Branching on what CAME BACK rather
         // than on what was asked for is deliberate -- the server declines the on-page path
         // whenever it cannot be honoured, and the next branch catches that.
+        setSessionId(r.data.sessionId ?? null)
         setClientSecret(r.data.clientSecret)
       } else if (r.data.url) {
         window.location.href = r.data.url
@@ -136,6 +139,11 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
             clientSecret={clientSecret}
             priceLabel={`$${(effectiveCents / 100).toFixed(2)}`}
             onFellBack={fallBackToHosted}
+            // 🔴 SETTLE FROM OUR OWN SUCCESS HANDLER. `confirm({ redirect: 'if_required' })` means
+            // the card path never navigates, so the success URL's reconcile never runs and the
+            // webhook was the only thing that could flip this tip to `succeeded`. The panel waits
+            // for this before it says the tip is done, so the confirmation is true when it appears.
+            onPaid={sessionId ? () => settleTipAction(sessionId) : undefined}
           />
         </div>
       )}

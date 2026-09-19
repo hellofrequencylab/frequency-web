@@ -63,8 +63,8 @@ in the wrong place, and copy that teaches something else.** Measured:
 
 | Claim | Reality today | Evidence |
 |---|---|---|
-| "People join free" | 🔴 **Starting a Circle shows an upgrade lightbox.** `NewCircleCompose` wraps the CTA in `CrewGateButton` even though `circle.create` is open to any signed-in member. | `components/compose/new-circle-compose.tsx:26-35` vs `lib/core/capabilities.ts:223-226` |
-| | 🔴 Three live walls refuse people now: entry points, marketing codes, message rooms. | `entry-points/actions.ts:50`, `codes/actions.ts:41`, `messages/rooms/actions.ts:29` |
+| "People join free" | Starting a Circle is a signed-in act, not a Crew wall: `NewCircleCompose`, Remix, Claim, and Start a Chapter no longer wrap `CrewGateButton`. `circle.create` is granted to any signed-in member. Circle Join on a Circle page is a membership act, not compose, and still uses `CrewGate`. | `components/compose/new-circle-compose.tsx`, `components/circles/builder/remix-button.tsx`, `lib/core/capabilities.ts` |
+| | Three live `isPaid` walls on entry points, marketing codes, and message rooms were removed (LIVE-267). | `entry-points/actions.ts`, `codes/actions.ts`, `messages/rooms/actions.ts` |
 | "Businesses host free" | ⏳ All 22 tools are universal and default-on, but **five caps read zero**, which is a lock wearing an allowance's clothes. | `lib/pricing/feature-meters.ts:98-142` |
 | "Pay when you charge" | ⏳ The membership charge path exists and works; **two doc comments still say "v1 IS NOT BILLING"**, which is now false and misleading. | `lib/spaces/memberships.ts:10`, `settings/memberships/section.tsx:27` |
 | "Placement is earned" | 🔴 The Spaces directory is sorted **alphabetically**. | `lib/spaces/discovery.ts:135`, `:378-380` |
@@ -103,10 +103,10 @@ loom) · **⏳ 12 partial** · **🔴 3 stubs** (donations, enroll, tickets).
 
 | Surface | Today | Model target |
 |---|---|---|
-| Member rail rows (non-admin) | **16** | **7** |
+| Member rail rows (non-admin) | **16** | as short as the **role can use** ([ADR-1406](DECISIONS.md); the 7-count is cancelled) |
 | Mobile spine tabs | 5 + Menu + a centre "Zap" button | 5 + Menu + a centre **create** button |
 | Space operator console | **34 rows in 12 boxes** | **5 boxes** |
-| Public header | 6 tabs, 21 dropdown links | **4 tabs** |
+| Public header | 4 tabs after LIVE-250 (The Quest still a tab) | **3 tabs** (LIVE-254: The Quest grouped under The Community) |
 | Hand-typed menu rows across the four catalogs | **301** | unchanged — grouped, not deleted |
 
 **Nothing is removed. Things are grouped.** A starting operator sees five boxes; a mature one still
@@ -229,12 +229,12 @@ survey counted the editors and nobody had before.
 
 | # | Change | Files | Done when |
 |---|---|---|---|
-| 5.1 | Member rail **16 → 7**: Feed · Around You · Circles · Events · Members · Messages · The Quest. Market's three rows collapse to one; Channels, Library, Journal, Practices, Journeys, Vault move under their parent. | `lib/nav-areas.ts`, `lib/verticals/*` | 7 member-visible rows |
+| 5.1 | Member rail stays as short as the role can use. LIVE-241's **16 → 7** count is cancelled. Channels stay unless a role/matrix/flag gate hides them ([ADR-1406](DECISIONS.md)). | `lib/nav-areas.ts`, `lib/nav/registry.ts` | no magic-number target; unused rows hide by gate |
 | 5.2 | Mobile centre button creates (post/event/circle) instead of firing `open-capture` | `components/layout/app-shell.tsx:1573-1583` | Button opens the create menu |
 | 5.3 | Feed hero becomes a **community board** (your circles' next gathering, your spaces' activity); `PracticePrompt` and `JourneyBoard` move to the rail | `app/(main)/feed/page.tsx:245-290` | First module above the composer is community |
 | 5.4 | Operator console **12 boxes → 5**: Your page · Your people · Gather · Money · Reach | `lib/admin/modules/space-modules.ts` (parents only), `space-hub.ts` | 5 parentless rows; all 34 still reachable |
 | 5.5 | Bundle presets as the setup shape (studio · practice · venue · non-profit), core on and the rest off-but-switchable | `lib/pricing/bundles.ts` | ≥4 bundles; closes **OWN-048** |
-| 5.6 | Public header **6 → 4** tabs; fix the member footer's dead `maker` navKey. ⚠️ The header is DB rows (`menu_items`), so the code seeds are the FALLBACK and a code-only edit moves nothing live | `lib/nav/registry.ts` HEADER_TRIGGER_SEEDS + MEMBER_FOOTER_COLUMNS | 4 triggers, no dead navKey, and the live `header` menu reads 4 categories |
+| 5.6 | Public header **6 → 4** tabs (LIVE-250, shipped); **4 → 3** (LIVE-254: The Quest grouped under The Community, not deleted). ⚠️ The header is DB rows (`menu_items`), so the code seeds are the FALLBACK and a code-only edit moves nothing live | `lib/nav/registry.ts` HEADER_TRIGGER_SEEDS | 3 triggers, `/the-quest` still a row in The Community panel, live `header` menu reads 3 parentless categories |
 
 ### Phase 8 — The story matches · **M**
 

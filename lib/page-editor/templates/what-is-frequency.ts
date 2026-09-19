@@ -237,7 +237,7 @@ export const spec: ArticleSpec = {
           name: 'Crew',
           price: `${CREW_NOTE.foundingLabel}/mo`,
           note: `${CREW_RATE} network only`,
-          who: 'The same selling at a lower rate, plus the full game, your own Circles and Journeys, and the entry points that build your list.',
+          who: 'The same selling at a lower rate, plus your own Circles and Journeys, and the entry points that build your list.',
         },
         {
           name: 'Business',
@@ -266,12 +266,12 @@ export const spec: ArticleSpec = {
       ],
       links: [{ label: 'See the full pricing', href: '/pricing', variant: 'primary' }],
     },
-    // Hub-and-spoke: cross-link the three sibling pillars. This page is the
-    // canonical explainer; the triptych goes deep on each part.
+    // Hub-and-spoke: The Community and The Lab are the story pages. The Quest stays
+    // reachable as the side thing we all do together (LIVE-254), not a third peer.
     {
       question: 'Where can I go deeper?',
       answer:
-        'This page is the short answer. Three sibling pages go deep on each part of Frequency.',
+        'This page is the short answer. The Community and The Lab go deep on the people and the room. The Quest is the light game everyone plays alongside them.',
       cards: [
         {
           title: 'The Community',
@@ -285,7 +285,7 @@ export const spec: ArticleSpec = {
         },
         {
           title: 'The Quest',
-          body: 'The year-round game that turns practices into a rhythm you actually keep.',
+          body: 'The light game everyone plays alongside their Circle: Zaps, Gems, and Journeys.',
           href: '/the-quest',
         },
       ],

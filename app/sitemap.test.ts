@@ -303,6 +303,13 @@ describe('app/sitemap emitted URL set', () => {
     )
   })
 
+  it('advertises The Quest below The Community and The Lab (LIVE-254)', async () => {
+    const byUrl = new Map((await sitemap()).map((e) => [e.url, e]))
+    expect(byUrl.get(`${SITE}/the-community`)?.priority).toBe(0.8)
+    expect(byUrl.get(`${SITE}/the-lab`)?.priority).toBe(0.8)
+    expect(byUrl.get(`${SITE}/the-quest`)?.priority).toBe(0.6)
+  })
+
   it('emits no duplicate URLs', async () => {
     const urls = (await sitemap()).map((e) => e.url)
     const dupes = urls.filter((u, i) => urls.indexOf(u) !== i)

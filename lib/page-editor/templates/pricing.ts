@@ -222,11 +222,11 @@ export const data: Data = {
           {
             name: 'Crew', livePriceKey: 'crew', price: CREW_NOTE.foundingLabel, strikePrice: '', cadence: '/mo',
             priceNote: `You pick the amount: anything from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested. Every amount buys the same thing.`,
-            tagline: 'The same selling at a lower rate, plus the full game, the Crew badge, and the tools that build your list.',
+            tagline: 'The same selling at a lower rate, plus the Crew badge, and the tools that build your list.',
             highlight: 'normal', badge: 'none',
             features: [
               { text: 'Everything in Member, and your own events to sell' },
-              { text: 'Full game: Gems and Vault cash-in' },
+              { text: 'Gems and Vault cash-in' },
               { text: 'Author and share your own Quest' },
               { text: 'Vera, unlimited' },
               { text: 'The leaderboard' },
@@ -436,7 +436,7 @@ export const data: Data = {
         items: [
           { q: 'Is being a Member really free?', a: 'Yes. The Member tier is free, forever. You can browse Circles and Events, attend gatherings in person, earn Zaps, and message Vera up to 10 times a day, all without paying.' },
           { q: 'Is there a discount for paying yearly?', a: `Yes. Pay yearly on any plan and you get two months free: ${andList(PAID_SPACE_TIERS.map((t) => `${t.name} is ${yearOf(t)} a year instead of ${monthOf(t)} a month`))}. Crew is contribute what you want: anything from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested, and every amount buys the same access.` },
-          { q: 'What is the difference between Member and Crew?', a: `Member is the free tier, forever, and the community itself is never behind it. Both tiers can sell: a free Member can run a ticketed event and get paid. Crew is the rung for someone doing that regularly: it adds the full game, with Gems, Vault cash-in, your own Quest to author, unlimited Vera, and the leaderboard, for whatever you choose to pay, from ${CREW_NOTE.foundingLabel} a month, and it settles at ${RATE.member} on network-sourced sales instead of ${RATE.memberFree}. Those two are the whole member ladder.` },
+          { q: 'What is the difference between Member and Crew?', a: `Member is the free tier, forever, and the community itself is never behind it. Both tiers can sell: a free Member can run a ticketed event and get paid. Crew is the rung for someone doing that regularly: it adds Gems, Vault cash-in, your own Quest to author, unlimited Vera, and the leaderboard, for whatever you choose to pay, from ${CREW_NOTE.foundingLabel} a month, and it settles at ${RATE.member} on network-sourced sales instead of ${RATE.memberFree}. Those two are the whole member ladder.` },
           { q: 'What do the Space plans cost?', a: `A Space is free to start and stays free until you start charging. ${andList(PAID_SPACE_TIERS.map((t) => `${t.name} is ${monthOf(t)} a month or ${yearOf(t)} a year`))}. Every plan is the same price whenever you start, and yearly is two months free.` },
           { q: 'How does the take-rate work?', a: `You keep 100% of the business you bring yourself, always, on every tier. Someone who already follows you, is on your list, or has bought from you before is yours, and Frequency takes nothing on them. There is a rate only on someone the network introduces. ${PLAN_STORY.rate} Where each rung settles: a free Member is ${RATE.memberFree}, Crew is ${RATE.member}, ${andList(SPACE_TIERS.map((t) => `${t.name} is ${rateOf(t)}`))}.` },
           { q: 'What about refunds?', a: 'Every plan is month to month, and you can cancel at any time. Cancel and your plan simply runs out its paid period. No contracts, no lock-in.' },

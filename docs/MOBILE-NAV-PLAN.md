@@ -14,10 +14,9 @@
 The chrome we already have is close to best practice. The changes are small and data-level, not a
 teardown:
 
-1. **Bottom bar** — swap **Messages** out for **Events**, and move Messages to the header (top-right,
-   with an unread badge) where DMs conventionally live. The four thumb tabs become the four things a
-   local-community member returns to most: **Home · Community · Events · The Quest**, with the center
-   **Zap** create button between them.
+1. **Bottom bar** — five thumb targets: **Menu · Feed · Zap · Events · Marketplace**. Circles
+   (the Community world) and **The Quest** stay in the Menu drawer and the left rail. Messages
+   stay in the header. This is not the cancelled 16→7 rail cut ([ADR-1406](DECISIONS.md)).
 2. **Top-right user menu** — reorder to a prioritized, grouped list (You · Membership · Commerce ·
    Community · Support · Sign out) and hide the gated items unless the viewer qualifies.
 3. **Orphan fixes** — surface the operator **Context Switcher / View-as**, the **Messages** icon, and
@@ -30,7 +29,7 @@ few `hidden sm:`/`md:` class flips in `components/layout/app-shell.tsx`. No new 
 
 | Principle | Source | How we apply it |
 |---|---|---|
-| **3–5 primary tabs**, no more; use a "More" for the long tail. | [Material / UX Planet](https://uxplanet.org/bottom-tab-bar-navigation-design-best-practices-48d46a3b0c36), [UXPin](https://www.uxpin.com/studio/blog/mobile-navigation-examples/) | 4 destination tabs + the Zap action; the **Menu** drawer is the "More" that holds the whole rail. |
+| **3–5 primary tabs**, no more; use a "More" for the long tail. | [Material / UX Planet](https://uxplanet.org/bottom-tab-bar-navigation-design-best-practices-48d46a3b0c36), [UXPin](https://www.uxpin.com/studio/blog/mobile-navigation-examples/) | 3 destination tabs + Menu + the Zap action; the **Menu** drawer is the "More" that holds the whole rail. |
 | **Thumb zone** — the bottom third is the reachable area; put the top-priority item where the thumb lands. | [Webdesignerindia](https://webdesignerindia.medium.com/thumb-zone-optimization-mobile-navigation-patterns-9fbc54418b81) | Primary destinations live in the bottom bar; the center Zap sits at the natural thumb rest. |
 | **One FAB, only for the app's defining action.** | [Appypie](https://www.appypie.com/blog/app-navigation-patterns) | The center **Zap** (capture/create) is that one action. Keep it. |
 | **Badges on tabs drive engagement.** | [UXPin](https://www.uxpin.com/studio/blog/mobile-navigation-examples/) | Give Events (and the relocated Messages icon) unread/soon badges. |
@@ -42,7 +41,7 @@ few `hidden sm:`/`md:` class flips in `components/layout/app-shell.tsx`. No new 
 
 - **Bottom tab bar** (`app-shell.tsx` → `MobileTabBar`, tabs from `calmSpine()` /
   `CALM_SPINE_ROOTS` in `lib/nav/registry.ts`):
-  `Menu · Home(/feed) · Community(/circles) · [⚡ Zap] · The Quest(/crew) · Messages(/messages) · Stats`.
+  `Menu · Feed · [⚡ Zap] · Events · Marketplace`. Circles and The Quest are drawer/rail rows.
 - **Menu drawer** renders the entire desktop rail (`NAV_AREAS`) — the long tail is already reachable.
 - **Stats drawer** is the Quest gamification peek (streaks/Gems) + a link to `/crew`.
 - **Top-right AccountDropdown** = Profile · Invite · the `profile` menu (Account/Commerce/Community/
@@ -57,26 +56,18 @@ return destination too, but it has a natural home in the header cluster (top-rig
 social apps place DMs, and moving it there frees a precious tab for **Events** — a top reason people join
 a local network, and today buried in the drawer.
 
-**Recommended bar (left → right):**
+**Ruled bar (left → right), HYG-033:**
 
 | Slot | Item | Route | Why it earns a slot |
 |---|---|---|---|
 | 1 | **Menu** (overflow) | drawer | The "More" — holds the whole rail long tail. Keep. |
-| 2 | **Home** | `/feed` | The stream. The #1 return surface. |
-| 3 | **Community** | `/circles` (or `/network`) | People + Circles. The point of the platform. |
-| 4 | **⚡ Zap** (center FAB) | capture | The one defining action (post / Event / Contact / Connect). Keep. |
-| 5 | **Events** | `/events` | **NEW.** Local happenings, high intent, currently drawer-only. |
-| 6 | **The Quest** | `/crew` | Streaks/Zaps — the signature engagement loop. |
-| 7 | **Stats** (right) | drawer | The Quest gamification peek. Keep (see note). |
+| 2 | **Feed** | `/feed` | The stream. The #1 return surface. |
+| 3 | **⚡ Zap** (center FAB) | capture | The one defining action. Keep. |
+| 4 | **Events** | `/events` | Local happenings, high intent. |
+| 5 | **Marketplace** | `/marketplace` | Commerce umbrella (NAMING.md). |
 
-**The one swap:** Events replaces Messages as a tab. **Messages** moves to the header top-right (the
-Messages popover already exists there — it is just `hidden sm:` today; unhide it on mobile and add the
-unread badge). This is a one-line change to `CALM_SPINE_ROOTS` + a class flip.
-
-**Optional simplification (if you want a stricter 5-item bar):** fold the **Stats** drawer into the
-**The Quest** tab (its `/crew` dashboard already shows the same streak/Gems). That drops the bar to
-`Menu · Home · Community · [Zap] · Events · The Quest` — six touch targets, closer to the 5-item ideal —
-without losing anything. Recommended as a fast follow, not required.
+Circles and The Quest are not tabs. They stay on the member rail and in the Menu drawer. Do not
+fold Channels (ADR-1406). Do not cut the rail to seven to match this bar.
 
 ## 2. Top-right user menu — prioritized personal settings
 
@@ -110,7 +101,7 @@ From the feature survey, the gaps and their fixes (all small):
 
 | Orphan today | Fix |
 |---|---|
-| **Messages** peek + **daily-streak** pill are `hidden sm:` (desktop header only) | Unhide Messages as a badged header icon on mobile (part of change #1); the streak already links to `/crew` and lives in the Quest tab/Stats. |
+| **Messages** peek + **daily-streak** pill are `hidden sm:` (desktop header only) | Unhide Messages as a badged header icon on mobile; the streak already links to `/crew` and lives in the Menu drawer stats. |
 | **Context Switcher / View-as** (operator hat-switching) live only in the desktop rail profile card | Render them in the mobile user-menu identity block (change #2). |
 | **About / What is Frequency / Terms / Privacy** (desktop mega-menu only) | Add an "About" group to the Menu drawer footer (or the Support group of the user menu). Help is already in the menu. |
 | **UpgradeCrew** upsell + top-of-rail bug report (desktop right rail) | Bug report already survives in the user menu; surface the upgrade nudge in the Stats drawer or user menu. |
@@ -121,20 +112,18 @@ From the feature survey, the gaps and their fixes (all small):
 
 | Change | File | Kind |
 |---|---|---|
-| Bottom-bar tabs (Events in, Messages out) | `lib/nav/registry.ts` (`CALM_SPINE_ROOTS`) | data edit |
+| Bottom-bar tabs (HYG-033 five) | `lib/nav/registry.ts` (`CALM_SPINE_ROOTS`) + `MobileTabBar` | data + split |
 | Messages → header icon on mobile; badges | `components/layout/app-shell.tsx` (unhide `hidden sm:`) | class flip |
 | User-menu order + gating + Context Switcher/View-as on mobile | `lib/nav/registry.ts` (`PROFILE_LINK_SEEDS`) + `app-shell.tsx` (`AccountDropdown`) | data + render |
 | About/Legal in the drawer footer | `components/layout/member-footer.tsx` / drawer | data edit |
-| Optional: fold Stats into the Quest tab | `app-shell.tsx` (`MobileTabBar`) | render |
 
 ## Rollout
 
-- **Step 1 (the swap):** Events in the bar, Messages to the header. One data edit + one class flip.
+- **Step 1 (the bar):** five tabs, Circles and The Quest in the drawer. Data edit + Zap split.
 - **Step 2 (the user menu):** reorder + gate + add Context Switcher/View-as. Data + small render.
 - **Step 3 (orphan closeout):** About/Legal in the drawer, upgrade nudge, Zap create-intents.
-- **Step 4 (optional):** collapse Stats into the Quest tab for the stricter 5-item bar.
 
-Each step is independently shippable and reversible; none touches the left role-based rail.
+Each step is independently shippable and reversible; none touches the left role-based rail (ADR-1406).
 
 ## References
 
