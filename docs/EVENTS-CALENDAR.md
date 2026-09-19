@@ -188,11 +188,11 @@ else. Its column list is the gate; it must never gain a detail column.
 slot that overlaps is neither offered nor bookable. An existing booking inside the range is never
 touched. The read is service-role and fails safe to no blocks.
 
-**Admin / Guest on the Calendar tab** ([ADR-1389](DECISIONS.md), [ADR-1450](DECISIONS.md)). A viewer who
+**Admin / Guest on the Calendar tab** ([ADR-1389](DECISIONS.md), [ADR-1450](DECISIONS.md), [ADR-1454](DECISIONS.md)). A viewer who
 edits the Space (with the Calendar function), or platform staff previewing it, lands on **Admin**: the
 production console (`CalendarPmConsole`) over `loadAdminCalendar` (`lib/calendar/admin-calendar.ts`,
-shared with the settings console). The board lists what is penciled, in planning, in production, and
-cancelled. `StaffCalendar` is the date map and the settings drawer, not a second guest month.
+shared with the settings console). Pencil is its own lane (`pencilLane`). The board lists what is
+in planning, in production, and cancelled. `StaffCalendar` is the date map and the settings drawer, not a second guest month.
 `?view=guest` shows the visitor view. Everyone else only ever gets Guest, and the mode is decided on the
 server before any admin read.
 

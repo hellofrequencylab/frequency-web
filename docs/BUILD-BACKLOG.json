@@ -171,7 +171,6 @@
           "name": "W0c \u00b7 P2 \u2014 FOCUS remainder, gems replay grant, remaining audit security, small cleanups, Journey sales tail.",
           "ids": [
             "LIVE-408",
-            "LIVE-416",
             "LIVE-417",
             "LIVE-418",
             "LIVE-419",
@@ -14870,20 +14869,21 @@
     {
       "id": "LIVE-416",
       "title": "Calendar C2: Pencil is a first-class Admin lane (ADR-1388)",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "lib/calendar/entries.ts",
-        "ref": "ADR-1388, ADR-1445"
+        "ref": "ADR-1388, ADR-1445, ADR-1454"
       },
-      "detail": "Admin PM console lists pencil holds as their own lane, not mixed into live chips. Candidate dates stay on the grid for the team. Guest never sees them (LIVE-419). After C1 (LIVE-415).",
+      "detail": "Admin PM console lists pencil-stage gatherings as their own lane, not mixed into live chips. Candidate dates stay on the grid for the team. Guest never sees them (LIVE-419). After C1 (LIVE-415).\n\nWHAT SHIPPED. pencilLane (lib/calendar/pm-console.ts) is the Admin Pencil lane. CalendarPmConsole renders it above the mixed board. Planning and Production stay on that board until C3 and C4. StaffCalendar is still the date map, so candidate dates stay on the grid. Did not declare planningLane or productionLane. Did not fold Guest through guestLiveItems (LIVE-419).",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"components/spaces/calendar-pm-console.tsx\",\"utf8\");if(!s.includes(\"pencilLane\"))process.exit(1)'",
-        "note": "Fails until the PM console has a pencilLane."
-      }
+        "note": "Passes when the PM console has a pencilLane. Written 2026-09-19."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-417",
