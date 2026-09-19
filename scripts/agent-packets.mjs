@@ -92,7 +92,7 @@ LOOP.
 5. If the PR added supabase/migrations/*.sql, apply with execute_sql then ledger insert; run pnpm check:migrations --require-ledger when credentials exist.
 6. Validate the row's probe on main. Close the row in BUILD-BACKLOG.json in the SAME PR that makes the probe pass, and prune it from meta.slate.waves.
 
-PRODUCT-FIRST (ADR-1403). LIVE-410 (memberships on the free floor, ADR-1415; Connect still refuses checkout) is closed in this tree. LIVE-376 closed (sole-Space default, ADR-1413). Prefer remaining money. LIVE-234 is P0 money proof and is owner-walked. LIVE-408 needs an owner ruling. Journey sales (LIVE-392+) is claimed by ${FOREIGN_LANE_CLAIMS.journey}.
+PRODUCT-FIRST (ADR-1403). LIVE-410 (memberships on the free floor, ADR-1415; Connect still refuses checkout) is closed in this tree. LIVE-376 closed (sole-Space default, ADR-1413). LIVE-306 closed (worktree lint installs, ADR-1441). Prefer remaining money. LIVE-234 is P0 money proof and is owner-walked. LIVE-408 needs an owner ruling. Journey sales (LIVE-392+) is claimed by ${FOREIGN_LANE_CLAIMS.journey}.
 
 TWO-AGENT SPLIT (2026-09-19, meta.slate.metaScanCleanup). If you are the product agent already on the backlog: take derived lanes money then events. Do not take lane \`scan\` and do not start SCAN-636. If you are the scan follow-through agent: \`pnpm packets --lane scan\` and start SCAN-636. Do not take LIVE-376 or LIVE-234. LIVE-412 is on the scan lane (shell split after SCAN-641), not a free shell packet.
 `
