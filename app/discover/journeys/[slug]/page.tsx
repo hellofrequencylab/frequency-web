@@ -27,6 +27,7 @@ import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { journeySchema, breadcrumbSchema, journeyOfferSchema } from '@/lib/jsonld'
 import { getJourneyOffer, isSoldOut } from '@/lib/journeys/paid'
+import { journeyBuySignInPath } from '@/lib/journeys/sales-path'
 
 // Public, indexable detail page for one library Journey. Mirrors the in-app Journey
 // page's header (badge + Pillar + stat chips) + two-column body + sticky "At a glance"
@@ -143,7 +144,7 @@ export default async function DiscoverJourneyPage({
           </span>
         ) : (
           <Link
-            href={`/market/${offer.productId}`}
+            href={journeyBuySignInPath(plan.slug)}
             className={buttonClasses('primary', 'md', 'w-full')}
           >
             Get access · {priceLabel}
@@ -279,7 +280,7 @@ export default async function DiscoverJourneyPage({
               </p>
               {offer && priceLabel ? (
                 soldOut ? null : (
-                  <Link href={`/market/${offer.productId}`} className={buttonClasses('primary', 'md')}>
+                  <Link href={journeyBuySignInPath(plan.slug)} className={buttonClasses('primary', 'md')}>
                     Get access · {priceLabel}
                   </Link>
                 )

@@ -8,6 +8,7 @@ import { readStorefrontConfig } from '@/lib/spaces/storefront'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { spaceFunctionDef, spaceFunctionEnabled } from '@/lib/spaces/functions'
 import { listPublicSpaceCatalog } from '@/lib/commerce/products'
+import { withJourneySalesHref } from '@/lib/journeys/listing-href'
 import { productRatingsFor } from '@/lib/commerce/reviews'
 import { marketGroupForKind, MARKET_GROUPS, type MarketGroup } from '@/lib/commerce/types'
 import Image from 'next/image'
@@ -52,7 +53,7 @@ export default async function SpaceShopTabPage({ params }: { params: Promise<{ s
   const shopEnabled = shopDef ? spaceFunctionEnabled(space, shopDef) : true
   if (!storefront.published || !isConsoleSpaceType(space.type) || !shopEnabled) notFound()
 
-  const items = await listPublicSpaceCatalog(space.id)
+  const items = await withJourneySalesHref(await listPublicSpaceCatalog(space.id))
   // Trust & Safety (Phase 8): aggregate ratings per item (batch); every item shares this Space's
   // verification, so the badge is derived once from the Space type (a Business/nonprofit page = verified).
   const ratings = await productRatingsFor(items.map((p) => p.id))
@@ -108,7 +109,6 @@ export default async function SpaceShopTabPage({ params }: { params: Promise<{ s
               <ProductCard
                 key={p.id}
                 product={p}
-                href={`/market/${p.id}`}
                 rating={ratings.get(p.id) ?? null}
                 verified={spaceVerified}
               />

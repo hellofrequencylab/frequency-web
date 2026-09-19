@@ -10,6 +10,12 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ## [Unreleased]
 
+### Changed
+
+- **A Journey has one sales page now**: cards in a Space Shop and in the Market open the Journey
+  itself, not a separate product page. That page is the pitch and the paywall. The course
+  (`/learn`) opens after you enrol. A leftover Market link still works; it hops you across.
+
 ### Fixed
 
 - **An event's cover fills the screen on a phone again**: the artwork had been shrinking to fit

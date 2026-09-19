@@ -45437,3 +45437,37 @@ change.
 **Rejected.** Treating FOCUS-MODEL as a reversal of join-free / pay-when-charging. Starting a sixth plan file. Letting kit work jump product this week.
 
 **Consequences.** `OWN-066` is the ruling row and closes. The code has not moved yet. `QUEST-IA-DEBT`, `HYG-033`, `LIVE-204` are the first product surfaces. Editor E0–E9 stays on its own wave.
+
+## ADR-1404: A Journey has one sales page, and listing areas only point at it (2026-09-19)
+
+**Status:** Accepted · **Amends** [ADR-1398](DECISIONS.md) §4 and [ADR-1400](DECISIONS.md) §6 (the
+product URL as a living sales surface) · **Extends** [ADR-1397](DECISIONS.md) (one product, many
+storefronts) · Backlog `LIVE-400` · corroborated by `lib/journeys/sales-path.ts`,
+`lib/journeys/listing-href.ts`, `app/(main)/market/[id]/page.tsx`
+
+**Context.** Owner, 2026-09-19: a Space should sell a Journey on its Shop and in the Market, through
+one sales page that is the paywall, because people could see the course directly. The money path from
+ADR-1397 through ADR-1401 was already there. The confusion was three sales pages (`/market/<uuid>`,
+`/journeys/<slug>`, `/discover/journeys/<slug>`) and an author redirect that opened `/learn` as the
+public face of the offer.
+
+**Decision.**
+
+1. **Listing areas are doors.** Market cards and Space Shop cards attach `href` to
+   `/journeys/<slug>`. Signed-out visitors are handed the public twin by `TWIN_RULES`. A leftover
+   `/market/<uuid>` for a Journey product **redirects** to that slug. Emails and the sitemap do not
+   advertise the uuid as a Journey URL.
+2. **The sales page is the paywall.** A published author stays on `/journeys/<slug>` so they can
+   sell. An enrolled learner who is not the author goes to `/learn`. The path on the sales page is
+   an outline (titles and cadence), not a "Free preview" of the course.
+3. **The public pitch does not send anyone to `/market/<id>`.** A paid visitor on
+   `/discover/journeys/<slug>` signs in with `next` set to the till. Redirecting Market to the slug
+   and then linking Market from Discover would loop.
+
+**Rejected.** A second product row per storefront (duplicates the seat pool, which ADR-1397 forbade).
+Embedding checkout on the cached public page (ADR-1400 already refused this). Keying reviews to the
+plan (LIVE-392, still open; the uuid redirect keeps old review URLs from 404ing while that ships).
+
+**Consequences.** Shop and Market can both sell the same Journey. The course stays behind enrolment.
+Reviews and Q&A still live on the product row until LIVE-392. The generic Market listing render
+remains as a fallback when the plan is missing.

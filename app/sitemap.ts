@@ -615,7 +615,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       COMMERCE_SITEMAP_CAP,
       "market listings",
       "listMarketListings",
-    ).map((p) => ({
+    ).filter((p) => p.productKind !== 'journey').map((p) => ({
       url: `${SITE_URL}/market/${p.id}`,
       ...((p.updatedAt) ? { lastModified: new Date(p.updatedAt) } : {}),
       changeFrequency: "weekly" as const,

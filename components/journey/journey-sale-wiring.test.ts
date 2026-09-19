@@ -148,10 +148,11 @@ describe('the till is handed in by the page, not built into the widget', () => {
     expect(src).toMatch(/buyControl\?:\s*React\.ReactNode/)
   })
 
-  it('the paid branch prefers it and still falls back to the product link', () => {
-    // An ABSENT SLOT, never a fork: the public marketing route passes nothing and keeps the link.
+  it('the paid branch prefers it and still falls back to the Journey till', () => {
+    // An ABSENT SLOT, never a fork: a surface that passes nothing links to /journeys/<slug>.
     expect(src).toMatch(/buyControl \?\? \(/)
-    expect(src).toContain('/market/${offer.productId}')
+    expect(src).toContain('/journeys/${slug}')
+    expect(src).not.toContain('/market/${offer.productId}')
   })
 
   it('does NOT import the member-route buy control', () => {
@@ -209,19 +210,17 @@ describe('the public Journey page states the price', () => {
 })
 
 describe('the canonical chain is one hop', () => {
-  it('a Journey product points straight at the public page', () => {
-    // Was market -> /journeys/<slug> -> /discover/journeys/<slug>, each hop naming a URL that
-    // disclaimed itself, ending on a page a signed-out visitor is redirected to and that showed
-    // no price.
+  it('a leftover Journey product url hops to the Journey slug', () => {
     const src = code('app', '(main)', 'market', '[id]', 'page.tsx')
-    expect(src).toMatch(/canonical: `\/discover\/journeys\/\$\{plan\.plan\.slug\}`/)
+    expect(src).toContain('journeyMemberPath')
+    expect(src).toMatch(/redirect\(journeyMemberPath\(/)
   })
 
-  it('the author can reach the page that charges', () => {
-    // /journeys/<slug> redirects an author back to /learn, so ?preview=1 is the only way in and
-    // nothing linked to it.
+  it('the author can reach the page that charges from the course', () => {
     const src = code('app', '(main)', 'journeys', '[slug]', 'learn', 'page.tsx')
-    expect(src).toContain('?preview=1')
+    expect(src).toContain('Sales page')
+    expect(src).toContain('`/journeys/${slug}`')
+    expect(src).not.toContain('?preview=1')
   })
 })
 
@@ -313,5 +312,45 @@ describe('the additive rail slot does not reach the other verticals', () => {
     ]) {
       expect(code(...p)).not.toContain('asideExtras')
     }
+  })
+})
+
+// ── WAVE 3 (ADR-1404): one sales page from every listing, course behind enrolment.
+
+describe('listing areas open the Journey sales page, not a product uuid', () => {
+  it('the Space Shop does not force every card onto /market/<id>', () => {
+    expect(code('app', '(main)', 'spaces', '[slug]', '(profile)', 'shop', 'page.tsx')).not.toContain(
+      '/market/${p.id}',
+    )
+    expect(code('app', '(main)', 'spaces', '[slug]', '(profile)', 'shop', 'page.tsx')).toContain(
+      'withJourneySalesHref',
+    )
+  })
+
+  it('the Market grid attaches the Journey slug before rendering cards', () => {
+    expect(code('app', '(main)', 'market', 'page.tsx')).toContain('withJourneySalesHref')
+  })
+
+  it('the public pitch sends a paid visitor to sign-in, not a Market uuid', () => {
+    const src = code('app', 'discover', 'journeys', '[slug]', 'page.tsx')
+    expect(src).toContain('journeyBuySignInPath')
+    expect(src).not.toContain('/market/${offer.productId}')
+  })
+})
+
+describe('the sales page is the paywall, not the classroom', () => {
+  it('a published author is not sent to /learn', () => {
+    const src = code('app', '(main)', 'journeys', '[slug]', 'page.tsx')
+    expect(src).not.toContain("plan.visibility === 'public' ? `/journeys/${plan.slug}/learn`")
+    expect(src).toContain("plan.visibility === 'private'")
+  })
+
+  it('an enrolled learner still goes to /learn, an author does not', () => {
+    const src = code('app', '(main)', 'journeys', '[slug]', 'page.tsx')
+    expect(src).toContain('if (adopted && !preview && !isAuthor)')
+  })
+
+  it('the path is an outline, not a free preview of the course', () => {
+    expect(code('components', 'journey', 'discovery-widgets.tsx')).not.toContain('Free preview')
   })
 })

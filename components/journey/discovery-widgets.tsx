@@ -287,11 +287,6 @@ export function PathBlock({
                           )}
                           {cadence}
                         </span>
-                        {i === 0 && (
-                          <span className="rounded-pill bg-success-bg px-1.5 py-0.5 font-semibold text-success">
-                            Free preview
-                          </span>
-                        )}
                       </span>
                     </span>
                     <ChevronDown
@@ -469,9 +464,10 @@ export function EnrollCta({
   /**
    * THE TILL, HANDED IN BY THE PAGE (ADR-1400).
    *
-   * An ABSENT SLOT, never a fork: a surface that passes nothing keeps the link-to-the-product-page
-   * behaviour byte for byte, which is what the public marketing route still wants (it cannot mount
-   * Stripe on a cached route, and its buyer has no account yet). The member page passes a real
+   * An ABSENT SLOT, never a fork: a surface that passes nothing links to the Journey till
+   * (`/journeys/<slug>`). The public marketing route cannot mount Stripe on a cached page, so it
+   * sends a signed-out buyer to sign-in instead of rendering this control. The member page passes a
+   * real `BuyButton`, so the card fields open under the button the member pressed.
    * `BuyButton`, so the card fields open under the button the member pressed.
    *
    * 🔴 WHY THE PAGE OWNS IT AND NOT THIS COMPONENT. `BuyButton` lives under `app/(main)/`, and this
@@ -484,8 +480,9 @@ export function EnrollCta({
 }) {
   const full = layout === 'block' ? 'w-full' : ''
 
-  // The author previewing their own Journey: edit, not enroll.
-  if (isAuthor) {
+  // The author who is not enrolled: edit, not enroll. An enrolled author (or anyone already in)
+  // gets Continue below, so opening the sales page never hides the course.
+  if (isAuthor && !enrolled) {
     return (
       <Link href={`/journeys/${slug}/edit`} className={buttonClasses('primary', 'md', full)}>
         Edit Journey
@@ -514,7 +511,7 @@ export function EnrollCta({
         </span>
       ) : (
         buyControl ?? (
-          <Link href={`/market/${offer.productId}`} className={buttonClasses('primary', 'md', full)}>
+          <Link href={`/journeys/${slug}`} className={buttonClasses('primary', 'md', full)}>
             Get access · {offer.priceLabel}
           </Link>
         )
