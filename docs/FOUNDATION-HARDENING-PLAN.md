@@ -3,9 +3,14 @@
 > **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
 > This document is the spec and the rationale. It does **not** record what is done, because prose
 > cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+>
+> ⚠️ **Not the live execution list (2026-09-18).** What ships next is
+> [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) + [`BUILD-LIST.md`](BUILD-LIST.md) +
+> [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md). Product law: [`CORE-MODEL.md`](CORE-MODEL.md).
+> Names: [`NAMING.md`](NAMING.md). This file is the 2026-06-28 hardening spec (ADR-439).
+> Do not open it for "what to build next."
 
-> **The hardening-first, best-practice-first execution sequence.** This is the active build
-> order locked by owner decision **2026-06-28**: make the platform world-class and
+> **The hardening-first, best-practice-first sequence** locked by owner decision **2026-06-28**: make the platform world-class and
 > scale-ready **before** adding more features, finish the web foundation fully, then build the
 > mobile app (the eventual primary surface). It re-sequences (does not replace) the staged
 > build in [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md); the *what/why* of the verticals and the

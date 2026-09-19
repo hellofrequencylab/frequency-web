@@ -9,11 +9,11 @@
 > **Not a live tracker (2026-09-18).** Do not add new threads here. The A+ roadmap it
 > points at is also history.
 
-> ▶ **Driving every domain to A+:** see **[`A-PLUS-ROADMAP.md`](A-PLUS-ROADMAP.md)** (the per-domain
-> gap analysis + what's code-reachable vs owner-gated). This file is the live per-item tracker.
+> ▶ **Driving every domain to A+:** see **[`A-PLUS-ROADMAP.md`](A-PLUS-ROADMAP.md)** (also
+> history: the per-domain gap analysis as of mid-2026). This file is a frozen per-item tracker.
 >
-> The single place that tracks **every trail of work in flight, blocked, or queued** so nothing
-> is missed. Updated as items move. This is the *active* companion to the detailed lists:
+> It once tracked **every trail of work in flight, blocked, or queued**. It is no longer
+> updated. Historical companion to the lists of that era:
 > [`BUILD-LIST.md`](BUILD-LIST.md) (full reconciled backlog), [`AUDIT-2026-06-15.md`](AUDIT-2026-06-15.md)
 > (graded audit + §9 master list), and [`DECISIONS.md`](DECISIONS.md) (ADR log).
 >

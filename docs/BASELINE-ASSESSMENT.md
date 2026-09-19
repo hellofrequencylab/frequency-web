@@ -9,6 +9,10 @@ phased roadmap to reach a clean, hand-off-ready, best-practice baseline and scal
 the Frequency **Foundation** (nonprofit community) + **Labs** (for-profit member-management
 SaaS) dual-entity future. Decision record: [ADR-246](DECISIONS.md).
 
+> ⚠️ **Frozen snapshot (2026-06-13). Do not update status, grades, or counts here.**
+> Not the live plan. `WidgetSlot` below is a sketch, not live chrome. The template kit is
+> seven shells; RailGrid is not a shell.
+
 Status legend: ✅ done · ⏳ in progress / partial · 🔴 gap / risk · 🅿️ deliberately parked.
 
 ## Verdict
