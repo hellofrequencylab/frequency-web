@@ -145,7 +145,12 @@ const FROZEN_MENU_DEBT = new Map([
   [
     'lib/admin/rail-bank.ts',
     {
-      items: 11,
+      // OWN-058, ruled 2026-09-08: this is the one raise. 11 → 13 admits the Circle and Event
+      // Settings doors. Those modules already resolve through hrefForEntitySurface (SCAN-603);
+      // LIVE-237 retired the standalone /settings pages onto the Manage hub Settings tab. The
+      // ledger is admitting two doors, not a new hand-typed menu. Do not raise it again without
+      // a new owner ruling dated after 2026-09-08.
+      items: 13,
       site: '`baseBank` — a switch over scope.kind returning literal link arrays',
       why:
         'The bottom-bank quick links for space / global+profile / circle / event / hub+nexus+practice / ' +
@@ -156,11 +161,10 @@ const FROZEN_MENU_DEBT = new Map([
         'row\'s `placement` is carried by lib/apps/catalog.ts into `App.surfaces.editor.placement`, which ' +
         'settings-panel reads and merges into the bank via bankForScope(extra). As of 2026-09-04 EIGHT rows ride ' +
         'it (five account.* rows in registry.ts; space.reach, space.comms, space.billing in space-modules.ts). ' +
-        'What has NOT moved is the eleven FIXED links typed in baseBank itself. (This sentence once read "which ' +
-        'today no module opts into"; that premise expired without the ledger noticing, which is what ADR-1082 ' +
-        'says a status claim in prose does.) MIGRATION: mint the remaining rows with `placement: "bank"` and ' +
-        'delete baseBank. OWNER DECISION: doing so changes which quick links each scope shows, so it is a ' +
-        'product change, not a mechanical one.',
+        'What has NOT moved is the thirteen FIXED links typed in baseBank itself (11, then OWN-058 admitted ' +
+        'Circle Settings and Event Settings on 2026-09-08). MIGRATION: mint the remaining rows with ' +
+        '`placement: "bank"` and delete baseBank. OWNER DECISION: doing so changes which quick links each ' +
+        'scope shows, so it is a product change, not a mechanical one.',
     },
   ],
   [

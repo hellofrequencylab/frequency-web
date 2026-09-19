@@ -317,9 +317,10 @@ The operator admin menu + rail + `/manage` consoles all derive from ONE source. 
 a per-scope menu, rewrite the rail to add an item, or reintroduce a parallel registry. Full spec:
 [`docs/MENU-CONTRACT.md`](docs/MENU-CONTRACT.md) (ADR-553, **corrected by ADR-927 on 2026-08-04**
 to describe what the code actually does). Enforced in CI by `pnpm check:menu` + the drift-guard
-tests, so a violation fails the build — with one honest exception: 21 hand-declared rows are
+tests, so a violation fails the build — with one honest exception: 23 hand-declared rows are
 carried as **frozen debt** (`FROZEN_MENU_DEBT` in `scripts/check-menu.mjs`, MENU-CONTRACT
-§Frozen debt), a ratchet that may shrink and never grow.
+§Frozen debt), a ratchet that may shrink and never grow except the OWN-058 raise (11 → 13)
+that admitted the Circle and Event Settings doors.
 
 - **To add or change a menu item:** edit a row in one of the **four registered catalogs**, the
   only places a menu row may be typed by hand (`REGISTERED_CATALOGS` in `scripts/check-menu.mjs`):
