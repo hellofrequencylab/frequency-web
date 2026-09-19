@@ -12,6 +12,10 @@ import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
 import { SpaceBodyPanel } from '@/components/spaces/workspace/space-body-panel'
 import { isPanelId } from '@/components/spaces/workspace/surface-panels'
 
+// Signed-in members land here via proxy rewrite (lib/nav/member-space-rewrite.ts).
+// The share URL stays /spaces/<slug>; this file is /spaces/<slug>/full so the
+// (public) ISR body can own the sitemap path (SCAN-644).
+//
 // The profile's HOME page body (ADR-508 U3 LIVE CUTOVER). The Home body now renders through the
 // MODULE ENGINE (the block-picker grid), NOT Puck: it resolves the Space, builds the small render
 // context (toProfileContext), and renders <SpaceProfileModules> with the operator's EFFECTIVE GRID.

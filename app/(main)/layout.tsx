@@ -203,9 +203,9 @@ export default async function MainLayout({
     )
   }
 
-  // Leftover public views still in this group (Space profiles, /events index).
-  // headers() + getCachedUser still run here; those URLs are SCAN-644 (Space
-  // layout also calls getMyProfileId). Share event + listing URLs left this group.
+  // Leftover public views still in this group (Space profile tabs, /events index).
+  // headers() + getCachedUser still run here. Share event, listing, and Space
+  // home / Show URLs left this group (SCAN-643, SCAN-644).
   const currentPath = (await headers()).get('x-pathname')
   const isPublicView =
     isAnonSpaceProfile(currentPath) || isAnonPublicEvent(currentPath) || isAnonPublicDetail(currentPath)

@@ -12,6 +12,8 @@ const PAGES = [
   'app/(public)/housing/[id]/page.tsx',
   'app/(public)/classifieds/[id]/page.tsx',
   'app/(public)/events/[slug]/page.tsx',
+  'app/(public)/spaces/[slug]/page.tsx',
+  'app/(public)/spaces/[slug]/podcasts/[showSlug]/page.tsx',
   'app/spotlight/[handle]/page.tsx',
 ] as const
 
@@ -53,6 +55,13 @@ describe('sitemap-advertised listing details stay eligible for ISR', () => {
     const data = readFileSync('lib/spotlight/data.ts', 'utf8')
     expect(data).toMatch(/export async function listPublishedSpotlightHandles/)
     expect(data).toMatch(/meta->spotlight->>published/)
+  })
+
+  it('the (main) Space root layout no longer calls getMyProfileId (SCAN-644)', () => {
+    const layout = readFileSync('app/(main)/spaces/[slug]/layout.tsx', 'utf8')
+    expect(layout).not.toMatch(/getMyProfileId\s*\(/)
+    expect(existsSync('app/(public)/spaces/[slug]/page.tsx')).toBe(true)
+    expect(existsSync('app/(main)/spaces/[slug]/(profile)/full/page.tsx')).toBe(true)
   })
 
   it('the (public) share layout never calls a dynamic API', () => {

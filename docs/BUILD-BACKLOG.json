@@ -181,8 +181,7 @@
             "LIVE-335",
             "LIVE-394",
             "LIVE-395",
-            "LIVE-396",
-            "SCAN-644"
+            "LIVE-396"
           ]
         },
         {
@@ -5008,15 +5007,15 @@
       "lane": "live",
       "size": "S",
       "source": {
-        "file": "app/(main)/spaces/[slug]/podcasts/[showSlug]/page.tsx",
-        "ref": "metadata + JSON-LD block"
+        "file": "components/airwaves/show-page-view.tsx",
+        "ref": "metadata + JSON-LD block (moved here from the Show page in SCAN-644)"
       },
       "detail": "MS25 Phase 2. The Show page sets openGraph but no twitter block (metadata merges per top-level key, so X/Slack shares show 'Frequency - Community Collective' instead of the Show) and no og:url; and podcastEpisodeSchema (lib/jsonld.ts:1132) is built, documented and called nowhere while the page renders every episode with title/date/duration/enclosure already loaded. Mirror OG into twitter, add the url, emit episode nodes (cap ~10). File was train-claimed at scan time.",
       "verify": {
         "kind": "grep-present",
         "pattern": "podcastEpisodeSchema",
         "paths": [
-          "app/(main)/spaces/[slug]/podcasts/[showSlug]/page.tsx"
+          "components/airwaves/show-page-view.tsx"
         ],
         "note": "Passes when the Show page emits the episode nodes it already has the data for (the twitter block rides the same edit)."
       }
@@ -15002,7 +15001,7 @@
     {
       "id": "SCAN-644",
       "title": "Space profile layouts still call getMyProfileId and void sitemap ISR",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "L",
@@ -15010,12 +15009,13 @@
         "file": "app/(main)/spaces/[slug]/layout.tsx",
         "ref": "SCAN-643 remainder; meta-scan 2026-09-19 evening"
       },
-      "detail": "FOUND 2026-09-19 while closing SCAN-643. Sitemap advertises /spaces/<slug> and /spaces/<slug>/podcasts/<show>. SCAN-643 moved event + listing share URLs out of (main). Space profiles stayed because app/(main)/spaces/[slug]/layout.tsx awaits getMyProfileId() (cookies) so a member can open a private Space. Moving the (profile) group without that read would 404 a signed-in member of a private Space. Close by a public networked body that reads with a null viewer (the sitemap set) and a signed-in rewrite to a member path for private Spaces, the SCAN-636 /full pattern. Do not enable RLS on spatial_ref_sys. Do not swap SiteHeader (SCAN-641).",
+      "detail": "FOUND 2026-09-19 while closing SCAN-643. Sitemap advertises /spaces/<slug> and /spaces/<slug>/podcasts/<show>. SCAN-643 moved event + listing share URLs out of (main). Space profiles stayed because app/(main)/spaces/[slug]/layout.tsx awaits getMyProfileId() (cookies) so a member can open a private Space. Moving the (profile) group without that read would 404 a signed-in member of a private Space. Close by a public networked body that reads with a null viewer (the sitemap set) and a signed-in rewrite to a member path for private Spaces, the SCAN-636 /full pattern. Do not enable RLS on spatial_ref_sys. Do not swap SiteHeader (SCAN-641).\n\nCLOSED 2026-09-19 (ADR-1465). PREMISE RE-TESTED FIRST: the Space root layout still called getMyProfileId (probe failed). Moved /spaces/<slug> and /spaces/<slug>/podcasts/<show> into app/(public)/ whose layout never calls cookies() or headers() (null viewer, revalidate 3600). Signed-in members rewrite to /full (memberSpaceRewrite, same shape as SCAN-636). The (main) root layout no longer calls getMyProfileId; owner surfaces and /full resolve the viewer through getVisibleSpaceForRequest. Did not enable RLS on spatial_ref_sys. Did not swap SiteHeader.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"app/(main)/spaces/[slug]/layout.tsx\",\"utf8\");process.exit(/getMyProfileId\\s*\\(/.test(s)?1:0)'",
         "note": "Fails while the Space root layout still calls getMyProfileId during render."
-      }
+      },
+      "closed": "2026-09-19"
     }
   ]
 }

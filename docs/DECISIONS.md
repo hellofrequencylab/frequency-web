@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1458**. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643 on this PR. 1451 is SCAN-642. 1463 is LIVE-393 on main. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs.
+tree as of this index: **ADR-1465**. 1465 is SCAN-644. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46642,6 +46642,27 @@ Premise re-tested 2026-09-19:
 
 **Rejected.** Enabling `cacheComponents` for one layout. Swapping SiteHeader in this PR. Passing a null viewer on Space profiles without a member rewrite.
 
-**Consequences.** Crawlers on `/events/<slug>` and `/store|/market|/housing|/classifieds/<id>` no longer pay the (main) auth read. Space sitemap URLs still do, until SCAN-644.
+**Consequences.** Crawlers on `/events/<slug>` and `/store|/market|/housing|/classifieds/<id>` no longer pay the (main) auth read. Space sitemap URLs left in SCAN-644 (ADR-1465).
 
-**Rows.** SCAN-643 (closed), SCAN-644 (filed).
+**Rows.** SCAN-643 (closed), SCAN-644 (closed in ADR-1465).
+
+## ADR-1465: Space share URLs leave the (main) layout (SCAN-644)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-644` · numbered **1465** because **1464** was used on a closed unmerged leftover and **1452** is SCAN-643 on this tree · corroborated by `app/(public)/spaces/[slug]/page.tsx`, `lib/nav/member-space-rewrite.ts`, and `app/(main)/spaces/[slug]/layout.tsx`
+
+**Context.** SCAN-643 moved event and listing share URLs out of `(main)`. Space profiles stayed because `spaces/[slug]/layout.tsx` called `getMyProfileId()` so a member could open a private Space. Without `cacheComponents`, that cookies() read voids ISR for every sitemap URL under the layout: `/spaces/<slug>` and `/spaces/<slug>/podcasts/<show>`. Passing a null viewer on those routes without a member rewrite would 404 a signed-in member of a private Space.
+
+Premise re-tested 2026-09-19: the Space root layout still called `getMyProfileId` (the SCAN-644 probe failed).
+
+**Decision.**
+
+1. Move the networked Space home and the Show page into `app/(public)/`. That layout never calls `cookies()` or `headers()`. Both pages read with a null viewer (`getVisibleSpaceBySlug(slug, null)`). ISR window is 3600, same as the other share URLs.
+2. Signed-in members rewrite to `/spaces/<slug>/full` and `/spaces/<slug>/full/podcasts/<show>`. `memberSpaceRewrite` is pure; `proxy.ts` rewrites after `getUser()`. The browser URL and `x-pathname` stay the share path.
+3. The `(main)` Space root layout no longer calls `getMyProfileId`. Owner surfaces and `/full` resolve the viewer through `getVisibleSpaceForRequest`, so a private Space still 404s identically for a stranger and still opens for a member.
+4. Do not swap `SiteHeader` (SCAN-641). Do not enable RLS on `spatial_ref_sys`.
+
+**Rejected.** Enabling `cacheComponents` for one layout. Passing a null viewer on the `(main)` profile without a `/full` rewrite. Opening private Spaces to crawlers.
+
+**Consequences.** Crawlers on `/spaces/<slug>` and `/spaces/<slug>/podcasts/<show>` no longer pay the `(main)` auth read or the Space layout viewer read. A later edit that puts `getMyProfileId(` back in `app/(main)/spaces/[slug]/layout.tsx` fails the SCAN-644 probe. Private Spaces stay 404 for a null viewer.
+
+**Rows.** SCAN-644.

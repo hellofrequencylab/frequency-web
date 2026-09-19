@@ -1,8 +1,9 @@
 // PUBLIC DETAIL PAGES advertised in app/sitemap.ts. Listing + event share URLs moved
-// to app/(public)/ (SCAN-643). This list still names the leftover (main) families
-// the member layout must not 307 to `/` (Space Shows). Event + listing details no
-// longer render under (main); the patterns stay so a stale rewrite still counts
-// as public chrome rather than a splash bounce.
+// to app/(public)/ (SCAN-643). Space home + Show URLs moved in SCAN-644. This list
+// still names the leftover (main) families the member layout must not 307 to `/`
+// (a stale rewrite, or a signed-in /full Show). Event + listing + Space details no
+// longer render under (main) at the share URL; the patterns stay so a stale rewrite
+// still counts as public chrome rather than a splash bounce.
 //
 // app/(main)/layout.tsx redirects an anonymous visitor to `/` for any path it does not recognise as
 // public. That rule and the sitemap are written in different files for different reasons, and they

@@ -10,6 +10,7 @@ import {
 import { isProfileRef } from '@/lib/qr/public-url'
 import { hasPublicTwin } from '@/lib/nav/public-twin'
 import { memberEventRewrite } from '@/lib/nav/member-event-rewrite'
+import { memberSpaceRewrite } from '@/lib/nav/member-space-rewrite'
 import { frontDoorRedirect } from '@/lib/nav/front-door'
 import { referralsEnabled } from '@/lib/platform-flags'
 import { isFunnelSplashPath } from '@/lib/funnels/definitions'
@@ -365,6 +366,22 @@ export async function proxy(request: NextRequest) {
   if (eventMemberPath) {
     const memberUrl = request.nextUrl.clone()
     memberUrl.pathname = eventMemberPath
+    const rewriteResponse = NextResponse.rewrite(memberUrl, {
+      request: { headers: withPath(request) },
+    })
+    supabaseResponse.cookies.getAll().forEach((cookie) => rewriteResponse.cookies.set(cookie))
+    return rewriteResponse
+  }
+
+  // SCAN-644. A signed-in member on the public Space URL keeps follow, owner
+  // tools, and private-Space access on the existing profile. The rewrite is
+  // internal: the share URL stays /spaces/<slug> (or /podcasts/<show>), and
+  // withPath above stamps that path on x-pathname. Crawlers and signed-out
+  // visitors fall through to the ISR body under (public).
+  const spaceMemberPath = memberSpaceRewrite(pathname, !!user)
+  if (spaceMemberPath) {
+    const memberUrl = request.nextUrl.clone()
+    memberUrl.pathname = spaceMemberPath
     const rewriteResponse = NextResponse.rewrite(memberUrl, {
       request: { headers: withPath(request) },
     })
