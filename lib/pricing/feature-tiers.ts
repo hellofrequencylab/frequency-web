@@ -156,12 +156,12 @@ export function tierLabelOnAxis(axis: GateAxis, tier: string): string {
 }
 
 /** The naming-canon label of the plan (or tier) a WALL sits on, read off the SAME merged gate the
- *  live `featureAllowed` seam enforces (ADR-914's three walls: `space_memberships`, `space_campaigns`,
- *  `space_membership_tickets`). A surface that says "charging your members is part of Business" reads
- *  the word HERE, so an operator override that moves the wall moves the sentence with it, and no copy
- *  carries a typed plan name that can drift from the gate (LIVE-231). Pass the overrides the caller
- *  already loaded (`loadFeatureGateOverrides`, an IO seam this pure module never touches); the code
- *  default stands with none. Null for a feature no gate declares. PURE. */
+ *  live `featureAllowed` seam enforces. A surface that says "charging your members is part of X"
+ *  reads the word HERE, so an operator override that moves the wall moves the sentence with it, and
+ *  no copy carries a typed plan name that can drift from the gate (LIVE-231). The code default for
+ *  `space_memberships` is the free floor (LIVE-410); an override can still raise it. Pass the
+ *  overrides the caller already loaded (`loadFeatureGateOverrides`, an IO seam this pure module
+ *  never touches); the code default stands with none. Null for a feature no gate declares. PURE. */
 export function featureWallLabel(feature: string, overrides: FeatureGateOverrides = {}): string | null {
   const gate = mergeGate(feature, overrides)
   if (!gate) return null
@@ -261,15 +261,12 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
       'Host up to 3 other businesses inside your space, and co-host events with Collaborator Spaces. They keep their own page and pay for their own space. Collective hosts unlimited and adds revenue splits.',
     ),
   },
-  space_memberships: {
-    axis: 'plan',
-    minTier: 'business',
-    title: 'Sell memberships',
-    rungs: spaceRungs(
-      'Sell tickets, take donations, and run your shop. Free members and followers, no limit.',
-      'Sell recurring memberships with their own tiers, benefits, and member-only spaces.',
-    ),
-  },
+  // 🔴 `space_memberships` and `space_membership_tickets` LADDERS USED TO SIT HERE and no longer do
+  // (LIVE-410 / ADR-1413). A ladder answers "which tier UNLOCKS this", and both now sit on the free
+  // floor the way the storefront does: selling a membership, and including events in it, is open on
+  // every plan. Checkout still refuses when Connect is not payout-ready. An operator override that
+  // raises either gate can still name the wall through featureWallLabel; there is no unlock rung to
+  // display on the default map.
   space_campaigns: {
     axis: 'plan',
     minTier: 'business',
@@ -277,15 +274,6 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     rungs: spaceRungs(
       'Email your people directly, inside your send allowance.',
       'Campaigns, funnels, and saved sequences that bring new people in and follow up for you.',
-    ),
-  },
-  space_membership_tickets: {
-    axis: 'plan',
-    minTier: 'business',
-    title: 'Membership-included event tickets',
-    rungs: spaceRungs(
-      'Sell tickets to everyone.',
-      'Reserve event tickets for your own members, or for one membership tier, so your membership includes your events.',
     ),
   },
   // ── Space AI depth (plan axis; the Resonance Engine paid depth · ADR-387) ────────────────────────

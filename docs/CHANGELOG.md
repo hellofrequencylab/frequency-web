@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **A free Space can sell a membership.** Set a tier on Offerings. The first paid join still needs payouts set up. Campaigns stay on Business.
+
 - **Starting a Circle is open to every signed-in member.** Remix a Starter, claim one near you, or start a Chapter on a program Channel: those buttons no longer open an upgrade popup. Creating a Practice from the library is the same. You still need to be signed in. How many Circles or Practices you can publish stays metered.
 
 - **The Quest is no longer a top-level marketing tab.** The public header is now The Community, Spaces, and About. The Quest still has its page, and you still reach it from The Community menu, the footer, and search. It is the light game everyone plays alongside their Circle, not a third of the story.

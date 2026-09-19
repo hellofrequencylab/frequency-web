@@ -160,38 +160,28 @@ describe('every gate is accounted for on the meter side', () => {
   })
 })
 
-describe('the walls are the three the strategy names, and nothing has crept in', () => {
-  it('selling a membership is a wall at Business', () => {
+describe('the walls are the ones the strategy names, and nothing has crept in', () => {
+  it('selling a membership is open on the free floor (LIVE-410 / ADR-1403 Q3)', () => {
     expect(FEATURE_GATES.space_memberships).toEqual({
       axis: 'plan',
-      minEntitlement: 'business',
+      minEntitlement: 'free',
       enabled: true,
     })
-    // 🔴 And it is UNMETERED above that wall. A cap on active members would tell a Space its eleventh
+    // 🔴 And it is UNMETERED for active members. A cap on members would tell a Space its eleventh
     // supporter cannot join, which punishes the customer for succeeding at the exact thing we asked
-    // them to do. It carried a `free: 10 active members` allowance before ADR-914.
+    // them to do. The TIER count is a separate meter (space_membership_tiers), now with a real free
+    // allowance of 1 so the gate and the meter cannot part again.
     expect(PLACEHOLDER_METER_LIMITS).not.toHaveProperty('space_memberships')
+    expect(PLACEHOLDER_METER_LIMITS.space_membership_tiers?.free).toBe(1)
   })
 
-  it('member benefits never state the membership wall a second time, and are never a gate of their own', () => {
-    // ADR-1372. A benefit is a priced modifier assigned to a membership tier, so the wall that
-    // matters is the one deciding whether the Space has a tier at all: space_memberships.
-    //
-    // The first draft pinned this free rung to ZERO and tied it to space_membership_tiers. That is
-    // the ADR-914 worry applied one step too far, and LIVE-225 is the row that settled it: "a cap of
-    // zero is a wall wearing a meter's clothes". LIVE-225 grandfathers exactly ONE zero,
-    // space_membership_tiers, because that one IS the paid line. A second zero re-opens the pattern
-    // that row closed, in the one place meant to meter rather than refuse. So: above zero, and
-    // unreachable in practice, because a free Space has no tier to assign a benefit to anyway.
+  it('member benefits never state a membership wall a second time, and are never a gate of their own', () => {
+    // ADR-1372. A benefit is a priced modifier assigned to a membership tier. LIVE-410 opened the
+    // membership floor, so the free benefit allowance is reachable (one benefit on the one free
+    // tier). A zero here would be the wall wearing a meter's clothes, the LIVE-225 pattern.
     expect(PLACEHOLDER_METER_LIMITS.space_member_benefits?.free).toBeGreaterThan(0)
-    // The zero that IS allowed stays exactly where LIVE-225 left it, so this test fails if a future
-    // change quietly hands the exception to a second key.
-    expect(PLACEHOLDER_METER_LIMITS.space_membership_tiers?.free).toBe(0)
-    // And it is metered ONLY. The named-wall list above is the whole set; a second gate by this name
-    // would be a quieter opinion about the same customer, which is what this file exists to catch.
+    expect(PLACEHOLDER_METER_LIMITS.space_membership_tiers?.free).toBeGreaterThan(0)
     expect(FEATURE_GATES).not.toHaveProperty('space_member_benefits')
-    // Above the wall it is a real dial, not a second wall: Business gets a finite allowance and the
-    // top rung stops counting.
     expect(PLACEHOLDER_METER_LIMITS.space_member_benefits?.business).toBeGreaterThan(0)
     expect(PLACEHOLDER_METER_LIMITS.space_member_benefits?.collective).toBeNull()
   })

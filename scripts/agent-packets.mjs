@@ -91,7 +91,7 @@ LOOP.
 5. If the PR added supabase/migrations/*.sql, apply with execute_sql then ledger insert; run pnpm check:migrations --require-ledger when credentials exist.
 6. Validate the row's probe on main. Close the row in BUILD-BACKLOG.json in the SAME PR that makes the probe pass, and prune it from meta.slate.waves.
 
-PRODUCT-FIRST (ADR-1403). Prefer LIVE-410 (memberships on Connect readiness, not Business plan) then LIVE-376 (event Space attach). LIVE-234 is P0 money proof and is owner-walked. LIVE-408 needs an owner ruling. Journey sales (LIVE-392+) is claimed by ${FOREIGN_LANE_CLAIMS.journey}.
+PRODUCT-FIRST (ADR-1403). LIVE-410 (memberships on Connect readiness) is closed. Prefer remaining money, then LIVE-376 (event Space attach). LIVE-234 is P0 money proof and is owner-walked. LIVE-408 needs an owner ruling. Journey sales (LIVE-392+) is claimed by ${FOREIGN_LANE_CLAIMS.journey}.
 `
 
 export function loadBacklog(root = '.') {

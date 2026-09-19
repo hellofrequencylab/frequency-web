@@ -101,7 +101,7 @@ describe('REMAINING-WORK #4 — space_* feature gates resolve consistently via f
   it('ON: the collapsed plan ladder bites (the paid floor for space_* is business · ADR-552)', async () => {
     // The coarse plan-rank gate is now a single paid floor of 'business'; the fine per-feature gating is
     // the entitlement-key union (spaceHasEntitlement), not this ladder.
-    expect(await featureAllowed('space_memberships', { plan: 'free' }, { gatesLive: true })).toBe(false)
+    expect(await featureAllowed('space_memberships', { plan: 'free' }, { gatesLive: true })).toBe(true)
     expect(await featureAllowed('space_memberships', { plan: 'business' }, { gatesLive: true })).toBe(true)
     expect(await featureAllowed('space_campaigns', { plan: 'free' }, { gatesLive: true })).toBe(false)
     // A legacy label narrows to business through asSpacePlan inside the gate, so it still clears.

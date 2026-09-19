@@ -126,24 +126,20 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   // collaborator is the FIRST ONE FREE shape the personal axis already uses: enough to do the thing
   // once and find out it works, and the second one is what a plan buys.
   space_collaborators: { free: 1, business: 3, collective: null },
-  // Membership tiers a Space may define. Free runs one tier (the §2 "10 active, 1 tier" row), Business
-  // runs a small ladder, Collective is unlimited (multi-tier pricing is the Collective offer).
-  // 🔴 FREE IS ZERO, NOT ONE (ADR-914). Selling memberships is a WALL at Business, and this meter
-  // promised a free Space one tier. That is the "gated and metered = two promises to the same
-  // customer" class the drift guard exists to catch, and it slipped through only because the gate key
-  // (`space_memberships`) and the meter key (`space_membership_tiers`) differ by name. The guard
-  // compares keys, so a rename defeats it. Above the wall the tier COUNT is a real dial, so the meter
-  // stays; its floor just has to agree with the wall.
-  space_membership_tiers: { free: 0, business: 3, collective: null },
+  // Membership tiers a Space may define. Free runs one tier (enough to sell the first membership),
+  // Business runs a small ladder, Collective is unlimited (multi-tier pricing is the Collective offer).
+  // 🔴 FREE WAS ZERO WHILE MEMBERSHIPS WERE A WALL (ADR-914). LIVE-410 / ADR-1413 moved the
+  // `space_memberships` gate to the free floor (ADR-1403 Q3: host free until you charge). A zero
+  // here would have been the wall wearing a meter's clothes, the exact LIVE-225 pattern. The gate
+  // key (`space_memberships`) and this meter key still differ by name; the floor has to agree with
+  // the gate or the two promises part again.
+  space_membership_tiers: { free: 1, business: 3, collective: null },
   // Member benefits a Space may DEFINE (ADR-1372): a priced modifier (percent off, amount off, fixed
   // price, included) assigned to any number of membership tiers. The quantity metered is how many
   // distinct benefits exist in the Space, not how many tiers carry each one, because a benefit is
   // written once and assigned across tiers (space_tier_benefits).
-  //   · FREE 0 for the same reason the tier meter is 0: selling a recurring membership is a WALL at
-  //     Business (FEATURE_GATES.space_memberships), so a free Space has no tier to assign a benefit
-  //     to. A floor above zero here would be the ADR-914 mistake again, a meter promising what the
-  //     wall above it refuses. What a free Space keeps is unchanged by this row: the ADR-823
-  //     members-only ticket flag decides ADMISSION and is not a benefit.
+  //   · FREE 1, reachable now that a free Space may define one tier (LIVE-410). The first draft
+  //     set 0 because the membership wall left no tier to assign a benefit to. That wall moved.
   //   · BUSINESS 6 is two per tier against the 3 tiers space_membership_tiers carries at Business,
   //     which covers the shape a Business Space actually runs (a standing members rate plus one
   //     capped guest pass per tier) without reaching the full program.
@@ -153,15 +149,11 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   // `space_membership_tiers` (meter) differ by name, which is what let a gate/meter collision slip
   // past a guard that compares keys. This row keeps the convention coherent the other way: the meter
   // key IS the table name (public.space_member_benefits), and it is deliberately NOT a gate key, so
-  // there is no second opinion hiding behind a rename. The only wall in play stays space_memberships.
+  // there is no second opinion hiding behind a rename. Memberships are no longer a plan wall
+  // (LIVE-410); the remaining named wall is space_campaigns.
   //
-  // FREE IS 1, NOT 0, and the reason is LIVE-225: "a cap of zero is a wall wearing a meter's clothes".
-  // The first draft of this row set 0 on the argument that a free Space has no tier to assign a
-  // benefit to. True, and it is precisely why 0 buys nothing: the WALL is space_memberships, and a
-  // zero here would state it a second time, in the one place that is supposed to meter rather than
-  // refuse. LIVE-225 grandfathers exactly one zero (space_membership_tiers, which IS the paid line);
-  // a second one would re-open the pattern that row closed. At 1 the meter is simply unreachable for
-  // a free Space, which is the honest shape: nothing promised, nothing refused twice.
+  // FREE IS 1 (LIVE-225), and LIVE-410 made that 1 reachable: a free Space now has a tier to assign
+  // the benefit to. A second zero would re-open the pattern LIVE-225 closed.
   space_member_benefits: { free: 1, business: 6, collective: null },
   vera_unlimited: { free: 10, crew: null },
   // FIRST ONE FREE — the personal leadership allowances. A free Member leads at one of each; Crew leads
@@ -345,7 +337,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Membership tiers',
     unit: 'tiers',
     period: null,
-    // Free: 1 tier (§2 "10 active, 1 tier"). Business: a small ladder. Collective: unlimited, which is
+    // Free: 1 tier (LIVE-410). Business: a small ladder. Collective: unlimited, which is
     // what a membership program actually needs.
     allowances: PLACEHOLDER_METER_LIMITS.space_membership_tiers!,
   },
@@ -355,8 +347,8 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Member benefits',
     unit: 'benefits',
     period: null,
-    // Free: one, and unreachable in practice (no tier below the Business wall to assign it to).
-    // Deliberately not zero: see the allowance map above and LIVE-225.
+    // Free: one, assigned to the one free-Space tier (LIVE-410). Deliberately not zero: see
+    // the allowance map above and LIVE-225.
     // Business: 6, two per tier against the 3 tiers that plan carries. Collective: unlimited.
     allowances: PLACEHOLDER_METER_LIMITS.space_member_benefits!,
   },
@@ -490,7 +482,7 @@ export const NON_METERED_FEATURES: Record<string, string> = {
   // sell a recurring promise at all), never in the middle of a growing member list, and above the wall
   // there is no ceiling: the take rate already scales with volume, so capping members would charge
   // twice for the same success.
-  space_memberships: 'On/off capability (sell recurring memberships). Deliberately UNMETERED above the wall: capping active members would punish a Space for growing, and the take rate already scales with volume.',
+  space_memberships: 'On/off capability (sell recurring memberships). Open on the free floor (LIVE-410); deliberately UNMETERED for active members: capping them would punish a Space for growing, and the take rate already scales with volume. The tier COUNT is space_membership_tiers.',
   // Campaigns are the same shape. "One free campaign" is not enough to learn anything from, so it
   // converts badly and teaches nothing; the honest line is between messaging your own people (metered
   // by space_email sends, available free) and running an acquisition machine (paid).

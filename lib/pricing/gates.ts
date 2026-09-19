@@ -163,27 +163,31 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // surface with no upgrade path to offer. Whichever of the two ships first declares its wall in the
   // SAME change as the code that enforces it, so the gate and its call site are never more than one
   // file apart.
-  // ── THE THREE WALLS (ADR-914, docs/VALUE-LADDER.md §3) ──────────────────────────────────────
+  // ── THE REMAINING WALL (ADR-914, amended by ADR-1403 Q3 / ADR-1413 / LIVE-410) ──────────────
   // Everything else on this ladder is a METER with a real free allowance, because a used feature with
-  // a ceiling converts and a locked preview does not. These are walls because a quantity cannot
-  // express the difference.
+  // a ceiling converts and a locked preview does not. A wall is only justified where a quantity
+  // cannot express the difference.
   //
-  // SELLING A MEMBERSHIP is the most defensible wall in the product. A membership is a recurring
-  // promise to another person: they pay you every month expecting the thing to still be there. Helping
-  // someone make that promise from an account they might abandon next month is not a feature, and "one
-  // free membership" teaches nothing while creating exactly one stranded subscriber. Business floor.
-  space_memberships: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  // SELLING A MEMBERSHIP USED TO BE THE MOST DEFENSIBLE WALL. ADR-914 put it at Business because a
+  // membership is a recurring promise, and helping someone make that promise from an account they
+  // might abandon next month is not a feature. FOCUS-MODEL Q3 / ADR-1403 ruled that argument is a
+  // READINESS concern wearing a pricing gate: host free until you charge, then you pay. The code
+  // default is therefore the free floor, the same shape as the storefront. Checkout still refuses
+  // when Connect is not payout-ready (LIVE-233 / LIVE-339). An operator can still raise this gate
+  // from /admin/pricing; the write seam and the settings notice both read the merged map.
+  space_memberships: { axis: 'plan', minEntitlement: 'free', enabled: true },
   // CAMPAIGNS AND FUNNELS. The line is between MESSAGING YOUR PEOPLE, which every Space can do inside
   // its send allowance, and RUNNING AN ACQUISITION MACHINE, which is what someone is paying for. A
   // metered "one free campaign" converts badly for the same reason a locked preview does: it is not
-  // enough to learn anything from. Business floor.
+  // enough to learn anything from. Business floor. This is the wall that remains.
   space_campaigns: { axis: 'plan', minEntitlement: 'business', enabled: true },
   // Membership-linked ticket access (ADR-823): restricting an event ticket tier to the hosting Space's
-  // own members. LOWERED from collective to business (ADR-914) so it sits with the membership program
-  // it sells — gating the membership at Business and then its own tickets a tier higher sold half a
-  // feature. Enforced where the gate is WRITTEN (lib/events/ticket-tiers validateSpaceAccess); the
+  // own members. Sits WITH the membership it sells (ADR-914 lowered it from Collective so the two
+  // could not part). LIVE-410 moved the membership floor to free, so this floor moves with it —
+  // gating the membership open and then its own tickets a tier higher would sell half a feature
+  // again. Enforced where the gate is WRITTEN (lib/events/ticket-tiers validateSpaceAccess); the
   // checkout enforces the stored gate unconditionally.
-  space_membership_tickets: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  space_membership_tickets: { axis: 'plan', minEntitlement: 'free', enabled: true },
   // Storefront (ADR-39X/Z) — available from the FREE plan (a free Space can sell; the plan
   // only buys the rake down + features). A per-Space toggle decides ON/OFF.
   space_storefront: { axis: 'plan', minEntitlement: 'free', enabled: true },

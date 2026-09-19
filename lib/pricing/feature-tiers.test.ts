@@ -213,13 +213,15 @@ describe('ladder unlock copy cannot drift from the meter it describes', () => {
 describe('read helpers', () => {
   it('featureTierLadder returns null for an ungated / unknown feature', () => {
     expect(featureTierLadder('space_storefront')).toBeNull() // free floor, not gated
+    expect(featureTierLadder('space_memberships')).toBeNull() // LIVE-410: free floor, same shape
     expect(featureTierLadder('made-up')).toBeNull()
   })
 
   it('isFeatureUnlockedAt: below the min tier is locked, at/above is unlocked', () => {
-    // Was `space_crm` until ADR-917 made it a meter (a metered feature has no unlock ladder). The
-    // shape under test is a plan-axis gate at the Business floor, which `space_memberships` is.
-    const wall = featureTierLadder('space_memberships')!
+    // Was `space_crm` until ADR-917 made it a meter, then `space_memberships` until LIVE-410 moved
+    // that gate to the free floor (no unlock ladder). The shape under test is a plan-axis gate at
+    // the Business floor, which `space_campaigns` still is.
+    const wall = featureTierLadder('space_campaigns')!
     expect(isFeatureUnlockedAt(wall, 'free')).toBe(false)
     expect(isFeatureUnlockedAt(wall, 'business')).toBe(true)
     // Nonprofit ranks above business, so it clears the business floor.
@@ -230,7 +232,7 @@ describe('read helpers', () => {
   })
 
   it('currentStepIndex maps a viewer tier to the highest rung at/below it', () => {
-    const wall = featureTierLadder('space_memberships')! // steps: free, business
+    const wall = featureTierLadder('space_campaigns')! // steps: free, business
     expect(currentStepIndex(wall, 'free')).toBe(0)
     expect(currentStepIndex(wall, 'business')).toBe(1)
     // Nonprofit ranks above business (the top rung) → maps to the business rung.
@@ -244,8 +246,8 @@ describe('read helpers', () => {
 // the setMembershipTiers refusal both say the plan word through, so an operator override that moves the
 // wall moves the sentence with it, and a typo in a copy string can never disagree with the gate.
 describe('featureWallLabel', () => {
-  it('names the plan the space_memberships wall sits on, off the code gate map', () => {
-    expect(featureWallLabel('space_memberships')).toBe(SPACE_PLAN_LABEL.business)
+  it('names the plan each gate sits on, off the code gate map', () => {
+    expect(featureWallLabel('space_memberships')).toBe(SPACE_PLAN_LABEL.free)
     expect(featureWallLabel('space_campaigns')).toBe(SPACE_PLAN_LABEL.business)
   })
 
@@ -255,7 +257,7 @@ describe('featureWallLabel', () => {
     )
     // A label off the gate's ladder must not widen or rename the wall (mergeGate keeps the code default).
     expect(featureWallLabel('space_memberships', { space_memberships: { minEntitlement: 'crew' } })).toBe(
-      SPACE_PLAN_LABEL.business,
+      SPACE_PLAN_LABEL.free,
     )
   })
 

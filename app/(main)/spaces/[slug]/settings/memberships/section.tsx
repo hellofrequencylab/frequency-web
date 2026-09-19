@@ -32,21 +32,18 @@ import type { Space } from '@/lib/spaces/types'
 //
 // MONEY IS REAL ON THIS SURFACE. The price and interval an owner sets here are what a member is charged:
 // a paid tier is joined through Stripe Connect Checkout (lib/billing/space-membership-checkout.ts), and a
-// cancel stops the subscription. That is why the section carries the plan ladder rather than a "later"
-// note: publishing any tier at all is a Business capability (ADR-914, enforced in setMembershipTiers), the
-// FeatureLockedNotice names space_membership_tiers so a plan-reason lock renders its upsell, and MeterUpsell
-// warns at 80% of the tier allowance. Active members stay unmetered on purpose. No em/en dashes.
+// cancel stops the subscription. Publishing a tier is open on the free floor (LIVE-410 / ADR-1403 Q3);
+// checkout still refuses when Connect is not payout-ready. FeatureLockedNotice names
+// space_membership_tiers so a plan-reason lock (an operator who raised the gate) renders its upsell,
+// and MeterUpsell warns at 80% of the tier allowance. Active members stay unmetered on purpose. No
+// em/en dashes.
 //
-// THE WALL IS SAID OUT LOUD HERE, NOT DISCOVERED AT SAVE (LIVE-231, docs/CORE-MODEL.md §5 phase 4). The
-// `memberships` FUNCTION is universal (entitlement null), so a free Space with the role walked straight
-// into the tier editor and met the Business wall only as a red error under the save button, worded by
-// the action. Now the section asks the same `featureAllowed('space_memberships')` seam the write asks,
-// and a Space below the wall reads WHY before it types a tier name: a membership is the repeat ADR-914
-// gates, so charging members comes with Business. The plan's NAME is read off the merged gate
-// (featureWallLabel over the same overrides the seam enforces), never typed. The notice is the house
-// GateNotice (no padlock, DAWN §5) and its one door is the billing surface every meter upsell already
-// links to (METER_UPSELL_CTA). A Space that DOWNGRADED with tiers still listed keeps the editor under the
-// notice, because clearing tiers is always allowed and hiding the form would trap it (memberships.ts).
+// THE WALL IS SAID OUT LOUD HERE, NOT DISCOVERED AT SAVE (LIVE-231). The section asks the same
+// `featureAllowed('space_memberships')` seam the write asks. The CODE default is the free floor, so
+// a free Space sees the editor. An operator override that raises the gate still names the plan
+// through featureWallLabel (never typed) and shows the house GateNotice. A Space that later sits
+// below a raised wall with tiers still listed keeps the editor under the notice, because clearing
+// tiers is always allowed (memberships.ts).
 
 export async function MembershipsSection({
   space,
@@ -93,7 +90,7 @@ export async function MembershipsSection({
   if (!canSell) {
     // The same overrides the seam just enforced (memoized per request), so the name and the gate agree.
     const wall =
-      featureWallLabel('space_memberships', await loadFeatureGateOverrides()) ?? SPACE_PLAN_LABEL.business
+      featureWallLabel('space_memberships', await loadFeatureGateOverrides()) ?? SPACE_PLAN_LABEL.free
     const notice = (
       <MembershipWallNotice
         wall={wall}

@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1412**.
+tree as of this index: **ADR-1413**.
 
 | Theme | Start here |
 |---|---|
@@ -45436,7 +45436,7 @@ change.
 
 **Rejected.** Treating FOCUS-MODEL as a reversal of join-free / pay-when-charging. Starting a sixth plan file. Letting kit work jump product this week.
 
-**Consequences.** `OWN-066` is the ruling row and closes. The code has not moved yet. `QUEST-IA-DEBT`, `HYG-033`, `LIVE-204` are the first product surfaces. Editor E0–E9 stays on its own wave.
+**Consequences.** `OWN-066` is the ruling row and closes. The memberships code half moved in [ADR-1413](DECISIONS.md) (`LIVE-410`): the gate sits on the free floor, Connect readiness still refuses a checkout. `QUEST-IA-DEBT`, `HYG-033`, `LIVE-204` are the first product surfaces. Editor E0–E9 stays on its own wave.
 
 ## ADR-1404: A Journey has one sales page, and listing areas only point at it (2026-09-19)
 
@@ -45698,4 +45698,21 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 **Consequences.** `pnpm packets` is the machine front door for fan-out. ADR-1325's loop still runs; only the lane *count* is derived. Branch protection and Vercel remain the merge and artifact gates. This session cannot send Resend.
 
 **Rows.** None. This is process, not a backlog close.
+
+## ADR-1413: A free Space may sell memberships; Connect readiness is the door (LIVE-410)
+
+**Status:** Accepted · 2026-09-19 · **Implements** [ADR-1403](DECISIONS.md) Q3 · **Amends** [ADR-914](DECISIONS.md) (memberships as a Business wall) · backlog `LIVE-410` · corroborated by `lib/pricing/gates.ts` (`space_memberships` / `space_membership_tickets` at the free floor) and `lib/pricing/feature-meters.ts` (`space_membership_tiers.free = 1`)
+
+**Context.** ADR-914 put `space_memberships` at Business because a membership is a recurring promise, and helping someone make that promise from an account they might abandon next month is not a feature. FOCUS-MODEL Q3 asked whether that was a readiness concern wearing a pricing gate. ADR-1403 ruled yes: host free until you charge, then you pay. Readiness (payout-ready Connect) still applies. LIVE-231 made the Business wall honest and did not move it. LIVE-233 / LIVE-339 already surface Connect at the first sell attempt. The remaining untruth was the $29 plan as permission to collect the first dollar.
+
+**Decision.**
+
+1. **The code default is the free floor.** `FEATURE_GATES.space_memberships` and `space_membership_tickets` sit at `minEntitlement: 'free'`, the same shape as the storefront. Members-only tickets move with the membership they sell, so the two cannot part again.
+2. **The tier meter agrees.** `space_membership_tiers` free allowance is 1, not 0. A zero here was the wall wearing a meter's clothes (LIVE-225). Active members stay unmetered.
+3. **Checkout still refuses when Connect is not payout-ready.** That is LIVE-233 / LIVE-339 territory, not this wall. An operator can still raise the gate from `/admin/pricing`; the write seam and the settings notice both read the merged map.
+4. **Copy follows the gate.** `paidWalls()` already drops a free-floor key, so `/pricing`, `/llms.txt`, and `/llms-full.txt` stop naming memberships as a paid wall. The remaining named wall is campaigns and funnels.
+
+**Rejected.** Deleting the gate (the probe requires the key; an operator override still needs it). Adding a new Circle-to-deliver-into check in this row (ADR-1403 named it; it is not this wall). Raising `space_campaigns`.
+
+**Consequences.** A free Space with the role sees the tier editor. The first paid join still needs a payout-ready Connect account. Campaigns stay at Business.
 
