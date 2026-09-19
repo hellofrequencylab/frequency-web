@@ -20,6 +20,8 @@ import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-me
 import { EventShareApprovals } from '@/components/events/event-share-approvals'
 import { SectionHeader } from '@/components/ui/section-header'
 import { SpaceEventsManager, type ManagedEvent } from './space-events-manager'
+import { listSpacePlans, listPlaybooks } from '@/lib/calendar/plans-store'
+import { CalendarPlansPanel } from './calendar-plans-panel'
 
 // THE SPACE CALENDAR CONSOLE (Events EC2/EC3/EC5, upgraded 2026-07-25). The MANAGEMENT calendar for a
 // space's events: the month grid AND the chronological list (the calendar's own toggle), every item
@@ -56,6 +58,9 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
   const { events, ownedRows, dayNotes } = featureLocked
     ? { events: [] as CalendarEvent[], ownedRows: [], dayNotes: [] }
     : await loadAdminCalendar(space.id, { canManage, year: initialYear, month1: initialMonth1, now })
+
+  const plans = featureLocked || !canManage ? [] : await listSpacePlans(space.id)
+  const playbooks = featureLocked || !canManage ? [] : await listPlaybooks(space.id)
 
   // "N upcoming events." — GATHERINGS, not materialised occurrences (LIVE-198 / SERIES-COUNT).
   // Recurrence is materialised (ADR-007), so a weekly series is ~9 rows inside the cron's 60-day
@@ -122,14 +127,20 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
 
           <StaffCalendar
             slug={space.slug}
+            spaceId={space.id}
             events={events}
             initialYear={initialYear}
             initialMonth1={initialMonth1}
             canEdit={canManage}
             dayNotes={dayNotes}
+            plans={plans}
           />
 
           <DayNotesField slug={space.slug} notes={dayNotes} canEdit={canManage} />
+
+          {canManage && (
+            <CalendarPlansPanel slug={space.slug} spaceId={space.id} plans={plans} playbooks={playbooks} />
+          )}
 
           {managedEvents.length > 0 && (
             <div className="pt-2">

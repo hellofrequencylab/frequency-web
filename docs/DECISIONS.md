@@ -46721,7 +46721,7 @@ Premise re-tested 2026-09-19: the Space root layout still called `getMyProfileId
 2. **Operators load Guest and Admin data once.** `adminAllowed` is the gate. Switching a view updates client state, `history.replaceState`, and a per-Space cookie. It does not navigate.
 3. **Unsigned visitors stay Guest-only.** They never call `loadAdminCalendar` and never pass `includeUnpublished`.
 4. **List is index plus a truncated stats card.** The right pane is `EventCoreStatsCards` over going counts already on the item, plus Go to event. It is not Manage and not the edit form.
-5. **Do not start Editor, Sites, or Etsy from this pass.**
+5. **LIVE-412 stays parked.** Do not start Editor, Sites, or Etsy from this pass.
 
 **Rejected.** Reloading the Calendar tab to change a view. Loading unpublished rows because `view !== guest`. Opening the event editor in List.
 
