@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1448**. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1432 is LIVE-246.
+tree as of this index: **ADR-1448**. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1432 is LIVE-246.
 
 | Theme | Start here |
 |---|---|
@@ -9206,7 +9206,7 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 | **Admin override** | Staff (janitor/admin) | Free number, audited break-glass only |
 
 **Consequences.**
-- Practices implemented now (`lib/practices/tiers.ts`, the builder Effort gate, the `setPractice` clamp, unit tests). Other types (crew tasks first) follow as separate PRs against this rule — tracked in the [BUILD-SEQUENCE](BUILD-SEQUENCE.md) Idea Inbox.
+- Practices implemented now (`lib/practices/tiers.ts`, the builder Effort gate, the `setPractice` clamp, unit tests). Other types (crew tasks first) follow as separate PRs against this rule — owned by ADR-442, not re-filed from the deleted BUILD-SEQUENCE inbox (HYG-104).
 - "Time vs points" is enforced at BOTH authoring (tier needs the length) and logging (must complete the length), so Zaps-per-real-minute stays roughly flat (no arbitrage), consistent with the ADR-438 anti-farm guarantee.
 - Tier amounts remain data-tunable in `zap_config`; the floors are the structural gate and live in code.
 
@@ -36482,7 +36482,7 @@ The premise was re-tested on 2026-09-07 and it had expired, twice over. ADR-552 
 - **The four comments now say what the code does.** `computeLoadoutTotal` composes one `business_base` line plus the Vera AI line; that is the Business-rung figure the persona strip and the `/pricing` loadout copy quote, and it is not a per-tier quote. Tier selection lives in the checkout, per-seat billing lives in `operator_seat`, and each comment names both, cites the decisions that overtook ADR-472, and states that no tier-aware rewrite is planned. The `seatQuantity` parameter stays in the signature, unread, exactly as before.
 - **The row closes on the absence of the promise.** Its `grep-absent` probe over `lib/pricing`, `lib/billing` and `app/(main)/admin/pricing` fails on the phrase "Tier x Mode picker rebuild" or "Tier x Mode console rebuild"; it passed the moment the comments were rewritten and fails again the day someone writes the promise back.
 
-**Consequences.** Nothing a member or operator sees changes; the pricing and billing suites run unchanged as the proof. Three things were deliberately left alone and are named in the row so they are not re-filed as promises: the base line stays fixed at `business_base` (correct for the figure it produces), the catalog header in `pricing-keys.ts` still recites the five-tier vocabulary of June as history, and `docs/BUILD-SEQUENCE.md` still marks the Tier x Mode row "in progress" inside a document that carries a superseded banner. LIVE-192 is pruned from wave W7.
+**Consequences.** Nothing a member or operator sees changes; the pricing and billing suites run unchanged as the proof. Three things were deliberately left alone and are named in the row so they are not re-filed as promises: the base line stays fixed at `business_base` (correct for the figure it produces), the catalog header in `pricing-keys.ts` still recites the five-tier vocabulary of June as history, and the superseded BUILD-SEQUENCE file that still marked the Tier x Mode row "in progress" was later absorbed and removed (HYG-104). LIVE-192 is pruned from wave W7.
 
 The generalisable part: a `TODO` that defers to "a separate PR" is a plan document with one line and no banner. It cannot say it was superseded, so it keeps describing shipped code as interim for as long as it stands, and every reader who takes it at its word estimates a rebuild of something that already happened under a different name. When the audit finds one, the first question is not how big the promised work is; it is whether the model the promise was made against still exists. If it does not, the promise is the whole change.
 
@@ -46326,9 +46326,35 @@ Premise re-tested 2026-09-19 on this tree:
 
 **Rows.** HYG-103.
 
+## ADR-1447: BUILD-SEQUENCE and MASTER-TODO are absorbed, then deleted (HYG-104)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-104` · numbered **1447** (1445 is the calendar ruling; 1446 is HYG-103) · amends the one-list rule that a deleted plan must be re-homed first ([ADR-1043](DECISIONS.md))
+
+**Context.** `docs/BUILD-SEQUENCE.md` called itself the single front door. `docs/MASTER-TODO.md` called itself the one list. Both have carried superseded banners since 2026-08-04. The owner asked them cleared out. A first pass at the absorb started minting new program rows from their Idea Inbox and importer tail. That is how a sixth master list is born: an old snapshot rewritten as a new plan.
+
+Premise re-tested 2026-09-19 against the tree, not the banners:
+
+- Alternative-to pages (IDEA-001) already live at `/vs/[slug]`.
+- Practice-depth PD6 already lives in `lib/practices/depth-streak.ts`.
+- Tier × Mode (P5 / P5.5) already closed as LIVE-192 because ADR-472 expired.
+- Etsy, booking, housing, money, mobile, harden, billing_live, sitemap, leaked-password, and the Stripe webhook already have named rows.
+- Owner Wizard P4 and IDEA-006/007/008/009 still sit in their specs (`BUSINESS-IMPORTER.md`, `PRACTICE-DEPTH-BUILD.md`). A spec is not a missing backlog row.
+
+**Decision.**
+
+1. **Index, then delete.** HYG-104 maps every remaining claim to an existing row, or to "shipped / superseded / still named in its spec." Both files are removed. Their lines drop from `scripts/planning-docs.txt`.
+2. **Do not write an old idea into a new row.** A June/July snapshot does not mint PROG-IMP, PROG-PD, or an alternative-to LIVE. Promote from a live spec only when the work is scheduled.
+3. **LIVE-404 keeps the banner probe on `OPEN-THREADS.md` only.** BUILD-SEQUENCE was the other file in that pair.
+
+**Rejected.** Filing the Idea Inbox as new 2026-09 programs. Keeping the files on disk "for history" after the owner asked them cleared. Deleting them without a mapped row (the one-list failure in the other direction).
+
+**Consequences.** `pnpm check:one-list` sees two fewer frozen files. `check:docs-links` no longer resolves either path. Agents that used to open BUILD-SEQUENCE as a front door open `pnpm backlog`. Specs that still name leftover depth or importer work keep those names; they do not become a second list.
+
+**Rows.** HYG-104.
+
 ## ADR-1448: The Circle and Event rail banks get a Settings door (OWN-058)
 
-**Status:** Accepted · 2026-09-19 · Records the 2026-09-08 OWN-058 ruling · **Implements** option (a) · numbered **1448** because **1446** is HYG-103 on main and **1445** is the calendar C0–C5 ruling · corroborated by `bankForScope` in `lib/admin/rail-bank.ts` and `FROZEN_MENU_DEBT` in `scripts/check-menu.mjs`
+**Status:** Accepted · 2026-09-19 · Records the 2026-09-08 OWN-058 ruling · **Implements** option (a) · numbered **1448** because **1447** is HYG-104 on main, **1446** is HYG-103, and **1445** is the calendar C0–C5 ruling · corroborated by `bankForScope` in `lib/admin/rail-bank.ts` and `FROZEN_MENU_DEBT` in `scripts/check-menu.mjs`
 
 **Context.** SCAN-603 made `circle.settings` and `event.settings` resolve through the href builders. Adding a Settings item to the rail bank raised `FROZEN_MENU_DEBT` from 11 to 13, and MENU-CONTRACT said that count may shrink and never grow. Both manage pages already carried an in-page Settings tab. The owner ruled 2026-09-08: add the two rail items and raise the ledger, because the rows are doors to pages that already exist, not new hand-typed menus.
 

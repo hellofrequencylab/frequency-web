@@ -8,7 +8,9 @@
 # docs/BUILD-BACKLOG.json (it defers status to the one list) OR a SUPERSEDED banner
 # (it is history). A planning doc that claims neither is how a fifth rival master list is born.
 #
-# Frozen 2026-08-17 at 81 files.
+# Frozen 2026-08-17 at 81 files. Two history files dropped 2026-09-19 (HYG-104):
+# BUILD-SEQUENCE.md and MASTER-TODO.md. Set is now 79. Deleting a plan is allowed
+# only after every open claim is a backlog row (or marked shipped / superseded).
 ROADMAP.md
 SEO-AEO-PLAN.md
 docs/A-PLUS-ROADMAP.md
@@ -26,7 +28,6 @@ docs/BOOKING-PLAN.md
 docs/BUILD-CATALOG.md
 docs/BUILD-LIST.md
 docs/BUILD-PHASES.md
-docs/BUILD-SEQUENCE.md
 docs/BUSINESS-ACCOUNTS-PRODUCTION-PLAN.md
 docs/BUSINESS-ACCOUNTS-RECONCILED-PLAN.md
 docs/BUSINESS-MODEL-PLAN.md
@@ -59,7 +60,6 @@ docs/LOOM-EVERYWHERE-PLAN.md
 docs/MARKETING-BUILD-PLAN.md
 docs/MARKETING-FUNNEL-PLAN.md
 docs/MASTER-PLAN.md
-docs/MASTER-TODO.md
 docs/MEDIA-PLATFORM-PLAN.md
 docs/MENU-AUDIT-2026-08-06.md
 docs/META-SCAN-STATUS.md
