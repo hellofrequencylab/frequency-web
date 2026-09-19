@@ -23,7 +23,7 @@ import { ownsBreadcrumb } from './page-chrome'
 
 const shell = readFileSync('components/layout/app-shell.tsx', 'utf8')
 const detail = readFileSync('components/templates/detail-template.tsx', 'utf8')
-const eventPage = readFileSync('app/(main)/events/[slug]/page.tsx', 'utf8')
+const eventPage = readFileSync('app/(main)/events/[slug]/event-member-page.tsx', 'utf8')
 
 describe('ownsBreadcrumb — which routes render their own trail', () => {
   it('an event DETAIL page owns its crumb', () => {

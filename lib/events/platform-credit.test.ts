@@ -49,7 +49,7 @@ describe('both credit surfaces consult the shared answer', () => {
     src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/(^|\s)\/\/.*$/gm, '')
 
   it('the event page and the host rail card both gate on showsOrganizerCredit', () => {
-    for (const f of ['app/(main)/events/[slug]/page.tsx', 'components/widgets/events/host-cohost-section.tsx']) {
+    for (const f of ['app/(main)/events/[slug]/event-member-page.tsx', 'components/widgets/events/host-cohost-section.tsx']) {
       const src = code(read(f))
       expect(src).toContain('showsOrganizerCredit')
       // An "organized by" that renders without the gate above it is the drift this pins.
@@ -62,7 +62,7 @@ describe('both credit surfaces consult the shared answer', () => {
   })
 
   it('the poster credit no longer resolves the @frequency brand row at all', () => {
-    const page = read('app/(main)/events/[slug]/page.tsx')
+    const page = read('app/(main)/events/[slug]/event-member-page.tsx')
     // The brand lookup and its fallback constant are gone, not merely unused: a resolved brand row
     // sitting in scope is how "Posted by Frequency" comes back by accident.
     expect(page).not.toContain('BRAND_CREDIT')

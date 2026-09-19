@@ -113,7 +113,7 @@ describe('no app code can reach the claim token from a browser client', () => {
   it('the token is never rendered without an ownership check', () => {
     // The event page embeds the claim URL in the DOM. It must stay behind the posted-by check,
     // or the revoke is undone at the template layer for every visitor.
-    const page = readFileSync('app/(main)/events/[slug]/page.tsx', 'utf8')
+    const page = readFileSync('app/(main)/events/[slug]/event-member-page.tsx', 'utf8')
     // Anchor on the URL CONSTRUCTION, not the string '/events/claim/' — that also appears in the
     // ClaimButton import at the top of the file, and matching it there made this assertion read
     // 400 characters of import statements and pass/fail for the wrong reason.
