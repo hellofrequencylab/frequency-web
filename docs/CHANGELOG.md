@@ -10,6 +10,10 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ## [Unreleased]
 
+### Changed
+
+- **The Quest is no longer a top-level marketing tab.** The public header is now The Community, Spaces, and About. The Quest still has its page, and you still reach it from The Community menu, the footer, and search. It is the light game everyone plays alongside their Circle, not a third of the story.
+
 ### Fixed
 
 - **An event's cover fills the screen on a phone again**: the artwork had been shrinking to fit

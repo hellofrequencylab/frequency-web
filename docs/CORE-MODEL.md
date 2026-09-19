@@ -106,7 +106,7 @@ loom) · **⏳ 12 partial** · **🔴 3 stubs** (donations, enroll, tickets).
 | Member rail rows (non-admin) | **16** | **7** |
 | Mobile spine tabs | 5 + Menu + a centre "Zap" button | 5 + Menu + a centre **create** button |
 | Space operator console | **34 rows in 12 boxes** | **5 boxes** |
-| Public header | 6 tabs, 21 dropdown links | **4 tabs** |
+| Public header | 4 tabs after LIVE-250 (The Quest still a tab) | **3 tabs** (LIVE-254: The Quest grouped under The Community) |
 | Hand-typed menu rows across the four catalogs | **301** | unchanged — grouped, not deleted |
 
 **Nothing is removed. Things are grouped.** A starting operator sees five boxes; a mature one still
@@ -234,7 +234,7 @@ survey counted the editors and nobody had before.
 | 5.3 | Feed hero becomes a **community board** (your circles' next gathering, your spaces' activity); `PracticePrompt` and `JourneyBoard` move to the rail | `app/(main)/feed/page.tsx:245-290` | First module above the composer is community |
 | 5.4 | Operator console **12 boxes → 5**: Your page · Your people · Gather · Money · Reach | `lib/admin/modules/space-modules.ts` (parents only), `space-hub.ts` | 5 parentless rows; all 34 still reachable |
 | 5.5 | Bundle presets as the setup shape (studio · practice · venue · non-profit), core on and the rest off-but-switchable | `lib/pricing/bundles.ts` | ≥4 bundles; closes **OWN-048** |
-| 5.6 | Public header **6 → 4** tabs; fix the member footer's dead `maker` navKey. ⚠️ The header is DB rows (`menu_items`), so the code seeds are the FALLBACK and a code-only edit moves nothing live | `lib/nav/registry.ts` HEADER_TRIGGER_SEEDS + MEMBER_FOOTER_COLUMNS | 4 triggers, no dead navKey, and the live `header` menu reads 4 categories |
+| 5.6 | Public header **6 → 4** tabs (LIVE-250, shipped); **4 → 3** (LIVE-254: The Quest grouped under The Community, not deleted). ⚠️ The header is DB rows (`menu_items`), so the code seeds are the FALLBACK and a code-only edit moves nothing live | `lib/nav/registry.ts` HEADER_TRIGGER_SEEDS | 3 triggers, `/the-quest` still a row in The Community panel, live `header` menu reads 3 parentless categories |
 
 ### Phase 8 — The story matches · **M**
 

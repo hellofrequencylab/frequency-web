@@ -57,7 +57,7 @@ describe('FAQPage — the Accordion carries every question, and it is never opti
   })
 })
 
-// ── The triptych cross-link (LIVE-100) ───────────────────────────────────────
+// ── Story cross-link (LIVE-100 seat, LIVE-254 shape) ─────────────────────────
 // The coded body closed with <PillarNav current="/the-community" />, and when that body was
 // retired the block did not come with it, so for one day this was the only pillar page that did
 // not link across while both siblings still linked to it. These assertions are on the RENDERED
@@ -71,19 +71,21 @@ const renderBlocks = (blocks: Data['content']) =>
 
 const pillarNavOf = (doc: Data) => doc.content.filter((b) => b.type === 'PillarNav')
 
-describe('PillarNav — the third pillar links across, and the other two still link back', () => {
+describe('PillarNav — Lab and Community are the pair, The Quest rides alongside (LIVE-254)', () => {
   it('the-community carries exactly one PillarNav, marked as the current page', () => {
     const navs = pillarNavOf(data)
     expect(navs).toHaveLength(1)
     expect(navs[0].props.current).toBe('/the-community')
   })
 
-  it('renders anchors to BOTH siblings, and marks itself current rather than linking to itself', () => {
+  it('renders The Lab as a peer, The Quest as a side link, and does not link to itself', () => {
     const html = renderBlocks(pillarNavOf(data))
     expect(html).toContain('href="/the-lab"')
     expect(html).toContain('href="/the-quest"')
     expect(html).not.toContain('href="/the-community"')
     expect(html).toContain('aria-current="page"')
+    expect(html).not.toContain('The triptych')
+    expect(html).not.toContain('The path')
   })
 
   it('sits between the FAQ and the ink close, the seat its two siblings use', () => {

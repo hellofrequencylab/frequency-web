@@ -898,14 +898,13 @@ export function Marquee({ items }: { items: string[] }) {
   )
 }
 
-// The triptych cross-link. Shows the three brand pillars as a numbered set
-// (1 The Lab · 2 The Community · 3 The Quest) with the current page marked, so
-// visitors feel the arc and can move Lab → Community → Quest. Place near the
-// bottom of each pillar page, above the BetaCTA. Token-only; Server Component.
-const PILLARS = [
+// Cross-link at the foot of the story pages. LIVE-254: The Quest is not a third
+// peer of The Lab and The Community. The two story pages sit as a pair; The Quest
+// rides underneath as the side thing we all do together. Place near the bottom of
+// each of those pages, above the BetaCTA. Token-only; Server Component.
+const STORY_PAGES = [
   { n: '1', label: 'The Lab', href: '/the-lab', tag: 'The place' },
   { n: '2', label: 'The Community', href: '/the-community', tag: 'The people' },
-  { n: '3', label: 'The Quest', href: '/the-quest', tag: 'The path' },
 ] as const
 
 export function PillarNav({
@@ -917,6 +916,7 @@ export function PillarNav({
 }) {
   const isInk = tone === 'ink'
   const bg = tone === 'canvas' ? 'bg-marketing-canvas' : isInk ? 'bg-slat' : 'bg-surface'
+  const questHere = current === '/the-quest'
   return (
     <section className={`${bg} px-6 py-16 sm:py-20`}>
       <div className="max-w-5xl mx-auto">
@@ -925,10 +925,10 @@ export function PillarNav({
             isInk ? 'text-primary' : 'text-primary-strong'
           }`}
         >
-          The triptych
+          Keep reading
         </p>
-        <ol className="grid gap-4 sm:grid-cols-3">
-          {PILLARS.map((p) => {
+        <ol className="grid gap-4 sm:grid-cols-2">
+          {STORY_PAGES.map((p) => {
             const active = p.href === current
             return (
               <li key={p.href}>
@@ -959,6 +959,25 @@ export function PillarNav({
             )
           })}
         </ol>
+        <p
+          className={`mt-8 text-center text-meta ${
+            isInk ? 'text-on-ink-subtle' : 'text-subtle'
+          }`}
+        >
+          {questHere ? (
+            <span aria-current="page">The Quest is the light game everyone plays alongside their Circle.</span>
+          ) : (
+            <>
+              The Quest is the light game everyone plays alongside their Circle.{' '}
+              <Link
+                href="/the-quest"
+                className={isInk ? 'text-primary underline-offset-2 hover:underline' : 'text-primary-strong underline-offset-2 hover:underline'}
+              >
+                How it works
+              </Link>
+            </>
+          )}
+        </p>
       </div>
     </section>
   )
