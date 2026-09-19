@@ -302,7 +302,8 @@ describe('every platform_flags key the code reads is seeded by a migration', () 
 // The beta referral contest was ruled out (SCAN-511, ADR-1155): its code went in #2297 and its
 // table in 20270339000000. `platform_flags.beta_referral_contest` outlived both as a switch an
 // operator could flip with nothing on the other end, which is ADR-1083's failure shape wearing a
-// flag instead of a banner. The same is true of the three plan keys the ADR-552 collapse retired.
+// flag instead of a banner. The same is true of the three plan keys the ADR-552 collapse retired,
+// and of gamification_full_supporter after the Supporter rung left EntitlementTier (HYG-078).
 //
 // TWO ASSERTIONS, because there are two ways to leave one behind: the ROW (a migration must delete
 // it, not merely stop reading it) and the READER (no source may name it again, which would quietly
@@ -314,6 +315,7 @@ const RETIRED_FLAG_KEYS = [
   'plan_practitioner_enabled',
   'plan_organization_enabled',
   'plan_whitelabel_enabled',
+  'gamification_full_supporter',
 ] as const
 
 /** Every key named by a `delete from public.platform_flags ...` statement in any migration.

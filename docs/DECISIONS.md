@@ -46155,3 +46155,21 @@ Premise re-tested 2026-09-19: all four files still exported `force-dynamic`. Sto
 
 **Rows.** LIVE-242.
 
+## ADR-1440: Delete the unread gamification_full_supporter flag (HYG-078)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-078` · **Implements** the deferred delete in [ADR-1106](DECISIONS.md) §2 · numbered **1440** because **1439** is LIVE-242 on this tree · corroborated by `supabase/migrations/20270345006300_drop_orphan_gamification_full_supporter_flag.sql` and `supabase/migrations/20260723010000_pricing_foundation.sql`
+
+**Context.** ADR-1106 dropped `gamification_full_supporter` from `PRICING_FLAG_KEYS` when the Supporter rung left `EntitlementTier`. The stored `platform_flags` row was left as an unread orphan: "the owner may delete it out of band." HYG-078 is that delete. Premise re-tested 2026-09-19: no production reader names the key outside a comment, `20260723010000` still inserted it, no later migration deleted it, and `tier_supporter_enabled` plus the pay-what-you-want badge path are still live.
+
+**Decision.**
+
+1. **Stop seeding the key.** `20260723010000` no longer inserts `gamification_full_supporter`. A greenfield replay cannot bring the switch back.
+2. **Delete the stored row.** `20270345006300` deletes that key only and asserts `gamification_full_crew` and `tier_supporter_enabled` survive. `platform_flag_events` is history and is not deleted.
+3. **Do not touch the badge.** `lib/billing/supporter.ts`, `profiles.is_supporter`, and `memberTierSellable('supporter')` stay. Those share a word, not a mechanism.
+
+**Rejected.** Deleting `tier_supporter_enabled` (that would make the sell-path refuse vacuous). Leaving the seed and only deleting live (a replay would recreate the orphan until the later file ran, which is the defect the row named).
+
+**Consequences.** `/admin/pricing` still shows Member and Crew gamification toggles. A flag nobody can flip and nothing consults is gone. Production apply is `execute_sql` then `supabase_migrations.schema_migrations` at version `20270345006300`.
+
+**Rows.** HYG-078.
+
