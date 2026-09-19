@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1437**. 1436 is HYG-068 on another open branch.
+tree as of this index: **ADR-1439**. 1436 is HYG-068 on another open branch. 1438 is LIVE-228 on another branch.
 
 | Theme | Start here |
 |---|---|
@@ -46116,3 +46116,23 @@ Premise re-tested 2026-09-19: all four files still exported `force-dynamic`. Sto
 **Consequences.** A later page that adds `getCallerProfile` or `export const dynamic = 'force-dynamic'` fails `lib/nav/public-detail-isr.test.ts`. Comments, offers, and exact street address stay on the anonymous shell until a follow-up teaches those slots the viewer. The layout auth read still dynamizes the tree today.
 
 **Rows.** SCAN-637.
+
+## ADR-1439: Hubs and Nexuses fold into Space (LIVE-242)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-242` · numbered **1439** because **1436** is HYG-068 and **1438** is LIVE-228 on other branches · corroborated by `next.config.ts` (`/hubs` and `/nexuses` 308 to `/spaces`), `app/(main)/hubs` and `app/(main)/nexuses` absent, `supabase/migrations/20270345006200_hubs_nexuses_fold_into_spaces.sql`, `spaces.parent_id`
+
+**Context.** CORE-MODEL ruling 5 (2026-09-08): a Hub and a Nexus both read as "a Space that contains other Spaces". Production held 3 hubs and 2 nexuses, all `forming`, with **zero Circles** on any of them. Each noun still shipped a detail page, a manage console, and a LeaderCrmViewer roster titled "Message Members" (ADR-827), duplicating Space at two more scopes. Circle geography still uses `circles.hub_id` / `hubs.nexus_id`.
+
+**Decision.**
+
+1. **Member URLs die.** `/hubs`, `/hubs/:path*`, `/nexuses`, and `/nexuses/:path*` 308 onto `/spaces` with the same slug. Staff geography editors stay at `/admin/hubs` and `/admin/nexuses`.
+2. **A Space may name its parent.** `spaces.parent_id` is a self-FK. Each hub and nexus row gains `space_id` pointing at the Space that now is that noun. The migration mints a Business Space per live row when the slug is free, parents hub Spaces under their Nexus Space, and links when a Space with that slug already exists.
+3. **The Hub and Nexus CRMs leave with the noun.** Message-Members pages under `/hubs/<slug>/crm` and `/nexuses/<slug>/crm` are deleted. A leftover rail link resolves to the Space CRM at `/spaces/<slug>/crm`.
+4. **Place-tree tables stay.** Circles, broadcasts, and Guide/Mentor caps still read `hubs` / `nexuses`. Folding those FKs onto `spaces.id` is a later row, not this one.
+
+**Rejected.** Deleting the geography tables in the same change (Circles still attach through `hub_id`). Leaving redirect-only `page.tsx` stubs under `app/(main)/hubs` (the LIVE-242 probe is the directories' absence; HYG-043 already ruled a consolidation unfinished until the old tree is gone).
+
+**Consequences.** Help, NAMING, and GLOSSARY say the member noun is Space. `hubs` and `nexuses` feature keys retarget `/spaces` so `check:help` still has a live prefix. Done-row probes that required the old pages (HYG-046, HYG-064, SCAN-404) measure the fold instead of exit 79.
+
+**Rows.** LIVE-242.
+

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { getHubPeopleData, type HubPeopleData } from '@/app/(main)/hubs/admin-actions'
+import { getHubPeopleData, type HubPeopleData } from '@/lib/hierarchy/hub-admin'
 import { ProgressTrack } from '@/components/ui/progress-track'
 
 // In-place "People" module (ADMIN-RAIL.md Phase 7, the 'people' spine cell for hubs — the LP-EVENT
