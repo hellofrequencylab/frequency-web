@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **A repeating event counts as one gathering on a free membership**, not one per date. Crew is still unlimited. The message when you are at the free cap no longer says a series is a Crew perk.
+
 - **Extra operator seats have a public price.** The pricing page and the comparison grid read it from the catalog. Your first seat on a Space is still included.
 
 - **A Space has one create form.** The extra "Running a business?" shortcut is gone. Pick what you run, including a business, on Create a space. Niche doors still land on the matching type.

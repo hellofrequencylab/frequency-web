@@ -23,11 +23,14 @@
 //   - journey_publish  counts visibility past 'private' (unlisted AND public), which is what
 //     lib/journeys/publish-gate.ts counts.
 //   - vera_unlimited   reuses veraMessagesToday, the same ai_usage read the live cap enforces against.
-//   - event_create     states both cancellation columns the way lib/events/follower-reminders.ts does.
+//   - event_create     states both cancellation columns the way lib/events/follower-reminders.ts does,
+//     then folds materialised dates to gatherings (OWN-063 / 2026-09-08, ADR-1440), matching the
+//     create-path allowance in app/(main)/events/actions.ts.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { veraMessagesToday } from '@/lib/ai/vera/usage-gate'
 import { eventInstant, resolveZone } from '@/lib/time/zone'
+import { SERIES_COLUMNS, countSeries, type SeriesRow } from '@/lib/events/series'
 
 /** The widest an IANA zone sits from UTC (UTC+14 / UTC-12), so a raw `starts_at` band padded by
  *  this much can never miss an event whose TRUE instant is inside the window. The same constant the
@@ -38,6 +41,24 @@ export const MAX_TZ_OFFSET_MS = 14 * 60 * 60 * 1000
 export interface UpcomingEventRow {
   starts_at: string
   time_zone: string | null
+}
+
+/** Upcoming row plus the series key the gathering fold needs. */
+export type UpcomingGatheringRow = SeriesRow & UpcomingEventRow
+
+/**
+ * How many gatherings are still ahead of `now`. Filters by real instant, then folds
+ * through countSeries so a weekly series is one, not nine (OWN-063 / 2026-09-08).
+ */
+export function countUpcomingGatherings(
+  rows: UpcomingGatheringRow[],
+  now: Date = new Date(),
+  opts: { dropCancelled?: boolean } = {},
+): number {
+  return countSeries(
+    rows.filter((row) => isUpcomingByInstant(row, now)),
+    { dropCancelled: opts.dropCancelled ?? true },
+  )
 }
 
 /**
@@ -145,14 +166,14 @@ export async function memberActiveEvents(profileId: string, now: Date = new Date
   try {
     const { data, error } = await createAdminClient()
       .from('events')
-      .select('starts_at, time_zone')
+      .select(`id, starts_at, time_zone, ${SERIES_COLUMNS}`)
       .eq('host_id', profileId)
       .eq('status', 'published')
       .eq('is_cancelled', false)
       .is('removed_at', null)
       .gte('starts_at', new Date(now.getTime() - MAX_TZ_OFFSET_MS).toISOString())
     if (error || !Array.isArray(data)) return null
-    return (data as unknown as UpcomingEventRow[]).filter((row) => isUpcomingByInstant(row, now)).length
+    return countUpcomingGatherings(data as unknown as UpcomingGatheringRow[], now)
   } catch {
     return null
   }

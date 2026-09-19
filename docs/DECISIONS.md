@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1437**. 1436 is HYG-068 on another open branch.
+tree as of this index: **ADR-1440**. 1436 is HYG-068, 1438 is SCAN-636, and 1439 is LIVE-306 on other open branches.
 
 | Theme | Start here |
 |---|---|
@@ -46116,3 +46116,25 @@ Premise re-tested 2026-09-19: all four files still exported `force-dynamic`. Sto
 **Consequences.** A later page that adds `getCallerProfile` or `export const dynamic = 'force-dynamic'` fails `lib/nav/public-detail-isr.test.ts`. Comments, offers, and exact street address stay on the anonymous shell until a follow-up teaches those slots the viewer. The layout auth read still dynamizes the tree today.
 
 **Rows.** SCAN-637.
+
+## ADR-1440: A recurring series costs one event allowance (OWN-063)
+
+**Status:** Accepted · 2026-09-19 · **Records** the 2026-09-08 owner ruling on `OWN-063` · **Implements** the create-path fold · numbered **1440** because **1438** and **1439** are on other branches · corroborated by `app/(main)/events/actions.ts` (`memberEventAllowanceOk` via `countSeries`) and `lib/pricing/member-meter-usage.ts` (`countUpcomingGatherings`)
+
+**Context.** Recurrence is materialised (ADR-007): a weekly series inside the 60-day horizon is about nine `events` rows. LIVE-198 folded eleven display counts through `countSeries` so a dashboard that said "9 upcoming" became "1 gathering". `memberEventAllowanceOk` was split out because it is an entitlement quota, not a dashboard. Folding it loosens a paid cap: a free member at `event_create` 2 could then run one series plus another gathering where each date used to burn a slot. The agent that found it refused to decide.
+
+Ruled 2026-09-08: the allowance caps gatherings. A weekly series costs one. Premise re-tested 2026-09-19: the function still counted occurrence rows and selected no series columns.
+
+**Decision.**
+
+1. **Count gatherings.** `memberEventAllowanceOk` selects `SERIES_COLUMNS`, keeps the instant filter (`isUpcomingByInstant`, SCAN-610), and folds through `countSeries`. A weekly series occupies one of the two free slots.
+2. **The meter matches the cap.** `memberActiveEvents` uses the same helper, so the upgrade readout cannot show "9 of 2" for one series the create path would accept.
+3. **Cancelled rows still occupy a slot on the create path.** `dropCancelled: false` keeps that behaviour. The fold is the series key, not a new cancellation rule.
+4. **Say so at the call site.** The comment names `OWN-063` and 2026-09-08 so the next reader does not treat this as a hygiene off-by-N.
+5. **Cap copy drops the series perk.** "Join Crew to run more, and to set up a series" became false the moment a series cost one. Crew is still unlimited.
+
+**Rejected.** Leaving the create path on occurrence rows (the ruling already said that was the bug). Folding cancelled rows out of the allowance (a different pricing change). Treating Space-placed events as personal (they already skip this check).
+
+**Consequences.** A free member can run two gatherings, and one of them may repeat. The two SQL counts LIVE-206 still cannot fold (`circle_momentum`, `public_events`) stay on that row. `EVENT_CREATE_CAP_MESSAGE` no longer names a series as a Crew-only perk.
+
+**Rows.** OWN-063.

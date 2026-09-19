@@ -8,6 +8,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { getEventCapabilities, getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { memberWithinLeadershipAllowance, EVENT_CREATE_CAP_MESSAGE } from '@/lib/pricing/member-leadership'
 import { isUpcomingByInstant, MAX_TZ_OFFSET_MS } from '@/lib/pricing/member-meter-usage'
+import { SERIES_COLUMNS, countSeries, type SeriesRow } from '@/lib/events/series'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 import { slugify } from '@/lib/utils'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
@@ -201,8 +202,17 @@ async function geocodeEventOnCreate(eventId: string, fd: FormData): Promise<void
 // price their event and connect their bank in either order.
 
 /**
- * The personal `event_create` allowance check (ADR-908). Counts the member's UPCOMING personal
- * events (host_id = them, no Space placement) against their tier's allowance.
+ * The personal `event_create` allowance check (ADR-908, ADR-1440). Counts the member's
+ * UPCOMING personal gatherings (host_id = them, no Space placement) against their tier.
+ *
+ * OWN-063 / 2026-09-08: the owner ruled this allowance caps GATHERINGS. A weekly series
+ * costs ONE. Folding loosens a paid cap (a free member can then run one series plus
+ * another gathering where today each date burned a slot). That is the intended pricing,
+ * not a hygiene off-by-N, which is why this comment names the row and the ruling date
+ * rather than only the LIVE-198 sibling pattern.
+ *
+ * dropCancelled is false so a cancelled upcoming row still occupies a slot, the same
+ * as before the fold. The change is the series key, not a new cancellation rule.
  *
  * FAIL-SAFE to allowed in every failure path: a count we cannot complete, or a profile we cannot
  * read, must never stop someone putting a gathering on the calendar.
@@ -225,13 +235,14 @@ async function memberEventAllowanceOk(
     // the real instant, the way the reminder crons already do.
     const { data: upcomingRows } = await admin
       .from('events')
-      .select('starts_at, time_zone')
+      .select(`id, starts_at, time_zone, ${SERIES_COLUMNS}`)
       .eq('host_id', profileId)
       .is('space_id', null)
       .gte('starts_at', new Date(Date.now() - MAX_TZ_OFFSET_MS).toISOString())
-    const count = ((upcomingRows ?? []) as { starts_at: string; time_zone: string | null }[]).filter((r) =>
+    const upcoming = ((upcomingRows ?? []) as (SeriesRow & { time_zone: string | null })[]).filter((r) =>
       isUpcomingByInstant(r),
-    ).length
+    )
+    const count = countSeries(upcoming, { dropCancelled: false })
     if (await memberWithinLeadershipAllowance('event_create', tier, count)) return { ok: true }
     return { ok: false, message: EVENT_CREATE_CAP_MESSAGE }
   } catch {
