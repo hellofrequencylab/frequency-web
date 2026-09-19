@@ -11250,7 +11250,8 @@
     {
       "id": "LIVE-246",
       "title": "Operator console: 34 modules into 5 boxes",
-      "status": "open",
+      "status": "done",
+      "closed": "2026-09-19",
       "priority": "P2",
       "lane": "live",
       "size": "M",
