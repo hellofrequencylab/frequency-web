@@ -37,10 +37,10 @@
     ],
     "slate": {
       "ruled": "Owner ruling 2026-08-20 evening: \"Take all tasks out of deferred or parked programs and add them to the priority list. I want all those things built out. The things that we are deferring are white labeling, mobile application, texting.\" Supersedes the same-day \"hold white label and app at the end\" slate: the App Platform now builds; only the three named holds park.\n\n\u2500\u2500 OWNER RULING 2026-08-24: \"I want to save the etsy grade store for last. Second to last is the white label tenant sites with full WYSIWYG editor. I want everything else fully functional and clean before those.\" So DEF-ETSY moves out of W8 into its own final wave W10, and white label (PROG-E10 Sites, PROG-W6 member sites + theme marketplace, PROG-P7 per-Space theming depth) is UNPARKED into W9 immediately before it. deferredByName drops to mobile and texting only.\n\nINTERPRETATION, stated so it can be corrected in one line: the CORE editor phases E0-E9 stay in W4 and were NOT moved to the end. \"White label tenant sites with full WYSIWYG editor\" is read as the tenant-sites DELIVERABLE \u2014 PROG-E10 is literally titled 'Sites, absorbs White Label W1-W5' \u2014 not as the editor platform underneath it. E10 depends on E0-E9; W1's content retirements block E3; E2 projects onto the Loom built in W3. Moving E0-E9 to the end would invert those documented dependencies and would leave 'everything else' with no editor to be built on. If the intent was to move the whole editor program back, only the W4 block moves.\n\n\u2500\u2500 OWNER RULING 2026-08-25: DEF-A2P parks with the others, asked as a direct multiple choice against its real cost (EIN, carrier fee, 2-4 weeks of TCR review). The named holds are now FOUR: DEF-MOBILE, DEF-ETSY, PROG-W6, DEF-A2P. `deferredByName` was drifting in BOTH directions before this edit \u2014 it listed DEF-A2P (whose row read `open`) and omitted DEF-ETSY and PROG-W6 (whose rows both read `parked`). The list and the row statuses now agree, and that agreement is the thing to check when either changes.\n\n\u2500\u2500 OWNER RULING 2026-09-07, and it REVERSES the 2026-08-20 unpark of the App Platform. Asked as \"I want everything signed off except the editor, app platform and Etsy grade shop\", then answered on a follow-up as \"Keep white label and mobile app deferred. Prioritize everything else\", then CORRECTED in the owner's own words: \"I made a mistake. keep the following as deferred until the end. 1. app platform 2. White label platform 3. etsy build.\"\n\nSO THE DEFERRED SET IS FOUR PROGRAMS, in the order the owner listed them: (1) APP PLATFORM \u2014 PROG-A1, PROG-A3, PROG-A4; (2) WHITE LABEL \u2014 PROG-E10 (Sites), PROG-W6 (member sites + theme marketplace), PROG-P7 (per-Space theming depth); (3) ETSY \u2014 DEF-ETSY; (4) MOBILE \u2014 DEF-MOBILE, carried forward from the 2026-08-20 and 2026-08-25 rulings and NOT re-named in the correction, so it is held on the earlier ruling rather than this one. Everything else is on the prioritized list.\n\n\ud83d\udd34 THE EDITOR QUESTION WAS ASKED AND ANSWERED IN THE SAME BREATH. The owner asked: \"when you say editor, is that the full white label editor? if so, add that to the white label section.\" It is not. docs/EDITOR-ARCHITECTURE.md opens by stating what E0-E9 is for \u2014 \"Frequency should author a block ONCE and render it on a member's Spotlight, a Space's profile, a Space's external Site, and an email\" \u2014 so E0-E9 is Frequency's own block editor, the thing every member-facing surface composes from. Only E10 is the white-label deliverable, and it is literally titled \"Sites, absorbs White Label W1-W5\". E10 therefore moves to the white-label group and E0-E9 STAYS ACTIVE in W4. Moving E0-E9 back would leave \"everything else\" with no editor to be built on, which is the opposite of what the ruling asks for.\n\n\u26a0\ufe0f ONE COST TO STATE PLAINLY, because parking a program is not free. PROG-A3 (\"enablement inside RLS\") was the App Platform's only P1 and sat in W2, the foundation wave, beside DEF-HARDEN. Parking it means a disabled module's data stays reachable by direct API until the App Platform builds. Nothing else in the active list depends on it, so this is a stated consequence rather than a blocker \u2014 but it is the one place where \"defer the app platform\" costs a security posture rather than a feature.\n\n\u26a0\ufe0f AND DEF-A2P COMES OFF THE DEFERRED LIST, on the plain reading of \"everything on the list except white label and mobile app\". The correction re-added three programs and did not re-add texting. It is NOT agent-work \u2014 a Standard EIN-backed brand, a carrier fee, and 10-15 days of TCR review \u2014 so it moves to the OWNER lane as an open row with ownerAction \"account\" rather than back into a build wave. If the intent was to keep texting parked, one line moves it back.\n\n\u2500\u2500 OWNER CONFIRMED 2026-09-07, in reply to the reading above: \"go head and add E0-E9 into the backlog production list. keep mobile app deferred\". So the editor reading stands \u2014 E0-E9 is Frequency's own block editor and is on the production list in W4; only E10 sits with white label. Mobile stays in W12. Nothing moved on this confirmation: it ratifies the interpretation rather than changing it, which is the point of having stated it in one paragraph that could be corrected in one line.\n\n\u2500\u2500 OWNER RULING 2026-09-14 (ADR-1325, twelve multiple-choice answers after the build-completion audit): \"Stabilise, rework, then Editor E0; Sites wait for the block contract.\" White label is UNPARKED into the editor sequence: PROG-E10 (Sites) runs after PROG-E3 and before the E4 to E9 depth phases, and PROG-W6 + PROG-P7 close the runway after E9. Multiplayer (E0 task 18) is deferred to the depth phase behind render_path, so E0 is an L. The App Platform (W9) and the Etsy-grade store stay deferred; mobile stays held on the 2026-08-20 ruling. deferredByName drops White label.",
-      "note": "The development order for the whole open queue, waves in sequence, ids in order within a wave. Array order IS the sequence \u2014 W0 first through W12 last, with `owner-timed` kept at the end because it is scheduled by the owner rather than by this order. Owner-lane rows are decisions, not sequenced dev. Status lives only in each row's probe; this object is the sequence.\n\n\u2500\u2500 2026-09-19 SURVEY: next agent builds HYG-033 (five-tab bar) after LIVE-254 merges; then LIVE-409 CrewGate compose walls and LIVE-410 membership vs readiness. Do not pick up cancelled LIVE-241 16\u21927. Do not enable RLS on spatial_ref_sys.",
+      "note": "The development order for the whole open queue, waves in sequence, ids in order within a wave. Array order IS the sequence \u2014 W0 first through W12 last, with `owner-timed` kept at the end because it is scheduled by the owner rather than by this order. Owner-lane rows are decisions, not sequenced dev. Status lives only in each row's probe; this object is the sequence.\n\n\u2500\u2500 2026-09-19: LIVE-254 and OWN-073 closed on owner confirm (Quest off the public header; nine support-admitted members emailed). HYG-033 and LIVE-409 already done on main. Next sequenced live work is LIVE-410. Do not pick up cancelled LIVE-241 16\u21927. Do not enable RLS on spatial_ref_sys.",
       "waves": [
         {
-          "name": "W0 \u00b7 P0 \u2014 costing something today: an incident, a wrong money/consent/permission answer, or a crawl-facing defect the submitted sitemap exposes. EMPTY IS THE GOAL. LIVE-234 is the money proof (one succeeded $44 ticket is not five loops). OWN-073 sits in owner-timed: nine support-admitted members still un-emailed. PROG-R5 is no longer here \u2014 Connect is not the lie.",
+          "name": "W0 \u00b7 P0 \u2014 costing something today: an incident, a wrong money/consent/permission answer, or a crawl-facing defect the submitted sitemap exposes. EMPTY IS THE GOAL. LIVE-234 is the money proof (one succeeded $44 ticket is not five loops). OWN-073 closed 2026-09-19 (owner emailed). PROG-R5 is no longer here \u2014 Connect is not the lie.",
           "ids": [
             "LIVE-234"
           ]
@@ -48,7 +48,6 @@
         {
           "name": "W0b \u00b7 P1 \u2014 product-first interior (ADR-1403) ready to work now, then CORE-MODEL walls that are still untrue. Pull from here.",
           "ids": [
-            "LIVE-254",
             "LIVE-410",
             "LIVE-186",
             "LIVE-213",
@@ -237,7 +236,6 @@
             "HYG-068",
             "OWN-067",
             "OWN-070",
-            "OWN-073",
             "OWN-074",
             "OWN-076",
             "OWN-075",
@@ -280,7 +278,7 @@
           "P2": "Scheduled build-out: the programme phases in their wave order, the perf set (no traffic yet justifies auth reordering), feature depth, and record hygiene.",
           "P3": "Housekeeping with no member-facing consequence, the perf set (12 visitors / 18 pageviews in 31 days: the funnel is the constraint, not the page), and work gated on something that has to happen first \u2014 an owner-dispatched run, a traffic threshold, a bundle that does not exist yet. NOT the deferred programs: those are `parked`, which is a status, not a priority. This line named mobile / texting / Etsy / white-label until 2026-09-07, which confused a hold with a ranking."
         },
-        "set": "2026-09-19, survey compile: P0 is LIVE-234 + OWN-073 only; PROG-R5 is P2; HYG-033 is P1 live code; FOCUS remainder P2; craft P3. Re-rank when a row changes lane or a premise is re-tested; do not let a P0 sit because its wave is later."
+        "set": "2026-09-19, after OWN-073 close: P0 is LIVE-234 only; PROG-R5 is P2; HYG-033 and LIVE-409 are done on main; FOCUS remainder P2; craft P3. Re-rank when a row changes lane or a premise is re-tested; do not let a P0 sit because its wave is later."
       },
       "phases": {
         "note": "THE PHASED PRODUCTION PLAN (ADR-1325, 2026-09-14). Phases are the owner-facing shape of the same sequence the waves encode; a wave is the unit check:backlog proves, a phase is the unit that exits. A phase exits only on all five: every row done with its probe passing; CI green on main at the last merge; the production deploy READY with all six postbuild gates printed; visual baselines recaptured for every surface the phase moved; a round-report ADR naming every CI failure the phase saw and its mitigation. The loop that works each row (pick, branch, build to the probe, validate, push, arm auto-merge, repair on red, verify the deploy, record) is ADR-1325 \u00a7\"The loop\". Lanes: two by ruling 4, widened by owner instruction on 2026-09-14 (\"fan way out\") to as many worktree lanes as there are independent rows, one row per PR, merge one at a time when two touch the same surface.",
@@ -299,7 +297,7 @@
               "STRIPE_CONNECT_WEBHOOK_SECRET after #2560",
               "the sites apex",
               "OWN-072 ruling",
-              "OWN-073 and OWN-074 messages"
+              "OWN-074 messages"
             ],
             "exit": "P0 lane empty; LIVE-233 shipped and LIVE-234 walked by the owner; LIVE-315, LIVE-316, LIVE-317 and LIVE-322 closed before the first ticket sells; pr-compare public tier required; round-report ADR"
           },
@@ -9903,7 +9901,7 @@
       },
       "closed": "2026-09-15"
     },
-        {
+    {
       "id": "LIVE-215",
       "title": "The webhook verifies against ONE signing secret, so connected-account events can never be received",
       "status": "done",
@@ -10330,7 +10328,7 @@
         "checked": "2026-09-08"
       }
     },
-        {
+    {
       "id": "PROG-R5",
       "title": "Rework phase 5: the Connect onboarding push",
       "status": "open",
@@ -10420,7 +10418,7 @@
         "checked": "2026-09-08"
       }
     },
-        {
+    {
       "id": "PROG-R10",
       "title": "Rework phase 10: placement is earned",
       "status": "open",
@@ -10930,7 +10928,7 @@
       },
       "closed": "2026-09-15"
     },
-        {
+    {
       "id": "LIVE-234",
       "title": "Prove each money loop once in production",
       "status": "open",
@@ -11066,7 +11064,7 @@
       "size": "M",
       "source": {
         "file": "docs/CORE-MODEL.md",
-        "ref": "§5"
+        "ref": "\u00a75"
       },
       "detail": "CANCELLED AS A COUNT 2026-09-19 (Daniel / Designer; ADR-1406). The 16-to-7 plan is not the law. Member nav stays as short as the role can use, not as short as seven. Do not hide Channels, Library, Journeys or anything else to hit a number.\n\nThe 16 non-admin rail rows (Feed, Around You, Circles, Channels, Events, Message Boards, Members, Business Spaces, Market, Housing, Frequency Store, My Quest, Journeys, Practices, Library, The Vault) already hide through defaultAccess (visitor vs member), Admin telescoping, navAccess / area_permissions, and marketplace flags (the Store is often none while unpublished). Journal and My Contacts are railHidden, not role-hidden. A signed-in member still sees almost all sixteen; that is expected until a row's floor or matrix says they cannot use it.\n\nThe Quest still keeps a row. LIVE-254 (public header) is a separate PR. LIVE-244's fold is refused in the same ruling.",
       "verify": {
@@ -11120,7 +11118,7 @@
       "size": "M",
       "source": {
         "file": "docs/CORE-MODEL.md",
-        "ref": "§5"
+        "ref": "\u00a75"
       },
       "detail": "RULING 2026-09-19 (Daniel / Designer; ADR-1406): do not fold Channels into Circles. Channels stay unless a role, access-matrix, or flag gate says the viewer cannot use them. He did not pick fold.\n\nThe 2026-09-08 fold assumed the empty legacy `channels` / `channel_memberships` tables. The 2026-09-15 re-test showed every Channel surface reads `topical_channels` (the seven live topics). Retiring `app/(main)/channels` would delete the tune-in surface. LIVE-241's 16-to-7 count assumed this fold and is cancelled with it. Legacy-table residue remains LIVE-334.\n\nOWNER RULING 2026-09-08. Channels ship an index, a detail page (720 lines), an editor and a 1,400-line console - and the channels table holds ZERO rows. channel_memberships is also empty, has no writer, and app/(main)/channels/actions.test.ts:233 literally asserts the app never writes it. A Channel reads as a topic Circle. Nothing is lost because there are no channels; redirect old links at /circles.\n\nRE-TESTED 2026-09-15 by a lane before working it: DO NOT BUILD AS WRITTEN. The three facts above are true of the RETIRED legacy tables channels and channel_memberships (20240102000000_hierarchy_v2.sql), and no route under app/(main)/channels or app/(main)/admin/channels reads them (actions.test.ts:184,232 and load-channels.test.ts:109-111 pin that). Every Channel surface reads topical_channels: the SEVEN seeded topics of docs/NAMING.md's locked Pillar > Channel > Circle ladder (Spirituality, Movement, Holistic Health, Human Relating, Activism, Creative, Business Support), with topical_channel_memberships written by tune in/out and READ by Messages (room access), Events connectors, People associations and profile associations; circles.topical_channel_id is consumed in 26 files; the Circle manifest's topicalChannelId field points at it; the sitemap emits /channels/<slug> per topic; Programs and Chapters (topical_channels.template_id, lib/channels/programs.ts, the Space program settings, two help articles) hang off it; 30 files outside the Channel directories consume topical_channel*. docs/GLOSSARY.md:29-35 already distinguishes the two. Retiring /channels as a redirect PR would delete the tune-in surface for seven live topics and the Programs feature, which is not \"nothing is lost\". OWNER: re-take ruling 6 (ADR-1294 / CORE-MODEL section 4b row 6) on the corrected measurement, the way the Store ruling was corrected beneath that table. If topical Channels are still to fold into Circles, that is a data-model change (topical_channel_id, the manifest field, Programs, Channel-scoped rooms, the sitemap) with a migration plan, an L not an M. LIVE-241's rail count (16 to 7) assumes this fold and waits on the same ruling. The legacy tables' residue is LIVE-334.",
       "verify": {
@@ -11295,10 +11293,10 @@
       },
       "closed": "2026-09-15"
     },
-        {
+    {
       "id": "LIVE-254",
       "title": "Demote /the-quest from a top-level pillar",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -11306,12 +11304,13 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "\u00a75"
       },
-      "detail": "The Quest is 1 of 3 top-level pillars in BOTH live nav menus (header and footer, from the menu_items table), holds sitemap priority 0.8 equal to /the-community and /the-lab, and appears in a PillarNav triptych cross-linking Lab / Quest / Community as peers. It is also sold as a Crew feature (\"adds the full game, with Gems, Vault cash-in, your own Quest to author\").\n\nThe page, its two nav entries, its sitemap priority and its role in the Crew upsell move together. The Quest survives as the side thing we all do together; it stops being a third of the story.\n\n\u2500\u2500 SURVEY 2026-09-19. PR #2690 may still be open. Do not mark done until that merge; the probe is a live menu_items read. Interior leftovers that #2690 does not own (feed hero, Zap centre button) are LIVE-408.",
+      "detail": "The Quest is 1 of 3 top-level pillars in BOTH live nav menus (header and footer, from the menu_items table), holds sitemap priority 0.8 equal to /the-community and /the-lab, and appears in a PillarNav triptych cross-linking Lab / Quest / Community as peers. It is also sold as a Crew feature (\"adds the full game, with Gems, Vault cash-in, your own Quest to author\").\n\nThe page, its two nav entries, its sitemap priority and its role in the Crew upsell move together. The Quest survives as the side thing we all do together; it stops being a third of the story.\n\n\u2500\u2500 CLOSED 2026-09-19. Code shipped as ADR-1408 / #2690; live header SQL already applied. Owner confirm the same day: \"People emailed, quest is gone.\" Production azsqfeonabsbmemvddqd header (2026-09-19) has three parentless categories Community / Spaces / About; /the-quest is an active row in Community (position 5). Footer still carries a flat /the-quest link (ADR-1408). Interior leftovers (feed hero, Zap centre button) stay LIVE-408. LIVE-234 is a different row and stays open.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Read menu_items: The Quest is not a top-level pillar in the header or footer menu. 2026-09-19: #2690 not treated as merged; leave open.",
-        "checked": "2026-09-19"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const Q=String.fromCharCode(39);const fail=(m)=>{console.error(m);process.exit(1)};const s=fs.readFileSync(\"lib/nav/registry.ts\",\"utf8\");const m=s.match(/const HEADER_TRIGGER_SEEDS[\\s\\S]*?\\] as const/);if(!m)fail(\"HEADER_TRIGGER_SEEDS missing\");const block=m[0];const ids=[...block.matchAll(new RegExp(\"id:\\\\s*\"+Q+\"([^\"+Q+\"]+)\"+Q,\"g\"))].map(x=>x[1]);if(ids.length!==3)fail(\"header triggers \"+ids.length+\" not 3: \"+ids.join(\",\"));const want=[\"the-community\",\"spaces\",\"about\"];if(want.some((id)=>!ids.includes(id)))fail(\"expected \"+want.join(\" \")+\", got \"+ids.join(\" \"));if(ids.includes(\"the-quest\"))fail(\"The Quest is still a header trigger\");const marker=\"id: \"+Q+\"the-community\"+Q;const i=block.indexOf(marker);if(i<0)fail(\"The Community trigger missing\");const rest=block.slice(i+marker.length);const n=rest.indexOf(\"id: \");const panel=n<0?rest:rest.slice(0,n);if(!panel.includes(\"href: \"+Q+\"/the-quest\"+Q))fail(\"/the-quest is not a row in The Community panel\");console.log(\"LIVE-254 ok: 3 header triggers, /the-quest under The Community\")'",
+        "note": "Tree half: three HEADER_TRIGGER_SEEDS, /the-quest inside The Community, Quest not a trigger. Live half recorded 2026-09-19 on azsqfeonabsbmemvddqd: three parentless header categories Community/Spaces/About; /the-quest under Community. The header is DB rows, so the cmd cannot see production; the SQL reading is the close evidence."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-255",
@@ -12183,10 +12182,10 @@
         "checked": "2026-09-15"
       }
     },
-        {
+    {
       "id": "OWN-073",
       "title": "Tell the nine support-admitted members they are in, and offer them a display name",
-      "status": "open",
+      "status": "done",
       "priority": "P0",
       "lane": "owner",
       "size": "XS",
@@ -12195,12 +12194,13 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1324 (the induction resume) and the 2026-09-14 handoff"
       },
-      "detail": "FILED 2026-09-14 from the induction-lockout handoff. All nine accounts carrying meta.admitted_by_support (stamped 11 Sep) are admitted, moved free to crew, and verified working. Nothing and nobody has told them. The member who reported it has been locked out since 15 July, last tried on 11 September, and her account has worked since that afternoon.\n\nTWO THINGS, one owner, no code. (1) One message to the reporter, and one to each of the other eight if you choose. (2) Admitting them skipped profile setup, so each appears to the community under the local part of their email and a generated handle until they edit both in settings; an optional nudge. meta.admitted_by_support makes the nine queryable in one line.\n\n\u2500\u2500 SURVEY 2026-09-19. Still unsent. A cloud agent cannot send the nine emails; this stays P0 owner content.",
+      "detail": "FILED 2026-09-14 from the induction-lockout handoff. All nine accounts carrying meta.admitted_by_support (stamped 11 Sep) are admitted, moved free to crew, and verified working. Nothing and nobody has told them. The member who reported it has been locked out since 15 July, last tried on 11 September, and her account has worked since that afternoon.\n\nTWO THINGS, one owner, no code. (1) One message to the reporter, and one to each of the other eight if you choose. (2) Admitting them skipped profile setup, so each appears to the community under the local part of their email and a generated handle until they edit both in settings; an optional nudge. meta.admitted_by_support makes the nine queryable in one line.\n\n\u2500\u2500 CLOSED 2026-09-19. Owner (Daniel) confirmed the emails went out: \"People emailed, quest is gone.\" The reporter-told half is the close; the identity nudge was optional and does not hold the row. LIVE-234 is not this row.",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-19: not yet sent (cloud could not send). Closes when the reporter has been told; the identity nudge is optional and does not hold the row.",
+        "evidence": "Owner (Daniel) 2026-09-19: \"People emailed, quest is gone.\" That is the send confirmation this row asked for (the reporter told; the display-name nudge is optional). Inbox copies are not in the repo. LIVE-254 is the Quest-header half of the same sentence.",
         "checked": "2026-09-19"
-      }
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-311",
