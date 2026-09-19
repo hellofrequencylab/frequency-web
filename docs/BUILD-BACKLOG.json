@@ -224,8 +224,7 @@
           "name": "W2 \u00b7 foundation first",
           "ids": [
             "DEF-HARDEN",
-            "SCAN-502",
-            "LIVE-313"
+            "SCAN-502"
           ]
         },
         {
@@ -12352,7 +12351,7 @@
     {
       "id": "LIVE-313",
       "title": "The shell visual tier is advisory since #2554, and it earns its block back on a seeded, deterministic dataset",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "live",
       "size": "M",
@@ -12360,12 +12359,13 @@
         "file": ".github/workflows/e2e.yml",
         "ref": "the @shell compare step"
       },
-      "detail": "FILED 2026-09-14 from the induction-lockout handoff. #2554 took the honest trade: the @visual @shell surfaces photograph LIVE production data through a real session, so a diff there cannot tell \"someone moved the header\" from \"the Space gained a member since Tuesday\", and a gate that cannot fire truthfully was made advisory instead of being merged past. That is ADR-970 in the right direction, and it is also a real coverage hole: a genuine shell regression now reads as advice. #2554's own comment names the fix and does not pretend otherwise: point the shell suite at a seeded, deterministic dataset instead of production, and the tier earns its block back and the two compare steps collapse into one.\n\nNot urgent. It is the kind of deferral that reads as coverage a year later, which is why it has a row and a probe rather than a comment.",
+      "detail": "FILED 2026-09-14 from the induction-lockout handoff. #2554 took the honest trade: the @visual @shell surfaces photograph LIVE production data through a real session, so a diff there cannot tell \"someone moved the header\" from \"the Space gained a member since Tuesday\", and a gate that cannot fire truthfully was made advisory instead of being merged past. That is ADR-970 in the right direction, and it is also a real coverage hole: a genuine shell regression now reads as advice. #2554's own comment names the fix and does not pretend otherwise: point the shell suite at a seeded, deterministic dataset instead of production, and the tier earns its block back and the two compare steps collapse into one.\n\nNot urgent. It is the kind of deferral that reads as coverage a year later, which is why it has a row and a probe rather than a comment.\n\nCLOSED 2026-09-19 (ADR-1449). PREMISE RE-TESTED before writing: the row asked for a seeded dataset so the two compare steps could collapse into one blocking job. That premise is expired. viewportOnly + data-visual-mask already hold the chrome the shell photographs, and six unrelated 2026-09-19 PRs (#2722, #2720, #2713, #2709, #2705, #2704) ran the member-shell step SUCCESS while the public visual tier was red. A seed is not required for the pixels the masks leave in the picture. /discover cannot join that gate (LIVE-373 / ADR-1410): its HEIGHT is production Circles, events and posts. So the two-step advisory shell is split into three: public blocks, shell blocks, /discover stays advisory on its own step. The LIVE-313 probe passes when the shell step name is present and the next 900 characters do not treat it as advisory.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\".github/workflows/e2e.yml\",\"utf8\");const i=s.indexOf(\"member shell + operator\");if(i<0){console.error(\"e2e.yml no longer has a member shell + operator compare step\");process.exit(1)}const step=s.slice(i,i+900);if(/continue-on-error:\\s*true/.test(step)){console.error(\"the member shell + operator visual tier is still continue-on-error: a shell regression cannot fail a PR\");process.exit(1)}'",
         "note": "Passes when the shell compare step exists and no longer carries continue-on-error. Written 2026-09-14; the first draft looked 1500 chars around the first @shell mention, which is a comment, and read DONE on an open row."
-      }
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-314",

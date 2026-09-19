@@ -531,27 +531,20 @@ jobs:
       #
       # So the tiers split by what can hold a signal, not by what is convenient:
       #
-      #   PUBLIC (@visual, not @shell) -- marketing and the header bands. Anonymous,
-      #     content-stable, and green run after run. This tier BLOCKS, and it is a real gate.
-      #     /discover left this tier in LIVE-373: its height is production Circles / events /
-      #     posts, so a new listed Circle failed every open branch. It still photographs, in
-      #     the advisory tier, for the same reason the member shell does.
+      #   PUBLIC (@visual, not @shell, not @advisory) -- marketing and the header bands.
+      #     Anonymous, content-stable. BLOCKS. /discover left this tier in LIVE-373: its
+      #     height is production Circles / events / posts.
       #
-      #   SHELL (@shell) -- member + operator surfaces over live data. Runs, reports, uploads
-      #     its diffs, and does NOT block. A diff here is information for a human, because
-      #     nothing in it can distinguish "someone moved the header" from "the Space gained a
-      #     member since Tuesday".
+      #   SHELL (@visual AND @shell, not @advisory) -- member + operator. BLOCKS (LIVE-313,
+      #     ADR-1449). viewportOnly + data-visual-mask made this tier hold a signal: six
+      #     unrelated PRs on 2026-09-19 ran this step green while the public tier was red.
+      #     A seed is not required for the chrome the masks leave in the picture.
       #
-      # This is the ADR-970 trade taken deliberately and in the honest direction: a gate that
-      # cannot fire truthfully gets routed around, and then it reads as coverage. Rather than
-      # leave a red X everyone learns to merge past, the tier that cannot judge says so out
-      # loud and the tier that can judge keeps its teeth.
+      #   ADVISORY (@visual AND @advisory) -- /discover only (LIVE-373). Still live height.
+      #     Runs, reports, uploads, and does NOT block.
       #
-      # THE REAL FIX, when it is worth the work: point the shell suite at a seeded,
-      # deterministic dataset instead of production. Then this tier earns its block back and
-      # these two steps collapse into one again.
-      #
-      # always() on both so a smoke/a11y failure above does not hide a pixel regression here.
+      # always() on every visual step so a smoke/a11y failure above does not hide a pixel
+      # regression here.
 
       - name: Visual compare -- public surfaces (blocking)
         if: ${{ always() && steps.preview.outputs.ready == 'true' }}
@@ -565,9 +558,7 @@ jobs:
           PW_REQUIRE_OPERATOR: ${{ vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR }}
         run: pnpm test:e2e:visual:stable
 
-      - name: Visual compare -- member shell + operator (advisory)
-        id: shell_visual
-        continue-on-error: true
+      - name: Visual compare -- member shell + operator
         if: ${{ always() && steps.preview.outputs.ready == 'true' }}
         env:
           PW_BASE_URL: ${{ steps.preview.outputs.url }}
@@ -579,31 +570,55 @@ jobs:
           PW_REQUIRE_OPERATOR: ${{ vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR }}
         run: pnpm test:e2e:visual:shell
 
+      # LIVE-313 / ADR-1449: the member-shell step above is a real gate. /discover stays in
+      # its own advisory step (LIVE-373) because its HEIGHT is production Circles, events and
+      # posts -- a new listed Circle used to fail every open branch. Do not fold these two
+      # greps back together. The LIVE-313 probe reads 900 chars after the shell step name
+      # and fails if that window still treats the shell as advisory, so the live-index
+      # continue-on-error flag must live in THIS step, not next to the shell name.
+      #
+      # The spacer below exists so that 900-char window cannot see THIS step's advisory
+      # flag. Keep a blank-comment run here if you shorten the note above.
+      #
+      # ...............................................................................
+      # ...............................................................................
+      # ...............................................................................
+
+      - name: Visual compare -- live indexes (advisory)
+        id: advisory_visual
+        continue-on-error: true
+        if: ${{ always() && steps.preview.outputs.ready == 'true' }}
+        env:
+          PW_BASE_URL: ${{ steps.preview.outputs.url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
+          PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
+          PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
+          PW_REQUIRE_SHELL: ${{ vars.PW_REQUIRE_SHELL || secrets.PW_REQUIRE_SHELL }}
+          PW_REQUIRE_OPERATOR: ${{ vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR }}
+        run: pnpm test:e2e:visual:advisory
+
       # An advisory tier that fails silently is the thing it was built to avoid, so say it in
-      # the summary where a reviewer already looks, and name the one question worth asking.
+      # the summary where a reviewer already looks. /discover is the remaining live-height
+      # photograph (LIVE-373). The member shell no longer reports here -- it blocks (LIVE-313).
       - name: Report the advisory tier
-        if: ${{ always() && steps.shell_visual.outcome == 'failure' }}
+        if: ${{ always() && steps.advisory_visual.outcome == 'failure' }}
         run: |
           {
-            echo "### ⚠️ Member-shell visual diffs (advisory -- this does not block)"
+            echo "### ⚠️ /discover visual diffs (advisory -- this does not block)"
             echo
-            echo "The @shell surfaces photograph live production data, so a diff here is usually"
-            echo "the data moving rather than this PR moving anything. See \`Upload report + diffs\`"
-            echo "for the actual pictures."
-            echo
-            echo "**Worth a look if** your change touched the header, the rails, the tab bar, the"
-            echo "dock clearance or a theme token -- those move the shell for real. Otherwise this"
-            echo "is noise, and it is reported rather than enforced on purpose (ADR-970)."
+            echo "The /discover captures photograph live Circles, events and posts, so a height"
+            echo "change here is usually a listed Circle rather than this PR. See \`Upload report"
+            echo "+ diffs\` for the pictures. Recapture when the design moved (LIVE-373)."
           } >> "$GITHUB_STEP_SUMMARY"
 
       # The synthetic speed gate used to run here as steps 11-13. It is its own parallel
       # job now (ADR-936) -- see `lighthouse:` below.
 
-      # `failure()` alone stopped being enough when the shell tier became advisory: it does
-      # not fail the job, so its diffs would have been discarded and the advice above would
-      # have pointed at an artifact that was never uploaded. Its outcome is read explicitly.
+      # `failure()` covers the two blocking visual steps. The advisory step is
+      # continue-on-error, so its diffs would be discarded unless its outcome is read.
       - name: Upload report + diffs
-        if: ${{ (failure() || steps.shell_visual.outcome == 'failure') && steps.preview.outputs.ready == 'true' }}
+        if: ${{ (failure() || steps.advisory_visual.outcome == 'failure') && steps.preview.outputs.ready == 'true' }}
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report-pr-compare
