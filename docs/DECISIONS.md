@@ -46498,7 +46498,7 @@ Premise re-tested 2026-09-19:
 
 ## ADR-1461: Give the ADR-1316 snapshot a primary key; do not drop it yet (SCAN-640)
 
-**Status:** Accepted · 2026-09-19 · backlog `SCAN-640` · numbered **1461** (1456–1458 and 1460 are claimed on open calendar PRs; 1459 is SCAN-638 on this tree) · corroborated by `supabase/migrations/20270345006500_scan_640_backup_table_primary_key.sql`
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-640` · numbered **1461** (1456–1458 and 1460 are claimed on open calendar PRs; 1459 is SCAN-638 on this tree) · corroborated by `docs/proposals/SCAN-640-backup-table-primary-key.sql`
 
 **Context.** The 2026-09-19 scan filed SCAN-640 against advisor `no_primary_key` INFO on `public.page_settings_events_backup_20260910`. That table is the ADR-1316 restore net: 21 `/events` `page_settings` rows snapshotted on 2026-09-10 before the cleanup deleted nine of them. HYG-086 already enabled RLS (no policy: service-role only) and dated the drop for on or after 2026-10-10. Premise re-tested 2026-09-19 on this tree: no later migration mentions the table, no migration adds a primary key, and today is 21 days before that drop date. Production count was not readable from this session.
 
@@ -46506,10 +46506,10 @@ Premise re-tested 2026-09-19:
 
 1. **Add a primary key. Do not drop.** The advisor finding is the missing key. The drop stays dated 2026-10-10 on HYG-086. Dropping now throws away the only way back.
 2. **Prefer the source key `(space_id, route)`.** That is how `page_settings` is keyed. If any snapshot row has a null or duplicated key (CREATE TABLE AS SELECT copies neither NOT NULL nor uniqueness), fall back to a surrogate identity so the advisor still clears.
-3. **Draft in the tree. Do not apply from an agent session.** Same apply contract as SCAN-638 / ADR-1459. Owner applies later: `execute_sql`, then insert `supabase_migrations.schema_migrations` at version `20270345006500`. Fresh databases never have this table; the migration is a no-op there.
+3. **Stage at `docs/proposals/`. Do not apply from an agent session.** Same apply contract as SCAN-638 / ADR-1459, plus [ADR-1056](DECISIONS.md) / [ADR-1007](DECISIONS.md): an unapplied file in `supabase/migrations/` fails required `checks`. Applying now would also redden every open branch that lacks the promoted file ([ADR-1111](DECISIONS.md)). Owner applies later: `execute_sql`, insert `supabase_migrations.schema_migrations` at version `20270345006500`, then copy the file into `supabase/migrations/`. Fresh databases never have this table; the SQL is a no-op there.
 
-**Rejected.** Dropping the table 21 days early. Adding a `DROP TABLE` file now so the original probe would pass (a future apply-all would then destroy the restore net). Applying the DDL from this session.
+**Rejected.** Dropping the table 21 days early. Adding a `DROP TABLE` file now so the original probe would pass (a future apply-all would then destroy the restore net). Applying the DDL from this session. Leaving the unapplied file in `supabase/migrations/` (required `checks` goes red).
 
-**Consequences.** The SCAN-640 probe passes on the later file (key or drop). Advisors stay the production proof until the owner applies the version. The Oct 10 drop is still HYG-086's work.
+**Consequences.** The SCAN-640 probe passes on the staged file (key or drop). Advisors stay the production proof until the owner applies the version. The Oct 10 drop is still HYG-086's work.
 
 **Rows.** SCAN-640.

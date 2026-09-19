@@ -1,4 +1,15 @@
--- SCAN-640 (ADR-1461): give page_settings_events_backup_20260910 a primary key.
+-- STAGED PROPOSAL (ADR-1056 / ADR-1461). Not a migration.
+-- A file in supabase/migrations/ asserts production has run it, and CI arms
+-- check:migrations rule 4 against the live ledger (ADR-1007). This file makes
+-- no such claim. Applying it now would also redden every open branch that
+-- lacks the promoted file (ADR-1111).
+--
+-- Promote after the owner applies:
+--   1. execute_sql (this file)
+--   2. insert supabase_migrations.schema_migrations at version 20270345006500
+--   3. copy to supabase/migrations/20270345006500_scan_640_backup_table_primary_key.sql
+--
+-- SCAN-640: give page_settings_events_backup_20260910 a primary key.
 --
 -- FOUND 2026-09-19. Advisor no_primary_key INFO on the ADR-1316 snapshot table.
 -- RLS landed in 20270345003500 (HYG-086), so this is not an open read. That file
@@ -20,8 +31,7 @@
 --
 -- WHAT THIS DOES NOT DO. It does not drop the table. HYG-086 still owns that
 -- date. Draft only. The row and the 2026-09-19 slate forbid apply_migration
--- and DDL execute_sql from an agent session. Owner applies later: execute_sql,
--- then insert supabase_migrations.schema_migrations at version 20270345006500.
+-- and DDL execute_sql from an agent session.
 --
 -- House style: additive + idempotent. SAFE to re-run. No em dashes.
 --
