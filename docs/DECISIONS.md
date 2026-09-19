@@ -38365,6 +38365,9 @@ change to a marquee page, and not this.
 the reversal, recorded in the row, not rot. The band paints one image instead of two, which is a
 decode saved on the surface least able to afford one.
 
+Amended by [ADR-1431](DECISIONS.md): the picker now previews both surfaces. The phone frame has to
+read the phone height token; a second width over the desktop height is the wrong shape.
+
 ---
 
 ## ADR-1301: ACCEPTED, LANES SUPERSEDED BY ADR-1302 — the event identity region is full width, outside the action column (2026-09-10)
@@ -45984,3 +45987,23 @@ Premise re-tested 2026-09-19 on this tree: `pnpm check:tokens` is already green.
 **Consequences.** HYG-099 closes on the allowlist the gate already had. A new hex in chrome still fails `check:tokens`. A new raster or email file still has to join `ALLOWLIST` with a reason, which is the same review the guard already demanded.
 
 **Rows.** HYG-099.
+
+## ADR-1431: The event cover picker previews phone and desktop (LIVE-272)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-272` · amends [ADR-1300](DECISIONS.md) · corroborated by `lib/layout/cover-height.ts` (`posterBandHeightPx`, `EVENT_POSTER_PHONE_WIDTH_PX`) and `components/admin/modules/event-header-controls.tsx`
+
+**Context.** ADR-1300 taught the focal picker to preview the real band instead of a stock 16/9. The control still passed one width: 1044, the event page's centre column. The phone band is one rung shorter below `sm`, so a standard-tier phone paints 412x221 (1.86:1) against the desktop's 1044x374 (2.79:1). A host who framed tightly against the desktop preview could lose more or less of the artwork on a phone than the control showed.
+
+Premise re-tested 2026-09-19 on this tree: the control still passed `posterBandAspect(height, 1044, aspect)`. The row said the second frame was one more call because the function already took a width. That was half wrong. `posterBandAspect` always divided by the desktop (`sm:`) height token, so `posterBandAspect('standard', 412)` is 412/374, not 412/221.
+
+**Decision.**
+
+1. **Show both frames on one focus.** Phone and desktop pickers share the same `object-position`. Dragging either updates both. A toggle would hide the difference this row exists to show.
+2. **The phone frame uses the phone height token.** `posterBandHeightPx(tier, 'phone')` reads the first class in `POSTER_HEIGHT_CLASS`. Width alone is not a surface.
+3. **Name the two widths.** `EVENT_POSTER_DESKTOP_WIDTH_PX` (1044) and `EVENT_POSTER_PHONE_WIDTH_PX` (412) live next to the ladder so a retune moves the preview with the survey.
+
+**Rejected.** A width toggle (hides the mismatch). Passing 412 with the desktop height (the naive second call). Two focal points (the page has one `coverFocus`).
+
+**Consequences.** The rail is taller by one preview. The height picker still moves both frames. A later change that reverts to `posterBandAspect(height, 1044, aspect)` fails the LIVE-272 probe and the band test's naive-width control.
+
+**Rows.** LIVE-272.
