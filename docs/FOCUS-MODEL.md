@@ -211,21 +211,21 @@ Flags read live: `billing_live = true` (since 2026-07-21), `host_payouts_enabled
 
 ### The contradiction
 
-`lib/pricing/gates.ts:144` sets `space_memberships: { minEntitlement: 'business' }`, and free Spaces
-get **0** membership tiers. **An operator must buy a $29/mo subscription before they may collect a
+`lib/pricing/gates.ts` used to set `space_memberships: { minEntitlement: 'business' }`, and free Spaces
+got **0** membership tiers. **An operator had to buy a $29/mo subscription before they could collect a
 single dollar from their own members.**
 
-That is the exact inverse of the rule this repo already adopted. [ADR-914](DECISIONS.md) says: *"Never
+That was the exact inverse of the rule this repo already adopted. [ADR-914](DECISIONS.md) says: *"Never
 gate the transaction. Gate the repeat."* It says a free Member can sell tickets and take donations on
 day one, precisely because *"a free Member who hits a paywall does not upgrade, they send people to
-Venmo, and both the sale and the contact are lost permanently."* Recurring dues are the one place that
-rule was not applied, and it is the place the owner now wants to be the primary engine.
+Venmo, and both the sale and the contact are lost permanently."* Recurring dues were the one place that
+rule was not applied.
 
-The gate's own comment defends itself well, and the argument deserves an answer rather than a
-dismissal: a monthly membership *"is a promise to another person"*, and helping someone make that
-promise from an account they may abandon next month is not a feature. **That is a readiness concern
-wearing a pricing gate's clothes.** Test readiness directly, and the wall stops taxing the thing we
-want to grow.
+The gate's own comment defended itself well: a monthly membership *"is a promise to another person"*,
+and helping someone make that promise from an account they may abandon next month is not a feature.
+**That is a readiness concern wearing a pricing gate's clothes.** [ADR-1415](DECISIONS.md) moved the
+code default to the free floor. Checkout still refuses when Connect is not payout-ready. Status for
+the remaining readiness work lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
 
 ---
 

@@ -3,7 +3,7 @@
 > **Status: ACCEPTED** as [ADR-1294](DECISIONS.md) (owner, 2026-09-08). Status for any work it produces lives in
 > [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json), never in this file. Filed 2026-09-08 from sixteen
 > research lanes plus live production reads. Supersedes the shape in
-> [`OFFER-MODEL.md`](OFFER-MODEL.md) §5 on one point (memberships stay paid-gated) and corrects one
+> [`OFFER-MODEL.md`](OFFER-MODEL.md) §5 on one point (memberships used to stay paid-gated; [ADR-1415](DECISIONS.md) moved that wall to Connect readiness) and corrects one
 > argument in it (see §2). Companion: [`FOCUS-MODEL.md`](FOCUS-MODEL.md)
 > (interior accepted, [ADR-1403](DECISIONS.md)). This file stays commercial law.
 > ADR-1403 does not rewrite it.
@@ -187,7 +187,7 @@ unwritten or unsold by the 2026-09-08 dead-surface sweep, so there are no judgem
 
 | # | Change | Files | Done when | Verify |
 |---|---|---|---|---|
-| 2.1 | Five zero caps become real numbers: automation 50/mo · playbooks 100/mo · collaborators 1 · membership tiers **0, unchanged** (paid line) · practice publish 3 | `lib/pricing/feature-meters.ts:98-142` | No cap reads `free: 0` except `space_membership_tiers` | `node -e` assert |
+| 2.1 | Five zero caps become real numbers: automation 50/mo · playbooks 100/mo · collaborators 1 · membership tiers **1** (LIVE-410) · practice publish 3 | `lib/pricing/feature-meters.ts:98-142` | No cap reads `free: 0` | `node -e` assert |
 | 2.2 | Retire `tickets`; merge `enroll` into journeys+memberships; merge `checkin` into events | `lib/spaces/functions.ts`, `space-modules.ts`, the three settings sections | `SPACE_FUNCTIONS` has **19** keys | `node -e` assert length 19 |
 | 2.3 | Fix stale comments that now lie | `lib/spaces/memberships.ts:10`, `settings/memberships/section.tsx:27`, `settings/checkin/section.tsx:17` | No "v1 IS NOT BILLING" / "takes no payment" / "event_space only" | `grep -c` → 0 |
 | 2.4 | Hide the dead "Publish website" button and the "Coming soon" plan rungs behind a flag | `components/spaces/space-page-panel.tsx:68,187`, `billing/plan-ladder.tsx:62,68` | No enabled surface says "Coming soon" | `grep` over enabled surfaces |
@@ -199,7 +199,7 @@ unwritten or unsold by the 2026-09-08 dead-surface sweep, so there are no judgem
 | 3.1 | Merge `collective` → `business`; one paid tier at **$49** | `lib/pricing/plans.ts`, `pricing-keys.ts` (+ `RETIRED_CATALOG_ITEM_KEYS` for `collective_base`), 1 migration, `scripts/check-collective.mjs` | `SPACE_PLANS` = free/business/nonprofit/independent | `pricing.test.ts` |
 | 3.2 | Seats live: clear `placeholder`, set **$12**, sync catalog, flip `catalog_operator_seat_active` | `pricing-keys.ts:491`, operator flag | Checkout mints a seat line | one real checkout |
 | 3.3 | Take-rate to two numbers: 10% free · 3% paid · 0% non-profit · 0% own audience | `NETWORK_TAKE_RATE_DEFAULT` + the seeded vector migration | Ladder has two rungs | `take-rate-ladder.test.ts` |
-| 3.4 | Memberships stay paid-gated; make the **upsell honest at the point of tier creation** ("charging your members is part of Business") | `settings/memberships/section.tsx` | A free Space sees why, not a lock | copy review |
+| 3.4 | Memberships stay paid-gated; make the **upsell honest at the point of tier creation** ("charging your members is part of Business") | `settings/memberships/section.tsx` | Superseded by [ADR-1415](DECISIONS.md) / LIVE-410: the wall moved to the free floor; Connect readiness is the door | copy review |
 | 3.5 | Pricing page, grid, FAQ, JSON-LD and llms.txt all derive from the catalog | `/admin/pricing` data edit; `pricing-grid.ts` | No `$`+digit or `N%` literal in marketing source | `marketing-figures.test.ts` |
 
 ### Phase 5 — Connect onboarding push · **M** · ⚡ *highest commercial leverage*

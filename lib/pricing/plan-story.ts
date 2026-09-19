@@ -45,7 +45,7 @@ export const PLAN_STORY = {
    *  interpolates this instead of arguing it again; the capabilities it names are read off the gate map
    *  (paidWalls), so the sentence and the product cannot disagree. */
   paid:
-    'A plan is what you take when money starts moving. Never the transaction: a free Space sells tickets and takes donations from day one, and a free Space is the whole thing, not a trial of it. What a plan carries is the repeat, the part where you make a standing promise to the same person and have to keep it.',
+    'A plan is what you take when money starts moving. Never the transaction: a free Space sells tickets, takes donations, and sells memberships from day one once payouts are ready, and a free Space is the whole thing, not a trial of it. What a plan carries is the repeat: campaigns and funnels that bring new people in, month after month.',
   /** The rate, stated as the consequence it is. It used to be the sales argument on every surface,
    *  which made the ladder read as a fee ladder you climb to pay less, rather than as one price you
    *  take once you are charging. */

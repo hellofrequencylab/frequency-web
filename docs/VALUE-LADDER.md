@@ -242,7 +242,7 @@ Everything else is a meter. A wall is only justified where a quantity cannot exp
 
 | Wall | Floor | Why not a meter |
 |---|---|---|
-| **Sell memberships** | Business | A membership is a recurring promise to another person. Selling one on a tier you might abandon next month is a commitment we should not help someone make casually. This is the single most defensible wall in the product |
+| **Sell memberships** | Free (Connect readiness) | Amended [ADR-1415](DECISIONS.md) / LIVE-410. ADR-914 put this at Business as a recurring promise. FOCUS-MODEL Q3 ruled that is a readiness concern wearing a pricing gate: host free until you charge. Checkout still refuses when Connect is not payout-ready. |
 | **Campaigns + funnels** | Business | "One campaign free" teaches nothing and converts badly. The line is between *messaging your people* (free) and *running an acquisition machine* (paid) |
 | **Revenue splits** | Collective | Automatic money-splitting between businesses is the collective's actual job. Hosting a few partners is Business; sharing revenue with them is the engine |
 

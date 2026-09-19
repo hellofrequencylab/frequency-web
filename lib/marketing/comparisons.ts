@@ -148,7 +148,7 @@ export const COMPARISONS: Comparison[] = [
     forReader:
       'You are in a few online communities already. What you are short on is people you can sit across a table from.',
     moneyBeat:
-      'Frequency takes 0% on your own bookings, always. Selling a session, a class, or a ticket is open on a free account, from day one; selling recurring memberships runs on a Business Space. Either way, what your own work earns is yours. Frequency runs on one honest price and earns only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
+      'Frequency takes 0% on your own bookings, always. Selling a session, a class, a ticket, or a membership is open on a free account, from day one, once payouts are ready. Either way, what your own work earns is yours. Frequency runs on one honest price and earns only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
   },
 ]
 

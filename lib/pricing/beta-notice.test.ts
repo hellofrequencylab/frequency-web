@@ -39,9 +39,9 @@ const SEPT = betaGraceEndsAtMs('2026-09-01') // the window's end, read the way t
 
 describe('targetForGate (a feature names the tier its REAL gate sits on)', () => {
   it('a Business feature resolves to the Business tier', () => {
-    // `space_crm` / `space_email` were the examples here until ADR-917 turned both into meters, so
-    // the Business examples are now the two of the three named walls that sit at Business.
-    expect(targetForGate(FEATURE_GATES.space_memberships)).toEqual({ axis: 'plan', tier: 'business' })
+    // `space_crm` / `space_email` were the examples here until ADR-917 turned both into meters.
+    // LIVE-410 moved memberships to the free floor, so the remaining Business wall is campaigns.
+    expect(targetForGate(FEATURE_GATES.space_memberships)).toBeNull()
     expect(targetForGate(FEATURE_GATES.space_campaigns)).toEqual({ axis: 'plan', tier: 'business' })
   })
 

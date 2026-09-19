@@ -9,7 +9,7 @@ import { featureTierLadder } from '@/lib/pricing/feature-tiers'
 // link to the billing surface) rather than charging.
 
 // A plan-axis ladder. Was `space_crm` until ADR-917 turned it into a meter with no unlock rung.
-const CRM = featureTierLadder('space_memberships')!
+const CRM = featureTierLadder('space_campaigns')!
 const VERA = featureTierLadder('vera_unlimited')!
 
 function html(node: React.ReactElement): string {
