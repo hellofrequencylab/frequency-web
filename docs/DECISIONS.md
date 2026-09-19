@@ -45820,3 +45820,24 @@ The signup trigger (`public.handle_new_auth_user` in `20261013000000_reconcile_s
 
 **Rows.** LIVE-349.
 
+## ADR-1422: Retirement stands down on an unreadable rule, not on an empty expansion (LIVE-338)
+
+**Status.** Accepted, 2026-09-19. Amends [ADR-1304](DECISIONS.md) rule 3. Row: LIVE-338. Corroborated by `recurrenceRuleUnreadable` and `retireStaleOccurrences` in `lib/event-recurrence.ts`, pinned by `lib/event-recurrence-count-one.test.ts`.
+
+**Context.** ADR-1304's fail-safe is: an anchor that still says it repeats but whose rule expands to nothing is not a series with no dates, it is a rule this code could not read, so retirement stands down. That is the right fear. The reading is wrong. `expandOccurrenceInstants` flattens "could not parse" and "produced no child dates" into one empty array, and `includeAnchor: false` means a `COUNT=1` series (the picker admits 1 to 400) ALWAYS expands to no child dates: the only occurrence is the anchor itself. Reducing a weekly series to one date therefore stood down and left every leftover future child live. The same flattening hides a spent `COUNT=6` that still carries dates from a larger previous count. ADR-1353 left this row open on purpose: its floor change did not touch the retirement expansion.
+
+Premise re-tested 2026-09-19 on this tree: `retireStaleOccurrences` still stood down on `expected.length === 0`. Live COUNT-bounded series were zero on 2026-09-15; this is a reachable hole, not a stranded production series.
+
+**Decision.**
+
+1. **`recurrenceRuleUnreadable` is the stand-down.** False when `recurrence_type` is `none` (switched off is empty on purpose). True when a still-repeating row has no parseable rule, or no parseable `starts_at` (daily can build a rule without a start, so the clock check is load-bearing). A readable COUNT rule that expands to `[]` proceeds.
+2. **The expander's flatten stays.** Materialisation and `.ics` EXDATE still receive `Date[]`. They never deleted on empty, so they do not need the discriminant. Retirement is the only caller that treated empty as unread.
+3. **Attachment-read failures still stand down.** A read that errored is not a read that found nothing. Unchanged from ADR-1304.
+
+**Rejected.** Treating `COUNT=1` as a special case beside the length check (every spent COUNT is empty for children; the bug is the flatten, not the integer). Stamping `recurrence_until` on a spent COUNT series so the existing empty check would not fire (ADR-1348 already refused that: it would emit an invalid RRULE with both UNTIL and COUNT). Injecting a clock into `retireStaleOccurrences` in this row (the IO test freezes `Date`; the arithmetic is already pure in `staleOccurrenceIds`).
+
+**Consequences.** Reducing a series to one date, or to a count already spent, retires unattached leftover future dates the next time the rail saves or the daily cron runs. Dates with an RSVP, ticket, guest or post stay, as ADR-1304 already required. An unparseable start still touches nothing and logs the stand-down.
+
+**Rows.** LIVE-338 (done, this ADR).
+
+

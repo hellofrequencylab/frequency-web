@@ -8,6 +8,7 @@ import {
   expandOccurrenceInstants,
   occurrenceRow,
   occurrenceTierRows,
+  recurrenceRuleUnreadable,
   staleOccurrenceIds,
 } from './event-recurrence'
 
@@ -454,6 +455,62 @@ describe('staleOccurrenceIds — the dates a changed rule leaves behind', () => 
     const children = [kid('a', '2026-09-23T18:30:00.000Z'), kid('b', '2026-09-30T18:30:00.000Z')]
     const expected = [at('2026-09-23'), at('2026-09-30'), at('2026-10-07')]
     expect(staleOccurrenceIds(children, expected, NOW)).toEqual([])
+  })
+})
+
+// ── LIVE-338: AN EMPTY EXPANSION IS NOT AN UNREADABLE RULE ──────────────────────────────────────
+//
+// `retireStaleOccurrences` used to stand down whenever a still-repeating anchor expanded to
+// nothing. That guard is right for a rule this code cannot read. It is wrong for COUNT=1: the
+// expander excludes the anchor, COUNT is already spent on that one date, and leftover future
+// children from a previous rule are exactly what retirement is for.
+describe('recurrenceRuleUnreadable — empty is not unread (LIVE-338)', () => {
+  const weeklyCountOne = {
+    starts_at: '2026-09-09T18:30:00.000Z',
+    recurrence_type: 'weekly' as const,
+    recurrence_rule: 'FREQ=WEEKLY;BYDAY=WE;COUNT=1',
+  }
+
+  it('a spent COUNT=1 series is readable, even though it expands to no child dates', () => {
+    expect(recurrenceRuleUnreadable(weeklyCountOne)).toBe(false)
+    const expected = expandOccurrenceInstants(
+      { ...weeklyCountOne, recurrence_until: null },
+      new Date('2026-12-01T00:00:00.000Z'),
+    )
+    expect(expected).toEqual([])
+  })
+
+  it('a weekly series with an unparseable start is unreadable, and stands down', () => {
+    expect(
+      recurrenceRuleUnreadable({
+        starts_at: 'not-a-date',
+        recurrence_type: 'weekly',
+        recurrence_rule: null,
+      }),
+    ).toBe(true)
+  })
+
+  it('a daily series with an unparseable start is unreadable (the rule exists, the clock does not)', () => {
+    // Daily does not need the start to BUILD the rule, so a flattened empty array would hide this
+    // as "expands to nothing" the same way COUNT=1 does. The start check is what keeps the
+    // fail-safe.
+    expect(
+      recurrenceRuleUnreadable({
+        starts_at: 'not-a-date',
+        recurrence_type: 'daily',
+        recurrence_rule: null,
+      }),
+    ).toBe(true)
+  })
+
+  it('a series switched off is not unreadable: leftover dates should retire', () => {
+    expect(
+      recurrenceRuleUnreadable({
+        starts_at: '2026-09-09T18:30:00.000Z',
+        recurrence_type: 'none',
+        recurrence_rule: null,
+      }),
+    ).toBe(false)
   })
 })
 
