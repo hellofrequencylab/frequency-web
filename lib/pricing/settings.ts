@@ -163,11 +163,12 @@ export const PRICING_FLAG_KEYS = [
   'plan_independent_enabled',
   'gamification_full_member',
   'gamification_full_crew',
-  // NO 'gamification_full_supporter' (owner directive, 2026-08-24). The Supporter RUNG left
-  // EntitlementTier, so no tier can select that flag: GAMIFICATION_FLAG is keyed by the union and
-  // has two entries. A key kept here would render an operator toggle that gates nothing, which is
-  // the "a dead switch reads as coverage" failure. Its stored platform_flags row is now orphaned
-  // and unread (loadPricingFlags filters on this list); the owner deletes it out of band.
+  // NO 'gamification_full_supporter' (owner directive, 2026-08-24; HYG-078 / ADR-1442). The
+  // Supporter RUNG left EntitlementTier, so no tier can select that flag: GAMIFICATION_FLAG is
+  // keyed by the union and has two entries. A key kept here would render an operator toggle that
+  // gates nothing, which is the "a dead switch reads as coverage" failure. The seed no longer
+  // inserts it; a greenfield delete sits in 20260723010000. Production: execute_sql the same
+  // delete (no new ledger row). loadPricingFlags already filters on this list.
   // Household / Circle multi-seat bundle (ADR-370, REMAINING-WORK #6). Default OFF (never sold while OFF).
   'bundle_household_enabled',
   // Operator-seat ACTIVATION (ADR-803). Default OFF = the seat stays the inert PLACEHOLDER (catalog sync

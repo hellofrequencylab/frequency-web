@@ -266,8 +266,9 @@ route tree by the copy cascade with the reserved site row `'*'` set from `/admin
 >   (default **OFF** — the live gate is `billingLive()` = `billingEnabled()` env keys AND this flag,
 >   so OFF even with keys), per-tier/plan `*_enabled` (all OFF), and per-role `gamification_full_*`
 >   (member OFF, crew ON to match today's derive-from-tier default). `gamification_full_supporter`
->   was seeded here too; it left the code on 2026-08-24 with the Supporter tier and its stored row is
->   now orphaned and unread.
+>   was seeded here too; it left the code on 2026-08-24 with the Supporter tier (ADR-1106). HYG-078 /
+>   ADR-1442 stops the seed and deletes the row on greenfield replay. Production: `execute_sql`
+>   `delete from public.platform_flags where key = 'gamification_full_supporter'` (no ledger row).
 
 > **Pricing P2 — Stripe products/prices + subscriptions (ADR-363, [docs/PRICING.md](PRICING.md);
 > migration `20260723020000_pricing_stripe.sql`). STILL SHIPS OFF — no charge / no live Stripe call

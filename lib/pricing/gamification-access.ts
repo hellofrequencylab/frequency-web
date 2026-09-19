@@ -27,7 +27,7 @@ import { loadPricingFlags } from './settings'
 
 /** The per-role gamification_full_* flag key for a tier (the operator's per-tier override).
  *  Two rungs, two flags: the Supporter rung was retired from EntitlementTier (2026-08-24), and its
- *  `gamification_full_supporter` flag went with it — no tier could ever select it again. */
+ *  `gamification_full_supporter` flag went with it (HYG-078 / ADR-1442). No tier can select it. */
 const GAMIFICATION_FLAG: Record<EntitlementTier, 'gamification_full_member' | 'gamification_full_crew'> = {
   free: 'gamification_full_member',
   crew: 'gamification_full_crew',
