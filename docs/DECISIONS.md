@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1458**. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643 on this PR. 1451 is SCAN-642. 1463 is LIVE-393 on main. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs.
+tree as of this index: **ADR-1464**. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643 on main. 1451 is SCAN-642. 1463 is LIVE-393 on main. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46645,3 +46645,24 @@ Premise re-tested 2026-09-19:
 **Consequences.** Crawlers on `/events/<slug>` and `/store|/market|/housing|/classifieds/<id>` no longer pay the (main) auth read. Space sitemap URLs still do, until SCAN-644.
 
 **Rows.** SCAN-643 (closed), SCAN-644 (filed).
+
+## ADR-1464: Admin Calendar has five views; Projects reuses ENTRY_STAGES
+
+**Status:** Accepted · 2026-09-19 · numbered **1464** (1458 is LIVE-417; 1457 is LIVE-419; 1456 is LIVE-418) · extends [ADR-1389](DECISIONS.md) (Admin / Guest) and [ADR-1445](DECISIONS.md) (C0–C5) · corroborated by `lib/calendar/admin-views.ts`, `components/spaces/calendar-mode-toggle.tsx`, `app/(main)/spaces/[slug]/(profile)/calendar/page.tsx`
+
+**Context.** C0–C5 ruled how Guest and Admin *read*. Daniel then asked for five views on the Admin Calendar: Guest, Admin, List, Timeline, Projects. The first two already exist as grids. The last three are additional operator views, not a second guest calendar and not new entities.
+
+**Decision.**
+
+1. **One segmented control, five views.** `CalendarModeToggle` lists Guest, Admin, List, Timeline, and Projects. `?view=guest` stays the visitor URL. Default (no `view`) stays Admin for a manager. Unsigned members always get Guest.
+2. **Guest and Admin stay the two grids.** Guest is `guestLiveItems` plus the C0 footer. Admin is `CalendarPmConsole` plus `StaffCalendar`. Do not fork a second guest month.
+3. **List is index plus viewer.** Left: the operator gathering index. Right: the selected event's stats (`EventCoreStatsCards` over `loadEventCoreStats`) and management links. Not a spreadsheet.
+4. **Timeline is a month time scale.** Days on the X axis, one row per gathering, bars clipped to the month. Not a 7-column date grid.
+5. **Projects is a kanban over `ENTRY_STAGES`.** Pencil, Planning, Production, Cancelled. Cards with an `entryId` move through the existing `saveCalendarEntry` write. Published events sit in Production or Cancelled and open Manage. No new table, no migration.
+6. **C3 and C4 stay on the Admin console.** This view set does not declare `planningLane` or `productionLane`. Those symbols already live on `CalendarPmConsole` from LIVE-417 / LIVE-418.
+
+**Rejected.** A second guest calendar. A new project entity or stage table. Closing LIVE-417 / LIVE-418 from this chrome. Spreadsheet List. Another month grid labeled Timeline.
+
+**Consequences.** The Calendar tab chrome is the view switcher. C0–C5 still measure Guest paint and Admin lanes. Help and `EVENTS-CALENDAR.md` describe the five views in place.
+
+**Rows.** None. This is the view-set ruling; status of C0–C5 stays on LIVE-414 through LIVE-419.

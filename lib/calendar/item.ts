@@ -41,6 +41,8 @@ export interface CalendarEvent {
   isLaterDate?: boolean
   /** Which layer this item belongs to (lib/calendar/registry.ts). Absent = 'events'. */
   layer?: CalendarLayerKey
+  /** The published event id when this item is an events-layer row (list viewer stats). */
+  eventId?: string | null
   /** A private entry's id (space_calendar_entries.id) when the viewer may edit it. */
   entryId?: string | null
   /** A private entry's notes, shown in the staff preview only. */

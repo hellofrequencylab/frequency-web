@@ -188,13 +188,19 @@ else. Its column list is the gate; it must never gain a detail column.
 slot that overlaps is neither offered nor bookable. An existing booking inside the range is never
 touched. The read is service-role and fails safe to no blocks.
 
-**Admin / Guest on the Calendar tab** ([ADR-1389](DECISIONS.md), [ADR-1450](DECISIONS.md), [ADR-1454](DECISIONS.md), [ADR-1456](DECISIONS.md), [ADR-1457](DECISIONS.md), [ADR-1458](DECISIONS.md)). A viewer who
-edits the Space (with the Calendar function), or platform staff previewing it, lands on **Admin**: the
-production console (`CalendarPmConsole`) over `loadAdminCalendar` (`lib/calendar/admin-calendar.ts`,
-shared with the settings console). Pencil (`pencilLane`), Planning (`planningLane`), and Production (`productionLane`) are their own lanes. The board lists what is
-cancelled. `StaffCalendar` is the date map and the settings drawer, not a second guest month.
-`?view=guest` and unsigned members go through `guestLiveItems` (live chips plus the C0 cancelled footer; pencil and planning stay off). The mode is decided on the
-server before any admin read.
+**Admin Calendar views** ([ADR-1389](DECISIONS.md), [ADR-1450](DECISIONS.md), [ADR-1454](DECISIONS.md), [ADR-1456](DECISIONS.md), [ADR-1457](DECISIONS.md), [ADR-1458](DECISIONS.md), [ADR-1464](DECISIONS.md)). A viewer who
+edits the Space (with the Calendar function), or platform staff previewing it, lands on **Admin**
+and can switch five views from one segmented control (`CalendarModeToggle`):
+
+| View | What it is |
+|---|---|
+| **Guest** | The existing public month (`guestLiveItems`). Live chips plus the C0 cancelled footer. Pencil and planning stay off. `?view=guest`. |
+| **Admin** | The existing production console (`CalendarPmConsole`) over `loadAdminCalendar`. Pencil (`pencilLane`), Planning (`planningLane`), and Production (`productionLane`) are their own lanes. The month is the date map (`StaffCalendar`), not a second guest grid. Default URL. |
+| **List** | A tight gathering index on the left. The right interior is the selected event's stats and management. `?view=list&item=`. |
+| **Timeline** | The month as a linear time scale (days on the X axis, one row per gathering). Not a 7-column month grid. `?view=timeline&y=&m=`. |
+| **Projects** | A kanban over `ENTRY_STAGES` (Pencil, Planning, Production, Cancelled). An event on its way moves stage through the existing entry write. No new table. `?view=projects`. |
+
+Unsigned members always get Guest. The server decides the view before any admin read. C3 and C4 already own `planningLane` / `productionLane` on the Admin board.
 
 **Loading a month.** The first month and every browsed month use the same public reader:
 `loadPublicSpaceWindow` (`lib/calendar/public-month.ts`), which composes `listSpaceCalendarEvents`,

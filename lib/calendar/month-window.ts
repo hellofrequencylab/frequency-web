@@ -15,6 +15,17 @@ export function safeMonth(year: unknown, month1: unknown): { year: number; month
   return { year: y, month1: m }
 }
 
+/** Step a month. January minus one is December of the previous year. */
+export function adjacentMonth(year: number, month1: number, delta: number): { year: number; month1: number } {
+  const idx = year * 12 + (month1 - 1) + delta
+  return { year: Math.floor(idx / 12), month1: (idx % 12) + 1 }
+}
+
+/** The [fromDay, toDay) span of one calendar year, for Admin list and Projects. */
+export function yearHorizonWindow(year: number): { fromDay: string; toDay: string } {
+  return { fromDay: `${year}-01-01`, toDay: `${year + 1}-01-01` }
+}
+
 /** The grid of a month spans up to 6 days either side of it, so load that whole visible range. */
 export function monthGridWindow(year: number, month1: number): { fromDay: string; toDay: string } {
   const first = new Date(Date.UTC(year, month1 - 1, 1))

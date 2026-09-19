@@ -16,6 +16,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **If you run a Space, its Calendar tab has five views.** Guest is still what visitors see. Admin is the production board and the date map. List puts every gathering on the left and opens stats and management on the right. Timeline is the month as a time scale. Projects lets you move an event on its way through Pencil, Planning, Production, and Cancelled.
+
 - **A Space calendar with nothing published says so in the same empty pattern as the rest of the site**, and it does not claim the month is empty when a cancelled gathering or Unavailable time is already on the grid. Cancelled stays a muted note at the bottom of the day, and the same note under that month in the list. The calendar can be focused: arrows step a month, Escape closes the jump panel.
 
 - **The blocks visitors see on a Journey follow the Advanced layout.** The story, the path, and the pillar balance are the ones you can show, hide, or reorder. That same order now shows on the Journey page, the public page, and the store listing. How many people have started, and the Gems for finishing, stay in the header.
