@@ -248,9 +248,8 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Team seats',
     unit: 'seats',
     period: null,
-    // Free + Business: 1 seat, the owner's (BASE_SEAT_ALLOWANCE, ADR-799 / §2) — adding teammates is
-    // a Collective capability (`space_team` gates there), so Business runs on the owner alone.
-    // Collective: 3 seats INCLUDED (placeholder); more are the ADR-799 per-seat add-on, never a wall.
+    // Free: 1 seat, the owner's. Business: 2 included (LIVE-228 / LIVE-229). Extra seats are the
+    // ADR-799 per-seat add-on. Collective is not a published rung after LIVE-228.
     //
     // Extra seats are the ADR-799 per-seat add-on at the catalog amount (LIVE-229, $12/seat/mo).
     // The catalog sync mints that price; `catalog_operator_seat_active` still gates checkout.

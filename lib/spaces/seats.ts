@@ -135,9 +135,8 @@ export async function getSpaceSeatRow(spaceId: string): Promise<{ seatQuantity: 
  *  🔴 THE OWNER IS IN THIS COUNT, and the header above used to say they were not. Re-measured in
  *  production on 2026-08-19, the day the gates went live (ADR-1087): ALL 19 non-root Spaces hold an
  *  ACTIVE `space_members` row for their own `owner_profile_id`, at role 'admin'. So the owner
- *  consumes the base seat rather than sitting outside it, and the free / Business rung (allowance 1)
- *  is spent by the owner alone. That matches what the ladder publishes for those rungs (a Space runs
- *  on the owner's seat; teammates start at Collective), so nothing is mis-enforced there.
+ *  consumes the base seat rather than sitting outside it. Free (allowance 1) is spent by the owner
+ *  alone. Business includes 2 seats after LIVE-228. The count still includes the owner's admin row.
  *
  *  ✅ COLLECTIVE IS SETTLED, by the owner, 2026-08-19 (OWN-033): "Owner + 2, total of 3." The
  *  allowance of 3 means three operator humans INCLUDING the owner, which is exactly what counting the

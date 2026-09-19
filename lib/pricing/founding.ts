@@ -64,18 +64,16 @@ export interface FoundingConfig {
 export const FOUNDING_DEFAULT: FoundingConfig = {
   member_one_time_cents: 25000, // $250, locked for life (the Founders Round)
   member_cap: 150, // the first 150
-  // 🔴 $29, THE LIST RATE — there is NO founding discount for Business (ADR-1067). This was 1900, the
-  //    $19 anchor from the 2026-07-24 ladder, and it is not a display number: `grantFoundingStatus`
-  //    stamps it onto a new founding row as `locked_rate_cents` when the caller passes no amount
-  //    (lib/founding/status.ts:281, and again on the update branch at :353), and that is a LIFETIME
-  //    term. Left at 1900 it would have gone on handing out a permanent $19 through a FALLBACK, months
-  //    after the owner removed founding pricing from everything a customer can see. The one beta rate
-  //    that still exists is Collective's, it is unlisted, and it is granted by hand — never defaulted.
+  // 🔴 $49, THE LIST RATE — there is NO founding discount for Business (ADR-1067, then LIVE-228 /
+  //    ADR-1438). This was 1900, then 2900; the grant fallback must equal `business_base` list or
+  //    it stamps a lifetime discount. `grantFoundingStatus` writes it as `locked_rate_cents` when
+  //    the caller passes no amount (lib/founding/status.ts:281 and :353). OWN-026's probe asserts
+  //    both halves: catalog founding == list, and this default equals that list.
   //
   //    WHAT THIS DOES NOT DO: it does not retire the Founding Business PROGRAM. The badge, the 25-per-
   //    city cap and the 3% take-rate buy-down are recognition, not a discount, and they are untouched.
   //    A Founding Business is now someone recognised at the normal rate.
-  business_monthly_cents: 2900,
+  business_monthly_cents: 4900,
   business_take_bps: 300, // 3% (bought down from the 5-8% ladder, ADR-596)
   business_city_cap: 25, // 25 founding businesses per city
 }
