@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ShowPageView, showPageMetadata } from '@/components/airwaves/show-page-view'
 import { assembleShowFeed, listPublicShowsBySpace } from '@/lib/airwaves/shows'
+import type { Show } from '@/lib/airwaves/types'
 import { listNetworkedSpaces } from '@/lib/spaces/discovery'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 
@@ -13,7 +14,9 @@ export const revalidate = 3600
 export async function generateStaticParams() {
   const spaces = await listNetworkedSpaces({ sort: 'name' }).catch(() => [])
   const slice = spaces.slice(0, 80)
-  const showsBySpace = await listPublicShowsBySpace(slice.map((s) => s.id)).catch(() => new Map())
+  const showsBySpace = await listPublicShowsBySpace(slice.map((s) => s.id)).catch(
+    () => new Map<string, Show[]>(),
+  )
   return slice.flatMap((s) =>
     (showsBySpace.get(s.id) ?? []).map((sh) => ({ slug: s.slug, showSlug: sh.slug })),
   )
