@@ -315,16 +315,22 @@ chunks. That is not a new trick; it is how dc47b89 proved the bug was real, by f
 This is the operator recipe for Cursor cloud agents. Status still lives only in
 [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json). Do not open a plan file.
 
+You do **not** click Merge. WORKFLOW.md rule 4: the agent arms squash auto-merge on green.
+`gh pr merge --auto --squash` is the arm; required checks are the reviewer. A red PR stays
+open (#2699 is the current example: `test` failed, auto-merge correctly blocked).
+
 **In-repo half (already in this tree):**
 
 1. `pnpm packets` prints the next agent-workable row per *derived* lane (money, events, hygiene, …).
-2. `pnpm packets --prompt` prints the prompt every run must follow.
+2. `pnpm packets --prompt` prints the prompt every run must follow, including the auto-merge arm.
 3. `pnpm packets --json` is what an automation should parse.
-4. After a schema PR merges: `execute_sql` for the DDL, then insert
+4. `.github/workflows/arm-auto-merge.yml` arms auto-merge on ready `cursor/*` PRs so a run that
+   forgets the `gh` call still ships.
+5. After a schema PR merges: `execute_sql` for the DDL, then insert
    `supabase_migrations.schema_migrations` at the **file's** version ([DATABASE.md](DATABASE.md)).
    Then `pnpm check:migrations --require-ledger` when credentials exist.
 
-**Cursor Dashboard (MCP cannot create this):** `cursor-cloud-get-automation` is lookup-only.
+**Cursor Dashboard (the remaining human click; MCP cannot create this):** `cursor-cloud-get-automation` is lookup-only. This click *spawns the next agent*. It does not merge.
 
 1. Open [cursor.com](https://cursor.com) → **Dashboard** → **Automations** (or Cloud Agents → Automations).
 2. **New automation**.
