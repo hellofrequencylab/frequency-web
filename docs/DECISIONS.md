@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1455**. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1451–1453 are claimed on open PRs.
+tree as of this index: **ADR-1451**. 1463 is LIVE-393 on main. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1452–1453 and 1456–1458 are claimed on other open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46549,3 +46549,26 @@ Premise re-tested 2026-09-19:
 **Consequences.** A Journey with no authored outcomes no longer shows "What you'll learn". Authors add the list in settings. LIVE-394 (authored FAQ) is still open and can use the same repeat shape.
 
 **Rows.** LIVE-393.
+
+## ADR-1451: Evening meta-scan — Spotlight ISR and the layout void (SCAN-642, SCAN-643)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-642` · `SCAN-643` · numbered **1451** (1450 is LIVE-415 on main; 1448 is OWN-058; 1447 is HYG-104) · corroborated by `app/spotlight/[handle]/page.tsx` (`revalidate = 3600`, `generateStaticParams`) and `lib/spotlight/data.ts` (`listPublishedSpotlightHandles`)
+
+**Context.** The morning 2026-09-19 scan filed SCAN-636…641. Four of those rows, plus LIVE-242, landed the same day. A second pass re-tested premises against production rather than trusting the morning board.
+
+1. **SCAN-636 is done and still incomplete.** `#2733` made `/events/<slug>` the ISR public body. ADR-1440 said the `(main)` layout auth read was SCAN-641 and forbade touching the layout in that PR. The page now exports `revalidate = 3600`. The layout still calls `getCachedUser()` (`cookies()`) and `headers()` before `publicChrome()`, and `generateMetadata` calls `headers()`. Without `cacheComponents`, one dynamic API in a parent voids the subtree. Discover already paid to learn this (`authMode="client"`).
+2. **SCAN-638's production premise expired.** Advisors now show zero `unindexed_foreign_keys` and zero `auth_rls_initplan`. The six covering indexes and both `(select auth.uid())` wraps exist in production. The creating migration files still unwrap. The remaining hole is greenfield replay, not a live advisor.
+3. **Spotlight is the SCAN-637 twin outside `(main)`.** `app/sitemap.ts` advertises published `/spotlight/<handle>` URLs. The page was `force-dynamic`, uses the admin client, and does not read cookies. SCAN-641 / SCAN-643 cannot reach it.
+
+**Decision.**
+
+1. **Do not reopen SCAN-636.** File `SCAN-643` for the layout void. SCAN-641 stays the header swap (MarketingHeader vs SiteHeader), already on main.
+2. **Close `SCAN-642`** for Spotlight: drop `force-dynamic`, ask for `revalidate = 3600`, prerender published handles through the same reader the sitemap uses.
+3. **Re-point SCAN-638** to a later migration that matches production (`IF NOT EXISTS` indexes + wrapped policies). Draft only. Do not apply. Do not enable RLS on `spatial_ref_sys`.
+4. **SCAN-640 stays open.** The backup table holds 21 rows. Count first, drop never from an agent session.
+
+**Rejected.** Closing SCAN-638 because advisors went quiet (the creating files would recreate the hole). Treating a header-only SCAN-641 close as ISR. Folding Spotlight into the (main) layout row.
+
+**Consequences.** `pnpm packets --lane scan` starts at SCAN-643. Status stays in `docs/BUILD-BACKLOG.json`. Rationale in `docs/META-SCAN-STATUS.md` 2026-09-19 evening pass.
+
+**Rows.** SCAN-642, SCAN-643, SCAN-638 (re-pointed).

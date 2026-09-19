@@ -143,15 +143,16 @@ describe('agent packets (ADR-1412)', () => {
     expect(AGENT_PROMPT).toContain('Never stamp wall-clock versions')
   })
 
-  it('CLI --json names LIVE-412 on the scan lane from the real file', () => {
+  it('CLI --json names SCAN-643 on the scan lane from the real file', () => {
     const { status, stdout, stderr } = run(['--json', '--lane', 'scan'])
     expect(status, stderr).toBe(0)
     const body = JSON.parse(stdout)
-    expect(body.next[0].id).toBe('LIVE-412')
+    expect(body.next[0].id).toBe('SCAN-643')
     expect(body.next[0].derivedLane).toBe('scan')
     expect(body.packets.some((p: { id: string }) => p.id === 'LIVE-410')).toBe(false)
     expect(body.packets.some((p: { id: string }) => p.id === 'SCAN-636')).toBe(false)
     expect(body.packets.some((p: { id: string }) => p.id === 'SCAN-638')).toBe(false)
+    expect(body.packets.some((p: { id: string }) => p.id === 'SCAN-642')).toBe(false)
   })
 
   it('slate product next lists LIVE-414 before other product ids', () => {
