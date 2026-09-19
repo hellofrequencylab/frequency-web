@@ -22,6 +22,7 @@ import { getProductReviews, getMyProductReview } from '@/lib/commerce/reviews'
 import { ProductReviews } from '@/components/marketplace/product-reviews'
 import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { ListingQna } from '@/components/marketplace/listing-qna'
+import type { ListingComment } from '@/lib/marketplace/listing-comments'
 import {
   StoryBlock,
   OutcomesBlock,
@@ -151,7 +152,7 @@ export default async function JourneyPlanPage({
         getListingComments('product', reviewProductId),
         isPlatformStaff(),
       ])
-    : [null, null, [], false] as const
+    : [null, null, [] as ListingComment[], false]
   const offer = rawOffer
     ? {
         productId: rawOffer.productId,
