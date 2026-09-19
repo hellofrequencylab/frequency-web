@@ -49,7 +49,6 @@
           "name": "W0b \u00b7 P1 \u2014 product-first interior (ADR-1403) ready to work now, then CORE-MODEL walls that are still untrue. Pull from here.",
           "ids": [
             "LIVE-254",
-            "HYG-033",
             "LIVE-410",
             "LIVE-186",
             "LIVE-213",
@@ -5673,18 +5672,18 @@
         ]
       }
     },
-        {
+    {
       "id": "HYG-033",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "hygiene",
       "size": "S",
       "source": {
         "file": "docs/DECISIONS.md",
-        "ref": "mobile display-surface audit, 2026-08-31"
+        "ref": "ADR-1411"
       },
       "title": "Mobile tab bar is five destinations: Menu, Feed, Zap, Events, Marketplace",
-      "detail": "RULED 2026-09-08: cut the mobile tab bar to FIVE destinations \u2014 remove Community and The Quest to the drawer. The bar becomes Menu \u00b7 Feed \u00b7 Zap \u00b7 Events \u00b7 Marketplace.\n\nSTILL UNBUILT 2026-09-19 (survey re-prioritise, after ADR-1406 / #2691). `CALM_SPINE_ROOTS` in lib/nav/registry.ts still lists feed, circles (Community), events, quest, market \u2014 five spine roots plus Menu plus Zap is seven flex-1 slots. app-shell.tsx still comments an equal seventh. LIVE-241/244 cancelled the 16\u21927 member-rail COUNT; they did not implement this five-tab ruling. Next code after LIVE-254 (#2690) if that PR is still open.\n\nMarketplace is the widest remaining label. At five slots: 412/5 = 82.4px vs ~64px; at 320px, 320/5 = 64.0px, exactly on the line. The implementing PR must assert rendered label width against slot width at 320px so the next label cannot silently truncate.\n\nThe seven-slot HARD CAP comment in components/sidebar/game-stats-dock.tsx caps TOUCH TARGET, not label fit.",
+      "detail": "RULED 2026-09-08: cut the mobile tab bar to FIVE destinations \u2014 remove Community and The Quest to the drawer. The bar becomes Menu \u00b7 Feed \u00b7 Zap \u00b7 Events \u00b7 Marketplace.\n\n\u2500\u2500 FIXED 2026-09-19 as ADR-1411, after LIVE-254 (#2690) merged. ADR-1410 on main is `/discover` visual captures (LIVE-373). `CALM_SPINE_ROOTS` is feed, events, market. Circles and The Quest stay on the rail and in the Menu drawer. The 16\u21927 member-rail count is still cancelled (ADR-1406); this row never owned it. Caption fit at 320px (64px slots) is pinned in header-fit.test.ts and overflow.spec.ts.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const r=fs.readFileSync(\"lib/nav/registry.ts\",\"utf8\");const m=r.match(/CALM_SPINE_ROOTS[\\s\\S]*?as const/);if(!m)fail(\"CALM_SPINE_ROOTS missing\");const block=m[0];if(/id: .circles./.test(block)||/id: .quest./.test(block))fail(\"Community or The Quest is still a calm-spine root; the ruled bar is Menu Feed Zap Events Marketplace\");for(const id of [\"feed\",\"events\",\"market\"])if(!(new RegExp(\"id: .\"+id+\".\")).test(block))fail(\"calm spine lost \"+id);console.log(\"HYG-033 ok: Community and The Quest are off the mobile spine\")'",

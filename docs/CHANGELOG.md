@@ -16,6 +16,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 - **The Quest is no longer a top-level marketing tab.** The public header is now The Community, Spaces, and About. The Quest still has its page, and you still reach it from The Community menu, the footer, and search. It is the light game everyone plays alongside their Circle, not a third of the story.
 
+- **The phone bar is five taps:** Menu, Feed, Zap, Events, and Marketplace. Circles and The Quest are in the Menu drawer, the same place as the rest of the rail. The Zap button in the middle is unchanged.
+
 - **A Journey keeps its reviews when the price changes**: stars and questions stay on the Journey,
   not on the old product page. Changing the price no longer wipes the proof a buyer already left.
   You read them on the Journey itself.
