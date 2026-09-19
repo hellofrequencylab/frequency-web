@@ -126,6 +126,10 @@
 # bypass. The signed-in event body was lifted out of app/(main)/events/[slug]/page.tsx so the
 # public share URL can ISR; the service-role reads (RSVP, tickets, host tools) moved with it.
 # The public page no longer imports the admin client. File count is flat.
+# lib/library/asset-urls.ts (added 2026-09-19, HYG-068): batched `select id, url` for the six
+# column-backed image companions. library_assets is RLS deny-all (scripts/rls-deny-all.txt),
+# so a session client cannot refresh a cached url. Same posture as lib/library/resolve-refs.ts
+# (PROG-D2): fail-open to the cache, one query, no writes.
 # lib/feed/community-board.ts (added 2026-09-15, LIVE-248): the feed's first module, reading the
 # next gathering in the member's Circles and the newest posts in their Spaces. Same posture as the
 # four lib/feed/* readers and components/sidebar/rail-panels.tsx already in this list, and the
@@ -770,6 +774,7 @@ lib/layout/chrome-sources.ts
 lib/layout/content-cascade.ts
 lib/layout/page-chrome.ts
 lib/library.ts
+lib/library/asset-urls.ts
 lib/library/embeddings.ts
 lib/library/event-loom.ts
 lib/library/resolve-refs.ts
