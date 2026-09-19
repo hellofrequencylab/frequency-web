@@ -168,7 +168,6 @@
           "name": "W0c \u00b7 P2 \u2014 FOCUS remainder, gems replay grant, remaining audit security, small cleanups, Journey sales tail.",
           "ids": [
             "LIVE-408",
-            "LIVE-417",
             "LIVE-418",
             "LIVE-419",
             "HYG-100",
@@ -14884,20 +14883,21 @@
     {
       "id": "LIVE-417",
       "title": "Calendar C3: Planning is a first-class Admin lane (ADR-1388)",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "lib/calendar/entries.ts",
-        "ref": "ADR-1388, ADR-1445"
+        "ref": "ADR-1388, ADR-1445, ADR-1465"
       },
-      "detail": "Admin PM console lists planning-stage gatherings as their own lane. After C2 (LIVE-416).",
+      "detail": "Admin PM console lists planning-stage gatherings as their own lane. After C2 (LIVE-416).\n\nCLOSED 2026-09-19 (ADR-1465). PREMISE RE-TESTED FIRST: CalendarPmConsole had pencilLane; planning-stage gatherings still sat on the mixed board; planningLane did not exist. planningLane (lib/calendar/pm-console.ts) is now the Admin Planning lane. CalendarPmConsole renders it under Pencil and above the mixed board. Production and Cancelled stay on that board until C4. Did not declare productionLane. Did not fold Guest through guestLiveItems (LIVE-419). Did not absorb leftover #2758 (CONFLICTING on a pre-C2 tree).",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"components/spaces/calendar-pm-console.tsx\",\"utf8\");if(!s.includes(\"planningLane\"))process.exit(1)'",
-        "note": "Fails until the PM console has a planningLane."
-      }
+        "note": "Passes when the PM console has a planningLane. Written 2026-09-19."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-418",
