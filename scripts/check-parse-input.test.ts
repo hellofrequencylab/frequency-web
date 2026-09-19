@@ -14,6 +14,11 @@ import {
 
 const USE = "'use server'\n"
 
+const io = (files: Record<string, string>) => ({
+  files: Object.keys(files),
+  read: (f: string) => files[f] ?? '',
+})
+
 function residualSrc(name = 'doThing') {
   return `${USE}export async function ${name}(id: string) {\n  return id\n}\n`
 }
@@ -81,14 +86,11 @@ describe('the ratchet fires — arm 1: a NEW residual file', () => {
       'app/(main)/admin/a/actions.ts': residualSrc(),
       'app/(main)/admin/b/actions.ts': residualSrc(),
     }
-    const scanned = scanAdmin({
-      files: Object.keys(files),
-      read: (f) => files[f] ?? '',
-    })
+    const scanned = scanAdmin(io(files))
     const r = evaluate({
       residual: scanned.residual,
       baseline: ['app/(main)/admin/a/actions.ts'],
-      exists: (f) => f in files,
+      exists: (f: string) => f in files,
     })
     expect(r.code).toBe(1)
     expect(r.added).toEqual(['app/(main)/admin/b/actions.ts'])
@@ -100,14 +102,11 @@ describe('the ratchet only shrinks — arm 2: a graduated file', () => {
     const files = {
       'app/(main)/admin/a/actions.ts': parsedSrc(),
     }
-    const scanned = scanAdmin({
-      files: Object.keys(files),
-      read: (f) => files[f] ?? '',
-    })
+    const scanned = scanAdmin(io(files))
     const r = evaluate({
       residual: scanned.residual,
       baseline: ['app/(main)/admin/a/actions.ts'],
-      exists: (f) => f in files,
+      exists: (f: string) => f in files,
     })
     expect(r.code).toBe(1)
     expect(r.graduated).toEqual(['app/(main)/admin/a/actions.ts'])
@@ -133,14 +132,11 @@ describe('the ratchet clears — matching residual and baseline', () => {
       'app/(main)/admin/a/actions.ts': residualSrc(),
       'app/(main)/admin/b/actions.ts': parsedSrc(),
     }
-    const scanned = scanAdmin({
-      files: Object.keys(files),
-      read: (f) => files[f] ?? '',
-    })
+    const scanned = scanAdmin(io(files))
     const r = evaluate({
       residual: scanned.residual,
       baseline: ['app/(main)/admin/a/actions.ts'],
-      exists: (f) => f in files,
+      exists: (f: string) => f in files,
     })
     expect(r.code).toBe(0)
     expect(r.added).toEqual([])
@@ -172,7 +168,7 @@ describe('the real tree', () => {
     expect(existsSync(BASELINE)).toBe(true)
     const baseline = loadBaseline(readFileSync(BASELINE, 'utf8'))
     expect(baseline.length).toBeGreaterThan(50)
-    expect(baseline.every((e) => e.startsWith('app/(main)/admin/') && e.endsWith('.ts'))).toBe(true)
+    expect(baseline.every((e: string) => e.startsWith('app/(main)/admin/') && e.endsWith('.ts'))).toBe(true)
   })
 
   it('evaluate matches the committed baseline, so the freeze is honest', () => {

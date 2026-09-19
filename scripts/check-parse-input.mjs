@@ -104,6 +104,13 @@ export function fileIsResidual(src) {
   return false
 }
 
+/**
+ * @param {{
+ *   root?: string,
+ *   read?: (f: string) => string,
+ *   files?: string[],
+ * }} [opts]
+ */
 export function scanAdmin({
   root = ROOT,
   read = (f) => readFileSync(f, 'utf8'),
@@ -130,6 +137,7 @@ export function scanAdmin({
   return { server, residual, parsed }
 }
 
+/** @param {string} src @returns {string[]} */
 export function loadBaseline(src) {
   return src
     .split('\n')
@@ -155,6 +163,13 @@ export function readHeader(read = () => readFileSync(BASELINE, 'utf8')) {
   return header.length ? header.join('\n') + '\n' : DEFAULT_HEADER
 }
 
+/**
+ * @param {{
+ *   residual: string[],
+ *   baseline: string[],
+ *   exists?: (f: string) => boolean,
+ * }} opts
+ */
 export function evaluate({ residual, baseline, exists = (f) => existsSync(f) }) {
   const residualSet = new Set(residual)
   const baselineSet = new Set(baseline)
