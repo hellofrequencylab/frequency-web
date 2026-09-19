@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1455**. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1451–1453 are claimed on open PRs.
+tree as of this index: **ADR-1464**. 1463 is LIVE-393. 1462 is LIVE-397. 1461 is SCAN-640. 1459 is SCAN-638. 1455 is LIVE-414. 1454 is LIVE-416. 1450 is LIVE-415. 1445 is the calendar C0–C5 ruling. 1451–1453, 1456–1458, and 1460 are claimed on open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46549,3 +46549,23 @@ Premise re-tested 2026-09-19:
 **Consequences.** A Journey with no authored outcomes no longer shows "What you'll learn". Authors add the list in settings. LIVE-394 (authored FAQ) is still open and can use the same repeat shape.
 
 **Rows.** LIVE-393.
+
+## ADR-1464: The app shell is a composer, not one 2600-line client module (LIVE-412)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-412` · numbered **1464** (1463 is LIVE-393 on this tree; 1462 is LIVE-397; 1461 is SCAN-640; leftover #2770 used this number and was closed unmerged) · corroborated by `components/layout/app-shell.tsx`, `components/layout/app-shell-model.ts`, `components/layout/app-shell-account.tsx`, `components/layout/app-shell-nav-list.tsx`
+
+**Context.** The 2026-09-18 survey filed LIVE-412: `app-shell.tsx` was one ~2632-line `'use client'` module on every `(main)` route. Premise re-tested 2026-09-19 on `b9ddb7de7`: 2629 lines, SCAN-641 already closed, leftover `#2747` mixed this split with SCAN-643 and `#2770` was the same split closed unmerged while required CI was still queued. The 1800-line probe is a ratchet, not a quality definition. Raising the budget would hide the same fan-out the shell-weight gates already police.
+
+**Decision.**
+
+1. Extract the account dock (`Profile`, `useTheme`, `ProfileCard`, `AccountDropdown`) to `app-shell-account.tsx`.
+2. Extract `NavLinkList` to `app-shell-nav-list.tsx`.
+3. Extract NAV_AREAS builders, telescope set, and `itemAccess` to `app-shell-model.ts` (no `'use client'`).
+4. Leave the composer in `app-shell.tsx`: mobile drawer, tab bar, header, rails, fold ladder. Keep the 1800-line ratchet.
+5. Source-shape tests that pinned NavLinkList class strings now haystack the list module plus the shell that mounts it. Wiring assertions (`compact={leftStrip}`, fold ladder) stay on the composer.
+
+**Rejected.** Raising the line budget. Folding SCAN-643 into this PR. Moving the mobile drawer in the same change. Reopening `#2770`.
+
+**Consequences.** `app-shell.tsx` is 1554 lines. Every `(main)` route still mounts one composer. Account, list, and model can change without re-parsing the whole chrome. The ratchet stays at 1800 so a later island merge cannot silently grow the composer back past the alarm.
+
+**Rows.** LIVE-412.
