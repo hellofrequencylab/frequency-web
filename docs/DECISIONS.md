@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1425**.
+tree as of this index: **ADR-1427**.
 
 | Theme | Start here |
 |---|---|
@@ -45919,3 +45919,29 @@ Premise re-tested 2026-09-19 on this tree: the pattern still matched `class="dro
 **Consequences.** A future `drop-shadow-md` cannot raise `shadow-literals`. A future `shadow-md` still can. The probe feeds the class `class="drop-shadow-sm"` and requires no match, so deleting the two sites without correcting the pattern cannot close the row.
 
 **Rows.** HYG-071.
+
+## ADR-1427: `pricing_stripe_prices.archived` is not a Stripe archive (HYG-082)
+
+**Status:** Accepted · 2026-09-19 · backlog `HYG-082` · restates [ADR-1062](DECISIONS.md) rule 5 after a survey misread it · corroborated by `lib/billing/pricing-products.ts` (`archived: list`), `lib/pricing/beta.ts` (`loadoutChargePriceKey`), `lib/billing/pricing-prices.ts` (`resolveStripePriceId`), and `lib/billing/pricing-catalog-sync.test.ts`
+
+**Context.** HYG-082, filed 2026-09-08 from the core-model survey: `pricing_stripe_prices` holds 20 rows, 8 with `archived: true` (every `*_list` anchor), and `catalogPriceKey(..., list=true)` still asks for them, "so the pricing surface resolves anchors against IDs Stripe has archived." The proposed work was re-mint or stop asking, sequenced after Collective (LIVE-228) so the Collective list keys would not be cleaned twice.
+
+Premise re-tested 2026-09-19 on this tree, and the row is false.
+
+1. The catalog sync writes `archived: list` as a **map annotation**. It is Stripe's `active` in neither direction. ADR-1062 rule 5 already said so, and the catalog-sync test pins that `prices.update({ active: false })` is never called. Twenty prices, all created active.
+2. Since [ADR-1060](DECISIONS.md) the **`_list` key is what checkout charges**. `loadoutChargeArm` returns `list` when there is no lock and no grant; `loadoutChargePriceKey` then asks `catalogPriceKey(item, interval, true)`. Stopping that ask would unplug every ungranted Space-plan checkout, which is the live path.
+3. `resolveStripePriceId` never reads `row.archived`. A list row with the flag set still resolves. That is why checkout can charge a row the survey called archived.
+
+The "wait for Collective" sequencing was a consequence of the wrong reading: LIVE-228 retires the Collective **tier**, not a Stripe archive.
+
+**Decision.**
+
+1. **Keep asking for `_list` keys.** They are the charged catalog keys. Founding keys stay for the grant and for a lock.
+2. **Do not Stripe-archive a catalog price to "fix" the map flag.** A Price archived in Stripe cannot join a new subscription, which is exactly what the list arm (everyone) and the founding arm (the grant) both need.
+3. **Close HYG-082 without a catalog rewrite.** The probe now pins the three facts the survey inverted: the list arm still builds a `_list` key, the sync still annotates list rows `archived: true` without calling `prices.update({ active: false })`, and `resolveStripePriceId` still ignores the flag.
+
+**Rejected.** Stopping `catalogPriceKey(..., true)` (that is the charge). Flipping the map flag so list rows read `archived: false` (ADR-1062 already refused that as an unrelated semantic edit with no gate). Waiting for LIVE-228 (the Collective merge does not change what `archived` means).
+
+**Consequences.** A later sweep that greps `archived = true` and treats the hit as "Stripe will refuse this id" fails the probe instead of shipping a checkout outage. [PRICING.md](PRICING.md) already names the historical wording; this ADR is the HYG-082 close, not a new pricing shape. LIVE-228 still has to drop Collective from `SPACE_PLANS` on its own terms.
+
+**Rows.** HYG-082.

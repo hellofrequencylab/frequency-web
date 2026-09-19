@@ -262,11 +262,12 @@ describe('standard pricing carries no founding rate (the owner decision, ADR-106
 })
 
 describe('the founding prices stay chargeable (ADR-1061 needs them ACTIVE in Stripe)', () => {
-  it('every price is created active, and the sync never deactivates one', async () => {
+  it('every price is created active, and the sync never deactivates one (HYG-082)', async () => {
     await syncPricingCatalogToStripe('op-1')
     expect(store.prices.every((p) => p.active)).toBe(true)
     expect(calls.priceCreate.every((args) => args.active === undefined)).toBe(true)
     // The one call that could archive a Stripe price is prices.update({ active: false }). It is never made.
+    // HYG-082: pricing_stripe_prices.archived on a _list row is this map annotation, not Stripe's active.
     expect(calls.priceUpdate).toEqual([])
   })
 

@@ -212,7 +212,6 @@
           "ids": [
             "HYG-078",
             "HYG-080",
-            "HYG-082",
             "PROG-R4",
             "LIVE-228",
             "LIVE-229",
@@ -10656,7 +10655,7 @@
     {
       "id": "HYG-082",
       "title": "Stop resolving pricing against eight archived Stripe list prices",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "hygiene",
       "size": "S",
@@ -10664,12 +10663,13 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "\u00a75"
       },
-      "detail": "pricing_stripe_prices holds 20 rows; 8 are archived: true - every *_list anchor variant (business_base_month_list, collective_base_year_list, independent_base_month_list, nonprofit_seat_*_list, addon_ai_*_list). catalogPriceKey(..., list=true) at lib/billing/pricing-keys.ts:524-537 still asks for them, so the pricing surface resolves anchors against IDs Stripe has archived. Either re-mint or stop asking. Phase 4 removes the Collective anchors anyway, so do this AFTER the merge to avoid doing it twice.",
+      "detail": "pricing_stripe_prices holds 20 rows; 8 are archived: true - every *_list anchor variant (business_base_month_list, collective_base_year_list, independent_base_month_list, nonprofit_seat_*_list, addon_ai_*_list). catalogPriceKey(..., list=true) at lib/billing/pricing-keys.ts:524-537 still asks for them, so the pricing surface resolves anchors against IDs Stripe has archived. Either re-mint or stop asking. Phase 4 removes the Collective anchors anyway, so do this AFTER the merge to avoid doing it twice.\n\nCLOSED WITHOUT ACTION 2026-09-19 (ADR-1427). PREMISE RE-TESTED FIRST, and it was false. The catalog sync writes archived: list as a map annotation, not Stripe's active (ADR-1062 rule 5); pricing-catalog-sync.test.ts pins that prices.update({ active: false }) is never called. Since ADR-1060 the _list key is what checkout charges (loadoutChargeArm list -> catalogPriceKey(..., true)). resolveStripePriceId never reads row.archived. Stopping the ask would unplug ungranted Space-plan checkout. LIVE-228 still retires the Collective tier; that is unrelated to this flag.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Read pricing_stripe_prices where archived = true, and confirm no live code path resolves those keys.",
-        "checked": "2026-09-08"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const beta=fs.readFileSync(\"lib/pricing/beta.ts\",\"utf8\");if(!/return catalogPriceKey\\(catalogKey, interval, arm === .list.\\)/.test(beta))fail(\"the list charge arm no longer resolves the _list catalog key\");const products=fs.readFileSync(\"lib/billing/pricing-products.ts\",\"utf8\");if(!/archived:\\s*list/.test(products))fail(\"catalog sync no longer annotates list rows as archived\");if(/prices\\.update\\(\\s*\\{\\s*active:\\s*false/.test(products))fail(\"catalog sync now Stripe-archives a price\");const prices=fs.readFileSync(\"lib/billing/pricing-prices.ts\",\"utf8\");const start=prices.indexOf(\"export async function resolveStripePriceId\");const end=prices.indexOf(\"export async function upsertStripePrice\");if(start<0||end<=start)fail(\"resolveStripePriceId is gone\");if(/\\.archived/.test(prices.slice(start,end)))fail(\"resolveStripePriceId now consults the archived map flag\");const t=fs.readFileSync(\"lib/billing/pricing-catalog-sync.test.ts\",\"utf8\");if(!t.includes(\"HYG-082\"))fail(\"catalog-sync test no longer names HYG-082\");if(!t.includes(\"The one call that could archive a Stripe price is prices.update\"))fail(\"the never-deactivates pin is gone\");console.log(\"HYG-082 ok\")'",
+        "note": "Passes when the list arm still builds a _list key, the sync still annotates list rows archived without Stripe-deactivating them, resolveStripePriceId still ignores the flag, and the catalog-sync test still names HYG-082. Written 2026-09-19 against the inverted survey, not the title."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "HYG-083",
