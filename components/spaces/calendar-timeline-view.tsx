@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SectionHeader } from '@/components/ui/section-header'
+import { buttonClasses } from '@/components/ui/button'
 import { adminViewHref, timelineMonthLabel } from '@/lib/calendar/admin-views'
 import { adjacentMonth } from '@/lib/calendar/month-window'
 import type { TimelineBar, TimelineDay } from '@/lib/calendar/month-timeline'
@@ -31,18 +32,10 @@ export function CalendarTimelineView({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SectionHeader title={timelineMonthLabel(year, month1)} count={bars.length} />
         <nav aria-label="Timeline month" className="flex items-center gap-2">
-          <Link
-            href={adminViewHref(slug, 'timeline', prev)}
-            scroll={false}
-            className="rounded-control border border-border px-3 py-1 text-body-sm font-semibold text-text hover:bg-surface-elevated"
-          >
+          <Link href={adminViewHref(slug, 'timeline', prev)} scroll={false} className={buttonClasses('secondary', 'sm')}>
             Previous
           </Link>
-          <Link
-            href={adminViewHref(slug, 'timeline', next)}
-            scroll={false}
-            className="rounded-control border border-border px-3 py-1 text-body-sm font-semibold text-text hover:bg-surface-elevated"
-          >
+          <Link href={adminViewHref(slug, 'timeline', next)} scroll={false} className={buttonClasses('secondary', 'sm')}>
             Next
           </Link>
         </nav>

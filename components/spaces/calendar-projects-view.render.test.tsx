@@ -4,6 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/entry-actions', () => ({
   moveCalendarProjectStage: async () => ({}),
 }))
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ refresh: () => {} }),
+}))
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { CalendarProjectsView } from './calendar-projects-view'

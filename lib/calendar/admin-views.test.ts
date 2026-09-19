@@ -6,6 +6,7 @@ import {
   parseTimelineMonth,
   timelineMonthLabel,
 } from './admin-views'
+import { adjacentMonth, yearHorizonWindow } from './month-window'
 
 describe('parseAdminCalendarView', () => {
   it('keeps guest as the visitor URL and defaults unknown to admin', () => {
@@ -48,5 +49,13 @@ describe('parseTimelineMonth', () => {
     expect(parseTimelineMonth('2026', '9', { year: 2026, month1: 1 })).toEqual({ year: 2026, month1: 9 })
     expect(parseTimelineMonth('nope', '9', { year: 2026, month1: 1 })).toEqual({ year: 2026, month1: 1 })
     expect(timelineMonthLabel(2026, 9)).toBe('September 2026')
+  })
+})
+
+describe('adjacentMonth / yearHorizonWindow', () => {
+  it('steps December to January and names a year window', () => {
+    expect(adjacentMonth(2026, 1, -1)).toEqual({ year: 2025, month1: 12 })
+    expect(adjacentMonth(2026, 12, 1)).toEqual({ year: 2027, month1: 1 })
+    expect(yearHorizonWindow(2026)).toEqual({ fromDay: '2026-01-01', toDay: '2027-01-01' })
   })
 })
