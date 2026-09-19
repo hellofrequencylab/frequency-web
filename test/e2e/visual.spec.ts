@@ -139,7 +139,39 @@ test.describe('visual', { tag: '@visual' }, () => {
 
   for (const state of PUBLIC_RENDER_STATES) {
     test.describe(state.id, () => {
-      for (const surface of publicSurfaces()) {
+      // LIVE-373: /discover is photographed in the advisory describe below. Its height is a
+      // function of production Circles, events and posts, so a new listed Circle used to fail
+      // every open PR's blocking visual job.
+      for (const surface of publicSurfaces().filter((s) => s.path !== '/discover')) {
+        test(`${surface.path} matches baseline`, async ({ page, serverErrors }) => {
+          await capture(page, surface, state, serverErrors)
+        })
+      }
+    })
+  }
+})
+
+// /discover is public and anonymous, AND it photographs live production data. The blocking
+// public tier cannot tell "someone moved the hero" from "a Circle was listed since Tuesday"
+// (LIVE-373: one new public Circle grew the page ~180 px and failed every branch). Same
+// reason the member shell is advisory: a gate that cannot fire truthfully gets routed around.
+// Tagged @advisory, not @shell: @shell is what shell-reporter.ts counts as the authed app, and
+// a running /discover capture would make that reporter call the member shell covered.
+// a11y and overflow still walk publicSurfaces() including /discover; those are geometry and
+// roles, not pixels.
+test.describe('visual · discover', { tag: ['@visual', '@advisory'] }, () => {
+  test.skip(
+    !baseURL,
+    'PW_BASE_URL is not set. Point it at a Vercel preview or a running dev server to run the visual suite.',
+  )
+  test.skip(
+    () => test.info().project.name === NARROW_PROJECT,
+    'The narrow project photographs the shell and the header band; the public surfaces are measured at 320 by overflow.spec.ts instead (ADR-1270).',
+  )
+
+  for (const state of PUBLIC_RENDER_STATES) {
+    test.describe(state.id, () => {
+      for (const surface of publicSurfaces().filter((s) => s.path === '/discover')) {
         test(`${surface.path} matches baseline`, async ({ page, serverErrors }) => {
           await capture(page, surface, state, serverErrors)
         })

@@ -49,7 +49,6 @@
             "LIVE-186",
             "LIVE-213",
             "LIVE-367",
-            "LIVE-373",
             "LIVE-376",
             "LIVE-377"
           ]
@@ -13560,7 +13559,7 @@
     {
       "id": "LIVE-373",
       "title": "One new public Circle breaks four BLOCKING visual baselines on every open branch",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
@@ -13570,9 +13569,9 @@
       },
       "detail": "WHAT HAPPENED, with the window measured. A Circle was created in production at 23:30:17Z on 2026-09-15. The last green e2e run started 23:27:15Z; the next one, 00:02:11Z, failed, and so did EVERY e2e run on EVERY branch after it, including branches that touch no public code at all. The four failures are always the same: /discover matches baseline, dawn-light and midnight-light, desktop and mobile, in the tier the job labels \"public surfaces (blocking)\".\n\nThe assertion says the cause outright: \"Expected an image 1280px by 7493px, received 1280px by 7672px\" (mobile 9541 -> 9671). The page did not change colour, it GREW, by about one CircleCard row. /discover renders getPublicCircles() against live production data, so the count of public Circles is an input to a committed baseline.\n\nWHY MASKING IS NOT THE ANSWER, already written down. surfaces.ts says it at waitForStable: \"A mask paints over a region; the element keeps its box, so a masked block that arrives late still moves everything under it. The failure is the page HEIGHT, not its pixels.\" The same sentence applies to a row that is genuinely there.\n\nWHY THIS IS P1 RATHER THAN A RE-BASELINE. Re-baselining closes it until the next Circle, and the owner adds Circles as ordinary product work. Between the two, every open PR carries a red blocking job it did not cause, which is the condition under which people start reading a red gate as weather. Three routes, in the order they are worth trying: (1) photograph a surface whose content is fixed rather than the live index, (2) give the shot a fixed viewport clip instead of fullPage so the count below the fold cannot move the assertion, or (3) move /discover to the advisory tier and keep a structural test for what the page must contain. Pick one and write the reason beside it.\n\nIMMEDIATE STATE: cleared on 2026-09-16 by unlisting the Circle that caused it (it was meant to be private and should never have been listed, which is LIVE-374). The suite is green again and the fragility is untouched.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Not started. The four /discover rows failed on every branch from run 35038257196 to 35059005812; green again once the Circle was unlisted.",
-        "checked": "2026-09-16"
+        "kind": "cmd",
+        "cmd": "node scripts/check-discover-visual-tier.mjs",
+        "note": "Measures the CONSEQUENCE: /discover visual captures are out of the blocking public loop, tagged @advisory so they ride the continue-on-error tier, and not tagged @shell so a running capture cannot make shell-reporter.ts call the app covered."
       }
     },
     {

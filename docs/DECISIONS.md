@@ -45501,3 +45501,32 @@ public page (ADR-1400: that route is an hour stale and has no till).
 **Consequences.** Market cards attribute sibling reviews to the live product id. Settled orders on
 an archived uuid still count as a verified purchase. `LIVE-392` closes when `lib/commerce/reviews.ts`
 knows the plan.
+
+## ADR-1407: `/discover` visual captures are advisory, because the database sets the page height (2026-09-19)
+
+**Status:** Accepted · **Extends** the visual two-tier split in `test/e2e/visual-tiers.test.ts` · Backlog
+`LIVE-373`
+
+**Context.** `/discover` photographs live Circles, events and posts. On 2026-09-15 a new listed
+Circle grew the page about 180 px. Every open PR's blocking visual job failed, including branches
+that touched no public code. Masks cannot fix a height. `viewportOnly` was tried and the owner
+reversed it (#2139): it dropped eight below-the-fold baselines to quiet a rare recapture.
+
+**Decision.** Route (3) from the row, not (1) or (2).
+
+1. **Keep the full-page photograph.** The design surface below the fold stays in the picture.
+2. **Move those eight captures to the advisory visual tier.** Tag `visual · discover` with
+   `@visual` + `@advisory`. The blocking grep inverts `@shell|@advisory`. The advisory grep
+   takes `@visual` and (`@shell` or `@advisory`).
+3. **Do not tag it `@shell`.** That tag is what `shell-reporter.ts` counts as the authed app. A
+   running anonymous `/discover` capture would make the reporter call the member shell covered.
+4. **a11y and overflow stay on `publicSurfaces()`.** Those assert roles and geometry, not pixels.
+
+**Rejected.** Re-baselining on every new Circle (the next Circle repeats the outage). Putting
+`/discover` back in `LIVE_DATA_PATHS` / `viewportOnly` (owner reversed that trade). Seeding a
+fixture index in this change (the real fix the shell tier also wants; not this row).
+
+**Consequences.** A listed Circle is information in the advisory report, not a red X on every
+PR. Recapture `/discover` when the design moved. `LIVE-373` closes when the blocking public loop
+no longer photographs `/discover`.
+
