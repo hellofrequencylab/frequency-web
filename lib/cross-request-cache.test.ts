@@ -198,7 +198,7 @@ describe('the privilege rule: rows cross the boundary, viewers never do', () => 
   })
 
   it('the per-viewer menu filter still runs in the renderer, after both caches', () => {
-    const shell = src('components/layout/app-shell.tsx')
+    const shell = src('components/layout/app-shell.tsx') + src('components/layout/app-shell-nav.ts')
     expect(count(shell, /\bcanSeeMenuItem\(/g)).toBeGreaterThanOrEqual(3)
     expect(count(shell, /\beffectiveMode\(/g)).toBeGreaterThanOrEqual(1)
     // The reader hands the renderer everything; it does not import the viewer filter.

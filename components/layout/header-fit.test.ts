@@ -45,7 +45,7 @@ const read = (p: string) => readFileSync(new URL(p, import.meta.url), 'utf8')
 
 const MARKETING = read('./marketing-header.tsx')
 const SITE = read('./site-header.tsx')
-const SHELL = read('./app-shell.tsx')
+const SHELL = read('./app-shell.tsx') + read('./app-shell-chrome.tsx')
 const BRAND = read('./brand-mark.tsx')
 const MOBILE_MENU = read('./marketing-mobile-menu.tsx')
 const USER_MENU = read('./user-menu.tsx')

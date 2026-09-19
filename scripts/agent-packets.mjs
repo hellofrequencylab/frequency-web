@@ -94,7 +94,7 @@ LOOP.
 
 PRODUCT-FIRST (ADR-1403 / ADR-1445). Calendar section first: LIVE-414 then LIVE-415 then LIVE-416–419. LIVE-410 and LIVE-376 are closed. LIVE-234 is P0 money proof, owner-gated (account / OWN-078) — do not demote it and do not pick it. LIVE-408 needs an owner ruling. Journey sales (LIVE-392+) is claimed by ${FOREIGN_LANE_CLAIMS.journey}. Do not start Editor, Sites, Etsy, App Platform, or LIVE-242.
 
-TWO-AGENT SPLIT (2026-09-19, meta.slate.metaScanCleanup). If you are the product agent: take derived lane \`events\` (calendar C0–C5). Do not take lane \`scan\`. If you are the scan follow-through agent: \`pnpm packets --lane scan\`. SCAN-636 through SCAN-644 are done. Leave LIVE-414 through LIVE-419. Do not take LIVE-234. LIVE-412 is on the scan lane (shell split, P3, SERIAL), not a free shell packet.
+TWO-AGENT SPLIT (2026-09-19, meta.slate.metaScanCleanup). If you are the product agent: take derived lane \`events\` (calendar C0–C5). Do not take lane \`scan\`. If you are the scan follow-through agent: \`pnpm packets --lane scan\`. SCAN-636 through SCAN-644 and LIVE-412 are done. Leave LIVE-414 through LIVE-419. Do not take LIVE-234.
 `
 
 export function loadBacklog(root = '.') {

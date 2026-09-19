@@ -41,7 +41,7 @@ you never touch a page to add a function. This is what makes it scale.
 
 ## 2. The shell (already built, keep it)
 
-`components/layout/app-shell.tsx` is the global frame and it's the right shape:
+`components/layout/app-shell.tsx` is the global frame (composer; nav helpers and chrome islands live beside it, ADR-1466) and it's the right shape:
 
 ```
 ┌─ Header: logo · search · messages · notifications · account/admin ─┐

@@ -47,7 +47,9 @@ import {
 //      destroys the node the ride-up observer was watching.
 
 const dock = readFileSync('components/layout/dock-bar.tsx', 'utf8')
-const shell = readFileSync('components/layout/app-shell.tsx', 'utf8')
+const shell =
+  readFileSync('components/layout/app-shell.tsx', 'utf8') +
+  readFileSync('components/layout/app-shell-chrome.tsx', 'utf8')
 const launcher = readFileSync('components/vera/vera-launcher.tsx', 'utf8')
 const vaultSegment = readFileSync('components/sidebar/game-stats-dock.tsx', 'utf8')
 
