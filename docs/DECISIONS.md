@@ -45501,3 +45501,20 @@ public page (ADR-1400: that route is an hour stale and has no till).
 **Consequences.** Market cards attribute sibling reviews to the live product id. Settled orders on
 an archived uuid still count as a verified purchase. `LIVE-392` closes when `lib/commerce/reviews.ts`
 knows the plan.
+
+## ADR-1408: Naive event timestamps are UTC parts, never the machine zone (2026-09-19)
+
+**Status:** Accepted · Backlog `LIVE-377`
+
+**Context.** Event `starts_at` / `ends_at` store wall-clock as UTC parts (`7:00 PM` →
+`2026-07-01T19:00:00Z`). `eventInstant` already documented that. It then did `new Date(storedIso)`
+on strings that often have **no** `Z`. The ES5 Date parser treats those as local, so a Pacific
+laptop and a UTC server disagree on the same row. Five `pickSeatLanding` tests were red on every
+non-UTC machine and green in CI.
+
+**Decision.** A naive ISO in `eventInstant` is UTC parts. Append `Z` when the string has no offset.
+Do not pin the test process's `TZ`; that would hide a production leak on any non-UTC runtime.
+
+**Consequences.** `LIVE-377`'s probe runs the suite under `TZ=America/Los_Angeles`. Vercel is UTC,
+so this was invisible in production and loud on a laptop.
+

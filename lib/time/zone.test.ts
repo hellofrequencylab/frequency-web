@@ -40,6 +40,11 @@ describe('eventInstant — stored wall-clock + zone -> true UTC instant', () => 
   it('winter DST boundary — LA in January (PST, UTC-8)', () => {
     expect(eventInstant('2026-01-15T19:00:00Z', 'America/Los_Angeles')!.toISOString()).toBe('2026-01-16T03:00:00.000Z')
   })
+  it('a naive ISO is UTC parts, the same instant as a Z suffix (LIVE-377)', () => {
+    const naive = eventInstant('2026-08-13T19:00:00', 'America/Los_Angeles')!.toISOString()
+    const zulu = eventInstant('2026-08-13T19:00:00Z', 'America/Los_Angeles')!.toISOString()
+    expect(naive).toBe(zulu)
+  })
   it('null/invalid input -> null', () => {
     expect(eventInstant(null, 'UTC')).toBeNull()
     expect(eventInstant('nonsense', 'UTC')).toBeNull()

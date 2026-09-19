@@ -88,7 +88,12 @@ export function zonedWallClockToInstant(
  *  rendering in a DIFFERENT zone than the event's own. null on empty/invalid input. */
 export function eventInstant(storedIso: string | null | undefined, timezone: string | null | undefined): Date | null {
   if (!storedIso) return null
-  const d = new Date(storedIso)
+  // Naive ISO (no Z, no offset) is UTC PARTS, never the machine's zone. `new Date('2026-08-13T19:00:00')`
+  // is local in the ES5 spec, so a Pacific laptop and a UTC server disagree on the same row
+  // (LIVE-377). A trailing Z keeps the digits and names the convention.
+  const trimmed = storedIso.trim()
+  const iso = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(trimmed) ? trimmed : `${trimmed}Z`
+  const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return null
   const tz = resolveZone(timezone)
   // The stored UTC parts ARE the intended wall-clock in `tz`.
