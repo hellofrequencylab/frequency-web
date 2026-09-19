@@ -53,7 +53,6 @@
             "SCAN-637",
             "SCAN-638",
             "SCAN-639",
-            "SCAN-640",
             "SCAN-641",
             "LIVE-412"
           ],
@@ -68,7 +67,6 @@
             "SCAN-637",
             "SCAN-638",
             "SCAN-641",
-            "SCAN-640",
             "LIVE-412"
           ],
           "leave": [
@@ -119,7 +117,6 @@
             "owner": "scanAgent",
             "ids": [
               "SCAN-641",
-              "SCAN-640",
               "LIVE-412"
             ]
           },
@@ -187,7 +184,6 @@
           "name": "W0d \u00b7 P3 \u2014 craft: shell split, hex, parked niceties. 12 visitors / 18 pageviews in 31 days: the funnel, not the page speed, is the constraint.",
           "ids": [
             "SCAN-641",
-            "SCAN-640",
             "LIVE-412",
             "LIVE-221",
             "LIVE-273",
@@ -14771,7 +14767,7 @@
     {
       "id": "SCAN-640",
       "title": "page_settings_events_backup_20260910 is still a public table with no primary key",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "hygiene",
       "size": "XS",
@@ -14779,12 +14775,13 @@
         "file": "supabase/migrations/20270345003500_page_settings_events_backup_rls.sql",
         "ref": "meta-scan 2026-09-19"
       },
-      "detail": "FOUND 2026-09-19. Advisor no_primary_key INFO on public.page_settings_events_backup_20260910, created by the ADR-1316 events page-settings cleanup. RLS was enabled later so it is not an open read. Drop only after a production count is 0 or the rows are archived off-public. Draft-and-approve; do not drop from an agent session.",
+      "detail": "FOUND 2026-09-19. Advisor no_primary_key INFO on public.page_settings_events_backup_20260910, created by the ADR-1316 events page-settings cleanup. RLS was enabled later so it is not an open read. Drop only after a production count is 0 or the rows are archived off-public. Draft-and-approve; do not drop from an agent session.\n\nCLOSED 2026-09-19 (ADR-1446). PREMISE RE-TESTED FIRST: lib/database.types.ts still lists the table; 20270345003500 still only enables RLS; no later file dropped it. Added 20270345006600 with `drop table if exists public.page_settings_events_backup_20260910` after a count guard that raises when the snapshot still has rows, so a premature apply cannot destroy the ADR-1316 recovery. Did not apply from this session (no Supabase credentials here). Production apply after merge: execute_sql then schema_migrations insert at 20270345006600. Types stay until that apply; nothing in app/lib reads the table.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const files=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\"));const drop=files.some(f=>/drop table if exists public.page_settings_events_backup_20260910/i.test(fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\")));process.exit(drop?0:1)'",
         "note": "Fails until a later migration drops the backup table."
-      }
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "SCAN-641",

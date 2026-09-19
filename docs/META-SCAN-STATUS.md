@@ -24,7 +24,7 @@ Sitemap/robots/llms.txt/JSON-LD/marketing metadata are coherent. Member-facing c
 OWN-006). Performance **moved**: the 2026-08-31 pass had **zero** `unindexed_foreign_keys` and
 **zero** `auth_rls_initplan`. Today: **6 unindexed FKs** and **2 initplan WARNs** on tables that
 landed with Space Circles / entitlements (`SCAN-638`). Unused indexes 538 → 392. One leftover
-backup table (`SCAN-640`).
+backup table (`SCAN-640`, drop drafted as `20270345006600`, apply after a zero count).
 
 **The SEO/speed inversion (the finding this pass is for).** `/discover` already paid to stay
 static (`SiteHeader authMode="client"` so `revalidate = 3600` is not voided). The URLs the sitemap
@@ -69,7 +69,7 @@ follow-through). Derived lane `scan` is SCAN-636…641 plus LIVE-412.
 | 0 | product agent | LIVE-234, **LIVE-410**, **LIVE-376**, LIVE-186, LIVE-213 | Product first (ADR-1403). `pnpm packets --lane money` then `--lane events`. LIVE-254 and OWN-073 closed (#2699). Do not start SCAN-636. |
 | 1 | scan follow-through | **SCAN-636**, **SCAN-637** | Crawl truth. Pattern: `SiteHeader authMode="client"`. Keep `/events/<slug>` as the share URL. |
 | 2 | scan follow-through | **SCAN-638** | Draft FK indexes + `(select auth.uid())`. Do not apply SQL. No `spatial_ref_sys`. |
-| 3 | scan follow-through | **SCAN-641**, **SCAN-639**, **SCAN-640**, then LIVE-412 | One public header, FilterBar wire-or-delete, drop backup after a count, then shell split. |
+| 3 | scan follow-through | **SCAN-641**, then LIVE-412 | One public header, then shell split. SCAN-639 closed. SCAN-640 drop is drafted (`20270345006600`); apply after a zero count. |
 | 4 | neither | Editor / Sites / Etsy / App Platform / LIVE-242 | Already sequenced in `slate.phases`. Do not start from this scan. |
 
 ## 2026-08-31 pass (events, spaces, drafts, RSVP — one defect shape, three times)

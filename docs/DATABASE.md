@@ -20,6 +20,11 @@ to be, never as a description of the current schema.
 
 `area_permissions` and `profile_personas` are still live and are described accurately below.
 
+`page_settings_events_backup_20260910` is the ADR-1316 snapshot (HYG-086 enabled RLS; SCAN-640
+drafts the drop in `20270345006600_drop_page_settings_events_backup.sql`). The file refuses a
+non-empty table. Apply with `execute_sql` then a `schema_migrations` insert at `20270345006600`.
+Do not list it above until that apply.
+
 ## Table inventory by domain
 
 **Identity & social**

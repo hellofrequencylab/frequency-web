@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1441**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main.
+tree as of this index: **ADR-1446**. 1440 is SCAN-636 on main. 1439 is LIVE-242 on main. 1441 is LIVE-306 on main.
 
 | Theme | Start here |
 |---|---|
@@ -46204,3 +46204,23 @@ The harness can still create a bare worktree. That is not repo-observable. What 
 **Consequences.** The first `pnpm lint` in a new worktree installs this repo's ESLint 9, or refuses with the install error, and does not fall through to a global ESLint 10. CI already installs, so the new branch is a no-op there. The probe calls `ensureLintToolchain` with a missing bin and a lockfile and requires `attemptedInstall` plus `ok`.
 
 **Rows.** LIVE-306.
+
+## ADR-1446: Drop the empty ADR-1316 events page-settings snapshot (SCAN-640)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-640` · numbered **1446** because **1442** is HYG-078, **1443** is SCAN-641, **1444** is OWN-063, and **1445** is SCAN-638 · corroborated by `supabase/migrations/20270345006600_drop_page_settings_events_backup.sql`
+
+**Context.** ADR-1316's cleanup script created `page_settings_events_backup_20260910` on 2026-09-10 as the only way back for 21 retired per-page `/events` layout rows. HYG-086 (`20270345003500`) later enabled RLS with no policy, so the table is not an open read. The 2026-09-19 meta-scan still saw advisor `no_primary_key` INFO because the snapshot was `CREATE TABLE AS` with no primary key. HYG-086 dated a drop on or after 2026-10-10. SCAN-640 narrowed that to: drop after a production count is 0 or the rows are archived off-public. Draft-and-approve; do not drop from an agent session.
+
+Premise re-tested 2026-09-19 on this tree, and it held. `lib/database.types.ts` still lists the table. `20270345003500` still only enables RLS. No later migration dropped it. Nothing under `app/` or `lib/` reads the name except the generated types.
+
+**Decision.**
+
+1. **The drop file is `20270345006600`.** It runs `drop table if exists public.page_settings_events_backup_20260910` so the SCAN-640 probe can see the phrase.
+2. **A non-empty snapshot refuses the apply.** A `DO` block counts the table when it exists and raises if any row remains. An empty table, or a fresh environment that never had it, no-ops then drops-if-exists.
+3. **Do not apply from the agent session.** Production apply is `execute_sql` the file, then an insert into `supabase_migrations.schema_migrations` at version `20270345006600`. Never `apply_migration`. Never `db push`. Types stay until that apply.
+
+**Rejected.** Adding a primary key to silence the advisor and keeping the table (the probe is the drop). Dropping without a count guard (that would spend the 21-row recovery 21 days early if someone applied on merge). Applying from this session (no credentials, and the row forbade it).
+
+**Consequences.** `check:migrations` rule 4 reads red on this branch until the file is ledgered. That is ADR-1111, not a defect in the gate. A later apply against leftover rows fails closed and must archive first.
+
+**Rows.** SCAN-640.
