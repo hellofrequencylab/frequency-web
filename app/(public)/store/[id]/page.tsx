@@ -7,7 +7,7 @@ import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { JsonLd } from '@/components/json-ld'
 import { productSchema } from '@/lib/jsonld'
 import { SITE_NAME } from '@/lib/site'
-import { BuyButton } from '../../marketplace/buy-button'
+import { BuyButton } from '@/app/(main)/marketplace/buy-button'
 
 // Public Product JSON-LD page, advertised in app/sitemap.ts. force-dynamic here would keep the
 // crawler on a full render after the (main) public chrome stops reading auth (SCAN-641). Viewer

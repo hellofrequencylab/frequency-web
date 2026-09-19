@@ -333,11 +333,11 @@ describe('event page robots wiring', () => {
   })
 
   it('applies the same two rules on the public ISR share page', () => {
-    const share = readFileSync(join(process.cwd(), 'app/(main)/events/[slug]/page.tsx'), 'utf8')
+    const share = readFileSync(join(process.cwd(), 'app/(public)/events/[slug]/page.tsx'), 'utf8')
     expect(share).toContain('export const revalidate = 3600')
     expect(share).toContain('seriesRobots(facts, indexedOccurrences)')
     expect(
-      sourceWithoutComments(join(process.cwd(), 'app/(main)/events/[slug]/page.tsx'), { imports: true }),
+      sourceWithoutComments(join(process.cwd(), 'app/(public)/events/[slug]/page.tsx'), { imports: true }),
     ).toContain('!suppressPastNoindex(facts)')
     expect(share).toContain('canonical: `/events/${event.slug}`')
   })

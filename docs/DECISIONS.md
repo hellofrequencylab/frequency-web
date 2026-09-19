@@ -46626,3 +46626,24 @@ Premise re-tested 2026-09-19:
 **Consequences.** Admin Calendar lists Pencil, Planning, and Production as named lanes. The date map is unchanged. LIVE-419 already owns the Guest feed.
 
 **Rows.** LIVE-418.
+
+## ADR-1464: Share event and listing URLs leave the member layout (SCAN-643)
+
+**Status:** Accepted · 2026-09-19 · backlog `SCAN-643` · numbered **1464** (1463 is LIVE-393; 1462 is LIVE-397; 1461 is SCAN-640) · **Follows** [ADR-1440](DECISIONS.md) (share event ISR body) and [ADR-1451](DECISIONS.md) (layout void) · corroborated by `app/(public)/layout.tsx`, `components/layout/public-share-chrome.tsx`, and `lib/nav/public-detail-isr.test.ts`
+
+**Context.** ADR-1440 made `/events/<slug>` the ISR public body. The page exports `revalidate = 3600`. The parent `(main)` layout still called `getCachedUser()` (`cookies()`) and `headers()` before `publicChrome()`, and `generateMetadata` called `headers()` for page_settings SEO. This app does not enable `cacheComponents`. One dynamic API in a layout voids the subtree. Discover already paid to learn this (`authMode="client"`).
+
+Premise re-tested 2026-09-19 on the LIVE-418 tree, and it held.
+
+**Decision.**
+
+1. **Move the share URLs, do not empty the member layout.** `/events/<slug>`, `/store/<id>`, `/market/<id>`, `/housing/<id>`, and `/classifieds/<id>` live under `app/(public)/`. That layout never calls `cookies()` or `headers()`.
+2. **`PublicShareChrome` is the SCAN-641 bar.** `SiteHeader` `authMode="client"`, same as `/discover`. Footer stays `MarketingFooter`. Do not mount `MarketingHeader`.
+3. **Drop layout `generateMetadata` that read `headers()`.** Page-level `generateMetadata` still wins. Space profiles stay under `(main)` until SCAN-644.
+4. **Keep `/events/<slug>` as the share URL.** Signed-in members still rewrite to `/events/<slug>/full`. Do not reopen SCAN-636.
+
+**Rejected.** Closing SCAN-643 by reordering `publicChrome` above `getCachedUser` while those pages still sat under `(main)` (shape-not-truth). Swapping `MarketingHeader` (SCAN-641). Moving Space profiles in the same PR (a signed-in member keeps the member shell on that URL).
+
+**Consequences.** A later edit that puts `cookies()` or `headers()` on `app/(public)/layout.tsx` or `PublicShareChrome` fails `lib/nav/public-detail-isr.test.ts`. MainLayout still dynamizes leftover Space profiles. That remainder is SCAN-644.
+
+**Rows.** SCAN-643. SCAN-644 (filed).

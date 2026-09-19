@@ -76,10 +76,13 @@ describe('every public surface threads the viewer through', () => {
   })
 
   it('the (main) public chrome uses the same SiteHeader /discover uses (SCAN-641)', () => {
-    const main = read('../../app/(main)/layout.tsx')
+    const chrome = read('../../components/layout/public-share-chrome.tsx')
     const disc = read('../../app/discover/layout.tsx')
-    expect(main).toMatch(/<SiteHeader[\s\S]*authMode="client"/)
+    const main = read('../../app/(main)/layout.tsx')
+    expect(chrome).toMatch(/<SiteHeader[\s\S]*authMode="client"/)
     expect(disc).toMatch(/<SiteHeader[\s\S]*authMode="client"/)
+    expect(main).toContain('PublicShareChrome')
+    expect(chrome).not.toMatch(/<MarketingHeader/)
     expect(main).not.toMatch(/<MarketingHeader/)
   })
 

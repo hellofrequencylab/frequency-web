@@ -14,11 +14,12 @@ import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { seriesRobots, seriesSeoFactsBySlug, suppressPastNoindex } from '@/lib/events/series-seo'
 import { getSeriesDisplayConfig } from '@/lib/events/series-config'
 
-// Public share URL for an event (SCAN-636 / ADR-1440). Same ISR window and
-// column-safe RPC as /discover/events/[slug]. Auth during render is a dynamic
-// API and would void that window; signed-in members are rewritten to
-// /events/<slug>/full (event-member-page.tsx) so RSVP and host tools stay
-// on the existing page. The (main) layout auth read is SCAN-641.
+// Public share URL for an event (SCAN-636 / ADR-1440 / SCAN-643). Same ISR
+// window and column-safe RPC as /discover/events/[slug]. Auth during render
+// is a dynamic API and would void that window; signed-in members are rewritten
+// to /events/<slug>/full (event-member-page.tsx) so RSVP and host tools stay
+// on the existing page. This file lives under (public) so the (main) layout
+// auth read cannot void the window.
 export const revalidate = 3600
 
 export async function generateStaticParams() {
