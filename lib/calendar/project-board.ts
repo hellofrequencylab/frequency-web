@@ -5,8 +5,8 @@ import { ENTRY_STAGES, type EntryStage } from './registry'
 // PROJECTS KANBAN (ADR-1464). Columns are ENTRY_STAGES (Pencil, Planning,
 // Production, Cancelled). No new table. A card can move only when it is an
 // event on its way (entryId). Published events sit in Production or Cancelled
-// and open Manage. Do not name planningLane / productionLane here: those
-// symbols close LIVE-417 / LIVE-418 on the Admin date-map console.
+// and open Manage. Do not import the Admin console's planning or production
+// lane helpers here: those already close LIVE-417 / LIVE-418 on the date map.
 
 export type ProjectCard = {
   key: string
