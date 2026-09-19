@@ -113,25 +113,48 @@ function heightTokenRem(token: string): number {
   throw new Error(`unparsed height utility: ${token}`)
 }
 
-/** The DESKTOP (`sm` and up) pixel height of a poster band at a tier, at this app's 17px root.
- *  Read off the ladder's own class string, so there is no second copy of the numbers to drift. */
-export function posterHeightPx(height: CoverHeight): number {
+/** Which half of the poster ladder a preview is aiming. Desktop is the `sm:` token; phone is the
+ *  unprefixed rung (one step shorter). LIVE-272: the two frames are different shapes, so a preview
+ *  that only asks for desktop cannot describe the phone crop. */
+export type PosterBandSurface = 'desktop' | 'phone'
+
+/** The event page's centre-column width, the figure poster-band.tsx measures its 24-cover survey
+ *  against. One constant so a picker and a test cannot drift. */
+export const POSTER_BAND_DESKTOP_WIDTH_PX = 1044
+
+/** A full-bleed phone viewport. Same 412 the poster-band survey and the ladder comments use; the
+ *  phone crop is this width over the unprefixed height token. */
+export const POSTER_BAND_PHONE_WIDTH_PX = 412
+
+/** The pixel height of a poster band at a tier, at this app's 17px root.
+ *  Read off the ladder's own class string, so there is no second copy of the numbers to drift.
+ *  Default `desktop` keeps every existing caller on the `sm:` token. */
+export function posterHeightPx(
+  height: CoverHeight,
+  surface: PosterBandSurface = 'desktop',
+): number {
   const tokens = POSTER_HEIGHT_CLASS[height].split(/\s+/)
-  const sm = tokens.find((t) => t.startsWith('sm:')) ?? tokens[0]
-  return Math.round(heightTokenRem(sm) * ROOT_PX)
+  const token =
+    surface === 'desktop'
+      ? (tokens.find((t) => t.startsWith('sm:')) ?? tokens[0])
+      : (tokens.find((t) => !t.startsWith('sm:')) ?? tokens[0])
+  return Math.round(heightTokenRem(token) * ROOT_PX)
 }
 
 /** The width:height aspect of the poster band as it will actually render — the shape a focal-crop
  *  preview must adopt. `widthPx` is the band's real render width in its surface (the event page's
- *  1044px centre column); `sourceAspect` is the poster's own measured ratio
- *  (events.theme.coverAspect) or null when it carries none. Pure + total: an unusable ratio is
- *  treated as absent, exactly as the band treats it. */
+ *  1044px centre column, or 412 on a phone); `sourceAspect` is the poster's own measured ratio
+ *  (events.theme.coverAspect) or null when it carries none. `surface` picks which ladder token
+ *  supplies the height: desktop is `sm:`, phone is the shorter unprefixed rung. Passing the phone
+ *  WIDTH with the default desktop HEIGHT is the lie LIVE-272 named (412/374 instead of 412/221).
+ *  Pure + total: an unusable ratio is treated as absent, exactly as the band treats it. */
 export function posterBandAspect(
   height: CoverHeight,
   widthPx: number,
   sourceAspect?: number | null,
+  surface: PosterBandSurface = 'desktop',
 ): number {
-  const tierAspect = widthPx / posterHeightPx(height)
+  const tierAspect = widthPx / posterHeightPx(height, surface)
   const usable =
     typeof sourceAspect === 'number' && Number.isFinite(sourceAspect) && sourceAspect > 0
   return usable ? Math.max(sourceAspect as number, tierAspect) : tierAspect

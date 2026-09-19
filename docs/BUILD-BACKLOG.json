@@ -196,7 +196,6 @@
             "LIVE-412",
             "LIVE-216",
             "LIVE-221",
-            "LIVE-272",
             "LIVE-273",
             "HYG-092",
             "LIVE-397"
@@ -11703,7 +11702,7 @@
     },
     {
       "id": "LIVE-272",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "live",
       "size": "S",
@@ -11712,12 +11711,13 @@
         "ref": "the focal picker previews one width"
       },
       "title": "The cover focus picker previews the DESKTOP band only, and the phone band is a different shape",
-      "detail": "Half of the 2026-09-10 report was that the picker framed a stock 16/9 while the page painted something else; that is fixed (ADR-1300 \u2014 the preview is now `posterBandAspect(tier, 1044, coverAspect)`, the real band). What it previews is the DESKTOP band, and the phone band is not the same shape: the poster ladder is one rung shorter below `sm`, so at the standard tier a phone paints 412x221 (1.86:1) against the desktop's 1044x374 (2.79:1).\n\nThe consequence is bounded and is smaller than the one just fixed: both bands crop on the SAME axis (the tier clamps height, never width, once the poster's aspect is known), so a focal point aimed on the desktop preview is aimed correctly on a phone \u2014 it just survives a different amount of the artwork. A host who frames tightly against the desktop band can still lose a little more or less on a phone than the preview showed.\n\nThe fix is a preview that shows both, or a width toggle on the control, and it is a design question rather than a plumbing one: `posterBandAspect` already takes the width, so the second frame is one call. Worth doing when someone is next in this panel; not worth a round on its own.",
+      "detail": "Half of the 2026-09-10 report was that the picker framed a stock 16/9 while the page painted something else; that is fixed (ADR-1300 \u2014 the preview is now `posterBandAspect(tier, 1044, coverAspect)`, the real band). What it previews is the DESKTOP band, and the phone band is not the same shape: the poster ladder is one rung shorter below `sm`, so at the standard tier a phone paints 412x221 (1.86:1) against the desktop's 1044x374 (2.79:1).\n\nThe consequence is bounded and is smaller than the one just fixed: both bands crop on the SAME axis (the tier clamps height, never width, once the poster's aspect is known), so a focal point aimed on the desktop preview is aimed correctly on a phone \u2014 it just survives a different amount of the artwork. A host who frames tightly against the desktop band can still lose a little more or less on a phone than the preview showed.\n\nThe fix is a preview that shows both, or a width toggle on the control, and it is a design question rather than a plumbing one: `posterBandAspect` already takes the width, so the second frame is one call. Worth doing when someone is next in this panel; not worth a round on its own.\n\nCLOSED 2026-09-19 (ADR-1431). PREMISE RE-TESTED FIRST, and it held: event-header-controls still passed a single `posterBandAspect(height, 1044, aspect)`. posterBandAspect used posterHeightPx, which always read the `sm:` token, so even handing it 412 would have computed 412/374, not 412/221. The control now renders two ImageFocalPickers (Desktop + Phone) on the same focus; posterHeightPx takes a surface; posterBandAspect's fourth argument picks the ladder half. Widths live as POSTER_BAND_DESKTOP_WIDTH_PX / POSTER_BAND_PHONE_WIDTH_PX so a picker and a test cannot type 1044 and 412 apart.",
       "verify": {
-        "kind": "manual",
-        "evidence": "components/admin/modules/event-header-controls.tsx passes a single width (1044) to posterBandAspect, so the control renders one frame. Confirmed by reading the call site on 2026-09-10, the day the preview was wired to the real band at all.",
-        "checked": "2026-09-10"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const s=fs.readFileSync(\"components/admin/modules/event-header-controls.tsx\",\"utf8\");const c=fs.readFileSync(\"lib/layout/cover-height.ts\",\"utf8\");if(!/export const POSTER_BAND_PHONE_WIDTH_PX = 412/.test(c))fail(\"phone width is not one constant\");if(!/export const POSTER_BAND_DESKTOP_WIDTH_PX = 1044/.test(c))fail(\"desktop width is not one constant\");if((s.match(/<ImageFocalPicker/g)||[]).length<2)fail(\"the header still previews one band\");if(!/posterBandAspect\\(height, POSTER_BAND_DESKTOP_WIDTH_PX, aspect, .desktop./.test(s))fail(\"desktop frame is not wired\");if(!/posterBandAspect\\(height, POSTER_BAND_PHONE_WIDTH_PX, aspect, .phone./.test(s))fail(\"phone frame is not wired\");console.log(\"LIVE-272 ok\")'",
+        "note": "Passes when the event header paints two focal frames, each asking posterBandAspect for its own width and ladder half, and the widths are named constants rather than typed at the call site."
+      },
+      "closed": "2026-09-19"
     },
     {
       "id": "LIVE-273",

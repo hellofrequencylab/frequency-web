@@ -46004,3 +46004,24 @@ Premise re-tested 2026-09-19 on this tree: zero imports of `@/components/admin/f
 **Consequences.** A later sweep that greps for `FilterBar` and finds only the kit plus `LinkChipBar` is reading the same split. Type and subject search were already in `listTickets` and now have a control. SCAN-636 (ISR event canonical) and SCAN-637 (marketplace `force-dynamic`) stay separate; this row is the unwired kit piece.
 
 **Rows.** SCAN-639.
+
+## ADR-1431: The cover focus picker previews both poster bands (2026-09-19)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-272` · corroborated by `components/admin/modules/event-header-controls.tsx` and `lib/layout/cover-height.ts`
+
+**Context.** ADR-1300 made the event focal picker preview the real band instead of a stock 16/9. What it previewed was the desktop band only: `posterBandAspect(height, 1044, aspect)`. The poster ladder is one rung shorter below `sm`, so a standard phone paints 412x221 (1.86:1) against the desktop 1044x374 (2.79:1). LIVE-272 named that remainder.
+
+Premise re-tested 2026-09-19: the call site still passed a single 1044. `posterHeightPx` always read the `sm:` token, so handing `posterBandAspect` a phone width without a surface would have computed 412/374, which is neither band.
+
+**Decision.**
+
+1. **Show both frames.** Two `ImageFocalPicker`s share one focus. Dragging either writes the same `object-position`. A toggle would hide the difference the host needs to see.
+2. **The height comes from the matching ladder half.** `posterHeightPx(tier, surface)` reads `sm:` for desktop and the unprefixed token for phone. `posterBandAspect` takes that surface as a fourth argument. Default remains desktop so every existing caller stays on the `sm:` token.
+3. **Widths are named constants.** `POSTER_BAND_DESKTOP_WIDTH_PX` (1044) and `POSTER_BAND_PHONE_WIDTH_PX` (412) live next to the ladder they describe.
+
+**Rejected.** A Desktop/Phone toggle (hides the other crop). Passing 412 into `posterBandAspect` without teaching it the phone height (the 412/374 lie). JSON in a text column is not this row.
+
+**Consequences.** A host who frames tightly against the desktop band can see, in the rail, how much more of the top and bottom the phone keeps. Both crops still fall on height, never width, once the poster aspect is known (ADR-1300). The cover's intrinsic size is still measured from one decode.
+
+**Rows.** LIVE-272.
+

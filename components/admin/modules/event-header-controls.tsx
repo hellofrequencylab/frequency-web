@@ -6,7 +6,11 @@ import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
 import { updateEventCoverFocus, updateEventHeroHeight } from '@/app/(main)/events/admin-actions'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { EVENT_HERO_HEIGHTS, type EventHeroHeight } from '@/lib/events/hero-height'
-import { posterBandAspect } from '@/lib/layout/cover-height'
+import {
+  posterBandAspect,
+  POSTER_BAND_DESKTOP_WIDTH_PX,
+  POSTER_BAND_PHONE_WIDTH_PX,
+} from '@/lib/layout/cover-height'
 import { measureCoverAspect } from '@/lib/events/cover-aspect'
 
 // The event HEADER controls — one tidy section that pairs the cover FOCAL POINT (where the cover
@@ -107,31 +111,41 @@ export function EventHeaderControls({
     <div className="space-y-1.5">
       <span className={labelClasses}>Header</span>
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_9rem] sm:items-start">
-        {/* LEFT — cover focus (the draggable crop preview). Constrained by the grid column, so the
-            preview reads as a compact header crop rather than a full-width band. The Vertical +
-            Horizontal sliders are hidden here (showSliders={false}) — the draggable marker, with
-            arrow-key nudging, is the only control, which keeps the rail panel tidy. */}
+        {/* LEFT — cover focus. Two crop previews, desktop then phone, because the bands are
+            different shapes (LIVE-272). Constrained by the grid column so they read as compact
+            header crops rather than full-width bands. Sliders stay hidden; the marker plus
+            arrow-key nudging is the control. */}
         {imageUrl ? (
-          <ImageFocalPicker
-            imageUrl={imageUrl}
-            value={focus}
-            onChange={onFocusChange}
-            onImageLoad={onCoverLoad}
-            label="Cover focus"
-            hint="Drag to choose which part of the cover stays in frame. Vertical matters most."
-            showSliders={false}
-            // 🔴 THE PREVIEW IS THE BAND, NOT A STOCK 16/9. Half of the 2026-09-10 report was that
-            // this control promised a crop the page did not perform: it framed the cover at 16/9
-            // while the desktop band contained the whole poster between blurred bars. The band now
-            // crops at every width, so the preview adopts its exact shape at the chosen tier —
-            // `max(posterAspect, 1044 / tierHeight)` — and a cover the band shows whole previews
-            // whole, with nothing to drag, which is the honest answer.
-            //
-            // 1044 is the event page's centre-column width (the same figure poster-band.tsx
-            // measures its 24-cover survey against). The phone band is one rung shorter and
-            // therefore wider; the picker previews the surface it is being dragged on.
-            aspect={posterBandAspect(height, 1044, aspect)}
-          />
+          <div className="space-y-3">
+            {/* 🔴 TWO FRAMES, BECAUSE THE TWO BANDS ARE DIFFERENT SHAPES (LIVE-272, ADR-1431).
+                ADR-1300 made the preview the real band instead of a stock 16/9, but it asked
+                only for the desktop width. The phone ladder is one rung shorter, so a standard
+                phone paints 412x221 (1.86:1) against the desktop's 1044x374 (2.79:1). Both crop
+                on the same axis, so a point aimed on one is aimed on the other; the host still
+                needs to see how much of the artwork survives each. posterBandAspect already
+                takes the width; the fourth argument is the ladder half that supplies the height.
+                Dragging either marker writes the same focus. The cover's intrinsic size is
+                measured from the desktop decode only, so a second load does not double-write. */}
+            <ImageFocalPicker
+              imageUrl={imageUrl}
+              value={focus}
+              onChange={onFocusChange}
+              onImageLoad={onCoverLoad}
+              label="Desktop"
+              hint=""
+              showSliders={false}
+              aspect={posterBandAspect(height, POSTER_BAND_DESKTOP_WIDTH_PX, aspect, 'desktop')}
+            />
+            <ImageFocalPicker
+              imageUrl={imageUrl}
+              value={focus}
+              onChange={onFocusChange}
+              label="Phone"
+              hint="Drag either picture. Phone is shorter, so it keeps a different slice of the same photo."
+              showSliders={false}
+              aspect={posterBandAspect(height, POSTER_BAND_PHONE_WIDTH_PX, aspect, 'phone')}
+            />
+          </div>
         ) : (
           <p className="text-2xs text-muted">
             Add a header photo above to choose where it sits in frame.

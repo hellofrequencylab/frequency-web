@@ -8,6 +8,8 @@ import {
   posterHeightClass,
   posterHeightPx,
   posterMaxHeightClass,
+  POSTER_BAND_DESKTOP_WIDTH_PX,
+  POSTER_BAND_PHONE_WIDTH_PX,
   type CoverHeight,
 } from '@/lib/layout/cover-height'
 
@@ -520,9 +522,34 @@ describe('the crop preview is the same shape as the band it previews', () => {
   it('the event header control actually passes it — a preview that is not wired is not a preview', () => {
     const controls = readFileSync('components/admin/modules/event-header-controls.tsx', 'utf8')
     expect(controls).toContain("from '@/lib/layout/cover-height'")
-    expect(controls).toContain('aspect={posterBandAspect(height, 1044, aspect)}')
+    expect(controls).toContain(
+      "aspect={posterBandAspect(height, POSTER_BAND_DESKTOP_WIDTH_PX, aspect, 'desktop')}",
+    )
+    expect(controls).toContain(
+      "aspect={posterBandAspect(height, POSTER_BAND_PHONE_WIDTH_PX, aspect, 'phone')}",
+    )
+    expect((controls.match(/<ImageFocalPicker/g) ?? []).length).toBe(2)
     // The measured shape has to be STATE, or a swapped cover re-measures into a ref and the
     // preview keeps the old frame until something else re-renders the panel.
     expect(controls).toContain('setAspect(measured)')
+  })
+
+  it('LIVE-272: the phone frame is a different shape, read off the unprefixed ladder token', () => {
+    // Standard phone: h-52 = 13rem × 17px = 221. 412/221 ≈ 1.86, the figure poster-band.tsx cites.
+    expect(posterHeightPx('standard', 'phone')).toBe(221)
+    expect(posterBandAspect('standard', POSTER_BAND_PHONE_WIDTH_PX, null, 'phone')).toBeCloseTo(
+      412 / 221,
+      6,
+    )
+    expect(posterBandAspect('standard', POSTER_BAND_DESKTOP_WIDTH_PX, null, 'desktop')).toBeCloseTo(
+      1044 / 374,
+      6,
+    )
+    // Passing the phone WIDTH with the default desktop HEIGHT is the lie this row named.
+    expect(
+      posterBandAspect('standard', POSTER_BAND_PHONE_WIDTH_PX),
+    ).not.toBeCloseTo(412 / 221, 2)
+    expect(POSTER_BAND_DESKTOP_WIDTH_PX).toBe(1044)
+    expect(POSTER_BAND_PHONE_WIDTH_PX).toBe(412)
   })
 })
