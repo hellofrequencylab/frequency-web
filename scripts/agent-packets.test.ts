@@ -39,6 +39,22 @@ describe('agent packets (ADR-1412)', () => {
     expect(classifyLane({ id: 'LIVE-393', title: 'What you will learn', detail: 'OutcomesBlock', lane: 'live' })).toBe(
       'journey',
     )
+    expect(
+      classifyLane({
+        id: 'SCAN-636',
+        title: 'The ISR event page canonicals onto a fully dynamic route',
+        detail: '',
+        lane: 'live',
+      }),
+    ).toBe('scan')
+    expect(
+      classifyLane({
+        id: 'LIVE-412',
+        title: 'Split app-shell',
+        detail: 'components/layout/app-shell.tsx',
+        lane: 'hygiene',
+      }),
+    ).toBe('scan')
   })
 
   it('refuses parked 16-to-7 nav and owner-gated rows unless asked', () => {
@@ -108,6 +124,15 @@ describe('agent packets (ADR-1412)', () => {
     expect(stdout).toContain('cursor/cloud-agent-workspace-8978')
     expect(stdout).toContain('LIVE-410')
     expect(AGENT_PROMPT).toContain('Never stamp wall-clock versions')
+  })
+
+  it('CLI --json names SCAN-636 on the scan lane from the real file', () => {
+    const { status, stdout, stderr } = run(['--json', '--lane', 'scan'])
+    expect(status, stderr).toBe(0)
+    const body = JSON.parse(stdout)
+    expect(body.next[0].id).toBe('SCAN-636')
+    expect(body.next[0].derivedLane).toBe('scan')
+    expect(body.packets.some((p: { id: string }) => p.id === 'LIVE-410')).toBe(false)
   })
 
   it('CLI --json names the next money packet from the real file, and not a closed LIVE-410', () => {

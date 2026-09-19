@@ -92,7 +92,9 @@ LOOP.
 5. If the PR added supabase/migrations/*.sql, apply with execute_sql then ledger insert; run pnpm check:migrations --require-ledger when credentials exist.
 6. Validate the row's probe on main. Close the row in BUILD-BACKLOG.json in the SAME PR that makes the probe pass, and prune it from meta.slate.waves.
 
-PRODUCT-FIRST (ADR-1403). LIVE-410 (memberships on Connect readiness) is closed. Prefer remaining money, then LIVE-376 (event Space attach). LIVE-234 is P0 money proof and is owner-walked. LIVE-408 needs an owner ruling. Journey sales (LIVE-392+) is claimed by ${FOREIGN_LANE_CLAIMS.journey}.
+PRODUCT-FIRST (ADR-1403). LIVE-410 (memberships on the free floor; Connect still refuses checkout) is closed in this tree. Prefer remaining money, then LIVE-376 (event Space attach). LIVE-234 is P0 money proof and is owner-walked. LIVE-408 needs an owner ruling. Journey sales (LIVE-392+) is claimed by ${FOREIGN_LANE_CLAIMS.journey}.
+
+TWO-AGENT SPLIT (2026-09-19, meta.slate.metaScanCleanup). If you are the product agent already on the backlog: take derived lanes money then events. Do not take lane \`scan\` and do not start SCAN-636. If you are the scan follow-through agent: \`pnpm packets --lane scan\` and start SCAN-636. Do not take LIVE-376 or LIVE-234. LIVE-412 is on the scan lane (shell split after SCAN-641), not a free shell packet.
 `
 
 export function loadBacklog(root = '.') {
@@ -122,6 +124,9 @@ function haystack(entry) {
 export function classifyLane(entry) {
   const id = entry.id ?? ''
   const h = haystack(entry)
+  // Meta-scan follow-through (2026-09-19). Must beat hygiene/shell so SCAN-638 and LIVE-412
+  // stay on one agent and the product agent cannot pick LIVE-412 as a shell packet.
+  if (/^SCAN-/.test(id) || id === 'LIVE-412') return 'scan'
   if (/^HYG-/.test(id)) return 'hygiene'
   if (/^PROG-E/.test(id)) return 'editor'
   if (/^OWN-/.test(id) || entry.lane === 'owner') return 'owner'

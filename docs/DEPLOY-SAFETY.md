@@ -321,7 +321,7 @@ open (#2699 is the current example: `test` failed, auto-merge correctly blocked)
 
 **In-repo half (already in this tree):**
 
-1. `pnpm packets` prints the next agent-workable row per *derived* lane (money, events, hygiene, …).
+1. `pnpm packets` prints the next agent-workable row per *derived* lane (money, events, scan, hygiene, …).
 2. `pnpm packets --prompt` prints the prompt every run must follow, including the auto-merge arm.
 3. `pnpm packets --json` is what an automation should parse.
 4. `.github/workflows/arm-auto-merge.yml` arms auto-merge on ready `cursor/*` PRs so a run that
@@ -338,11 +338,11 @@ open (#2699 is the current example: `test` failed, auto-merge correctly blocked)
 4. **Repository:** `hellofrequencylab/frequency-web`.
 5. **Trigger:** schedule (hourly is enough) *or* when `main` receives a push. Do not fire on every PR.
 6. **Environment:** the Frequency cloud environment already used by agents (same `environment.json`).
-7. **Prompt:** paste the output of `pnpm packets --prompt`. Optionally prefix `You are assigned lane money.` (or `events`, `hygiene`) so two automations do not grab the same packet.
+7. **Prompt:** paste the output of `pnpm packets --prompt`. Optionally prefix `You are assigned lane money.` (or `events`, `scan`, `hygiene`) so two automations do not grab the same packet.
 8. **Tools:** GitHub (read + ManagePullRequest), Supabase MCP (execute_sql only; never apply_migration), Cursor subscriptions for PR/CI.
 9. **Save** and **Enable**. Copy the automation UUID from the URL if you later want `get-automation`.
 
 **Honest limits.** Required GitHub checks still gate merge. Auto-merge on green is WORKFLOW.md default; a red PR must not merge. Vercel `postbuild` is the artifact gate and is invisible to GitHub `test`. Stay off `cursor/cloud-agent-workspace-8978`. This environment has no Resend key. LIVE-234 is an owner walk with a real card.
 
-**Fan-out that is safe today** (re-run `pnpm packets`; these ids move): **money** next packet after LIVE-410 · **events** LIVE-376 (event Spark / rail, maybe a default-space trigger) · **hygiene** HYG-102 (later `award_gems` lockdown). Do not start a fourth agent on Journey sales or on `app-shell.tsx` while another shell PR is open.
+**Fan-out that is safe today** (re-run `pnpm packets`; these ids move): **money** next derived packet after LIVE-410 · **events** LIVE-376 (event Spark / rail, maybe a default-space trigger) · **scan** SCAN-636 (ISR event canonical; then SCAN-637…641 and LIVE-412, `meta.slate.metaScanCleanup`) · **hygiene** HYG-102 (later `award_gems` lockdown). Two agents must not both take LIVE-376. Do not start a fifth agent on Journey sales or on `app-shell.tsx` while the scan lane still owns LIVE-412.
 
