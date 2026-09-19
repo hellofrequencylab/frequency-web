@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1448**. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1432 is LIVE-246.
+tree as of this index: **ADR-1455**. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1451–1454 are claimed on open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46393,7 +46393,6 @@ Premise re-tested 2026-09-19 against the tree, not the banners:
 
 **Rows.** LIVE-415.
 
-<<<<<<< HEAD
 ## ADR-1448: The Circle and Event rail banks get a Settings door (OWN-058)
 
 **Status:** Accepted · 2026-09-19 · Records the 2026-09-08 OWN-058 ruling · **Implements** option (a) · numbered **1448** because **1450** is LIVE-415 on main (which reserved 1448–1449 for open PRs), **1447** is HYG-104, **1446** is HYG-103, and **1445** is the calendar C0–C5 ruling · corroborated by `bankForScope` in `lib/admin/rail-bank.ts` and `FROZEN_MENU_DEBT` in `scripts/check-menu.mjs`
@@ -46419,7 +46418,6 @@ Premise re-tested 2026-09-19:
 
 **Rows.** OWN-058.
 
-=======
 ## ADR-1449: The member-shell visual tier blocks; `/discover` stays advisory (LIVE-313)
 
 **Status:** Accepted · 2026-09-19 · backlog `LIVE-313` · amends [ADR-1410](DECISIONS.md) · numbered **1449** (1447 is HYG-104 on main; 1450 is LIVE-415; 1448 sits on an open branch)
@@ -46442,4 +46440,20 @@ Premise re-tested 2026-09-19:
 **Consequences.** A header or rail regression fails a PR. A new listed Circle is information in the advisory report. Recapture `/discover` when the design moved. Numbered **1449** because 1448 sits on an open branch and 1450 is LIVE-415 on main.
 
 **Rows.** LIVE-313.
->>>>>>> 5e45566df (Let the member-shell visual tier block (LIVE-313))
+
+## ADR-1455: Public calendar C0 paints cancelled as footer text (LIVE-414)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-414` · numbered **1455** (1446 is HYG-103 on main; 1447 is HYG-104; 1448 is OWN-058; 1450 is LIVE-415; 1449–1454 are claimed on open PRs) · implements [ADR-1445](DECISIONS.md) C0 · extends [ADR-1388](DECISIONS.md) and [ADR-1389](DECISIONS.md) · corroborated by `lib/calendar/guest-live.ts`, `components/events/event-calendar.tsx` (`cancelledCellFooter`), `lib/events/store.ts` (`paintCancelled`)
+
+**Context.** LIVE-379 shipped `stage` and LIVE-380 shipped Admin / Guest. ADR-1445 filed how those surfaces should read. Premise re-tested 2026-09-19: `EventCalendar` still painted cancelled as a struck chip (`line-through`); `passesCalendarGate` dropped cancelled before the public grid could show them; `guestLiveItems` did not exist.
+
+**Decision.**
+
+1. **`guestLiveItems` is the public feed.** It keeps live gatherings and cancelled items. It drops pencil, planning, and private-layer rows. Production is the live show.
+2. **`cancelledCellFooter` is the date-square paint.** Small muted titles at the bottom of that day. Not a chip. Not a strikethrough. Not omitted. The subscribed `.ics` stays live-only.
+3. **The on-page reader opts in.** `listSpaceCalendarEvents(..., { paintCancelled: true })` uses `passesCalendarPaintGate`, which is the live gate without the cancelled drop. Clash checks and the ICS RPC stay on `passesCalendarGate`.
+4. **C1 through C5 stay their own rows.** This change does not mount `CalendarPmConsole` and does not put `guestLiveItems` on the Guest page branch.
+
+**Rejected.** Changing `passesCalendarGate` itself (that would put cancelled gatherings into every subscriber's calendar app). Hiding cancelled. Painting cancelled as a struck chip.
+
+**Rows.** LIVE-414.
