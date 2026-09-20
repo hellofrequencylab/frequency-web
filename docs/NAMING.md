@@ -319,6 +319,10 @@
   the brand's "The Community"). "Members" names the directory of people; it is not a synonym
   for the community itself, and the generic lowercase "member" (a person on the platform)
   is unchanged. My Contacts (`/network/contacts`) stays its own row.
+- **People** (on a Space) = who belongs there (`/spaces/<slug>/people`, LIVE-420 / ADR-1471).
+  Active `space_memberships` only, visible to fellow members and managers. **Your people**
+  stays the staff roster (`space.people` → `/settings/members`). Never call the member
+  directory Members on a Space: that word is `/network` and the staff settings title.
 - Resonance, Inner/Middle/Outer orbit, Pulse, Near Misses, Frequency Signature: unchanged.
 - **Circle Current: RETIRED as a reward mechanic (Rewards Economy v3, ADR-305).** It was a
   circle's collective, non-competitive seasonal standing (internal column

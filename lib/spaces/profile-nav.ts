@@ -8,6 +8,7 @@ import { deriveSectionNav } from '@/lib/spaces/section-anchors'
 import { getSpaceSectionPresence } from '@/lib/spaces/content-data'
 import { spaceHasPublicUpcomingEvents } from '@/lib/events/store'
 import { spaceHasCollaborators } from '@/lib/spaces/collaborations'
+import { viewerCanSeeSpaceMemberDirectory } from '@/lib/spaces/member-directory'
 import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
 
 // THE ONE Space profile sub-nav model — the tab set + the operator's admin links — resolved from the
@@ -38,7 +39,7 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   const brandName = space.brandName ?? space.name
   const base = `/spaces/${space.slug}`
 
-  const [presence, manage, hasCalendarEvents, hasCollaborators] = await Promise.all([
+  const [presence, manage, hasCalendarEvents, hasCollaborators, showPeople] = await Promise.all([
     getSpaceSectionPresence(space.id, space.slug),
     resolveSpaceManageAccess(space, viewerProfileId, caller?.webRole ?? null),
     // Gate the Calendar tab on the SAME public/unlisted published set the calendar renders, not on the
@@ -47,6 +48,9 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
     spaceHasPublicUpcomingEvents(space.id),
     // The Collaborators tab shows only when there is at least one ACCEPTED collaboration (ADR-799 B1).
     spaceHasCollaborators(space.id),
+    // People (LIVE-420): fellow members and managers only. Visitors never get a tab over a roster
+    // they cannot read. ROOT is refused inside the reader.
+    viewerCanSeeSpaceMemberDirectory(space),
   ])
 
   const pages = readProfilePages(space.preferences)
@@ -97,6 +101,9 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
     // A manager sees it even at zero, because the empty state is where "Start your first circle"
     // lives; a visitor only sees it once there is a circle they could actually open.
     ...(circlesEnabled && (presence.circles || canSeeAsOwner) ? [{ href: `${base}/circles`, label: 'Circles' }] : []),
+    // People: the member directory of space_memberships, never the staff roster at settings/members.
+    // Shown only to an active member or a manager (ADR-1471).
+    ...(showPeople ? [{ href: `${base}/people`, label: 'People' }] : []),
     // Reviews on their own tab (owner decision): the member rating + review wall. Public read; a signed-in
     // member (not the owner) leaves one review they can revise. Gated on the `reviews` function (default ON).
     ...(reviewsEnabled ? [{ href: `${base}/reviews`, label: 'Reviews' }] : []),

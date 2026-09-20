@@ -33,6 +33,10 @@ vi.mock('@/lib/spaces/entitlements', async (importOriginal) => ({
 vi.mock('@/lib/spaces/content-data', () => ({ getSpaceSectionPresence: async () => presence }))
 vi.mock('@/lib/events/store', () => ({ spaceHasPublicUpcomingEvents: async () => false }))
 vi.mock('@/lib/spaces/collaborations', () => ({ spaceHasCollaborators: async () => false }))
+let showPeople = false
+vi.mock('@/lib/spaces/member-directory', () => ({
+  viewerCanSeeSpaceMemberDirectory: async () => showPeople,
+}))
 
 import { buildSpaceProfileNav } from './profile-nav'
 
@@ -67,6 +71,7 @@ beforeEach(() => {
   presence.circles = false
   manage.canManage = false
   manage.staffViewing = false
+  showPeople = false
 })
 
 describe('the Circles tab', () => {
@@ -118,5 +123,19 @@ describe('the Circles tab', () => {
     manage.canManage = true
     const { tabs } = await buildSpaceProfileNav(space({ type: 'root' }))
     expect(labels(tabs)).not.toContain('Circles')
+  })
+})
+
+describe('the People tab (LIVE-420)', () => {
+  it('hides from a visitor who cannot see the directory', async () => {
+    const { tabs } = await buildSpaceProfileNav(space())
+    expect(labels(tabs)).not.toContain('People')
+  })
+
+  it('is a real page once the viewer belongs here', async () => {
+    showPeople = true
+    const { tabs } = await buildSpaceProfileNav(space())
+    expect(labels(tabs)).toContain('People')
+    expect(hrefFor(tabs, 'People')).toBe('/spaces/ojai/people')
   })
 })

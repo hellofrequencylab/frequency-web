@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1467**. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs.
+tree as of this index: **ADR-1471**. 1471 is LIVE-420. 1470 is LIVE-422. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1468 is claimed by Space Plans. 1469 is claimed by LIVE-421.
 
 | Theme | Start here |
 |---|---|
@@ -46748,3 +46748,25 @@ Premise re-tested 2026-09-19: `ensureHostOnOwnership` still self-grants host (`l
 **Consequences.** A Space with no Journeys, or Journeys no one has started, reads zeros and does not print a 0% finish rate. The manage gate on Home is the door. The admin client is the read, because enrollment RLS is member-owned.
 
 **Rows.** LIVE-422.
+
+## ADR-1471: A Space lists the people who belong there, not the staff roster (LIVE-420)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-420` · numbered **1471** because **1468** is Space Plans on the calendar plan-data branch and **1469** is LIVE-421 · corroborated by `lib/spaces/member-directory.ts` and `app/(main)/spaces/[slug]/(profile)/people/page.tsx`
+
+**Context.** FOCUS-MODEL Q5 named five operator gaps. `space.people` is the staff roster at `/spaces/<slug>/settings/members`. Paying members live in `space_memberships` and had no member-facing list. Members of a community could not find each other inside it.
+
+Premise re-tested 2026-09-19: no `(profile)/people` or `(profile)/members` route existed. `listSpaceMemberships` is owner-only. `/spaces/directory` lists Spaces, not people. `/network` is the platform directory.
+
+**Decision.**
+
+1. `/spaces/<slug>/people` is the member directory. It lives in the Space profile chrome. The heading is People. The operator catalog row Your people stays the staff roster.
+2. The list is `space_memberships` rows with `status = active`. Waitlist is not a membership.
+3. Active members and managers (including staff preview) can see it. Visitors see a join door, never the roster. ROOT never lists.
+4. Ghost mode stays invisible. `directory_visible` is the `/network` switch and does not hide you from people you joined a Space with.
+5. The tab is hidden from anyone who cannot see the list. Metadata is noindex. `people` is a reserved profile page slug.
+
+**Rejected.** Putting paying members on the staff Members settings page. Publishing the roster to crawlers. Reusing `/network` as a Space filter. Treating waitlist as belonging.
+
+**Consequences.** A later PR that lists waitlist rows, drops the membership gate, or renders the roster for a null viewer fails the LIVE-420 intent. Space discussion stays LIVE-421. Completion analytics stays LIVE-422.
+
+**Rows.** LIVE-420.

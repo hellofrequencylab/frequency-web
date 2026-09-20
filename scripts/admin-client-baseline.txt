@@ -187,6 +187,10 @@
 # knows, which is what keeps this entry five narrow files instead of one wide one.
 # Added 2026-09-15 (ADR-1372, member benefits): lib/spaces/benefits-store.ts. The sibling of
 # lib/spaces/memberships.ts, which is on this list for the same reason and reads the same subsystem.
+# Added 2026-09-19 (LIVE-420, ADR-1471): lib/spaces/member-directory.ts. space_memberships is
+# RLS-on with owner-shaped policies; the People tab must list the whole active roster to an
+# active member. A session client cannot see another member's row. The app-layer gate is the
+# door (active member or manager; ROOT never; waitlist omitted; ghost mode hidden).
 # Migration 20270345004800_space_member_benefits.sql enables RLS on space_member_benefits,
 # space_tier_benefits and space_benefit_redemptions with ZERO client policies, deliberately and
 # identically to space_memberships: the gated server actions ARE the access model, so a client key
@@ -924,6 +928,7 @@ lib/spaces/follows.ts
 lib/spaces/health-signals.ts
 lib/spaces/invites.ts
 lib/spaces/managed.ts
+lib/spaces/member-directory.ts
 lib/spaces/member-segment-audience.ts
 lib/spaces/membership.ts
 lib/spaces/memberships.ts

@@ -4,9 +4,9 @@ description: Browse the directory and search by location.
 category: connecting
 order: 1
 published: 2026-06-03
-updated: 2026-06-23
+updated: 2026-09-19
 audience: member
-featureKeys: [people]
+featureKeys: [people, memberships]
 status: published
 ---
 
@@ -16,6 +16,14 @@ The directory is how you find members and Circles: by topic, and by place.
 
 - See members and Circles, and open anyone's profile to learn a bit about them.
 - Each profile shows who someone is in the community; from there you can send a [friend request](/help/connecting/friends).
+
+## People in a Space you belong to
+
+If you have joined a Space, open **People** on that Space to see the other members. This is not the staff list the host uses. It is the people who belong there with you.
+
+- Visitors who have not joined see a join door, not the list.
+- A waitlist spot is not a membership yet, so it does not show you or them.
+- Ghost mode hides you here the same way it hides you from the Community directory.
 
 ## Finding people near you
 
