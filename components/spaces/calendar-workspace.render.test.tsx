@@ -70,8 +70,10 @@ describe('CalendarWorkspace', () => {
         guestFirstUse={false}
         adminEvents={[sit]}
         dayNotes={[]}
+        plans={[]}
         subscribe={null}
         loadGuestMonth={async () => []}
+        loadAdminMonth={async () => []}
       />,
     )
     const labels = [...el.querySelectorAll('[aria-label="Calendar views"] button')].map((n) => n.textContent)
@@ -110,8 +112,10 @@ describe('CalendarWorkspace', () => {
         guestFirstUse={false}
         adminEvents={[]}
         dayNotes={[]}
+        plans={[]}
         subscribe={null}
         loadGuestMonth={async () => []}
+        loadAdminMonth={async () => []}
       />,
     )
     expect(el.querySelector('[data-calendar-view="guest"]')).not.toBeNull()

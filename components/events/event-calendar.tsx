@@ -149,6 +149,23 @@ export function EventCalendar({
   }, [refreshKey])
 
   useEffect(() => {
+    // The server cannot know the browser's calendar day. Only correct the initial
+    // viewport when it was derived from the current UTC month and the viewer's
+    // local month differs (the few hours around a month boundary).
+    const now = new Date()
+    if (initialYear !== now.getUTCFullYear() || initialMonth1 !== now.getUTCMonth() + 1) return
+    const local = localToday()
+    const localYear = Number(local.slice(0, 4))
+    const localMonth1 = Number(local.slice(5, 7))
+    if (!localYear || !localMonth1 || (localYear === initialYear && localMonth1 === initialMonth1)) return
+    const timer = window.setTimeout(() => {
+      setMonth({ year: localYear, month1: localMonth1 })
+      setJumpYear(localYear)
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [initialYear, initialMonth1])
+
+  useEffect(() => {
     if (!loadMonth) return
     const key = monthKey(year, month1)
     if (key === monthKey(initialYear, initialMonth1) && refreshKey === 0) return

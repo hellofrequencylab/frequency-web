@@ -19,7 +19,14 @@ describe('listIndexItems', () => {
   it('keeps the operator set and drops private and unavailable', () => {
     const rows = listIndexItems([
       item({ slug: 'entry-1', title: 'New moon sit', dayKey: '2026-09-22', stage: 'pencil', layer: 'pencil', entryId: 'e1' }),
-      item({ slug: 'open-house', title: 'Open house', dayKey: '2026-09-24', eventId: 'evt-1', goingCount: 12 }),
+      item({
+        slug: 'open-house',
+        title: 'Open house',
+        dayKey: '2026-09-24',
+        eventId: 'evt-1',
+        publicationState: 'published',
+        goingCount: 12,
+      }),
       item({ slug: 'entry-2', title: 'Staff meeting', dayKey: '2026-09-23', layer: 'private' }),
     ])
     expect(rows.map((r) => r.title)).toEqual(['New moon sit', 'Open house'])
@@ -29,6 +36,21 @@ describe('listIndexItems', () => {
     expect(rows[1]?.publicSlug).toBe('open-house')
     expect(rows[1]?.href).toBe('/events/open-house')
     expect(rows[1]?.goingCount).toBe(12)
+  })
+
+  it('never exposes a public event route for an unpublished admin row', () => {
+    const [row] = listIndexItems([
+      item({
+        slug: 'draft-gathering',
+        title: 'Draft gathering',
+        dayKey: '2026-09-25',
+        eventId: 'evt-draft',
+        publicationState: 'unpublished',
+        editHref: '/events/draft-gathering/manage?section=settings',
+      }),
+    ])
+    expect(row?.publicSlug).toBeNull()
+    expect(row?.href).toBe('/events/draft-gathering/manage?section=settings')
   })
 })
 

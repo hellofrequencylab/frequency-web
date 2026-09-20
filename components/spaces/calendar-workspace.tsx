@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useMemo, useState, useTransition, type ReactNode } from 'react'
 import { EventCalendar } from '@/components/events/event-calendar'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StaffCalendar } from '@/app/(main)/spaces/[slug]/settings/calendar/staff-calendar'
@@ -20,6 +20,7 @@ import { monthTimelineBars, monthTimelineDays } from '@/lib/calendar/month-timel
 import { projectBoard } from '@/lib/calendar/project-board'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import type { DayNote } from '@/lib/calendar/day-notes'
+import type { SpacePlan } from '@/lib/calendar/plans'
 
 // OPERATOR CALENDAR SHELL (ADR-1467). Guest and Admin data load once on the
 // server. Switching a view slides the already-mounted panels. The last view
@@ -42,8 +43,10 @@ export function CalendarWorkspace({
   guestFirstUse,
   adminEvents,
   dayNotes,
+  plans,
   subscribe,
   loadGuestMonth,
+  loadAdminMonth,
 }: {
   slug: string
   spaceId: string
@@ -61,13 +64,17 @@ export function CalendarWorkspace({
   guestFirstUse: boolean
   adminEvents: CalendarEvent[]
   dayNotes: DayNote[]
+  plans: SpacePlan[]
   subscribe: ReactNode
   loadGuestMonth: (year: number, month1: number) => Promise<CalendarEvent[]>
+  loadAdminMonth: (year: number, month1: number) => Promise<CalendarEvent[]>
 }) {
   const [view, setView] = useState<CalendarAdminView>(adminAllowed ? initialView : 'guest')
   const [listKey, setListKey] = useState<string | null>(initialListItem)
   const [timelineYear, setTimelineYear] = useState(timelineYearStart)
   const [timelineMonth1, setTimelineMonth1] = useState(timelineMonthStart)
+  const [timelineEvents, setTimelineEvents] = useState(adminEvents)
+  const [timelinePending, startTimelineTransition] = useTransition()
 
   const items = useMemo(() => (adminAllowed ? listIndexItems(adminEvents) : []), [adminAllowed, adminEvents])
   const selected = useMemo(() => selectListItem(items, listKey), [items, listKey])
@@ -76,8 +83,8 @@ export function CalendarWorkspace({
     [timelineYear, timelineMonth1, todayKey],
   )
   const timelineBars = useMemo(
-    () => monthTimelineBars(adminEvents, timelineYear, timelineMonth1),
-    [adminEvents, timelineYear, timelineMonth1],
+    () => monthTimelineBars(timelineEvents, timelineYear, timelineMonth1),
+    [timelineEvents, timelineYear, timelineMonth1],
   )
   const columns = useMemo(() => (adminAllowed ? projectBoard(adminEvents) : []), [adminAllowed, adminEvents])
 
@@ -114,8 +121,16 @@ export function CalendarWorkspace({
       setTimelineYear(year)
       setTimelineMonth1(month1)
       syncUrl('timeline', { year, month1 })
+      setTimelineEvents([])
+      startTimelineTransition(async () => {
+        try {
+          setTimelineEvents(await loadAdminMonth(year, month1))
+        } catch {
+          setTimelineEvents([])
+        }
+      })
     },
-    [syncUrl],
+    [loadAdminMonth, syncUrl],
   )
 
   const guestBody = (
@@ -189,6 +204,7 @@ export function CalendarWorkspace({
                       initialMonth1={initialMonth1}
                       canEdit={canManage}
                       dayNotes={dayNotes}
+                      plans={plans}
                     />
                   </div>
                 ) : null}
@@ -202,6 +218,7 @@ export function CalendarWorkspace({
                     days={timelineDays}
                     bars={timelineBars}
                     onMonthChange={changeTimelineMonth}
+                    loading={timelinePending}
                   />
                 ) : null}
                 {panel === 'projects' ? (

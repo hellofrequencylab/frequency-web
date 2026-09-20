@@ -28,6 +28,7 @@ export type ListIndexItem = {
 
 export function listPublicSlug(ev: CalendarEvent): string | null {
   if (!ev.eventId) return null
+  if (ev.publicationState !== 'published') return null
   if (ev.slug.startsWith('entry-')) return null
   return ev.slug
 }
