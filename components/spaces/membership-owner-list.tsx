@@ -3,6 +3,7 @@ import { listSpaceMemberships } from '@/lib/spaces/memberships'
 import { EmptyState } from '@/components/ui/empty-state'
 import { MembershipCancelButton } from '@/components/spaces/membership-cancel-button'
 import { MembershipPromoteButton } from '@/components/spaces/membership-promote-button'
+import { isPastDueSpaceMembership, spacePastDueOwnerLabel } from '@/lib/spaces/membership-dunning'
 
 // OWNER MEMBER LIST (ENTITY-SPACES-SYSTEM §2.5, memberships v1). A self-fetching server component for
 // the owner memberships surface: the Business's members (member name + tier + joined date), gated on
@@ -39,6 +40,11 @@ export async function MembershipOwnerList({ spaceId }: { spaceId: string }) {
               {m.status === 'waitlist' && (
                 <span className="rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
                   Waitlist
+                </span>
+              )}
+              {isPastDueSpaceMembership(m.paymentStatus) && (
+                <span className="rounded-pill bg-warning-bg px-1.5 py-0.5 text-2xs font-medium text-warning">
+                  {spacePastDueOwnerLabel()}
                 </span>
               )}
             </p>

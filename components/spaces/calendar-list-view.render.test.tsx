@@ -1,8 +1,12 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { CalendarListView } from './calendar-list-view'
+
+vi.mock('@/components/events/event-share-button', () => ({
+  EventShareButton: ({ title }: { title: string }) => <button type="button">Share {title}</button>,
+}))
 import type { ListIndexItem } from '@/lib/calendar/list-index'
 
 let container: HTMLDivElement | null = null
@@ -30,6 +34,7 @@ const sit: ListIndexItem = {
   stageLabel: 'Production',
   href: '/events/sit',
   editHref: '/events/sit/manage?section=settings',
+  publicSlug: 'sit',
   isCancelled: false,
   eventId: 'evt-1',
   entryId: null,
@@ -38,6 +43,7 @@ const sit: ListIndexItem = {
   notes: null,
   goingCount: 4,
   coverUrl: null,
+  startInstantIso: '2026-09-22T19:00:00.000Z',
   stage: null,
 }
 
@@ -51,8 +57,13 @@ describe('CalendarListView', () => {
       />,
     )
     expect(el.querySelector('[data-calendar-list-view]')).not.toBeNull()
-    expect(el.querySelector('[data-calendar-list-viewer]')?.textContent).toContain('New moon sit')
+    expect(el.querySelector('[aria-label="Gatherings"]')?.className).toContain('lg:w-52')
+    const viewer = el.querySelector('[data-calendar-list-viewer]')
+    const header = viewer?.querySelector('header')
+    expect(header?.textContent).toContain('New moon sit')
+    expect(header?.textContent).toContain('Production')
     expect(el.textContent).toContain('The loft')
+    expect(el.textContent).toContain('Share')
     expect(el.textContent).toContain('Going')
     expect(el.textContent).toContain('Go to event')
     expect(el.textContent).not.toContain('Manage')

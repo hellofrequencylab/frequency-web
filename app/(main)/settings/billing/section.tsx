@@ -10,6 +10,8 @@ import { getConnectStatus, syncConnectedAccount, payoutsLive, canReceivePayouts,
 import { ENTITLEMENT_LABEL, type EntitlementTier } from '@/lib/core/entitlement'
 import { resolveMemberPaymentState } from '@/lib/pricing/dunning'
 import { PastDueBanner } from '@/components/billing/past-due-banner'
+import { MembershipPastDueList } from '@/components/spaces/membership-past-due-banner'
+import { listMyPastDueSpaceMemberships } from '@/lib/spaces/memberships'
 import { ManageBillingButton } from './manage-button'
 import { StartPayoutButton, ManagePayoutButton } from '@/components/billing/payout-controls'
 import { BundleSeatsSection } from './bundle-seats-section'
@@ -54,6 +56,7 @@ export async function PlanSection({
   // Dunning / past-due state (ADR-370). resolveMemberPaymentState is GATED on billingLive(): it returns
   // 'active' while billing is OFF, so the recovery banner is dark until launch (today's behavior).
   const paymentState = await resolveMemberPaymentState(me.id)
+  const spacePastDue = await listMyPastDueSpaceMemberships()
 
   // Payouts (ADR-175): show the Connect card to earners only. On return from the
   // hosted onboarding (?payouts=return) reconcile the account synchronously so the
@@ -68,6 +71,7 @@ export async function PlanSection({
     <div>
       {/* Dunning recovery (ADR-370): dark until billing is live AND a payment fails/cancels. */}
       <PastDueBanner state={paymentState} />
+      <MembershipPastDueList rows={spacePastDue} />
 
       {justUpgradedTo && (
         <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-success/50 bg-success-bg/30 px-4 py-2.5 text-body-sm font-semibold text-success">
