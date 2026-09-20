@@ -384,11 +384,11 @@ they must read as one idea on the event page:
   owner's name; instead the picker results and Collaborator rows always show the Space's logo
   plus a type badge, "Business Space" / "Non Profit", so an owner-named Space never reads as a
   person. BEING a Collaborator is free for any Business / Non Profit Space; HOSTING an event
-  with Collaborators is the host Space's Collective-plan capability (see next bullet).
+  with Collaborators is the host Space's plan capability (Business floor; see next bullet).
 - **"Event hub" is not a name; the capability is "Collaborator hosting" (ADR-835).** The
   owner's informal "event hub" concept (a Space whose event brings on Collaborator Spaces)
-  maps to the **Collaborator hosting** capability on the Collective plan (feature
-  `space_collaborators`). Never write "Event Hub" / "hub" in UI or member copy for this:
+  maps to the **Collaborator hosting** capability on the Business plan (feature
+  `space_collaborators`, LIVE-430). Never write "Event Hub" / "hub" in UI or member copy for this:
   **Hub** is the locked community-structure term (Circle → Hub → Nexus) and must not collide.
   A member-hosted event has no host Space, so it can never take on Collaborators at all
   (individuals have Cohosts; their business Space can collaborate on a Space-hosted event).

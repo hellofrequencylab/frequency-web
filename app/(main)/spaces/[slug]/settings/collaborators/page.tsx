@@ -5,6 +5,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { spaceCanHostCollaborators } from '@/lib/spaces/function-access'
+import { resolveCollaboratorHostWall } from '@/lib/spaces/collaborator-host-gate'
 import { CollaboratorsBody } from './collaborators-body'
 import { SharedCollaboratorCalendar } from './shared-collaborator-calendar'
 import { VenueHoldsSection } from './venue-holds-section'
@@ -28,11 +29,14 @@ export default async function SpaceCollaboratorsPage({ params }: { params: Promi
 
   const brandName = space.brandName ?? space.name
   const caps = await getSpaceCapabilities(space, viewerProfileId)
-  // Locked when the viewer lacks the role OR the space is on a plan below Collective (ADR-810, floor
-  // raised by ADR-835): a lower-plan space sees the surface + the value but the controls are the upgrade
-  // prompt (the tease pattern). While billing is OFF, spaceCanHostCollaborators grants, so this stays
-  // exactly today's behavior.
-  const planOk = await spaceCanHostCollaborators(space)
+  // Locked when the viewer lacks the role OR the space is below the collaborator-host
+  // wall (ADR-810 / LIVE-430, Business floor). A lower-plan space sees the surface + the
+  // value but the controls are the upgrade prompt. While billing is OFF,
+  // spaceCanHostCollaborators grants, so this stays today's behavior.
+  const [planOk, wallLabel] = await Promise.all([
+    spaceCanHostCollaborators(space),
+    resolveCollaboratorHostWall(),
+  ])
   const roleOk = spaceFunctionAccess(space, 'collaborators', caps.role)
   const featureLocked = !staffViewing && (!roleOk || !planOk)
   // Which lock to explain: a plan lock routes to the plans/billing surface; a role/module lock routes to
@@ -46,7 +50,13 @@ export default async function SpaceCollaboratorsPage({ params }: { params: Promi
       description="The businesses that operate inside your space, and requests to collaborate. Invite another business space; they approve, and you both show as collaborators."
       width={featureLocked ? undefined : 'wide'}
     >
-      <CollaboratorsBody spaceId={space.id} slug={slug} manage={!featureLocked} lockedReason={lockedReason} />
+      <CollaboratorsBody
+        spaceId={space.id}
+        slug={slug}
+        manage={!featureLocked}
+        lockedReason={lockedReason}
+        wallLabel={wallLabel}
+      />
       {/* B3 first slice: the combined calendar of this space + its accepted collaborators (public events
           only, gated per source). Renders nothing when there are no accepted collaborators / events. */}
       {!featureLocked && <SharedCollaboratorCalendar spaceId={space.id} ownName={brandName} />}
