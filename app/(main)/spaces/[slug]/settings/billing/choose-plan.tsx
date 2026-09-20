@@ -6,14 +6,17 @@ import { isError } from '@/lib/action-result'
 import { startSpaceLoadoutCheckout, settleSpaceLoadoutAction } from './actions'
 import CheckoutPanel from '@/components/billing/checkout-panel'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
+import { SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 
-// CHOOSE PLAN BUTTON (client · ADR-811). The inline upgrade action for a ladder rung the checkout can
-// sell self-serve, which today is Collective alone: Independent came off the self-serve path when the
-// owner made it a hand-sold tier (LIVE-227), so the prop type names the one plan this button offers and
-// a second one cannot be added without a decision. It wires to startSpaceLoadoutCheckout, which is
-// DOUBLE-GATED server-side (billingLive AND the per-plan switch), so the parent only renders this when
-// the plan is sellable. Business keeps its own richer CTA (GoBusinessCta) with the seat picker; this is
-// the plain one-click choose for the flat higher rung. No em dashes (CONTENT-VOICE §10).
+// CHOOSE PLAN BUTTON (client · ADR-811 / LIVE-438). The inline upgrade action for a ladder rung the
+// checkout can sell self-serve, which today is Business: Independent came off the self-serve path
+// when the owner made it a hand-sold tier (LIVE-227), so the prop type names the one plan this
+// button offers and a second one cannot be added without a decision. It wires to
+// startSpaceLoadoutCheckout, which is DOUBLE-GATED server-side (billingLive AND the per-plan
+// switch), so the parent only renders this when the plan is sellable. Business also has a richer
+// CTA (GoBusinessCta) with the seat picker; this is the plain one-click choose. The paid
+// confirmation names SPACE_PLAN_LABEL[plan], never a retired plan label (LIVE-228). No em
+// dashes (CONTENT-VOICE §10).
 
 export function ChoosePlanButton({
   slug,
@@ -88,7 +91,7 @@ export function ChoosePlanButton({
             onFellBack={fallBackToHosted}
             onPaid={session.sessionId ? () => settleSpaceLoadoutAction(session.sessionId as string) : undefined}
             onClose={() => window.location.reload()}
-            doneTitle="You are on Collective."
+            doneTitle={`You are on ${SPACE_PLAN_LABEL[plan]}.`}
             doneBody="A receipt is on its way to your email."
           />
         </div>

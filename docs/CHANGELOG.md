@@ -28,6 +28,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **Choosing Business on a Space now says you are on Business after you pay.** It used to name a leftover Collective plan. The confirmation matches the plan you just bought.
+
 - **Email no longer says sends go to 25,000 on Collective.** A free Space includes 300 sends a month. Business is 25,000 a month.
 
 - **Reach no longer says QR codes go unlimited on Collective.** A free Space includes 3 codes. Business is unlimited.
