@@ -4914,6 +4914,7 @@ export type Database = {
           organizer_contact: string | null
           organizer_name: string | null
           parent_event_id: string | null
+          plan_id: string | null
           postal_code: string | null
           posted_by_profile_id: string | null
           poster_path: string | null
@@ -4980,6 +4981,7 @@ export type Database = {
           organizer_contact?: string | null
           organizer_name?: string | null
           parent_event_id?: string | null
+          plan_id?: string | null
           postal_code?: string | null
           posted_by_profile_id?: string | null
           poster_path?: string | null
@@ -5046,6 +5048,7 @@ export type Database = {
           organizer_contact?: string | null
           organizer_name?: string | null
           parent_event_id?: string | null
+          plan_id?: string | null
           postal_code?: string | null
           posted_by_profile_id?: string | null
           poster_path?: string | null
@@ -5116,6 +5119,13 @@ export type Database = {
             columns: ["parent_event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "space_plans"
             referencedColumns: ["id"]
           },
           {
@@ -16507,6 +16517,19 @@ export type Database = {
         }
         Returns: Json
       }
+      create_penciled_plan: {
+        Args: {
+          p_ends_at: string
+          p_space_id: string
+          p_starts_at: string
+          p_time_zone: string
+          p_title: string
+        }
+        Returns: {
+          entry_id: string
+          plan_id: string
+        }[]
+      }
       dashboard_health_summary: {
         Args: never
         Returns: {
@@ -18119,6 +18142,10 @@ export type Database = {
       st_within: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       st_wkbtosql: { Args: { wkb: string }; Returns: unknown }
       st_wkttosql: { Args: { "": string }; Returns: unknown }
+      transition_space_plan_stage: {
+        Args: { p_plan_id: string; p_space_id: string; p_stage: string }
+        Returns: boolean
+      }
       st_wrapx: {
         Args: { geom: unknown; move: number; wrap: number }
         Returns: unknown
