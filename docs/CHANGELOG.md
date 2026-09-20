@@ -18,11 +18,15 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 - **You can keep a Journey for one Space membership.** In settings, pick the tier. People who are not in that membership see a join link instead of Start or Get access.
 
+- **A Space has a Discussion tab.** When that Space's Circle is on, people who can see the Space can talk there. Comments sit under each post. If the Circle is off, only the people who run the Space see the tab, so they can turn it on.
+
 - **You can list what people will learn on a Journey.** Add the outcomes in settings, one line each. Visitors see that list next to the story, not a repeat of the one-line promise.
 
 - **If you run a Space, Home now shows who started and finished your Journeys.** Enrolled, finished, still going, and the finish rate sit next to your profile views. Revenue was already on that same page. A person who starts again still counts as one.
 
 ### Changed
+
+- **Reserving a ticket for your members is no longer described as a Collective plan feature.** Every plan can do that. The ticket editor and Event access name the same rule as the memberships floor. A payout account is what starts the money.
 
 - **Help no longer says you need the Business plan to sell memberships or to reserve tickets for your members.** Every plan can sell those. A payout account is what starts the money. Campaigns and funnels still open at Business.
 

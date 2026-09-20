@@ -4,7 +4,7 @@ description: Share with your Circle and join the conversation.
 category: sharing
 order: 1
 published: 2026-06-03
-updated: 2026-06-21
+updated: 2026-09-20
 audience: member
 featureKeys: [posts]
 status: published
@@ -25,7 +25,7 @@ Tap the **Zap button** to capture a moment, then pick a style:
 Want bold, lists, or links? Tap the little **Format** arrow under the text box
 and the writing tools unfold.
 
-From home, whatever you capture lands on your wall and the community feed. From inside a Circle, it shares with that Circle.
+From home, whatever you capture lands on your wall and the community feed. From inside a Circle, it shares with that Circle. A Space's [Discussion](/help/groups/talk-on-a-space) tab is that Space's Circle, so a post you write there stays with the people at that Space.
 
 ## Reacting & commenting
 
