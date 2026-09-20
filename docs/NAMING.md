@@ -263,7 +263,9 @@
   **Circles**. (Same collision ADR-868 already fixed once in the sidebar; "Community" stays
   reserved for the canon uses in this doc — the community structure tree, `community_role`,
   Community Resonance, and the brand's Community Collective.) The stored block TYPE KEY
-  `SpaceCommunity` is an internal identifier and is deliberately not renamed.
+  `SpaceCommunity` is an internal identifier and is deliberately not renamed. The Space
+  profile tab for the Space Circle's conversation is **Discussion** ([ADR-1469](DECISIONS.md)).
+  It is that Circle's feed, on the Space. Never a second post scope.
 - **Outpost** = the brick-and-mortar home base of a Nexus; one per Nexus; the seed
   toward a Lab. Circles meet in homes/public spaces, never Outposts.
 - **Frequency Lab** = standalone for-profit venue; when a Lab exists in a Nexus, the

@@ -29,6 +29,7 @@ import { startJourneyRunAction, endJourneyRunAction } from '@/app/(main)/journey
 function revalidateSpaceCircles(slug: string) {
   revalidatePath(`/spaces/${slug}/manage/circles`)
   revalidatePath(`/spaces/${slug}/circles`)
+  revalidatePath(`/spaces/${slug}/discussion`)
   revalidatePath(`/spaces/${slug}`)
 }
 

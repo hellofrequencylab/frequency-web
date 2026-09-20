@@ -8,6 +8,7 @@ import {
 import { listAudienceTags } from '@/lib/spaces/audiences'
 import { listSpaceSegments } from '@/lib/spaces/segments'
 import { listSpaceSequences } from '@/lib/spaces/automation'
+import { automationWallSentence, resolveAutomationWall } from '@/lib/spaces/automation-access'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
@@ -41,7 +42,9 @@ export async function AutomationBody({ slug }: { slug: string }) {
 
   // The `crm.space.automation` gate: the Space's plan must grant the automation entitlement. A staff
   // janitor keeps a read-only preview even when the plan lacks it (so staff can see the surface).
+  // LIVE-432 names the wall through featureWallLabel (never the retired Collective label).
   if (!staffViewing && !spaceHasEntitlement(space, 'automation')) {
+    const wall = await resolveAutomationWall()
     return (
       <FeatureLockedNotice
         brandName={brandName}
@@ -52,11 +55,7 @@ export async function AutomationBody({ slug }: { slug: string }) {
         canManageMembers={caps.canManageMembers}
         featureKey="space_automation"
         currentPlan={space.plan}
-        planLine={
-          caps.canManageMembers
-            ? 'Automations come with the Collective plan. Sequences and rules run your follow-ups for you.'
-            : 'Automations come with the Collective plan. Ask an admin about the plan for this space.'
-        }
+        planLine={automationWallSentence(wall, caps.canManageMembers)}
       />
     )
   }

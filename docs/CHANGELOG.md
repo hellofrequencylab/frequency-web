@@ -12,9 +12,15 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **If a Space membership payment fails, you see it.** The Space still counts you as a member. Settings, Plan and billing, names the Space. The host sees Payment failed on that member.
+
+- **Spaces you belong to now live on Settings → Memberships.** Open one from there, or leave it. The Frequency plan stays under Plan and billing.
+
 - **If you belong to a Space, you can see the other members.** Open People on that Space. Visitors who have not joined see a join door, not the list.
 
 - **You can keep a Journey for one Space membership.** In settings, pick the tier. People who are not in that membership see a join link instead of Start or Get access.
+
+- **A Space has a Discussion tab.** When that Space's Circle is on, people who can see the Space can talk there. Comments sit under each post. If the Circle is off, only the people who run the Space see the tab, so they can turn it on.
 
 - **You can list what people will learn on a Journey.** Add the outcomes in settings, one line each. Visitors see that list next to the story, not a repeat of the one-line promise.
 
@@ -23,6 +29,10 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 ### Changed
 
 - **Hosting other businesses on your Space, or on your event, is no longer described as a Collective plan feature.** That door opens at Business. The invite, the accept, and the locked preview name the same rule as the plan map.
+
+- **If you run a Space, you can include a Circle with a membership on any plan.** Set Who can join to Included with a membership. A payout account is what starts the money. Campaigns and funnels still open at Business.
+
+- **Automations come with Business, not a leftover Collective plan.** If your Space is on Free, the lock screen names Business. Sequences and rules still run the same way once you are on that plan.
 
 - **Reserving a ticket for your members is no longer described as a Collective plan feature.** Every plan can do that. The ticket editor and Event access name the same rule as the memberships floor. A payout account is what starts the money.
 
