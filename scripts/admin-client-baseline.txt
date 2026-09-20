@@ -199,6 +199,10 @@
 # Converging this onto the session client is not an effort question, it would mean giving pricing
 # rules and a redemption ledger client-readable policies. The write re-gates canEditProfile plus the
 # per-Space memberships function gate before it touches a row.
+# Added 2026-09-20 (LIVE-421, ADR-1469): lib/spaces/space-discussion.ts. Looks up the live Space
+# Circle the same way the Circles tab already does (admin client, fail-closed). The app-layer
+# gate is the door: ROOT never, visitors only when the hub is on, managers keep the tab to
+# turn it on. A session client cannot see another Space's primary circle row under RLS.
 # Added 2026-09-17 (ADR-1397, selling a Journey). Five files, and the reason is one table:
 #                                     CALLER through getSpaceCapabilities before it answers
 #                                     all: the caller is Stripe, and it must write an enrolment
@@ -950,6 +954,7 @@ lib/spaces/provision.ts
 lib/spaces/resonance-roster.ts
 lib/spaces/seats.ts
 lib/spaces/segments.ts
+lib/spaces/space-discussion.ts
 lib/spaces/standing-rollup.ts
 lib/spaces/store.ts
 lib/spaces/tagline.ts
