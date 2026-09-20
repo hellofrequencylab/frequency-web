@@ -34,7 +34,7 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 - **If you sell a Journey from a Space you run, Sell this Journey now asks for a payout account when the Space cannot take money yet.** You can still set the price. The money lands once that account is ready.
 
-- **If you run a Space, its Calendar tab slides between Guest, Admin, List, Timeline, and Projects.** Guest is first in the control. List is a gathering list on the left and a short stats card on the right, not the event editor. The tab remembers the last view you used.
+- **If you run a Space, its Calendar tab slides between Guest, Admin, List, Timeline, and Projects.** Guest is first in the control. Admin is the same month as Guest, with every date your team can see. List is a slim gathering list on the left and a control console on the right (stage pill next to the title, share links, stats). Not the event editor. The tab remembers the last view you used.
 
 - **If you run a Space, you can keep a Plan behind the dates on its calendar.** Start one from a penciled date or from Calendar settings. Open it for notes and to-dos. When you are ready, Make it a Production opens the same new-event form, already filled in. A cancelled gathering stays a muted note. Guest still sees live events only.
 
@@ -44,7 +44,7 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 - **A cancelled gathering on a Space calendar is a small note at the bottom of that day**, not a crossed-out chip. Live events stay on the grid. Dates that are only penciled or still in planning stay off the public calendar.
 
-- **If you run a Space, Admin on its Calendar tab is the production board.** Pencil and Planning are their own lanes. Production and Cancelled stay on the board. The month grid is the date map underneath. Guest is still what visitors see.
+- **If you run a Space, Admin on its Calendar tab is the same month grid as Guest**, plus drafts, pencils, and other team-only dates. Stage columns live on the Projects view. Guest is still what visitors see.
 
 - **A repeating event counts as one gathering on a free membership**, not one per date. Crew is still unlimited. The message when you are at the free cap no longer says a series is a Crew perk.
 
