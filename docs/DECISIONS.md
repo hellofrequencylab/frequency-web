@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1481**. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1478–1480 are claimed on other open PRs.
+tree as of this index: **ADR-1486**. 1486 is LIVE-415 Admin = Guest-plus-staff events. 1485 is LIVE-436. 1481 is LIVE-432. 1479 is LIVE-430. 1478 is LIVE-429. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415 (original PM console; amended). 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1480 and 1482–1484 are claimed on other open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46391,7 +46391,7 @@ Premise re-tested 2026-09-19 against the tree, not the banners:
 
 **Rejected.** Restyling the guest month and calling it Admin. Closing C2–C4 in the same PR. Folding Guest through `guestLiveItems` (LIVE-419).
 
-**Consequences.** The Calendar tab's Admin mode leads with the board. The settings console is unchanged. LIVE-416 starts the pencil lane. **Amended by [ADR-1454](DECISIONS.md):** that lane now exists.
+**Consequences.** The Calendar tab's Admin mode leads with the board. The settings console is unchanged. LIVE-416 starts the pencil lane. **Amended by [ADR-1454](DECISIONS.md):** that lane now exists. **Amended by [ADR-1486](DECISIONS.md):** Admin on the Calendar tab is StaffCalendar over the admin feed, not CalendarPmConsole.
 
 **Rows.** LIVE-415.
 
@@ -47017,3 +47017,21 @@ Premise re-tested 2026-09-20: `spaceEarningsSummary` folds commerce then tickets
 **Consequences.** A later `spaceEarningsSummary` that drops `space_donations` fails the LIVE-431 probe. A network-sourced gift that never reaches `networkGrossCents` fails the test. Checkout still refuses when Connect is not payout-ready.
 
 **Rows.** LIVE-431.
+
+## ADR-1486: Admin Calendar is Guest chrome plus staff events (LIVE-415)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-415` · numbered **1486** because **1485** is LIVE-436 on this tree · **Amends** [ADR-1450](DECISIONS.md) and [ADR-1464](DECISIONS.md) (Admin body) · corroborated by `components/spaces/calendar-workspace.tsx` (`StaffCalendar`, no `CalendarPmConsole`) and `app/(main)/spaces/[slug]/(profile)/calendar/page.tsx` (`loadAdminCalendar`)
+
+**Context.** ADR-1450 mounted `CalendarPmConsole` as Admin. Daniel then approved Guest as the sliding month and asked Admin to be that same month with staff events (drafts, pencils, private/unpublished), not the PM wrap. List is a condensed left index and a right event console. Stage columns stay on Projects.
+
+**Decision.**
+
+1. **Admin mounts `StaffCalendar` over `loadAdminCalendar`.** Same month chrome as Guest. Guest stays `EventCalendar` over `guestLiveItems`.
+2. **Do not mount `CalendarPmConsole` on the Calendar tab.** The file may stay for C2–C4 lane probes. Projects keeps the stage board.
+3. **List is the control console.** Stage pill on the title row, narrower left list, share and stats on the right. Not Studio.
+
+**Rejected.** Keeping the PM wrap as Admin. Opening the event editor in List. A second Guest month.
+
+**Consequences.** A later Admin panel that mounts `CalendarPmConsole` fails the LIVE-415 probe.
+
+**Rows.** LIVE-415.
