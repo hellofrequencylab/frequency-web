@@ -28,6 +28,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **Hosting other businesses on your Space is no longer described as a Collective plan extra.** Business is the door. The plan ladder no longer says Collective hosts unlimited, or that you get three hosts and then a higher plan.
+
 - **Choosing Business on a Space now says you are on Business after you pay.** It used to name a leftover Collective plan. The confirmation matches the plan you just bought.
 
 - **Email no longer says sends go to 25,000 on Collective.** A free Space includes 300 sends a month. Business is 25,000 a month.

@@ -250,12 +250,11 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     axis: 'plan',
     minTier: 'business',
     title: 'Collaborator hosting',
-    // @placeholder 3 mirrors PLACEHOLDER_METER_LIMITS.space_collaborators (ADR-837). Collaboration opens
-    // at Business as a real, small allowance and goes unlimited at Collective, so the ladder reads as
-    // "use more" rather than "unlock".
+    // LIVE-439 / LIVE-228. The meter is free 1 / Business unlimited. Collective is not a
+    // plan label. Revenue splits are PROG-D8, not this ladder.
     rungs: spaceRungs(
       'Be a Collaborator on other Spaces and events, and preview the hosting surface.',
-      'Host up to 3 other businesses inside your space, and co-host events with Collaborator Spaces. They keep their own page and pay for their own space. Collective hosts unlimited and adds revenue splits.',
+      'Host other businesses inside your space, and co-host events with Collaborator Spaces. They keep their own page and pay for their own space.',
     ),
   },
   // 🔴 `space_memberships` and `space_membership_tickets` LADDERS USED TO SIT HERE and no longer do
