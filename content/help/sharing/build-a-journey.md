@@ -139,6 +139,8 @@ counts as one.
 A **paid Space** can put a price on a Journey from **Sell this Journey** in its settings. Leave
 **Also list it in the main Market** off to sell only from the Journey page and that Space's Shop.
 Turn it on to show the same offer in the Market too. There is still one price and one set of seats.
+If the Space cannot take money yet, that same panel asks the owner to add a payout account. It
+takes about two minutes. You can still set the price while that finishes.
 
 People who are not enrolled see the sales page (the story, the outline, the price, and any
 reviews). They see the lessons after they pay or, for a free Journey, after they start it.

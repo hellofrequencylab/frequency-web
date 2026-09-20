@@ -48,6 +48,15 @@ describe('every sell path reaches the one Connect prompt (source shape)', () => 
     expect(src).toMatch(/channels:\s*\['orders'\]/)
   })
 
+  it('Sell this Journey resolves the Space owner prompt and renders the shared card (LIVE-425)', () => {
+    const data = read('app/(main)/journeys/admin-actions.ts')
+    expect(data).toContain('resolveSpacePayoutPromptById')
+    expect(data).toMatch(/channels:\s*\['journeys'\]/)
+    const sell = read('components/admin/modules/journey-sell-module.tsx')
+    expect(sell).toContain('PayoutPromptCard')
+    expect(sell).toContain('payoutPrompt')
+  })
+
   it('no sell path links an operator to /settings/billing instead of starting onboarding inline', () => {
     // The four hand-written cards each ended in a link to the billing page. The shared card posts
     // to the onboarding action instead; a surface that re-grows the link has re-grown the dead end.

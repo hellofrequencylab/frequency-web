@@ -4,7 +4,7 @@ description: Where your Space's money lands, how the owner connects the payout a
 category: spaces
 order: 4
 published: 2026-09-10
-updated: 2026-09-10
+updated: 2026-09-20
 audience: member
 featureKeys: [payouts]
 status: published
@@ -51,15 +51,16 @@ billing side.
 
 ## Your money paths
 
-There are five ways a Space can take money, and Get paid lists all five with the state each one is in:
+There are six ways a Space can take money, and Get paid lists all six with the state each one is in:
 
 | Money path | What it is |
 | --- | --- |
-| **Memberships** | Paid tiers people join. Selling these needs the Business plan. |
+| **Memberships** | Paid tiers people join. Open on every plan. The money lands once a payout account is ready. |
 | **Bookings** | Paid time on your calendar, deposit included at checkout. |
 | **Orders** | Sales from your Shop. |
 | **Donations** | Your fund and the amounts people can pick. |
 | **Tickets** | Paid tickets on an event your Space hosts. |
+| **Journeys** | A price on a Journey this Space sells. |
 
 Two things have to be true for a path to take money: the path needs its own setup, and the payout
 account needs to exist. So a path can read **Ready once payouts are on** while everything else about it
@@ -67,7 +68,8 @@ is finished, and a path you have not turned on reads **Turned off in your settin
 are live.
 
 Set each path up from the tool that owns it. Booking, memberships, donations and your **Shop** all sit
-beside Get paid under **Offerings & Money**. Tickets live in the event's own settings.
+beside Get paid under **Offerings & Money**. Tickets live in the event's own settings. Journeys use
+**Sell this Journey** on the Journey itself.
 
 ## Your rate
 
@@ -95,8 +97,9 @@ You **pay** Frequency for your plan. That is a separate charge, and it is the on
 ## Common questions
 
 **Do I need a plan to take money?** No. Every plan can sell, including Free, and a paid plan lowers
-what the network takes rather than turning selling on. Memberships are the one path that needs the
-Business plan.
+what the network takes rather than turning selling on. Memberships, tickets, bookings, orders, and
+donations all follow that rule. A Journey needs a paid Space. A payout account is what actually
+starts the money.
 
 **Get paid says payments are not turned on yet. Is something wrong?** No. That line is about the
 platform, not your account. You can set your money paths up now, and payouts go live with the rest of

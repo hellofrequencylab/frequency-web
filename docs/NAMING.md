@@ -710,8 +710,8 @@ rewards one was in the canon. These are the money-IN names, the ones a Space hos
   something an operator **adds** rather than applies for: *"Add a payout account to start selling
   tickets."* Say **payout account** in member-facing copy and keep **Stripe Connect** for the one
   sentence that has to name the processor. Never "merchant account", never a bare "Stripe account".
-- **money path**: one of the **five** ways money comes in, and the set is closed: memberships,
-  bookings, orders, donations, tickets (`PayoutChannel`, `lib/billing/payout-prompt.ts`). The
+- **money path**: one of the **six** ways money comes in, and the set is closed: memberships,
+  bookings, orders, donations, tickets, journeys (`PayoutChannel`, `lib/billing/payout-prompt.ts`). The
   plural is how a surface covering several at once names them: *"which of your money paths are
   live."* Never "revenue stream", and never "channel" — Channels is the focus-area feature.
 - **Receive payments**: the personal entry point. The account-menu item that deep-links to

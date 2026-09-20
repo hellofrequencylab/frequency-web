@@ -468,8 +468,9 @@ export function paidWalls(overrides: FeatureGateOverrides = {}): PaidWall[] {
   return walls
 }
 
-/** The one-line answer-engine form, "selling memberships (Business) and campaigns and funnels
- *  (Business)". PURE. Shared by /pricing, /llms.txt and /llms-full.txt so the three cannot disagree. */
+/** The one-line answer-engine form, e.g. "campaigns and funnels (Business)". PURE. Shared by
+ *  /pricing, /llms.txt and /llms-full.txt so the three cannot disagree. A free-floor gate
+ *  (LIVE-410 memberships) drops out of paidWalls rather than naming a plan. */
 export function paidWallsPhrase(overrides: FeatureGateOverrides = {}): string {
   const parts = paidWalls(overrides).map((w) => `${w.what} (${w.plan})`)
   if (parts.length === 0) return 'nothing'

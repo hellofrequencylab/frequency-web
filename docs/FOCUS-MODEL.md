@@ -165,7 +165,7 @@ That is exactly the primitive the owner is asking for, and it is already the rul
 
 | Gap | Evidence |
 |---|---|
-| **You cannot sell a course.** `journey_plans` has no price, no Stripe product, no tier link. | `lib/database.types.ts:6425` |
+| **You cannot sell a course.** Closed for the price half: a paid Space sells a Journey through `commerce_products` (ADR-1397) and Sell this Journey. LIVE-425 / ADR-1474 adds the Connect prompt on that rail so the first sell attempt is not a dead end. The 2026-09-17 ruling still holds: a personal Journey and a free Space cannot sell. | `components/admin/modules/journey-sell-module.tsx` |
 | **No gated content except events.** Only `event_ticket_types` carries `member_only` / `space_tier_id`. Journeys are `private \| unlisted \| public`, with no fourth "members of my tier" state. | `lib/database.types.ts:4676-4685` |
 | **No space-level discussion.** `posts` has `scope_circle_id`, `scope_event_id`, `scope_profile_id` and **no `scope_space_id`**. A Space's only broadcast is an announcement wall with no replies. | `20260829000000_h1_1_scope_typed_arc_expand.sql:49-51` |
 | **No member directory.** Closed 2026-09-19 as LIVE-420 / ADR-1471. `space.people` is still the *staff* roster. Paying members now have `/spaces/<slug>/people`, visible to active members and managers. | `app/(main)/spaces/[slug]/(profile)/people/page.tsx` |

@@ -4,7 +4,7 @@ description: What each Space plan is for, what it turns on, and how to pick the 
 category: spaces
 order: 2
 published: 2026-07-27
-updated: 2026-09-19
+updated: 2026-09-20
 audience: member
 featureKeys: [billing]
 status: published
@@ -81,9 +81,10 @@ takes payments from day one. You do not buy the ability to charge, you buy the r
 lowers what Frequency takes on the sales the network brings you, and it gives you the tools that turn
 those buyers into your own people, where the rate is 0% on every plan.
 
-Two things do genuinely need a plan, and they are both about money: **selling memberships** and
-**campaigns and funnels**. Both open at Business. Nothing about being here, gathering people, or being
-found needs one.
+One thing still needs a plan, and it is about bringing people in: **campaigns and funnels**. That
+opens at Business. Selling memberships, tickets, bookings, orders, and donations is open on every
+plan, including Free. A Journey needs a paid Space. A payout account is what starts the money, not
+the plan. Nothing about being here, gathering people, or being found needs a plan.
 
 On your personal account the same shape applies: a free Member sells at the free rate, and **Crew**
 brings it down. Crew is contribute what you want: pick any monthly amount at or above the floor shown
