@@ -14531,7 +14531,7 @@
         "file": "docs/FOCUS-MODEL.md",
         "ref": "ADR-1403 Q5; survey 2026-09-19"
       },
-      "detail": "FILED 2026-09-19. FOCUS-MODEL Q5: sell a course, gate content to a tier, member directory, space-level discussion, completion analytics. Sequence AFTER interior (LIVE-254, HYG-033, LIVE-409, LIVE-410). Keep as one sequenced row so five operator asks do not each become a parallel P1.\n\nUPDATED 2026-09-20. Children: LIVE-420 (directory, done), LIVE-422 (analytics, done), LIVE-425 (sell-course Connect prompt, done). LIVE-426 closed the leftover Business-plan lie in help (LIVE-410). Price half of sell-a-course already lived on ADR-1397. Tier gate and Discussion still have their own PRs. Do not close this parent from a child. Do not add posts.scope_space_id from this row.\n\nUPDATED 2026-09-20: the tier-gate child is LIVE-427. Do not close this parent from that child. Discussion closed as LIVE-421 (ADR-1469).",
+      "detail": "FILED 2026-09-19. FOCUS-MODEL Q5: sell a course, gate content to a tier, member directory, space-level discussion, completion analytics. Sequence AFTER interior (LIVE-254, HYG-033, LIVE-409, LIVE-410). Keep as one sequenced row so five operator asks do not each become a parallel P1.\n\nUPDATED 2026-09-20. Children: LIVE-420 (directory, done), LIVE-422 (analytics, done), LIVE-425 (sell-course Connect prompt, done). LIVE-426 closed the leftover Business-plan lie in help (LIVE-410). Price half of sell-a-course already lived on ADR-1397. Tier gate and Discussion still have their own PRs. Do not close this parent from a child. Do not add posts.scope_space_id from this row.\n\nUPDATED 2026-09-20: the tier-gate child is LIVE-427. Do not close this parent from that child. Discussion closed as LIVE-421 (ADR-1469). Programs catalog leftover is LIVE-434.",
       "verify": {
         "kind": "manual",
         "evidence": "2026-09-20: sell-course Connect is LIVE-425 (done). Directory is LIVE-420. Analytics is LIVE-422. Help no longer restates the Business membership wall (LIVE-426). Tier gate is LIVE-427 (own PR). Closes when each of the five has its own child row with a passing probe, or a ruling drops one. Discussion is LIVE-421 (done).",
@@ -15162,6 +15162,25 @@
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const files=[\"lib/events/ticket-tiers.ts\",\"lib/events/space-event-access.ts\",\"lib/events/ticket-space-access.ts\",\"components/spaces/membership-event-access.tsx\",\"app/(main)/events/[slug]/manage/ticket-tiers-panel.tsx\",\"app/(main)/admin/events/[id]/event-edit-client.tsx\"];for (const f of files){const s=fs.readFileSync(f,\"utf8\");if(/Collective plan/.test(s))fail(f+\" still names the Collective plan\")}const g=fs.readFileSync(\"lib/events/ticket-space-access.ts\",\"utf8\");if(!g.includes(\"featureWallLabel\"))fail(\"ticket-space-access no longer names the wall through featureWallLabel\");if(!g.includes(\"export function membershipTicketWallSentence\"))fail(\"membershipTicketWallSentence is gone\");if(!g.includes(\"export async function resolveMembershipTicketGate\"))fail(\"resolveMembershipTicketGate is gone\");const gates=fs.readFileSync(\"lib/pricing/gates.ts\",\"utf8\");const m=gates.match(/space_membership_tickets:\\s*\\{[^}]+\\}/);if(!m)fail(\"space_membership_tickets gate missing\");if(/minEntitlement:\\s*.business./.test(m[0])||/minEntitlement:\\s*.collective./.test(m[0]))fail(\"space_membership_tickets left the free floor\");console.log(\"LIVE-428 ok\")'",
         "note": "Passes when the member-ticket writers and editors no longer type Collective plan, the loader names the wall through featureWallLabel, and space_membership_tickets stays on the free floor."
+      },
+      "closed": "2026-09-20"
+    },
+    {
+      "id": "LIVE-434",
+      "title": "Program settings and the catalog still name Collective after LIVE-228 moved Programs onto Business",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/spaces/program-wall.ts",
+        "ref": "LIVE-228 leftover; ADR-1483; ADR-1438"
+      },
+      "detail": "FILED 2026-09-20 from the LIVE-411 re-test. Packets money/events/hygiene were empty. LIVE-411 is the umbrella and stays open. Seat-counter is LIVE-433. Automations and collaborator hosting have their own PRs. The leftover was the Program settings tease (Collective carries Programs / See what Collective adds) and space.program freeNote (Included with Collective). Collective is not a plan label (LIVE-228). Help already names Business.\n\nPREMISE RE-TESTED 2026-09-20. program sits in BUSINESS_DEPTH_ENTITLEMENT_KEYS. targetForEntitlementKey('program') is business. The typed Collective sentences were still the tease and the catalog note.\n\nCLOSED 2026-09-20 (ADR-1483). programWallLabel is the one seam. The tease and catalog note interpolate it. The entitlement stays on Business. No migration. Did not close LIVE-411. Did not absorb the space.people catalog note.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const page=fs.readFileSync(\"app/(main)/spaces/[slug]/settings/program/page.tsx\",\"utf8\");if(/Collective/.test(page))fail(\"program page still names Collective\");if(!page.includes(\"programTeaseBody\"))fail(\"the Program page no longer uses programTeaseBody\");if(!page.includes(\"programTeaseCta\"))fail(\"the Program page no longer uses programTeaseCta\");const w=fs.readFileSync(\"lib/spaces/program-wall.ts\",\"utf8\");if(!w.includes(\"export function programWallLabel\"))fail(\"programWallLabel is gone\");if(!w.includes(\"targetForEntitlementKey\"))fail(\"program wall is typed, not derived\");const cat=fs.readFileSync(\"lib/admin/modules/space-modules.ts\",\"utf8\");const row=cat.match(/id: .space\\.program.[\\s\\S]*?parent: .space\\.content./);if(!row)fail(\"space.program row missing\");if(!row[0].includes(\"programCatalogNote()\"))fail(\"space.program freeNote is no longer programCatalogNote\");if(/Collective/.test(row[0]))fail(\"space.program row still names Collective\");const plans=fs.readFileSync(\"lib/pricing/plans.ts\",\"utf8\");if(!plans.includes(String.fromCharCode(39)+\"program\"+String.fromCharCode(39)))fail(\"program left the Business depth set\");console.log(\"LIVE-434 ok\")'",
+        "note": "Passes when the Program settings tease and space.program catalog note no longer type Collective, the wall is derived from the entitlement depth, and program stays on Business."
       },
       "closed": "2026-09-20"
     }

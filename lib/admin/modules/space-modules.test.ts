@@ -382,4 +382,9 @@ describe('access badges match the real free-tier caps (ADR-784)', () => {
       }
     }
   })
+
+  it('names Program as a Business feature, never Collective (LIVE-434)', () => {
+    expect(spaceModuleById('space.program')!.freeNote).toBe('Included with Business')
+    expect(spaceModuleById('space.program')!.freeNote).not.toMatch(/Collective/)
+  })
 })
