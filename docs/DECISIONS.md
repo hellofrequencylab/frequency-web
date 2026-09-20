@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1486**. 1486 is LIVE-415 Admin = Guest-plus-staff events. 1485 is LIVE-436. 1481 is LIVE-432. 1478 is LIVE-429. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415 (original PM console; amended). 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1479–1480 and 1482–1484 are claimed on other open PRs.
+tree as of this index: **ADR-1486**. 1486 is LIVE-415 Admin = Guest-plus-staff events. 1485 is LIVE-436. 1481 is LIVE-432. 1479 is LIVE-430. 1478 is LIVE-429. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415 (original PM console; amended). 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1480 and 1482–1484 are claimed on other open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46975,6 +46975,27 @@ Premise re-tested 2026-09-20: `FEATURE_GATES.space_memberships.minEntitlement` i
 **Consequences.** A later surface that hides a past_due Space membership, or that treats pending as past due, fails the LIVE-429 probe. LIVE-411 stays open (Discussion is still LIVE-421).
 
 **Rows.** LIVE-429.
+
+## ADR-1479: Collaborator-host writers name the wall, not Collective (LIVE-430)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-430` · numbered **1479** because **1478** is claimed by LIVE-429 · extends [ADR-810](DECISIONS.md) and [ADR-1477](DECISIONS.md) (LIVE-428) · corroborated by `lib/spaces/collaborator-host-gate.ts` (`resolveCollaboratorHostWall`, `collaboratorHostWallSentence`)
+
+**Context.** LIVE-228 retired Collective as a plan label. `FEATURE_GATES.space_collaborators` sits on the Business floor. Help already says hosting Collaborators is part of Business. ADR-1477 fixed member-ticket writers and left this paid-floor leftover alone.
+
+Premise re-tested 2026-09-20: `featureAllowed('space_collaborators', { plan: 'business' }, { gatesLive: true })` is true. `spaceCanHostCollaborators` already reads that gate. The Space writers, the event-share writers, and the locked preview still said "the Collective plan". Automations still sit on a paid floor and were left alone.
+
+**Decision.**
+
+1. One seam, `resolveCollaboratorHostWall`, names the wall through `featureWallLabel('space_collaborators')`. The writers and the locked preview interpolate that name.
+2. The refusal sentences keep their three shapes (Space host, event home, event host Space). Never Collective. Never a typed Business.
+3. The code default stays the Business floor. An operator override that raises the gate still refuses the write and still names the raised plan.
+4. No migration. LIVE-411 stays open. Automations still type Collective until a later leftover.
+
+**Rejected.** Moving the gate to free (hosting is still a paid floor). Closing LIVE-411 from a copy fix. Restating Collective on a new surface.
+
+**Consequences.** A later typed "Collective plan" on a collaborator-host writer or locked preview fails the LIVE-430 probe.
+
+**Rows.** LIVE-430.
 
 ## ADR-1486: Admin Calendar is Guest chrome plus staff events (LIVE-415)
 

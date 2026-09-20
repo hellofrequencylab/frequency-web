@@ -15221,6 +15221,25 @@
         "note": "Passes when the past-due predicate exists, both member surfaces and the host list read it, and Settings billing lists Space dues. Access may still ignore the column."
       },
       "closed": "2026-09-20"
+    },
+    {
+      "id": "LIVE-430",
+      "title": "Collaborator-host writers still name the Collective plan after LIVE-228 retired it",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/spaces/function-access.ts",
+        "ref": "LIVE-410 leftover; ADR-1479; ADR-1477; ADR-810; LIVE-228"
+      },
+      "detail": "FILED 2026-09-20 from the LIVE-410 re-test. Packets next was LIVE-411 (umbrella). Money and events lanes were empty. LIVE-428 fixed member-ticket writers and left collaborator hosting alone. The leftover was the operator collaborator surfaces: collaborations-actions, share-actions, and the locked preview still said \"the Collective plan.\" Collective is not a plan label (LIVE-228). The gate is Business. Help already said Business.\n\nPREMISE RE-TESTED 2026-09-20. FEATURE_GATES.space_collaborators.minEntitlement is business. spaceCanHostCollaborators already reads that gate. The typed Collective sentence was still the refusal and the locked hint.\n\nCLOSED 2026-09-20 (ADR-1479). resolveCollaboratorHostWall is the one seam. Both writers and the locked preview use it. The locked hint interpolates featureWallLabel. The code default stays Business. An override that raises the gate still refuses and still names the raised plan. No migration. Did not close LIVE-411. Did not move automations off a typed Collective sentence.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const files=[\"lib/spaces/collaborator-host-gate.ts\",\"app/(main)/spaces/[slug]/collaborations-actions.ts\",\"app/(main)/events/share-actions.ts\",\"app/(main)/spaces/[slug]/settings/collaborators/collaborators-body.tsx\"];for (const f of files){const s=fs.readFileSync(f,\"utf8\");if(/Collective plan/.test(s))fail(f+\" still names the Collective plan\")}const g=fs.readFileSync(\"lib/spaces/collaborator-host-gate.ts\",\"utf8\");if(!g.includes(\"featureWallLabel\"))fail(\"collaborator-host-gate no longer names the wall through featureWallLabel\");if(!g.includes(\"export function collaboratorHostWallSentence\"))fail(\"collaboratorHostWallSentence is gone\");if(!g.includes(\"export async function resolveCollaboratorHostWall\"))fail(\"resolveCollaboratorHostWall is gone\");const gates=fs.readFileSync(\"lib/pricing/gates.ts\",\"utf8\");const m=gates.match(/space_collaborators:\\s*\\{[^}]+\\}/);if(!m)fail(\"space_collaborators gate missing\");if(/minEntitlement:\\s*.collective./.test(m[0]))fail(\"space_collaborators left the Business floor\");if(!/minEntitlement:\\s*.business./.test(m[0]))fail(\"space_collaborators is not on the Business floor\");console.log(\"LIVE-430 ok\")'",
+        "note": "Passes when the collaborator-host writers and locked preview no longer type Collective plan, the loader names the wall through featureWallLabel, and space_collaborators stays on the Business floor."
+      },
+      "closed": "2026-09-20"
     }
   ]
 }

@@ -20,11 +20,11 @@ import {
 } from '@/lib/spaces/collaborations'
 import { cancelOpenHoldsBetween } from '@/lib/spaces/venue-holds'
 import { spaceCanHostCollaborators } from '@/lib/spaces/function-access'
+import { collaboratorHostRefusal } from '@/lib/spaces/collaborator-host-gate'
 
-// The upgrade line shown when a lower-plan space tries to host collaborators (ADR-810, floor raised to
-// Collective by ADR-835). Plain voice, no em dash (CONTENT-VOICE §10). The venue/host needs the Collective
-// plan; the collaborator pays for their own space. Mirrors share-actions.ts HOSTING_NEEDS_COLLECTIVE.
-const HOST_NEEDS_COLLECTIVE = 'Hosting collaborators comes with the Collective plan. Upgrade this space to invite and approve collaborators.'
+// The upgrade line shown when a lower-plan space tries to host collaborators (ADR-810).
+// The wall word comes from featureWallLabel (LIVE-430). Collective is not a plan
+// label (LIVE-228). The collaborator pays for their own space.
 
 /** True when the signed-in caller is an owner/admin of `spaceId`. Fail-closed (false on no session /
  *  read error, since the approver set is empty then). */
@@ -89,7 +89,7 @@ async function requestCollaboration(
   // collaborators. The collaborator (guest) just needs an active space. Enforced here so the wall holds
   // even if the actions are driven directly. While billing is OFF this grants (today's free behavior).
   const hostSpace = hostSide === 'initiator' ? initiating : partner
-  if (!(await spaceCanHostCollaborators(hostSpace))) return fail(HOST_NEEDS_COLLECTIVE)
+  if (!(await spaceCanHostCollaborators(hostSpace))) return fail(await collaboratorHostRefusal('space'))
   // One operator owning both sides can skip the approval round-trip.
   const autoAccept = await viewerApprovesSpace(partnerSpaceId)
 
@@ -152,7 +152,7 @@ async function respondToRequest(collaborationId: string, next: 'accepted' | 'dec
   // approval). Declining is never gated. While billing is OFF this grants (today's free behavior).
   if (next === 'accepted') {
     const hostSpace = await getSpaceById(row.host_space_id)
-    if (!(await spaceCanHostCollaborators(hostSpace))) return fail(HOST_NEEDS_COLLECTIVE)
+    if (!(await spaceCanHostCollaborators(hostSpace))) return fail(await collaboratorHostRefusal('space'))
   }
 
   // Guard the status in the WHERE too: the row updates only if it is STILL pending, so a concurrent
