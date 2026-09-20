@@ -98,10 +98,6 @@ export const ALLOWLIST = [
   // PROG-CAL2–8. Migration 20270345006700 is in the tree and is not applied from this session
   // (no apply_migration). Types regenerate after merge. Retires on the next lib/database.types.ts pass.
   ...[
-    { file: 'app/(main)/spaces/[slug]/settings/calendar/plan-actions.ts', table: 'space_plan_shares', column: null, kind: 'table' },
-    { file: 'app/(main)/spaces/[slug]/settings/calendar/plan-actions.ts', table: 'space_calendar_private_feeds', column: null, kind: 'table' },
-    { file: 'app/calendar/private/[token]/route.ts', table: 'space_calendar_private_feeds', column: null, kind: 'table' },
-    { file: 'app/calendar/private/[token]/route.ts', table: 'space_calendar_entries', column: 'plan_id', kind: 'select' },
     { file: 'lib/calendar/entries-store.ts', table: 'space_calendar_entries', column: 'plan_id', kind: 'select' },
     { file: 'lib/calendar/plans-store.ts', table: 'space_plans', column: null, kind: 'table' },
     { file: 'lib/calendar/plans-store.ts', table: 'space_calendar_entries', column: 'plan_id', kind: 'update' },
