@@ -38,6 +38,22 @@ vi.mock('@/lib/spaces/member-directory', () => ({
   viewerCanSeeSpaceMemberDirectory: async () => showPeople,
 }))
 
+const hub = { live: false }
+vi.mock('@/lib/spaces/space-discussion', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./space-discussion')>()),
+  getLiveSpaceCircle: async () =>
+    hub.live
+      ? {
+          id: 'hub',
+          slug: 'ojai-hub',
+          name: 'Ojai',
+          status: 'active',
+          is_space_primary: true,
+          space_id: 's1',
+        }
+      : null,
+}))
+
 import { buildSpaceProfileNav } from './profile-nav'
 
 /** A Space with a Home doc that DOES carry the Circles block, so the anchor would be derived if it
@@ -72,6 +88,7 @@ beforeEach(() => {
   manage.canManage = false
   manage.staffViewing = false
   showPeople = false
+  hub.live = false
 })
 
 describe('the Circles tab', () => {
@@ -137,5 +154,47 @@ describe('the People tab (LIVE-420)', () => {
     const { tabs } = await buildSpaceProfileNav(space())
     expect(labels(tabs)).toContain('People')
     expect(hrefFor(tabs, 'People')).toBe('/spaces/ojai/people')
+  })
+})
+
+describe('the Discussion tab', () => {
+  it('hides from a visitor when the Space Circle is off', async () => {
+    const { tabs } = await buildSpaceProfileNav(space())
+    expect(labels(tabs)).not.toContain('Discussion')
+  })
+
+  it('shows once the Space Circle is on', async () => {
+    hub.live = true
+    const { tabs } = await buildSpaceProfileNav(space())
+    expect(labels(tabs)).toContain('Discussion')
+    expect(hrefFor(tabs, 'Discussion')).toBe('/spaces/ojai/discussion')
+  })
+
+  it('a manager keeps it when the hub is off, so they can turn it on', async () => {
+    manage.canManage = true
+    const { tabs } = await buildSpaceProfileNav(space())
+    expect(labels(tabs)).toContain('Discussion')
+  })
+
+  it('is never named Community', async () => {
+    hub.live = true
+    const { tabs } = await buildSpaceProfileNav(space())
+    expect(labels(tabs)).not.toContain('Community')
+  })
+
+  it('ROOT never offers it', async () => {
+    hub.live = true
+    manage.canManage = true
+    const { tabs } = await buildSpaceProfileNav(space({ type: 'root' }))
+    expect(labels(tabs)).not.toContain('Discussion')
+  })
+
+  it('the `circles` FUNCTION being switched off hides it', async () => {
+    hub.live = true
+    manage.canManage = true
+    const { tabs } = await buildSpaceProfileNav(
+      space({ entitlements: { circles: false } as unknown as Space['entitlements'] }),
+    )
+    expect(labels(tabs)).not.toContain('Discussion')
   })
 })
