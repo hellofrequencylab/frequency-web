@@ -46732,7 +46732,7 @@ Premise re-tested 2026-09-19: `ensureHostOnOwnership` still self-grants host (`l
 
 ## ADR-1468: Space Plans close Pencil, Plan, Production; LIVE-412 is parked
 
-**Status:** Accepted · 2026-09-19 · backlog `PROG-CAL2` through `PROG-CAL8` · numbered **1468** because **1467** is the Calendar view slide and **1466** is OWN-054 · corroborated by `supabase/migrations/20270345006600_space_plans.sql`, `lib/calendar/plans.ts`, `lib/studio/entities/space-plan.ts`, `app/calendar/private/[token]/route.ts`
+**Status:** Accepted · 2026-09-19 · backlog `PROG-CAL2` through `PROG-CAL8` · numbered **1468** because **1467** is the Calendar view slide and **1466** is OWN-054 · corroborated by `supabase/migrations/20270345006700_space_plans.sql`, `lib/calendar/plans.ts`, `lib/studio/entities/space-plan.ts`, `app/calendar/private/[token]/route.ts`
 
 **Context.** C0–C5 and the five Admin views (ADR-1445, ADR-1464) painted the calendar. PROG-CAL2–8 was the remaining ADR-1386 spine: Plan as the working record, Production through the existing event Spark, views, playbooks, Vera proposals, co-host shares, a private feed, and non-event targets. Packets on the scan lane were still offering LIVE-412 (split `app-shell.tsx`).
 
