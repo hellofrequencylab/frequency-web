@@ -1,13 +1,13 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-// ADR-1464 source shape: five views in Admin chrome. Guest and Admin stay the two
-// grids. C3–C4 already own planningLane / productionLane on the PM console (main).
-// This view set must not redeclare those symbols in the new view files.
+// ADR-1464 + ADR-1467 source shape: five views in Admin chrome. Guest first.
+// Operators slide in a client shell. The gate is adminAllowed before any admin read.
 
-describe('Admin Calendar views (ADR-1464)', () => {
+describe('Admin Calendar views (ADR-1464, ADR-1467)', () => {
   const page = readFileSync('app/(main)/spaces/[slug]/(profile)/calendar/page.tsx', 'utf8')
   const toggle = readFileSync('components/spaces/calendar-mode-toggle.tsx', 'utf8')
+  const shell = readFileSync('components/spaces/calendar-workspace.tsx', 'utf8')
   const consoleSrc = readFileSync('components/spaces/calendar-pm-console.tsx', 'utf8')
   const viewSet = [
     'lib/calendar/admin-views.ts',
@@ -19,20 +19,27 @@ describe('Admin Calendar views (ADR-1464)', () => {
     'components/spaces/calendar-projects-view.tsx',
   ].map((path) => readFileSync(path, 'utf8')).join('\n')
 
-  it('keeps the Admin/Guest gate and mounts all five views', () => {
-    expect(page).toMatch(/adminAllowed && view !== .guest./)
+  it('gates the admin read on adminAllowed and mounts the slide shell', () => {
+    expect(page).toContain('if (!adminAllowed)')
+    expect(page).toContain('loadAdminCalendar(')
+    expect(page.indexOf('loadAdminCalendar(')).toBeGreaterThan(page.indexOf('if (!adminAllowed)'))
+    expect(page).toContain('CalendarWorkspace')
     expect(page).toContain('guestLiveItems')
-    expect(page).toContain('CalendarPmConsole')
-    expect(page).toContain('CalendarListView')
-    expect(page).toContain('CalendarTimelineView')
-    expect(page).toContain('CalendarProjectsView')
-    expect(page).toContain('parseAdminCalendarView')
+    expect(page).not.toContain("view !== 'guest'")
+    expect(shell).toContain('CalendarPmConsole')
+    expect(shell).toContain('CalendarListView')
+    expect(shell).toContain('CalendarTimelineView')
+    expect(shell).toContain('CalendarProjectsView')
+    expect(shell).toContain('history.replaceState')
+    expect(shell).toContain('rememberCalendarView')
   })
 
-  it('extends the segmented control with List, Timeline, and Projects', () => {
+  it('switches views with buttons, not a Link navigation', () => {
     expect(toggle).toContain('Calendar views')
     expect(toggle).toContain('CALENDAR_ADMIN_VIEW_DEFS')
-    expect(toggle).toContain("adminViewHref(slug, o.view)")
+    expect(toggle).toContain('onSelect')
+    expect(toggle).not.toContain('adminViewHref')
+    expect(toggle).not.toContain('from \'next/link\'')
   })
 
   it('leaves LIVE-417 and LIVE-418 lanes on the console and off the new view files', () => {

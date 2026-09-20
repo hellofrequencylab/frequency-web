@@ -1,11 +1,12 @@
 import { monthKey, safeMonth } from './month-window'
 
-// ADMIN CALENDAR VIEWS (ADR-1464). Daniel's five views on one Space Calendar tab.
-// Guest and Admin stay the two existing grids. List, Timeline, and Projects are
-// additional operator views. The URL keeps `?view=guest` (ADR-1389) and adds
-// list / timeline / projects. Default (no view) is Admin for a manager.
+// ADMIN CALENDAR VIEWS (ADR-1464, ADR-1467). Daniel's five views on one Space Calendar tab.
+// Order on the control: Guest, Admin, List, Timeline, Projects. Guest and Admin stay the
+// two existing grids. List, Timeline, and Projects are additional operator views. The URL
+// keeps `?view=guest` (ADR-1389) and adds list / timeline / projects. Default (no view, no
+// cookie) is Admin for a manager. Operators switch client-side; the last view is remembered.
 
-export const CALENDAR_ADMIN_VIEWS = ['admin', 'guest', 'list', 'timeline', 'projects'] as const
+export const CALENDAR_ADMIN_VIEWS = ['guest', 'admin', 'list', 'timeline', 'projects'] as const
 export type CalendarAdminView = (typeof CALENDAR_ADMIN_VIEWS)[number]
 
 export const CALENDAR_ADMIN_VIEW_DEFS: readonly {
@@ -15,19 +16,19 @@ export const CALENDAR_ADMIN_VIEW_DEFS: readonly {
   blurb: string
 }[] = [
   {
-    view: 'admin',
-    label: 'Admin',
-    blurb: 'What is penciled, in planning, in production, and cancelled. The month is the date map.',
-  },
-  {
     view: 'guest',
     label: 'Guest',
     blurb: 'Upcoming events from {brand}. Subscribe to add them to your own calendar.',
   },
   {
+    view: 'admin',
+    label: 'Admin',
+    blurb: 'What is penciled, in planning, in production, and cancelled. The month is the date map.',
+  },
+  {
     view: 'list',
     label: 'List',
-    blurb: 'Pick a gathering on the left. Stats and management open on the right.',
+    blurb: 'Pick a gathering on the left. A truncated card with its stats opens on the right.',
   },
   {
     view: 'timeline',
@@ -91,4 +92,29 @@ export function timelineMonthLabel(year: number, month1: number): string {
   const [y, m] = key.split('-')
   const date = new Date(Date.UTC(Number(y), Number(m) - 1, 1))
   return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date)
+}
+
+/** Per-Space cookie so the last operator view survives a later visit (ADR-1467). */
+export function calendarViewCookieName(slug: string): string {
+  const safe = slug.replace(/[^a-z0-9-]/gi, '').slice(0, 80).toLowerCase()
+  return `freq-cal-view-${safe || 'space'}`
+}
+
+export function parseRememberedCalendarView(raw: string | null | undefined): CalendarAdminView | null {
+  return isCalendarAdminView(raw) ? raw : null
+}
+
+/** Query wins when it names a view. Otherwise the cookie. Otherwise Admin. */
+export function resolveOperatorCalendarView(
+  queryView: string | string[] | null | undefined,
+  cookieView: string | null | undefined,
+): CalendarAdminView {
+  const query = Array.isArray(queryView) ? queryView[0] : queryView
+  if (isCalendarAdminView(query)) return query
+  return parseRememberedCalendarView(cookieView) ?? 'admin'
+}
+
+export function rememberCalendarView(slug: string, view: CalendarAdminView): void {
+  if (typeof document === 'undefined') return
+  document.cookie = `${calendarViewCookieName(slug)}=${view}; Path=/; Max-Age=31536000; SameSite=Lax`
 }

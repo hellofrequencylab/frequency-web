@@ -45,32 +45,22 @@ describe('CalendarListView', () => {
   it('puts the index on the left and the selected gathering in the viewer', () => {
     const el = mount(
       <CalendarListView
-        slug="lab"
         items={[sit]}
         selected={sit}
-        stats={{
-          sold: 0,
-          revenueCents: 0,
-          currency: 'usd',
-          going: 4,
-          interested: 1,
-          waitlist: 0,
-          checkedIn: 0,
-          capacity: 20,
-          paid: false,
-        }}
+        onSelect={() => {}}
       />,
     )
     expect(el.querySelector('[data-calendar-list-view]')).not.toBeNull()
     expect(el.querySelector('[data-calendar-list-viewer]')?.textContent).toContain('New moon sit')
     expect(el.textContent).toContain('The loft')
     expect(el.textContent).toContain('Going')
-    expect(el.textContent).toContain('Manage')
+    expect(el.textContent).toContain('Go to event')
+    expect(el.textContent).not.toContain('Manage')
     expect(el.textContent).not.toContain('—')
   })
 
   it('uses the kit empty when there is nothing to run', () => {
-    const el = mount(<CalendarListView slug="lab" items={[]} selected={null} stats={null} />)
+    const el = mount(<CalendarListView items={[]} selected={null} onSelect={() => {}} />)
     expect(el.textContent).toContain('Nothing to run yet.')
   })
 })

@@ -1,10 +1,10 @@
+import type { EventCoreStats } from '@/lib/events/event-stats-core'
 import type { CalendarEvent } from './item'
 import { isOperatorListItem, operatorListHref, operatorStageLabel } from './pm-console'
 import type { EntryStage } from './registry'
 
-// LIST VIEW INDEX (ADR-1464). The left-hand event index for Admin List. Same
-// operator set as the PM console, richer so the right-hand viewer can show
-// stats and management without a second fetch of the row.
+// LIST VIEW INDEX (ADR-1464, ADR-1467). The left-hand gathering index. The right
+// pane is a truncated stats card, not the event edit screen.
 
 export type ListIndexItem = {
   key: string
@@ -60,4 +60,19 @@ export function selectListItem(items: ListIndexItem[], selectedKey: string | nul
     if (match) return match
   }
   return items[0] ?? null
+}
+
+/** Headline numbers the List viewer can show without opening Manage. */
+export function truncatedListStats(item: ListIndexItem): EventCoreStats {
+  return {
+    sold: 0,
+    revenueCents: 0,
+    currency: 'usd',
+    going: item.goingCount,
+    interested: 0,
+    waitlist: 0,
+    checkedIn: 0,
+    capacity: null,
+    paid: false,
+  }
 }
