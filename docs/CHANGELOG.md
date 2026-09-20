@@ -20,6 +20,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **If you sell a Journey from a Space you run, Sell this Journey now asks for a payout account when the Space cannot take money yet.** You can still set the price. The money lands once that account is ready.
+
 - **If you run a Space, its Calendar tab slides between Guest, Admin, List, Timeline, and Projects.** Guest is first in the control. List is a gathering list on the left and a short stats card on the right, not the event editor. The tab remembers the last view you used.
 
 - **A Space calendar with nothing published says so in the same empty pattern as the rest of the site**, and it does not claim the month is empty when a cancelled gathering or Unavailable time is already on the grid. Cancelled stays a muted note at the bottom of the day, and the same note under that month in the list. The calendar can be focused: arrows step a month, Escape closes the jump panel.

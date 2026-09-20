@@ -8,6 +8,7 @@ import { setJourneyPriceAction, unsetJourneyPriceAction } from '@/app/(main)/jou
 import { buttonClasses } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
 import { Checkbox } from '@/components/ui/checkbox'
+import { PayoutPromptCard } from '@/components/billing/payout-prompt-card'
 
 // "Sell this Journey" (ADR-1397): the one control that puts a price on a Journey, and the only caller
 // of setJourneyPriceAction. Without it the action was unreachable and the whole selling path was
@@ -85,6 +86,8 @@ export function JourneySellModule() {
           Set a price and people pay to enrol. Free stays free.
         </p>
       </div>
+
+      {data.payoutPrompt ? <PayoutPromptCard prompt={data.payoutPrompt} /> : null}
 
       {!data.canSell ? (
         <p className="text-meta leading-relaxed text-muted">{data.reason}</p>

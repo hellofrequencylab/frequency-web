@@ -1,4 +1,4 @@
-// THE ONE CONNECT ONBOARDING PROMPT (LIVE-233). PURE: no imports, no IO, safe in a client bundle.
+// THE ONE CONNECT ONBOARDING PROMPT (LIVE-233, LIVE-425). PURE: no imports, no IO, safe in a client bundle.
 //
 // 🔴 WHY THIS FILE EXISTS. Nothing has ever been charged on this platform. Production, 2026-09-08:
 // commerce_orders 0, event_tickets 0, space_subscription_items 0, financial_transactions 0, tips 0.
@@ -27,8 +27,8 @@
 // import-free means the same sentence reaches a client price control and a server settings card
 // without two copies of it. The IO half lives in ./payout-prompt-resolve.ts.
 
-/** The five money paths. Each one costs an operator the same setup step and gets the same prompt. */
-export type PayoutChannel = 'memberships' | 'bookings' | 'orders' | 'donations' | 'tickets'
+/** The money paths. Each one costs an operator the same setup step and gets the same prompt. */
+export type PayoutChannel = 'memberships' | 'bookings' | 'orders' | 'donations' | 'tickets' | 'journeys'
 
 export const PAYOUT_CHANNELS: readonly PayoutChannel[] = [
   'memberships',
@@ -36,6 +36,7 @@ export const PAYOUT_CHANNELS: readonly PayoutChannel[] = [
   'orders',
   'donations',
   'tickets',
+  'journeys',
 ]
 
 /** How each channel names itself. `verb` completes "Add a payout account to start ___"; `noun` is the
@@ -46,6 +47,7 @@ export const PAYOUT_CHANNEL_WORDS: Record<PayoutChannel, { verb: string; noun: s
   orders: { verb: 'taking orders', noun: 'orders' },
   donations: { verb: 'taking donations', noun: 'donations' },
   tickets: { verb: 'selling tickets', noun: 'tickets' },
+  journeys: { verb: 'selling Journeys', noun: 'Journeys' },
 }
 
 /** Join a list in plain English with no serial comma and no dashes: [a] -> "a", [a,b] -> "a and b",

@@ -29,7 +29,7 @@ import type { Space } from '@/lib/spaces/types'
 // SELF-GATES server-side (canManage || staffViewing) so it is safe to mount anywhere; the page adds
 // its own notFound() so a null here never renders a bare 200.
 
-/** The five money paths, each with what has to be true for it to take money TODAY.
+/** The money paths, each with what has to be true for it to take money TODAY.
  *  🔴 There is no single "is this channel live" resolver in the tree: every path enforces its own
  *  conditions at its own seam (space-membership-checkout, booking, commerce/checkout, donation
  *  checkout, ticket-eligibility). Rather than become a sixth place that GUESSES at money rules, this
@@ -42,6 +42,7 @@ const PATHS: { channel: PayoutChannel; fn: Parameters<typeof spaceFunctionAccess
   { channel: 'donations', fn: 'donations' },
   // `tickets` retired as a function key and resolves to `events` (LIVE-226), so the gate is events'.
   { channel: 'tickets', fn: 'events' },
+  { channel: 'journeys', fn: 'journeys' },
 ]
 
 export async function PaymentsBody({ slug }: { slug: string }) {
@@ -76,7 +77,7 @@ export async function PaymentsBody({ slug }: { slug: string }) {
       <section className="mb-10">
         <SectionHeader title="Your money paths" />
         <p className="-mt-2 mb-4 text-body-sm text-muted">
-          Five ways this space can take money. Each one needs its own setup, and all five need a payout account.
+          The ways this Space can take money. Each one needs its own setup, and all of them need a payout account.
         </p>
         <Suspense fallback={<BandSkeleton />}>
           <PathsBand space={space} viewerProfileId={viewerProfileId} staffViewing={staffViewing} />
@@ -97,7 +98,7 @@ export async function PaymentsBody({ slug }: { slug: string }) {
         <div className="rounded-card border border-border bg-surface p-5 text-body-sm leading-relaxed text-muted">
           <p className="mb-3">
             You <strong className="text-text">receive</strong> every sale, membership, booking deposit,
-            donation and ticket, minus the rate above and Stripe&rsquo;s processing fee. Stripe sends it to
+            donation, ticket and Journey, minus the rate above and Stripe&rsquo;s processing fee. Stripe sends it to
             your bank on its own schedule.
           </p>
           <p>
