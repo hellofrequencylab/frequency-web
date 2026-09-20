@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1471**. 1471 is LIVE-420. 1470 is LIVE-422. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1468 is claimed by Space Plans. 1469 is claimed by LIVE-421.
+tree as of this index: **ADR-1471**. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is claimed by LIVE-421.
 
 | Theme | Start here |
 |---|---|
@@ -46773,7 +46773,7 @@ Premise re-tested 2026-09-19: no `(profile)/people` or `(profile)/members` route
 
 ## ADR-1468: Space Plans close Pencil, Plan, Production; LIVE-412 is parked
 
-**Status:** Accepted · 2026-09-19 · backlog `PROG-CAL2` through `PROG-CAL8` · numbered **1468** because **1467** is the Calendar view slide and **1466** is OWN-054 · corroborated by `supabase/migrations/20270345006700_space_plans.sql`, `lib/calendar/plans.ts`, `lib/studio/entities/space-plan.ts`, `app/calendar/private/[token]/route.ts`
+**Status:** Accepted · 2026-09-19 · backlog `PROG-CAL2` through `PROG-CAL8` · numbered **1468** because **1467** is the Calendar view slide and **1466** is OWN-054 · corroborated by `supabase/migrations/20270345006700_space_plans.sql`, `lib/calendar/plans.ts`, `lib/studio/entities/space-plan.ts`
 
 **Context.** C0–C5 and the five Admin views (ADR-1445, ADR-1464) painted the calendar. PROG-CAL2–8 was the remaining ADR-1386 spine: Plan as the working record, Production through the existing event Spark, views, playbooks, Vera proposals, co-host shares, a private feed, and non-event targets. Packets on the scan lane were still offering LIVE-412 (split `app-shell.tsx`).
 
@@ -46791,19 +46791,3 @@ Premise re-tested 2026-09-19: no `(profile)/people` or `(profile)/members` route
 **Consequences.** PROG-CAL2–8 close when their probes pass. LIVE-412 stays sequenced in W0d as parked work. Editor, Sites, Etsy, and App Platform stay off this pass.
 
 **Rows.** PROG-CAL2, PROG-CAL3, PROG-CAL4, PROG-CAL5, PROG-CAL6, PROG-CAL7, PROG-CAL8 (closed). LIVE-412 (parked).
-
-**Context.** ADR-1464 added five views behind a segmented control of Links. Each switch remounted the page. List opened management on the right. Daniel asked for Guest first, a slide between views, a remembered last view, and List as a condensed index plus a truncated stats card, not the event edit screen.
-
-**Decision.**
-
-1. **Guest, Admin, List, Timeline, Projects**, in that order. Default with no query and no cookie is Admin for a manager.
-2. **Operators load Guest and Admin data once.** `adminAllowed` is the gate. Switching a view updates client state, `history.replaceState`, and a per-Space cookie. It does not navigate.
-3. **Unsigned visitors stay Guest-only.** They never call `loadAdminCalendar` and never pass `includeUnpublished`.
-4. **List is index plus a truncated stats card.** The right pane is `EventCoreStatsCards` over going counts already on the item, plus Go to event. It is not Manage and not the edit form.
-5. **Do not start Editor, Sites, or Etsy from this pass.**
-
-**Rejected.** Reloading the Calendar tab to change a view. Loading unpublished rows because `view !== guest`. Opening the event editor in List.
-
-**Consequences.** `?view=` remains a shareable URL. The cookie restores the last operator view on a later visit. Help and `EVENTS-CALENDAR.md` describe the slide and the List card.
-
-**Rows.** None. This is the view-shell ruling on top of ADR-1464.
