@@ -18,7 +18,7 @@
 //   * `journey_plans` columns (lib/journey-plans.ts `JourneyPlan` + the ADR-302 attribute
 //     migration): title, summary, intro, emoji, accent, cover_image, logo_image,
 //     header_overlay_style, header_overlay_color, difficulty, category, tags, daily_minutes,
-//     enroll_cap, completion_gems, drip_interval_days, certificate_enabled, visibility, status,
+//     enroll_cap, space_tier_id, completion_gems, drip_interval_days, certificate_enabled, visibility, status,
 //     official, source_overview. The three header columns joined on 2026-09-07 (ADR-1246): the
 //     Inspector rail had persisted them for a year while the manifest was silent, which is the
 //     drift ADR-1240 exists to make visible. `cover_focus` is deliberately NOT a field: a focal
@@ -169,6 +169,15 @@ export const JOURNEY_MANIFEST: EntityManifest = {
     { path: 'tags', label: 'Tags', kind: 'tags', section: 'discovery', omitWhenEmpty: true },
     { path: 'daily_minutes', label: 'Minutes a day', kind: 'duration', section: 'discovery', omitWhenEmpty: true },
     { path: 'enroll_cap', label: 'Max people', kind: 'number', section: 'discovery', omitWhenEmpty: true, veraDrafts: false },
+    {
+      path: 'space_tier_id',
+      label: 'Members of this tier',
+      kind: 'select',
+      section: 'discovery',
+      veraDrafts: false,
+      omitWhenEmpty: true,
+      optionsFrom: 'space-tiers',
+    },
 
     // ── Delivery and rewards. Column defaults: 30 Gems, a 7 day drip, no certificate. ──
     { path: 'completion_gems', label: 'Completion Gems', kind: 'number', section: 'delivery', veraDrafts: false, read: (d) => str(d.completion_gems) || '30' },

@@ -17,6 +17,7 @@ import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons
 import { adoptPlanAction, forkPlanAction } from '../actions'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { getJourneyOffer, seatLine, isSoldOut, productIdsForJourneyPlan } from '@/lib/journeys/paid'
+import { checkJourneyTier } from '@/lib/journeys/tier-gate'
 import { BuyButton } from '../../marketplace/buy-button'
 import { getProductReviews, getMyProductReview } from '@/lib/commerce/reviews'
 import { ProductReviews } from '@/components/marketplace/product-reviews'
@@ -171,7 +172,10 @@ export default async function JourneyPlanPage({
   // cookie, so this page must not pass a client entryPoint. classifyOrderSource still runs
   // the self-scan and the ADR-913 relationship check ABOVE the stamp, so an existing
   // follower or member is still 0%.
-  const buyControl = offer ? (
+  const tierCheck = await checkJourneyTier(plan.id, profileId, { isOwner: isAuthor || canManageJourney })
+  const tierGate = tierCheck.ok ? null : { reason: tierCheck.error, href: tierCheck.href }
+
+  const buyControl = offer && !tierGate ? (
     <BuyButton
       productId={offer.productId}
       label={`Get access · ${offer.priceLabel}`}
@@ -312,6 +316,7 @@ export default async function JourneyPlanPage({
             forkAction={forkPlanAction}
             offer={offer}
             buyControl={buyControl}
+            tierGate={tierGate}
           />
         </div>
       }

@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1475**. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is claimed by LIVE-421. 1472 is claimed by LIVE-423. 1473 is claimed by LIVE-424.
+tree as of this index: **ADR-1476**. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is claimed by LIVE-421. 1472 is claimed by LIVE-423. 1473 is claimed by LIVE-424.
 
 | Theme | Start here |
 |---|---|
@@ -46835,9 +46835,30 @@ Premise re-tested 2026-09-20: `FEATURE_GATES.space_memberships.minEntitlement` i
 
 **Rows.** LIVE-426.
 
+## ADR-1476: A Journey can require one Space membership tier (2026-09-19)
+
+**Status:** Accepted · 2026-09-19 · backlog `LIVE-427` · numbered **1476** because **1475** is LIVE-426, **1474** is LIVE-425, **1473** is claimed by LIVE-424, and **1472** is claimed by LIVE-423 · corroborated by `lib/journeys/tier-gate.ts`, `lib/journeys/free-enrol-gate.ts`, `lib/commerce/checkout.ts`, and `supabase/migrations/20270345006600_journey_space_tier_gate.sql`
+
+**Context.** FOCUS-MODEL Q5 named five operator gaps. The first, sell a course, already ships as a Journey commerce product (`product_kind = journey`, ADR-1397). The second was still untrue: only `event_ticket_types` carried `space_tier_id`. Journeys were `private | unlisted | public`, with no "members of this tier" audience. LIVE-411 stays the parent row for those five gaps and is not closed from this child.
+
+Premise re-tested 2026-09-19: `canEnterJourney` still asked enrolled / author / manager. `checkFreeEnrol` still asked price and seats. Checkout still asked seats. `journey_plans` had no `space_tier_id`.
+
+**Decision.**
+
+1. Add nullable `journey_plans.space_tier_id` referencing `space_membership_tiers`, `ON DELETE SET NULL`. Visibility stays who can find the Journey. The column is who may enrol.
+2. `journeyTierGateError` is the one comparison. A waitlist row is not a membership. Authors and managers skip it, matching `checkFreeEnrol`.
+3. Both doors call `checkJourneyTier`: the free adopt action and `createCommerceCheckout`. A UI hide is not the rule.
+4. Authors pick the tier on the Journey settings rail (`space_tier_id` on `JOURNEY_MANIFEST`). The writer confirms the tier belongs to the Journey's Space.
+
+**Rejected.** A fourth visibility value (that would mix "who can find it" with "who may enrol"). Gating lessons after enrol (the door is enrol). Building the member directory, Space discussion, or completion analytics in this change. Closing parent LIVE-411 from this child.
+
+**Consequences.** A later enrol path that skips `checkJourneyTier` fails the LIVE-427 probe. Remaining FOCUS gap in the parent is Space discussion (`LIVE-421`). The migration `20270345006600` is already on main.
+
+**Rows.** LIVE-427.
+
 ## ADR-1477: Member-ticket writers name the wall, not Collective (LIVE-428)
 
-**Status:** Accepted · 2026-09-20 · backlog `LIVE-428` · numbered **1477** because **1476** is LIVE-427 on the open Circle-tier PR · extends [ADR-1415](DECISIONS.md) (LIVE-410) and [ADR-1475](DECISIONS.md) (LIVE-426) · corroborated by `lib/events/ticket-space-access.ts` (`resolveMembershipTicketGate`, `membershipTicketWallSentence`)
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-428` · numbered **1477** because **1476** is LIVE-427 on main · extends [ADR-1415](DECISIONS.md) (LIVE-410) and [ADR-1475](DECISIONS.md) (LIVE-426) · corroborated by `lib/events/ticket-space-access.ts` (`resolveMembershipTicketGate`, `membershipTicketWallSentence`)
 
 **Context.** LIVE-410 moved `space_membership_tickets` to the free floor. LIVE-228 retired Collective as a plan label. LIVE-426 fixed help. The ticket writers and Event access panel still said "the Collective plan" when the gate refused.
 
@@ -46848,7 +46869,7 @@ Premise re-tested 2026-09-20: `FEATURE_GATES.space_membership_tickets.minEntitle
 1. One seam, `resolveMembershipTicketGate`, asks `featureAllowed('space_membership_tickets')` and names the wall through `featureWallLabel`. Both writers and the Event access loader use it.
 2. The locked hint interpolates that name. The refusal sentence is `Membership-only tickets come with {wall}.` Never Collective. Never a typed Business.
 3. The code default stays the free floor. An operator override that raises the gate still refuses the write and still names the raised plan.
-4. No migration. LIVE-411 stays open. Circle `tier` access stays on `space_can_sell` until LIVE-427 lands.
+4. No migration. LIVE-411 stays open. Circle `tier` access stays on `space_can_sell` until a later ruling.
 
 **Rejected.** Deleting the plan check (an override must still bind). Closing LIVE-411 from a copy fix. Restating Collective on a new surface.
 

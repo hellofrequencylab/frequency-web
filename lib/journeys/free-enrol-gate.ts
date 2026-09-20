@@ -20,6 +20,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getJourneyOffer } from './paid'
 import { journeyHasRoom, JOURNEY_FULL_MESSAGE } from './journey-access'
+import { checkJourneyTier } from './tier-gate'
 
 export type FreeEnrolCheck = { ok: true } | { ok: false; error: string }
 
@@ -40,6 +41,9 @@ export async function checkFreeEnrol(
   const offer = await getJourneyOffer(planId)
 
   if (offer && !opts.isOwner) return { ok: false, error: JOURNEY_NEEDS_PURCHASE_MESSAGE }
+
+  const tier = await checkJourneyTier(planId, profileId, { isOwner: opts.isOwner })
+  if (!tier.ok) return { ok: false, error: tier.error }
 
   // Seats bind on the free door too, and for the owner as well: a full room is full. A Run's own cap
   // is enforced separately at the Run path, which has its own roster.

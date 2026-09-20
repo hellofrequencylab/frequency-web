@@ -213,6 +213,11 @@
 #   lib/journeys/free-enrol-gate.ts   the same count at the free door, plus the price lookup
 #   lib/journeys/paid.ts              counts live enrolments against enroll_cap for the seat line
 #   lib/journeys/sell-gate.ts         reads journey_plans to resolve the owning Space; same posture
+#   lib/journeys/tier-gate.ts         LIVE-411 / ADR-1470: reads journey_plans.space_tier_id and
+#                                     the viewer's space_memberships row so both enrol doors can
+#                                     refuse a guest or the wrong tier. A session client cannot
+#                                     see another member's row, and a guest has no session that
+#                                     can read the gate; fail-closed still needs the lookup.
 #   opposite of what selling access needs.
 #   question this feature asks -- how many seats are left, are you in, put this buyer in -- has to
 app/(main)/admin/actions.ts
@@ -774,6 +779,7 @@ lib/journeys/publish-gate.ts
 lib/journeys/run-gate.ts
 lib/journeys/runs.ts
 lib/journeys/sell-gate.ts
+lib/journeys/tier-gate.ts
 lib/keystone/store.ts
 lib/layout/chrome-sources.ts
 lib/layout/content-cascade.ts

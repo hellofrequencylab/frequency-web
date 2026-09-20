@@ -166,8 +166,8 @@ That is exactly the primitive the owner is asking for, and it is already the rul
 | Gap | Evidence |
 |---|---|
 | **You cannot sell a course.** Closed for the price half: a paid Space sells a Journey through `commerce_products` (ADR-1397) and Sell this Journey. LIVE-425 / ADR-1474 adds the Connect prompt on that rail so the first sell attempt is not a dead end. The 2026-09-17 ruling still holds: a personal Journey and a free Space cannot sell. | `components/admin/modules/journey-sell-module.tsx` |
-| **No gated content except events.** Only `event_ticket_types` carries `member_only` / `space_tier_id`. Journeys are `private \| unlisted \| public`, with no fourth "members of my tier" state. | `lib/database.types.ts:4676-4685` |
-| **No space-level discussion.** `posts` has `scope_circle_id`, `scope_event_id`, `scope_profile_id` and **no `scope_space_id`**. A Space's only broadcast is an announcement wall with no replies. | `20260829000000_h1_1_scope_typed_arc_expand.sql:49-51` |
+| **No gated content except events.** Closed as LIVE-427 / ADR-1476. `journey_plans.space_tier_id` is the optional enrol gate. Visibility is still who can find it. Parent LIVE-411 stays open. | `lib/journeys/tier-gate.ts` |
+| **No space-level discussion.** `posts` has `scope_circle_id`, `scope_event_id`, `scope_profile_id` and **no `scope_space_id`**. A Space's only broadcast is an announcement wall with no replies. | `LIVE-421` · `20260829000000_h1_1_scope_typed_arc_expand.sql:49-51` |
 | **No member directory.** Closed 2026-09-19 as LIVE-420 / ADR-1471. `space.people` is still the *staff* roster. Paying members now have `/spaces/<slug>/people`, visible to active members and managers. | `app/(main)/spaces/[slug]/(profile)/people/page.tsx` |
 | **Enrollment takes no money**, and Space analytics is QR-scan-shaped, with no completion, retention or revenue readout. | Closed for the completion/revenue half: Home already showed `spaceEarningsSummary`; LIVE-422 / ADR-1470 adds who started and finished this Space's Journeys (`lib/spaces/completion-analytics.ts`). QR scans stay on QR codes and insights. |
 

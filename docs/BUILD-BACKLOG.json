@@ -14532,10 +14532,10 @@
         "file": "docs/FOCUS-MODEL.md",
         "ref": "ADR-1403 Q5; survey 2026-09-19"
       },
-      "detail": "FILED 2026-09-19. FOCUS-MODEL Q5: sell a course, gate content to a tier, member directory, space-level discussion, completion analytics. Sequence AFTER interior (LIVE-254, HYG-033, LIVE-409, LIVE-410). Keep as one sequenced row so five operator asks do not each become a parallel P1.\n\nUPDATED 2026-09-20. Children: LIVE-420 (directory, done), LIVE-422 (analytics, done), LIVE-425 (sell-course Connect prompt, done). LIVE-426 closed the leftover Business-plan lie in help (LIVE-410). Price half of sell-a-course already lived on ADR-1397. Tier gate and Discussion still have their own PRs. Do not close this parent from a child. Do not add posts.scope_space_id from this row.",
+      "detail": "FILED 2026-09-19. FOCUS-MODEL Q5: sell a course, gate content to a tier, member directory, space-level discussion, completion analytics. Sequence AFTER interior (LIVE-254, HYG-033, LIVE-409, LIVE-410). Keep as one sequenced row so five operator asks do not each become a parallel P1.\n\nUPDATED 2026-09-20. Children: LIVE-420 (directory, done), LIVE-422 (analytics, done), LIVE-425 (sell-course Connect prompt, done). LIVE-426 closed the leftover Business-plan lie in help (LIVE-410). Price half of sell-a-course already lived on ADR-1397. Tier gate and Discussion still have their own PRs. Do not close this parent from a child. Do not add posts.scope_space_id from this row.\n\nUPDATED 2026-09-20: the tier-gate child is LIVE-427. Do not close this parent from that child. Discussion remains LIVE-421.",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-20: sell-course Connect is LIVE-425 (done). Directory is LIVE-420. Analytics is LIVE-422. Help no longer restates the Business membership wall (LIVE-426). Closes when each of the five has its own child row with a passing probe, or a ruling drops one. Tier and Discussion still open.",
+        "evidence": "2026-09-20: sell-course Connect is LIVE-425 (done). Directory is LIVE-420. Analytics is LIVE-422. Help no longer restates the Business membership wall (LIVE-426). Tier gate is LIVE-427 (own PR). Closes when each of the five has its own child row with a passing probe, or a ruling drops one. Discussion still open.",
         "checked": "2026-09-20"
       }
     },
@@ -15090,6 +15090,25 @@
       "closed": "2026-09-20"
     },
     {
+      "id": "LIVE-427",
+      "title": "Gate a Journey to a Space membership tier",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/FOCUS-MODEL.md",
+        "ref": "ADR-1403 Q5; ADR-1476"
+      },
+      "detail": "FILED as the gated-content child of LIVE-411. CLOSED 2026-09-20 (ADR-1476). journey_plans.space_tier_id is the optional enrol gate. journeyTierGateError is the one comparison. checkFreeEnrol and createCommerceCheckout both call checkJourneyTier. Authors pick the tier on the settings rail. Waitlist is not a membership. Parent LIVE-411 stays open (Discussion still unshipped).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const g=fs.readFileSync(\"lib/journeys/tier-gate.ts\",\"utf8\");if(!g.includes(\"export function journeyTierGateError\"))fail(\"journeyTierGateError is gone\");if(!g.includes(\"export async function checkJourneyTier\"))fail(\"checkJourneyTier is gone\");const f=fs.readFileSync(\"lib/journeys/free-enrol-gate.ts\",\"utf8\");if(!f.includes(\"checkJourneyTier\"))fail(\"the free door no longer asks the tier gate\");const c=fs.readFileSync(\"lib/commerce/checkout.ts\",\"utf8\");if(!c.includes(\"checkJourneyTier\"))fail(\"checkout no longer asks the tier gate\");const m=fs.readFileSync(\"lib/studio/entities/journey.ts\",\"utf8\");if(!m.includes(\"space_tier_id\"))fail(\"the Journey manifest no longer declares the tier\");const mig=fs.existsSync(\"supabase/migrations/20270345006600_journey_space_tier_gate.sql\");if(!mig)fail(\"the tier-gate migration is gone\");console.log(\"LIVE-427 ok\")'",
+        "note": "Passes when both enrol doors call checkJourneyTier, the manifest declares space_tier_id, and the migration file is present."
+      },
+      "closed": "2026-09-20"
+    },
+    {
       "id": "LIVE-428",
       "title": "Member-ticket writers still name the Collective plan after LIVE-410 moved the floor",
       "status": "done",
@@ -15100,7 +15119,7 @@
         "file": "lib/events/ticket-space-access.ts",
         "ref": "LIVE-410 leftover; ADR-1477; ADR-1415; ADR-1475"
       },
-      "detail": "FILED 2026-09-20 from the LIVE-410 re-test. Packets next was LIVE-411 (umbrella). Money and events lanes were empty. LIVE-427 already claims Circle tier / space_can_sell. Help no longer names the Business membership wall (LIVE-426). The leftover was the operator ticket surfaces: validateSpaceAccess and setSpaceEventAccess still threw \"Membership-only tickets are part of the Collective plan.\", and the host ticket editor, the admin ticket editor, and Memberships Event access still painted that leftover. Collective is not a plan label (LIVE-228).\n\nPREMISE RE-TESTED 2026-09-20. FEATURE_GATES.space_membership_tickets.minEntitlement is free. featureAllowed therefore grants on the code default. The typed Collective sentence was still the refusal and the locked hint.\n\nCLOSED 2026-09-20 (ADR-1477). resolveMembershipTicketGate is the one seam. Both writers and the Event access loader use it. The locked hint interpolates featureWallLabel. The code default stays free. An override that raises the gate still refuses and still names the raised plan. No migration. Did not close LIVE-411. Did not move Circle tier access off space_can_sell.",
+      "detail": "FILED 2026-09-20 from the LIVE-410 re-test. Packets next was LIVE-411 (umbrella). Money and events lanes were empty. Help no longer names the Business membership wall (LIVE-426). Journey tier-gate is LIVE-427. The leftover was the operator ticket surfaces: validateSpaceAccess and setSpaceEventAccess still threw \"Membership-only tickets are part of the Collective plan.\", and the host ticket editor, the admin ticket editor, and Memberships Event access still painted that leftover. Collective is not a plan label (LIVE-228).\n\nPREMISE RE-TESTED 2026-09-20. FEATURE_GATES.space_membership_tickets.minEntitlement is free. featureAllowed therefore grants on the code default. The typed Collective sentence was still the refusal and the locked hint.\n\nCLOSED 2026-09-20 (ADR-1477). resolveMembershipTicketGate is the one seam. Both writers and the Event access loader use it. The locked hint interpolates featureWallLabel. The code default stays free. An override that raises the gate still refuses and still names the raised plan. No migration. Did not close LIVE-411. Did not move Circle tier access off space_can_sell.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const files=[\"lib/events/ticket-tiers.ts\",\"lib/events/space-event-access.ts\",\"lib/events/ticket-space-access.ts\",\"components/spaces/membership-event-access.tsx\",\"app/(main)/events/[slug]/manage/ticket-tiers-panel.tsx\",\"app/(main)/admin/events/[id]/event-edit-client.tsx\"];for (const f of files){const s=fs.readFileSync(f,\"utf8\");if(/Collective plan/.test(s))fail(f+\" still names the Collective plan\")}const g=fs.readFileSync(\"lib/events/ticket-space-access.ts\",\"utf8\");if(!g.includes(\"featureWallLabel\"))fail(\"ticket-space-access no longer names the wall through featureWallLabel\");if(!g.includes(\"export function membershipTicketWallSentence\"))fail(\"membershipTicketWallSentence is gone\");if(!g.includes(\"export async function resolveMembershipTicketGate\"))fail(\"resolveMembershipTicketGate is gone\");const gates=fs.readFileSync(\"lib/pricing/gates.ts\",\"utf8\");const m=gates.match(/space_membership_tickets:\\s*\\{[^}]+\\}/);if(!m)fail(\"space_membership_tickets gate missing\");if(/minEntitlement:\\s*.business./.test(m[0])||/minEntitlement:\\s*.collective./.test(m[0]))fail(\"space_membership_tickets left the free floor\");console.log(\"LIVE-428 ok\")'",

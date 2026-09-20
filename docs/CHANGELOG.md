@@ -14,6 +14,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 - **If you belong to a Space, you can see the other members.** Open People on that Space. Visitors who have not joined see a join door, not the list.
 
+- **You can keep a Journey for one Space membership.** In settings, pick the tier. People who are not in that membership see a join link instead of Start or Get access.
+
 - **You can list what people will learn on a Journey.** Add the outcomes in settings, one line each. Visitors see that list next to the story, not a repeat of the one-line promise.
 
 - **If you run a Space, Home now shows who started and finished your Journeys.** Enrolled, finished, still going, and the finish rate sit next to your profile views. Revenue was already on that same page. A person who starts again still counts as one.

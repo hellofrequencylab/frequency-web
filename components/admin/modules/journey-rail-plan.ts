@@ -61,7 +61,7 @@ export const JOURNEY_DELIVERY_WRITES = ['completion_gems', 'drip_interval_days',
 export const JOURNEY_VISIBILITY_WRITES = ['visibility'] as const
 
 /** The columns `setJourneyAttributes` writes. */
-export const JOURNEY_ATTRIBUTE_WRITES = ['difficulty', 'category', 'tags', 'daily_minutes', 'enroll_cap'] as const
+export const JOURNEY_ATTRIBUTE_WRITES = ['difficulty', 'category', 'tags', 'daily_minutes', 'enroll_cap', 'space_tier_id'] as const
 
 /** The paths `setJourneyMeeting` writes into the one `meeting` jsonb column: both touchpoints. */
 const TOUCHPOINT_KEYS = ['format', 'schedule', 'timezone', 'location', 'link', 'notes', 'eventId'] as const
@@ -189,6 +189,7 @@ export function journeyAttributesPatch(values: JourneyRailValues): {
   tags: string[]
   dailyMinutes: number | null
   enrollCap: number | null
+  spaceTierId: string | null
 } {
   return {
     difficulty: values.difficulty || null,
@@ -196,6 +197,7 @@ export function journeyAttributesPatch(values: JourneyRailValues): {
     tags: (values.tags ?? '').split(',').map((t) => t.trim()).filter(Boolean),
     dailyMinutes: Number(values.daily_minutes) || null,
     enrollCap: Number(values.enroll_cap) || null,
+    spaceTierId: values.space_tier_id || null,
   }
 }
 

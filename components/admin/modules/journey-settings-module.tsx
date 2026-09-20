@@ -81,6 +81,7 @@ for (const prefix of ['meeting', 'meeting.gathering']) {
 /** Standing guidance under a control. Also the surface's. */
 const HINTS: Record<string, string> = {
   enroll_cap: 'A Run of about 8 to 12 keeps real accountability.',
+  space_tier_id: 'Leave empty so anyone can start. Pick a membership so only those members can enrol.',
   certificate_enabled: 'A printable certificate when someone finishes.',
   header_overlay_color: 'A hex color. Leave it empty for the overlay style’s own shade.',
 }
@@ -203,7 +204,10 @@ function JourneySettingsRail({ data }: { data: JourneyRailData }) {
       active = false
     }
   }, [planId])
-  const loaded = useMemo<FieldOptions>(() => ({ events }), [events])
+  const loaded = useMemo<FieldOptions>(
+    () => ({ events, 'space-tiers': data.spaceTiers }),
+    [events, data.spaceTiers],
+  )
 
   // The images self-save on pick, as a pick is one whole change. The cover's focal point debounces
   // (400ms) so a drag never fires a save per pixel; it is a property of the cover, not a field.
