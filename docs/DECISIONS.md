@@ -46956,3 +46956,22 @@ Premise re-tested 2026-09-20: `FEATURE_GATES.space_memberships.minEntitlement` i
 **Consequences.** A later `space_can_sell` that ranks on a plan list, or a shape trigger that raises `circle_access_plan_floor` again, fails the LIVE-436 probe. Campaigns stay at Business.
 
 **Rows.** LIVE-436.
+
+## ADR-1478: Show a past-due Space membership without locking the member out (2026-09-20)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-429` · numbered **1478** because **1477** is claimed by LIVE-428 · corroborated by `lib/spaces/membership-dunning.ts`, `lib/spaces/memberships.ts`, `components/spaces/membership-join.tsx`, `components/spaces/membership-owner-list.tsx`, and `app/(main)/settings/billing/section.tsx`
+
+**Context.** FOCUS-MODEL §6 item 3 said `space_memberships.payment_status` is never enforced and Crew dunning does not cover Space dues. Premise re-tested 2026-09-20: the webhook already writes `pending | active | past_due | canceled`. `private.is_space_paid_member` and `isSpacePaidMember` deliberately ignore the column (ADR-1092), because a free join is often `status=active` with `payment_status=pending`. No UI selected the column. Settings Plan and billing only reads `profiles.membership_payment_status`.
+
+**Decision.**
+
+1. Display only. `isPastDueSpaceMembership` is true only for `past_due`. pending stays invisible, which keeps the free-join default honest.
+2. The member sees the notice on the Space join card and on Settings Plan and billing (`listMyPastDueSpaceMemberships` in `lib/spaces/memberships.ts`, so the reader does not grow the admin-client ratchet). The host sees a Payment failed chip on the member list.
+3. Access is unchanged. Circle entry, Journey enrol, and member tickets still read `status`. A later ruling can turn the column into a lock.
+4. ROOT never lists. `billingLive()` still darkens the Settings list, matching Crew dunning.
+
+**Rejected.** Revoking Circle access on past_due (that would lock out pending free joins if copied carelessly, and it reverses ADR-1092 without a ruling). Opening the Crew Stripe portal for a Space subscription (wrong customer). Absorbing LIVE-423's memberships list. Closing parent LIVE-411.
+
+**Consequences.** A later surface that hides a past_due Space membership, or that treats pending as past due, fails the LIVE-429 probe. LIVE-411 stays open (Discussion is still LIVE-421).
+
+**Rows.** LIVE-429.
