@@ -24,13 +24,32 @@ vi.mock('@/lib/auth', () => ({
     currentProfileId ? { id: currentProfileId, webRole: currentWebRole } : null,
 }))
 
-let resolvedSpace: { id: string; slug: string; ownerProfileId?: string | null } | null = {
+let resolvedSpace: {
+  id: string
+  slug: string
+  name?: string
+  brandName?: string | null
+  type?: string
+  ownerProfileId?: string | null
+} | null = {
   id: 'space-1',
   slug: 'river-studio',
+  name: 'River Studio',
+  type: 'space',
   ownerProfileId: 'owner-0000-4000-a000-0000000ownr',
 }
+const extraSpaces: Record<string, NonNullable<typeof resolvedSpace>> = {}
 vi.mock('./store', () => ({
-  getSpaceById: async () => resolvedSpace,
+  getSpaceById: async (id: string) => {
+    if (resolvedSpace && id === resolvedSpace.id) return resolvedSpace
+    return extraSpaces[id] ?? null
+  },
+}))
+
+let billingOn = true
+vi.mock('@/lib/pricing/settings', async (orig) => ({
+  ...(await orig<typeof import('@/lib/pricing/settings')>()),
+  billingLive: async () => billingOn,
 }))
 
 let canEdit = true
@@ -153,6 +172,7 @@ function membershipsBuilder() {
     statusIn?: string[]
     id?: string
     member_profile_id?: string
+    payment_status?: string
   } = {}
   let pendingInsert: Record<string, unknown> | null = null
   let pendingUpdate: Record<string, unknown> | null = null
@@ -162,7 +182,8 @@ function membershipsBuilder() {
     (!filters.space_id || m.space_id === filters.space_id) &&
     (!filters.member_profile_id || m.member_profile_id === filters.member_profile_id) &&
     (!filters.status || m.status === filters.status) &&
-    (!filters.statusIn || filters.statusIn.includes(m.status))
+    (!filters.statusIn || filters.statusIn.includes(m.status)) &&
+    (!filters.payment_status || m.payment_status === filters.payment_status)
 
   const api = {
     select() {
@@ -173,6 +194,7 @@ function membershipsBuilder() {
       if (col === 'status') filters.status = val
       if (col === 'id') filters.id = val
       if (col === 'member_profile_id') filters.member_profile_id = val
+      if (col === 'payment_status') filters.payment_status = val
       return api
     },
     in(col: string, vals: string[]) {
@@ -252,6 +274,7 @@ import {
   listMembershipTiers,
   listAllMembershipTiers,
   getMyMembership,
+  listMyPastDueSpaceMemberships,
   joinTier,
   cancelMembership,
   listSpaceMemberships,
@@ -263,7 +286,15 @@ import { annualSavingLabel, resolveBillingInterval, tierPriceView } from './memb
 beforeEach(() => {
   currentProfileId = 'member-0000-4000-a000-0000000membr'
   currentWebRole = 'none'
-  resolvedSpace = { id: 'space-1', slug: 'river-studio', ownerProfileId: 'owner-0000-4000-a000-0000000ownr' }
+  resolvedSpace = {
+    id: 'space-1',
+    slug: 'river-studio',
+    name: 'River Studio',
+    type: 'space',
+    ownerProfileId: 'owner-0000-4000-a000-0000000ownr',
+  }
+  for (const k of Object.keys(extraSpaces)) delete extraSpaces[k]
+  billingOn = true
   canEdit = true
   isAdmin = true
   db.tiers = []
@@ -659,6 +690,81 @@ describe('getMyMembership (action)', () => {
     })
     const mine = await getMyMembership('space-1')
     expect(mine?.paymentStatus).toBe('past_due')
+  })
+})
+
+describe('listMyPastDueSpaceMemberships', () => {
+  it('returns [] when signed out', async () => {
+    currentProfileId = null
+    expect(await listMyPastDueSpaceMemberships()).toEqual([])
+  })
+
+  it('returns [] while billing is off', async () => {
+    billingOn = false
+    seedActiveTier('t0', { name: 'Gold' })
+    db.memberships.push({
+      id: 'm1',
+      space_id: 'space-1',
+      member_profile_id: currentProfileId!,
+      tier_id: 't0',
+      status: 'active',
+      started_at: '2026-06-18T00:00:00.000Z',
+      payment_status: 'past_due',
+    })
+    expect(await listMyPastDueSpaceMemberships()).toEqual([])
+  })
+
+  it('lists an active past_due membership and skips ROOT, pending, and other people', async () => {
+    seedActiveTier('t0', { name: 'Gold' })
+    extraSpaces.root = { id: 'root', slug: 'root', name: 'Frequency', type: 'root' }
+    db.memberships.push(
+      {
+        id: 'm1',
+        space_id: 'space-1',
+        member_profile_id: currentProfileId!,
+        tier_id: 't0',
+        status: 'active',
+        started_at: '2026-06-18T00:00:00.000Z',
+        payment_status: 'past_due',
+      },
+      {
+        id: 'm-pending',
+        space_id: 'space-1',
+        member_profile_id: currentProfileId!,
+        tier_id: 't0',
+        status: 'active',
+        started_at: '2026-06-18T00:00:00.000Z',
+        payment_status: 'pending',
+      },
+      {
+        id: 'm-root',
+        space_id: 'root',
+        member_profile_id: currentProfileId!,
+        tier_id: 't0',
+        status: 'active',
+        started_at: '2026-06-18T00:00:00.000Z',
+        payment_status: 'past_due',
+      },
+      {
+        id: 'm-other',
+        space_id: 'space-1',
+        member_profile_id: 'someone-else',
+        tier_id: 't0',
+        status: 'active',
+        started_at: '2026-06-18T00:00:00.000Z',
+        payment_status: 'past_due',
+      },
+    )
+    const rows = await listMyPastDueSpaceMemberships()
+    expect(rows).toEqual([
+      {
+        membershipId: 'm1',
+        spaceId: 'space-1',
+        spaceName: 'River Studio',
+        spaceSlug: 'river-studio',
+        tierName: 'Gold',
+      },
+    ])
   })
 })
 

@@ -52,6 +52,11 @@ import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
 import { syncTierCircleAccess } from '@/lib/spaces/tier-circle'
 import { stripe } from '@/lib/billing/stripe'
 import { resolveBillingInterval, type BillingInterval } from '@/lib/spaces/membership-pricing'
+import { billingLive } from '@/lib/pricing/settings'
+import {
+  isPastDueSpaceMembership,
+  type PastDueSpaceMembership,
+} from '@/lib/spaces/membership-dunning'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -576,6 +581,43 @@ export async function getMyMembership(spaceId: string): Promise<MyMembership | n
     }
   } catch {
     return null
+  }
+}
+
+/**
+ * The viewer's active Space memberships whose card failed (LIVE-429). Empty when
+ * billing is off, when the viewer is signed out, or when the read misses. ROOT is
+ * omitted. Display only: access still ignores payment_status.
+ */
+export async function listMyPastDueSpaceMemberships(): Promise<PastDueSpaceMembership[]> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return []
+  try {
+    if (!(await billingLive())) return []
+    const { data, error } = await membershipsTable()
+      .select(MEMBERSHIP_COLS)
+      .eq('member_profile_id', profileId)
+      .eq('status', 'active')
+      .eq('payment_status', 'past_due')
+    if (error || !data?.length) return []
+    const out: PastDueSpaceMembership[] = []
+    for (const row of data as MembershipRow[]) {
+      if (!isPastDueSpaceMembership(row.payment_status)) continue
+      const space = await getSpaceById(row.space_id)
+      if (!space || space.type === 'root') continue
+      const tiers = await readTiers(row.space_id, false)
+      const tier = tiers.find((t) => t.id === row.tier_id)
+      out.push({
+        membershipId: row.id,
+        spaceId: space.id,
+        spaceName: space.brandName?.trim() || space.name.trim() || 'this Space',
+        spaceSlug: space.slug,
+        tierName: tier?.name ?? 'Member',
+      })
+    }
+    return out
+  } catch {
+    return []
   }
 }
 
