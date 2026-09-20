@@ -92,7 +92,7 @@ Frequency charges once for the introduction, and after that they're your people,
 | **Create a Space** | 🔴 | 🔴 (go Crew) | ✅ 1 space | — | ✅ unlimited |
 | **Receive tips** (0% platform fee, always) | 🔴 | ✅ | ✅ | ✅ | ✅ |
 | **Sell** (tickets, bookings, payments) | 🔴 | ✅ 10% network-sourced ~~(🔴 RSVPs only)~~ | ✅ 8% network-sourced | ✅ 10% network-sourced ~~(🔴 RSVPs only)~~ | ✅ 5% network-sourced (Collective: 3%), Non Profit 0% |
-| **Host collaborators / co-host events** | 🔴 | 🔴 | 🔴 | 🔴 preview | ✅ Non Profit; Business previews (Collective floor, ADR-835) |
+| **Host collaborators / co-host events** | 🔴 | 🔴 | 🔴 | 🔴 preview | ✅ Business / Non Profit (LIVE-430); free sees the locked preview |
 | Team seats, full CRM/email/automation, custom domain | 🔴 | 🔴 | 🔴 | 🔴 preview | ✅ |
 
 Legend: ✅ available · 🔴 gated (upgrade prompt) · earn-only = plays but cannot cash in. Every rate shown
@@ -103,10 +103,11 @@ struck cells are the sell-wall it used to teach.
 
 ## 5. How it is enforced (and why OFF is safe)
 
-- **Collaboration host gate** — `space_collaborators` feature gate (Collective floor since ADR-835,
+- **Collaboration host gate** — `space_collaborators` feature gate (Business floor, LIVE-430,
   `lib/pricing/gates.ts`), read by `spaceCanHostCollaborators` (`lib/spaces/function-access.ts`) and
   enforced in the write actions (`collaborations-actions.ts` request + accept; `share-actions.ts`
-  request/feature). The settings surface shows a locked preview for a lower-plan host.
+  request/feature). The refusal and the locked preview name the wall through `featureWallLabel`.
+  The settings surface shows a locked preview for a lower-plan host.
 - **Space-count cap** — the pure rule `canCreateSpace` (`lib/pricing/space-limits.ts`) enforced in
   `createSpace` (`lib/spaces/provision.ts`): free → 0, Crew → 1, owning a paid space → unlimited.
 - **Event creation** — opened to any signed-in member (`event.create` capability in

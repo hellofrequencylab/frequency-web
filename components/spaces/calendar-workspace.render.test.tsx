@@ -14,6 +14,10 @@ vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/entry-actions', () => ({
   loadStaffCalendarMonth: async () => [],
 }))
 
+vi.mock('@/components/events/event-share-button', () => ({
+  EventShareButton: ({ title }: { title: string }) => <button type="button">Share {title}</button>,
+}))
+
 let container: HTMLDivElement | null = null
 let root: Root | null = null
 
@@ -73,6 +77,8 @@ describe('CalendarWorkspace', () => {
     const labels = [...el.querySelectorAll('[aria-label="Calendar views"] button')].map((n) => n.textContent)
     expect(labels).toEqual(['Guest', 'Admin', 'List', 'Timeline', 'Projects'])
     expect(el.querySelector('[data-calendar-view="admin"]')).not.toBeNull()
+    expect(el.querySelector('[data-calendar-admin-grid]')).not.toBeNull()
+    expect(el.querySelector('[data-calendar-pm-console]')).toBeNull()
     expect(el.querySelector('a[href*="view=list"]')).toBeNull()
     act(() => {
       el.querySelectorAll('[aria-label="Calendar views"] button')[2]?.dispatchEvent(

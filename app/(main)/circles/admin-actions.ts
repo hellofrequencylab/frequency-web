@@ -178,8 +178,8 @@ async function listChannelOptionGroups(currentChannelId: string | null): Promise
   return groups
 }
 
-/** The two facts `availableAccessModes` decides over: is this a REAL Space (a personal Circle sits
- *  on the root sentinel), and is it on a plan that may sell. Returned as null for a Circle with no
+/** The facts `availableAccessModes` decides over: is this a REAL Space (a personal Circle sits
+ *  on the root sentinel). Plan is not the door (ADR-1476). Returned as null for a Circle with no
  *  `space_id` at all, which `availableAccessModes` already reads as personal. */
 async function readOwningSpaceFacts(
   spaceId: string | null,
@@ -228,8 +228,9 @@ export async function getCircleAdminData(slug: string) {
     ])
 
   // AXIS 2 (ADR-1015). The modes to OFFER are narrowed by the owning Space, because
-  // `trg_circles_access_shape` refuses the two Space modes on a personal Circle and refuses `tier`
-  // below a selling plan — and a mode the trigger refuses reads to a host as a broken save button.
+  // `trg_circles_access_shape` refuses the Space modes on a personal Circle, and a mode the
+  // trigger refuses reads to a host as a broken save button. `tier` follows the free membership
+  // floor (ADR-1476).
   const access = asCircleAccess(circle.access)
   // A SPACE CIRCLE narrows further, to the two doors the owner named (ADR-1393): open, or
   // membership gated. The other four each break what a Space's hub is for — `circle_members` and
@@ -250,8 +251,8 @@ export async function getCircleAdminData(slug: string) {
     access,
     access_modes: accessModeOptions(space, access, { isSpaceCircle }),
     /** True when the list is narrowed at all, so the control can show the one note that says why.
-     *  Either the owning Space narrows it (a personal Circle, or a non-selling plan) or this is a
-     *  Space Circle, which carries its own two-door rule. */
+     *  Either the owning Space narrows it (a personal Circle) or this is a Space Circle, which
+     *  carries its own two-door rule. */
     access_limited:
       isSpaceCircle || availableAccessModes(space).length < CIRCLE_ACCESS_MODES.length,
     theme,
@@ -349,10 +350,11 @@ export async function updateCircleSettings(id: string, slug: string, fd: FormDat
   revalidatePath('/circles')
 }
 
-/** Turn a database refusal into something a host can act on. `trg_circles_access_shape` raises its
- *  two rules as bare codes (`circle_access_needs_space`, `circle_access_plan_floor`), which is the
- *  right thing for a trigger and the wrong thing for a rail. Anything else stays generic on
- *  purpose: a raw Postgres message is not member-facing copy. */
+/** Turn a database refusal into something a host can act on. `trg_circles_access_shape` raises
+ *  `circle_access_needs_space` as a bare code, which is the right thing for a trigger and the
+ *  wrong thing for a rail. `circle_access_plan_floor` is kept as a readable alias for a database
+ *  that has not yet applied ADR-1476. Anything else stays generic on purpose: a raw Postgres
+ *  message is not member-facing copy. */
 function readableAccessError(message: string): string {
   if (message.includes('circle_access_needs_space') || message.includes('circle_access_plan_floor')) {
     return CIRCLE_ACCESS_LIMIT_NOTE

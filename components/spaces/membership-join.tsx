@@ -7,10 +7,13 @@ import {
 import { listMembershipIncludedEvents, includedEventCoversTier } from '@/lib/events/membership-included'
 import { billingLive } from '@/lib/pricing/settings'
 import { viewerManagesSpace } from '@/lib/spaces/operator'
+import { getSpaceById } from '@/lib/spaces/store'
 import { EmptyState } from '@/components/ui/empty-state'
 import { AdminSetupPrompt } from '@/components/spaces/admin-setup-prompt'
 import { MembershipTierPicker } from '@/components/spaces/membership-tier-picker'
 import { MembershipCancelButton } from '@/components/spaces/membership-cancel-button'
+import { MembershipPastDueBanner } from '@/components/spaces/membership-past-due-banner'
+import { isPastDueSpaceMembership } from '@/lib/spaces/membership-dunning'
 
 // MEMBER JOIN SURFACE (ENTITY-SPACES-SYSTEM §2.5, memberships v1). The self-fetching server half of
 // the Business "Join" tab: it loads this Space's active tiers and the viewer's own membership (if
@@ -72,9 +75,22 @@ export async function MembershipJoin({
         </div>
       )
     }
+    const pastDue = isPastDueSpaceMembership(mine.paymentStatus)
+    const space = pastDue ? await getSpaceById(spaceId) : null
+    const spaceName = space?.brandName?.trim() || space?.name?.trim() || 'this Space'
     return (
-      <div className="rounded-card border border-success/30 bg-success-bg px-6 py-8 text-center">
-        <BadgeCheck className="mx-auto mb-3 h-8 w-8 text-success" aria-hidden />
+      <div
+        className={
+          pastDue
+            ? 'space-y-3 rounded-card border border-warning/40 bg-warning-bg/20 px-6 py-8 text-center'
+            : 'rounded-card border border-success/30 bg-success-bg px-6 py-8 text-center'
+        }
+      >
+        {pastDue ? (
+          <MembershipPastDueBanner spaceName={spaceName} />
+        ) : (
+          <BadgeCheck className="mx-auto mb-3 h-8 w-8 text-success" aria-hidden />
+        )}
         <p className="text-body-sm font-semibold text-text">You are a member.</p>
         <p className="mx-auto mt-1 max-w-sm text-body-sm text-muted">
           {mine.tierName} since {since}.

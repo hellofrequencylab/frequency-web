@@ -5,7 +5,6 @@ import { EventCalendar } from '@/components/events/event-calendar'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StaffCalendar } from '@/app/(main)/spaces/[slug]/settings/calendar/staff-calendar'
 import { CalendarModeToggle } from '@/components/spaces/calendar-mode-toggle'
-import { CalendarPmConsole } from '@/components/spaces/calendar-pm-console'
 import { CalendarListView } from '@/components/spaces/calendar-list-view'
 import { CalendarTimelineView } from '@/components/spaces/calendar-timeline-view'
 import { CalendarProjectsView } from '@/components/spaces/calendar-projects-view'
@@ -181,7 +180,7 @@ export function CalendarWorkspace({
               >
                 {panel === 'guest' ? guestBody : null}
                 {panel === 'admin' ? (
-                  <CalendarPmConsole events={adminEvents}>
+                  <div data-calendar-admin-grid>
                     <StaffCalendar
                       slug={slug}
                       spaceId={spaceId}
@@ -191,7 +190,7 @@ export function CalendarWorkspace({
                       canEdit={canManage}
                       dayNotes={dayNotes}
                     />
-                  </CalendarPmConsole>
+                  </div>
                 ) : null}
                 {panel === 'list' ? (
                   <CalendarListView items={items} selected={selected} onSelect={selectList} />

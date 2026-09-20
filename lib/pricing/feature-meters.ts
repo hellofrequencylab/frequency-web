@@ -84,8 +84,8 @@ export type MeterPeriod = 'month' | 'day' | null
  *   - space_qr 3 free / 500 Business — MIRRORS the LIVE cap in lib/qr/space-codes.ts PLAN_CODE_CAPS
  *                                     (free 3, business 500). Collective unlimited is a placeholder; the
  *                                     live map has no collective row yet (it falls to the free cap).
- *   - space_automation 1,000 runs/mo on Collective — placeholder included volume (the feature itself is
- *                                     the Collective on/off, FEATURE_GATES.space_automation).
+ *   - space_automation 1,000 runs/mo on Business — placeholder included volume (the feature itself is
+ *                                     the Business on/off, FEATURE_GATES.space_automation).
  *   - space_team 1 free             — MIRRORS lib/spaces/seats.ts BASE_SEAT_ALLOWANCE (the owner's seat,
  *                                     ADR-799). Collective 3 = placeholder INCLUDED seats; more seats
  *                                     stay the ADR-799 per-seat add-on, never blocked by this meter.
@@ -234,10 +234,10 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Automation runs',
     unit: 'runs',
     period: 'month',
-    // Free: 50 runs / mo (LIVE-225), enough to automate one real habit and watch it work. Collective:
-    // 1,000 included runs / mo (placeholder, ADR-811).
-    // ⚠️ KNOWN CONTRADICTION, deliberately left: FEATURE_GATES.space_automation still floors this at
-    // 'collective', so the gate says "not on your plan" while this meter grants 50 a month. It is an
+    // Free: 50 runs / mo (LIVE-225), enough to automate one real habit and watch it work. Business:
+    // 1,000 included runs / mo (placeholder, ADR-811 / LIVE-228).
+    // ⚠️ KNOWN CONTRADICTION, deliberately left: FEATURE_GATES.space_automation floors this at
+    // 'business', so the gate says "not on your plan" while this meter grants 50 a month. It is an
     // exempted entry in KNOWN_GATE_METER_COLLISIONS (gate-meter-drift.test.ts) and Phase 4's plan merge
     // owns resolving it. Do not fix it by lowering this number back to zero.
     allowances: PLACEHOLDER_METER_LIMITS.space_automation!,

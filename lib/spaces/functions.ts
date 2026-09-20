@@ -282,7 +282,7 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
   {
     // Programs on Channels: a Space runs its model as a Program (topical_channels.owner_space_id +
     // template_id), its flagship circle becomes the Chapter blueprint, and members start Chapters
-    // anywhere. Universal like every other function (entitlement null; the Collective-plan story is
+    // anywhere. Universal like every other function (entitlement is `program`; the Business-plan story is
     // the console badge + the surface's own server-side checks). Admin-managed: creating a Program
     // publishes a network-wide Channel, so it stays above the editor bar.
     key: 'program',

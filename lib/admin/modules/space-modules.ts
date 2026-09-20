@@ -35,6 +35,7 @@ import {
 } from 'lucide-react'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import { peopleCatalogNote } from '@/lib/spaces/people-catalog-note'
+import { programCatalogNote } from '@/lib/spaces/program-wall'
 import type { AdminSlot } from './registry'
 
 // LOCKED CONTRACT (ADR-553, docs/MENU-CONTRACT.md): one of the only three module catalogs the admin menu
@@ -188,7 +189,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Space Dispatch publishing moved to the post box (LIVE-295), so composeSpaceDispatch keeps a writer.
   // Automation rides the `crm` feature gate; the surface self-gates on the automation ENTITLEMENT (a paid
   // amplifier) and shows an upgrade notice when the plan lacks it. Nested under CRM on the console.
-  { id: 'space.automation', label: 'Automation', desc: 'Rules and drip sequences over your own contacts.', Icon: Workflow, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/settings/automation`, order: 36, tier: 'primary', priority: 16, access: 'premium', parent: 'space.people', freeNote: 'On Collective, 1,000 runs/mo included' },
+  { id: 'space.automation', label: 'Automation', desc: 'Rules and drip sequences over your own contacts.', Icon: Workflow, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/settings/automation`, order: 36, tier: 'primary', priority: 16, access: 'premium', parent: 'space.people', freeNote: 'On Business, 1,000 runs/mo included' },
   // Reviews is a gateable feature keyed on the `reviews` function: the member rating and review wall on the
   // public profile. Default ON (only an explicit `false` hides it); we recommend keeping it on to build trust.
   // A TOOL inside Profile and Settings (ADR-846): the wall is part of how the space presents itself, and its
@@ -254,9 +255,9 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Chapter blueprint (topical_channels.template_id) and members anywhere start Chapters from it. A TOOL
   // inside the Content box (parent keeps it off the top-level box count, ADR-846), ordered right after Circles:
   // a Program is what a circle grows into. Family `growth` so the Module Manager files it under Growth with
-  // Plan and billing — it is the growth play, not another content library. Collective-plan feature: the
+  // Plan and billing — it is the growth play, not another content library. Business-plan feature: the
   // premium badge + freeNote mark the plan story (presentation only; the surface gates server-side).
-  { id: 'space.program', label: 'Program', desc: 'Run your model as a Program: your flagship circle becomes the blueprint, and members start Chapters anywhere.', Icon: Network, family: 'growth', hub: 'programs', slot: 'engage', gate: { kind: 'feature', fn: 'program' }, featureKey: 'program', render: 'link', deepLink: (s) => `${base(s)}/settings/program`, order: 57.7, tier: 'primary', priority: 33.8, access: 'premium', freeNote: 'Included with Collective', parent: 'space.content' },
+  { id: 'space.program', label: 'Program', desc: 'Run your model as a Program: your flagship circle becomes the blueprint, and members start Chapters anywhere.', Icon: Network, family: 'growth', hub: 'programs', slot: 'engage', gate: { kind: 'feature', fn: 'program' }, featureKey: 'program', render: 'link', deepLink: (s) => `${base(s)}/settings/program`, order: 57.7, tier: 'primary', priority: 33.8, access: 'premium', freeNote: programCatalogNote(), parent: 'space.content' },
   // Shop is now a first-class GATEABLE feature keyed on the `shop` function (SpaceFunctionKey), so it can
   // be turned off, role-gated, and entitlement-gated (the `storefront` tier key) like every sibling
   // offering — it is no longer the always-on outlier. Free Spaces can sell; a paid plan lowers fees.

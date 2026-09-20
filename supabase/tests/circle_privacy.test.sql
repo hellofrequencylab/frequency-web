@@ -72,7 +72,8 @@ select '00000000-0000-4000-c100-0000000000cc'::uuid, 'priv-root', 'Priv Root', '
        (select id from public.entities where key = 'labs' limit 1), 'active', 'network'
 where not exists (select 1 from public.spaces where type = 'root');
 
--- A FREE business Space (cannot sell) and a BUSINESS-plan one (can).
+-- A FREE business Space and a BUSINESS-plan one. Both may include a Circle with a membership
+-- (ADR-1476). The personal / root sentinel still cannot.
 insert into public.spaces (id, slug, name, type, entity_id, owner_profile_id, status, visibility, plan) values
   ('00000000-0000-4000-c100-00000000000f', 'priv-free-space', 'Priv Free Space', 'business',
    (select id from public.entities where key = 'labs' limit 1),
@@ -103,11 +104,8 @@ insert into public.circles (id, name, slug, type, status, space_id, unlisted, ac
   ('00000000-0000-4000-e100-000000000003', 'Priv Space Only', 'priv-space-only', 'online', 'active',
    '00000000-0000-4000-c100-00000000000b', false, 'space_members');
 
--- A circle the FREE business Space legitimately owns. `open` access, so the plan floor on
--- `circles.access` does not fire and the row actually exists — which is the whole point: the
--- plan-floor assertions further down need a real, ownable Circle to try to SELL. Without this the
--- only circle the free Space would have is the one created inside a throws_ok, which by
--- definition never lands, and a subselect for it silently yields NULL.
+-- A circle the FREE business Space legitimately owns. Used to prove a free Space can sell a
+-- Circle it owns (ADR-1476) and that a personal Circle still cannot.
 insert into public.circles (id, name, slug, type, status, space_id, unlisted, access) values
   ('00000000-0000-4000-e100-000000000009', 'Priv Free Owned', 'priv-free-owned', 'online', 'active',
    '00000000-0000-4000-c100-00000000000f', false, 'open');
@@ -367,13 +365,11 @@ select throws_ok(
   'a PERSONAL circle cannot use space_members access -- the root Space has no roster to admit from'
 );
 
-select throws_ok(
+select lives_ok(
   $$ insert into public.circles (name, slug, type, status, space_id, access)
      values ('Priv Free Sell', 'priv-free-sell', 'online', 'active',
              '00000000-0000-4000-c100-00000000000f', 'tier') $$,
-  'P0001',
-  'circle_access_plan_floor',
-  'a Space below the Business plan cannot put a Circle behind a tier'
+  'a free Space CAN put a Circle behind a tier — memberships are open on every plan'
 );
 
 -- A personal Circle can never be paid: its Space is root, a tier's Space never is.
@@ -397,24 +393,14 @@ select throws_ok(
   'a tier cannot link a Circle its Space does not own'
 );
 
--- 🔴 THE PLAN FLOOR AT THE LINK SITE — "only businesses charge", enforced where the PRICE lives.
--- `circles.access` has no price on it, so the tier link is the only place this rule can be made
--- true. The Circle below is one the free Space really owns, so the cross-tenant clause cannot fire
--- and the failure can only be the plan floor.
---
--- ⚠️ This assertion used to compute its circle_id with
---     (select id from public.circles where space_id = <free space> limit 1)
--- and expect `circle_link_unknown_circle`. The free Space owned no Circle -- the only one it ever
--- tried to create is inside a throws_ok above -- so the subselect was NULL, the trigger returned
--- early on `new.circle_id is null` exactly as designed, and the test failed against CORRECT code.
--- It never once exercised the plan floor it was named after.
-select throws_ok(
+-- A free Space may SELL a Circle it owns. The wall that used to fire here was the Business plan
+-- floor (circle_link_plan_floor). ADR-1476 dropped it: memberships are open on every plan, and
+-- including a Circle with one follows that floor. Connect readiness still refuses checkout.
+select lives_ok(
   $$ insert into public.space_membership_tiers (space_id, name, price_cents, circle_id)
      values ('00000000-0000-4000-c100-00000000000f', 'Paid tier on a free plan', 2900,
              '00000000-0000-4000-e100-000000000009') $$,
-  'P0001',
-  'circle_link_plan_floor',
-  'a free Space cannot SELL a Circle it owns -- only businesses charge'
+  'a free Space CAN SELL a Circle it owns — memberships are open on every plan'
 );
 
 -- ...and the other side of that rule, which the trigger states in a comment and nothing tested:
