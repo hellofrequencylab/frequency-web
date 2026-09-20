@@ -1,8 +1,9 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { featureAllowed } from '@/lib/pricing/gates'
-import { featureGatesLive } from '@/lib/pricing/settings'
-import { asSpacePlan } from '@/lib/pricing/plans'
 import { resolveHostingSpaceIdFromRow } from './host-space'
+import {
+  membershipTicketWallSentence,
+  resolveMembershipTicketGate,
+} from './ticket-space-access'
 import { resolveZone, zonedWallClockToInstant } from '@/lib/time/zone'
 
 // Shared ticket-tier logic (EVENTS-SYSTEM §2.2). Named tiers with richer pricing
@@ -23,11 +24,13 @@ import { resolveZone, zonedWallClockToInstant } from '@/lib/time/zone'
 // only layer that knows which event a tier belongs to. The decision itself is pure and lives in
 // lib/events/sales-window.ts; this module only parses, validates and persists.
 //
-// MEMBERSHIP-LINKED ACCESS (ADR-823): a tier may be restricted to active members of the event's
-// HOSTING Space (space_members_only / space_tier_id). Both writers validate that INPUT here —
-// the event must have a hosting Space, the Space's plan must clear the Collective gate, and a
-// named membership tier must belong to that Space — so neither surface (host Manage nor the
-// admin console) can persist a gate the checkout can't honestly enforce.
+// MEMBERSHIP-LINKED ACCESS (ADR-823 / LIVE-428): a tier may be restricted to active members of
+// the event's HOSTING Space (space_members_only / space_tier_id). Both writers validate that
+// INPUT here — the event must have a hosting Space, the Space's plan must clear the
+// space_membership_tickets gate (free floor since LIVE-410; an override still names the wall
+// through featureWallLabel), and a named membership tier must belong to that Space — so neither
+// surface (host Manage nor the admin console) can persist a gate the checkout can't honestly
+// enforce.
 
 export type TicketPricingMode = 'fixed' | 'free' | 'pwyc' | 'sliding_scale' | 'donation'
 
@@ -236,8 +239,8 @@ export function parseTicketTierInput(
  * an ungated tier. For a gated one, requires (in order):
  *   1. a hosting Space — the gate keys on events.host_space_id (falling back to the placement
  *      space_id, the same resolution the checkout + attribution use, ADR-819);
- *   2. the Space's plan to clear the Collective floor (feature `space_membership_tickets` —
- *      selling membership-included tickets is Collective depth, like collaborators/automation);
+ *   2. the Space's plan to clear `space_membership_tickets` (free floor since LIVE-410; an
+ *      operator override still names the wall through featureWallLabel);
  *   3. a named space_tier_id to be a real membership tier OF that Space (no cross-space gates).
  * Throws a member-readable Error on any miss, exactly like parseTicketTierInput.
  */
@@ -267,14 +270,11 @@ async function validateSpaceAccess(
     .select('plan')
     .eq('id', spaceId)
     .maybeSingle()
-  const plan = asSpacePlan((sp as { plan: string | null } | null)?.plan)
-  const allowed = await featureAllowed(
-    'space_membership_tickets',
-    { plan },
-    { gatesLive: await featureGatesLive() },
+  const { allowed, wall } = await resolveMembershipTicketGate(
+    (sp as { plan: string | null } | null)?.plan,
   )
   if (!allowed) {
-    throw new Error('Membership-only tickets are part of the Collective plan.')
+    throw new Error(membershipTicketWallSentence(wall))
   }
 
   if (fields.space_tier_id) {

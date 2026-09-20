@@ -9,6 +9,7 @@ import { featureWallLabel } from '@/lib/pricing/feature-tiers'
 import { METER_UPSELL_CTA } from '@/lib/pricing/meter-upsell'
 import { featureGatesLive } from '@/lib/pricing/settings'
 import { asSpacePlan, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
+import { resolveMembershipTicketGate } from '@/lib/events/ticket-space-access'
 import { isError } from '@/lib/action-result'
 import { MembershipTierForm } from '@/components/spaces/membership-tier-form'
 import { MembershipOwnerList } from '@/components/spaces/membership-owner-list'
@@ -227,7 +228,7 @@ function MembershipWallNotice({
 }
 
 // Self-fetching loader for the Event access panel: the upcoming events + their current audience
-// (manager-gated read) and the Collective plan gate the selects need.
+// (manager-gated read) and the membership-ticket gate the selects need.
 async function EventAccessLoader({
   space,
   tiers,
@@ -237,14 +238,9 @@ async function EventAccessLoader({
   tiers: { id?: string; name: string }[]
   staffViewing: boolean
 }) {
-  const [access, allowed] = await Promise.all([
+  const [access, gate] = await Promise.all([
     listSpaceEventAccess(space.id),
-    (async () =>
-      featureAllowed(
-        'space_membership_tickets',
-        { plan: asSpacePlan(space.plan) },
-        { gatesLive: await featureGatesLive() },
-      ))(),
+    resolveMembershipTicketGate(space.plan),
   ])
   const rows = isError(access) ? [] : access.data.rows
   return (
@@ -254,7 +250,8 @@ async function EventAccessLoader({
         slug={space.slug}
         rows={rows}
         membershipTiers={tiers.filter((t) => t.id).map((t) => ({ id: t.id!, name: t.name }))}
-        allowed={allowed}
+        allowed={gate.allowed}
+        wallLabel={gate.wall}
       />
     </fieldset>
   )
