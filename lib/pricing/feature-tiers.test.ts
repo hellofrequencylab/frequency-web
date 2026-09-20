@@ -189,7 +189,6 @@ describe('ladder unlock copy cannot drift from the meter it describes', () => {
 
   it('every quantity in an unlock line is a real allowance on that feature meter', () => {
     for (const key of FEATURE_TIER_KEYS) {
-      if (key === 'space_collaborators') continue // business rung is unlimited (null); unlock copy is qualitative
       const meter = featureMeter(key)
       if (!meter) continue
       const allowances = new Set(
@@ -248,6 +247,7 @@ describe('featureWallLabel', () => {
     expect(featureWallLabel('space_membership_tickets')).toBe(SPACE_PLAN_LABEL.free)
     expect(featureWallLabel('space_campaigns')).toBe(SPACE_PLAN_LABEL.business)
     expect(featureWallLabel('space_automation')).toBe(SPACE_PLAN_LABEL.business)
+    expect(featureWallLabel('space_collaborators')).toBe(SPACE_PLAN_LABEL.business)
   })
 
   it('follows a valid operator override of the wall, and ignores an invalid one', () => {
@@ -262,5 +262,19 @@ describe('featureWallLabel', () => {
 
   it('is null for a feature no gate declares', () => {
     expect(featureWallLabel('not_a_feature')).toBeNull()
+  })
+})
+
+describe('collaborator hosting ladder never types Collective (LIVE-439)', () => {
+  it('the Business unlock line names the host door, not a retired Collective rung', () => {
+    const ladder = featureTierLadder('space_collaborators')!
+    expect(ladder.minTier).toBe('business')
+    for (const step of ladder.steps) {
+      expect(step.unlocks).not.toMatch(/Collective/)
+      expect(step.unlocks).not.toMatch(/Host up to 3/)
+      expect(step.unlocks).not.toMatch(/revenue splits/)
+    }
+    const paid = ladder.steps.find((s) => s.tier === 'business')
+    expect(paid?.unlocks).toMatch(/Host other businesses/)
   })
 })

@@ -28,6 +28,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **Hosting other businesses on your Space is no longer described as a Collective plan extra.** Business is the door. The plan ladder no longer says Collective hosts unlimited, or that you get three hosts and then a higher plan.
+
 - **If you run a Space, you can include a Circle with a membership on any plan.** Set Who can join to Included with a membership. A payout account is what starts the money. Campaigns and funnels still open at Business.
 
 - **Automations come with Business, not a leftover Collective plan.** If your Space is on Free, the lock screen names Business. Sequences and rules still run the same way once you are on that plan.
