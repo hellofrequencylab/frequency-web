@@ -4,7 +4,7 @@ import { isOperatorListItem, operatorListHref, operatorStageLabel } from './pm-c
 import type { EntryStage } from './registry'
 
 // LIST VIEW INDEX (ADR-1464, ADR-1467). The left-hand gathering index. The right
-// pane is a truncated stats card, not the event edit screen.
+// pane is the event control console (header, share, stats), not the Studio editor.
 
 export type ListIndexItem = {
   key: string
@@ -13,6 +13,7 @@ export type ListIndexItem = {
   stageLabel: string
   href: string | null
   editHref: string | null
+  publicSlug: string | null
   isCancelled: boolean
   eventId: string | null
   entryId: string | null
@@ -21,7 +22,14 @@ export type ListIndexItem = {
   notes: string | null
   goingCount: number
   coverUrl: string | null
+  startInstantIso: string | null
   stage: EntryStage | null
+}
+
+export function listPublicSlug(ev: CalendarEvent): string | null {
+  if (!ev.eventId) return null
+  if (ev.slug.startsWith('entry-')) return null
+  return ev.slug
 }
 
 export function listItemKey(ev: CalendarEvent): string {
@@ -33,23 +41,28 @@ export function listIndexItems(events: CalendarEvent[]): ListIndexItem[] {
     .filter(isOperatorListItem)
     .slice()
     .sort((a, b) => a.dayKey.localeCompare(b.dayKey) || a.title.localeCompare(b.title))
-    .map((ev) => ({
-      key: listItemKey(ev),
-      title: ev.title,
-      whenLabel: ev.whenLabel,
-      stageLabel: operatorStageLabel(ev),
-      href: operatorListHref(ev),
-      editHref: ev.editHref ?? null,
-      isCancelled: ev.isCancelled || ev.stage === 'cancelled',
-      eventId: ev.eventId ?? null,
-      entryId: ev.entryId ?? null,
-      location: ev.location,
-      description: ev.description ?? null,
-      notes: ev.notes ?? null,
-      goingCount: ev.goingCount,
-      coverUrl: ev.coverUrl,
-      stage: ev.stage ?? null,
-    }))
+    .map((ev) => {
+      const publicSlug = listPublicSlug(ev)
+      return {
+        key: listItemKey(ev),
+        title: ev.title,
+        whenLabel: ev.whenLabel,
+        stageLabel: operatorStageLabel(ev),
+        href: publicSlug ? `/events/${publicSlug}` : operatorListHref(ev),
+        editHref: ev.editHref ?? null,
+        publicSlug,
+        isCancelled: ev.isCancelled || ev.stage === 'cancelled',
+        eventId: ev.eventId ?? null,
+        entryId: ev.entryId ?? null,
+        location: ev.location,
+        description: ev.description ?? null,
+        notes: ev.notes ?? null,
+        goingCount: ev.goingCount,
+        coverUrl: ev.coverUrl,
+        startInstantIso: ev.startInstantIso,
+        stage: ev.stage ?? null,
+      }
+    })
 }
 
 /** Selected row, or the first, or null when the index is empty. */

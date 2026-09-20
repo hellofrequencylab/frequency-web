@@ -4,12 +4,24 @@ import Link from 'next/link'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Button } from '@/components/ui/button'
+import { Badge, type BadgeTone } from '@/components/ui/badge'
 import { EventCoreStatsCards } from '@/components/events/event-core-stats'
+import { EventShareButton } from '@/components/events/event-share-button'
+import { AddToCalendar, buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { truncatedListStats, type ListIndexItem } from '@/lib/calendar/list-index'
 import { cn } from '@/lib/utils'
 
 // LIST VIEW (ADR-1464, ADR-1467). Condensed gathering index on the left. Right
-// interior is a truncated stats card, not the event edit screen.
+// interior is the event control console: header with stage pill, primary facts,
+// share links, and headline stats. Not the Studio editor.
+
+function stageTone(label: string, cancelled: boolean): BadgeTone {
+  if (cancelled || label === 'Cancelled') return 'danger'
+  if (label === 'Draft') return 'warning'
+  if (label === 'Production') return 'success'
+  if (label === 'Planning') return 'signal'
+  return 'neutral'
+}
 
 export function CalendarListView({
   items,
@@ -32,9 +44,9 @@ export function CalendarListView({
 
   return (
     <div className="flex flex-col gap-5 lg:flex-row lg:items-start" data-calendar-list-view>
-      <nav aria-label="Gatherings" className="w-full shrink-0 lg:w-80">
+      <nav aria-label="Gatherings" className="w-full shrink-0 lg:w-52">
         <SectionHeader title="Gatherings" count={items.length} />
-        <ul className="mt-3 space-y-2">
+        <ul className="mt-3 space-y-1">
           {items.map((item) => {
             const current = selected?.key === item.key
             return (
@@ -44,19 +56,16 @@ export function CalendarListView({
                   onClick={() => onSelect(item.key)}
                   aria-pressed={current}
                   className={cn(
-                    'block w-full rounded-card border px-3 py-2 text-left transition-colors',
+                    'block w-full rounded-card border px-2.5 py-1.5 text-left transition-colors',
                     current
                       ? 'border-primary bg-primary-bg text-primary-strong'
                       : 'border-border bg-surface hover:border-border-strong hover:bg-surface-elevated',
                   )}
                 >
-                  <span className={cn('block text-body-sm font-semibold', item.isCancelled && 'line-through')}>
+                  <span className={cn('block truncate text-body-sm font-semibold', item.isCancelled && 'line-through')}>
                     {item.title}
                   </span>
-                  <span className="mt-0.5 block text-meta text-muted">{item.whenLabel}</span>
-                  <span className="mt-1 inline-flex items-center rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-semibold text-muted">
-                    {item.stageLabel}
-                  </span>
+                  <span className="mt-0.5 block truncate text-meta text-muted">{item.whenLabel}</span>
                 </button>
               </li>
             )
@@ -68,7 +77,7 @@ export function CalendarListView({
         {selected ? (
           <CalendarListViewer item={selected} />
         ) : (
-          <EmptyState variant="no-results" title="Pick a gathering." description="A short stats card opens here." />
+          <EmptyState variant="no-results" title="Pick a gathering." description="A control console opens here." />
         )}
       </section>
     </div>
@@ -77,20 +86,64 @@ export function CalendarListView({
 
 function CalendarListViewer({ item }: { item: ListIndexItem }) {
   const openHref = item.href
+  const publicSlug = item.publicSlug
+  const googleUrl =
+    publicSlug && item.startInstantIso
+      ? buildGoogleCalendarUrl({
+          title: item.title,
+          startsAt: item.startInstantIso,
+          endsAt: null,
+          description: item.description,
+          location: item.location,
+        })
+      : null
+
   return (
-    <div data-calendar-list-viewer className="space-y-4 rounded-card border border-border bg-surface p-4">
-      <SectionHeader id="calendar-list-viewer" title={item.title} />
-      <p className="text-body-sm text-muted">{item.whenLabel}</p>
-      {item.location && <p className="text-body-sm text-text">{item.location}</p>}
-      <p>
-        <span className="inline-flex items-center rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-semibold text-muted">
+    <div data-calendar-list-viewer className="space-y-5 rounded-card border border-border bg-surface p-4 sm:p-5">
+      <header className="flex flex-row items-start justify-between gap-3">
+        <h3
+          id="calendar-list-viewer"
+          className={cn('min-w-0 text-page-title font-bold text-text', item.isCancelled && 'line-through')}
+        >
+          {item.title}
+        </h3>
+        <Badge tone={stageTone(item.stageLabel, item.isCancelled)} size="md">
           {item.stageLabel}
-        </span>
-      </p>
-      {item.description && (
-        <p className="line-clamp-3 text-body-sm text-text">{item.description}</p>
+        </Badge>
+      </header>
+
+      <div className="space-y-1.5">
+        <p className="text-body-sm text-muted">{item.whenLabel}</p>
+        {item.location && <p className="text-body-sm text-text">{item.location}</p>}
+        {item.description && <p className="text-body-sm text-text">{item.description}</p>}
+        {item.notes && (
+          <p className="text-body-sm text-muted">
+            <span className="font-semibold text-text">Team notes. </span>
+            {item.notes}
+          </p>
+        )}
+      </div>
+
+      {publicSlug && (
+        <section aria-labelledby="calendar-list-share" className="space-y-3">
+          <h4 id="calendar-list-share" className="text-body-sm font-bold text-text">
+            Share
+          </h4>
+          <p className="text-body-sm text-muted">Send the public page. Copy the link, scan the QR, or drop the date on a calendar.</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <EventShareButton slug={publicSlug} title={item.title} sharerProfileId={null} />
+            {googleUrl && <AddToCalendar icsHref={`/events/${publicSlug}/event.ics`} googleUrl={googleUrl} />}
+          </div>
+        </section>
       )}
-      <EventCoreStatsCards stats={truncatedListStats(item)} variant="panel" />
+
+      <section aria-labelledby="calendar-list-stats" className="space-y-3">
+        <h4 id="calendar-list-stats" className="text-body-sm font-bold text-text">
+          At a glance
+        </h4>
+        <EventCoreStatsCards stats={truncatedListStats(item)} variant="panel" />
+      </section>
+
       {openHref && (
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="primary" size="sm">

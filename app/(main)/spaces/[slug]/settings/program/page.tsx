@@ -1,4 +1,4 @@
-// Program — the owner surface for Programs on Channels. A Space (Collective business member) runs its
+// Program — the owner surface for Programs on Channels. A Space on Business runs its
 // model as a Program: a Channel it owns (topical_channels.owner_space_id) whose Chapter blueprint
 // (template_id) is a snapshot of its flagship circle, so members anywhere can start Chapters from it.
 // Mirrors the sibling settings-page pattern (collaborators / airwaves): resolve the caller, resolve +
@@ -23,6 +23,7 @@ import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/ent
 import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { UpsellTease } from '@/components/upsell/upsell-tease'
 import { resolveSpaceTeaseGate } from '@/lib/pricing/tease-gate'
+import { programTeaseBody, programTeaseCta } from '@/lib/spaces/program-wall'
 import { listCirclesForSpace } from '@/lib/circles/store'
 import { listSpacePrograms, listChapters } from '@/lib/channels/programs'
 import {
@@ -89,9 +90,9 @@ export default async function SpaceProgramPage({
   )
   const errorMsg = error ? ERROR_COPY[error] : null
 
-  // BETA FOUNDER PUSH (ADR-875) / Phase E tease (ADR-466). Running a Program is Collective depth. While
+  // BETA FOUNDER PUSH (ADR-875) / Phase E tease (ADR-466). Running a Program is Business depth. While
   // the beta grace window is open this Space HAS it without paying, so the resolver hands back the warm
-  // notice ("You are using Collective tools", when memberships start, and the founder invite) rather
+  // notice (the derived plan name, when memberships start, and the founder invite) rather
   // than any claim of a lock. Once the gates bite it becomes the ordinary tease. A Space that already
   // pays, by Stripe or by cash, and a Founding Business are resolved out inside the resolver.
   const programTease = staffViewing ? null : await resolveSpaceTeaseGate(space, 'program')
@@ -116,8 +117,8 @@ export default async function SpaceProgramPage({
             notice={programTease.notice}
             href={`/spaces/${slug}/settings/billing`}
             title="Keep running your model as a Program"
-            body="Collective carries Programs, Chapters, and the Channel your Space owns, plus automation, team roles, and multiple pipelines."
-            cta="See what Collective adds"
+            body={programTeaseBody()}
+            cta={programTeaseCta()}
           />
         )}
         {errorMsg && (

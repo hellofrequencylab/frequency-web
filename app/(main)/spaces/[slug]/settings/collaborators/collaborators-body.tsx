@@ -6,6 +6,7 @@ import {
 } from '@/lib/spaces/collaborations'
 import { InviteCollaborator, RequestControls, RevokeControl, ReinviteControl } from './collaborator-controls'
 import type { CollaborationView } from '@/lib/spaces/collaborations'
+import { collaboratorHostPreviewSentence } from '@/lib/spaces/collaborator-host-gate'
 
 // The Collaborators management surface body (ADR-799 B1-UI). Chrome-free (the page wraps it in a
 // FocusTemplate). Reads the space's collaborations three ways (incoming to approve, accepted, pending
@@ -42,16 +43,17 @@ export async function CollaboratorsBody({
   slug,
   manage,
   lockedReason = 'module',
+  wallLabel,
 }: {
   spaceId: string
   slug: string
   manage: boolean
   lockedReason?: 'plan' | 'module'
+  wallLabel: string
 }) {
   if (!manage) {
-    // Plan lock (ADR-810, Collective floor per ADR-835): a lower-plan space sees the value + the plans
-    // path. Hosting collaborators is Collective depth; the collaborator pays for their own space, so the
-    // host pays nothing extra per guest.
+    // Plan lock (ADR-810 / LIVE-430): a lower-plan space sees the value + the plans path.
+    // The wall word is read off the merged gate. The collaborator pays for their own space.
     if (lockedReason === 'plan') {
       return (
         <div className="rounded-card border border-dashed border-border bg-surface px-4 py-6 text-body-sm text-muted">
@@ -60,10 +62,7 @@ export async function CollaboratorsBody({
             venue hosts the makers who sell there. Each keeps their own page, and they show as your
             collaborators.
           </p>
-          <p className="mt-3">
-            Hosting collaborators comes with the Collective plan. The businesses you host pay for their own
-            space, so it costs you nothing extra per collaborator.
-          </p>
+          <p className="mt-3">{collaboratorHostPreviewSentence(wallLabel)}</p>
           <Link
             href={`/spaces/${slug}/settings/billing`}
             className="mt-4 inline-flex items-center rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
