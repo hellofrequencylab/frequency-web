@@ -183,7 +183,6 @@
         {
           "name": "W0d · P3 — craft: shell split, hex, parked niceties. 12 visitors / 18 pageviews in 31 days: the funnel, not the page speed, is the constraint.",
           "ids": [
-            "LIVE-412",
             "LIVE-221",
             "LIVE-273",
             "HYG-092"
@@ -14542,20 +14541,21 @@
     {
       "id": "LIVE-412",
       "title": "Split components/layout/app-shell.tsx (still one ~2632-line client module)",
-      "status": "parked",
+      "status": "done",
       "priority": "P3",
       "lane": "hygiene",
       "size": "L",
       "source": {
         "file": "components/layout/app-shell.tsx",
-        "ref": "2026-09-18 survey craft"
+        "ref": "2026-09-18 survey craft; ADR-1477"
       },
-      "detail": "FILED 2026-09-19. app-shell.tsx is a single client module on every (main) route. Split is craft, not product-blocked. P3 unless a shell-weight or Arm C leak forces it. Do not raise the budget; extract islands behind existing dynamic boundaries.\n\nPARKED 2026-09-19 (ADR-1468). Packets were spawning split-app-shell PRs. Status parked plus PARKED_IDS. Probe stays. Do not pick this up until the owner unparks it.",
+      "detail": "FILED 2026-09-19. app-shell.tsx is a single client module on every (main) route. Split is craft, not product-blocked. P3 unless a shell-weight or Arm C leak forces it. Do not raise the budget; extract islands behind existing dynamic boundaries.\n\nPREMISE RE-TESTED 2026-09-20. app-shell.tsx was still 2628 lines. No other open PR touched it. LIVE-410 and LIVE-376 were already closed. LIVE-411 children are in other PRs.\n\nCLOSED 2026-09-20 (ADR-1477). Extracted four sibling modules: app-shell-nav.ts (types + access helpers), app-shell-nav-list.tsx (NavLinkList), app-shell-account.tsx (useTheme, ProfileCard, AccountDropdown), app-shell-mobile.tsx (MobileTabBar). The shell keeps header, rails, drawer, and layout chrome. Static imports, no new dynamic() boundary, no budget raise. Source-shape tests followed the moved strings. LIVE-247's Zap probe now reads the mobile island.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const n=fs.readFileSync(\"components/layout/app-shell.tsx\",\"utf8\").split(/\\n/).length;if(n>1800){console.error(\"app-shell.tsx is \"+n+\" lines\");process.exit(1)}process.exit(0)'",
         "note": "Ratchet, not the definition of done: fails while the shell is still a 1800+ line client module. Extraction quality is the PR, this number is the alarm."
-      }
+      },
+      "closed": "2026-09-20"
     },
     {
       "id": "LIVE-413",

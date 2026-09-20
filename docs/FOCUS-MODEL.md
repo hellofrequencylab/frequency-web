@@ -24,7 +24,7 @@ Three things are true, all measured, none of them obvious:
 
 | # | Finding | Evidence |
 |---|---|---|
-| 1 | **The marketing says Collective; the app says Quest.** 0 of 13 home blocks mention the game. Inside, the game holds 5 of 16 rail rows, 1 of 5 mobile tabs, the raised centre button, the entire feed hero, and a permanent Vault dock. | `lib/page-editor/templates/home.ts:63`, `lib/nav-areas.ts:120-134`, `components/layout/app-shell.tsx:1572-1610`, `app/(main)/feed/page.tsx:245-270` |
+| 1 | **The marketing says Collective; the app says Quest.** 0 of 13 home blocks mention the game. Inside, the game holds 5 of 16 rail rows, 1 of 5 mobile tabs, the raised centre button, the entire feed hero, and a permanent Vault dock. | `lib/page-editor/templates/home.ts:63`, `lib/nav-areas.ts:120-134`, `components/layout/app-shell-mobile.tsx`, `app/(main)/feed/page.tsx:245-270` |
 | 2 | **The revenue model the owner wants is ~85% built and dark.** Paid tiers → Stripe Connect subscription → webhook → automatic circle membership all exist, and as of 2026-09-08 the rails are **proven**: live payouts went live and one real webhook event closed `OWN-050`. What still stops it is one thing, not two: it is walled behind a $29/mo plan the operator must buy first. | `lib/billing/space-membership-checkout.ts`, `lib/spaces/tier-circle.ts`, [ADR-1291](DECISIONS.md), `lib/pricing/gates.ts:144` |
 | 3 | **"Communities run their own program" is an accepted ADR that was never sequenced.** [ADR-252](DECISIONS.md) already ruled Journeys are group-coaching programs a Circle moves through together. The engine exists: `journey_runs` + cohort meter + drip + kickoff event. | `supabase/migrations/20260621000000_journeys_v2.sql`, `lib/journeys/cohort.ts`, `components/journey/v2/cohort-meter.tsx` |
 
@@ -72,7 +72,7 @@ gather everyone else."* Thirteen blocks: none about the Quest. `/the-quest` is o
 | Surface | Game share | Cite |
 |---|---|---|
 | Left rail | "The Quest" section = **5 of 16** member-visible rows | `lib/nav-areas.ts:120-134` |
-| Mobile spine | **1 of 5** tabs, plus the raised centre button labelled **Zap** | `lib/nav/registry.ts:621-657`; `app-shell.tsx:1572-1610` |
+| Mobile spine | **1 of 5** tabs, plus the raised centre button labelled **Zap** | `lib/nav/registry.ts:621-657`; `components/layout/app-shell-mobile.tsx` |
 | Feed hero | `JourneyBoard` / `PracticePrompt`, props are **entirely game state**; plus two celebration modules | `app/(main)/feed/page.tsx:228-270` |
 | Right rail | "Your Quest" next-step panel + Frequency Signature dial + a permanent Vault dock | `right-sidebar.tsx:289-361`, `app/(main)/layout.tsx:561` |
 | Layout catalog | **46 of 144** assignable modules are game-owned | `lib/widgets/modules.ts` |
