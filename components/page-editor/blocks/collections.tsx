@@ -164,7 +164,12 @@ export function FeatureGridBlock({
             const num = String(i + 1).padStart(2, '0')
             return (
               <article key={i} className={`${cardBase} ${pad}`}>
-                <p className={`font-display text-5xl mb-5 ${ink ? 'text-on-ink/20' : 'text-text/10'}`}>{num}</p>
+                <p
+                  aria-hidden="true"
+                  className={`font-display text-5xl mb-5 ${ink ? 'text-on-ink/20' : 'text-text/10'}`}
+                >
+                  {num}
+                </p>
                 {item.title && <h3 className={`text-lead font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
                 {item.body && <div className={`text-body leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
                 {item.href && (

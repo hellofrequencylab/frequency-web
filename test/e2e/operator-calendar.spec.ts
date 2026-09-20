@@ -17,6 +17,15 @@ async function openOperatorCalendar(page: Page) {
   expect(response, `navigation to ${calendarPath} returned a response`).toBeTruthy()
   expect(response!.ok(), `expected 2xx for ${calendarPath}, got ${response!.status()}`).toBe(true)
   await expect(page.locator('[data-calendar-workspace]')).toBeVisible()
+  const calendarControl = page.getByRole('button', { name: 'Calendar', exact: true })
+  if ((await calendarControl.count()) === 0) {
+    test.skip(
+      true,
+      `The saved e2e member cannot manage ${calendarPath}; point PW_SPACE_SLUG at a Space this account can manage.`,
+    )
+  }
+  await calendarControl.click()
+  await expect(page.locator('[data-calendar-workspace]')).toHaveAttribute('data-calendar-view', 'admin')
   await expect(page.locator('[data-calendar-admin-grid]')).toBeVisible()
 }
 
@@ -205,7 +214,7 @@ test.describe('operator calendar privacy and redirects', { tag: '@smoke' }, () =
 
   for (const [legacy, current] of [
     ['/onboarding/beta', '/join'],
-    ['/onboarding/beta/operator-calendar', '/join/operator-calendar'],
+    ['/onboarding/beta/operator-calendar', '/join'],
   ] as const) {
     test(`${legacy} redirects to ${current}`, async ({ page }) => {
       const response = await page.goto(legacy)

@@ -413,6 +413,9 @@ const nextConfig: NextConfig = {
       { source: '/beta', destination: '/start', permanent: true },
       { source: '/beta/:slug', destination: '/join/:slug', permanent: true },
       { source: '/onboarding/beta', destination: '/join', permanent: true },
+      // The retired operator-calendar beta door was a product route, not a Funnel slug.
+      // Sending it through the wildcard would land on the nonexistent /join/operator-calendar.
+      { source: '/onboarding/beta/operator-calendar', destination: '/join', permanent: true },
       { source: '/onboarding/beta/:path*', destination: '/join/:path*', permanent: true },
       // Circles C3.3 (ADR-1091, LIVE-059): Space Communities is removed and a Space's community
       // is its Circles, which live on the Space's own page. The old Community tab URL carries to
