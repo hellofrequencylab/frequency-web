@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Spaces you belong to now live on Settings → Memberships.** Open one from there, or leave it. The Frequency plan stays under Plan and billing.
+
 - **If you belong to a Space, you can see the other members.** Open People on that Space. Visitors who have not joined see a join door, not the list.
 
 - **You can keep a Journey for one Space membership.** In settings, pick the tier. People who are not in that membership see a join link instead of Start or Get access.

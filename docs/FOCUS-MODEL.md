@@ -202,8 +202,10 @@ Flags read live: `billing_live = true` (since 2026-07-21), `host_payouts_enabled
    `account.updated` now proves URL, signature verification, the deployed handler and the database
    write end to end, and live payouts went live the same day ([ADR-1291](DECISIONS.md)). What is
    still true: **no payment event has ever arrived, because nothing has ever been sold.**
-2. **There is no member-facing "my memberships" surface.** No route exists. A member who starts paying
-   a community has nowhere to see or manage it.
+2. ✅ **The member-facing "my memberships" surface shipped as LIVE-423 / ADR-1472.** Settings →
+   Memberships lists the viewer's open `space_memberships` (active and waitlist). Cancel reuses
+   `cancelMembership`. ROOT never lists. `payment_status` is still not enforced; that is the
+   remaining dunning hole, not this list.
 3. **`payment_status` is never enforced.** Both the RLS helper and the app predicate read `status`
    only, and nothing flips it, so a `past_due` member keeps circle access forever. Dunning covers the
    platform's own Crew subscription and not Space memberships.
@@ -324,7 +326,7 @@ There is one backlog. Nothing here becomes a parallel roadmap.
 | ~~**0**~~ | ~~Rule the focus model (§7) and the grace window (§8)~~ | ✅ Closed 2026-09-18 (`OWN-066`, [ADR-1403](DECISIONS.md)). `#6` `beta_grace` is still an owner flag. | done |
 | **1** | Give event attendance its own record, independent of the reward ledger | W0b, prerequisite for everything in Move 1 | — |
 | **2** | Rail collapse, centre button, feed hero, shared-bar default | W0b/W2, closes `QUEST-IA-DEBT` (ADR-293) | step 1 |
-| **3** | Membership wall → readiness; member "my memberships" surface; enforce `payment_status` | W8 money lane, pulled forward | step 0 |
+| **3** | Membership wall → readiness ✅ (LIVE-410); member "my memberships" surface ✅ (LIVE-423); enforce `payment_status` still open | W8 money lane, pulled forward | step 0 |
 | **4** | Runs as the operator headline; seed `circle_challenge_adoptions` | W7 feature depth | ruling |
 | **5** | The five operator gaps (§5), in the stated order | W7/W8 | ruling |
 
