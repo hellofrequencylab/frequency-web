@@ -26,6 +26,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **Choosing Business on a Space now says you are on Business after you pay.** It used to name a leftover Collective plan. The confirmation matches the plan you just bought.
+
 - **If you run a Space, you can include a Circle with a membership on any plan.** Set Who can join to Included with a membership. A payout account is what starts the money. Campaigns and funnels still open at Business.
 
 - **Automations come with Business, not a leftover Collective plan.** If your Space is on Free, the lock screen names Business. Sequences and rules still run the same way once you are on that plan.

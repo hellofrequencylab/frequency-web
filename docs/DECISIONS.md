@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1481**. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1478–1480 are claimed on other open PRs.
+tree as of this index: **ADR-1487**. 1487 is LIVE-438. 1485 is LIVE-436. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1478–1480 and 1482–1486 are claimed on other open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46956,3 +46956,22 @@ Premise re-tested 2026-09-20: `FEATURE_GATES.space_memberships.minEntitlement` i
 **Consequences.** A later `space_can_sell` that ranks on a plan list, or a shape trigger that raises `circle_access_plan_floor` again, fails the LIVE-436 probe. Campaigns stay at Business.
 
 **Rows.** LIVE-436.
+
+## ADR-1487: Choose-plan checkout names the plan you bought, not Collective (LIVE-438)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-438` · numbered **1487** because **1485** is LIVE-436 on this tree, **1481** is LIVE-432, and **1482–1486** are claimed on other open PRs · extends [ADR-1438](DECISIONS.md) (LIVE-228) · corroborated by `app/(main)/spaces/[slug]/settings/billing/choose-plan.tsx`
+
+**Context.** LIVE-228 merged Collective into Business. The self-serve Choose button already sells `plan: 'business'` and labels it Choose Business. After pay, CheckoutPanel still said "You are on Collective." GoBusinessCta, the sibling CTA on the same page, already said "You are on Business."
+
+Premise re-tested 2026-09-20: `SPACE_PLAN_LABEL` has no Collective key. `asSpacePlan('collective')` remaps to Business. PlanLadder offers Choose only on the Business rung. The typed confirmation was still the leftover.
+
+**Decision.**
+
+1. The paid confirmation interpolates `SPACE_PLAN_LABEL[plan]`. On the code default that is Business. It cannot drift from the plan the button just sold.
+2. No migration. The checkout action and the loadout are unchanged. LIVE-411 stays open.
+
+**Rejected.** Closing LIVE-411 from a copy fix. Absorbing the Program lock screen, seat counter, catalog notes, or collaborator hosting leftovers (those sit on other open PRs). Rewriting GateNotice / beta-grace titles. Those already interpolate `tierLabelOnAxis`.
+
+**Consequences.** A later typed "You are on Collective." on ChoosePlanButton fails the LIVE-438 probe. A later confirmation that does not read `SPACE_PLAN_LABEL[plan]` fails the same probe.
+
+**Rows.** LIVE-438.
