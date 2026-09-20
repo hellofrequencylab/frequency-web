@@ -115,6 +115,7 @@ export default defineConfig({
   // $GITHUB_STEP_SUMMARY (and in the terminal locally) so a green board and a green board with
   // the product missing stop looking identical. It never fails a run on its own; see its
   // header for the single opt-in exception (PW_REQUIRE_SHELL).
+  // GitHub annotations keep assertion details visible even when CI artifacts are inaccessible.
   reporter: process.env.CI
     ? [['list'], ['github'], ['html', { open: 'never' }], ['./test/e2e/shell-reporter.ts']]
     : [['list'], ['./test/e2e/shell-reporter.ts']],
