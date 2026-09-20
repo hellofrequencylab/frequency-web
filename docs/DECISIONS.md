@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1476**. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424.
+tree as of this index: **ADR-1482**. 1482 is LIVE-433 (seat-counter leftover). 1478–1481 are claimed by open leftover PRs. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424.
 
 | Theme | Start here |
 |---|---|
@@ -46914,3 +46914,23 @@ Premise re-tested 2026-09-20: `FEATURE_GATES.space_membership_tickets.minEntitle
 **Consequences.** A later PR that lists cancelled rows, shows ROOT, or renders another member's rows fails the LIVE-423 intent. Journey selling stays on `journey.sell`. Space discussion stays LIVE-421.
 
 **Rows.** LIVE-423.
+
+## ADR-1482: Seat counter names extra seats, not Collective (LIVE-433)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-433` · numbered **1482** because **1478** through **1481** are claimed by open leftover PRs (past-due, collaborator-host, donation arm, automation wall) · extends [ADR-1438](DECISIONS.md) (LIVE-228) and [ADR-917](DECISIONS.md) · corroborated by `components/spaces/seat-counter.tsx`
+
+**Context.** LIVE-228 retired Collective as a plan label. LIVE-410 leftovers have been peeling typed Collective sentences off money surfaces (LIVE-428 tickets, then open PRs for collaborator hosting and automations). The seat counter on Members and Plan and billing still said "Team roles come with the Collective plan." Seats are not a plan wall. `space_team` left `FEATURE_GATES` in ADR-917. The meter is 1 seat on free, 2 included on Business, extra seats the $12 add-on (LIVE-229).
+
+Premise re-tested 2026-09-20: `PLACEHOLDER_METER_LIMITS.space_team` is `{ free: 1, business: 2 }`. `SPACE_PLAN_LABEL` has no Collective. Help already says two operator seats plus an add-on. The caption was the leftover.
+
+**Decision.**
+
+1. When every operator seat is taken, the caption still says to add a seat. The dest sentence is `Extra seats are on Plan and billing.` Never Collective. Never a typed Business wall.
+2. Team roles stay what they were: admins, moderators, and editors use a seat. Members are free.
+3. No migration. No gate change. LIVE-411 stays open. Automations, collaborator hosting, Programs upsell, and the `space.people` catalog note stay on their own rows.
+
+**Rejected.** Inventing a `featureWallLabel` for `space_team` (there is no gate). Closing LIVE-411 from a copy fix. Absorbing the automation or collaborator PRs.
+
+**Consequences.** A later typed "Collective" on `components/spaces/seat-counter.tsx` fails the LIVE-433 probe. Extra seats still check out through the existing add-on.
+
+**Rows.** LIVE-433.
