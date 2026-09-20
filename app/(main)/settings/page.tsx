@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { User, Palette, Bell, MapPin, Shield, CreditCard } from 'lucide-react'
+import { User, Palette, Bell, MapPin, Shield, CreditCard, Users } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -13,11 +13,13 @@ import { NotificationsSection } from './notifications/section'
 import { ConnectionsSection } from './connections/section'
 import { AccountSection } from './account/section'
 import { PlanSection } from './billing/section'
+import { MyMembershipsSection } from './memberships/section'
 
 // The member Settings suite as ONE page (DAWN 2 screen pass, per
 // design_handoff/dawn/ui_kits/screens/settings.html): a chip section-rail up top, then
 // the whole suite stacked — Appearance (the skin picker leads), the four-channel
-// notification grid, Connections and location, Account and privacy, Plan and billing.
+// notification grid, Connections and location, Account and privacy, Plan and billing,
+// then Memberships (Spaces this member belongs to, LIVE-423).
 // Each section keeps the exact forms + server actions its old standalone route had (the
 // old routes now redirect to their anchor here); this page only composes them.
 //
@@ -41,6 +43,7 @@ const SECTIONS = [
   { id: 'connections', label: 'Connections and location', Icon: MapPin },
   { id: 'account', label: 'Account and privacy', Icon: Shield },
   { id: 'plan', label: 'Plan and billing', Icon: CreditCard },
+  { id: 'memberships', label: 'Memberships', Icon: Users },
 ] as const
 
 export default async function SettingsPage({
@@ -149,6 +152,16 @@ export default async function SettingsPage({
         <span id="billing" className="scroll-mt-24" />
         <Suspense fallback={<SectionSkeleton rows={2} />}>
           <PlanSection sessionId={params.session_id} payouts={params.payouts} />
+        </Suspense>
+      </SettingsSection>
+
+      <SettingsSection
+        id="memberships"
+        title="Memberships"
+        intro="Spaces you belong to. Open one, or leave it from here."
+      >
+        <Suspense fallback={<SectionSkeleton rows={2} />}>
+          <MyMembershipsSection />
         </Suspense>
       </SettingsSection>
     </FocusTemplate>
