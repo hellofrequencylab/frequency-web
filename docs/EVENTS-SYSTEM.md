@@ -399,7 +399,8 @@ A ticket tier can be restricted to ACTIVE members of the event's hosting Space
 (`space_tier_id → space_membership_tiers`, ON DELETE SET NULL degrades to any-member).
 Enforced in `createTicketCheckout` before the free-claim return (pure decision:
 `spaceMembershipGateError`, tested) and validated at write time in `lib/events/ticket-tiers`
-(hosting Space required; Collective plan floor via the `space_membership_tickets` gate; the
+(hosting Space required; `space_membership_tickets` gate, free floor since LIVE-410, named
+through `featureWallLabel` since LIVE-428; the
 named membership tier must belong to the hosting Space). Host editor gets a "Who can buy"
 select; the event page shows a lock chip + a join pointer for non-members. Composes with the
 platform `member_only` (Crew+) gate. Migration `20261220000000`.

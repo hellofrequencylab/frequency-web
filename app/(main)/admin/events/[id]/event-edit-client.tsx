@@ -673,7 +673,7 @@ function TierForm({
           </div>
         ) : (
           <p className="rounded-lg bg-surface px-3 py-2 text-meta text-muted">
-            Members-only tickets, linked to the space membership, come with the Collective plan.
+            Members-only tickets, linked to the space membership, come with {spaceAccess.wallLabel}.
           </p>
         ))}
 

@@ -245,6 +245,7 @@ describe('read helpers', () => {
 describe('featureWallLabel', () => {
   it('names the plan each gate sits on, off the code gate map', () => {
     expect(featureWallLabel('space_memberships')).toBe(SPACE_PLAN_LABEL.free)
+    expect(featureWallLabel('space_membership_tickets')).toBe(SPACE_PLAN_LABEL.free)
     expect(featureWallLabel('space_campaigns')).toBe(SPACE_PLAN_LABEL.business)
   })
 
