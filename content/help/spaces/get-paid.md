@@ -55,7 +55,7 @@ There are six ways a Space can take money, and Get paid lists all six with the s
 
 | Money path | What it is |
 | --- | --- |
-| **Memberships** | Paid tiers people join. Selling these needs the Business plan. |
+| **Memberships** | Paid tiers people join. Open on every plan. The money lands once a payout account is ready. |
 | **Bookings** | Paid time on your calendar, deposit included at checkout. |
 | **Orders** | Sales from your Shop. |
 | **Donations** | Your fund and the amounts people can pick. |
@@ -97,8 +97,9 @@ You **pay** Frequency for your plan. That is a separate charge, and it is the on
 ## Common questions
 
 **Do I need a plan to take money?** No. Every plan can sell, including Free, and a paid plan lowers
-what the network takes rather than turning selling on. Memberships are the one path that needs the
-Business plan.
+what the network takes rather than turning selling on. Memberships, tickets, bookings, orders, and
+donations all follow that rule. A Journey needs a paid Space. A payout account is what actually
+starts the money.
 
 **Get paid says payments are not turned on yet. Is something wrong?** No. That line is about the
 platform, not your account. You can set your money paths up now, and payouts go live with the rest of

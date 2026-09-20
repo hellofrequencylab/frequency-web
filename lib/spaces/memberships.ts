@@ -26,8 +26,8 @@
 //     Space owner is not payout ready), so a member is never left at a broken button.
 //   - cancelMembership cancels the Stripe subscription BEFORE it flips the row, so a paid cancel stops
 //     the money as well as the access (ADR-859).
-//   - setMembershipTiers is behind the Business plan wall (ADR-914): publishing any tier at all is a
-//     paid capability, enforced at the write rather than on the settings surface.
+//   - setMembershipTiers sits on the free floor (LIVE-410 / ADR-1415): publishing a tier is not a
+//     paid capability. Checkout still refuses when Connect is not payout-ready.
 // Dunning, proration and member-only content gating are still not built here.
 //
 // SHAPE: the PURE helpers (tier normalization + validation) have no Supabase/Next imports, so they

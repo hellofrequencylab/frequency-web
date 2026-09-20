@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1474**. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is claimed by LIVE-421. 1472 is claimed by LIVE-423. 1473 is claimed by LIVE-424.
+tree as of this index: **ADR-1475**. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is claimed by LIVE-421. 1472 is claimed by LIVE-423. 1473 is claimed by LIVE-424.
 
 | Theme | Start here |
 |---|---|
@@ -46813,3 +46813,24 @@ Premise re-tested 2026-09-20: `journey.sell` is standard in the rail. `setJourne
 **Consequences.** A later PR that drops `journeys` from `PAYOUT_CHANNELS` or stops rendering `PayoutPromptCard` on Sell this Journey fails the LIVE-425 probe. Checkout still refuses when payouts are not ready.
 
 **Rows.** LIVE-425.
+
+## ADR-1475: Help follows the free membership floor (LIVE-426)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-426` · numbered **1475** because **1474** is LIVE-425 · extends [ADR-1415](DECISIONS.md) (LIVE-410) · corroborated by `content/help/spaces/plans-and-pricing.md`, `content/help/spaces/get-paid.md`, `lib/pricing/plan-story.ts`
+
+**Context.** LIVE-410 moved `space_memberships` and `space_membership_tickets` to the free floor. `PLAN_STORY.paid` already says a free Space sells memberships from day one once payouts are ready. `paidWalls()` already drops a free-floor gate. Help still told hosts they needed Business to sell memberships, and that member tickets were a Business control.
+
+Premise re-tested 2026-09-20: `FEATURE_GATES.space_memberships.minEntitlement` is `free`. Get Paid, Plans and pricing, Billing, and Events help still named the retired wall.
+
+**Decision.**
+
+1. Help names the same rule as the gate map. Selling memberships, tickets, bookings, orders, and donations is open on every plan. A Journey still needs a paid Space (ADR-1397). Campaigns and funnels stay the Business money wall.
+2. Member tickets are not a plan control. Who can buy stays on the ticket and on Memberships, Event access.
+3. A payout account is what starts the money. That is LIVE-233, not a plan.
+4. No migration. LIVE-411 stays open (tier and Discussion still have their own PRs). Circle `tier` access stays on `space_can_sell` until a later ruling.
+
+**Rejected.** Moving Circle `tier` access to the free floor in this pass. Closing LIVE-411 from a help fix. Restating the retired Business wall in a new article.
+
+**Consequences.** A later help sentence that says selling memberships or member tickets needs Business fails the LIVE-426 probe. `/pricing` and `llms.txt` already read `paidWalls()` and do not name that wall.
+
+**Rows.** LIVE-426.
