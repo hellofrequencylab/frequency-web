@@ -28,6 +28,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **Running a Program is no longer described as a Collective plan feature.** The Program page and the catalog note name Business, the plan that actually carries it.
+
 - **If you run a Space, the seat counter no longer says team roles come with the Collective plan.** Extra seats are on Plan and billing. Members stay free.
 
 - **If you run a Space, Home's last-30-days revenue now includes gifts to your fund.** Shop orders and tickets were already in that number.
