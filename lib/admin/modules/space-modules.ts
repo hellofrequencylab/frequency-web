@@ -38,6 +38,8 @@ import { peopleCatalogNote } from '@/lib/spaces/people-catalog-note'
 import { programCatalogNote } from '@/lib/spaces/program-wall'
 
 import { reachCatalogNote } from '@/lib/spaces/reach-catalog-note'
+
+import { emailCatalogNote } from '@/lib/spaces/email-catalog-note'
 import type { AdminSlot } from './registry'
 
 // LOCKED CONTRACT (ADR-553, docs/MENU-CONTRACT.md): one of the only three module catalogs the admin menu
@@ -298,7 +300,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // contradict it.
   { id: 'space.reachreceipt', label: 'Your reach', desc: 'See what the network sent you, and the next thing that would send more.', Icon: TrendingUp, family: 'reach', hub: 'programs', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/settings/reach`, order: 76, tier: 'primary', priority: 51, access: 'included', parent: 'space.content' },
 
-  { id: 'space.comms', label: 'Email', desc: 'Write a campaign, pick who gets it, and send or schedule it.', Icon: Mail, family: 'reach', hub: 'marketing', slot: 'reach', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'panel', deepLink: (s) => `${base(s)}/settings/email`, order: 80, tier: 'primary', priority: 55, placement: 'bank', access: 'freemium', freeNote: '300 sends/mo free, then 5,000/mo on Business, 25,000/mo on Collective', parent: 'space.reach' },
+  { id: 'space.comms', label: 'Email', desc: 'Write a campaign, pick who gets it, and send or schedule it.', Icon: Mail, family: 'reach', hub: 'marketing', slot: 'reach', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'panel', deepLink: (s) => `${base(s)}/settings/email`, order: 80, tier: 'primary', priority: 55, placement: 'bank', access: 'freemium', freeNote: emailCatalogNote(), parent: 'space.reach' },
   // Email design (Email in the Business CRM, P1): the FULL on-canvas email editor. Reuses the one Email Studio
   // engine (EmailCanvasEditor) pointed at this Space's own drafts, seeded from the Space brand. Gated on the
   // `email` function; nested under Email on the console. Distinct destination from `space.comms` (the composer).

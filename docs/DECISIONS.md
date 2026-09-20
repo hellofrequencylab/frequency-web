@@ -24,6 +24,8 @@ tree as of this index: **ADR-1483**. 1483 is LIVE-434. 1477 is LIVE-428 on main.
 
 tree as of this index: **ADR-1485**. 1485 is LIVE-436. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1478–1480 and 1482–1484 are claimed on other open PRs.
 
+tree as of this index: **ADR-1486**. 1486 is LIVE-437. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1478–1480 and 1482–1485 are claimed on other open leftover PRs.
+
 | Theme | Start here |
 |---|---|
 | **Names** | ADR-208 → [NAMING.md](NAMING.md) |
@@ -47122,3 +47124,23 @@ Premise re-tested 2026-09-20: money, events, and hygiene packets were empty. LIV
 **Consequences.** A later typed Collective QR rung on `space.reach` fails the LIVE-440 probe. The meter remains the quantity source.
 
 **Rows.** LIVE-440.
+
+## ADR-1490: Email names Business sends from the meter (LIVE-437)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-437` · numbered **1490** because **1486**–**1489** are claimed on this tree (1486 LIVE-415, 1487–1488 by open leftover PRs, 1489 the Reach note) and **1490** is the next free number · extends [ADR-1438](DECISIONS.md) (LIVE-228) · corroborated by `lib/spaces/email-catalog-note.ts` and `lib/pricing/meter-limits.ts`
+
+**Context.** LIVE-228 retired Collective as a plan label. `PLACEHOLDER_METER_LIMITS.space_email` is 300/mo free and 25,000/mo on Business. The pricing grid already reads that meter. The Email catalog note still said "300 sends/mo free, then 5,000/mo on Business, 25,000/mo on Collective". That sentence is the lever the console badges come back to when the beta window closes.
+
+Premise re-tested 2026-09-20: money, events, and hygiene packets were empty. LIVE-411 stays the parent. Reach is LIVE-436. Your people is LIVE-435. This leftover is the Email catalog note only.
+
+**Decision.**
+
+1. `emailCatalogNote` is the one seam. It reads `space_email` and `SPACE_PLAN_LABEL.business`.
+2. `space.comms.freeNote` calls that function. Never Collective. Never a typed 5,000.
+3. No migration. The live monthly send cap stays the meter. LIVE-411 stays open.
+
+**Rejected.** Closing LIVE-411 from a catalog note. Absorbing the Reach, Your people, Program, or seat-counter leftovers. Changing the 300 / 25,000 ladder.
+
+**Consequences.** A later typed Collective send rung on `space.comms` fails the LIVE-437 probe. The meter remains the quantity source.
+
+**Rows.** LIVE-437.

@@ -18,6 +18,8 @@ import { peopleCatalogNote } from '@/lib/spaces/people-catalog-note'
 
 import { reachCatalogNote } from '@/lib/spaces/reach-catalog-note'
 
+import { emailCatalogNote } from '@/lib/spaces/email-catalog-note'
+
 // ADR-543 (docs/MODULAR-MENU.md P0): the universal SPACE module catalog + manifest.
 
 describe('SPACE_MODULES catalog', () => {
@@ -383,6 +385,13 @@ describe('access badges match the real free-tier caps (ADR-784)', () => {
   it('names Business QR codes from the meter, never Collective (LIVE-440)', () => {
     const note = spaceModuleById('space.reach')!.freeNote
     expect(note).toBe(reachCatalogNote())
+    expect(note).not.toMatch(/Collective/)
+    expect(note).toContain('Business')
+  })
+
+  it('names Business email sends from the meter, never Collective (LIVE-437)', () => {
+    const note = spaceModuleById('space.comms')!.freeNote
+    expect(note).toBe(emailCatalogNote())
     expect(note).not.toMatch(/Collective/)
     expect(note).toContain('Business')
   })
