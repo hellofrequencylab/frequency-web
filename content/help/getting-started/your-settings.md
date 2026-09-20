@@ -25,7 +25,8 @@ Settings is one page. Each area below is a section you can scroll to, in this or
 - **Notifications**: choose what you're told about and how (in-app, email, push, and text where enabled), pick how often, and mute a single Circle or Space. See [Notifications](/help/getting-started/notifications) and "Choosing what reaches you" below.
 - **Connections and location**: control how you're found by people nearby (see below).
 - **Account and privacy**: sign-in, account-level controls, and your privacy choices. This is also where you can erase your saved drafts, and where deleting your account lives.
-- **Plan and billing**: your Crew plan, what it costs, and where your payment details live (see [Membership & the Vault](/help/membership/the-vault)). If a Space membership payment did not go through, that Space is named here. You are still a member. Update the card Stripe emailed you about, or leave from the Space.
+- **Plan and billing**: your Frequency plan, what it costs, and where your payment details live (see [Membership & the Vault](/help/membership/the-vault)). If a Space membership payment did not go through, that Space is named here. You are still a member. Update the card Stripe emailed you about, or leave from the Space.
+- **Memberships**: Spaces you belong to. Open one from here, or leave it. See [Your Space memberships](/help/membership/your-space-memberships).
 
 ## Connections & Location
 

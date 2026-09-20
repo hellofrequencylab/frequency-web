@@ -382,7 +382,7 @@ function TierForm({
       />
 
       {/* Who can buy (ADR-823): restrict this ticket to the hosting Space's own membership.
-          Renders only for a Space-hosted event; locked below the Collective plan. */}
+          Renders only for a Space-hosted event; locked when the membership-ticket gate refuses. */}
       {spaceAccess &&
         (spaceAccess.allowed ? (
           <div>
@@ -411,7 +411,7 @@ function TierForm({
           </div>
         ) : (
           <p className="rounded-lg bg-surface px-3 py-2 text-meta text-muted">
-            Members-only tickets, linked to your space membership, come with the Collective plan.
+            Members-only tickets, linked to your space membership, come with {spaceAccess.wallLabel}.
           </p>
         ))}
 

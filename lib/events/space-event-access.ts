@@ -9,18 +9,20 @@
 //
 // AUTHZ: every action re-resolves the caller and gates on the Space's canEditProfile (owner /
 // admin / editor) — the same bar as editing the tiers themselves — and every event write is bound
-// to an event HOSTED BY this Space. Setting access is additionally plan-gated at the Collective
-// floor (feature `space_membership_tickets`), matching the event-side writers.
+// to an event HOSTED BY this Space. Setting access is additionally plan-gated at
+// `space_membership_tickets` (free floor since LIVE-410; LIVE-428 names any override
+// through featureWallLabel), matching the event-side writers.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { featureAllowed } from '@/lib/pricing/gates'
-import { featureGatesLive } from '@/lib/pricing/settings'
-import { asSpacePlan } from '@/lib/pricing/plans'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { resolveHostingSpaceIdFromRow } from './host-space'
+import {
+  membershipTicketWallSentence,
+  resolveMembershipTicketGate,
+} from './ticket-space-access'
 import { isUpcomingByInstant, MAX_TZ_OFFSET_MS } from '@/lib/pricing/member-meter-usage'
 
 /** One upcoming event of the Space with its current members-ticket state.
@@ -239,20 +241,16 @@ export async function setSpaceEventAccess(
     return ok()
   }
 
-  // Opening/narrowing access is the Collective-depth capability (same gate as the event-side
-  // writers). Checked only when GRANTING access, so retiring always works.
+  // Opening/narrowing access is the same gate the event-side writers ask. Checked only when
+  // GRANTING access, so retiring always works.
   const { data: sp } = await admin
     .from('spaces')
     .select('plan, name, brand_name')
     .eq('id', spaceId)
     .maybeSingle()
   const spRow = sp as { plan: string | null; name: string | null; brand_name: string | null } | null
-  const allowed = await featureAllowed(
-    'space_membership_tickets',
-    { plan: asSpacePlan(spRow?.plan) },
-    { gatesLive: await featureGatesLive() },
-  )
-  if (!allowed) return fail('Membership-only tickets are part of the Collective plan.')
+  const { allowed, wall } = await resolveMembershipTicketGate(spRow?.plan)
+  if (!allowed) return fail(membershipTicketWallSentence(wall))
 
   const tierId = audience === 'members' ? null : audience
   if (tierId) {

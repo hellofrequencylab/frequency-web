@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1478**. 1478 is LIVE-429. 1477 is claimed by LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is claimed by LIVE-421. 1472 is claimed by LIVE-423. 1473 is claimed by LIVE-424.
+tree as of this index: **ADR-1481**. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1478–1480 are claimed on other open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46855,6 +46855,107 @@ Premise re-tested 2026-09-19: `canEnterJourney` still asked enrolled / author / 
 **Consequences.** A later enrol path that skips `checkJourneyTier` fails the LIVE-427 probe. Remaining FOCUS gap in the parent is Space discussion (`LIVE-421`). The migration `20270345006600` is already on main.
 
 **Rows.** LIVE-427.
+
+## ADR-1477: Member-ticket writers name the wall, not Collective (LIVE-428)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-428` · numbered **1477** because **1476** is LIVE-427 on main · extends [ADR-1415](DECISIONS.md) (LIVE-410) and [ADR-1475](DECISIONS.md) (LIVE-426) · corroborated by `lib/events/ticket-space-access.ts` (`resolveMembershipTicketGate`, `membershipTicketWallSentence`)
+
+**Context.** LIVE-410 moved `space_membership_tickets` to the free floor. LIVE-228 retired Collective as a plan label. LIVE-426 fixed help. The ticket writers and Event access panel still said "the Collective plan" when the gate refused.
+
+Premise re-tested 2026-09-20: `FEATURE_GATES.space_membership_tickets.minEntitlement` is `free`. `validateSpaceAccess` and `setSpaceEventAccess` still threw a typed Collective sentence. The host ticket editor, the admin ticket editor, and Memberships → Event access still painted that leftover when `allowed` was false. Collaborator hosting and automations still sit on a paid floor and were left alone.
+
+**Decision.**
+
+1. One seam, `resolveMembershipTicketGate`, asks `featureAllowed('space_membership_tickets')` and names the wall through `featureWallLabel`. Both writers and the Event access loader use it.
+2. The locked hint interpolates that name. The refusal sentence is `Membership-only tickets come with {wall}.` Never Collective. Never a typed Business.
+3. The code default stays the free floor. An operator override that raises the gate still refuses the write and still names the raised plan.
+4. No migration. LIVE-411 stays open. Circle `tier` access stays on `space_can_sell` until a later ruling.
+
+**Rejected.** Deleting the plan check (an override must still bind). Closing LIVE-411 from a copy fix. Restating Collective on a new surface.
+
+**Consequences.** A later typed "Collective plan" on a member-ticket writer or editor fails the LIVE-428 probe. Checkout still refuses when Connect is not payout-ready.
+
+**Rows.** LIVE-428.
+
+## ADR-1469: Space discussion is the Space Circle feed, on the Space (LIVE-421)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-421` · numbered **1469** because **1467** is the Calendar view slide and **1468** is Space Plans on the calendar plan-data branch · corroborated by `lib/spaces/space-discussion.ts` and `app/(main)/spaces/[slug]/(profile)/discussion/page.tsx`
+
+**Context.** FOCUS-MODEL Q5 said a Space could not hold a discussion because `posts` had no `scope_space_id` and the announcement wall had no replies. Premise re-tested 2026-09-20: the Space Circle (ADR-1391, ADR-1393, ADR-1395) already is that conversation. Composer, stream, and comments already run on `scope_circle_id`. Members auto-enrol when the hub is on. What was missing is a door on the Space profile.
+
+**Decision.**
+
+1. **No fourth scope column.** Posts stay circle-scoped. A `scope_space_id` would be a parallel system next to the hub NAMING.md already named.
+2. **The Space tab is Discussion.** Never Community. The body is `CircleFeed` stamped onto the live Space Circle.
+3. **Off means off.** `getLiveSpaceCircle` only returns `forming` or `active`. A manager keeps the tab so they can turn the hub on. A visitor never sees a tab over a room that is not there. ROOT never offers it.
+4. **The Circles function hides it.** Same switch as the Circles tab.
+
+**Rejected.** Adding `posts.scope_space_id`. Naming the tab Community. Redirecting away from the Space chrome. Building a second composer.
+
+**Consequences.** A later `scope_space_id` on `posts` is a new decision, not this one. The LIVE-421 probe fails if the Discussion route stops loading the Space Circle feed.
+
+**Rows.** LIVE-421.
+
+## ADR-1472: A member can see and leave the Spaces they belong to (LIVE-423)
+
+**Status:** Accepted · 2026-09-20 · numbered **1472** because **1468** / **1469** stay claimed by open calendar and Discussion PRs, **1470** is LIVE-422, and **1471** is LIVE-420 · FOCUS-MODEL §6 leftover · corroborated by `lib/spaces/my-memberships.ts` and `app/(main)/settings/page.tsx`
+
+**Context.** FOCUS-MODEL §6 said there was no member-facing "my memberships" surface. Premise re-tested 2026-09-20: Settings Plan and billing is the Frequency Crew plan. `listSpaceMemberships` is owner-only. `getMyMembership` is per-Space, for the join card. `/settings` had no memberships section. `cancelMembership` already lets the member who joined cancel.
+
+**Decision.**
+
+1. `listMySpaceMemberships` is the one reader. It lists the signed-in viewer's open `space_memberships` rows (active and waitlist), with Space name, slug, and tier.
+2. Settings → Memberships mounts the list. Search dest is `/settings#memberships`.
+3. Cancel reuses `MembershipCancelButton` / `cancelMembership`. Waitlist copy is Leave the waitlist.
+4. ROOT never lists. Cancelled never lists. Signed-out is empty. No migration. `payment_status` is not this row.
+
+**Rejected.** Putting Space dues on the Crew billing card. A second cancel path. Enforcing `payment_status` here (dunning is a different hole). Closing LIVE-411 from this row.
+
+**Consequences.** A later PR that lists cancelled rows, shows ROOT, or renders another member's rows fails the LIVE-423 intent. Journey selling stays on `journey.sell`. Space discussion stays LIVE-421.
+
+**Rows.** LIVE-423.
+
+## ADR-1481: Automation lock screen names the wall, not Collective (LIVE-432)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-432` · numbered **1481** because **1477** is LIVE-428 on this tree and **1478–1480** are claimed on other open PRs · extends [ADR-1438](DECISIONS.md) (LIVE-228) and [ADR-1477](DECISIONS.md) (LIVE-428) · corroborated by `lib/spaces/automation-access.ts` (`resolveAutomationWall`, `automationWallSentence`)
+
+**Context.** LIVE-228 merged Collective depth into Business. `FEATURE_GATES.space_automation.minEntitlement` is `business`. LIVE-428 stopped member-ticket writers typing Collective and left automations alone because they still sit on a paid floor. The lock screen and the Space catalog note still said Collective.
+
+Premise re-tested 2026-09-20: `featureAllowed('space_automation', { plan: 'business' })` is true. `featureWallLabel('space_automation')` is Business. `automation-body.tsx` still painted "Automations come with the Collective plan." The catalog `freeNote` still said "On Collective, 1,000 runs/mo included." The writer fail (`Automation is not available on this space plan.`) never named Collective and was left alone. Collaborator hosting is a separate leftover (open PR). Seat-counter still types Collective and is a later leftover. The gate-meter collision (50 free runs vs a Business wall) stays exempted.
+
+**Decision.**
+
+1. One seam, `resolveAutomationWall`, names the wall through `featureWallLabel`. The lock screen interpolates `automationWallSentence`. Never Collective. Never a typed Business that can drift from the gate.
+2. The code default stays Business. An operator override that raises the gate still names the raised plan.
+3. The catalog note for Automation matches the meter: 1,000 runs/mo on Business.
+4. No migration. The entitlement check (`spaceHasEntitlement(space, 'automation')`) is unchanged. LIVE-411 stays open.
+
+**Rejected.** Lowering automations to the free floor (that is the gate-meter collision, not this copy lie). Closing LIVE-411 from a copy fix. Absorbing collaborator hosting or the seat-counter leftover.
+
+**Consequences.** A later typed "Collective plan" on the automation lock screen fails the LIVE-432 probe. A later catalog note for `space.automation` that names Collective fails the same probe.
+
+**Rows.** LIVE-432.
+
+## ADR-1485: Circle `tier` access follows the free membership floor (LIVE-436)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-436` · numbered **1485** because **1481** is LIVE-432 on main, and **1476** is already the Journey tier gate (LIVE-427) · extends [ADR-1415](DECISIONS.md) (LIVE-410) · is the later ruling [ADR-1475](DECISIONS.md) deferred · corroborated by `lib/circles/visibility.ts` (`spaceCanSell`) and `supabase/migrations/20270345006800_circle_tier_follows_membership_floor.sql`
+
+**Context.** ADR-1415 let a free Space sell memberships. Connect readiness is the checkout door. Circle `access = 'tier'` and a priced membership tier linked to a Circle still required `private.space_can_sell`, a Business+ plan list. A free host could take the money and could not include the room. ADR-1475 left that wall in place so a help-only pass would not also rewrite the trigger.
+
+Premise re-tested 2026-09-20: `FEATURE_GATES.space_memberships.minEntitlement` is `free`. `availableAccessModes` hid `tier` from a free Space. `CIRCLE_ACCESS_LIMIT_NOTE` said selling a tier comes with the Business plan. Both triggers still raised a plan floor.
+
+**Decision.**
+
+1. **A real Space may include a Circle with a membership.** `private.space_can_sell` is true when the Space is not the root sentinel. Plan is not the door.
+2. **The two triggers drop the plan floor.** `circle_access_needs_space` and `circle_link_cross_tenant` stay. A personal Circle still cannot sell.
+3. **The picker matches the trigger.** A free Space is offered `tier`. The limit note no longer names Business.
+4. **Checkout still refuses when Connect is not payout-ready.** That is LIVE-233 / LIVE-339, not this wall.
+
+**Rejected.** Leaving Circle delivery on Business after memberships moved to free. Closing LIVE-411 from this leftover. Changing Journey selling (ADR-1397 still needs a paid Space).
+
+**Consequences.** A later `space_can_sell` that ranks on a plan list, or a shape trigger that raises `circle_access_plan_floor` again, fails the LIVE-436 probe. Campaigns stay at Business.
+
+**Rows.** LIVE-436.
 
 ## ADR-1478: Show a past-due Space membership without locking the member out (2026-09-20)
 

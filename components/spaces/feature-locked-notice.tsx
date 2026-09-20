@@ -45,7 +45,7 @@ export function FeatureLockedNotice({
   /** The Space's current plan, for the meter range highlight. */
   currentPlan?: string | null
   /** Optional override for the 'plan' description: one plain sentence naming the plan that carries the
-   *  feature (e.g. "Automations come with the Collective plan."). Use it for an on/off tier unlock,
+   *  feature (e.g. "Automations come with Business."). Use it for an on/off tier unlock,
    *  where the default "available on every plan, move up for a higher limit" line would be wrong. */
   planLine?: string
 }) {
