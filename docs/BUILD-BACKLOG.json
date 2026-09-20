@@ -15071,6 +15071,25 @@
       "closed": "2026-09-20"
     },
     {
+      "id": "LIVE-423",
+      "title": "A member who pays a Space has nowhere to see or manage that membership",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/FOCUS-MODEL.md",
+        "ref": "ADR-1472; FOCUS-MODEL §6 leftover after LIVE-410"
+      },
+      "detail": "FILED AND CLOSED 2026-09-20 from a LIVE-411 / FOCUS-MODEL re-test. LIVE-410 and LIVE-376 are already done. Packets next was LIVE-411; sell-a-course is already journey.sell. The remaining money-adjacent hole in FOCUS-MODEL §6 was the member list: Settings Plan and billing is the Crew plan, listSpaceMemberships is owner-only, getMyMembership is per-Space for the join card.\n\nPREMISE RE-TESTED FIRST: no /settings#memberships, no listMySpaceMemberships, no dest for the member's own Space dues. cancelMembership already lets the member who joined cancel.\n\nWHAT SHIPPED (ADR-1472). listMySpaceMemberships lists the viewer's open space_memberships (active + waitlist) with Space name, slug, and tier. Settings mounts the band. Search dest is /settings#memberships. Cancel reuses MembershipCancelButton. ROOT never lists. Cancelled never lists. No migration. Did not enforce payment_status. Did not close LIVE-411. No static redirect page (HYG-043).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};if(!fs.existsSync(\"lib/spaces/my-memberships.ts\"))fail(\"my-memberships is gone\");const s=fs.readFileSync(\"lib/spaces/my-memberships.ts\",\"utf8\");if(!s.includes(\"export async function listMySpaceMemberships\"))fail(\"listMySpaceMemberships is gone\");if(!s.includes(\"export function isOpenSpaceMembership\"))fail(\"the open-status gate is gone\");if(!s.includes(\"waitlist\"))fail(\"the waitlist rule is gone\");const p=fs.readFileSync(\"app/(main)/settings/page.tsx\",\"utf8\");if(!p.includes(\"MyMembershipsSection\"))fail(\"Settings no longer mounts the memberships band\");if(!p.includes(\"id=\\\"memberships\\\"\"))fail(\"the Memberships section is gone\");const d=fs.readFileSync(\"lib/search/destinations.ts\",\"utf8\");if(!d.includes(\"/settings#memberships\"))fail(\"search lost the memberships dest\");const u=fs.readFileSync(\"app/(main)/settings/memberships/section.tsx\",\"utf8\");if(!u.includes(\"MembershipCancelButton\"))fail(\"the list no longer reuses cancel\");if(!fs.existsSync(\"lib/spaces/my-memberships.test.ts\"))fail(\"no my-memberships test\");console.log(\"LIVE-423 ok\")'",
+        "note": "Passes when Settings mounts the viewer's own Space memberships, the reader keeps waitlist and refuses cancelled, and cancel reuses the existing action. Written 2026-09-20."
+      },
+      "closed": "2026-09-20"
+    },
+    {
       "id": "LIVE-425",
       "title": "Selling a Journey never starts Connect, so the sixth money path is a dead end",
       "status": "done",
