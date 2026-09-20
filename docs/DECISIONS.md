@@ -16,6 +16,14 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
+tree as of this index: **ADR-1486**. 1486 is LIVE-415 Admin = Guest-plus-staff events. 1485 is LIVE-436. 1481 is LIVE-432. 1479 is LIVE-430. 1478 is LIVE-429. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415 (original PM console; amended). 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1480 and 1482–1484 are claimed on other open PRs.
+
+tree as of this index: **ADR-1482**. 1482 is LIVE-433 (seat-counter leftover). 1478–1481 are claimed by open leftover PRs. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424.
+
+tree as of this index: **ADR-1483**. 1483 is LIVE-434. 1477 is LIVE-428 on main. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1478 through 1482 are claimed by open leftover PRs.
+
+tree as of this index: **ADR-1485**. 1485 is LIVE-436. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1478–1480 and 1482–1484 are claimed on other open PRs.
+
 tree as of this index: **ADR-1486**. 1486 is LIVE-437. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1478–1480 and 1482–1485 are claimed on other open leftover PRs.
 
 | Theme | Start here |
@@ -46391,7 +46399,7 @@ Premise re-tested 2026-09-19 against the tree, not the banners:
 
 **Rejected.** Restyling the guest month and calling it Admin. Closing C2–C4 in the same PR. Folding Guest through `guestLiveItems` (LIVE-419).
 
-**Consequences.** The Calendar tab's Admin mode leads with the board. The settings console is unchanged. LIVE-416 starts the pencil lane. **Amended by [ADR-1454](DECISIONS.md):** that lane now exists.
+**Consequences.** The Calendar tab's Admin mode leads with the board. The settings console is unchanged. LIVE-416 starts the pencil lane. **Amended by [ADR-1454](DECISIONS.md):** that lane now exists. **Amended by [ADR-1486](DECISIONS.md):** Admin on the Calendar tab is StaffCalendar over the admin feed, not CalendarPmConsole.
 
 **Rows.** LIVE-415.
 
@@ -46877,6 +46885,27 @@ Premise re-tested 2026-09-20: `FEATURE_GATES.space_membership_tickets.minEntitle
 
 **Rows.** LIVE-428.
 
+## ADR-1483: Program writers name the wall, not Collective (LIVE-434)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-434` · numbered **1483** because **1477** is LIVE-428 on main and 1478 through 1482 are claimed by open leftover PRs · extends [ADR-1438](DECISIONS.md) (LIVE-228) · corroborated by `lib/spaces/program-wall.ts` (`programWallLabel`, `programCatalogNote`, `programTeaseBody`)
+
+**Context.** LIVE-228 retired Collective as a plan label. Business carries the former Collective depth, including Programs. Help already said Business. The Program settings tease and the `space.program` catalog note still said Collective.
+
+Premise re-tested 2026-09-20: `program` is in `BUSINESS_DEPTH_ENTITLEMENT_KEYS`. `targetForEntitlementKey('program')` is `{ axis: 'plan', tier: 'business' }`. The settings page still typed "Collective carries Programs" and "See what Collective adds". The catalog `freeNote` was "Included with Collective". Seat-counter, automations, and collaborator leftovers stay on their own PRs.
+
+**Decision.**
+
+1. One seam, `programWallLabel`, names the lowest paid plan that grants `program` through `targetForEntitlementKey`. Never Collective. Never a typed Business.
+2. The Program settings tease interpolates that name (`programTeaseBody`, `programTeaseCta`). The catalog note is `programCatalogNote`.
+3. The entitlement stays on Business depth. This row does not move Programs to free.
+4. No migration. LIVE-411 stays open.
+
+**Rejected.** Lowering Programs to free. Closing LIVE-411 from a copy fix. Absorbing the `space.people` seat catalog note, automations, or collaborator hosting.
+
+**Consequences.** A later typed Collective sentence on the Program settings tease or `space.program` catalog note fails the LIVE-434 probe. Help already names Business.
+
+**Rows.** LIVE-434.
+
 ## ADR-1469: Space discussion is the Space Circle feed, on the Space (LIVE-421)
 
 **Status:** Accepted · 2026-09-20 · backlog `LIVE-421` · numbered **1469** because **1467** is the Calendar view slide and **1468** is Space Plans on the calendar plan-data branch · corroborated by `lib/spaces/space-discussion.ts` and `app/(main)/spaces/[slug]/(profile)/discussion/page.tsx`
@@ -46936,9 +46965,169 @@ Premise re-tested 2026-09-20: `featureAllowed('space_automation', { plan: 'busin
 
 **Rows.** LIVE-432.
 
-## ADR-1486: Email names Business sends from the meter (LIVE-437)
+## ADR-1485: Circle `tier` access follows the free membership floor (LIVE-436)
 
-**Status:** Accepted · 2026-09-20 · backlog `LIVE-437` · numbered **1486** because **1481** is LIVE-432 on this tree and **1482**–**1485** stay claimed by open leftover PRs · extends [ADR-1438](DECISIONS.md) (LIVE-228) · corroborated by `lib/spaces/email-catalog-note.ts` and `lib/pricing/feature-meters.ts`
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-436` · numbered **1485** because **1481** is LIVE-432 on main, and **1476** is already the Journey tier gate (LIVE-427) · extends [ADR-1415](DECISIONS.md) (LIVE-410) · is the later ruling [ADR-1475](DECISIONS.md) deferred · corroborated by `lib/circles/visibility.ts` (`spaceCanSell`) and `supabase/migrations/20270345006800_circle_tier_follows_membership_floor.sql`
+
+**Context.** ADR-1415 let a free Space sell memberships. Connect readiness is the checkout door. Circle `access = 'tier'` and a priced membership tier linked to a Circle still required `private.space_can_sell`, a Business+ plan list. A free host could take the money and could not include the room. ADR-1475 left that wall in place so a help-only pass would not also rewrite the trigger.
+
+Premise re-tested 2026-09-20: `FEATURE_GATES.space_memberships.minEntitlement` is `free`. `availableAccessModes` hid `tier` from a free Space. `CIRCLE_ACCESS_LIMIT_NOTE` said selling a tier comes with the Business plan. Both triggers still raised a plan floor.
+
+**Decision.**
+
+1. **A real Space may include a Circle with a membership.** `private.space_can_sell` is true when the Space is not the root sentinel. Plan is not the door.
+2. **The two triggers drop the plan floor.** `circle_access_needs_space` and `circle_link_cross_tenant` stay. A personal Circle still cannot sell.
+3. **The picker matches the trigger.** A free Space is offered `tier`. The limit note no longer names Business.
+4. **Checkout still refuses when Connect is not payout-ready.** That is LIVE-233 / LIVE-339, not this wall.
+
+**Rejected.** Leaving Circle delivery on Business after memberships moved to free. Closing LIVE-411 from this leftover. Changing Journey selling (ADR-1397 still needs a paid Space).
+
+**Consequences.** A later `space_can_sell` that ranks on a plan list, or a shape trigger that raises `circle_access_plan_floor` again, fails the LIVE-436 probe. Campaigns stay at Business.
+
+**Rows.** LIVE-436.
+
+## ADR-1478: Show a past-due Space membership without locking the member out (2026-09-20)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-429` · numbered **1478** because **1477** is claimed by LIVE-428 · corroborated by `lib/spaces/membership-dunning.ts`, `lib/spaces/memberships.ts`, `components/spaces/membership-join.tsx`, `components/spaces/membership-owner-list.tsx`, and `app/(main)/settings/billing/section.tsx`
+
+**Context.** FOCUS-MODEL §6 item 3 said `space_memberships.payment_status` is never enforced and Crew dunning does not cover Space dues. Premise re-tested 2026-09-20: the webhook already writes `pending | active | past_due | canceled`. `private.is_space_paid_member` and `isSpacePaidMember` deliberately ignore the column (ADR-1092), because a free join is often `status=active` with `payment_status=pending`. No UI selected the column. Settings Plan and billing only reads `profiles.membership_payment_status`.
+
+**Decision.**
+
+1. Display only. `isPastDueSpaceMembership` is true only for `past_due`. pending stays invisible, which keeps the free-join default honest.
+2. The member sees the notice on the Space join card and on Settings Plan and billing (`listMyPastDueSpaceMemberships` in `lib/spaces/memberships.ts`, so the reader does not grow the admin-client ratchet). The host sees a Payment failed chip on the member list.
+3. Access is unchanged. Circle entry, Journey enrol, and member tickets still read `status`. A later ruling can turn the column into a lock.
+4. ROOT never lists. `billingLive()` still darkens the Settings list, matching Crew dunning.
+
+**Rejected.** Revoking Circle access on past_due (that would lock out pending free joins if copied carelessly, and it reverses ADR-1092 without a ruling). Opening the Crew Stripe portal for a Space subscription (wrong customer). Absorbing LIVE-423's memberships list. Closing parent LIVE-411.
+
+**Consequences.** A later surface that hides a past_due Space membership, or that treats pending as past due, fails the LIVE-429 probe. LIVE-411 stays open (Discussion is still LIVE-421).
+
+**Rows.** LIVE-429.
+
+## ADR-1479: Collaborator-host writers name the wall, not Collective (LIVE-430)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-430` · numbered **1479** because **1478** is claimed by LIVE-429 · extends [ADR-810](DECISIONS.md) and [ADR-1477](DECISIONS.md) (LIVE-428) · corroborated by `lib/spaces/collaborator-host-gate.ts` (`resolveCollaboratorHostWall`, `collaboratorHostWallSentence`)
+
+**Context.** LIVE-228 retired Collective as a plan label. `FEATURE_GATES.space_collaborators` sits on the Business floor. Help already says hosting Collaborators is part of Business. ADR-1477 fixed member-ticket writers and left this paid-floor leftover alone.
+
+Premise re-tested 2026-09-20: `featureAllowed('space_collaborators', { plan: 'business' }, { gatesLive: true })` is true. `spaceCanHostCollaborators` already reads that gate. The Space writers, the event-share writers, and the locked preview still said "the Collective plan". Automations still sit on a paid floor and were left alone.
+
+**Decision.**
+
+1. One seam, `resolveCollaboratorHostWall`, names the wall through `featureWallLabel('space_collaborators')`. The writers and the locked preview interpolate that name.
+2. The refusal sentences keep their three shapes (Space host, event home, event host Space). Never Collective. Never a typed Business.
+3. The code default stays the Business floor. An operator override that raises the gate still refuses the write and still names the raised plan.
+4. No migration. LIVE-411 stays open. Automations still type Collective until a later leftover.
+
+**Rejected.** Moving the gate to free (hosting is still a paid floor). Closing LIVE-411 from a copy fix. Restating Collective on a new surface.
+
+**Consequences.** A later typed "Collective plan" on a collaborator-host writer or locked preview fails the LIVE-430 probe.
+
+**Rows.** LIVE-430.
+
+## ADR-1480: A Space's earnings count fund gifts, added as a third arm (LIVE-431)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-431` · numbered **1480** because **1479** is claimed by LIVE-430 · extends [ADR-1384](DECISIONS.md) (the ticket arm) · corroborated by `lib/commerce/orders.ts` (`donationEarnings`)
+
+**Context.** LIVE-375 / ADR-1384 taught Space Home to read `event_tickets` beside `commerce_orders`. A gift to a Space fund still never wrote `commerce_orders`. It writes `space_donations` through `recordSpaceDonationFromSession`. After that ticket arm, a Space whose only money was the fund still read $0.00 under "No sales yet". Packets next was LIVE-411 (umbrella). Money and events lanes were empty. Circle `tier` on free, past-due display, and my-memberships already have their own PRs.
+
+Premise re-tested 2026-09-20: `spaceEarningsSummary` folds commerce then tickets. `space_donations` has `amount_cents`, `platform_fee_cents`, `succeeded_at`, `refunded_at`, `status`, and `source`. Get Paid lists Donations as a money path. Home did not read the table. Memberships still have no amount and no invoice ledger, so they stay out.
+
+**Decision.**
+
+1. A third arm, not a second ledger. `donationEarnings` reads `space_donations` for this Space. The window is `succeeded_at`, matching tickets. Pending and abandoned rows are not revenue. A refund is recognised by status or `refunded_at`.
+2. Unlike tickets, a gift stores the effective order source. An explicit `network` gift lands in the network slice. Anything else, including a signed-out donor, stays out of it.
+3. The donation read fails safe on its own. A failure to read gifts returns the commerce and ticket number instead of collapsing the header to zeros.
+4. The fee is read, never re-derived. No migration. LIVE-411 stays open. Memberships stay out until they have a payment ledger.
+
+**Rejected.** Writing a `commerce_orders` row when a gift settles (the tidier model, the bigger change). Summing `space_membership_tiers.price_cents` on `started_at` (that invents renewals). Closing LIVE-411 from this leftover. Absorbing Circle-tier, past-due display, or my-memberships.
+
+**Consequences.** A later `spaceEarningsSummary` that drops `space_donations` fails the LIVE-431 probe. A network-sourced gift that never reaches `networkGrossCents` fails the test. Checkout still refuses when Connect is not payout-ready.
+
+**Rows.** LIVE-431.
+
+## ADR-1486: Admin Calendar is Guest chrome plus staff events (LIVE-415)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-415` · numbered **1486** because **1485** is LIVE-436 on this tree · **Amends** [ADR-1450](DECISIONS.md) and [ADR-1464](DECISIONS.md) (Admin body) · corroborated by `components/spaces/calendar-workspace.tsx` (`StaffCalendar`, no `CalendarPmConsole`) and `app/(main)/spaces/[slug]/(profile)/calendar/page.tsx` (`loadAdminCalendar`)
+
+**Context.** ADR-1450 mounted `CalendarPmConsole` as Admin. Daniel then approved Guest as the sliding month and asked Admin to be that same month with staff events (drafts, pencils, private/unpublished), not the PM wrap. List is a condensed left index and a right event console. Stage columns stay on Projects.
+
+**Decision.**
+
+1. **Admin mounts `StaffCalendar` over `loadAdminCalendar`.** Same month chrome as Guest. Guest stays `EventCalendar` over `guestLiveItems`.
+2. **Do not mount `CalendarPmConsole` on the Calendar tab.** The file may stay for C2–C4 lane probes. Projects keeps the stage board.
+3. **List is the control console.** Stage pill on the title row, narrower left list, share and stats on the right. Not Studio.
+
+**Rejected.** Keeping the PM wrap as Admin. Opening the event editor in List. A second Guest month.
+
+**Consequences.** A later Admin panel that mounts `CalendarPmConsole` fails the LIVE-415 probe.
+
+**Rows.** LIVE-415.
+
+## ADR-1482: Seat counter names extra seats, not Collective (LIVE-433)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-433` · numbered **1482** because **1478** through **1481** are claimed by open leftover PRs (past-due, collaborator-host, donation arm, automation wall) · extends [ADR-1438](DECISIONS.md) (LIVE-228) and [ADR-917](DECISIONS.md) · corroborated by `components/spaces/seat-counter.tsx`
+
+**Context.** LIVE-228 retired Collective as a plan label. LIVE-410 leftovers have been peeling typed Collective sentences off money surfaces (LIVE-428 tickets, then open PRs for collaborator hosting and automations). The seat counter on Members and Plan and billing still said "Team roles come with the Collective plan." Seats are not a plan wall. `space_team` left `FEATURE_GATES` in ADR-917. The meter is 1 seat on free, 2 included on Business, extra seats the $12 add-on (LIVE-229).
+
+Premise re-tested 2026-09-20: `PLACEHOLDER_METER_LIMITS.space_team` is `{ free: 1, business: 2 }`. `SPACE_PLAN_LABEL` has no Collective. Help already says two operator seats plus an add-on. The caption was the leftover.
+
+**Decision.**
+
+1. When every operator seat is taken, the caption still says to add a seat. The dest sentence is `Extra seats are on Plan and billing.` Never Collective. Never a typed Business wall.
+2. Team roles stay what they were: admins, moderators, and editors use a seat. Members are free.
+3. No migration. No gate change. LIVE-411 stays open. Automations, collaborator hosting, Programs upsell, and the `space.people` catalog note stay on their own rows.
+
+**Rejected.** Inventing a `featureWallLabel` for `space_team` (there is no gate). Closing LIVE-411 from a copy fix. Absorbing the automation or collaborator PRs.
+
+**Consequences.** A later typed "Collective" on `components/spaces/seat-counter.tsx` fails the LIVE-433 probe. Extra seats still check out through the existing add-on.
+
+**Rows.** LIVE-433.
+
+## ADR-1484: Your people names Business seats from the meter (LIVE-435)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-435` · numbered **1484** because **1478**–**1483** stay claimed by open leftover PRs · extends [ADR-1438](DECISIONS.md) (LIVE-228) · corroborated by `lib/spaces/people-catalog-note.ts` and `lib/pricing/feature-meters.ts`
+
+**Context.** LIVE-228 retired Collective as a plan label. `PLACEHOLDER_METER_LIMITS.space_team` is 1 free and 2 on Business. Extra seats are the ADR-799 add-on. The Your people catalog note still said "1 seat free, 3 included on Collective, more per seat". That sentence is the lever the console badges come back to when the beta window closes.
+
+Premise re-tested 2026-09-20: money, events, and hygiene packets were empty. LIVE-411 stays the parent. Seat-counter copy is LIVE-433. Programs is LIVE-434. Automations is LIVE-432. This leftover is the catalog note only.
+
+**Decision.**
+
+1. `peopleCatalogNote` is the one seam. It reads `space_team` and `SPACE_PLAN_LABEL.business`.
+2. `space.people.freeNote` calls that function. Never Collective. Never a typed 3.
+3. No migration. Seats stay a meter, not a plan wall. LIVE-411 stays open.
+
+**Rejected.** Closing LIVE-411 from a catalog note. Absorbing Reach or Email leftover Collective rungs. Changing the 1 / 2 ladder.
+
+**Consequences.** A later typed Collective seat count on `space.people` fails the LIVE-435 probe. The meter remains the quantity source.
+
+**Rows.** LIVE-435.
+
+## ADR-1489: Reach names Business QR codes from the meter (LIVE-440)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-440` · numbered **1485** because **1481** is LIVE-432 on this tree and **1482**–**1484** stay claimed by open leftover PRs · extends [ADR-1438](DECISIONS.md) (LIVE-228) · corroborated by `lib/spaces/reach-catalog-note.ts` and `lib/pricing/meter-limits.ts`
+
+**Context.** LIVE-228 retired Collective as a plan label. `PLACEHOLDER_METER_LIMITS.space_qr` is 3 free and unlimited on Business. `codeCapForPlan` already reads that meter. The Reach catalog note still said "3 codes free, then 500 on Business, unlimited on Collective". That sentence is the lever the console badges come back to when the beta window closes.
+
+Premise re-tested 2026-09-20: money, events, and hygiene packets were empty. LIVE-411 stays the parent. Your people is LIVE-435. Email still names a Collective send rung and is a later leftover. This leftover is the Reach catalog note only.
+
+**Decision.**
+
+1. `reachCatalogNote` is the one seam. It reads `space_qr` and `SPACE_PLAN_LABEL.business`.
+2. `space.reach.freeNote` calls that function. Never Collective. Never a typed 500.
+3. No migration. The live create cap stays the meter. LIVE-411 stays open.
+
+**Rejected.** Closing LIVE-411 from a catalog note. Absorbing the Email leftover Collective rung. Changing the 3 / unlimited ladder.
+
+**Consequences.** A later typed Collective QR rung on `space.reach` fails the LIVE-440 probe. The meter remains the quantity source.
+
+**Rows.** LIVE-440.
+
+## ADR-1490: Email names Business sends from the meter (LIVE-437)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-437` · numbered **1490** because **1486**–**1489** are claimed on this tree (1486 LIVE-415, 1487–1488 by open leftover PRs, 1489 the Reach note) and **1490** is the next free number · extends [ADR-1438](DECISIONS.md) (LIVE-228) · corroborated by `lib/spaces/email-catalog-note.ts` and `lib/pricing/meter-limits.ts`
 
 **Context.** LIVE-228 retired Collective as a plan label. `PLACEHOLDER_METER_LIMITS.space_email` is 300/mo free and 25,000/mo on Business. The pricing grid already reads that meter. The Email catalog note still said "300 sends/mo free, then 5,000/mo on Business, 25,000/mo on Collective". That sentence is the lever the console badges come back to when the beta window closes.
 

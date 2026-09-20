@@ -11,11 +11,15 @@ let rows: Record<string, unknown>[] = []
  *  written before tickets existed reads exactly as it did. */
 let ticketRows: Record<string, unknown>[] = []
 let eventRows: Record<string, unknown>[] = []
+/** Gift rows for the LIVE-431 arm. Empty by default so every test written before donations
+ *  folded in still reads as it did. */
+let donationRows: Record<string, unknown>[] = []
 
 // 🔴 THE MOCK IS TABLE-AWARE, and it has to be. It used to return the SAME seeded rows to every
 // query, which was harmless while this module read one table and silently wrong the moment it read
 // three: the events lookup and the ticket read would each have been handed the commerce_orders rows,
 // and the assertions would have passed on numbers that came from the wrong place entirely.
+// LIVE-431 adds a fourth table. Same rule.
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => {
     let table = ''
@@ -32,7 +36,14 @@ vi.mock('@/lib/supabase/admin', () => ({
       in: () => chain,
       not: () => chain,
       then: (resolve: (v: { data: Record<string, unknown>[]; error: null }) => unknown) => {
-        const data = table === 'event_tickets' ? ticketRows : table === 'events' ? eventRows : rows
+        const data =
+          table === 'event_tickets'
+            ? ticketRows
+            : table === 'events'
+              ? eventRows
+              : table === 'space_donations'
+                ? donationRows
+                : rows
         return Promise.resolve(resolve({ data, error: null }))
       },
     }
@@ -45,6 +56,7 @@ import { spaceEarningsSummary } from './orders'
 beforeEach(() => {
   rows = []
   ticketRows = []
+  donationRows = []
   // One event, so the ticket arm gets past its "no events, nothing to sum" early return whenever a
   // test seeds tickets. Tests that seed none are unaffected either way.
   eventRows = [{ id: 'event-1' }]
@@ -242,5 +254,69 @@ describe('spaceEarningsSummary — event ticket sales (LIVE-375)', () => {
     const e = await spaceEarningsSummary('space-1', 30)
     expect(e.grossCents).toBe(0)
     expect(e.orderCount).toBe(0)
+  })
+})
+
+// ── LIVE-431: gifts to the Space fund are earnings too ───────────────────────────────────────────
+//
+// The leftover LIVE-375 left: spaceEarningsSummary grew a ticket arm and still did not read
+// space_donations. A gift never writes commerce_orders. A Space whose only money was the fund
+// still read $0.00 under "No sales yet".
+describe('spaceEarningsSummary — Space fund gifts (LIVE-431)', () => {
+  it('counts a succeeded gift when there is no commerce order and no ticket', async () => {
+    donationRows = [{ amount_cents: 2500, platform_fee_cents: 0, status: 'succeeded', refunded_at: null, source: 'self' }]
+    const e = await spaceEarningsSummary('space-1', 30)
+    expect(e.grossCents, 'the gift must reach gross; this is the $0.00 the leftover named').toBe(2500)
+    expect(e.feeCents).toBe(0)
+    expect(e.netCents).toBe(2500)
+    expect(e.orderCount).toBe(1)
+    expect(e.networkGrossCents).toBe(0)
+  })
+
+  it('adds gifts to commerce and ticket earnings rather than replacing them', async () => {
+    rows = [{ amount_cents: 10000, platform_fee_cents: 1000, status: 'paid', source: 'self' }]
+    ticketRows = [{ amount_cents: 4400, platform_fee_cents: 132, status: 'succeeded', refunded_at: null }]
+    donationRows = [{ amount_cents: 2500, platform_fee_cents: 0, status: 'succeeded', refunded_at: null, source: 'self' }]
+    const e = await spaceEarningsSummary('space-1', 30)
+    expect(e.grossCents).toBe(16900)
+    expect(e.feeCents).toBe(1132)
+    expect(e.netCents).toBe(15768)
+    expect(e.orderCount).toBe(3)
+  })
+
+  it('a refunded gift moves to refunded and never to gross', async () => {
+    donationRows = [
+      { amount_cents: 2500, platform_fee_cents: 0, status: 'succeeded', refunded_at: null, source: 'self' },
+      { amount_cents: 1500, platform_fee_cents: 0, status: 'refunded', refunded_at: '2026-09-20T00:00:00Z', source: 'self' },
+      { amount_cents: 800, platform_fee_cents: 0, status: 'succeeded', refunded_at: '2026-09-20T00:00:00Z', source: 'self' },
+    ]
+    const e = await spaceEarningsSummary('space-1', 30)
+    expect(e.grossCents).toBe(2500)
+    expect(e.refundedCents).toBe(2300)
+    expect(e.orderCount).toBe(3)
+  })
+
+  it('a network-sourced gift lands in the network slice, because space_donations stores source', async () => {
+    donationRows = [
+      { amount_cents: 2500, platform_fee_cents: 0, status: 'succeeded', refunded_at: null, source: 'self' },
+      { amount_cents: 4000, platform_fee_cents: 400, status: 'succeeded', refunded_at: null, source: 'network' },
+      { amount_cents: 1000, platform_fee_cents: 100, status: 'succeeded', refunded_at: null, source: null },
+    ]
+    const e = await spaceEarningsSummary('space-1', 30)
+    expect(e.grossCents).toBe(7500)
+    expect(e.networkGrossCents).toBe(4000)
+    expect(e.networkFeeCents).toBe(400)
+    expect(e.networkOrderCount).toBe(1)
+  })
+
+  it('a pending or abandoned gift is not revenue', async () => {
+    donationRows = [
+      { amount_cents: 2500, platform_fee_cents: 0, status: 'pending', refunded_at: null, source: 'self' },
+      { amount_cents: 2500, platform_fee_cents: 0, status: 'abandoned', refunded_at: null, source: 'self' },
+    ]
+    const e = await spaceEarningsSummary('space-1', 30)
+    expect(e.grossCents).toBe(0)
+    expect(e.orderCount).toBe(0)
+    expect(e.networkGrossCents).toBe(0)
   })
 })
