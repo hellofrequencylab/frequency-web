@@ -8,7 +8,7 @@ import { SITE_URL } from '@/lib/site'
 import { loadPublicSpaceWindow } from '@/lib/calendar/public-month'
 import { guestFeedState, guestLiveItems } from '@/lib/calendar/guest-live'
 import { monthGridWindow, yearHorizonWindow } from '@/lib/calendar/month-window'
-import { loadSpaceCalendarMonth } from './actions'
+import { loadAdminSpaceCalendarMonth, loadSpaceCalendarMonth } from './actions'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 import { getSpaceCapabilities, resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
@@ -100,8 +100,10 @@ export default async function SpaceCalendarPage({
         guestFirstUse={feed.isFirstUse}
         adminEvents={[]}
         dayNotes={[]}
+        plans={[]}
         subscribe={subscribe}
         loadGuestMonth={loadSpaceCalendarMonth.bind(null, slug)}
+        loadAdminMonth={loadAdminSpaceCalendarMonth.bind(null, slug)}
       />
     )
   }
@@ -136,8 +138,10 @@ export default async function SpaceCalendarPage({
       guestFirstUse={feed.isFirstUse}
       adminEvents={admin.events}
       dayNotes={admin.dayNotes}
+      plans={admin.plans}
       subscribe={subscribe}
       loadGuestMonth={loadSpaceCalendarMonth.bind(null, slug)}
+      loadAdminMonth={loadAdminSpaceCalendarMonth.bind(null, slug)}
     />
   )
 }

@@ -18,12 +18,14 @@ export function CalendarTimelineView({
   days,
   bars,
   onMonthChange,
+  loading = false,
 }: {
   year: number
   month1: number
   days: TimelineDay[]
   bars: TimelineBar[]
   onMonthChange: (year: number, month1: number) => void
+  loading?: boolean
 }) {
   const prev = adjacentMonth(year, month1, -1)
   const next = adjacentMonth(year, month1, 1)
@@ -32,7 +34,10 @@ export function CalendarTimelineView({
   return (
     <div className="space-y-4" data-calendar-timeline-view>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <SectionHeader title={timelineMonthLabel(year, month1)} count={bars.length} />
+        <div className="flex items-center gap-2">
+          <SectionHeader title={timelineMonthLabel(year, month1)} count={bars.length} />
+          {loading ? <span className="text-meta text-muted">Loading…</span> : null}
+        </div>
         <nav aria-label="Timeline month" className="flex items-center gap-2">
           <button
             type="button"

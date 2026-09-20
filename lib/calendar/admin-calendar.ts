@@ -6,8 +6,10 @@ import { listStaffCalendarItems } from './entries-store'
 import { listDayNotes } from './day-notes-store'
 import { listDueDateItems } from './due-dates-store'
 import { monthGridWindow } from './month-window'
+import { listSpacePlans } from './plans-store'
 import type { DayNote } from './day-notes'
 import type { CalendarEvent } from './item'
+import type { SpacePlan } from './plans'
 
 // THE ADMIN CALENDAR, loaded once (ADR-1385, ADR-1389, ADR-1467). What a Space's team sees: every event under the
 // Space (drafts, past and cancelled included), the events other hosts co-host here, the private layer for
@@ -25,6 +27,7 @@ export interface AdminCalendar {
   /** Every event under the Space, for the console's counts and its manage table. */
   ownedRows: OwnedRow[]
   dayNotes: DayNote[]
+  plans: SpacePlan[]
 }
 
 export async function loadAdminCalendar(
@@ -78,6 +81,7 @@ export async function loadAdminCalendar(
         editHref: editHrefFor(ev.slug),
         isCancelled: !!ev.is_cancelled,
         eventId: ev.id,
+        publicationState: ev.status === 'published' ? 'published' : 'unpublished',
       }
     }),
     ...sharedRows.map((ev): CalendarEvent | null => {
@@ -99,6 +103,7 @@ export async function loadAdminCalendar(
         sourceLabel: 'Co-hosted here',
         isCancelled: !!ev.is_cancelled,
         eventId: ev.id,
+        publicationState: 'published',
       }
     }),
   ].filter((e): e is CalendarEvent => e !== null)
@@ -106,12 +111,13 @@ export async function loadAdminCalendar(
   // THE PRIVATE LAYER: this month's entries. Other months load as the calendar browses. Read on the
   // caller's own session, so RLS decides what a viewer sees.
   const grid = entryWindow ?? monthGridWindow(year, month1)
-  const [entryItems, dayNotes, dueItems] = await Promise.all([
+  const [entryItems, dayNotes, dueItems, plans] = await Promise.all([
     listStaffCalendarItems(spaceId, grid.fromDay, grid.toDay, { editable: canManage }),
     listDayNotes(spaceId),
     listDueDateItems(spaceId, grid.fromDay, grid.toDay),
+    canManage ? listSpacePlans(spaceId) : Promise.resolve([]),
   ])
   events.push(...entryItems, ...dueItems)
 
-  return { events, ownedRows, dayNotes }
+  return { events, ownedRows, dayNotes, plans }
 }
