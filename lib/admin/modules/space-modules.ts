@@ -187,7 +187,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Space Dispatch publishing moved to the post box (LIVE-295), so composeSpaceDispatch keeps a writer.
   // Automation rides the `crm` feature gate; the surface self-gates on the automation ENTITLEMENT (a paid
   // amplifier) and shows an upgrade notice when the plan lacks it. Nested under CRM on the console.
-  { id: 'space.automation', label: 'Automation', desc: 'Rules and drip sequences over your own contacts.', Icon: Workflow, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/settings/automation`, order: 36, tier: 'primary', priority: 16, access: 'premium', parent: 'space.people', freeNote: 'On Collective, 1,000 runs/mo included' },
+  { id: 'space.automation', label: 'Automation', desc: 'Rules and drip sequences over your own contacts.', Icon: Workflow, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/settings/automation`, order: 36, tier: 'primary', priority: 16, access: 'premium', parent: 'space.people', freeNote: 'On Business, 1,000 runs/mo included' },
   // Reviews is a gateable feature keyed on the `reviews` function: the member rating and review wall on the
   // public profile. Default ON (only an explicit `false` hides it); we recommend keeping it on to build trust.
   // A TOOL inside Profile and Settings (ADR-846): the wall is part of how the space presents itself, and its

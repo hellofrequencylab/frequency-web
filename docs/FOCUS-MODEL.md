@@ -24,7 +24,7 @@ Three things are true, all measured, none of them obvious:
 
 | # | Finding | Evidence |
 |---|---|---|
-| 1 | **The marketing says Collective; the app says Quest.** 0 of 13 home blocks mention the game. Inside, the game holds 5 of 16 rail rows, 1 of 5 mobile tabs, the raised centre button, the entire feed hero, and a permanent Vault dock. | `lib/page-editor/templates/home.ts:63`, `lib/nav-areas.ts:120-134`, `components/layout/app-shell.tsx:1572-1610`, `app/(main)/feed/page.tsx:245-270` |
+| 1 | **The marketing says Collective; the app says Quest.** 0 of 13 home blocks mention the game. Inside, the game holds 5 of 16 rail rows, 1 of 5 mobile tabs, the raised centre button, the entire feed hero, and a permanent Vault dock. | `lib/page-editor/templates/home.ts:63`, `lib/nav-areas.ts:120-134`, `components/layout/app-shell-mobile.tsx`, `app/(main)/feed/page.tsx:245-270` |
 | 2 | **The revenue model the owner wants is ~85% built and dark.** Paid tiers → Stripe Connect subscription → webhook → automatic circle membership all exist, and as of 2026-09-08 the rails are **proven**: live payouts went live and one real webhook event closed `OWN-050`. What still stops it is one thing, not two: it is walled behind a $29/mo plan the operator must buy first. | `lib/billing/space-membership-checkout.ts`, `lib/spaces/tier-circle.ts`, [ADR-1291](DECISIONS.md), `lib/pricing/gates.ts:144` |
 | 3 | **"Communities run their own program" is an accepted ADR that was never sequenced.** [ADR-252](DECISIONS.md) already ruled Journeys are group-coaching programs a Circle moves through together. The engine exists: `journey_runs` + cohort meter + drip + kickoff event. | `supabase/migrations/20260621000000_journeys_v2.sql`, `lib/journeys/cohort.ts`, `components/journey/v2/cohort-meter.tsx` |
 
@@ -72,7 +72,7 @@ gather everyone else."* Thirteen blocks: none about the Quest. `/the-quest` is o
 | Surface | Game share | Cite |
 |---|---|---|
 | Left rail | "The Quest" section = **5 of 16** member-visible rows | `lib/nav-areas.ts:120-134` |
-| Mobile spine | **1 of 5** tabs, plus the raised centre button labelled **Zap** | `lib/nav/registry.ts:621-657`; `app-shell.tsx:1572-1610` |
+| Mobile spine | **1 of 5** tabs, plus the raised centre button labelled **Zap** | `lib/nav/registry.ts:621-657`; `components/layout/app-shell-mobile.tsx` |
 | Feed hero | `JourneyBoard` / `PracticePrompt`, props are **entirely game state**; plus two celebration modules | `app/(main)/feed/page.tsx:228-270` |
 | Right rail | "Your Quest" next-step panel + Frequency Signature dial + a permanent Vault dock | `right-sidebar.tsx:289-361`, `app/(main)/layout.tsx:561` |
 | Layout catalog | **46 of 144** assignable modules are game-owned | `lib/widgets/modules.ts` |
@@ -169,7 +169,7 @@ That is exactly the primitive the owner is asking for, and it is already the rul
 | **No gated content except events.** Closed as LIVE-427 / ADR-1476. `journey_plans.space_tier_id` is the optional enrol gate. Visibility is still who can find it. Parent LIVE-411 stays open. | `lib/journeys/tier-gate.ts` |
 | **Space discussion is the Space Circle feed.** The door is `/spaces/<slug>/discussion` (LIVE-421, [ADR-1469](DECISIONS.md)). Posts stay `scope_circle_id`. A fourth `scope_space_id` was rejected. | `app/(main)/spaces/[slug]/(profile)/discussion/page.tsx` |
 | **No member directory.** Closed 2026-09-19 as LIVE-420 / ADR-1471. `space.people` is still the *staff* roster. Paying members now have `/spaces/<slug>/people`, visible to active members and managers. | `app/(main)/spaces/[slug]/(profile)/people/page.tsx` |
-| **Enrollment takes no money**, and Space analytics is QR-scan-shaped, with no completion, retention or revenue readout. | Closed for the completion/revenue half: Home already showed `spaceEarningsSummary`; LIVE-422 / ADR-1470 adds who started and finished this Space's Journeys (`lib/spaces/completion-analytics.ts`). QR scans stay on QR codes and insights. |
+| **Enrollment takes no money**, and Space analytics is QR-scan-shaped, with no completion, retention or revenue readout. | Closed for the completion/revenue half: Home already showed `spaceEarningsSummary` (orders, tickets, and LIVE-431 / ADR-1480 gifts to the fund); LIVE-422 / ADR-1470 adds who started and finished this Space's Journeys (`lib/spaces/completion-analytics.ts`). QR scans stay on QR codes and insights. |
 
 **Practice authoring is Crew-gated** (`app/(main)/practices/create-actions.ts:43-54`), which under a
 "free for individuals" ruling should go.
@@ -204,11 +204,13 @@ Flags read live: `billing_live = true` (since 2026-07-21), `host_payouts_enabled
    still true: **no payment event has ever arrived, because nothing has ever been sold.**
 2. ✅ **The member-facing "my memberships" surface shipped as LIVE-423 / ADR-1472.** Settings →
    Memberships lists the viewer's open `space_memberships` (active and waitlist). Cancel reuses
-   `cancelMembership`. ROOT never lists. `payment_status` is still not enforced; that is the
-   remaining dunning hole, not this list.
-3. **`payment_status` is never enforced.** Both the RLS helper and the app predicate read `status`
-   only, and nothing flips it, so a `past_due` member keeps circle access forever. Dunning covers the
-   platform's own Crew subscription and not Space memberships.
+   `cancelMembership`. ROOT never lists.
+3. **`payment_status` is written and now shown (LIVE-429 / ADR-1478), but it is still not an access
+   gate.** The RLS helper and `isSpacePaidMember` read `status` only, so a `past_due` member keeps
+   Circle access while Stripe retries. That grace is ADR-1092: a free join is often `status=active`
+   with `payment_status=pending`. Crew dunning stays on Settings Plan. Space dues now appear on the
+   Space join card, the host member list, and Settings Plan and billing. A later ruling can turn the
+   column into a lock.
 4. **The wall is in the wrong place.** See below.
 
 ### The contradiction

@@ -1,8 +1,9 @@
 import { monthKey, safeMonth } from './month-window'
 
 // ADMIN CALENDAR VIEWS (ADR-1464, ADR-1467). Daniel's five views on one Space Calendar tab.
-// Order on the control: Guest, Admin, List, Timeline, Projects. Guest and Admin stay the
-// two existing grids. List, Timeline, and Projects are additional operator views. The URL
+// Order on the control: Guest, Admin, List, Timeline, Projects. Guest and Admin are the
+// same sliding month. Admin feeds StaffCalendar the private layer Guest never sees.
+// List, Timeline, and Projects are additional operator views. The URL
 // keeps `?view=guest` (ADR-1389) and adds list / timeline / projects. Default (no view, no
 // cookie) is Admin for a manager. Operators switch client-side; the last view is remembered.
 
@@ -23,12 +24,12 @@ export const CALENDAR_ADMIN_VIEW_DEFS: readonly {
   {
     view: 'admin',
     label: 'Admin',
-    blurb: 'What is penciled, in planning, in production, and cancelled. The month is the date map.',
+    blurb: 'The same month as Guest, with every draft, pencil, private date, and unpublished gathering your team can see.',
   },
   {
     view: 'list',
     label: 'List',
-    blurb: 'Pick a gathering on the left. A truncated card with its stats opens on the right.',
+    blurb: 'Pick a gathering on the left. The right pane is the control console for that event.',
   },
   {
     view: 'timeline',

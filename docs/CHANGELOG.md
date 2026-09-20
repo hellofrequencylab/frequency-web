@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **If a Space membership payment fails, you see it.** The Space still counts you as a member. Settings, Plan and billing, names the Space. The host sees Payment failed on that member.
+
 - **Spaces you belong to now live on Settings → Memberships.** Open one from there, or leave it. The Frequency plan stays under Plan and billing.
 
 - **If you belong to a Space, you can see the other members.** Open People on that Space. Visitors who have not joined see a join door, not the list.
@@ -28,13 +30,21 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 - **If you run a Space, the seat counter no longer says team roles come with the Collective plan.** Extra seats are on Plan and billing. Members stay free.
 
+- **If you run a Space, Home's last-30-days revenue now includes gifts to your fund.** Shop orders and tickets were already in that number.
+
+- **Hosting other businesses on your Space, or on your event, is no longer described as a Collective plan feature.** That door opens at Business. The invite, the accept, and the locked preview name the same rule as the plan map.
+
+- **If you run a Space, you can include a Circle with a membership on any plan.** Set Who can join to Included with a membership. A payout account is what starts the money. Campaigns and funnels still open at Business.
+
+- **Automations come with Business, not a leftover Collective plan.** If your Space is on Free, the lock screen names Business. Sequences and rules still run the same way once you are on that plan.
+
 - **Reserving a ticket for your members is no longer described as a Collective plan feature.** Every plan can do that. The ticket editor and Event access name the same rule as the memberships floor. A payout account is what starts the money.
 
 - **Help no longer says you need the Business plan to sell memberships or to reserve tickets for your members.** Every plan can sell those. A payout account is what starts the money. Campaigns and funnels still open at Business.
 
 - **If you sell a Journey from a Space you run, Sell this Journey now asks for a payout account when the Space cannot take money yet.** You can still set the price. The money lands once that account is ready.
 
-- **If you run a Space, its Calendar tab slides between Guest, Admin, List, Timeline, and Projects.** Guest is first in the control. List is a gathering list on the left and a short stats card on the right, not the event editor. The tab remembers the last view you used.
+- **If you run a Space, its Calendar tab slides between Guest, Admin, List, Timeline, and Projects.** Guest is first in the control. Admin is the same month as Guest, with every date your team can see. List is a slim gathering list on the left and a control console on the right (stage pill next to the title, share links, stats). Not the event editor. The tab remembers the last view you used.
 
 - **If you run a Space, you can keep a Plan behind the dates on its calendar.** Start one from a penciled date or from Calendar settings. Open it for notes and to-dos. When you are ready, Make it a Production opens the same new-event form, already filled in. A cancelled gathering stays a muted note. Guest still sees live events only.
 
@@ -44,7 +54,7 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 - **A cancelled gathering on a Space calendar is a small note at the bottom of that day**, not a crossed-out chip. Live events stay on the grid. Dates that are only penciled or still in planning stay off the public calendar.
 
-- **If you run a Space, Admin on its Calendar tab is the production board.** Pencil and Planning are their own lanes. Production and Cancelled stay on the board. The month grid is the date map underneath. Guest is still what visitors see.
+- **If you run a Space, Admin on its Calendar tab is the same month grid as Guest**, plus drafts, pencils, and other team-only dates. Stage columns live on the Projects view. Guest is still what visitors see.
 
 - **A repeating event counts as one gathering on a free membership**, not one per date. Crew is still unlimited. The message when you are at the free cap no longer says a series is a Crew perk.
 

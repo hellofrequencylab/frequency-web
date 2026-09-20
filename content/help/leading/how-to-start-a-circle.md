@@ -4,7 +4,7 @@ description: Pick one thing, set a standing time, recruit a co-host, and run a s
 category: leading
 order: 1
 published: 2026-06-23
-updated: 2026-09-10
+updated: 2026-09-20
 audience: host
 role: host
 featureKeys: [circles, events]
@@ -179,7 +179,8 @@ all three, but anyone you send the link to can still open it.
 - **By invite only** means a link or a QR code is the only way in.
 - Circles a Space owns get three more: **Space team only** for the people who help
   run the Space, **Space members only** for anyone with an active membership in it,
-  and **Included with a membership** if that Space sells one.
+  and **Included with a membership** if that Space sells one. Every plan can sell
+  a membership. A payout account is what starts the money.
 
 The useful pairing most Hosts miss: leave the Circle **listed** and set who can
 join to **Members only**. Strangers find it by name, read what it is about, and ask
