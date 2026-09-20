@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1475**. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is claimed by LIVE-421. 1472 is claimed by LIVE-423. 1473 is claimed by LIVE-424.
+tree as of this index: **ADR-1476**. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is claimed by LIVE-421. 1472 is claimed by LIVE-423. 1473 is claimed by LIVE-424.
 
 | Theme | Start here |
 |---|---|
@@ -46834,3 +46834,24 @@ Premise re-tested 2026-09-20: `FEATURE_GATES.space_memberships.minEntitlement` i
 **Consequences.** A later help sentence that says selling memberships or member tickets needs Business fails the LIVE-426 probe. `/pricing` and `llms.txt` already read `paidWalls()` and do not name that wall.
 
 **Rows.** LIVE-426.
+
+## ADR-1476: Circle `tier` access follows the free membership floor (LIVE-427)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-427` · numbered **1476** because **1475** is LIVE-426 · extends [ADR-1415](DECISIONS.md) (LIVE-410) · is the later ruling [ADR-1475](DECISIONS.md) deferred · corroborated by `lib/circles/visibility.ts` (`spaceCanSell`) and `supabase/migrations/20270345006800_circle_tier_follows_membership_floor.sql`
+
+**Context.** ADR-1415 let a free Space sell memberships. Connect readiness is the checkout door. Circle `access = 'tier'` and a priced membership tier linked to a Circle still required `private.space_can_sell`, a Business+ plan list. A free host could take the money and could not include the room. ADR-1475 left that wall in place so a help-only pass would not also rewrite the trigger.
+
+Premise re-tested 2026-09-20: `FEATURE_GATES.space_memberships.minEntitlement` is `free`. `availableAccessModes` hid `tier` from a free Space. `CIRCLE_ACCESS_LIMIT_NOTE` said selling a tier comes with the Business plan. Both triggers still raised a plan floor.
+
+**Decision.**
+
+1. **A real Space may include a Circle with a membership.** `private.space_can_sell` is true when the Space is not the root sentinel. Plan is not the door.
+2. **The two triggers drop the plan floor.** `circle_access_needs_space` and `circle_link_cross_tenant` stay. A personal Circle still cannot sell.
+3. **The picker matches the trigger.** A free Space is offered `tier`. The limit note no longer names Business.
+4. **Checkout still refuses when Connect is not payout-ready.** That is LIVE-233 / LIVE-339, not this wall.
+
+**Rejected.** Leaving Circle delivery on Business after memberships moved to free. Closing LIVE-411 from this leftover. Changing Journey selling (ADR-1397 still needs a paid Space).
+
+**Consequences.** A later `space_can_sell` that ranks on a plan list, or a shape trigger that raises `circle_access_plan_floor` again, fails the LIVE-427 probe. Campaigns stay at Business.
+
+**Rows.** LIVE-427.

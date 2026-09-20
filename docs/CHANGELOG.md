@@ -20,6 +20,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **If you run a Space, you can include a Circle with a membership on any plan.** Set Who can join to Included with a membership. A payout account is what starts the money. Campaigns and funnels still open at Business.
+
 - **Help no longer says you need the Business plan to sell memberships or to reserve tickets for your members.** Every plan can sell those. A payout account is what starts the money. Campaigns and funnels still open at Business.
 
 - **If you sell a Journey from a Space you run, Sell this Journey now asks for a payout account when the Space cannot take money yet.** You can still set the price. The money lands once that account is ready.
