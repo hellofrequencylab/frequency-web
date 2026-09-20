@@ -85,7 +85,6 @@ export default async function SpaceCalendarPage({
     return (
       <CalendarWorkspace
         slug={slug}
-        spaceId={space.id}
         brandName={brandName}
         adminAllowed={false}
         canManage={false}
@@ -121,7 +120,6 @@ export default async function SpaceCalendarPage({
   return (
     <CalendarWorkspace
       slug={slug}
-      spaceId={space.id}
       brandName={brandName}
       adminAllowed
       canManage={canManage}

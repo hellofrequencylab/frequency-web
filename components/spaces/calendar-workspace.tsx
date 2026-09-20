@@ -28,7 +28,6 @@ import type { DayNote } from '@/lib/calendar/day-notes'
 
 export function CalendarWorkspace({
   slug,
-  spaceId,
   brandName,
   adminAllowed,
   canManage,
@@ -47,7 +46,6 @@ export function CalendarWorkspace({
   loadGuestMonth,
 }: {
   slug: string
-  spaceId: string
   brandName: string
   adminAllowed: boolean
   canManage: boolean
@@ -184,7 +182,6 @@ export function CalendarWorkspace({
                   <CalendarPmConsole events={adminEvents}>
                     <StaffCalendar
                       slug={slug}
-                      spaceId={spaceId}
                       events={adminEvents}
                       initialYear={initialYear}
                       initialMonth1={initialMonth1}
