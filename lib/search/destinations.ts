@@ -86,6 +86,13 @@ const CURATED: Destination[] = [
   // ── Personal pages (not nav areas) ──
   { href: '/settings', label: 'Settings', group: 'You', surface: 'settings', keywords: ['settings', 'account', 'preferences'] },
   { href: '/settings/billing', label: 'Billing', group: 'You', surface: 'settings', keywords: ['billing', 'payment method', 'subscription', 'plan', 'invoices'] },
+  {
+    href: '/settings#memberships',
+    label: 'Memberships',
+    group: 'You',
+    surface: 'settings',
+    keywords: ['memberships', 'space membership', 'communities you belong to', 'cancel membership'],
+  },
 ]
 
 // Derive the bulk from the canonical nav catalog. Every nav area becomes a searchable
