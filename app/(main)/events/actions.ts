@@ -27,6 +27,7 @@ import { resolveSubmittedRepeat, validateRecurrenceUntil } from '@/lib/events/re
 import { resolveRegionScopeId } from '@/lib/events/event-drafts'
 import { listSpaceEventCreatorIds, journeyLinkPatch } from '@/lib/events/placement'
 import { canEditJourney } from '@/lib/journeys/authoring'
+import { deleteCalendarEntryRow } from '@/lib/calendar/entries-store'
 import { cancelAudit } from '@/lib/events/event-lifecycle'
 import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
@@ -505,13 +506,14 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
           // space_id is newer than the generated DB types — cast the payload to reach the column
           // (ADR-246); omit when the root row is missing (the backfill sweeps the NULL to root).
           ...(spaceId ? { space_id: spaceId } : {}),
-          // HOSTING ENTITY: an event created under a space is HOSTED by that space (billed + displayed
-          // host; registrations and ticket money route through it). host_id stays the personal operator
-          // axis (edit rights, notifications). Distinct from space_id, which is pure tenancy/placement.
           ...(scopeChoice === 'space' && spaceIdForPlacement ? { host_space_id: spaceIdForPlacement } : {}),
-          // The Journey association (journey_id), authorized above. Empty when the form sent no link,
-          // so this is the only place the column is touched on create and it can never carry a scope.
           ...journeyLink.patch,
+          ...((() => {
+            const planId = (formData.get('planId') as string | null)?.trim() || ''
+            return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(planId)
+              ? { plan_id: planId }
+              : {}
+          })()),
         } as never).select('id').single()
       if (error || !row) {
         console.error('createEvent error', error)
@@ -528,6 +530,13 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   // its address columns + geog already set.
   if (inserted) {
     await geocodeEventOnCreate(inserted.id, formData)
+    const pencilId = (formData.get('pencilId') as string | null)?.trim() || ''
+    if (
+      spaceId &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pencilId)
+    ) {
+      await deleteCalendarEntryRow(spaceId, pencilId)
+    }
   }
 
   // For recurring events, materialise the first batch of occurrences right

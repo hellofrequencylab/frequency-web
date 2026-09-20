@@ -187,6 +187,9 @@
 # knows, which is what keeps this entry five narrow files instead of one wide one.
 # Added 2026-09-15 (ADR-1372, member benefits): lib/spaces/benefits-store.ts. The sibling of
 # lib/spaces/memberships.ts, which is on this list for the same reason and reads the same subsystem.
+# Added 2026-09-20 (ADR-1472, LIVE-423): lib/spaces/my-memberships.ts. space_memberships
+# is owner-shaped RLS; the member list is the caller's own rows. Same posture as
+# lib/spaces/memberships.ts.
 # Added 2026-09-19 (LIVE-420, ADR-1471): lib/spaces/member-directory.ts. space_memberships is
 # RLS-on with owner-shaped policies; the People tab must list the whole active roster to an
 # active member. A session client cannot see another member's row. The app-layer gate is the
@@ -199,6 +202,10 @@
 # Converging this onto the session client is not an effort question, it would mean giving pricing
 # rules and a redemption ledger client-readable policies. The write re-gates canEditProfile plus the
 # per-Space memberships function gate before it touches a row.
+# Added 2026-09-20 (LIVE-421, ADR-1469): lib/spaces/space-discussion.ts. Looks up the live Space
+# Circle the same way the Circles tab already does (admin client, fail-closed). The app-layer
+# gate is the door: ROOT never, visitors only when the hub is on, managers keep the tab to
+# turn it on. A session client cannot see another Space's primary circle row under RLS.
 # Added 2026-09-17 (ADR-1397, selling a Journey). Five files, and the reason is one table:
 #                                     CALLER through getSpaceCapabilities before it answers
 #                                     all: the caller is Stripe, and it must write an enrolment
@@ -213,8 +220,17 @@
 #   lib/journeys/free-enrol-gate.ts   the same count at the free door, plus the price lookup
 #   lib/journeys/paid.ts              counts live enrolments against enroll_cap for the seat line
 #   lib/journeys/sell-gate.ts         reads journey_plans to resolve the owning Space; same posture
+#   lib/journeys/tier-gate.ts         LIVE-411 / ADR-1470: reads journey_plans.space_tier_id and
+#                                     the viewer's space_memberships row so both enrol doors can
+#                                     refuse a guest or the wrong tier. A session client cannot
+#                                     see another member's row, and a guest has no session that
+#                                     can read the gate; fail-closed still needs the lookup.
 #   opposite of what selling access needs.
 #   question this feature asks -- how many seats are left, are you in, put this buyer in -- has to
+# Added 2026-09-20 (ADR-1470, LIVE-422). lib/spaces/completion-analytics.ts reads
+# journey_enrollments (RLS-on, zero policies, same reason as the Journey sell files
+# above) and space_memberships (same reason as lib/spaces/memberships.ts). Home
+# already gated the caller. A session client cannot count enrollments it cannot see.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -445,6 +461,7 @@ app/api/wallet/google/route.ts
 app/api/webhooks/resend/route.ts
 app/api/webhooks/stripe/route.ts
 app/api/zap-prompt/route.ts
+app/calendar/private/[token]/route.ts
 app/events/[slug]/event.ics/route.ts
 app/events/calendar.ics/route.ts
 app/events/calendar/[token]/route.ts
@@ -773,6 +790,7 @@ lib/journeys/publish-gate.ts
 lib/journeys/run-gate.ts
 lib/journeys/runs.ts
 lib/journeys/sell-gate.ts
+lib/journeys/tier-gate.ts
 lib/keystone/store.ts
 lib/layout/chrome-sources.ts
 lib/layout/content-cascade.ts
@@ -932,6 +950,7 @@ lib/spaces/member-directory.ts
 lib/spaces/member-segment-audience.ts
 lib/spaces/membership.ts
 lib/spaces/memberships.ts
+lib/spaces/my-memberships.ts
 lib/spaces/nonprofit-verification.ts
 lib/spaces/operated.ts
 lib/spaces/profile-settings.ts
@@ -939,6 +958,7 @@ lib/spaces/provision.ts
 lib/spaces/resonance-roster.ts
 lib/spaces/seats.ts
 lib/spaces/segments.ts
+lib/spaces/space-discussion.ts
 lib/spaces/standing-rollup.ts
 lib/spaces/store.ts
 lib/spaces/tagline.ts

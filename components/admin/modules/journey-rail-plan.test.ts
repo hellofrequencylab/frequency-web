@@ -58,6 +58,7 @@ describe('the Journey rail plan', () => {
       'tags',
       'daily_minutes',
       'enroll_cap',
+      'space_tier_id',
     ])
     expect(JOURNEY_RAIL.meeting.fields.map((f) => f.path)).toEqual([
       ...TOUCHPOINT.map((k) => `meeting.${k}`),
@@ -116,7 +117,7 @@ describe('the Journey rail plan', () => {
       fields: JOURNEY_MANIFEST.fields.map((f) => (f.path === 'tags' ? { ...f, placement: 'spark' as const } : f)),
     }
     const form = railForm(moved, JOURNEY_ATTRIBUTE_WRITES)
-    expect(form.fields.map((f) => f.path)).toEqual(['difficulty', 'category', 'daily_minutes', 'enroll_cap'])
+    expect(form.fields.map((f) => f.path)).toEqual(['difficulty', 'category', 'daily_minutes', 'enroll_cap', 'space_tier_id'])
     expect(form.dropped).toEqual([{ path: 'tags', reason: 'spark-only' }])
   })
 })
@@ -192,6 +193,7 @@ describe('the rail reads the row by manifest path, and writes each action its ow
       tags: ['sleep', 'calm'],
       dailyMinutes: 15,
       enrollCap: null,
+      spaceTierId: null,
     })
   })
 

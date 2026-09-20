@@ -296,8 +296,6 @@ describe('SOURCE SHAPE: gating seams read featureGatesLive, charging seams read 
     '../spaces/seats.ts',
     '../spaces/provision.ts',
     '../ai/vera/usage-gate.ts',
-    '../events/ticket-tiers.ts',
-    '../events/space-event-access.ts',
     '../events/ticket-space-access.ts',
     // 🔴 './gamification-access.ts' WAS HERE and left the list because it stopped being a gating
     // seam, not because the guard was inconvenient (ADR-1295, owner ruling 2026-09-09, OWN-071).
@@ -329,6 +327,17 @@ describe('SOURCE SHAPE: gating seams read featureGatesLive, charging seams read 
     expect(src).toContain('featureGatesLive')
     expect(src).not.toMatch(/\bbillingLive\b/)
   })
+
+  // LIVE-428: these two used to call featureGatesLive themselves. They now ask the shared
+  // membership-ticket seam, which is the file above. Still must never read the charging switch.
+  it.each(['../events/ticket-tiers.ts', '../events/space-event-access.ts'])(
+    '%s gates through resolveMembershipTicketGate and never on billingLive',
+    (rel) => {
+      const src = codeOnly(read(rel))
+      expect(src).toContain('resolveMembershipTicketGate')
+      expect(src).not.toMatch(/\bbillingLive\b/)
+    },
+  )
 
   it.each(CHARGING_SEAMS)('%s charges on billingLive and never on featureGatesLive', (rel) => {
     const src = codeOnly(read(rel))

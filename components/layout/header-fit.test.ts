@@ -46,6 +46,7 @@ const read = (p: string) => readFileSync(new URL(p, import.meta.url), 'utf8')
 const MARKETING = read('./marketing-header.tsx')
 const SITE = read('./site-header.tsx')
 const SHELL = read('./app-shell.tsx')
+const TAB_BAR = read('./app-shell-mobile.tsx')
 const BRAND = read('./brand-mark.tsx')
 const MOBILE_MENU = read('./marketing-mobile-menu.tsx')
 const USER_MENU = read('./user-menu.tsx')
@@ -250,29 +251,29 @@ describe('MobileTabBar: five equal fifths, whatever the labels say', () => {
   // to 319px on a 320px screen. HYG-033 cuts the bar to five (Menu · Feed · Zap · Events ·
   // Marketplace); five equal slots at 320px are 64px, which is the line Marketplace sits on.
   it('lets every tab shrink to its share', () => {
-    expect(SHELL).toContain('flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-medium transition-colors')
+    expect(TAB_BAR).toContain('flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-medium transition-colors')
   })
 
   it('lets Menu and Zap shrink too, so the row stays uniform', () => {
-    expect(SHELL).toContain("'flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-medium text-muted")
-    expect(SHELL).toContain('relative flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-semibold')
+    expect(TAB_BAR).toContain("'flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-medium text-muted")
+    expect(TAB_BAR).toContain('relative flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-semibold')
   })
 
   it('clips a long label to one line instead of wrapping or overflowing', () => {
-    const labels = SHELL.match(/className="w-full truncate text-center leading-none"/g) ?? []
+    const labels = TAB_BAR.match(/className="w-full truncate text-center leading-none"/g) ?? []
     // Menu, Zap, and the shared destination-tab renderer.
     expect(labels.length).toBeGreaterThanOrEqual(3)
   })
 
   it('never lets an icon absorb the shrink — the glyph is what a thumb aims at', () => {
-    const icons = SHELL.match(/h-\[22px\] w-\[22px\] shrink-0/g) ?? []
+    const icons = TAB_BAR.match(/h-\[22px\] w-\[22px\] shrink-0/g) ?? []
     expect(icons.length).toBeGreaterThanOrEqual(3)
   })
 
   it('splits destinations around Zap from the live tab count, not a leftover seven-slot slice', () => {
-    expect(SHELL).toContain('tabs.slice(0, Math.floor(tabs.length / 2))')
-    expect(SHELL).toContain('tabs.slice(Math.floor(tabs.length / 2))')
-    expect(SHELL).not.toMatch(/tabs\.slice\(0, 2\)/)
+    expect(TAB_BAR).toContain('tabs.slice(0, Math.floor(tabs.length / 2))')
+    expect(TAB_BAR).toContain('tabs.slice(Math.floor(tabs.length / 2))')
+    expect(TAB_BAR).not.toMatch(/tabs\.slice\(0, 2\)/)
   })
 })
 
@@ -290,8 +291,8 @@ describe('MobileTabBar: 320px label-fit (HYG-033)', () => {
   }
 
   it('is still text-3xs on every caption, so the 10px budget is the one we measured', () => {
-    expect(SHELL).toContain('text-3xs font-medium')
-    expect(SHELL).toContain('text-3xs font-semibold')
+    expect(TAB_BAR).toContain('text-3xs font-medium')
+    expect(TAB_BAR).toContain('text-3xs font-semibold')
   })
 
   it('keeps every ruled caption inside a fifth of 320px', () => {

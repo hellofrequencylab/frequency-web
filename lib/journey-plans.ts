@@ -94,6 +94,8 @@ export interface JourneyPlan {
   drip_interval_days: number
   /** Show a printable certificate on Journey completion. ADR-252. */
   certificate_enabled: boolean
+  /** Optional Space membership tier that may enrol (LIVE-411). Null = anyone who clears the other doors. */
+  space_tier_id?: string | null
   /** Meeting / format details: how a Circle gathers around the Journey. Defaults to {} (jsonb). */
   meeting: JourneyMeeting
 }
@@ -152,7 +154,7 @@ const PLAN_COLS =
   'id, slug, title, summary, intro, emoji, accent, author_id, space_id, visibility, fork_of, ' +
   'forked_count, adopt_count, cover_image, cover_focus, logo_image, header_overlay_style, header_overlay_color, created_at, updated_at, published_at, ' +
   'quest_id, official, window_starts_at, window_ends_at, status, page_config, completion_gems, ' +
-  'drip_interval_days, certificate_enabled, difficulty, category, tags, daily_minutes, enroll_cap, meeting'
+  'drip_interval_days, certificate_enabled, difficulty, category, tags, daily_minutes, enroll_cap, space_tier_id, meeting'
 
 const ITEM_COLS =
   'id, plan_id, practice_id, domain_id, sort_order, note, cadence, ' +
@@ -1140,6 +1142,7 @@ export async function duplicatePlan(profileId: string, planId: string): Promise<
         tags: string[] | null
         daily_minutes: number | null
         enroll_cap: number | null
+        space_tier_id: string | null
         source_overview: string | null
       })
     | null
@@ -1172,6 +1175,7 @@ export async function duplicatePlan(profileId: string, planId: string): Promise<
       tags: src.tags,
       daily_minutes: src.daily_minutes,
       enroll_cap: src.enroll_cap,
+      space_tier_id: src.space_tier_id,
       source_overview: src.source_overview,
       meeting: src.meeting,
     })

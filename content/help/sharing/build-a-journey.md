@@ -83,6 +83,8 @@ Everything else sits in the **settings panel** on the right:
 - **What visitors see.** Under Advanced you can show, hide, and reorder the story, the path, and
   the pillar balance. The path always stays on. How many people have started, and the Gems for
   finishing, stay in the header.
+- **Members of this tier.** If the Journey belongs to a Space, you can pick one membership so
+  only those members can start or buy it. Leave it on Anyone and the other doors still apply.
 - **Who can see it**, the rest of the advanced bits, and a **Danger zone** if you ever need to
   delete the Journey. Guides and Mentors can mark a Journey **official** and attach it to a Season
   here.

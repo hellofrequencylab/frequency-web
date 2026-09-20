@@ -12,7 +12,13 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Spaces you belong to now live on Settings → Memberships.** Open one from there, or leave it. The Frequency plan stays under Plan and billing.
+
 - **If you belong to a Space, you can see the other members.** Open People on that Space. Visitors who have not joined see a join door, not the list.
+
+- **You can keep a Journey for one Space membership.** In settings, pick the tier. People who are not in that membership see a join link instead of Start or Get access.
+
+- **A Space has a Discussion tab.** When that Space's Circle is on, people who can see the Space can talk there. Comments sit under each post. If the Circle is off, only the people who run the Space see the tab, so they can turn it on.
 
 - **You can list what people will learn on a Journey.** Add the outcomes in settings, one line each. Visitors see that list next to the story, not a repeat of the one-line promise.
 
@@ -22,11 +28,17 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 - **If you run a Space, you can include a Circle with a membership on any plan.** Set Who can join to Included with a membership. A payout account is what starts the money. Campaigns and funnels still open at Business.
 
+- **Automations come with Business, not a leftover Collective plan.** If your Space is on Free, the lock screen names Business. Sequences and rules still run the same way once you are on that plan.
+
+- **Reserving a ticket for your members is no longer described as a Collective plan feature.** Every plan can do that. The ticket editor and Event access name the same rule as the memberships floor. A payout account is what starts the money.
+
 - **Help no longer says you need the Business plan to sell memberships or to reserve tickets for your members.** Every plan can sell those. A payout account is what starts the money. Campaigns and funnels still open at Business.
 
 - **If you sell a Journey from a Space you run, Sell this Journey now asks for a payout account when the Space cannot take money yet.** You can still set the price. The money lands once that account is ready.
 
 - **If you run a Space, its Calendar tab slides between Guest, Admin, List, Timeline, and Projects.** Guest is first in the control. List is a gathering list on the left and a short stats card on the right, not the event editor. The tab remembers the last view you used.
+
+- **If you run a Space, you can keep a Plan behind the dates on its calendar.** Start one from a penciled date or from Calendar settings. Open it for notes and to-dos. When you are ready, Make it a Production opens the same new-event form, already filled in. A cancelled gathering stays a muted note. Guest still sees live events only.
 
 - **A Space calendar with nothing published says so in the same empty pattern as the rest of the site**, and it does not claim the month is empty when a cancelled gathering or Unavailable time is already on the grid. Cancelled stays a muted note at the bottom of the day, and the same note under that month in the list. The calendar can be focused: arrows step a month, Escape closes the jump panel.
 
