@@ -15107,6 +15107,25 @@
         "note": "Passes when both enrol doors call checkJourneyTier, the manifest declares space_tier_id, and the migration file is present."
       },
       "closed": "2026-09-20"
+    },
+    {
+      "id": "LIVE-424",
+      "title": "A Journey has no fourth audience: members of one Space membership",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/journeys/tier-gate.ts",
+        "ref": "ADR-1473; LIVE-411 leftover; migration 20270345006600 already on main"
+      },
+      "detail": "FILED 2026-09-20 from the LIVE-411 re-test. FOCUS-MODEL Q5 said only events carried space_tier_id. The column already shipped on main so the ledger matched production. Types, the settings rail, and both enrol doors did not read it.\n\nCLOSED 2026-09-20 (ADR-1473). PREMISE RE-TESTED FIRST: 20270345006600 exists; checkFreeEnrol and createCommerceCheckout did not call a tier helper; JOURNEY_MANIFEST had no space_tier_id. journeyTierGateError is the one comparison. Waitlist is not a membership. Authors and managers skip it. Both doors call checkJourneyTier. The rail writes space_tier_id only when the tier belongs to the Journey's Space. The page hides Start and Get access and shows a join link. No new migration. Did not close LIVE-411 (discussion stays LIVE-421). Did not add posts.scope_space_id.\n\nREBASED 2026-09-20 onto LIVE-427. The named-tier gate already shipped as LIVE-427 / ADR-1476. This row keeps the already-enrolled skip on the free door (LIVE-424 / ADR-1473) so a member already in does not hit the join wall.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const need=(p,s)=>{if(!fs.readFileSync(p,\"utf8\").includes(s))fail(p+\" missing \"+s)};need(\"lib/journeys/tier-gate.ts\",\"journeyTierGateError\");need(\"lib/journeys/tier-gate.ts\",\"active\");need(\"lib/journeys/free-enrol-gate.ts\",\"checkJourneyTier\");need(\"lib/journeys/free-enrol-gate.ts\",\"membership gate is not their door\");need(\"lib/commerce/checkout.ts\",\"checkJourneyTier\");need(\"lib/studio/entities/journey.ts\",\"space_tier_id\");need(\"app/(main)/journeys/actions.ts\",\"spaceTierId\");need(\"app/(main)/journeys/actions.ts\",\"That membership is not one of this Space\");need(\"app/(main)/journeys/[slug]/page.tsx\",\"checkJourneyTier\");need(\"app/(main)/journeys/[slug]/page.tsx\",\"tierGate\");if(!fs.existsSync(\"lib/journeys/tier-gate.test.ts\"))fail(\"the tier gate has no test\");console.log(\"LIVE-424 ok\")'",
+        "note": "Passes when both enrol doors call the same helper, the rail can set a Space-owned tier, and the visitor page shows a join instead of Start. Written 2026-09-20."
+      },
+      "closed": "2026-09-20"
     }
   ]
 }

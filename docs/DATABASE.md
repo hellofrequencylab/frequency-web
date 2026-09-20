@@ -110,7 +110,9 @@ ADR-201)
 > `journey_plan_adoptions.tier_override` (member), resolved member→circle→item→`adept`
 > (the middle-tier default; was `current`).
 > `journey_plans` gains `status` (review), `page_config` (JSONB widget layout),
-> `min_practices_per_day`, `target_weeks`, `season_locked`, `completion_gems`. Completion is
+> `min_practices_per_day`, `target_weeks`, `season_locked`, `completion_gems`.
+> `space_tier_id` (LIVE-424, `20270345006600`) is the optional Space membership
+> that may enrol; visibility stays who can find the Journey. Completion is
 > **derived** from `practice_logs` against the season's fixed 91-day / 13-week buckets
 > (`lib/journey-arc.ts`); no progress table; bonuses (Full Day / Weekly Rhythm / completion) fire
 > once via `reward_grants` (`lib/journey-grants.ts`). Full spec: [JOURNEYS.md](JOURNEYS.md).

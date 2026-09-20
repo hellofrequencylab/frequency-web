@@ -83,8 +83,9 @@ Everything else sits in the **settings panel** on the right:
 - **What visitors see.** Under Advanced you can show, hide, and reorder the story, the path, and
   the pillar balance. The path always stays on. How many people have started, and the Gems for
   finishing, stay in the header.
-- **Members of this tier.** If the Journey belongs to a Space, you can pick one membership so
-  only those members can start or buy it. Leave it on Anyone and the other doors still apply.
+- **Members of this tier.** If the Journey belongs to a Space, you can require one of that
+  Space's memberships before anyone starts or buys it. Leave it on Anyone and the other doors
+  still apply. People who are not in that membership see a join link instead of Start.
 - **Who can see it**, the rest of the advanced bits, and a **Danger zone** if you ever need to
   delete the Journey. Guides and Mentors can mark a Journey **official** and attach it to a Season
   here.
@@ -141,8 +142,6 @@ counts as one.
 A **paid Space** can put a price on a Journey from **Sell this Journey** in its settings. Leave
 **Also list it in the main Market** off to sell only from the Journey page and that Space's Shop.
 Turn it on to show the same offer in the Market too. There is still one price and one set of seats.
-If the Space cannot take money yet, that same panel asks the owner to add a payout account. It
-takes about two minutes. You can still set the price while that finishes.
 
 People who are not enrolled see the sales page (the story, the outline, the price, and any
 reviews). They see the lessons after they pay or, for a free Journey, after they start it.

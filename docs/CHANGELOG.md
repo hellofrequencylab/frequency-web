@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **A Journey can ask for one Space membership before anyone starts it.** Authors pick the membership in settings. People who are not in it see a join link instead of Start or Get access.
+
 - **If you belong to a Space, you can see the other members.** Open People on that Space. Visitors who have not joined see a join door, not the list.
 
 - **You can keep a Journey for one Space membership.** In settings, pick the tier. People who are not in that membership see a join link instead of Start or Get access.

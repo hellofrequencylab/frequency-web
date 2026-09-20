@@ -246,6 +246,17 @@ export const JOURNEY_MANIFEST: EntityManifest = {
       ],
     },
     { path: 'official', label: 'Official Journey', kind: 'toggle', section: 'publishing', veraDrafts: false },
+    // Who may enrol (LIVE-424). Visibility above is who can find it. Empty = anyone
+    // who clears the other doors. Options load from the owning Space's tiers.
+    {
+      path: 'space_tier_id',
+      label: 'Members of this tier',
+      kind: 'select',
+      section: 'discovery',
+      veraDrafts: false,
+      optionsFrom: 'spaceTiers',
+      read: (d) => str(d.space_tier_id),
+    },
   ],
 
   // Two repeated children. The weekly arc is still the Spark's creation payload (each week

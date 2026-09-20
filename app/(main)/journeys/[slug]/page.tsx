@@ -364,9 +364,18 @@ export default async function JourneyPlanPage({
               <p className="mb-3 text-body-sm font-semibold text-text">
                 Start it solo, or run it with your Circle.
               </p>
-              <a href="#enrol" className={buttonClasses('primary', 'md')}>
-                {offer ? `Get access · ${offer.priceLabel}` : 'Start this Journey'}
-              </a>
+              {tierGate ? (
+                <>
+                  <p className="mb-3 text-body-sm text-muted">{tierGate.reason}</p>
+                  <a href={tierGate.href ?? '#enrol'} className={buttonClasses('primary', 'md')}>
+                    Join the Space
+                  </a>
+                </>
+              ) : (
+                <a href="#enrol" className={buttonClasses('primary', 'md')}>
+                  {offer ? `Get access · ${offer.priceLabel}` : 'Start this Journey'}
+                </a>
+              )}
             </div>
           )}
         </div>

@@ -42,12 +42,26 @@ export async function checkFreeEnrol(
 
   if (offer && !opts.isOwner) return { ok: false, error: JOURNEY_NEEDS_PURCHASE_MESSAGE }
 
+  const admin = createAdminClient()
+  // adoptPlan is idempotent. An already-enrolled member is already in, so the
+  // membership gate is not their door (LIVE-424). A broken count must not skip
+  // the gate: fall through and let the fail-closed tier check speak.
+  try {
+    const { count: mine } = await admin
+      .from('journey_enrollments')
+      .select('id', { count: 'exact', head: true })
+      .eq('plan_id', planId)
+      .eq('profile_id', profileId)
+    if ((mine ?? 0) > 0) return { ok: true }
+  } catch {
+    // Fall through to the tier gate.
+  }
+
   const tier = await checkJourneyTier(planId, profileId, { isOwner: opts.isOwner })
   if (!tier.ok) return { ok: false, error: tier.error }
 
   // Seats bind on the free door too, and for the owner as well: a full room is full. A Run's own cap
   // is enforced separately at the Run path, which has its own roster.
-  const admin = createAdminClient()
   try {
     const [{ data: plan }, { count }] = await Promise.all([
       admin.from('journey_plans').select('enroll_cap').eq('id', planId).maybeSingle(),
@@ -58,15 +72,6 @@ export async function checkFreeEnrol(
         .is('completed_at', null),
     ])
     const enrollCap = (plan as { enroll_cap: number | null } | null)?.enroll_cap ?? null
-
-    // An ALREADY-enrolled member re-adopting must never be refused for being in the room they are
-    // already in. adoptPlan is idempotent, so this only matters for the message.
-    const { count: mine } = await admin
-      .from('journey_enrollments')
-      .select('id', { count: 'exact', head: true })
-      .eq('plan_id', planId)
-      .eq('profile_id', profileId)
-    if ((mine ?? 0) > 0) return { ok: true }
 
     if (!journeyHasRoom({ enrollCap, activeEnrollmentCount: count ?? 0 })) {
       return { ok: false, error: JOURNEY_FULL_MESSAGE }
