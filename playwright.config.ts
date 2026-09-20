@@ -116,7 +116,7 @@ export default defineConfig({
   // the product missing stop looking identical. It never fails a run on its own; see its
   // header for the single opt-in exception (PW_REQUIRE_SHELL).
   reporter: process.env.CI
-    ? [['list'], ['html', { open: 'never' }], ['./test/e2e/shell-reporter.ts']]
+    ? [['list'], ['github'], ['html', { open: 'never' }], ['./test/e2e/shell-reporter.ts']]
     : [['list'], ['./test/e2e/shell-reporter.ts']],
   expect: {
     toHaveScreenshot: {
