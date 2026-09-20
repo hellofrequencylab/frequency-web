@@ -11,7 +11,7 @@ let rows: Record<string, unknown>[] = []
  *  written before tickets existed reads exactly as it did. */
 let ticketRows: Record<string, unknown>[] = []
 let eventRows: Record<string, unknown>[] = []
-/** Gift rows for the LIVE-430 arm. Empty by default so every test written before donations
+/** Gift rows for the LIVE-431 arm. Empty by default so every test written before donations
  *  folded in still reads as it did. */
 let donationRows: Record<string, unknown>[] = []
 
@@ -19,7 +19,7 @@ let donationRows: Record<string, unknown>[] = []
 // query, which was harmless while this module read one table and silently wrong the moment it read
 // three: the events lookup and the ticket read would each have been handed the commerce_orders rows,
 // and the assertions would have passed on numbers that came from the wrong place entirely.
-// LIVE-430 adds a fourth table. Same rule.
+// LIVE-431 adds a fourth table. Same rule.
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => {
     let table = ''
@@ -257,12 +257,12 @@ describe('spaceEarningsSummary — event ticket sales (LIVE-375)', () => {
   })
 })
 
-// ── LIVE-430: gifts to the Space fund are earnings too ───────────────────────────────────────────
+// ── LIVE-431: gifts to the Space fund are earnings too ───────────────────────────────────────────
 //
 // The leftover LIVE-375 left: spaceEarningsSummary grew a ticket arm and still did not read
 // space_donations. A gift never writes commerce_orders. A Space whose only money was the fund
 // still read $0.00 under "No sales yet".
-describe('spaceEarningsSummary — Space fund gifts (LIVE-430)', () => {
+describe('spaceEarningsSummary — Space fund gifts (LIVE-431)', () => {
   it('counts a succeeded gift when there is no commerce order and no ticket', async () => {
     donationRows = [{ amount_cents: 2500, platform_fee_cents: 0, status: 'succeeded', refunded_at: null, source: 'self' }]
     const e = await spaceEarningsSummary('space-1', 30)

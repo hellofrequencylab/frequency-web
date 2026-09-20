@@ -46877,9 +46877,9 @@ Premise re-tested 2026-09-20: `FEATURE_GATES.space_membership_tickets.minEntitle
 
 **Rows.** LIVE-428.
 
-## ADR-1479: A Space's earnings count fund gifts, added as a third arm (LIVE-430)
+## ADR-1480: A Space's earnings count fund gifts, added as a third arm (LIVE-431)
 
-**Status:** Accepted · 2026-09-20 · backlog `LIVE-430` · numbered **1479** because **1478** is claimed by LIVE-429 · extends [ADR-1384](DECISIONS.md) (the ticket arm) · corroborated by `lib/commerce/orders.ts` (`donationEarnings`)
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-431` · numbered **1480** because **1479** is claimed by LIVE-430 · extends [ADR-1384](DECISIONS.md) (the ticket arm) · corroborated by `lib/commerce/orders.ts` (`donationEarnings`)
 
 **Context.** LIVE-375 / ADR-1384 taught Space Home to read `event_tickets` beside `commerce_orders`. A gift to a Space fund still never wrote `commerce_orders`. It writes `space_donations` through `recordSpaceDonationFromSession`. After that ticket arm, a Space whose only money was the fund still read $0.00 under "No sales yet". Packets next was LIVE-411 (umbrella). Money and events lanes were empty. Circle `tier` on free, past-due display, and my-memberships already have their own PRs.
 
@@ -46894,6 +46894,6 @@ Premise re-tested 2026-09-20: `spaceEarningsSummary` folds commerce then tickets
 
 **Rejected.** Writing a `commerce_orders` row when a gift settles (the tidier model, the bigger change). Summing `space_membership_tiers.price_cents` on `started_at` (that invents renewals). Closing LIVE-411 from this leftover. Absorbing Circle-tier, past-due display, or my-memberships.
 
-**Consequences.** A later `spaceEarningsSummary` that drops `space_donations` fails the LIVE-430 probe. A network-sourced gift that never reaches `networkGrossCents` fails the test. Checkout still refuses when Connect is not payout-ready.
+**Consequences.** A later `spaceEarningsSummary` that drops `space_donations` fails the LIVE-431 probe. A network-sourced gift that never reaches `networkGrossCents` fails the test. Checkout still refuses when Connect is not payout-ready.
 
-**Rows.** LIVE-430.
+**Rows.** LIVE-431.

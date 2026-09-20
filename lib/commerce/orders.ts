@@ -230,7 +230,7 @@ async function ticketEarnings(spaceId: string, sinceDays?: number): Promise<Spac
 }
 
 /**
- * THE DONATION ARM (LIVE-430).
+ * THE DONATION ARM (LIVE-431).
  *
  * Same leftover class as LIVE-375. A gift to a Space fund writes `space_donations` through
  * `recordSpaceDonationFromSession`. It never writes `commerce_orders`. After the ticket arm, a
@@ -382,7 +382,7 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number):
       out.netCents = out.grossCents - out.feeCents
     }
 
-    // THE DONATION ARM (LIVE-430). Own try/catch, same posture as tickets: a failure to read
+    // THE DONATION ARM (LIVE-431). Own try/catch, same posture as tickets: a failure to read
     // gifts returns the commerce+ticket number instead of collapsing the header to zeros.
     let donations: SpaceEarnings | null = null
     try {
