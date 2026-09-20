@@ -34,6 +34,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
+import { reachCatalogNote } from '@/lib/spaces/reach-catalog-note'
 import type { AdminSlot } from './registry'
 
 // LOCKED CONTRACT (ADR-553, docs/MENU-CONTRACT.md): one of the only three module catalogs the admin menu
@@ -274,7 +275,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // than nested: its destination was the SAME /settings/qr page, differing only by the `#scans` anchor, so
   // it was a second row onto one surface. The scans and growth readout is the lower half of this box's own
   // page, and the rail bank keeps its own fixed Insights quick-link straight to that anchor.
-  { id: 'space.reach', label: 'Reach', desc: 'Create codes for this space, and see the scans, growth, and how your space is doing.', Icon: QrCode, family: 'reach', hub: 'marketing', slot: 'reach', gate: { kind: 'feature', fn: 'qr' }, featureKey: 'qr', render: 'panel', deepLink: (s) => `${base(s)}/settings/qr`, order: 75, tier: 'primary', priority: 50, placement: 'bank', access: 'freemium', freeNote: '3 codes free, then 500 on Business, unlimited on Collective' },
+  { id: 'space.reach', label: 'Reach', desc: 'Create codes for this space, and see the scans, growth, and how your space is doing.', Icon: QrCode, family: 'reach', hub: 'marketing', slot: 'reach', gate: { kind: 'feature', fn: 'qr' }, featureKey: 'qr', render: 'panel', deepLink: (s) => `${base(s)}/settings/qr`, order: 75, tier: 'primary', priority: 50, placement: 'bank', access: 'freemium', freeNote: reachCatalogNote() },
   // Email is the ONE comms card (ADR-782): Email design (the canvas editor, `space.marketing`) and Email
   // style (the palette, `space.emailstyle`) fold UNDER it on the console — Compose / Design / Style read as
   // one Email surface. Each stays a first-class module (own deepLink + rail row).

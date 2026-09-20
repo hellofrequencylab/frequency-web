@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1481**. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1478–1480 are claimed on other open PRs.
+tree as of this index: **ADR-1485**. 1485 is LIVE-436. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1478–1480 and 1482–1484 are claimed on other open PRs.
 
 | Theme | Start here |
 |---|---|
@@ -46935,3 +46935,23 @@ Premise re-tested 2026-09-20: `featureAllowed('space_automation', { plan: 'busin
 **Consequences.** A later typed "Collective plan" on the automation lock screen fails the LIVE-432 probe. A later catalog note for `space.automation` that names Collective fails the same probe.
 
 **Rows.** LIVE-432.
+
+## ADR-1485: Reach names Business QR codes from the meter (LIVE-436)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-436` · numbered **1485** because **1481** is LIVE-432 on this tree and **1482**–**1484** stay claimed by open leftover PRs · extends [ADR-1438](DECISIONS.md) (LIVE-228) · corroborated by `lib/spaces/reach-catalog-note.ts` and `lib/pricing/feature-meters.ts`
+
+**Context.** LIVE-228 retired Collective as a plan label. `PLACEHOLDER_METER_LIMITS.space_qr` is 3 free and unlimited on Business. `codeCapForPlan` already reads that meter. The Reach catalog note still said "3 codes free, then 500 on Business, unlimited on Collective". That sentence is the lever the console badges come back to when the beta window closes.
+
+Premise re-tested 2026-09-20: money, events, and hygiene packets were empty. LIVE-411 stays the parent. Your people is LIVE-435. Email still names a Collective send rung and is a later leftover. This leftover is the Reach catalog note only.
+
+**Decision.**
+
+1. `reachCatalogNote` is the one seam. It reads `space_qr` and `SPACE_PLAN_LABEL.business`.
+2. `space.reach.freeNote` calls that function. Never Collective. Never a typed 500.
+3. No migration. The live create cap stays the meter. LIVE-411 stays open.
+
+**Rejected.** Closing LIVE-411 from a catalog note. Absorbing the Email leftover Collective rung. Changing the 3 / unlimited ladder.
+
+**Consequences.** A later typed Collective QR rung on `space.reach` fails the LIVE-436 probe. The meter remains the quantity source.
+
+**Rows.** LIVE-436.
