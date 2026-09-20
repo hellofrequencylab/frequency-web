@@ -1,4 +1,4 @@
-// MAY THIS MEMBER ENROL IN A TIER-GATED JOURNEY? (LIVE-411, ADR-1472)
+// MAY THIS MEMBER ENROL IN A TIER-GATED JOURNEY? (LIVE-427, ADR-1476)
 //
 // Events already gate tickets on space_membership_tiers (ADR-823,
 // spaceMembershipGateError). Journeys only had private | unlisted | public.

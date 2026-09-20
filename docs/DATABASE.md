@@ -156,7 +156,7 @@ ADR-201)
 **Journeys**
 `journey_plans`, `journey_plan_items`, `journey_plan_adoptions`, `practice_tiers`
 (Initiate/Adept/Master, ADR-197/198, rename migration `20260613000020`; spec in JOURNEYS.md).
-`journey_plans.space_tier_id` (LIVE-411, ADR-1472) is the optional enrol gate onto one
+`journey_plans.space_tier_id` (LIVE-427, ADR-1476) is the optional enrol gate onto one
 `space_membership_tiers` row. Apply `20270345006600` after merge.
 
 **Practices (North Star)**
