@@ -15126,6 +15126,25 @@
         "note": "Passes when both enrol doors call checkJourneyTier, the manifest declares space_tier_id, and the migration file is present."
       },
       "closed": "2026-09-20"
+    },
+    {
+      "id": "LIVE-428",
+      "title": "Member-ticket writers still name the Collective plan after LIVE-410 moved the floor",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/events/ticket-space-access.ts",
+        "ref": "LIVE-410 leftover; ADR-1477; ADR-1415; ADR-1475"
+      },
+      "detail": "FILED 2026-09-20 from the LIVE-410 re-test. Packets next was LIVE-411 (umbrella). Money and events lanes were empty. Help no longer names the Business membership wall (LIVE-426). Journey tier-gate is LIVE-427. The leftover was the operator ticket surfaces: validateSpaceAccess and setSpaceEventAccess still threw \"Membership-only tickets are part of the Collective plan.\", and the host ticket editor, the admin ticket editor, and Memberships Event access still painted that leftover. Collective is not a plan label (LIVE-228).\n\nPREMISE RE-TESTED 2026-09-20. FEATURE_GATES.space_membership_tickets.minEntitlement is free. featureAllowed therefore grants on the code default. The typed Collective sentence was still the refusal and the locked hint.\n\nCLOSED 2026-09-20 (ADR-1477). resolveMembershipTicketGate is the one seam. Both writers and the Event access loader use it. The locked hint interpolates featureWallLabel. The code default stays free. An override that raises the gate still refuses and still names the raised plan. No migration. Did not close LIVE-411. Did not move Circle tier access off space_can_sell.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const files=[\"lib/events/ticket-tiers.ts\",\"lib/events/space-event-access.ts\",\"lib/events/ticket-space-access.ts\",\"components/spaces/membership-event-access.tsx\",\"app/(main)/events/[slug]/manage/ticket-tiers-panel.tsx\",\"app/(main)/admin/events/[id]/event-edit-client.tsx\"];for (const f of files){const s=fs.readFileSync(f,\"utf8\");if(/Collective plan/.test(s))fail(f+\" still names the Collective plan\")}const g=fs.readFileSync(\"lib/events/ticket-space-access.ts\",\"utf8\");if(!g.includes(\"featureWallLabel\"))fail(\"ticket-space-access no longer names the wall through featureWallLabel\");if(!g.includes(\"export function membershipTicketWallSentence\"))fail(\"membershipTicketWallSentence is gone\");if(!g.includes(\"export async function resolveMembershipTicketGate\"))fail(\"resolveMembershipTicketGate is gone\");const gates=fs.readFileSync(\"lib/pricing/gates.ts\",\"utf8\");const m=gates.match(/space_membership_tickets:\\s*\\{[^}]+\\}/);if(!m)fail(\"space_membership_tickets gate missing\");if(/minEntitlement:\\s*.business./.test(m[0])||/minEntitlement:\\s*.collective./.test(m[0]))fail(\"space_membership_tickets left the free floor\");console.log(\"LIVE-428 ok\")'",
+        "note": "Passes when the member-ticket writers and editors no longer type Collective plan, the loader names the wall through featureWallLabel, and space_membership_tickets stays on the free floor."
+      },
+      "closed": "2026-09-20"
     }
   ]
 }

@@ -19,14 +19,17 @@ export function MembershipEventAccess({
   rows,
   membershipTiers,
   allowed,
+  wallLabel,
 }: {
   spaceId: string
   /** The Space slug, for the locked hint's plans link. */
   slug: string
   rows: SpaceEventAccessRow[]
   membershipTiers: { id: string; name: string }[]
-  /** Collective plan gate; false renders the locked hint instead of the selects. */
+  /** Plan gate; false renders the locked hint instead of the selects. */
   allowed: boolean
+  /** Naming-canon plan word for the locked hint (LIVE-428). */
+  wallLabel: string
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +49,7 @@ export function MembershipEventAccess({
     // One plain sentence, one link (the house upsell pattern). Never a modal, never urgency.
     return (
       <p className="rounded-card bg-surface px-3 py-2 text-body-sm text-muted">
-        Including events with your membership comes with the Collective plan.{' '}
+        Including events with your membership comes with {wallLabel}.{' '}
         <Link href={`/spaces/${slug}/settings/billing`} className="font-medium text-primary hover:underline">
           See plans
         </Link>
