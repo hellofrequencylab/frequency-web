@@ -169,7 +169,7 @@ That is exactly the primitive the owner is asking for, and it is already the rul
 | **No gated content except events.** Closed as LIVE-427 / ADR-1476. `journey_plans.space_tier_id` is the optional enrol gate. Visibility is still who can find it. Parent LIVE-411 stays open. | `lib/journeys/tier-gate.ts` |
 | **Space discussion is the Space Circle feed.** The door is `/spaces/<slug>/discussion` (LIVE-421, [ADR-1469](DECISIONS.md)). Posts stay `scope_circle_id`. A fourth `scope_space_id` was rejected. | `app/(main)/spaces/[slug]/(profile)/discussion/page.tsx` |
 | **No member directory.** Closed 2026-09-19 as LIVE-420 / ADR-1471. `space.people` is still the *staff* roster. Paying members now have `/spaces/<slug>/people`, visible to active members and managers. | `app/(main)/spaces/[slug]/(profile)/people/page.tsx` |
-| **Enrollment takes no money**, and Space analytics is QR-scan-shaped, with no completion, retention or revenue readout. | Closed for the completion/revenue half: Home already showed `spaceEarningsSummary`; LIVE-422 / ADR-1470 adds who started and finished this Space's Journeys (`lib/spaces/completion-analytics.ts`). QR scans stay on QR codes and insights. |
+| **Enrollment takes no money**, and Space analytics is QR-scan-shaped, with no completion, retention or revenue readout. | Closed for the completion/revenue half: Home already showed `spaceEarningsSummary` (orders, tickets, and LIVE-431 / ADR-1480 gifts to the fund); LIVE-422 / ADR-1470 adds who started and finished this Space's Journeys (`lib/spaces/completion-analytics.ts`). QR scans stay on QR codes and insights. |
 
 **Practice authoring is Crew-gated** (`app/(main)/practices/create-actions.ts:43-54`), which under a
 "free for individuals" ruling should go.
