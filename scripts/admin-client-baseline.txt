@@ -220,6 +220,10 @@
 #                                     can read the gate; fail-closed still needs the lookup.
 #   opposite of what selling access needs.
 #   question this feature asks -- how many seats are left, are you in, put this buyer in -- has to
+# Added 2026-09-20 (ADR-1470, LIVE-422). lib/spaces/completion-analytics.ts reads
+# journey_enrollments (RLS-on, zero policies, same reason as the Journey sell files
+# above) and space_memberships (same reason as lib/spaces/memberships.ts). Home
+# already gated the caller. A session client cannot count enrollments it cannot see.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
