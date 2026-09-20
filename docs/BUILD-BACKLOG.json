@@ -14532,10 +14532,10 @@
         "file": "docs/FOCUS-MODEL.md",
         "ref": "ADR-1403 Q5; survey 2026-09-19"
       },
-      "detail": "FILED 2026-09-19. FOCUS-MODEL Q5: sell a course, gate content to a tier, member directory, space-level discussion, completion analytics. Sequence AFTER interior (LIVE-254, HYG-033, LIVE-409, LIVE-410). Keep as one sequenced row so five operator asks do not each become a parallel P1.\n\nUPDATED 2026-09-20. Children: LIVE-420 (directory, done), LIVE-422 (analytics, done), LIVE-425 (sell-course Connect prompt, done). Price half of sell-a-course already lived on ADR-1397. Tier gate and Discussion still have their own PRs. Do not close this parent from a child. Do not add posts.scope_space_id from this row.",
+      "detail": "FILED 2026-09-19. FOCUS-MODEL Q5: sell a course, gate content to a tier, member directory, space-level discussion, completion analytics. Sequence AFTER interior (LIVE-254, HYG-033, LIVE-409, LIVE-410). Keep as one sequenced row so five operator asks do not each become a parallel P1.\n\nUPDATED 2026-09-20. Children: LIVE-420 (directory, done), LIVE-422 (analytics, done), LIVE-425 (sell-course Connect prompt, done). LIVE-426 closed the leftover Business-plan lie in help (LIVE-410). Price half of sell-a-course already lived on ADR-1397. Tier gate and Discussion still have their own PRs. Do not close this parent from a child. Do not add posts.scope_space_id from this row.",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-20: sell-course Connect is LIVE-425 (done). Directory is LIVE-420. Analytics is LIVE-422. Closes when each of the five has its own child row with a passing probe, or a ruling drops one. Tier and Discussion still open.",
+        "evidence": "2026-09-20: sell-course Connect is LIVE-425 (done). Directory is LIVE-420. Analytics is LIVE-422. Help no longer restates the Business membership wall (LIVE-426). Closes when each of the five has its own child row with a passing probe, or a ruling drops one. Tier and Discussion still open.",
         "checked": "2026-09-20"
       }
     },
@@ -15067,6 +15067,25 @@
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const p=fs.readFileSync(\"lib/billing/payout-prompt.ts\",\"utf8\");if(!/PAYOUT_CHANNELS[\\s\\S]*journeys/.test(p))fail(\"PAYOUT_CHANNELS is missing journeys\");if(!p.includes(\"selling Journeys\"))fail(\"journeys channel copy is gone\");const a=fs.readFileSync(\"app/(main)/journeys/admin-actions.ts\",\"utf8\");if(!a.includes(\"resolveSpacePayoutPromptById\"))fail(\"sell data no longer resolves Connect\");if(!/channels:\\s*\\[\\s*.journeys.\\s*\\]/.test(a))fail(\"sell data does not name journeys\");const s=fs.readFileSync(\"components/admin/modules/journey-sell-module.tsx\",\"utf8\");if(!s.includes(\"PayoutPromptCard\"))fail(\"Sell this Journey no longer renders the shared card\");const g=fs.readFileSync(\"app/(main)/spaces/[slug]/settings/payments/payments-body.tsx\",\"utf8\");if(!g.includes(\"channel: \\x27journeys\\x27\"))fail(\"Get Paid no longer lists Journeys\");console.log(\"LIVE-425 ok\")'",
         "note": "Passes when journeys is a payout channel, Sell this Journey resolves and renders the shared Connect card, and Get Paid lists the sixth path. Setup step, never a price gate."
+      },
+      "closed": "2026-09-20"
+    },
+    {
+      "id": "LIVE-426",
+      "title": "Help still says you need Business to sell memberships after LIVE-410 moved the wall",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "content/help/spaces/plans-and-pricing.md",
+        "ref": "LIVE-410 leftover; ADR-1475; ADR-1415"
+      },
+      "detail": "FILED 2026-09-20 from the LIVE-410 re-test. Packets next was LIVE-411 (umbrella). Money and events lanes were empty. The remaining unclaimed leftover of LIVE-410 was a wrong money answer on live help: Get Paid, Plans and pricing, Billing, and Events still told hosts they needed Business to sell memberships or to reserve member tickets.\n\nPREMISE RE-TESTED 2026-09-20. FEATURE_GATES.space_memberships and space_membership_tickets sit at minEntitlement free. PLAN_STORY.paid already says a free Space sells memberships from day one once payouts are ready. paidWalls() already drops a free-floor gate, so /pricing and llms.txt were already honest. Help was not.\n\nCLOSED 2026-09-20 (ADR-1475). Help names the same rule as the gate map. Memberships, tickets, bookings, orders, and donations are open on every plan. A Journey still needs a paid Space (ADR-1397). Campaigns and funnels stay the Business money wall. Member tickets are not a plan control. No migration. Did not close LIVE-411. Did not move Circle tier access off space_can_sell.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const paid=fs.readFileSync(\"content/help/spaces/get-paid.md\",\"utf8\");if(/Selling these needs the Business plan/.test(paid))fail(\"get-paid still walls memberships on Business\");if(/Memberships are the one path that needs the Business plan/.test(paid))fail(\"get-paid FAQ still walls memberships\");const plans=fs.readFileSync(\"content/help/spaces/plans-and-pricing.md\",\"utf8\");if(/Two things do genuinely need a plan[\\\\s\\\\S]*selling memberships/.test(plans))fail(\"plans-and-pricing still names memberships as a plan wall\");if(!/Selling memberships, tickets, bookings, orders, and donations is open on every/.test(plans))fail(\"plans-and-pricing no longer says memberships are open on every plan\");const bill=fs.readFileSync(\"content/help/spaces/billing.md\",\"utf8\");if(/selling memberships/.test(bill))fail(\"billing still names selling memberships as a paid tool\");const ev=fs.readFileSync(\"content/help/groups/events.md\",\"utf8\");if(/On the Business plan, a Space-hosted event can reserve a ticket/.test(ev))fail(\"events help still walls member tickets on Business\");const story=fs.readFileSync(\"lib/pricing/plan-story.ts\",\"utf8\");if(!story.includes(\"sells memberships from day one\"))fail(\"PLAN_STORY.paid no longer names memberships on free\");const walls=fs.readFileSync(\"lib/pricing/pricing-page.ts\",\"utf8\");if(!walls.includes(\"gate.minEntitlement === \\x27free\\x27\"))fail(\"paidWalls no longer drops the free floor\");console.log(\"LIVE-426 ok\")'",
+        "note": "Passes when help no longer restates the retired Business wall for memberships or member tickets, PLAN_STORY.paid still names memberships on free, and paidWalls still drops a free-floor gate."
       },
       "closed": "2026-09-20"
     }
