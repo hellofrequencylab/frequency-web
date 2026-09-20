@@ -28,6 +28,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **Your people no longer says team seats come with Collective.** A free Space includes 1 seat. Business includes 2. Extra seats are per seat.
+
 - **Running a Program is no longer described as a Collective plan feature.** The Program page and the catalog note name Business, the plan that actually carries it.
 
 - **If you run a Space, the seat counter no longer says team roles come with the Collective plan.** Extra seats are on Plan and billing. Members stay free.
