@@ -46975,3 +46975,24 @@ Premise re-tested 2026-09-20: `FEATURE_GATES.space_memberships.minEntitlement` i
 **Consequences.** A later surface that hides a past_due Space membership, or that treats pending as past due, fails the LIVE-429 probe. LIVE-411 stays open (Discussion is still LIVE-421).
 
 **Rows.** LIVE-429.
+
+## ADR-1479: Collaborator-host writers name the wall, not Collective (LIVE-430)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-430` · numbered **1479** because **1478** is claimed by LIVE-429 · extends [ADR-810](DECISIONS.md) and [ADR-1477](DECISIONS.md) (LIVE-428) · corroborated by `lib/spaces/collaborator-host-gate.ts` (`resolveCollaboratorHostWall`, `collaboratorHostWallSentence`)
+
+**Context.** LIVE-228 retired Collective as a plan label. `FEATURE_GATES.space_collaborators` sits on the Business floor. Help already says hosting Collaborators is part of Business. ADR-1477 fixed member-ticket writers and left this paid-floor leftover alone.
+
+Premise re-tested 2026-09-20: `featureAllowed('space_collaborators', { plan: 'business' }, { gatesLive: true })` is true. `spaceCanHostCollaborators` already reads that gate. The Space writers, the event-share writers, and the locked preview still said "the Collective plan". Automations still sit on a paid floor and were left alone.
+
+**Decision.**
+
+1. One seam, `resolveCollaboratorHostWall`, names the wall through `featureWallLabel('space_collaborators')`. The writers and the locked preview interpolate that name.
+2. The refusal sentences keep their three shapes (Space host, event home, event host Space). Never Collective. Never a typed Business.
+3. The code default stays the Business floor. An operator override that raises the gate still refuses the write and still names the raised plan.
+4. No migration. LIVE-411 stays open. Automations still type Collective until a later leftover.
+
+**Rejected.** Moving the gate to free (hosting is still a paid floor). Closing LIVE-411 from a copy fix. Restating Collective on a new surface.
+
+**Consequences.** A later typed "Collective plan" on a collaborator-host writer or locked preview fails the LIVE-430 probe.
+
+**Rows.** LIVE-430.

@@ -39,7 +39,7 @@ function SpaceTypeBadge({ label }: { label: string }) {
 // The picker offers any real Business / Non Profit Space (ADR-835 — the person/Space distinction is
 // structural, so owner-named Spaces are eligible; each result and row wears a Space-type badge +
 // logo so it never reads as a person — /api/search-scopes?for=event-share); requestEventShare
-// enforces the same rule, and the host side's Collective plan gates Collaborator hosting.
+// enforces the same rule, and the host side's plan gate (LIVE-430) names Collaborator hosting.
 // Mirrors the placement field: results render IN FLOW (the module's @container wrapper clips a
 // `top-full` overlay).
 
