@@ -28,7 +28,8 @@
 //     the money as well as the access (ADR-859).
 //   - setMembershipTiers sits on the free floor (LIVE-410 / ADR-1415): publishing a tier is not a
 //     paid capability. Checkout still refuses when Connect is not payout-ready.
-// Dunning, proration and member-only content gating are still not built here.
+// Member-only Journey gating is LIVE-427. Showing a past_due Space membership is LIVE-429.
+// Access still ignores payment_status (ADR-1092 / ADR-1478): pending is the free-join default.
 //
 // SHAPE: the PURE helpers (tier normalization + validation) have no Supabase/Next imports, so they
 // are fully unit-testable (lib/spaces/memberships.test.ts). The IO (the admin-client reads/writes)
@@ -51,6 +52,11 @@ import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
 import { syncTierCircleAccess } from '@/lib/spaces/tier-circle'
 import { stripe } from '@/lib/billing/stripe'
 import { resolveBillingInterval, type BillingInterval } from '@/lib/spaces/membership-pricing'
+import { billingLive } from '@/lib/pricing/settings'
+import {
+  isPastDueSpaceMembership,
+  type PastDueSpaceMembership,
+} from '@/lib/spaces/membership-dunning'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -93,6 +99,8 @@ export interface SpaceMembership {
   tierName: string
   status: 'active' | 'waitlist'
   startedAt: string
+  /** Stripe recovery state. Display only. pending is the free-join default (LIVE-429). */
+  paymentStatus: string | null
 }
 
 /** The viewer's OWN open membership (or null), for the join surface to show their current tier.
@@ -103,6 +111,8 @@ export interface MyMembership {
   tierName: string
   status: 'active' | 'waitlist'
   startedAt: string
+  /** Stripe recovery state. Display only. pending is the free-join default (LIVE-429). */
+  paymentStatus: string | null
 }
 
 // Hard caps so a malformed/hostile tier set can never write an unbounded number of rows.
@@ -271,6 +281,7 @@ type MembershipRow = {
   tier_id: string
   status: string
   started_at: string
+  payment_status?: string | null
 }
 
 function tiersTable() {
@@ -310,7 +321,7 @@ function looseMembershipsTable() {
 
 const TIER_COLS =
   'id, space_id, name, price_cents, annual_price_cents, interval, description, benefits, capacity, waitlist, sort, is_active'
-const MEMBERSHIP_COLS = 'id, space_id, member_profile_id, tier_id, status, started_at'
+const MEMBERSHIP_COLS = 'id, space_id, member_profile_id, tier_id, status, started_at, payment_status'
 
 /** Map a DB tier row to the app's MembershipTier (benefits re-normalized; a malformed row's name is
  *  trusted as-is since it was validated on write). */
@@ -566,9 +577,47 @@ export async function getMyMembership(spaceId: string): Promise<MyMembership | n
       tierName: tier?.name ?? 'Member',
       status: row.status === 'waitlist' ? 'waitlist' : 'active',
       startedAt: row.started_at,
+      paymentStatus: row.payment_status ?? null,
     }
   } catch {
     return null
+  }
+}
+
+/**
+ * The viewer's active Space memberships whose card failed (LIVE-429). Empty when
+ * billing is off, when the viewer is signed out, or when the read misses. ROOT is
+ * omitted. Display only: access still ignores payment_status.
+ */
+export async function listMyPastDueSpaceMemberships(): Promise<PastDueSpaceMembership[]> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return []
+  try {
+    if (!(await billingLive())) return []
+    const { data, error } = await membershipsTable()
+      .select(MEMBERSHIP_COLS)
+      .eq('member_profile_id', profileId)
+      .eq('status', 'active')
+      .eq('payment_status', 'past_due')
+    if (error || !data?.length) return []
+    const out: PastDueSpaceMembership[] = []
+    for (const row of data as MembershipRow[]) {
+      if (!isPastDueSpaceMembership(row.payment_status)) continue
+      const space = await getSpaceById(row.space_id)
+      if (!space || space.type === 'root') continue
+      const tiers = await readTiers(row.space_id, false)
+      const tier = tiers.find((t) => t.id === row.tier_id)
+      out.push({
+        membershipId: row.id,
+        spaceId: space.id,
+        spaceName: space.brandName?.trim() || space.name.trim() || 'this Space',
+        spaceSlug: space.slug,
+        tierName: tier?.name ?? 'Member',
+      })
+    }
+    return out
+  } catch {
+    return []
   }
 }
 
@@ -888,6 +937,7 @@ export async function listSpaceMemberships(spaceId: string): Promise<SpaceMember
       tierName: tierName.get(r.tier_id) ?? 'Member',
       status: r.status === 'waitlist' ? 'waitlist' : 'active',
       startedAt: r.started_at,
+      paymentStatus: r.payment_status ?? null,
     }))
   } catch {
     return []

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { sourceWithoutComments } from '@/test/source-shape'
 import { join } from 'node:path'
 import {
@@ -9,9 +9,9 @@ import {
   CIRCLE_ACCESS_LIMIT_NOTE,
   CIRCLE_ACCESS_MODES,
   SPACE_ONLY_ACCESS_MODES,
-  SPACE_SELLING_PLANS,
   asCircleAccess,
   availableAccessModes,
+  spaceCanSell,
   canEnterCircle,
   canJoinCircle,
   canSeeCircle,
@@ -388,6 +388,20 @@ describe('the space_paid_members migration shape (OWN-034 ruling C)', () => {
     expect(body).toContain("new.access = 'tier' and not private.space_can_sell")
     expect(body).not.toContain("new.access = 'space_paid_members' and not private.space_can_sell")
   })
+
+  it('the latest shape trigger drops the plan floor, because memberships are open on every plan', () => {
+    const files = readdirSync(join(root, 'supabase/migrations')).filter((f) => f.endsWith('.sql')).sort()
+    const latest = files
+      .filter((f) => read(`supabase/migrations/${f}`).includes('create or replace function public.enforce_circle_access_shape'))
+      .pop()
+    expect(latest).toBeTruthy()
+    const sql = read(`supabase/migrations/${latest!}`)
+    const start = sql.indexOf('create or replace function public.enforce_circle_access_shape')
+    const body = sql.slice(start, sql.indexOf('$$;', start))
+    expect(body).toContain("in ('space_members', 'space_paid_members', 'tier')")
+    expect(body).not.toContain('circle_access_plan_floor')
+    expect(body).not.toContain('private.space_can_sell')
+  })
 })
 
 // ── WHAT THE FORM MAY OFFER ────────────────────────────────────────────────────────────────────
@@ -413,15 +427,15 @@ describe('availableAccessModes — the form offers only what the trigger will ac
     expect(availableAccessModes(null)).toEqual(['open', 'circle_members', 'invite'])
   })
 
-  it('a FREE Space gets both Space audiences but NOT tier — it has rosters to admit from, and nothing to sell with', () => {
+  it('a FREE Space gets both Space audiences AND tier — memberships are open on every plan', () => {
     expect(availableAccessModes(FREE_BIZ)).toContain('space_members')
-    // A free Space may run free membership tiers, so its members are admittable without the
-    // selling plan — the plan floor belongs to SELLING, not to having members.
+    // A free Space may sell memberships (ADR-1415) and include a Circle with one (ADR-1476).
     expect(availableAccessModes(FREE_BIZ)).toContain('space_paid_members')
-    expect(availableAccessModes(FREE_BIZ)).not.toContain('tier')
+    expect(availableAccessModes(FREE_BIZ)).toContain('tier')
+    expect(spaceCanSell(FREE_BIZ)).toBe(true)
   })
 
-  it('a Space on a selling plan gets all six', () => {
+  it('a Space on a selling plan still gets all six', () => {
     expect(availableAccessModes(PAID_BIZ)).toEqual([...CIRCLE_ACCESS_MODES])
   })
 
@@ -435,28 +449,19 @@ describe('availableAccessModes — the form offers only what the trigger will ac
     }
   })
 
-  it('the TS plan list matches private.space_can_sell, because two lists of plan names drift silently', () => {
-    const sql = read('supabase/migrations/20270227000000_circle_privacy.sql')
+  it('the latest space_can_sell is a real-Space check, not a plan list', () => {
+    const files = readdirSync(join(root, 'supabase/migrations')).filter((f) => f.endsWith('.sql')).sort()
+    const latest = files
+      .filter((f) => read(`supabase/migrations/${f}`).includes('create or replace function private.space_can_sell'))
+      .pop()
+    expect(latest).toBeTruthy()
+    const sql = read(`supabase/migrations/${latest!}`)
     const start = sql.indexOf('function private.space_can_sell')
     const body = sql.slice(start, sql.indexOf('$$;', start))
-    for (const plan of SPACE_SELLING_PLANS) {
-      expect(body).toContain(`'${plan}'`)
-    }
-    // And the other direction: a plan added to the SQL must reach the UI, or the form quietly
-    // stops offering `tier` to a Space that is paying for it. Scoped to the plan IN-list rather
-    // than the whole body, which also contains 'public'/'private'/'pg_temp' from the search_path
-    // and 'root' from the type check.
-    const listStart = body.indexOf("coalesce(s.plan, 'free') in (")
-    expect(listStart).toBeGreaterThan(-1)
-    // Start INSIDE the IN-list's paren: slicing from `listStart` stops at the close paren of
-    // `coalesce(...)`, which lands before the plans and matches nothing.
-    const open = body.indexOf('in (', listStart) + 'in ('.length
-    const planList = body.slice(open, body.indexOf(')', open))
-    const inSql = [...planList.matchAll(/'([a-z]+)'/g)].map((m) => m[1]).filter((p) => p !== 'free')
-    expect(inSql.length).toBeGreaterThan(0)
-    for (const plan of new Set(inSql)) {
-      expect(SPACE_SELLING_PLANS).toContain(plan)
-    }
+    expect(body).toContain("s.type <> 'root'")
+    expect(body).not.toContain("coalesce(s.plan, 'free') in (")
+    expect(spaceCanSell({ type: 'root', plan: 'business' })).toBe(false)
+    expect(spaceCanSell(null)).toBe(false)
   })
 })
 
@@ -471,12 +476,10 @@ describe('accessModeOptions — the list a picker renders', () => {
     expect(accessModeOptions(PAID_BIZ, 'tier')).toEqual([...availableAccessModes(PAID_BIZ)])
   })
 
-  it('keeps a mode the circle is ALREADY on, even once the Space may no longer choose it', () => {
-    // A Space that drops off a selling plan keeps its `tier` circles as they stand. Hiding the
-    // current mode would make the select claim the circle is something it is not, and the next
-    // save would change access nobody asked to change.
-    expect(availableAccessModes(FREE_BIZ)).not.toContain('tier')
-    expect(accessModeOptions(FREE_BIZ, 'tier')).toContain('tier')
+  it('keeps a mode the circle is ALREADY on, even once this picker no longer offers it', () => {
+    // A Space Circle only offers two doors. A hub already sitting on `tier` keeps that mode
+    // listed so the select does not claim the circle is something it is not.
+    expect(accessModeOptions(FREE_BIZ, 'tier', { isSpaceCircle: true })).toContain('tier')
   })
 
   it('lists in the canonical order, so an added mode never lands in a different slot per Space', () => {
@@ -492,5 +495,6 @@ describe('accessModeOptions — the list a picker renders', () => {
     expect(CIRCLE_ACCESS_LIMIT_NOTE.length).toBeGreaterThan(0)
     expect(CIRCLE_ACCESS_LIMIT_NOTE).not.toContain('—')
     expect(CIRCLE_ACCESS_LIMIT_NOTE).not.toContain('_')
+    expect(CIRCLE_ACCESS_LIMIT_NOTE).not.toMatch(/Business/)
   })
 })

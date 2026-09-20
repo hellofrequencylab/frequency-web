@@ -196,12 +196,12 @@ edits the Space (with the Calendar function), or platform staff previewing it, l
 | View | What it is |
 |---|---|
 | **Guest** | The existing public month (`guestLiveItems`). Live chips plus the C0 cancelled footer. Pencil and planning stay off. `?view=guest`. |
-| **Admin** | The existing production console (`CalendarPmConsole`) over `loadAdminCalendar`. Pencil (`pencilLane`), Planning (`planningLane`), and Production (`productionLane`) are their own lanes. The month is the date map (`StaffCalendar`), not a second guest grid. Default URL. |
-| **List** | A condensed gathering index on the left. The right interior is a truncated stats card plus Go to event. Not the event edit screen. `?view=list&item=`. |
+| **Admin** | The same sliding month as Guest (`StaffCalendar` over `loadAdminCalendar`). Drafts, pencils, private entries, unpublished and internal dates Guest does not see. Not `CalendarPmConsole`. Stage lanes live on Projects. Default URL. |
+| **List** | A condensed gathering index on the left. The right interior is the event control console: title with stage pill top-right, primary facts, share links, stats, Go to event. Not the Studio editor. `?view=list&item=`. |
 | **Timeline** | The month as a linear time scale (days on the X axis, one row per gathering). Not a 7-column month grid. `?view=timeline&y=&m=`. |
 | **Projects** | A kanban over `ENTRY_STAGES` (Pencil, Planning, Production, Cancelled). An event on its way moves stage through the existing entry write. No new table. `?view=projects`. |
 
-Operators load Guest and Admin data once so a view switch does not remount. Unsigned members always get Guest and never hit `loadAdminCalendar`. C3 and C4 already own `planningLane` / `productionLane` on the Admin board.
+Operators load Guest and Admin data once so a view switch does not remount. Unsigned members always get Guest and never hit `loadAdminCalendar`. Pencil, Planning, and Production lanes stay on `CalendarPmConsole` for tests; the Calendar tab Admin view is the guest-style month. Projects is the stage board.
 
 **Loading a month.** The first month and every browsed month use the same public reader:
 `loadPublicSpaceWindow` (`lib/calendar/public-month.ts`), which composes `listSpaceCalendarEvents`,

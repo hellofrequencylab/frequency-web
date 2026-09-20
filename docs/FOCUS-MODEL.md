@@ -169,7 +169,7 @@ That is exactly the primitive the owner is asking for, and it is already the rul
 | **No gated content except events.** Closed as LIVE-427 / ADR-1476. `journey_plans.space_tier_id` is the optional enrol gate. Visibility is still who can find it. Parent LIVE-411 stays open. | `lib/journeys/tier-gate.ts` |
 | **Space discussion is the Space Circle feed.** The door is `/spaces/<slug>/discussion` (LIVE-421, [ADR-1469](DECISIONS.md)). Posts stay `scope_circle_id`. A fourth `scope_space_id` was rejected. | `app/(main)/spaces/[slug]/(profile)/discussion/page.tsx` |
 | **No member directory.** Closed 2026-09-19 as LIVE-420 / ADR-1471. `space.people` is still the *staff* roster. Paying members now have `/spaces/<slug>/people`, visible to active members and managers. | `app/(main)/spaces/[slug]/(profile)/people/page.tsx` |
-| **Enrollment takes no money**, and Space analytics is QR-scan-shaped, with no completion, retention or revenue readout. | Closed for the completion/revenue half: Home already showed `spaceEarningsSummary`; LIVE-422 / ADR-1470 adds who started and finished this Space's Journeys (`lib/spaces/completion-analytics.ts`). QR scans stay on QR codes and insights. |
+| **Enrollment takes no money**, and Space analytics is QR-scan-shaped, with no completion, retention or revenue readout. | Closed for the completion/revenue half: Home already showed `spaceEarningsSummary` (orders, tickets, and LIVE-431 / ADR-1480 gifts to the fund); LIVE-422 / ADR-1470 adds who started and finished this Space's Journeys (`lib/spaces/completion-analytics.ts`). QR scans stay on QR codes and insights. |
 
 **Practice authoring is Crew-gated** (`app/(main)/practices/create-actions.ts:43-54`), which under a
 "free for individuals" ruling should go.
@@ -204,11 +204,13 @@ Flags read live: `billing_live = true` (since 2026-07-21), `host_payouts_enabled
    still true: **no payment event has ever arrived, because nothing has ever been sold.**
 2. ✅ **The member-facing "my memberships" surface shipped as LIVE-423 / ADR-1472.** Settings →
    Memberships lists the viewer's open `space_memberships` (active and waitlist). Cancel reuses
-   `cancelMembership`. ROOT never lists. `payment_status` is still not enforced; that is the
-   remaining dunning hole, not this list.
-3. **`payment_status` is never enforced.** Both the RLS helper and the app predicate read `status`
-   only, and nothing flips it, so a `past_due` member keeps circle access forever. Dunning covers the
-   platform's own Crew subscription and not Space memberships.
+   `cancelMembership`. ROOT never lists.
+3. **`payment_status` is written and now shown (LIVE-429 / ADR-1478), but it is still not an access
+   gate.** The RLS helper and `isSpacePaidMember` read `status` only, so a `past_due` member keeps
+   Circle access while Stripe retries. That grace is ADR-1092: a free join is often `status=active`
+   with `payment_status=pending`. Crew dunning stays on Settings Plan. Space dues now appear on the
+   Space join card, the host member list, and Settings Plan and billing. A later ruling can turn the
+   column into a lock.
 4. **The wall is in the wrong place.** See below.
 
 ### The contradiction

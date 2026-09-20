@@ -6,10 +6,11 @@ describe('CalendarPmConsole source (LIVE-415 / LIVE-416 / LIVE-417 / LIVE-418)',
   const page = readFileSync('app/(main)/spaces/[slug]/(profile)/calendar/page.tsx', 'utf8')
   const shell = readFileSync('components/spaces/calendar-workspace.tsx', 'utf8')
 
-  it('exports CalendarPmConsole and the Calendar tab mounts it', () => {
+  it('exports CalendarPmConsole; the Calendar tab Admin view is the guest-style grid', () => {
     expect(consoleSrc).toContain('export function CalendarPmConsole')
     expect(page).toContain('CalendarWorkspace')
-    expect(shell).toContain('CalendarPmConsole')
+    expect(shell).toContain('StaffCalendar')
+    expect(shell).not.toContain('CalendarPmConsole')
   })
 
   it('declares the C2–C4 named lanes', () => {
