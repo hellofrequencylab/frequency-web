@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import {
   journeyNeedsMembershipMessage,
@@ -32,9 +33,8 @@ describe('journeyTierGateError', () => {
 
 describe('the LIVE-411 doors consult the same helper', () => {
   it('free enrol and checkout both call checkJourneyTier', () => {
-    const fs = require('node:fs') as typeof import('node:fs')
-    const free = fs.readFileSync('lib/journeys/free-enrol-gate.ts', 'utf8')
-    const paid = fs.readFileSync('lib/commerce/checkout.ts', 'utf8')
+    const free = readFileSync('lib/journeys/free-enrol-gate.ts', 'utf8')
+    const paid = readFileSync('lib/commerce/checkout.ts', 'utf8')
     expect(free).toMatch(/checkJourneyTier/)
     expect(paid).toMatch(/checkJourneyTier/)
   })

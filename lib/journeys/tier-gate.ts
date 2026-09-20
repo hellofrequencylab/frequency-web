@@ -5,7 +5,9 @@
 // This is the fourth audience: members of one named tier.
 //
 // PURE comparison lives here so both doors (free enrol and paid checkout)
-// cannot disagree. IO is a thin admin-client read. Fail-closed on a missing
+// cannot disagree. IO is a thin admin-client read (same posture as
+// free-enrol-gate: the gate must still read the plan and the membership
+// when the viewer is a guest or the wrong tier). Fail-closed on a missing
 // plan or a broken membership read: a gated Journey must never open because
 // a lookup failed.
 
