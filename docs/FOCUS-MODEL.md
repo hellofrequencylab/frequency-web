@@ -168,7 +168,7 @@ That is exactly the primitive the owner is asking for, and it is already the rul
 | **You cannot sell a course.** `journey_plans` has no price, no Stripe product, no tier link. | `lib/database.types.ts:6425` |
 | **No gated content except events.** Only `event_ticket_types` carries `member_only` / `space_tier_id`. Journeys are `private \| unlisted \| public`, with no fourth "members of my tier" state. | `lib/database.types.ts:4676-4685` |
 | **No space-level discussion.** `posts` has `scope_circle_id`, `scope_event_id`, `scope_profile_id` and **no `scope_space_id`**. A Space's only broadcast is an announcement wall with no replies. | `20260829000000_h1_1_scope_typed_arc_expand.sql:49-51` |
-| **No member directory.** `space.people` is the *staff* roster. Paying members live in `space_memberships` with no browsable roster. Members of a community cannot find each other inside it. | `lib/admin/modules/space-modules.ts:157` |
+| **No member directory.** Closed 2026-09-19 as LIVE-420 / ADR-1471. `space.people` is still the *staff* roster. Paying members now have `/spaces/<slug>/people`, visible to active members and managers. | `app/(main)/spaces/[slug]/(profile)/people/page.tsx` |
 | **Enrollment takes no money**, and Space analytics is QR-scan-shaped, with no completion, retention or revenue readout. | Closed for the completion/revenue half: Home already showed `spaceEarningsSummary`; LIVE-422 / ADR-1470 adds who started and finished this Space's Journeys (`lib/spaces/completion-analytics.ts`). QR scans stay on QR codes and insights. |
 
 **Practice authoring is Crew-gated** (`app/(main)/practices/create-actions.ts:43-54`), which under a

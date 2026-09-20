@@ -15018,6 +15018,25 @@
       "closed": "2026-09-19"
     },
     {
+      "id": "LIVE-420",
+      "title": "A Space has no member directory, so paying members cannot find each other",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/FOCUS-MODEL.md",
+        "ref": "LIVE-411 re-test; ADR-1471"
+      },
+      "detail": "FILED 2026-09-19 from the LIVE-411 re-test. space.people is the staff roster. Paying members live in space_memberships with no browsable member-facing list. Sequence after the tier gate (LIVE-411). Do not start Editor, Sites, Etsy, or App Platform from this row.\n\nCLOSED 2026-09-19 (ADR-1471). PREMISE RE-TESTED FIRST: no (profile)/people or (profile)/members route; listSpaceMemberships is owner-only. /spaces/<slug>/people now lists active space_memberships to active members and managers. Waitlist is omitted. Ghost mode stays invisible. Visitors see a join door. ROOT never lists. The People tab is hidden from anyone who cannot see the list. people is a reserved profile slug.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const a=fs.existsSync(\"app/(main)/spaces/[slug]/(profile)/people/page.tsx\");const b=fs.existsSync(\"app/(main)/spaces/[slug]/(profile)/members/page.tsx\");if(!(a||b))fail(\"no Space profile member directory route\");const d=fs.readFileSync(\"lib/spaces/member-directory.ts\",\"utf8\");if(!d.includes(\"export function canSeeSpaceMemberDirectory\"))fail(\"the directory gate is gone\");if(!d.includes(\"export async function listSpaceMemberDirectory\"))fail(\"the directory reader is gone\");if(!d.includes(\"waitlist\"))fail(\"the waitlist rule is gone\");const n=fs.readFileSync(\"lib/spaces/profile-nav.ts\",\"utf8\");if(!n.includes(\"/people\"))fail(\"the People tab is gone\");console.log(\"LIVE-420 ok\")'",
+        "note": "Fails until a Space profile route lists members for members, not only staff at settings/members, and the gate still refuses waitlist and visitors."
+      },
+      "closed": "2026-09-19"
+    },
+    {
       "id": "LIVE-422",
       "title": "Space analytics is QR-scan-shaped, with no completion or revenue readout",
       "status": "done",

@@ -4,7 +4,7 @@ description: What your profile reveals about the Circles, Spaces, and events you
 category: connecting
 order: 5
 published: 2026-07-28
-updated: 2026-07-28
+updated: 2026-09-19
 audience: member
 featureKeys: [people, profile]
 status: published
@@ -26,6 +26,10 @@ is not on your profile.
 
 The Circles the two of you are both in. This is about the two of you, so it changes depending on who
 is looking. Someone in none of your Circles sees none of them.
+
+If you both belong to the same Space, they can also find you on that Space's **People** list. Ghost
+mode hides you there. Turning off "Show me in the Community directory" only hides you from the
+platform directory, not from a Space you already joined.
 
 ## What only you can see
 
