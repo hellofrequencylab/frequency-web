@@ -140,6 +140,10 @@ export interface EventFormInitial {
   specialInstructions?: string
   /** The Journey this event is part of (events.journey_id), or '' for none. */
   journeyId?: string
+  /** Plan this Production was made from (hidden; ADR-1386). */
+  planId?: string
+  /** Pencil entry retired when this Production is created. */
+  pencilId?: string
 }
 
 // A grouped, tokenized section wrapper so the form reads as five clear steps instead of a
@@ -389,6 +393,8 @@ export function EventForm({
     // form that could not offer the current link leaves it untouched instead of clearing it. Blank
     // is a real value here (detach); the server re-checks the Journey authority before attaching.
     if (showJourneyField) fd.set('journeyId', journeyId)
+    if (initial?.planId) fd.set('planId', initial.planId)
+    if (initial?.pencilId) fd.set('pencilId', initial.pencilId)
 
     fd.set('startsAt', startsAt)
     if (endsAt) fd.set('endsAt', endsAt)

@@ -27,8 +27,9 @@ import { CALENDAR_LAYERS, itemChipClass, type CalendarLayerKey } from '@/lib/cal
 import { spanDayKeys } from '@/lib/calendar/entries'
 import { notesForDay, type DayNote } from '@/lib/calendar/day-notes'
 import { monthKey } from '@/lib/calendar/month-window'
-import type { CalendarEvent } from '@/lib/calendar/item'
+import { stackDay } from '@/lib/calendar/sunday-stack'
 import { useMonthGestures } from './use-month-gestures'
+import type { CalendarEvent } from '@/lib/calendar/item'
 
 export type { CalendarEvent } from '@/lib/calendar/item'
 
@@ -601,7 +602,20 @@ export function EventCalendar({
                         </p>
                       )}
                       <div className="flex flex-col gap-1">
-                        {cards.slice(0, 3).map((ev, i) => (
+                        {stackDay(cards)[0]?.stacked ? (
+                          <button
+                            type="button"
+                            onClick={() => select(cards[0])}
+                            title={cards.map((c) => c.title).join(', ')}
+                            className={cn(
+                              'w-full rounded-control px-1.5 py-0.5 text-left text-2xs font-medium transition-colors',
+                              itemChipClass(cards[0]?.layer, cards[0]?.stage),
+                            )}
+                          >
+                            <span className="block truncate">{cards.map((c) => c.title).join(' · ')}</span>
+                          </button>
+                        ) : (
+                          cards.slice(0, 3).map((ev, i) => (
                           <button
                             key={`${ev.slug}-${i}`}
                             type="button"
@@ -615,8 +629,8 @@ export function EventCalendar({
                           >
                             <span className="tabular-nums">{ev.timeLabel}</span> {ev.title}
                           </button>
-                        ))}
-                        {cards.length > 3 && (
+                        )))}
+                        {cards.length > 3 && !stackDay(cards)[0]?.stacked && (
                           <button
                             type="button"
                             onClick={() => {

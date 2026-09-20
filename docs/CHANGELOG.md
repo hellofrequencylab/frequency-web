@@ -26,6 +26,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 - **If you run a Space, its Calendar tab slides between Guest, Admin, List, Timeline, and Projects.** Guest is first in the control. List is a gathering list on the left and a short stats card on the right, not the event editor. The tab remembers the last view you used.
 
+- **If you run a Space, you can keep a Plan behind the dates on its calendar.** Start one from a penciled date or from Calendar settings. Open it for notes and to-dos. When you are ready, Make it a Production opens the same new-event form, already filled in. A cancelled gathering stays a muted note. Guest still sees live events only.
+
 - **A Space calendar with nothing published says so in the same empty pattern as the rest of the site**, and it does not claim the month is empty when a cancelled gathering or Unavailable time is already on the grid. Cancelled stays a muted note at the bottom of the day, and the same note under that month in the list. The calendar can be focused: arrows step a month, Escape closes the jump panel.
 
 - **The blocks visitors see on a Journey follow the Advanced layout.** The story, the path, and the pillar balance are the ones you can show, hide, or reorder. That same order now shows on the Journey page, the public page, and the store listing. How many people have started, and the Gems for finishing, stay in the header.
