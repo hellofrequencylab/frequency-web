@@ -46729,3 +46729,22 @@ Premise re-tested 2026-09-19: `ensureHostOnOwnership` still self-grants host (`l
 **Consequences.** `?view=` remains a shareable URL. The cookie restores the last operator view on a later visit. Help and `EVENTS-CALENDAR.md` describe the slide and the List card.
 
 **Rows.** None. This is the view-shell ruling on top of ADR-1464.
+
+## ADR-1470: Space Home reads Journey completion from existing enrollments (LIVE-422)
+
+**Status:** Accepted · 2026-09-20 · numbered **1470** because **1467** is the calendar view shell on main and **1468** / **1469** are claimed by open People and Discussion PRs · FOCUS-MODEL Q5 leftover · corroborated by `lib/spaces/completion-analytics.ts` and `components/spaces/dashboard/space-dashboard.tsx`
+
+**Context.** FOCUS-MODEL Q5 said Space analytics was QR-scan-shaped, with no completion, retention, or revenue readout. Premise re-tested 2026-09-20: Space Home already shows `spaceEarningsSummary` (revenue, last 30 days), weekly-active / at-risk, and profile views. Per-Journey launch already splits enrolled / still going / finished. What was missing is one Space-wide completion reader. `journey_enrollments.completed_at` is stamped by `tryCompleteJourney`. `journey_plans.space_id` already scopes a course to a Space.
+
+**Decision.**
+
+1. `getSpaceCompletionAnalytics` is the one reader. It lists this Space's Journeys, then folds `journey_enrollments` into unique people: enrolled, finished, still going, paid, finish rate.
+2. People, not seats. A re-take is one start. Finished wins if any of that person's rows is stamped.
+3. Space Home mounts the band next to profile views. Revenue stays on the first row. QR scans stay on QR codes and insights.
+4. No migration. No `scope_space_id`. No new completion table.
+
+**Rejected.** A 30-day completion window (a four-week Journey would vanish). Counting QR scans as completion. Closing LIVE-411 from this row (tier, People, and Discussion still have their own PRs).
+
+**Consequences.** A Space with no Journeys, or Journeys no one has started, reads zeros and does not print a 0% finish rate. The manage gate on Home is the door. The admin client is the read, because enrollment RLS is member-owned.
+
+**Rows.** LIVE-422.

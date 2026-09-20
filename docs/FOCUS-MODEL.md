@@ -169,7 +169,7 @@ That is exactly the primitive the owner is asking for, and it is already the rul
 | **No gated content except events.** Only `event_ticket_types` carries `member_only` / `space_tier_id`. Journeys are `private \| unlisted \| public`, with no fourth "members of my tier" state. | `lib/database.types.ts:4676-4685` |
 | **No space-level discussion.** `posts` has `scope_circle_id`, `scope_event_id`, `scope_profile_id` and **no `scope_space_id`**. A Space's only broadcast is an announcement wall with no replies. | `20260829000000_h1_1_scope_typed_arc_expand.sql:49-51` |
 | **No member directory.** `space.people` is the *staff* roster. Paying members live in `space_memberships` with no browsable roster. Members of a community cannot find each other inside it. | `lib/admin/modules/space-modules.ts:157` |
-| **Enrollment takes no money**, and Space analytics is QR-scan-shaped, with no completion, retention or revenue readout. | `settings/enroll/section.tsx:17` |
+| **Enrollment takes no money**, and Space analytics is QR-scan-shaped, with no completion, retention or revenue readout. | Closed for the completion/revenue half: Home already showed `spaceEarningsSummary`; LIVE-422 / ADR-1470 adds who started and finished this Space's Journeys (`lib/spaces/completion-analytics.ts`). QR scans stay on QR codes and insights. |
 
 **Practice authoring is Crew-gated** (`app/(main)/practices/create-actions.ts:43-54`), which under a
 "free for individuals" ruling should go.
@@ -266,7 +266,9 @@ template".
   Circle joins the seasonal challenge as a group, or runs its own instead. **Built, rendered, zero
   rows.** It needs seeding and a door, not a build.
 - The five gaps in §5 become the operator roadmap, in this order: **sell a course · gate content to a
-  tier · a member directory · space-level discussion · completion analytics.**
+  tier · a member directory · space-level discussion · completion analytics.** Completion
+  analytics shipped as LIVE-422 (ADR-1470). Status for the rest lives in
+  [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
 
 ### Move 3 — Free to be here, pay to belong to a community
 

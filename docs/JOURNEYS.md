@@ -153,6 +153,11 @@ Completion is **phase- and program-based** (the season/8-of-13 model is gone):
 All grants are idempotent via `reward_grants`. Reward plumbing reuses the existing
 Zaps/Gems/trophy/co-op systems, retuned, not rebuilt.
 
+**Space Home readout (LIVE-422 / ADR-1470).** A Space's Home band reads who started and
+finished the Journeys that belong to that Space (`lib/spaces/completion-analytics.ts`).
+People, not seats. Revenue stays on the existing Home earnings tile. The per-Journey
+launch page still splits the same three groups for one plan.
+
 ---
 
 ## 5. The learner front-end (super clean)

@@ -15016,6 +15016,25 @@
         "note": "Fails while the Space root layout still calls getMyProfileId during render."
       },
       "closed": "2026-09-19"
+    },
+    {
+      "id": "LIVE-422",
+      "title": "Space analytics is QR-scan-shaped, with no completion or revenue readout",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/FOCUS-MODEL.md",
+        "ref": "ADR-1403 Q5; ADR-1470; LIVE-411 leftover"
+      },
+      "detail": "FILED 2026-09-19 from the LIVE-411 re-test. Enrollment takes money on Journeys and memberships now, but Space analytics still had no completion surface.\n\nPREMISE RE-TESTED 2026-09-20. Space Home already showed spaceEarningsSummary (revenue, last 30 days), weekly-active / at-risk, and profile views. Per-Journey launch already split enrolled / still going / finished. What was missing is one Space-wide completion reader. journey_enrollments.completed_at is stamped by tryCompleteJourney. QR scans stay on QR codes and insights.\n\nCLOSED 2026-09-20 (ADR-1470). getSpaceCompletionAnalytics lists this Space's Journeys and folds enrollments into unique people: enrolled, finished, still going, paid, finish rate. Space Home mounts the band. A re-take is one start. No migration. Did not close LIVE-411 (tier / People / Discussion still have their own PRs).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};if(!fs.existsSync(\"lib/spaces/completion-analytics.ts\"))fail(\"completion-analytics is gone\");const s=fs.readFileSync(\"lib/spaces/completion-analytics.ts\",\"utf8\");if(!s.includes(\"export function foldSpaceCompletions\"))fail(\"foldSpaceCompletions is gone\");if(!s.includes(\"export async function getSpaceCompletionAnalytics\"))fail(\"getSpaceCompletionAnalytics is gone\");const d=fs.readFileSync(\"components/spaces/dashboard/space-dashboard.tsx\",\"utf8\");if(!d.includes(\"getSpaceCompletionAnalytics\"))fail(\"Space Home no longer mounts completion analytics\");if(!d.includes(\"Your Journeys\"))fail(\"Space Home no longer names the Journeys band\");if(!fs.existsSync(\"lib/spaces/completion-analytics.test.ts\"))fail(\"no completion-analytics test\");console.log(\"LIVE-422 ok\")'",
+        "note": "Passes when the Space completion reader exists, folds unique people, and Space Home mounts the Journeys band. Written 2026-09-20 against the missing readout, not a QR count."
+      },
+      "closed": "2026-09-20"
     }
   ]
 }

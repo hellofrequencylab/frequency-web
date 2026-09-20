@@ -904,6 +904,7 @@ lib/spaces/campaigns.ts
 lib/spaces/checkin.ts
 lib/spaces/claim.ts
 lib/spaces/collaborations.ts
+lib/spaces/completion-analytics.ts
 lib/spaces/content-actions.ts
 lib/spaces/content-data.ts
 lib/spaces/crm-funnel.ts
