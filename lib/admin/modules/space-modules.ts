@@ -34,6 +34,9 @@ import {
   Wallet,
 } from 'lucide-react'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
+import { peopleCatalogNote } from '@/lib/spaces/people-catalog-note'
+import { programCatalogNote } from '@/lib/spaces/program-wall'
+
 import { reachCatalogNote } from '@/lib/spaces/reach-catalog-note'
 import type { AdminSlot } from './registry'
 
@@ -174,7 +177,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // here (ADR-1313). CRM itself is a tool, not a sixth box: nesting is one level, so Conversations /
   // Automation / Leads / Doors / Shared nest directly under this box too. Hub tabs stay split
   // (Team on Settings, CRM on Resonance); that divergence is named in space-hub.test.ts.
-  { id: 'space.people', label: 'Your people', desc: 'The people on your team and the role each one holds.', Icon: Users, family: 'audience', hub: 'settings', slot: 'people', gate: { kind: 'feature', fn: 'members' }, featureKey: 'members', render: 'panel', deepLink: (s) => `${base(s)}/settings/members`, order: 30, tier: 'primary', priority: 10, access: 'freemium', freeNote: '1 seat free, 3 included on Collective, more per seat' },
+  { id: 'space.people', label: 'Your people', desc: 'The people on your team and the role each one holds.', Icon: Users, family: 'audience', hub: 'settings', slot: 'people', gate: { kind: 'feature', fn: 'members' }, featureKey: 'members', render: 'panel', deepLink: (s) => `${base(s)}/settings/members`, order: 30, tier: 'primary', priority: 10, access: 'freemium', freeNote: peopleCatalogNote() },
   { id: 'space.crm', label: 'CRM', desc: 'Your pipeline, contacts, private notes, and Vera autonomy.', Icon: Briefcase, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'panel', deepLink: (s) => `${base(s)}/crm`, order: 35, tier: 'primary', priority: 15, access: 'freemium', freeNote: '200 contacts free, then unlimited', parent: 'space.people' },
   // The flat Inbox (ADR-786) is RETIRED (ADR-820): folded into Conversations; /crm/inbox redirects.
   // Conversations (ADR-812): the ticketed workspace over the comms_* spine, scoped to THIS space. Support,
@@ -254,9 +257,9 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Chapter blueprint (topical_channels.template_id) and members anywhere start Chapters from it. A TOOL
   // inside the Content box (parent keeps it off the top-level box count, ADR-846), ordered right after Circles:
   // a Program is what a circle grows into. Family `growth` so the Module Manager files it under Growth with
-  // Plan and billing — it is the growth play, not another content library. Collective-plan feature: the
+  // Plan and billing — it is the growth play, not another content library. Business-plan feature: the
   // premium badge + freeNote mark the plan story (presentation only; the surface gates server-side).
-  { id: 'space.program', label: 'Program', desc: 'Run your model as a Program: your flagship circle becomes the blueprint, and members start Chapters anywhere.', Icon: Network, family: 'growth', hub: 'programs', slot: 'engage', gate: { kind: 'feature', fn: 'program' }, featureKey: 'program', render: 'link', deepLink: (s) => `${base(s)}/settings/program`, order: 57.7, tier: 'primary', priority: 33.8, access: 'premium', freeNote: 'Included with Collective', parent: 'space.content' },
+  { id: 'space.program', label: 'Program', desc: 'Run your model as a Program: your flagship circle becomes the blueprint, and members start Chapters anywhere.', Icon: Network, family: 'growth', hub: 'programs', slot: 'engage', gate: { kind: 'feature', fn: 'program' }, featureKey: 'program', render: 'link', deepLink: (s) => `${base(s)}/settings/program`, order: 57.7, tier: 'primary', priority: 33.8, access: 'premium', freeNote: programCatalogNote(), parent: 'space.content' },
   // Shop is now a first-class GATEABLE feature keyed on the `shop` function (SpaceFunctionKey), so it can
   // be turned off, role-gated, and entitlement-gated (the `storefront` tier key) like every sibling
   // offering — it is no longer the always-on outlier. Free Spaces can sell; a paid plan lowers fees.

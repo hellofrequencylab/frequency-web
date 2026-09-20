@@ -2884,7 +2884,7 @@
       "detail": "One sentence from the owner closes this. The seat wall began enforcing on 2026-08-19 (ADR-1087) and its own header was wrong about who spends a seat: it said 'the owner holds no member row', and ALL 19 non-root Spaces hold an ACTIVE space_members row for their own owner_profile_id at role 'admin'. So the owner is counted.\n\nFor Free and Business (allowance 1) that is right either way: the rung is meant to be the owner alone, and teammates start at Collective. For COLLECTIVE (allowance 3) it decides whether the Space gets owner + 2 teammates (today) or owner + 3 (if usedSeats excluded the owner, as the comment claimed). Three Spaces are on Collective and each holds owner + 1, so none is at the wall yet and there is no hurry, only a decision.\n\nThe code was deliberately NOT changed when this was found: either answer is defensible, and moving a paying Space's seat total on the strength of a stale comment is guessing in the expensive direction. The fix, once decided, is one filter in usedSeats or one number in PLACEHOLDER_METER_LIMITS.space_team, plus the comment.\n\n── ANSWERED 2026-08-19, owner verbatim: \"Owner + 2, total of 3.\" Today's behaviour is the intended one: the space_team allowance of 3 counts three operator humans INCLUDING the owner's own admin row, so usedSeats stays exactly as written and no code changed. The stale header claim ('the owner holds no member row') was already corrected when the question was filed; the seats.ts header now records the decision instead of the question.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const S='lib/spaces/seats.ts',M='lib/pricing/feature-meters.ts';if(!fs.existsSync(S)||!fs.existsSync(M))process.exit(79);const s=fs.readFileSync(S,'utf8'),m=fs.readFileSync(M,'utf8');const bad=[];if(!/COLLECTIVE IS SETTLED/.test(s))bad.push('seats.ts no longer records the OWN-033 decision');if(/profile_id\\\\s*<>\\\\s*owner_profile_id|neq\\\\(.profile_id.,/.test(s))bad.push('usedSeats now excludes the owner, contradicting the owner decision (owner + 2, total 3)');if(!/space_team:\\\\s*{\\\\s*free:\\\\s*1,\\\\s*business:\\\\s*2\\\\s*}/.test(m))bad.push('the space_team ladder moved off free 1 / business 2 without a new decision');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+        "cmd": "node -e \"const fs=require('fs');const S='lib/spaces/seats.ts',M='lib/pricing/meter-limits.ts';if(!fs.existsSync(S)||!fs.existsSync(M))process.exit(79);const s=fs.readFileSync(S,'utf8'),m=fs.readFileSync(M,'utf8');const bad=[];if(!/COLLECTIVE IS SETTLED/.test(s))bad.push('seats.ts no longer records the OWN-033 decision');if(/profile_id\\\\s*<>\\\\s*owner_profile_id|neq\\\\(.profile_id.,/.test(s))bad.push('usedSeats now excludes the owner, contradicting the owner decision (owner + 2, total 3)');if(!/space_team:\\\\s*{\\\\s*free:\\\\s*1,\\\\s*business:\\\\s*2\\\\s*}/.test(m))bad.push('the space_team ladder moved off free 1 / business 2 without a new decision');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
       }
     },
     {
@@ -14531,10 +14531,10 @@
         "file": "docs/FOCUS-MODEL.md",
         "ref": "ADR-1403 Q5; survey 2026-09-19"
       },
-      "detail": "FILED 2026-09-19. FOCUS-MODEL Q5: sell a course, gate content to a tier, member directory, space-level discussion, completion analytics. Sequence AFTER interior (LIVE-254, HYG-033, LIVE-409, LIVE-410). Keep as one sequenced row so five operator asks do not each become a parallel P1.\n\nUPDATED 2026-09-20. Children: LIVE-420 (directory, done), LIVE-422 (analytics, done), LIVE-425 (sell-course Connect prompt, done). LIVE-426 closed the leftover Business-plan lie in help (LIVE-410). Price half of sell-a-course already lived on ADR-1397. Tier gate and Discussion still have their own PRs. Do not close this parent from a child. Do not add posts.scope_space_id from this row.\n\nUPDATED 2026-09-20: the tier-gate child is LIVE-427. Do not close this parent from that child. Discussion closed as LIVE-421 (ADR-1469).\n\nUPDATED 2026-09-20: automation lock-screen leftover of LIVE-228 is LIVE-432. Do not close this parent from that child.\n\nUPDATED 2026-09-20: Reach catalog leftover of LIVE-228 is LIVE-436. Do not close this parent from that child.",
+      "detail": "FILED 2026-09-19. FOCUS-MODEL Q5: sell a course, gate content to a tier, member directory, space-level discussion, completion analytics. Sequence AFTER interior (LIVE-254, HYG-033, LIVE-409, LIVE-410). Keep as one sequenced row so five operator asks do not each become a parallel P1.\n\nUPDATED 2026-09-20. Children: LIVE-420 (directory, done), LIVE-422 (analytics, done), LIVE-425 (sell-course Connect prompt, done). LIVE-426 closed the leftover Business-plan lie in help (LIVE-410). Price half of sell-a-course already lived on ADR-1397. Tier gate and Discussion still have their own PRs. Do not close this parent from a child. Do not add posts.scope_space_id from this row.\n\nUPDATED 2026-09-20: the tier-gate child is LIVE-427. Do not close this parent from that child. Discussion closed as LIVE-421 (ADR-1469).\n\nUPDATED 2026-09-20: automation lock-screen leftover of LIVE-228 is LIVE-432. Do not close this parent from that child.\n\nUPDATED 2026-09-20: Circle membership delivery leftover is LIVE-436. Do not close this parent from that child.\n\nUPDATED 2026-09-20: LIVE-429 closed the leftover that payment_status was written and never shown. Access still ignores the column. Do not close this parent from that child.\n\nUPDATED 2026-09-20: seat-counter Collective leftover is LIVE-433. Do not close this parent from that child. Automations and collaborator-host copy stay on their own open PRs. Programs catalog leftover is LIVE-434.\n\nUPDATED 2026-09-20: Reach catalog leftover of LIVE-228 is LIVE-436. Do not close this parent from that child.",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-20: sell-course Connect is LIVE-425 (done). Directory is LIVE-420. Analytics is LIVE-422. Help no longer restates the Business membership wall (LIVE-426). Tier gate is LIVE-427 (own PR). Discussion is LIVE-421 (done). Automation lock-screen leftover is LIVE-432 (own PR). Reach catalog leftover is LIVE-436 (own PR). Closes when each of the five has its own child row with a passing probe, or a ruling drops one.",
+        "evidence": "2026-09-20: sell-course Connect is LIVE-425 (done). Directory is LIVE-420. Analytics is LIVE-422. Help no longer restates the Business membership wall (LIVE-426). Tier gate is LIVE-427 (own PR). Discussion is LIVE-421 (done). Automation lock-screen leftover is LIVE-432 (own PR). Reach catalog leftover is LIVE-440 (own PR). Closes when each of the five has its own child row with a passing probe, or a ruling drops one.Closes when each of the five has its own child row with a passing probe, or a ruling drops one. Circle membership delivery is LIVE-436 (this PR). Space past-due display is LIVE-429 (this PR).",
         "checked": "2026-09-20"
       }
     },
@@ -14882,20 +14882,20 @@
     },
     {
       "id": "LIVE-415",
-      "title": "Calendar C1: the Admin calendar is a mini production-management console",
+      "title": "Calendar C1: Admin is the Guest month plus staff events",
       "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
       "source": {
         "file": "app/(main)/spaces/[slug]/(profile)/calendar/page.tsx",
-        "ref": "ADR-1389, ADR-1445, ADR-1450"
+        "ref": "ADR-1389, ADR-1445, ADR-1450, ADR-1486"
       },
-      "detail": "Owner 2026-09-19: Admin is not a second copy of the guest month. It is a small PM console: what is pencilled, in planning, in production, and cancelled, with the month grid as the date map. StaffCalendar today is the settings drawer. C1 is the operator list. Builds after C0 (LIVE-414).\n\nWHAT SHIPPED. Admin mounts CalendarPmConsole. The board is operatorListItems (lib/calendar/pm-console.ts): Pencil, Planning, Production, Cancelled, plus live and draft events. Private entries and Unavailable stay on the date map. StaffCalendar is the child date map and the settings drawer. C2–C4 own the named lanes.",
+      "detail": "Owner 2026-09-20: Admin is the same sliding month as Guest, with drafts, pencils, private dates, and unpublished gatherings. It is not the PM-console wrap. Stage columns stay on Projects. CalendarPmConsole remains on disk for C2–C4 lane probes and is not mounted.\n\nWHAT SHIPPED. CalendarWorkspace Admin mounts StaffCalendar over loadAdminCalendar. Guest stays EventCalendar over guestLiveItems. List is the condensed index plus right console. Did not revive CalendarPmConsole on the tab.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e 'const fs=require(\"fs\");if(!fs.existsSync(\"components/spaces/calendar-pm-console.tsx\"))process.exit(1);const s=fs.readFileSync(\"components/spaces/calendar-workspace.tsx\",\"utf8\");if(!s.includes(\"CalendarPmConsole\"))process.exit(1)'",
-        "note": "Passes when Admin mounts CalendarPmConsole in the sliding workspace. Rewritten 2026-09-20 for ADR-1467."
+        "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"components/spaces/calendar-workspace.tsx\",\"utf8\");if(!s.includes(\"StaffCalendar\"))process.exit(1);if(s.includes(\"CalendarPmConsole\"))process.exit(1);const p=fs.readFileSync(\"app/(main)/spaces/[slug]/(profile)/calendar/page.tsx\",\"utf8\");if(!p.includes(\"loadAdminCalendar\"))process.exit(1)'",
+        "note": "Passes when Admin mounts StaffCalendar in the sliding workspace and does not mount CalendarPmConsole. Rewritten 2026-09-20 for ADR-1486."
       },
       "closed": "2026-09-19"
     },
@@ -15166,6 +15166,63 @@
       "closed": "2026-09-20"
     },
     {
+      "id": "LIVE-435",
+      "title": "Your people still names three Collective seats after LIVE-228",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/admin/modules/space-modules.ts",
+        "ref": "LIVE-228 leftover; ADR-1484; ADR-1438"
+      },
+      "detail": "FILED 2026-09-20 from the LIVE-411 leftover pass. Packets next was LIVE-411 (umbrella). Money and events lanes were empty. LIVE-228 retired Collective as a plan label. space_team is 1 free and 2 on Business. The Your people catalog note still said \"1 seat free, 3 included on Collective, more per seat\". That sentence is the lever the console badges come back to when the beta window closes.\n\nPREMISE RE-TESTED 2026-09-20. PLACEHOLDER_METER_LIMITS.space_team is { free: 1, business: 2 }. allowanceTextByTier already says 2 seats on Business. The catalog string did not.\n\nCLOSED 2026-09-20 (ADR-1484). peopleCatalogNote reads the meter and SPACE_PLAN_LABEL.business. space.people.freeNote calls it. Never Collective. Never a typed 3. No migration. Did not close LIVE-411. Did not absorb Reach, Email, automations, Programs, or the seat counter.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const note=fs.readFileSync(\"lib/spaces/people-catalog-note.ts\",\"utf8\");if(!note.includes(\"export function peopleCatalogNote\"))fail(\"peopleCatalogNote is gone\");if(!note.includes(\"PLACEHOLDER_METER_LIMITS.space_team\"))fail(\"people catalog note does not read the seat meter\");if(!note.includes(\"SPACE_PLAN_LABEL.business\"))fail(\"people catalog note does not name Business from the plan label\");if(/Collective/.test(note))fail(\"people-catalog-note still types Collective\");const cat=fs.readFileSync(\"lib/admin/modules/space-modules.ts\",\"utf8\");if(!cat.includes(\"peopleCatalogNote()\"))fail(\"space.people no longer reads peopleCatalogNote\");if(/1 seat free, 3 included on Collective/.test(cat))fail(\"space.people still names 3 Collective seats\");const meters=fs.readFileSync(\"lib/pricing/meter-limits.ts\",\"utf8\");if(!/space_team:\\s*\\{\\s*free:\\s*1,\\s*business:\\s*2\\s*\\}/.test(meters))fail(\"space_team left the 1/2 ladder\");console.log(\"LIVE-435 ok\")'",
+        "note": "Passes when space.people reads peopleCatalogNote, that note names Business from the seat meter, and space_team stays 1 free / 2 on Business."
+      },
+      "closed": "2026-09-20"
+    },
+    {
+      "id": "LIVE-434",
+      "title": "Program settings and the catalog still name Collective after LIVE-228 moved Programs onto Business",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/spaces/program-wall.ts",
+        "ref": "LIVE-228 leftover; ADR-1483; ADR-1438"
+      },
+      "detail": "FILED 2026-09-20 from the LIVE-411 re-test. Packets money/events/hygiene were empty. LIVE-411 is the umbrella and stays open. Seat-counter is LIVE-433. Automations and collaborator hosting have their own PRs. The leftover was the Program settings tease (Collective carries Programs / See what Collective adds) and space.program freeNote (Included with Collective). Collective is not a plan label (LIVE-228). Help already names Business.\n\nPREMISE RE-TESTED 2026-09-20. program sits in BUSINESS_DEPTH_ENTITLEMENT_KEYS. targetForEntitlementKey('program') is business. The typed Collective sentences were still the tease and the catalog note.\n\nCLOSED 2026-09-20 (ADR-1483). programWallLabel is the one seam. The tease and catalog note interpolate it. The entitlement stays on Business. No migration. Did not close LIVE-411. Did not absorb the space.people catalog note.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const page=fs.readFileSync(\"app/(main)/spaces/[slug]/settings/program/page.tsx\",\"utf8\");if(/Collective/.test(page))fail(\"program page still names Collective\");if(!page.includes(\"programTeaseBody\"))fail(\"the Program page no longer uses programTeaseBody\");if(!page.includes(\"programTeaseCta\"))fail(\"the Program page no longer uses programTeaseCta\");const w=fs.readFileSync(\"lib/spaces/program-wall.ts\",\"utf8\");if(!w.includes(\"export function programWallLabel\"))fail(\"programWallLabel is gone\");if(!w.includes(\"targetForEntitlementKey\"))fail(\"program wall is typed, not derived\");const cat=fs.readFileSync(\"lib/admin/modules/space-modules.ts\",\"utf8\");const row=cat.match(/id: .space\\.program.[\\s\\S]*?parent: .space\\.content./);if(!row)fail(\"space.program row missing\");if(!row[0].includes(\"programCatalogNote()\"))fail(\"space.program freeNote is no longer programCatalogNote\");if(/Collective/.test(row[0]))fail(\"space.program row still names Collective\");const plans=fs.readFileSync(\"lib/pricing/plans.ts\",\"utf8\");if(!plans.includes(String.fromCharCode(39)+\"program\"+String.fromCharCode(39)))fail(\"program left the Business depth set\");console.log(\"LIVE-434 ok\")'",
+        "note": "Passes when the Program settings tease and space.program catalog note no longer type Collective, the wall is derived from the entitlement depth, and program stays on Business."
+      },
+      "closed": "2026-09-20"
+    },
+    {
+      "id": "LIVE-433",
+      "title": "Seat counter still names the Collective plan after LIVE-228 retired the tier",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/spaces/seat-counter.tsx",
+        "ref": "LIVE-410 leftover; ADR-1482; LIVE-228; ADR-917"
+      },
+      "detail": "FILED 2026-09-20 from the LIVE-411 re-test. Packets next was LIVE-411 (umbrella). Money and events lanes were empty. LIVE-428 fixed member-ticket writers. The remaining unclaimed leftover on this tree was the seat counter: when every operator seat is taken it said \"Team roles come with the Collective plan.\"\n\nPREMISE RE-TESTED 2026-09-20. SPACE_PLANS has no collective. space_team is a meter (free 1, business 2), not a FEATURE_GATES wall. Help already names two included seats plus an add-on. The caption was the leftover.\n\nCLOSED 2026-09-20 (ADR-1482). Full-meter dest is Extra seats are on Plan and billing. Members stay free. No migration. Did not close LIVE-411. Did not absorb automations (#2807), collaborator hosting (#2805), or the Programs upsell.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const s=fs.readFileSync(\"components/spaces/seat-counter.tsx\",\"utf8\");if(/Collective/.test(s))fail(\"seat-counter still names Collective\");if(!s.includes(\"Extra seats are on Plan and billing.\"))fail(\"the billing dest sentence is gone\");if(!s.includes(\"Admins, moderators, and editors use a seat. Members are free.\"))fail(\"the free-member rule is gone\");if(!fs.existsSync(\"components/spaces/seat-counter.test.ts\"))fail(\"no seat-counter test\");console.log(\"LIVE-433 ok\")'",
+        "note": "Passes when the seat counter no longer types Collective, the full-meter dest names Plan and billing, and the free-member rule stays."
+      },
+      "closed": "2026-09-20"
+    },
+    {
       "id": "LIVE-432",
       "title": "Automation lock screen still names the Collective plan after LIVE-228 merged that depth into Business",
       "status": "done",
@@ -15186,6 +15243,82 @@
     },
     {
       "id": "LIVE-436",
+      "title": "A free Space can sell a membership and still cannot include a Circle with it",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/circles/visibility.ts",
+        "ref": "LIVE-410 leftover; ADR-1485; ADR-1415"
+      },
+      "detail": "FILED 2026-09-20 from the LIVE-410 re-test. Packets next was LIVE-411 (umbrella). Money and events lanes were empty. LIVE-410 let a free Space sell memberships. Circle access = tier and a priced tier linked to a Circle still required private.space_can_sell, a Business+ plan list. That sold half a feature: you could take the money and could not deliver the room.\n\nPREMISE RE-TESTED 2026-09-20. FEATURE_GATES.space_memberships is free. spaceCanSell still ranked on SPACE_SELLING_PLANS. availableAccessModes hid tier from a free Space. CIRCLE_ACCESS_LIMIT_NOTE said Selling a tier comes with the Business plan. enforce_circle_access_shape and enforce_membership_tier_circle_link still raised circle_access_plan_floor / circle_link_plan_floor. ADR-1475 deferred this from the help pass.\n\nCLOSED 2026-09-20 (ADR-1485). space_can_sell is a real-Space check. The two triggers drop the plan floor. A free Space is offered tier. A personal Circle still cannot sell. Checkout still refuses when Connect is not payout-ready. Did not close LIVE-411.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const {join}=require(\"path\");const fail=(m)=>{console.error(m);process.exit(1)};const v=fs.readFileSync(\"lib/circles/visibility.ts\",\"utf8\");if(v.includes(\"Selling a tier comes with the Business plan\"))fail(\"limit note still names Business\");if(/SPACE_SELLING_PLANS\\.includes\\(space\\.plan/.test(v))fail(\"spaceCanSell still ranks on a plan list\");if(!v.includes(\"if (mode === \\x27tier\\x27 && !spaceCanSell(space))\"))fail(\"tier still is not gated through spaceCanSell\");const files=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\")).sort();const latestShape=files.filter(f=>fs.readFileSync(join(\"supabase/migrations\",f),\"utf8\").includes(\"create or replace function public.enforce_circle_access_shape\")).pop();if(!latestShape)fail(\"shape trigger replace is gone\");const shape=fs.readFileSync(join(\"supabase/migrations\",latestShape),\"utf8\");if(shape.includes(\"circle_access_plan_floor\"))fail(\"latest shape trigger still raises a plan floor\");const latestSell=files.filter(f=>fs.readFileSync(join(\"supabase/migrations\",f),\"utf8\").includes(\"create or replace function private.space_can_sell\")).pop();if(!latestSell)fail(\"space_can_sell replace is gone\");const sell=fs.readFileSync(join(\"supabase/migrations\",latestSell),\"utf8\");if(/coalesce\\(s\\.plan, .free.\\) in \\(/.test(sell))fail(\"latest space_can_sell still ranks on a plan list\");const t=fs.readFileSync(\"lib/circles/visibility.test.ts\",\"utf8\");if(!t.includes(\"a FREE Space gets both Space audiences AND tier\"))fail(\"free-Space tier pin is gone\");const rail=fs.readFileSync(\"app/(main)/circles/circle-access-rail.test.ts\",\"utf8\");if(rail.includes(\"a Space on a FREE plan is not offered tier\"))fail(\"rail still refuses tier on free\");console.log(\"LIVE-436 ok\")'",
+        "note": "Passes when a free Space is offered tier, spaceCanSell is not a plan list, and the latest shape trigger plus space_can_sell no longer raise a Business plan floor."
+      },
+      "closed": "2026-09-20"
+    },
+    {
+      "id": "LIVE-429",
+      "title": "A past-due Space membership is written and never shown",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/FOCUS-MODEL.md",
+        "ref": "FOCUS-MODEL §6 item 3; LIVE-410 leftover; ADR-1478"
+      },
+      "detail": "FILED 2026-09-20 from the LIVE-411 re-test after the Journey tier gate landed. Packets next was LIVE-411 (umbrella). Money and events lanes were empty. FOCUS-MODEL §6 item 3 said payment_status is never enforced and Crew dunning does not cover Space dues. Premise re-tested first: the webhook already writes pending/active/past_due/canceled (lib/billing/space-subscriptions.ts). isSpacePaidMember and private.is_space_paid_member deliberately ignore the column (ADR-1092), because free joins are status=active with payment_status=pending. No UI selected the column. Settings Plan and billing only reads profiles.membership_payment_status.\n\nCLOSED 2026-09-20 (ADR-1478). Display only. isPastDueSpaceMembership is true only for past_due. The member sees the notice on the Space join card and on Settings Plan and billing. The host sees a Payment failed chip. Access is unchanged. ROOT never lists. billingLive() still darkens the Settings list. No migration. Did not close LIVE-411. Did not absorb LIVE-423. Did not move Circle tier off space_can_sell.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const d=fs.readFileSync(\"lib/spaces/membership-dunning.ts\",\"utf8\");if(!d.includes(\"export function isPastDueSpaceMembership\"))fail(\"the past-due predicate is gone\");if(!d.includes(\"paymentStatus === \\x27past_due\\x27\"))fail(\"the predicate no longer keys on past_due\");const j=fs.readFileSync(\"components/spaces/membership-join.tsx\",\"utf8\");if(!j.includes(\"isPastDueSpaceMembership\"))fail(\"the join surface never asks the past-due predicate\");if(!j.includes(\"MembershipPastDueBanner\"))fail(\"the join surface no longer renders the banner\");const o=fs.readFileSync(\"components/spaces/membership-owner-list.tsx\",\"utf8\");if(!o.includes(\"isPastDueSpaceMembership\"))fail(\"the owner list never asks the past-due predicate\");const b=fs.readFileSync(\"app/(main)/settings/billing/section.tsx\",\"utf8\");if(!b.includes(\"listMyPastDueSpaceMemberships\"))fail(\"Settings billing no longer lists Space past-due\");const m=fs.readFileSync(\"lib/spaces/memberships.ts\",\"utf8\");if(!m.includes(\"export async function listMyPastDueSpaceMemberships\"))fail(\"the reader left the allowlisted memberships module\");if(!m.includes(\"payment_status\"))fail(\"memberships reads no longer select payment_status\");if(d.includes(\"@/lib/supabase/admin\"))fail(\"membership-dunning.ts imported the admin client\");if(!fs.existsSync(\"lib/spaces/membership-dunning.test.ts\"))fail(\"no dunning test\");console.log(\"LIVE-429 ok\")'",
+        "note": "Passes when the past-due predicate exists, both member surfaces and the host list read it, and Settings billing lists Space dues. Access may still ignore the column."
+      },
+      "closed": "2026-09-20"
+    },
+    {
+      "id": "LIVE-430",
+      "title": "Collaborator-host writers still name the Collective plan after LIVE-228 retired it",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/spaces/function-access.ts",
+        "ref": "LIVE-410 leftover; ADR-1479; ADR-1477; ADR-810; LIVE-228"
+      },
+      "detail": "FILED 2026-09-20 from the LIVE-410 re-test. Packets next was LIVE-411 (umbrella). Money and events lanes were empty. LIVE-428 fixed member-ticket writers and left collaborator hosting alone. The leftover was the operator collaborator surfaces: collaborations-actions, share-actions, and the locked preview still said \"the Collective plan.\" Collective is not a plan label (LIVE-228). The gate is Business. Help already said Business.\n\nPREMISE RE-TESTED 2026-09-20. FEATURE_GATES.space_collaborators.minEntitlement is business. spaceCanHostCollaborators already reads that gate. The typed Collective sentence was still the refusal and the locked hint.\n\nCLOSED 2026-09-20 (ADR-1479). resolveCollaboratorHostWall is the one seam. Both writers and the locked preview use it. The locked hint interpolates featureWallLabel. The code default stays Business. An override that raises the gate still refuses and still names the raised plan. No migration. Did not close LIVE-411. Did not move automations off a typed Collective sentence.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const files=[\"lib/spaces/collaborator-host-gate.ts\",\"app/(main)/spaces/[slug]/collaborations-actions.ts\",\"app/(main)/events/share-actions.ts\",\"app/(main)/spaces/[slug]/settings/collaborators/collaborators-body.tsx\"];for (const f of files){const s=fs.readFileSync(f,\"utf8\");if(/Collective plan/.test(s))fail(f+\" still names the Collective plan\")}const g=fs.readFileSync(\"lib/spaces/collaborator-host-gate.ts\",\"utf8\");if(!g.includes(\"featureWallLabel\"))fail(\"collaborator-host-gate no longer names the wall through featureWallLabel\");if(!g.includes(\"export function collaboratorHostWallSentence\"))fail(\"collaboratorHostWallSentence is gone\");if(!g.includes(\"export async function resolveCollaboratorHostWall\"))fail(\"resolveCollaboratorHostWall is gone\");const gates=fs.readFileSync(\"lib/pricing/gates.ts\",\"utf8\");const m=gates.match(/space_collaborators:\\s*\\{[^}]+\\}/);if(!m)fail(\"space_collaborators gate missing\");if(/minEntitlement:\\s*.collective./.test(m[0]))fail(\"space_collaborators left the Business floor\");if(!/minEntitlement:\\s*.business./.test(m[0]))fail(\"space_collaborators is not on the Business floor\");console.log(\"LIVE-430 ok\")'",
+        "note": "Passes when the collaborator-host writers and locked preview no longer type Collective plan, the loader names the wall through featureWallLabel, and space_collaborators stays on the Business floor."
+      },
+      "closed": "2026-09-20"
+    },
+    {
+      "id": "LIVE-431",
+      "title": "Space Home revenue still misses gifts to the fund after the ticket arm",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/commerce/orders.ts",
+        "ref": "LIVE-375 leftover; ADR-1480; ADR-1384"
+      },
+      "detail": "FILED 2026-09-20 from the LIVE-410 / LIVE-375 re-test. Packets next was LIVE-411 (umbrella). Money and events lanes were empty. LIVE-430 is the collaborator-host Collective leftover (#2805). Circle tier on free, past-due display, and my-memberships already have their own PRs. LIVE-375 taught Space Home to read event_tickets beside commerce_orders. A gift to a Space fund still never wrote commerce_orders. It writes space_donations through recordSpaceDonationFromSession. A Space whose only money was the fund still read $0.00 under No sales yet.\n\nPREMISE RE-TESTED 2026-09-20. spaceEarningsSummary folded commerce then tickets. space_donations already has amount_cents, platform_fee_cents, succeeded_at, refunded_at, status, and source. Get Paid lists Donations as a money path. Home did not read the table. space_memberships still has no amount and no invoice ledger.\n\nCLOSED 2026-09-20 (ADR-1480). donationEarnings is the third arm. The window is succeeded_at. Pending and abandoned are not revenue. A refund is status or refunded_at. An explicit network gift lands in the network slice. The donation read fails safe on its own. No migration. Did not close LIVE-411. Did not invent membership renewals from tier price times started_at.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const s=fs.readFileSync(\"lib/commerce/orders.ts\",\"utf8\");if(!s.includes(\"async function donationEarnings\"))fail(\"donationEarnings is gone\");if(!s.includes(\"space_donations\"))fail(\"the donation arm no longer reads space_donations\");if(!s.includes(\"r.source === \\x27network\\x27\"))fail(\"a network gift no longer lands in the network slice\");const t=fs.readFileSync(\"lib/commerce/orders.test.ts\",\"utf8\");if(!t.includes(\"LIVE-431\"))fail(\"no donation earnings test\");if(!t.includes(\"space_donations\"))fail(\"the test mock no longer names space_donations\");const dash=fs.readFileSync(\"components/spaces/dashboard/space-dashboard.tsx\",\"utf8\");if(!dash.includes(\"spaceEarningsSummary\"))fail(\"Space Home no longer mounts the earnings reader\");console.log(\"LIVE-431 ok\")'",
+        "note": "Passes when the donation arm reads space_donations, a network gift can reach the network slice, the test names LIVE-431, and Space Home still mounts the reader. Written 2026-09-20 against the missing gift, not a membership sum."
+      },
+      "closed": "2026-09-20"
+    },
+    {
+      "id": "LIVE-440",
       "title": "Reach still names a Collective QR rung after LIVE-228 merged that depth into Business",
       "status": "done",
       "priority": "P2",
@@ -15193,12 +15326,12 @@
       "size": "S",
       "source": {
         "file": "lib/admin/modules/space-modules.ts",
-        "ref": "LIVE-228 leftover; ADR-1485; ADR-1438"
+        "ref": "LIVE-228 leftover; ADR-1489; ADR-1438"
       },
-      "detail": "FILED 2026-09-20 from the LIVE-411 leftover pass. Packets next was LIVE-411 (umbrella). Money and events lanes were empty. LIVE-228 retired Collective as a plan label. space_qr is 3 free and unlimited on Business. codeCapForPlan already reads that meter. The Reach catalog note still said \"3 codes free, then 500 on Business, unlimited on Collective\". That sentence is the lever the console badges come back to when the beta window closes.\n\nPREMISE RE-TESTED 2026-09-20. PLACEHOLDER_METER_LIMITS.space_qr is { free: 3, business: null }. PLACEHOLDER_METER_LIMITS.space_qr.collective is undefined. The catalog string still named 500 and Collective.\n\nCLOSED 2026-09-20 (ADR-1485). reachCatalogNote reads the meter and SPACE_PLAN_LABEL.business. space.reach.freeNote calls it. Never Collective. Never a typed 500. No migration. Did not close LIVE-411. Did not absorb Email, Your people, Programs, or the seat counter.",
+      "detail": "FILED 2026-09-20 from the LIVE-411 leftover pass. Packets next was LIVE-411 (umbrella). Money and events lanes were empty. LIVE-228 retired Collective as a plan label. space_qr is 3 free and unlimited on Business. codeCapForPlan already reads that meter. The Reach catalog note still said \"3 codes free, then 500 on Business, unlimited on Collective\". That sentence is the lever the console badges come back to when the beta window closes.\n\nPREMISE RE-TESTED 2026-09-20. PLACEHOLDER_METER_LIMITS.space_qr is { free: 3, business: null }. PLACEHOLDER_METER_LIMITS.space_qr.collective is undefined. The catalog string still named 500 and Collective.\n\nCLOSED 2026-09-20 (ADR-1489). reachCatalogNote reads the meter and SPACE_PLAN_LABEL.business. space.reach.freeNote calls it. Never Collective. Never a typed 500. No migration. Did not close LIVE-411. Did not absorb Email, Your people, Programs, or the seat counter.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const note=fs.readFileSync(\"lib/spaces/reach-catalog-note.ts\",\"utf8\");if(!note.includes(\"export function reachCatalogNote\"))fail(\"reachCatalogNote is gone\");if(!note.includes(\"PLACEHOLDER_METER_LIMITS.space_qr\"))fail(\"reach catalog note does not read the QR meter\");if(!note.includes(\"SPACE_PLAN_LABEL.business\"))fail(\"reach catalog note does not name Business from the plan label\");if(/Collective/.test(note))fail(\"reach-catalog-note still types Collective\");const cat=fs.readFileSync(\"lib/admin/modules/space-modules.ts\",\"utf8\");if(!cat.includes(\"reachCatalogNote()\"))fail(\"space.reach no longer reads reachCatalogNote\");if(/unlimited on Collective/.test(cat))fail(\"space.reach still names a Collective QR rung\");if(/500 on Business/.test(cat))fail(\"space.reach still names the leftover 500 Business rung\");const meters=fs.readFileSync(\"lib/pricing/feature-meters.ts\",\"utf8\");if(!/space_qr:\\s*\\{\\s*free:\\s*3,\\s*business:\\s*null\\s*\\}/.test(meters))fail(\"space_qr left the 3 / unlimited ladder\");console.log(\"LIVE-436 ok\")'",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const note=fs.readFileSync(\"lib/spaces/reach-catalog-note.ts\",\"utf8\");if(!note.includes(\"export function reachCatalogNote\"))fail(\"reachCatalogNote is gone\");if(!note.includes(\"PLACEHOLDER_METER_LIMITS.space_qr\"))fail(\"reach catalog note does not read the QR meter\");if(!note.includes(\"SPACE_PLAN_LABEL.business\"))fail(\"reach catalog note does not name Business from the plan label\");if(/Collective/.test(note))fail(\"reach-catalog-note still types Collective\");const cat=fs.readFileSync(\"lib/admin/modules/space-modules.ts\",\"utf8\");if(!cat.includes(\"reachCatalogNote()\"))fail(\"space.reach no longer reads reachCatalogNote\");if(/unlimited on Collective/.test(cat))fail(\"space.reach still names a Collective QR rung\");if(/500 on Business/.test(cat))fail(\"space.reach still names the leftover 500 Business rung\");const meters=fs.readFileSync(\"lib/pricing/meter-limits.ts\",\"utf8\");if(!/space_qr:\\s*\\{\\s*free:\\s*3,\\s*business:\\s*null\\s*\\}/.test(meters))fail(\"space_qr left the 3 / unlimited ladder\");console.log(\"LIVE-440 ok\")'",
         "note": "Passes when space.reach reads reachCatalogNote, that note names Business from the QR meter, and space_qr stays 3 free / unlimited on Business."
       },
       "closed": "2026-09-20"

@@ -85,21 +85,22 @@ export async function spaceFunctionAccessLive(
   }
 }
 
-// ── Collaborator hosting (ADR-799 §B / ADR-810 / ADR-835) ────────────────────────────────────────
+// ── Collaborator hosting (ADR-799 §B / ADR-810 / LIVE-430) ────────────────────────────────────────
 // The LIVE plan gate for HOSTING collaborator spaces + hosting events WITH Collaborator Spaces. The
-// HOST side needs the plan (feature `space_collaborators`, Collective floor; Non Profit clears it):
+// HOST side needs the plan (feature `space_collaborators`, Business floor; Non Profit clears it):
 // the venue in a space↔space collaboration, or the EVENT'S HOME SPACE for an event Collaborator.
 // BEING a collaborator (the guest side, incl. an event Collaborator) is free for any active Business /
 // Non Profit Space. This is the SERVER-SIDE authority the collaboration + event-share actions call
 // before writing (invite, feature-request, and every accept), so the free→paid wall cannot be bypassed
-// by driving the actions directly. While the gates are not live (billing off, or the beta grace window
-// still open), featureAllowed short-circuits to TRUE, so hosting stays free + universal (today's
-// behavior). FAIL-SAFE: an error degrades to GRANTED, matching every other reader (never a lockout).
+// by driving the actions directly. The refusal sentence names the wall through featureWallLabel
+// (LIVE-430). While the gates are not live (billing off, or the beta grace window still open),
+// featureAllowed short-circuits to TRUE, so hosting stays free + universal (today's behavior).
+// FAIL-SAFE: an error degrades to GRANTED, matching every other reader (never a lockout).
 
 /** May this space HOST collaborators (venue grain) / host events with Collaborators (event grain)
- *  under its current plan, LIVE? Collective/Non Profit pass; a free or Business space is gated once
+ *  under its current plan, LIVE? Business/Non Profit/Independent pass; a free space is gated once
  *  the gates are live (and sees the locked preview meanwhile). Pass the plan explicitly, or it reads
- *  space.plan. FAIL-SAFE to granted. */
+ *  space.plan. FAIL-SAFE to granted. The locked sentence is resolveCollaboratorHostWall, not this boolean. */
 export async function spaceCanHostCollaborators(
   space: ({ plan?: string | null } & SpaceLike) | null | undefined,
   plan?: string | null,

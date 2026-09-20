@@ -109,10 +109,14 @@ billing.
 connected. **Manage payouts** opens the Stripe dashboard, where you can see a payout and manage your
 bank details and payout schedule.
 
-**Where are my sales totals?** Not on this page. Get paid answers "can I take money", and the numbers
-sit with the tool that made them: orders in your **Shop** console, tickets on the event's manage
-screen.
+**Where are my sales totals?** Not on this page. Get paid answers "can I take money". **Home** shows
+the last 30 days across shop orders, tickets, and gifts to your fund. Orders also sit in your
+**Shop** console, and tickets sit on the event's manage screen.
 
 **I am the owner and I already set up payouts. Why does a tool still say it cannot take payment?** The
 payout account is one of two conditions. Check the path's own setup as well: a tier, a product or a
 ticket that is still a draft stops that path on its own, whatever your payout account says.
+
+**A member shows Payment failed. Did they leave?** No. Their renewal did not go through, and they
+are still a member while Stripe retries the card. They see the same notice on the Space and in
+Settings. You can cancel them from the member list if you need the seat.

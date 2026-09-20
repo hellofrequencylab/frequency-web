@@ -1,8 +1,8 @@
-// Reach catalog note — LIVE-436. QR codes are a meter (3 free, unlimited on
+// Reach catalog note — LIVE-440. QR codes are a meter (3 free, unlimited on
 // Business). The Reach freeNote reads this seam, never the retired plan
 // label (LIVE-228) and never the leftover "500 on Business" rung.
 
-import { PLACEHOLDER_METER_LIMITS } from '@/lib/pricing/feature-meters'
+import { PLACEHOLDER_METER_LIMITS } from '@/lib/pricing/meter-limits'
 import { SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 
 /** The lever on the Reach catalog card. Numbers come from `space_qr`. */

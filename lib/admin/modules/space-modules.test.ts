@@ -14,6 +14,8 @@ import {
   spaceModuleChildren,
 } from './space-modules'
 import { SPACE_FUNCTIONS, type SpaceFunctionKey } from '@/lib/spaces/functions'
+import { peopleCatalogNote } from '@/lib/spaces/people-catalog-note'
+
 import { reachCatalogNote } from '@/lib/spaces/reach-catalog-note'
 
 // ADR-543 (docs/MODULAR-MENU.md P0): the universal SPACE module catalog + manifest.
@@ -371,7 +373,14 @@ describe('access badges match the real free-tier caps (ADR-784)', () => {
     expect(spaceModuleById('space.people')!.access).toBe('freemium')
   })
 
-  it('names Business QR codes from the meter, never Collective (LIVE-436)', () => {
+  it('names Business seats from the meter, never Collective (LIVE-435)', () => {
+    const note = spaceModuleById('space.people')!.freeNote
+    expect(note).toBe(peopleCatalogNote())
+    expect(note).not.toMatch(/Collective/)
+    expect(note).toContain('Business')
+  })
+
+  it('names Business QR codes from the meter, never Collective (LIVE-440)', () => {
     const note = spaceModuleById('space.reach')!.freeNote
     expect(note).toBe(reachCatalogNote())
     expect(note).not.toMatch(/Collective/)
@@ -389,5 +398,10 @@ describe('access badges match the real free-tier caps (ADR-784)', () => {
         expect(m.freeNote, `${m.id} needs a freeNote lever`).toBeTruthy()
       }
     }
+  })
+
+  it('names Program as a Business feature, never Collective (LIVE-434)', () => {
+    expect(spaceModuleById('space.program')!.freeNote).toBe('Included with Business')
+    expect(spaceModuleById('space.program')!.freeNote).not.toMatch(/Collective/)
   })
 })

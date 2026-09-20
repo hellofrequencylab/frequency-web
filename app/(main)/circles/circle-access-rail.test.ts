@@ -11,9 +11,9 @@ import { CIRCLE_ACCESS_LIMIT_NOTE, CIRCLE_ACCESS_MODES } from '@/lib/circles/vis
 //
 // Two halves, both network-free:
 //   1. WHAT THE RAIL OFFERS. getCircleAdminData narrows the list by the owning Space, because
-//      `trg_circles_access_shape` refuses the two Space modes on a personal Circle and refuses
-//      `tier` below a selling plan. A mode the trigger will refuse reads to a host as a broken
-//      save button, so it must never appear in the select.
+//      `trg_circles_access_shape` refuses the Space modes on a personal Circle. A mode the
+//      trigger will refuse reads to a host as a broken save button, so it must never appear
+//      in the select. `tier` follows the free membership floor (ADR-1476).
 //   2. WHAT THE SAVE ACCEPTS. The narrowing is UI politeness; a client can post anything. The
 //      action re-runs the same gate and RETURNS its refusal — an expected error is a return value,
 //      not a throw, because a thrown server-action message is redacted in production and the host
@@ -107,12 +107,12 @@ describe('the rail offers only the modes the trigger will accept', () => {
     expect(data?.access_modes).not.toContain('tier')
   })
 
-  it('a Space on a FREE plan is not offered tier, and keeps space_members', async () => {
+  it('a Space on a FREE plan is offered tier, and keeps space_members', async () => {
     seed({ access: 'open' }, FREE_SPACE)
     const data = await getCircleAdminData('sound-bath')
     expect(data?.access_modes).toContain('space_members')
-    expect(data?.access_modes).not.toContain('tier')
-    expect(data?.access_limited).toBe(true)
+    expect(data?.access_modes).toContain('tier')
+    expect(data?.access_limited).toBe(false)
   })
 
   it('a Space on a selling plan gets all five, and shows no limit note', async () => {
@@ -121,11 +121,10 @@ describe('the rail offers only the modes the trigger will accept', () => {
     expect(data?.access_limited).toBe(false)
   })
 
-  it('the circle`s CURRENT mode stays listed even when it could no longer be chosen', async () => {
-    // A Space that dropped off a selling plan keeps its `tier` circles as they are. Dropping the
-    // mode from the list would make the select claim the circle is something it is not, and the
-    // next save would silently change access nobody asked to change.
-    seed({ access: 'tier' }, FREE_SPACE)
+  it('the circle`s CURRENT mode stays listed even when this picker no longer offers it', async () => {
+    // A Space Circle only offers two doors. A hub already sitting on `tier` keeps that mode
+    // listed so the select does not claim the circle is something it is not.
+    seed({ access: 'tier', is_space_primary: true }, FREE_SPACE)
     const data = await getCircleAdminData('sound-bath')
     expect(data?.access).toBe('tier')
     expect(data?.access_modes).toContain('tier')
@@ -159,11 +158,11 @@ describe('setCircleAccessAction refuses by returning, never by throwing', () => 
     expect(updates).toHaveLength(0)
   })
 
-  it('tier on a FREE Space is refused with the reason, not attempted', async () => {
+  it('tier on a FREE Space saves, because memberships are open on every plan', async () => {
     seed({ access: 'open' }, FREE_SPACE)
     const res = await setCircleAccessAction('circle-1', 'sound-bath', 'tier')
-    expect(res).toEqual({ error: CIRCLE_ACCESS_LIMIT_NOTE })
-    expect(updates).toHaveLength(0)
+    expect(res).toEqual({ ok: true })
+    expect(updates).toEqual([{ table: 'circles', row: { access: 'tier' } }])
   })
 
   it('a trigger refusal becomes readable copy, not a raw Postgres code', async () => {
