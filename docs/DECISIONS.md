@@ -46876,3 +46876,24 @@ Premise re-tested 2026-09-20: `FEATURE_GATES.space_membership_tickets.minEntitle
 **Consequences.** A later typed "Collective plan" on a member-ticket writer or editor fails the LIVE-428 probe. Checkout still refuses when Connect is not payout-ready.
 
 **Rows.** LIVE-428.
+
+## ADR-1479: A Space's earnings count fund gifts, added as a third arm (LIVE-430)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-430` · numbered **1479** because **1478** is claimed by LIVE-429 · extends [ADR-1384](DECISIONS.md) (the ticket arm) · corroborated by `lib/commerce/orders.ts` (`donationEarnings`)
+
+**Context.** LIVE-375 / ADR-1384 taught Space Home to read `event_tickets` beside `commerce_orders`. A gift to a Space fund still never wrote `commerce_orders`. It writes `space_donations` through `recordSpaceDonationFromSession`. After that ticket arm, a Space whose only money was the fund still read $0.00 under "No sales yet". Packets next was LIVE-411 (umbrella). Money and events lanes were empty. Circle `tier` on free, past-due display, and my-memberships already have their own PRs.
+
+Premise re-tested 2026-09-20: `spaceEarningsSummary` folds commerce then tickets. `space_donations` has `amount_cents`, `platform_fee_cents`, `succeeded_at`, `refunded_at`, `status`, and `source`. Get Paid lists Donations as a money path. Home did not read the table. Memberships still have no amount and no invoice ledger, so they stay out.
+
+**Decision.**
+
+1. A third arm, not a second ledger. `donationEarnings` reads `space_donations` for this Space. The window is `succeeded_at`, matching tickets. Pending and abandoned rows are not revenue. A refund is recognised by status or `refunded_at`.
+2. Unlike tickets, a gift stores the effective order source. An explicit `network` gift lands in the network slice. Anything else, including a signed-out donor, stays out of it.
+3. The donation read fails safe on its own. A failure to read gifts returns the commerce and ticket number instead of collapsing the header to zeros.
+4. The fee is read, never re-derived. No migration. LIVE-411 stays open. Memberships stay out until they have a payment ledger.
+
+**Rejected.** Writing a `commerce_orders` row when a gift settles (the tidier model, the bigger change). Summing `space_membership_tiers.price_cents` on `started_at` (that invents renewals). Closing LIVE-411 from this leftover. Absorbing Circle-tier, past-due display, or my-memberships.
+
+**Consequences.** A later `spaceEarningsSummary` that drops `space_donations` fails the LIVE-430 probe. A network-sourced gift that never reaches `networkGrossCents` fails the test. Checkout still refuses when Connect is not payout-ready.
+
+**Rows.** LIVE-430.

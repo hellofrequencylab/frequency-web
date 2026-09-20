@@ -229,6 +229,76 @@ async function ticketEarnings(spaceId: string, sinceDays?: number): Promise<Spac
   return out
 }
 
+/**
+ * THE DONATION ARM (LIVE-430).
+ *
+ * Same leftover class as LIVE-375. A gift to a Space fund writes `space_donations` through
+ * `recordSpaceDonationFromSession`. It never writes `commerce_orders`. After the ticket arm, a
+ * Space that had taken gifts still read $0.00 under "No sales yet" whenever the only money was
+ * the fund.
+ *
+ * UNLIKE tickets, `space_donations.source` is the effective order source the fee was billed at
+ * (`self` | `network`). A network-sourced gift therefore lands in the network slice, the same
+ * rule `commerce_orders` already uses: only an explicit `network` counts. A signed-out donor
+ * degrades to `self` at checkout, so those gifts cannot inflate the network figure.
+ *
+ * The window is `succeeded_at`, matching tickets. Pending and abandoned rows never get that
+ * stamp. A refund is recognised by status or `refunded_at`, same as tickets.
+ *
+ * Memberships stay out of this arm. `space_memberships` has no amount and no invoice ledger, so
+ * summing a tier price on `started_at` would invent renewals that never happened.
+ */
+async function donationEarnings(spaceId: string, sinceDays?: number): Promise<SpaceEarnings> {
+  const out: SpaceEarnings = {
+    grossCents: 0,
+    feeCents: 0,
+    netCents: 0,
+    refundedCents: 0,
+    orderCount: 0,
+    networkGrossCents: 0,
+    networkFeeCents: 0,
+    networkOrderCount: 0,
+  }
+  if (!spaceId) return out
+
+  let q = db()
+    .from('space_donations')
+    .select('amount_cents, platform_fee_cents, status, refunded_at, source')
+    .eq('space_id', spaceId)
+    .not('succeeded_at', 'is', null)
+  if (sinceDays && sinceDays > 0) {
+    q = q.gte('succeeded_at', new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString())
+  }
+  const { data } = await q
+  const rows = (data ?? []) as {
+    amount_cents?: number | null
+    platform_fee_cents?: number | null
+    status?: string | null
+    refunded_at?: string | null
+    source?: string | null
+  }[]
+
+  for (const r of rows) {
+    const amt = Number(r.amount_cents) || 0
+    const fee = Number(r.platform_fee_cents) || 0
+    if (r.status === 'refunded' || r.refunded_at) {
+      out.refundedCents += amt
+      out.orderCount += 1
+    } else if (r.status === 'succeeded') {
+      out.grossCents += amt
+      out.feeCents += fee
+      out.orderCount += 1
+      if (r.source === 'network') {
+        out.networkGrossCents += amt
+        out.networkFeeCents += fee
+        out.networkOrderCount += 1
+      }
+    }
+  }
+  out.netCents = out.grossCents - out.feeCents
+  return out
+}
+
 export async function spaceEarningsSummary(spaceId: string, sinceDays?: number): Promise<SpaceEarnings> {
   const empty: SpaceEarnings = {
     grossCents: 0,
@@ -309,6 +379,25 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number):
       out.refundedCents += tickets.refundedCents
       out.orderCount += tickets.orderCount
       // networkGross / networkFee / networkOrderCount are deliberately untouched; see ticketEarnings.
+      out.netCents = out.grossCents - out.feeCents
+    }
+
+    // THE DONATION ARM (LIVE-430). Own try/catch, same posture as tickets: a failure to read
+    // gifts returns the commerce+ticket number instead of collapsing the header to zeros.
+    let donations: SpaceEarnings | null = null
+    try {
+      donations = await donationEarnings(spaceId, sinceDays)
+    } catch {
+      donations = null
+    }
+    if (donations) {
+      out.grossCents += donations.grossCents
+      out.feeCents += donations.feeCents
+      out.refundedCents += donations.refundedCents
+      out.orderCount += donations.orderCount
+      out.networkGrossCents += donations.networkGrossCents
+      out.networkFeeCents += donations.networkFeeCents
+      out.networkOrderCount += donations.networkOrderCount
       out.netCents = out.grossCents - out.feeCents
     }
     return out
