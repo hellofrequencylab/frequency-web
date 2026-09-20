@@ -51,6 +51,7 @@ describe('CalendarWorkspace', () => {
     const el = mount(
       <CalendarWorkspace
         slug="lab"
+        spaceId="space-1"
         brandName="Frequency Lab"
         adminAllowed
         canManage
@@ -88,6 +89,7 @@ describe('CalendarWorkspace', () => {
     const el = mount(
       <CalendarWorkspace
         slug="lab"
+        spaceId="space-1"
         brandName="Frequency Lab"
         adminAllowed={false}
         canManage={false}
