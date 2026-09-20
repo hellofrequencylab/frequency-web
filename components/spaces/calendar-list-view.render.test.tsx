@@ -45,6 +45,7 @@ const sit: ListIndexItem = {
   coverUrl: null,
   startInstantIso: '2026-09-22T19:00:00.000Z',
   stage: null,
+  planId: null,
 }
 
 describe('CalendarListView', () => {

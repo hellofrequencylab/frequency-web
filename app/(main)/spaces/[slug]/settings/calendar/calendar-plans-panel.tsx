@@ -21,14 +21,16 @@ export function CalendarPlansPanel({
   spaceId,
   plans,
   playbooks,
+  initialPlanId,
 }: {
   slug: string
   spaceId: string
   plans: SpacePlan[]
   playbooks: PlanPlaybook[]
+  initialPlanId?: string | null
 }) {
   const [pending, start] = useTransition()
-  const [openPlan, setOpenPlan] = useState<SpacePlan | null>(null)
+  const [openPlan, setOpenPlan] = useState<SpacePlan | null>(() => plans.find((plan) => plan.id === initialPlanId) ?? null)
   const [title, setTitle] = useState('')
   const [bookTitle, setBookTitle] = useState('')
   const [bookTasks, setBookTasks] = useState('')

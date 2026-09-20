@@ -25,6 +25,7 @@ import { canAcceptProjectMove } from '@/lib/calendar/project-board'
 import { entryKind, entryStage } from '@/lib/calendar/registry'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import { listDueDateItems } from '@/lib/calendar/due-dates-store'
+import { transitionPlanStage } from './plan-actions'
 
 // THE PRIVATE CALENDAR ACTIONS (ADR-1385). Create, edit and delete a Space's private entries, and read
 // one month of them. Gated twice: here (the caller edits this Space and it has the Calendar function)
@@ -76,6 +77,11 @@ export async function saveCalendarEntry(
     if (inGroup > 1 && w.kind !== current.kind) return fail('This is one of several possible dates. Keep one date before you change its type.')
     if (inGroup > 1 && w.stage !== 'pencil') return fail('This is one of several possible dates. Keep one date before you move it past Pencil.')
     if (inGroup + extra.length > MAX_CANDIDATE_DATES) return fail(`A pencil can hold ${MAX_CANDIDATE_DATES} dates at most.`)
+    if (current.plan_id && w.stage && w.stage !== current.stage) {
+      const planStage = w.stage === 'planning' ? 'plan' : w.stage
+      const moved = await transitionPlanStage(slug, current.plan_id, planStage)
+      if ('error' in moved) return moved
+    }
     if (extra.length === 0) {
       res = await updateCalendarEntryRow(editor.spaceId, entryId, w)
     } else {

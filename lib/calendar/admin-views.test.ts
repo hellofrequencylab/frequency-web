@@ -13,8 +13,8 @@ import {
 import { adjacentMonth, yearHorizonWindow } from './month-window'
 
 describe('CALENDAR_ADMIN_VIEWS', () => {
-  it('starts with Guest, then Admin, List, Timeline, Projects', () => {
-    expect(CALENDAR_ADMIN_VIEWS).toEqual(['guest', 'admin', 'list', 'timeline', 'projects'])
+  it('keeps Guest preview separate from Calendar, List, and Workflow', () => {
+    expect(CALENDAR_ADMIN_VIEWS).toEqual(['guest', 'admin', 'list', 'workflow'])
   })
 })
 
@@ -22,8 +22,8 @@ describe('parseAdminCalendarView', () => {
   it('keeps guest as the visitor URL and defaults unknown to admin', () => {
     expect(parseAdminCalendarView('guest')).toBe('guest')
     expect(parseAdminCalendarView('list')).toBe('list')
-    expect(parseAdminCalendarView('timeline')).toBe('timeline')
-    expect(parseAdminCalendarView('projects')).toBe('projects')
+    expect(parseAdminCalendarView('timeline')).toBe('admin')
+    expect(parseAdminCalendarView('projects')).toBe('workflow')
     expect(parseAdminCalendarView('admin')).toBe('admin')
     expect(parseAdminCalendarView(undefined)).toBe('admin')
     expect(parseAdminCalendarView('nope')).toBe('admin')
@@ -34,9 +34,11 @@ describe('parseAdminCalendarView', () => {
 describe('resolveOperatorCalendarView', () => {
   it('lets the query beat the cookie, and the cookie beat the Admin default', () => {
     expect(resolveOperatorCalendarView('list', 'guest')).toBe('list')
-    expect(resolveOperatorCalendarView(undefined, 'projects')).toBe('projects')
+    expect(resolveOperatorCalendarView('projects', 'guest')).toBe('workflow')
+    expect(resolveOperatorCalendarView('timeline', 'guest')).toBe('admin')
+    expect(resolveOperatorCalendarView(undefined, 'projects')).toBe('workflow')
     expect(resolveOperatorCalendarView(undefined, 'nope')).toBe('admin')
-    expect(parseRememberedCalendarView('timeline')).toBe('timeline')
+    expect(parseRememberedCalendarView('timeline')).toBe('admin')
     expect(parseRememberedCalendarView('nope')).toBeNull()
     expect(calendarViewCookieName('Lab Space!')).toBe('freq-cal-view-labspace')
   })
@@ -49,10 +51,17 @@ describe('adminViewHref', () => {
     expect(adminViewHref('lab', 'list', { item: 'sit|2026-09-22' })).toBe(
       '/spaces/lab/calendar?view=list&item=sit%7C2026-09-22',
     )
-    expect(adminViewHref('lab', 'timeline', { year: 2026, month1: 9 })).toBe(
-      '/spaces/lab/calendar?view=timeline&y=2026&m=9',
+    expect(adminViewHref('lab', 'workflow')).toBe('/spaces/lab/calendar?view=workflow')
+  })
+
+  it('keeps the shared Plan id in every operator view URL', () => {
+    expect(adminViewHref('lab', 'admin', { plan: 'plan-1' })).toBe('/spaces/lab/calendar?plan=plan-1')
+    expect(adminViewHref('lab', 'list', { item: 'event|day', plan: 'plan-1' })).toBe(
+      '/spaces/lab/calendar?view=list&item=event%7Cday&plan=plan-1',
     )
-    expect(adminViewHref('lab', 'projects')).toBe('/spaces/lab/calendar?view=projects')
+    expect(adminViewHref('lab', 'workflow', { plan: 'plan-1' })).toBe(
+      '/spaces/lab/calendar?view=workflow&plan=plan-1',
+    )
   })
 })
 

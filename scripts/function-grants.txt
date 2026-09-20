@@ -1,3 +1,5 @@
+transition_space_plan_stage  authenticated
+create_penciled_plan         authenticated
 # Function-grant contract — one EXECUTE verdict per live `public` function (LIVE-020, ADR-959).
 # Enforced by `pnpm check:function-grants` (scripts/check-function-grants.mjs).
 #

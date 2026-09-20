@@ -24,7 +24,7 @@ export function CalendarModeToggle({
       aria-label="Calendar views"
       className="inline-flex max-w-full flex-wrap items-center rounded-control border border-border p-0.5"
     >
-      {CALENDAR_ADMIN_VIEW_DEFS.map((o) => (
+      {CALENDAR_ADMIN_VIEW_DEFS.filter((o) => o.view !== 'guest').map((o) => (
         <button
           key={o.view}
           type="button"

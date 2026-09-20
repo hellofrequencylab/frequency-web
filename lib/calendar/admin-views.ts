@@ -1,13 +1,9 @@
 import { monthKey, safeMonth } from './month-window'
 
-// ADMIN CALENDAR VIEWS (ADR-1464, ADR-1467). Daniel's five views on one Space Calendar tab.
-// Order on the control: Guest, Admin, List, Timeline, Projects. Guest and Admin are the
-// same sliding month. Admin feeds StaffCalendar the private layer Guest never sees.
-// List, Timeline, and Projects are additional operator views. The URL
-// keeps `?view=guest` (ADR-1389) and adds list / timeline / projects. Default (no view, no
-// cookie) is Admin for a manager. Operators switch client-side; the last view is remembered.
+// Operator views are Calendar, List, and Workflow. Guest is a separate audience preview.
+// Legacy timeline/projects URL values are accepted and safely mapped below.
 
-export const CALENDAR_ADMIN_VIEWS = ['guest', 'admin', 'list', 'timeline', 'projects'] as const
+export const CALENDAR_ADMIN_VIEWS = ['guest', 'admin', 'list', 'workflow'] as const
 export type CalendarAdminView = (typeof CALENDAR_ADMIN_VIEWS)[number]
 
 export const CALENDAR_ADMIN_VIEW_DEFS: readonly {
@@ -23,7 +19,7 @@ export const CALENDAR_ADMIN_VIEW_DEFS: readonly {
   },
   {
     view: 'admin',
-    label: 'Admin',
+    label: 'Calendar',
     blurb: 'The same month as Guest, with every draft, pencil, private date, and unpublished gathering your team can see.',
   },
   {
@@ -31,16 +27,7 @@ export const CALENDAR_ADMIN_VIEW_DEFS: readonly {
     label: 'List',
     blurb: 'Pick a gathering on the left. The right pane is the control console for that event.',
   },
-  {
-    view: 'timeline',
-    label: 'Timeline',
-    blurb: 'The month as a time scale, one row per gathering.',
-  },
-  {
-    view: 'projects',
-    label: 'Projects',
-    blurb: 'Move an event on its way through Pencil, Planning, Production, and Cancelled.',
-  },
+  { view: 'workflow', label: 'Workflow', blurb: 'Every Plan, grouped by its production stage.' },
 ] as const
 
 export function isCalendarAdminView(value: string | null | undefined): value is CalendarAdminView {
@@ -50,6 +37,8 @@ export function isCalendarAdminView(value: string | null | undefined): value is 
 /** Unknown or missing `view` is Admin. `guest` stays the ADR-1389 visitor URL. */
 export function parseAdminCalendarView(raw: string | string[] | null | undefined): CalendarAdminView {
   const value = Array.isArray(raw) ? raw[0] : raw
+  if (value === 'projects') return 'workflow'
+  if (value === 'timeline') return 'admin'
   return isCalendarAdminView(value) ? value : 'admin'
 }
 
@@ -61,18 +50,15 @@ export function firstSearchParam(raw: string | string[] | null | undefined): str
 export function adminViewHref(
   slug: string,
   view: CalendarAdminView,
-  extras: { item?: string | null; year?: number; month1?: number } = {},
+  extras: { item?: string | null; plan?: string | null; year?: number; month1?: number } = {},
 ): string {
   const base = `/spaces/${slug}/calendar`
-  if (view === 'admin') return base
   const params = new URLSearchParams()
-  params.set('view', view)
+  if (view !== 'admin') params.set('view', view)
   if (view === 'list' && extras.item) params.set('item', extras.item)
-  if (view === 'timeline' && extras.year && extras.month1) {
-    params.set('y', String(extras.year))
-    params.set('m', String(extras.month1))
-  }
-  return `${base}?${params.toString()}`
+  if (extras.plan) params.set('plan', extras.plan)
+  const query = params.toString()
+  return query ? `${base}?${query}` : base
 }
 
 export function calendarViewBlurb(view: CalendarAdminView, brandName: string): string {
@@ -102,6 +88,8 @@ export function calendarViewCookieName(slug: string): string {
 }
 
 export function parseRememberedCalendarView(raw: string | null | undefined): CalendarAdminView | null {
+  if (raw === 'projects') return 'workflow'
+  if (raw === 'timeline') return 'admin'
   return isCalendarAdminView(raw) ? raw : null
 }
 
@@ -111,7 +99,9 @@ export function resolveOperatorCalendarView(
   cookieView: string | null | undefined,
 ): CalendarAdminView {
   const query = Array.isArray(queryView) ? queryView[0] : queryView
-  if (isCalendarAdminView(query)) return query
+  if (query === 'projects' || query === 'timeline' || isCalendarAdminView(query)) {
+    return parseAdminCalendarView(query)
+  }
   return parseRememberedCalendarView(cookieView) ?? 'admin'
 }
 

@@ -82,6 +82,7 @@ export async function loadAdminCalendar(
         isCancelled: !!ev.is_cancelled,
         eventId: ev.id,
         publicationState: ev.status === 'published' ? 'published' : 'unpublished',
+        planId: ev.plan_id ?? null,
       }
     }),
     ...sharedRows.map((ev): CalendarEvent | null => {
@@ -104,6 +105,7 @@ export async function loadAdminCalendar(
         isCancelled: !!ev.is_cancelled,
         eventId: ev.id,
         publicationState: 'published',
+        planId: ev.plan_id ?? null,
       }
     }),
   ].filter((e): e is CalendarEvent => e !== null)

@@ -37,6 +37,7 @@ export interface SpaceEvent {
   /** 'draft' | 'published' — the manage calendar badges drafts; public readers filter on it. */
   status: string | null
   location: string | null
+  plan_id?: string | null
   // The SERIES columns (ADR-897 / ADR-007). Present on every row this reader returns, so any caller
   // that COUNTS or LISTS these rows can fold occurrences into gatherings instead of counting dates.
   recurrence_type?: string | null
@@ -63,7 +64,7 @@ export interface SpaceEvent {
 // MATERIALISED (ADR-007), so without these columns the fold that turns occurrences back into
 // gatherings is a silent no-op and each of them counts a weekly series nine times (LIVE-198).
 const COLS =
-  `id, slug, title, description, starts_at, ends_at, host_id, scope_id, scope_type, is_cancelled, space_id, time_zone, status, location, capacity, price_cents, join_mode, hide_address, city, region, venue_name, attendance_mode, is_demo, ${SERIES_COLUMNS}`
+  `id, slug, title, description, starts_at, ends_at, host_id, scope_id, scope_type, is_cancelled, space_id, time_zone, status, location, plan_id, capacity, price_cents, join_mode, hide_address, city, region, venue_name, attendance_mode, is_demo, ${SERIES_COLUMNS}`
 
 /** An event row for the per-space CALENDAR (Events EC2): the fields the month grid + popup need. */
 export interface SpaceCalendarEvent {
@@ -75,9 +76,10 @@ export interface SpaceCalendarEvent {
   location: string | null
   time_zone: string | null
   is_cancelled: boolean | null
+  plan_id?: string | null
 }
 
-const CALENDAR_COLS = 'id, slug, title, starts_at, ends_at, location, time_zone, is_cancelled'
+const CALENDAR_COLS = 'id, slug, title, starts_at, ends_at, location, time_zone, is_cancelled, plan_id'
 
 /** A MASTER-calendar row: the display fields plus the three recurrence columns the feed RPCs have
  *  carried since 20261203000000. The .ics route already reads them to collapse a series to one

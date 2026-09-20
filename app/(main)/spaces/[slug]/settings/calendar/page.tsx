@@ -32,8 +32,14 @@ import { CalendarPlansPanel } from './calendar-plans-panel'
 
 export const metadata = { title: 'Calendar' }
 
-export default async function SpaceCalendarConsolePage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
+export default async function SpaceCalendarConsolePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ plan?: string | string[] }>
+}) {
+  const [{ slug }, query] = await Promise.all([params, searchParams])
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
 
@@ -139,7 +145,13 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
           <DayNotesField slug={space.slug} notes={dayNotes} canEdit={canManage} />
 
           {canManage && (
-            <CalendarPlansPanel slug={space.slug} spaceId={space.id} plans={plans} playbooks={playbooks} />
+            <CalendarPlansPanel
+              slug={space.slug}
+              spaceId={space.id}
+              plans={plans}
+              playbooks={playbooks}
+              initialPlanId={Array.isArray(query.plan) ? query.plan[0] : query.plan}
+            />
           )}
 
           {managedEvents.length > 0 && (

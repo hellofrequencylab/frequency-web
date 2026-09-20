@@ -6,6 +6,7 @@ import {
   parsePlanLinks,
   planTargetDef,
 } from './plans'
+import { parseEntryInput } from './entries'
 
 describe('parsePlanInput', () => {
   it('requires a title', () => {
@@ -16,6 +17,41 @@ describe('parsePlanInput', () => {
     const parsed = parsePlanInput({ title: 'Fall retreat' })
     expect('data' in parsed && parsed.data.stage).toBe('plan')
     expect('data' in parsed && parsed.data.target_kind).toBe('event')
+  })
+
+  it('accepts the title/date-only pencil contract when paired with an entry', () => {
+    const plan = parsePlanInput({ title: '  Community dinner  ', stage: 'pencil', targetKind: 'event' })
+    const entry = parseEntryInput({
+      kind: 'pencil',
+      title: 'Community dinner',
+      allDay: true,
+      startDate: '2027-06-14',
+      endDate: '2027-06-14',
+      timeZone: 'America/Los_Angeles',
+      stage: 'pencil',
+      blocksTime: false,
+      showPublicly: false,
+      planId: null,
+    })
+    expect('data' in plan && plan.data.stage).toBe('pencil')
+    expect('data' in entry && entry.data.stage).toBe('pencil')
+    expect('data' in entry && entry.data.starts_at).toBe('2027-06-14T00:00:00.000Z')
+  })
+
+  it('rejects an invalid date before any Plan or entry write', () => {
+    const entry = parseEntryInput({
+      kind: 'pencil',
+      title: 'Community dinner',
+      allDay: true,
+      startDate: '2027-02-30',
+      endDate: '2027-02-30',
+      timeZone: 'UTC',
+      stage: 'pencil',
+      blocksTime: false,
+      showPublicly: false,
+      planId: null,
+    })
+    expect(entry).toEqual({ error: 'Pick a valid date.' })
   })
 })
 

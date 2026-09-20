@@ -74,6 +74,14 @@ export function Dialog({
   // BOTH the press and the release land on the backdrop, so a drag/scroll that starts inside the panel and
   // ends on the backdrop (or a tap that starts on the backdrop margin during a touch-scroll) never closes.
   const downOnBackdropRef = useRef(false)
+  // Event handlers must see the latest callback without making the focus-trap
+  // effect depend on callback identity. Callers commonly pass an inline
+  // function; rebinding the effect on every render restores focus to the
+  // trigger and then focuses the first field, which makes forms feel jumpy.
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
   // Stays mounted IN PLACE on both branches, so there is always a node at this dialog's real
   // position in the tree to read the Space theme from before the portal jumps to <body>.
   const anchorRef = useRef<HTMLSpanElement>(null)
@@ -110,7 +118,7 @@ export function Dialog({
       // beneath it (which would double-close, and make the two focus traps fight over Tab).
       if (dialogStack[dialogStack.length - 1] !== id) return
       if (e.key === 'Escape') {
-        onClose()
+        onCloseRef.current()
         return
       }
       if (e.key !== 'Tab' || !panel) return
@@ -156,7 +164,7 @@ export function Dialog({
     // `isClient` is a dep so the effect re-runs once the portal actually mounts (a Dialog rendered with
     // open=true on first paint mounts its panel only after isClient flips true) — otherwise the focus trap
     // would capture a null panel and never re-bind.
-  }, [open, onClose, isClient])
+  }, [open, isClient])
 
   // The theme in force where this dialog was OPENED. The portal below escapes the Space's
   // `[data-space-theme]` div (ADR-578), so without this a Dialog opened from a themed Space page

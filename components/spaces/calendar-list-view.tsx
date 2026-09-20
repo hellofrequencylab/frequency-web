@@ -27,10 +27,12 @@ export function CalendarListView({
   items,
   selected,
   onSelect,
+  onOpenPlan,
 }: {
   items: ListIndexItem[]
   selected: ListIndexItem | null
   onSelect: (key: string) => void
+  onOpenPlan?: (planId: string, entryId?: string | null) => void
 }) {
   if (items.length === 0) {
     return (
@@ -75,7 +77,7 @@ export function CalendarListView({
 
       <section className="min-w-0 flex-1" aria-labelledby="calendar-list-viewer">
         {selected ? (
-          <CalendarListViewer item={selected} />
+          <CalendarListViewer item={selected} onOpenPlan={onOpenPlan} />
         ) : (
           <EmptyState variant="no-results" title="Pick a gathering." description="A control console opens here." />
         )}
@@ -84,7 +86,13 @@ export function CalendarListView({
   )
 }
 
-function CalendarListViewer({ item }: { item: ListIndexItem }) {
+function CalendarListViewer({
+  item,
+  onOpenPlan,
+}: {
+  item: ListIndexItem
+  onOpenPlan?: (planId: string, entryId?: string | null) => void
+}) {
   const openHref = item.href
   const publicSlug = item.publicSlug
   const googleUrl =
@@ -144,13 +152,20 @@ function CalendarListViewer({ item }: { item: ListIndexItem }) {
         <EventCoreStatsCards stats={truncatedListStats(item)} variant="panel" />
       </section>
 
-      {openHref && (
+      {(item.planId && onOpenPlan) || openHref ? (
         <div className="flex flex-wrap gap-2">
-          <Button asChild variant="primary" size="sm">
-            <Link href={openHref}>Go to event</Link>
-          </Button>
+          {item.planId && onOpenPlan && (
+            <Button type="button" variant="primary" size="sm" onClick={() => onOpenPlan(item.planId!, item.entryId)}>
+              Open Plan
+            </Button>
+          )}
+          {openHref && (
+            <Button asChild variant={item.planId && onOpenPlan ? 'secondary' : 'primary'} size="sm">
+              <Link href={openHref}>Go to event</Link>
+            </Button>
+          )}
         </div>
-      )}
+      ) : null}
     </div>
   )
 }
