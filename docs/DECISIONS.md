@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1471**. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is claimed by LIVE-421.
+tree as of this index: **ADR-1474**. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is claimed by LIVE-421. 1472 is claimed by LIVE-423. 1473 is claimed by LIVE-424.
 
 | Theme | Start here |
 |---|---|
@@ -46791,3 +46791,25 @@ Premise re-tested 2026-09-19: no `(profile)/people` or `(profile)/members` route
 **Consequences.** PROG-CAL2–8 close when their probes pass. LIVE-412 stays sequenced in W0d as parked work. Editor, Sites, Etsy, and App Platform stay off this pass.
 
 **Rows.** PROG-CAL2, PROG-CAL3, PROG-CAL4, PROG-CAL5, PROG-CAL6, PROG-CAL7, PROG-CAL8 (closed). LIVE-412 (parked).
+
+## ADR-1474: Selling a Journey uses the one Connect prompt (LIVE-425)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-425` · numbered **1474** because **1471** is LIVE-420 on main, **1472** is LIVE-423, and **1473** is LIVE-424 · extends [ADR-1397](DECISIONS.md) (paid Space may sell a Journey) and [LIVE-233](BUILD-BACKLOG.json) (one Connect prompt) · corroborated by `lib/billing/payout-prompt.ts` (`journeys` channel), `app/(main)/journeys/admin-actions.ts` (`resolveSpacePayoutPromptById`), `components/admin/modules/journey-sell-module.tsx`
+
+**Context.** FOCUS-MODEL Q5 said you cannot sell a course because `journey_plans` has no price. That half was already untrue: ADR-1397 puts a price on `commerce_products` and Sell this Journey is the write path. What was still true: LIVE-233's Connect prompt covered memberships, bookings, orders, donations, and tickets. An operator who priced a Journey on a paid Space with no payout account still hit a dead end at checkout, and the sell rail said nothing.
+
+Premise re-tested 2026-09-20: `journey.sell` is standard in the rail. `setJourneyPriceAction` does not read Connect. `PayoutChannel` had five values. The sell module imported no prompt.
+
+**Decision.**
+
+1. `journeys` is a payout channel. The sentence is "start selling Journeys."
+2. `getJourneySellData` resolves the Space owner's prompt when the viewer may sell. Ready stays silent. The price form still works. This is a setup step, never a gate.
+3. Sell this Journey renders the shared `PayoutPromptCard`. Get Paid lists Journeys with the other money paths.
+4. A personal Journey and a free Space still cannot sell (ADR-1397). They keep that sentence and do not also see a Connect card.
+5. No migration. LIVE-411 stays open (tier and Discussion still have their own PRs).
+
+**Rejected.** A second payout card. Blocking `setJourneyPriceAction` until Connect is ready. Letting a free Space sell because Connect is ready (the 2026-09-17 ruling stands). Closing LIVE-411 from this row.
+
+**Consequences.** A later PR that drops `journeys` from `PAYOUT_CHANNELS` or stops rendering `PayoutPromptCard` on Sell this Journey fails the LIVE-425 probe. Checkout still refuses when payouts are not ready.
+
+**Rows.** LIVE-425.

@@ -7,6 +7,8 @@ import type { PlanStatus, StoredVeraReview } from '@/lib/journey-plans'
 import { getMyProfileId } from '@/lib/auth'
 import { checkJourneySell } from '@/lib/journeys/sell-gate'
 import { getJourneyOffer } from '@/lib/journeys/paid'
+import { resolveSpacePayoutPromptById } from '@/lib/billing/payout-prompt-resolve'
+import type { PayoutPrompt } from '@/lib/billing/payout-prompt'
 
 // The Journey admin rail's read seam (ADR-515 Phase 6). One getter feeds every journey rail module:
 // Settings (mounted inline), the Builder/Layout affordance (links out), Export, and the Danger zone.
@@ -102,6 +104,9 @@ export interface JourneySellData {
   reason: string | null
   /** The live offer, or null when the Journey is free. */
   offer: { productId: string; priceCents: number; enrolled: number; enrollCap: number | null } | null
+  /** Connect prompt for this Space's owner (LIVE-425). Null when they cannot sell, or when
+   *  the account is already ready. A setup step, never a gate: the price form still works. */
+  payoutPrompt: PayoutPrompt | null
 }
 
 export async function getJourneySellData(slug: string): Promise<JourneySellData | null> {
@@ -113,10 +118,23 @@ export async function getJourneySellData(slug: string): Promise<JourneySellData 
   const caps = await getJourneyCapabilities(plan.id)
   if (!caps.has('journey.editSettings')) return null
 
+  const callerId = await getMyProfileId()
   const [gate, offer] = await Promise.all([
-    checkJourneySell(plan.id, await getMyProfileId()),
+    checkJourneySell(plan.id, callerId),
     getJourneyOffer(plan.id),
   ])
+
+  // Connect is a setup step on the Space owner, not a second price wall. Skip the read when
+  // this viewer cannot sell (free Space / personal Journey): they already have a different
+  // sentence, and two walls at once is noise.
+  const payoutPrompt =
+    gate.ok && plan.space_id
+      ? await resolveSpacePayoutPromptById({
+          spaceId: plan.space_id,
+          viewerProfileId: callerId,
+          channels: ['journeys'],
+        })
+      : null
 
   return {
     planId: plan.id,
@@ -132,5 +150,6 @@ export async function getJourneySellData(slug: string): Promise<JourneySellData 
           enrollCap: offer.enrollCap,
         }
       : null,
+    payoutPrompt,
   }
 }

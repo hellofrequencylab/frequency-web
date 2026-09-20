@@ -1,18 +1,18 @@
-import { Wallet, Clock, Info, Check } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import {
   resolveProfilePayoutPrompt,
   resolveSpacePayoutPrompt,
   resolveSpacePayoutPromptById,
 } from '@/lib/billing/payout-prompt-resolve'
-import type { PayoutChannel, PayoutPrompt } from '@/lib/billing/payout-prompt'
-import { StartPayoutButton, ManagePayoutButton } from './payout-controls'
+import type { PayoutChannel } from '@/lib/billing/payout-prompt'
+import { PayoutPromptCard } from './payout-prompt-card'
 
-// THE ONE CONNECT ONBOARDING PROMPT, rendered (LIVE-233). One component, five money paths:
-// memberships, bookings, orders, donations, tickets. There were four hand-written versions of this
-// card before it (settings/billing, market manage, the shop storefront tab, the event page), each
-// with its own sentence and each LINKING to /settings/billing rather than starting onboarding. The
-// decision + copy live in lib/billing/payout-prompt.ts; this file only renders them.
+export { PayoutPromptCard } from './payout-prompt-card'
+
+// THE ONE CONNECT ONBOARDING PROMPT, rendered (LIVE-233, LIVE-425). Server wrappers around the
+// shared card. Money paths: memberships, bookings, orders, donations, tickets, Journeys. The
+// decision + copy live in lib/billing/payout-prompt.ts. The card lives in payout-prompt-card.tsx
+// so a client rail (Sell this Journey) can render a prompt it already resolved.
 //
 // 🔴 IT STARTS ONBOARDING INLINE. That is the whole point of the row. A link to a settings page is a
 // second decision on a page the operator did not want to be on, and for as long as it was the only
@@ -34,53 +34,6 @@ import { StartPayoutButton, ManagePayoutButton } from './payout-controls'
 //
 // SERVER COMPONENT. Both entry props do their own reads, so a caller passes who gets paid and which
 // paths this surface covers, and nothing else.
-
-const TONE = {
-  needs_setup: { icon: Wallet, ring: 'border-primary/40 bg-primary-bg/20' },
-  in_review: { icon: Clock, ring: 'border-border bg-surface-elevated' },
-  not_live: { icon: Info, ring: 'border-border bg-surface-elevated' },
-  // READY is the calmest of the four: nothing is wrong, so it reads as a receipt rather than a
-  // nudge. Only reachable when a surface passes whenReady="status" (LIVE-290).
-  ready: { icon: Check, ring: 'border-border bg-surface-elevated' },
-} as const
-
-/** Render a resolved prompt. Exported so a surface that already resolved one (or resolves several in
- *  parallel with its own data) does not pay for a second read. */
-export function PayoutPromptCard({
-  prompt,
-  className = '',
-}: {
-  prompt: PayoutPrompt | null
-  className?: string
-}) {
-  if (!prompt) return null
-  const tone = TONE[prompt.state]
-  const Icon = tone.icon
-
-  return (
-    <div className={`rounded-card border p-5 lift-1 ${tone.ring} ${className}`}>
-      <div className="flex items-start gap-3">
-        <Icon className="mt-0.5 h-5 w-5 shrink-0 text-subtle" aria-hidden />
-        <div className="min-w-0 flex-1">
-          <p className="text-body font-bold leading-tight text-text">{prompt.headline}</p>
-          <p className="mt-1 text-body-sm leading-relaxed text-muted">{prompt.body}</p>
-          {/* `manage` opens the Express dashboard for an account that already works; `onboard` and
-              `resume` both start the hosted form. Branching on the ACTION rather than on the label
-              is what stops a ready operator being offered onboarding a second time (ADR-1158). */}
-          {prompt.action === 'manage' ? (
-            <div className="mt-4">
-              <ManagePayoutButton />
-            </div>
-          ) : prompt.action !== 'none' && prompt.actionLabel ? (
-            <div className="mt-4">
-              <StartPayoutButton label={prompt.actionLabel} />
-            </div>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 /** The prompt for a SPACE's money paths: the space OWNER is the payee (ADR-819), so an admin who is
  *  not the owner is told who has to act instead of being handed a button for the wrong account. */

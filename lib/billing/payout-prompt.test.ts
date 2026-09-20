@@ -46,8 +46,12 @@ describe('needsPayoutLine', () => {
     expect(needsPayoutLine(PAYOUT_CHANNELS)).not.toMatch(/—/)
   })
 
-  it('has copy for all five money paths', () => {
-    expect(PAYOUT_CHANNELS).toHaveLength(5)
+  it('has copy for every named money path', () => {
+    expect(PAYOUT_CHANNELS).toHaveLength(6)
+    expect(PAYOUT_CHANNELS).toContain('journeys')
+    expect(needsPayoutLine(['journeys'])).toBe(
+      'Add a payout account to start selling Journeys. It takes about two minutes, and the money lands in your bank.',
+    )
     for (const c of PAYOUT_CHANNELS) {
       expect(PAYOUT_CHANNEL_WORDS[c].verb).toBeTruthy()
       expect(PAYOUT_CHANNEL_WORDS[c].noun).toBeTruthy()

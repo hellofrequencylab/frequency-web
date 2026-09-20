@@ -4,7 +4,7 @@ description: Where your Space's money lands, how the owner connects the payout a
 category: spaces
 order: 4
 published: 2026-09-10
-updated: 2026-09-10
+updated: 2026-09-20
 audience: member
 featureKeys: [payouts]
 status: published
@@ -51,7 +51,7 @@ billing side.
 
 ## Your money paths
 
-There are five ways a Space can take money, and Get paid lists all five with the state each one is in:
+There are six ways a Space can take money, and Get paid lists all six with the state each one is in:
 
 | Money path | What it is |
 | --- | --- |
@@ -60,6 +60,7 @@ There are five ways a Space can take money, and Get paid lists all five with the
 | **Orders** | Sales from your Shop. |
 | **Donations** | Your fund and the amounts people can pick. |
 | **Tickets** | Paid tickets on an event your Space hosts. |
+| **Journeys** | A price on a Journey this Space sells. |
 
 Two things have to be true for a path to take money: the path needs its own setup, and the payout
 account needs to exist. So a path can read **Ready once payouts are on** while everything else about it
@@ -67,7 +68,8 @@ is finished, and a path you have not turned on reads **Turned off in your settin
 are live.
 
 Set each path up from the tool that owns it. Booking, memberships, donations and your **Shop** all sit
-beside Get paid under **Offerings & Money**. Tickets live in the event's own settings.
+beside Get paid under **Offerings & Money**. Tickets live in the event's own settings. Journeys use
+**Sell this Journey** on the Journey itself.
 
 ## Your rate
 

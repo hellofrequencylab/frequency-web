@@ -29,6 +29,8 @@ A paid Space may also **sell** a Journey as one product (ADR-1397). Shop and Mar
 doors. The sales page is `/journeys/<slug>` (public twin `/discover/journeys/<slug>`). `/learn` is
 the course, and only enrolment, the author, or a manager opens it (ADR-1404). Reviews and buyer
 questions follow the Journey across a price change (ADR-1405), not the archived product uuid.
+Sell this Journey starts Connect onboarding on the Space owner when payouts are not ready
+(LIVE-425 / ADR-1474). A setup step, never a second price wall.
 
 ---
 
