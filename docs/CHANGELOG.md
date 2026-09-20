@@ -26,6 +26,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **If you run a Space, you can include a Circle with a membership on any plan.** Set Who can join to Included with a membership. A payout account is what starts the money. Campaigns and funnels still open at Business.
+
 - **Automations come with Business, not a leftover Collective plan.** If your Space is on Free, the lock screen names Business. Sequences and rules still run the same way once you are on that plan.
 
 - **Reserving a ticket for your members is no longer described as a Collective plan feature.** Every plan can do that. The ticket editor and Event access name the same rule as the memberships floor. A payout account is what starts the money.

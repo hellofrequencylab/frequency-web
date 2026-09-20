@@ -100,7 +100,7 @@ export const CIRCLE_ACCESS_HINT: Record<CircleAccess, string> = {
  *  sentence the save action refuses with. Written once because a note and a refusal that disagree
  *  teach an operator two different rules for the same wall. */
 export const CIRCLE_ACCESS_LIMIT_NOTE =
-  'Space team access, Space member access, and paid membership tiers are for circles a Space owns. Selling a tier comes with the Business plan.'
+  'Space team access, Space member access, and paid membership tiers are for circles a Space owns.'
 
 /** Which modes need a real (non-root) owning Space. A personal Circle lives on the root sentinel,
  *  which has no team, no memberships to admit from, and sells nothing, so all three are nonsense
@@ -112,34 +112,20 @@ export const SPACE_ONLY_ACCESS_MODES: readonly CircleAccess[] = [
   'tier',
 ]
 
-/** The plans that may SELL access to a Circle. A mirror of `private.space_can_sell`
- *  (20270227000000), and the drift between the two is asserted in visibility.test.ts against the
- *  migration text, because two lists of plan names WILL diverge otherwise and the failure mode is
- *  silent: the UI offers a paid mode the trigger then refuses, which reads to an operator as the
- *  save button being broken.
- *
- *  The second block is grandfathering, not aliasing. Those rows predate the plan rename and must
- *  not lose the ability to sell just because the label moved. */
-export const SPACE_SELLING_PLANS: readonly string[] = [
-  'business', 'collective', 'nonprofit', 'independent',
-  'pro', 'practitioner', 'partner', 'organization', 'whitelabel',
-]
-
-/** May this Space put a Circle behind a paid tier? Two conditions, both from the SQL: it must be a
- *  REAL Space (a personal Circle lives on the root sentinel, which sells nothing) and it must be on
- *  a selling plan. A missing plan reads `free`, which is the same fail-closed direction the
- *  database takes. */
+/** May this Space put a Circle behind a paid tier? It must be a REAL Space. A personal Circle
+ *  lives on the root sentinel, which sells nothing. Plan is not the door (ADR-1476, extends
+ *  ADR-1415 / LIVE-410). Checkout still refuses when Connect is not payout-ready. */
 export function spaceCanSell(space: { type?: string | null; plan?: string | null } | null): boolean {
   if (!space || !space.type || space.type === 'root') return false
-  return SPACE_SELLING_PLANS.includes(space.plan ?? 'free')
+  return true
 }
 
 /** Which access modes this Circle may actually be set to, given the Space that owns it.
  *
- *  The UI must not offer a mode the trigger will refuse. Both refusals are real and both are
- *  raised by `trg_circles_access_shape`: `circle_access_needs_space` for the three Space modes on
- *  a personal Circle, and `circle_access_plan_floor` for `tier` below the Business plan. This is the
- *  same rule stated once so the form and the database cannot disagree.
+ *  The UI must not offer a mode the trigger will refuse. The remaining refusal is
+ *  `circle_access_needs_space` for the three Space modes on a personal Circle. `tier` follows the
+ *  same free membership floor as selling memberships (ADR-1476). This is the same rule stated once
+ *  so the form and the database cannot disagree.
  *
  *  ⚠️ This narrows what is OFFERED. It is not the enforcement, and it must never become the only
  *  check: the trigger fires on the service role too, which is the guarantee that survives an
@@ -183,11 +169,11 @@ export const SPACE_CIRCLE_ACCESS_NOTE =
 /** What a PICKER should list for a Circle that currently sits on `current`.
  *
  *  `availableAccessModes` says what may be SET. That is not the same list: a Circle can already be
- *  sitting on a mode it could no longer be moved to, because the Space that owns it dropped off a
- *  selling plan while a `tier` Circle stayed as it was. Dropping the current mode from the list
- *  would make the select claim the Circle is something it is not, and the first save would silently
- *  change access nobody asked to change. So the current mode stays listed, in canonical order —
- *  the same rule the Channel picker follows for a paused Channel. */
+ *  sitting on a mode this picker no longer offers (a Space Circle already on `tier`, or a personal
+ *  Circle that somehow carries a Space mode). Dropping the current mode from the list would make
+ *  the select claim the Circle is something it is not, and the first save would silently change
+ *  access nobody asked to change. So the current mode stays listed, in canonical order. The same
+ *  rule the Channel picker follows for a paused Channel. */
 export function accessModeOptions(
   space: { type?: string | null; plan?: string | null } | null,
   current: CircleAccess,
@@ -195,8 +181,8 @@ export function accessModeOptions(
 ): readonly CircleAccess[] {
   const available = availableAccessModes(space)
   // A Space Circle narrows to the two doors the owner named (ADR-1393). The narrowing composes with
-  // the Space rules above rather than replacing them: a mode has to survive BOTH, so a Space on a
-  // non-selling plan can no more reach `tier` through this arm than through the other.
+  // the Space rules above rather than replacing them: a mode has to survive BOTH, so a personal
+  // Circle can no more reach `tier` through this arm than through the other.
   const offered = opts.isSpaceCircle ? SPACE_CIRCLE_ACCESS_MODES : CIRCLE_ACCESS_MODES
   return CIRCLE_ACCESS_MODES.filter(
     (mode) => (offered.includes(mode) && available.includes(mode)) || mode === current,

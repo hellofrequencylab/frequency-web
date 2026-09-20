@@ -46935,3 +46935,24 @@ Premise re-tested 2026-09-20: `featureAllowed('space_automation', { plan: 'busin
 **Consequences.** A later typed "Collective plan" on the automation lock screen fails the LIVE-432 probe. A later catalog note for `space.automation` that names Collective fails the same probe.
 
 **Rows.** LIVE-432.
+
+## ADR-1485: Circle `tier` access follows the free membership floor (LIVE-436)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-436` · numbered **1485** because **1481** is LIVE-432 on main, and **1476** is already the Journey tier gate (LIVE-427) · extends [ADR-1415](DECISIONS.md) (LIVE-410) · is the later ruling [ADR-1475](DECISIONS.md) deferred · corroborated by `lib/circles/visibility.ts` (`spaceCanSell`) and `supabase/migrations/20270345006800_circle_tier_follows_membership_floor.sql`
+
+**Context.** ADR-1415 let a free Space sell memberships. Connect readiness is the checkout door. Circle `access = 'tier'` and a priced membership tier linked to a Circle still required `private.space_can_sell`, a Business+ plan list. A free host could take the money and could not include the room. ADR-1475 left that wall in place so a help-only pass would not also rewrite the trigger.
+
+Premise re-tested 2026-09-20: `FEATURE_GATES.space_memberships.minEntitlement` is `free`. `availableAccessModes` hid `tier` from a free Space. `CIRCLE_ACCESS_LIMIT_NOTE` said selling a tier comes with the Business plan. Both triggers still raised a plan floor.
+
+**Decision.**
+
+1. **A real Space may include a Circle with a membership.** `private.space_can_sell` is true when the Space is not the root sentinel. Plan is not the door.
+2. **The two triggers drop the plan floor.** `circle_access_needs_space` and `circle_link_cross_tenant` stay. A personal Circle still cannot sell.
+3. **The picker matches the trigger.** A free Space is offered `tier`. The limit note no longer names Business.
+4. **Checkout still refuses when Connect is not payout-ready.** That is LIVE-233 / LIVE-339, not this wall.
+
+**Rejected.** Leaving Circle delivery on Business after memberships moved to free. Closing LIVE-411 from this leftover. Changing Journey selling (ADR-1397 still needs a paid Space).
+
+**Consequences.** A later `space_can_sell` that ranks on a plan list, or a shape trigger that raises `circle_access_plan_floor` again, fails the LIVE-436 probe. Campaigns stay at Business.
+
+**Rows.** LIVE-436.
