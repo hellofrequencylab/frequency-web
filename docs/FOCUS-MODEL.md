@@ -204,9 +204,12 @@ Flags read live: `billing_live = true` (since 2026-07-21), `host_payouts_enabled
    still true: **no payment event has ever arrived, because nothing has ever been sold.**
 2. **There is no member-facing "my memberships" surface.** No route exists. A member who starts paying
    a community has nowhere to see or manage it.
-3. **`payment_status` is never enforced.** Both the RLS helper and the app predicate read `status`
-   only, and nothing flips it, so a `past_due` member keeps circle access forever. Dunning covers the
-   platform's own Crew subscription and not Space memberships.
+3. **`payment_status` is written and now shown (LIVE-429 / ADR-1478), but it is still not an access
+   gate.** The RLS helper and `isSpacePaidMember` read `status` only, so a `past_due` member keeps
+   Circle access while Stripe retries. That grace is ADR-1092: a free join is often `status=active`
+   with `payment_status=pending`. Crew dunning stays on Settings Plan. Space dues now appear on the
+   Space join card, the host member list, and Settings Plan and billing. A later ruling can turn the
+   column into a lock.
 4. **The wall is in the wrong place.** See below.
 
 ### The contradiction

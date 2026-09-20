@@ -28,7 +28,8 @@
 //     the money as well as the access (ADR-859).
 //   - setMembershipTiers sits on the free floor (LIVE-410 / ADR-1415): publishing a tier is not a
 //     paid capability. Checkout still refuses when Connect is not payout-ready.
-// Dunning, proration and member-only content gating are still not built here.
+// Member-only Journey gating is LIVE-427. Showing a past_due Space membership is LIVE-429.
+// Access still ignores payment_status (ADR-1092 / ADR-1478): pending is the free-join default.
 //
 // SHAPE: the PURE helpers (tier normalization + validation) have no Supabase/Next imports, so they
 // are fully unit-testable (lib/spaces/memberships.test.ts). The IO (the admin-client reads/writes)
@@ -93,6 +94,8 @@ export interface SpaceMembership {
   tierName: string
   status: 'active' | 'waitlist'
   startedAt: string
+  /** Stripe recovery state. Display only. pending is the free-join default (LIVE-429). */
+  paymentStatus: string | null
 }
 
 /** The viewer's OWN open membership (or null), for the join surface to show their current tier.
@@ -103,6 +106,8 @@ export interface MyMembership {
   tierName: string
   status: 'active' | 'waitlist'
   startedAt: string
+  /** Stripe recovery state. Display only. pending is the free-join default (LIVE-429). */
+  paymentStatus: string | null
 }
 
 // Hard caps so a malformed/hostile tier set can never write an unbounded number of rows.
@@ -271,6 +276,7 @@ type MembershipRow = {
   tier_id: string
   status: string
   started_at: string
+  payment_status?: string | null
 }
 
 function tiersTable() {
@@ -310,7 +316,7 @@ function looseMembershipsTable() {
 
 const TIER_COLS =
   'id, space_id, name, price_cents, annual_price_cents, interval, description, benefits, capacity, waitlist, sort, is_active'
-const MEMBERSHIP_COLS = 'id, space_id, member_profile_id, tier_id, status, started_at'
+const MEMBERSHIP_COLS = 'id, space_id, member_profile_id, tier_id, status, started_at, payment_status'
 
 /** Map a DB tier row to the app's MembershipTier (benefits re-normalized; a malformed row's name is
  *  trusted as-is since it was validated on write). */
@@ -566,6 +572,7 @@ export async function getMyMembership(spaceId: string): Promise<MyMembership | n
       tierName: tier?.name ?? 'Member',
       status: row.status === 'waitlist' ? 'waitlist' : 'active',
       startedAt: row.started_at,
+      paymentStatus: row.payment_status ?? null,
     }
   } catch {
     return null
@@ -888,6 +895,7 @@ export async function listSpaceMemberships(spaceId: string): Promise<SpaceMember
       tierName: tierName.get(r.tier_id) ?? 'Member',
       status: r.status === 'waitlist' ? 'waitlist' : 'active',
       startedAt: r.started_at,
+      paymentStatus: r.payment_status ?? null,
     }))
   } catch {
     return []

@@ -14532,10 +14532,10 @@
         "file": "docs/FOCUS-MODEL.md",
         "ref": "ADR-1403 Q5; survey 2026-09-19"
       },
-      "detail": "FILED 2026-09-19. FOCUS-MODEL Q5: sell a course, gate content to a tier, member directory, space-level discussion, completion analytics. Sequence AFTER interior (LIVE-254, HYG-033, LIVE-409, LIVE-410). Keep as one sequenced row so five operator asks do not each become a parallel P1.\n\nUPDATED 2026-09-20. Children: LIVE-420 (directory, done), LIVE-422 (analytics, done), LIVE-425 (sell-course Connect prompt, done). LIVE-426 closed the leftover Business-plan lie in help (LIVE-410). Price half of sell-a-course already lived on ADR-1397. Tier gate and Discussion still have their own PRs. Do not close this parent from a child. Do not add posts.scope_space_id from this row.\n\nUPDATED 2026-09-20: the tier-gate child is LIVE-427. Do not close this parent from that child. Discussion remains LIVE-421.",
+      "detail": "FILED 2026-09-19. FOCUS-MODEL Q5: sell a course, gate content to a tier, member directory, space-level discussion, completion analytics. Sequence AFTER interior (LIVE-254, HYG-033, LIVE-409, LIVE-410). Keep as one sequenced row so five operator asks do not each become a parallel P1.\n\nUPDATED 2026-09-20. Children: LIVE-420 (directory, done), LIVE-422 (analytics, done), LIVE-425 (sell-course Connect prompt, done). LIVE-426 closed the leftover Business-plan lie in help (LIVE-410). Price half of sell-a-course already lived on ADR-1397. Tier gate and Discussion still have their own PRs. Do not close this parent from a child. Do not add posts.scope_space_id from this row.\n\nUPDATED 2026-09-20: the tier-gate child is LIVE-427. Do not close this parent from that child. Discussion remains LIVE-421.\n\nUPDATED 2026-09-20: LIVE-429 closed the leftover that payment_status was written and never shown. Access still ignores the column. Do not close this parent from that child.",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-20: sell-course Connect is LIVE-425 (done). Directory is LIVE-420. Analytics is LIVE-422. Help no longer restates the Business membership wall (LIVE-426). Tier gate is LIVE-427 (own PR). Closes when each of the five has its own child row with a passing probe, or a ruling drops one. Discussion still open.",
+        "evidence": "2026-09-20: sell-course Connect is LIVE-425 (done). Directory is LIVE-420. Analytics is LIVE-422. Help no longer restates the Business membership wall (LIVE-426). Tier gate is LIVE-427. Space past-due display is LIVE-429. Closes when each of the five has its own child row with a passing probe, or a ruling drops one. Discussion still open.",
         "checked": "2026-09-20"
       }
     },
@@ -15105,6 +15105,25 @@
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const g=fs.readFileSync(\"lib/journeys/tier-gate.ts\",\"utf8\");if(!g.includes(\"export function journeyTierGateError\"))fail(\"journeyTierGateError is gone\");if(!g.includes(\"export async function checkJourneyTier\"))fail(\"checkJourneyTier is gone\");const f=fs.readFileSync(\"lib/journeys/free-enrol-gate.ts\",\"utf8\");if(!f.includes(\"checkJourneyTier\"))fail(\"the free door no longer asks the tier gate\");const c=fs.readFileSync(\"lib/commerce/checkout.ts\",\"utf8\");if(!c.includes(\"checkJourneyTier\"))fail(\"checkout no longer asks the tier gate\");const m=fs.readFileSync(\"lib/studio/entities/journey.ts\",\"utf8\");if(!m.includes(\"space_tier_id\"))fail(\"the Journey manifest no longer declares the tier\");const mig=fs.existsSync(\"supabase/migrations/20270345006600_journey_space_tier_gate.sql\");if(!mig)fail(\"the tier-gate migration is gone\");console.log(\"LIVE-427 ok\")'",
         "note": "Passes when both enrol doors call checkJourneyTier, the manifest declares space_tier_id, and the migration file is present."
+      },
+      "closed": "2026-09-20"
+    },
+    {
+      "id": "LIVE-429",
+      "title": "A past-due Space membership is written and never shown",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/FOCUS-MODEL.md",
+        "ref": "FOCUS-MODEL §6 item 3; LIVE-410 leftover; ADR-1478"
+      },
+      "detail": "FILED 2026-09-20 from the LIVE-411 re-test after the Journey tier gate landed. Packets next was LIVE-411 (umbrella). Money and events lanes were empty. FOCUS-MODEL §6 item 3 said payment_status is never enforced and Crew dunning does not cover Space dues. Premise re-tested first: the webhook already writes pending/active/past_due/canceled (lib/billing/space-subscriptions.ts). isSpacePaidMember and private.is_space_paid_member deliberately ignore the column (ADR-1092), because free joins are status=active with payment_status=pending. No UI selected the column. Settings Plan and billing only reads profiles.membership_payment_status.\n\nCLOSED 2026-09-20 (ADR-1478). Display only. isPastDueSpaceMembership is true only for past_due. The member sees the notice on the Space join card and on Settings Plan and billing. The host sees a Payment failed chip. Access is unchanged. ROOT never lists. billingLive() still darkens the Settings list. No migration. Did not close LIVE-411. Did not absorb LIVE-423. Did not move Circle tier off space_can_sell.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const d=fs.readFileSync(\"lib/spaces/membership-dunning.ts\",\"utf8\");if(!d.includes(\"export function isPastDueSpaceMembership\"))fail(\"the past-due predicate is gone\");if(!d.includes(\"export async function listMyPastDueSpaceMemberships\"))fail(\"the member reader is gone\");if(!d.includes(\"paymentStatus === \\x27past_due\\x27\"))fail(\"the predicate no longer keys on past_due\");const j=fs.readFileSync(\"components/spaces/membership-join.tsx\",\"utf8\");if(!j.includes(\"isPastDueSpaceMembership\"))fail(\"the join surface never asks the past-due predicate\");if(!j.includes(\"MembershipPastDueBanner\"))fail(\"the join surface no longer renders the banner\");const o=fs.readFileSync(\"components/spaces/membership-owner-list.tsx\",\"utf8\");if(!o.includes(\"isPastDueSpaceMembership\"))fail(\"the owner list never asks the past-due predicate\");const b=fs.readFileSync(\"app/(main)/settings/billing/section.tsx\",\"utf8\");if(!b.includes(\"listMyPastDueSpaceMemberships\"))fail(\"Settings billing no longer lists Space past-due\");const m=fs.readFileSync(\"lib/spaces/memberships.ts\",\"utf8\");if(!m.includes(\"payment_status\"))fail(\"memberships reads no longer select payment_status\");if(!fs.existsSync(\"lib/spaces/membership-dunning.test.ts\"))fail(\"no dunning test\");console.log(\"LIVE-429 ok\")'",
+        "note": "Passes when the past-due predicate exists, both member surfaces and the host list read it, and Settings billing lists Space dues. Access may still ignore the column."
       },
       "closed": "2026-09-20"
     }

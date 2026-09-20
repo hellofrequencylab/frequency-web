@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **If a Space membership payment fails, you see it.** The Space still counts you as a member. Settings, Plan and billing, names the Space. The host sees Payment failed on that member.
+
 - **If you belong to a Space, you can see the other members.** Open People on that Space. Visitors who have not joined see a join door, not the list.
 
 - **You can keep a Journey for one Space membership.** In settings, pick the tier. People who are not in that membership see a join link instead of Start or Get access.

@@ -72,6 +72,7 @@ type MembershipRow = {
   status: string
   started_at: string
   billing_interval?: string
+  payment_status?: string | null
 }
 const db = {
   tiers: [] as TierRow[],
@@ -642,6 +643,22 @@ describe('getMyMembership (action)', () => {
     const mine = await getMyMembership('space-1')
     expect(mine?.tierName).toBe('Gold')
     expect(mine?.id).toBe('m0')
+    expect(mine?.paymentStatus).toBeNull()
+  })
+
+  it('passes payment_status through for the past-due banner', async () => {
+    seedActiveTier('t0', { name: 'Gold' })
+    db.memberships.push({
+      id: 'm0',
+      space_id: 'space-1',
+      member_profile_id: currentProfileId!,
+      tier_id: 't0',
+      status: 'active',
+      started_at: '2026-06-18T00:00:00.000Z',
+      payment_status: 'past_due',
+    })
+    const mine = await getMyMembership('space-1')
+    expect(mine?.paymentStatus).toBe('past_due')
   })
 })
 
@@ -720,6 +737,13 @@ describe('listSpaceMemberships (action) — owner only', () => {
     expect(list).toHaveLength(1)
     expect(list[0]!.memberName).toBe('Ada Lovelace')
     expect(list[0]!.tierName).toBe('Gold')
+    expect(list[0]!.paymentStatus).toBeNull()
+  })
+
+  it('passes payment_status through so the owner list can name a failed renewal', async () => {
+    db.memberships[0]!.payment_status = 'past_due'
+    const list = await listSpaceMemberships('space-1')
+    expect(list[0]!.paymentStatus).toBe('past_due')
   })
 
   it('falls back to generic names when the profile / tier is missing', async () => {
