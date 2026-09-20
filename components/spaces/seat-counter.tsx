@@ -11,6 +11,9 @@ import type { SeatUsage } from '@/lib/spaces/seats'
 // WHILE BILLING IS OFF (preview): seats are not enforced yet, so the counter is shown as an
 // informational preview and the copy says so plainly (CONTENT-VOICE skeptic test, no em dashes). When
 // billing goes live, the same counter reflects the real licensed allowance + the enforcement.
+//
+// LIVE-433: extra seats are a meter plus an add-on (ADR-917 / LIVE-229), not a retired-plan wall.
+// The full-meter caption names Plan and billing. Never the retired plan label from LIVE-228.
 
 export function SeatCounter({
   usage,
@@ -48,12 +51,7 @@ export function SeatCounter({
           <p className="mt-1.5 text-meta text-muted">
             {enforced ? (
               full ? (
-                <>
-                  Every operator seat is taken. Add a seat to invite another teammate.{' '}
-                  <Link href={billingHref} className="font-medium text-text underline underline-offset-2 hover:text-primary">
-                    Team roles come with the Collective plan.
-                  </Link>
-                </>
+                'Every operator seat is taken. Add a seat to invite another teammate. Extra seats are on Plan and billing.'
               ) : (
                 'Admins, moderators, and editors use a seat. Members are free.'
               )

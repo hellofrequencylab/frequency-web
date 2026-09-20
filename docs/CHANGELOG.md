@@ -28,6 +28,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **If you run a Space, the seat counter no longer says team roles come with the Collective plan.** Extra seats are on Plan and billing. Members stay free.
+
 - **If you run a Space, Home's last-30-days revenue now includes gifts to your fund.** Shop orders and tickets were already in that number.
 
 - **Hosting other businesses on your Space, or on your event, is no longer described as a Collective plan feature.** That door opens at Business. The invite, the accept, and the locked preview name the same rule as the plan map.

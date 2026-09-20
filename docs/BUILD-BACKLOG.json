@@ -14531,7 +14531,7 @@
         "file": "docs/FOCUS-MODEL.md",
         "ref": "ADR-1403 Q5; survey 2026-09-19"
       },
-      "detail": "FILED 2026-09-19. FOCUS-MODEL Q5: sell a course, gate content to a tier, member directory, space-level discussion, completion analytics. Sequence AFTER interior (LIVE-254, HYG-033, LIVE-409, LIVE-410). Keep as one sequenced row so five operator asks do not each become a parallel P1.\n\nUPDATED 2026-09-20. Children: LIVE-420 (directory, done), LIVE-422 (analytics, done), LIVE-425 (sell-course Connect prompt, done). LIVE-426 closed the leftover Business-plan lie in help (LIVE-410). Price half of sell-a-course already lived on ADR-1397. Tier gate and Discussion still have their own PRs. Do not close this parent from a child. Do not add posts.scope_space_id from this row.\n\nUPDATED 2026-09-20: the tier-gate child is LIVE-427. Do not close this parent from that child. Discussion closed as LIVE-421 (ADR-1469).\n\nUPDATED 2026-09-20: automation lock-screen leftover of LIVE-228 is LIVE-432. Do not close this parent from that child.\n\nUPDATED 2026-09-20: Circle membership delivery leftover is LIVE-436. Do not close this parent from that child.\n\nUPDATED 2026-09-20: LIVE-429 closed the leftover that payment_status was written and never shown. Access still ignores the column. Do not close this parent from that child.",
+      "detail": "FILED 2026-09-19. FOCUS-MODEL Q5: sell a course, gate content to a tier, member directory, space-level discussion, completion analytics. Sequence AFTER interior (LIVE-254, HYG-033, LIVE-409, LIVE-410). Keep as one sequenced row so five operator asks do not each become a parallel P1.\n\nUPDATED 2026-09-20. Children: LIVE-420 (directory, done), LIVE-422 (analytics, done), LIVE-425 (sell-course Connect prompt, done). LIVE-426 closed the leftover Business-plan lie in help (LIVE-410). Price half of sell-a-course already lived on ADR-1397. Tier gate and Discussion still have their own PRs. Do not close this parent from a child. Do not add posts.scope_space_id from this row.\n\nUPDATED 2026-09-20: the tier-gate child is LIVE-427. Do not close this parent from that child. Discussion closed as LIVE-421 (ADR-1469).\n\nUPDATED 2026-09-20: automation lock-screen leftover of LIVE-228 is LIVE-432. Do not close this parent from that child.\n\nUPDATED 2026-09-20: Circle membership delivery leftover is LIVE-436. Do not close this parent from that child.\n\nUPDATED 2026-09-20: LIVE-429 closed the leftover that payment_status was written and never shown. Access still ignores the column. Do not close this parent from that child.\n\nUPDATED 2026-09-20: seat-counter Collective leftover is LIVE-433. Do not close this parent from that child. Automations and collaborator-host copy stay on their own open PRs.",
       "verify": {
         "kind": "manual",
         "evidence": "2026-09-20: sell-course Connect is LIVE-425 (done). Directory is LIVE-420. Analytics is LIVE-422. Help no longer restates the Business membership wall (LIVE-426). Tier gate is LIVE-427 (own PR). Discussion is LIVE-421 (done). Automation lock-screen leftover is LIVE-432 (own PR). Closes when each of the five has its own child row with a passing probe, or a ruling drops one. Circle membership delivery is LIVE-436 (this PR). Space past-due display is LIVE-429 (this PR).",
@@ -15162,6 +15162,25 @@
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const files=[\"lib/events/ticket-tiers.ts\",\"lib/events/space-event-access.ts\",\"lib/events/ticket-space-access.ts\",\"components/spaces/membership-event-access.tsx\",\"app/(main)/events/[slug]/manage/ticket-tiers-panel.tsx\",\"app/(main)/admin/events/[id]/event-edit-client.tsx\"];for (const f of files){const s=fs.readFileSync(f,\"utf8\");if(/Collective plan/.test(s))fail(f+\" still names the Collective plan\")}const g=fs.readFileSync(\"lib/events/ticket-space-access.ts\",\"utf8\");if(!g.includes(\"featureWallLabel\"))fail(\"ticket-space-access no longer names the wall through featureWallLabel\");if(!g.includes(\"export function membershipTicketWallSentence\"))fail(\"membershipTicketWallSentence is gone\");if(!g.includes(\"export async function resolveMembershipTicketGate\"))fail(\"resolveMembershipTicketGate is gone\");const gates=fs.readFileSync(\"lib/pricing/gates.ts\",\"utf8\");const m=gates.match(/space_membership_tickets:\\s*\\{[^}]+\\}/);if(!m)fail(\"space_membership_tickets gate missing\");if(/minEntitlement:\\s*.business./.test(m[0])||/minEntitlement:\\s*.collective./.test(m[0]))fail(\"space_membership_tickets left the free floor\");console.log(\"LIVE-428 ok\")'",
         "note": "Passes when the member-ticket writers and editors no longer type Collective plan, the loader names the wall through featureWallLabel, and space_membership_tickets stays on the free floor."
+      },
+      "closed": "2026-09-20"
+    },
+    {
+      "id": "LIVE-433",
+      "title": "Seat counter still names the Collective plan after LIVE-228 retired the tier",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/spaces/seat-counter.tsx",
+        "ref": "LIVE-410 leftover; ADR-1482; LIVE-228; ADR-917"
+      },
+      "detail": "FILED 2026-09-20 from the LIVE-411 re-test. Packets next was LIVE-411 (umbrella). Money and events lanes were empty. LIVE-428 fixed member-ticket writers. The remaining unclaimed leftover on this tree was the seat counter: when every operator seat is taken it said \"Team roles come with the Collective plan.\"\n\nPREMISE RE-TESTED 2026-09-20. SPACE_PLANS has no collective. space_team is a meter (free 1, business 2), not a FEATURE_GATES wall. Help already names two included seats plus an add-on. The caption was the leftover.\n\nCLOSED 2026-09-20 (ADR-1482). Full-meter dest is Extra seats are on Plan and billing. Members stay free. No migration. Did not close LIVE-411. Did not absorb automations (#2807), collaborator hosting (#2805), or the Programs upsell.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const s=fs.readFileSync(\"components/spaces/seat-counter.tsx\",\"utf8\");if(/Collective/.test(s))fail(\"seat-counter still names Collective\");if(!s.includes(\"Extra seats are on Plan and billing.\"))fail(\"the billing dest sentence is gone\");if(!s.includes(\"Admins, moderators, and editors use a seat. Members are free.\"))fail(\"the free-member rule is gone\");if(!fs.existsSync(\"components/spaces/seat-counter.test.ts\"))fail(\"no seat-counter test\");console.log(\"LIVE-433 ok\")'",
+        "note": "Passes when the seat counter no longer types Collective, the full-meter dest names Plan and billing, and the free-member rule stays."
       },
       "closed": "2026-09-20"
     },
