@@ -9,6 +9,7 @@ import { getSpaceSectionPresence } from '@/lib/spaces/content-data'
 import { spaceHasPublicUpcomingEvents } from '@/lib/events/store'
 import { spaceHasCollaborators } from '@/lib/spaces/collaborations'
 import { viewerCanSeeSpaceMemberDirectory } from '@/lib/spaces/member-directory'
+import { canSeeSpaceDiscussionTab, getLiveSpaceCircle } from '@/lib/spaces/space-discussion'
 import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
 
 // THE ONE Space profile sub-nav model — the tab set + the operator's admin links — resolved from the
@@ -39,7 +40,7 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   const brandName = space.brandName ?? space.name
   const base = `/spaces/${space.slug}`
 
-  const [presence, manage, hasCalendarEvents, hasCollaborators, showPeople] = await Promise.all([
+  const [presence, manage, hasCalendarEvents, hasCollaborators, showPeople, hub] = await Promise.all([
     getSpaceSectionPresence(space.id, space.slug),
     resolveSpaceManageAccess(space, viewerProfileId, caller?.webRole ?? null),
     // Gate the Calendar tab on the SAME public/unlisted published set the calendar renders, not on the
@@ -51,6 +52,7 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
     // People (LIVE-420): fellow members and managers only. Visitors never get a tab over a roster
     // they cannot read. ROOT is refused inside the reader.
     viewerCanSeeSpaceMemberDirectory(space),
+    space.type === 'root' ? Promise.resolve(null) : getLiveSpaceCircle(space.id),
   ])
 
   const pages = readProfilePages(space.preferences)
@@ -104,6 +106,17 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
     // People: the member directory of space_memberships, never the staff roster at settings/members.
     // Shown only to an active member or a manager (ADR-1471).
     ...(showPeople ? [{ href: `${base}/people`, label: 'People' }] : []),
+    // Discussion (LIVE-421): the Space Circle feed on the Space. Never named Community.
+    // A manager keeps it when the hub is off so they can turn it on. A visitor never sees
+    // a tab over a room that is not there.
+    ...(circlesEnabled &&
+    canSeeSpaceDiscussionTab({
+      spaceType: space.type,
+      hubLive: !!hub,
+      canManage: canSeeAsOwner,
+    })
+      ? [{ href: `${base}/discussion`, label: 'Discussion' }]
+      : []),
     // Reviews on their own tab (owner decision): the member rating + review wall. Public read; a signed-in
     // member (not the owner) leaves one review they can revise. Gated on the `reviews` function (default ON).
     ...(reviewsEnabled ? [{ href: `${base}/reviews`, label: 'Reviews' }] : []),
