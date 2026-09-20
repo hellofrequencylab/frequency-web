@@ -26,6 +26,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **Email no longer says sends go to 25,000 on Collective.** A free Space includes 300 sends a month. Business is 25,000 a month.
+
 - **Automations come with Business, not a leftover Collective plan.** If your Space is on Free, the lock screen names Business. Sequences and rules still run the same way once you are on that plan.
 
 - **Reserving a ticket for your members is no longer described as a Collective plan feature.** Every plan can do that. The ticket editor and Event access name the same rule as the memberships floor. A payout account is what starts the money.

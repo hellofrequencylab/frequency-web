@@ -14,6 +14,7 @@ import {
   spaceModuleChildren,
 } from './space-modules'
 import { SPACE_FUNCTIONS, type SpaceFunctionKey } from '@/lib/spaces/functions'
+import { emailCatalogNote } from '@/lib/spaces/email-catalog-note'
 
 // ADR-543 (docs/MODULAR-MENU.md P0): the universal SPACE module catalog + manifest.
 
@@ -368,6 +369,13 @@ describe('access badges match the real free-tier caps (ADR-784)', () => {
 
   it('badges Team Freemium (1 seat free, then paid per seat)', () => {
     expect(spaceModuleById('space.people')!.access).toBe('freemium')
+  })
+
+  it('names Business email sends from the meter, never Collective (LIVE-437)', () => {
+    const note = spaceModuleById('space.comms')!.freeNote
+    expect(note).toBe(emailCatalogNote())
+    expect(note).not.toMatch(/Collective/)
+    expect(note).toContain('Business')
   })
 
   it('badges Practices Included (no cap constant backs a freemium claim)', () => {
