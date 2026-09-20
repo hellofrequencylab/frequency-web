@@ -1,4 +1,4 @@
--- LIVE-427 / ADR-1476: Circle `tier` access follows the free membership floor.
+-- LIVE-436 / ADR-1485: Circle `tier` access follows the free membership floor.
 --
 -- ADR-1415 (LIVE-410) let a free Space sell memberships. Connect readiness is the
 -- checkout door. The leftover wall was here: `private.space_can_sell` still ranked
@@ -37,7 +37,7 @@ revoke all on function private.space_can_sell(uuid) from public, anon, authentic
 grant execute on function private.space_can_sell(uuid) to authenticated, service_role;
 
 comment on function private.space_can_sell(uuid) is
-  'May this Space charge? (ADR-1476, extends ADR-1415 / LIVE-410). True for a non-root Space. Plan is not the door; Connect readiness still refuses checkout. The root Space can never sell, which is what makes a personal Circle free by construction.';
+  'May this Space charge? (ADR-1485 / LIVE-436, extends ADR-1415 / LIVE-410). True for a non-root Space. Plan is not the door; Connect readiness still refuses checkout. The root Space can never sell, which is what makes a personal Circle free by construction.';
 
 -- ── 2. Shape trigger: Space modes still need a real Space. No plan floor. ─────────────
 
