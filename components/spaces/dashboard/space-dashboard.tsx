@@ -3,13 +3,17 @@ import Link from 'next/link'
 import {
   Activity,
   BadgeDollarSign,
+  BookOpen,
   CalendarClock,
+  CheckCircle2,
   Eye,
   HeartPulse,
+  Hourglass,
   Inbox,
   Mail,
   MessageSquare,
   MousePointerClick,
+  Percent,
   Sparkles,
   Ticket,
   UserPlus,
@@ -35,6 +39,7 @@ import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 /** How many upcoming events the dashboard's "Coming up" box lists. */
 const COMING_UP_SLOTS = 5
 import { getSpaceProfileStats } from '@/lib/spaces/analytics'
+import { getSpaceCompletionAnalytics } from '@/lib/spaces/completion-analytics'
 
 // THE SPACE COMMAND-CENTER HOME (ADR-796). The default landing of the /manage console: at-a-glance revenue,
 // members, what needs attention, the latest activity, and what's coming up — with inline links to act. Every
@@ -84,6 +89,10 @@ export async function SpaceDashboard({
 
         <Suspense fallback={<StatRowSkeleton count={2} />}>
           <DashboardProfileStats spaceId={spaceId} slug={slug} />
+        </Suspense>
+
+        <Suspense fallback={<StatRowSkeleton />}>
+          <DashboardJourneyStats spaceId={spaceId} slug={slug} />
         </Suspense>
 
         <Suspense fallback={<BlockSkeleton />}>
@@ -180,6 +189,68 @@ async function DashboardProfileStats({ spaceId, slug }: { spaceId: string; slug:
           detail={stats.ctaClicks === 0 ? 'No clicks yet' : 'taps on your button'}
           href={`/spaces/${slug}/manage/mode`}
           title="Taps on the button your profile leads with. Opens the setting that picks what it does."
+        />
+      </div>
+    </section>
+  )
+}
+
+// ── Journeys: who started and who finished (LIVE-422) ─────────────────────────────────────────────
+// Revenue already sits on the first row (spaceEarningsSummary). This band is completion:
+// unique people on this Space's Journeys, all-time. A re-take is one person. Fail-safe zeros.
+async function DashboardJourneyStats({ spaceId, slug }: { spaceId: string; slug: string }) {
+  const stats = await getSpaceCompletionAnalytics(spaceId)
+  const offeringsHref = `/spaces/${slug}/settings/offerings`
+  const enrolledDetail =
+    stats.enrolled === 0
+      ? 'No one has started yet'
+      : stats.paidEnrolled > 0
+        ? `${stats.paidEnrolled} paid · ${stats.journeyCount === 1 ? '1 Journey' : `${stats.journeyCount} Journeys`}`
+        : stats.journeyCount === 1
+          ? '1 Journey'
+          : `${stats.journeyCount} Journeys`
+  return (
+    <section className="space-y-3">
+      <SectionHeader title="Your Journeys" href={offeringsHref} action="Offerings" />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard
+          label="Enrolled"
+          value={stats.enrolled}
+          icon={BookOpen}
+          detail={enrolledDetail}
+          href={offeringsHref}
+          title="People who started a Journey that belongs to this Space. Counted once per person."
+        />
+        <StatCard
+          label="Finished"
+          value={stats.completed}
+          icon={CheckCircle2}
+          detail={stats.completed === 0 ? 'No one has finished yet' : 'people who finished'}
+          title="People who finished at least one of this Space's Journeys"
+        />
+        <StatCard
+          label="Still going"
+          value={stats.inProgress}
+          icon={Hourglass}
+          detail={
+            stats.enrolled === 0
+              ? 'No one has started yet'
+              : stats.inProgress === 0
+                ? 'Everyone who started has finished'
+                : 'still in a Journey'
+          }
+          title="People who started and have not finished yet"
+        />
+        <StatCard
+          label="Finish rate"
+          value={stats.completionPct === null ? 'None' : `${stats.completionPct}%`}
+          icon={Percent}
+          detail={
+            stats.completionPct === null
+              ? 'No one has started yet'
+              : `${stats.completed} of ${stats.enrolled} finished`
+          }
+          title="Share of people who started a Journey here and finished one"
         />
       </div>
     </section>

@@ -14,6 +14,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 - **You can list what people will learn on a Journey.** Add the outcomes in settings, one line each. Visitors see that list next to the story, not a repeat of the one-line promise.
 
+- **If you run a Space, Home now shows who started and finished your Journeys.** Enrolled, finished, still going, and the finish rate sit next to your profile views. Revenue was already on that same page. A person who starts again still counts as one.
+
 ### Changed
 
 - **If you run a Space, its Calendar tab slides between Guest, Admin, List, Timeline, and Projects.** Guest is first in the control. List is a gathering list on the left and a short stats card on the right, not the event editor. The tab remembers the last view you used.

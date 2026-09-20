@@ -4,7 +4,7 @@ description: Turn what you know into a guided program. Let Vera draft a balanced
 category: sharing
 order: 3
 published: 2026-06-06
-updated: 2026-09-19
+updated: 2026-09-20
 audience: member
 featureKeys: [journeys]
 status: published
@@ -129,6 +129,10 @@ You'll see her verdict right in the **settings panel**:
 
 Either way the Journey stays live the whole time. Vera's notes are coaching to make it stronger, not a
 gate on sharing.
+
+If the Journey belongs to a Space you run, that Space's **Home** page shows how many people
+started and finished your Journeys, and the finish rate. A person who starts again still
+counts as one.
 
 ## Sell it from a Space
 
