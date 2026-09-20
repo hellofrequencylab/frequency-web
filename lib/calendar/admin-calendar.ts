@@ -4,17 +4,19 @@ import { formatEventWhen, eventInstant } from '@/lib/time/zone'
 import { eventDayKey } from '@/lib/events/calendar-grid'
 import { listStaffCalendarItems } from './entries-store'
 import { listDayNotes } from './day-notes-store'
+import { listDueDateItems } from './due-dates-store'
 import { monthGridWindow } from './month-window'
 import type { DayNote } from './day-notes'
 import type { CalendarEvent } from './item'
 
-// THE ADMIN CALENDAR, loaded once (ADR-1385, ADR-1389). What a Space's team sees: every event under the
+// THE ADMIN CALENDAR, loaded once (ADR-1385, ADR-1389, ADR-1467). What a Space's team sees: every event under the
 // Space (drafts, past and cancelled included), the events other hosts co-host here, the private layer for
-// the first month, and the day notes. Shared by the Calendar settings console and the Admin mode of the
-// public Calendar tab so the two never disagree about what the team's calendar holds.
+// the year window, and the day notes. Shared by the Calendar settings console and the operator Calendar
+// tab so the two never disagree about what the team's calendar holds.
 //
 // 🔴 Call this ONLY for a viewer who manages the Space (or platform staff previewing it). It reads
-// unpublished events; the private layer and day notes are additionally locked by RLS.
+// unpublished events; the private layer and day notes are additionally locked by RLS. Unsigned
+// visitors never reach this function.
 
 type OwnedRow = Awaited<ReturnType<typeof listEventsForSpace>>[number]
 
@@ -104,11 +106,12 @@ export async function loadAdminCalendar(
   // THE PRIVATE LAYER: this month's entries. Other months load as the calendar browses. Read on the
   // caller's own session, so RLS decides what a viewer sees.
   const grid = entryWindow ?? monthGridWindow(year, month1)
-  const [entryItems, dayNotes] = await Promise.all([
+  const [entryItems, dayNotes, dueItems] = await Promise.all([
     listStaffCalendarItems(spaceId, grid.fromDay, grid.toDay, { editable: canManage }),
     listDayNotes(spaceId),
+    listDueDateItems(spaceId, grid.fromDay, grid.toDay),
   ])
-  events.push(...entryItems)
+  events.push(...entryItems, ...dueItems)
 
   return { events, ownedRows, dayNotes }
 }

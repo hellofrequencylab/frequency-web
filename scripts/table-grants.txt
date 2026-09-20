@@ -23,7 +23,7 @@
 # `public` table with an anon-readable stripe_customer_id column). `internal` is the load-bearing
 # one, and it is the only verdict that fails closed. If you are unsure, write `internal`.
 #
-# 39 public · 158 authenticated · 84 internal · 281 total (space_calendar_day_notes moved public to authenticated 2026-09-16, ADR-1387; space_calendar_entries + space_calendar_day_notes added 2026-09-16, ADR-1385/1386; recounted 2026-09-15 with the
+# 39 public · 163 authenticated · 84 internal · 286 total (space_plans + shares + playbooks + private feeds 2026-09-19, ADR-1468; space_calendar_day_notes moved public to authenticated 2026-09-16, ADR-1387; space_calendar_entries + space_calendar_day_notes added 2026-09-16, ADR-1385/1386; recounted 2026-09-15 with the
 # space_member_benefits recovery, which added three service-role-only tables; before it the line
 # read 81 internal / 276 total, itself recounted 2026-09-15 with LIVE-334,
 # which dropped the retired `channels` + `channel_memberships` rows; the line read 272 and had been
@@ -248,6 +248,7 @@ space_billing_agreements             authenticated
 space_bookings                       authenticated
 space_calendar_day_notes             authenticated
 space_calendar_entries               authenticated
+space_calendar_private_feeds         authenticated
 space_circle_optouts                 authenticated
 space_collaborations                 internal
 space_donation_asks                  authenticated
@@ -268,6 +269,9 @@ space_members                        authenticated
 space_membership_tiers               authenticated
 space_memberships                    authenticated
 space_nonprofit_verifications        authenticated
+space_plan_playbooks                 authenticated
+space_plan_shares                    authenticated
+space_plans                          authenticated
 space_programs                       authenticated
 space_reviews                        authenticated
 space_segments                       authenticated

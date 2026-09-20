@@ -16,7 +16,7 @@ This file is **why**, not **whether it is done**. Status lives in
 ## Theme index (2026-09-18)
 
 Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1471**. 1471 is LIVE-420. 1470 is LIVE-422. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1468 is claimed by Space Plans. 1469 is claimed by LIVE-421.
+tree as of this index: **ADR-1471**. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is claimed by LIVE-421.
 
 | Theme | Start here |
 |---|---|
@@ -46770,3 +46770,24 @@ Premise re-tested 2026-09-19: no `(profile)/people` or `(profile)/members` route
 **Consequences.** A later PR that lists waitlist rows, drops the membership gate, or renders the roster for a null viewer fails the LIVE-420 intent. Space discussion stays LIVE-421. Completion analytics stays LIVE-422.
 
 **Rows.** LIVE-420.
+
+## ADR-1468: Space Plans close Pencil, Plan, Production; LIVE-412 is parked
+
+**Status:** Accepted · 2026-09-19 · backlog `PROG-CAL2` through `PROG-CAL8` · numbered **1468** because **1467** is the Calendar view slide and **1466** is OWN-054 · corroborated by `supabase/migrations/20270345006700_space_plans.sql`, `lib/calendar/plans.ts`, `lib/studio/entities/space-plan.ts`
+
+**Context.** C0–C5 and the five Admin views (ADR-1445, ADR-1464) painted the calendar. PROG-CAL2–8 was the remaining ADR-1386 spine: Plan as the working record, Production through the existing event Spark, views, playbooks, Vera proposals, co-host shares, a private feed, and non-event targets. Packets on the scan lane were still offering LIVE-412 (split `app-shell.tsx`).
+
+**Decision.**
+
+1. **One Plan table.** `space_plans` is the working record. Dates, events, and `crm_tasks` point at it with `plan_id`. A Plan may have no dates. Stage is stored so a someday Plan still has one, and is derived from its dates and events when it can be.
+2. **Drawer from the Studio catalog.** The Plan drawer is a rail composed from `SPACE_PLAN_MANIFEST`. There is no Plan Spark wizard. Staff start a Plan from a calendar date or Calendar settings.
+3. **Production is the existing Spark.** Prefill reads field keys from `EVENT_MANIFEST`. The created event carries `plan_id`. The Pencil row is removed in the same create. Vera never publishes.
+4. **Private feed is token-keyed.** `/calendar/private/<token>` is the team ICS. Never a Space slug. Shares go through `space_plan_shares`.
+5. **The third stage stays Production** on team surfaces for every target kind (event, journey, program, maintenance). The target only changes which Studio the verb opens, or none for maintenance.
+6. **LIVE-412 is parked.** Status `parked` plus `PARKED_IDS`. The probe stays. Packets must not spawn a shell-split PR.
+
+**Rejected.** A second event wizard. A slug-keyed private calendar. Dragging a Plan card into Production. Applying the migration from an agent session.
+
+**Consequences.** PROG-CAL2–8 close when their probes pass. LIVE-412 stays sequenced in W0d as parked work. Editor, Sites, Etsy, and App Platform stay off this pass.
+
+**Rows.** PROG-CAL2, PROG-CAL3, PROG-CAL4, PROG-CAL5, PROG-CAL6, PROG-CAL7, PROG-CAL8 (closed). LIVE-412 (parked).

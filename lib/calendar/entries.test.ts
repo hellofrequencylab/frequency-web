@@ -87,6 +87,11 @@ describe('the round trip and the grid span', () => {
     expect(back.allDay).toBe(true)
   })
 
+  it('keeps a Plan id on the write', () => {
+    const r = row({ ...base, planId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' })
+    expect(r.plan_id).toBe('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')
+  })
+
   it('spans the inclusive days an entry covers', () => {
     expect(entryDaySpan(row(base))).toEqual({ dayKey: '2026-12-24', endDayKey: '2026-12-26' })
     expect(spanDayKeys('2026-12-30', '2027-01-02')).toEqual(['2026-12-30', '2026-12-31', '2027-01-01', '2027-01-02'])
