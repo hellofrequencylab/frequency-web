@@ -34,6 +34,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
+import { peopleCatalogNote } from '@/lib/spaces/people-catalog-note'
 import type { AdminSlot } from './registry'
 
 // LOCKED CONTRACT (ADR-553, docs/MENU-CONTRACT.md): one of the only three module catalogs the admin menu
@@ -173,7 +174,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // here (ADR-1313). CRM itself is a tool, not a sixth box: nesting is one level, so Conversations /
   // Automation / Leads / Doors / Shared nest directly under this box too. Hub tabs stay split
   // (Team on Settings, CRM on Resonance); that divergence is named in space-hub.test.ts.
-  { id: 'space.people', label: 'Your people', desc: 'The people on your team and the role each one holds.', Icon: Users, family: 'audience', hub: 'settings', slot: 'people', gate: { kind: 'feature', fn: 'members' }, featureKey: 'members', render: 'panel', deepLink: (s) => `${base(s)}/settings/members`, order: 30, tier: 'primary', priority: 10, access: 'freemium', freeNote: '1 seat free, 3 included on Collective, more per seat' },
+  { id: 'space.people', label: 'Your people', desc: 'The people on your team and the role each one holds.', Icon: Users, family: 'audience', hub: 'settings', slot: 'people', gate: { kind: 'feature', fn: 'members' }, featureKey: 'members', render: 'panel', deepLink: (s) => `${base(s)}/settings/members`, order: 30, tier: 'primary', priority: 10, access: 'freemium', freeNote: peopleCatalogNote() },
   { id: 'space.crm', label: 'CRM', desc: 'Your pipeline, contacts, private notes, and Vera autonomy.', Icon: Briefcase, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'panel', deepLink: (s) => `${base(s)}/crm`, order: 35, tier: 'primary', priority: 15, access: 'freemium', freeNote: '200 contacts free, then unlimited', parent: 'space.people' },
   // The flat Inbox (ADR-786) is RETIRED (ADR-820): folded into Conversations; /crm/inbox redirects.
   // Conversations (ADR-812): the ticketed workspace over the comms_* spine, scoped to THIS space. Support,

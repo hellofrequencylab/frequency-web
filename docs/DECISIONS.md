@@ -46914,3 +46914,23 @@ Premise re-tested 2026-09-20: `FEATURE_GATES.space_membership_tickets.minEntitle
 **Consequences.** A later PR that lists cancelled rows, shows ROOT, or renders another member's rows fails the LIVE-423 intent. Journey selling stays on `journey.sell`. Space discussion stays LIVE-421.
 
 **Rows.** LIVE-423.
+
+## ADR-1484: Your people names Business seats from the meter (LIVE-435)
+
+**Status:** Accepted · 2026-09-20 · backlog `LIVE-435` · numbered **1484** because **1478**–**1483** stay claimed by open leftover PRs · extends [ADR-1438](DECISIONS.md) (LIVE-228) · corroborated by `lib/spaces/people-catalog-note.ts` and `lib/pricing/feature-meters.ts`
+
+**Context.** LIVE-228 retired Collective as a plan label. `PLACEHOLDER_METER_LIMITS.space_team` is 1 free and 2 on Business. Extra seats are the ADR-799 add-on. The Your people catalog note still said "1 seat free, 3 included on Collective, more per seat". That sentence is the lever the console badges come back to when the beta window closes.
+
+Premise re-tested 2026-09-20: money, events, and hygiene packets were empty. LIVE-411 stays the parent. Seat-counter copy is LIVE-433. Programs is LIVE-434. Automations is LIVE-432. This leftover is the catalog note only.
+
+**Decision.**
+
+1. `peopleCatalogNote` is the one seam. It reads `space_team` and `SPACE_PLAN_LABEL.business`.
+2. `space.people.freeNote` calls that function. Never Collective. Never a typed 3.
+3. No migration. Seats stay a meter, not a plan wall. LIVE-411 stays open.
+
+**Rejected.** Closing LIVE-411 from a catalog note. Absorbing Reach or Email leftover Collective rungs. Changing the 1 / 2 ladder.
+
+**Consequences.** A later typed Collective seat count on `space.people` fails the LIVE-435 probe. The meter remains the quantity source.
+
+**Rows.** LIVE-435.

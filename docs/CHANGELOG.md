@@ -26,6 +26,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **Your people no longer says team seats come with Collective.** A free Space includes 1 seat. Business includes 2. Extra seats are per seat.
+
 - **Reserving a ticket for your members is no longer described as a Collective plan feature.** Every plan can do that. The ticket editor and Event access name the same rule as the memberships floor. A payout account is what starts the money.
 
 - **Help no longer says you need the Business plan to sell memberships or to reserve tickets for your members.** Every plan can sell those. A payout account is what starts the money. Campaigns and funnels still open at Business.
