@@ -15240,6 +15240,25 @@
         "note": "Passes when the collaborator-host writers and locked preview no longer type Collective plan, the loader names the wall through featureWallLabel, and space_collaborators stays on the Business floor."
       },
       "closed": "2026-09-20"
+    },
+    {
+      "id": "LIVE-431",
+      "title": "Space Home revenue still misses gifts to the fund after the ticket arm",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/commerce/orders.ts",
+        "ref": "LIVE-375 leftover; ADR-1480; ADR-1384"
+      },
+      "detail": "FILED 2026-09-20 from the LIVE-410 / LIVE-375 re-test. Packets next was LIVE-411 (umbrella). Money and events lanes were empty. LIVE-430 is the collaborator-host Collective leftover (#2805). Circle tier on free, past-due display, and my-memberships already have their own PRs. LIVE-375 taught Space Home to read event_tickets beside commerce_orders. A gift to a Space fund still never wrote commerce_orders. It writes space_donations through recordSpaceDonationFromSession. A Space whose only money was the fund still read $0.00 under No sales yet.\n\nPREMISE RE-TESTED 2026-09-20. spaceEarningsSummary folded commerce then tickets. space_donations already has amount_cents, platform_fee_cents, succeeded_at, refunded_at, status, and source. Get Paid lists Donations as a money path. Home did not read the table. space_memberships still has no amount and no invoice ledger.\n\nCLOSED 2026-09-20 (ADR-1480). donationEarnings is the third arm. The window is succeeded_at. Pending and abandoned are not revenue. A refund is status or refunded_at. An explicit network gift lands in the network slice. The donation read fails safe on its own. No migration. Did not close LIVE-411. Did not invent membership renewals from tier price times started_at.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const s=fs.readFileSync(\"lib/commerce/orders.ts\",\"utf8\");if(!s.includes(\"async function donationEarnings\"))fail(\"donationEarnings is gone\");if(!s.includes(\"space_donations\"))fail(\"the donation arm no longer reads space_donations\");if(!s.includes(\"r.source === \\x27network\\x27\"))fail(\"a network gift no longer lands in the network slice\");const t=fs.readFileSync(\"lib/commerce/orders.test.ts\",\"utf8\");if(!t.includes(\"LIVE-431\"))fail(\"no donation earnings test\");if(!t.includes(\"space_donations\"))fail(\"the test mock no longer names space_donations\");const dash=fs.readFileSync(\"components/spaces/dashboard/space-dashboard.tsx\",\"utf8\");if(!dash.includes(\"spaceEarningsSummary\"))fail(\"Space Home no longer mounts the earnings reader\");console.log(\"LIVE-431 ok\")'",
+        "note": "Passes when the donation arm reads space_donations, a network gift can reach the network slice, the test names LIVE-431, and Space Home still mounts the reader. Written 2026-09-20 against the missing gift, not a membership sum."
+      },
+      "closed": "2026-09-20"
     }
   ]
 }
