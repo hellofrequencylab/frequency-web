@@ -28,6 +28,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **Reach no longer says QR codes go unlimited on Collective.** A free Space includes 3 codes. Business is unlimited.
+
 - **Your people no longer says team seats come with Collective.** A free Space includes 1 seat. Business includes 2. Extra seats are per seat.
 
 - **Running a Program is no longer described as a Collective plan feature.** The Program page and the catalog note name Business, the plan that actually carries it.

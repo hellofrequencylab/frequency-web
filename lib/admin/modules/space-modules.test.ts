@@ -16,6 +16,8 @@ import {
 import { SPACE_FUNCTIONS, type SpaceFunctionKey } from '@/lib/spaces/functions'
 import { peopleCatalogNote } from '@/lib/spaces/people-catalog-note'
 
+import { reachCatalogNote } from '@/lib/spaces/reach-catalog-note'
+
 // ADR-543 (docs/MODULAR-MENU.md P0): the universal SPACE module catalog + manifest.
 
 describe('SPACE_MODULES catalog', () => {
@@ -374,6 +376,13 @@ describe('access badges match the real free-tier caps (ADR-784)', () => {
   it('names Business seats from the meter, never Collective (LIVE-435)', () => {
     const note = spaceModuleById('space.people')!.freeNote
     expect(note).toBe(peopleCatalogNote())
+    expect(note).not.toMatch(/Collective/)
+    expect(note).toContain('Business')
+  })
+
+  it('names Business QR codes from the meter, never Collective (LIVE-440)', () => {
+    const note = spaceModuleById('space.reach')!.freeNote
+    expect(note).toBe(reachCatalogNote())
     expect(note).not.toMatch(/Collective/)
     expect(note).toContain('Business')
   })
