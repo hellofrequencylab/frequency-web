@@ -47390,9 +47390,9 @@ Three facts were measured rather than assumed, and two of them changed the desig
 
 **Consequences.** The drawer has no Stage `<select>`; `scripts/live-452-probe.mjs` fails if one returns, if the row gains or loses a step, if a step saves on click, if the door drops `pencil=`, or if the prefill drops a field or lets Team notes through. `check:elements` counts one more primitive with a state test. The Plan drawer's stage select is the same shape and is the follow-up once #2830 merges.
 
-## ADR-1505: Per-tree uniqueness gates cannot see a merge-created collision, so CI grows a cross-PR arm and the later-opened PR renumbers (HYG-110)
+## ADR-1509: Per-tree uniqueness gates cannot see a merge-created collision, so CI grows a cross-PR arm and the later-opened PR renumbers (HYG-111)
 
-**Status:** Accepted · 2026-09-21 · backlog `HYG-110` · numbered **1505** because 1497–1504 were claimed on the ten PRs open against `main` when this was written, checked on every one of their heads before commit · extends [ADR-1488](DECISIONS.md) (the convention this gate enforces) and the header of `scripts/check-adr.mjs` · beside [ADR-1007](DECISIONS.md) (a ledger keyed on an id that nothing machine-checked) and [ADR-1354](DECISIONS.md) (a lane never mints a number)
+**Status:** Accepted · 2026-09-21 · backlog `HYG-111` · numbered **1505** because 1497–1504 were claimed on the ten PRs open against `main` when this was written, checked on every one of their heads before commit · extends [ADR-1488](DECISIONS.md) (the convention this gate enforces) and the header of `scripts/check-adr.mjs` · beside [ADR-1007](DECISIONS.md) (a ledger keyed on an id that nothing machine-checked) and [ADR-1354](DECISIONS.md) (a lane never mints a number)
 
 **Context.** `check:adr` proves every ADR number is declared exactly once, and `check:backlog` proves every backlog id is unique. Both read ONE TREE. The collision that hurt on 2026-09-21 is not in any tree: two branches each append a block to the end of `docs/DECISIONS.md` and a row to `docs/BUILD-BACKLOG.json`, each is green alone, and git merges two appended blocks without a conflict. Measured that day: #2824 and #2822 both declared ADR-1492 and merged eighty seconds apart, so `main` went red on `check:adr` until #2828 renumbered PROG-D2 to 1495. LIVE-442 was claimed by #2823 and #2825, HYG-107 and HYG-108 each by two PRs, LIVE-444 by #2833 and #2831. [ADR-1496](DECISIONS.md) was authored as 1493, renumbered to 1495 in flight and settled on 1496 by hand. Four PRs paid a full cycle each to renumber after the fact, and the coordinator did the numbering by reading every open branch by eye, which is the thing [ADR-1354](DECISIONS.md) says a gate has to do.
 
@@ -47412,4 +47412,6 @@ Premise re-tested before building ([ADR-1082](DECISIONS.md)): CI checks out the 
 
 **Consequences.** Every `pull_request` run against `main` costs one pulls listing, one files listing per other open PR, and two raw reads per PR that touches the ledger or the backlog, ~9 MB each, under the job's existing `pull-requests: read`. A later PR that introduces a number or a row id another open PR already introduced fails on its own CI, naming the PR to look at, before a merge can turn `main` red. A skip anywhere but CI is printed, not silent, and `scripts/guard-wiring.test.ts` fails if the guard ever leaves the array.
 
-**Rows.** HYG-110 (closed). Beside HYG-003 (the in-tree ADR contract) and HYG-093 (placeholders where a number belongs).
+**Rows.** HYG-111 (closed). Beside HYG-003 (the in-tree ADR contract) and HYG-093 (placeholders where a number belongs).
+
+Renumbered on 2026-09-21 from ADR-1505 / HYG-110: #2843, opened from the owner's own session, carried that pair first.

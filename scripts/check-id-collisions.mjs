@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Cross-PR id collision gate (HYG-110, ADR-1505).
+// Cross-PR id collision gate (HYG-111, ADR-1509).
 //
 // `check:adr` proves every ADR number is declared once IN A TREE, and `check:backlog` proves
 // every backlog id is unique IN A TREE. Neither can see the collision that git creates at merge
@@ -118,7 +118,7 @@ export function decide({ me, collisions }) {
     const line =
       `${c.kind === 'ADR' ? 'ADR number' : 'backlog id'} ${c.id} is also introduced by open PR #${c.pr.number} ` +
       `"${c.pr.title}" (opened ${c.pr.createdAt ?? 'unknown'}). ${who}: the later-opened PR takes the next free ` +
-      'number and repoints its own citations (ADR-1488 records the convention; ADR-1505 records this gate).'
+      'number and repoints its own citations (ADR-1488 records the convention; ADR-1509 records this gate).'
     if (iAmLater) {
       fail = true
       lines.push(`::error title=id collision::${line}`)

@@ -1,4 +1,4 @@
-// Non-triviality tests for the cross-PR id collision gate (HYG-110, ADR-1505).
+// Non-triviality tests for the cross-PR id collision gate (HYG-111, ADR-1509).
 //
 // The gate's IO (the pulls listing, the contents API, `git show`) is not what these prove. They
 // drive the exported pure functions against fixtures that must FAIL and fixtures that must PASS,
@@ -57,9 +57,9 @@ describe('what counts as a declaration and an id', () => {
 
 describe('newIdSets subtracts the base tip', () => {
   it('an id already on main is nobody\'s claim to make', () => {
-    const mine = pr(1, '2026-09-21T10:00:00Z', ['1492', '1493'], ['HYG-106', 'HYG-110'])
+    const mine = pr(1, '2026-09-21T10:00:00Z', ['1492', '1493'], ['HYG-106', 'HYG-111'])
     expect([...mine.adrs]).toEqual(['1493'])
-    expect([...mine.rows]).toEqual(['HYG-110'])
+    expect([...mine.rows]).toEqual(['HYG-111'])
   })
 })
 

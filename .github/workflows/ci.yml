@@ -226,7 +226,7 @@ jobs:
       # exactly that half, opening the weekly tracking issue when it breaks. Do NOT add
       # `cron-freshness` to the guards array below: with no deployment env its coverage verdict
       # would be noise, and the wiring half is already gated where the finding has an owner.
-      # ARMS check:id-collisions (HYG-110, ADR-1505). The checkout is depth-1 and carries only the
+      # ARMS check:id-collisions (HYG-111, ADR-1509). The checkout is depth-1 and carries only the
       # PR's merge commit, so the base branch tip is not on the runner; the gate reads it with
       # `git show origin/<base>:<file>` to work out which ADR numbers and backlog ids THIS PR
       # introduces. Depth 1 is enough: the gate subtracts the base TIP, never walks history. If
@@ -261,7 +261,7 @@ jobs:
         # a guard someone armed and stopped comparing — a diagnosis that pointed at a human who did
         # not exist. Gating the ref on the token restores the tri-state the guard actually wants:
         # both set = compare, NEITHER set = loud skip, one set = a real half-arming to shout about.
-        # ARMS THE CROSS-PR ARM OF check:id-collisions (HYG-110, ADR-1505). check:adr and
+        # ARMS THE CROSS-PR ARM OF check:id-collisions (HYG-111, ADR-1509). check:adr and
         # check:backlog prove uniqueness within THIS tree; two open PRs that each append a block
         # pass alone and collide on merge (four times on 2026-09-21: ADR-1492 twice merged,
         # LIVE-442 / HYG-107 / HYG-108 / LIVE-444 each claimed by two PRs). With the token the gate
@@ -317,7 +317,7 @@ jobs:
           # for those rows were string greps over the .sql file, which a migration no database can
           # execute passes perfectly. The new guard builds the policy reference graph and looks
           # for a cycle. SOURCE-only (reads supabase/migrations), so this array is its home.
-          # 2026-09-21: id-collisions joined (HYG-110, ADR-1505). It is the only guard here that
+          # 2026-09-21: id-collisions joined (HYG-111, ADR-1509). It is the only guard here that
           # looks OUTSIDE the tree: on a pull_request run it reads every other open PR's ledger
           # and backlog through the API and fails the later-opened PR when two introduce the same
           # ADR number or backlog id. In this array rather than a step of its own so its skip and
