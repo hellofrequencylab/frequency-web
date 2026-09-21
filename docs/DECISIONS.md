@@ -47290,3 +47290,44 @@ Premise re-tested 2026-09-20: `featureAllowed('space_collaborators', { plan: 'bu
 **Consequences.** A ref-free document — every legacy Space, every default page — costs ZERO queries and returns the same object, so the common case is unchanged. A document with refs costs ONE batched `select id, url`; the seam walks 5 modules and reaches no `sharp` and no `next/og`, the same shape `lib/page-editor/data.ts` already has from `app/page.tsx`. A later Space render path that resolves instead of loads fails the PROG-D2 probe. The entity-block layout blob still has no refresh-on-load, which is unchanged and recorded in LIBRARY.md.
 
 **Rows.** PROG-D2 (closed). Beside HYG-029, HYG-066, HYG-068 (all done). D4's usage index stays PROG-D4.
+
+
+## ADR-1498: The entity-cover grammar closes at 26 of 30, and the two compositions that stay off it are ruled, not forgotten (PROG-P5)
+
+**Status:** Accepted · 2026-09-21 · backlog `PROG-P5` (closed) → `LIVE-447` (the ruling it leaves open) · completes [ADR-1117](DECISIONS.md) (the detail-hero resolver) and [ADR-1136](DECISIONS.md) (the 26-band adoption) · beside [ADR-1248](DECISIONS.md) (the poster band takes its cover's own shape), [ADR-526](DECISIONS.md) (a Space profile is always Hero), [ADR-578](DECISIONS.md) (the page theme heading face) · re-tests under [ADR-1082](DECISIONS.md)
+
+### The premise, re-tested first
+
+`PROG-P5` said 43 surfaces, then 30, then "26 done, 4 left". Re-measured today with a census that is comment-blind **by line** and counts by **render site**, resolving the two wrapper compositions (`EventDetailTemplate`, `JourneyDetailTemplate`) to their callers: **30 live `DetailTemplate` surfaces**. The 30 held. The split did not: it was **24 on the grammar and 6 off**, because two public share twins landed after the ADR-1136 sweep and adopted nothing — `SCAN-643` gave `/events/<slug>` a public page that rides the event composition, and `SCAN-644` gave `/spaces/<slug>` one that passed a plain `coverImage` and ignored the operator's focal point. A sweep that closes on a count and not a gate is re-opened by the next page, which is the whole reason this row now closes on a probe.
+
+One method note that matters for the next person: a block-comment regex (`/\*[\s\S]*?\*/`) is opened by the route glob `'/events/*'` in the in-app event page and swallows it whole, so the first draft of the census read 28 and missed the marquee surface. Dropping comment **lines** instead is what makes the 30 honest, and `scripts/check-templates.mjs` carries the same regex.
+
+### What shipped
+
+**Two stragglers folded**, each a consolidation and not a redesign:
+
+- `/circles/starter/<slug>` hand-rolled an `h-40 sm:h-52` box around `TemplateCover`. It now calls `resolveDetailHero` (rung 1 is the blueprint's uploaded photo; `size: 'short'` is the surface's own default, the nearest rung to the old box) and renders the canonical `PageHero` (`minimal`, `heading={false}`). A blueprint with no upload wears its **drawn scene** through PageHero's `background` slot — the same seam the Around You map uses (ADR-1034) — and `background` wins over `coverImage`, so a blueprint's own art is never outranked by a section image, exactly as an entity's own upload never is. Pixels that move: the band grows one rem at each breakpoint, the corner goes from the card radius to the band radius, and the band gains the light strip every other PageHero carries.
+- the public `/spaces/<slug>` spreads `resolveDetailHero` with the Space's cover (or its deterministic stock stand-in, the same photo the OG card draws) as rung 1 **and the operator's focal point as `entityFocus`**, so the crop keeps the subject the operator framed. The band moves from the plain 16:6 crop to the same PageHero band every resolver-adopted entity with a cover renders, at the header element's height and overlay. Service-role reads only; the page's ISR is untouched (`lib/nav/public-detail-isr.test.ts` still passes).
+
+**26 of 30 now resolve through `lib/layout/detail-hero.ts` and render through `PageHero`.**
+
+### The four that stay off, and why that is a ruling
+
+The remaining 4 ride **two compositions** that hand-roll a cover **node** the grammar has no slot for. Both were named as such in ADR-1117 §"what this does not do" and again in ADR-1136, and re-reading them today confirms neither is a straggler:
+
+| Composition | Surfaces | What the grammar cannot express |
+|---|---|---|
+| the Space profile hero, `app/(main)/spaces/[slug]/(profile)/layout.tsx` | 1 | an overlaid lockup in the **page theme heading face** (`font-section`, ADR-578) with the brand chip, a follow chip that moves between the cover and a mobile action card, a tagline that relocates below `lg`; always Hero (ADR-526) on the **fixed** cover-height ladder, never the header element. `PageHero` `identity` would set every Space name in the uppercase display face at min-heights — a redesign of the one page a Business pays for. |
+| the event poster band behind `EventDetailTemplate` | 3 (`/events/<slug>`, `/discover/events/<slug>`, the public `/events/<slug>`) | a band that takes the **poster's own aspect** with the height tier as a ceiling (ADR-1248), full-bleed and square-cornered on a phone — settled by three owner reports (2026-08-31, 09-04, 09-10). `PageHero` has no aspect-shaped band, a hard-coded `rounded-3xl` border and a light strip. Folding it re-opens a fit the owner closed three times. |
+
+Folding either moves pixels on a marquee surface, so it is an **owner ruling with screenshots**, filed as `LIVE-447` (`ownerAction: ruling`, P3). The row names both doors: teach `PageHero` the two missing affordances and fold, or rule them permanently separate and pin that.
+
+### The probe
+
+`PROG-P5`'s manual verify becomes a `cmd` probe that runs the census, requires every surface off the grammar to be one of the two ruled compositions, and requires each ruled entry to still exist **and still be off** — so the set can only shrink, and a fold that forgets to shrink it fails loudly rather than laundering the exception. A census under 20 surfaces fails as the wrong tree, and two positive controls keep the classifier honest (the starter page must read as on; a copy with its resolver call and `PageHero` tag renamed must read as off). Four mutations fired: each folded page reverted, and each exception planted with a `<PageHero>`.
+
+**Rejected.** Routing the event cover through `PageHero`'s `background` slot (loses the aspect-shaped band, adds the border and strip, undoes ADR-1248 on the phone). Folding the Space hero onto `identity` (uppercase display face on every Space name). Adding a `/spaces` row to `DETAIL_HERO_DEFAULTS` for the public twin (the prefix would also map the podcast show page ADR-1136 keeps deliberately unmapped; unmapped resolves to the same no-cover fallback, so the row buys nothing the page needs). Touching `DetailTemplate`'s own 16:6 and gradient-placeholder branches (ADR-1117 left the template alone; a change there moves `/practices/<id>` with no image).
+
+**Consequences.** Two more surfaces honour the operator's focal point and the header element. A third bespoke cover on any `DetailTemplate` page fails CI. The count that lives in docs is now the probe's output, not a paragraph.
+
+**Rows.** PROG-P5 (closed). LIVE-447 (filed). Beside SCAN-643 and SCAN-644 (done), whose public twins this catches up.
