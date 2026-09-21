@@ -19,6 +19,7 @@
 //   identity    saveJourneyMeta         the name and the promise, hosted from the inline plane
 //   outcomes    setJourneyOutcomes      What you'll learn (LIVE-393), a repeat on story settings
 //   guarantee   setJourneyGuarantee     the refund promise (LIVE-395), a scalar on the same settings
+//   faq         setJourneyFaq           the questions (LIVE-394), a repeat of { q, a } on the same settings
 //   header      saveJourneyMeta         the cover and logo (self-saving Loom picks) + the overlay
 //   delivery    setJourneyRewards + setJourneyDelivery   one manifest section, two actions
 //   visibility  setJourneyVisibility    its own flow: publish, moderation state, Vera's rank gate
@@ -43,6 +44,7 @@ import { railForm, type RailForm } from '@/lib/studio/kernel/edit-plan'
 import { REPEAT_ITEM_SELF, type FieldDef } from '@/lib/studio/kernel/manifest'
 import type { RepeatRow } from '@/components/admin/rail/rail-field-value'
 import { JOURNEY_OUTCOMES_CAP, normalizeJourneyOutcomes } from '@/lib/journeys/outcomes'
+import { JOURNEY_FAQ_CAP, normalizeJourneyFaq, type JourneyFaqItem } from '@/lib/journeys/faq'
 import type { JourneyMeeting, JourneyTouchpoint } from '@/lib/journeys/meeting'
 
 /** The columns `saveJourneyMeta` writes from the identity form. */
@@ -55,6 +57,11 @@ export { JOURNEY_OUTCOMES_CAP }
 /** The scalar `setJourneyGuarantee` persists onto story.settings.guarantee (LIVE-395). Its own
  *  zone because it is its own action: it reads and rewrites page_config, which no column save does. */
 export const JOURNEY_GUARANTEE_WRITES = ['guarantee'] as const
+
+/** The repeat `setJourneyFaq` persists onto story.settings.faq (LIVE-394). Its own zone for the
+ *  same reason as the guarantee: its own action, rewriting page_config rather than a column. */
+export const JOURNEY_FAQ_WRITES = ['faq'] as const
+export { JOURNEY_FAQ_CAP }
 
 /** The columns `saveJourneyMeta` writes from the header zone. */
 export const JOURNEY_HEADER_WRITES = ['cover_image', 'logo_image', 'header_overlay_style', 'header_overlay_color'] as const
@@ -79,6 +86,7 @@ export interface JourneyRailPlan {
   identity: RailForm
   outcomes: RailForm
   guarantee: RailForm
+  faq: RailForm
   header: RailForm
   delivery: RailForm
   visibility: RailForm
@@ -90,6 +98,7 @@ export const JOURNEY_RAIL: JourneyRailPlan = {
   identity: railForm(JOURNEY_MANIFEST, JOURNEY_IDENTITY_WRITES, { hostInline: true }),
   outcomes: railForm(JOURNEY_MANIFEST, JOURNEY_OUTCOMES_WRITES),
   guarantee: railForm(JOURNEY_MANIFEST, JOURNEY_GUARANTEE_WRITES),
+  faq: railForm(JOURNEY_MANIFEST, JOURNEY_FAQ_WRITES),
   header: railForm(JOURNEY_MANIFEST, JOURNEY_HEADER_WRITES),
   delivery: railForm(JOURNEY_MANIFEST, JOURNEY_DELIVERY_WRITES),
   visibility: railForm(JOURNEY_MANIFEST, JOURNEY_VISIBILITY_WRITES),
@@ -238,4 +247,17 @@ export function journeyOutcomesRows(row: Record<string, unknown>): RepeatRow[] {
 /** The string[] `setJourneyOutcomes` writes. */
 export function journeyOutcomesFromRows(rows: readonly RepeatRow[]): string[] {
   return normalizeJourneyOutcomes(rows.map((r) => r[REPEAT_ITEM_SELF] ?? ''))
+}
+
+/** Rail rows for the questions repeat (LIVE-394). Each `{ q, a }` record keys its two controls at
+ *  the manifest's own field paths, which is what RailManifestRepeat reads a record row by. */
+export function journeyFaqRows(row: Record<string, unknown>): RepeatRow[] {
+  return normalizeJourneyFaq(row.faq).map(({ q, a }) => ({ q, a }))
+}
+
+/** The `{ q, a }[]` `setJourneyFaq` writes. A half-filled row (a question still waiting on its
+ *  answer) is dropped here the same way the server drops it, so the rail never claims a save the
+ *  page will not show. */
+export function journeyFaqFromRows(rows: readonly RepeatRow[]): JourneyFaqItem[] {
+  return normalizeJourneyFaq(rows.map((r) => ({ q: r.q ?? '', a: r.a ?? '' })))
 }

@@ -32,6 +32,8 @@
 //     they are what the Spark actually asks and what a re-seed actually re-reads.
 //   * `outcomes[]` is the visitor-facing "What you'll learn" list (LIVE-393). It is a bare
 //     string[] stored on `page_config` story.settings.outcomes, not a column.
+//   * `faq[]` is the visitor-facing "Questions" list (LIVE-394): `{ q, a }` records stored on
+//     `page_config` story.settings.faq, not a column. Empty means the page keeps its generic set.
 //
 // NO LEDGER: a Journey is the author's own work, so `verify: 'none'` and nothing is flagged
 // `commercial` (the kernel rejects a commercial field under verify:'none', by design).
@@ -260,10 +262,12 @@ export const JOURNEY_MANIFEST: EntityManifest = {
     { path: 'official', label: 'Official Journey', kind: 'toggle', section: 'publishing', veraDrafts: false },
   ],
 
-  // Two repeated children. The weekly arc is still the Spark's creation payload (each week
+  // Three repeated children. The weekly arc is still the Spark's creation payload (each week
   // becomes a Phase row). Outcomes are the visitor-facing "What you'll learn" list (LIVE-393):
   // a bare string[] on the story widget's settings, so the rail can add / remove / reorder
-  // through RailManifestRepeat and every visitor face reads the same list.
+  // through RailManifestRepeat and every visitor face reads the same list. The questions
+  // (LIVE-394) ride the same settings as `{ q, a }` records: the objections a host actually
+  // hears, answered once, in place of the generic set the page otherwise falls back to.
   repeats: [
     {
       arrayPath: 'arc',
@@ -283,6 +287,19 @@ export const JOURNEY_MANIFEST: EntityManifest = {
       section: 'story',
       itemLabel: (_item, index) => `Outcome ${index + 1}`,
       fields: [{ path: REPEAT_ITEM_SELF, label: 'outcome', kind: 'text', veraDrafts: true }],
+    },
+    {
+      arrayPath: 'faq',
+      label: 'Questions',
+      section: 'story',
+      itemLabel: (item, index) => {
+        const q = str(item.q)
+        return q ? q : `Question ${index + 1}`
+      },
+      fields: [
+        { path: 'q', label: 'question', kind: 'text', veraDrafts: true },
+        { path: 'a', label: 'answer', kind: 'longtext', prose: true, veraDrafts: true },
+      ],
     },
   ],
 }

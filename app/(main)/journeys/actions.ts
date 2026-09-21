@@ -37,6 +37,7 @@ import { canEditJourney } from '@/lib/journeys/authoring'
 import { normalizeJourneyCoverFocus } from '@/lib/journeys/header'
 import { writeJourneyOutcomes } from '@/lib/journeys/outcomes'
 import { writeJourneyGuarantee } from '@/lib/journeys/guarantee'
+import { writeJourneyFaq, type JourneyFaqItem } from '@/lib/journeys/faq'
 import { reviewJourneyForLibrary } from '@/lib/ai/journey-review'
 import { planJourneyEdits, type JourneyForEdit } from '@/lib/ai/journey-edit'
 import { JOURNEY_MANIFEST } from '@/lib/studio/entities/journey'
@@ -322,6 +323,21 @@ export async function setJourneyGuarantee(planId: string, guarantee: string): Pr
   if (!data) return fail('That Journey is gone.')
   const stored = (data as { page_config: PageWidgetConfig[] | null }).page_config
   const saved = await updatePlan(planId, { pageConfig: writeJourneyGuarantee(stored, guarantee) })
+  if (!saved.ok) return fail(saved.error)
+  revalidatePath('/journeys', 'layout')
+  return ok()
+}
+
+/** The authored questions (LIVE-394). Stored on the story widget's settings beside the outcomes
+ *  and the guarantee, so Advanced layout saves keep them. An empty list clears the key, and a
+ *  Journey with no authored questions falls back to the generic set on every visitor face. */
+export async function setJourneyFaq(planId: string, faq: JourneyFaqItem[]): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  const admin = createAdminClient()
+  const { data } = await admin.from('journey_plans').select('page_config').eq('id', planId).maybeSingle()
+  if (!data) return fail('That Journey is gone.')
+  const stored = (data as { page_config: PageWidgetConfig[] | null }).page_config
+  const saved = await updatePlan(planId, { pageConfig: writeJourneyFaq(stored, faq) })
   if (!saved.ok) return fail(saved.error)
   revalidatePath('/journeys', 'layout')
   return ok()

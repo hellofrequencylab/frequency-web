@@ -11,9 +11,13 @@ import {
   JOURNEY_IDENTITY_WRITES,
   JOURNEY_MEETING_WRITES,
   JOURNEY_OUTCOMES_WRITES,
+  JOURNEY_GUARANTEE_WRITES,
+  JOURNEY_FAQ_WRITES,
   JOURNEY_VISIBILITY_WRITES,
   journeyOutcomesFromRows,
   journeyOutcomesRows,
+  journeyFaqFromRows,
+  journeyFaqRows,
   journeyAttributesPatch,
   journeyDeliveryPatch,
   journeyMeetingPatch,
@@ -36,10 +40,18 @@ import {
 const TOUCHPOINT = ['format', 'schedule', 'timezone', 'location', 'link', 'notes', 'eventId']
 
 describe('the Journey rail plan', () => {
-  it('renders the same fields the hand-mounted editor rendered, plus the outcomes repeat', () => {
+  it('renders the same fields the hand-mounted editor rendered, plus the outcomes and questions repeats', () => {
     expect(JOURNEY_RAIL.identity.fields.map((f) => f.path)).toEqual(['title', 'summary'])
     expect(JOURNEY_RAIL.outcomes.fields).toEqual([])
     expect(JOURNEY_RAIL.outcomes.repeats.map((r) => r.arrayPath)).toEqual(['outcomes'])
+    expect(JOURNEY_RAIL.guarantee.fields.map((f) => f.path)).toEqual(['guarantee'])
+    expect(JOURNEY_RAIL.faq.fields).toEqual([])
+    expect(JOURNEY_RAIL.faq.repeats.map((r) => r.arrayPath)).toEqual(['faq'])
+    // A question and its answer, each a real path on the record (ADR-992), in that order.
+    expect(JOURNEY_RAIL.faq.repeats[0]?.fields.map((f) => [f.path, f.kind])).toEqual([
+      ['q', 'text'],
+      ['a', 'longtext'],
+    ])
     expect(JOURNEY_RAIL.header.fields.map((f) => f.path)).toEqual([
       'cover_image',
       'logo_image',
@@ -74,6 +86,8 @@ describe('the Journey rail plan', () => {
     const all = [
       ...JOURNEY_IDENTITY_WRITES,
       ...JOURNEY_OUTCOMES_WRITES,
+      ...JOURNEY_GUARANTEE_WRITES,
+      ...JOURNEY_FAQ_WRITES,
       ...JOURNEY_HEADER_WRITES,
       ...JOURNEY_DELIVERY_WRITES,
       ...JOURNEY_VISIBILITY_WRITES,
@@ -219,6 +233,14 @@ describe('the rail reads the row by manifest path, and writes each action its ow
     expect(journeyOutcomesRows({ outcomes: ['Hold the room', '  '] })).toEqual([{ '': 'Hold the room' }])
     expect(journeyOutcomesFromRows([{ '': 'Name the feeling' }, { '': '' }])).toEqual(['Name the feeling'])
   })
+
+  it('round-trips questions as RepeatRows keyed at q and a, dropping a half-filled row both ways', () => {
+    expect(journeyFaqRows({ faq: [{ q: 'Solo?', a: 'Sure.' }, { q: 'Draft?', a: '' }] })).toEqual([{ q: 'Solo?', a: 'Sure.' }])
+    expect(journeyFaqRows({})).toEqual([])
+    expect(journeyFaqFromRows([{ q: 'Live?', a: 'Sundays.' }, { q: 'Draft?', a: '' }, { q: '', a: 'Orphan' }])).toEqual([
+      { q: 'Live?', a: 'Sundays.' },
+    ])
+  })
 })
 
 describe('the Journey settings module renders the plan, not an editor', () => {
@@ -231,6 +253,7 @@ describe('the Journey settings module renders the plan, not an editor', () => {
     expect(source).toMatch(/JOURNEY_RAIL\.attributes\.fields/)
     expect(source).toMatch(/JOURNEY_RAIL\.visibility\.fields/)
     expect(source).toMatch(/JOURNEY_RAIL\.outcomes\.repeats/)
+    expect(source).toMatch(/JOURNEY_RAIL\.faq\.repeats/)
     expect(source).toMatch(/<RailManifestRepeat\b/)
   })
 
