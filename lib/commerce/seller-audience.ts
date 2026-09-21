@@ -88,6 +88,12 @@ export async function buyerIsSellersAudience(input: {
 
   const checks: Array<{ signal: AudienceSignal; run: () => Promise<boolean | null> }> = []
 
+  // A PROFILE seller reaches here with `space` null, BY RULING (ADR-1511, LIVE-221, 2026-09-21): a
+  // profile seller's own audience is narrower than a Space's. The follower, member and CRM sets
+  // below belong to a Space, and a profile has none, so an individual is measured on the personal
+  // contact list and prior purchases alone. lib/commerce/checkout.ts passes `sellerSpaceId: null`
+  // for a profile seller on purpose; more of an individual's buyers classify network, and that is
+  // the intended reading of "the introduction", not a gap to fill.
   if (space) {
     checks.push({
       signal: 'follows',
