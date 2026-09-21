@@ -7,7 +7,8 @@ import { setActiveSpace } from '@/lib/spaces/active-space'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { config } from '@/lib/page-editor/config'
 import { withVisibleBlocks } from '@/lib/page-editor/templates/space-blocks'
-import { resolveSpacePageDoc, readPageDoc, hasPage, HOME_SLUG } from '@/lib/spaces/profile-pages'
+import { readPageDoc, hasPage, HOME_SLUG } from '@/lib/spaces/profile-pages'
+import { loadSpacePageDoc } from '@/lib/spaces/page-doc'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
@@ -71,7 +72,10 @@ export default async function SpaceEditLandingPage({
   // default page (so a first-time operator opens onto a designed start point). Drop any block the
   // Page quick-panel hid (and strip the flag), so the full editor never shows a parked block;
   // hiding lives only in the compact Page panel.
-  const data = withVisibleBlocks(resolveSpacePageDoc(space.preferences, brandName, pageSlug))
+  // Loaded through the same seam the public render uses (lib/spaces/page-doc.ts), so the operator
+  // edits against the asset's CURRENT file rather than a stale cached url — and the next publish
+  // writes the refreshed cache back, healing the stored document one save at a time (PROG-D2).
+  const data = withVisibleBlocks(await loadSpacePageDoc(space.preferences, brandName, pageSlug))
   const customized = readPageDoc(space.preferences, pageSlug) !== null
 
   // STAFF PREVIEW: read-only. No editor runtime; render the resolved landing with the

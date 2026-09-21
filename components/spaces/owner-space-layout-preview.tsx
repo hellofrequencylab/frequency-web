@@ -3,7 +3,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
-import { resolveSpaceAuthoredContent } from '@/lib/spaces/authored-content'
+import { loadSpaceAuthoredContent } from '@/lib/spaces/page-doc'
 import { withEffectiveDataContent } from '@/lib/spaces/effective-block-content'
 import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { parseEntityLayout, resolveRows } from '@/lib/entity-blocks/layout'
@@ -57,7 +57,7 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
     slug: context.slug,
     profile: context.profile,
   })
-  const authored = resolveSpaceAuthoredContent(context.preferences, context.brandName)
+  const authored = await loadSpaceAuthoredContent(context.preferences, context.brandName)
 
   // DRAFT / PUBLISH SPLIT: the owner's live-page EDITOR seeds from the DRAFT node when one exists, else the
   // PUBLISHED node (`profileLayoutDraft ?? profileLayout`) — so the owner resumes an in-progress draft while

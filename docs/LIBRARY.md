@@ -156,6 +156,17 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   (`lib/library/resolve-refs.ts`) — fail-open to the cache at every grain, no query at all for a
   ref-free document. 🔴 The refresh decodes nothing and must never import `sharp` (same rule as
   ingest).
+- **A Space profile document refreshes on load too** ([ADR-1492](DECISIONS.md), which closes
+  PROG-D2). A Space page body is the same kind of Puck document, picked with the same fields, but
+  it lives on `spaces.preferences.pageDocs[slug]` and had no refresh: `resolveSpacePageDoc` is pure
+  by contract, so the refresh had nowhere to hang. `lib/spaces/page-doc.ts` is that seam — the
+  Space-side twin of `getPublishedData`. `loadSpacePageDoc` resolves then refreshes;
+  `loadSpaceAuthoredContent` does the same for the module engine's authored bag. The public profile
+  body, the page editor (so the next publish heals the stored cache), and both module-engine
+  authored reads load instead of resolve. `lib/spaces/profile-nav.ts` keeps the pure resolve on
+  purpose: it reads the Home doc for section anchors, never for images. 🔴 This matters TODAY, not
+  at D3 — `replaceLibraryAssetFile`, `rollbackToVersion` and the Recraft edits all re-point
+  `library_assets.url` on a live row while keeping its id.
 - **The entity-block system holds the same reference** ([ADR-1245](DECISIONS.md)). Its image
   fields (`url` fields with `upload`, gallery `images`, a Features or Card-grid item's `image`) are
   `string | AssetRef` too: `sanitizeBlockContent` keeps a well-formed ref in the shape it arrived
