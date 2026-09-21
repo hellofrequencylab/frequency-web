@@ -201,7 +201,7 @@ edits the Space (with the Calendar function), or platform staff previewing it, l
 | **Timeline** | The month as a linear time scale (days on the X axis, one row per gathering). Not a 7-column month grid. `?view=timeline&y=&m=`. |
 | **Projects** | A kanban over `ENTRY_STAGES` (Pencil, Planning, Production, Cancelled). An event on its way moves stage through the existing entry write. No new table. `?view=projects`. |
 
-Operators load Guest and Admin data once so a view switch does not remount. Unsigned members always get Guest and never hit `loadAdminCalendar`. Pencil, Planning, and Production lanes are `pencilLane` / `planningLane` / `productionLane` in `lib/calendar/pm-console.ts`; the component that rendered them was retired with the Admin view set (ADR-1511) and the Calendar tab Admin view is the guest-style month. Projects is the stage board.
+Operators load Guest and Admin data once so a view switch does not remount. Unsigned members always get Guest and never hit `loadAdminCalendar`. Pencil, Planning, and Production are the Workflow board's columns (`STAGES` in `lib/calendar/workflow-board.ts`, rendered by `CalendarWorkflowView`); the PM console that used to duplicate them was retired with the Admin view set (ADR-1511), and the Calendar tab Admin view is the guest-style month. Projects is the stage board.
 
 **Loading a month.** The first month and every browsed month use the same public reader:
 `loadPublicSpaceWindow` (`lib/calendar/public-month.ts`), which composes `listSpaceCalendarEvents`,
