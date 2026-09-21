@@ -47563,3 +47563,50 @@ On the count. OWN-048's premise note of 2026-09-08 listed 22 keys. LIVE-226 then
 **Consequences.** `SPACE_FUNCTIONS` and `RETIRED_SPACE_FUNCTIONS` are a ruled contract, not a draft. Anyone adding a twenty-third function key, or a fifth preset, expects to fail `check:backlog` and to bring the change to the owner as a ruling. LIVE-149's provision call, which shipped with LIVE-249, stands on a curated registry rather than a pass-through row.
 
 **Rows.** OWN-048 (closed, `cmd` probe pinning the exact 22 names, the 19-row registry, the 3-alias map and the five registered bundles). LIVE-249 and LIVE-226 unchanged.
+
+## ADR-1505: A retired route takes its shared module and its cover-map row with it (HYG-110)
+
+**Status:** Accepted · 2026-09-21 · backlog `HYG-110` · number allocated by the coordinator · extends [ADR-1439](DECISIONS.md) (LIVE-242) · amends the HYG-046 probe ([ADR-1197](DECISIONS.md)) · corroborated by `components/hierarchy/` absent, `lib/hierarchy/tier-detail.ts` absent, and `DETAIL_HERO_DEFAULTS` in `lib/layout/detail-hero.ts` carrying no `/hubs` or `/nexuses` row
+
+**Context.** ADR-1439 folded the Hub and Nexus member trees into Space and deleted both detail pages. It kept the module those pages shared, `components/hierarchy/tier-detail.tsx` and `lib/hierarchy/tier-detail.ts`. It rewrote a test to assert the files exist, and re-pointed HYG-046's probe to require them, on the stated ground that staff consoles and Circle geography still use them. PROG-P5's census of DetailTemplate render sites found the component names the template only in comments.
+
+Premise re-tested 2026-09-21: `git log --diff-filter=D` gives one commit for both pages, `7a1b87029` (PR #2734, LIVE-242). The removal was deliberate. No file under `app/`, `lib/`, or `components/` imports either module outside its own tests. The staff consoles read `lib/hierarchy/hub-admin.ts` and `lib/hierarchy/nexus-admin.ts`. `/hubs/:path*` and `/nexuses/:path*` 308 in `next.config.ts`, so no request resolves a cover for either prefix.
+
+**Decision.**
+
+1. **The module goes.** `tier-detail.tsx`, `tier-detail.ts`, and their three tests are deleted. `components/hierarchy/breadcrumb.tsx` goes with them, because the deleted component was its only importer.
+2. **The cover map names only live sections.** The `/hubs` and `/nexuses` rows leave `DETAIL_HERO_DEFAULTS`. A row in that map is an opt-in for a section an operator can set a header image on. A section that 308s cannot show one.
+3. **HYG-046's probe is re-pointed, not deleted.** The twin directories stay gone. The shared module may return only with a page importing it, and then its loader must still exclude archived children.
+4. **The pages are not restored.** Restoring them would reverse CORE-MODEL ruling 5 to give dead code a caller.
+
+**Rejected.** Keeping the module "in case staff need it" (that is the claim the tree disproved, and the staff loaders already own their reads). Keeping the hero rows as harmless (a map whose rows are the opt-in cannot carry rows for sections that do not exist, and the next reader counts them as adopters). Moving the archived-child filter somewhere to preserve it (HYG-064 already measures it on the one Hub listing that survives).
+
+**Consequences.** A probe that requires a file to exist proves nothing about whether the file is used. When a route is retired, its done-row probes measure the fold, and its shared modules and map rows leave in the same change. HYG-110's probe now fails a cover-map row whose section has no route directory, for any section, and fails a tier-detail module with no real importer.
+
+**Rows.** HYG-110. HYG-046 (probe re-pointed).
+
+## ADR-1509: Per-tree uniqueness gates cannot see a merge-created collision, so CI grows a cross-PR arm and the later-opened PR renumbers (HYG-111)
+
+**Status:** Accepted · 2026-09-21 · backlog `HYG-111` · numbered **1505** because 1497–1504 were claimed on the ten PRs open against `main` when this was written, checked on every one of their heads before commit · extends [ADR-1488](DECISIONS.md) (the convention this gate enforces) and the header of `scripts/check-adr.mjs` · beside [ADR-1007](DECISIONS.md) (a ledger keyed on an id that nothing machine-checked) and [ADR-1354](DECISIONS.md) (a lane never mints a number)
+
+**Context.** `check:adr` proves every ADR number is declared exactly once, and `check:backlog` proves every backlog id is unique. Both read ONE TREE. The collision that hurt on 2026-09-21 is not in any tree: two branches each append a block to the end of `docs/DECISIONS.md` and a row to `docs/BUILD-BACKLOG.json`, each is green alone, and git merges two appended blocks without a conflict. Measured that day: #2824 and #2822 both declared ADR-1492 and merged eighty seconds apart, so `main` went red on `check:adr` until #2828 renumbered PROG-D2 to 1495. LIVE-442 was claimed by #2823 and #2825, HYG-107 and HYG-108 each by two PRs, LIVE-444 by #2833 and #2831. [ADR-1496](DECISIONS.md) was authored as 1493, renumbered to 1495 in flight and settled on 1496 by hand. Four PRs paid a full cycle each to renumber after the fact, and the coordinator did the numbering by reading every open branch by eye, which is the thing [ADR-1354](DECISIONS.md) says a gate has to do.
+
+Premise re-tested before building ([ADR-1082](DECISIONS.md)): CI checks out the PR's MERGE commit, so a PR that collides with something already ON `main` does fail in-tree today. The gap is exactly open-PR against open-PR, and nothing in the repo could look sideways.
+
+**Decision.**
+
+1. **A cross-PR arm in CI, `scripts/check-id-collisions.mjs` (`pnpm check:id-collisions`), in the `guards` array of `.github/workflows/ci.yml`.** On a `pull_request` run it computes the ADR numbers and backlog ids THIS PR introduces (in the checkout, absent from the base tip read by `git show origin/<base>:<file>` after a depth-1 fetch), lists every other open PR against the same base through the REST API with `GITHUB_TOKEN`, reads each head's `docs/DECISIONS.md` and `docs/BUILD-BACKLOG.json` through the contents API with the RAW media type (both files are past the 1 MB JSON limit), computes the same sets, and reports every overlap with the PR number, title and id. A PR whose file list touches neither file is not downloaded.
+2. **What a declaration IS is not a second regex.** `check-adr.mjs` now exports `HEADING` and the new gate imports it, so the in-tree gate and the cross-PR gate cannot disagree about what counts.
+3. **The later-opened PR renumbers, and it is the side that fails.** That is the convention [ADR-1488](DECISIONS.md) already recorded in its own header and three ADRs paid for by hand that day. The later-opened PR exits 1 with the list; the earlier-opened PR gets a `::warning` naming the latecomer and exits 0, because a red job on the PR that keeps the number would hand it nothing to do. If the earlier PR merges first, the later PR's next run fails in-tree on `check:adr` / `check:backlog`, so enforcement is complete with only one side red.
+4. **It degrades loudly and fails honestly.** Without `GITHUB_TOKEN`, outside a `pull_request` event, or without `GITHUB_BASE_REF`, the arm prints `CROSS-PR ARM SKIPPED` with what was NOT proved and exits 0, the same contract as `check:migrations` and for the same reason (this repo's named failure is a local green that means nothing). A network error, a non-2xx page, an unreadable head or an unparseable file is exit 1, never a skip: a gate that cannot look must not say clean.
+5. **Pure node.** No grep, no ripgrep, no pipelines; the one subprocess is `git show`, with the contents API as the stated fallback when the base ref was not fetched. The comparison is exported and mutation-tested in `scripts/check-id-collisions.test.ts` (colliding, not colliding, renumbered, later-fails / earlier-warns).
+
+**Recommended owner action, not code.** The branch-protection complement is the ruleset setting **"Require branches to be up to date before merging"** (`strict_required_status_checks_policy`, read as `false` on 2026-08-26). With it on, a PR that merges after another must re-run CI on a tree that contains the other's ids, so the in-tree gates see the collision this arm would otherwise have to catch. It is an owner action on ruleset 17640795; a Claude Code session cannot change it (the agent proxy refuses ruleset writes). It costs a re-run per stacked merge and it is the only setting that also closes the window between "clean when checked" and "merged". This ADR recommends it; it does not depend on it.
+
+**Rejected.** A central number allocator (a file on `main` claiming the next number is itself a merge conflict, which is the failure with the roles reversed). Failing BOTH PRs (the earlier one has nothing to do). Comparing against the merge base rather than the base tip (with a merge-commit checkout the head already contains the base tip, and every open PR is subtracted against the same tip, so the answer is the same and no history walk is needed on a depth-1 runner). Making the arm a separate job (its skip and its failure should read in the same log shape as every other guard). Reading the other PRs' heads with `git fetch` per branch (a listing of 1,400 refs and a 5 MB blob each; the API is one authenticated read per file).
+
+**Consequences.** Every `pull_request` run against `main` costs one pulls listing, one files listing per other open PR, and two raw reads per PR that touches the ledger or the backlog, ~9 MB each, under the job's existing `pull-requests: read`. A later PR that introduces a number or a row id another open PR already introduced fails on its own CI, naming the PR to look at, before a merge can turn `main` red. A skip anywhere but CI is printed, not silent, and `scripts/guard-wiring.test.ts` fails if the guard ever leaves the array.
+
+**Rows.** HYG-111 (closed). Beside HYG-003 (the in-tree ADR contract) and HYG-093 (placeholders where a number belongs).
+
+Renumbered on 2026-09-21 from number 1505 (and row HYG-110): #2843, opened from the owner's own session, carried that pair first.
