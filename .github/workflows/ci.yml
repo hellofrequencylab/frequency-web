@@ -83,6 +83,11 @@
 # A Claude Code session cannot change this: the agent proxy refuses writes to the GitHub
 # rulesets API. Reading it back is permitted, which is how the state above was confirmed —
 # so verify, do not assume, before citing this block.
+#
+# ✅ CORRECTED 2026-09-21 (LIVE-186 closed): `pr-compare` IS NOW REQUIRED. The owner added it to
+# ruleset 17640795 at about 20:17 UTC, so the required set is SEVEN contexts (checks, analyze, lint,
+# test, Vercel, db-tests, pr-compare) and "Require branches to be up to date before merging" is ON.
+# Read from the owner's screenshot of the ruleset page, not the API. Both fallbacks are load-bearing.
 name: ci
 
 on:

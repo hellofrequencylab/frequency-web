@@ -5,6 +5,11 @@
 # required: checks, analyze, lint, test, Vercel, db-tests. NOT pr-compare, and no other visual
 # gate. That one line is the fact; everything below it is the history.
 #
+# ✅ CORRECTED 2026-09-21 (LIVE-186 closed): `pr-compare` IS NOW REQUIRED. The owner added it to
+# ruleset 17640795 at about 20:17 UTC beside those six (read from the owner's screenshot, not the
+# API), so the status this job POSTs is load-bearing from today and the deadlock below is live again
+# without it. LIVE-186's probe pins this file, the `"context": "pr-compare"` it posts, and e2e.yml's job.
+#
 # ⚠️ The 2026-08-18 reading this line used to carry was right about `pr-compare` and has since gone
 # stale on the rest: `db-tests` joined the required set via #2302 (ADR-1150). It was corrected in
 # the same pass that found ci.yml's own list wrong in the other direction — that block claimed
