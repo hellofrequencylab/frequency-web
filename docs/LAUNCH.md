@@ -63,12 +63,12 @@ registered at GoDaddy; point it at Vercel.
 | `RESEND_INBOUND_WEBHOOK_SECRET` | Svix signing secret for `/api/webhooks/inbound-email` | until set, every inbound request is rejected 401 — the seam is inert, so replies never thread back into Conversations |
 | `OPTIN_CONFIRM_SECRET` | signs CRM double-opt-in confirm + lead links | **optional**: falls back to `BETA_CONFIRM_SECRET`, then `UNSUBSCRIBE_SECRET`, then the service-role key. Set it so opt-in links do not share a secret with unsubscribe |
 | `EVENT_INVITE_SECRET` | signs event invite / QR intro links | **optional**: same fallback chain as `OPTIN_CONFIRM_SECRET` |
-| `COMPANY_POSTAL_ADDRESS` | physical mailing address in the scan-intro email footer (CAN-SPAM) | **🔴 not set yet**: required before turning on scan-intro friend invites (see urgent note below). One line, e.g. `Frequency™, PO Box 123, Encinitas, CA 92024` |
+| `COMPANY_POSTAL_ADDRESS` | physical mailing address in the scan-intro email footer (CAN-SPAM) | **✅ set 2026-09-21** in Vercel (production + preview, one line, Carlsbad CA; the value lives in Vercel, not here). It was required before turning on scan-intro friend invites (see urgent note below), so step 1 there is done and step 2 is still the owner's switch |
 
 > 🔴 **URGENT: before enabling scan-intro friend invites** *(deferred ~a few months; owner-only)*
 >
 > The "invite a scanned contact to **The Quest**" email is **gated OFF by default**. Scanning files people into the CRM but emails no one yet. Before flipping it on:
-> 1. **Set `COMPANY_POSTAL_ADDRESS`** (row above): the invite footer needs a real postal address for CAN-SPAM. Until set, the footer falls back to org identity only.
+> 1. **Set `COMPANY_POSTAL_ADDRESS`** (row above): the invite footer needs a real postal address for CAN-SPAM. Until set, the footer falls back to org identity only. ✅ Done 2026-09-21 (set in Vercel, production + preview).
 > 2. **Turn on** Marketing → Contacts → **"Scan-intro emails"** (`platform_flags.scan_invite_email_enabled`; audited in `platform_flag_events`). Needs `RESEND_API_KEY` (already set).
 > 3. **Send a test to your own inbox first**, then go live.
 >
