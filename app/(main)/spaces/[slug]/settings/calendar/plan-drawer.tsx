@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input, Textarea, labelClasses } from '@/components/ui/field'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { PLAN_STAGES, PLAN_TARGETS, planTargetDef, type SpacePlan } from '@/lib/calendar/plans'
@@ -16,11 +17,14 @@ import {
   listPlanLinkableEvents,
   listPlanTodos,
   planReadiness,
+  reanchorPlanTodos,
   runPlanAgain,
   saveSpacePlan,
+  setPlanTodoDone,
   sharePlanWithSpace,
   veraPlanProposal,
 } from './plan-actions'
+import { describeOffset, offsetFromForm } from '@/lib/calendar/relative-schedule'
 import type { VeraPlanProposal } from '@/lib/calendar/vera-plan'
 
 export function PlanDrawer({
@@ -46,6 +50,10 @@ export function PlanDrawer({
   const [stage, setStage] = useState(plan?.stage ?? 'plan')
   const [targetKind, setTargetKind] = useState(plan?.targetKind ?? 'event')
   const [todoTitle, setTodoTitle] = useState('')
+  // RELATIVE SCHEDULING (ADR-1386 P5). '' means this to-do has a fixed date, or none: the offset is
+  // opt-in, because a checklist where every row must be anchored is a worse checklist.
+  const [todoOffsetDays, setTodoOffsetDays] = useState('')
+  const [todoOffsetDir, setTodoOffsetDir] = useState<'before' | 'after'>('before')
   const [todos, setTodos] = useState<CrmTask[]>([])
   const [gaps, setGaps] = useState<string[]>([])
   const [href, setHref] = useState<string | null>(null)
@@ -66,6 +74,8 @@ export function PlanDrawer({
     setTargetKind(plan?.targetKind ?? 'event')
     setProposal(null)
     setTodoTitle('')
+    setTodoOffsetDays('')
+    setTodoOffsetDir('before')
     setTodos([])
     setGaps([])
     setHref(null)
@@ -103,6 +113,27 @@ export function PlanDrawer({
   }, [open, plan, slug, entryId])
 
   if (!plan) return null
+
+  // One place both halves of the to-do list re-read from: the readiness bar counts OPEN to-dos, so
+  // ticking one off has to move the bar in the same pass or the drawer would still say what is
+  // missing after the person fixed it.
+  const refresh = async (planId: string) => {
+    setTodos(await listPlanTodos(slug, planId))
+    const next = await planReadiness(slug, planId, entryId ?? null)
+    setGaps(next.gaps)
+    setHref(next.href)
+  }
+
+  const toggleTodo = (todoId: string, done: boolean) => {
+    if (!plan) return
+    setError(null)
+    setTodos((cur) => cur.map((t) => (t.id === todoId ? { ...t, status: done ? 'done' : 'open' } : t)))
+    start(async () => {
+      const res = await setPlanTodoDone(slug, plan.id, todoId, done)
+      if (isError(res)) setError(res.error)
+      await refresh(plan.id)
+    })
+  }
 
   const save = (e: FormEvent) => {
     e.preventDefault()
@@ -187,12 +218,27 @@ export function PlanDrawer({
         <div className="space-y-2">
           <p className={labelClasses}>To-dos</p>
           <ul className="space-y-1 text-body-sm text-text">
-            {todos.map((t) => (
-              <li key={t.id}>
-                {t.title}
-                {t.dueAt ? ` · ${t.dueAt.slice(0, 10)}` : ''}
-              </li>
-            ))}
+            {todos.map((t) => {
+              // An anchored to-do says so. Without this the list shows a bare date and the person
+              // has no way to tell which rows will follow the event when it moves.
+              const anchor = describeOffset(t.dueOffsetDays)
+              return (
+                <li key={t.id}>
+                  <Checkbox
+                    checked={t.status === 'done'}
+                    disabled={pending}
+                    onChange={(e) => toggleTodo(t.id, e.target.checked)}
+                    label={
+                      <span className={t.status === 'done' ? 'text-muted line-through' : undefined}>
+                        {t.title}
+                        {t.dueAt ? ` · ${t.dueAt.slice(0, 10)}` : ''}
+                        {anchor ? <span className="text-muted"> {`· ${anchor} the date`}</span> : null}
+                      </span>
+                    }
+                  />
+                </li>
+              )
+            })}
           </ul>
           <div className="flex gap-2">
             <Input
@@ -208,10 +254,18 @@ export function PlanDrawer({
               disabled={pending || !todoTitle.trim()}
               onClick={() =>
                 start(async () => {
-                  const res = await addPlanTodo(slug, plan.id, todoTitle)
-                  if (!isError(res)) {
+                  const res = await addPlanTodo(
+                    slug,
+                    plan.id,
+                    todoTitle,
+                    null,
+                    offsetFromForm(todoOffsetDays, todoOffsetDir),
+                  )
+                  if (isError(res)) setError(res.error)
+                  else {
                     setTodoTitle('')
-                    setTodos(await listPlanTodos(slug, plan.id))
+                    setTodoOffsetDays('')
+                    await refresh(plan.id)
                   }
                 })
               }
@@ -219,6 +273,53 @@ export function PlanDrawer({
               Add
             </Button>
           </div>
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="grid gap-1">
+              <label htmlFor="plan-todo-offset" className={labelClasses}>
+                Due, counting from the date
+              </label>
+              <Input
+                id="plan-todo-offset"
+                type="number"
+                min={0}
+                max={400}
+                inputMode="numeric"
+                className="w-24"
+                value={todoOffsetDays}
+                onChange={(e) => setTodoOffsetDays(e.target.value)}
+                placeholder="Days"
+              />
+            </div>
+            <Select
+              aria-label="Before or after the date"
+              className="w-32"
+              value={todoOffsetDir}
+              options={[
+                { value: 'before', label: 'days before' },
+                { value: 'after', label: 'days after' },
+              ]}
+              onChange={(e) => setTodoOffsetDir(e.target.value === 'after' ? 'after' : 'before')}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={pending}
+              onClick={() =>
+                start(async () => {
+                  const res = await reanchorPlanTodos(slug, plan.id)
+                  if (isError(res)) setError(res.error)
+                  await refresh(plan.id)
+                })
+              }
+            >
+              Move to-dos to the date
+            </Button>
+          </div>
+          <p className="text-meta text-muted">
+            Leave the days blank for a to-do that stays where you put it. Anything with a count moves
+            when the date moves.
+          </p>
         </div>
 
         {/* THE REPAIR DOOR (PROG-CAL3). `plan_id` was create-only: `updateEvent` never touched it and
@@ -319,9 +420,10 @@ export function PlanDrawer({
               className="mt-2"
               onClick={() =>
                 start(async () => {
-                  await acceptVeraChecklist(slug, plan.id, proposal.checklist)
+                  const res = await acceptVeraChecklist(slug, plan.id, proposal.checklist)
+                  if (isError(res)) setError(res.error)
                   setProposal(null)
-                  setTodos(await listPlanTodos(slug, plan.id))
+                  await refresh(plan.id)
                 })
               }
             >
