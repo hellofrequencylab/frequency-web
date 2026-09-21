@@ -47132,6 +47132,29 @@ Premise re-tested 2026-09-20: money, events, and hygiene packets were empty. LIV
 
 **Rows.** LIVE-440.
 
+## ADR-1493: Rework phase 6 was already true, and it never needed the editor program (PROG-R6)
+
+**Status:** Accepted · 2026-09-21 · backlog `PROG-R6` · numbered **1493** because **1491** is the tail-sequencing ruling on this tree and **1492** is claimed by the open PROG-R4 PR · extends [ADR-1294](DECISIONS.md) (the core-model rework) and [ADR-1082](DECISIONS.md) (re-test the premise) · reads against [ADR-1491](DECISIONS.md) (the Editor deferral) and [ADR-1347](DECISIONS.md) (the re-measured console cell) · corroborated by the route tree under `app/(main)` and `next.config.ts`
+
+**Context.** PROG-R6 is the second row of the WR rework wave. Its `verify` was `kind: manual`, evidence "Program phase; proven by its child rows."
+
+Premise re-tested 2026-09-21 against the live tree. Every phase-6 item had already shipped on 2026-09-14 under its own row, and all four child probes pass here: 6.1 LIVE-237, 6.2 LIVE-238, 6.3 LIVE-239, 6.4 LIVE-240.
+
+**The question this row was flagged for, answered.** ADR-1491 defers the Editor program E0–E10 to third-to-last, and the lane brief asked for a stop-and-ask if R6 turned out to need E0/E1's block contract. It does not. The "editor" in phase 6 is the **entity** editor — the registry-driven Studio surface per Circle, Event and Practice, plus the Space-settings door — not the page-block editor E0–E10 is building. `STUDIO.md` already rules that those field lists derive from the manifest, which is why LIVE-237 and LIVE-238 both landed without E0 or E1. The two programs share a word, not a dependency.
+
+**Decision.**
+
+1. PROG-R6 closes as done. No product code changes.
+2. Its `manual` verify becomes a `cmd` probe with fourteen arms, measuring **both directions**: what was retired stays retired, and what survived is still there. An absence-only probe passes on an empty tree, which is the failure mode worth designing against when the phase's whole content is deletion.
+3. Three positive controls guard it: a file that is certainly present must read as present (or the probe is looking at the wrong tree), and the export and redirect arms must still report a planted rename and a planted deletion.
+4. The four child probes stay exactly as written; none is deleted. PROG-R6 is pruned from `meta.slate.waves` WR in the same edit (HYG-047).
+
+**Rejected.** Starting the Editor program, which ADR-1491 places third-to-last. Asserting a uniform "exactly one route per entity": LIVE-237 amended the Circle builder in on the record, because seven creation flows commit into `circles/[slug]/edit`, and a probe stricter than the ruling would fail on correct code. Re-opening the console count that ADR-1347 already re-measured and found wrong twice over.
+
+**Consequences.** Resurrecting any retired editor or door, dropping either Space redirect, losing one of the surviving CRM write actions, or re-importing a deleted onboarding engine into the app shell now fails the PROG-R6 probe directly, not only its child's. WR advances to PROG-R7.
+
+**Rows.** PROG-R6.
+
 ## ADR-1491: The editor moves to third to last; Etsy second to last; the app last (owner ruling 2026-09-21)
 
 **Status:** Accepted · 2026-09-21 · numbered **1491** because **1486**-**1490** are claimed on this tree · **reverses the E0-E9 half of** [ADR-1325](DECISIONS.md) and the 2026-09-07 reading recorded in `meta.slate.ruled` · corroborated by `docs/BUILD-BACKLOG.json` `meta.slate.waves` order
