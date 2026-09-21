@@ -25,6 +25,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
 import { ImageCropper } from '@/components/ui/image-cropper'
+import { Input } from '@/components/ui/field'
 import { CROP_FRAMES } from '@/lib/library/renditions'
 import {
   STRAIGHTEN_LIMIT,
@@ -168,20 +169,17 @@ export function LoomImageEditor({
         {/* Frames: the CROP_FRAMES presets, as a toggle group. */}
         <div role="group" aria-label="Crop frame" className="flex flex-wrap gap-2">
           {CROP_FRAMES.map((f) => (
-            <button
+            <Button
               key={f.key}
               type="button"
+              size="sm"
+              variant={frame === f.key ? 'primary' : 'secondary'}
               aria-pressed={frame === f.key}
               disabled={busy}
               onClick={() => setFrame(f.key)}
-              className={`rounded-2xl border px-3 py-1.5 text-body-sm transition-colors disabled:opacity-60 ${
-                frame === f.key
-                  ? 'border-primary bg-primary-bg font-semibold text-primary-strong'
-                  : 'border-border text-text hover:bg-surface-elevated'
-              }`}
             >
               {f.label}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -203,10 +201,11 @@ export function LoomImageEditor({
           >
             <RotateCw className="h-4 w-4" aria-hidden />
           </IconButton>
-          <label className="flex min-w-[200px] flex-1 items-center gap-2 text-meta text-muted">
+          <label className="flex min-w-48 flex-1 items-center gap-2 text-meta text-muted">
             <span className="shrink-0">Straighten</span>
-            <input
+            <Input
               type="range"
+              variant="seamless"
               min={-STRAIGHTEN_LIMIT}
               max={STRAIGHTEN_LIMIT}
               step={1}
@@ -215,7 +214,7 @@ export function LoomImageEditor({
               aria-label="Straighten"
               aria-valuetext={`${straighten} degrees`}
               onChange={(e) => setStraighten(Number(e.target.value))}
-              className="w-full accent-primary"
+              className="w-full px-0 py-0 accent-primary"
             />
             <span className="w-10 shrink-0 text-right tabular-nums">{straighten}°</span>
           </label>
@@ -225,11 +224,11 @@ export function LoomImageEditor({
         </div>
 
         {errorMessage ? (
-          <p role="alert" className="rounded-2xl border border-danger/40 bg-danger/10 px-3 py-2 text-body-sm text-danger">
+          <p role="alert" className="rounded-card border border-danger/40 bg-danger/10 px-3 py-2 text-body-sm text-danger">
             {errorMessage}
           </p>
         ) : !src ? (
-          <div className="flex min-h-[160px] items-center justify-center rounded-card border border-border bg-surface-elevated p-6">
+          <div className="flex min-h-40 items-center justify-center rounded-card border border-border bg-surface-elevated p-6">
             <p className="text-body-sm text-muted">{degrees === 0 ? 'Loading image…' : 'Rotating…'}</p>
           </div>
         ) : (
