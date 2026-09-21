@@ -214,6 +214,18 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
   }
   const seller = products[0]
 
+  // ONE CURRENCY PER CART (HYG-107, ADR-1500). The line items, the order row and the application fee
+  // must all be denominated in the same currency, because `application_fee_amount` is an absolute
+  // integer that Stripe reads in the PaymentIntent's currency -- which under Adaptive Pricing stays
+  // the currency these line items carry, not the one the buyer is shown. The fee is computed from
+  // `gross`, and a gross summed across two currencies is a number in no currency at all. Stripe would
+  // refuse the mixed session anyway; refusing here means no pending order is written for it and no
+  // fee is ever computed on nonsense. `cartCurrency` is the single value every consumer below reads.
+  const cartCurrency = (seller.currency || 'usd').toLowerCase()
+  if (products.some((p) => (p.currency || 'usd').toLowerCase() !== cartCurrency)) {
+    return { error: 'Please check out items in one currency at a time.' }
+  }
+
   // R2 (Phase 0): only a Business Space Shop or the Frequency Store may take in-app payments. An
   // individual maker ('profile') listing is connect-only — never open a Stripe session for it; the
   // buyer contacts the seller instead. Single source of truth: canTakePayments.
@@ -298,7 +310,7 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
       // §3), and drop the provenance tag when it collapsed — a self order carries no network attribution.
       source: charge.source,
       attribution_ref: charge.source === 'network' ? attributionRef : null,
-      currency: seller.currency || 'usd',
+      currency: cartCurrency,
       status: 'pending',
       shipping: input.shipping ?? {},
       seller_stripe_account_id: charge.sellerStripeAccountId,
@@ -360,7 +372,7 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
       line_items: lines.map((l) => ({
         quantity: l.qty,
         price_data: {
-          currency: (l.product.currency || 'usd').toLowerCase(),
+          currency: cartCurrency,
           unit_amount: l.unitCents,
           product_data: { name: l.title },
         },
