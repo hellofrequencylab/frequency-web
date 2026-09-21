@@ -25,6 +25,9 @@ import { classifyLoomUpload, fallbackMimeFor } from '@/lib/library/upload-kinds'
 export async function replaceLibraryAssetFile(
   assetId: string,
   formData: FormData,
+  /** The native image editor (edit-actions.ts, HYG-109) reuses this whole flow and only names the
+   *  edit in the version note and carries the new pixel size. Absent = an ordinary replace. */
+  opts?: { note?: string; width?: number | null; height?: number | null },
 ): Promise<{ ok: true; url: string } | { error: string }> {
   await requireAdmin('janitor', { staff: 'marketing' })
   const id = (assetId ?? '').trim()
@@ -53,7 +56,7 @@ export async function replaceLibraryAssetFile(
   if (!asset) return { error: 'That asset no longer exists.' }
 
   // Snapshot the CURRENT file into a version BEFORE the swap, so the replace is reversible.
-  await recordVersion(id, `Replaced file (${target.kind})`)
+  await recordVersion(id, opts?.note ?? `Replaced file (${target.kind})`)
 
   // Upload the new file to a fresh path (the old file is preserved for the version snapshot).
   const ext = (file.name.split('.').pop() || target.kind).toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -77,6 +80,8 @@ export async function replaceLibraryAssetFile(
       url: pub.publicUrl,
       mime: contentType,
       bytes: file.size,
+      // A crop changes the pixel size; an ordinary replace does not know it and keeps the old numbers.
+      ...(opts?.width && opts?.height ? { width: opts.width, height: opts.height } : {}),
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)

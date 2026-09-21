@@ -33,6 +33,7 @@ export function ImageCropper({
   src,
   aspect,
   fileName,
+  outputType,
   onCancel,
   onCropped,
 }: {
@@ -42,6 +43,10 @@ export function ImageCropper({
   aspect?: number
   /** Optional base name for the produced File (default 'crop'). */
   fileName?: string
+  /** Output encoding. Default: JPEG with a PNG fallback (the email-studio case, where size wins).
+   *  The Loom editor passes the master's own mime so a PNG/WebP master keeps its transparency
+   *  through a crop (HYG-109); an unsupported type falls back to PNG. */
+  outputType?: 'image/jpeg' | 'image/png' | 'image/webp'
   onCancel: () => void
   /** Called with a JPEG (or PNG fallback) File of the cropped region. */
   onCropped: (file: File) => void
@@ -274,15 +279,17 @@ export function ImageCropper({
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh)
 
       const base = fileName ?? 'crop'
+      const preferred = outputType ?? 'image/jpeg'
       const blob = await new Promise<Blob | null>((resolve) => {
-        // Prefer JPEG for size; if the browser refuses the type it returns null and we retry PNG.
+        // Prefer the requested type (JPEG for size by default); if the browser refuses it the callback
+        // gets null and we retry PNG, which every browser encodes.
         canvas.toBlob(
           (b) => {
             if (b) resolve(b)
             else canvas.toBlob((p) => resolve(p), 'image/png')
           },
-          'image/jpeg',
-          0.9,
+          preferred,
+          preferred === 'image/png' ? undefined : 0.9,
         )
       })
 
@@ -291,7 +298,7 @@ export function ImageCropper({
         onCancel()
         return
       }
-      const ext = blob.type === 'image/png' ? 'png' : 'jpg'
+      const ext = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg'
       const file = new File([blob], `${base}.${ext}`, { type: blob.type || 'image/jpeg' })
       setBusy(false)
       onCropped(file)
@@ -300,7 +307,7 @@ export function ImageCropper({
       setBusy(false)
       onCancel()
     }
-  }, [rect, natural, display, busy, fileName, onCropped, onCancel])
+  }, [rect, natural, display, busy, fileName, outputType, onCropped, onCancel])
 
   return (
     <div className="space-y-4">

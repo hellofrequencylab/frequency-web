@@ -45,6 +45,8 @@ import { updateLibraryAssetMeta, archiveLibraryAsset, deleteLibraryAsset } from 
 import { editLoomSvg, saveElementSvg, reviewLoomSvg, type LoomEditMode } from './vera-actions'
 import { RecraftEditRow, AssetVersions } from './recraft-studio'
 import { AssetAvPanel } from './asset-av-panel'
+import { LoomImageEditor } from '@/components/loom/loom-image-editor'
+import { saveEditedImage } from './edit-actions'
 import { createBrandStyle } from './recraft-actions'
 import {
   addAssetsToCollection,
@@ -541,6 +543,9 @@ function DetailDrawer({
   const [err, setErr] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  // The native crop / rotate editor (HYG-109, ADR-1506): a file-backed raster image gets an
+  // "Edit image" door; saving versions the current file and swaps the master under the same id.
+  const [editing, setEditing] = useState(false)
 
   // ── The keyboard contract this drawer was missing ────────────────────────────────────────
   // It declares `aria-modal="true"`, which is a PROMISE that the rest of the page is inert. It kept
@@ -791,6 +796,11 @@ function DetailDrawer({
                 <Download className="h-4 w-4" /> Download
               </button>
             )}
+            {asset.url && asset.kind === 'image' && asset.mime !== 'image/svg+xml' && (
+              <button type="button" onClick={() => setEditing(true)} className={chipCls} aria-haspopup="dialog">
+                <Wand2 className="h-4 w-4" /> Edit image
+              </button>
+            )}
             {isElement && (
               <>
                 <button type="button" onClick={exportSvg} className={chipCls}>
@@ -895,6 +905,21 @@ function DetailDrawer({
 
           {/* Media manager (Airwaves P2): replace-file for any file-backed asset + a usage map for A/V. */}
           <AssetAvPanel assetId={asset.id} kind={asset.kind} hasFile={!!asset.url} />
+
+          {/* The native crop / rotate editor (HYG-109, ADR-1506). Mounted only while open, so the
+              master is fetched for editing exactly once per session and never on drawer open. */}
+          {editing && asset.url && (
+            <LoomImageEditor
+              asset={{ id: asset.id, url: asset.url, mime: asset.mime, slug: asset.slug, title: asset.title }}
+              open
+              onClose={() => setEditing(false)}
+              onSaved={() => {
+                setEditing(false)
+                router.refresh()
+              }}
+              save={saveEditedImage}
+            />
+          )}
 
           <label className="block">
             <span className="mb-1 block eyebrow text-subtle">Title</span>
