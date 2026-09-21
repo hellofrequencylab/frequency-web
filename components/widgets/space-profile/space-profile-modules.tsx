@@ -3,6 +3,7 @@ import { getSpaceContentData, type SpaceContentData } from '@/lib/spaces/content
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import type { ProfileBlockId } from '@/lib/spaces/profile-blocks'
 import { resolveSpaceAuthoredContent } from '@/lib/spaces/authored-content'
+import { loadSpaceAuthoredContent } from '@/lib/spaces/page-doc'
 import { type SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { effectiveProfileLayout } from '@/lib/spaces/profile-layout'
 import { resolveRows, type EntityLayout } from '@/lib/entity-blocks/layout'
@@ -251,10 +252,12 @@ export async function SpaceProfileModules({
     profile: space.profile,
   })
 
-  // The operator's AUTHORED content, grouped by unified content id (pure, sync, fail-safe to an empty bag
-  // when they have written none). Rendered by the content ids alongside the live-data section blocks, so
-  // authored headings/text/images the operator wrote in their Home doc appear as their own blocks.
-  const authored = resolveSpaceAuthoredContent(space.preferences, space.brandName)
+  // The operator's AUTHORED content, grouped by unified content id (fail-safe to an empty bag when they
+  // have written none). Rendered by the content ids alongside the live-data section blocks, so authored
+  // headings/text/images the operator wrote in their Home doc appear as their own blocks.
+  // Loaded, not resolved: the load seam refreshes every stored AssetRef cache so an authored image
+  // follows a Loom replace / rollback without a re-save (PROG-D2). No refs in the bag ⇒ no query.
+  const authored = await loadSpaceAuthoredContent(space.preferences, space.brandName)
 
   // OWNER wrap (fail-safe): when `editHref` is set, sheathe a block in the click-to-edit frame; the frame
   // collapses itself when the block renders honest-empty, so a hidden block never leaves a phantom pencil.

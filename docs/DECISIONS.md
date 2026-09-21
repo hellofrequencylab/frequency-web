@@ -47238,3 +47238,32 @@ Premise re-tested 2026-09-20: `featureAllowed('space_collaborators', { plan: 'bu
 **Consequences.** A later collaborator hosting unlock line that names Collective, a 3-host cap, or revenue splits fails the LIVE-439 probe.
 
 **Rows.** LIVE-439.
+
+## ADR-1492: Space profile documents refresh their asset caches on load, which closes PROG-D2 (PROG-D2)
+
+**Status:** Accepted · 2026-09-21 · backlog `PROG-D2` · numbered **1492** because **1490** is the highest on this tree and **1491** is claimed by the owner sequencing ruling on another PR · completes [ADR-1130](DECISIONS.md) (the AssetField seam) · beside [ADR-1253](DECISIONS.md) (entity-block writers) and [ADR-1436](DECISIONS.md) (column-backed companions)
+
+**Context.** ADR-1130 re-shaped PROG-D2 into three parts and shipped two of them. The one control already existed with 16 consumers. The reference half shipped for Puck documents. The backfill was struck on a live-database census that found nothing to backfill. What ADR-1130 left was a three-item remainder, and this pass measured each item against the tree rather than against the row.
+
+(a) **Reference-storing adoption beyond the Puck fields is DONE, by two rows that closed after ADR-1130 wrote the remainder.** HYG-029 closed 2026-09-07 (ADR-1253) once HYG-066 removed the sanitizer that silently deleted the image. HYG-068 closed on ADR-1436 with companion `*_asset_id` columns and `lib/library/column-image.ts`, which is the column-backed half the remainder said needed a ruling first. Nothing is left here.
+
+(c) **The usage index is D4's** (`block_usage`, ADR-975), as the remainder said. Untouched.
+
+(b) **The Space-document cache refresh was real, and its stated precondition had already arrived.** `refreshAssetRefUrls` had exactly ONE production caller on this tree: `getPublishedData` (`lib/page-editor/data.ts:131`), the `pages` table. A Space profile page body is the same kind of Puck document, picked with the same page-editor fields, stored on `spaces.preferences.pageDocs[slug]` — and it had no refresh anywhere.
+
+🔴 The remainder deferred this with "wire it when D3 edits can re-point a live asset's URL". **D3 is not what re-points a live asset's URL, and three shipped actions already do it:** `replaceLibraryAssetFile` (`app/(main)/admin/library/replace-actions.ts`) swaps the file and keeps the id, `rollbackToVersion` (`lib/library/versions.ts`) restores a snapshot onto the live row, and `recraftEditAsset` (`app/(main)/admin/library/recraft-actions.ts`) writes a vectorize / remove-bg / image-to-image result onto it. Each of those headers promises that every reference "follows the new file automatically". That promise was true for `pages` and false for every Space profile. The condition was met before the row was written; the deferral outlived its premise.
+
+**Decision.**
+
+1. One load seam, `lib/spaces/page-doc.ts`, is the Space-side twin of `getPublishedData`: `loadSpacePageDoc` resolves then refreshes, `loadSpaceAuthoredContent` does the same for the module engine's authored bag. Server-only, because the refresh reaches the database.
+2. `resolveSpacePageDoc` STAYS PURE. The refresh could not live inside it and that is why it had nowhere to hang; the seam is the answer, not a relaxed contract. The pure resolver keeps every existing caller and every existing test.
+3. Four render paths load instead of resolve: the public Space profile body (`components/spaces/space-landing.tsx`), the Space page editor including its staff preview (`app/(main)/spaces/[slug]/edit-page/page.tsx`), and the module-engine authored reads (`components/widgets/space-profile/space-profile-modules.tsx`, `components/spaces/owner-space-layout-preview.tsx`). The editor loads refreshed too, so the next publish writes the fresh cache back and heals the stored document one save at a time.
+4. `lib/spaces/profile-nav.ts` deliberately keeps the pure resolve: it reads the Home doc for section ANCHORS, never for images, so a refresh there would buy a query and nothing else.
+5. Ordering is fail-safe then fail-open: the resolver still falls back to the universal default page, and a refresh that cannot reach the database leaves every cached url standing. A stale image is a degradation; a blank one is an outage.
+6. PROG-D2 closes, and its `manual` verify is replaced by a `cmd` probe that measures the consequence rather than asserting the phase.
+
+**Rejected.** Calling `refreshAssetRefUrls` inside `readPageDoc` / `resolveSpacePageDoc` (it would make the pure module import Supabase and turn every caller async, including the sync pure adapters). Refreshing inside `getVisibleSpaceBySlug` (every Space read pays for a page-doc concern). Rewriting stored Space documents to carry fresh urls (a stored-document migration is exactly what ADR-1130's seam exists to avoid; legacy strings stay legal forever). Building D4's usage index here. Re-opening the struck backfill.
+
+**Consequences.** A ref-free document — every legacy Space, every default page — costs ZERO queries and returns the same object, so the common case is unchanged. A document with refs costs ONE batched `select id, url`; the seam walks 5 modules and reaches no `sharp` and no `next/og`, the same shape `lib/page-editor/data.ts` already has from `app/page.tsx`. A later Space render path that resolves instead of loads fails the PROG-D2 probe. The entity-block layout blob still has no refresh-on-load, which is unchanged and recorded in LIBRARY.md.
+
+**Rows.** PROG-D2 (closed). Beside HYG-029, HYG-066, HYG-068 (all done). D4's usage index stays PROG-D4.
