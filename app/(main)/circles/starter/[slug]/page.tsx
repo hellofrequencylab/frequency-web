@@ -1,12 +1,13 @@
 import { notFound } from 'next/navigation'
 import { MapPin, Users, Repeat, MessagesSquare, Calendar, Handshake } from 'lucide-react'
-import { DetailTemplate } from '@/components/templates/detail-template'
+import { DetailTemplate, PageHero } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StarterBadge } from '@/components/ui/starter-badge'
 import { StarterClaim } from '@/components/circles/starter-claim'
-import { TemplateCover } from '@/components/circles/template-art'
+import { TemplateHeaderArt } from '@/components/circles/template-art'
 import { getTemplateBySlug, templatesEnabled } from '@/lib/circles/templates-data'
 import { canCreate } from '@/lib/core/load-capabilities'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { PILLAR_SLUGS, type PillarSlug } from '@/lib/pillars'
 import { pageContentMetadata } from '@/lib/page-content'
 
@@ -46,20 +47,38 @@ export default async function StarterCirclePreview({
 
   const lead = t.about || t.identity || t.oneLiner
 
+  // THE COVER RESOLVES LIKE EVERY OTHER ENTITY PAGE (PROG-P5, ADR-1498). A staff-uploaded
+  // photo is the blueprint's own cover, so it is rung 1 of the detail ladder; the header element
+  // supplies the height and the overlay, so /admin/elements retunes this band with the rest.
+  // `short` is this surface's own default height, the nearest rung to the h-40/sm:h-52 box the
+  // page hand-rolled before it adopted, and an operator height master still wins over it.
+  const hero = await resolveDetailHero(`/circles/starter/${t.slug}`, {
+    entityImage: t.imageUrl,
+    size: 'short',
+  })
+
   return (
     <DetailTemplate
       back={{ href: '/circles', label: 'Circles' }}
+      // The canonical band, in `hero` rather than spread as `coverImage`, for one reason: a
+      // blueprint with no upload wears its DRAWN scene (components/circles/template-art), which is
+      // a live node and not a URL. PageHero's `background` slot is exactly that seam (the Around
+      // You map is its first caller, ADR-1034), and it wins over `coverImage`, so a blueprint's
+      // own art is never outranked by a section image the way an entity's own upload never is.
+      // `heading={false}` is load-bearing: the context band below owns this page's single <h1>.
       hero={
-        <div className="relative h-40 w-full overflow-hidden rounded-2xl border border-border sm:h-52">
-          <TemplateCover
-            imageUrl={t.imageUrl}
-            name={t.name}
-            slug={t.slug}
-            primaryPillar={t.primaryPillar}
-            sizes="(max-width: 1024px) 100vw, 768px"
-            priority
-          />
-        </div>
+        <PageHero
+          variant="minimal"
+          heading={false}
+          title={t.name}
+          coverImage={hero.coverImage}
+          coverFocus={hero.coverFocus}
+          background={
+            t.imageUrl ? undefined : <TemplateHeaderArt slug={t.slug} primaryPillar={t.primaryPillar} />
+          }
+          size={hero.coverSize}
+          overlayStyle={hero.coverOverlayStyle}
+        />
       }
       title={t.name}
       badges={

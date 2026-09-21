@@ -4,24 +4,22 @@ import Link from 'next/link'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Button } from '@/components/ui/button'
-import { Badge, type BadgeTone } from '@/components/ui/badge'
+import { StatusChip } from '@/components/admin/status'
 import { EventCoreStatsCards } from '@/components/events/event-core-stats'
 import { EventShareButton } from '@/components/events/event-share-button'
 import { AddToCalendar, buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { truncatedListStats, type ListIndexItem } from '@/lib/calendar/list-index'
+import { itemSelectedClass, itemTitleClass } from '@/lib/calendar/registry'
 import { cn } from '@/lib/utils'
 
 // LIST VIEW (ADR-1464, ADR-1467). Condensed gathering index on the left. Right
 // interior is the event control console: header with stage pill, primary facts,
 // share links, and headline stats. Not the Studio editor.
-
-function stageTone(label: string, cancelled: boolean): BadgeTone {
-  if (cancelled || label === 'Cancelled') return 'danger'
-  if (label === 'Draft') return 'warning'
-  if (label === 'Production') return 'success'
-  if (label === 'Planning') return 'signal'
-  return 'neutral'
-}
+//
+// How a stage looks comes from lib/calendar/registry.ts, never from here: the row's title class,
+// the selected row's fill, and the stage badge's tone are all the registry's. A cancelled row is
+// grey and struck through even when it is the selected row (selection is then its edge alone), so
+// the brand fill never reads as "live" over a date that was called off.
 
 export function CalendarListView({
   items,
@@ -51,20 +49,23 @@ export function CalendarListView({
         <ul className="mt-3 space-y-1">
           {items.map((item) => {
             const current = selected?.key === item.key
+            const titleClass = itemTitleClass(item.stage, item.isCancelled)
             return (
               <li key={item.key}>
                 <button
                   type="button"
                   onClick={() => onSelect(item.key)}
                   aria-pressed={current}
+                  data-calendar-list-row={item.isCancelled ? 'cancelled' : (item.stage ?? 'event')}
                   className={cn(
                     'block w-full rounded-card border px-2.5 py-1.5 text-left transition-colors',
                     current
-                      ? 'border-primary bg-primary-bg text-primary-strong'
-                      : 'border-border bg-surface hover:border-border-strong hover:bg-surface-elevated',
+                      ? itemSelectedClass(item.stage, item.isCancelled)
+                      : cn('border-border bg-surface hover:border-border-strong hover:bg-surface-elevated', titleClass),
                   )}
                 >
-                  <span className={cn('block truncate text-body-sm font-semibold', item.isCancelled && 'line-through')}>
+                  <span className={cn('block truncate text-body-sm font-semibold', titleClass)}>
+                    {item.isCancelled && <span className="sr-only">Cancelled. </span>}
                     {item.title}
                   </span>
                   <span className="mt-0.5 block truncate text-meta text-muted">{item.whenLabel}</span>
@@ -111,13 +112,11 @@ function CalendarListViewer({
       <header className="flex flex-row items-start justify-between gap-3">
         <h3
           id="calendar-list-viewer"
-          className={cn('min-w-0 text-page-title font-bold text-text', item.isCancelled && 'line-through')}
+          className={cn('min-w-0 text-page-title font-bold text-text', itemTitleClass(item.stage, item.isCancelled))}
         >
           {item.title}
         </h3>
-        <Badge tone={stageTone(item.stageLabel, item.isCancelled)} size="md">
-          {item.stageLabel}
-        </Badge>
+        <StatusChip tone={item.stageTone}>{item.stageLabel}</StatusChip>
       </header>
 
       <div className="space-y-1.5">

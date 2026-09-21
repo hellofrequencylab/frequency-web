@@ -25,7 +25,8 @@ import { canAcceptProjectMove } from '@/lib/calendar/project-board'
 import { entryKind, entryStage } from '@/lib/calendar/registry'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import { listDueDateItems } from '@/lib/calendar/due-dates-store'
-import { transitionPlanStage } from './plan-actions'
+import { reanchorPlanTodos, transitionPlanStage } from './plan-actions'
+import { log } from '@/lib/log'
 
 // THE PRIVATE CALENDAR ACTIONS (ADR-1385). Create, edit and delete a Space's private entries, and read
 // one month of them. Gated twice: here (the caller edits this Space and it has the Calendar function)
@@ -66,6 +67,8 @@ export async function saveCalendarEntry(
   if ('error' in extra) return fail(extra.error)
 
   let res: { data: unknown } | { error: string }
+  /** Set when a Plan-linked date actually changed day, so its anchored to-dos follow it. */
+  let movedPlanId: string | null = null
   if (!entryId) {
     res = await insertCalendarEntries(editor.spaceId, [w, ...extra], editor.profileId)
   } else {
@@ -89,8 +92,27 @@ export async function saveCalendarEntry(
       res = await updateCalendarEntryRow(editor.spaceId, entryId, w, group)
       if (!('error' in res)) res = await insertCalendarEntries(editor.spaceId, extra, editor.profileId, group)
     }
+    // MOVE THE DATE, MOVE THE PREP LIST (ADR-1386 P5). The one mechanic that makes an attached
+    // checklist worth more than a notes app: every to-do anchored "14 days before" stays 14 days
+    // before when the date slips, and a to-do with a fixed date stays put.
+    if (!('error' in res) && current.plan_id && current.starts_at.slice(0, 10) !== w.starts_at.slice(0, 10)) {
+      movedPlanId = current.plan_id
+    }
   }
   if ('error' in res) return fail(res.error)
+  if (movedPlanId) {
+    // The DATE moved, and it moved successfully. A checklist that failed to follow it is a real
+    // regression, but it is not a reason to tell the owner their date did not save — so it is
+    // reported to the log, where a gate can see it, rather than swallowed or thrown at the form.
+    const anchored = await reanchorPlanTodos(slug, movedPlanId)
+    if ('error' in anchored) {
+      log.error('calendar.plan.reanchor_failed', {
+        plan_id: movedPlanId,
+        entry_id: entryId,
+        day_key: w.starts_at.slice(0, 10),
+      })
+    }
+  }
   revalidate(slug)
   return ok()
 }
