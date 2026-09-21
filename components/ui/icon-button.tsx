@@ -101,9 +101,9 @@ const BORDERED_TONE: Record<IconButtonTone, string> = {
 // instead of at every call site.
 const FILLED_TONE: Record<IconButtonTone, string> = {
   default: 'bg-primary text-on-primary hover:bg-primary-hover',
-  danger: 'bg-danger text-on-primary hover:bg-danger/90',
-  warning: 'bg-warning text-on-primary hover:bg-warning/90',
-  success: 'bg-success text-on-primary hover:bg-success/90',
+  danger: 'bg-danger text-on-danger hover:bg-danger/90',
+  warning: 'bg-warning text-on-warning hover:bg-warning/90',
+  success: 'bg-success text-on-success hover:bg-success/90',
 }
 
 // Tinted is loud at rest like `filled`, so tone is the tint itself rather than a hover step. The

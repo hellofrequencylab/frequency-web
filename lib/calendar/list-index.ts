@@ -1,7 +1,7 @@
 import type { EventCoreStats } from '@/lib/events/event-stats-core'
 import type { CalendarEvent } from './item'
-import { isOperatorListItem, operatorListHref, operatorStageLabel } from './pm-console'
-import type { EntryStage } from './registry'
+import { isOperatorListItem, operatorListHref, operatorStageLabel, operatorStageTone } from './pm-console'
+import { itemIsCancelled, type EntryStage, type EntryStageTone } from './registry'
 
 // LIST VIEW INDEX (ADR-1464, ADR-1467). The left-hand gathering index. The right
 // pane is the event control console (header, share, stats), not the Studio editor.
@@ -11,6 +11,8 @@ export type ListIndexItem = {
   title: string
   whenLabel: string
   stageLabel: string
+  /** The tone of the badge that says `stageLabel` (lib/calendar/registry.ts, never the label). */
+  stageTone: EntryStageTone
   href: string | null
   editHref: string | null
   publicSlug: string | null
@@ -50,10 +52,11 @@ export function listIndexItems(events: CalendarEvent[]): ListIndexItem[] {
         title: ev.title,
         whenLabel: ev.whenLabel,
         stageLabel: operatorStageLabel(ev),
+        stageTone: operatorStageTone(ev),
         href: publicSlug ? `/events/${publicSlug}` : operatorListHref(ev),
         editHref: ev.editHref ?? null,
         publicSlug,
-        isCancelled: ev.isCancelled || ev.stage === 'cancelled',
+        isCancelled: itemIsCancelled(ev.stage, ev.isCancelled),
         eventId: ev.eventId ?? null,
         entryId: ev.entryId ?? null,
         location: ev.location,
