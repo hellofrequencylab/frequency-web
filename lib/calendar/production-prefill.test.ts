@@ -21,6 +21,7 @@ const entry: EntryRow = {
   stage: 'production',
   description: 'We gather at dusk.',
   plan_id: 'p1',
+  published_event_id: null,
 }
 
 describe('productionPrefill', () => {
