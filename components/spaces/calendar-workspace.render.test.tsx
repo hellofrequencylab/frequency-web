@@ -20,6 +20,10 @@ vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/plan-actions', () => ({
   planReadiness: async () => ({ gaps: [], href: '/events/new?plan=plan-1' }),
   saveSpacePlan: async () => ({ data: undefined }),
   transitionPlanStage: async () => ({}),
+  // The repair door (PROG-CAL3): the drawer lists the Space's events on open so a broken
+  // events.plan_id can be re-attached in the app. Empty here; the render is what this pins.
+  listPlanLinkableEvents: async () => [],
+  attachEventToPlan: async () => ({ data: undefined }),
 }))
 
 vi.mock('@/components/events/event-share-button', () => ({

@@ -38,6 +38,7 @@ type EntryQuery = PromiseLike<{ data: EntryRow[] | null; error: { message: strin
   select: (c: string) => EntryQuery
   eq: (c: string, v: string) => EntryQuery
   neq: (c: string, v: string) => EntryQuery
+  is: (c: string, v: null) => EntryQuery
   lt: (c: string, v: string) => EntryQuery
   gt: (c: string, v: string) => EntryQuery
   order: (c: string, o: { ascending: boolean }) => EntryQuery
@@ -55,13 +56,26 @@ export const entryFormatters: EntryFormatters = {
   instantIso: (iso, tz) => eventInstant(iso, tz)?.toISOString() ?? null,
 }
 
-/** The Space's private entries overlapping [fromDay, toDay). RLS returns nothing to a non-editor. */
+/** The Space's private entries overlapping [fromDay, toDay), EXCLUDING dates that already became a
+ *  Production. RLS returns nothing to a non-editor.
+ *
+ *  🔴 THE `published_event_id is null` FILTER IS THE WHOLE DUPLICATE RULE (PROG-CAL3, ADR-1386).
+ *  Publishing used to DELETE the Pencil, taking its description, Team notes and hold with it, and
+ *  the reason it did is right here: `lib/calendar/admin-calendar.ts` merges events and entries as
+ *  two separate arrays, so a Pencil that merely survived would draw a second card beside its own
+ *  event on the same day — the duplicate ADR-1386 forbids. Filtering it out of the ITEM list keeps
+ *  the row (as history, and as the event's back-link) while the event card takes its place, which
+ *  is what "the Pencil's calendar card becomes the event card" actually requires.
+ *
+ *  Clash-checking wants the same set: a retired date is not competing for the time, the event it
+ *  became is, and `findEntryClashes` already reads events separately. */
 export async function listSpaceCalendarEntries(spaceId: string, fromDay: string, toDay: string): Promise<EntryRow[]> {
   try {
     const { data, error } = await (await db())
       .from('space_calendar_entries')
       .select(ENTRY_COLS)
       .eq('space_id', spaceId)
+      .is('published_event_id', null)
       .lt('starts_at', `${toDay}T00:00:00Z`)
       .gt('ends_at', `${fromDay}T00:00:00Z`)
       .order('starts_at', { ascending: true })
@@ -174,6 +188,35 @@ export async function updateCalendarEntryRow(
     .eq('id', entryId)
     .select(ENTRY_COLS)
   if (error || !data?.length) return { error: 'The entry could not be saved.' }
+  return { data: true }
+}
+
+/** THE PENCIL BECOMES ITS PRODUCTION (PROG-CAL3, ADR-1386). Called once, by the publish seam in
+ *  app/(main)/events/actions.ts, in place of the hard delete that used to sit there.
+ *
+ *  Two columns, one statement: `published_event_id` retires the date from the item list and
+ *  back-links the event it became, and `stage` moves it to `production` so the Projects kanban and
+ *  every stage reader agree with the Plan. The table's BEFORE trigger derives `status` from the
+ *  stage (ADR-1388 §2), so status is deliberately NOT written here — two writers for one fact is
+ *  how the form and the row came to disagree in the first place.
+ *
+ *  Runs on the CALLER'S session like every other entry write, so the operator quad on
+ *  space_calendar_entries is still the lock: a caller who cannot edit this Space's calendar
+ *  updates nothing and gets the error, even though the event insert above it ran as the service
+ *  role. `kind = 'pencil'` is asserted in the filter as well as by the table's check constraint. */
+export async function retirePencilToEvent(
+  spaceId: string,
+  entryId: string,
+  eventId: string,
+): Promise<{ data: true } | { error: string }> {
+  const { data, error } = await (await db())
+    .from('space_calendar_entries')
+    .update({ published_event_id: eventId, stage: 'production' })
+    .eq('space_id', spaceId)
+    .eq('id', entryId)
+    .eq('kind', 'pencil')
+    .select('id')
+  if (error || !data?.length) return { error: 'That date could not be marked as published.' }
   return { data: true }
 }
 
