@@ -176,16 +176,17 @@
             "HYG-075",
             "LIVE-335",
             "LIVE-394",
-            "LIVE-395",
+            "LIVE-441",
             "LIVE-396"
           ]
         },
         {
-          "name": "W0d · P3 — craft: shell split, hex, parked niceties. 12 visitors / 18 pageviews in 31 days: the funnel, not the page speed, is the constraint.",
+          "name": "W0d · P2/P3 — craft: shell split, hex, dev-environment correctness, parked niceties. 12 visitors / 18 pageviews in 31 days: the funnel, not the page speed, is the constraint.",
           "ids": [
             "LIVE-221",
             "LIVE-273",
-            "HYG-092"
+            "HYG-092",
+            "HYG-105"
           ]
         },
         {
@@ -309,8 +310,7 @@
             "OWN-076",
             "OWN-075",
             "LIVE-399",
-            "OWN-077",
-            "OWN-078"
+            "OWN-077"
           ]
         }
       ],
@@ -11022,11 +11022,11 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "Nothing has ever been charged. Production 2026-09-08: commerce_orders 0, event_tickets 0, space_subscription_items 0, financial_transactions 0, tips 0, creator_tips 0, store_redemptions 0, supporter_contributions 0. stripe_webhook_events holds exactly 1 row.\n\nFive non-zero row counts is the whole probe: a membership reaching active, a booking with a deposit, one order, one donation, one Space subscription. Until then every revenue number in this model is arithmetic, not evidence.  OWNER ASK MADE VISIBLE 2026-09-15 (ADR-1356). This row sat in the `live` lane with a `manual` probe, so check:backlog never demanded an `ownerAction` -- the guard only requires one on a row whose LANE is `owner`. The consequence is the exact failure AGENTS.md names: the ask was hiding in a live row's detail instead of being printed beside the OWNER section, and it read as an agent-workable P0 in every scan of the board. No agent can move it: the probe is five non-zero row counts produced by five REAL Stripe charges, which needs a human with a payment method. `account` is the nearest of the five keys (account|config|content|ruling|waiting) and it is an imperfect fit -- none of them names \"perform a real end-to-end transaction\", which is worth a glance at the taxonomy rather than a sixth key added on one row's evidence. The CODE half of this is PROG-R5, which is genuinely agent-workable and whose own detail says surfacing Connect onboarding at the first sell attempt unblocks all five loops with one push.\n\n── PROBE CORRECTED 2026-09-15 after it was nearly satisfied by nothing. The owner opened a real cs_live_ checkout for a $44 ticket to Toni Hypnotic Sound, did not complete it, and the session expired 30 minutes later on schedule. That left event_tickets holding exactly one row — pending, unpaid, worth nothing — and the row evidence as written (five tables NON-ZERO) would have read that as the ticket loop closing. It also incidentally proved two things worth keeping: reserve_ticket_atomic writes the pending row correctly with the right 3% fee, and the webhook received, signature-verified and recorded a SECOND event type (checkout.session.expired, stripe_webhook_events 1 to 2). The loop is real up to the Pay button; nothing has been charged.\n\n── SURVEY 2026-09-19. One House of Fates $44 ticket DID succeed. Count succeeded only. Pending/unpaid test reservations still sit in event_tickets and must not close a loop; delete them is OWN-078 (owner SQL). Remaining loops (membership, booking deposit, order, donation, Space subscription) still need a settled row each. Cloud agents cannot complete real charges.",
+      "detail": "Nothing has ever been charged. Production 2026-09-08: commerce_orders 0, event_tickets 0, space_subscription_items 0, financial_transactions 0, tips 0, creator_tips 0, store_redemptions 0, supporter_contributions 0. stripe_webhook_events holds exactly 1 row.\n\nFive non-zero row counts is the whole probe: a membership reaching active, a booking with a deposit, one order, one donation, one Space subscription. Until then every revenue number in this model is arithmetic, not evidence.  OWNER ASK MADE VISIBLE 2026-09-15 (ADR-1356). This row sat in the `live` lane with a `manual` probe, so check:backlog never demanded an `ownerAction` -- the guard only requires one on a row whose LANE is `owner`. The consequence is the exact failure AGENTS.md names: the ask was hiding in a live row's detail instead of being printed beside the OWNER section, and it read as an agent-workable P0 in every scan of the board. No agent can move it: the probe is five non-zero row counts produced by five REAL Stripe charges, which needs a human with a payment method. `account` is the nearest of the five keys (account|config|content|ruling|waiting) and it is an imperfect fit -- none of them names \"perform a real end-to-end transaction\", which is worth a glance at the taxonomy rather than a sixth key added on one row's evidence. The CODE half of this is PROG-R5, which is genuinely agent-workable and whose own detail says surfacing Connect onboarding at the first sell attempt unblocks all five loops with one push.\n\n── PROBE CORRECTED 2026-09-15 after it was nearly satisfied by nothing. The owner opened a real cs_live_ checkout for a $44 ticket to Toni Hypnotic Sound, did not complete it, and the session expired 30 minutes later on schedule. That left event_tickets holding exactly one row — pending, unpaid, worth nothing — and the row evidence as written (five tables NON-ZERO) would have read that as the ticket loop closing. It also incidentally proved two things worth keeping: reserve_ticket_atomic writes the pending row correctly with the right 3% fee, and the webhook received, signature-verified and recorded a SECOND event type (checkout.session.expired, stripe_webhook_events 1 to 2). The loop is real up to the Pay button; nothing has been charged.\n\n── SURVEY 2026-09-19. One House of Fates $44 ticket DID succeed. Count succeeded only. Pending/unpaid test reservations still sit in event_tickets and must not close a loop; delete them is OWN-078 (owner SQL). Remaining loops (membership, booking deposit, order, donation, Space subscription) still need a settled row each. Cloud agents cannot complete real charges.\n\n── PRODUCTION READ 2026-09-21 (direct SQL, this session). Settled rows: event_tickets status='succeeded' 1 · financial_transactions 1 · store_redemptions 4 · commerce_orders 0 · tips 0 · creator_tips 0 · supporter_contributions 0 · space_subscription_items 0 · journey_runs 0. stripe_webhook_events is now 26, up from the 2 this row last recorded, and it breaks down as 24 checkout.session.expired, 1 checkout.session.completed, 1 account.updated. The pending test rows OWN-078 was filed to delete are GONE (event_tickets is exactly one succeeded row), so OWN-078 closed on the same read.\n\nSo the count stands at ONE of five loops proven: the ticket. Membership, booking deposit, order and donation are all still zero. TWO THINGS WORTH READING OUT OF THE WEBHOOK SPLIT: the pipeline is healthy (it is receiving, signature-verifying and recording three distinct event types), and 24 expired against 1 completed is the abandonment signal — noted on LIVE-396, which owns the product cause.",
       "verify": {
         "kind": "manual",
-        "evidence": "SQL: five tables non-zero, counting ONLY settled rows. event_tickets where status = succeeded (not count(*)). 2026-09-19 survey: one House of Fates $44 succeeded ticket exists; abandoned pending test rows also exist (OWN-078). financial_transactions is the honest cross-check. Cloud could not delete pending tests.",
-        "checked": "2026-09-19"
+        "evidence": "SQL: five tables non-zero, counting ONLY settled rows. event_tickets where status = 'succeeded' (not count(*)). 2026-09-21 production read: 1 of 5 loops proven (ticket). financial_transactions 1 is the honest cross-check. store_redemptions 4 is NOT a charge and does not count toward the five. Pending test rows are gone (OWN-078 closed). Cloud agents cannot complete real charges.",
+        "checked": "2026-09-21"
       },
       "ownerAction": "account"
     },
@@ -14232,7 +14232,7 @@
     {
       "id": "LIVE-395",
       "title": "A $444 page carries no testimonials and no guarantee",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
@@ -14240,11 +14240,11 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
       },
-      "detail": "Named in ADR-1398's 'Not done' list and unaddressed since. Both want authoring surfaces that do not exist. The guarantee is the cheaper half and the more load-bearing: 2026 course refund rates run 18-28%, a named refund window is standard on every comparable offer, and `revokeJourneyByOrder` already performs the mechanics on a full refund — so the policy has an implementation and no way to state itself. Testimonials are the other half of the proof problem LIVE-392 describes.",
+      "detail": "Named in ADR-1398's 'Not done' list and unaddressed since. Both want authoring surfaces that do not exist. The guarantee is the cheaper half and the more load-bearing: 2026 course refund rates run 18-28%, a named refund window is standard on every comparable offer, and `revokeJourneyByOrder` already performs the mechanics on a full refund — so the policy has an implementation and no way to state itself. Testimonials are the other half of the proof problem LIVE-392 describes.\n\n── CLOSED 2026-09-21, on the GUARANTEE half, which is what the probe measures and what the row's own detail calls the cheaper and more load-bearing of the two. The refund promise is now authored per Journey and rendered where the decision is made.\n\nHOW, following LIVE-393/ADR-1463 exactly rather than inventing a second pattern: lib/journeys/guarantee.ts is a pure normalize/read/write module over `page_config` story.settings.guarantee — no column, no migration, no fourth page_config toggle (ADR-1462) — and it mirrors writeJourneyOutcomes down to dropping an emptied settings bag, because the two share that object. JOURNEY_MANIFEST declares one `guarantee` longtext on the story section at rail placement (a commitment made once, not canvas copy); JOURNEY_GUARANTEE_WRITES is its own rail zone because setJourneyGuarantee rewrites page_config rather than a column; the settings module mounts it beside the outcomes repeat. components/journey/guarantee-block.tsx renders it, in its own file rather than discovery-widgets.tsx for two reasons: it is NOT a reorderable discovery widget, so putting it in the widget bag would offer a control that does nothing, and LIVE-394 is rewriting that file on cursor/cloud-agent-workspace-8978.\n\nPLACED LAST on the sales body, after JourneyFaq: the guarantee answers the objection the questions cannot close. It degrades to nothing — a host who wrote none gets no empty shell and no refund language the platform invented on their behalf, which matters because `revokeJourneyByOrder` performs real refunds and a promise nobody made must not appear beside it.\n\nWHAT IS NOT DONE, and is NOT hidden by this closure: testimonials. That half wants an authoring surface for third-party quotes and is the other half of the proof problem LIVE-392 describes; the `proof` slot (ADR-1401) already carries product reviews into the same body, so the honest next question is whether authored testimonials are a second thing at all. Filed as LIVE-441. Also not done: the block renders on the product sales body only, not on /journeys/[slug] or /discover/journeys/[slug], which show the same Journey to a buyer who can also pay. That is deliberate scope, not an oversight, and it is the first thing LIVE-441 should sweep up.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const b=s('components/marketplace/journey-sales-body.tsx');if(!/[Gg]uarantee|[Tt]estimonial/.test(b))fail('the sales body carries neither a guarantee block nor testimonials')\"",
-        "note": "Measures the CONSEQUENCE: either block reaching the page a buyer reads. Fails while neither exists."
+        "note": "Measures the CONSEQUENCE: either block reaching the page a buyer reads. Written 2026-09-14. Closed 2026-09-21 by the guarantee block; it stays honest about the testimonials half because LIVE-441 owns it and the probe was always an OR."
       }
     },
     {
@@ -14258,7 +14258,7 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
       },
-      "detail": "Two separate barriers, both deferred with reasons in ADR-1399, kept in one row because both are about who can afford to say yes.\n\nGUEST: event tickets have a first-class guest door (`startGuestTicket`), written because 'Sign in to get your ticket' was the entire signed-out path on 14 of 15 events. A Journey grants account-bound access, so its guest door needs account creation at fulfilment — real work, not a fix. Research puts forced account creation at 19-26% of checkout abandonment.\n\nINSTALMENTS: no instalment, Klarna, Affirm or payment-plan support exists anywhere in the repo. At $444 against a community audience this is the most-cited high-ticket objection.",
+      "detail": "Two separate barriers, both deferred with reasons in ADR-1399, kept in one row because both are about who can afford to say yes.\n\nGUEST: event tickets have a first-class guest door (`startGuestTicket`), written because 'Sign in to get your ticket' was the entire signed-out path on 14 of 15 events. A Journey grants account-bound access, so its guest door needs account creation at fulfilment — real work, not a fix. Research puts forced account creation at 19-26% of checkout abandonment.\n\nINSTALMENTS: no instalment, Klarna, Affirm or payment-plan support exists anywhere in the repo. At $444 against a community audience this is the most-cited high-ticket objection.\n\n── EVIDENCE 2026-09-21 (production read, this session). stripe_webhook_events holds 24 checkout.session.expired against 1 checkout.session.completed. Even discounting the owner test sessions inside that 24, the ratio is the first hard measurement this row has had of the cost of the two gaps it names. It moves the row from a craft argument to a measured conversion defect, and it is the reason to sequence this ahead of the other P2 live rows. NOT gated on PROG-R5: that row was re-tested on 2026-09-15, its onboarding fix had already shipped, and it now stays open only on LIVE-234, which needs a real purchase. Waiting for it would mean waiting for a sale to fix the thing suppressing sales.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const a=s('app/(main)/marketplace/commerce-actions.ts');if(!/guestEmail|startGuest/.test(a))fail('commerce checkout still has no guest door, so a Journey cannot be bought without an account');const c=s('lib/commerce/checkout.ts');if(!/instal|payment_plan|klarna|affirm/i.test(c))fail('no instalment path exists on the commerce checkout')\"",
@@ -14712,7 +14712,7 @@
     {
       "id": "OWN-078",
       "title": "Delete pending test event_tickets so LIVE-234 cannot close on a reservation",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "owner",
       "size": "XS",
@@ -14721,11 +14721,11 @@
         "file": "docs/BUILD-BACKLOG.json",
         "ref": "LIVE-234, 2026-09-19 survey"
       },
-      "detail": "FILED 2026-09-19. Abandoned / pending unpaid test ticket rows remain in event_tickets. A bare count(*) once almost closed LIVE-234 on a $44 session that never paid. Owner SQL: delete or void pending test reservations. Keep the House of Fates succeeded $44 row. Cloud could not run this SQL.",
+      "detail": "FILED 2026-09-19. Abandoned / pending unpaid test ticket rows remain in event_tickets. A bare count(*) once almost closed LIVE-234 on a $44 session that never paid. Owner SQL: delete or void pending test reservations. Keep the House of Fates succeeded $44 row. Cloud could not run this SQL.\n\n── CLOSED 2026-09-21, verified by direct read of the production database. event_tickets holds exactly ONE row and its status is 'succeeded' (the House of Fates $44). There are no pending or unpaid rows left, so the risk this row was filed against — LIVE-234 closing on a reservation that never paid — is gone. Cross-checks taken in the same read: financial_transactions 1, stripe_webhook_events 26 (1 account.updated, 1 checkout.session.completed, 24 checkout.session.expired).",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-19: pending tests still to delete. Closes when production event_tickets has no pending unpaid test rows the owner does not intend to complete.",
-        "checked": "2026-09-19"
+        "evidence": "2026-09-21: production read — select status, count(*) from event_tickets group by 1 returns exactly one group, ('succeeded', 1). No pending unpaid rows remain. Re-opens if a bare count(*) on event_tickets ever exceeds the count of status='succeeded'.",
+        "checked": "2026-09-21"
       }
     },
     {
@@ -15392,6 +15392,64 @@
         "note": "Passes when space.reach reads reachCatalogNote, that note names Business from the QR meter, and space_qr stays 3 free / unlimited on Business."
       },
       "closed": "2026-09-20"
+    },
+    {
+      "id": "HYG-105",
+      "title": "The kit has no segmented control, so every view switcher hand-rolls a raw <button> whose selected state is a bg-primary fill",
+      "status": "open",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "scripts/adoption-baselines.json",
+        "ref": "raw-button-bg raised 403 → 404 on 2026-09-21"
+      },
+      "detail": "FILED 2026-09-21 from the adoption ratchet going red on main. The operator-calendar work added two segmented view switchers — components/spaces/calendar-mode-toggle.tsx and the item rail in components/spaces/calendar-list-view.tsx — and both are aria-pressed controls whose SELECTED state paints bg-primary inside a raw <button> opening tag. That is what raw-button-bg counts, so the count went 403 → 404.\n\nNEITHER SITE IS A MISUSE. They are not primary action buttons that should have composed Button; they are segmented controls, and the kit has no segmented control to compose. components/ui/ ships underline-tabs.tsx (a different form) and switch.tsx (binary on/off). So the ratchet is counting a real gap in the kit, not sloppy work, which is exactly the 'a count ratchet fires on legitimate growth' case .github/workflows/ci.yml reasons about when it keeps check:adoption advisory (ADR-970). The rise was therefore BANKED on 2026-09-21 with that reason rather than papered over, and it stays flagged ⚠️ raised on every run until a sweep brings it down.\n\nWHAT CLOSES THIS: a SegmentedControl primitive in components/ui that carries the aria-pressed group semantics and the selected fill once, with both calendar sites composing it. THE FORM IS NOT FREE: HYG-092 records that the owner superseded pills, so whether a segmented control is a pill row, an underline row, or something else is a design ruling that should be taken before the primitive is built, not after.\n\nNOTE ON HOW THIS GOT IN, kept as context and NOT as an argument to make the gate blocking: the rise was printed into the run summary of every PR that carried it, and the merging agent did not read it. ci.yml already anticipates that case and says the remedy would be deleting the advisory, not blocking on it. Do not file a 'make check:adoption required' row against this; argue with ADR-970 first.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const has=p=>fs.existsSync(p);const prim=['components/ui/segmented-control.tsx','components/ui/segmented.tsx'].find(has);if(!prim)process.exit(1);const t=fs.readFileSync('components/spaces/calendar-mode-toggle.tsx','utf8');const l=fs.readFileSync('components/spaces/calendar-list-view.tsx','utf8');const name=prim.split('/').pop().replace('.tsx','');const composed=t.includes(name)&&l.includes(name);process.exit(composed?0:1)\"",
+        "note": "Measures the consequence in the tree: a segmented-control primitive exists in the kit AND both calendar switchers compose it. Fails today because no such primitive exists, which is what keeps the row open."
+      },
+      "notes": "The 403 → 404 rise is banked in scripts/adoption-baselines.json with its own dated reason. Closing this row should bring the count back DOWN, which is the sweep the ratchet is waiting for."
+    },
+    {
+      "id": "HYG-106",
+      "title": "The SessionStart hook tests only that node_modules exists, so a partial install silently skips and typecheck reports phantom errors in the billing files",
+      "status": "done",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": ".claude/hooks/session-start.sh",
+        "ref": "the `if [ ! -d node_modules ]` guard"
+      },
+      "detail": "FILED 2026-09-21, measured in a cloud container this session. The hook branches on directory PRESENCE alone: `if [ ! -d node_modules ]` installs, otherwise it prints '📦 node_modules present — skipping install.' and moves on. A node_modules that exists but is INCOMPLETE therefore takes the skip path and nothing ever notices.\n\nTHE CONSEQUENCE, measured: @stripe/stripe-js and @stripe/react-stripe-js are both declared in package.json (^9.16.0, ^6.10.0) and were both absent from node_modules, so `pnpm exec tsc --noEmit` exited 2 with 6 errors — 4 module-not-found in components/billing/checkout-form.tsx and lib/billing/stripe-browser.ts, plus 2 implicit-any errors that are purely downstream of the missing types. None of those 6 exist in CI or in the production build; the tree typechecks. An agent working in such a container reads 6 red errors in files that are actually clean.\n\nWHY IT MATTERS MORE THAN IT LOOKS: the two files it lands on are the browser half of checkout. They are exactly what PROG-R5 (surface Connect onboarding at the first sell attempt) and LIVE-396 (guest checkout + instalments) have to edit, so the phantom errors sit on the highest-leverage money work on the board, and the honest reading of them ('the billing types are broken') is the wrong one.\n\nWHAT CLOSES THIS: the hook verifies the install SATISFIES THE LOCKFILE rather than that a directory exists — e.g. an offline/frozen resolution check on the else branch, falling through to a real install when it fails. Keep it non-blocking and keep it exiting 0; the hook's contract is to prepare a workspace, never to fail a session.\n\n── CLOSED 2026-09-21 in the same change that filed it. The presence branch is gone: the hook now runs `pnpm install --frozen-lockfile --prefer-offline` whenever pnpm is on PATH, falling back to a plain install, so it resolves the LOCKFILE instead of trusting the directory. pnpm is idempotent, so a complete tree costs a couple of seconds and an incomplete one is repaired in the same call. The hook still exits 0 and still never fails a session.\n\nPROVEN, not assumed: run in the container that produced the finding, the hook printed 'Verifying dependencies against the lockfile…', and @stripe/stripe-js and @stripe/react-stripe-js were both present afterwards. `pnpm exec tsc --noEmit` then went from 6 errors to 0.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "if \\[ ! -d node_modules \\]",
+        "paths": [
+          ".claude/hooks/session-start.sh"
+        ],
+        "note": "Measures the consequence: the bare presence-only guard is gone from the hook. Fails today because that exact line is the hook's only install condition."
+      }
+    },
+    {
+      "id": "LIVE-441",
+      "title": "The testimonials half of the $444 proof problem, and the guarantee only reaches one of the three buyer faces",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1398 Not done · ADR-1401 the proof slot · LIVE-395"
+      },
+      "detail": "FILED 2026-09-21 when LIVE-395 closed on its guarantee half. Two things are left, and neither is hidden inside the closed row.\n\n1. TESTIMONIALS. ADR-1398 named them beside the guarantee and they are still absent. But ASK THE PRIOR QUESTION FIRST, because the answer may be that this is not a new authoring surface at all: the sales body already takes a `proof` slot (ADR-1401) that renders product REVIEWS keyed to the commerce_products row, placed between the guide and the questions for exactly the reason authored testimonials would want. So the row is not 'add a testimonials field'; it is 'decide whether an authored quote is a different thing from a review, and if it is, say what makes it different before building a second surface for it'. A Journey with real reviews and a second block of host-chosen quotes beside them reads worse than either alone.\n\n2. THE GUARANTEE REACHES ONE FACE OF THREE. components/marketplace/journey-sales-body.tsx renders JourneyGuaranteeBlock; app/(main)/journeys/[slug]/page.tsx and app/discover/journeys/[slug]/page.tsx do not, and both show the same Journey to someone who can buy it. The data is already there — readJourneyGuarantee reads the same page_config those pages already load for readJourneyOutcomes — so this half is small and should land first. It was left out of LIVE-395 as deliberate scope, to close that row on the surface its probe measures rather than widen the change.\n\nEVIDENCE THIS IS WORTH DOING: the production read of 2026-09-21 recorded 24 checkout.session.expired against 1 completed (LIVE-234, LIVE-396).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const a=s('app/(main)/journeys/[slug]/page.tsx');const b=s('app/discover/journeys/[slug]/page.tsx');const ok=/JourneyGuaranteeBlock|readJourneyGuarantee/.test(a)&&/JourneyGuaranteeBlock|readJourneyGuarantee/.test(b);process.exit(ok?0:1)\"",
+        "note": "Measures the CONSEQUENCE of half 2, the cheap and unambiguous half: the guarantee reaches the other two buyer faces. Half 1 is a ruling first, so it is deliberately not in the probe — a probe cannot measure whether a question was asked."
+      }
     }
   ]
 }

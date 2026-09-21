@@ -22,17 +22,27 @@ if ! command -v pnpm >/dev/null 2>&1; then
   corepack enable >/dev/null 2>&1 || true
 fi
 
-if [ ! -d node_modules ]; then
-  echo "📦 Installing dependencies (node_modules missing)…"
-  if command -v pnpm >/dev/null 2>&1; then
-    pnpm install --frozen-lockfile >/tmp/freq-install.log 2>&1 \
-      || pnpm install >/tmp/freq-install.log 2>&1 \
-      || { echo "⚠️  pnpm install failed — see /tmp/freq-install.log"; tail -5 /tmp/freq-install.log; }
+# A node_modules DIRECTORY is not an INSTALL (HYG-106). Testing only that the directory
+# exists let a PARTIAL tree — what a reclaimed or interrupted container leaves behind — take
+# the skip path silently. Measured 2026-09-21: @stripe/stripe-js and @stripe/react-stripe-js
+# were both declared and both absent, the hook printed "skipping install", and the first
+# `tsc --noEmit` reported 6 errors in components/billing/checkout-form.tsx and
+# lib/billing/stripe-browser.ts that do not exist in CI. Phantom errors in the checkout files
+# are the worst possible ones to hand an agent: the honest reading of them is the wrong one.
+#
+# So resolve the LOCKFILE rather than trust the directory. pnpm is idempotent, so a complete
+# tree costs a couple of seconds and an incomplete one is repaired in the same call.
+if command -v pnpm >/dev/null 2>&1; then
+  if [ -d node_modules ]; then
+    echo "📦 Verifying dependencies against the lockfile…"
   else
-    echo "⚠️  pnpm not found and corepack enable failed — install deps manually."
+    echo "📦 Installing dependencies (node_modules missing)…"
   fi
+  pnpm install --frozen-lockfile --prefer-offline >/tmp/freq-install.log 2>&1 \
+    || pnpm install >/tmp/freq-install.log 2>&1 \
+    || { echo "⚠️  pnpm install failed — see /tmp/freq-install.log"; tail -5 /tmp/freq-install.log; }
 else
-  echo "📦 node_modules present — skipping install."
+  echo "⚠️  pnpm not found and corepack enable failed — install deps manually."
 fi
 
 cat <<'NOTE'

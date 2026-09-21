@@ -5,6 +5,7 @@ import { getPillars } from '@/lib/pillars'
 import { getJourneyOffer } from '@/lib/journeys/paid'
 import { enabledWidgets } from '@/lib/journey-page-config'
 import { readJourneyOutcomes } from '@/lib/journeys/outcomes'
+import { readJourneyGuarantee } from '@/lib/journeys/guarantee'
 import {
   StoryBlock,
   OutcomesBlock,
@@ -15,6 +16,7 @@ import {
   JourneyStatChips,
   journeyFacts,
 } from '@/components/journey/discovery-widgets'
+import { JourneyGuaranteeBlock } from '@/components/journey/guarantee-block'
 import { SectionHeader } from '@/components/ui/section-header'
 
 // THE SALES BODY OF A JOURNEY PRODUCT (ADR-1398), derived live.
@@ -69,6 +71,7 @@ export async function JourneySalesBody({
   const widgets = enabledWidgets(plan.page_config, 'discovery')
   const storyOn = widgets.some((w) => w.id === 'story')
   const outcomes = readJourneyOutcomes(plan.page_config)
+  const guarantee = readJourneyGuarantee(plan.page_config)
   const meeting = normalizeJourneyMeeting(plan.meeting)
   const t = meeting.gathering ?? meeting
 
@@ -140,6 +143,11 @@ export async function JourneySalesBody({
       {proof}
 
       <JourneyFaq plan={plan} />
+
+      {/* LAST, and deliberately so (LIVE-395). The guarantee answers the objection the FAQ could
+          not close -- what happens if this is not for me -- so it reads after the questions and
+          immediately before the buyer scrolls back to the price. Empty unless the host wrote one. */}
+      <JourneyGuaranteeBlock guarantee={guarantee} />
     </div>
   )
 }
