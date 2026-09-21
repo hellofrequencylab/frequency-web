@@ -46,7 +46,7 @@ const fmt: EntryFormatters = {
 function row(input: EntryInput, id = '11111111-1111-4111-8111-111111111111'): EntryRow {
   const parsed = parseEntryInput(input)
   if ('error' in parsed) throw new Error(parsed.error)
-  return { id, space_id: 's', option_group: null, ...parsed.data }
+  return { id, space_id: 's', option_group: null, published_event_id: null, ...parsed.data }
 }
 
 describe('parseEntryInput', () => {

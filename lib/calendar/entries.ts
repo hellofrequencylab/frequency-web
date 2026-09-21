@@ -40,10 +40,15 @@ export interface EntryRow {
   description: string | null
   /** The Plan this date belongs to (ADR-1386). */
   plan_id: string | null
+  /** The Production this Pencil BECAME (PROG-CAL3). Set on publish instead of deleting the row, so
+   *  the date keeps its description, Team notes and hold and back-links its event. A row carrying
+   *  one no longer renders as its own calendar item: the event card IS this date's card now, which
+   *  is what ADR-1386's "rather than sitting beside it as a duplicate" asks for. */
+  published_event_id: string | null
 }
 
 export const ENTRY_COLS =
-  'id, space_id, kind, title, notes, location, all_day, starts_at, ends_at, time_zone, status, blocks_time, visibility, option_group, hold_expires_at, stage, description, plan_id'
+  'id, space_id, kind, title, notes, location, all_day, starts_at, ends_at, time_zone, status, blocks_time, visibility, option_group, hold_expires_at, stage, description, plan_id, published_event_id'
 
 /** The staff form, as plain strings and booleans (what a client sends). */
 export interface EntryInput {
@@ -75,8 +80,10 @@ export interface EntryInput {
   planId?: string | null
 }
 
-/** The columns a create or update writes. `option_group` is set by the action, never by the form. */
-export type EntryWrite = Omit<EntryRow, 'id' | 'space_id' | 'option_group'>
+/** The columns a create or update writes. `option_group` is set by the action, never by the form,
+ *  and `published_event_id` only ever by the publish seam (retirePencilToEvent) — leaving it in
+ *  this type would let an ordinary edit of the drawer silently un-retire a published date. */
+export type EntryWrite = Omit<EntryRow, 'id' | 'space_id' | 'option_group' | 'published_event_id'>
 
 /** The most candidate dates one pencil may carry (the first date included). */
 export const MAX_CANDIDATE_DATES = 6
