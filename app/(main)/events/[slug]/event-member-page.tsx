@@ -24,6 +24,7 @@ import { SITE_NAME, SITE_URL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { ticketFromPriceCents, ticketsSoldOut } from '@/lib/commerce/ticket-projection'
+import { TICKETS_NOT_READY } from '@/lib/events/ticket-eligibility'
 import { toggleRSVP } from '../actions'
 import { TicketButton, type TicketTierView } from './ticket-button'
 import { PosterBand } from '@/components/media/poster-band'
@@ -1634,7 +1635,14 @@ export default async function EventDetailPage({
                     signInHref={`/sign-in?next=/events/${event.slug}`}
                   />
                 ) : (
-                  <p className="text-body-sm text-muted">The host hasn&rsquo;t opened ticket sales yet.</p>
+                  /* THE ONE BUYER SENTENCE (EVT-PRICE-HONESTY). This read "The host hasn't opened
+                     ticket sales yet", which is a different sentence from the one the buy path
+                     returns AND it attributes the state to the host -- a stranger is never told
+                     anything about the host's account, and "hasn't opened" reads as a choice the
+                     host made rather than a setup step nobody has finished. TICKETS_NOT_READY is
+                     the constant lib/billing/tickets.ts refuses with, so the page and the checkout
+                     now say the same words. */
+                  <p className="text-body-sm text-muted">{TICKETS_NOT_READY}</p>
                 )
               ) : isHost && !hostSpaceOwnerId ? (
                 /* PERSONAL event only: the host IS the payee, so "no ticket needed" / "connect
@@ -1718,9 +1726,10 @@ export default async function EventDetailPage({
                   </p>
                 </div>
               ) : (
-                /* Host hasn't finished payout setup, so there is no one to pay yet.
-                   Honest to the buyer, no dead "not available" phrasing. */
-                <p className="text-body-sm text-muted">The host hasn&rsquo;t opened ticket sales yet.</p>
+                /* The payee has not finished payout setup, so there is no one to pay yet. The SAME
+                   sentence the buy path refuses with (EVT-PRICE-HONESTY), and it says nothing about
+                   whose account is missing: this branch is reached by ordinary signed-in buyers. */
+                <p className="text-body-sm text-muted">{TICKETS_NOT_READY}</p>
               )}
           </div>
         )}
@@ -2017,6 +2026,13 @@ export default async function EventDetailPage({
     // into "Join waitlist". Reusing them is the point — the schema cannot disagree with the page
     // unless the page disagrees with itself.
     is_sold_out: capacityInfo.isFull || allTiersSoldOut,
+    // NOBODY CAN BE PAID -> NO OFFER (EVT-PRICE-HONESTY). `hostPayoutReady` is the same value that
+    // decides whether this page renders a buy control at all, so the rich result and the page can
+    // no longer disagree: where the reader is told tickets are not on sale, the schema publishes no
+    // price either. Supplied only for a TICKETS-mode event -- in RSVP mode the money is collected
+    // at the door (LIVE-314), so the price is a fact about the event rather than an offer we make,
+    // and `undefined` there leaves the Offer exactly as it was.
+    ...(ticketsMode ? { payouts_ready: hostPayoutReady } : {}),
   })
 
   // (`hostAskSpaces` — the ADR-911 host handshake's Space side — is resolved in the social wave
