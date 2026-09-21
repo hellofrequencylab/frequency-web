@@ -189,7 +189,6 @@
             "LIVE-273",
             "HYG-092",
             "HYG-105",
-            "HYG-107",
             "LIVE-453"
           ]
         },
@@ -15476,7 +15475,7 @@
     {
       "id": "HYG-107",
       "title": "Adaptive Pricing is on, and the platform fee is an absolute cents integer computed against the product currency",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "hygiene",
       "size": "S",
@@ -15486,11 +15485,11 @@
       },
       "detail": "FILED 2026-09-21 from a read of the live Stripe dashboard beside the code.\n\nTHE SETTING: Settings → Payments → Adaptive Pricing is ENABLED for Checkout, Elements and the Hosted Invoice Page (Payment Links are always on). Its whole purpose is to present and charge a buyer in THEIR local currency.\n\nTHE CODE: lib/commerce/checkout.ts builds line items at `currency: (l.product.currency || 'usd')`, stores `currency: seller.currency || 'usd'` on the order, and passes `application_fee_amount: charge.platformFeeCents` — an absolute integer, computed by the take-rate helpers against that currency. lib/billing/tickets.ts has the same shape for tickets.\n\nTHE QUESTION, stated precisely rather than as an accusation: an application fee is denominated in the charge's currency, and Adaptive Pricing changes what the buyer is charged in. Whether our integer is still the intended cut under conversion needs to be established against Stripe's actual behaviour for destination charges with on_behalf_of — not reasoned about from the dashboard copy. The failure mode if it is wrong is quiet and ugly: a fee that is wrong by an exchange rate, on money that already moved.\n\n🔴 EXPOSURE TODAY IS NIL, AND THAT IS WHY THIS IS P2 RATHER THAN P1. Measured on production 2026-09-21: all 38 commerce_products carry currency 'usd' (37 active). There is no non-USD product to convert from, so no sale can currently hit this. It becomes real on the first non-USD product or the first buyer Adaptive Pricing decides to present differently.\n\nWHAT WOULD CLOSE IT: either a test pinning that the fee is computed in the same currency the charge settles in, or a documented verification against Stripe's Connect + Adaptive Pricing behaviour recorded in an ADR — plus, if the answer is that they can diverge, a guard that refuses rather than guesses. Do NOT close this by turning Adaptive Pricing off: it exists to help international conversion, and the platform wants that.",
       "verify": {
-        "kind": "manual",
-        "evidence": "2026-09-21: not yet established. Adaptive Pricing enabled in the dashboard; all 38 commerce_products are usd so nothing can hit it today. Closes when the fee/charge currency relationship is proven (test or ADR-recorded verification) and any divergence is guarded, or when a non-USD sale is deliberately taken and reconciled against the expected take-rate.",
-        "checked": "2026-09-21"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const strip=(p)=>fs.readFileSync(p,'utf8').replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const t=strip('lib/commerce/checkout-fee-currency.test.ts');if(!/application_fee_amount\\\\)\\\\.toBe\\\\(/.test(t)||!/price_data\\\\.currency\\\\)\\\\.toBe\\\\('cad'\\\\)/.test(t))fail('the commerce fee/currency test no longer ties application_fee_amount to non-USD line items');if(!/one currency at a time/.test(t))fail('the mixed-currency refusal is no longer tested');const k=strip('lib/billing/tickets-onpage.test.ts');if(!/application_fee_amount\\\\)\\\\.toBe\\\\(/.test(k)||!/price_data\\\\.currency\\\\)\\\\.toBe\\\\('usd'\\\\)/.test(k))fail('the ticket fee/currency test is gone');const c=strip('lib/commerce/checkout.ts');if((c.match(/currency: cartCurrency,/g)||[]).length<2)fail('the order row and the line items no longer read one cart currency, so the fee can be cut in a currency the line items do not carry');if(!/return \\\\{ error: 'Please check out items in one currency at a time\\\\.' \\\\}/.test(c))fail('a mixed-currency cart is no longer refused before the fee is computed');if(!/^## ADR-1500:/m.test(fs.readFileSync('docs/DECISIONS.md','utf8')))fail('ADR-1500 (the Stripe fact) is gone from the ledger')\"",
+        "note": "Measures the CONSEQUENCE: the two behavioural tests still assert application_fee_amount against the sum of non-USD (commerce) and usd (ticket) line items, checkout.ts (comments stripped) still feeds ONE cart currency to both the order row and the line items and still refuses a mixed cart with the member sentence, and the ADR that records Stripe’s behaviour is still in the ledger. The test assertions are matched on the ACT (`).toBe(`), not on identifiers in comments. Six code mutations (line currency defaulted, fee off by one, guard removed, order currency drifted, ticket fee off by one, ticket currency changed) each failed the tests on 2026-09-21."
       },
-      "notes": "Found by reading the dashboard against the code rather than from a failure. Nothing is broken today; this exists so the first non-USD sale is a checkpoint rather than a surprise."
+      "notes": "Found by reading the dashboard against the code rather than from a failure. Nothing is broken today; this exists so the first non-USD sale is a checkpoint rather than a surprise. CLOSED 2026-09-21 (ADR-1500): Stripe reads application_fee_amount in the PaymentIntent currency, which under Adaptive Pricing stays the line items’ currency (the buyer’s local price is presentment only, cost on the buyer), and the fee reaches the platform in the connected account’s settlement currency with no second conversion. Our integer is cut from the same cents in the same currency, so it is the intended cut. Pinned by lib/commerce/checkout-fee-currency.test.ts and a ticket case in lib/billing/tickets-onpage.test.ts; a mixed-currency cart is now refused before an order is written. Adaptive Pricing stays ON."
     },
     {
       "id": "OWN-080",
@@ -15569,24 +15568,6 @@
       }
     },
     {
-      "id": "LIVE-453",
-      "title": "lib/database.types.ts is a partial regeneration: five tables the live database has are missing from it",
-      "status": "open",
-      "priority": "P2",
-      "lane": "hygiene",
-      "size": "S",
-      "source": {
-        "file": "lib/database.types.ts",
-        "ref": "HYG-052 (the drift detector) · PROG-CAL2/CAL7 · supabase/migrations/20270345006700_space_plans.sql"
-      },
-      "detail": "FOUND 2026-09-21 while re-probing the PROG-CAL family (HYG-108). Filed as LIVE-444 in the first cut of that PR and renumbered to LIVE-453 because LIVE-444 (#2833, PROG-CAL5), 445, 447 and 452 were claimed by other lanes in the same window and 446 to 451 were pre-allocated to lanes still in flight.\n\nFive tables exist in the live database and have NO Tables block in lib/database.types.ts: space_plans, space_plan_shares, space_plan_playbooks, space_calendar_private_feeds and space_circle_optouts. space_plans appears in the file exactly once, as a referencedRelation string inside another table’s foreign key — the name is there, the shape is not.\n\nWHY IT HID. The file is not stale wholesale, it is PARTIAL. Functions.create_penciled_plan IS in the types, and so are space_calendar_entries and space_calendar_day_notes from phase 1 of the same program. So the file was regenerated after that migration and not after the later ones, and every gate in the repo checks that the CODE agrees with the FILE (HYG-052 named this class exactly), which it does — by casting.\n\nCONSEQUENCE. Every read or write of those five goes through an untyped cast, so tsc cannot see a renamed or dropped column on any of them and the failure arrives at runtime, in the calendar surface an owner is using. It also blocks the honest version of the PROG-CAL work: lib/calendar/plans-store.ts cannot be typed against the schema it queries.\n\nSCOPE, stated so the row is not read as bigger than it is. 22 tables that a committed migration creates have no Tables block, but 17 of those do not exist in the live database either (domains, programs, beta_*, email_templates, claim_tokens and the rest are dropped or never applied) — the types are correctly silent about those, and whether those migrations should still be in the tree is a SEPARATE question worth its own row. Only the five named here are a real gap.\n\nRELATED, NOT DUPLICATE. HYG-052 built the drift detector and closed 2026-09-07. It runs report-only in maintenance.yml and does not block, which is why an additive drift like this one can sit in the tree. This row is the instance; whether the detector should go from report-only to blocking is the question HYG-052 deliberately left open.",
-      "verify": {
-        "kind": "cmd",
-        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const need=[\"space_plans\",\"space_plan_shares\",\"space_plan_playbooks\",\"space_calendar_private_feeds\",\"space_circle_optouts\"];const t=fs.readFileSync(\"lib/database.types.ts\",\"utf8\");const missing=need.filter((n)=>!new RegExp(\"^\\\\s{6}\" + n + \": \\\\{\",\"m\").test(t));if(missing.length)fail(\"lib/database.types.ts is a PARTIAL regeneration: \" + missing.length + \" of \" + need.length + \" tables that exist in the live database have no Tables block (\" + missing.join(\", \") + \"), so every read of them goes through an untyped cast and tsc cannot see a renamed or dropped column. create_penciled_plan IS in Functions, which is how the gap hid: the file was regenerated, just not from a schema that had them.\")'",
-        "note": "Asserts a generated Tables block for each of the five tables confirmed present in the live database on 2026-09-21. A generated block can only come from a regeneration, so unlike a name grep it cannot be satisfied by typing. Mutation-tested both ways 2026-09-21: stubbing the five blocks in passes, reverting fails."
-      }
-    },
-    {
       "id": "HYG-109",
       "title": "The Loom has no in-browser crop/rotate editor, and the library PROG-D3 named costs seven packages and a second styling runtime",
       "status": "open",
@@ -15603,6 +15584,24 @@
         "kind": "manual",
         "evidence": "Owner ruling. No crop/rotate editor exists; CROP_FRAMES has no editor consumer; the dependency measurement is in ADR-1496.",
         "checked": "2026-09-21"
+      }
+    },
+    {
+      "id": "LIVE-453",
+      "title": "lib/database.types.ts is a partial regeneration: five tables the live database has are missing from it",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "lib/database.types.ts",
+        "ref": "HYG-052 (the drift detector) · PROG-CAL2/CAL7 · supabase/migrations/20270345006700_space_plans.sql"
+      },
+      "detail": "FOUND 2026-09-21 while re-probing the PROG-CAL family (HYG-108). Filed as LIVE-444 in the first cut of that PR and renumbered to LIVE-453 because LIVE-444 (#2833, PROG-CAL5), 445, 447 and 452 were claimed by other lanes in the same window and 446 to 451 were pre-allocated to lanes still in flight.\n\nFive tables exist in the live database and have NO Tables block in lib/database.types.ts: space_plans, space_plan_shares, space_plan_playbooks, space_calendar_private_feeds and space_circle_optouts. space_plans appears in the file exactly once, as a referencedRelation string inside another table’s foreign key — the name is there, the shape is not.\n\nWHY IT HID. The file is not stale wholesale, it is PARTIAL. Functions.create_penciled_plan IS in the types, and so are space_calendar_entries and space_calendar_day_notes from phase 1 of the same program. So the file was regenerated after that migration and not after the later ones, and every gate in the repo checks that the CODE agrees with the FILE (HYG-052 named this class exactly), which it does — by casting.\n\nCONSEQUENCE. Every read or write of those five goes through an untyped cast, so tsc cannot see a renamed or dropped column on any of them and the failure arrives at runtime, in the calendar surface an owner is using. It also blocks the honest version of the PROG-CAL work: lib/calendar/plans-store.ts cannot be typed against the schema it queries.\n\nSCOPE, stated so the row is not read as bigger than it is. 22 tables that a committed migration creates have no Tables block, but 17 of those do not exist in the live database either (domains, programs, beta_*, email_templates, claim_tokens and the rest are dropped or never applied) — the types are correctly silent about those, and whether those migrations should still be in the tree is a SEPARATE question worth its own row. Only the five named here are a real gap.\n\nRELATED, NOT DUPLICATE. HYG-052 built the drift detector and closed 2026-09-07. It runs report-only in maintenance.yml and does not block, which is why an additive drift like this one can sit in the tree. This row is the instance; whether the detector should go from report-only to blocking is the question HYG-052 deliberately left open.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const need=[\"space_plans\",\"space_plan_shares\",\"space_plan_playbooks\",\"space_calendar_private_feeds\",\"space_circle_optouts\"];const t=fs.readFileSync(\"lib/database.types.ts\",\"utf8\");const missing=need.filter((n)=>!new RegExp(\"^\\\\s{6}\" + n + \": \\\\{\",\"m\").test(t));if(missing.length)fail(\"lib/database.types.ts is a PARTIAL regeneration: \" + missing.length + \" of \" + need.length + \" tables that exist in the live database have no Tables block (\" + missing.join(\", \") + \"), so every read of them goes through an untyped cast and tsc cannot see a renamed or dropped column. create_penciled_plan IS in Functions, which is how the gap hid: the file was regenerated, just not from a schema that had them.\")'",
+        "note": "Asserts a generated Tables block for each of the five tables confirmed present in the live database on 2026-09-21. A generated block can only come from a regeneration, so unlike a name grep it cannot be satisfied by typing. Mutation-tested both ways 2026-09-21: stubbing the five blocks in passes, reverting fails."
       }
     }
   ]
