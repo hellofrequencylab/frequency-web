@@ -30,7 +30,9 @@
 // reasoning: this repo's named failure mode is a local green that means nothing (the ripgrep
 // probes, check:og-trace). A network error, a non-2xx page, a PR whose head cannot be read, or
 // an unparseable file is a FAILURE, exit 1, never a skip: a gate that cannot look must not say
-// clean.
+// clean. A TRANSIENT limit (403 / 429 / 5xx) is RETRIED first, under one ~60s budget for the
+// whole run, and only then reported as that failure: see the retry section below, which records
+// the 2026-09-21 20:31 UTC rate limit that blocked #2840.
 //
 // Pure node. No grep, no ripgrep, no shell pipelines (scripts/backlog-contract.test.ts records
 // why: `rg` was on dev boxes and not on the runner, and eight probes inverted at once). The one
@@ -139,6 +141,113 @@ function headers(token, accept) {
   }
 }
 
+// ── A TRANSIENT LIMIT IS NOT AN ANSWER ────────────────────────────────────────────────────────
+// Measured on 2026-09-21, twelve minutes into this gate's first day. #2842 landed the gate at
+// 20:19 UTC; its own run at 20:13 listed four open PRs and printed the tick. At 20:31 the SAME
+// gate, on the SAME job, with the SAME permissions, failed on #2840 with
+// `GET pulls (page 1): HTTP 403` after printing this PR's ids. Nothing about scope changed
+// between those two runs (`.github/workflows/ci.yml` grants the checks job `contents: read` +
+// `pull-requests: read` and passes GITHUB_TOKEN to the guards step), so the 403 was not a
+// permissions defect: it is how GitHub signals SECONDARY RATE LIMITING, which arrives as 403 or
+// 429 with `retry-after` and/or `x-ratelimit-remaining: 0` plus `x-ratelimit-reset`. A gate that
+// reads every other open PR's 9 MB of watched files on every run is the thing that reaches that
+// limit, and then one transient page blocks every open PR at once.
+//
+// Two answers, both here. (1) THE READ VOLUME IS CUT: main reads only the watched files a PR's
+// own files listing names (see fetchNewIdsForPull). (2) A retry sits in the gate's own fetch
+// helper: 403, 429 and 5xx are retried, honouring `retry-after` (seconds or an HTTP date) and
+// `x-ratelimit-reset`, under ONE budget for the whole run so the gate can never add more than
+// RETRY_BUDGET_MS of waiting. 401 and 404 are answers, not weather, and are never retried.
+//
+// What does NOT change is the never-skip contract: when every attempt fails, the read still
+// throws, main still exits 1, and the loud message still says the arm could not look — now with
+// the attempt count and the last status, so a rate limit reads as a rate limit.
+
+/** Statuses worth a second look. 403 and 429 are GitHub's rate-limit signals; 5xx is the API
+ *  having a moment. 401 (bad token) and 404 (not there) are answers and are absent on purpose. */
+export const RETRY_STATUSES = new Set([403, 429, 500, 502, 503, 504])
+/** Attempts per request, first try included: one try plus two retries. */
+export const RETRY_ATTEMPTS = 3
+/** Total wait this gate may add across ALL its requests in one run. */
+export const RETRY_BUDGET_MS = 60_000
+/** First backoff step; doubles per attempt (1s, 2s, …). */
+export const RETRY_BASE_MS = 1_000
+
+function headerValue(res, name) {
+  try {
+    const v = res?.headers?.get?.(name)
+    return typeof v === 'string' && v !== '' ? v : null
+  } catch {
+    return null
+  }
+}
+
+/** `retry-after` in ms: a delta in seconds, or an HTTP date. Null when absent or unreadable. */
+export function retryAfterMs(value, nowMs) {
+  if (value == null) return null
+  const seconds = Number(value)
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000)
+  const at = Date.parse(value)
+  return Number.isFinite(at) ? Math.max(0, at - nowMs) : null
+}
+
+/** How long to wait before attempt N+1: the larger of exponential backoff and whatever the
+ *  response asked for (`retry-after`, or `x-ratelimit-reset` once the remaining quota is 0). */
+export function retryDelayMs({ res, attempt, nowMs, base = RETRY_BASE_MS }) {
+  const backoff = base * 2 ** (attempt - 1)
+  const asked = retryAfterMs(headerValue(res, 'retry-after'), nowMs) ?? 0
+  const spent = headerValue(res, 'x-ratelimit-remaining') === '0'
+  const reset = spent ? Number(headerValue(res, 'x-ratelimit-reset')) : Number.NaN
+  const untilReset = Number.isFinite(reset) ? Math.max(0, reset * 1000 - nowMs) : 0
+  return Math.max(backoff, asked, untilReset)
+}
+
+/** Wraps a fetch so every request in this run retries transient statuses under one shared budget.
+ *  Returns the LAST response when the attempts or the budget run out — the callers below decide
+ *  what a non-2xx means, and they all decide "failure", which is the contract. `wrapped.state`
+ *  carries the attempt count, the last status and the total waiting, for the failure message. */
+export function retryingFetch(fetchImpl = fetch, options = {}) {
+  const {
+    attempts = RETRY_ATTEMPTS,
+    budgetMs = RETRY_BUDGET_MS,
+    base = RETRY_BASE_MS,
+    sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    now = () => Date.now(),
+    log = (line) => console.log(line),
+  } = options
+  const state = { attempts: 0, retries: 0, waitedMs: 0, lastStatus: null }
+  const wrapped = async (url, init) => {
+    for (let attempt = 1; ; attempt += 1) {
+      const res = await fetchImpl(url, init)
+      state.attempts = attempt
+      state.lastStatus = res?.status ?? null
+      if (res?.ok || !RETRY_STATUSES.has(res?.status) || attempt >= attempts) return res
+      const left = budgetMs - state.waitedMs
+      if (left <= 0) {
+        log(`  HTTP ${res.status} on attempt ${attempt}: the ${budgetMs / 1000}s retry budget is spent, so this is the answer.`)
+        return res
+      }
+      const delay = Math.max(0, Math.min(retryDelayMs({ res, attempt, nowMs: now(), base }), left))
+      log(`  HTTP ${res.status} (attempt ${attempt} of ${attempts}) looks transient; retrying in ${(delay / 1000).toFixed(1)}s.`)
+      await sleep(delay)
+      state.waitedMs += delay
+      state.retries += 1
+    }
+  }
+  wrapped.state = state
+  return wrapped
+}
+
+/** What to append to a read failure so a rate limit reads as a rate limit and not as a mystery. */
+export function retryNote(state) {
+  if (!state || state.retries === 0) return ''
+  return (
+    ` (${state.attempts} attempt(s), last status ${state.lastStatus}, ` +
+    `${(state.waitedMs / 1000).toFixed(1)}s of backoff spent; a 403 or 429 here with no scope change is ` +
+    'GitHub secondary rate limiting, not a permissions defect)'
+  )
+}
+
 /** Every open PR against `base`, paginated. Throws on a non-2xx page. */
 export async function fetchOpenPulls({ repo, base, token, fetchImpl = fetch }) {
   const pulls = []
@@ -193,6 +302,26 @@ async function baseText({ base, path, repo, token, fetchImpl }) {
   }
 }
 
+/** The ids ONE other open PR introduces, reading only what its own diff names.
+ *
+ *  THE READ VOLUME, measured 2026-09-21: docs/DECISIONS.md is 5.26 MB and docs/BUILD-BACKLOG.json
+ *  is 3.50 MB, 8.77 MB together. The first version skipped a PR that touched NEITHER file and
+ *  then read BOTH for a PR that touched either one, so a PR that appended a single backlog row
+ *  cost 8.77 MB of which 5.26 MB could not contain a new id: a file a PR does not touch is
+ *  identical to its merge base there and introduces nothing. Reading only the named files takes a
+ *  dozen-open-PR run from ~100 MB towards ~40 MB, which is the pressure that produced the 403.
+ *  `files` is the PR's own files listing, which the caller already pays for. */
+export async function fetchNewIdsForPull({ pr, files, baseSets, token, fetchImpl = fetch }) {
+  const named = WATCHED.filter((path) => files.includes(path))
+  if (named.length === 0) return { adrs: new Set(), rows: new Set(), touched: false, read: [] }
+  const texts = await Promise.all(
+    named.map((path) => fetchFileAt({ repo: pr.headRepo, path, ref: pr.headSha, token, fetchImpl })),
+  )
+  const at = (path) => (named.includes(path) ? texts[named.indexOf(path)] : '')
+  const head = idSets({ ledger: at(LEDGER), backlog: at(BACKLOG) })
+  return { ...newIdSets(head, baseSets), touched: true, read: named }
+}
+
 function readTree(path) {
   try {
     return readFileSync(path, 'utf8')
@@ -218,7 +347,16 @@ function skip(reason) {
   )
 }
 
-export async function main(env = process.env, fetchImpl = fetch) {
+/** The loud failure text. Exported so a test can assert the never-skip contract verbatim. */
+export function couldNotRun(err) {
+  return (
+    `🔴 check:id-collisions — the cross-PR arm could not RUN: ${err instanceof Error ? err.message : String(err)}\n` +
+    '    This is a failure and not a skip on purpose: the arm was armed and could not look, and a\n' +
+    '    gate that answers "clean" when it could not look is the failure it exists to prevent.'
+  )
+}
+
+export async function main(env = process.env, fetchImpl = fetch, options = {}) {
   const token = env.GITHUB_TOKEN
   const repo = env.GITHUB_REPOSITORY
   const base = env.GITHUB_BASE_REF
@@ -228,6 +366,16 @@ export async function main(env = process.env, fetchImpl = fetch) {
   if (event !== 'pull_request') return skip(`Event is "${event ?? 'none'}", not pull_request, so there is no base to compare against.`)
   if (!repo || !base) return skip(`GITHUB_REPOSITORY (${repo ?? 'unset'}) and GITHUB_BASE_REF (${base ?? 'unset'}) are both required.`)
 
+  const http = retryingFetch(fetchImpl, options)
+  try {
+    return await compare({ env, repo, base, token, fetchImpl: http })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    throw new Error(`${message}${retryNote(http.state)}`)
+  }
+}
+
+async function compare({ env, repo, base, token, fetchImpl }) {
   const myNumber = prNumberFromEnv(env)
 
   const baseLedger = await baseText({ base, path: LEDGER, repo, token, fetchImpl })
@@ -256,24 +404,19 @@ export async function main(env = process.env, fetchImpl = fetch) {
     if (!pr.headSha || !pr.headRepo) {
       throw new Error(`PR #${pr.number} "${pr.title}" has no readable head (fork deleted?); refusing to call this clean`)
     }
-    // A PR that touches neither watched file introduces no ids; skip the two large reads.
+    // Only the watched files this PR's own diff names are downloaded: neither, when it touches
+    // neither, and ONE when it touches one (the 8.77 MB pair is what reached the rate limit).
     const files = await listPullRequestFiles({ repo, number: pr.number, token, fetchImpl })
-    if (!files.some((f) => WATCHED.includes(f))) {
-      compared.push({ number: pr.number, title: pr.title, createdAt: pr.createdAt, adrs: new Set(), rows: new Set(), touched: false })
-      continue
-    }
-    const [ledger, backlog] = await Promise.all(
-      WATCHED.map((path) => fetchFileAt({ repo: pr.headRepo, path, ref: pr.headSha, token, fetchImpl })),
-    )
-    const theirs = newIdSets(idSets({ ledger, backlog }), baseSets)
-    compared.push({ number: pr.number, title: pr.title, createdAt: pr.createdAt, ...theirs, touched: true })
+    const theirs = await fetchNewIdsForPull({ pr, files, baseSets, token, fetchImpl })
+    compared.push({ number: pr.number, title: pr.title, createdAt: pr.createdAt, ...theirs })
   }
 
   for (const pr of compared) {
     console.log(
       `  #${pr.number} "${pr.title}": ` +
         (pr.touched
-          ? `introduces ${pr.adrs.size} ADR(s) [${[...pr.adrs].map((a) => `ADR-${a}`).join(', ')}], ${pr.rows.size} row(s) [${[...pr.rows].join(', ')}]`
+          ? `introduces ${pr.adrs.size} ADR(s) [${[...pr.adrs].map((a) => `ADR-${a}`).join(', ')}], ${pr.rows.size} row(s) ` +
+            `[${[...pr.rows].join(', ')}] (read ${pr.read.join(' + ')})`
           : 'touches neither file'),
     )
   }
@@ -287,11 +430,7 @@ export async function main(env = process.env, fetchImpl = fetch) {
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   main().catch((err) => {
-    console.log(
-      `🔴 check:id-collisions — the cross-PR arm could not RUN: ${err instanceof Error ? err.message : String(err)}\n` +
-        '    This is a failure and not a skip on purpose: the arm was armed and could not look, and a\n' +
-        '    gate that answers "clean" when it could not look is the failure it exists to prevent.',
-    )
+    console.log(couldNotRun(err))
     process.exit(1)
   })
 }
