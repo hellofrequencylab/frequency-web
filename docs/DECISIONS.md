@@ -30,6 +30,9 @@ tree as of this index: **ADR-1487**. 1487 is LIVE-438. 1485 is LIVE-436. 1481 is
 
 tree as of this index: **ADR-1488**. 1488 is LIVE-439. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1478–1480 and 1482–1487 are claimed on other open PRs.
 
+tree as of this index: **ADR-1491**. 1491 is the 2026-09-21 tail-order ruling (editor third to last, Etsy second to last, the app last). 1490 is LIVE-437. 1487 is LIVE-438. 1483 is LIVE-434. 1482 is LIVE-433. 1485 is LIVE-436. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1468 is Space Plans (PROG-CAL2-8). 1467 is the Calendar view slide shell. 1464 is the Admin Calendar five-view set. 1463 is LIVE-393. 1445 is the calendar C0-C5 ruling. 1325 is the plan this one amends.
+
+
 | Theme | Start here |
 |---|---|
 | **Names** | ADR-208 → [NAMING.md](NAMING.md) |
@@ -47128,6 +47131,32 @@ Premise re-tested 2026-09-20: money, events, and hygiene packets were empty. LIV
 **Consequences.** A later typed Collective QR rung on `space.reach` fails the LIVE-440 probe. The meter remains the quantity source.
 
 **Rows.** LIVE-440.
+
+## ADR-1491: The editor moves to third to last; Etsy second to last; the app last (owner ruling 2026-09-21)
+
+**Status:** Accepted · 2026-09-21 · numbered **1491** because **1486**-**1490** are claimed on this tree · **reverses the E0-E9 half of** [ADR-1325](DECISIONS.md) and the 2026-09-07 reading recorded in `meta.slate.ruled` · corroborated by `docs/BUILD-BACKLOG.json` `meta.slate.waves` order
+
+**Context.** The owner, on a phone and unable to run console work, asked for the remaining build to be sequenced so that three groups sit at the end and everything else is cleared first. Verbatim: *"I want to save building the app for the very end. The full Etsy capability, second to last, and white label websites and the editor. To do that, third to last. I want you to take care of everything else so we can completely clear the backlog."*
+
+Etsy (`DEF-ETSY`) and the app (`PROG-A1`/`A3`/`A4`, `DEF-MOBILE`) were already deferred by the 2026-08-24 and 2026-09-07 rulings, and they stay `parked`. The editor was not. ADR-1325 put W4 — E0-E10 plus `PROG-W6` and `PROG-P7` — at position 8 of the slate, ahead of Loom-at-scale, the re-theme sweeps, feature depth and commerce. That is the one thing this ruling moves.
+
+**Decision.**
+
+1. Array order in `meta.slate.waves` IS the sequence. W4 moves from position 8 to position 12, after W5, W6, W7 and W8. The order WITHIN W4 is untouched: E0, E1, E2, E3, E10 Sites v1, E4-E9 depth, then W6 and P7.
+2. W11 (Etsy) is second to last. W9 (App Platform) and W12 (mobile) are last.
+3. No row changes status. The editor rows stay `open`; they are later in the order, not parked.
+4. "The editor" means the whole program E0-E10, not only the white-label deliverable E10.
+5. "The app" means both the App Platform and mobile.
+
+**Rejected.** Parking the editor rows (`open` is the truth: they are still to be built). Moving Loom with the editor — its dependency points backwards, so Loom running first is the direction E2 already needed. Re-opening `DEF-ETSY` or the app rows to re-defer them; they were already deferred and only their relative order changed.
+
+**Consequences.** Points 4 and 5 are readings of a short instruction, and each is written so it can be corrected in one line.
+
+- **Point 4 reverses a prior confirmed reading.** On 2026-09-07 the owner asked "when you say editor, is that the full white label editor? if so, add that to the white label section", the answer distinguished E0-E9 (Frequency's own block editor) from E10 (Sites), and the owner confirmed "go head and add E0-E9 into the backlog production list". This ruling names "white label websites and the editor" as ONE group with ONE position, so that split does not survive it. If E0-E9 was meant to stay ahead of W5-W8, move the W4 wave back.
+- **The cost, stated plainly.** Everything in W5-W8 now gets built on the CURRENT page editor and block registry rather than on E1's block contract. Nothing in those waves declares a hard dependency on E0-E9, so this is a consequence rather than a blocker — but feature-depth work that would have composed the new contract will compose the old one and be re-done by E1.
+- **Point 5** leaves `PROG-A3` ("enablement inside RLS") parked, which the 2026-09-07 ruling already flagged: a disabled module's data stays reachable by direct API until the App Platform builds. That flag is unchanged, not new.
+
+**Rows.** No row status changed. `meta.slate.waves` re-ordered; `meta.slate.deferredByName` rewritten to name the three tail groups in order.
 
 ## ADR-1490: Email names Business sends from the meter (LIVE-437)
 
