@@ -11,6 +11,7 @@
 // trap). Drop it in anywhere: it resolves the caller's scopes itself, so the host needs no config.
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
+import { renditionUrl } from '@/lib/library/rendition-url'
 import { Dialog } from '@/components/ui/dialog'
 import {
   Upload, Loader2, ImageIcon, Sparkles, Tag as TagIcon, Building2, User, Check, X, Search, Shapes,
@@ -189,7 +190,9 @@ export function LoomPicker({
   // `assetId` rides only on real library rows (an AssetRef the caller can store, ADR-1130);
   // a house SITE icon is a data URL with no catalog row, so it stays reference-less.
   const tiles: { key: string; value: string; label: string; src: string; contain: boolean; generated: boolean; assetId?: string; alt?: string | null }[] = [
-    ...assets.map((a) => ({ key: a.id, value: a.url, label: a.title, src: a.url, contain: a.kind === 'icon', generated: a.generated, assetId: a.id, alt: a.alt })),
+    // `value` is the MASTER and is what a pick stores (ADR-1130); `src` is a display-only
+    // rendition, so a 3-across grid of tiles stops pulling multi-megabyte originals (PROG-D3).
+    ...assets.map((a) => ({ key: a.id, value: a.url, label: a.title, src: renditionUrl(a.url, 'grid'), contain: a.kind === 'icon', generated: a.generated, assetId: a.id, alt: a.alt })),
     ...(activeView === 'icons'
       ? siteIcons.map((s) => ({ key: `site:${s.name}`, value: s.dataUrl, label: s.label, src: s.dataUrl, contain: true, generated: false }))
       : []),

@@ -86,7 +86,8 @@ export async function EventsForYou({
                 coverUrl={coverUrls[event.id]}
                 coverFocus={coverFocus[event.id]}
                 going={rsvpCounts[event.id] ?? 0}
-                priceLabel={priceLabels[event.id] ?? 'Free'}
+                /* null, never 'Free' — see the prop on EventCard. */
+                priceLabel={priceLabels[event.id] ?? null}
                 now={nowDate}
               />
               {blurbs[i] ? <p className="px-1 text-2xs text-muted">{blurbs[i]}</p> : null}
