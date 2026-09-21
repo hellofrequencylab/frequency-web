@@ -47525,6 +47525,45 @@ The design-system audit that ran beside this found that `--color-warning` is the
 
 **Rows.** LIVE-445 (closed). Beside LIVE-379 (ADR-1388) and LIVE-414 to LIVE-419.
 
+## ADR-1507: The feed hero stays the practice board and the centre button stays Zap, by design; PROG-R7 5.2 and 5.3 are struck (PROG-R7, LIVE-408)
+
+**Status:** Accepted, by owner ruling · 2026-09-21 · backlog `PROG-R7`, `LIVE-408` · leaves [ADR-1362](DECISIONS.md) as the last word on the FOCUS interior · beside [ADR-1403](DECISIONS.md) (product-first) and [ADR-1406](DECISIONS.md) (the rail is as short as the role can use) · touches `docs/CORE-MODEL.md` §5 Phase 7 only; no product code moves
+
+**Context.** CORE-MODEL §5 Phase 7 ("the product looks like the model") listed six clauses. Four of them shipped and closed on their own rows: 5.1 (LIVE-241 and LIVE-244, the 16-to-7 rail count cancelled and Channels kept, ADR-1406), 5.4 (LIVE-246, the operator console in five parentless boxes with every module still reachable), 5.5 (LIVE-249, the four setup presets) and 5.6 (LIVE-250 then LIVE-254, the public header from six tabs to three, with `/the-quest` a row under The Community; the live `header` menu reads exactly three parentless categories). The other two, 5.2 (the raised mobile centre button opens a Create sheet instead of firing `open-capture`) and 5.3 (the feed hero becomes a community board and `PracticePrompt` / `JourneyBoard` move to the rail), shipped on 2026-09-14 as LIVE-247 and LIVE-248 and were reversed the next morning by ADR-1362, because on a phone the rail does not exist and both moves landed as deletions. LIVE-408 was filed on 2026-09-19 as the remainder: the feed hero is still the practice board, the centre button is still Zap, and the first module above the composer still teaches a personal game rather than the community. Its own closing condition offered two exits: a new ruling on hero and teaching-vs-streak that is then shipped, or the owner explicitly leaving ADR-1362 as the last word.
+
+**Decision.** The owner rules, 2026-09-21: **keep as is.** The feed hero stays the practice board and the raised centre button stays the Zap bolt, **by design, not by omission.** Concretely:
+
+1. PROG-R7 clauses 5.2 and 5.3 are **struck**, as reversed by ADR-1362. The CORE-MODEL §5 Phase 7 table now says so on each row; the rows are not deleted, because the table is the record of what was tried.
+2. Teaching-on versus the streak box is settled the same way: the first module above the composer on `/feed` is `PracticePrompt` before activation and `JourneyBoard` after, on every viewport. The community board keeps its rail slot (`community` leads `pageRailPanels('/feed')`).
+3. No Create sheet returns to the centre button and the bolt is not hidden without a NEW ruling. `components/layout/create-button.tsx` and `components/sidebar/practice-panel.tsx` stay absent from the tree.
+4. With 5.1, 5.4, 5.5 and 5.6 shipped and 5.2 and 5.3 struck, Phase 7 has no open clause. PROG-R7 and LIVE-408 close on this ruling.
+
+**Rejected.** Re-shipping the Create sheet with the bolt as a row inside it (that is what LIVE-247 did, and it cost a tap on the one gesture the product is named for). Re-shipping the community-board hero with a mobile home for the practice board (the timer's entry point would still leave the first screen, which is the demotion the owner declined). Leaving LIVE-408 open as a standing invitation to relitigate ADR-1362 (a row whose closing condition is "the owner says so" is closed the day the owner says so).
+
+**Consequences.** The three probes that pin this state (LIVE-247, LIVE-248 and now LIVE-408, with PROG-R7 reading every clause at once) fail if the centre button stops dispatching `open-capture` under the `Zap, capture a moment` label, if a `CreateButton` is mounted in the mobile shell, if either practice module leaves the feed page or drops below `<CaptureBar>`, if `<CommunityBoard>` returns to the hero, or if either of the two struck CORE-MODEL rows loses its strike. A future owner who wants the community board first sees the reversal, the ruling and the phone-side reason in one place before writing a fourth version.
+
+**Rows.** PROG-R7 (closed, `cmd` probe over every clause). LIVE-408 (closed, `cmd` probe over the hero and the centre button). LIVE-247 and LIVE-248 unchanged; their probes already pin the reversed state.
+
+## ADR-1508: The four shipped setup presets are the bundle specification, and the function registry is frozen at its 22 keys (OWN-048)
+
+**Status:** Accepted, by owner ruling · 2026-09-21 · backlog `OWN-048` · closes the second half of what [ADR-1197](DECISIONS.md) and [ADR-1199](DECISIONS.md) opened; the first half shipped under LIVE-249 ([OFFER-MODEL.md](OFFER-MODEL.md) §3) · touches nothing in `lib/`; the ruling is recorded here and pinned by the row's probe
+
+**Context.** OWN-048 was opened on 2026-09-04 by owner ruling: before any capability bundle ships, write a spec per bundle and re-review the function registry beside it, because a bundle is defined by what it omits and naming the omissions is a statement about which keys in `lib/spaces/functions.ts` are the right ones. LIVE-249 delivered the bundle half on 2026-09-15: four curated presets in `lib/pricing/bundles.ts` (`studio`, `practice`, `venue`, `nonprofit`), each `CORE_SPACE_FUNCTION_KEYS` plus a short list, with two rules pinned by `bundles.test.ts` (no preset subtracts a core key; no preset names a tier-marked function as on), the `preset` field on the Space Spark, and provision applying the choice through `setSpaceBundle`. It left the registry half open on purpose: a keep / merge / retire decision per key is an owner ruling, not code.
+
+On the count. OWN-048's premise note of 2026-09-08 listed 22 keys. LIVE-226 then folded `enroll` into `journeys` and `tickets` and `checkin` into `events`, so `SPACE_FUNCTIONS` holds **19 live rows** and `RETIRED_SPACE_FUNCTIONS` holds the **3 retired aliases**, each resolving to the live function that absorbed it. The 22-key vocabulary the app speaks, `SpaceFunctionKey`, is those 19 plus those 3: `crm`, `email`, `members`, `qr`, `availability`, `memberships`, `donations`, `shop`, `billing`, `profile`, `reviews`, `events`, `airwaves`, `practices`, `journeys`, `circles`, `loom`, `collaborators`, `program`, and the retired `enroll`, `tickets`, `checkin`. That is the registry the ruling freezes.
+
+**Decision.** The owner rules, 2026-09-21:
+
+1. **The shipped presets ARE the specification.** `studio`, `practice`, `venue` and `nonprofit` as registered in `lib/pricing/bundles.ts`, with `CORE_SPACE_FUNCTION_KEYS` as the floor and OFFER-MODEL §3 as the written spec, need no further per-bundle document. The pass-through `general` bundle stays as the state a Space is in before a preset is applied.
+2. **The 22-key function registry is frozen as-is.** Every live key is kept; no key merges, splits or retires; the three retired aliases keep resolving to their successors. The per-key keep / merge / retire review OWN-048 asked for is answered once, for all 22: keep.
+3. Changing either is a new ruling. Adding, removing or renaming a registry key, or removing a preset, fails OWN-048's probe, which is how the question comes back to the owner instead of drifting.
+
+**Rejected.** A written spec document per bundle beyond the registry row and OFFER-MODEL §3 (the row is the spec; a second document would be a parallel record of the same list). Retiring `airwaves`, `program` or `shop` because no current operator runs them (a paid tool that starts off and one switch away costs a Space nothing). Merging `qr` into `crm` (the venue and nonprofit presets name `qr` without `crm`, which is the case a merge would break).
+
+**Consequences.** `SPACE_FUNCTIONS` and `RETIRED_SPACE_FUNCTIONS` are a ruled contract, not a draft. Anyone adding a twenty-third function key, or a fifth preset, expects to fail `check:backlog` and to bring the change to the owner as a ruling. LIVE-149's provision call, which shipped with LIVE-249, stands on a curated registry rather than a pass-through row.
+
+**Rows.** OWN-048 (closed, `cmd` probe pinning the exact 22 names, the 19-row registry, the 3-alias map and the five registered bundles). LIVE-249 and LIVE-226 unchanged.
+
 ## ADR-1501: A Journey buyer lands on a welcome that opens onto the product, and the account stays one step (PROG-GD5)
 
 **Status:** Accepted · 2026-09-21 · backlog `PROG-GD5` · builds on [ADR-854](DECISIONS.md) (a typed address keys nothing), [ADR-1033](DECISIONS.md) (the claim runs at sign-in and may decide the landing), [ADR-1371](DECISIONS.md) (an account holder is admitted) and the LIVE-396 guest Journey door · beside the guest ticket doctrine in `lib/events/guest-ticket-email.ts`
