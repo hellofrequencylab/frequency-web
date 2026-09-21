@@ -47369,3 +47369,24 @@ Three facts were measured rather than assumed, and two of them changed the desig
 **Consequences.** The first non-USD product prices its fee correctly with no code change, and the order row stores the currency the fee was cut in. A cart that mixes currencies is refused with a plain sentence rather than a Stripe error behind a failed order row. `presentment_details` is not read anywhere yet: a receipt still names the integration price, which is what the seller settles, not the local amount the buyer's statement will show. That is a receipt-copy question for the first real non-USD buyer, not a money question, and it is not opened here ([ADR-1403](DECISIONS.md): product-first).
 
 **Rows.** HYG-107 (closed, `cmd` probe).
+
+## ADR-1505: A retired route takes its shared module and its cover-map row with it (HYG-110)
+
+**Status:** Accepted · 2026-09-21 · backlog `HYG-110` · number allocated by the coordinator · extends [ADR-1439](DECISIONS.md) (LIVE-242) · amends the HYG-046 probe ([ADR-1197](DECISIONS.md)) · corroborated by `components/hierarchy/` absent, `lib/hierarchy/tier-detail.ts` absent, and `DETAIL_HERO_DEFAULTS` in `lib/layout/detail-hero.ts` carrying no `/hubs` or `/nexuses` row
+
+**Context.** ADR-1439 folded the Hub and Nexus member trees into Space and deleted both detail pages. It kept the module those pages shared, `components/hierarchy/tier-detail.tsx` and `lib/hierarchy/tier-detail.ts`. It rewrote a test to assert the files exist, and re-pointed HYG-046's probe to require them, on the stated ground that staff consoles and Circle geography still use them. PROG-P5's census of DetailTemplate render sites found the component names the template only in comments.
+
+Premise re-tested 2026-09-21: `git log --diff-filter=D` gives one commit for both pages, `7a1b87029` (PR #2734, LIVE-242). The removal was deliberate. No file under `app/`, `lib/`, or `components/` imports either module outside its own tests. The staff consoles read `lib/hierarchy/hub-admin.ts` and `lib/hierarchy/nexus-admin.ts`. `/hubs/:path*` and `/nexuses/:path*` 308 in `next.config.ts`, so no request resolves a cover for either prefix.
+
+**Decision.**
+
+1. **The module goes.** `tier-detail.tsx`, `tier-detail.ts`, and their three tests are deleted. `components/hierarchy/breadcrumb.tsx` goes with them, because the deleted component was its only importer.
+2. **The cover map names only live sections.** The `/hubs` and `/nexuses` rows leave `DETAIL_HERO_DEFAULTS`. A row in that map is an opt-in for a section an operator can set a header image on. A section that 308s cannot show one.
+3. **HYG-046's probe is re-pointed, not deleted.** The twin directories stay gone. The shared module may return only with a page importing it, and then its loader must still exclude archived children.
+4. **The pages are not restored.** Restoring them would reverse CORE-MODEL ruling 5 to give dead code a caller.
+
+**Rejected.** Keeping the module "in case staff need it" (that is the claim the tree disproved, and the staff loaders already own their reads). Keeping the hero rows as harmless (a map whose rows are the opt-in cannot carry rows for sections that do not exist, and the next reader counts them as adopters). Moving the archived-child filter somewhere to preserve it (HYG-064 already measures it on the one Hub listing that survives).
+
+**Consequences.** A probe that requires a file to exist proves nothing about whether the file is used. When a route is retired, its done-row probes measure the fold, and its shared modules and map rows leave in the same change. HYG-110's probe now fails a cover-map row whose section has no route directory, for any section, and fails a tier-detail module with no real importer.
+
+**Rows.** HYG-110. HYG-046 (probe re-pointed).
