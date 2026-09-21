@@ -186,7 +186,8 @@
             "LIVE-221",
             "LIVE-273",
             "HYG-092",
-            "HYG-105"
+            "HYG-105",
+            "LIVE-450"
           ]
         },
         {
@@ -238,8 +239,7 @@
           "ids": [
             "PROG-PRAC4",
             "DEF-DOMAIN",
-            "DEF-CODE",
-            "PROG-GD5"
+            "DEF-CODE"
           ]
         },
         {
@@ -5839,10 +5839,10 @@
         "ref": "Breathwork funnel flow audit, 2026-08-31"
       },
       "title": "A beta signup started in Instagram's in-app browser landed in the generic Circles induction",
-      "detail": "Owner capture of the LIVE funnel showed the giveaway: the page is served inside INSTAGRAM'S IN-APP BROWSER. That webview keeps its own cookie jar, and the emailed magic link opens in Mail/Safari — a different one.\n\nThe chain, all proven: email submitted in the Instagram webview sets `fq_post_login` in ITS jar -> the emailed link opens elsewhere with the cookie absent -> app/auth/callback has no cookie and no ?next, so it defaults to /feed -> (main)/layout sees an un-onboarded member and sends them to /onboarding -> /onboarding forwards to /join with no ?seq -> /join resolves the DEFAULT funnel. Someone who asked for a breathwork timer got the generic Vera induction about starting a local Circle. For Instagram traffic this is the normal path, not an edge case, and nothing in the repo detects in-app browsers.\n\nWHY THE OBVIOUS FIX WAS NOT TAKEN. Putting ?next= on the callback URL is two lines and app/auth/callback/route.ts:22 already reads and validates it — but app/sign-in/actions.ts:12-15 documents a deliberate decision to keep `emailRedirectTo` bare so the provider's redirect-allowlist match is never affected, and on an allowlist miss some Supabase versions silently fall back to the Site URL, which would land people on the homepage and be WORSE than the bug. That config is owner-held and unreadable from the repo.\n\nFIXED with a second carrier instead: the funnel slug is stamped on the AUTH USER at sign-in (Supabase `options.data`), which no change of browser, device or day can lose, and is read back in the callback through the SAME FUNNELS map that wrote it — never interpolated into a path unvalidated. It joins `seatLanding` as a sibling recovery for the identical cookie-less arrival the `destination` comment there already described, and sits behind `hasExplicitNext` so it can never overrule a destination actually asked for. Seat wins over funnel: a claimed seat can be an event happening right now.\n\n⚠️ This lands them back in the BREATHWORK funnel, with its timer and its copy. Where that funnel then finishes is LIVE-134, still open.",
+      "detail": "Owner capture of the LIVE funnel showed the giveaway: the page is served inside INSTAGRAM'S IN-APP BROWSER. That webview keeps its own cookie jar, and the emailed magic link opens in Mail/Safari — a different one.\n\nThe chain, all proven: email submitted in the Instagram webview sets `fq_post_login` in ITS jar -> the emailed link opens elsewhere with the cookie absent -> app/auth/callback has no cookie and no ?next, so it defaults to /feed -> (main)/layout sees an un-onboarded member and sends them to /onboarding -> /onboarding forwards to /join with no ?seq -> /join resolves the DEFAULT funnel. Someone who asked for a breathwork timer got the generic Vera induction about starting a local Circle. For Instagram traffic this is the normal path, not an edge case, and nothing in the repo detects in-app browsers.\n\nWHY THE OBVIOUS FIX WAS NOT TAKEN. Putting ?next= on the callback URL is two lines and app/auth/callback/route.ts:22 already reads and validates it — but app/sign-in/actions.ts:12-15 documents a deliberate decision to keep `emailRedirectTo` bare so the provider's redirect-allowlist match is never affected, and on an allowlist miss some Supabase versions silently fall back to the Site URL, which would land people on the homepage and be WORSE than the bug. That config is owner-held and unreadable from the repo.\n\nFIXED with a second carrier instead: the funnel slug is stamped on the AUTH USER at sign-in (Supabase `options.data`), which no change of browser, device or day can lose, and is read back in the callback through the SAME FUNNELS map that wrote it — never interpolated into a path unvalidated. It joins `seatLanding` as a sibling recovery for the identical cookie-less arrival the `destination` comment there already described, and sits behind `hasExplicitNext` so it can never overrule a destination actually asked for. Seat wins over funnel: a claimed seat can be an event happening right now.\n\n⚠️ This lands them back in the BREATHWORK funnel, with its timer and its copy. Where that funnel then finishes is LIVE-134, still open.\n\nPROBE RE-POINTED 2026-09-21 (PROG-GD5): the precedence line grew a middle term, seatLanding ?? orderLanding ?? funnelLanding. Seat still first, funnel still last; the probe pins the new line.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/sign-in/actions.ts','utf8');const c=fs.readFileSync('app/auth/callback/route.ts','utf8');process.exit(s.includes('data: { funnel_seq: seq }')&&s.includes('hasOwnProperty.call(FUNNELS, v)')&&c.includes('hasOwnProperty.call(FUNNELS, seq)')&&c.includes('seatLanding ?? funnelLanding')?0:1)\"",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/sign-in/actions.ts','utf8');const c=fs.readFileSync('app/auth/callback/route.ts','utf8');process.exit(s.includes('data: { funnel_seq: seq }')&&s.includes('hasOwnProperty.call(FUNNELS, v)')&&c.includes('hasOwnProperty.call(FUNNELS, seq)')&&c.includes('seatLanding ?? orderLanding ?? funnelLanding')?0:1)\"",
         "note": "All four halves or none: the slug is stamped on the auth user, narrowed through FUNNELS on the way in, re-validated through FUNNELS on the way out, and ordered behind the seat claim. Any one missing and the recovery is either dead or an open redirect."
       }
     },

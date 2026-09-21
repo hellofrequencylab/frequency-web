@@ -200,7 +200,7 @@ export default async function JourneyWelcomePage({
                 style={plan.cover_focus ? { objectPosition: plan.cover_focus } : undefined}
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-primary-bg text-5xl" aria-hidden>
+              <div className="flex h-full w-full items-center justify-center bg-primary-bg text-display-h2" aria-hidden>
                 {plan.emoji ?? ''}
               </div>
             )
@@ -218,7 +218,7 @@ export default async function JourneyWelcomePage({
         />
 
         <section aria-labelledby="welcome-doors">
-          <h2 id="welcome-doors" className="text-meta font-semibold uppercase tracking-wide text-subtle">
+          <h2 id="welcome-doors" className="eyebrow text-subtle">
             Where this opens onto
           </h2>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
