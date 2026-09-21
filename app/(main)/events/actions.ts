@@ -68,7 +68,7 @@ import {
 import { saveSteer } from '@/lib/studio/steer-store'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
-import { resolveHostingSpaceIdFromRow } from '@/lib/events/host-space'
+import { resolveHostingSpaceId, resolveHostingSpaceIdFromRow } from '@/lib/events/host-space'
 
 // Gallery images ride as a JSON array of storage paths (the form has no native array
 // shape). Parse defensively: a missing/garbage value, a non-array, or any non-string
@@ -501,7 +501,18 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   // session (RLS on space_plans decides) and requires it to belong to the Space this event is
   // landing in; a link the caller may not make fails the create rather than being dropped in
   // silence, which is the ADR-883 doctrine this file already follows for Journeys.
-  const planLink = await resolvePlanLink(formData.get('planId'), spaceId)
+  //
+  // ⚠️ AGAINST THE HOSTING SPACE, NOT `spaceId`. `stampEventSpaceId` stamps the ROOT tenant onto
+  // every event that names no Space (lib/events/store.ts), so `spaceId` is "Frequency" for every
+  // personal event — passing it here would authorize the ROOT Space's Plans onto a personal event
+  // and point the retire + stage writes below at the platform tenant. `resolveHostingSpaceId` is
+  // the one door that applies the root guard (lib/events/host-space.ts, LIVE-075: ten call sites
+  // hand-rolled `host_space_id ?? space_id` and every one of them read root as a real host).
+  // Personal event -> null -> no Plan link, which is the honest answer: a Plan lives on a Space.
+  const hostSpaceIdForEvent = scopeChoice === 'space' && spaceIdForPlacement ? spaceIdForPlacement : null
+  const planSpaceId = await resolveHostingSpaceId({ spaceId, hostSpaceId: hostSpaceIdForEvent })
+
+  const planLink = await resolvePlanLink(formData.get('planId'), planSpaceId)
   if (!planLink.ok) return fail(planLink.message)
 
   // The Pencil this Production was opened from, if any. Authorized by the same rule: the read is
@@ -510,7 +521,7 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   // caller has no business touching.
   const pencilIdRaw = (formData.get('pencilId') as string | null)?.trim() || ''
   const pencilId =
-    spaceId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pencilIdRaw)
+    planSpaceId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pencilIdRaw)
       ? pencilIdRaw
       : null
 
@@ -591,7 +602,7 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
           // space_id is newer than the generated DB types — cast the payload to reach the column
           // (ADR-246); omit when the root row is missing (the backfill sweeps the NULL to root).
           ...(spaceId ? { space_id: spaceId } : {}),
-          ...(scopeChoice === 'space' && spaceIdForPlacement ? { host_space_id: spaceIdForPlacement } : {}),
+          ...(hostSpaceIdForEvent ? { host_space_id: hostSpaceIdForEvent } : {}),
           ...journeyLink.patch,
           // The Plan link, authorized above rather than trusted from the form.
           ...planLink.patch,
@@ -611,7 +622,7 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   // its address columns + geog already set.
   if (inserted) {
     await geocodeEventOnCreate(inserted.id, formData)
-    if (spaceId) await closeProductionSeam(spaceId, inserted.id, pencilId, planLink.planId)
+    if (planSpaceId) await closeProductionSeam(planSpaceId, inserted.id, pencilId, planLink.planId)
   }
 
   // For recurring events, materialise the first batch of occurrences right
@@ -773,9 +784,11 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   // put an event back on its Plan, so one wrong link could only be repaired in SQL. Resolved
   // BEFORE the write against the Space that HOSTS this event, so a Plan from another Space fails
   // the save instead of being written by a service-role update nobody checked.
+  // Against the HOSTING Space, through the one resolver: `host_space_id ?? space_id` hand-rolled
+  // here would resolve the ROOT tenant for every personal event (see createEvent's note).
   const planLink = await resolvePlanLink(
     formData.get('planId'),
-    evRow?.host_space_id ?? evRow?.space_id ?? null,
+    await resolveHostingSpaceIdFromRow(evRow),
   )
   if (!planLink.ok) return fail(planLink.message)
 

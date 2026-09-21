@@ -249,7 +249,13 @@ export async function listPlanPencilEntryIds(spaceId: string): Promise<Record<st
       .is('published_event_id', null)
       .order('starts_at', { ascending: true })
       .limit(500)
-    if (error || !data) return {}
+    // Logged, never swallowed: this file's header records the five days space_plans was 100%
+    // dead behind a `catch { return [] }`. The empty map is still the right fallback (the board
+    // renders, "Make it a Production" just opens unprefilled) but the fire gets a line first.
+    if (error || !data) {
+      planReadFailed('pencil_pairs', error)
+      return {}
+    }
     const rows = data as unknown as { id: string; plan_id: string | null }[]
     const out: Record<string, string> = {}
     for (const row of rows) {
@@ -257,7 +263,8 @@ export async function listPlanPencilEntryIds(spaceId: string): Promise<Record<st
       out[row.plan_id] = row.id
     }
     return out
-  } catch {
+  } catch (err) {
+    planReadFailed('pencil_pairs', err)
     return {}
   }
 }
@@ -275,9 +282,16 @@ export async function planHasPublishedEntry(spaceId: string, planId: string): Pr
       .eq('plan_id', planId)
       .not('published_event_id', 'is', null)
       .limit(1)
-    if (error || !data) return false
+    // A read failure here must not read as "no published event": that is the exact shape of the
+    // swallowed error this file's header is about, and here it would silently disarm the GATE on
+    // the publish seam's fail-safe (planPublishLag), hiding a lagging Plan instead of showing it.
+    if (error || !data) {
+      planReadFailed('published_entry', error)
+      return false
+    }
     return data.length > 0
-  } catch {
+  } catch (err) {
+    planReadFailed('published_entry', err)
     return false
   }
 }
