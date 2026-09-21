@@ -272,8 +272,24 @@ survey counted the editors and nobody had before.
 
 **One city. Three businesses. One real gathering each per week. Each brings ten of their own people.**
 
-Instrument three numbers and nothing else: **circles per Space** (0.32 today: 7 circles across 22 Spaces) · **gatherings actually
-held** · **attendance**. Every other number in this model is a guess until these three move.
+Instrument three numbers and nothing else: **circles per Space** · **gatherings actually held** ·
+**attendance**. Every other number in this model is a guess until these three move.
+
+The instrument is one query, written once, with its definitions beside it:
+`scripts/maintenance/prove-it.mjs` ([ADR-1510](DECISIONS.md)). The weekly maintenance sweep takes the
+reading as a series; a person takes it from the SQL editor with `--print-query`. The definitions are
+the decision, so they are stated here and not only in the file:
+
+| # | Number | Reads | Not |
+|---|---|---|---|
+| 11.1 | **Circles per Space** | listable circles (`forming`, `active`, not demo) a Space **started**, over active non-root Spaces (the population `space_standing` scores) | the provisioned Space Circle (`is_space_primary`, [ADR-1391](DECISIONS.md)): a trigger made it, so counting it would move the number on provisioning, not on behaviour |
+| 11.2 | **Gatherings held** | published, not cancelled, not removed, not demo, start passed, trailing 42 days (the same rule as `space_standing.gatherings_held`), and beside it how many of those had anyone marked present | a cancelled date, a draft, a demo row |
+| 11.3 | **Attendance** | seats a host marked present, `attended_at` on `event_rsvps` and `event_tickets` (PROG-GD4, [ADR-1332](DECISIONS.md)), trailing 42 days | the engagement ledger. Before PROG-GD4 that ledger was the only trace of attendance, written by the path that pays Zaps; the instrument never reads it, so no decision about the game can move this number |
+
+The first reading (2026-09-21) and each later one live in the sweep summaries and the field-test row
+(`LIVE-455`), never here. The 0.32 this section once quoted (7 circle rows across 22 Spaces on
+2026-09-08) counted drafts and predates the Space Circle; the instrument's definition is the one
+from now on, and the two are not comparable.
 
 ---
 
