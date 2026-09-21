@@ -144,6 +144,9 @@ export interface EventFormInitial {
   planId?: string
   /** Pencil entry retired when this Production is created. */
   pencilId?: string
+  /** The zone `startsAt`/`endsAt` are wall-clock in, when a prefill carries one (a Pencil's own
+   *  zone, ADR-1504). Submitted as-is; the action validates it and falls back to the home zone. */
+  timeZone?: string
 }
 
 // A grouped, tokenized section wrapper so the form reads as five clear steps instead of a
@@ -395,6 +398,7 @@ export function EventForm({
     if (showJourneyField) fd.set('journeyId', journeyId)
     if (initial?.planId) fd.set('planId', initial.planId)
     if (initial?.pencilId) fd.set('pencilId', initial.pencilId)
+    if (initial?.timeZone) fd.set('timeZone', initial.timeZone)
 
     fd.set('startsAt', startsAt)
     if (endsAt) fd.set('endsAt', endsAt)

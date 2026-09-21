@@ -10,8 +10,10 @@ import { IconButton } from '@/components/ui/icon-button'
 import { Input, Textarea, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { StageTimeline } from '@/components/ui/stage-timeline'
 import { ENTRY_KINDS, ENTRY_STAGES, entryKind, entryStage, type CalendarLayerKey } from '@/lib/calendar/registry'
 import { MAX_CANDIDATE_DATES, MAX_DESCRIPTION, type EntryInput } from '@/lib/calendar/entries'
+import { PUBLISH_STEP, productionDoorHref, stageTimeline } from '@/lib/calendar/stage-timeline'
 import type { DayNote } from '@/lib/calendar/day-notes'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import { isError } from '@/lib/action-result'
@@ -26,6 +28,16 @@ import { PlanDrawer } from './plan-drawer'
 // table's RLS is the lock.
 
 const LAYERS: CalendarLayerKey[] = ['events', 'pencil', 'private', 'unavailable', 'todos']
+
+/** The drawer's working copy of one entry. `saved` is the input as last written, so the Publish
+ *  step can tell whether typed fields would be lost by leaving; `optionGroup` says the date still
+ *  has candidate siblings (ADR-1388 §3), which the timeline refuses to move past Pencil. */
+interface Draft {
+  id: string | null
+  input: EntryInput
+  optionGroup?: string | null
+  saved?: string
+}
 
 function browserZone(): string {
   try {
@@ -82,7 +94,7 @@ export function StaffCalendar({
   onOpenPlan?: (planId: string, entryId?: string | null) => void
 }) {
   const router = useRouter()
-  const [draft, setDraft] = useState<{ id: string | null; input: EntryInput } | null>(null)
+  const [draft, setDraft] = useState<Draft | null>(null)
   const [openPlan, setOpenPlan] = useState<SpacePlan | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -114,7 +126,8 @@ export function StaffCalendar({
         if (isError(res)) {
           setError(res.error)
         } else {
-          setDraft({ id: res.data.entryId, input: { ...draft.input, planId: res.data.id } })
+          const input = { ...draft.input, planId: res.data.id }
+          setDraft({ id: res.data.entryId, input, saved: JSON.stringify(input) })
           setRefreshKey((k) => k + 1)
           router.refresh()
         }
@@ -141,6 +154,39 @@ export function StaffCalendar({
   const def = input ? entryKind(input.kind) : null
   const stage = def?.isPencil ? (entryStage(input?.stage) ?? ENTRY_STAGES[0]) : null
   const holding = stage?.stage === 'pencil'
+
+  // THE STAGE TIMELINE (ADR-1504). Four steps in place of the old Stage select. Steps one to three
+  // write `stage` into the SAME form state the select wrote, so every other field the person has
+  // typed survives and the change persists on Save exactly as before: nothing auto-saves on click.
+  // The fourth step, Publish, is the door to the event Spark ("Make it a Production"), not a stage.
+  const timeline = stage ? stageTimeline({ stage: stage.stage, oneOfSeveral: !!draft?.optionGroup }) : null
+  const step = (key: string) => {
+    if (key === PUBLISH_STEP) {
+      publish()
+      return
+    }
+    set('stage', key)
+  }
+  // Publish saves first when the drawer holds unsaved edits, then leaves for the Spark, so a person
+  // never loses typed fields by clicking it. The Spark prefills from the saved row (`pencil=`), and
+  // from its Plan when it has one.
+  const publish = () => {
+    if (!draft?.id) return
+    const id = draft.id
+    const href = productionDoorHref(spaceId, id, draft.input.planId)
+    const dirty = draft.saved !== JSON.stringify(draft.input)
+    setError(null)
+    startTransition(async () => {
+      if (dirty) {
+        const res = await saveCalendarEntry(slug, id, draft.input)
+        if (isError(res)) {
+          setError(res.error)
+          return
+        }
+      }
+      router.push(href)
+    })
+  }
 
   // CLASH WARNINGS (ADR-1386): what this entry would overlap. A warning, never a block.
   const [clashes, setClashes] = useState<string[]>([])
@@ -199,7 +245,12 @@ export function StaffCalendar({
             ? (item) => {
                 if (!item.entryId || !item.entryInput) return
                 setError(null)
-                setDraft({ id: item.entryId, input: item.entryInput })
+                setDraft({
+                  id: item.entryId,
+                  input: item.entryInput,
+                  optionGroup: item.optionGroup ?? null,
+                  saved: JSON.stringify(item.entryInput),
+                })
               }
             : undefined
         }
@@ -265,24 +316,35 @@ export function StaffCalendar({
               />
             </div>
 
-            {stage && !input.planId && (
-              <div className="grid gap-1">
-                <label htmlFor="entry-stage" className={labelClasses}>Stage</label>
-                <Select
-                  id="entry-stage"
-                  value={stage.stage}
-                  options={ENTRY_STAGES.map((st) => ({ value: st.stage, label: st.label }))}
-                  onChange={(e) => set('stage', e.target.value)}
-                  aria-describedby="entry-stage-hint"
-                />
-                <p id="entry-stage-hint" className="text-meta text-muted">{stage.hint}</p>
-              </div>
-            )}
-            {stage && input.planId && (
+            {stage && timeline && (
               <div className="grid gap-1">
                 <span className={labelClasses}>Stage</span>
-                <p className="text-body-sm font-medium text-text">{stage.label}</p>
-                <p className="text-meta text-muted">Move this Plan from Workflow so its dates stay in sync.</p>
+                <StageTimeline
+                  label="Stage"
+                  steps={timeline.steps}
+                  onStep={step}
+                  hint={timeline.hint}
+                  hintId="entry-stage-hint"
+                  reasons={timeline.reasons}
+                  pending={pending}
+                />
+                {input.planId && (
+                  <p className="text-meta text-muted">
+                    This date belongs to a Plan. Moving it here moves the Plan and every date on it.
+                  </p>
+                )}
+                {/* Cancelled is an exit, not a step: a pipeline and its exit never share a control (ADR-1504). */}
+                <div>
+                  {timeline.cancelled ? (
+                    <Button type="button" variant="ghost" size="sm" onClick={() => set('stage', 'pencil')} disabled={pending}>
+                      Bring it back
+                    </Button>
+                  ) : (
+                    <Button type="button" variant="ghost" size="sm" onClick={() => set('stage', 'cancelled')} disabled={pending}>
+                      Cancel this date
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
 
@@ -503,13 +565,6 @@ export function StaffCalendar({
                     }}
                   >
                     Open Plan
-                  </Button>
-                )}
-                {draft?.id && input.planId && (
-                  <Button asChild size="sm" variant="ghost">
-                    <a href={`/events/new?space=${spaceId}&plan=${input.planId}&pencil=${draft.id}`}>
-                      Make it a Production
-                    </a>
                   </Button>
                 )}
                 {draft?.id && !input.planId && plans.length > 0 && (
