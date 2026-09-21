@@ -241,8 +241,9 @@ build time.
 - First-party events are internal product telemetry tied to the member's own account — no
   *additional* cookies, no new consent surface.
 - GA4 stays per ADR-048 (anonymized, ad signals off).
-- ✅ **The EU/UK consent banner is no longer deferred** ([ADR-1370](DECISIONS.md), OWN-061). It was
-  deferred here for most of this doc's life, and the deferral outlived its reason: the gap was not
+- ✅ **The EU/UK consent banner shipped** ([ADR-1370](DECISIONS.md); OWN-061 closed under
+  [ADR-1515](DECISIONS.md), which also records why the wait ended). This doc carried the banner as a
+  follow-up for most of its life, and the wait outlived its reason: the gap was not
   the banner, it was that the ONLY consent surface in the product (`<GaConsentGate/>`) lived in the
   authenticated `(main)` layout while the GA4 tag mounts in the ROOT layout, so no anonymous visitor
   ever met one. The design, in one line: `lib/consent/cookie-consent.ts` is the law, and the two

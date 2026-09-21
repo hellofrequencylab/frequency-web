@@ -5,6 +5,7 @@ import { Sparkles, Wand2, ChevronDown } from 'lucide-react'
 import type { CircleComposeSection } from '@/lib/ai/circle-compose'
 import { Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { AiDisclosure } from '@/components/vera/ai-disclosure'
 
 // The Vera panel in the Circle builder, mirroring the Journey composer (ADR-302):
 // a collapsible section with two moves. "Fill this section" buttons ask Vera to
@@ -84,6 +85,8 @@ export function CircleVeraPanel({
 
       {open && (
         <>
+          {/* The Article 50 line (OWN-061, ADR-1515): what she fills in is hers until you edit it. */}
+          <AiDisclosure kind="chat" detail="What she fills in lands in the form as a draft you can edit." className="mt-1" />
           <p className="mt-2 text-2xs font-semibold uppercase tracking-wide text-muted">Fill a section</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {SECTIONS.map((s) => (

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Sparkles, Check, X, Send, ArrowRight, ArrowLeft, Compass } from 'lucide-react'
 import { confirmProposal } from '@/app/onboarding/vera-actions'
 import { streamConciergeTurn } from '@/components/vera/vera-stream'
+import { AiDisclosure } from '@/components/vera/ai-disclosure'
 import type { ProposedToolCall } from '@/lib/ai/vera/concierge'
 import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
 import type { DeckSlide, VeraOpening } from '@/lib/onboarding/vera-welcome'
@@ -238,8 +239,8 @@ export function VeraLightbox({
               </span>
               <div className="min-w-0">
                 <p id="vera-lightbox-title" className="text-body-sm font-bold text-text">Vera</p>
-                {/* AI disclosure (EU AI Act Art. 50): members must know they're talking to AI. */}
-                <p className="text-meta text-subtle">Vera is AI. She meets you where you are, then points you toward your people.</p>
+                {/* The Article 50 line, from the one shared component (OWN-061, ADR-1515). */}
+                <AiDisclosure kind="chat" detail="She meets you where you are, then points you toward your people." />
               </div>
             </div>
 

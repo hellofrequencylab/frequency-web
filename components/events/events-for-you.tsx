@@ -2,6 +2,7 @@ import { Sparkles } from 'lucide-react'
 import { scoreEventsForViewer } from '@/lib/events/matching'
 import { eventBlurb } from '@/lib/ai/event-blurb'
 import { EventCard } from '@/components/events/event-card'
+import { AiDisclosure } from '@/components/vera/ai-disclosure'
 import type { EventsIndexData } from '@/app/(main)/events/index-data'
 
 // "For You" — the personalized lane on the events library (Events B-4).
@@ -74,6 +75,11 @@ export async function EventsForYou({
       <p className="text-2xs text-muted">
         Picked from what is coming up, by what you are into and who is going.
       </p>
+      {/* The ranking is arithmetic; the note under each card is Vera's. When at least one landed,
+          the Article 50 line (OWN-061, ADR-1515) says so once for the lane rather than under each. */}
+      {blurbs.some((b) => b) && (
+        <AiDisclosure kind="copy" detail="The note under each pick is hers." />
+      )}
 
       <div className="mp-grid gap-4">
         {top.map((r, i) => {

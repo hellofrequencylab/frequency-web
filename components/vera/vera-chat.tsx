@@ -7,6 +7,7 @@ import { streamConciergeTurn } from '@/components/vera/vera-stream'
 import { openSupport } from '@/components/support/support-launcher'
 import { UpsellTease } from '@/components/upsell/upsell-tease'
 import { Button } from '@/components/ui/button'
+import { AiDisclosure } from '@/components/vera/ai-disclosure'
 import type { TeaseGate } from '@/lib/pricing/upsell-tease'
 import type { ProposedToolCall } from '@/lib/ai/vera/concierge'
 import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
@@ -133,6 +134,9 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      {/* The Article 50 line (OWN-061). OUTSIDE the live region below on purpose: it is read once,
+          on the way in, and must never be re-announced with each reply. */}
+      <AiDisclosure kind="chat" className="shrink-0 px-4 pt-3" />
       {/* The transcript is a LIVE REGION, or Vera answers into silence for anyone using a screen
           reader: the reply lands in a scroll container nobody's focus is in, so nothing is spoken.
           `role="log"` (not `status`/`alert`) is the right primitive because this is an append-only

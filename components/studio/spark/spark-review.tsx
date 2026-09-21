@@ -23,6 +23,7 @@
 import { useState } from 'react'
 import { Check, ExternalLink, Pencil, ShieldQuestion, Sparkles, X } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
+import { AiDisclosure } from '@/components/vera/ai-disclosure'
 import { SIGNAL_GLYPH, type ReviewSignal } from '@/lib/studio/kernel/ledger'
 import type { FieldModel, FieldState } from '@/lib/studio/kernel/review-kernel'
 import { SparkOffers, type SparkCoverOffer, type SparkQualityCheck } from './spark-offers'
@@ -61,6 +62,10 @@ export interface SparkReviewProps {
 
 export function SparkReview({ model, cover, quality, onEdit, onConfirm, disabled }: SparkReviewProps) {
   const s = model.summary
+  // The Article 50 line (OWN-061, ADR-1515) renders once per board, not once per row: the per-row
+  // "Written by Vera" pill already marks WHICH fields she wrote, and one sentence above them says
+  // what that pill means. A board with nothing generated on it has nothing to disclose.
+  const anyGenerated = model.sections.some((section) => section.fields.some((f) => f.generated))
 
   return (
     <div>
@@ -76,6 +81,14 @@ export function SparkReview({ model, cover, quality, onEdit, onConfirm, disabled
           </span>
         )}
       </div>
+
+      {anyGenerated && (
+        <AiDisclosure
+          kind="copy"
+          detail="The rows marked Written by Vera are hers. Read them before this goes live."
+          className="mt-2 px-1"
+        />
+      )}
 
       <SparkOffers cover={cover} quality={quality} disabled={disabled} className="mt-3" />
 

@@ -18,6 +18,7 @@ import { achievedTier, TIER_LABELS, TIER_ORDER, TIER_FLOOR_MIN } from '@/lib/pra
 import { depthStreakLine } from '@/lib/practices/depth-streak'
 import { ProgressTrack } from '@/components/ui/progress-track'
 import { IconButton } from '@/components/ui/icon-button'
+import { AiDisclosure } from '@/components/vera/ai-disclosure'
 
 const fmtMin = (sec: number) => {
   const m = Math.round(sec / 60)
@@ -572,6 +573,10 @@ function DispatchPanel({
           {dispatch.copy.slice(0, chars)}
           {chars < dispatch.copy.length && <span className="animate-pulse">▍</span>}
         </p>
+        {/* The Dispatch is generated per member per day, so it carries the Article 50 line
+            (OWN-061, ADR-1515). Under the copy, not above it: the disclosure is a footnote to what
+            she said, and the typewriter above is the thing the member came for. */}
+        <AiDisclosure kind="copy" className="mt-2" />
         {dispatch.actionHref &&
           (actionIsFeed && onClose ? (
             // "Back to feed" through the close path: in overlay mode this drops the

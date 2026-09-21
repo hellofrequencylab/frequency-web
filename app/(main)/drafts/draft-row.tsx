@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation'
 import { Sparkles, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { RowCard } from '@/components/cards/row-card'
+import { AiDisclosure } from '@/components/vera/ai-disclosure'
 import { isError } from '@/lib/action-result'
 import { confirmDraftAction, dismissDraftAction } from './actions'
 import type { PendingCreateProposal } from '@/lib/ai/vera/create-entity'
@@ -88,7 +89,19 @@ export function DraftRow({ proposal, noCommitReason }: { proposal: PendingCreate
         }
         context={`Keep it until ${whenText(proposal.expiresAt)}`}
         description={blurb}
-        meta={proposal.rationale}
+        meta={
+          proposal.aiDrafted ? (
+            // The Article 50 line (OWN-061, ADR-1515), beside her reasoning rather than as a
+            // second badge: the pill above names WHO drafted it, this names what that means.
+            <>
+              {proposal.rationale}
+              {/* RowCard lays meta out as a wrapping flex row; basis-full puts this on its own line. */}
+              <AiDisclosure kind="copy" detail="Nothing is made until you confirm it." className="basis-full" />
+            </>
+          ) : (
+            proposal.rationale
+          )
+        }
         footer={
           <>
             <div className="flex flex-wrap items-center gap-2">
