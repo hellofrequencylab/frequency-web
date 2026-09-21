@@ -195,7 +195,7 @@
             "PROG-R9",
             "PROG-R10",
             "LIVE-263",
-            "PROG-R11"
+            "LIVE-456"
           ]
         },
         {
@@ -10514,7 +10514,7 @@
     {
       "id": "PROG-R11",
       "title": "Rework phase 11: prove it",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "program",
       "size": "M",
@@ -10522,11 +10522,50 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "One city. Three businesses. One real gathering each per week. Each brings ten of their own people. Instrument three numbers and nothing else: circles per Space (0.32 on 2026-09-08 - 7 circles across 22 spaces), gatherings actually held, attendance. Every other number in this model is a guess until those three move. No code, and no engineer.\n\nBLOCKED ON A MEASUREMENT GAP: event attendance has no independent record. There is no checked_in column; attendance exists only as an engagement-ledger row written by the path that pays Zaps, so demoting the game would silently destroy the metric. Fix that before phase 11 starts, not during.",
+      "detail": "One city. Three businesses. One real gathering each per week. Each brings ten of their own people. Instrument three numbers and nothing else: circles per Space (0.32 on 2026-09-08 - 7 circles across 22 spaces), gatherings actually held, attendance. Every other number in this model is a guess until those three move. No code, and no engineer.\n\nBLOCKED ON A MEASUREMENT GAP: event attendance has no independent record. There is no checked_in column; attendance exists only as an engagement-ledger row written by the path that pays Zaps, so demoting the game would silently destroy the metric. Fix that before phase 11 starts, not during.\n\nPREMISE RE-TESTED 2026-09-21 against production (ADR-1082), and it split. THE BLOCK ABOVE HAD EXPIRED: PROG-GD4 (ADR-1332, 2026-09-14) put the host mark on the seat, attended_at on event_rsvps and event_tickets, written by the roster and paying nobody, so attendance has had an independent record for a week; production carries both columns. THE INSTRUMENT DID NOT EXIST: nobody had written the three numbers down as one query, so every reading would have been a different query. And the first number had quietly changed meaning: ADR-1391 provisions every Space a Space Circle (26 of the 30 circle rows in Spaces are is_space_primary), so a naive count now reads 1.25 circles per Space with no one having started anything.\n\nWHAT CLOSES THIS ROW (ADR-1510): scripts/maintenance/prove-it.mjs is the instrument, one SELECT with its definitions beside it, and the weekly maintenance sweep takes the reading as a series (a read that could not happen routes to the tracking issue as 79, a reading never does). Circles per Space counts listable circles a Space STARTED (not the provisioned Space Circle) over active non-root Spaces; gatherings held is the space_standing rule (published, not cancelled, start passed, 42 days) with the attested subset beside it; attendance is the host mark on both seat tables and never the engagement ledger. FIRST READING, production 2026-09-21 19:57Z: 26 Spaces, 4 started circles (0.15 per Space), 13 gatherings held in 42 days, 0 of them with anyone marked present, 0 people marked present. The 239 practice.verified ledger rows are the paid path and are not attendance. The six weeks themselves are LIVE-455, owner-timed: this row is the instrument, not the test.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const NL=String.fromCharCode(10);const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const R=(f)=>{try{return fs.readFileSync(f,\"utf8\")}catch{fail(\"missing \"+f)}};const S=\"scripts/maintenance/prove-it.mjs\";R(S);import(require(\"url\").pathToFileURL(require(\"path\").resolve(S)).href).then((m)=>{const q=m.PROVE_IT_QUERY;if(typeof q!==\"string\")fail(\"the instrument exports no query\");if(!/public\\.event_rsvps r where r\\.attended_at is not null/.test(q)||!/public\\.event_tickets t where t\\.attended_at is not null/.test(q))fail(\"attendance is not read from the host mark on both seat tables, so a guest or a ticket holder in the room is not counted\");if(/engagement_events|practice\\.verified|event_attend/.test(q))fail(\"the reading touches the engagement ledger, so demoting the game would move the metric, which is the gap the row was blocked on\");if(!/not c\\.is_space_primary/.test(q))fail(\"the provisioned Space Circle is counted as a circle the Space started, so circles per Space moves on provisioning instead of behaviour\");if(!/coalesce\\(e\\.is_cancelled, false\\) = false/.test(q)||!/e\\.removed_at is null/.test(q)||!/not e\\.is_demo/.test(q)||!/e\\.starts_at < now\\(\\)/.test(q))fail(\"a cancelled, removed, demo or future event can count as a gathering held\");if(m.WINDOW_DAYS!==42)fail(\"the window is not the six weeks of the field test\");const live=[{reading:{asOf:\"2026-09-21T19:57:59.790864+00:00\",windowDays:42,spaces:26,circles:4,gatheringsHeld:13,gatheringsAttested:0,attendance:0}}];const r=m.parseReading(live);if(!r||Math.abs(r.circlesPerSpace-4/26)>1e-9)fail(\"the reading does not turn circles and Spaces into circles per Space\");const out=m.report(r);if(out.code!==0||!out.text.includes(\"**Circles per Space** — 0.15\")||!out.text.includes(\"**Gatherings held** — 13\")||!out.text.includes(\"**Attendance** — 0 people\"))fail(\"the report does not print the three numbers, or prints a zero as nothing\");if(m.parseReading([{reading:{spaces:26,circles:4,gatheringsHeld:13,gatheringsAttested:0,ledgerCheckIns:239}}])!==null)fail(\"a payload with a ledger count where attendance should be is accepted as a reading\");if(m.parseReading([])!==null)fail(\"an empty result is read as a reading\");const ind=m.indeterminate(\"x\");if(ind.code!==79||!ind.text.includes(\"Could not look\")||/Attendance/.test(ind.text))fail(\"a read that could not happen is reported as a clean reading\");const cm=R(\"docs/CORE-MODEL.md\");const i=cm.indexOf(\"### Phase 11\");if(i<0)fail(\"CORE-MODEL has no phase 11\");const sec=cm.slice(i,cm.indexOf(NL+\"## \",i));if(!sec.includes(S)||!sec.includes(\"attended_at\")||!sec.includes(\"is_space_primary\"))fail(\"CORE-MODEL phase 11 does not name the instrument, the independent attendance record and the Space Circle exclusion\");const y=R(\".github/workflows/maintenance.yml\");const from=y.indexOf(\"- name: Phase 11 reading\"+NL);if(from<0)fail(\"the weekly sweep takes no phase 11 reading, so the series depends on someone remembering to run a query\");const end=y.indexOf(NL+\"      - name:\",from+1);const step=y.slice(from,end<0?y.length:end);if(!step.includes(S+\" --print-query\")||!step.includes(\"node \"+S+\" proveit.json\")||!step.includes(\"set +e\"))fail(\"the sweep step does not run the instrument as a reading under set +e\");if(!y.includes(\"steps.proveit.outputs.code != \"+String.fromCharCode(39)+\"0\"+String.fromCharCode(39)))fail(\"a reading that could not happen never reaches the tracking issue\");console.log(\"PROG-R11 ok: the three phase 11 numbers are one query reading the host mark and never the ledger, the Space Circle is not a started circle, CORE-MODEL names the instrument, and the sweep takes the reading weekly\")}).catch((e)=>fail(String(e&&e.stack||e)))'",
+        "note": "Measures the CONSEQUENCE: the exported query reads attended_at on both seat tables and never the engagement ledger, excludes the provisioned Space Circle, and counts a gathering as held only when published, not cancelled, not removed, not demo and started; the parser refuses a partial or empty payload and the report prints a zero as a zero; CORE-MODEL phase 11 names the instrument; the weekly sweep runs it under set +e and routes 79 to the tracking issue. Pure node (dynamic import, no child_process). Mutation-tested 2026-09-21: deleting the instrument, reading engagement_events, dropping the is_space_primary exclusion, dropping the CORE-MODEL pointer and dropping the sweep step each exit 1."
+      },
+      "closed": "2026-09-21"
+    },
+    {
+      "id": "LIVE-455",
+      "title": "Phase 11, the six weeks: one city, three businesses, one gathering each per week, and the instrument read at the start and the end",
+      "status": "parked",
+      "priority": "P1",
+      "lane": "owner",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5 phase 11; ADR-1510"
+      },
+      "ownerAction": "ruling",
+      "detail": "FILED 2026-09-21 when PROG-R11 closed as the instrument (ADR-1510). This row is the field test itself, which needs no engineer and cannot be closed by code: the owner names the city, the three businesses (each a Space) and the start date; each hosts one real gathering a week for six weeks and brings ten of their own people; hosts mark who was in the room from the roster (the host mark, attended_at, is the only thing the instrument counts as attendance, so a host who does not mark reads as zero).\n\nTHE START READING is already taken. Production 2026-09-21 19:57Z, from scripts/maintenance/prove-it.mjs: 26 active non-root Spaces, 4 circles a Space started (0.15 per Space), 13 gatherings held in the trailing 42 days, 0 of them with anyone marked present, 0 people marked present. The weekly maintenance sweep prints the same three numbers every week under \"Phase 11 reading\", so the series exists whether or not anyone runs the query by hand.\n\nCLOSES WHEN the end reading (six weeks after the named start date) is recorded in this detail beside the start reading, taken the same way. What the numbers say is then a ruling, not a row: CORE-MODEL §6 says phase 11 is the only phase that can tell whether the model is right.\n\n── PARKED 2026-09-21 by owner ruling: the six weeks do not start now. The instrument stays live (PROG-R11 probe) and the weekly maintenance sweep keeps printing the three numbers under \"Phase 11 reading\", so the series accumulates while this row waits; the start reading above stands as the baseline. Unpark at launch prep (parkedUntil 2026-11-15) by naming the city, the three Spaces and the start date, and put the row back in the owner-timed wave.",
       "verify": {
         "kind": "manual",
-        "evidence": "Owner-run field test. Three numbers, read from SQL at the start and end of the six weeks.",
-        "checked": "2026-09-08"
+        "evidence": "Not started: no city, no three Spaces and no start date named. Start reading 2026-09-21 (above). End reading not taken. The instrument works: the query ran on production on 2026-09-21 and the sweep step is wired (PROG-R11 probe).",
+        "checked": "2026-09-21"
+      },
+      "notes": "parkedUntil: 2026-11-15. Parked until launch prep; the weekly sweep keeps printing the series."
+    },
+    {
+      "id": "LIVE-456",
+      "title": "Attendance becomes the seventh standing signal now that the host mark exists",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/spaces/standing.ts",
+        "ref": "module header; ADR-1332; ADR-1510"
+      },
+      "detail": "FILED 2026-09-21 from the PROG-R11 premise re-test. lib/spaces/standing.ts promises, in its header: \"The day an independent attendance record exists, it is added as a seventh signal and every Space is re-scored against it at once; no weight below needs to change, because they renormalise.\" That day was 2026-09-14 (PROG-GD4, ADR-1332): attended_at on event_rsvps and event_tickets, the host mark, paying nobody. The header still says attendance \"has NO independent record on this platform\", the space_standing table comment says the same, and lib/spaces/standing-rollup.ts reads neither column. The promise is unkept and the stated reason for it is no longer true.\n\nTHE WORK: declare attendance as a DOING signal (people a host marked present at this Space's gatherings in the trailing window, saturated on its own scale), feed it from the two seat tables in the rollup, correct the header and the table comment, and keep standing.test.ts pinning that no commercial term entered. Renormalisation means no existing weight moves. It is P3 because zero hosts have marked anyone present yet (first reading 2026-09-21: 0), so the signal would read 0 for every Space today; it becomes worth doing the week the phase 11 field test (LIVE-455) starts producing marks. Do it beside LIVE-263 (the nightly rollup), which is the same file. Owner ruling 2026-09-21: the stale standing.ts header and the space_standing table comment stay folded into this row, no separate row; priority stays P3.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const s=fs.readFileSync(\"lib/spaces/standing.ts\",\"utf8\");if(!/STANDING_SIGNALS[\\s\\S]*?\\[[\\s\\S]*?attendance[\\s\\S]*?\\]/.test(s))fail(\"attendance is not a declared standing signal, so a Space that fills a room is scored the same as one that gathers for nobody\");if(/no independent record on this platform/.test(s))fail(\"lib/spaces/standing.ts still says attendance has no independent record, which stopped being true with PROG-GD4\");const r=fs.readFileSync(\"lib/spaces/standing-rollup.ts\",\"utf8\");if(!/attended_at/.test(r))fail(\"the nightly rollup does not read the host mark, so the seventh signal has no feeder\");console.log(\"LIVE-456 ok: attendance is the seventh standing signal, fed by the host mark\")'",
+        "note": "Fails today by design: attendance is not in STANDING_SIGNALS, the header still claims no independent record, and the rollup reads no attended_at. Passes when all three are true. Pure node."
       }
     },
     {
