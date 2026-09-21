@@ -27,7 +27,10 @@ import { resolveSubmittedRepeat, validateRecurrenceUntil } from '@/lib/events/re
 import { resolveRegionScopeId } from '@/lib/events/event-drafts'
 import { listSpaceEventCreatorIds, journeyLinkPatch } from '@/lib/events/placement'
 import { canEditJourney } from '@/lib/journeys/authoring'
-import { deleteCalendarEntryRow } from '@/lib/calendar/entries-store'
+import { retirePencilToEvent } from '@/lib/calendar/entries-store'
+import { transitionSpacePlanRows } from '@/lib/calendar/plans-store'
+import { resolvePlanLink } from '@/lib/events/plan-link'
+import { briefError, log } from '@/lib/log'
 import { cancelAudit } from '@/lib/events/event-lifecycle'
 import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
@@ -65,7 +68,7 @@ import {
 import { saveSteer } from '@/lib/studio/steer-store'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
-import { resolveHostingSpaceIdFromRow } from '@/lib/events/host-space'
+import { resolveHostingSpaceId, resolveHostingSpaceIdFromRow } from '@/lib/events/host-space'
 
 // Gallery images ride as a JSON array of storage paths (the form has no native array
 // shape). Parse defensively: a missing/garbage value, a non-array, or any non-string
@@ -123,6 +126,67 @@ async function resolveJourneyLink(formData: FormData, profileId: string | null):
     return { ok: false, message: 'You can only add an event to a Journey you run.' }
   }
   return { ok: true, patch: journeyLinkPatch(journeyId) }
+}
+
+/** CLOSE THE PRODUCTION SEAM (ADR-1386 phase 3, PROG-CAL3). The event row exists; this is the rest
+ *  of what "Make it a Production" means, and all three halves of it were missing.
+ *
+ *  1. THE PENCIL BECOMES THE EVENT, it is not destroyed by it. This used to be
+ *     `deleteCalendarEntryRow(spaceId, pencilId)`, which hard-deleted the date and took its
+ *     `description` (the copy ADR-1388 §5 says becomes the event's description), its Team notes and
+ *     its `hold_expires_at` with it. ADR-1386 invariant 2 ("one record per thing") is a rendering
+ *     rule, not an instruction to destroy one of the two records: the row now carries
+ *     `published_event_id`, which retires it from the calendar's item list and back-links the event
+ *     it became.
+ *  2. THE PLAN ADVANCES. `transitionSpacePlanRows` had two callers, both in the Space's calendar
+ *     settings, and NEITHER on the publish path — so every published Plan stayed at Pencil or
+ *     Planning on the Workflow board for ever.
+ *
+ *  ── 🔴 WHY BEST-EFFORT AND NOT A THROW, WHICH IS THE REAL QUESTION HERE ────────────────────────
+ *  By the time this runs the event is COMMITTED: the insert ran on the admin client inside a
+ *  governed proposal that has already been claimed and closed out. There is no transaction left to
+ *  roll back. So throwing would not undo anything — it would surface "Could not create the event"
+ *  to a host whose event exists and is about to be listed, and the create action would return a
+ *  failure the form navigates away from. That is strictly worse than the thing it is protecting
+ *  against: the host loses the event they can see, and the Plan is STILL not advanced.
+ *
+ *  The cost of choosing best-effort is that a failure here is invisible, and AGENTS.md is explicit
+ *  that "every fail-safe needs a gate that notices it fired". Two things notice:
+ *    • one structured log line per failure, on its own `event` name, so the failure is queryable
+ *      rather than buried in a stack trace;
+ *    • and in-product, `planPublishLag` (lib/calendar/plans.ts) DERIVES the lag from the data
+ *      itself — a Plan holding a date that carries a `published_event_id` reached Production
+ *      whatever its stage column says — and the Plan drawer's readiness bar says so, where the
+ *      operator can fix it with one save. A gate nobody reads is the same as no gate.
+ *
+ *  The two writes are independent on purpose: a failed retire must not stop the Plan advancing, and
+ *  a failed transition must not leave the Pencil drawing a duplicate card beside its own event. */
+async function closeProductionSeam(
+  spaceId: string,
+  eventId: string,
+  pencilId: string | null,
+  planId: string | null,
+): Promise<void> {
+  if (pencilId) {
+    try {
+      const retired = await retirePencilToEvent(spaceId, pencilId, eventId)
+      if ('error' in retired) {
+        log.error('calendar.production_pencil_not_retired', { spaceId, eventId, pencilId })
+      }
+    } catch (e) {
+      log.error('calendar.production_pencil_not_retired', { spaceId, eventId, pencilId, error: briefError(e) })
+    }
+  }
+  if (planId) {
+    try {
+      const moved = await transitionSpacePlanRows(spaceId, planId, 'production')
+      if ('error' in moved) {
+        log.error('calendar.production_plan_stage_not_advanced', { spaceId, eventId, planId })
+      }
+    } catch (e) {
+      log.error('calendar.production_plan_stage_not_advanced', { spaceId, eventId, planId, error: briefError(e) })
+    }
+  }
 }
 
 /** ⚠️ The cadence is DERIVED from the submitted rule now (ADR-1299), never posted on its own — see
@@ -429,6 +493,38 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   // above, so it goes live there instantly); every other flow defaults to the root space, so the
   // single-tenant path keeps behaving exactly as today.
   const spaceId = await stampEventSpaceId(spaceIdForPlacement)
+
+  // THE PLAN THIS PRODUCTION COMES FROM (ADR-1386, PROG-CAL3) — resolved and AUTHORIZED here,
+  // BEFORE the insert, exactly like the Journey link above it. `planId` used to be read off the
+  // form, tested for a UUID SHAPE alone, and written with the service-role client, so it was never
+  // checked against the Space at all. `resolvePlanLink` reads the Plan through the caller's own
+  // session (RLS on space_plans decides) and requires it to belong to the Space this event is
+  // landing in; a link the caller may not make fails the create rather than being dropped in
+  // silence, which is the ADR-883 doctrine this file already follows for Journeys.
+  //
+  // ⚠️ AGAINST THE HOSTING SPACE, NOT `spaceId`. `stampEventSpaceId` stamps the ROOT tenant onto
+  // every event that names no Space (lib/events/store.ts), so `spaceId` is "Frequency" for every
+  // personal event — passing it here would authorize the ROOT Space's Plans onto a personal event
+  // and point the retire + stage writes below at the platform tenant. `resolveHostingSpaceId` is
+  // the one door that applies the root guard (lib/events/host-space.ts, LIVE-075: ten call sites
+  // hand-rolled the host-then-space fallback and every one of them read root as a real host).
+  // Personal event -> null -> no Plan link, which is the honest answer: a Plan lives on a Space.
+  const hostSpaceIdForEvent = scopeChoice === 'space' && spaceIdForPlacement ? spaceIdForPlacement : null
+  const planSpaceId = await resolveHostingSpaceId({ spaceId, hostSpaceId: hostSpaceIdForEvent })
+
+  const planLink = await resolvePlanLink(formData.get('planId'), planSpaceId)
+  if (!planLink.ok) return fail(planLink.message)
+
+  // The Pencil this Production was opened from, if any. Authorized by the same rule: the read is
+  // space-scoped and on the caller's session, so an entry id belonging to another Space simply
+  // comes back null and the create carries on without a back-link rather than touching a row the
+  // caller has no business touching.
+  const pencilIdRaw = (formData.get('pencilId') as string | null)?.trim() || ''
+  const pencilId =
+    planSpaceId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pencilIdRaw)
+      ? pencilIdRaw
+      : null
+
   // Cast: capacity/visibility/category/energy_tag/space_id are newer than the generated
   // DB types (lib/database.types.ts) — repo convention for not-yet-regenerated
   // columns (see lib/billing/*).
@@ -506,14 +602,10 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
           // space_id is newer than the generated DB types — cast the payload to reach the column
           // (ADR-246); omit when the root row is missing (the backfill sweeps the NULL to root).
           ...(spaceId ? { space_id: spaceId } : {}),
-          ...(scopeChoice === 'space' && spaceIdForPlacement ? { host_space_id: spaceIdForPlacement } : {}),
+          ...(hostSpaceIdForEvent ? { host_space_id: hostSpaceIdForEvent } : {}),
           ...journeyLink.patch,
-          ...((() => {
-            const planId = (formData.get('planId') as string | null)?.trim() || ''
-            return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(planId)
-              ? { plan_id: planId }
-              : {}
-          })()),
+          // The Plan link, authorized above rather than trusted from the form.
+          ...planLink.patch,
         } as never).select('id').single()
       if (error || !row) {
         console.error('createEvent error', error)
@@ -530,13 +622,7 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   // its address columns + geog already set.
   if (inserted) {
     await geocodeEventOnCreate(inserted.id, formData)
-    const pencilId = (formData.get('pencilId') as string | null)?.trim() || ''
-    if (
-      spaceId &&
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pencilId)
-    ) {
-      await deleteCalendarEntryRow(spaceId, pencilId)
-    }
+    if (planSpaceId) await closeProductionSeam(planSpaceId, inserted.id, pencilId, planLink.planId)
   }
 
   // For recurring events, materialise the first batch of occurrences right
@@ -692,6 +778,20 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
       : {}
   const mergedDetails = { ...existingDetails, specialInstructions }
 
+  // Attach / detach the PLAN (events.plan_id), the same three-state contract as the Journey link
+  // above: absent field = leave it alone, blank = detach, an id = attach once authorized. This link
+  // was create-only until PROG-CAL3 — `updateEvent` never touched the column and no surface could
+  // put an event back on its Plan, so one wrong link could only be repaired in SQL. Resolved
+  // BEFORE the write against the Space that HOSTS this event, so a Plan from another Space fails
+  // the save instead of being written by a service-role update nobody checked.
+  // Against the HOSTING Space, through the one resolver: a hand-rolled host-then-space fallback
+  // here would resolve the ROOT tenant for every personal event (see createEvent's note).
+  const planLink = await resolvePlanLink(
+    formData.get('planId'),
+    await resolveHostingSpaceIdFromRow(evRow),
+  )
+  if (!planLink.ok) return fail(planLink.message)
+
   const { error } = await admin
     .from('events')
     .update({
@@ -722,6 +822,8 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
       // The Journey association (journey_id), authorized above. Empty when the form sent no link,
       // so an editor that does not surface the field can never wipe one.
       ...journeyLink.patch,
+      // The Plan this Production belongs to (plan_id), on the same absent/blank/id contract.
+      ...planLink.patch,
     } as never)
     .eq('id', eventId)
   if (error) {

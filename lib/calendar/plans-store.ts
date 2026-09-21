@@ -52,6 +52,7 @@ type PlanQuery = PromiseLike<{ data: PlanRow[] | null; error: { message: string 
   select: (c: string) => PlanQuery
   eq: (c: string, v: string) => PlanQuery
   is: (c: string, v: null) => PlanQuery
+  not: (c: string, op: 'is', v: null) => PlanQuery
   order: (c: string, o: { ascending: boolean }) => PlanQuery
   limit: (n: number) => PlanQuery
 }
@@ -257,6 +258,73 @@ export async function getPlanAnchorDayKey(spaceId: string, planId: string): Prom
   } catch (err) {
     planReadFailed('anchor_day', err)
     return null
+  }
+}
+
+/** The date each Plan should open its Production from: its earliest date that has NOT already been
+ *  published (PROG-CAL3).
+ *
+ *  Why this exists at all: `plan-board.tsx` built its "Make it a Production" href from
+ *  `{spaceId, planId}` and NO entryId, so `productionPrefill` never ran and the Spark opened with a
+ *  title and nothing else — no date, no time, no location, no description. The board has plans, not
+ *  dates, so the pairing has to be read; the month window the calendar happens to be showing is not
+ *  it, because a Plan's date is usually in another month. */
+export async function listPlanPencilEntryIds(spaceId: string): Promise<Record<string, string>> {
+  try {
+    const q = (await db()).from('space_calendar_entries') as unknown as {
+      select: (c: string) => PlanQuery
+    }
+    const { data, error } = await q
+      .select('id, plan_id, starts_at')
+      .eq('space_id', spaceId)
+      .eq('kind', 'pencil')
+      .is('published_event_id', null)
+      .order('starts_at', { ascending: true })
+      .limit(500)
+    // Logged, never swallowed: this file's header records the five days space_plans was 100%
+    // dead behind a `catch { return [] }`. The empty map is still the right fallback (the board
+    // renders, "Make it a Production" just opens unprefilled) but the fire gets a line first.
+    if (error || !data) {
+      planReadFailed('pencil_pairs', error)
+      return {}
+    }
+    const rows = data as unknown as { id: string; plan_id: string | null }[]
+    const out: Record<string, string> = {}
+    for (const row of rows) {
+      if (!row.plan_id || out[row.plan_id]) continue
+      out[row.plan_id] = row.id
+    }
+    return out
+  } catch (err) {
+    planReadFailed('pencil_pairs', err)
+    return {}
+  }
+}
+
+/** Has any date of this Plan already become a published event? The input to `planPublishLag`, which
+ *  is how the best-effort stage transition on the publish seam gets NOTICED when it fails. */
+export async function planHasPublishedEntry(spaceId: string, planId: string): Promise<boolean> {
+  try {
+    const q = (await db()).from('space_calendar_entries') as unknown as {
+      select: (c: string) => PlanQuery
+    }
+    const { data, error } = await q
+      .select('id')
+      .eq('space_id', spaceId)
+      .eq('plan_id', planId)
+      .not('published_event_id', 'is', null)
+      .limit(1)
+    // A read failure here must not read as "no published event": that is the exact shape of the
+    // swallowed error this file's header is about, and here it would silently disarm the GATE on
+    // the publish seam's fail-safe (planPublishLag), hiding a lagging Plan instead of showing it.
+    if (error || !data) {
+      planReadFailed('published_entry', error)
+      return false
+    }
+    return data.length > 0
+  } catch (err) {
+    planReadFailed('published_entry', err)
+    return false
   }
 }
 
