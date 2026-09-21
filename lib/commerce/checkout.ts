@@ -27,6 +27,7 @@ import { canTakePayments } from './selling'
 import { getVariantsByIds } from './variants'
 import { effectiveVariantPriceCents, effectiveVariantStock } from './types'
 import { receiptEmailFor } from '@/lib/billing/receipt-address'
+import { commercePaymentMethodParams } from './payment-methods'
 import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
 import { sendOrderReceipts } from './order-receipt'
 import type { CheckoutInput, CommerceVariant, ServiceConfig } from './types'
@@ -386,6 +387,13 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
           order_id: orderId,
         },
       },
+      // INSTALMENTS, SCOPED (LIVE-396). Empty unless the owner has named a configuration, in which
+      // case this is where Klarna / Affirm reach a Journey purchase WITHOUT reaching every other
+      // thing commerce sells. `journeyOnly` is all-or-nothing on purpose: a mixed cart is not a
+      // Journey purchase, and one qualifying line must not let a buyer finance the rest of it.
+      ...commercePaymentMethodParams({
+        journeyOnly: products.length > 0 && products.every((p) => p.product_kind === 'journey'),
+      }),
       // Prefill and lock the address for a guest so the receipt, the Stripe customer and the row all
       // agree — and so the address the claim later matches on is the one they actually typed.
       ...(guestEmail ? { customer_email: guestEmail } : {}),
