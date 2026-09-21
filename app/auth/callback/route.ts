@@ -19,6 +19,10 @@ import {
   claimGuestTicketsOnSignIn,
   type SessionClient as TicketSessionClient,
 } from '@/lib/events/claim-guest-tickets-on-sign-in'
+import {
+  claimGuestOrdersOnSignIn,
+  type OrderSessionClient,
+} from '@/lib/commerce/claim-guest-orders-on-sign-in'
 
 // Must match the cookie set in app/sign-in/actions.ts (stashNext).
 const POST_LOGIN_COOKIE = 'fq_post_login'
@@ -154,6 +158,21 @@ export async function GET(request: Request) {
             // claim already owns that decision. Swallows its own failures.
             // Cast per ADR-246: the RPC postdates the generated types.
             await claimGuestTicketsOnSignIn(supabase as unknown as TicketSessionClient)
+
+            // CLAIM-ON-SIGN-IN, THE ORDER LEG (LIVE-396). The fourth member of this set and the
+            // second where somebody paid money: a guest Journey purchase (commerce_orders with
+            // buyer_profile_id NULL and guest_email set) is a settled payment granting nothing,
+            // because journey_enrollments.profile_id is NOT NULL and a guest cannot hold one.
+            //
+            // Unlike its three neighbours this does not finish in SQL. `claim_guest_orders()`
+            // attaches the ORDER and returns the ids; the module then runs the ordinary
+            // `enrolByOrder` for each, because adoptPlan is the single authority for what enrolling
+            // means and SQL alone would grant a degraded enrolment missing its practices.
+            //
+            // SESSION client, for the reason all three neighbours carry. Returns void ON PURPOSE:
+            // the seat claim already owns the destination. Swallows its own failures.
+            // Cast per ADR-246: the RPC postdates the generated types.
+            await claimGuestOrdersOnSignIn(supabase as unknown as OrderSessionClient)
           }
 
           // Read the funnel back through the SAME map that wrote it. `user_metadata` is

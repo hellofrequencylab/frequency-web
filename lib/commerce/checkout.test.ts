@@ -650,3 +650,99 @@ describe('recordCommerceOrderFromSession — persists Stripe shipping (LIVE-346)
     })
   })
 })
+
+// ── THE GUEST DOOR (LIVE-396) ────────────────────────────────────────────────────────────────────
+// A Journey could not be bought without an account, and forced account creation is 19-26% of
+// checkout abandonment. Production on 2026-09-21 read 24 checkout.session.expired against 1
+// completed. These pin the three things that keep the door safe:
+//   * EXACTLY ONE of buyerProfileId / guestEmail — the invariant commerce_orders carries in SQL,
+//     enforced here because this is the only writer of a new order;
+//   * the guest entry is JOURNEY-ONLY, so no future caller widens signed-out checkout to physical
+//     goods (which would owe a guest a shipping address, stock and a returns path);
+//   * the address reaches the row, the Stripe customer and the receipt, because it is the only way
+//     to reach the buyer before they have an account — and it is what claim_guest_orders() matches.
+describe('createCommerceCheckout — the guest door (LIVE-396)', () => {
+  const JOURNEY_PRODUCT = { ...PRODUCT, product_kind: 'journey', journey_plan_id: null }
+
+  function handler(product: Record<string, unknown> = JOURNEY_PRODUCT) {
+    state.setHandler((c) => {
+      if (c.table === 'commerce_products' && c.op === 'select') return { data: [product] }
+      if (c.table === 'commerce_orders' && c.op === 'insert') return { data: { id: 'o1' } }
+      if (c.table === 'commerce_order_items' && c.op === 'insert') return { data: [] }
+      if (c.table === 'commerce_orders' && c.op === 'update') return { data: [{ id: 'o1' }] }
+      return {}
+    })
+  }
+
+  it('refuses when NEITHER identity is given, and writes no order', async () => {
+    handler()
+    const res = await createCommerceCheckout({ items: [{ productId: 'p1', qty: 1 }] })
+    expect(res.error).toBeTruthy()
+    expect(res.url).toBeUndefined()
+    expect(firstCall((c) => c.table === 'commerce_orders' && c.op === 'insert')).toBeUndefined()
+    expect(stripeFake.checkout.sessions.create).not.toHaveBeenCalled()
+  })
+
+  it('refuses when BOTH identities are given, and writes no order', async () => {
+    handler()
+    const res = await createCommerceCheckout({
+      items: [{ productId: 'p1', qty: 1 }],
+      buyerProfileId: 'buyer-1',
+      guestEmail: 'sam@example.com',
+    })
+    expect(res.error).toBeTruthy()
+    expect(firstCall((c) => c.table === 'commerce_orders' && c.op === 'insert')).toBeUndefined()
+    expect(stripeFake.checkout.sessions.create).not.toHaveBeenCalled()
+  })
+
+  it('refuses a guest buying anything that is not a Journey', async () => {
+    handler({ ...PRODUCT, product_kind: 'physical' })
+    const res = await createCommerceCheckout({
+      items: [{ productId: 'p1', qty: 1 }],
+      guestEmail: 'sam@example.com',
+    })
+    expect(res.error).toBe('Sign in to buy this.')
+    expect(firstCall((c) => c.table === 'commerce_orders' && c.op === 'insert')).toBeUndefined()
+    expect(stripeFake.checkout.sessions.create).not.toHaveBeenCalled()
+  })
+
+  it('writes the guest address on the order with a NULL buyer, and normalizes it once', async () => {
+    handler()
+    const res = await createCommerceCheckout({
+      items: [{ productId: 'p1', qty: 1 }],
+      guestEmail: '  SAM@Example.COM  ',
+    })
+    expect(res.orderId).toBe('o1')
+    const row = firstCall((c) => c.table === 'commerce_orders' && c.op === 'insert')!
+      .payload as Record<string, unknown>
+    expect(row.guest_email).toBe('sam@example.com')
+    expect(row.buyer_profile_id).toBeNull()
+    expect(row.status).toBe('pending')
+  })
+
+  it('locks the address onto the Stripe session so the receipt and the claim agree', async () => {
+    handler()
+    await createCommerceCheckout({ items: [{ productId: 'p1', qty: 1 }], guestEmail: 'sam@example.com' })
+    const args = stripeFake.checkout.sessions.create.mock.calls[0][0] as Stripe.Checkout.SessionCreateParams
+    expect(args.customer_email).toBe('sam@example.com')
+    // No client_reference_id: there is no profile to reference yet.
+    expect(args.client_reference_id).toBeUndefined()
+    // Both metadata slots name the guest rather than carrying an undefined buyer.
+    expect(args.metadata).toMatchObject({ kind: 'commerce_order', guest_email: 'sam@example.com', order_id: 'o1' })
+    expect('buyer_profile_id' in (args.metadata ?? {})).toBe(false)
+    expect(args.payment_intent_data?.receipt_email).toBe('sam@example.com')
+  })
+
+  it('leaves the member path exactly as it was', async () => {
+    handler({ ...PRODUCT })
+    await createCommerceCheckout({ items: [{ productId: 'p1', qty: 1 }], buyerProfileId: 'buyer-1' })
+    const row = firstCall((c) => c.table === 'commerce_orders' && c.op === 'insert')!
+      .payload as Record<string, unknown>
+    expect(row.buyer_profile_id).toBe('buyer-1')
+    expect(row.guest_email).toBeNull()
+    const args = stripeFake.checkout.sessions.create.mock.calls[0][0] as Stripe.Checkout.SessionCreateParams
+    expect(args.client_reference_id).toBe('buyer-1')
+    expect(args.customer_email).toBeUndefined()
+    expect(args.metadata).toMatchObject({ buyer_profile_id: 'buyer-1' })
+  })
+})

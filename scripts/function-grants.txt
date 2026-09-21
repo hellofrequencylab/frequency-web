@@ -101,6 +101,7 @@ circles_near                         public
 circles_space_primary_guard          internal
 claim_guest_rsvps                    authenticated
 claim_guest_tickets                  authenticated
+claim_guest_orders                   authenticated
 claim_outbox_jobs                    internal
 claim_season_certificate             internal
 claim_space_plan_event               internal

@@ -1484,6 +1484,7 @@ export type Database = {
           currency: string
           entity_id: string
           fulfillment_status: string
+          guest_email: string | null
           id: string
           metadata: Json
           owner_kind: string
@@ -1507,6 +1508,7 @@ export type Database = {
           currency?: string
           entity_id: string
           fulfillment_status?: string
+          guest_email?: string | null
           id?: string
           metadata?: Json
           owner_kind: string
@@ -1530,6 +1532,7 @@ export type Database = {
           currency?: string
           entity_id?: string
           fulfillment_status?: string
+          guest_email?: string | null
           id?: string
           metadata?: Json
           owner_kind?: string
@@ -16449,6 +16452,7 @@ export type Database = {
         }[]
       }
       claim_guest_rsvps: { Args: { p_profile_id: string }; Returns: undefined }
+      claim_guest_orders: { Args: never; Returns: string[] }
       claim_guest_tickets: { Args: never; Returns: number }
       claim_outbox_jobs: {
         Args: { _limit?: number }
