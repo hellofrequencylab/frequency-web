@@ -507,7 +507,7 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   // personal event — passing it here would authorize the ROOT Space's Plans onto a personal event
   // and point the retire + stage writes below at the platform tenant. `resolveHostingSpaceId` is
   // the one door that applies the root guard (lib/events/host-space.ts, LIVE-075: ten call sites
-  // hand-rolled `host_space_id ?? space_id` and every one of them read root as a real host).
+  // hand-rolled the host-then-space fallback and every one of them read root as a real host).
   // Personal event -> null -> no Plan link, which is the honest answer: a Plan lives on a Space.
   const hostSpaceIdForEvent = scopeChoice === 'space' && spaceIdForPlacement ? spaceIdForPlacement : null
   const planSpaceId = await resolveHostingSpaceId({ spaceId, hostSpaceId: hostSpaceIdForEvent })
@@ -784,7 +784,7 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   // put an event back on its Plan, so one wrong link could only be repaired in SQL. Resolved
   // BEFORE the write against the Space that HOSTS this event, so a Plan from another Space fails
   // the save instead of being written by a service-role update nobody checked.
-  // Against the HOSTING Space, through the one resolver: `host_space_id ?? space_id` hand-rolled
+  // Against the HOSTING Space, through the one resolver: a hand-rolled host-then-space fallback
   // here would resolve the ROOT tenant for every personal event (see createEvent's note).
   const planLink = await resolvePlanLink(
     formData.get('planId'),
