@@ -10,6 +10,7 @@ import { EventCalendar, type CalendarEvent } from '@/components/events/event-cal
 import { loadEventJoinState, type EventJoinState } from '@/app/(main)/events/join-state-actions'
 import { eventCoverFocusStyle } from '@/lib/events/cover-focus'
 import type { SpaceEventItem } from '@/lib/spaces/content-data'
+import { TICKETS_NOT_READY } from '@/lib/events/ticket-eligibility'
 
 // THE SPACE PAGE EVENT POPUP (Events block upgrade). Clicking an event in ANY of the block's views
 // (list rows, index-style cards, the month calendar) opens ONE shared on-page dialog — never a
@@ -210,7 +211,7 @@ function EventPopupBody({ item, onClose }: { item: SpaceEventsViewItem; onClose:
 
         {/* The join affordance — the real mechanics, never a fork (ADR-826). */}
         <div className="mt-5">
-          {item.ticketsMode ? (
+          {item.ticketsMode && item.ticketsOnSale ? (
             <div className="space-y-2">
               <Link href={eventHref} className={buttonClasses('primary', 'sm')}>
                 Get tickets
@@ -218,6 +219,13 @@ function EventPopupBody({ item, onClose }: { item: SpaceEventsViewItem; onClose:
               </Link>
               <p className="text-meta text-muted">Your ticket is your spot. Checkout is on the event page.</p>
             </div>
+          ) : item.ticketsMode ? (
+            /* TICKETS MODE WITH NOTHING TO SELL (EVT-PRICE-HONESTY). `ticketsMode` says buying is how
+               you attend; `ticketsOnSale` says the platform can take the money. Where they come
+               apart, a "Get tickets" button is a promise the event page refuses a click later, so
+               the neutral sentence stands in its place -- the SAME words the buy path returns, and
+               nothing about the host's account state. "View full event" below is still the way in. */
+            <p className="text-body-sm text-muted">{TICKETS_NOT_READY}</p>
           ) : join === null ? (
             <div className="h-16 w-full max-w-sm animate-pulse rounded-card bg-surface-elevated" aria-hidden />
           ) : !join.signedIn ? (

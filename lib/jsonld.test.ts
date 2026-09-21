@@ -177,12 +177,12 @@ describe('eventSchema', () => {
   it('falls back to USD on the column default, not on a hardcode', () => {
     // Absent and explicit-null both mean "the column default", which IS 'usd'. The distinction
     // from the old behaviour is that a supplied currency now wins — pinned by the case above.
-    expect(eventSchema(makeEvent()).offers.priceCurrency).toBe('USD')
-    expect(eventSchema({ ...makeEvent(), currency: null }).offers.priceCurrency).toBe('USD')
+    expect(eventSchema(makeEvent()).offers!.priceCurrency).toBe('USD')
+    expect(eventSchema({ ...makeEvent(), currency: null }).offers!.priceCurrency).toBe('USD')
   })
 
   it('upper-cases an already-upper-case currency without mangling it', () => {
-    expect(eventSchema({ ...makeEvent(), currency: 'GBP' }).offers.priceCurrency).toBe('GBP')
+    expect(eventSchema({ ...makeEvent(), currency: 'GBP' }).offers!.priceCurrency).toBe('GBP')
   })
 
   // ── Availability (meta-scan 10.18) ──────────────────────────────────────────
@@ -191,28 +191,66 @@ describe('eventSchema', () => {
   // InStock. `availability` reflected only is_cancelled and never capacity.
   it('reports SoldOut when the caller says the event is sold out', () => {
     const result = eventSchema({ ...makeEvent({ price_cents: 2500 }), is_sold_out: true })
-    expect(result.offers.availability).toBe('https://schema.org/SoldOut')
+    expect(result.offers!.availability).toBe('https://schema.org/SoldOut')
   })
 
   it('reports InStock when the caller positively says seats remain', () => {
     const result = eventSchema({ ...makeEvent({ price_cents: 2500 }), is_sold_out: false })
-    expect(result.offers.availability).toBe('https://schema.org/InStock')
+    expect(result.offers!.availability).toBe('https://schema.org/InStock')
   })
 
   it('leaves availability on the cancellation rule when capacity is unknown', () => {
     // THREE-STATE, as with ticket_from_cents: `undefined` means the caller could not determine
     // this. It must read exactly as it did before the field existed, or every caller that cannot
     // see capacity silently starts publishing "seats available" as a fact.
-    expect(eventSchema(makeEvent()).offers.availability).toBe('https://schema.org/InStock')
-    expect(eventSchema({ ...makeEvent(), is_cancelled: true }).offers.availability).toBe(
+    expect(eventSchema(makeEvent()).offers!.availability).toBe('https://schema.org/InStock')
+    expect(eventSchema({ ...makeEvent(), is_cancelled: true }).offers!.availability).toBe(
       'https://schema.org/SoldOut',
     )
+  })
+
+  // ── The Offer itself (EVT-PRICE-HONESTY) ────────────────────────────────────
+  // OWN-074, measured on production: a live $55 tickets-mode event whose host has no Connect
+  // account. Unbuyable to everyone, signed in or out, and still publishing a priced Offer to every
+  // search and answer engine -- the copy of the number that travels furthest from the page.
+  it('publishes NO offer at all when the caller says nobody can be paid', () => {
+    const result = eventSchema({ ...makeEvent({ price_cents: 5500 }), payouts_ready: false })
+    expect(result.offers).toBeUndefined()
+    // `isAccessibleForFree` is a claim about the same money and is equally false, so it goes too.
+    expect('isAccessibleForFree' in result).toBe(false)
+    // Everything that is still TRUE about the event survives: it is happening, at a time, in a place.
+    expect(result.name).toBe(makeEvent().title)
+    expect(result.startDate).toBeTruthy()
+    expect(result.eventStatus).toBe('https://schema.org/EventScheduled')
+  })
+
+  it('does NOT reach for SoldOut instead, which is a different false claim', () => {
+    // There are seats. There is no way to pay for them. Saying "sold out" is not the honest
+    // substitute for saying nothing, and it would contradict a page showing open capacity.
+    const json = JSON.stringify(eventSchema({ ...makeEvent({ price_cents: 5500 }), payouts_ready: false }))
+    expect(json).not.toContain('SoldOut')
+    expect(json).not.toContain('5500')
+    expect(json).not.toContain('55.00')
+  })
+
+  it('publishes the offer as before when the payee IS ready', () => {
+    const result = eventSchema({ ...makeEvent({ price_cents: 5500 }), payouts_ready: true })
+    expect(result.offers).toMatchObject({ price: '55.00', availability: 'https://schema.org/InStock' })
+  })
+
+  it('leaves the offer untouched when the caller could not determine it', () => {
+    // THREE-STATE, as with ticket_from_cents and is_sold_out: `undefined` must read exactly as it
+    // did before the field existed, or a caller that cannot answer silently strips every price.
+    expect(eventSchema(makeEvent({ price_cents: 5500 })).offers).toMatchObject({ price: '55.00' })
+    expect(eventSchema({ ...makeEvent({ price_cents: 5500 }), payouts_ready: null }).offers).toMatchObject({
+      price: '55.00',
+    })
   })
 
   it('keeps a cancelled event SoldOut even when seats are free', () => {
     // is_cancelled wins: a cancelled event is not buyable regardless of capacity.
     const result = eventSchema({ ...makeEvent(), is_cancelled: true, is_sold_out: false })
-    expect(result.offers.availability).toBe('https://schema.org/SoldOut')
+    expect(result.offers!.availability).toBe('https://schema.org/SoldOut')
     expect(result.eventStatus).toBe('https://schema.org/EventCancelled')
   })
 
