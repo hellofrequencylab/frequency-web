@@ -186,8 +186,7 @@
             "LIVE-221",
             "LIVE-273",
             "HYG-092",
-            "HYG-105",
-            "HYG-107"
+            "HYG-105"
           ]
         },
         {
@@ -15474,7 +15473,7 @@
     {
       "id": "HYG-107",
       "title": "Adaptive Pricing is on, and the platform fee is an absolute cents integer computed against the product currency",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "hygiene",
       "size": "S",
@@ -15484,11 +15483,11 @@
       },
       "detail": "FILED 2026-09-21 from a read of the live Stripe dashboard beside the code.\n\nTHE SETTING: Settings → Payments → Adaptive Pricing is ENABLED for Checkout, Elements and the Hosted Invoice Page (Payment Links are always on). Its whole purpose is to present and charge a buyer in THEIR local currency.\n\nTHE CODE: lib/commerce/checkout.ts builds line items at `currency: (l.product.currency || 'usd')`, stores `currency: seller.currency || 'usd'` on the order, and passes `application_fee_amount: charge.platformFeeCents` — an absolute integer, computed by the take-rate helpers against that currency. lib/billing/tickets.ts has the same shape for tickets.\n\nTHE QUESTION, stated precisely rather than as an accusation: an application fee is denominated in the charge's currency, and Adaptive Pricing changes what the buyer is charged in. Whether our integer is still the intended cut under conversion needs to be established against Stripe's actual behaviour for destination charges with on_behalf_of — not reasoned about from the dashboard copy. The failure mode if it is wrong is quiet and ugly: a fee that is wrong by an exchange rate, on money that already moved.\n\n🔴 EXPOSURE TODAY IS NIL, AND THAT IS WHY THIS IS P2 RATHER THAN P1. Measured on production 2026-09-21: all 38 commerce_products carry currency 'usd' (37 active). There is no non-USD product to convert from, so no sale can currently hit this. It becomes real on the first non-USD product or the first buyer Adaptive Pricing decides to present differently.\n\nWHAT WOULD CLOSE IT: either a test pinning that the fee is computed in the same currency the charge settles in, or a documented verification against Stripe's Connect + Adaptive Pricing behaviour recorded in an ADR — plus, if the answer is that they can diverge, a guard that refuses rather than guesses. Do NOT close this by turning Adaptive Pricing off: it exists to help international conversion, and the platform wants that.",
       "verify": {
-        "kind": "manual",
-        "evidence": "2026-09-21: not yet established. Adaptive Pricing enabled in the dashboard; all 38 commerce_products are usd so nothing can hit it today. Closes when the fee/charge currency relationship is proven (test or ADR-recorded verification) and any divergence is guarded, or when a non-USD sale is deliberately taken and reconciled against the expected take-rate.",
-        "checked": "2026-09-21"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const strip=(p)=>fs.readFileSync(p,'utf8').replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const t=strip('lib/commerce/checkout-fee-currency.test.ts');if(!/application_fee_amount\\\\)\\\\.toBe\\\\(/.test(t)||!/price_data\\\\.currency\\\\)\\\\.toBe\\\\('cad'\\\\)/.test(t))fail('the commerce fee/currency test no longer ties application_fee_amount to non-USD line items');if(!/one currency at a time/.test(t))fail('the mixed-currency refusal is no longer tested');const k=strip('lib/billing/tickets-onpage.test.ts');if(!/application_fee_amount\\\\)\\\\.toBe\\\\(/.test(k)||!/price_data\\\\.currency\\\\)\\\\.toBe\\\\('usd'\\\\)/.test(k))fail('the ticket fee/currency test is gone');const c=strip('lib/commerce/checkout.ts');if((c.match(/currency: cartCurrency,/g)||[]).length<2)fail('the order row and the line items no longer read one cart currency, so the fee can be cut in a currency the line items do not carry');if(!/return \\\\{ error: 'Please check out items in one currency at a time\\\\.' \\\\}/.test(c))fail('a mixed-currency cart is no longer refused before the fee is computed');if(!/^## ADR-1500:/m.test(fs.readFileSync('docs/DECISIONS.md','utf8')))fail('ADR-1500 (the Stripe fact) is gone from the ledger')\"",
+        "note": "Measures the CONSEQUENCE: the two behavioural tests still assert application_fee_amount against the sum of non-USD (commerce) and usd (ticket) line items, checkout.ts (comments stripped) still feeds ONE cart currency to both the order row and the line items and still refuses a mixed cart with the member sentence, and the ADR that records Stripe’s behaviour is still in the ledger. The test assertions are matched on the ACT (`).toBe(`), not on identifiers in comments. Six code mutations (line currency defaulted, fee off by one, guard removed, order currency drifted, ticket fee off by one, ticket currency changed) each failed the tests on 2026-09-21."
       },
-      "notes": "Found by reading the dashboard against the code rather than from a failure. Nothing is broken today; this exists so the first non-USD sale is a checkpoint rather than a surprise."
+      "notes": "Found by reading the dashboard against the code rather than from a failure. Nothing is broken today; this exists so the first non-USD sale is a checkpoint rather than a surprise. CLOSED 2026-09-21 (ADR-1500): Stripe reads application_fee_amount in the PaymentIntent currency, which under Adaptive Pricing stays the line items’ currency (the buyer’s local price is presentment only, cost on the buyer), and the fee reaches the platform in the connected account’s settlement currency with no second conversion. Our integer is cut from the same cents in the same currency, so it is the intended cut. Pinned by lib/commerce/checkout-fee-currency.test.ts and a ticket case in lib/billing/tickets-onpage.test.ts; a mixed-currency cart is now refused before an order is written. Adaptive Pricing stays ON."
     },
     {
       "id": "OWN-080",
