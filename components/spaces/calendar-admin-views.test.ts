@@ -8,7 +8,7 @@ describe('Admin Calendar views (ADR-1464, ADR-1467)', () => {
   const page = readFileSync('app/(main)/spaces/[slug]/(profile)/calendar/page.tsx', 'utf8')
   const toggle = readFileSync('components/spaces/calendar-mode-toggle.tsx', 'utf8')
   const shell = readFileSync('components/spaces/calendar-workspace.tsx', 'utf8')
-  const consoleSrc = readFileSync('components/spaces/calendar-pm-console.tsx', 'utf8')
+  const laneSrc = readFileSync('lib/calendar/pm-console.ts', 'utf8')
   const viewSet = [
     'lib/calendar/admin-views.ts',
     'lib/calendar/list-index.ts',
@@ -16,7 +16,6 @@ describe('Admin Calendar views (ADR-1464, ADR-1467)', () => {
     'lib/calendar/project-board.ts',
     'components/spaces/calendar-list-view.tsx',
     'components/spaces/calendar-timeline-view.tsx',
-    'components/spaces/calendar-projects-view.tsx',
   ].map((path) => readFileSync(path, 'utf8')).join('\n')
 
   it('gates the admin read on adminAllowed and mounts the slide shell', () => {
@@ -44,10 +43,10 @@ describe('Admin Calendar views (ADR-1464, ADR-1467)', () => {
     expect(toggle).not.toContain('from \'next/link\'')
   })
 
-  it('leaves LIVE-417 and LIVE-418 lanes on the console and off the new view files', () => {
-    expect(consoleSrc).toContain('pencilLane')
-    expect(consoleSrc).toContain('planningLane')
-    expect(consoleSrc).toContain('productionLane')
+  it('keeps the LIVE-416/417/418 lanes in lib and off the view files', () => {
+    expect(laneSrc).toContain('export function pencilLane')
+    expect(laneSrc).toContain('export function planningLane')
+    expect(laneSrc).toContain('export function productionLane')
     expect(viewSet).not.toMatch(/\bplanningLane\b/)
     expect(viewSet).not.toMatch(/\bproductionLane\b/)
   })

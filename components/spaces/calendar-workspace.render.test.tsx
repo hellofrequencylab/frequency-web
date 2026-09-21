@@ -106,7 +106,6 @@ describe('CalendarWorkspace', () => {
     expect(labels).toEqual(['Calendar', 'List', 'Workflow'])
     expect(el.querySelector('[data-calendar-view="admin"]')).not.toBeNull()
     expect(el.querySelector('[data-calendar-admin-grid]')).not.toBeNull()
-    expect(el.querySelector('[data-calendar-pm-console]')).toBeNull()
     expect(el.querySelector('a[href*="view=list"]')).toBeNull()
     act(() => {
       el.querySelectorAll('[aria-label="Calendar views"] button')[1]?.dispatchEvent(
