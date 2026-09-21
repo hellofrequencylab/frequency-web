@@ -130,9 +130,16 @@ under the table before building against either.
 > `library_assets`, `library_collection_items`, `library_collections`, `library_styles` and
 > `library_versions` — and neither of the two.
 >
-> - **Usages** has a named replacement: `block_usage`, derived rather than written directly
->   ([ADR-975](DECISIONS.md)), after [ADR-979](DECISIONS.md) deleted every reader of the old table.
->   D4 below builds that write path from zero.
+> - **Usages** has a named replacement, and it is a QUERY, not a table ([ADR-1502](DECISIONS.md),
+>   2026-09-21, superseding the `block_usage` table [ADR-975](DECISIONS.md) sketched):
+>   `public.library_asset_usage(uuid)` and `public.block_type_usage(text)`
+>   (`supabase/migrations/20270345007500`) are SECURITY INVOKER live scans over `pages`,
+>   `spaces.preferences.pageDocs` / `puck` / `profileLayout(-Draft)` and `page_settings.layout`.
+>   Exact by construction, nothing to refresh; 3 ms over the whole corpus when measured. The
+>   read is `lib/library/usage.ts` (a failed read is `ok: false`, never zero, which is how the old
+>   table died per [ADR-979](DECISIONS.md)); the surfaces are the Loom drawer's "Used on N pages",
+>   the safe-delete guard in `deleteLibraryAsset`, and `pnpm block-usage`. The `app_instances`
+>   trigger half of ADR-975 is `LIVE-454`, blocked on PROG-E0 re-creating that table.
 > - **Renditions has no replacement, and does not need one.** The owner decision above says
 >   transforms are **on-the-fly**, which means a rendition is a *request* (a width + format against
 >   the master) and never a row, so `RENDITION_PRESETS` belongs to the D3 resolver and no table
