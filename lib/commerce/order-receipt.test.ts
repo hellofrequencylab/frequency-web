@@ -19,7 +19,11 @@ const m = vi.hoisted(() => ({
   spaces: new Map<string, Record<string, unknown>>(),
   items: [] as { title: string | null; qty: number | null }[],
   itemsError: null as null | { message: string },
+  /** The Journeys the order bought, as `journeySlugsForOrder` would resolve them (PROG-GD5). */
+  journeySlugs: [] as string[],
 }))
+
+vi.mock('./journey-fulfilment', () => ({ journeySlugsForOrder: async () => m.journeySlugs }))
 
 // Only the SEND is stubbed. The receipt body is wrapped by the real `emailShell` (lib/email.ts),
 // so what this file asserts about the rendered message is what a mailbox actually receives.
@@ -82,6 +86,46 @@ beforeEach(() => {
   m.spaces.set('space-1', { owner_profile_id: 'owner-1', name: 'Blue Door', brand_name: null, slug: 'blue-door' })
   m.items = [{ title: 'Two mugs', qty: 2 }]
   m.itemsError = null
+  m.journeySlugs = []
+})
+
+// ── THE WELCOME (PROG-GD5) ───────────────────────────────────────────────────────────────────────
+// A Journey is not "sent on"; it opens. The receipt's button is the Journey's welcome, reached
+// through the sign-in door so a guest's tap is the proof of the address (ADR-854) and a member
+// passes straight through. Measured before this: the only link was /orders, a member page the
+// shell bounces a signed-out guest away from, so the receipt's one door was dead for exactly the
+// person it was written for.
+describe('sendOrderReceipts — a Journey order opens onto the Journey', () => {
+  it('a guest is sent through sign-in to the welcome, with the address that paid prefilled', async () => {
+    m.journeySlugs = ['heart-on-fire']
+    m.items = [{ title: 'Heart on Fire', qty: 1 }]
+    await sendOrderReceipts({ ...spaceOrder, buyerProfileId: null, buyerEmail: 'guest@example.test' })
+    const buyer = m.enqueueEmail.mock.calls[0][0] as Record<string, string>
+    expect(buyer.text).toContain(
+      'https://freq.test/sign-in?next=/journeys/heart-on-fire/welcome&email=guest%40example.test',
+    )
+    expect(buyer.text).toContain('Open your Journey')
+    expect(buyer.text).toContain('sign in with this address')
+    expect(buyer.text).not.toContain('will send it on')
+  })
+
+  it('a member goes through the same door with no address to prefill, and is told it is theirs', async () => {
+    m.journeySlugs = ['heart-on-fire']
+    m.items = [{ title: 'Heart on Fire', qty: 1 }]
+    await sendOrderReceipts(spaceOrder)
+    const buyer = m.enqueueEmail.mock.calls[0][0] as Record<string, string>
+    expect(buyer.text).toContain('https://freq.test/sign-in?next=/journeys/heart-on-fire/welcome')
+    expect(buyer.text).not.toContain('email=')
+    expect(buyer.text).toContain('The Journey is yours now')
+  })
+
+  it('an order that bought no Journey keeps My orders as its door', async () => {
+    await sendOrderReceipts(spaceOrder)
+    const buyer = m.enqueueEmail.mock.calls[0][0] as Record<string, string>
+    expect(buyer.text).toContain('https://freq.test/orders')
+    expect(buyer.text).toContain('See my orders')
+    expect(buyer.text).not.toContain('/welcome')
+  })
 })
 
 describe('sendOrderReceipts', () => {

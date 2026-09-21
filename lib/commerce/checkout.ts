@@ -18,7 +18,8 @@ import { effectiveOrderSource } from '@/lib/pricing/network-world'
 import type { OrderSource } from '@/lib/billing/pricing-keys'
 import { confirmBookingByOrder, cancelBookingByOrder } from '@/lib/spaces/booking'
 import { enrolByOrder, revokeJourneyByOrder } from './journey-fulfilment'
-import { getJourneyOffer, isSoldOut } from '@/lib/journeys/paid'
+import { getJourneyOffer, isSoldOut, journeySlugsByPlanId } from '@/lib/journeys/paid'
+import { CHECKOUT_SESSION_PLACEHOLDER, journeyWelcomeDoor } from '@/lib/journeys/sales-path'
 import { checkJourneyTier } from '@/lib/journeys/tier-gate'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
@@ -207,6 +208,19 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
     const tier = await checkJourneyTier(p.journey_plan_id as string, buyerProfileId)
     if (!tier.ok) return { error: tier.error }
   }
+
+  // ── WHERE A GUEST COMES BACK TO (PROG-GD5) ────────────────────────────────────────────────────
+  // The member return is /orders. A GUEST cannot land there: it is a member page with no public
+  // twin, so the shell dropped every paid stranger on the marketing home with no acknowledgement
+  // and no door. A guest is journey-only (refused above otherwise), so the return is the Journey's
+  // welcome, reached through sign-in with the address that paid: `journeyWelcomeDoor`, the one door
+  // the receipt also uses. Resolved BEFORE the order is written so a slug that cannot be read costs
+  // a fallback to the sign-in door for /orders, never a session with nowhere to return to.
+  const guestSlug = guestEmail
+    ? ((await journeySlugsByPlanId(journeyItems.map((p) => p.journey_plan_id as string))).get(
+        journeyItems[0]?.journey_plan_id as string,
+      ) ?? null)
+    : null
 
   const ownerKey = (p: ProductRow) => `${p.owner_kind}:${p.owner_profile_id ?? ''}:${p.owner_space_id ?? ''}`
   if (new Set(products.map(ownerKey)).size > 1) {
@@ -405,7 +419,16 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
         ...gaMeta,
       },
       ...checkoutReturnFields(ui, {
-        successUrl: `${appUrl()}/orders?ok=1&session_id={CHECKOUT_SESSION_ID}`,
+        // A member comes back to My orders. A guest comes back through the sign-in door to the
+        // Journey's welcome (see guestSlug above); a guest whose slug could not be read still comes
+        // back through sign-in rather than to a member page the shell would bounce.
+        successUrl: guestEmail
+          ? `${appUrl()}${
+              guestSlug
+                ? journeyWelcomeDoor(guestSlug, { sessionId: CHECKOUT_SESSION_PLACEHOLDER, email: guestEmail })
+                : `/sign-in?next=${encodeURIComponent('/orders')}&email=${encodeURIComponent(guestEmail)}`
+            }`
+          : `${appUrl()}/orders?ok=1&session_id=${CHECKOUT_SESSION_PLACEHOLDER}`,
         // Cancel back to the surface the buyer was purchasing from, never the free peer board
         // (`/marketplace` redirects to Classifieds). Frequency Store → /store; Market + Space
         // shops both browse under the Market umbrella.

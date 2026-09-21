@@ -744,5 +744,37 @@ describe('createCommerceCheckout — the guest door (LIVE-396)', () => {
     expect(args.client_reference_id).toBe('buyer-1')
     expect(args.customer_email).toBeUndefined()
     expect(args.metadata).toMatchObject({ buyer_profile_id: 'buyer-1' })
+    expect(args.success_url).toBe('https://app.test/orders?ok=1&session_id={CHECKOUT_SESSION_ID}')
+  })
+
+  // ── THE WELCOME (PROG-GD5) ─────────────────────────────────────────────────────────────────────
+  // Measured 2026-09-21: a guest came back from Stripe to /orders, a member page with no public
+  // twin, and the shell dropped them on the marketing home with no acknowledgement, no sign-in
+  // door and no settle. The return is now the sign-in door to the Journey's welcome, carrying the
+  // session id BARE so Stripe substitutes it and the welcome can settle the order itself.
+  it('sends a guest back through sign-in to the Journey welcome, session id bare, address prefilled', async () => {
+    state.setHandler((c) => {
+      if (c.table === 'commerce_products' && c.op === 'select') return { data: [{ ...JOURNEY_PRODUCT, journey_plan_id: 'plan-1' }] }
+      if (c.table === 'journey_plans' && c.op === 'select') return { data: [{ id: 'plan-1', slug: 'heart-on-fire' }] }
+      if (c.table === 'commerce_orders' && c.op === 'insert') return { data: { id: 'o1' } }
+      if (c.table === 'commerce_order_items' && c.op === 'insert') return { data: [] }
+      if (c.table === 'commerce_orders' && c.op === 'update') return { data: [{ id: 'o1' }] }
+      return {}
+    })
+    await createCommerceCheckout({ items: [{ productId: 'p1', qty: 1 }], guestEmail: 'sam@example.com' })
+    const args = stripeFake.checkout.sessions.create.mock.calls[0][0] as Stripe.Checkout.SessionCreateParams
+    expect(args.success_url).toBe(
+      'https://app.test/sign-in?next=/journeys/heart-on-fire/welcome?session_id={CHECKOUT_SESSION_ID}&email=sam%40example.com',
+    )
+    expect(args.success_url).not.toContain('%7B')
+    expect(args.success_url).not.toContain('/orders')
+  })
+
+  it('a guest whose Journey slug cannot be read still returns through sign-in, never to a member page bare', async () => {
+    handler()
+    await createCommerceCheckout({ items: [{ productId: 'p1', qty: 1 }], guestEmail: 'sam@example.com' })
+    const args = stripeFake.checkout.sessions.create.mock.calls[0][0] as Stripe.Checkout.SessionCreateParams
+    expect(args.success_url).toMatch(/^https:\/\/app\.test\/sign-in\?next=/)
+    expect(args.success_url).toContain('email=sam%40example.com')
   })
 })
