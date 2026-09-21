@@ -47584,3 +47584,20 @@ Premise re-tested 2026-09-21: `git log --diff-filter=D` gives one commit for bot
 **Consequences.** A probe that requires a file to exist proves nothing about whether the file is used. When a route is retired, its done-row probes measure the fold, and its shared modules and map rows leave in the same change. HYG-110's probe now fails a cover-map row whose section has no route directory, for any section, and fails a tier-detail module with no real importer.
 
 **Rows.** HYG-110. HYG-046 (probe re-pointed).
+## ADR-1513: Two inert onboarding flags are deleted, and the walkthrough stays inactive (LIVE-260)
+
+**Status:** Accepted · 2026-09-21 · owner ruling · backlog `LIVE-260` · corroborated by `supabase/migrations/20270345007600_delete_the_two_inert_onboarding_flags.sql` and by `lib/platform-flags.test.ts`, which lists `lib/platform-flags.ts` as the only flag reader left
+
+**Context.** CORE-MODEL ([ADR-1294](DECISIONS.md)) step 7.3 said to turn the onboarding lights on by flipping `platform_flags.auto_popups_enabled` and `next_steps_enabled` and activating a walkthrough row. LIVE-240 then deleted the two engines those flags gated along with their readers, so the checklist and Vera's deck render unconditionally. The premise expired ([ADR-1082](DECISIONS.md)): there were no lights left to flip, only two rows that decide nothing and show in the admin console as switches. The stored `onboarding-next-steps` walkthrough is inactive with four slides, two tagged with criteria LIVE-259 retired; `lib/onboarding/steps.ts` now refuses such a funnel whole, so activating it could no longer truncate the checklist. An empty `new-walkthrough` draft sat beside it.
+
+**Decision.** The owner rules, 2026-09-21:
+
+1. **The two inert `platform_flags` rows are deleted** by migration, idempotently, with the six sibling keys the same seed inserted asserted intact.
+2. **`onboarding-next-steps` stays inactive.** The code default (photo, Circle, Event, host) is the model. Nothing is activated by this change.
+3. **The empty `new-walkthrough` draft is deleted only while it has zero slides.** A draft an operator has since authored is left alone.
+
+**Rejected.** Leaving the rows as harmless (a switch that does nothing is still a switch an operator can flip). Activating the walkthrough to make the ruling visible (the default already renders; the row's authored copy needs retagging first, which is an editor task, not a migration). Deleting `platform_flag_events` rows for the two keys (that is history; the live row was state).
+
+**Consequences.** `LIVE-260` closes. Its probe asserts the migration exists and deletes both keys, that it activates nothing, and that no non-test file under `app/`, `lib/` or `components/` names either key, read comment-blind, so a reintroduced reader fails the build before a missing row can decide anything.
+
+**Rows.** LIVE-260 (closed).
