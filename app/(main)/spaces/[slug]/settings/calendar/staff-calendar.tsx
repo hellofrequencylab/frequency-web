@@ -16,7 +16,7 @@ import type { DayNote } from '@/lib/calendar/day-notes'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import { isError } from '@/lib/action-result'
 import { deleteCalendarEntry, findEntryClashes, loadStaffCalendarMonth, pickPencilDate, saveCalendarEntry } from './entry-actions'
-import { joinEntryToPlan, startPlanFromEntry } from './plan-actions'
+import { createPenciledPlan, joinEntryToPlan, startPlanFromEntry } from './plan-actions'
 import { PlanDrawer } from './plan-drawer'
 
 // THE STAFF CALENDAR (ADR-1385, ADR-1388). The Space's public events and its private layer on one grid,
@@ -68,6 +68,7 @@ export function StaffCalendar({
   canEdit,
   dayNotes,
   plans = [],
+  onOpenPlan,
 }: {
   slug: string
   spaceId: string
@@ -78,6 +79,7 @@ export function StaffCalendar({
   canEdit: boolean
   dayNotes?: DayNote[]
   plans?: SpacePlan[]
+  onOpenPlan?: (planId: string, entryId?: string | null) => void
 }) {
   const router = useRouter()
   const [draft, setDraft] = useState<{ id: string | null; input: EntryInput } | null>(null)
@@ -107,6 +109,17 @@ export function StaffCalendar({
     if (!draft) return
     setError(null)
     startTransition(async () => {
+      if (!draft.id) {
+        const res = await createPenciledPlan(slug, draft.input.title, draft.input.startDate, draft.input.timeZone)
+        if (isError(res)) {
+          setError(res.error)
+        } else {
+          setDraft({ id: res.data.entryId, input: { ...draft.input, planId: res.data.id } })
+          setRefreshKey((k) => k + 1)
+          router.refresh()
+        }
+        return
+      }
       const res = await saveCalendarEntry(slug, draft.id, draft.input)
       if (isError(res)) setError(res.error)
       else done()
@@ -193,7 +206,30 @@ export function StaffCalendar({
       />
 
       <Dialog open={draft !== null} onClose={() => !pending && setDraft(null)} ariaLabelledBy="calendar-entry-title" className="max-w-lg">
-        {input && (
+        {input && !draft?.id ? (
+          <form onSubmit={submit} className="space-y-4 rounded-card border border-border bg-surface p-6 lift-3">
+            <h2 id="calendar-entry-title" className="text-lead font-bold text-text">Pencil a date</h2>
+            <div className="grid gap-1">
+              <label htmlFor="entry-title" className={labelClasses}>Title</label>
+              <Input id="entry-title" required maxLength={200} value={input.title} onChange={(e) => set('title', e.target.value)} autoFocus />
+            </div>
+            <div className="grid gap-1">
+              <label htmlFor="entry-start-date" className={labelClasses}>Date</label>
+              <Input
+                id="entry-start-date"
+                type="date"
+                required
+                value={input.startDate}
+                onChange={(e) => setDraft((d) => d ? { ...d, input: { ...d.input, startDate: e.target.value, endDate: e.target.value } } : d)}
+              />
+            </div>
+            {error && <p role="alert" className="text-body-sm text-danger">{error}</p>}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="secondary" size="sm" onClick={() => setDraft(null)} disabled={pending}>Cancel</Button>
+              <Button type="submit" size="sm" disabled={pending}>{pending ? 'Saving' : 'Pencil date'}</Button>
+            </div>
+          </form>
+        ) : input && (
           <form onSubmit={submit} className="space-y-4 rounded-card border border-border bg-surface p-6 lift-3">
             <h2 id="calendar-entry-title" className="text-lead font-bold text-text">
               {draft?.id ? (def?.isPencil ? 'Edit event' : 'Edit entry') : def?.isPencil ? 'Pencil it in' : 'Add to calendar'}
@@ -229,7 +265,7 @@ export function StaffCalendar({
               />
             </div>
 
-            {stage && (
+            {stage && !input.planId && (
               <div className="grid gap-1">
                 <label htmlFor="entry-stage" className={labelClasses}>Stage</label>
                 <Select
@@ -240,6 +276,13 @@ export function StaffCalendar({
                   aria-describedby="entry-stage-hint"
                 />
                 <p id="entry-stage-hint" className="text-meta text-muted">{stage.hint}</p>
+              </div>
+            )}
+            {stage && input.planId && (
+              <div className="grid gap-1">
+                <span className={labelClasses}>Stage</span>
+                <p className="text-body-sm font-medium text-text">{stage.label}</p>
+                <p className="text-meta text-muted">Move this Plan from Workflow so its dates stay in sync.</p>
               </div>
             )}
 
@@ -455,7 +498,8 @@ export function StaffCalendar({
                     size="sm"
                     onClick={() => {
                       const plan = plans.find((p) => p.id === input.planId) ?? null
-                      setOpenPlan(plan)
+                       if (onOpenPlan && plan) onOpenPlan(plan.id, draft?.id)
+                       else setOpenPlan(plan)
                     }}
                   >
                     Open Plan
@@ -507,13 +551,15 @@ export function StaffCalendar({
           </form>
         )}
       </Dialog>
-      <PlanDrawer
-        slug={slug}
-        plan={openPlan}
-        entryId={draft?.id}
-        open={openPlan !== null}
-        onClose={() => setOpenPlan(null)}
-      />
+      {!onOpenPlan && (
+        <PlanDrawer
+          slug={slug}
+          plan={openPlan}
+          entryId={draft?.id}
+          open={openPlan !== null}
+          onClose={() => setOpenPlan(null)}
+        />
+      )}
     </div>
   )
 }

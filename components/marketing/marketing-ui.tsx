@@ -971,7 +971,7 @@ export function PillarNav({
               The Quest is the light game everyone plays alongside their Circle.{' '}
               <Link
                 href="/the-quest"
-                className={isInk ? 'text-primary underline-offset-2 hover:underline' : 'text-primary-strong underline-offset-2 hover:underline'}
+                className={isInk ? 'text-primary underline underline-offset-2' : 'text-primary-strong underline underline-offset-2'}
               >
                 How it works
               </Link>

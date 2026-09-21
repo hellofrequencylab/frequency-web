@@ -86,6 +86,38 @@ describe('Dialog stacking (only the topmost reacts to ESC)', () => {
   })
 })
 
+describe('Dialog focus stability', () => {
+  it('does not reset focus when an open caller supplies a new onClose function', () => {
+    const trigger = document.createElement('button')
+    trigger.textContent = 'Open'
+    document.body.appendChild(trigger)
+    trigger.focus()
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+
+    const render = () => {
+      root!.render(
+        <Dialog open onClose={() => {}} ariaLabel="Edit Plan">
+          <input id="first-field" />
+          <textarea id="notes-field" />
+        </Dialog>,
+      )
+    }
+
+    act(render)
+    const notes = document.getElementById('notes-field') as HTMLTextAreaElement
+    notes.focus()
+    expect(document.activeElement).toBe(notes)
+
+    // A controlled field update rerenders its parent. Inline callbacks get a
+    // new identity even though the dialog remains open.
+    act(render)
+    expect(document.activeElement).toBe(notes)
+    trigger.remove()
+  })
+})
+
 describe('Dialog align="sheet" (edge-to-edge on mobile)', () => {
   it('renders the overlay full-bleed (no padding, stretched) so the panel can fill the viewport', () => {
     container = document.createElement('div')

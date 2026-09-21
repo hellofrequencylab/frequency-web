@@ -8,7 +8,7 @@ import { SITE_URL } from '@/lib/site'
 import { loadPublicSpaceWindow } from '@/lib/calendar/public-month'
 import { guestFeedState, guestLiveItems } from '@/lib/calendar/guest-live'
 import { monthGridWindow, yearHorizonWindow } from '@/lib/calendar/month-window'
-import { loadAdminSpaceCalendarMonth, loadSpaceCalendarMonth } from './actions'
+import { loadSpaceCalendarMonth } from './actions'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 import { getSpaceCapabilities, resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
@@ -18,7 +18,6 @@ import { CalendarWorkspace } from '@/components/spaces/calendar-workspace'
 import {
   calendarViewCookieName,
   firstSearchParam,
-  parseTimelineMonth,
   resolveOperatorCalendarView,
 } from '@/lib/calendar/admin-views'
 
@@ -43,6 +42,7 @@ export default async function SpaceCalendarPage({
   searchParams: Promise<{
     view?: string | string[]
     item?: string | string[]
+    plan?: string | string[]
     y?: string | string[]
     m?: string | string[]
   }>
@@ -64,7 +64,6 @@ export default async function SpaceCalendarPage({
   const now = new Date()
   const initialYear = now.getUTCFullYear()
   const initialMonth1 = now.getUTCMonth() + 1
-  const todayKey = now.toISOString().slice(0, 10)
   const brandName = space.brandName ?? space.name
   const httpsUrl = `${SITE_URL}/spaces/${slug}/calendar.ics`
   const webcalUrl = httpsUrl.replace(/^https?:\/\//, 'webcal://')
@@ -91,11 +90,9 @@ export default async function SpaceCalendarPage({
         canManage={false}
         initialView="guest"
         initialListItem={null}
+        initialPlanId={null}
         initialYear={initialYear}
         initialMonth1={initialMonth1}
-        timelineYear={initialYear}
-        timelineMonth1={initialMonth1}
-        todayKey={todayKey}
         guestEvents={guestEvents}
         guestFirstUse={feed.isFirstUse}
         adminEvents={[]}
@@ -103,7 +100,6 @@ export default async function SpaceCalendarPage({
         plans={[]}
         subscribe={subscribe}
         loadGuestMonth={loadSpaceCalendarMonth.bind(null, slug)}
-        loadAdminMonth={loadAdminSpaceCalendarMonth.bind(null, slug)}
       />
     )
   }
@@ -111,7 +107,6 @@ export default async function SpaceCalendarPage({
   const jar = await cookies()
   const remembered = jar.get(calendarViewCookieName(slug))?.value
   const initialView = resolveOperatorCalendarView(query.view, remembered)
-  const month = parseTimelineMonth(query.y, query.m, { year: initialYear, month1: initialMonth1 })
   const admin = await loadAdminCalendar(space.id, {
     canManage,
     year: initialYear,
@@ -129,11 +124,9 @@ export default async function SpaceCalendarPage({
       canManage={canManage}
       initialView={initialView}
       initialListItem={firstSearchParam(query.item) ?? null}
+      initialPlanId={firstSearchParam(query.plan) ?? null}
       initialYear={initialYear}
       initialMonth1={initialMonth1}
-      timelineYear={month.year}
-      timelineMonth1={month.month1}
-      todayKey={todayKey}
       guestEvents={guestEvents}
       guestFirstUse={feed.isFirstUse}
       adminEvents={admin.events}
@@ -141,7 +134,6 @@ export default async function SpaceCalendarPage({
       plans={admin.plans}
       subscribe={subscribe}
       loadGuestMonth={loadSpaceCalendarMonth.bind(null, slug)}
-      loadAdminMonth={loadAdminSpaceCalendarMonth.bind(null, slug)}
     />
   )
 }

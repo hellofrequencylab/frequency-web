@@ -12,6 +12,10 @@ import { buildVeraProposal } from './vera-plan'
 // PLAN IO (ADR-1386). Caller session, so RLS on space_plans is the lock.
 
 type Untyped = {
+  rpc: (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => PromiseLike<{ data: unknown; error: { message: string } | null }>
   from: (t: string) => {
     select: (cols: string) => PlanQuery
     insert: (rows: Record<string, unknown> | Record<string, unknown>[]) => PromiseLike<{
@@ -101,6 +105,47 @@ export async function updateSpacePlan(
     .select(PLAN_COLS)
   if (error || !data?.[0]) return { error: 'The Plan could not be saved.' }
   return { data: mapPlanRow(data[0]) }
+}
+
+/** Keep the Plan authoritative while mirroring its lifecycle onto every linked calendar entry. */
+export async function transitionSpacePlanRows(
+  spaceId: string,
+  planId: string,
+  stage: string,
+): Promise<{ data: true } | { error: string }> {
+  const { data, error } = await (await db()).rpc('transition_space_plan_stage', {
+    p_space_id: spaceId,
+    p_plan_id: planId,
+    p_stage: stage,
+  })
+  if (error || data !== true) return { error: 'The Plan stage could not be changed.' }
+  return { data: true }
+}
+
+export async function createPenciledPlanRows(
+  spaceId: string,
+  title: string,
+  entry: PlanPencilEntry,
+): Promise<{ data: { planId: string; entryId: string } } | { error: string }> {
+  const { data, error } = await (await db()).rpc('create_penciled_plan', {
+    p_space_id: spaceId,
+    p_title: title,
+    p_starts_at: entry.starts_at,
+    p_ends_at: entry.ends_at,
+    p_time_zone: entry.time_zone,
+  })
+  const row = Array.isArray(data) ? data[0] : data
+  const rec = row && typeof row === 'object' ? (row as Record<string, unknown>) : null
+  const planId = typeof rec?.plan_id === 'string' ? rec.plan_id : null
+  const entryId = typeof rec?.entry_id === 'string' ? rec.entry_id : null
+  if (error || !planId || !entryId) return { error: 'The date could not be penciled in.' }
+  return { data: { planId, entryId } }
+}
+
+type PlanPencilEntry = {
+  starts_at: string
+  ends_at: string
+  time_zone: string
 }
 
 export async function attachEntryToPlan(

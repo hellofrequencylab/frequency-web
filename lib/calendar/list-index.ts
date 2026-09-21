@@ -24,6 +24,7 @@ export type ListIndexItem = {
   coverUrl: string | null
   startInstantIso: string | null
   stage: EntryStage | null
+  planId: string | null
 }
 
 export function listPublicSlug(ev: CalendarEvent): string | null {
@@ -62,6 +63,7 @@ export function listIndexItems(events: CalendarEvent[]): ListIndexItem[] {
         coverUrl: ev.coverUrl,
         startInstantIso: ev.startInstantIso,
         stage: ev.stage ?? null,
+        planId: ev.planId ?? null,
       }
     })
 }

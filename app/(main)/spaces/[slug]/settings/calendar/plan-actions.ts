@@ -7,18 +7,22 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { fail, isError, ok, type ActionResult } from '@/lib/action-result'
 import { parsePlanInput, planTargetDef, type PlanInput } from '@/lib/calendar/plans'
+import { planStageTransition, type WorkflowStage } from '@/lib/calendar/workflow-board'
 import {
   attachEntryToPlan,
+  createPenciledPlanRows,
   getSpacePlan,
   insertPlaybook,
   insertSpacePlan,
   listPlaybooks,
   listSpacePlans,
   updateSpacePlan,
+  transitionSpacePlanRows,
 } from '@/lib/calendar/plans-store'
 import { copyPlaybookToPlan, runItAgain } from '@/lib/calendar/playbooks'
 import { createTask, listTasks, type CrmTask } from '@/lib/crm/tasks'
 import { getCalendarEntryRow } from '@/lib/calendar/entries-store'
+import { parseEntryInput, type EntryInput } from '@/lib/calendar/entries'
 import { productionPrefill, readinessGaps } from '@/lib/calendar/production-prefill'
 import { EVENT_MANIFEST } from '@/lib/studio/entities/event'
 import { buildVeraProposal } from '@/lib/calendar/vera-plan'
@@ -52,12 +56,38 @@ export async function saveSpacePlan(
   if (planId !== null && !UUID_RE.test(planId)) return fail('That Plan no longer exists.')
   const parsed = parsePlanInput(input)
   if ('error' in parsed) return fail(parsed.error)
+  const { stage, ...details } = parsed.data
   const res = planId
-    ? await updateSpacePlan(editor.spaceId, planId, parsed.data)
+    ? await updateSpacePlan(editor.spaceId, planId, details)
     : await insertSpacePlan(editor.spaceId, parsed.data, editor.profileId)
   if ('error' in res) return fail(res.error)
+  if (planId) {
+    const moved = await transitionPlanStageForEditor(editor.spaceId, planId, stage)
+    if ('error' in moved) return fail(moved.error)
+  }
   revalidate(slug)
   return ok({ id: res.data.id })
+}
+
+async function transitionPlanStageForEditor(spaceId: string, planId: string, stage: string) {
+  const transition = planStageTransition(stage)
+  if (!transition) return { error: 'Choose a valid Plan stage.' } as const
+  return transitionSpacePlanRows(spaceId, planId, transition.stage)
+}
+
+/** The only operator action that changes lifecycle stage: the Plan leads and every linked date follows. */
+export async function transitionPlanStage(
+  slug: string,
+  planId: string,
+  stage: WorkflowStage,
+): Promise<ActionResult<void>> {
+  const editor = await resolveEditor(slug)
+  if (!editor) return fail('You do not have access to this calendar.')
+  if (!UUID_RE.test(planId)) return fail('That Plan no longer exists.')
+  const moved = await transitionPlanStageForEditor(editor.spaceId, planId, stage)
+  if ('error' in moved) return fail(moved.error)
+  revalidate(slug)
+  return ok()
 }
 
 export async function startPlanFromEntry(
@@ -74,6 +104,38 @@ export async function startPlanFromEntry(
   if ('error' in attached) return fail(attached.error)
   revalidate(slug)
   return created
+}
+
+/** Create the smallest useful production record from the operator Calendar:
+ * one titled date, represented by one pencil entry linked to one Plan. */
+export async function createPenciledPlan(
+  slug: string,
+  title: string,
+  dayKey: string,
+  timeZone = 'UTC',
+): Promise<ActionResult<{ id: string; entryId: string }>> {
+  const editor = await resolveEditor(slug)
+  if (!editor) return fail('You do not have access to this calendar.')
+  const parsedPlan = parsePlanInput({ title, stage: 'pencil', targetKind: 'event' })
+  if ('error' in parsedPlan) return fail(parsedPlan.error)
+  const input: EntryInput = {
+    kind: 'pencil',
+    title,
+    allDay: true,
+    startDate: dayKey,
+    endDate: dayKey,
+    timeZone,
+    stage: 'pencil',
+    blocksTime: false,
+    showPublicly: false,
+    planId: null,
+  }
+  const parsedEntry = parseEntryInput(input)
+  if ('error' in parsedEntry) return fail(parsedEntry.error)
+  const created = await createPenciledPlanRows(editor.spaceId, parsedPlan.data.title, parsedEntry.data)
+  if ('error' in created) return fail(created.error)
+  revalidate(slug)
+  return ok({ id: created.data.planId, entryId: created.data.entryId })
 }
 
 export async function joinEntryToPlan(

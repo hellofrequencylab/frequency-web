@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input, Textarea, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
-import { PLAN_STAGES, PLAN_TARGETS, type SpacePlan } from '@/lib/calendar/plans'
+import { PLAN_STAGES, PLAN_TARGETS, planTargetDef, type SpacePlan } from '@/lib/calendar/plans'
 import type { CrmTask } from '@/lib/crm/tasks'
 import {
   acceptVeraChecklist,
@@ -27,12 +27,16 @@ export function PlanDrawer({
   entryId,
   open,
   onClose,
+  onSaved,
+  deepSettingsHref,
 }: {
   slug: string
   plan: SpacePlan | null
   entryId?: string | null
   open: boolean
   onClose: () => void
+  onSaved?: (planId: string, stage: SpacePlan['stage']) => void
+  deepSettingsHref?: string
 }) {
   const [pending, start] = useTransition()
   const [title, setTitle] = useState(plan?.title ?? '')
@@ -55,15 +59,32 @@ export function PlanDrawer({
     setStage(plan?.stage ?? 'plan')
     setTargetKind(plan?.targetKind ?? 'event')
     setProposal(null)
+    setTodoTitle('')
+    setTodos([])
+    setGaps([])
+    setHref(null)
+    setError(null)
+    setGuestSpaceId('')
   }
 
   useEffect(() => {
     if (!open || !plan) return
-    listPlanTodos(slug, plan.id).then(setTodos).catch(() => setTodos([]))
+    let live = true
+    listPlanTodos(slug, plan.id)
+      .then((next) => {
+        if (live) setTodos(next)
+      })
+      .catch(() => {
+        if (live) setTodos([])
+      })
     planReadiness(slug, plan.id, entryId ?? null).then((r) => {
+      if (!live) return
       setGaps(r.gaps)
       setHref(r.href)
     })
+    return () => {
+      live = false
+    }
   }, [open, plan, slug, entryId])
 
   if (!plan) return null
@@ -74,28 +95,36 @@ export function PlanDrawer({
     start(async () => {
       const res = await saveSpacePlan(slug, plan.id, { title, notes, stage, targetKind })
       if (isError(res)) setError(res.error)
-      else onClose()
+      else {
+        onSaved?.(plan.id, stage)
+        onClose()
+      }
     })
   }
 
   return (
     <Dialog open={open} onClose={onClose} ariaLabelledBy="plan-drawer-title" className="max-w-lg">
       <form onSubmit={save} className="space-y-4 rounded-card border border-border bg-surface p-6 lift-3">
-        <h2 id="plan-drawer-title" className="text-lead font-bold text-text">
-          {plan.title}
-        </h2>
-        <p className="text-meta text-muted">The working record behind the dates on this calendar.</p>
-
-        {gaps.length > 0 && (
-          <div className="rounded-control bg-info-bg px-3 py-2 text-body-sm text-info">
-            <p className="font-medium">Still needed before this can go live</p>
-            <ul className="mt-1 list-disc pl-5">
-              {gaps.map((g) => (
-                <li key={g}>{g}</li>
-              ))}
-            </ul>
+        <div className="space-y-3" data-plan-production-summary>
+          <div>
+            <p className="text-meta font-semibold uppercase tracking-wide text-muted">Plan</p>
+            <h2 id="plan-drawer-title" className="text-lead font-bold text-text">{plan.title}</h2>
+            <p className="text-meta text-muted">{planTargetDef(plan.targetKind).label} production record</p>
           </div>
-        )}
+          <dl className="grid grid-cols-2 gap-3 rounded-control border border-border bg-surface-elevated p-3 text-body-sm">
+            <div><dt className="text-meta text-muted">Stage</dt><dd className="font-semibold capitalize text-text">{stage === 'plan' ? 'Planning' : stage}</dd></div>
+            <div><dt className="text-meta text-muted">Owner</dt><dd className="font-semibold text-text">{plan.ownerProfileId ? 'Assigned teammate' : 'Unassigned'}</dd></div>
+            <div className="col-span-2"><dt className="text-meta text-muted">Readiness</dt><dd className="font-semibold text-text">{gaps.length === 0 ? 'Ready for the next step' : `${gaps.length} ${gaps.length === 1 ? 'item' : 'items'} still needed`}</dd></div>
+            <div className="col-span-2"><dt className="text-meta text-muted">Next action</dt><dd className="font-semibold text-text">{href ? 'Open the production Studio' : gaps[0] ?? 'Keep the Plan current'}</dd></div>
+          </dl>
+          {gaps.length > 0 && (
+            <div className="rounded-control bg-info-bg px-3 py-2 text-body-sm text-info">
+              <p className="font-medium">Still needed before this can go live</p>
+              <ul className="mt-1 list-disc pl-5">{gaps.map((g) => <li key={g}>{g}</li>)}</ul>
+            </div>
+          )}
+          {deepSettingsHref && <Link href={deepSettingsHref} className="inline-flex text-body-sm font-semibold text-primary-strong hover:underline">Open deep settings</Link>}
+        </div>
 
         <div className="grid gap-1">
           <label htmlFor="plan-title" className={labelClasses}>

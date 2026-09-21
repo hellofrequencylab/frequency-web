@@ -1,13 +1,12 @@
 'use client'
 
-import { useCallback, useMemo, useState, useTransition, type ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { EventCalendar } from '@/components/events/event-calendar'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StaffCalendar } from '@/app/(main)/spaces/[slug]/settings/calendar/staff-calendar'
 import { CalendarModeToggle } from '@/components/spaces/calendar-mode-toggle'
 import { CalendarListView } from '@/components/spaces/calendar-list-view'
-import { CalendarTimelineView } from '@/components/spaces/calendar-timeline-view'
-import { CalendarProjectsView } from '@/components/spaces/calendar-projects-view'
+import { CalendarWorkflowView } from '@/components/spaces/calendar-workflow-view'
 import {
   adminViewHref,
   calendarViewBlurb,
@@ -16,11 +15,12 @@ import {
   type CalendarAdminView,
 } from '@/lib/calendar/admin-views'
 import { listIndexItems, selectListItem } from '@/lib/calendar/list-index'
-import { monthTimelineBars, monthTimelineDays } from '@/lib/calendar/month-timeline'
-import { projectBoard } from '@/lib/calendar/project-board'
+import { workflowBoard } from '@/lib/calendar/workflow-board'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import type { DayNote } from '@/lib/calendar/day-notes'
 import type { SpacePlan } from '@/lib/calendar/plans'
+import type { WorkflowStage } from '@/lib/calendar/workflow-board'
+import { PlanDrawer } from '@/app/(main)/spaces/[slug]/settings/calendar/plan-drawer'
 
 // OPERATOR CALENDAR SHELL (ADR-1467). Guest and Admin data load once on the
 // server. Switching a view slides the already-mounted panels. The last view
@@ -34,11 +34,9 @@ export function CalendarWorkspace({
   canManage,
   initialView,
   initialListItem,
+  initialPlanId,
   initialYear,
   initialMonth1,
-  timelineYear: timelineYearStart,
-  timelineMonth1: timelineMonthStart,
-  todayKey,
   guestEvents,
   guestFirstUse,
   adminEvents,
@@ -46,7 +44,6 @@ export function CalendarWorkspace({
   plans,
   subscribe,
   loadGuestMonth,
-  loadAdminMonth,
 }: {
   slug: string
   spaceId: string
@@ -55,11 +52,9 @@ export function CalendarWorkspace({
   canManage: boolean
   initialView: CalendarAdminView
   initialListItem: string | null
+  initialPlanId: string | null
   initialYear: number
   initialMonth1: number
-  timelineYear: number
-  timelineMonth1: number
-  todayKey: string
   guestEvents: CalendarEvent[]
   guestFirstUse: boolean
   adminEvents: CalendarEvent[]
@@ -67,34 +62,59 @@ export function CalendarWorkspace({
   plans: SpacePlan[]
   subscribe: ReactNode
   loadGuestMonth: (year: number, month1: number) => Promise<CalendarEvent[]>
-  loadAdminMonth: (year: number, month1: number) => Promise<CalendarEvent[]>
 }) {
   const [view, setView] = useState<CalendarAdminView>(adminAllowed ? initialView : 'guest')
   const [listKey, setListKey] = useState<string | null>(initialListItem)
-  const [timelineYear, setTimelineYear] = useState(timelineYearStart)
-  const [timelineMonth1, setTimelineMonth1] = useState(timelineMonthStart)
-  const [timelineEvents, setTimelineEvents] = useState(adminEvents)
-  const [timelinePending, startTimelineTransition] = useTransition()
+  const [planId, setPlanId] = useState<string | null>(initialPlanId)
+  const [planEntryId, setPlanEntryId] = useState<string | null>(null)
+  const [currentPlans, setCurrentPlans] = useState(plans)
+  const [currentAdminEvents, setCurrentAdminEvents] = useState(adminEvents)
+  const [serverSnapshot, setServerSnapshot] = useState({ plans, adminEvents })
+  if (plans !== serverSnapshot.plans || adminEvents !== serverSnapshot.adminEvents) {
+    setServerSnapshot({ plans, adminEvents })
+    setCurrentPlans(plans)
+    setCurrentAdminEvents(adminEvents)
+  }
 
-  const items = useMemo(() => (adminAllowed ? listIndexItems(adminEvents) : []), [adminAllowed, adminEvents])
+  const items = useMemo(() => (adminAllowed ? listIndexItems(currentAdminEvents) : []), [adminAllowed, currentAdminEvents])
   const selected = useMemo(() => selectListItem(items, listKey), [items, listKey])
-  const timelineDays = useMemo(
-    () => monthTimelineDays(timelineYear, timelineMonth1, todayKey),
-    [timelineYear, timelineMonth1, todayKey],
-  )
-  const timelineBars = useMemo(
-    () => monthTimelineBars(timelineEvents, timelineYear, timelineMonth1),
-    [timelineEvents, timelineYear, timelineMonth1],
-  )
-  const columns = useMemo(() => (adminAllowed ? projectBoard(adminEvents) : []), [adminAllowed, adminEvents])
+  const workflowColumns = useMemo(() => (adminAllowed ? workflowBoard(currentPlans, currentAdminEvents) : []), [adminAllowed, currentPlans, currentAdminEvents])
+  const openPlan = useMemo(() => currentPlans.find((plan) => plan.id === planId) ?? null, [currentPlans, planId])
+
+  const stageChanged = useCallback((changedPlanId: string, stage: WorkflowStage) => {
+    const planStage = stage === 'cancelled' ? 'plan' : stage
+    setCurrentPlans((all) => stage === 'cancelled'
+      ? all.filter((plan) => plan.id !== changedPlanId)
+      : all.map((plan) => plan.id === changedPlanId ? { ...plan, stage: planStage } : plan))
+    setCurrentAdminEvents((all) => all.map((event) => event.planId === changedPlanId
+      ? {
+          ...event,
+          stage: stage === 'plan' ? 'planning' : stage,
+          isCancelled: stage === 'cancelled',
+          sourceLabel: stage === 'plan' ? 'Planning' : stage[0].toUpperCase() + stage.slice(1),
+        }
+      : event))
+  }, [])
 
   const syncUrl = useCallback(
-    (next: CalendarAdminView, extras?: { item?: string | null; year?: number; month1?: number }) => {
+    (next: CalendarAdminView, extras?: { item?: string | null; plan?: string | null; year?: number; month1?: number }) => {
       if (typeof window === 'undefined') return
-      window.history.replaceState(null, '', adminViewHref(slug, next, extras))
+      window.history.replaceState(null, '', adminViewHref(slug, next, { ...extras, plan: extras?.plan === undefined ? planId : extras.plan }))
     },
-    [slug],
+    [slug, planId],
   )
+
+  const selectPlan = useCallback((nextPlanId: string, entryId?: string | null) => {
+    setPlanId(nextPlanId)
+    setPlanEntryId(entryId ?? null)
+    syncUrl(view, { item: view === 'list' ? listKey : null, plan: nextPlanId })
+  }, [listKey, syncUrl, view])
+
+  const closePlan = useCallback(() => {
+    setPlanId(null)
+    setPlanEntryId(null)
+    syncUrl(view, { item: view === 'list' ? listKey : null, plan: null })
+  }, [listKey, syncUrl, view])
 
   const selectView = useCallback(
     (next: CalendarAdminView) => {
@@ -102,10 +122,9 @@ export function CalendarWorkspace({
       setView(next)
       rememberCalendarView(slug, next)
       if (next === 'list') syncUrl(next, { item: listKey ?? selected?.key })
-      else if (next === 'timeline') syncUrl(next, { year: timelineYear, month1: timelineMonth1 })
       else syncUrl(next)
     },
-    [adminAllowed, slug, listKey, selected?.key, timelineYear, timelineMonth1, syncUrl],
+     [adminAllowed, slug, listKey, selected?.key, syncUrl],
   )
 
   const selectList = useCallback(
@@ -114,23 +133,6 @@ export function CalendarWorkspace({
       syncUrl('list', { item: key })
     },
     [syncUrl],
-  )
-
-  const changeTimelineMonth = useCallback(
-    (year: number, month1: number) => {
-      setTimelineYear(year)
-      setTimelineMonth1(month1)
-      syncUrl('timeline', { year, month1 })
-      setTimelineEvents([])
-      startTimelineTransition(async () => {
-        try {
-          setTimelineEvents(await loadAdminMonth(year, month1))
-        } catch {
-          setTimelineEvents([])
-        }
-      })
-    },
-    [loadAdminMonth, syncUrl],
   )
 
   const guestBody = (
@@ -158,7 +160,14 @@ export function CalendarWorkspace({
         <p className="text-body-sm text-muted">{calendarViewBlurb(view, brandName)}</p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        {adminAllowed && <CalendarModeToggle mode={view} onSelect={selectView} />}
+        {adminAllowed && (
+          <>
+            <button type="button" aria-pressed={view === 'guest'} onClick={() => selectView('guest')} className="rounded-control border border-border px-3 py-1 text-body-sm font-semibold text-muted hover:text-text">
+              Guest preview
+            </button>
+            <CalendarModeToggle mode={view} onSelect={selectView} />
+          </>
+        )}
         {subscribe}
       </div>
     </div>
@@ -199,36 +208,36 @@ export function CalendarWorkspace({
                     <StaffCalendar
                       slug={slug}
                       spaceId={spaceId}
-                      events={adminEvents}
+                      events={currentAdminEvents}
                       initialYear={initialYear}
                       initialMonth1={initialMonth1}
                       canEdit={canManage}
                       dayNotes={dayNotes}
-                      plans={plans}
+                      plans={currentPlans}
+                      onOpenPlan={selectPlan}
                     />
                   </div>
                 ) : null}
                 {panel === 'list' ? (
-                  <CalendarListView items={items} selected={selected} onSelect={selectList} />
+                  <CalendarListView items={items} selected={selected} onSelect={selectList} onOpenPlan={selectPlan} />
                 ) : null}
-                {panel === 'timeline' ? (
-                  <CalendarTimelineView
-                    year={timelineYear}
-                    month1={timelineMonth1}
-                    days={timelineDays}
-                    bars={timelineBars}
-                    onMonthChange={changeTimelineMonth}
-                    loading={timelinePending}
-                  />
-                ) : null}
-                {panel === 'projects' ? (
-                  <CalendarProjectsView slug={slug} columns={columns} canManage={canManage} />
+                {panel === 'workflow' ? (
+                  <CalendarWorkflowView columns={workflowColumns} slug={slug} canManage={canManage} onOpenPlan={selectPlan} onStageChanged={stageChanged} />
                 ) : null}
               </section>
             )
           })}
         </div>
       </div>
+      <PlanDrawer
+        slug={slug}
+        plan={openPlan}
+        entryId={planEntryId}
+        open={openPlan !== null}
+        onClose={closePlan}
+        onSaved={(savedPlanId, stage) => stageChanged(savedPlanId, stage)}
+        deepSettingsHref={`/spaces/${slug}/settings/calendar?plan=${planId ?? ''}`}
+      />
     </div>
   )
 }
