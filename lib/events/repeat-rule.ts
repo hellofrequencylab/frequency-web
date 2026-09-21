@@ -430,6 +430,21 @@ export interface ExpandOptions {
   /** Include the anchor itself as the first occurrence. Default true. The materialiser passes false
    *  because the anchor is already a row in the database. */
   includeAnchor?: boolean
+  /** RFC 5545 EXDATE, in this engine's terms: `YYYY-MM-DD` days the series DELIBERATELY skips
+   *  (ADR-1386 P5). A day listed here is walked and COUNTED like any other landing, and then left
+   *  out of the result.
+   *
+   *  🔴 COUNTED, NOT UNWALKED, and that is the whole point. The rule keeps producing the cadence it
+   *  always did, so a biweekly series that skips one Tuesday lands on the Tuesday after NEXT, not
+   *  on the one in between: the gap stays where the operator put it instead of the walk closing up
+   *  behind it. RFC 5545 §3.8.5.1 orders it the same way — EXDATE subtracts from the set the RRULE
+   *  generated, it does not change the rule. It also means the anchor's own day can be excluded,
+   *  which is legal and is what "skip the first one" has to mean.
+   *
+   *  Days are compared as the occurrence's stored wall-clock date (see the header: wall clock kept
+   *  as UTC parts), so a 7 pm landing on 2026-10-13 is skipped by the string "2026-10-13" in every
+   *  zone. Unparseable or duplicate entries are harmless. */
+  exceptDays?: readonly string[] | null
   /** Hard ceiling on how many occurrences to RETURN (after `from`). Defaults to
    *  MAX_REPEAT_OCCURRENCES. */
   max?: number
@@ -464,6 +479,7 @@ export function expandRepeat(
   const max = Math.max(1, Math.min(opts.max ?? MAX_REPEAT_OCCURRENCES, MAX_REPEAT_OCCURRENCES))
   const includeAnchor = opts.includeAnchor !== false
   const anchorMs = anchor.getTime()
+  const except = opts.exceptDays?.length ? new Set(opts.exceptDays) : null
 
   const out: Date[] = []
   /** Landings SEEN, anchor included — this is what `count` bounds, whether or not the caller asked
@@ -480,6 +496,8 @@ export function expandRepeat(
     if (ms > limit) return false
     if (ms === anchorMs && !includeAnchor) return true
     if (fromMs !== null && ms < fromMs) return true
+    // The deliberate gap (ADR-1386 P5): counted above, dropped here, cadence untouched.
+    if (except !== null && except.has(d.toISOString().slice(0, 10))) return true
     out.push(d)
     return out.length < max
   }

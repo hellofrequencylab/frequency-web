@@ -59,4 +59,10 @@ export interface CalendarEvent {
   entryInput?: EntryInput | null
   /** The Plan this calendar item belongs to. */
   planId?: string | null
+  /** REPEATING PENCILS (ADR-1511): the `YYYY-MM-DD` this item is ONE DATE of. Set only on a date
+   *  generated from a series, where `entryId` is the series' anchor row and this says which of its
+   *  dates was clicked. Absent on a one-off entry and on every events-layer item. */
+  seriesDayKey?: string | null
+  /** REPEATING PENCILS: this date is a deliberate skip. Drawn, struck through, and undoable. */
+  isSkippedDate?: boolean
 }

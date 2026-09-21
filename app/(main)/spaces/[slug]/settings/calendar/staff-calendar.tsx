@@ -11,13 +11,22 @@ import { Input, Textarea, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { StageTimeline } from '@/components/ui/stage-timeline'
+import { RepeatPicker } from '@/components/events/repeat-picker'
 import { ENTRY_KINDS, ENTRY_STAGES, entryKind, entryStage, type CalendarLayerKey } from '@/lib/calendar/registry'
 import { MAX_CANDIDATE_DATES, MAX_DESCRIPTION, type EntryInput } from '@/lib/calendar/entries'
 import { PUBLISH_STEP, productionDoorHref, stageTimeline } from '@/lib/calendar/stage-timeline'
 import type { DayNote } from '@/lib/calendar/day-notes'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import { isError } from '@/lib/action-result'
-import { deleteCalendarEntry, findEntryClashes, loadStaffCalendarMonth, pickPencilDate, saveCalendarEntry } from './entry-actions'
+import {
+  deleteCalendarEntry,
+  findEntryClashes,
+  loadStaffCalendarMonth,
+  pickPencilDate,
+  restoreSeriesDate,
+  saveCalendarEntry,
+  skipSeriesDate,
+} from './entry-actions'
 import { createPenciledPlan, joinEntryToPlan, startPlanFromEntry } from './plan-actions'
 import { PlanDrawer } from './plan-drawer'
 
@@ -220,6 +229,19 @@ export function StaffCalendar({
     })
   }
 
+  // ONE DATE OF A SERIES, TAKEN OUT OR PUT BACK (ADR-1511). The skip is written to the series'
+  // `exception_dates`, so it survives the reload this very call triggers; the cadence is never
+  // rewritten, which is what keeps a deliberate gap from being normalised away on the next read.
+  const skip = (item: CalendarEvent) => {
+    if (!item.entryId || !item.seriesDayKey) return
+    const { entryId: id, seriesDayKey: day, isSkippedDate } = item
+    startTransition(async () => {
+      const res = isSkippedDate ? await restoreSeriesDate(slug, id, day) : await skipSeriesDate(slug, id, day)
+      if (isError(res)) setError(res.error)
+      else done()
+    })
+  }
+
   return (
     <div className="space-y-2">
       {canEdit && (
@@ -239,6 +261,7 @@ export function StaffCalendar({
         refreshKey={refreshKey}
         dayNotes={dayNotes}
         onPickDate={canEdit ? pick : undefined}
+        onSkipDate={canEdit ? skip : undefined}
         onCreateAt={canEdit ? openNew : undefined}
         onEditEntry={
           canEdit
@@ -445,6 +468,20 @@ export function StaffCalendar({
                 <label htmlFor="entry-lapse" className={labelClasses}>Lapses on (optional)</label>
                 <Input id="entry-lapse" type="date" value={input.holdExpiresOn ?? ''} onChange={(e) => set('holdExpiresOn', e.target.value)} />
               </div>
+            )}
+
+            {/* THE CADENCE (ADR-1511). The same control events use, so "every other Wednesday" means
+                the same thing on both sides of the calendar and there is one repeat dialect, not two.
+                Candidate dates and a cadence are different questions and the drawer lets an operator
+                answer either; a series is expanded on read, so nothing is written per date. */}
+            {def?.isPencil && (
+              <RepeatPicker
+                value={input.repeatRule ?? ''}
+                onChange={(next) => set('repeatRule', next)}
+                startsAt={input.allDay ? input.startDate : `${input.startDate}T${input.startTime ?? '09:00'}`}
+                label="Repeat this date"
+                disabled={pending}
+              />
             )}
 
             {shownClashes.length > 0 && (

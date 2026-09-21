@@ -18,8 +18,10 @@ import {
   keepPencilDateRow,
   listSpaceCalendarEntries,
   listStaffCalendarItems,
+  setEntryExceptionDates,
   updateCalendarEntryRow,
 } from '@/lib/calendar/entries-store'
+import { entryRepeatRule, isDayKey, withExceptionDay, withoutExceptionDay } from '@/lib/calendar/entry-series'
 import { monthGridWindow, safeMonth } from '@/lib/calendar/month-window'
 import { canAcceptProjectMove } from '@/lib/calendar/project-board'
 import { entryKind, entryStage } from '@/lib/calendar/registry'
@@ -150,6 +152,48 @@ export async function pickPencilDate(slug: string, entryId: string): Promise<Act
   if ('error' in res) return fail(res.error)
   revalidate(slug)
   return ok()
+}
+
+/** SKIP ONE DATE OF A REPEATING PENCIL, or put it back (ADR-1386 P5, ADR-1511).
+ *
+ *  The gap is STORED, not inferred: `skip` appends the day to `exception_dates` and `restore`
+ *  removes it, and the generator reads that column on every expansion, so a deliberately skipped
+ *  date is still skipped after a reload, a month change and any later edit of the series. Nothing
+ *  touches the cadence — the point of an explicit exception is that the rule keeps saying what the
+ *  operator said, and one date is subtracted from what it produces.
+ *
+ *  Both directions go through one function because they are one fact with two values, and splitting
+ *  them is how "skip" and "unskip" end up with different guards. */
+async function setSeriesDateSkipped(
+  slug: string,
+  entryId: string,
+  dayKey: string,
+  skipped: boolean,
+): Promise<ActionResult<void>> {
+  const editor = await resolveEditor(slug)
+  if (!editor) return fail('You do not have access to this calendar.')
+  if (!UUID_RE.test(entryId)) return fail('That date no longer exists.')
+  if (!isDayKey(dayKey)) return fail('Pick a valid date.')
+  const current = await getCalendarEntryRow(editor.spaceId, entryId)
+  if (!current) return fail('That date no longer exists.')
+  if (!entryRepeatRule(current)) return fail('That date does not repeat, so there is nothing to skip.')
+  const days = skipped
+    ? withExceptionDay(current.exception_dates ?? [], dayKey)
+    : withoutExceptionDay(current.exception_dates ?? [], dayKey)
+  const res = await setEntryExceptionDates(editor.spaceId, entryId, days)
+  if ('error' in res) return fail(res.error)
+  revalidate(slug)
+  return ok()
+}
+
+/** Take one date out of a repeating Pencil. The rest of the series is untouched. */
+export async function skipSeriesDate(slug: string, entryId: string, dayKey: string): Promise<ActionResult<void>> {
+  return setSeriesDateSkipped(slug, entryId, dayKey, true)
+}
+
+/** Put a skipped date of a repeating Pencil back. */
+export async function restoreSeriesDate(slug: string, entryId: string, dayKey: string): Promise<ActionResult<void>> {
+  return setSeriesDateSkipped(slug, entryId, dayKey, false)
 }
 
 /** Move an event on its way to another stage (Projects kanban). Reuses saveCalendarEntry. */

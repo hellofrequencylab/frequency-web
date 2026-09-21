@@ -95,6 +95,7 @@ export function EventCalendar({
   refreshKey = 0,
   dayNotes,
   onPickDate,
+  onSkipDate,
 }: {
   events: CalendarEvent[]
   initialYear: number
@@ -121,6 +122,9 @@ export function EventCalendar({
   dayNotes?: DayNote[]
   /** Staff: keep this candidate date of a pencil and drop its siblings. */
   onPickDate?: (item: CalendarEvent) => void
+  /** Staff: skip this one date of a repeating Pencil, or put it back (ADR-1511). Offered only on an
+   *  item that IS one date of a series, which is what `seriesDayKey` says. */
+  onSkipDate?: (item: CalendarEvent) => void
 }) {
   const [{ year, month1 }, setMonth] = useState({ year: initialYear, month1: initialMonth1 })
   const [selected, setSelected] = useState<CalendarEvent | null>(null)
@@ -536,6 +540,7 @@ export function EventCalendar({
                   onOpenHost={onSelectEvent}
                   onEditEntry={onEditEntry}
                   onPickDate={onPickDate}
+                  onSkipDate={onSkipDate}
                 />
               </div>
             ) : (
@@ -733,6 +738,14 @@ export function EventCalendar({
                     }
                   : undefined
               }
+              onSkipDate={
+                onSkipDate
+                  ? (item) => {
+                      setSelected(null)
+                      onSkipDate(item)
+                    }
+                  : undefined
+              }
             />
           </div>
         )}
@@ -789,6 +802,7 @@ function CalendarPreview({
   onOpenHost,
   onEditEntry,
   onPickDate,
+  onSkipDate,
 }: {
   item: CalendarEvent
   inViewerTz: boolean
@@ -798,6 +812,7 @@ function CalendarPreview({
   onOpenHost?: (ev: CalendarEvent) => void
   onEditEntry?: (item: CalendarEvent) => void
   onPickDate?: (item: CalendarEvent) => void
+  onSkipDate?: (item: CalendarEvent) => void
 }) {
   const isEvent = (item.layer ?? 'events') === 'events'
   const viewerLabel = viewerZoneLabel(item.startInstantIso)
@@ -862,6 +877,11 @@ function CalendarPreview({
           {onClose && (
             <button type="button" onClick={onClose} className={buttonClasses('secondary', 'sm')}>
               Close
+            </button>
+          )}
+          {!isEvent && item.entryId && item.seriesDayKey && onSkipDate && (
+            <button type="button" onClick={() => onSkipDate(item)} className={buttonClasses('secondary', 'sm')}>
+              {item.isSkippedDate ? 'Put this date back' : 'Skip this date'}
             </button>
           )}
           {!isEvent && item.entryId && item.optionGroup && onPickDate && (

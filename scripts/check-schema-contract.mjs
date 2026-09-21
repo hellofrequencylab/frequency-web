@@ -139,6 +139,22 @@ export const ALLOWLIST = [
       'PROG-CAL3 (ADR-1386 phase 3). published_event_id ships in 20270345007400, applied at merge rather than ahead of it; plan_id ships in 20270345006700 on the same terms. Not in the checked-in generated types until they regenerate. Do not apply from an agent session.',
     owner: 'PROG-CAL3',
   })),
+  // LIVE-449 / ADR-1511. Repeating Pencils read and write space_calendar_entries.exception_dates,
+  // the column 20270345006700 already ships and that nothing had ever touched. Same terms as the
+  // PROG-CAL2 block above -- the migration is in the tree and applies at merge, so the checked-in
+  // generated types do not carry the column yet. `recurrence_rule` needs no entry: it shipped in
+  // 20270345005200 and IS in lib/database.types.ts; it was simply never written. All three retire
+  // with the rest of this list in one pass, by regenerating the types after the migration lands.
+  ...[
+    { file: 'lib/calendar/entries-store.ts', table: 'space_calendar_entries', column: 'exception_dates', kind: 'select' },
+    { file: 'lib/calendar/entries-store.ts', table: 'space_calendar_entries', column: 'exception_dates', kind: 'update' },
+  ].map((row) => ({
+    ...row,
+    added: '2026-09-21',
+    reason:
+      'LIVE-449 (ADR-1386 phase 5). exception_dates ships in 20270345006700 and is not in the checked-in generated types until that migration is applied and types regenerate. Do not apply from an agent session.',
+    owner: 'LIVE-449',
+  })),
 ]
 
 /** Walk `root` against `typesFile` and return the raw report. Pure: no exit, no console. */

@@ -1,4 +1,6 @@
+import { formatRepeatDraft, parseRepeat, repeatChipLabel, repeatUntilDate } from '@/lib/events/repeat-rule'
 import type { CalendarEvent } from './item'
+import { entryRepeatRule, type EntryOccurrence } from './entry-series'
 import {
   entryKind,
   entryStage,
@@ -40,6 +42,13 @@ export interface EntryRow {
   description: string | null
   /** The Plan this date belongs to (ADR-1386). */
   plan_id: string | null
+  /** THE CADENCE, when this date repeats (ADR-1386 P5, ADR-1299 dialect). Null for a one-off, which
+   *  is every entry written before ADR-1511. Unlike `events`, this string keeps its own `UNTIL`:
+   *  there is no second column here and `repeatUntilDate` reads it back (lib/calendar/entry-series.ts). */
+  recurrence_rule: string | null
+  /** THE DELIBERATE GAPS: `YYYY-MM-DD` days this series skips. Stored, never inferred, and never
+   *  written by the entry form — see `EntryWrite`. */
+  exception_dates: string[]
   /** The Production this Pencil BECAME (PROG-CAL3). Set on publish instead of deleting the row, so
    *  the date keeps its description, Team notes and hold and back-links its event. A row carrying
    *  one no longer renders as its own calendar item: the event card IS this date's card now, which
@@ -48,7 +57,7 @@ export interface EntryRow {
 }
 
 export const ENTRY_COLS =
-  'id, space_id, kind, title, notes, location, all_day, starts_at, ends_at, time_zone, status, blocks_time, visibility, option_group, hold_expires_at, stage, description, plan_id, published_event_id'
+  'id, space_id, kind, title, notes, location, all_day, starts_at, ends_at, time_zone, status, blocks_time, visibility, option_group, hold_expires_at, stage, description, plan_id, published_event_id, recurrence_rule, exception_dates'
 
 /** The staff form, as plain strings and booleans (what a client sends). */
 export interface EntryInput {
@@ -78,12 +87,20 @@ export interface EntryInput {
   candidateDates?: string[] | null
   /** The Plan this date belongs to, if any. */
   planId?: string | null
+  /** Pencils: the RRULE this date repeats on, as the picker emits it (`UNTIL` included). Empty or
+   *  absent means it happens once. */
+  repeatRule?: string | null
 }
 
 /** The columns a create or update writes. `option_group` is set by the action, never by the form,
  *  and `published_event_id` only ever by the publish seam (retirePencilToEvent) — leaving it in
- *  this type would let an ordinary edit of the drawer silently un-retire a published date. */
-export type EntryWrite = Omit<EntryRow, 'id' | 'space_id' | 'option_group' | 'published_event_id'>
+ *  this type would let an ordinary edit of the drawer silently un-retire a published date.
+ *
+ *  `exception_dates` is out for the same reason and it is the load-bearing one (ADR-1511): the
+ *  form has no field for a skipped date, so a form-shaped write would carry `[]` and every edit of
+ *  a repeating Pencil — renaming it, nudging its time — would quietly refill the gap the operator
+ *  put there. Skips are written ONLY by setEntryExceptionDates, from the calendar's own affordance. */
+export type EntryWrite = Omit<EntryRow, 'id' | 'space_id' | 'option_group' | 'published_event_id' | 'exception_dates'>
 
 /** The most candidate dates one pencil may carry (the first date included). */
 export const MAX_CANDIDATE_DATES = 6
@@ -156,6 +173,13 @@ export function parseEntryInput(input: EntryInput): { data: EntryWrite } | { err
   const timeZone = (input.timeZone ?? '').trim()
   if (!timeZone) return { error: 'The entry needs a time zone.' }
 
+  // ONLY AN EVENT ON ITS WAY REPEATS (ADR-1511). Unavailable time and a Private entry are spans,
+  // and a repeating span is a different feature with different arithmetic. Stored CANONICALLY, so
+  // two spellings of the same cadence cannot read as two different series; the picker's `UNTIL`
+  // rides along because this table has no second column for it.
+  const repeat = def.isPencil ? parseRepeat(input.repeatRule) : null
+  const recurrenceRule = repeat ? formatRepeatDraft(repeat, repeatUntilDate(input.repeatRule)) || null : null
+
   return {
     data: {
       kind: def.kind,
@@ -176,6 +200,7 @@ export function parseEntryInput(input: EntryInput): { data: EntryWrite } | { err
         typeof input.planId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.planId)
           ? input.planId
           : null,
+      recurrence_rule: recurrenceRule,
     },
   }
 }
@@ -238,6 +263,7 @@ export function entryToInput(row: EntryRow): EntryInput {
     holdExpiresOn: row.hold_expires_at ? row.hold_expires_at.slice(0, 10) : '',
     candidateDates: [],
     planId: row.plan_id,
+    repeatRule: row.recurrence_rule ?? '',
   }
 }
 
@@ -261,49 +287,67 @@ export interface EntryFormatters {
   instantIso: (storedIso: string, timeZone: string) => string | null
 }
 
-/** A private entry as the staff calendar renders it. */
+/** A private entry as the staff calendar renders it.
+ *
+ *  `occurrence` is one date of a repeating Pencil (ADR-1511): the row is the series' anchor and the
+ *  item stands for a date that has no row of its own, so every time field is read from the
+ *  occurrence rather than the row. A skipped date is still drawn — struck through and labelled —
+ *  because a gap an operator cannot see is a gap they cannot undo. */
 export function entryToCalendarItem(
   row: EntryRow,
   fmt: EntryFormatters,
-  opts: { editable: boolean; /** YYYY-MM-DD, to flag a lapsed pencil. */ now?: string },
+  opts: {
+    editable: boolean
+    /** YYYY-MM-DD, to flag a lapsed pencil. */ now?: string
+    occurrence?: EntryOccurrence | null
+  },
 ): CalendarEvent {
   const def = entryKind(row.kind)
-  const { dayKey, endDayKey } = entryDaySpan(row)
+  const occ = opts.occurrence ?? null
+  // The times this ITEM shows. For a series date that is the landing, not the anchor's own date.
+  const at = occ ? { ...row, starts_at: occ.starts_at, ends_at: occ.ends_at } : row
+  const { dayKey, endDayKey } = entryDaySpan(at)
   const lastDayIso = `${endDayKey}T00:00:00.000Z`
   const whenLabel = row.all_day
     ? endDayKey === dayKey
-      ? `${fmt.dateLabel(row.starts_at, row.time_zone)}, all day`
-      : `${fmt.dateLabel(row.starts_at, row.time_zone)} to ${fmt.dateLabel(lastDayIso, row.time_zone)}, all day`
-    : `${fmt.whenLabel(row.starts_at, row.time_zone)} to ${fmt.timeLabel(row.ends_at, row.time_zone)}`
+      ? `${fmt.dateLabel(at.starts_at, row.time_zone)}, all day`
+      : `${fmt.dateLabel(at.starts_at, row.time_zone)} to ${fmt.dateLabel(lastDayIso, row.time_zone)}, all day`
+    : `${fmt.whenLabel(at.starts_at, row.time_zone)} to ${fmt.timeLabel(at.ends_at, row.time_zone)}`
   // A stored stage is never dropped: a row that carries one renders by it whatever its kind (the
   // table's trigger keeps stage on pencil-kind rows, so this only matters if that ever loosens).
   // A pencil-kind row with no stage is a Pencil.
   const stage = entryStage(row.stage) ?? (def?.isPencil ? entryStage('pencil') : null)
   const holding = stage?.stage === 'pencil'
   const lapsed = holding && !!row.hold_expires_at && opts.now !== undefined && row.hold_expires_at.slice(0, 10) < opts.now
+  const repeatLabel = occ ? repeatChipLabel(entryRepeatRule(row), dayKey) : null
   const badges = [
+    occ?.skipped ? 'Skipped' : null,
     row.status === 'tentative' && !stage ? 'Tentative' : null,
     holding && row.option_group ? 'One of several dates' : null,
     holding && row.hold_expires_at ? (lapsed ? 'Lapsed' : `Lapses ${row.hold_expires_at.slice(5, 10).replace('-', '/')}`) : null,
+    repeatLabel,
     row.visibility === 'public_unavailable' ? 'Shown publicly' : null,
   ]
     .filter(Boolean)
     .join(' · ')
   return {
-    slug: `entry-${row.id}`,
+    // One date of a series has no id of its own, so its key carries the day. Two dates of one
+    // series in the same grid would otherwise collide on the anchor's id.
+    slug: occ ? `entry-${row.id}-${occ.dayKey}` : `entry-${row.id}`,
     title: row.title,
     dayKey,
     endDayKey: endDayKey === dayKey ? null : endDayKey,
-    timeLabel: row.all_day ? 'All day' : fmt.timeLabel(row.starts_at, row.time_zone),
+    timeLabel: row.all_day ? 'All day' : fmt.timeLabel(at.starts_at, row.time_zone),
     whenLabel,
-    startInstantIso: row.all_day ? null : fmt.instantIso(row.starts_at, row.time_zone),
+    startInstantIso: row.all_day ? null : fmt.instantIso(at.starts_at, row.time_zone),
     location: row.location,
     goingCount: 0,
     coverUrl: null,
     // An event on its way is labelled by its stage ("Planning"); other entries by their kind.
     sourceLabel: stage?.label ?? def?.label ?? null,
     statusLabel: badges || null,
-    isCancelled: row.status === 'cancelled' || stage?.stage === 'cancelled',
+    // A skipped date reads as a cancelled one on the grid: present, struck through, not happening.
+    isCancelled: row.status === 'cancelled' || stage?.stage === 'cancelled' || !!occ?.skipped,
     layer: def?.layer ?? 'private',
     entryId: opts.editable ? row.id : null,
     optionGroup: row.option_group,
@@ -312,6 +356,8 @@ export function entryToCalendarItem(
     notes: row.notes,
     description: row.description,
     planId: row.plan_id,
+    seriesDayKey: occ ? occ.dayKey : null,
+    isSkippedDate: !!occ?.skipped,
   }
 }
 
