@@ -231,6 +231,16 @@
 # journey_enrollments (RLS-on, zero policies, same reason as the Journey sell files
 # above) and space_memberships (same reason as lib/spaces/memberships.ts). Home
 # already gated the caller. A session client cannot count enrollments it cannot see.
+# lib/events/plan-link.ts (added 2026-09-21, PROG-CAL3): the ONE authority for events.plan_id, the
+# Plan a Production came from (ADR-1386). It does not widen anything: the write it performs was
+# already happening on the service-role client inside createEvent's insert, with a UUID-SHAPE test
+# as its only guard. Lifting it here ADDS the authorization that was missing -- the Plan is read
+# through the CALLER'S OWN session (getSpacePlan, so RLS on space_plans decides) and must belong to
+# the Space the event is hosted by, and the event is required to be on that same Space before a
+# column is touched. The bypass is load-bearing for the same reason the insert's own note gives:
+# live RLS on `events` carries a restrictive pair (`can_write_space_content` on the root arm) that
+# no ordinary host satisfies, so a session-client update of one column would fail for everyone but
+# platform staff. It writes `plan_id` and nothing else.
 #
 # lib/events/payout-readiness.ts (added 2026-09-21, EVT-PRICE-HONESTY): the BATCHED payout-readiness
 # read behind the buyer-facing price rule. NOT a new RLS bypass in substance: it resolves the same two
@@ -490,7 +500,6 @@ app/manage-emails/actions.ts
 app/onboarding/vera-actions.ts
 app/print/qr/page.tsx
 app/q/[slug]/route.ts
-app/sitemap.ts
 app/spaces/[slug]/calendar.ics/route.ts
 app/u/scan/route.ts
 app/unsubscribe/actions.ts
@@ -757,6 +766,7 @@ lib/events/member-ticket-email.ts
 lib/events/membership-included.ts
 lib/events/payout-readiness.ts
 lib/events/placement.ts
+lib/events/plan-link.ts
 lib/events/poster-media.ts
 lib/events/poster-quality.ts
 lib/events/questions.ts
