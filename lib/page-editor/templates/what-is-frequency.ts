@@ -1,8 +1,9 @@
-import { articleTemplate, type ArticleSpec } from '@/lib/page-editor/templates/article'
+import { articleTemplate, type ArticleSpec, type ArticleTier } from '@/lib/page-editor/templates/article'
 import { FOUNDING_PLACE } from '@/lib/site'
 import { priceStrings, CREW_NOTE } from '@/lib/pricing/pricing-page'
-import { PLACEHOLDER_SPACE_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
-import { formatBps, formatCents } from '@/lib/pricing/display'
+import { PLAN_STORY } from '@/lib/pricing/plan-story'
+import { SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
+import { ADVERTISED_SPACE_PLANS, formatBps } from '@/lib/pricing/display'
 import { PRICING_DEFAULTS } from '@/lib/pricing/settings'
 import { networkTakeRateBpsForPlan, networkTakeRateFromStored } from '@/lib/billing/pricing-keys'
 
@@ -99,12 +100,11 @@ import { networkTakeRateBpsForPlan, networkTakeRateFromStored } from '@/lib/bill
 // Every dollar figure on this page interpolates from the ONE price source (the code catalog via
 // priceStrings + the feature-tiers placeholder maps), so the ladder here can never drift from /pricing.
 const P = priceStrings()
-const INDEPENDENT_PRICE = formatCents(PLACEHOLDER_SPACE_PRICE_CENTS.independent)
 
 // Every RATE interpolates from the take-rate config the fee code charges, so no answer here can quote a
 // rung the owner has retired. The free Member rung LEADS, because selling is free on every tier and the
-// reference rate is the one a reader starts on; the paid rungs are what buys it down. Verified Non Profit
-// is zero, and Independent is off the network.
+// reference rate is the one a reader starts on. The rate is what a plan settles at, never the reason to
+// take one (PLAN_STORY.rate, ADR-1350). Verified Non Profit is zero.
 const TAKE = PRICING_DEFAULTS.take_rate
 /** A Space plan's rate, through the one plan-to-rung resolver (LIVE-230): free / paid / nonprofit. */
 const SPACE_RATE = (plan: string) => formatBps(networkTakeRateBpsForPlan(plan, networkTakeRateFromStored(TAKE)))
@@ -115,6 +115,32 @@ const NETWORK_RATES = `Member ${MEMBER_RATE}, Crew ${CREW_RATE}, Business ${BUSI
 /** The 0%-forever half of the model, stated the same way everywhere it appears. */
 const OWN_AUDIENCE_LINE =
   'It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free.'
+
+/** The Space rungs this page lifts for answer engines, and ONLY the advertised ones. A plan the owner
+ *  sells by hand (Independent, LIVE-227) drops out here BY CONSTRUCTION, the same way it drops out of
+ *  /pricing and llms.txt, because all three read ADVERTISED_SPACE_PLANS. This page used to type an
+ *  Independent row with its price, on a public page, under a ruling that hid the tier from public
+ *  pricing; the LIVE-227 probe only looked at /pricing (PROG-R8, ADR-1499). */
+const SPACE_TIER_ROWS: Partial<Record<(typeof ADVERTISED_SPACE_PLANS)[number], ArticleTier>> = {
+  business: {
+    name: SPACE_PLAN_LABEL.business,
+    price: `${P.businessList}/mo`,
+    note: `${BUSINESS_RATE} network only`,
+    who: 'Own your audience: unlimited contacts, campaigns, team seats, automations, and Collaborator hosting.',
+  },
+  nonprofit: {
+    name: SPACE_PLAN_LABEL.nonprofit,
+    price: `${P.nonprofit}/mo`,
+    note: `${SPACE_RATE('nonprofit')} network only`,
+    who: 'The full Business toolkit, verified 501(c)(3).',
+  },
+}
+const SPACE_TIERS: ArticleTier[] = ADVERTISED_SPACE_PLANS.flatMap((plan) => {
+  const row = SPACE_TIER_ROWS[plan]
+  return row ? [row] : []
+})
+/** The advertised Space ladder as one clause, for the FAQ answer, from the same rows. */
+const SPACE_LADDER = SPACE_TIERS.map((t) => `${t.name} is ${t.price.replace('/mo', ' a month')}`).join(' and ')
 
 const HERO_IMAGE = '/images/site/community-1.jpg'
 const BEGINS_IMAGE = '/images/site/community-dinner.jpg'
@@ -222,10 +248,11 @@ export const spec: ArticleSpec = {
     {
       question: 'How much does Frequency cost?',
       answer:
-        'Joining is free, forever, and so is selling. Every plan below can sell tickets and take donations, and every plan keeps 100% of the bookings you bring in yourself. We earn only on the business the network sends you, and each step up the ladder buys that small rate down.',
+        `Joining is free, forever, and so is hosting. Every plan below can sell tickets and take donations from day one, and every plan keeps 100% of the bookings you bring in yourself. ${PLAN_STORY.rate}`,
       // The tier ladder, lifted for AIO so an answer engine can quote the whole shape
       // in one place. Take-rate shown is network-introduced only: anyone already yours
-      // is 0% on every tier, for good. Prices and rates mirror /pricing and the FAQ.
+      // is 0% on every tier, for good. Prices and rates mirror /pricing and the FAQ, and
+      // the Space rows are the advertised set (SPACE_TIERS), never a typed list.
       tiers: [
         {
           name: 'Member',
@@ -235,28 +262,11 @@ export const spec: ArticleSpec = {
         },
         {
           name: 'Crew',
-          price: `${CREW_NOTE.foundingLabel}/mo`,
+          price: `${CREW_NOTE.fromLabel}/mo`,
           note: `${CREW_RATE} network only`,
-          who: 'The same selling at a lower rate, plus your own Circles and Journeys, and the entry points that build your list.',
+          who: 'Your own Circles and Journeys, and the entry points that build your list.',
         },
-        {
-          name: 'Business',
-          price: `${P.businessList}/mo`,
-          note: `${BUSINESS_RATE} network only`,
-          who: 'Own your audience: unlimited contacts, campaigns, team seats, automations, and Collaborator hosting.',
-        },
-        {
-          name: 'Non Profit',
-          price: `${P.nonprofit}/mo`,
-          note: `${SPACE_RATE('nonprofit')} network only`,
-          who: 'The full Collective toolkit, verified 501(c)(3).',
-        },
-        {
-          name: 'Independent',
-          price: `${INDEPENDENT_PRICE}/mo`,
-          note: 'Off the network',
-          who: 'White-label and standalone. Standard software, no network lift.',
-        },
+        ...SPACE_TIERS,
       ],
       links: [{ label: 'See the full pricing', href: '/pricing', variant: 'primary' }],
     },
@@ -333,7 +343,7 @@ export const spec: ArticleSpec = {
     },
     {
       q: 'How much does Frequency cost?',
-      a: `Connection is free, and so is selling. Joining, Circles, and Events never cost anything, a business never pays for access to people, and every tier can sell tickets and take donations from day one. Frequency keeps 0% of your own bookings, always; we make our money only on a sale the network introduced, at ${NETWORK_RATES}. ${OWN_AUDIENCE_LINE} Plans run Member (free, which creates events, takes RSVPs, and sells tickets at the Member rate), Crew (${CREW_NOTE.foundingLabel}, which buys that rate down and lifts the caps), Business (${P.businessList}), Non Profit (${P.nonprofit}), and Independent (${INDEPENDENT_PRICE}). See the full ladder at /pricing.`,
+      a: `${PLAN_STORY.lines} Joining, Circles, and Events never cost anything, a business never pays for access to people, and every plan can sell tickets and take donations from day one. Frequency keeps 0% of your own bookings, always; we make our money only on a sale the network introduced, at ${NETWORK_RATES}. ${OWN_AUDIENCE_LINE} ${PLAN_STORY.paid} Member is free, Crew is ${CREW_NOTE.fromLabel} a month and you pick the amount, and a Space plan is ${SPACE_LADDER}. See the full ladder at /pricing.`,
     },
     {
       q: 'How does Frequency make money?',
