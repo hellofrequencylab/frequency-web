@@ -47415,6 +47415,25 @@ Measured against production before anything was written. No usage table exists: 
 
 **Rows.** PROG-D4 (closed, re-scoped). LIVE-451 (global swap, P3). LIVE-454 (the `app_instances` trigger half, blocked on PROG-E0).
 
+## ADR-1497: A Journey host writes their own questions, and the generic four become the fallback (LIVE-394)
+
+**Status:** Accepted · 2026-09-21 · backlog `LIVE-394` · beside [ADR-1463](DECISIONS.md) (the outcomes list on story settings) and the LIVE-395 guarantee that followed it · named in [ADR-1398](DECISIONS.md)'s "Not done" list
+
+**Context.** `JourneyFaq` (components/journey/discovery-widgets.tsx) shipped with three or four questions it derived from two columns, `drip_interval_days` and `certificate_enabled`, and nothing else. Every Journey on the platform therefore answered the same objections in the same words, so the one section of a $444 sales page that exists to close a buyer's specific doubt was the one section that could not know what that doubt was. ADR-1398 listed it as not done, and it stayed that way through the three sales-page waves (ADR-1399 to ADR-1401). The outcomes list (LIVE-393, ADR-1463) and the guarantee (LIVE-395) had meanwhile established the pattern for per-Journey copy that is content rather than a column: a pure module over the story widget's `settings` on `page_config`, a declaration on the manifest, one rail zone per save path. A prior claim of this row on `cursor/cloud-agent-workspace-8978` left the literal untouched, so there was nothing to reuse.
+
+**Decision.**
+
+1. `lib/journeys/faq.ts` is a pure normalize/read/write module over `page_config` story.settings.faq, an ordered list of `{ q, a }` records. No column, no migration, no page_config toggle (ADR-1462): questions are content, and their presence is whether the host wrote any. It mirrors `writeJourneyOutcomes` and `writeJourneyGuarantee` down to removing an emptied settings bag, because the three share that object. Cap 8 rows, question 160 characters, answer 600. A row with only a question or only an answer is dropped, on the rail and on the server alike, so a half-written draft never reaches a buyer.
+2. `JOURNEY_MANIFEST` declares one `faq` repeat on the story section with two fields (`q` text, `a` longtext), each keyed at a real path on the record (ADR-992). `JOURNEY_FAQ_WRITES` is its own rail zone because `setJourneyFaq` rewrites `page_config` rather than a column, the same reason the guarantee has its own. The settings module mounts it through `RailManifestRepeat` after the guarantee; `getJourneyRailData` reads it back beside outcomes and guarantee. The kernel is untouched.
+3. `JourneyFaq` reads `readJourneyFaq(plan.page_config)` and renders the authored list when it has any rows. The old literal survives as `genericJourneyFaq(plan)`, exported and whole, and is used only when the host wrote none. The first authored pair replaces the generic set WHOLE rather than appending to it: a host who took the trouble to write their questions should not find the platform's four ahead of them. All three visitor faces already pass the full plan, so they pick this up with no edit.
+4. The row's probe measures the consequence (the block reading an authored source) and fails on `main`'s file.
+
+**Rejected.** Appending authored questions after the generic four (the platform's copy would outrank the host's on every page, and a host cannot remove a question they did not write). A `journey_faq` table or a `faq` jsonb column (a schema change for what is settings copy, and a third storage shape beside two that already work). Putting the questions on the manifest's `story` fields as `faq_1_q`, `faq_1_a` and so on (the repeat kernel exists for exactly this). Drafting a first set with Vera in this change (the fields carry `veraDrafts` so a rail draft can offer it later; the seam is the change, the draft is a feature on it). Deleting the generic set (a Journey whose host has written nothing would lose its FAQ the day this lands).
+
+**Consequences.** A Journey with no authored questions renders exactly what it rendered before. A host who writes one pair sees only their own questions on `/journeys/[slug]`, `/discover/journeys/[slug]` and the product sales body. Advanced layout saves keep the list, as they keep outcomes and the guarantee. The Q&A composer (`ListingQna`) beside this block is a different thing, buyer-asked and threaded, and is unchanged; its heading rule (never "Questions") still holds. Not done: a Vera draft of the first set from the intro and outcomes.
+
+**Rows.** LIVE-394 (closed).
+
 ## ADR-1505: A retired route takes its shared module and its cover-map row with it (HYG-110)
 
 **Status:** Accepted · 2026-09-21 · backlog `HYG-110` · number allocated by the coordinator · extends [ADR-1439](DECISIONS.md) (LIVE-242) · amends the HYG-046 probe ([ADR-1197](DECISIONS.md)) · corroborated by `components/hierarchy/` absent, `lib/hierarchy/tier-detail.ts` absent, and `DETAIL_HERO_DEFAULTS` in `lib/layout/detail-hero.ts` carrying no `/hubs` or `/nexuses` row
@@ -47435,4 +47454,3 @@ Premise re-tested 2026-09-21: `git log --diff-filter=D` gives one commit for bot
 **Consequences.** A probe that requires a file to exist proves nothing about whether the file is used. When a route is retired, its done-row probes measure the fold, and its shared modules and map rows leave in the same change. HYG-110's probe now fails a cover-map row whose section has no route directory, for any section, and fails a tier-detail module with no real importer.
 
 **Rows.** HYG-110. HYG-046 (probe re-pointed).
-
