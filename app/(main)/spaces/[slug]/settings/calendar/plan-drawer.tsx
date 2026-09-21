@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Input, Textarea, labelClasses } from '@/components/ui/field'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select } from '@/components/ui/select'
+import { StageTimeline } from '@/components/ui/stage-timeline'
 import { isError } from '@/lib/action-result'
-import { PLAN_STAGES, PLAN_TARGETS, planTargetDef, type SpacePlan } from '@/lib/calendar/plans'
+import { PLAN_TARGET_DEFS, planStage, planStageDef, planTargetDef, type SpacePlan } from '@/lib/calendar/plans'
+import { planStageTimeline } from '@/lib/calendar/stage-timeline'
 import type { CrmTask } from '@/lib/crm/tasks'
 import {
   acceptVeraChecklist,
@@ -135,6 +137,14 @@ export function PlanDrawer({
     })
   }
 
+  // Three steps in place of the old Stage select, from `PLAN_STAGE_DEFS` by way of the planner:
+  // every label and hint is the registry's, never restated here.
+  const timeline = planStageTimeline({ stage })
+  const step = (key: string) => {
+    const next = planStage(key)
+    if (next) setStage(next)
+  }
+
   const save = (e: FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -158,7 +168,7 @@ export function PlanDrawer({
             <p className="text-meta text-muted">{planTargetDef(plan.targetKind).label} production record</p>
           </div>
           <dl className="grid grid-cols-2 gap-3 rounded-control border border-border bg-surface-elevated p-3 text-body-sm">
-            <div><dt className="text-meta text-muted">Stage</dt><dd className="font-semibold capitalize text-text">{stage === 'plan' ? 'Planning' : stage}</dd></div>
+            <div><dt className="text-meta text-muted">Stage</dt><dd className="font-semibold text-text">{planStageDef(stage).label}</dd></div>
             <div><dt className="text-meta text-muted">Owner</dt><dd className="font-semibold text-text">{plan.ownerProfileId ? 'Assigned teammate' : 'Unassigned'}</dd></div>
             <div className="col-span-2"><dt className="text-meta text-muted">Readiness</dt><dd className="font-semibold text-text">{gaps.length === 0 ? 'Ready for the next step' : `${gaps.length} ${gaps.length === 1 ? 'item' : 'items'} still needed`}</dd></div>
             <div className="col-span-2"><dt className="text-meta text-muted">Next action</dt><dd className="font-semibold text-text">{href ? 'Open the production Studio' : gaps[0] ?? 'Keep the Plan current'}</dd></div>
@@ -178,35 +188,38 @@ export function PlanDrawer({
           </label>
           <Input id="plan-title" required maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} />
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="grid gap-1">
-            <label htmlFor="plan-stage" className={labelClasses}>
-              Stage
-            </label>
-            <Select
-              id="plan-stage"
-              value={stage}
-              options={PLAN_STAGES.map((s) => ({
-                value: s,
-                label: s === 'plan' ? 'Plan' : s === 'pencil' ? 'Pencil' : 'Production',
-              }))}
-              onChange={(e) => setStage(e.target.value as typeof stage)}
-            />
-          </div>
-          <div className="grid gap-1">
-            <label htmlFor="plan-target" className={labelClasses}>
-              Production opens
-            </label>
-            <Select
-              id="plan-target"
-              value={targetKind}
-              options={PLAN_TARGETS.map((s) => ({
-                value: s,
-                label: s === 'event' ? 'Event' : s === 'journey' ? 'Journey' : s === 'program' ? 'Program' : 'Maintenance',
-              }))}
-              onChange={(e) => setTargetKind(e.target.value as typeof targetKind)}
-            />
-          </div>
+        {/* THE STAGE TIMELINE, the Plan half (ADR-1520). The same stepper the entry drawer walks a
+            date through (ADR-1504), rendering the same kit component from the same plan shape, so
+            the product teaches one concept one way. A step writes `stage` into the SAME form state
+            the old select wrote, so every field the person has typed survives and the change
+            persists on Save exactly as before: nothing auto-saves on click. A Plan has three steps
+            and no exit — it leaves through `archived_at` — and its production door is the existing
+            "Make it a Production" button, never a fourth step. */}
+        <div className="grid gap-1">
+          <span className={labelClasses}>Stage</span>
+          <StageTimeline
+            label="Stage"
+            steps={timeline.steps}
+            onStep={step}
+            hint={timeline.hint}
+            hintId="plan-stage-hint"
+            reasons={timeline.reasons}
+            pending={pending}
+          />
+          <p className="text-meta text-muted">
+            Moving the Plan moves every date on it.
+          </p>
+        </div>
+        <div className="grid gap-1">
+          <label htmlFor="plan-target" className={labelClasses}>
+            Production opens
+          </label>
+          <Select
+            id="plan-target"
+            value={targetKind}
+            options={PLAN_TARGET_DEFS.map((d) => ({ value: d.kind, label: d.label }))}
+            onChange={(e) => setTargetKind(e.target.value as typeof targetKind)}
+          />
         </div>
         <div className="grid gap-1">
           <label htmlFor="plan-notes" className={labelClasses}>

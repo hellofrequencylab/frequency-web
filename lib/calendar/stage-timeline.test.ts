@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest'
+import { PLAN_STAGES, PLAN_STAGE_DEFS } from './plans'
 import { ENTRY_STAGES } from './registry'
 import {
   ONE_OF_SEVERAL_REASON,
+  PUBLISH_STEP,
   PUBLISH_NOT_YET_REASON,
   STAGE_PIPELINE,
+  planStageTimeline,
   productionDoorHref,
   stageTimeline,
 } from './stage-timeline'
@@ -82,5 +85,46 @@ describe('productionDoorHref', () => {
     expect(productionDoorHref('s1', 'e1')).toBe('/events/new?space=s1&pencil=e1')
     expect(productionDoorHref('s1', 'e1', 'p1')).toBe('/events/new?space=s1&pencil=e1&plan=p1')
     expect(productionDoorHref('s1', 'e1', null)).not.toContain('plan=')
+  })
+})
+
+// ── The Plan half of the same stepper (ADR-1520) ────────────────────────────────────────────────
+// A Plan walks three stages, not four, and every word the stepper shows is PLAN_STAGE_DEFS'. These
+// assertions fail if the planner hard-codes a label, grows a Publish door beside the drawer's own
+// "Make it a Production" button, or lets Cancelled in as a step (a Plan leaves via `archived_at`).
+
+describe('planStageTimeline', () => {
+  it('walks Pencil, Planning, Production and stops there', () => {
+    const plan = planStageTimeline({ stage: 'pencil' })
+    expect(plan.steps.map((s) => s.key)).toEqual([...PLAN_STAGES])
+    expect(plan.steps.map((s) => s.key)).not.toContain(PUBLISH_STEP)
+    expect(plan.cancelled).toBe(false)
+  })
+
+  it('takes every label and hint from the registry rather than restating them', () => {
+    for (const def of PLAN_STAGE_DEFS) {
+      const plan = planStageTimeline({ stage: def.stage })
+      expect(plan.steps.map((s) => s.label)).toEqual(PLAN_STAGE_DEFS.map((d) => d.label))
+      expect(plan.hint).toBe(def.hint)
+      expect(plan.steps.find((s) => s.key === def.stage)!.state).toBe('current')
+    }
+  })
+
+  it('reads the walked stages as done and the rest as upcoming', () => {
+    const plan = planStageTimeline({ stage: 'production' })
+    expect(plan.steps.map((s) => s.state)).toEqual(['done', 'done', 'current'])
+  })
+
+  it('refuses no step, because a Plan stage is an override of what the dates already derive', () => {
+    for (const stage of [...PLAN_STAGES, null, 'nonsense']) {
+      const plan = planStageTimeline({ stage })
+      expect(plan.steps.every((s) => !s.disabled)).toBe(true)
+      expect(plan.reasons).toEqual([])
+    }
+  })
+
+  it('falls back to the stage the store itself defaults to when the value is unknown', () => {
+    expect(planStageTimeline({ stage: null }).steps.find((s) => s.state === 'current')!.key).toBe('plan')
+    expect(planStageTimeline({ stage: 'cancelled' }).steps.find((s) => s.state === 'current')!.key).toBe('plan')
   })
 })

@@ -49,6 +49,49 @@ export function planStage(value: string | null | undefined): PlanStage | null {
   return PLAN_STAGES.includes(value as PlanStage) ? (value as PlanStage) : null
 }
 
+/** HOW A PLAN STAGE READS, declared once. Before this the same three stages were spelled out as a
+ *  ternary in four places (the Plan drawer's Stage select, the Plan board's columns, the Studio
+ *  manifest's options, the drawer's own summary row) and they disagreed: `plan` read "Plan" in
+ *  three of them and "Planning" in the fourth. docs/NAMING.md §Calendar rules the stage words are
+ *  Pencil, Planning, Production, so the registry carries those and every surface reads them here.
+ *
+ *  A PLAN STAGE IS NOT AN ENTRY STAGE. `ENTRY_STAGES` walks one date and carries a fourth value,
+ *  Cancelled, which is an exit rather than a step. PLAN_STAGES walks the whole working record and
+ *  has no exit at all: a Plan leaves through `archived_at`, never through its stage. It is also
+ *  DERIVED where the dates can say it (`derivePlanStage`), so the stepper is the operator's
+ *  override of that derivation, and no step is ever refused. The hints below therefore describe a
+ *  record that holds MANY dates, which is why they are not the entry copy. */
+export interface PlanStageDef {
+  stage: PlanStage
+  /** The stage name staff see (docs/NAMING.md). */
+  label: string
+  /** One plain line under the stage stepper saying what the stage means for a whole Plan. */
+  hint: string
+}
+
+export const PLAN_STAGE_DEFS: readonly PlanStageDef[] = [
+  {
+    stage: 'pencil',
+    label: 'Pencil',
+    hint: 'Every date on this Plan is still being held. Nothing is decided yet.',
+  },
+  {
+    stage: 'plan',
+    label: 'Planning',
+    hint: 'The dates are decided and the team is putting this together.',
+  },
+  {
+    stage: 'production',
+    label: 'Production',
+    hint: 'Ready to run. Open the production Studio when you want people to see it.',
+  },
+] as const
+
+/** Total: an unknown or missing stage reads as the one `parsePlanInput` and `mapPlanRow` default to. */
+export function planStageDef(value: string | null | undefined): PlanStageDef {
+  return PLAN_STAGE_DEFS.find((d) => d.stage === value) ?? PLAN_STAGE_DEFS[1]
+}
+
 export function planTarget(value: string | null | undefined): PlanTargetKind | null {
   return PLAN_TARGETS.includes(value as PlanTargetKind) ? (value as PlanTargetKind) : null
 }

@@ -208,12 +208,18 @@ describe('CalendarWorkspace', () => {
         loadGuestMonth={async () => []}
       />,
     )
+    // The Plan drawer walks its stages on the shared stepper now (ADR-1520), so the stage moves by
+    // pressing a step. Two acts, not one: the press only writes form state, and the SAVE is the
+    // submit that follows, which is the whole point of the conversion.
+    const planForm = () => document.querySelector('[data-plan-production-summary]')!.closest('form')!
     await act(async () => {
-      const stage = document.querySelector<HTMLSelectElement>('#plan-stage')!
-      stage.value = 'production'
-      stage.dispatchEvent(new Event('change', { bubbles: true }))
-      document.querySelector<HTMLFormElement>('[data-plan-production-summary]')!.closest('form')!
-        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+      // Scoped to the Plan drawer: the entry drawer carries a stage group of its own.
+      const steps = planForm().querySelectorAll<HTMLButtonElement>('[role="group"][aria-label="Stage"] button')
+      steps[steps.length - 1].dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+    })
+    await act(async () => {
+      planForm().dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
       await Promise.resolve()
     })
     act(() => {

@@ -9,24 +9,13 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { EntityManifest } from '../kernel/manifest'
-import { PLAN_STAGES, PLAN_TARGETS } from '@/lib/calendar/plans'
+import { PLAN_STAGE_DEFS, PLAN_TARGET_DEFS } from '@/lib/calendar/plans'
 
-const STAGE_OPTIONS = PLAN_STAGES.map((value) => ({
-  value,
-  label: value === 'plan' ? 'Plan' : value === 'pencil' ? 'Pencil' : 'Production',
-}))
+// Both option sets are the calendar registries' own labels. They were ternaries here, which is how
+// the middle stage came to read "Plan" in the manifest and "Planning" on the workflow board.
+const STAGE_OPTIONS = PLAN_STAGE_DEFS.map((d) => ({ value: d.stage, label: d.label }))
 
-const TARGET_OPTIONS = PLAN_TARGETS.map((value) => ({
-  value,
-  label:
-    value === 'event'
-      ? 'Event'
-      : value === 'journey'
-        ? 'Journey'
-        : value === 'program'
-          ? 'Program'
-          : 'Maintenance',
-}))
+const TARGET_OPTIONS = PLAN_TARGET_DEFS.map((d) => ({ value: d.kind, label: d.label }))
 
 export const SPACE_PLAN_MANIFEST: EntityManifest = {
   entity: 'space-plan',

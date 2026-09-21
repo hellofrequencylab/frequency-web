@@ -1,13 +1,12 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { PLAN_STAGES, type SpacePlan } from '@/lib/calendar/plans'
+import { PLAN_STAGE_DEFS, type SpacePlan } from '@/lib/calendar/plans'
 import { planTargetDef } from '@/lib/calendar/plans'
 
-const COLS = PLAN_STAGES.map((stage) => ({
-  stage,
-  label: stage === 'plan' ? 'Plan' : stage === 'pencil' ? 'Pencil' : 'Production',
-}))
+// One column per Plan stage, named by the registry rather than by a ternary here: the board and
+// the Plan drawer used to spell the middle stage differently ("Planning" against "Plan").
+const COLS = PLAN_STAGE_DEFS
 
 export function PlanBoard({
   spaceId,

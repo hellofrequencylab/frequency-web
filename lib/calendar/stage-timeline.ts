@@ -1,3 +1,4 @@
+import { PLAN_STAGES, PLAN_STAGE_DEFS, planStageDef, type PlanStage } from './plans'
 import { ENTRY_STAGES, entryStage, type EntryStage } from './registry'
 
 // THE STAGE TIMELINE (ADR-1504). The entry drawer walks an event on its way through four steps,
@@ -13,7 +14,10 @@ import { ENTRY_STAGES, entryStage, type EntryStage } from './registry'
 export const STAGE_PIPELINE: readonly EntryStage[] = ['pencil', 'planning', 'production'] as const
 
 export const PUBLISH_STEP = 'publish' as const
-export type TimelineStepKey = (typeof STAGE_PIPELINE)[number] | typeof PUBLISH_STEP
+/** What a step writes back when it is pressed: an entry stage, the Publish door, or — on the Plan
+ *  side of the same stepper, below — a Plan stage. One key type because one `StageTimelinePlan`
+ *  feeds one `components/ui/stage-timeline.tsx`. */
+export type TimelineStepKey = (typeof STAGE_PIPELINE)[number] | typeof PUBLISH_STEP | PlanStage
 
 export type TimelineStepState = 'done' | 'current' | 'upcoming'
 
@@ -77,6 +81,37 @@ export function stageTimeline(opts: {
 
   const reasons = [...new Set(steps.map((s) => s.reason).filter((r): r is string => !!r))]
   return { steps, hint: current.hint, reasons, cancelled }
+}
+
+// THE PLAN SIDE OF THE SAME STEPPER. The Plan drawer taught the same concept with a <select>
+// while the entry drawer taught it with a row of steps, which is the drift this repo names. It
+// renders the SAME `components/ui/stage-timeline.tsx` from the SAME `StageTimelinePlan` shape, so
+// there is one stepper in the product and not two.
+//
+// The planner is separate rather than shared because the two pipelines genuinely differ, and
+// pretending otherwise would put a lie in the model:
+//   · PLAN_STAGES is three values, not four, and `plan` (read "Planning") is its own word;
+//   · a Plan has no Cancelled exit at all — it leaves through `archived_at` — so `cancelled` is
+//     always false and the drawer grows no exit button to match the entry drawer's;
+//   · there is no Publish step: a Plan's production door is `PLAN_TARGET_DEFS.createHref`, which
+//     the drawer already renders as its own "Make it a Production" button, and a second control
+//     for the same door is exactly the parallel system AGENTS.md forbids;
+//   · no step is ever refused. ADR-1388 §3's candidate-date rule is a property of ONE date, and a
+//     Plan holds many; its stage is derived from those dates where it can be (`derivePlanStage`),
+//     so the stepper is the operator's override of that derivation, never a gate on it.
+
+/** The Plan's three steps, from `PLAN_STAGE_DEFS`. Every label and hint is the registry's. */
+export function planStageTimeline(opts: { stage: string | null | undefined }): StageTimelinePlan {
+  const current = planStageDef(opts.stage)
+  const at = PLAN_STAGES.indexOf(current.stage)
+  const steps: TimelineStep[] = PLAN_STAGE_DEFS.map((def, i) => ({
+    key: def.stage,
+    label: def.label,
+    state: i < at ? 'done' : i === at ? 'current' : 'upcoming',
+    disabled: false,
+    reason: null,
+  }))
+  return { steps, hint: current.hint, reasons: [], cancelled: false }
 }
 
 /** The Production door: the event Spark, prefilled from this entry (`lib/calendar/production-prefill.ts`

@@ -31,6 +31,15 @@ const STEP: Record<StageTimelineStepState, string> = {
   upcoming: 'border border-dashed border-border text-muted hover:border-border-strong hover:bg-surface-elevated hover:text-text',
 }
 
+// How many columns the row takes from `sm` up. A lookup and not a template string, because
+// Tailwind only ships the classes it can see written out. Three is the Plan pipeline (Pencil,
+// Planning, Production), four the entry one (those three plus the Publish door); any other count
+// falls back to four rather than laying out wrong in silence.
+const COLUMNS: Record<number, string> = {
+  3: 'sm:grid-cols-3',
+  4: 'sm:grid-cols-4',
+}
+
 const GLYPH: Record<StageTimelineStepState, string> = {
   current: 'bg-primary text-on-primary',
   done: 'bg-success-bg text-success',
@@ -66,8 +75,8 @@ export function StageTimeline({
         role="group"
         aria-label={label}
         aria-busy={pending || undefined}
-        // Four steps wrap to two rows on a phone and sit on one row from `sm` up; never a sideways scroll.
-        className="grid grid-cols-2 gap-1.5 sm:grid-cols-4"
+        // The steps wrap to two rows on a phone and sit on one row from `sm` up; never a sideways scroll.
+        className={cn('grid grid-cols-2 gap-1.5', COLUMNS[steps.length] ?? COLUMNS[4])}
       >
         {steps.map((step, i) => {
           const current = step.state === 'current'
