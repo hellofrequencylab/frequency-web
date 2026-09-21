@@ -92,6 +92,7 @@ apply_bundle_seating_atomic          internal
 apply_membership_event_atomic        internal
 award_gems_atomic                    internal
 award_zaps_atomic                    internal
+block_type_usage                     internal
 capture_guest_rsvp                   public
 capture_signup_lead                  public
 challenge_outcomes                   public

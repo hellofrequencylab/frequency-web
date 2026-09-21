@@ -6,7 +6,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { fail, isError, ok, type ActionResult } from '@/lib/action-result'
-import { parsePlanInput, planTargetDef, type PlanInput } from '@/lib/calendar/plans'
+import { parsePlanInput, planPublishLag, planTargetDef, type PlanInput } from '@/lib/calendar/plans'
 import { planStageTransition, type WorkflowStage } from '@/lib/calendar/workflow-board'
 import {
   attachEntryToPlan,
@@ -16,6 +16,7 @@ import {
   insertSpacePlan,
   listPlaybooks,
   listSpacePlans,
+  planHasPublishedEntry,
   updateSpacePlan,
   transitionSpacePlanRows,
 } from '@/lib/calendar/plans-store'
@@ -27,6 +28,8 @@ import { productionPrefill, readinessGaps } from '@/lib/calendar/production-pref
 import { EVENT_MANIFEST } from '@/lib/studio/entities/event'
 import { buildVeraProposal } from '@/lib/calendar/vera-plan'
 import { createClient } from '@/lib/supabase/server'
+import { setEventPlan } from '@/lib/events/plan-link'
+import { listPlanLinkableEventRows } from '@/lib/calendar/admin-calendar'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -227,7 +230,46 @@ export async function planReadiness(
     planId: plan.id,
     entryId: entryId ?? undefined,
   })
-  return { gaps: readinessGaps({ required, openTodoCount }), href: href ?? null }
+  const gaps = readinessGaps({ required, openTodoCount })
+  // THE GATE ON THE PUBLISH SEAM'S FAIL-SAFE (PROG-CAL3). Advancing the Plan on publish is
+  // best-effort by design — see closeProductionSeam in app/(main)/events/actions.ts — so the lag it
+  // can leave behind is derived from the data and shown HERE, where the operator can fix it with
+  // one save, rather than living only in a log line nobody opens.
+  const lag = planPublishLag({
+    stage: plan.stage,
+    hasPublishedEvent: await planHasPublishedEntry(editor.spaceId, plan.id),
+  })
+  if (lag) gaps.unshift(lag)
+  return { gaps, href: href ?? null }
+}
+
+/** The Space's events, for putting one back on a Plan by hand. The repair door for a link that was
+ *  never editable after create (PROG-CAL3): before this, `plan_id` could only be set at creation. */
+export async function listPlanLinkableEvents(
+  slug: string,
+): Promise<{ id: string; title: string; whenLabel: string; planId: string | null }[]> {
+  const editor = await resolveEditor(slug)
+  if (!editor) return []
+  // Through lib/calendar/admin-calendar.ts, the ONE file the publication gate lets opt out of
+  // listEventsForSpace's published-only default (lib/events/space-events-gate.test.ts freezes that
+  // list). Manager-gated by resolveEditor above, exactly like every other caller of that module.
+  return listPlanLinkableEventRows(editor.spaceId)
+}
+
+/** Attach an existing event to this Plan, or detach it when `eventId` is empty. */
+export async function attachEventToPlan(
+  slug: string,
+  planId: string,
+  eventId: string,
+): Promise<ActionResult<void>> {
+  const editor = await resolveEditor(slug)
+  if (!editor) return fail('You do not have access to this calendar.')
+  if (!UUID_RE.test(planId) || !UUID_RE.test(eventId)) return fail('Pick an event to link.')
+  const res = await setEventPlan(eventId, planId, editor.spaceId)
+  if ('error' in res) return fail(res.error)
+  revalidate(slug)
+  revalidatePath('/events', 'layout')
+  return ok()
 }
 
 export async function savePlaybook(
