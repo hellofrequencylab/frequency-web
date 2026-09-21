@@ -47217,9 +47217,9 @@ Premise re-tested 2026-09-20: `featureAllowed('space_collaborators', { plan: 'bu
 
 **Rows.** LIVE-439.
 
-## ADR-1493: Renditions resolve on the fly, and the Loom editor is split out with its dependency cost measured (PROG-D3)
+## ADR-1495: Renditions resolve on the fly, and the Loom editor is split out with its dependency cost measured (PROG-D3)
 
-**Status:** Accepted · 2026-09-21 · backlog `PROG-D3` · numbered **1493** because **1490** is the highest merged, **1491** is claimed by the owner sequencing ruling and **1492** by the PROG-D2 PR open beside this one · executes the owner ruling recorded on [HYG-017](BUILD-BACKLOG.json) · beside [ADR-480](DECISIONS.md) (the Loom data model) and [ADR-1130](DECISIONS.md) (the AssetRef seam)
+**Status:** Accepted · 2026-09-21 · backlog `PROG-D3` · numbered **1495** because **1491** is the highest on `main`, and **1492** is claimed by three open PRs (#2822 mine, #2824, #2825) and **1493** by two (#2826 and this one before renumbering), so this moves clear of every number an open PR holds; **1494** is left for the PROG-D2 PR beside this one · executes the owner ruling recorded on [HYG-017](BUILD-BACKLOG.json) · beside [ADR-480](DECISIONS.md) (the Loom data model) and [ADR-1130](DECISIONS.md) (the AssetRef seam)
 
 **Context.** PROG-D3 names four things: a Filerobot image editor, version-on-edit, rollback via `is_current`, and an on-the-fly rendition resolver. Re-tested against the tree, **the two version clauses are already shipped**: `library_versions` is live in production with `is_current`, `recordVersion` / `listVersions` / `rollbackToVersion` are in `lib/library/versions.ts`, and three edit sources already write versions (file replace, Recraft ops, Vera SVG saves), with a history-and-rollback UI in `recraft-studio.tsx`. Nothing to build there.
 
