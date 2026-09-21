@@ -18,12 +18,12 @@ gets its own Loom**. It grows for years without a code deploy per asset.
 
 - **In-browser editor:** **Filerobot Image Editor** (OSS) — crop with aspect frames, rotate,
   adjust, filters, compress. ⚠️ **Still the standing choice, now with a price tag attached**
-  ([HYG-108](BUILD-BACKLOG.json), [ADR-1495](DECISIONS.md)). This was picked before anyone measured
+  ([HYG-109](BUILD-BACKLOG.json), [ADR-1495](DECISIONS.md)). This was picked before anyone measured
   what it installs: ~6.8 MB across seven packages — `konva`, `styled-components`, and
   `@scaleflex/ui` + `@scaleflex/icons` pinned at `3.0.0-beta.10` — none of them in the tree, one a
   second styling runtime beside Tailwind 4, one a third-party design system arriving as a
   transitive dependency. That is a re-confirmation to make knowingly, not a decision to reverse
-  from a scan, so HYG-108 puts the numbers and the zero-dependency alternative (native canvas crop
+  from a scan, so HYG-109 puts the numbers and the zero-dependency alternative (native canvas crop
   over the existing `CROP_FRAMES`) in front of the owner. Nothing changes until it is answered.
 - **Privacy:** build a **full** protection system, but **develop it later** — only the schema
   hooks land now (`is_protected`, `download_policy`, `expires_at`, private-bucket-ready).
@@ -163,6 +163,17 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   (`lib/library/resolve-refs.ts`) — fail-open to the cache at every grain, no query at all for a
   ref-free document. 🔴 The refresh decodes nothing and must never import `sharp` (same rule as
   ingest).
+- **A Space profile document refreshes on load too** ([ADR-1494](DECISIONS.md), which closes
+  PROG-D2). A Space page body is the same kind of Puck document, picked with the same fields, but
+  it lives on `spaces.preferences.pageDocs[slug]` and had no refresh: `resolveSpacePageDoc` is pure
+  by contract, so the refresh had nowhere to hang. `lib/spaces/page-doc.ts` is that seam — the
+  Space-side twin of `getPublishedData`. `loadSpacePageDoc` resolves then refreshes;
+  `loadSpaceAuthoredContent` does the same for the module engine's authored bag. The public profile
+  body, the page editor (so the next publish heals the stored cache), and both module-engine
+  authored reads load instead of resolve. `lib/spaces/profile-nav.ts` keeps the pure resolve on
+  purpose: it reads the Home doc for section anchors, never for images. 🔴 This matters TODAY, not
+  at D3 — `replaceLibraryAssetFile`, `rollbackToVersion` and the Recraft edits all re-point
+  `library_assets.url` on a live row while keeping its id.
 - **The entity-block system holds the same reference** ([ADR-1245](DECISIONS.md)). Its image
   fields (`url` fields with `upload`, gallery `images`, a Features or Card-grid item's `image`) are
   `string | AssetRef` too: `sanitizeBlockContent` keeps a well-formed ref in the shape it arrived
@@ -265,7 +276,7 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
 3. **D3 — Editor + versions.** Shipped and closed ([ADR-1495](DECISIONS.md)): version-on-edit and
    rollback-via-`is_current` were already live (`lib/library/versions.ts`, three edit sources), and
    the on-the-fly rendition resolver landed with the row. 🔴 The in-browser **crop/rotate editor is
-   NOT built** and is now [HYG-108](BUILD-BACKLOG.json), an owner ruling: Filerobot costs ~6.8 MB
+   NOT built** and is now [HYG-109](BUILD-BACKLOG.json), an owner ruling: Filerobot costs ~6.8 MB
    across seven packages including `konva`, `styled-components` and a beta-pinned `@scaleflex/ui`,
    versus a native-canvas crop over the existing `CROP_FRAMES` with no dependency.
 4. **D4 — Organization at scale** (collections, saved views, tag governance; usage index + safe

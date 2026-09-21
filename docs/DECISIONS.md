@@ -47132,6 +47132,29 @@ Premise re-tested 2026-09-20: money, events, and hygiene packets were empty. LIV
 
 **Rows.** LIVE-440.
 
+## ADR-1493: Rework phase 6 was already true, and it never needed the editor program (PROG-R6)
+
+**Status:** Accepted · 2026-09-21 · backlog `PROG-R6` · numbered **1493** because **1491** is the tail-sequencing ruling on this tree and **1492** is claimed by the open PROG-R4 PR · extends [ADR-1294](DECISIONS.md) (the core-model rework) and [ADR-1082](DECISIONS.md) (re-test the premise) · reads against [ADR-1491](DECISIONS.md) (the Editor deferral) and [ADR-1347](DECISIONS.md) (the re-measured console cell) · corroborated by the route tree under `app/(main)` and `next.config.ts`
+
+**Context.** PROG-R6 is the second row of the WR rework wave. Its `verify` was `kind: manual`, evidence "Program phase; proven by its child rows."
+
+Premise re-tested 2026-09-21 against the live tree. Every phase-6 item had already shipped on 2026-09-14 under its own row, and all four child probes pass here: 6.1 LIVE-237, 6.2 LIVE-238, 6.3 LIVE-239, 6.4 LIVE-240.
+
+**The question this row was flagged for, answered.** ADR-1491 defers the Editor program E0–E10 to third-to-last, and the lane brief asked for a stop-and-ask if R6 turned out to need E0/E1's block contract. It does not. The "editor" in phase 6 is the **entity** editor — the registry-driven Studio surface per Circle, Event and Practice, plus the Space-settings door — not the page-block editor E0–E10 is building. `STUDIO.md` already rules that those field lists derive from the manifest, which is why LIVE-237 and LIVE-238 both landed without E0 or E1. The two programs share a word, not a dependency.
+
+**Decision.**
+
+1. PROG-R6 closes as done. No product code changes.
+2. Its `manual` verify becomes a `cmd` probe with fourteen arms, measuring **both directions**: what was retired stays retired, and what survived is still there. An absence-only probe passes on an empty tree, which is the failure mode worth designing against when the phase's whole content is deletion.
+3. Three positive controls guard it: a file that is certainly present must read as present (or the probe is looking at the wrong tree), and the export and redirect arms must still report a planted rename and a planted deletion.
+4. The four child probes stay exactly as written; none is deleted. PROG-R6 is pruned from `meta.slate.waves` WR in the same edit (HYG-047).
+
+**Rejected.** Starting the Editor program, which ADR-1491 places third-to-last. Asserting a uniform "exactly one route per entity": LIVE-237 amended the Circle builder in on the record, because seven creation flows commit into `circles/[slug]/edit`, and a probe stricter than the ruling would fail on correct code. Re-opening the console count that ADR-1347 already re-measured and found wrong twice over.
+
+**Consequences.** Resurrecting any retired editor or door, dropping either Space redirect, losing one of the surviving CRM write actions, or re-importing a deleted onboarding engine into the app shell now fails the PROG-R6 probe directly, not only its child's. WR advances to PROG-R7.
+
+**Rows.** PROG-R6.
+
 ## ADR-1491: The editor moves to third to last; Etsy second to last; the app last (owner ruling 2026-09-21)
 
 **Status:** Accepted · 2026-09-21 · numbered **1491** because **1486**-**1490** are claimed on this tree · **reverses the E0-E9 half of** [ADR-1325](DECISIONS.md) and the 2026-09-07 reading recorded in `meta.slate.ruled` · corroborated by `docs/BUILD-BACKLOG.json` `meta.slate.waves` order
@@ -47157,6 +47180,28 @@ Etsy (`DEF-ETSY`) and the app (`PROG-A1`/`A3`/`A4`, `DEF-MOBILE`) were already d
 - **Point 5** leaves `PROG-A3` ("enablement inside RLS") parked, which the 2026-09-07 ruling already flagged: a disabled module's data stays reachable by direct API until the App Platform builds. That flag is unchanged, not new.
 
 **Rows.** No row status changed. `meta.slate.waves` re-ordered; `meta.slate.deferredByName` rewritten to name the three tail groups in order.
+## ADR-1492: Rework phase 4 was already true, so the program row gets a probe instead of a prose verdict (PROG-R4)
+
+**Status:** Accepted · 2026-09-21 · backlog `PROG-R4` · numbered **1492** because **1491** is the owner ruling that sequences the tail (ADR-1491, landed on main the same day) and **1492** is the next free number · extends [ADR-1294](DECISIONS.md) (the core-model rework), [ADR-1438](DECISIONS.md) (LIVE-228) and [ADR-1082](DECISIONS.md) (re-test the premise) · corroborated by `lib/pricing/plans.ts`, `lib/billing/pricing-keys.ts`, `lib/pricing/display.ts`, `lib/pricing/gates.ts`
+
+**Context.** PROG-R4 is the first row of the WR rework wave and the only phase that changes money. Its `verify` was `kind: manual`, evidence "Program phase; proven by its child rows."
+
+Premise re-tested 2026-09-21, against the tree and against production. Every phase-4 item had already shipped under its own row: 3.1 on LIVE-228 (ADR-1438), 3.2 on LIVE-229 (ADR-1435), 3.3 on LIVE-230 (ADR-1335), 3.4 superseded by ADR-1415 and closed as LIVE-410, 3.5 on LIVE-232. All five child probes pass here. The row's own Independent ruling holds too and no child probe covered it: `ADVERTISED_SPACE_PLANS` is `[business, nonprofit]` while `independent_base` stays on `CATALOG_ITEM_KEYS` at $249 and off `RETIRED_CATALOG_ITEM_KEYS`, so the four hand-sold Stripe prices stay live and no public surface offers the tier.
+
+Production read the same day: `spaces.plan` is free 20, business 6, null 1. Zero `collective` rows, so migration `20270345006100` has landed and the six granted Spaces are grandfathered on the business label at $49. `space_subscription_items` is 0 and `space_billing_agreements` is 1, so nobody has been charged and the grandfather is still a grant rather than a subscription.
+
+**Decision.**
+
+1. PROG-R4 closes as done. No product code changes.
+2. Its `manual` verify becomes a `cmd` probe with twelve arms measuring the consequence of all five phase-4 items plus the Independent ruling. The five child probes stay exactly as written; none is deleted.
+3. Three positive controls plant a `collective` plan, a placeholder seat and a retired `independent_base` into copies of the sources and assert the same readers still report them, so a renamed constant degrades to a failure rather than to silent coverage.
+4. PROG-R4 is pruned from `meta.slate.waves` WR in the same edit, per the placement rule (HYG-047).
+
+**Rejected.** Leaving the row open because the phase is large. Leaving the verify `manual`: "proven by its child rows" cannot notice a child being reverted, which is the one-list failure mode reappearing inside the one list. Closing PROG-R5 alongside it — its premise expired on a different reading and it stays open on LIVE-234. Claiming any part of LIVE-234, which is the money proof and stays P0 and owner-gated. Taking number 1491.
+
+**Consequences.** Reverting any phase-4 consequence — Collective back on the plan ladder or the take-rate ladder, the seat back to a placeholder or off $12, the memberships gate back to a Business wall, Independent advertised or retired, the merged tier typed into a public pricing surface — now fails the PROG-R4 probe directly, not only its child's. WR advances to PROG-R6.
+
+**Rows.** PROG-R4.
 
 ## ADR-1490: Email names Business sends from the meter (LIVE-437)
 
@@ -47217,9 +47262,37 @@ Premise re-tested 2026-09-20: `featureAllowed('space_collaborators', { plan: 'bu
 
 **Rows.** LIVE-439.
 
+## ADR-1494: Space profile documents refresh their asset caches on load, which closes PROG-D2 (PROG-D2)
+
+**Status:** Accepted · 2026-09-21 · backlog `PROG-D2` · **renumbered 1492 → 1494 on 2026-09-21** (ported here from #2829): this entry and [ADR-1492](DECISIONS.md) (PROG-R4) merged within minutes holding the same number. PROG-R4 merged first and keeps 1492; this is the later claimant, the renumber `check:adr` itself prescribes · completes [ADR-1130](DECISIONS.md) (the AssetField seam) · beside [ADR-1253](DECISIONS.md) (entity-block writers) and [ADR-1436](DECISIONS.md) (column-backed companions)
+
+**Context.** ADR-1130 re-shaped PROG-D2 into three parts and shipped two of them. The one control already existed with 16 consumers. The reference half shipped for Puck documents. The backfill was struck on a live-database census that found nothing to backfill. What ADR-1130 left was a three-item remainder, and this pass measured each item against the tree rather than against the row.
+
+(a) **Reference-storing adoption beyond the Puck fields is DONE, by two rows that closed after ADR-1130 wrote the remainder.** HYG-029 closed 2026-09-07 (ADR-1253) once HYG-066 removed the sanitizer that silently deleted the image. HYG-068 closed on ADR-1436 with companion `*_asset_id` columns and `lib/library/column-image.ts`, which is the column-backed half the remainder said needed a ruling first. Nothing is left here.
+
+(c) **The usage index is D4's** (`block_usage`, ADR-975), as the remainder said. Untouched.
+
+(b) **The Space-document cache refresh was real, and its stated precondition had already arrived.** `refreshAssetRefUrls` had exactly ONE production caller on this tree: `getPublishedData` (`lib/page-editor/data.ts:131`), the `pages` table. A Space profile page body is the same kind of Puck document, picked with the same page-editor fields, stored on `spaces.preferences.pageDocs[slug]` — and it had no refresh anywhere.
+
+🔴 The remainder deferred this with "wire it when D3 edits can re-point a live asset's URL". **D3 is not what re-points a live asset's URL, and three shipped actions already do it:** `replaceLibraryAssetFile` (`app/(main)/admin/library/replace-actions.ts`) swaps the file and keeps the id, `rollbackToVersion` (`lib/library/versions.ts`) restores a snapshot onto the live row, and `recraftEditAsset` (`app/(main)/admin/library/recraft-actions.ts`) writes a vectorize / remove-bg / image-to-image result onto it. Each of those headers promises that every reference "follows the new file automatically". That promise was true for `pages` and false for every Space profile. The condition was met before the row was written; the deferral outlived its premise.
+
+**Decision.**
+
+1. One load seam, `lib/spaces/page-doc.ts`, is the Space-side twin of `getPublishedData`: `loadSpacePageDoc` resolves then refreshes, `loadSpaceAuthoredContent` does the same for the module engine's authored bag. Server-only, because the refresh reaches the database.
+2. `resolveSpacePageDoc` STAYS PURE. The refresh could not live inside it and that is why it had nowhere to hang; the seam is the answer, not a relaxed contract. The pure resolver keeps every existing caller and every existing test.
+3. Four render paths load instead of resolve: the public Space profile body (`components/spaces/space-landing.tsx`), the Space page editor including its staff preview (`app/(main)/spaces/[slug]/edit-page/page.tsx`), and the module-engine authored reads (`components/widgets/space-profile/space-profile-modules.tsx`, `components/spaces/owner-space-layout-preview.tsx`). The editor loads refreshed too, so the next publish writes the fresh cache back and heals the stored document one save at a time.
+4. `lib/spaces/profile-nav.ts` deliberately keeps the pure resolve: it reads the Home doc for section ANCHORS, never for images, so a refresh there would buy a query and nothing else.
+5. Ordering is fail-safe then fail-open: the resolver still falls back to the universal default page, and a refresh that cannot reach the database leaves every cached url standing. A stale image is a degradation; a blank one is an outage.
+6. PROG-D2 closes, and its `manual` verify is replaced by a `cmd` probe that measures the consequence rather than asserting the phase.
+
+**Rejected.** Calling `refreshAssetRefUrls` inside `readPageDoc` / `resolveSpacePageDoc` (it would make the pure module import Supabase and turn every caller async, including the sync pure adapters). Refreshing inside `getVisibleSpaceBySlug` (every Space read pays for a page-doc concern). Rewriting stored Space documents to carry fresh urls (a stored-document migration is exactly what ADR-1130's seam exists to avoid; legacy strings stay legal forever). Building D4's usage index here. Re-opening the struck backfill.
+
+**Consequences.** A ref-free document — every legacy Space, every default page — costs ZERO queries and returns the same object, so the common case is unchanged. A document with refs costs ONE batched `select id, url`; the seam walks 5 modules and reaches no `sharp` and no `next/og`, the same shape `lib/page-editor/data.ts` already has from `app/page.tsx`. A later Space render path that resolves instead of loads fails the PROG-D2 probe. The entity-block layout blob still has no refresh-on-load, which is unchanged and recorded in LIBRARY.md.
+
+**Rows.** PROG-D2 (closed). Beside HYG-029, HYG-066, HYG-068 (all done). D4's usage index stays PROG-D4.
 ## ADR-1495: Renditions resolve on the fly, and the Loom editor is split out with its dependency cost measured (PROG-D3)
 
-**Status:** Accepted · 2026-09-21 · backlog `PROG-D3` · numbered **1495** because **1491** is the highest on `main`, and **1492** is claimed by three open PRs (#2822 mine, #2824, #2825) and **1493** by two (#2826 and this one before renumbering), so this moves clear of every number an open PR holds; **1494** is left for the PROG-D2 PR beside this one · executes the owner ruling recorded on [HYG-017](BUILD-BACKLOG.json) · beside [ADR-480](DECISIONS.md) (the Loom data model) and [ADR-1130](DECISIONS.md) (the AssetRef seam)
+**Status:** Accepted · 2026-09-21 · backlog `PROG-D3` · numbered **1495** because 1491 through 1494 are all spoken for: **1491** and **1493** are on `main`, **1492** is on `main` TWICE (the PROG-R4 / PROG-D2 collision that #2829 repairs) and **1494** is the number that repair moves PROG-D2 to. This entry was written as 1493 and renumbered rather than left to collide — `check:adr` enforces uniqueness within a tree, so concurrent PRs each pass alone and clash on merge, which is the failure its own header records from 2026-08-17 and which #2822/#2824 hit for real on the day this was written · executes the owner ruling recorded on [HYG-017](BUILD-BACKLOG.json) · beside [ADR-480](DECISIONS.md) (the Loom data model) and [ADR-1130](DECISIONS.md) (the AssetRef seam)
 
 **Context.** PROG-D3 names four things: a Filerobot image editor, version-on-edit, rollback via `is_current`, and an on-the-fly rendition resolver. Re-tested against the tree, **the two version clauses are already shipped**: `library_versions` is live in production with `is_current`, `recordVersion` / `listVersions` / `rollbackToVersion` are in `lib/library/versions.ts`, and three edit sources already write versions (file replace, Recraft ops, Vera SVG saves), with a history-and-rollback UI in `recraft-studio.tsx`. Nothing to build there.
 
@@ -47237,12 +47310,12 @@ Three facts were measured rather than assumed, and two of them changed the desig
 2. **Fail-open at every grain.** A non-Supabase url, a `data:`/`blob:` url, an SVG, an already-rendered url, the `source` and `custom` kinds, and any preset outside Supabase's 1–2500px window all come back **unchanged**, so every call site can use it unconditionally.
 3. 🔴 **A rendition url is display-only and is never stored.** `value` in the Loom picker stays the master; only `src` resolves. Storing a width-capped derivative would freeze a display decision into the data and defeat ADR-1130, where one master re-points everywhere.
 4. Wired into the surfaces that were serving masters as thumbnails: the Loom picker grid (`grid`), the admin Loom grid tiles (`grid`), and the admin drawer preview (`hero`). `Thumb` takes `rendition` as its own prop rather than deriving it from `fit`, because one is layout and the other is bytes.
-5. **The Filerobot editor is SPLIT OUT to HYG-108 with `ownerAction: ruling`, not built here** — see below. PROG-D3 closes on the three clauses that are real.
+5. **The Filerobot editor is SPLIT OUT to HYG-109 with `ownerAction: ruling`, not built here** — see below. PROG-D3 closes on the three clauses that are real.
 
-**Why the editor is a ruling and not an estimate.** `react-filerobot-image-editor` is MIT and only 0.45 MB itself, but it is not what it costs. Measured from the registry: it pulls **`konva` 1.75 MB** (a full 2D canvas engine), **`styled-components` 1.99 MB**, **`@scaleflex/ui` 0.98 MB** and **`@scaleflex/icons` 1.21 MB** — both pinned at `3.0.0-beta.10` — plus `react-konva`, `react-konva-utils` and `@tippyjs/react`. That is **~6.8 MB across seven packages, none of them in the tree today**, two of them betas, and one of them a **second styling runtime on a Tailwind-4 repo** whose canon is DAWN tokens and no hardcoded hex. On a repo where `check:shell-weight` and `check:build-budget` are build-blocking and the 2026-08-11 incident was a green tree that shipped an artifact the container could not hold, adopting a third-party design system as a transitive dependency is an architecture decision, not an implementation detail. It is also not the only way to get crop and rotate — `CROP_FRAMES` already exists and a native-canvas crop would add zero dependencies. One owner sentence picks the exit; HYG-108 states both with these numbers.
+**Why the editor is a ruling and not an estimate.** `react-filerobot-image-editor` is MIT and only 0.45 MB itself, but it is not what it costs. Measured from the registry: it pulls **`konva` 1.75 MB** (a full 2D canvas engine), **`styled-components` 1.99 MB**, **`@scaleflex/ui` 0.98 MB** and **`@scaleflex/icons` 1.21 MB** — both pinned at `3.0.0-beta.10` — plus `react-konva`, `react-konva-utils` and `@tippyjs/react`. That is **~6.8 MB across seven packages, none of them in the tree today**, two of them betas, and one of them a **second styling runtime on a Tailwind-4 repo** whose canon is DAWN tokens and no hardcoded hex. On a repo where `check:shell-weight` and `check:build-budget` are build-blocking and the 2026-08-11 incident was a green tree that shipped an artifact the container could not hold, adopting a third-party design system as a transitive dependency is an architecture decision, not an implementation detail. It is also not the only way to get crop and rotate — `CROP_FRAMES` already exists and a native-canvas crop would add zero dependencies. One owner sentence picks the exit; HYG-109 states both with these numbers.
 
 **Rejected.** Materialising renditions (ruled against, and it means server-side decode). Re-creating `library_renditions` (dropped `20260925000000`, stays dropped). Rebuilding urls from the project env var (would break the custom-domain half of the catalog). Storing rendition urls in documents or columns. Adding Filerobot and its seven packages on this PR's own authority. Closing PROG-D3 with the editor silently dropped rather than filed.
 
 **Consequences.** `RENDITION_PRESETS` has its first production consumer, so HYG-017's ADR-979 finding is retired rather than re-inherited. Transformations are metered per distinct **origin** image per cycle (Pro includes 100, then $5 per 1,000) — per image, not per request, so repeat views and the Smart CDN cost nothing; the catalog is small today and this is a figure to watch, not a blocker. A later call site that renders `asset.url` straight into a grid tile fails the PROG-D3 probe. A later resolver that rebuilds the host, or that returns a transformed url for `source`, fails it too.
 
-**Rows.** PROG-D3 (closed). HYG-108 (new, the editor, owner ruling). HYG-017 (done, its ruling executed here). PROG-D4 still owns the usage index.
+**Rows.** PROG-D3 (closed). HYG-109 (new, the editor, owner ruling). HYG-017 (done, its ruling executed here). PROG-D4 still owns the usage index.

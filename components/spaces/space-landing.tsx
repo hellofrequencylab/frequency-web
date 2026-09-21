@@ -6,7 +6,8 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { config } from '@/lib/page-editor/config'
 import { withVisibleBlocks } from '@/lib/page-editor/templates/space-blocks'
-import { resolveSpacePageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
+import { HOME_SLUG } from '@/lib/spaces/profile-pages'
+import { loadSpacePageDoc } from '@/lib/spaces/page-doc'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { getSpaceReviews } from '@/lib/spaces/content-data'
 import { readLayoutPreset, applyLayoutPreset } from '@/lib/spaces/layout-presets'
@@ -59,10 +60,13 @@ export async function SpaceLanding({ slug, pageSlug = HOME_SLUG }: { slug: strin
   // Resolve THIS page's doc (Home or a custom page), drop any block the Page panel hid (and strip the
   // flag off survivors), then strip the legacy identity header. The resolver is fail-safe: a page with
   // no stored doc renders the one universal default, so it never goes blank.
+  // The load seam (lib/spaces/page-doc.ts) also re-points every stored AssetRef cache at its asset's
+  // CURRENT url (PROG-D2), so a Loom replace / rollback / Recraft edit reaches this page without the
+  // operator re-saving it. Ref-free docs cost no query; an unreachable database leaves the caches standing.
   // CONTENT (neutral, flat, editor-tied): the stored-or-default doc with hidden blocks stripped and the
   // legacy identity header removed.
   const content = stripIdentityHeader(
-    withVisibleBlocks(resolveSpacePageDoc(space.preferences, brandName, pageSlug)),
+    withVisibleBlocks(await loadSpacePageDoc(space.preferences, brandName, pageSlug)),
   )
   // DISPLAY: arrange that same content for the page's chosen layout preset (pure transform; the stored
   // content is never mutated, so an external site could render the same content with a different
