@@ -83,11 +83,14 @@ vi.mock('./connect', () => ({
   payoutsLive: async () => true,
   getConnectStatus: async () => connect.status,
 }))
+/** The member take-rate as a RECORDING fake: 8% of whatever gross it is handed, so the fee/currency
+ *  test below can tie the `application_fee_amount` Stripe receives back to the line items' cents. */
+const memberTakeRate = vi.hoisted(() => ({ cents: vi.fn(async (gross: number) => Math.floor(gross * 0.08)) }))
 vi.mock('./fees', () => ({
   platformFeeCents: () => 0,
   platformFeePct: () => 10,
   spaceTakeRateCents: async () => 0,
-  memberTakeRateCents: async () => 800,
+  memberTakeRateCents: (gross: number, ...rest: unknown[]) => memberTakeRate.cents(gross, ...rest),
   resolvedNetworkRate: async () => ({}),
 }))
 vi.mock('./pricing-keys', () => ({
@@ -277,6 +280,26 @@ describe('the mode changes nothing else about the sale', () => {
     expect(created().payment_intent_data.metadata.kind).toBe('ticket')
     expect(created().payment_intent_data.transfer_data.destination).toBe('acct_host')
     expect(created().mode).toBe('payment')
+  })
+
+  it('prices the fee on the line items\' own cents, in their currency (HYG-107, ADR-1500)', async () => {
+    // `application_fee_amount` is an integer Stripe reads in the PaymentIntent's currency, which under
+    // Adaptive Pricing stays the line items' currency (the buyer's local price is presentment only).
+    // So the cut is right exactly when fee and line items share cents and currency. Pinned here for
+    // tickets as lib/commerce/checkout-fee-currency.test.ts pins it for the shop.
+    flatEvent()
+    stripeFake.checkout.sessions.create.mockResolvedValue({ id: 'cs_1', url: 'https://stripe.test/cs_1' })
+    memberTakeRate.cents.mockClear()
+    await createTicketCheckout({ buyerProfileId: 'buyer-1', eventId: 'evt-1', qty: 2 })
+    const lines = created().line_items as { quantity: number; price_data: { currency: string; unit_amount: number } }[]
+    expect(lines.length).toBeGreaterThan(0)
+    const lineGross = lines.reduce((s, l) => s + l.price_data.unit_amount * l.quantity, 0)
+    expect(lineGross).toBe(2 * 2500)
+    for (const l of lines) expect(l.price_data.currency).toBe('usd')
+    expect(memberTakeRate.cents).toHaveBeenCalledTimes(1)
+    expect(memberTakeRate.cents.mock.calls[0][0]).toBe(lineGross)
+    expect(created().payment_intent_data.application_fee_amount).toBe(Math.floor(lineGross * 0.08))
+    expect(created().payment_intent_data.application_fee_amount).toBe(await memberTakeRate.cents.mock.results[0].value)
   })
 
   it('still narrows payment methods and still holds the seat for 30 minutes', async () => {
