@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2155,
+      "baseline": 2154,
       "frozen": {
         "at": "2026-09-21",
-        "value": 2155,
+        "value": 2154,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "Incidental retirement across the 2026-09-08..21 operator-calendar and Collective-copy merges (PRs #2789-#2817), not a deliberate sweep. Banked so the lower floor holds and the sites cannot come back unnoticed.",
-        "from": 2167
+        "reason": "PROG-P5 / ADR-1498: the Starter Circle preview retired its hand-rolled rounded-2xl cover box when its cover moved onto the canonical PageHero. 2155 to 2154.",
+        "from": 2155
       },
       "history": [
         {
@@ -266,6 +266,13 @@
           "to": 2155,
           "direction": "lowered",
           "reason": "Incidental retirement across the 2026-09-08..21 operator-calendar and Collective-copy merges (PRs #2789-#2817), not a deliberate sweep. Banked so the lower floor holds and the sites cannot come back unnoticed."
+        },
+        {
+          "at": "2026-09-21",
+          "from": 2155,
+          "to": 2154,
+          "direction": "lowered",
+          "reason": "PROG-P5 / ADR-1498: the Starter Circle preview retired its hand-rolled rounded-2xl cover box when its cover moved onto the canonical PageHero. 2155 to 2154."
         }
       ]
     },

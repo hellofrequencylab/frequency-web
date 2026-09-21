@@ -47348,6 +47348,33 @@ Three facts were measured rather than assumed, and two of them changed the desig
 
 **Rows.** PROG-D3 (closed). HYG-109 (new, the editor, owner ruling). HYG-017 (done, its ruling executed here). PROG-D4 still owns the usage index.
 
+## ADR-1499: Rework phase 8 closes on a probe over the marketing source, and the front door is confirmed in the database (PROG-R8)
+
+**Status:** Accepted · 2026-09-21 · backlog `PROG-R8` · numbered **1499** by coordinator allocation (six lanes running; 1496-1498 are other lanes) · implements [ADR-1294](DECISIONS.md) CORE-MODEL §5 phase 8 · extends [ADR-1350](DECISIONS.md) (LIVE-253, the retired rate-ladder framing), [ADR-1358](DECISIONS.md) (LIVE-252, the home document), [ADR-1438](DECISIONS.md) (Collective merged), [ADR-1439](DECISIONS.md) (Hubs and Nexuses folded), [ADR-1082](DECISIONS.md) (re-test the premise) · corroborated by production reads on 2026-09-21
+
+**Context.** PROG-R8 was `verify: manual`, "proven by its child rows". Its detail carried two warnings: the home page is a database edit, and the pricing page was one third correct. Both were re-tested before anything was edited.
+
+**Where the public copy lives, confirmed against production.** `/` BODY is `pages.published_data` for slug `home`: 14 blocks, published 2026-09-15 10:43Z, `data = published_data`, no em dash, hero "Frequency is where your local community happens" with the three lines under it, the four nouns as a ValueBand, and a money section that links /pricing. Migration `20270345004600` (LIVE-252) has landed; nothing on the home document was left to change. `/` TITLE and META DESCRIPTION are code: `page_content` has no `/` row (six member-route rows, every `title` and `description` null), so `resolvePageContent` falls through to `SITE_TAGLINE` / `SITE_DESCRIPTION` in `lib/site.ts`. Of the four `pages` rows only `home` is published; `about`, `how-it-works`, `the-lab` carry no document, so every other marketing page (`/spaces`, `/the-community`, `/the-quest`, `/what-is-frequency`, `/about`, `/pricing`, `/for/*`, `/vs/*`, `llms.txt`, `llms-full.txt`) renders its code template. `spaces.preferences.pageDocs` is per-Space, not marketing. So this phase is a pull request except for the front door, which was already done, and no migration is needed.
+
+**What was still off-model, and where.** LIVE-253 retired the "a plan buys the rate down" argument from the /pricing family and left a note that `SITE_DESCRIPTION` still said "small, shrinking". The same framing survived on eight more surfaces that LIVE-253's roots did not cover: `lib/site.ts` (the meta description of `/`, the Organization and WebSite JSON-LD, the llms-full.txt header), `app/llms.txt` (header), `templates/about.ts`, `templates/spaces.ts`, `templates/what-is-frequency.ts` twice, `templates/how-to-build-community.ts` ("at a rate that drops as your plan rises"), `lib/marketing/comparisons.ts` three times (the /vs pages), and the unreachable `templates/home.ts` seed. Three findings the row did not predict: (1) `/spaces` told visitors "Billing isn't turned on yet, so nothing charges today", which is false; `platform_flags.billing_live` has been `true` since 2026-07-21 and `PLACEHOLDER_PRICING` is `false`. (2) `/spaces` said "You cover the room" twice, the inverse of "businesses host free". (3) `/what-is-frequency` lifted a five-row tier ladder for answer engines that typed an **Independent** row with its price on a public page, under the owner ruling that hides the tier from public pricing (LIVE-227 probed only /pricing), and enumerated "Member to Crew, Business, Collective, Non Profit, and Independent" in prose. `llms.txt` also still described the community as "Circles group into Hubs, Hubs into a Nexus" after LIVE-242 folded both into Space.
+
+**Decision.**
+
+1. `PLAN_STORY` gains `lines`, the three sentences on their own, and `lib/site.ts` and `app/llms.txt` READ it. `SITE_DESCRIPTION` is "Frequency is a Community Collective. Start a Circle, host Events, grow a Space." plus the lines, 152 characters, under the check:seo Scan E limit. The tagline is unchanged; both OG `.alt.txt` files carry it and `lib/og/root-card.test.ts` pins that pairing, which is what CORE-MODEL item 6.2 means by "move together".
+2. Every surface above states the model instead of the ladder: "we earn a share only of the business the network sends you", never "shrinking", never "as your plan rises". `/spaces` says hosting is free and a plan is what you take when money starts moving; the false billing sentence is deleted, not softened.
+3. `/what-is-frequency` derives its Space rows from `ADVERTISED_SPACE_PLANS`, so a hand-sold tier drops out by construction, the same way it does on /pricing and llms.txt. The money FAQ reads `PLAN_STORY.lines` and `PLAN_STORY.paid`; the Crew figure reads as a floor (`CREW_NOTE.fromLabel`).
+4. `docs/NAMING.md`'s tier-ladder bullet carries an AMENDED note pointing at ADR-1294 and ADR-1438, in the form CONTENT-VOICE §1a took under ADR-1350. A locked canon that still said "Business ($29) · Collective ($79)" was the source LIVE-253 named and did not touch.
+5. The admin home SEO form (`app/(main)/pages/home`) stops telling an operator the home body is "a coded experience"; it names the published document.
+6. PROG-R8 closes with a `cmd` probe: the spine carries `lines` and site + llms read it; the tagline and both alt files agree; thirteen retired idioms are absent from 77 comment-stripped marketing source files (the check:canon roots plus the five named files); the home route still resolves the published document first and the home migration still writes the lines; sameAs, the /pricing sitemap priority and the help wall (items 6.5, 6.6, 6.7) hold. Mutation-fired: ten must-fire arms (each edited file reverted to main), two must-not-fire controls (a comment carrying every retired sentence; the restored tree).
+
+**Rejected.** Writing a migration: the database copy already states the model, and a second write to `pages` with nothing to change is churn on the row ADR-1115 protects. Editing `templates/home.ts` beyond one sentence: it is unreachable by decision (OWN-043) and the LIVE-252 probe forbids the front-door copy in it. Deriving the tier rows from the async pricing input: the template is synchronous and `ADVERTISED_SPACE_PLANS` is the ruling's own list. Leaving the row `manual`: a program row proven by prose cannot notice a child being reverted (ADR-1492).
+
+**Stated limits.** No probe in this repo can read production, so the home document's state is a recorded read, not an assertion; the maintenance sweep's `home-copy-canon.mjs` model arm is the instrument that watches it. The idiom pass cannot catch a new off-model sentence that uses none of the thirteen idioms; the canons are where the rule lives.
+
+**Left for an owner ruling, not guessed.** `content/help/membership/household-bundle.md` is a published help article for the household bundle, which `platform_flags.bundle_household_enabled` has held `false` since 2026-06-23 and ADR-1294 listed under "built and never sold"; the article is not marketing copy and stays, filed as LIVE-448.
+
+**Rows.** PROG-R8 (done). LIVE-448 (filed).
+
 ## ADR-1500: The platform fee is denominated in the line items' currency, and Adaptive Pricing does not move it (HYG-107)
 
 **Status:** Accepted · 2026-09-21 · backlog `HYG-107` · beside [ADR-811](DECISIONS.md) (the take-rate is a proportion) and [ADR-914](DECISIONS.md) (the rate receipt) · touches `lib/commerce/checkout.ts`, `lib/billing/tickets.ts`
@@ -47434,3 +47461,42 @@ Measured against production before anything was written. No usage table exists: 
 
 **Rows.** LIVE-394 (closed).
 
+## ADR-1498: The entity-cover grammar closes at 26 of 30, and the two compositions that stay off it are ruled, not forgotten (PROG-P5)
+
+**Status:** Accepted · 2026-09-21 · backlog `PROG-P5` (closed) → `LIVE-447` (the ruling it leaves open) · completes [ADR-1117](DECISIONS.md) (the detail-hero resolver) and [ADR-1136](DECISIONS.md) (the 26-band adoption) · beside [ADR-1248](DECISIONS.md) (the poster band takes its cover's own shape), [ADR-526](DECISIONS.md) (a Space profile is always Hero), [ADR-578](DECISIONS.md) (the page theme heading face) · re-tests under [ADR-1082](DECISIONS.md)
+
+### The premise, re-tested first
+
+`PROG-P5` said 43 surfaces, then 30, then "26 done, 4 left". Re-measured today with a census that is comment-blind **by line** and counts by **render site**, resolving the two wrapper compositions (`EventDetailTemplate`, `JourneyDetailTemplate`) to their callers: **30 live `DetailTemplate` surfaces**. The 30 held. The split did not: it was **24 on the grammar and 6 off**, because two public share twins landed after the ADR-1136 sweep and adopted nothing — `SCAN-643` gave `/events/<slug>` a public page that rides the event composition, and `SCAN-644` gave `/spaces/<slug>` one that passed a plain `coverImage` and ignored the operator's focal point. A sweep that closes on a count and not a gate is re-opened by the next page, which is the whole reason this row now closes on a probe.
+
+One method note that matters for the next person: a block-comment regex (`/\*[\s\S]*?\*/`) is opened by the route glob `'/events/*'` in the in-app event page and swallows it whole, so the first draft of the census read 28 and missed the marquee surface. Dropping comment **lines** instead is what makes the 30 honest, and `scripts/check-templates.mjs` carries the same regex.
+
+### What shipped
+
+**Two stragglers folded**, each a consolidation and not a redesign:
+
+- `/circles/starter/<slug>` hand-rolled an `h-40 sm:h-52` box around `TemplateCover`. It now calls `resolveDetailHero` (rung 1 is the blueprint's uploaded photo; `size: 'short'` is the surface's own default, the nearest rung to the old box) and renders the canonical `PageHero` (`minimal`, `heading={false}`). A blueprint with no upload wears its **drawn scene** through PageHero's `background` slot — the same seam the Around You map uses (ADR-1034) — and `background` wins over `coverImage`, so a blueprint's own art is never outranked by a section image, exactly as an entity's own upload never is. Pixels that move: the band grows one rem at each breakpoint, the corner goes from the card radius to the band radius, and the band gains the light strip every other PageHero carries.
+- the public `/spaces/<slug>` spreads `resolveDetailHero` with the Space's cover (or its deterministic stock stand-in, the same photo the OG card draws) as rung 1 **and the operator's focal point as `entityFocus`**, so the crop keeps the subject the operator framed. The band moves from the plain 16:6 crop to the same PageHero band every resolver-adopted entity with a cover renders, at the header element's height and overlay. Service-role reads only; the page's ISR is untouched (`lib/nav/public-detail-isr.test.ts` still passes).
+
+**26 of 30 now resolve through `lib/layout/detail-hero.ts` and render through `PageHero`.**
+
+### The four that stay off, and why that is a ruling
+
+The remaining 4 ride **two compositions** that hand-roll a cover **node** the grammar has no slot for. Both were named as such in ADR-1117 §"what this does not do" and again in ADR-1136, and re-reading them today confirms neither is a straggler:
+
+| Composition | Surfaces | What the grammar cannot express |
+|---|---|---|
+| the Space profile hero, `app/(main)/spaces/[slug]/(profile)/layout.tsx` | 1 | an overlaid lockup in the **page theme heading face** (`font-section`, ADR-578) with the brand chip, a follow chip that moves between the cover and a mobile action card, a tagline that relocates below `lg`; always Hero (ADR-526) on the **fixed** cover-height ladder, never the header element. `PageHero` `identity` would set every Space name in the uppercase display face at min-heights — a redesign of the one page a Business pays for. |
+| the event poster band behind `EventDetailTemplate` | 3 (`/events/<slug>`, `/discover/events/<slug>`, the public `/events/<slug>`) | a band that takes the **poster's own aspect** with the height tier as a ceiling (ADR-1248), full-bleed and square-cornered on a phone — settled by three owner reports (2026-08-31, 09-04, 09-10). `PageHero` has no aspect-shaped band, a hard-coded `rounded-3xl` border and a light strip. Folding it re-opens a fit the owner closed three times. |
+
+Folding either moves pixels on a marquee surface, so it is an **owner ruling with screenshots**, filed as `LIVE-447` (`ownerAction: ruling`, P3). The row names both doors: teach `PageHero` the two missing affordances and fold, or rule them permanently separate and pin that.
+
+### The probe
+
+`PROG-P5`'s manual verify becomes a `cmd` probe that runs the census, requires every surface off the grammar to be one of the two ruled compositions, and requires each ruled entry to still exist **and still be off** — so the set can only shrink, and a fold that forgets to shrink it fails loudly rather than laundering the exception. A census under 20 surfaces fails as the wrong tree, and two positive controls keep the classifier honest (the starter page must read as on; a copy with its resolver call and `PageHero` tag renamed must read as off). Four mutations fired: each folded page reverted, and each exception planted with a `<PageHero>`.
+
+**Rejected.** Routing the event cover through `PageHero`'s `background` slot (loses the aspect-shaped band, adds the border and strip, undoes ADR-1248 on the phone). Folding the Space hero onto `identity` (uppercase display face on every Space name). Adding a `/spaces` row to `DETAIL_HERO_DEFAULTS` for the public twin (the prefix would also map the podcast show page ADR-1136 keeps deliberately unmapped; unmapped resolves to the same no-cover fallback, so the row buys nothing the page needs). Touching `DetailTemplate`'s own 16:6 and gradient-placeholder branches (ADR-1117 left the template alone; a change there moves `/practices/<id>` with no image).
+
+**Consequences.** Two more surfaces honour the operator's focal point and the header element. A third bespoke cover on any `DetailTemplate` page fails CI. The count that lives in docs is now the probe's output, not a paragraph.
+
+**Rows.** PROG-P5 (closed). LIVE-447 (filed). Beside SCAN-643 and SCAN-644 (done), whose public twins this catches up.
