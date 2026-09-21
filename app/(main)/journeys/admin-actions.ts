@@ -3,6 +3,7 @@
 import { getPlan, getVeraReview, normalizeJourneyMeeting } from '@/lib/journey-plans'
 import { readJourneyOutcomes } from '@/lib/journeys/outcomes'
 import { readJourneyGuarantee } from '@/lib/journeys/guarantee'
+import { readJourneyFaq } from '@/lib/journeys/faq'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import type { PlanStatus, StoredVeraReview } from '@/lib/journey-plans'
 import { getMyProfileId } from '@/lib/auth'
@@ -81,6 +82,7 @@ export async function getJourneyRailData(slug: string): Promise<JourneyRailData 
     meeting: normalizeJourneyMeeting(plan.meeting),
     outcomes: readJourneyOutcomes(plan.page_config),
     guarantee: readJourneyGuarantee(plan.page_config),
+    faq: readJourneyFaq(plan.page_config),
   }
 
   const root = await loadRootSpaceId()
