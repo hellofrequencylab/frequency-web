@@ -20,7 +20,7 @@ import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-me
 import { EventShareApprovals } from '@/components/events/event-share-approvals'
 import { SectionHeader } from '@/components/ui/section-header'
 import { SpaceEventsManager, type ManagedEvent } from './space-events-manager'
-import { listSpacePlans, listPlaybooks } from '@/lib/calendar/plans-store'
+import { listSpacePlans, listPlaybooks, listPlanPencilEntryIds } from '@/lib/calendar/plans-store'
 import { CalendarPlansPanel } from './calendar-plans-panel'
 
 // THE SPACE CALENDAR CONSOLE (Events EC2/EC3/EC5, upgraded 2026-07-25). The MANAGEMENT calendar for a
@@ -67,6 +67,10 @@ export default async function SpaceCalendarConsolePage({
 
   const plans = featureLocked || !canManage ? [] : await listSpacePlans(space.id)
   const playbooks = featureLocked || !canManage ? [] : await listPlaybooks(space.id)
+  // Which date each Plan opens its Production from (PROG-CAL3). Read here rather than taken from
+  // the month the calendar happens to be showing: a Plan's date is usually in another month, and
+  // without it "Make it a Production" opened the Spark with a title and nothing else.
+  const pencilByPlan = plans.length === 0 ? {} : await listPlanPencilEntryIds(space.id)
 
   // "N upcoming events." — GATHERINGS, not materialised occurrences (LIVE-198 / SERIES-COUNT).
   // Recurrence is materialised (ADR-007), so a weekly series is ~9 rows inside the cron's 60-day
@@ -150,6 +154,7 @@ export default async function SpaceCalendarConsolePage({
               spaceId={space.id}
               plans={plans}
               playbooks={playbooks}
+              pencilByPlan={pencilByPlan}
               initialPlanId={Array.isArray(query.plan) ? query.plan[0] : query.plan}
             />
           )}

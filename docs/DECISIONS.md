@@ -47370,26 +47370,25 @@ Three facts were measured rather than assumed, and two of them changed the desig
 
 **Rows.** HYG-107 (closed, `cmd` probe).
 
-## ADR-1505: A retired route takes its shared module and its cover-map row with it (HYG-110)
+## ADR-1504: The entry drawer walks a date through four steps, Cancelled is an exit, and Publish is a door (LIVE-452)
 
-**Status:** Accepted · 2026-09-21 · backlog `HYG-110` · number allocated by the coordinator · extends [ADR-1439](DECISIONS.md) (LIVE-242) · amends the HYG-046 probe ([ADR-1197](DECISIONS.md)) · corroborated by `components/hierarchy/` absent, `lib/hierarchy/tier-detail.ts` absent, and `DETAIL_HERO_DEFAULTS` in `lib/layout/detail-hero.ts` carrying no `/hubs` or `/nexuses` row
+**Status:** Accepted · 2026-09-21 · backlog `LIVE-452` · amends [ADR-1388](DECISIONS.md) (the stage picker; the stages themselves are unchanged) · extends [ADR-1386](DECISIONS.md) invariant 1 (nothing becomes public without a person pressing publish in the Spark) · corroborated by `components/ui/stage-timeline.tsx`, `lib/calendar/stage-timeline.ts`, `app/(main)/spaces/[slug]/settings/calendar/staff-calendar.tsx`, `lib/calendar/production-prefill.ts`, `scripts/live-452-probe.mjs`
 
-**Context.** ADR-1439 folded the Hub and Nexus member trees into Space and deleted both detail pages. It kept the module those pages shared, `components/hierarchy/tier-detail.tsx` and `lib/hierarchy/tier-detail.ts`. It rewrote a test to assert the files exist, and re-pointed HYG-046's probe to require them, on the stated ground that staff consoles and Circle geography still use them. PROG-P5's census of DetailTemplate render sites found the component names the template only in comments.
-
-Premise re-tested 2026-09-21: `git log --diff-filter=D` gives one commit for both pages, `7a1b87029` (PR #2734, LIVE-242). The removal was deliberate. No file under `app/`, `lib/`, or `components/` imports either module outside its own tests. The staff consoles read `lib/hierarchy/hub-admin.ts` and `lib/hierarchy/nexus-admin.ts`. `/hubs/:path*` and `/nexuses/:path*` 308 in `next.config.ts`, so no request resolves a cover for either prefix.
+**Context.** Owner, 2026-09-21, on the Edit event drawer of the Royal Temple calendar: "Instead of a dropdown, let's put a row of timeline buttons that walk them through the process. It starts on the Pencil button and has three other buttons to the right (4 total). Use the buttons to change plan phase. Make sure all info carries over from the fields for each plan." ADR-1388 gave an event on its way four stage values in one column and a `<select>` to pick them; the select answered "which stage" but not "where am I and what is next", which is the question a person planning something is asking.
 
 **Decision.**
 
-1. **The module goes.** `tier-detail.tsx`, `tier-detail.ts`, and their three tests are deleted. `components/hierarchy/breadcrumb.tsx` goes with them, because the deleted component was its only importer.
-2. **The cover map names only live sections.** The `/hubs` and `/nexuses` rows leave `DETAIL_HERO_DEFAULTS`. A row in that map is an opt-in for a section an operator can set a header image on. A section that 308s cannot show one.
-3. **HYG-046's probe is re-pointed, not deleted.** The twin directories stay gone. The shared module may return only with a page importing it, and then its loader must still exclude archived children.
-4. **The pages are not restored.** Restoring them would reverse CORE-MODEL ruling 5 to give dead code a caller.
+1. **Four steps, left to right: Pencil, Planning, Production, Publish.** The first three are ADR-1388's stages. The fourth is not a stage value at all: it is the "Make it a Production" door (docs/NAMING.md), a step that saves the drawer if it holds unsaved edits and then opens the event Spark prefilled from this entry (`?pencil=<entryId>`, plus `?plan=` when the date is on a Plan). A Production stage that published on save was rejected by ADR-1388 and stays rejected; the Spark's publish button is still the only thing that makes anything public.
+2. **Cancelled is an exit, not a step.** A pipeline and its exit never share a control: a person reading a row of steps reads the last one as the goal, and "Cancelled" as the goal is wrong. It stays a separate, quieter "Cancel this date" action under the row, which writes the same `stage` the select wrote; from Cancelled the row shows no current step, the registry's Cancelled hint, and a "Bring it back" action that returns the date to Pencil. The stage value and the database trigger that derives `status` from it are untouched.
+3. **Steps write the same form state the select wrote.** Every other field the person has typed survives a step, and the change persists on Save exactly as before. Nothing auto-saves on a step click. That is the "all info carries over" requirement, and the LIVE-452 probe refuses a step that saves.
+4. **A refused move says why, in the hint, not a tooltip.** ADR-1388 §3 holds a date that is one of several candidates at Pencil until one is kept. The drawer now knows the row's `option_group` and disables Planning, Production and Publish with the same sentence the action refuses with, so the person reads the reason before the server says it. Publish before Production is disabled with "Make it a Production first."
+5. **The stepper is a kit primitive.** `components/ui/stage-timeline.tsx` is a stepper (an ordered row where the current position is part of the reading), not a segmented control (HYG-105's separate concern). It is `role="group"` with an accessible name; each step is a real `<button type="button">` whose label is its text; the current step carries `aria-current="step"`; earlier steps show a check glyph and later steps their number, so colour never carries the state alone. It composes `buttonGeometry` so every step keeps the tap floor and press state. Four steps wrap to two rows on a phone and never scroll sideways. It ships with the colocated state test `check:elements` demands.
+6. **A date on a Plan moves its Plan.** `saveCalendarEntry` already routed a stage change on a Plan-linked date through `transitionPlanStage` (the Plan leads, every linked date follows); the drawer hid that behind a read-only label. The timeline is live for those dates too, with one line under it saying the move carries the Plan and every date on it.
+7. **The prefill was missing the entry's zone, and the Spark demanded a Plan.** `productionPrefill` carried title, dates, location and description, but not `time_zone`; entries and events both store wall-clock as UTC parts with the zone beside them, so the Spark read a Pencil's 7 pm as 7 pm in the host's home zone and the event moved whenever the two differed. The prefill now carries `timeZone`, the form submits it, and the create action validates it as it already did. `productionPrefill` also accepts an entry with no Plan, and `/events/new` honours `?pencil=` on its own (reading the row's own `plan_id` for the link back when there is one), because the Publish step opens from a date that was never put on a Plan.
 
-**Rejected.** Keeping the module "in case staff need it" (that is the claim the tree disproved, and the staff loaders already own their reads). Keeping the hero rows as harmless (a map whose rows are the opt-in cannot carry rows for sections that do not exist, and the next reader counts them as adopters). Moving the archived-child filter somewhere to preserve it (HYG-064 already measures it on the one Hub listing that survives).
+**Rejected.** Cancelled as a fifth step or a red fourth step (an exit is not a destination). Publish as a stage value (it would either publish on save, which ADR-1388 rejected, or mean nothing). A segmented control (no order, no "where am I"). Auto-saving on a step click (the select never did, and a typed-then-abandoned field would be written). A tooltip for the refusal (unreadable on touch, and ADR-1388 §3 is a rule worth reading). Editing `plan-drawer.tsx` here: its Plan stage select is PR #2830's file and converts once that lands.
 
-**Consequences.** A probe that requires a file to exist proves nothing about whether the file is used. When a route is retired, its done-row probes measure the fold, and its shared modules and map rows leave in the same change. HYG-110's probe now fails a cover-map row whose section has no route directory, for any section, and fails a tier-detail module with no real importer.
-
-**Rows.** HYG-110. HYG-046 (probe re-pointed).
+**Consequences.** The drawer has no Stage `<select>`; `scripts/live-452-probe.mjs` fails if one returns, if the row gains or loses a step, if a step saves on click, if the door drops `pencil=`, or if the prefill drops a field or lets Team notes through. `check:elements` counts one more primitive with a state test. The Plan drawer's stage select is the same shape and is the follow-up once #2830 merges.
 
 ## ADR-1502: The usage index is a live scan, not a table, and it closes the scan half of PROG-D4 (PROG-D4)
 
@@ -47415,3 +47414,25 @@ Measured against production before anything was written. No usage table exists: 
 **Consequences.** The Loom drawer costs one RPC on open, in parallel with the Airwaves usage fetch beside it; the page around it is unchanged. `check:schema-contract` carries one dated allowlist entry for the rpc until `lib/database.types.ts` regenerates after apply. When the scan measurably slows the drawer, the materialisation ADR-975 describes drops in BEHIND the two signatures and no caller changes; that threshold is recorded in the migration header, not guessed here. LIBRARY.md and EDITOR-ARCHITECTURE.md said the index would be a table; both now say what the code does.
 
 **Rows.** PROG-D4 (closed, re-scoped). LIVE-451 (global swap, P3). LIVE-454 (the `app_instances` trigger half, blocked on PROG-E0).
+
+## ADR-1505: A retired route takes its shared module and its cover-map row with it (HYG-110)
+
+**Status:** Accepted · 2026-09-21 · backlog `HYG-110` · number allocated by the coordinator · extends [ADR-1439](DECISIONS.md) (LIVE-242) · amends the HYG-046 probe ([ADR-1197](DECISIONS.md)) · corroborated by `components/hierarchy/` absent, `lib/hierarchy/tier-detail.ts` absent, and `DETAIL_HERO_DEFAULTS` in `lib/layout/detail-hero.ts` carrying no `/hubs` or `/nexuses` row
+
+**Context.** ADR-1439 folded the Hub and Nexus member trees into Space and deleted both detail pages. It kept the module those pages shared, `components/hierarchy/tier-detail.tsx` and `lib/hierarchy/tier-detail.ts`. It rewrote a test to assert the files exist, and re-pointed HYG-046's probe to require them, on the stated ground that staff consoles and Circle geography still use them. PROG-P5's census of DetailTemplate render sites found the component names the template only in comments.
+
+Premise re-tested 2026-09-21: `git log --diff-filter=D` gives one commit for both pages, `7a1b87029` (PR #2734, LIVE-242). The removal was deliberate. No file under `app/`, `lib/`, or `components/` imports either module outside its own tests. The staff consoles read `lib/hierarchy/hub-admin.ts` and `lib/hierarchy/nexus-admin.ts`. `/hubs/:path*` and `/nexuses/:path*` 308 in `next.config.ts`, so no request resolves a cover for either prefix.
+
+**Decision.**
+
+1. **The module goes.** `tier-detail.tsx`, `tier-detail.ts`, and their three tests are deleted. `components/hierarchy/breadcrumb.tsx` goes with them, because the deleted component was its only importer.
+2. **The cover map names only live sections.** The `/hubs` and `/nexuses` rows leave `DETAIL_HERO_DEFAULTS`. A row in that map is an opt-in for a section an operator can set a header image on. A section that 308s cannot show one.
+3. **HYG-046's probe is re-pointed, not deleted.** The twin directories stay gone. The shared module may return only with a page importing it, and then its loader must still exclude archived children.
+4. **The pages are not restored.** Restoring them would reverse CORE-MODEL ruling 5 to give dead code a caller.
+
+**Rejected.** Keeping the module "in case staff need it" (that is the claim the tree disproved, and the staff loaders already own their reads). Keeping the hero rows as harmless (a map whose rows are the opt-in cannot carry rows for sections that do not exist, and the next reader counts them as adopters). Moving the archived-child filter somewhere to preserve it (HYG-064 already measures it on the one Hub listing that survives).
+
+**Consequences.** A probe that requires a file to exist proves nothing about whether the file is used. When a route is retired, its done-row probes measure the fold, and its shared modules and map rows leave in the same change. HYG-110's probe now fails a cover-map row whose section has no route directory, for any section, and fails a tier-detail module with no real importer.
+
+**Rows.** HYG-110. HYG-046 (probe re-pointed).
+

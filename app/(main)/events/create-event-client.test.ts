@@ -192,7 +192,14 @@ vi.mock('@/lib/rewards/creation', () => ({ awardCreationToken: async () => undef
 vi.mock('@/components/events/add-to-calendar', () => ({ buildGoogleCalendarUrl: () => '' }))
 vi.mock('@/lib/ai/events-ai', () => ({ draftEventSpark: async () => null }))
 vi.mock('@/lib/studio/steer-store', () => ({ saveSteer: async () => undefined }))
-vi.mock('@/lib/events/host-space', () => ({ resolveHostingSpaceIdFromRow: () => null }))
+// `resolveHostingSpaceId` joins the pair (PROG-CAL3): createEvent resolves the HOSTING Space --
+// root excluded -- before authorizing the Plan link, so that a personal event, whose space_id is
+// stamped to the root tenant, resolves null and carries no Plan link rather than one of the
+// platform tenant's. null here is the personal-event answer this suite's caller has.
+vi.mock('@/lib/events/host-space', () => ({
+  resolveHostingSpaceIdFromRow: () => null,
+  resolveHostingSpaceId: () => null,
+}))
 
 import { createEvent } from './actions'
 import { isError } from '@/lib/action-result'

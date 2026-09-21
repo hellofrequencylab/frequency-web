@@ -21,6 +21,7 @@ const entry: EntryRow = {
   stage: 'production',
   description: 'We gather at dusk.',
   plan_id: 'p1',
+  published_event_id: null,
 }
 
 describe('productionPrefill', () => {
@@ -31,6 +32,28 @@ describe('productionPrefill', () => {
     expect(prefill.startsAt).toBe('2026-09-22T19:00')
     expect(prefill.planId).toBe('p1')
     expect(prefill.sourceEntryId).toBe('e1')
+  })
+
+  it('carries every field the Spark needs: title, dates, zone, location, description (ADR-1504)', () => {
+    const prefill = productionPrefill({ id: 'p1', title: 'Equinox', notes: null }, entry)
+    expect(prefill.title).toBe('Equinox gathering')
+    expect(prefill.location).toBe('The hall')
+    expect(prefill.endsAt).toBe('2026-09-22T21:00')
+    expect(prefill.timeZone).toBe('America/Los_Angeles')
+  })
+
+  it('works from a date that is on no Plan: the entry alone fills the Spark, planId is empty', () => {
+    const prefill = productionPrefill(null, { ...entry, plan_id: null })
+    expect(prefill.title).toBe('Equinox gathering')
+    expect(prefill.description).toBe('We gather at dusk.')
+    expect(prefill.startsAt).toBe('2026-09-22T19:00')
+    expect(prefill.planId).toBe('')
+    expect(prefill.sourceEntryId).toBe('e1')
+  })
+
+  it('falls back to the Plan title only when the entry has none', () => {
+    expect(productionPrefill({ id: 'p1', title: 'Equinox', notes: null }, { ...entry, title: '' }).title).toBe('Equinox')
+    expect(productionPrefill(null, { ...entry, title: '' }).title).toBe('')
   })
 })
 
