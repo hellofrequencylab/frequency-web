@@ -15,6 +15,7 @@ import { getJourneyRailData, type JourneyRailData } from '@/app/(main)/journeys/
 import {
   saveJourneyMeta,
   setJourneyOutcomes,
+  setJourneyGuarantee,
   setJourneyAttributes,
   setJourneyDelivery,
   setJourneyHeaderFocus,
@@ -232,6 +233,7 @@ function JourneySettingsRail({ data }: { data: JourneyRailData }) {
   // The forms' actions: each builds its own action's patch from the rail's values.
   const saveIdentity = async () => unwrap(await saveJourneyMeta(planId, journeyMetaPatch(valuesRef.current, JOURNEY_IDENTITY_WRITES)))
   const saveOutcomes = async () => unwrap(await setJourneyOutcomes(planId, journeyOutcomesFromRows(outcomeRowsRef.current)))
+  const saveGuarantee = async () => unwrap(await setJourneyGuarantee(planId, String(valuesRef.current.guarantee ?? '')))
   const saveHeader = async () => unwrap(await saveJourneyMeta(planId, journeyMetaPatch(valuesRef.current, JOURNEY_HEADER_WRITES)))
   const saveDelivery = async () => {
     const v = valuesRef.current
@@ -268,6 +270,10 @@ function JourneySettingsRail({ data }: { data: JourneyRailData }) {
           />
         ))}
       </RailAutosaveForm>
+
+      {/* The refund promise (LIVE-395): one scalar on the same story settings as the outcomes
+          above, saved by its own action because it rewrites page_config rather than a column. */}
+      <RailAutosaveForm action={saveGuarantee}>{zone(JOURNEY_RAIL.guarantee.fields)}</RailAutosaveForm>
 
       {/* Header: the cover (with its focal point) and the logo self-save on pick; the overlay autosaves. */}
       <div className="space-y-4">

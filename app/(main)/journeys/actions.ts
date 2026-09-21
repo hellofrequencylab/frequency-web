@@ -36,6 +36,7 @@ import { checkJourneyPublish } from '@/lib/journeys/publish-gate'
 import { canEditJourney } from '@/lib/journeys/authoring'
 import { normalizeJourneyCoverFocus } from '@/lib/journeys/header'
 import { writeJourneyOutcomes } from '@/lib/journeys/outcomes'
+import { writeJourneyGuarantee } from '@/lib/journeys/guarantee'
 import { reviewJourneyForLibrary } from '@/lib/ai/journey-review'
 import { planJourneyEdits, type JourneyForEdit } from '@/lib/ai/journey-edit'
 import { JOURNEY_MANIFEST } from '@/lib/studio/entities/journey'
@@ -306,6 +307,21 @@ export async function setJourneyOutcomes(planId: string, outcomes: string[]): Pr
   if (!data) return fail('That Journey is gone.')
   const stored = (data as { page_config: PageWidgetConfig[] | null }).page_config
   const saved = await updatePlan(planId, { pageConfig: writeJourneyOutcomes(stored, outcomes) })
+  if (!saved.ok) return fail(saved.error)
+  revalidatePath('/journeys', 'layout')
+  return ok()
+}
+
+/** The authored refund promise (LIVE-395). Stored on the story widget's settings beside the
+ *  outcomes list, so Advanced layout saves keep it. An empty string clears it, and a Journey
+ *  with no guarantee renders no guarantee block. */
+export async function setJourneyGuarantee(planId: string, guarantee: string): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  const admin = createAdminClient()
+  const { data } = await admin.from('journey_plans').select('page_config').eq('id', planId).maybeSingle()
+  if (!data) return fail('That Journey is gone.')
+  const stored = (data as { page_config: PageWidgetConfig[] | null }).page_config
+  const saved = await updatePlan(planId, { pageConfig: writeJourneyGuarantee(stored, guarantee) })
   if (!saved.ok) return fail(saved.error)
   revalidatePath('/journeys', 'layout')
   return ok()

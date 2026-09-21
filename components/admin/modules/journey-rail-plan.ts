@@ -18,6 +18,7 @@
 // THE ZONES are the rail's save paths:
 //   identity    saveJourneyMeta         the name and the promise, hosted from the inline plane
 //   outcomes    setJourneyOutcomes      What you'll learn (LIVE-393), a repeat on story settings
+//   guarantee   setJourneyGuarantee     the refund promise (LIVE-395), a scalar on the same settings
 //   header      saveJourneyMeta         the cover and logo (self-saving Loom picks) + the overlay
 //   delivery    setJourneyRewards + setJourneyDelivery   one manifest section, two actions
 //   visibility  setJourneyVisibility    its own flow: publish, moderation state, Vera's rank gate
@@ -51,6 +52,10 @@ export const JOURNEY_IDENTITY_WRITES = ['title', 'summary'] as const
 export const JOURNEY_OUTCOMES_WRITES = ['outcomes'] as const
 export { JOURNEY_OUTCOMES_CAP }
 
+/** The scalar `setJourneyGuarantee` persists onto story.settings.guarantee (LIVE-395). Its own
+ *  zone because it is its own action: it reads and rewrites page_config, which no column save does. */
+export const JOURNEY_GUARANTEE_WRITES = ['guarantee'] as const
+
 /** The columns `saveJourneyMeta` writes from the header zone. */
 export const JOURNEY_HEADER_WRITES = ['cover_image', 'logo_image', 'header_overlay_style', 'header_overlay_color'] as const
 
@@ -73,6 +78,7 @@ export const JOURNEY_MEETING_WRITES = [
 export interface JourneyRailPlan {
   identity: RailForm
   outcomes: RailForm
+  guarantee: RailForm
   header: RailForm
   delivery: RailForm
   visibility: RailForm
@@ -83,6 +89,7 @@ export interface JourneyRailPlan {
 export const JOURNEY_RAIL: JourneyRailPlan = {
   identity: railForm(JOURNEY_MANIFEST, JOURNEY_IDENTITY_WRITES, { hostInline: true }),
   outcomes: railForm(JOURNEY_MANIFEST, JOURNEY_OUTCOMES_WRITES),
+  guarantee: railForm(JOURNEY_MANIFEST, JOURNEY_GUARANTEE_WRITES),
   header: railForm(JOURNEY_MANIFEST, JOURNEY_HEADER_WRITES),
   delivery: railForm(JOURNEY_MANIFEST, JOURNEY_DELIVERY_WRITES),
   visibility: railForm(JOURNEY_MANIFEST, JOURNEY_VISIBILITY_WRITES),

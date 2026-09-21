@@ -176,7 +176,7 @@
             "HYG-075",
             "LIVE-335",
             "LIVE-394",
-            "LIVE-395",
+            "LIVE-441",
             "LIVE-396"
           ]
         },
@@ -14232,7 +14232,7 @@
     {
       "id": "LIVE-395",
       "title": "A $444 page carries no testimonials and no guarantee",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
@@ -14240,11 +14240,11 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
       },
-      "detail": "Named in ADR-1398's 'Not done' list and unaddressed since. Both want authoring surfaces that do not exist. The guarantee is the cheaper half and the more load-bearing: 2026 course refund rates run 18-28%, a named refund window is standard on every comparable offer, and `revokeJourneyByOrder` already performs the mechanics on a full refund — so the policy has an implementation and no way to state itself. Testimonials are the other half of the proof problem LIVE-392 describes.",
+      "detail": "Named in ADR-1398's 'Not done' list and unaddressed since. Both want authoring surfaces that do not exist. The guarantee is the cheaper half and the more load-bearing: 2026 course refund rates run 18-28%, a named refund window is standard on every comparable offer, and `revokeJourneyByOrder` already performs the mechanics on a full refund — so the policy has an implementation and no way to state itself. Testimonials are the other half of the proof problem LIVE-392 describes.\n\n── CLOSED 2026-09-21, on the GUARANTEE half, which is what the probe measures and what the row's own detail calls the cheaper and more load-bearing of the two. The refund promise is now authored per Journey and rendered where the decision is made.\n\nHOW, following LIVE-393/ADR-1463 exactly rather than inventing a second pattern: lib/journeys/guarantee.ts is a pure normalize/read/write module over `page_config` story.settings.guarantee — no column, no migration, no fourth page_config toggle (ADR-1462) — and it mirrors writeJourneyOutcomes down to dropping an emptied settings bag, because the two share that object. JOURNEY_MANIFEST declares one `guarantee` longtext on the story section at rail placement (a commitment made once, not canvas copy); JOURNEY_GUARANTEE_WRITES is its own rail zone because setJourneyGuarantee rewrites page_config rather than a column; the settings module mounts it beside the outcomes repeat. components/journey/guarantee-block.tsx renders it, in its own file rather than discovery-widgets.tsx for two reasons: it is NOT a reorderable discovery widget, so putting it in the widget bag would offer a control that does nothing, and LIVE-394 is rewriting that file on cursor/cloud-agent-workspace-8978.\n\nPLACED LAST on the sales body, after JourneyFaq: the guarantee answers the objection the questions cannot close. It degrades to nothing — a host who wrote none gets no empty shell and no refund language the platform invented on their behalf, which matters because `revokeJourneyByOrder` performs real refunds and a promise nobody made must not appear beside it.\n\nWHAT IS NOT DONE, and is NOT hidden by this closure: testimonials. That half wants an authoring surface for third-party quotes and is the other half of the proof problem LIVE-392 describes; the `proof` slot (ADR-1401) already carries product reviews into the same body, so the honest next question is whether authored testimonials are a second thing at all. Filed as LIVE-441. Also not done: the block renders on the product sales body only, not on /journeys/[slug] or /discover/journeys/[slug], which show the same Journey to a buyer who can also pay. That is deliberate scope, not an oversight, and it is the first thing LIVE-441 should sweep up.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const b=s('components/marketplace/journey-sales-body.tsx');if(!/[Gg]uarantee|[Tt]estimonial/.test(b))fail('the sales body carries neither a guarantee block nor testimonials')\"",
-        "note": "Measures the CONSEQUENCE: either block reaching the page a buyer reads. Fails while neither exists."
+        "note": "Measures the CONSEQUENCE: either block reaching the page a buyer reads. Written 2026-09-14. Closed 2026-09-21 by the guarantee block; it stays honest about the testimonials half because LIVE-441 owns it and the probe was always an OR."
       }
     },
     {
@@ -15431,6 +15431,24 @@
           ".claude/hooks/session-start.sh"
         ],
         "note": "Measures the consequence: the bare presence-only guard is gone from the hook. Fails today because that exact line is the hook's only install condition."
+      }
+    },
+    {
+      "id": "LIVE-441",
+      "title": "The testimonials half of the $444 proof problem, and the guarantee only reaches one of the three buyer faces",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1398 Not done · ADR-1401 the proof slot · LIVE-395"
+      },
+      "detail": "FILED 2026-09-21 when LIVE-395 closed on its guarantee half. Two things are left, and neither is hidden inside the closed row.\n\n1. TESTIMONIALS. ADR-1398 named them beside the guarantee and they are still absent. But ASK THE PRIOR QUESTION FIRST, because the answer may be that this is not a new authoring surface at all: the sales body already takes a `proof` slot (ADR-1401) that renders product REVIEWS keyed to the commerce_products row, placed between the guide and the questions for exactly the reason authored testimonials would want. So the row is not 'add a testimonials field'; it is 'decide whether an authored quote is a different thing from a review, and if it is, say what makes it different before building a second surface for it'. A Journey with real reviews and a second block of host-chosen quotes beside them reads worse than either alone.\n\n2. THE GUARANTEE REACHES ONE FACE OF THREE. components/marketplace/journey-sales-body.tsx renders JourneyGuaranteeBlock; app/(main)/journeys/[slug]/page.tsx and app/discover/journeys/[slug]/page.tsx do not, and both show the same Journey to someone who can buy it. The data is already there — readJourneyGuarantee reads the same page_config those pages already load for readJourneyOutcomes — so this half is small and should land first. It was left out of LIVE-395 as deliberate scope, to close that row on the surface its probe measures rather than widen the change.\n\nEVIDENCE THIS IS WORTH DOING: the production read of 2026-09-21 recorded 24 checkout.session.expired against 1 completed (LIVE-234, LIVE-396).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const a=s('app/(main)/journeys/[slug]/page.tsx');const b=s('app/discover/journeys/[slug]/page.tsx');const ok=/JourneyGuaranteeBlock|readJourneyGuarantee/.test(a)&&/JourneyGuaranteeBlock|readJourneyGuarantee/.test(b);process.exit(ok?0:1)\"",
+        "note": "Measures the CONSEQUENCE of half 2, the cheap and unambiguous half: the guarantee reaches the other two buyer faces. Half 1 is a ruling first, so it is deliberately not in the probe — a probe cannot measure whether a question was asked."
       }
     }
   ]

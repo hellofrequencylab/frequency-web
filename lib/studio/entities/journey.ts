@@ -149,6 +149,18 @@ export const JOURNEY_MANIFEST: EntityManifest = {
     // ── Promise and overview. The content that IS the page, so it edits in place. ──
     { path: 'summary', label: 'One-line promise', kind: 'text', section: 'story', placement: 'inline', prose: true, veraDrafts: true },
     { path: 'intro', label: 'Overview', kind: 'longtext', section: 'story', placement: 'inline', prose: true, veraDrafts: true },
+    // The refund promise (LIVE-395). Rides story.settings.guarantee like `outcomes[]` beside it,
+    // not a column. `rail` rather than `inline`: it is a commitment the host makes once, not copy
+    // they tune on the canvas. Empty means the host wrote none, and the visitor block renders
+    // nothing rather than a promise the platform invented.
+    {
+      path: 'guarantee',
+      label: 'Refund promise',
+      kind: 'longtext',
+      section: 'story',
+      omitWhenEmpty: true,
+      veraDrafts: false,
+    },
 
     // ── Discovery ──
     // Mirrors `SparkSettings['difficulty']` (lib/ai/journey-spark.ts) and the DIFFICULTIES chips
