@@ -46,7 +46,10 @@ const LEDGER = join('docs', 'DECISIONS.md')
 // missing, including ADR-056 (the RLS SECURITY DEFINER pattern) which is cited from 17
 // live migrations and a contract test. Verified collision-safe: widening introduces no
 // duplicate ids.
-const HEADING = /^#{2,3} ADR-(\d+[a-z]?)\b/
+// Exported (HYG-110, ADR-1505) so scripts/check-id-collisions.mjs reads declarations with THIS
+// regex rather than a copy: the cross-PR gate and the in-tree gate must never disagree about
+// what a declaration is.
+export const HEADING = /^#{2,3} ADR-(\d+[a-z]?)\b/
 
 /** ADR numbers CITED in the tree that have no entry, frozen on 2026-08-04. EIGHT of them.
  *
