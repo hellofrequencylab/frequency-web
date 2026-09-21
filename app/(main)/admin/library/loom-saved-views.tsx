@@ -102,6 +102,7 @@ export function LoomSavedViews() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-label="Saved views"
         aria-haspopup="menu"
         aria-expanded={open}
         className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-2 text-body-sm font-medium text-muted transition-colors hover:border-primary"
