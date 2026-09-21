@@ -32,6 +32,8 @@ import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import type { LibraryGalleryItem, LibraryCollection } from '@/lib/library/store'
 import { renderRegistryElement, isRenderableElement } from '@/lib/library/element-registry'
 import { sanitizeSvg } from '@/lib/library/svg-sanitize'
+import { renditionUrl } from '@/lib/library/rendition-url'
+import type { LibraryRenditionKind } from '@/lib/library/types'
 import {
   downloadElementSvg,
   downloadElementPng,
@@ -76,8 +78,19 @@ function safeElementSvg(asset: LibraryGalleryItem): string | null {
 }
 
 /** Renders an asset's visual: a Vera-drawn SVG, a code element via its registry, a
- *  file via <img>, or a placeholder. `fit` picks cover (grid tiles) vs contain (preview). */
-function Thumb({ asset, fit }: { asset: LibraryGalleryItem; fit: 'cover' | 'contain' }) {
+ *  file via <img>, or a placeholder. `fit` picks cover (grid tiles) vs contain (preview).
+ *  `rendition` picks the DELIVERED size (PROG-D3): a grid tile does not need the master,
+ *  and the drawer preview does not need it either. Kept separate from `fit` on purpose —
+ *  one is layout, the other is bytes over the wire. A/V and inline SVG are unaffected. */
+function Thumb({
+  asset,
+  fit,
+  rendition,
+}: {
+  asset: LibraryGalleryItem
+  fit: 'cover' | 'contain'
+  rendition: LibraryRenditionKind
+}) {
   if (asset.kind === 'element') {
     const raw = safeElementSvg(asset)
     if (raw) {
@@ -111,7 +124,7 @@ function Thumb({ asset, fit }: { asset: LibraryGalleryItem; fit: 'cover' | 'cont
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={asset.url}
+        src={renditionUrl(asset.url, rendition)}
         alt={asset.alt || asset.title}
         loading="lazy"
         className={`h-full w-full ${fit === 'cover' ? 'object-cover' : 'object-contain'}`}
@@ -211,7 +224,7 @@ export function LoomGrid({
                   className="flex min-w-0 flex-1 items-center gap-3 text-left"
                 >
                   <span className="block h-10 w-14 shrink-0 overflow-hidden rounded-lg bg-surface-elevated">
-                    <Thumb asset={a} fit="cover" />
+                    <Thumb asset={a} fit="cover" rendition="grid" />
                   </span>
                   <span className="min-w-0 flex-1 truncate text-body-sm text-text" title={a.title}>
                     {a.title}
@@ -251,7 +264,7 @@ export function LoomGrid({
                       compact ? 'aspect-square' : 'aspect-[4/3]'
                     } overflow-hidden bg-surface-elevated transition-transform duration-200 group-hover:scale-[1.02]`}
                   >
-                    <Thumb asset={a} fit="cover" />
+                    <Thumb asset={a} fit="cover" rendition="grid" />
                   </span>
                   {compact ? (
                     <span className="block truncate px-2 py-1 text-2xs text-text" title={a.title}>
@@ -739,7 +752,7 @@ function DetailDrawer({
                 dangerouslySetInnerHTML={{ __html: safeOverride }}
               />
             ) : (
-              <Thumb asset={asset} fit="contain" />
+              <Thumb asset={asset} fit="contain" rendition="hero" />
             )}
           </div>
           {safeOverride && (
