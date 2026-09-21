@@ -166,7 +166,7 @@ export function FeatureGridBlock({
               <article key={i} className={`${cardBase} ${pad}`}>
                 <p
                   aria-hidden="true"
-                  className={`font-display text-5xl mb-5 ${ink ? 'text-on-ink/20' : 'text-text/10'}`}
+                  className={`font-display text-5xl mb-5 ${ink ? 'text-on-ink-subtle' : 'text-muted'}`}
                 >
                   {num}
                 </p>
