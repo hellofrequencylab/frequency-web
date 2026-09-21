@@ -174,7 +174,7 @@ Four things that are easy to get wrong and are each pinned by a test:
   selecting another tier or editing the amount invalidates the session.
 - **A price in a CTA is a promise.** Where there is no price this control may charge — a free tier,
   a members ticket the viewer cannot buy — it names no number at all.
-- **And so is a price anywhere else a stranger reads it** ([ADR-1492](DECISIONS.md)). The same rule
+- **And so is a price anywhere else a stranger reads it** ([ADR-1494](DECISIONS.md)). The same rule
   runs outside the control: a card, a Space's events block, and the schema.org `Offer` on all three
   event faces each withhold the number when the payee has no completed Connect account, because
   `canSellTickets` says the money cannot land. The predicate is `buyerMaySeePrice`

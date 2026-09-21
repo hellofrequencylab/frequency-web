@@ -8,8 +8,24 @@ import {
 } from './plans'
 import { copyPlaybookToPlan, type PlanPlaybook } from './playbooks'
 import { buildVeraProposal } from './vera-plan'
+import { log } from '@/lib/log'
 
 // PLAN IO (ADR-1386). Caller session, so RLS on space_plans is the lock.
+//
+// ── 🔴 EVERY FAILURE HERE IS LOGGED, AND THE 2026-09-21 OUTAGE IS WHY ───────────────────────
+// space_plans shipped with mutually recursive RLS policies, so EVERY statement against it
+// aborted with SQLSTATE 42P17. The feature was 100% dead from the day it shipped and nobody
+// knew for five days, because this file threw the Postgres error away at every single site:
+//
+//   * the write paths returned a fixed string ("The Plan could not be saved."), so the owner
+//     saw a sentence that could not be searched for and that named no cause;
+//   * the READ paths were worse — `catch { return [] }` turned a total outage into an empty
+//     state, so the calendar rendered a cheerful "no Plans yet" over a burning database.
+//
+// A fail-safe that hides the fire is not a fail-safe (AGENTS.md: "a swallowed error is an
+// invisible regression"). The fallbacks are KEPT — a calendar that still renders when Plans are
+// unavailable is the right behaviour — but every one of them now emits a structured line first,
+// so the next failure of this kind is one log query away instead of five days away.
 
 type Untyped = {
   rpc: (
@@ -43,6 +59,38 @@ async function db(): Promise<Untyped> {
   return (await createClient()) as unknown as Untyped
 }
 
+/**
+ * Record a Plan IO failure, then hand back the sentence the owner reads.
+ *
+ * The user-facing copy stays deliberately plain — a stack trace is not an empty state, and
+ * PostgREST messages leak schema. The DIAGNOSIS goes to the log, where `code` is the part that
+ * matters: 42P17 is recursive RLS, 42501 is a policy refusal, 23503 is a bad foreign key. Those
+ * are three completely different bugs that this file used to report with one identical string.
+ */
+function planIoFailed(
+  op: string,
+  message: string,
+  error: { message?: string; code?: string; details?: string; hint?: string } | null,
+): { error: string } {
+  log.error(`calendar.plan.${op}_failed`, {
+    db_error: error?.message ?? null,
+    // Not always present on a PostgREST error; null is honest and keeps the field queryable.
+    db_code: (error as { code?: string } | null)?.code ?? null,
+    db_details: (error as { details?: string } | null)?.details ?? null,
+    db_hint: (error as { hint?: string } | null)?.hint ?? null,
+  })
+  return { error: message }
+}
+
+/** The read-path twin: a fallback that still renders, but never silently. */
+function planReadFailed(op: string, error: unknown): void {
+  const e = (error ?? null) as { message?: string; code?: string } | null
+  log.error(`calendar.plan.${op}_failed`, {
+    db_error: e?.message ?? String(error ?? 'unknown'),
+    db_code: e?.code ?? null,
+  })
+}
+
 export async function listSpacePlans(spaceId: string): Promise<SpacePlan[]> {
   try {
     const { data, error } = await (await db())
@@ -52,9 +100,13 @@ export async function listSpacePlans(spaceId: string): Promise<SpacePlan[]> {
       .is('archived_at', null)
       .order('updated_at', { ascending: false })
       .limit(200)
-    if (error || !data) return []
+    if (error || !data) {
+      planReadFailed('list', error)
+      return []
+    }
     return data.map(mapPlanRow)
-  } catch {
+  } catch (err) {
+    planReadFailed('list', err)
     return []
   }
 }
@@ -67,9 +119,16 @@ export async function getSpacePlan(spaceId: string, planId: string): Promise<Spa
       .eq('space_id', spaceId)
       .eq('id', planId)
       .limit(1)
-    if (error || !data?.[0]) return null
+    // A missing row is a normal answer here (a deleted or foreign Plan), so only a real error
+    // is worth a line. Logging "not found" would bury the failures in routine misses.
+    if (error) {
+      planReadFailed('get', error)
+      return null
+    }
+    if (!data?.[0]) return null
     return mapPlanRow(data[0])
-  } catch {
+  } catch (err) {
+    planReadFailed('get', err)
     return null
   }
 }
@@ -88,7 +147,7 @@ export async function insertSpacePlan(
       created_by: profileId,
     })
     .select(PLAN_COLS)
-  if (error || !data?.[0]) return { error: 'The Plan could not be saved.' }
+  if (error || !data?.[0]) return planIoFailed('insert', 'The Plan could not be saved.', error)
   return { data: mapPlanRow(data[0]) }
 }
 
@@ -103,7 +162,7 @@ export async function updateSpacePlan(
     .eq('space_id', spaceId)
     .eq('id', planId)
     .select(PLAN_COLS)
-  if (error || !data?.[0]) return { error: 'The Plan could not be saved.' }
+  if (error || !data?.[0]) return planIoFailed('update', 'The Plan could not be saved.', error)
   return { data: mapPlanRow(data[0]) }
 }
 
@@ -118,7 +177,9 @@ export async function transitionSpacePlanRows(
     p_plan_id: planId,
     p_stage: stage,
   })
-  if (error || data !== true) return { error: 'The Plan stage could not be changed.' }
+  if (error || data !== true) {
+    return planIoFailed('transition', 'The Plan stage could not be changed.', error)
+  }
   return { data: true }
 }
 
@@ -138,7 +199,9 @@ export async function createPenciledPlanRows(
   const rec = row && typeof row === 'object' ? (row as Record<string, unknown>) : null
   const planId = typeof rec?.plan_id === 'string' ? rec.plan_id : null
   const entryId = typeof rec?.entry_id === 'string' ? rec.entry_id : null
-  if (error || !planId || !entryId) return { error: 'The date could not be penciled in.' }
+  if (error || !planId || !entryId) {
+    return planIoFailed('pencil', 'The date could not be penciled in.', error)
+  }
   return { data: { planId, entryId } }
 }
 
@@ -159,7 +222,9 @@ export async function attachEntryToPlan(
     .eq('space_id', spaceId)
     .eq('id', entryId)
     .select('id')
-  if (error || !data?.length) return { error: 'That date could not join the Plan.' }
+  if (error || !data?.length) {
+    return planIoFailed('attach_entry', 'That date could not join the Plan.', error)
+  }
   return { data: true }
 }
 
@@ -171,7 +236,10 @@ export async function listPlaybooks(spaceId: string): Promise<PlanPlaybook[]> {
       .eq('space_id', spaceId)
       .order('title', { ascending: true })
       .limit(50)
-    if (error || !data) return []
+    if (error || !data) {
+      planReadFailed('list_playbooks', error)
+      return []
+    }
     const rows = data as unknown as {
       id: string
       space_id: string
@@ -188,7 +256,8 @@ export async function listPlaybooks(spaceId: string): Promise<PlanPlaybook[]> {
       taskTitles: r.task_titles ?? [],
       notes: r.notes,
     }))
-  } catch {
+  } catch (err) {
+    planReadFailed('list_playbooks', err)
     return []
   }
 }
@@ -206,7 +275,7 @@ export async function insertPlaybook(
     notes: playbook.notes,
     created_by: profileId,
   })
-  if (error) return { error: 'The playbook could not be saved.' }
+  if (error) return planIoFailed('insert_playbook', 'The playbook could not be saved.', error)
   return { data: true }
 }
 
