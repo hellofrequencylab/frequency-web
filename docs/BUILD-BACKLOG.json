@@ -301,9 +301,7 @@
             "OWN-075",
             "LIVE-399",
             "OWN-077",
-            "OWN-080",
-            "HYG-109",
-            "LIVE-448"
+            "HYG-109"
           ]
         }
       ],
@@ -12843,7 +12841,7 @@
     },
     {
       "id": "OWN-074",
-      "title": "Two of the four hosts with priced events have no Stripe Connect account, so nobody can buy from them signed in or out",
+      "title": "Temple of Aset, host of Returning Home ($55, 23 Oct), has no Stripe Connect account, so nobody can buy that ticket signed in or out",
       "status": "open",
       "priority": "P1",
       "lane": "owner",
@@ -12853,12 +12851,13 @@
         "file": "docs/DECISIONS.md",
         "ref": "the guest-door handoff of 2026-09-14 (session 012voDkq), PRs #2552 and #2556"
       },
-      "detail": "FILED 2026-09-14 from the guest-door handoff, measured on production: ten upcoming events, all priced; hosts able to take money 1 of 3. The host of Returning Home ($55, 23 Oct, tickets mode) has no Connect account, so the event is unsellable to anyone. The host of Meld ($22, 16 Sep, RSVP mode) has none either; a member can still RSVP, the guest door is withheld until LIVE-314 lands. Five Breathe events have no payee row at all, harmless while RSVP mode. No amount of further building changes the first two: it needs two people to finish Connect onboarding at /settings/billing. LIVE-233 (the prompt at the first sell attempt) is the product side of the same fact.",
+      "detail": "FILED 2026-09-14 from the guest-door handoff, measured on production: ten upcoming events, all priced; hosts able to take money 1 of 3. The host of Returning Home ($55, 23 Oct, tickets mode) has no Connect account, so the event is unsellable to anyone. The host of Meld ($22, 16 Sep, RSVP mode) has none either; a member can still RSVP, the guest door is withheld until LIVE-314 lands. Five Breathe events have no payee row at all, harmless while RSVP mode. No amount of further building changes the first two: it needs two people to finish Connect onboarding at /settings/billing. LIVE-233 (the prompt at the first sell attempt) is the product side of the same fact.\n\nPREMISE RE-TESTED 2026-09-21 and corrected. The title used to say two of four hosts; it is now one. Stripe Connected accounts shows Royal Temple, House of Fates HypnoReiki and Daniel Tyack all Enabled, so Royal Temple has finished onboarding since this was filed. The two events the 2026-09-14 reading cited for 1 and 8 August have passed. The one remaining case is Temple of Aset, host of Returning Home ($55, tickets mode, 23 October), which still has no Connect account and therefore cannot sell that ticket to anyone. The owner parked the ask until October (see notes); the row stays open and owner-timed because the event is still ahead and nothing in the tree changes whether that host onboards.",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-14: 1 of 3 paying hosts connected. Closes when both named hosts read charges and payouts enabled, checked in the Stripe dashboard or profiles.stripe_payouts_enabled.",
-        "checked": "2026-09-14"
-      }
+        "evidence": "2026-09-21 re-test: 3 of 4 paying hosts connected (Royal Temple, House of Fates HypnoReiki, Daniel Tyack all Enabled in Stripe Connected accounts). Temple of Aset, host of Returning Home ($55, 23 Oct), is not. Closes when that host reads charges and payouts enabled, checked in the Stripe dashboard or profiles.stripe_payouts_enabled, or when the event passes unsold and no future priced event belongs to an unconnected host.",
+        "checked": "2026-09-21"
+      },
+      "notes": "parkedUntil: 2026-10-01. Owner parked this 2026-09-21 until October; the only remaining host is Temple of Aset (Returning Home, $55, 23 Oct). Status stays open on purpose: it is an owner ask with a date, not a scheduling decision about the tree. Re-check profiles.stripe_payouts_enabled for that host before asking again."
     },
     {
       "id": "PROG-GD2",
@@ -15494,7 +15493,7 @@
     {
       "id": "OWN-080",
       "title": "Create the Journey payment method configuration with Klarna/Affirm, and set its env — instalments are code-complete and off",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "owner",
       "size": "XS",
@@ -15503,12 +15502,13 @@
         "file": "lib/commerce/payment-methods.ts",
         "ref": "JOURNEY_PMC_ENV; LIVE-396 instalments half"
       },
-      "detail": "FILED 2026-09-21 when LIVE-396 closed on code. A $444 Journey still cannot be paid for in instalments, and nothing in this repository can change that — the remaining step is a Stripe configuration and an env var.\n\n  1. Stripe Dashboard → Settings → Payments → Payment methods → Create a configuration, e.g. 'Journeys (instalments)', with card and Link ON and Klarna / Affirm ON.\n  2. Copy its id (pmc_…) into STRIPE_JOURNEY_PAYMENT_METHOD_CONFIGURATION in the Vercel env.\n  3. Redeploy.\n\nAfter that, a cart that is ENTIRELY Journeys offers instalments and nothing else commerce sells changes — which is the whole point of the seam, because a pay-later method is right for $444 and a different proposition on a $20 item.\n\nTHE DOMAIN PREREQUISITE IS ALREADY DONE: Klarna requires a registered payment method domain exactly as the wallets do, and frequencylocal.com was registered on 2026-09-21 (OWN-076).\n\n⚠️ WHICH CONFIGURATION STRIPE ACTUALLY READS, because a platform-scoped id will not rescue a method that is off on the other side: lib/commerce/checkout.ts creates DESTINATION charges with on_behalf_of, so the CONNECTED ACCOUNT is the settlement merchant and its configuration governs what a buyer of a host's Journey sees. Both configurations exist today (platform pmc_1TdurnPhyalyRPP1vrYEJTv2, connected pmc_1TlJUqPhyalyRPP1I1Gxr5SJ). If instalments appear in a test on a platform-owned Journey but not on a host's, that asymmetry is the cause.\n\nNOT URGENT, and priced P2 rather than P1 for an honest reason: journey_runs is 0 and four of the five money loops have never completed, so there is no instalment demand being turned away yet. It becomes P1 the moment a Journey is actually selling and the price is the objection.",
+      "detail": "FILED 2026-09-21 when LIVE-396 closed on code. A $444 Journey still cannot be paid for in instalments, and nothing in this repository can change that — the remaining step is a Stripe configuration and an env var.\n\n  1. Stripe Dashboard → Settings → Payments → Payment methods → Create a configuration, e.g. 'Journeys (instalments)', with card and Link ON and Klarna / Affirm ON.\n  2. Copy its id (pmc_…) into STRIPE_JOURNEY_PAYMENT_METHOD_CONFIGURATION in the Vercel env.\n  3. Redeploy.\n\nAfter that, a cart that is ENTIRELY Journeys offers instalments and nothing else commerce sells changes — which is the whole point of the seam, because a pay-later method is right for $444 and a different proposition on a $20 item.\n\nTHE DOMAIN PREREQUISITE IS ALREADY DONE: Klarna requires a registered payment method domain exactly as the wallets do, and frequencylocal.com was registered on 2026-09-21 (OWN-076).\n\n⚠️ WHICH CONFIGURATION STRIPE ACTUALLY READS, because a platform-scoped id will not rescue a method that is off on the other side: lib/commerce/checkout.ts creates DESTINATION charges with on_behalf_of, so the CONNECTED ACCOUNT is the settlement merchant and its configuration governs what a buyer of a host's Journey sees. Both configurations exist today (platform pmc_1TdurnPhyalyRPP1vrYEJTv2, connected pmc_1TlJUqPhyalyRPP1I1Gxr5SJ). If instalments appear in a test on a platform-owned Journey but not on a host's, that asymmetry is the cause.\n\nNOT URGENT, and priced P2 rather than P1 for an honest reason: journey_runs is 0 and four of the five money loops have never completed, so there is no instalment demand being turned away yet. It becomes P1 the moment a Journey is actually selling and the price is the objection.\n\n── CLOSED 2026-09-21 by the owner, in the Stripe Dashboard and Vercel, at about 19:44 UTC. The connected-accounts payment method configuration 'Journeys (instalments)' exists as pmc_1UID2jPhyalyRPP1gFPNDGLq with Cards, Link, Apple Pay, Google Pay, Klarna and Affirm on by default; STRIPE_JOURNEY_PAYMENT_METHOD_CONFIGURATION names it in the Vercel env for production and preview; production was redeployed. A cart that is entirely Journeys now offers instalments and nothing else commerce sells changes.\n\nONE CAUTION, for the day it fires: lib/commerce/checkout.ts charges a HOST-OWNED Journey with on_behalf_of, so the connected-accounts configuration applies and this id is the right one. A PLATFORM-OWNED Journey is charged without on_behalf_of, and Stripe may refuse a connected-accounts configuration id on a platform-scoped session. If a platform-owned Journey checkout ever errors on the configuration, the fix is a second env var for the platform-scoped configuration (pmc_1TdurnPhyalyRPP1vrYEJTv2 today), read in lib/commerce/payment-methods.ts next to JOURNEY_PMC_ENV and chosen by whether the session carries on_behalf_of. Small code change; it does not need this row re-opened, it needs a new one with the error in hand.",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-21: not set. Closes when STRIPE_JOURNEY_PAYMENT_METHOD_CONFIGURATION names a live configuration with Klarna/Affirm enabled and a Journey-only checkout offers instalments. No probe in this repository can close it: the id is minted in the Stripe Dashboard and the value lives in the deployment environment.",
+        "evidence": "2026-09-21: set by the owner at about 19:44 UTC. Stripe connected-accounts payment method configuration 'Journeys (instalments)', id pmc_1UID2jPhyalyRPP1gFPNDGLq, with Cards, Link, Apple Pay, Google Pay, Klarna and Affirm on by default; Vercel env STRIPE_JOURNEY_PAYMENT_METHOD_CONFIGURATION set for production and preview; production redeployed. Re-opens if the env var is unset or names a configuration with Klarna and Affirm off.",
         "checked": "2026-09-21"
-      }
+      },
+      "closed": "2026-09-21"
     },
     {
       "id": "LIVE-442",
@@ -15532,7 +15532,7 @@
     {
       "id": "LIVE-448",
       "title": "The help center documents a household bundle nobody can buy",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "live",
       "size": "S",
@@ -15540,12 +15540,13 @@
         "file": "content/help/membership/household-bundle.md",
         "ref": "ADR-1294 phase 1 (\"built and never sold\"); ADR-1499; ADR-370"
       },
-      "detail": "FILED 2026-09-21 from the PROG-R8 story audit (ADR-1499), held out of that PR because it is a member help surface and needs an owner ruling, not a copy fix.\n\ncontent/help/membership/household-bundle.md is status: published and content/help/membership/the-vault.md links to it (\"sharing a membership with your household\"). It describes one payment seating several people, invites, lapses and seats. In production, platform_flags.bundle_household_enabled has been false since 2026-06-23 and lib/pricing/settings.ts defaults it false, so bundleSellable() is false and no member can reach the checkout the article describes (lib/billing/bundle-checkout.ts). ADR-1294 listed the household bundle under \"built and never sold\" for the phase 1 deletion sweep, and no HYG row took it: lib/pricing/bundle.ts, lib/billing/bundle-checkout.ts, bundle-seats.ts and bundle-invites.ts are all still in the tree.\n\nTHE RULING NEEDED: (a) delete the bundle path and the article, per ADR-1294; or (b) keep the code and mark the article draft until the flag flips; or (c) flip the flag and sell it, which is a pricing decision. The probe below passes on (a) or (b) and on (c) when the code default follows the flag.",
+      "detail": "FILED 2026-09-21 from the PROG-R8 story audit (ADR-1499), held out of that PR because it is a member help surface and needs an owner ruling, not a copy fix.\n\ncontent/help/membership/household-bundle.md is status: published and content/help/membership/the-vault.md links to it (\"sharing a membership with your household\"). It describes one payment seating several people, invites, lapses and seats. In production, platform_flags.bundle_household_enabled has been false since 2026-06-23 and lib/pricing/settings.ts defaults it false, so bundleSellable() is false and no member can reach the checkout the article describes (lib/billing/bundle-checkout.ts). ADR-1294 listed the household bundle under \"built and never sold\" for the phase 1 deletion sweep, and no HYG row took it: lib/pricing/bundle.ts, lib/billing/bundle-checkout.ts, bundle-seats.ts and bundle-invites.ts are all still in the tree.\n\nTHE RULING NEEDED: (a) delete the bundle path and the article, per ADR-1294; or (b) keep the code and mark the article draft until the flag flips; or (c) flip the flag and sell it, which is a pricing decision. The probe below passes on (a) or (b) and on (c) when the code default follows the flag.\n\n── RULED 2026-09-21 by the owner: option (b), DRAFT the article. content/help/membership/household-bundle.md now carries status: draft and a draftNote line saying why and when it comes back (when the bundle is purchasable). The file is not deleted and the bundle code stays in the tree. selectCategories() drops drafts from every public getter, so /help/membership/household-bundle 404s, the search index and help_chunks stop carrying it, and help:coverage counts vault / memberships as still covered by the-vault, the-gem-store and your-space-memberships. The one published link into it, the household paragraph in content/help/membership/the-vault.md, was removed in the same change so no live article points at a 404.\n\nRE-PUBLISH WHEN bundle_household_enabled is on in production AND the code default follows it; the probe below fails on a published article while the code default is false, and fails if the file is deleted, because the ruling was draft, not delete.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e 'const fs=require(\"fs\");const A=\"content/help/membership/household-bundle.md\";const S=\"lib/pricing/settings.ts\";if(!fs.existsSync(A)){console.log(\"LIVE-448 ok: article retired\");process.exit(0)}const art=fs.readFileSync(A,\"utf8\");const head=art.split(\"---\")[1]||\"\";if(!/status:\\s*published/.test(head)){console.log(\"LIVE-448 ok: article is not published\");process.exit(0)}let s=\"\";try{s=fs.readFileSync(S,\"utf8\")}catch{console.error(\"LIVE-448 cannot read \"+S);process.exit(1)}if(/bundle_household_enabled:\\s*true/.test(s)){console.log(\"LIVE-448 ok: the bundle default is on\");process.exit(0)}console.error(\"LIVE-448: \"+A+\" is published while lib/pricing/settings.ts defaults bundle_household_enabled to false, so help documents a bundle no member can buy\");process.exit(1)'",
-        "note": "Passes when the household-bundle article is gone, not published, or the bundle default is on (so the thing it documents can be bought). Fails while a published member article describes a checkout the code default keeps closed. Cannot read the production flag; the code default is the proxy, and the production value is recorded in the detail."
-      }
+        "cmd": "node -e 'const fs=require(\"fs\");const path=require(\"path\");const A=\"content/help/membership/household-bundle.md\";const S=\"lib/pricing/settings.ts\";const head=(t)=>{const m=t.match(/^---\\r?\\n([\\s\\S]*?)\\r?\\n---/);return m?m[1]:\"\"};const isDraft=(t)=>/^status:\\s*draft\\s*$/m.test(head(t));let art;try{art=fs.readFileSync(A,\"utf8\")}catch{console.error(\"LIVE-448: \"+A+\" is missing; the 2026-09-21 ruling was DRAFT, not delete\");process.exit(1)}if(isDraft(art)){const walk=(d)=>fs.readdirSync(d,{withFileTypes:true}).flatMap((e)=>e.isDirectory()?walk(path.join(d,e.name)):/\\.mdx?$/.test(e.name)?[path.join(d,e.name)]:[]);const linkers=walk(\"content/help\").filter((f)=>f!==A).filter((f)=>{const t=fs.readFileSync(f,\"utf8\");return !isDraft(t)&&t.includes(\"/help/membership/household-bundle\")});if(linkers.length){console.error(\"LIVE-448: household-bundle is draft (404) but these published articles still link to it: \"+linkers.join(\", \"));process.exit(1)}console.log(\"LIVE-448 ok: household-bundle is status: draft, hidden from the help center, and no published article links to it\");process.exit(0)}let s=\"\";try{s=fs.readFileSync(S,\"utf8\")}catch{console.error(\"LIVE-448 cannot read \"+S);process.exit(79)}if(/^\\s*bundle_household_enabled:\\s*true/m.test(s)){console.log(\"LIVE-448 ok: the article is published and the bundle code default is on\");process.exit(0)}console.error(\"LIVE-448: \"+A+\" is published (status is not draft; the loader defaults a missing status to published) while lib/pricing/settings.ts defaults bundle_household_enabled to false, so the help center documents a bundle no member can buy\");process.exit(1)'",
+        "note": "Passes when the household-bundle article is status: draft and no published help article links to it, or when it is published and the code default for bundle_household_enabled is true (the thing it documents can be bought). Fails if the file is deleted (the ruling was draft, not delete), if it is published again while the default stays false, or if a published article links to the drafted 404. Exit 79 if lib/pricing/settings.ts cannot be read. Cannot read the production flag; the code default is the proxy."
+      },
+      "closed": "2026-09-21"
     },
     {
       "id": "HYG-108",
