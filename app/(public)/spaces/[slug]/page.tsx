@@ -9,6 +9,8 @@ import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 import { listNetworkedSpaces } from '@/lib/spaces/discovery'
 import { readTagline } from '@/lib/spaces/tagline'
 import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
+import { readCoverFocus } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
 // Public share URL for a networked Space (SCAN-644 / ADR-1465). Auth during
@@ -44,8 +46,20 @@ export default async function PublicSpacePage({
   if (!space) notFound()
 
   const brandName = space.brandName?.trim() || space.name
-  const tagline = await readTagline(space.id)
   const coverSrc = space.coverImageUrl || coverPlaceholderFor(space.id)
+  // The cover resolves through the one detail-hero ladder (PROG-P5, ADR-1498), like the 20+
+  // entity pages before it: the Space's own cover (or its deterministic stock stand-in, the same
+  // photo the OG card draws) is rung 1, and the operator's FOCAL POINT travels with it, which the
+  // plain 16:6 crop this page shipped with ignored. The band then renders through the canonical
+  // PageHero at the header element's height and overlay, so /admin/elements retunes it with the
+  // rest. Service-role reads only, so ISR (`revalidate` above) is untouched.
+  const [tagline, hero] = await Promise.all([
+    readTagline(space.id),
+    resolveDetailHero(`/spaces/${space.slug}`, {
+      entityImage: coverSrc,
+      entityFocus: readCoverFocus(space.preferences),
+    }),
+  ])
 
   return (
     <>
@@ -65,9 +79,9 @@ export default async function PublicSpacePage({
         ]}
       />
       <DetailTemplate
+        {...hero}
         title={brandName}
         subtitle={tagline ?? undefined}
-        coverImage={coverSrc}
         back={{ href: '/discover/spaces', label: 'Spaces' }}
       >
         <div className="mx-auto max-w-xl">
