@@ -500,7 +500,6 @@ app/manage-emails/actions.ts
 app/onboarding/vera-actions.ts
 app/print/qr/page.tsx
 app/q/[slug]/route.ts
-app/sitemap.ts
 app/spaces/[slug]/calendar.ics/route.ts
 app/u/scan/route.ts
 app/unsubscribe/actions.ts
