@@ -108,7 +108,7 @@ export const COMPARISONS: Comparison[] = [
     forReader:
       'You can book a meeting in seconds. You still want a standing thing with a few people that does not need re-booking.',
     moneyBeat:
-      'Frequency takes 0% on your own bookings, always. When a session you schedule is paid, what you charge is yours to keep. Frequency runs on one honest price and earns only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
+      'Frequency takes 0% on your own bookings, always. When a session you schedule is paid, what you charge is yours to keep. Frequency runs on one honest price and earns a share only of the business the network brings you, never a cut of the business you bring yourself.',
   },
   {
     slug: 'eventbrite',
@@ -117,7 +117,7 @@ export const COMPARISONS: Comparison[] = [
     theyAreGoodAt:
       'Eventbrite is built to sell tickets to a real event. The listing, the payments, the door: all handled, and for a big paid one-off, it is the standard.',
     theDifference:
-      'Frequency is built for the small, free, repeating room, not the ticketed one-off. Here is the sharpest line between them, and it is about money: Eventbrite charges a fee on every ticket you sell, while Frequency takes 0% on your own bookings, always. Charging for a gathering is open on a free account, from day one, and what your work earns is yours. Frequency earns only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
+      'Frequency is built for the small, free, repeating room, not the ticketed one-off. Here is the sharpest line between them, and it is about money: Eventbrite charges a fee on every ticket you sell, while Frequency takes 0% on your own bookings, always. Charging for a gathering is open on a free account, from day one, and what your work earns is yours. Frequency earns a share only of the business the network brings you, never a cut of the business you bring yourself.',
     contrast: [
       { dimension: 'What it is', them: 'A ticketed event, often one time.', us: 'A free Circle that keeps meeting.' },
       { dimension: 'Getting in', them: 'You buy a ticket.', us: 'You find a Circle and show up.' },
@@ -148,7 +148,7 @@ export const COMPARISONS: Comparison[] = [
     forReader:
       'You are in a few online communities already. What you are short on is people you can sit across a table from.',
     moneyBeat:
-      'Frequency takes 0% on your own bookings, always. Selling a session, a class, a ticket, or a membership is open on a free account, from day one, once payouts are ready. Either way, what your own work earns is yours. Frequency runs on one honest price and earns only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
+      'Frequency takes 0% on your own bookings, always. Selling a session, a class, a ticket, or a membership is open on a free account, from day one, once payouts are ready. Either way, what your own work earns is yours. Frequency runs on one honest price and earns a share only of the business the network brings you, never a cut of the business you bring yourself.',
   },
 ]
 
