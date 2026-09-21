@@ -105,6 +105,10 @@ export type SpaceEventItem = {
    *  page instead of an RSVP switch. */
   ticketsMode?: boolean
   isDemo?: boolean
+  /** True when the event was called off (events.is_cancelled). The upcoming list drops cancelled
+   *  events before they reach a block, so a block that still sees one must paint it as cancelled
+   *  (grey, struck through), never as live. */
+  isCancelled?: boolean
 }
 
 /** Whether the Space is currently taking bookings, for the SpaceBooking block. Honest: `enabled` is
@@ -611,6 +615,7 @@ export async function getSpaceUpcomingEvents(spaceId: string): Promise<SpaceEven
         priceLabel,
         ticketsMode,
         isDemo: e.is_demo === true,
+        isCancelled: e.is_cancelled === true,
       }
     })
   } catch {

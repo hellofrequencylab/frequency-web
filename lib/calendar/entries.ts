@@ -268,7 +268,10 @@ export function entryToCalendarItem(
       ? `${fmt.dateLabel(row.starts_at, row.time_zone)}, all day`
       : `${fmt.dateLabel(row.starts_at, row.time_zone)} to ${fmt.dateLabel(lastDayIso, row.time_zone)}, all day`
     : `${fmt.whenLabel(row.starts_at, row.time_zone)} to ${fmt.timeLabel(row.ends_at, row.time_zone)}`
-  const stage = def?.isPencil ? (entryStage(row.stage) ?? entryStage('pencil')) : null
+  // A stored stage is never dropped: a row that carries one renders by it whatever its kind (the
+  // table's trigger keeps stage on pencil-kind rows, so this only matters if that ever loosens).
+  // A pencil-kind row with no stage is a Pencil.
+  const stage = entryStage(row.stage) ?? (def?.isPencil ? entryStage('pencil') : null)
   const holding = stage?.stage === 'pencil'
   const lapsed = holding && !!row.hold_expires_at && opts.now !== undefined && row.hold_expires_at.slice(0, 10) < opts.now
   const badges = [
@@ -293,7 +296,7 @@ export function entryToCalendarItem(
     // An event on its way is labelled by its stage ("Planning"); other entries by their kind.
     sourceLabel: stage?.label ?? def?.label ?? null,
     statusLabel: badges || null,
-    isCancelled: row.status === 'cancelled',
+    isCancelled: row.status === 'cancelled' || stage?.stage === 'cancelled',
     layer: def?.layer ?? 'private',
     entryId: opts.editable ? row.id : null,
     optionGroup: row.option_group,

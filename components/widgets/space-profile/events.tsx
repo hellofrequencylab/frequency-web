@@ -43,7 +43,7 @@ function toEventRow(e: SpaceEventsViewItem): EventRow {
     location: e.location ?? null,
     starts_at: e.startsAt,
     ends_at: e.endsAt ?? null,
-    is_cancelled: false,
+    is_cancelled: e.isCancelled,
     is_demo: e.isDemo === true,
     scope_id: '',
     scope_type: 'space',
@@ -110,6 +110,9 @@ export function EventsBlock({
     timeLabel: formatEventWhen(e.startsAt, e.timeZone ?? null, { style: 'time', withZone: false }),
     dayKey: eventDayKey(e.startsAt),
     startInstantIso: eventInstant(e.startsAt, e.timeZone ?? null)?.toISOString() ?? null,
+    // The real flag, carried through. A cancelled event is grey and struck through in every view,
+    // never a live brand chip; the calendar grid moves it to its cancelled footer.
+    isCancelled: e.isCancelled === true,
   }))
 
   const now = new Date()
@@ -148,7 +151,7 @@ export function EventsBlock({
         goingCount: e.going ?? 0,
         coverUrl: e.coverUrl ?? null,
         coverFocus: e.coverFocus ?? null,
-        isCancelled: false,
+        isCancelled: e.isCancelled,
       }))
     const idBySlug: Record<string, string> = {}
     for (const e of items) idBySlug[e.slug] = e.id

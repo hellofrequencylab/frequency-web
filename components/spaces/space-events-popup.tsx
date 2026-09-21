@@ -9,7 +9,9 @@ import { RsvpControls } from '@/components/events/rsvp-controls'
 import { EventCalendar, type CalendarEvent } from '@/components/events/event-calendar'
 import { loadEventJoinState, type EventJoinState } from '@/app/(main)/events/join-state-actions'
 import { eventCoverFocusStyle } from '@/lib/events/cover-focus'
+import { CANCELLED_TEXT_CLASS, entryStage } from '@/lib/calendar/registry'
 import type { SpaceEventItem } from '@/lib/spaces/content-data'
+import { cn } from '@/lib/utils'
 
 // THE SPACE PAGE EVENT POPUP (Events block upgrade). Clicking an event in ANY of the block's views
 // (list rows, index-style cards, the month calendar) opens ONE shared on-page dialog — never a
@@ -32,7 +34,12 @@ export type SpaceEventsViewItem = SpaceEventItem & {
   dayKey: string | null
   /** Absolute ISO instant for the calendar's viewer-timezone toggle. */
   startInstantIso: string | null
+  /** True when the event was called off. Every view paints it grey and struck through, with the
+   *  word beside it, never as a live brand chip (lib/calendar/registry.ts owns the look). */
+  isCancelled: boolean
 }
+
+const CANCELLED = entryStage('cancelled')!
 
 const PopupContext = createContext<{ open: (eventId: string) => void } | null>(null)
 
@@ -70,23 +77,34 @@ export function SpaceEventsList({ items }: { items: SpaceEventsViewItem[] }) {
         const d = new Date(e.startsAt)
         const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
         const day = d.getDate()
+        const cancelled = e.isCancelled
         return (
           <li key={e.id}>
             <button
               type="button"
               onClick={() => open(e.id)}
+              data-space-event-row={cancelled ? 'cancelled' : 'live'}
               className="flex w-full items-center gap-4 rounded-control border border-border/60 bg-surface/60 px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-primary-bg/20"
             >
-              <span className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-control bg-primary-bg">
-                <span className="text-3xs font-bold leading-none text-primary-strong">{month}</span>
-                <span className="text-body font-bold leading-tight text-primary-strong">{day}</span>
+              <span
+                className={cn(
+                  'flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-control',
+                  cancelled ? 'bg-surface-elevated text-muted' : 'bg-primary-bg text-primary-strong',
+                )}
+              >
+                <span className="text-3xs font-bold leading-none">{month}</span>
+                <span className="text-body font-bold leading-tight">{day}</span>
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-body-sm font-bold text-text">{e.title}</span>
+                <span className={cn('block truncate text-body-sm font-bold', cancelled ? CANCELLED_TEXT_CLASS : 'text-text')}>
+                  {cancelled && <span className="sr-only">{CANCELLED.label}. </span>}
+                  {e.title}
+                </span>
+                {cancelled && <span className="block text-2xs font-semibold text-danger">{CANCELLED.label}</span>}
                 <span className="block truncate text-2xs text-muted">{e.whenLabel}</span>
                 {e.location && <span className="block truncate text-2xs text-muted">{e.location}</span>}
               </span>
-              <Calendar className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+              <Calendar className={cn('h-4 w-4 shrink-0', cancelled ? 'text-muted' : 'text-primary-strong')} aria-hidden />
             </button>
           </li>
         )
@@ -168,7 +186,10 @@ function EventPopupBody({ item, onClose }: { item: SpaceEventsViewItem; onClose:
         />
       )}
       <div className="p-6">
-        <h3 className="text-lead font-bold leading-tight text-text">{item.title}</h3>
+        {item.isCancelled && <p className="mb-2 text-meta font-semibold text-danger">{CANCELLED.label}</p>}
+        <h3 className={cn('text-lead font-bold leading-tight', item.isCancelled ? CANCELLED_TEXT_CLASS : 'text-text')}>
+          {item.title}
+        </h3>
 
         <div className="mt-3 space-y-1.5 text-body-sm text-muted">
           <div className="flex items-start gap-2">
