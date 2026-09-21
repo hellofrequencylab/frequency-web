@@ -20,8 +20,11 @@ import {
 // "Call in the community builders." For the organizer who already gathers people,
 // or wants to, and wants to run THEIR OWN community on Frequency's rails. The
 // promise that does the heavy lifting: you bring your people, and your people join
-// free. We never charge the people who walk through your door. We only ask the
-// builder to cover the room.
+// free. We never charge the people who walk through your door, and hosting is free too:
+// a plan is what a builder takes once money starts moving (CORE-MODEL §1, PROG-R8). This
+// page used to say "you cover the room" and "billing isn't turned on yet"; the first is
+// the inverse of "businesses host free" and the second was false (platform_flags
+// billing_live has been true since 2026-07-21).
 //
 // COPY PROVENANCE (owner rule: default to what's on the site already). Every
 // sentence is lifted verbatim from something already published:
@@ -75,7 +78,7 @@ export const data: Data = {
         title: 'Bring your people. They join free. You hold the room.',
         titleAccent: 'They join free',
         subtitle:
-          "If you already gather people, or you've been meaning to, this is where you run your own community on rails that work. Your people join free. You cover the room, and we hand you the format and the backup.",
+          "If you already gather people, or you've been meaning to, this is where you run your own community on rails that work. Your people join free. You host free, and we hand you the format and the backup.",
         image: '/images/site/outdoor-group.jpg',
         focal: 'center',
         minHeight: 'auto',
@@ -319,8 +322,8 @@ export const data: Data = {
           {
             icon: '',
             image: '',
-            title: 'You: cover the room',
-            body: 'You pay a flat plan to run your room and its tools. Plans start free and grow with you, from a solo practitioner to a full team.',
+            title: 'You: free until you charge',
+            body: 'Hosting is free. Open a Space, run Circles and Events, sell tickets and take donations from day one. A plan is what you take when money starts moving, never a bill for access to people.',
             href: '',
           },
         ],
@@ -334,7 +337,7 @@ export const data: Data = {
       type: 'Text',
       props: {
         id: 'sp-deal-note',
-        body: "That's the whole shape of it. Plans run from a free listing to larger team tiers, one honest monthly price each. Your own bookings stay yours: 0% on what you book yourself, always. We earn a small, shrinking cut only on the business the network brings you, and you see exactly what the network earned you. The full breakdown lives on the [pricing page](/pricing). Billing isn't turned on yet, so nothing charges today.",
+        body: "That's the whole shape of it. A free Space is the whole thing, not a trial of it, and a plan is one honest monthly price. Your own bookings stay yours: 0% on what you book yourself, always. We earn a share only of the business the network brings you, and you see exactly what the network earned you. The full breakdown lives on the [pricing page](/pricing).",
         size: 'base',
         tone: 'surface',
         width: 'default',
@@ -455,7 +458,7 @@ export const data: Data = {
         title: 'The room belongs to the people in it.',
         titleAccent: 'people in it',
         kicker: '',
-        body: "A community that taxes its own members slowly stops being a community. We've all watched it happen. So Frequency keeps membership free and asks the builders who run the rooms to cover the rooms.\n\nThat keeps the math honest. Your people belong because they show up, not because they paid at the door. And when you grow, the rails grow with you, never against you.",
+        body: "A community that taxes its own members slowly stops being a community. We've all watched it happen. So Frequency keeps membership free and hosting free, and earns a share only when the network brings a builder new business.\n\nThat keeps the math honest. Your people belong because they show up, not because they paid at the door. And when you grow, the rails grow with you, never against you.",
         side: 'right',
         imgAspect: 'landscape',
         focal: 'center',

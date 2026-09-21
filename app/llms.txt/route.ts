@@ -240,7 +240,7 @@ export async function GET() {
     }),
     '',
     '## How it fits together',
-    '- Community: Pillar > Channel > Circle. Circles group into Hubs, Hubs into a Nexus.',
+    '- Community: Pillar > Channel > Circle. Nearby Circles cluster inside a Space, and a Space can hold other Spaces.',
     '- The Quest: a Quest (one season) > Journey > Practice. A Practice is one core real-world act.',
     '- Four Pillars (Mind, Body, Spirit, Expression) and seven Channels organize every Circle and topic.',
     '',

@@ -205,7 +205,7 @@ export const spec: ArticleSpec = {
       question: 'Why does Frequency exist?',
       answer:
         'Because the answer to the loneliest era in history is a folding chair with your name on it.',
-      body: 'Frequency exists to rebuild the third place: a community designed to last, real physical homes for connection, and a business model that stays honest. We never take a cut of your own bookings. We earn only on the business the network sends you, a small take-rate that shrinks as your plan rises. It is built guru-free, to outlast any one person. We are not building a following. We are building infrastructure, the kind of thing you can lean your whole weight on.',
+      body: 'Frequency exists to rebuild the third place: a community designed to last, real physical homes for connection, and a business model that stays honest. We never take a cut of your own bookings. We earn a share only of the business the network sends you, and never for access to people. It is built guru-free, to outlast any one person. We are not building a following. We are building infrastructure, the kind of thing you can lean your whole weight on.',
       beat: {
         kind: 'statement',
         text: "We're not building a following. We're building infrastructure.",
@@ -216,7 +216,7 @@ export const spec: ArticleSpec = {
       question: 'Who is Frequency for?',
       answer:
         'Anyone who wants to belong, and everyone who brings people together: the creators, coaches, healers, and small businesses who host the Circles and run the rooms.',
-      body: 'This is what makes Frequency a Community Collective. Independent hosts grow together instead of alone, share a Space and Events, and keep 100% of their own bookings. We earn only on what the network sends them. Nobody has to buy a plan to take money: a free Member sells tickets on day one. Plans climb from Member to Crew, Business, Collective, Non Profit, and Independent, and every step up lowers the small network-only take-rate instead of adding a bill. Four promises hold it honest: we never take a cut of your bookings, one honest price with no surprise invoices, month to month so you can leave anytime with your data, and a live readout of exactly what the network earned you.',
+      body: 'This is what makes Frequency a Community Collective. Hosts grow together instead of alone, share a Space and Events, and keep 100% of their own bookings. We earn only on what the network sends them. People join free. Businesses host free. You pay when you start charging: a free Space sells tickets on day one, and a plan is what you take once money starts moving, never a bill for access to people. Four promises hold it honest: we never take a cut of your bookings, one honest price with no surprise invoices, month to month so you can leave anytime with your data, and a live readout of exactly what the network earned you.',
       links: [{ label: 'See the plans and take-rates', href: '/pricing', variant: 'secondary' }],
     },
     {
