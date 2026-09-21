@@ -362,6 +362,57 @@ export async function updateTaskStatusInScope(
   }
 }
 
+/** The column patch one re-anchor writes. Pure: an unparseable instant yields null, never a write. */
+export function taskDuePatch(dueAt: string, now?: number): Record<string, unknown> | null {
+  if (typeof dueAt !== 'string' || Number.isNaN(Date.parse(dueAt))) return null
+  return {
+    due_at: new Date(dueAt).toISOString(),
+    updated_at: new Date(now ?? Date.now()).toISOString(),
+  }
+}
+
+/**
+ * Re-anchor a batch of to-dos INSIDE one Space and one Plan: the write half of relative scheduling.
+ *
+ * SCOPED FOR THE SAME REASON `updateTaskStatusInScope` IS. crm_tasks is reached through the
+ * service-role client, so an id that arrived from a browser is not evidence of anything. Every
+ * statement here carries `space_id` AND `plan_id` beside the row id, so a to-do belonging to another
+ * Space matches nothing and is counted as a miss rather than moved.
+ *
+ * Returns how many rows actually moved. A partial failure is reported as a smaller number, never as
+ * a clean success — the caller surfaces the shortfall instead of a date silently staying put.
+ */
+export async function reanchorTaskDuesInScope(
+  moves: readonly { id: string; dueAt: string }[],
+  scope: { spaceId: string; planId: string },
+): Promise<number> {
+  const spaceId = typeof scope?.spaceId === 'string' ? scope.spaceId.trim() : ''
+  const planId = typeof scope?.planId === 'string' ? scope.planId.trim() : ''
+  if (!spaceId || !planId || !moves?.length) return 0
+  let moved = 0
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { update: (p: Record<string, unknown>) => ScopedUpdateQuery }
+    }
+    for (const m of moves) {
+      const id = typeof m?.id === 'string' ? m.id.trim() : ''
+      const patch = id ? taskDuePatch(m.dueAt) : null
+      if (!patch) continue
+      const { data, error } = await db
+        .from('crm_tasks')
+        .update(patch)
+        .eq('id', id)
+        .eq('space_id', spaceId)
+        .eq('plan_id', planId)
+        .select('id')
+      if (!error && data?.length) moved += 1
+    }
+  } catch {
+    return moved
+  }
+  return moved
+}
+
 /** Filters for a task read. A Studio read scopes by `spaceId`; a per-contact read adds `contactId`. */
 export interface ListTasksFilter {
   spaceId?: string | null

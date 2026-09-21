@@ -11,6 +11,7 @@ import { planStageTransition, type WorkflowStage } from '@/lib/calendar/workflow
 import {
   attachEntryToPlan,
   createPenciledPlanRows,
+  getPlanAnchorDayKey,
   getSpacePlan,
   insertPlaybook,
   insertSpacePlan,
@@ -20,7 +21,14 @@ import {
   transitionSpacePlanRows,
 } from '@/lib/calendar/plans-store'
 import { copyPlaybookToPlan, runItAgain } from '@/lib/calendar/playbooks'
-import { createTask, listTasks, updateTaskStatusInScope, type CrmTask } from '@/lib/crm/tasks'
+import {
+  createTask,
+  listTasks,
+  reanchorTaskDuesInScope,
+  updateTaskStatusInScope,
+  type CrmTask,
+} from '@/lib/crm/tasks'
+import { moveAnchoredDues, normalizeOffsetDays, resolveDueFromOffset } from '@/lib/calendar/relative-schedule'
 import { getCalendarEntryRow } from '@/lib/calendar/entries-store'
 import { parseEntryInput, type EntryInput } from '@/lib/calendar/entries'
 import { productionPrefill, readinessGaps } from '@/lib/calendar/production-prefill'
@@ -169,10 +177,27 @@ export async function joinEntryToPlan(
   if (!UUID_RE.test(entryId) || !UUID_RE.test(planId)) return fail('That Plan no longer exists.')
   const res = await attachEntryToPlan(editor.spaceId, entryId, planId)
   if ('error' in res) return fail(res.error)
+  // The Plan may have had no date until now, so anchored to-dos had nothing to resolve against.
+  // Giving it one resolves them; a failure here is reported, never left to look like nothing.
+  const anchored = await reanchorPlanTodos(slug, planId)
+  if ('error' in anchored) return anchored
   revalidate(slug)
   return ok()
 }
 
+/**
+ * Add one to-do to a Plan, either on a FIXED date or ANCHORED to the Plan's date.
+ *
+ * An anchored to-do stores the offset AND the due date it resolves to right now: the offset is the
+ * truth that survives the date moving, the resolved `due_at` is what every existing reader (the
+ * drawer list, the due-date calendar items, `isOverdue`) already knows how to show. Storing only the
+ * offset is what made this column dead — nothing resolved it, so an anchored to-do looked undated
+ * everywhere in the product.
+ *
+ * When the Plan has no live date yet the offset is still stored and `due_at` stays null. It fills in
+ * the moment a date is penciled in, because `reanchorPlanTodos` resolves against the anchor rather
+ * than against whatever was true at creation.
+ */
 export async function addPlanTodo(
   slug: string,
   planId: string,
@@ -182,19 +207,59 @@ export async function addPlanTodo(
 ): Promise<ActionResult<void>> {
   const editor = await editorPlan(slug, planId)
   if ('error' in editor) return fail(editor.error)
+  const offset = normalizeOffsetDays(dueOffsetDays ?? null)
+  let resolvedDueAt = dueAt ?? null
+  if (offset !== null) {
+    const anchorDay = await getPlanAnchorDayKey(editor.spaceId, planId)
+    const day = anchorDay ? resolveDueFromOffset(anchorDay, offset) : null
+    resolvedDueAt = day ? `${day}T12:00:00.000Z` : null
+  }
   const created = await createTask(
     {
       createdBy: editor.profileId,
       title,
-      dueAt: dueAt ?? null,
+      dueAt: resolvedDueAt,
       planId,
-      dueOffsetDays: dueOffsetDays ?? null,
+      dueOffsetDays: offset,
     },
     editor.spaceId,
   )
   if (!created) return fail('That to-do could not be saved.')
   revalidate(slug)
   return ok()
+}
+
+/**
+ * MOVE THE DATE, MOVE THE PREP LIST. The payoff of relative scheduling, and the only part of it that
+ * delivers the value: every to-do anchored to this Plan is re-resolved against the Plan's current
+ * date, and a to-do with a fixed date is left exactly where it is.
+ *
+ * Called from the drawer (an owner can ask for it) and, the case that matters, automatically by
+ * `saveCalendarEntry` whenever a date that belongs to a Plan actually changes day. It re-READS the
+ * anchor rather than trusting a day key from the caller, so the two entry points cannot disagree
+ * and a stale browser cannot drag a checklist somewhere the calendar never went.
+ *
+ * FAIL-LOUD ON A SHORTFALL: if fewer rows move than were meant to, the caller is told. A checklist
+ * half-moved is worse than one that did not move, and a swallowed one is an invisible regression.
+ */
+export async function reanchorPlanTodos(
+  slug: string,
+  planId: string,
+): Promise<ActionResult<{ moved: number; anchorDay: string | null }>> {
+  const editor = await editorPlan(slug, planId)
+  if ('error' in editor) return fail(editor.error)
+  const anchorDay = await getPlanAnchorDayKey(editor.spaceId, planId)
+  if (!anchorDay) return ok({ moved: 0, anchorDay: null })
+  const todos = await listTasks({ spaceId: editor.spaceId, planId, limit: 200 })
+  const moves = moveAnchoredDues(
+    todos.map((t) => ({ id: t.id, dueOffsetDays: t.dueOffsetDays, dueAt: t.dueAt })),
+    anchorDay,
+  )
+  if (moves.length === 0) return ok({ moved: 0, anchorDay })
+  const moved = await reanchorTaskDuesInScope(moves, { spaceId: editor.spaceId, planId })
+  revalidate(slug)
+  if (moved < moves.length) return fail('Some to-dos did not move with the date. Open the Plan and check them.')
+  return ok({ moved, anchorDay })
 }
 
 export async function listPlanTodos(slug: string, planId?: string): Promise<CrmTask[]> {
@@ -311,12 +376,22 @@ export async function runPlanAgain(slug: string, planId: string): Promise<Action
   const seed = runItAgain({
     title: plan.title,
     notes: plan.notes,
-    taskTitles: todos.map((t) => t.title),
+    tasks: todos.map((t) => ({ title: t.title, dueOffsetDays: t.dueOffsetDays })),
   })
   const created = await saveSpacePlan(slug, null, { title: seed.title, notes: seed.notes, targetKind: plan.targetKind })
   if (isError(created)) return created
-  for (const title of seed.taskTitles) {
-    await createTask({ createdBy: editor.profileId, title, planId: created.data.id }, editor.spaceId)
+  for (const task of seed.tasks) {
+    // The offset comes along; the resolved due date does not. The new Plan has no date yet, so the
+    // copies resolve the moment one is penciled in and `reanchorPlanTodos` runs.
+    await createTask(
+      {
+        createdBy: editor.profileId,
+        title: task.title,
+        planId: created.data.id,
+        dueOffsetDays: task.dueOffsetDays,
+      },
+      editor.spaceId,
+    )
   }
   revalidate(slug)
   return created
