@@ -47584,3 +47584,25 @@ Premise re-tested 2026-09-21: `git log --diff-filter=D` gives one commit for bot
 **Consequences.** A probe that requires a file to exist proves nothing about whether the file is used. When a route is retired, its done-row probes measure the fold, and its shared modules and map rows leave in the same change. HYG-110's probe now fails a cover-map row whose section has no route directory, for any section, and fails a tier-detail module with no real importer.
 
 **Rows.** HYG-110. HYG-046 (probe re-pointed).
+## ADR-1516: Collect no sales tax for now, and say so, rather than switch on Stripe Tax against unregistered settings (OWN-075)
+
+**Status:** Accepted · 2026-09-21 · backlog `OWN-075` · owner ruling, multiple choice · corroborated by `automatic_tax` and `tax_id_collection` absent from every `checkout.sessions.create` call under `lib/` (eight call sites on 2026-09-21: `lib/billing/checkout.ts`, `lib/billing/tickets.ts`, `lib/billing/tips.ts`, `lib/billing/bundle-checkout.ts`, `lib/billing/space-plan-checkout.ts`, `lib/billing/space-membership-checkout.ts`, `lib/billing/space-donation-checkout.ts`, `lib/commerce/checkout.ts`) · the OWN-075 probe fails the day one of them sets it
+
+**Context.** The 2026-09-15 money-path audit found that no Checkout Session creator sets `automatic_tax`, none sets `tax_id_collection`, and none sets `billing_address_collection`, so no sales tax is calculated on any ticket, product, membership, donation or contribution this platform sells. The audit filed it as an owner ruling rather than wiring it, because enabling Stripe Tax is a small code change gated on a business fact the repository cannot derive: where this entity has nexus and where it is registered. An accountant was consulted and the answer is still pending.
+
+Two things bound the decision. Nothing has ever been charged on four of the five money loops and one $44 ticket has settled on the fifth (LIVE-234, parked 2026-09-21), so nothing has been under-collected. And Stripe Tax does not fail loudly when the account has no registered tax settings: it under-collects, or errors at checkout, and neither surfaces as a repo-visible failure. That is the shape [ADR-970](DECISIONS.md) names, a fail-safe nobody notices firing, and it is worse than knowingly collecting nothing.
+
+**Decision.**
+
+1. **Collect no sales tax for now.** Every Checkout Session creator stays as it is: no `automatic_tax`, no `tax_id_collection`, no `billing_address_collection` added for tax purposes. Prices are charged as entered.
+2. **The ruling is recorded, not deferred.** OWN-075 closes as a decision made, with the reasoning above. It is not left open as "waiting on the accountant", because an open row that nobody can advance is the failure [ADR-1356](DECISIONS.md) describes.
+3. **The code change is written down so it is not re-researched.** When the ruling reverses: `automatic_tax: { enabled: true }` on each creator, `billing_address_collection` set where the calculation needs an address, `tax_id_collection` where a business buyer supplies one, and a decision per creator on whether the entered price is tax-inclusive or exclusive. It is a small change gated on a decision that is not small.
+4. **The probe guards the reversal.** OWN-075's probe asserts this record exists and that no creator sets `automatic_tax`. The day a creator does, the row goes red and has to be re-read with a new ruling beside it, rather than tax switching on under a row that says it is off.
+
+**Re-open triggers.** The accountant's answer, whichever way it goes; or the first month of material volume, because it is cheaper to answer before there is a back-tax question than after. Either one re-opens OWN-075 or files its successor with the four-part code change above as its plan.
+
+**Rejected.** Enabling Stripe Tax now so the code is "ready" (it is not ready, it is wrong, until the account carries registrations; silent under-collection reads as compliance and is the more expensive error). Leaving the row open with `ownerAction: waiting` (the accountant consult has no date, and a waiting row with no date is noise in the OWNER section, per [ADR-1082](DECISIONS.md) on rows whose premise nobody re-tests). Collecting an address on every checkout in advance (an address nothing consumes is friction on the one loop that has ever settled).
+
+**Consequences.** Every price on the platform is charged without tax until this record is amended. Buyers outside any future registration see the same number they see today. The probe is the reminder: it cannot read nexus, registration or volume, so the two re-open triggers above live in this record and in the owner's hands, and the row's evidence carries the date they were last considered.
+
+**Rows.** OWN-075 (closed on this ruling). LIVE-234 (the volume fact this decision rests on).
