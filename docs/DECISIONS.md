@@ -47501,6 +47501,30 @@ Folding either moves pixels on a marquee surface, so it is an **owner ruling wit
 
 **Rows.** PROG-P5 (closed). LIVE-447 (filed). Beside SCAN-643 and SCAN-644 (done), whose public twins this catches up.
 
+## ADR-1503: A calendar stage is form plus colour plus its word, decided in the registry alone, and Cancelled is never painted over (LIVE-445)
+
+**Status:** Accepted · 2026-09-21 · backlog `LIVE-445` · extends [ADR-1388](DECISIONS.md) (the four stages) and [ADR-1385](DECISIONS.md) (the registry) · owner report 2026-09-21
+
+**Context.** The owner cancelled a Plan and the calendar's List view still showed it blue. The database was right (`stage='cancelled'`, `status='cancelled'`), the registry was right (`cancelled` is muted and struck through), and `lib/calendar/entries.ts` carried both through. The loss was at render time: the List view auto-selects the earliest row, its selected style was the brand fill, and that fill painted over the strike. The view never consulted the registry; it mapped a badge tone from the label string, and the Space profile events block hardcoded `isCancelled: false` so a cancelled published event rendered as a live brand chip. Only the month grid read the registry. Everything else hand-rolled.
+
+The design-system audit that ran beside this found that `--color-warning` is the same colour as `--color-primary` in dark mode, that `signal` and `success` are one teal there, and that the registry's three amber-opacity steps for three stages were invisible to the contrast gate because opacity modifiers are. The List view mapped Planning to `signal` and Production to `success`, which in dark mode were the same lane.
+
+**Decision.**
+
+1. **`lib/calendar/registry.ts` is the single source of stage presentation.** `EntryStageDef` carries `chipClass`, `badgeTone` and `titleClass`, and the registry exports `itemChipClass`, `itemTitleClass`, `itemBadgeTone`, `itemSelectedClass` and `itemIsCancelled`. Every surface that paints a stage derives from these; none writes a stage class by hand.
+2. **A state is never a hue alone** (WCAG 1.4.1, whose own failure example is a colour-coded calendar). Each stage is form, colour and its word: Pencil is a dashed border on the neutral ground; Planning is a solid info tint; Production is a solid success tint with a solid edge; Cancelled is muted and struck through on the neutral ground. Every chip carries its label, or `sr-only` text where the label would not fit.
+3. **The brand accent is not spent on stages.** `primary` is the one chrome accent and the dark-mode focus ring, and it is indistinguishable from `warning` there. `signal` is not used because it is `success` in dark mode. The stage tones are the admin `StatusChip` vocabulary (neutral, info, success, danger), so the badge that says the word is the same pill as every other status in the product.
+4. **Cancelled wins over everything, including selection.** A selected cancelled row shows selection by its edge alone; the brand fill never paints over the grey. `danger` is reserved for the badge that says the word; the item itself is never red. Deleted is gone, not greyed.
+5. **No opacity modifiers on a stage class.** The contrast gate checks token pairs and cannot see `bg-primary/15`; every pair a stage uses is one the gate already checks.
+6. **A stored stage is never dropped.** `entryToCalendarItem` renders a row by its stage whatever its kind; a pencil-kind row with no stage is a Pencil. The table's trigger keeps stage on pencil-kind rows, so this is a guard, not a behaviour change.
+7. **The Space profile events block carries the real flag.** `SpaceEventItem.isCancelled` is read from `events.is_cancelled`, `SpaceEventsViewItem.isCancelled` is required, and the block's list rows, cards and month grid paint a cancelled event as cancelled. The upcoming read still drops cancelled events before they reach a block, so this is what happens if that ever loosens.
+
+**Rejected.** Fixing the List view's selected class in place (a fourth hand-rolled stage style). Keeping three amber steps and adding a fourth token for Cancelled (hue alone, and the gate could not see it). Using `Badge` from `components/ui/badge.tsx` for the stage word (it lacks `info`; `StatusChip` has it and 132 call sites). Danger red for the cancelled chip (danger is a badge that says the word, not a fill for the thing).
+
+**Consequences.** The month grid's Pencil, Planning and Production chips change colour: neutral dashed, info, success. Cancelled reads the same everywhere: List view, month grid, Space profile rows, popup. `components/spaces/calendar-timeline-view.tsx` still duplicates the cancelled classes verbatim (it is orphaned; when it is picked up it reads the registry). `components/spaces/calendar-pm-console.tsx` still renders a neutral pill by hand for the stage word; it says the word, so it complies, and it moves to `StatusChip` when next touched. The Plan drawer prints "Planning" for a Plan whose stage is `plan`, which is a Plan stage, not an entry stage, and is a separate follow-up.
+
+**Rows.** LIVE-445 (closed). Beside LIVE-379 (ADR-1388) and LIVE-414 to LIVE-419.
+
 ## ADR-1507: The feed hero stays the practice board and the centre button stays Zap, by design; PROG-R7 5.2 and 5.3 are struck (PROG-R7, LIVE-408)
 
 **Status:** Accepted, by owner ruling · 2026-09-21 · backlog `PROG-R7`, `LIVE-408` · leaves [ADR-1362](DECISIONS.md) as the last word on the FOCUS interior · beside [ADR-1403](DECISIONS.md) (product-first) and [ADR-1406](DECISIONS.md) (the rail is as short as the role can use) · touches `docs/CORE-MODEL.md` §5 Phase 7 only; no product code moves
