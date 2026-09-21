@@ -79,6 +79,25 @@ export function derivePlanStage(opts: {
   return 'plan'
 }
 
+/** THE GATE ON THE PUBLISH SEAM'S FAIL-SAFE (PROG-CAL3, AGENTS.md "every fail-safe needs a gate
+ *  that notices it fired").
+ *
+ *  Publishing a Production advances its Plan to `production` BEST-EFFORT: the event row already
+ *  exists by then, so a thrown transition would leave a published event and an error message
+ *  telling the host their event failed to be created. The cost of that choice is that the Plan can
+ *  silently lag, which is exactly the "swallowed error is an invisible regression" failure mode.
+ *
+ *  So the lag is DERIVED and shown, never assumed away: a Plan with a date that already carries a
+ *  `published_event_id` is a Plan that reached Production, whatever its stage column says. The
+ *  drawer's readiness bar renders this beside the manifest gaps, and one save fixes it. */
+export function planPublishLag(opts: {
+  stage: PlanStage
+  hasPublishedEvent: boolean
+}): string | null {
+  if (!opts.hasPublishedEvent || opts.stage === 'production') return null
+  return 'This Plan already has a published event. Set its stage to Production to catch it up.'
+}
+
 export function parsePlanInput(input: PlanInput): { data: PlanWrite } | { error: string } {
   const title = typeof input.title === 'string' ? input.title.replace(/\s+/g, ' ').trim() : ''
   if (!title) return { error: 'Give the Plan a title.' }
