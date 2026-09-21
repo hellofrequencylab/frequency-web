@@ -27,6 +27,7 @@ import { SidebarCard } from '@/components/ui/sidebar-card'
 import { buttonClasses } from '@/components/ui/button'
 import type { Pillar } from '@/lib/pillars'
 import { buildJourneyTree, type BlockRow, type Phase } from '@/lib/journeys/tree'
+import { readJourneyFaq, type JourneyFaqItem } from '@/lib/journeys/faq'
 import { ProgressTrack } from '@/components/ui/progress-track'
 
 // Discovery-mode content blocks (docs/JOURNEYS.md §10) — the visitor / not-enrolled face.
@@ -443,9 +444,13 @@ export function InstructorBlock({
   )
 }
 
-/** FAQ accordion — the recurring questions, answered in v2 voice. */
-export function JourneyFaq({ plan }: { plan: Pick<JourneyPlan, 'drip_interval_days' | 'certificate_enabled'> }) {
-  const faqs: { q: string; a: string }[] = [
+/** The generic questions every Journey used to show (LIVE-394), now the FALLBACK: derived only from
+ *  the drip and the certificate flag, so they are true of every Journey and specific to none. Kept
+ *  whole so a host who has written nothing loses nothing. */
+export function genericJourneyFaq(
+  plan: Pick<JourneyPlan, 'drip_interval_days' | 'certificate_enabled'>,
+): JourneyFaqItem[] {
+  return [
     {
       q: 'How does the cadence work?',
       a: `Phases open one at a time, ${cadenceLabel(plan.drip_interval_days).replace('1 phase / ', 'about one a ')}. Once a phase opens it stays open, so you can go at your own pace.`,
@@ -462,6 +467,19 @@ export function JourneyFaq({ plan }: { plan: Pick<JourneyPlan, 'drip_interval_da
       ? [{ q: 'Do I earn a certificate?', a: 'Yes. Finish every phase and you get a printable certificate to keep and share, plus the completion Gems.' }]
       : []),
   ]
+}
+
+/** FAQ accordion. The host's own questions when they wrote any (LIVE-394, story.settings.faq on
+ *  page_config), otherwise the generic set. The first authored pair replaces the generic set WHOLE
+ *  rather than appending to it: a host who took the trouble to write their questions should not
+ *  find the platform's four ahead of them. */
+export function JourneyFaq({
+  plan,
+}: {
+  plan: Pick<JourneyPlan, 'drip_interval_days' | 'certificate_enabled' | 'page_config'>
+}) {
+  const authored = readJourneyFaq(plan.page_config)
+  const faqs: JourneyFaqItem[] = authored.length > 0 ? authored : genericJourneyFaq(plan)
   return (
     <section>
       <SectionHeader title="Questions" />
