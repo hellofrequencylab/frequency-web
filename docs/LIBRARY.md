@@ -17,7 +17,14 @@ gets its own Loom**. It grows for years without a code deploy per asset.
 ## Owner decisions (2026-07-01)
 
 - **In-browser editor:** **Filerobot Image Editor** (OSS) — crop with aspect frames, rotate,
-  adjust, filters, compress.
+  adjust, filters, compress. ⚠️ **Still the standing choice, now with a price tag attached**
+  ([HYG-109](BUILD-BACKLOG.json), [ADR-1496](DECISIONS.md)). This was picked before anyone measured
+  what it installs: ~6.8 MB across seven packages — `konva`, `styled-components`, and
+  `@scaleflex/ui` + `@scaleflex/icons` pinned at `3.0.0-beta.10` — none of them in the tree, one a
+  second styling runtime beside Tailwind 4, one a third-party design system arriving as a
+  transitive dependency. That is a re-confirmation to make knowingly, not a decision to reverse
+  from a scan, so HYG-109 puts the numbers and the zero-dependency alternative (native canvas crop
+  over the existing `CROP_FRAMES`) in front of the owner. Nothing changes until it is answered.
 - **Privacy:** build a **full** protection system, but **develop it later** — only the schema
   hooks land now (`is_protected`, `download_policy`, `expires_at`, private-bucket-ready).
 - **Scope:** **every asset is space-scoped.** Frequency's shared/master library is the **root
@@ -187,8 +194,21 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   (`lib/library/column-image.ts`). Pickers write both halves; readers prefer `library_assets.url`
   and fail open to the cache. A paste or a non-catalog upload nulls the companion. 🔴 Do not
   half-adopt by storing JSON in a text column: every reader of those columns is typed `string`.
-- **One master, many renditions.** Serve web-optimized renditions (thumb/grid/hero/og), never the
-  master, in pages and grids. Transforms are on-the-fly against the master.
+- **One master, many renditions, resolved at REQUEST time** ([ADR-1496](DECISIONS.md), executing the
+  owner's on-the-fly ruling on HYG-017). Serve web-optimized renditions (thumb 160 / grid 480 /
+  hero 1600 / og 1200), never the master, in pages and grids. `renditionUrl(url, kind)`
+  (`lib/library/rendition-url.ts`) is the one resolver and `RENDITION_PRESETS`' first production
+  consumer: a **pure string rewrite** of `/storage/v1/object/public/` to
+  `/storage/v1/render/image/public/` plus the preset width and `resize=contain`. No table, no
+  writers, no `sharp` — that decode is exactly what materialising would have cost against
+  `check:og-trace`. ⚠️ It **rewrites the path and keeps the host**: the catalog holds urls on the
+  project domain *and* the `api.frequencylocal.com` custom domain, so rebuilding from
+  `NEXT_PUBLIC_SUPABASE_URL` would re-point half the Loom. Fail-open — an external, `data:`,
+  `blob:`, SVG, already-rendered or out-of-range url comes back unchanged. 🔴 A rendition url is
+  **display-only and never stored**: the picker's `value` stays the master, because the whole point
+  of the reference is that one master re-points everywhere. Measured: a 2,243,106-byte master
+  returns 28,578 bytes at width 480, auto-negotiated to WebP. Billing is per distinct **origin**
+  image per cycle, not per request.
 - **Non-destructive editing.** Every edit (Recraft op, Vera SVG save, Filerobot recipe) first
   **snapshots** the asset's current state into a new `library_versions` row (`lib/library/versions.ts`
   `recordVersion`) and flips `is_current`, then overwrites the live row. Rollback restores a snapshot
@@ -253,7 +273,12 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
    see [ADR-1121](DECISIONS.md).
 2. **D2 — AssetField seam** (unified picker; store references; render resolution; backfill
    `site-media`).
-3. **D3 — Editor + versions** (Filerobot crop-frames + adjustments; version-on-edit; rollback).
+3. **D3 — Editor + versions.** Shipped and closed ([ADR-1496](DECISIONS.md)): version-on-edit and
+   rollback-via-`is_current` were already live (`lib/library/versions.ts`, three edit sources), and
+   the on-the-fly rendition resolver landed with the row. 🔴 The in-browser **crop/rotate editor is
+   NOT built** and is now [HYG-109](BUILD-BACKLOG.json), an owner ruling: Filerobot costs ~6.8 MB
+   across seven packages including `konva`, `styled-components` and a beta-pinned `@scaleflex/ui`,
+   versus a native-canvas crop over the existing `CROP_FRAMES` with no dependency.
 4. **D4 — Organization at scale** (collections, saved views, tag governance; usage index + safe
    delete + global swap).
 5. **D5 — Per-space Looms** (space-scoped libraries, fork-on-edit, quotas, per-space console,

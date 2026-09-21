@@ -127,7 +127,8 @@ export function EventsBlock({
               coverFocus={e.coverFocus ?? null}
               going={e.going ?? 0}
               now={now}
-              priceLabel={e.priceLabel ?? 'Free'}
+              /* null, never 'Free' — a withheld price is not a claim of free (EVT-PRICE-HONESTY). */
+              priceLabel={e.priceLabel ?? null}
             />
           </EventPopupTrigger>
         ))}

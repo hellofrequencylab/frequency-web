@@ -78,8 +78,14 @@ export function EventCard({
   coverFocus?: string | null
   going: number
   now: Date
-  /** Price stat resolved by the index loader — "Free" / "$X" / "From $X". */
-  priceLabel: string
+  /** Price stat resolved by the index loader — "Free" / "$X" / "From $X".
+   *
+   *  🔴 `null` MEANS SAY NOTHING, and it is not the same as "Free" (EVT-PRICE-HONESTY). In tickets
+   *  mode a number on a card is an offer to take money, so the loader withholds it when the person
+   *  Stripe would pay cannot receive it: a stranger is never shown a price nobody can be paid, and
+   *  is never told anything about the host's account state either. The stat is dropped entirely
+   *  rather than replaced, because every other value this slot can hold is a claim about money. */
+  priceLabel: string | null
   /** Optional AI "why you'd vibe" line — only set on the "For you" lane. */
   blurb?: string
 }) {
@@ -94,7 +100,8 @@ export function EventCard({
         ? 'Part of a series'
         : null
   // Compact stat row: who's coming (capacity-aware, never a FOMO countdown —
-  // EVENTS-SYSTEM §4), and how far. Price rides the row via the priceLabel prop.
+  // EVENTS-SYSTEM §4), and how far. Price rides the row via the priceLabel prop, and drops out of
+  // it entirely when the loader passes null (see the prop).
   const attendanceLabel =
     event.capacity != null
       ? `${going} of ${event.capacity} going`
@@ -160,9 +167,11 @@ export function EventCard({
           <span className="flex items-center gap-1 font-medium text-muted">
             <Users className="h-3 w-3" />{attendanceLabel}
           </span>
-          <span className="flex items-center gap-1 font-semibold text-text">
-            <Ticket className="h-3 w-3" />{priceLabel}
-          </span>
+          {priceLabel && (
+            <span className="flex items-center gap-1 font-semibold text-text">
+              <Ticket className="h-3 w-3" />{priceLabel}
+            </span>
+          )}
           {distance && (
             <span className="flex items-center gap-1">
               <Navigation className="h-3 w-3" />{distance}
