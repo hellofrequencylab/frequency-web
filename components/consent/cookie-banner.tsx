@@ -25,11 +25,11 @@ import {
 // convention the chat shell already uses — which the privacy policy's control does.
 //
 // ── EQUAL PROMINENCE IS WHY BOTH BUTTONS LOOK THE SAME ──────────────────────────────────────────
-// Allow and Decline are the same variant, the same size and the same one click. Consent that is
+// Accept and Decline are the same variant, the same size and the same one click. Consent that is
 // only valid when freely given cannot be nudged by making the refusal quieter, and the cheapest way
 // to be beyond argument about that is to not style a preference at all.
 //
-// ── THE TWO THINGS "ALLOW" ACTUALLY DOES ────────────────────────────────────────────────────────
+// ── THE TWO THINGS "ACCEPT" ACTUALLY DOES ────────────────────────────────────────────────────────
 //   1. `window.__fqGa()` — the SAME loader the head script defined, so GA starts in this pageview
 //      rather than at the next hard load. There is exactly one copy of the GA loading rules and it
 //      lives in the law module; this calls it, it does not repeat it.
@@ -128,7 +128,7 @@ export function CookieBanner() {
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Button type="button" variant="secondary" size="sm" onClick={() => answer('granted')}>
-          Allow
+          Accept
         </Button>
         <Button type="button" variant="secondary" size="sm" onClick={() => answer('denied')}>
           Decline

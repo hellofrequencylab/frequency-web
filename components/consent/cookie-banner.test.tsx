@@ -101,7 +101,7 @@ describe('the two answers are equally easy', () => {
 
   it('offers exactly two controls, in one click each, with the same weight', () => {
     const buttons = [...banner()!.querySelectorAll('button')]
-    expect(buttons.map((b) => b.textContent?.trim())).toEqual(['Allow', 'Decline'])
+    expect(buttons.map((b) => b.textContent?.trim())).toEqual(['Accept', 'Decline'])
     expect(new Set(buttons.map((b) => b.className)).size, 'declining is styled quieter than allowing').toBe(1)
   })
 
@@ -115,11 +115,11 @@ describe('what a click does', () => {
     document.cookie = `${CONSENT_REGION_COOKIE}=1; path=/`
   })
 
-  it('Allow records the choice, starts GA in this pageview, and re-runs the edge for first-touch', () => {
+  it('Accept records the choice, starts GA in this pageview, and re-runs the edge for first-touch', () => {
     const loader = vi.fn()
     ;(window as { __fqGa?: () => void }).__fqGa = loader
     mount()
-    click('Allow')
+    click('Accept')
     expect(document.cookie).toContain(`${CONSENT_COOKIE}=granted`)
     expect(loader, 'GA was not started, so consent bought nothing until the next hard load').toHaveBeenCalledTimes(1)
     expect(refresh, 'the edge was never re-run, so first-touch was lost for a consenting visitor').toHaveBeenCalledTimes(1)
