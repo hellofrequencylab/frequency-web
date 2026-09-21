@@ -104,7 +104,7 @@ export function LoomSavedViews() {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-surface px-3 py-2 text-body-sm font-medium text-muted transition-colors hover:border-primary"
+        className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-2 text-body-sm font-medium text-muted transition-colors hover:border-primary"
       >
         <Bookmark className="h-4 w-4" aria-hidden />
         <span className="hidden sm:inline">Saved views</span>
@@ -120,7 +120,7 @@ export function LoomSavedViews() {
           <button
             type="button"
             onClick={save}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-meta font-semibold text-primary-strong transition-colors hover:bg-surface-elevated"
+            className="flex w-full items-center gap-2 rounded-control-nested px-2.5 py-1.5 text-left text-meta font-semibold text-primary-strong transition-colors hover:bg-surface-elevated"
           >
             <Bookmark className="h-3.5 w-3.5" aria-hidden /> Save the current view
           </button>
@@ -132,7 +132,7 @@ export function LoomSavedViews() {
               views.map((view) => (
                 <div
                   key={view.name}
-                  className="group flex items-center gap-1 rounded-lg pl-2.5 pr-1 transition-colors hover:bg-surface-elevated"
+                  className="group flex items-center gap-1 rounded-control-nested pl-2.5 pr-1 transition-colors hover:bg-surface-elevated"
                 >
                   <button
                     type="button"
@@ -146,7 +146,7 @@ export function LoomSavedViews() {
                     onClick={() => remove(view.name)}
                     aria-label={`Delete the saved view ${view.name}`}
                     title={`Delete ${view.name}`}
-                    className="shrink-0 rounded-md p-1 text-subtle opacity-0 transition-opacity hover:text-danger focus:opacity-100 group-hover:opacity-100"
+                    className="shrink-0 rounded-control-nested p-1 text-subtle opacity-0 transition-opacity hover:text-danger focus:opacity-100 group-hover:opacity-100"
                   >
                     <Trash2 className="h-3.5 w-3.5" aria-hidden />
                   </button>

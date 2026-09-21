@@ -22,6 +22,14 @@ import { pathForSlug } from '@/lib/page-editor/data'
 // half of that bug.
 //
 // No pixels, no sharp, no next/og: one RPC and a pure mapping (DEPLOY-SAFETY).
+//
+// authz-delegated: this is a READ. `library_asset_usage` is a SECURITY INVOKER function that
+// only SELECTs, revoked from every browser role and granted to service_role alone, so the admin
+// client is the only way the read can reach it at all (scripts/function-grants.txt: internal).
+// The gate lives at both call sites: usage-actions.ts and actions.ts carry
+// requireAdmin('janitor', { staff: 'marketing' }), the Loom Studio door (LIVE-289). The authz
+// scan classes any `.rpc(` as a mutation because it cannot read the function body; this one is
+// the read-only-RPC shape lib/analytics/marketing-intel.ts is allowlisted for.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** One row of `library_asset_usage`, as PostgREST returns it. */

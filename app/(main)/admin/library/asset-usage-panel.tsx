@@ -42,7 +42,7 @@ export function AssetUsagePanel({ assetId }: { assetId: string }) {
   const result = loading ? null : state?.result ?? null
 
   return (
-    <div className="rounded-2xl border border-border bg-surface-elevated/50 p-3" data-testid="asset-usage">
+    <div className="rounded-card border border-border bg-surface-elevated/50 p-3" data-testid="asset-usage">
       <p className="mb-2 flex items-center gap-1.5 eyebrow text-subtle">
         <LayoutTemplate className="h-3.5 w-3.5" aria-hidden /> Where this is placed
       </p>
@@ -54,9 +54,9 @@ export function AssetUsagePanel({ assetId }: { assetId: string }) {
           {result.ok && result.places.length > 0 && (
             <ul className="mt-2 space-y-1.5">
               {result.places.map((p) => (
-                <li key={p.key} className="flex items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5">
+                <li key={p.key} className="flex items-center gap-2 rounded-control border border-border bg-surface px-2.5 py-1.5">
                   {p.href ? (
-                    <Link href={p.href} className="min-w-0 flex-1 truncate text-body-sm font-semibold text-text hover:underline">
+                    <Link href={p.href} className="block min-w-0 flex-1 truncate text-body-sm font-semibold text-text hover:underline">
                       {p.label}
                     </Link>
                   ) : (

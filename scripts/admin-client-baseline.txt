@@ -490,7 +490,6 @@ app/manage-emails/actions.ts
 app/onboarding/vera-actions.ts
 app/print/qr/page.tsx
 app/q/[slug]/route.ts
-app/sitemap.ts
 app/spaces/[slug]/calendar.ics/route.ts
 app/u/scan/route.ts
 app/unsubscribe/actions.ts
@@ -819,6 +818,7 @@ lib/library/resolve-refs.ts
 lib/library/splash-registry.ts
 lib/library/store.ts
 lib/library/styles.ts
+lib/library/usage.ts
 lib/library/versions.ts
 lib/listing-seeder/claim.ts
 lib/listing-seeder/dedupe.ts
