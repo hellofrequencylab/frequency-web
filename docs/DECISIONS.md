@@ -47291,6 +47291,63 @@ Premise re-tested 2026-09-20: `featureAllowed('space_collaborators', { plan: 'bu
 
 **Rows.** PROG-D2 (closed). Beside HYG-029, HYG-066, HYG-068 (all done). D4's usage index stays PROG-D4.
 
+## ADR-1494: A price is an OFFER in tickets mode and a FACT in RSVP mode; only the offer is withheld (LIVE-443)
+
+**Status:** Accepted · 2026-09-21 · backlog `LIVE-443` · renumbered **1492 → 1494** on 2026-09-21 by the merge coordinator: 1492 was taken by PROG-R4 while this branch was in flight, and 1493 by PROG-R6 · extends [ADR-914](DECISIONS.md) (gate the repeat, not the transaction) and [ADR-826](DECISIONS.md) (one join function per event) · corroborated by `lib/events/ticket-eligibility.ts`, `lib/events/payout-readiness.ts`, `lib/jsonld.ts`
+
+**Context.** `ticketSellerVerdict` is pure, fail-closed and correct, and `canSellTickets` was written for render-time branching. Its doc comment says so. It had **zero** callers in `app/` and `components/`: every buyer-facing surface read the price straight off the row, so the refusal fired only at checkout creation (`lib/billing/tickets.ts:791`, `TICKETS_NOT_READY`). The card said `$55`, the buyer pressed, and the turn-away came after the decision to buy.
+
+Premise re-tested 2026-09-21 (the [ADR-1082](DECISIONS.md) rule) and it SPLIT:
+
+- Still true: `canSellTickets` had no consumer outside its own test; `/events`, the For You lane, a Space's Events block, its event popup, and the schema.org `Offer` on all three event faces all priced events with no readiness input at all. `OWN-074` measured the live case: *Returning Home*, `$55`, tickets mode, host with no Connect account, unbuyable to everyone.
+- **No longer true:** "nothing buyer-facing gates on readiness". The tickets-mode join box on `event-member-page.tsx` already branched on `hostPayoutReady` and already withheld the buy control. What it did NOT do is withhold the price everywhere else, and it said so in bespoke words ("The host hasn't opened ticket sales yet") that attribute the state to the host.
+
+**Decision.**
+
+1. **The test is not "is it priced", it is "is the price an OFFER".** `buyerMaySeePrice({ ticketsMode, payoutsReady })` is the one pure predicate, and it routes through `canSellTickets`, which is what stops the listing verdict drifting from the buy path.
+   - **Tickets mode** (buying is attending): the number is an offer to take money through Stripe, so it is withheld when the payee cannot receive it.
+   - **RSVP mode**: money changes hands AT THE DOOR and nothing goes through checkout at RSVP time ([ADR-826](DECISIONS.md), `LIVE-314`). The number is a fact about the event, like the address, and the flow already says so in words. Hiding it would delete true information and re-close the guest door LIVE-314 opened.
+2. **Withheld is `null`, never `"Free"`.** Those are opposite claims. Every card renders no price stat at all, and the three `?? 'Free'` defaults that would have turned saying nothing back into a claim are gone.
+3. **The payee is resolved in TWO reads for a whole page**, through `getConnectReadyMap` ([ADR-1162](DECISIONS.md), LIVE-126) and keyed on the space OWNER for a space-hosted event ([ADR-819](DECISIONS.md)). Never one Stripe call, never one status read per card.
+4. **Structured data follows the page.** `eventSchema` takes `payouts_ready` as a THREE-STATE field beside `is_sold_out`: `false` omits the `Offer` and `isAccessibleForFree` entirely, `undefined` publishes exactly as before. A rich result reaches people who never open the page, so it is the furthest-travelling copy of the number, and a schema that prices what the page withholds is the page-vs-schema contradiction `is_sold_out` already exists to prevent.
+5. **A stranger is told nothing about the host's account.** Both unbuyable branches now say `TICKETS_NOT_READY`, the same constant the buy path refuses with.
+
+**Rejected.** Publishing `availability: SoldOut` instead of dropping the Offer (there are seats; there is no way to pay for them, and that would contradict a page showing open capacity). Publishing `price: "0.00"` (reads as free). Withholding the RSVP-mode door price (deletes true information and regresses LIVE-314). Flipping `ticketsMode` itself to false when payouts are missing (that would swap the ticket cascade for an RSVP switch and diverge from the detail page, which keeps tickets mode and says the neutral sentence). Hiding the price from a HOST's own management surfaces, which keep it with the setup prompt beside it. Reading an unanswerable payout question as `false` on a crawl-facing route: `eventPayoutReadyOrUnknown` returns `null` there, because collapsing an infrastructure failure onto "nobody can be paid" would strip the price out of every event's rich result at once.
+
+**Consequences.** `lib/events/payout-readiness.ts` is a new entry on the `check:admin-client` baseline, justified in that file's header: it resolves the same two facts the buy path already resolves on the service-role client, and returns one boolean per event id and nothing else. A later card that prices unconditionally, a `?? 'Free'` default, a loader that stops branching, a schema that publishes an Offer regardless, or a re-hand-rolled "the host hasn't..." sentence each fail the `LIVE-443` probe, mutation-tested nine ways on 2026-09-21.
+
+**Rows.** LIVE-443. Does not close OWN-074, which needs two people to finish Connect onboarding; it removes the buyer-facing damage that row has been causing in the meantime.
+
+## ADR-1496: Renditions resolve on the fly, and the Loom editor is split out with its dependency cost measured (PROG-D3)
+
+**Status:** Accepted · 2026-09-21 · backlog `PROG-D3` · numbered **1496**: this entry was authored as 1493, renumbered to 1495 in flight, and settled on 1496 by the merge coordinator once `main` carried 1493 (PROG-R6), 1494 (LIVE-443) and 1495 (PROG-D2, the number #2828 gave it when repairing the duplicate ADR-1492 that #2822 and #2824 merged concurrently). `check:adr` enforces uniqueness within a tree, so concurrent PRs each pass alone and clash on merge, which is the failure its own header records from 2026-08-17 and which hit for real three times on the day this was written · executes the owner ruling recorded on [HYG-017](BUILD-BACKLOG.json) · beside [ADR-480](DECISIONS.md) (the Loom data model) and [ADR-1130](DECISIONS.md) (the AssetRef seam)
+
+**Context.** PROG-D3 names four things: a Filerobot image editor, version-on-edit, rollback via `is_current`, and an on-the-fly rendition resolver. Re-tested against the tree, **the two version clauses are already shipped**: `library_versions` is live in production with `is_current`, `recordVersion` / `listVersions` / `rollbackToVersion` are in `lib/library/versions.ts`, and three edit sources already write versions (file replace, Recraft ops, Vera SVG saves), with a history-and-rollback UI in `recraft-studio.tsx`. Nothing to build there.
+
+The resolver was unbuilt, and the question behind it was already answered. HYG-017 found `RENDITION_PRESETS` and `CROP_FRAMES` with **one importer — their own shape test**, which is the ADR-979 shape (types standing in for work), and asked the owner one word: on-the-fly or materialised. **Ruled ON-THE-FLY 2026-08-25.** This builds the resolver that ruling names.
+
+Three facts were measured rather than assumed, and two of them changed the design:
+
+1. **Image Transformations are enabled on this project**, not merely available. The org is on Pro (the feature's floor) *and* the per-project toggle is on — verified against a live asset, not inferred from the plan.
+2. 🔴 **The catalog holds urls on TWO hosts** — the project domain and the `api.frequencylocal.com` Supabase custom domain. A resolver that rebuilt urls from `NEXT_PUBLIC_SUPABASE_URL` would have silently re-pointed half the Loom at the wrong origin. The resolver therefore **rewrites one path segment and keeps the host**.
+3. **The win is real and measured:** a 2,243,106-byte master returns **28,578 bytes** at `width=480` — 78x — auto-negotiated to WebP.
+
+**Decision.**
+
+1. `lib/library/rendition-url.ts` — `renditionUrl(url, kind)`. A **pure string rewrite** of `/storage/v1/object/public/` to `/storage/v1/render/image/public/` plus the preset's `width` and an explicit `resize=contain`. No IO, no database, no pixels, and no `sharp` — which is the collision materialising would have caused, with `check:og-trace` at 67 of a 100-function budget in a seam the picker, page editor, importer and email studio all reach.
+2. **Fail-open at every grain.** A non-Supabase url, a `data:`/`blob:` url, an SVG, an already-rendered url, the `source` and `custom` kinds, and any preset outside Supabase's 1–2500px window all come back **unchanged**, so every call site can use it unconditionally.
+3. 🔴 **A rendition url is display-only and is never stored.** `value` in the Loom picker stays the master; only `src` resolves. Storing a width-capped derivative would freeze a display decision into the data and defeat ADR-1130, where one master re-points everywhere.
+4. Wired into the surfaces that were serving masters as thumbnails: the Loom picker grid (`grid`), the admin Loom grid tiles (`grid`), and the admin drawer preview (`hero`). `Thumb` takes `rendition` as its own prop rather than deriving it from `fit`, because one is layout and the other is bytes.
+5. **The Filerobot editor is SPLIT OUT to HYG-109 with `ownerAction: ruling`, not built here** — see below. PROG-D3 closes on the three clauses that are real.
+
+**Why the editor is a ruling and not an estimate.** `react-filerobot-image-editor` is MIT and only 0.45 MB itself, but it is not what it costs. Measured from the registry: it pulls **`konva` 1.75 MB** (a full 2D canvas engine), **`styled-components` 1.99 MB**, **`@scaleflex/ui` 0.98 MB** and **`@scaleflex/icons` 1.21 MB** — both pinned at `3.0.0-beta.10` — plus `react-konva`, `react-konva-utils` and `@tippyjs/react`. That is **~6.8 MB across seven packages, none of them in the tree today**, two of them betas, and one of them a **second styling runtime on a Tailwind-4 repo** whose canon is DAWN tokens and no hardcoded hex. On a repo where `check:shell-weight` and `check:build-budget` are build-blocking and the 2026-08-11 incident was a green tree that shipped an artifact the container could not hold, adopting a third-party design system as a transitive dependency is an architecture decision, not an implementation detail. It is also not the only way to get crop and rotate — `CROP_FRAMES` already exists and a native-canvas crop would add zero dependencies. One owner sentence picks the exit; HYG-109 states both with these numbers.
+
+**Rejected.** Materialising renditions (ruled against, and it means server-side decode). Re-creating `library_renditions` (dropped `20260925000000`, stays dropped). Rebuilding urls from the project env var (would break the custom-domain half of the catalog). Storing rendition urls in documents or columns. Adding Filerobot and its seven packages on this PR's own authority. Closing PROG-D3 with the editor silently dropped rather than filed.
+
+**Consequences.** `RENDITION_PRESETS` has its first production consumer, so HYG-017's ADR-979 finding is retired rather than re-inherited. Transformations are metered per distinct **origin** image per cycle (Pro includes 100, then $5 per 1,000) — per image, not per request, so repeat views and the Smart CDN cost nothing; the catalog is small today and this is a figure to watch, not a blocker. A later call site that renders `asset.url` straight into a grid tile fails the PROG-D3 probe. A later resolver that rebuilds the host, or that returns a transformed url for `source`, fails it too.
+
+**Rows.** PROG-D3 (closed). HYG-109 (new, the editor, owner ruling). HYG-017 (done, its ruling executed here). PROG-D4 still owns the usage index.
+
 ## ADR-1497: A Journey host writes their own questions, and the generic four become the fallback (LIVE-394)
 
 **Status:** Accepted · 2026-09-21 · backlog `LIVE-394` · beside [ADR-1463](DECISIONS.md) (the outcomes list on story settings) and the LIVE-395 guarantee that followed it · named in [ADR-1398](DECISIONS.md)'s "Not done" list

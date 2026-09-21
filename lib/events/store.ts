@@ -56,6 +56,10 @@ export interface SpaceEvent {
   venue_name?: string | null
   attendance_mode?: string | null
   is_demo?: boolean | null
+  /** The Space that HOSTS this event (ADR-819), which is a different question from `space_id`
+   *  (where it sits on a calendar): its OWNER is the payee, so any reader answering "will this
+   *  money land?" must key on this rather than on `host_id`. */
+  host_space_id?: string | null
 }
 
 // 🔴 SERIES_COLUMNS is part of this SELECT, and it is load-bearing rather than decorative: three
@@ -64,7 +68,7 @@ export interface SpaceEvent {
 // MATERIALISED (ADR-007), so without these columns the fold that turns occurrences back into
 // gatherings is a silent no-op and each of them counts a weekly series nine times (LIVE-198).
 const COLS =
-  `id, slug, title, description, starts_at, ends_at, host_id, scope_id, scope_type, is_cancelled, space_id, time_zone, status, location, plan_id, capacity, price_cents, join_mode, hide_address, city, region, venue_name, attendance_mode, is_demo, ${SERIES_COLUMNS}`
+  `id, slug, title, description, starts_at, ends_at, host_id, host_space_id, scope_id, scope_type, is_cancelled, space_id, time_zone, status, location, plan_id, capacity, price_cents, join_mode, hide_address, city, region, venue_name, attendance_mode, is_demo, ${SERIES_COLUMNS}`
 
 /** An event row for the per-space CALENDAR (Events EC2): the fields the month grid + popup need. */
 export interface SpaceCalendarEvent {

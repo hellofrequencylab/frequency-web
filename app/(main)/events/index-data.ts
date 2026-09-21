@@ -20,6 +20,9 @@ import { CATEGORY_OPTIONS } from '@/lib/events/options'
 import { collapseSeriesRows, SERIES_WIDE_READ } from '@/lib/events/series'
 import { goingCountsByEvent } from '@/lib/events/going-counts'
 import { tierSummariesByEvent, priceLabelFromSummary } from '@/lib/events/tier-prices'
+import { eventPayoutReadyMap } from '@/lib/events/payout-readiness'
+import { buyerMaySeePrice } from '@/lib/events/ticket-eligibility'
+import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { getSeriesDisplayConfig } from '@/lib/events/series-config'
 import type { CatalogFacet } from './events-filter-bar'
 import type { SortOption } from './events-sort'
@@ -76,6 +79,14 @@ export type EventRow = {
   // as an EWKB hex STRING (or, in some setups, a GeoJSON object) — decode it with
   // pointFromGeog. Used to plot standalone public events (no hosting circle) at their spot.
   geog?: unknown
+  // The PAYEE inputs (ADR-819) + the join model (ADR-826), read so the card can answer "may we
+  // name a price here?" before it prints one. A space-hosted event pays the space OWNER, not the
+  // organizer, and an RSVP-mode price is collected at the door rather than through checkout --
+  // see `buyerMaySeePrice` in lib/events/ticket-eligibility.ts. Newer than the generated DB types
+  // -> read through the untyped client, the repo convention above.
+  host_id?: string | null
+  host_space_id?: string | null
+  join_mode?: string | null
   host: { id: string; display_name: string; handle: string } | null
 }
 
@@ -263,7 +274,9 @@ export interface EventsIndexData {
   coverFocus: Record<string, string>
   rsvpCounts: Record<string, number>
   /** Per-event price stat for the card — "Free" / "$X" / "From $X". */
-  priceLabels: Record<string, string>
+  /** The card's price stat, or `null` where naming one would be an offer we cannot honour
+   *  (EVT-PRICE-HONESTY). `null` is not "Free": a card renders no price stat at all. */
+  priceLabels: Record<string, string | null>
   myRsvps: Set<string>
   /** Empty-state branching: any active facet, and whether the viewer has any scope. */
   filtering: boolean
@@ -396,6 +409,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   const EVENT_SELECT = `id, title, slug, location, starts_at, ends_at, is_cancelled, is_demo,
        featured_at, scope_id, scope_type, category, energy_tag, capacity, attendance_mode, price_cents,
        cover_image_path, theme, recurrence_type, recurrence_until, recurrence_rule, parent_event_id, poster_path, geog,
+       host_id, host_space_id, join_mode,
        host:profiles!host_id ( id, display_name, handle )`
 
   // ── The three event sources + proximity, fetched in ONE wave ────────────────
@@ -560,7 +574,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     .filter((e) => !e.cover_image_path && e.poster_path)
     .map((e) => e.poster_path as string)
 
-  const [circlesRows, posterUrlByPath, rsvpCounts, myRsvpRows, tierSummaries] = await Promise.all([
+  const [circlesRows, posterUrlByPath, rsvpCounts, myRsvpRows, tierSummaries, payoutReady] = await Promise.all([
     circleScopeIds.length > 0
       ? admin.from('circles').select('id, name, latitude, longitude').in('id', circleScopeIds)
           .then(({ data }) => (data ?? []) as { id: string; name: string; latitude: number | null; longitude: number | null }[])
@@ -587,6 +601,11 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     // event — and falls back to a PAGED read folded locally when that function is absent. Correct
     // both before and after the migration is applied. Fail-safe to {}.
     tierSummariesByEvent(eventIds),
+    // Can the person Stripe would pay actually receive this money? Two reads for the whole page
+    // (lib/events/payout-readiness.ts) rather than one pair per card, through the batched map
+    // LIVE-126 built for exactly this. Absent = not ready, which is the direction every other
+    // reader of this question fails.
+    eventPayoutReadyMap(events),
   ])
 
   // Circle names + coordinates for the circle-scoped events.
@@ -621,8 +640,22 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   // Resolve each card's price stat from its summary. An ABSENT summary means "no active tiers",
   // which falls back to the event's own flat price — not the same as a present summary whose floor
   // is null ("has tiers, all free"), which is "Free" regardless of what price_cents says.
-  const priceLabels: Record<string, string> = {}
-  for (const e of events) priceLabels[e.id] = priceLabelFromSummary(e.price_cents, tierSummaries[e.id])
+  //
+  // 🔴 AND A CARD MAY DECLINE TO NAME ONE (EVT-PRICE-HONESTY). In TICKETS mode the number on a card
+  // is an offer to take money, and an offer we cannot honour is the worst thing this listing can
+  // print: OWN-074 measured a live $55 event whose host has no Connect account, so the card
+  // advertised a purchase that dead-ended at checkout with TICKETS_NOT_READY. `null` means "say
+  // nothing about price", NOT "free" -- the two are opposite claims and the card renders no stat at
+  // all for the first. An RSVP-mode price is untouched: that money is collected at the door and
+  // nothing goes through checkout (LIVE-314), so it is information rather than a promise.
+  const priceLabels: Record<string, string | null> = {}
+  for (const e of events) {
+    const label = priceLabelFromSummary(e.price_cents, tierSummaries[e.id])
+    // The same three-part derivation the detail page and lib/spaces/content-data.ts do: priced, on
+    // a platform where ticketing is live, and not an RSVP-mode event.
+    const ticketsMode = TICKETING_ENABLED && label !== 'Free' && (e.join_mode ?? 'auto') !== 'rsvp'
+    priceLabels[e.id] = buyerMaySeePrice({ ticketsMode, payoutsReady: payoutReady[e.id] }) ? label : null
+  }
 
   // ── Facets (applied server-side; URL-driven so the view stays shareable) ────
   const goingCount = (e: EventRow) => rsvpCounts[e.id] ?? 0
