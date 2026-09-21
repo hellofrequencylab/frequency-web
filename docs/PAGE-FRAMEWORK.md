@@ -918,12 +918,18 @@ from the index side for the index side's reason: the identity band carries the `
 empty-ladder result is `null` (the gradient) — never "no band" — and the section `tail` does not
 apply. The page keeps its own lockup; only the stanza moved.
 
-As of the ADR-1136 adoption, 26 of the 30 live `DetailTemplate` render sites resolve their band
-through this module (21 standard + 5 identity). The four that do not — `/circles/starter/<slug>`
-(a generated `TemplateCover`), the Space profile layout (its own Header/Hero size vocabulary), and
-the two event pages via `EventDetailTemplate` (a multi-source event-media ladder) — hand-roll a
-bespoke cover NODE, not the stanza, and folding each is a behaviour change with its own PR
-(counted on `PROG-P5`).
+**The count is the probe's, not this paragraph's.** `PROG-P5`'s verify probe (ADR-1498) runs a
+comment-blind census of every `DetailTemplate` render site (wrappers resolved to their callers)
+and prints how many resolve through this module or render `PageHero` in their `hero` slot. A
+surface that hand-rolls its own cover node fails that probe unless it is one of the **two ruled
+compositions** the probe freezes as a shrink-only set: the Space profile hero
+(`app/(main)/spaces/[slug]/(profile)/layout.tsx`, an overlaid lockup in the page theme heading
+face on the fixed cover-height ladder, ADR-526 / ADR-578) and the event poster band behind
+`EventDetailTemplate` (an aspect-shaped band with the height tier as a ceiling, ADR-1248). Both
+are off the grammar by ruling, not neglect; folding either is an owner ruling with screenshots
+(`LIVE-447`). A cover that is a LIVE node rather than a URL — the Starter Circle's drawn scene,
+the Around You map — goes through `PageHero`'s `background` slot inside `hero`, still with the
+resolver supplying height and overlay.
 
 ### The admin-settings scope kit (9 touch-points)
 

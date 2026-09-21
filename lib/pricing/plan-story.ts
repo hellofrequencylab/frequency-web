@@ -40,6 +40,11 @@ export const PLAN_STORY = {
   /** The whole spine in one breath. */
   spine:
     'Frequency is where your local community happens. People join free. Businesses host free. You pay when you start charging, and never for access to people.',
+  /** The three lines on their own (CORE-MODEL §1), for a surface that already has its own first
+   *  sentence: the site description, the llms.txt header. PROG-R8 (ADR-1499) added this so the
+   *  <meta> description and the crawler corpus READ the lines rather than retype them; the spine
+   *  above keeps them too, because the home document's hero is the spine verbatim. */
+  lines: 'People join free. Businesses host free. You pay when you start charging.',
   /** WHY a plan, in the model's own terms: the moment, not the meter. The free rung is the whole
    *  product, the transaction is never walled, and a plan is what the REPEAT runs on. Every surface
    *  interpolates this instead of arguing it again; the capabilities it names are read off the gate map
