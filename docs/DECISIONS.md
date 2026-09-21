@@ -47414,7 +47414,7 @@ Premise re-tested before building ([ADR-1082](DECISIONS.md)): CI checks out the 
 
 **Rows.** HYG-111 (closed). Beside HYG-003 (the in-tree ADR contract) and HYG-093 (placeholders where a number belongs).
 
-Renumbered on 2026-09-21 from ADR-1505 / HYG-110: #2843, opened from the owner's own session, carried that pair first.
+Renumbered on 2026-09-21 from number 1505 (and row HYG-110): #2843, opened from the owner's own session, carried that pair first.
 
 ## ADR-1502: The usage index is a live scan, not a table, and it closes the scan half of PROG-D4 (PROG-D4)
 
