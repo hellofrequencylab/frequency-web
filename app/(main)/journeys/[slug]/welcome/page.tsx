@@ -166,8 +166,11 @@ export default async function JourneyWelcomePage({
   ])
   const space = plan.space_id && plan.space_id !== rootSpaceId ? await getSpaceById(plan.space_id) : null
 
-  const phases = items.filter((i) => i.block_type === 'phase').length
-  const steps = items.filter((i) => (i.block_type ?? 'practice') !== 'phase' && i.block_type !== 'module').length
+  // The column carries 'phase' and 'module' beside the typed BlockType union (getMyPlanSummaries
+  // counts the same way), so it is read as the string it is.
+  const blockKind = (i: (typeof items)[number]): string => (i.block_type as string | undefined) ?? 'practice'
+  const phases = items.filter((i) => blockKind(i) === 'phase').length
+  const steps = items.filter((i) => blockKind(i) !== 'phase' && blockKind(i) !== 'module').length
   const facts = [
     phases > 0 ? `${phases} ${phases === 1 ? 'phase' : 'phases'}` : null,
     steps > 0 ? `${steps} ${steps === 1 ? 'step' : 'steps'}` : null,
