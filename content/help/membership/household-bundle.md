@@ -4,10 +4,11 @@ description: One payment, several seats. How to invite people, what a seat gets 
 category: membership
 order: 3
 published: 2026-08-12
-updated: 2026-09-19
+updated: 2026-09-21
 audience: member
 featureKeys: [vault, memberships]
-status: published
+status: draft
+draftNote: Drafted 2026-09-21 by owner ruling (LIVE-448) because bundle_household_enabled is off and nobody can buy a household bundle. It returns to published when the bundle is purchasable.
 ---
 
 A household bundle is one membership payment that covers several people. You pay, you
