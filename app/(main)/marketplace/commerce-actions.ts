@@ -193,6 +193,84 @@ export async function startCheckoutAction(
   return { url: r.url }
 }
 
+/** Local, and deliberately the same shape the other guest doors use (subscribe, rsvp, start).
+ *  UX validation only: the SQL and Stripe both re-validate, and this never echoes anything but the
+ *  reader's own input back to them. */
+const GUEST_EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+
+/**
+ * THE GUEST DOOR (LIVE-396) — buy without an account, and get it on sign-in.
+ *
+ * A separate export rather than a widened `startCheckoutAction`, for the reason
+ * `startGuestTicket` is separate from `startTicket`: widening the member path would make its
+ * `getMyProfileId()` guard conditional, and that guard is what keeps a member's purchase attached
+ * to their account. Here it still refuses nobody — it hands off.
+ *
+ * The door idioms below are the ones pinned in
+ * app/(main)/events/[slug]/ticket-actions.guest.test.ts, in the same order and for the same
+ * reasons. They are copied deliberately: a second guest door that guards differently is a second
+ * door to get wrong.
+ *
+ * WHAT HAPPENS AFTER THE MONEY. Nothing here grants anything. The order settles with a NULL buyer
+ * and `guest_email` set, `enrolByOrder` no-ops on it, and access appears when they sign in with
+ * that address and `claim_guest_orders()` attaches it (lib/commerce/claim-guest-orders-on-sign-in.ts).
+ * That is why the receipt matters: it is the only thing telling them which address to use.
+ */
+export async function startGuestCheckoutAction(input: {
+  productId: string
+  email: string
+  variantId?: string | null
+  /** Honeypot. A real person never sees this field, so anything in it is a bot. */
+  company?: string
+  /** 🔴 Set by a caller whose on-page form already FAILED, to demand a session it can redirect to.
+   *  Without it the fallback re-asks for elements and dead-ends the buyer — the live 2026-09-15
+   *  ticket failure, which cost two Stripe sessions and two pending rows per buyer. */
+  forceHosted?: boolean
+}): Promise<{ url?: string; clientSecret?: string; sessionId?: string; error?: string }> {
+  // Silent success for the honeypot, CLAIMING NOTHING. No url, no secret, no error: telling a bot
+  // it was caught only teaches it to stop filling the field, and a success that claimed something
+  // would tell a human whose browser autofilled a hidden field that they had bought a thing they
+  // had not.
+  if ((input.company || '').trim() !== '') return {}
+
+  const email = (input.email || '').trim().toLowerCase()
+
+  // Throttle this open, unauthenticated endpoint per IP. Fails CLOSED in production when Upstash is
+  // unconfigured (lib/rate-limit.ts), which is the right direction for a door that opens a Stripe
+  // session. Runs BEFORE the signed-in check so a caller cannot buy their way past it by holding a
+  // session.
+  const hdrs = await headers()
+  const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown'
+  if (!(await rateLimitOk('commerce_guest_checkout', ip, 5, '10 m'))) {
+    return { error: 'Too many requests. Please try again in a few minutes.' }
+  }
+
+  // A SIGNED-IN CALLER BUYS AS THEMSELVES. Minting a guest order keyed to a typed address would
+  // strand the purchase outside the account they are already holding: absent from their Journeys
+  // until they happened to sign in again with the same address. Prefer the identity we can PROVE
+  // over the one they typed, and hand off to the member path, which re-reads getMyProfileId itself.
+  if (await getMyProfileId()) {
+    return startCheckoutAction(input.productId, input.variantId ?? null, {
+      forceHosted: input.forceHosted,
+    })
+  }
+
+  if (!GUEST_EMAIL_RE.test(email)) return { error: 'Please enter a valid email address.' }
+
+  // No entry-point stamp is read here. `entryPointFromStamp` classifies a sale as network-sourced
+  // off a cookie the member surfaces set; a signed-out visitor on the public Journey page carries
+  // no such stamp, and inventing one would bill a take-rate against provenance nobody recorded.
+  // The default (`self`) is the honest classification for a purchase we cannot attribute.
+  const r = await createCommerceCheckout({
+    guestEmail: email,
+    items: [{ productId: input.productId, variantId: input.variantId ?? null, qty: 1 }],
+    ui: input.forceHosted ? 'hosted' : onPageCheckoutAvailable() ? 'elements' : 'hosted',
+  })
+  if (r.error) return { error: r.error }
+  if (r.clientSecret) return { clientSecret: r.clientSecret, sessionId: r.sessionId }
+  return { url: r.url }
+}
+
 /**
  * Settle a commerce order the moment it is paid ON PAGE, without waiting for the webhook.
  *

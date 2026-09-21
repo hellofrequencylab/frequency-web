@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import {
   buildOnboardingSteps,
+  staleOnboardingCriteria,
   DEFAULT_ONBOARDING_STEPS,
+  DEFAULT_ONBOARDING_ORDER,
   type AuthoredOnboardingStep,
   type OnboardingStepKey,
 } from './steps'
@@ -68,15 +70,44 @@ describe('buildOnboardingSteps — authored slides override copy + order', () =>
     expect(steps.map((s) => s.key)).toEqual(['identity', 'host'])
     expect(steps.find((s) => s.key === 'host')!.label).toBe('First')
   })
-  it('ignores untagged / unknown-criterion slides but keeps tagged ones', () => {
+  it('ignores UNTAGGED slides but keeps tagged ones', () => {
+    // An untagged slide is ordinary narrative: it claims nothing, so it contributes no step and
+    // the authored funnel is still trustworthy.
     const mixed = [
       { title: 'no criterion' },
       { criterion: 'event' as OnboardingStepKey, title: 'Come along' },
-      { criterion: 'bogus' as unknown as OnboardingStepKey, title: 'junk' },
     ]
     const steps = buildOnboardingSteps(mixed, done({ event: true }))
     expect(steps.map((s) => s.key)).toEqual(['identity', 'event'])
     expect(steps.find((s) => s.key === 'event')!.done).toBe(true)
+  })
+  it('🔴 REFUSES the whole funnel when any slide carries a RETIRED criterion (LIVE-260)', () => {
+    // This used to drop the unknown slide and keep the rest, which is how the stored
+    // `onboarding-next-steps` walkthrough — four slides, two tagged with the criteria LIVE-259
+    // retired — would have rendered a TWO-step checklist over the four-step default, shorter than
+    // authored and with nothing saying why. A funnel tagged against an older build is not
+    // trustworthy in part, so the known-correct default is used instead.
+    const stale = [
+      { criterion: 'event' as OnboardingStepKey, title: 'Come along' },
+      { criterion: 'practice' as unknown as OnboardingStepKey, title: 'retired key' },
+    ]
+    const steps = buildOnboardingSteps(stale, done({ event: true }))
+    expect(steps.map((s) => s.key)).toEqual([...DEFAULT_ONBOARDING_ORDER])
+    // The code-computed done-map still wins, exactly as on the default path.
+    expect(steps.find((s) => s.key === 'event')!.done).toBe(true)
+  })
+  it('names the retired criteria so the fail-safe is not silent', () => {
+    expect(staleOnboardingCriteria(null)).toEqual([])
+    expect(staleOnboardingCriteria([{ title: 'narrative' }])).toEqual([])
+    expect(staleOnboardingCriteria([{ criterion: 'event' as OnboardingStepKey }])).toEqual([])
+    expect(
+      staleOnboardingCriteria([
+        { criterion: 'practice' as unknown as OnboardingStepKey },
+        { criterion: 'log' as unknown as OnboardingStepKey },
+        { criterion: 'practice' as unknown as OnboardingStepKey },
+        { criterion: '   ' as unknown as OnboardingStepKey },
+      ]),
+    ).toEqual(['practice', 'log'])
   })
   it('treats whitespace-only fields as blank (falls back)', () => {
     const ws: AuthoredOnboardingStep[] = [{ criterion: 'circle', title: '   ', body: '  ' }]

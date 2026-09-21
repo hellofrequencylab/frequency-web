@@ -6,6 +6,7 @@ import { getPublicJourney, listPublicJourneys } from '@/lib/journey-plans'
 import { readJourneyOutcomes } from '@/lib/journeys/outcomes'
 import { readJourneyGuarantee } from '@/lib/journeys/guarantee'
 import { JourneyGuaranteeBlock } from '@/components/journey/guarantee-block'
+import { JourneyGuestBuy } from '@/components/journey/journey-guest-buy'
 import { getPillars, pillarsById } from '@/lib/pillars'
 import {
   DiscoveryBlocks,
@@ -151,18 +152,19 @@ export default async function DiscoverJourneyPage({
             Full
           </span>
         ) : (
-          <Link
-            href={journeyBuySignInPath(plan.slug)}
-            className={buttonClasses('primary', 'md', 'w-full')}
-          >
-            Get access · {priceLabel}
-          </Link>
+          // LIVE-396: buy without an account. The sign-in door is kept beside it for anyone who
+          // already has one, so their purchase lands on their profile instead of waiting on a claim.
+          <JourneyGuestBuy
+            productId={offer.productId}
+            priceLabel={priceLabel}
+            signInHref={journeyBuySignInPath(plan.slug)}
+          />
         )}
-        <p className="text-2xs leading-relaxed text-muted">
-          {soldOut
-            ? 'Every seat is taken for this run.'
-            : 'Enrol to unlock every phase. Run it with your Circle or solo.'}
-        </p>
+        {soldOut ? (
+          <p className="text-2xs leading-relaxed text-muted">
+            Every seat is taken for this run.
+          </p>
+        ) : null}
       </div>
     ) : (
       <div className="space-y-2">

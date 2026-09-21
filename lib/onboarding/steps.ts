@@ -121,6 +121,33 @@ function isCriterion(v: unknown): v is OnboardingStepKey {
 }
 
 /**
+ * Criteria an operator tagged that this code no longer recognises — a key that was RETIRED or
+ * mistyped. Distinct from an untagged slide: `criterion: undefined` is an ordinary narrative slide
+ * and means nothing is claimed, while `criterion: 'practice'` is a claim this build cannot honour.
+ *
+ * 🔴 WHY THIS EXISTS (LIVE-260). LIVE-259 replaced the criteria `practice` and `log` with `event`
+ * and `host`. The stored `onboarding-next-steps` walkthrough still carries the old two on two of its
+ * four slides. Under the previous behaviour those two were silently filtered out and the remaining
+ * two were used, so activating that row would have rendered a TWO-step checklist in place of the
+ * four-step default — shorter than authored, shorter than the model, and with nothing anywhere
+ * saying so. The backlog row had to carry a red DO NOT ACTIVATE warning as the only guard, which is
+ * a note standing in for a gate.
+ *
+ * PURE and total, so the caller decides what to do about it: `buildOnboardingSteps` refuses the
+ * authored funnel outright, and an editor or a gate can name the offending keys to an operator.
+ */
+export function staleOnboardingCriteria(
+  authored: AuthoredOnboardingStep[] | null | undefined,
+): string[] {
+  const out: string[] = []
+  for (const s of authored ?? []) {
+    const v = s?.criterion
+    if (typeof v === 'string' && v.trim() !== '' && !isCriterion(v) && !out.includes(v)) out.push(v)
+  }
+  return out
+}
+
+/**
  * Build the funnel's steps from the operator-authored slides (if any) and the computed
  * done-map. Pure — the testable core.
  *   - Each authored slide that carries a recognized `criterion` contributes one step, in
@@ -139,8 +166,16 @@ export function buildOnboardingSteps(
 ): OnboardingStep[] {
   const tagged = (authored ?? []).filter((s) => isCriterion(s.criterion))
 
+  // 🔴 A FUNNEL AUTHORED AGAINST RETIRED KEYS IS REFUSED WHOLE, not partially applied (LIVE-260).
+  // Dropping the unrecognised slides and keeping the rest is the worst of the three options: it
+  // looks authored, it is shorter than the operator intended, and nothing says why. The default
+  // funnel is the known-correct one, so an operator who tagged against an older build gets the
+  // model rather than a silently truncated version of their own work. `staleOnboardingCriteria`
+  // names the offending keys for whoever wants to tell them.
+  const stale = staleOnboardingCriteria(authored)
+
   let out: OnboardingStep[]
-  if (tagged.length === 0) {
+  if (tagged.length === 0 || stale.length > 0) {
     out = DEFAULT_ONBOARDING_ORDER.map((key) => ({ ...DEFAULT_ONBOARDING_STEPS[key], done: !!done[key] }))
   } else {
     const seen = new Set<OnboardingStepKey>()
