@@ -304,8 +304,7 @@
             "OWN-077",
             "OWN-080",
             "HYG-109",
-            "LIVE-448",
-            "LIVE-455"
+            "LIVE-448"
           ]
         }
       ],
@@ -10538,7 +10537,7 @@
     {
       "id": "LIVE-455",
       "title": "Phase 11, the six weeks: one city, three businesses, one gathering each per week, and the instrument read at the start and the end",
-      "status": "open",
+      "status": "parked",
       "priority": "P1",
       "lane": "owner",
       "size": "M",
@@ -10547,12 +10546,13 @@
         "ref": "§5 phase 11; ADR-1510"
       },
       "ownerAction": "ruling",
-      "detail": "FILED 2026-09-21 when PROG-R11 closed as the instrument (ADR-1510). This row is the field test itself, which needs no engineer and cannot be closed by code: the owner names the city, the three businesses (each a Space) and the start date; each hosts one real gathering a week for six weeks and brings ten of their own people; hosts mark who was in the room from the roster (the host mark, attended_at, is the only thing the instrument counts as attendance, so a host who does not mark reads as zero).\n\nTHE START READING is already taken. Production 2026-09-21 19:57Z, from scripts/maintenance/prove-it.mjs: 26 active non-root Spaces, 4 circles a Space started (0.15 per Space), 13 gatherings held in the trailing 42 days, 0 of them with anyone marked present, 0 people marked present. The weekly maintenance sweep prints the same three numbers every week under \"Phase 11 reading\", so the series exists whether or not anyone runs the query by hand.\n\nCLOSES WHEN the end reading (six weeks after the named start date) is recorded in this detail beside the start reading, taken the same way. What the numbers say is then a ruling, not a row: CORE-MODEL §6 says phase 11 is the only phase that can tell whether the model is right.",
+      "detail": "FILED 2026-09-21 when PROG-R11 closed as the instrument (ADR-1510). This row is the field test itself, which needs no engineer and cannot be closed by code: the owner names the city, the three businesses (each a Space) and the start date; each hosts one real gathering a week for six weeks and brings ten of their own people; hosts mark who was in the room from the roster (the host mark, attended_at, is the only thing the instrument counts as attendance, so a host who does not mark reads as zero).\n\nTHE START READING is already taken. Production 2026-09-21 19:57Z, from scripts/maintenance/prove-it.mjs: 26 active non-root Spaces, 4 circles a Space started (0.15 per Space), 13 gatherings held in the trailing 42 days, 0 of them with anyone marked present, 0 people marked present. The weekly maintenance sweep prints the same three numbers every week under \"Phase 11 reading\", so the series exists whether or not anyone runs the query by hand.\n\nCLOSES WHEN the end reading (six weeks after the named start date) is recorded in this detail beside the start reading, taken the same way. What the numbers say is then a ruling, not a row: CORE-MODEL §6 says phase 11 is the only phase that can tell whether the model is right.\n\n── PARKED 2026-09-21 by owner ruling: the six weeks do not start now. The instrument stays live (PROG-R11 probe) and the weekly maintenance sweep keeps printing the three numbers under \"Phase 11 reading\", so the series accumulates while this row waits; the start reading above stands as the baseline. Unpark at launch prep (parkedUntil 2026-11-15) by naming the city, the three Spaces and the start date, and put the row back in the owner-timed wave.",
       "verify": {
         "kind": "manual",
         "evidence": "Not started: no city, no three Spaces and no start date named. Start reading 2026-09-21 (above). End reading not taken. The instrument works: the query ran on production on 2026-09-21 and the sweep step is wired (PROG-R11 probe).",
         "checked": "2026-09-21"
-      }
+      },
+      "notes": "parkedUntil: 2026-11-15. Parked until launch prep; the weekly sweep keeps printing the series."
     },
     {
       "id": "LIVE-456",
@@ -10565,7 +10565,7 @@
         "file": "lib/spaces/standing.ts",
         "ref": "module header; ADR-1332; ADR-1510"
       },
-      "detail": "FILED 2026-09-21 from the PROG-R11 premise re-test. lib/spaces/standing.ts promises, in its header: \"The day an independent attendance record exists, it is added as a seventh signal and every Space is re-scored against it at once; no weight below needs to change, because they renormalise.\" That day was 2026-09-14 (PROG-GD4, ADR-1332): attended_at on event_rsvps and event_tickets, the host mark, paying nobody. The header still says attendance \"has NO independent record on this platform\", the space_standing table comment says the same, and lib/spaces/standing-rollup.ts reads neither column. The promise is unkept and the stated reason for it is no longer true.\n\nTHE WORK: declare attendance as a DOING signal (people a host marked present at this Space's gatherings in the trailing window, saturated on its own scale), feed it from the two seat tables in the rollup, correct the header and the table comment, and keep standing.test.ts pinning that no commercial term entered. Renormalisation means no existing weight moves. It is P3 because zero hosts have marked anyone present yet (first reading 2026-09-21: 0), so the signal would read 0 for every Space today; it becomes worth doing the week the phase 11 field test (LIVE-455) starts producing marks. Do it beside LIVE-263 (the nightly rollup), which is the same file.",
+      "detail": "FILED 2026-09-21 from the PROG-R11 premise re-test. lib/spaces/standing.ts promises, in its header: \"The day an independent attendance record exists, it is added as a seventh signal and every Space is re-scored against it at once; no weight below needs to change, because they renormalise.\" That day was 2026-09-14 (PROG-GD4, ADR-1332): attended_at on event_rsvps and event_tickets, the host mark, paying nobody. The header still says attendance \"has NO independent record on this platform\", the space_standing table comment says the same, and lib/spaces/standing-rollup.ts reads neither column. The promise is unkept and the stated reason for it is no longer true.\n\nTHE WORK: declare attendance as a DOING signal (people a host marked present at this Space's gatherings in the trailing window, saturated on its own scale), feed it from the two seat tables in the rollup, correct the header and the table comment, and keep standing.test.ts pinning that no commercial term entered. Renormalisation means no existing weight moves. It is P3 because zero hosts have marked anyone present yet (first reading 2026-09-21: 0), so the signal would read 0 for every Space today; it becomes worth doing the week the phase 11 field test (LIVE-455) starts producing marks. Do it beside LIVE-263 (the nightly rollup), which is the same file. Owner ruling 2026-09-21: the stale standing.ts header and the space_standing table comment stay folded into this row, no separate row; priority stays P3.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const s=fs.readFileSync(\"lib/spaces/standing.ts\",\"utf8\");if(!/STANDING_SIGNALS[\\s\\S]*?\\[[\\s\\S]*?attendance[\\s\\S]*?\\]/.test(s))fail(\"attendance is not a declared standing signal, so a Space that fills a room is scored the same as one that gathers for nobody\");if(/no independent record on this platform/.test(s))fail(\"lib/spaces/standing.ts still says attendance has no independent record, which stopped being true with PROG-GD4\");const r=fs.readFileSync(\"lib/spaces/standing-rollup.ts\",\"utf8\");if(!/attended_at/.test(r))fail(\"the nightly rollup does not read the host mark, so the seventh signal has no feeder\");console.log(\"LIVE-456 ok: attendance is the seventh standing signal, fed by the host mark\")'",
