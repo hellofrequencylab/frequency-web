@@ -296,7 +296,10 @@ describe('a PR is read only for the watched files its own diff names', () => {
 })
 
 describe('main under a rate limit: retries, then fails loudly rather than answering clean', () => {
-  const env = {
+  // `main`'s first parameter defaults to `process.env`, so TypeScript types it as NodeJS.ProcessEnv,
+  // which this project declares NODE_ENV on as required. A test env literal has to carry it.
+  const env: NodeJS.ProcessEnv = {
+    NODE_ENV: 'test',
     GITHUB_TOKEN: 't',
     GITHUB_REPOSITORY: 'o/r',
     GITHUB_EVENT_NAME: 'pull_request',
