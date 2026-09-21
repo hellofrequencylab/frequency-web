@@ -16,6 +16,7 @@ import {
   saveJourneyMeta,
   setJourneyOutcomes,
   setJourneyGuarantee,
+  setJourneyFaq,
   setJourneyAttributes,
   setJourneyDelivery,
   setJourneyHeaderFocus,
@@ -33,12 +34,15 @@ import {
   JOURNEY_HEADER_WRITES,
   JOURNEY_IDENTITY_WRITES,
   JOURNEY_OUTCOMES_CAP,
+  JOURNEY_FAQ_CAP,
   journeyAttributesPatch,
   journeyDeliveryPatch,
   journeyMeetingPatch,
   journeyMetaPatch,
   journeyOutcomesFromRows,
   journeyOutcomesRows,
+  journeyFaqFromRows,
+  journeyFaqRows,
   journeyRailValues,
   journeyRewards,
   type JourneyRailValues,
@@ -178,6 +182,13 @@ function JourneySettingsRail({ data }: { data: JourneyRailData }) {
     setOutcomeRows(next)
   }, [])
 
+  const [faqRows, setFaqRows] = useState<RepeatRow[]>(() => journeyFaqRows(data.row))
+  const faqRowsRef = useRef(faqRows)
+  const setFaq = useCallback((next: RepeatRow[]) => {
+    faqRowsRef.current = next
+    setFaqRows(next)
+  }, [])
+
   const publishing = useJourneyPublishing({
     planId,
     initialVisibility: values[VISIBILITY.path] as PlanVisibility,
@@ -234,6 +245,7 @@ function JourneySettingsRail({ data }: { data: JourneyRailData }) {
   const saveIdentity = async () => unwrap(await saveJourneyMeta(planId, journeyMetaPatch(valuesRef.current, JOURNEY_IDENTITY_WRITES)))
   const saveOutcomes = async () => unwrap(await setJourneyOutcomes(planId, journeyOutcomesFromRows(outcomeRowsRef.current)))
   const saveGuarantee = async () => unwrap(await setJourneyGuarantee(planId, String(valuesRef.current.guarantee ?? '')))
+  const saveFaq = async () => unwrap(await setJourneyFaq(planId, journeyFaqFromRows(faqRowsRef.current)))
   const saveHeader = async () => unwrap(await saveJourneyMeta(planId, journeyMetaPatch(valuesRef.current, JOURNEY_HEADER_WRITES)))
   const saveDelivery = async () => {
     const v = valuesRef.current
@@ -274,6 +286,14 @@ function JourneySettingsRail({ data }: { data: JourneyRailData }) {
       {/* The refund promise (LIVE-395): one scalar on the same story settings as the outcomes
           above, saved by its own action because it rewrites page_config rather than a column. */}
       <RailAutosaveForm action={saveGuarantee}>{zone(JOURNEY_RAIL.guarantee.fields)}</RailAutosaveForm>
+
+      {/* The questions (LIVE-394): a repeat of question + answer on the same story settings. Empty
+          means the visitor page keeps its generic set; the first authored pair replaces it whole. */}
+      <RailAutosaveForm action={saveFaq}>
+        {JOURNEY_RAIL.faq.repeats.map((def) => (
+          <RailManifestRepeat key={def.arrayPath} def={def} rows={faqRows} onChange={setFaq} max={JOURNEY_FAQ_CAP} />
+        ))}
+      </RailAutosaveForm>
 
       {/* Header: the cover (with its focal point) and the logo self-save on pick; the overlay autosaves. */}
       <div className="space-y-4">
