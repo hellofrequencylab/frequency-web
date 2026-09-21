@@ -130,7 +130,7 @@ export const data: Data = {
           {
             icon: 'HandHeart',
             title: 'One honest price',
-            body: 'Zero percent on your own bookings, always, and taking money is never behind a plan. We earn only a small, shrinking cut on the business the network sends you. One price, no surprise invoices, and your data leaves with you any month you want.',
+            body: 'Zero percent on your own bookings, always, and taking money is never behind a plan. We earn a share only of the business the network sends you. One price, no surprise invoices, and your data leaves with you any month you want.',
           },
           {
             icon: 'Home',
