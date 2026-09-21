@@ -40,6 +40,12 @@
 -- what a ContentItem is and what a rich-text node (type without props) is not; that is how nested
 -- slot children are counted without counting prose marks.
 --
+-- EVERY PATH IS `strict`, and that is load-bearing. In lax mode (the default) `$.**` unwraps arrays
+-- at every level and visits each array element TWICE, so a document with two refs to one asset
+-- reported three hits and every block in `content[]` counted double (measured on a literal
+-- document before this shipped). Strict mode visits each node once; inside a filter, a strict-mode
+-- error (asking a scalar for `.props`) is simply false, so scalars and nulls are skipped, not raised.
+--
 -- SECURITY. SECURITY INVOKER on purpose: the functions add no privilege of their own, so whoever
 -- calls them sees exactly the rows their RLS already allows. They are granted to service_role only
 -- (ledger verdict `internal` in scripts/function-grants.txt), because the one caller is the
@@ -97,12 +103,12 @@ as $$
          s.type  as space_type,
          d.doc_key,
          d.live,
-         jsonb_array_length(jsonb_path_query_array(d.doc, '$.** ? (@.assetId == $id)', vars.v))::integer as hits
+         jsonb_array_length(jsonb_path_query_array(d.doc, 'strict $.** ? (@.assetId == $id)', vars.v))::integer as hits
     from docs d
    cross join vars
     left join public.spaces s on s.id = d.space_id
    where jsonb_typeof(d.doc) in ('object', 'array')
-     and jsonb_path_exists(d.doc, '$.** ? (@.assetId == $id)', vars.v)
+     and jsonb_path_exists(d.doc, 'strict $.** ? (@.assetId == $id)', vars.v)
    order by d.store, s.slug nulls last, d.doc_key, d.live desc;
 $$;
 
@@ -161,12 +167,12 @@ as $$
        d.doc,
        case d.store
          -- a Puck ContentItem: `type` AND `props`, at any depth (nested slots included)
-         when 'pages'         then '$.** ? (exists(@.props) && exists(@.type)).type'::jsonpath
-         when 'space_page'    then '$.** ? (exists(@.props) && exists(@.type)).type'::jsonpath
+         when 'pages'         then 'strict $.** ? (exists(@.props) && exists(@.type)).type'::jsonpath
+         when 'space_page'    then 'strict $.** ? (exists(@.props) && exists(@.type)).type'::jsonpath
          -- the entity grid: rows[].cells[column][] are block ids
-         when 'space_layout'  then '$.rows[*].cells[*][*]'::jsonpath
+         when 'space_layout'  then 'strict $.rows[*].cells[*][*]'::jsonpath
          -- the module engine: every `order` list, in slots or at the legacy flat root
-         when 'page_settings' then '$.** ? (exists(@.order)).order[*]'::jsonpath
+         when 'page_settings' then 'strict $.** ? (exists(@.order)).order[*]'::jsonpath
        end
      ) as v
      where jsonb_typeof(d.doc) in ('object', 'array')

@@ -95,6 +95,19 @@ export const ALLOWLIST = [
       'lets the localized ADR-246 cast at the call site go.',
     owner: 'LIVE-386',
   },
+  {
+    file: 'lib/library/usage.ts',
+    kind: 'rpc',
+    table: 'library_asset_usage',
+    column: null,
+    added: '2026-09-21',
+    reason:
+      'PROG-D4 usage index (ADR-1502). The function ships in migration 20270345007500, which is in the ' +
+      'tree and applied by the coordinator at merge, not from the authoring session; the generated ' +
+      'types cannot know it until the next lib/database.types.ts regeneration, which also retires the ' +
+      'localized ADR-246 cast at the call site.',
+    owner: 'PROG-D4',
+  },
   // PROG-CAL2–8. Migration 20270345006700 is in the tree and is not applied from this session
   // (no apply_migration). Types regenerate after merge. Retires on the next lib/database.types.ts pass.
   ...[

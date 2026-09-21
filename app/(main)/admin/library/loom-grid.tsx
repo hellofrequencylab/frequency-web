@@ -43,6 +43,7 @@ import { updateLibraryAssetMeta, archiveLibraryAsset, deleteLibraryAsset } from 
 import { editLoomSvg, saveElementSvg, reviewLoomSvg, type LoomEditMode } from './vera-actions'
 import { RecraftEditRow, AssetVersions } from './recraft-studio'
 import { AssetAvPanel } from './asset-av-panel'
+import { AssetUsagePanel } from './asset-usage-panel'
 import { createBrandStyle } from './recraft-actions'
 import {
   addAssetsToCollection,
@@ -882,6 +883,11 @@ function DetailDrawer({
 
           {/* Media manager (Airwaves P2): replace-file for any file-backed asset + a usage map for A/V. */}
           <AssetAvPanel assetId={asset.id} kind={asset.kind} hasFile={!!asset.url} />
+
+          {/* The usage index (PROG-D4, ADR-1502): which stored block documents place this asset. Every
+              kind, file-backed or not: a Vera-drawn element has a library row and can be picked into a
+              block like any image. */}
+          <AssetUsagePanel assetId={asset.id} />
 
           <label className="block">
             <span className="mb-1 block eyebrow text-subtle">Title</span>
