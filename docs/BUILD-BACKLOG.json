@@ -15613,6 +15613,25 @@
         "evidence": "Owner ruling. No crop/rotate editor exists; CROP_FRAMES has no editor consumer; the dependency measurement is in ADR-1496.",
         "checked": "2026-09-21"
       }
+    },
+    {
+      "id": "LIVE-452",
+      "title": "The entry drawer walks a date through Pencil, Planning, Production, Publish in place of the Stage select",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1504; owner ask 2026-09-21 on the Royal Temple Edit event drawer; ADR-1388 (stages), ADR-1386 invariant 1 (publish only in the Spark)"
+      },
+      "detail": "FILED AND CLOSED 2026-09-21. Owner: \"Instead of a dropdown, let's put a row of timeline buttons that walk them through the process. It starts on the Pencil button and has three other buttons to the right (4 total). Use the buttons to change plan phase. Make sure all info carries over from the fields for each plan.\"\n\nWHAT SHIPPED. components/ui/stage-timeline.tsx, a kit stepper (role=\"group\", real buttons, aria-current=\"step\", check and number glyphs so colour never carries the state alone, buttonGeometry for the tap floor, two columns on a phone), with its colocated state test. lib/calendar/stage-timeline.ts is the pure step model: Pencil, Planning, Production, Publish; Cancelled is an exit and stays a separate \"Cancel this date\" action under the row (with \"Bring it back\" from Cancelled). Steps one to three write `stage` into the same form state the select wrote, so every typed field carries over and the change persists on Save; nothing auto-saves on click. Publish is the \"Make it a Production\" door: it saves first when the drawer holds unsaved edits, then opens the Spark with ?pencil=<entryId> (and ?plan= when the date is on a Plan). A date that is one of several candidates (option_group) cannot leave Pencil, and the row says so in the hint with the action's own sentence (ADR-1388 §3).\n\nWHAT THE PREFILL WAS MISSING. lib/calendar/production-prefill.ts carried title, dates, location and description but not the entry's time_zone; both entries and events store wall-clock as UTC parts with the zone beside them, so a Pencil's 7 pm became 7 pm in the host's home zone. It now carries timeZone, the Spark form submits it, and the create action validates it as before. The Spark also required ?plan= and returned no prefill without one; it now honours ?pencil= alone and reads the row's own plan_id for the link back.\n\nNOT IN THIS ROW. app/(main)/spaces/[slug]/settings/calendar/plan-drawer.tsx has the same shape of Stage select for a Plan and is PR #2830's file; it converts to the same primitive once that PR merges.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/live-452-probe.mjs",
+        "note": "Measures the CONSEQUENCE: the drawer renders the kit stepper and no Stage <select> remains; the pipeline is exactly Pencil, Planning, Production plus Publish and Cancelled is not a step; a step writes the shared form state and does not save on click; the Publish door carries pencil=<entryId>, the Spark honours pencil without a Plan, and the prefill carries title, dates, zone, location and description and never Team notes; Publish saves before it leaves. Mutation-tested against nine regressions on 2026-09-21, all caught."
+      },
+      "notes": "Follow-up once #2830 merges: convert plan-drawer.tsx's Plan stage select to StageTimeline (Plan stages are pencil, plan, production; the same three steps)."
     }
   ]
 }
