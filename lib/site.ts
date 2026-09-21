@@ -1,4 +1,5 @@
 import { headerTriggers, marketingFooterLinks } from "@/lib/nav/registry";
+import { PLAN_STORY } from "@/lib/pricing/plan-story";
 
 // Canonical site URL. Override per-environment with NEXT_PUBLIC_SITE_URL;
 // falls back to the production apex so canonical/sitemap/OG stay correct even if
@@ -39,8 +40,17 @@ export const SITE_NAME = "Frequency";
 // NOT to be confused with "The Community Collective" the TIER LADDER (also ADR-811) — that is a
 // billing surface heading, a different name that keeps its article.
 export const SITE_TAGLINE = "Community Collective";
+// The site description: the <meta> description of `/` (page_content carries no `/` row, so
+// app/page.tsx falls through to this), the Organization and WebSite JSON-LD `description`, and the
+// llms-full.txt header. It used to close on "a small, shrinking network-only take-rate", which is the
+// rate-ladder framing ADR-1350 retired: the reason a business is here is not that the fee goes down.
+// The three lines are READ from the leaf spine (lib/pricing/plan-story.ts, no imports of its own), so
+// this sentence, the home hero and the crawler corpus cannot argue different models (PROG-R8,
+// ADR-1499). Kept under the ~160 characters a search result shows (scripts/check-seo.mjs Scan E).
+// The tagline is unchanged and the two OG `.alt.txt` files carry it; lib/og/root-card.test.ts pins
+// that pairing, which is what CORE-MODEL §5 item 6.2 means by "move together".
 export const SITE_DESCRIPTION =
-  "Frequency is a Community Collective. Everything a community needs, in one place: start a Circle, host Events near you, and grow a Space. You keep 100% of your own bookings; we earn only a small, shrinking network-only take-rate on what the network sends you.";
+  `Frequency is a Community Collective. Start a Circle, host Events, grow a Space. ${PLAN_STORY.lines}`;
 
 // ── Unified site navigation ───────────────────────────────────────────────────
 // One nav, used by every header (the in-app AppShell top bar, the marketing
