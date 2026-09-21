@@ -47239,9 +47239,9 @@ Premise re-tested 2026-09-20: `featureAllowed('space_collaborators', { plan: 'bu
 
 **Rows.** LIVE-439.
 
-## ADR-1492: Space profile documents refresh their asset caches on load, which closes PROG-D2 (PROG-D2)
+## ADR-1495: Space profile documents refresh their asset caches on load, which closes PROG-D2 (PROG-D2)
 
-**Status:** Accepted · 2026-09-21 · backlog `PROG-D2` · numbered **1492** because **1490** is the highest on this tree and **1491** is claimed by the owner sequencing ruling on another PR · completes [ADR-1130](DECISIONS.md) (the AssetField seam) · beside [ADR-1253](DECISIONS.md) (entity-block writers) and [ADR-1436](DECISIONS.md) (column-backed companions)
+**Status:** Accepted · 2026-09-21 · backlog `PROG-D2` · renumbered **1492 → 1495** on 2026-09-21 by the merge coordinator: this entry and the PROG-R4 entry were authored concurrently on separate branches, each correctly saw 1492 as free, and BOTH MERGED — leaving `main` with two ADR-1492 headings and `check:adr` red on the base branch. PROG-R4 merged first and keeps 1492. 1493 and 1494 are claimed by PRs still in flight, so this took 1495 rather than the next free number, to avoid causing the same collision a second time · completes [ADR-1130](DECISIONS.md) (the AssetField seam) · beside [ADR-1253](DECISIONS.md) (entity-block writers) and [ADR-1436](DECISIONS.md) (column-backed companions)
 
 **Context.** ADR-1130 re-shaped PROG-D2 into three parts and shipped two of them. The one control already existed with 16 consumers. The reference half shipped for Puck documents. The backfill was struck on a live-database census that found nothing to backfill. What ADR-1130 left was a three-item remainder, and this pass measured each item against the tree rather than against the row.
 

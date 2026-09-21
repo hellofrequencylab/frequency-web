@@ -156,7 +156,7 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   (`lib/library/resolve-refs.ts`) — fail-open to the cache at every grain, no query at all for a
   ref-free document. 🔴 The refresh decodes nothing and must never import `sharp` (same rule as
   ingest).
-- **A Space profile document refreshes on load too** ([ADR-1492](DECISIONS.md), which closes
+- **A Space profile document refreshes on load too** ([ADR-1495](DECISIONS.md), which closes
   PROG-D2). A Space page body is the same kind of Puck document, picked with the same fields, but
   it lives on `spaces.preferences.pageDocs[slug]` and had no refresh: `resolveSpacePageDoc` is pure
   by contract, so the refresh had nowhere to hang. `lib/spaces/page-doc.ts` is that seam — the
