@@ -197,7 +197,10 @@ export async function EventsSurface({
                       coverUrl={coverUrls[event.id]}
                       coverFocus={coverFocus[event.id]}
                       going={rsvpCounts[event.id] ?? 0}
-                      priceLabel={priceLabels[event.id] ?? 'Free'}
+                      /* `?? 'Free'` stood here and would have turned a WITHHELD price back into a
+                         claim: the loader now passes null for an event whose payee cannot be paid
+                         (EVT-PRICE-HONESTY), and an absent id is the same fail-closed case. */
+                      priceLabel={priceLabels[event.id] ?? null}
                       now={nowDate}
                     />
                   ))}

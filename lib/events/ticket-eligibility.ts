@@ -115,3 +115,35 @@ export function payoutScopeKey(scopeId: string | null | undefined): string {
   if (!scopeId || scopeId === '__public__') return PAYOUT_SCOPE_SELF
   return scopeId.startsWith('space:') ? scopeId.slice('space:'.length) : scopeId
 }
+
+// ── May a BUYER-FACING surface NAME the price? (EVT-PRICE-HONESTY) ─────────────────────────────
+//
+// `canSellTickets` shipped with a doc comment describing exactly this job -- "render-time branching
+// (showing the connect step beside a price control)" -- and ZERO callers in app/ or components/.
+// Everything buyer-facing read the price straight off the row, so the refusal below only ever fired
+// at CHECKOUT CREATION (lib/billing/tickets.ts, `TICKETS_NOT_READY`): the card said $55, the buyer
+// pressed, and the turn-away came after the decision to buy. A stranger seeing a price for an event
+// nobody can be paid for is the worst failure this product has, because it looks like it works.
+//
+// 🔴 THE TEST IS NOT "IS IT PRICED", IT IS "IS THE PRICE AN OFFER". The two modes of ADR-826 answer
+// that differently and collapsing them would break an honest path:
+//
+//   · TICKETS mode -- buying IS attending. The number is an offer to take money through Stripe, so
+//     it may only be shown when the payee can receive it. This is the $55 event (OWN-074).
+//   · RSVP mode -- money changes hands AT THE DOOR and nothing goes through checkout at RSVP time
+//     (LIVE-314). The number is a fact about the event, like the address, and the flow already
+//     says so in words ("Pay the $22 at the door."). Hiding it would delete true information and
+//     re-close the guest door LIVE-314 opened.
+//
+// Fail-closed on the tickets side, through `canSellTickets`, so an unknown payee never gets a price.
+export interface TicketPriceVisibilityContext extends TicketSellerContext {
+  /** Is buying how you attend (ADR-826 'tickets' mode)? False for an RSVP-mode event, whose price
+   *  is collected at the door and is therefore information rather than an offer. */
+  ticketsMode: boolean
+}
+
+/** PURE. May a buyer-facing surface print this event's price, or must it say nothing? */
+export function buyerMaySeePrice(ctx: TicketPriceVisibilityContext): boolean {
+  if (!ctx.ticketsMode) return true
+  return canSellTickets(ctx)
+}

@@ -241,6 +241,21 @@
 # live RLS on `events` carries a restrictive pair (`can_write_space_content` on the root arm) that
 # no ordinary host satisfies, so a session-client update of one column would fail for everyone but
 # platform staff. It writes `plan_id` and nothing else.
+#
+# lib/events/payout-readiness.ts (added 2026-09-21, EVT-PRICE-HONESTY): the BATCHED payout-readiness
+# read behind the buyer-facing price rule. NOT a new RLS bypass in substance: it resolves the same two
+# facts app/(main)/events/admin-actions.ts and lib/billing/tickets.ts already resolve on the service-role
+# client before a sale -- the hosting space's owner (ADR-819) and that profile's mirrored Stripe
+# capability flags -- and it resolves them for a PAGE of events in two reads instead of one pair per
+# card. The bypass is load-bearing on both halves: /events and a Space's card merchandise events across
+# circles the viewer is not a member of (the same case as going-counts.ts and tier-prices.ts above), and
+# profiles.stripe_charges_enabled / stripe_payouts_enabled are not readable under RLS to anyone but the
+# owning profile, so a session-client read returns nothing for exactly the rows the listing exists to
+# merchandise -- and 'nothing' fails closed into 'no price', which would blank the price on every card.
+# It returns ONE BOOLEAN PER EVENT ID and never surfaces an account id, a display name, or which of the
+# two flags is missing: a stranger is never told anything about the host's account state
+# (lib/events/ticket-eligibility.ts). getConnectReadyMap, which does the profiles half, is itself
+# already a service-role read in lib/billing/connect.ts.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -750,6 +765,7 @@ lib/events/host-gate.ts
 lib/events/matching.ts
 lib/events/member-ticket-email.ts
 lib/events/membership-included.ts
+lib/events/payout-readiness.ts
 lib/events/placement.ts
 lib/events/plan-link.ts
 lib/events/poster-media.ts
