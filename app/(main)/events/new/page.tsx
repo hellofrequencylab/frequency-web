@@ -389,24 +389,29 @@ export default async function NewEventPage({
     const pencilId = typeof pencilParam === 'string' ? pencilParam : ''
     const spaceId = typeof spaceParam === 'string' ? spaceParam : ''
     const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    if (!uuid.test(planId) || !uuid.test(spaceId)) return null
-    const plan = await getSpacePlan(spaceId, planId)
-    if (!plan) return null
+    if (!uuid.test(spaceId)) return null
+    const plan = uuid.test(planId) ? await getSpacePlan(spaceId, planId) : null
+    // A `?pencil=` on its own is the entry drawer's Publish step (ADR-1504): a date that was never
+    // put on a Plan still opens the Spark prefilled from the entry. When the row IS on a Plan the
+    // link back is kept even if the URL did not name it.
     if (uuid.test(pencilId)) {
       const entry = await getCalendarEntryRow(spaceId, pencilId)
       if (entry) {
-        const mapped = productionPrefill(plan, entry)
+        const linked = plan ?? (entry.plan_id ? await getSpacePlan(spaceId, entry.plan_id) : null)
+        const mapped = productionPrefill(linked, entry)
         return {
           title: mapped.title,
           description: mapped.description,
           location: mapped.location,
           startsAt: mapped.startsAt,
           endsAt: mapped.endsAt,
-          planId: mapped.planId,
+          timeZone: mapped.timeZone || undefined,
+          planId: mapped.planId || undefined,
           pencilId: mapped.sourceEntryId,
         }
       }
     }
+    if (!plan) return null
     return { title: plan.title, planId: plan.id }
   })()
 
