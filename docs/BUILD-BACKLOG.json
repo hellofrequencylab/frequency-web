@@ -167,7 +167,6 @@
         {
           "name": "W0c · P1/P2 — calendar C2–C5 (ADR-1445) first, then FOCUS remainder, gems, scan cheap-DB, Journey sales tail.",
           "ids": [
-            "HYG-100",
             "LIVE-413",
             "HYG-075",
             "LIVE-335",
@@ -196,7 +195,6 @@
             "PROG-R9",
             "LIVE-260",
             "PROG-R10",
-            "LIVE-263",
             "PROG-R11"
           ]
         },
@@ -208,7 +206,8 @@
           "name": "W2 · foundation first",
           "ids": [
             "DEF-HARDEN",
-            "SCAN-502"
+            "SCAN-502",
+            "HYG-112"
           ]
         },
         {
@@ -289,7 +288,6 @@
             "OWN-040",
             "LIVE-060",
             "OWN-011",
-            "OWN-052",
             "LIVE-127",
             "OWN-059",
             "OWN-060",
@@ -6888,7 +6886,7 @@
     {
       "id": "OWN-052",
       "title": "Confirm the production values of the four feature gates that decide whether shipped features are on",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "XS",
@@ -6896,12 +6894,13 @@
         "file": ".env.example",
         "ref": "ADR-1207"
       },
-      "detail": "Four environment gates turn whole shipped features on or off and their production values are not visible from the repo: NEXT_PUBLIC_SUPPORT_CHAT ('1' mounts the live-chat widget, and it is a BUILD-time flag with no runtime check of CONVERSATION_TOKEN_SECRET, so '1' without the secret 500s the chat token route), SMS_PROVISIONING_ENABLED (Twilio number provisioning for Spaces), CONVERSATION_EMAIL_BRIDGE (inbound email replies into conversations), AI_DISABLED (kills Vera and every generation path). Read each in the Vercel project settings for Production, decide which should be on, and note the four values here so the next scan can compare code defaults against intent. If NEXT_PUBLIC_SUPPORT_CHAT is '1', CONVERSATION_TOKEN_SECRET must also be set. ── ✅ THREE OF THE FOUR ANSWERED 2026-09-05 WITHOUT DASHBOARD ACCESS, by measuring consequences rather than reading env. The row said \"Vercel get_project exposes no env names to an agent\", which is true and was treated as the end of the enquiry; it is not. (1) NEXT_PUBLIC_SUPPORT_CHAT = '1'. Production https://frequencylocal.com/what-is-frequency carries `SupportChatWidget` in its RSC payload with its three client chunks. The three public layouts render it only when `process.env.NEXT_PUBLIC_SUPPORT_CHAT === '1' && isSupportChatAvailable()`, and the flag is build-time inlined, so the widget being in the payload proves the flag. (2) AND IT RESOLVES THIS ROW'S OWN HAZARD: isSupportChatAvailable() is `CRM_INBOX_OWNER_PROFILE_ID set && chatSigningAvailable()` (lib/comms/chat-token.ts:38), so the same observation proves CONVERSATION_TOKEN_SECRET *is* set and CRM_INBOX_OWNER_PROFILE_ID is populated. The row warned \"'1' without the secret 500s the chat token route\" — that combination is NOT live. (3) AI_DISABLED is OFF: ai_usage holds 1,339 rows, 99 of them in the last 7 days, most recent 2026-09-05 13:00:40Z, so generation is running. ⚠️ ONE GATE REMAINS UNMEASURED, and it is the least urgent: SMS_PROVISIONING_ENABLED leaves NO database trace (no twilio/number column exists on any table — only notification_preferences.sms_* member preferences and event_dispatches.to_sms), so nothing here can see it. Texting is one of the three programs the owner explicitly deferred (slate ruling 2026-08-20), so the expected value is off and a surprise would be it being on. CONVERSATION_EMAIL_BRIDGE is also unmeasured, but note inbound email HAS worked (4 inbound comms_messages, 2026-07-24/25), which needs inbound receiving live and is a weaker condition than the bridge.\n\n── OWNER-GATE RE-TESTED 2026-09-07 (the 26-row triage). THE FOURTH GATE IS ANSWERED BY CONSEQUENCE, so the reading is bookkeeping rather than a blocker. CONVERSATION_EMAIL_BRIDGE is INERT whatever its value: ADR-814 requires MX on reply.frequencylocal.com, and pnpm check:mail-dns reports \"reply.frequencylocal.com not verified, NO MX\" today. SMS likewise - evaluateSmsGate refuses on platformEnabled first, and production platform_flags.sms_enabled is false. All four gates now have answers; what remains is writing the literal env strings down, which no longer gates anything.\n\n── RE-TESTED 2026-09-07, and the audit's \"both inert, close it\" is NOT supported. Both variables are read by live code: SMS_PROVISIONING_ENABLED at lib/comms/sms.ts:111 and app/(main)/admin/sms/page.tsx:89, CONVERSATION_EMAIL_BRIDGE at lib/comms/inbound.ts:454. What IS true is that the SMS half cannot matter yet — SMS needs A2P 10DLC registration, which is unfiled (DEF-A2P), so whatever SMS_PROVISIONING_ENABLED reads, no message sends. That halves the row without closing it. What remains is one value: whether CONVERSATION_EMAIL_BRIDGE is on in production, which decides whether an inbound reply reaches a conversation or is dropped silently.",
+      "detail": "Four environment gates turn whole shipped features on or off and their production values are not visible from the repo: NEXT_PUBLIC_SUPPORT_CHAT ('1' mounts the live-chat widget, and it is a BUILD-time flag with no runtime check of CONVERSATION_TOKEN_SECRET, so '1' without the secret 500s the chat token route), SMS_PROVISIONING_ENABLED (Twilio number provisioning for Spaces), CONVERSATION_EMAIL_BRIDGE (inbound email replies into conversations), AI_DISABLED (kills Vera and every generation path). Read each in the Vercel project settings for Production, decide which should be on, and note the four values here so the next scan can compare code defaults against intent. If NEXT_PUBLIC_SUPPORT_CHAT is '1', CONVERSATION_TOKEN_SECRET must also be set. ── ✅ THREE OF THE FOUR ANSWERED 2026-09-05 WITHOUT DASHBOARD ACCESS, by measuring consequences rather than reading env. The row said \"Vercel get_project exposes no env names to an agent\", which is true and was treated as the end of the enquiry; it is not. (1) NEXT_PUBLIC_SUPPORT_CHAT = '1'. Production https://frequencylocal.com/what-is-frequency carries `SupportChatWidget` in its RSC payload with its three client chunks. The three public layouts render it only when `process.env.NEXT_PUBLIC_SUPPORT_CHAT === '1' && isSupportChatAvailable()`, and the flag is build-time inlined, so the widget being in the payload proves the flag. (2) AND IT RESOLVES THIS ROW'S OWN HAZARD: isSupportChatAvailable() is `CRM_INBOX_OWNER_PROFILE_ID set && chatSigningAvailable()` (lib/comms/chat-token.ts:38), so the same observation proves CONVERSATION_TOKEN_SECRET *is* set and CRM_INBOX_OWNER_PROFILE_ID is populated. The row warned \"'1' without the secret 500s the chat token route\" — that combination is NOT live. (3) AI_DISABLED is OFF: ai_usage holds 1,339 rows, 99 of them in the last 7 days, most recent 2026-09-05 13:00:40Z, so generation is running. ⚠️ ONE GATE REMAINS UNMEASURED, and it is the least urgent: SMS_PROVISIONING_ENABLED leaves NO database trace (no twilio/number column exists on any table — only notification_preferences.sms_* member preferences and event_dispatches.to_sms), so nothing here can see it. Texting is one of the three programs the owner explicitly deferred (slate ruling 2026-08-20), so the expected value is off and a surprise would be it being on. CONVERSATION_EMAIL_BRIDGE is also unmeasured, but note inbound email HAS worked (4 inbound comms_messages, 2026-07-24/25), which needs inbound receiving live and is a weaker condition than the bridge.\n\n── OWNER-GATE RE-TESTED 2026-09-07 (the 26-row triage). THE FOURTH GATE IS ANSWERED BY CONSEQUENCE, so the reading is bookkeeping rather than a blocker. CONVERSATION_EMAIL_BRIDGE is INERT whatever its value: ADR-814 requires MX on reply.frequencylocal.com, and pnpm check:mail-dns reports \"reply.frequencylocal.com not verified, NO MX\" today. SMS likewise - evaluateSmsGate refuses on platformEnabled first, and production platform_flags.sms_enabled is false. All four gates now have answers; what remains is writing the literal env strings down, which no longer gates anything.\n\n── RE-TESTED 2026-09-07, and the audit's \"both inert, close it\" is NOT supported. Both variables are read by live code: SMS_PROVISIONING_ENABLED at lib/comms/sms.ts:111 and app/(main)/admin/sms/page.tsx:89, CONVERSATION_EMAIL_BRIDGE at lib/comms/inbound.ts:454. What IS true is that the SMS half cannot matter yet — SMS needs A2P 10DLC registration, which is unfiled (DEF-A2P), so whatever SMS_PROVISIONING_ENABLED reads, no message sends. That halves the row without closing it. What remains is one value: whether CONVERSATION_EMAIL_BRIDGE is on in production, which decides whether an inbound reply reaches a conversation or is dropped silently.\n\n── CLOSED 2026-09-21. Read-only evidence pass against the Vercel project (prj_k6ayYRhJOvJnl2n3FiZMgQpwp9ZN) and production Supabase (azsqfeonabsbmemvddqd); nothing was written. THE FOUR LITERAL STATES. (1) CONVERSATION_EMAIL_BRIDGE: present in Vercel as a sensitive variable targeting preview and production, created 2026-07-25; its value is unreadable by design. lib/comms/inbound.ts:452 (emailBridgeEnabled) treats only the strings 1, true or on as on, and whichever it holds the bridge is inert, because reply.frequencylocal.com has no MX (the 2026-09-07 note above, ADR-814). (2) SMS_PROVISIONING_ENABLED: NOT set in any target. lib/comms/sms.ts:111 (isSmsProvisioned) needs === true, so provisioning is off; and platform_flags.sms_enabled = false (read 2026-09-05) refuses the send path before the env is consulted. (3) AI_DISABLED: absent, so AI is on (lib/ai/client.ts:66 switches off only on the string 1). (4) NEXT_PUBLIC_SUPPORT_CHAT: present, with both secrets it needs (CONVERSATION_TOKEN_SECRET, CRM_INBOX_OWNER_PROFILE_ID), which the 2026-09-05 RSC-payload observation had already proved by consequence. Code defaults and intent agree on all four: chat on, AI on, SMS off, bridge dormant. The probe stays manual: a node probe cannot read Vercel, and a probe that cannot look must not pretend to (ADR-970). This is an evidence close, not a decision; no ADR was written.",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-07: SupportChatWidget in the production RSC payload proves NEXT_PUBLIC_SUPPORT_CHAT and its two secrets are set; ai_usage rows prove AI_DISABLED is off; SMS_PROVISIONING_ENABLED cannot matter while A2P 10DLC is unfiled (DEF-A2P). Closes when CONVERSATION_EMAIL_BRIDGE's production value is recorded — or, better, when an inbound reply is shown landing in a conversation, which measures it by consequence.",
-        "checked": "2026-09-07"
-      }
+        "evidence": "2026-09-21 read-only pass, Vercel prj_k6ayYRhJOvJnl2n3FiZMgQpwp9ZN and production Supabase azsqfeonabsbmemvddqd. CONVERSATION_EMAIL_BRIDGE = present (sensitive, preview+production, created 2026-07-25, value unreadable by design; on only for 1/true/on at lib/comms/inbound.ts:452; inert regardless, reply.frequencylocal.com has no MX). SMS_PROVISIONING_ENABLED = not set in any target (lib/comms/sms.ts:111 needs === true, so off; platform_flags.sms_enabled = false). AI_DISABLED = absent (AI on). NEXT_PUBLIC_SUPPORT_CHAT = present with CONVERSATION_TOKEN_SECRET and CRM_INBOX_OWNER_PROFILE_ID (proven by consequence 2026-09-05). To re-check, read the four names in the Vercel project env list; a repo probe cannot see them.",
+        "checked": "2026-09-21"
+      },
+      "closed": "2026-09-21"
     },
     {
       "id": "OWN-053",
@@ -11543,8 +11542,8 @@
     },
     {
       "id": "LIVE-263",
-      "title": "Nightly space_standing rollup",
-      "status": "open",
+      "title": "Nightly space_standing rollup on the Vercel refresh-traits cron",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
@@ -11552,13 +11551,13 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "CODE IS IN THE TREE (2026-09-09); the remaining step is applying the migration. lib/spaces/standing-rollup.ts computes all six signals for every active non-root Space in six grouped reads and upserts them plus the resolved score; it runs on the nightly refresh-traits cron beside the density rollup, and reports failures the way lib/resonance/density.ts had to be taught to (an error message, logged at error level, never a silent 'wrote nothing'). The table is supabase/migrations/20270345002900_space_standing.sql: additive, idempotent, service-role only, six earned counts and a score, no commercial column.\n\nTHE ATTENDANCE GAP, handled in the open rather than quietly: event attendance has no independent record (no checked_in column; it exists only as an engagement-ledger row written by the path that pays Zaps, so 'attended' and 'was paid for attending' are the same fact). It is therefore NOT a signal and NOT a zero-weighted one. gatherings_held counts gatherings that happened, which the data can stand behind. The score renormalises over the signals present, so adding attendance later re-scores everyone at once and changes no existing weight. Said in the module header, the migration comment, the operator receipt page, and pinned by a test.\n\nOWNER ACTION (config): apply supabase/migrations/20270345002900_space_standing.sql and repair the ledger (supabase/migrations/README.md, the two-step protocol), then confirm the next nightly refresh-traits run logs cron.refresh_space_standing with a non-zero spaces count. Until then the directory runs on the v0 subset BY DESIGN: an unreadable or empty space_standing means two signals were not measured, and the score renormalises over the four that were.",
+      "detail": "CODE IS IN THE TREE (2026-09-09); the remaining step is applying the migration. lib/spaces/standing-rollup.ts computes all six signals for every active non-root Space in six grouped reads and upserts them plus the resolved score; it runs on the nightly refresh-traits cron beside the density rollup, and reports failures the way lib/resonance/density.ts had to be taught to (an error message, logged at error level, never a silent 'wrote nothing'). The table is supabase/migrations/20270345002900_space_standing.sql: additive, idempotent, service-role only, six earned counts and a score, no commercial column.\n\nTHE ATTENDANCE GAP, handled in the open rather than quietly: event attendance has no independent record (no checked_in column; it exists only as an engagement-ledger row written by the path that pays Zaps, so 'attended' and 'was paid for attending' are the same fact). It is therefore NOT a signal and NOT a zero-weighted one. gatherings_held counts gatherings that happened, which the data can stand behind. The score renormalises over the signals present, so adding attendance later re-scores everyone at once and changes no existing weight. Said in the module header, the migration comment, the operator receipt page, and pinned by a test.\n\nOWNER ACTION (config): apply supabase/migrations/20270345002900_space_standing.sql and repair the ledger (supabase/migrations/README.md, the two-step protocol), then confirm the next nightly refresh-traits run logs cron.refresh_space_standing with a non-zero spaces count. Until then the directory runs on the v0 subset BY DESIGN: an unreadable or empty space_standing means two signals were not measured, and the score renormalises over the four that were.\n\n── CLOSED 2026-09-21. Read-only evidence pass against production Supabase (azsqfeonabsbmemvddqd), SQL only. count(*) public.space_standing = 26 against public.spaces = 27 (the rollup scores active non-root Spaces only, so one row fewer than the table is the expected shape; which Space is excluded was not read). Every row has standing_score > 0. computed_at min = max = 2026-09-21 02:31:05Z: one pass wrote the whole set, and the time is 02:30 UTC plus the run. That matches vercel.json, which schedules /api/cron/refresh-traits at 30 2 * * *, and the route calls refreshSpaceStanding() as its last step.\n\nCORRECTION TO THE RECORD: THE SCHEDULE IS VERCEL CRON, NOT POSTGRES. There is no pg_cron in production (cron.job does not exist; the only extension installed is postgis). The string cron.refresh_space_standing in the paragraphs above is a log event label in app/api/cron/refresh-traits/route.ts (log.info on success, cron.refresh_space_standing.failed on error), not a pg_cron job name. The title now names the real scheduler. The migration path above is also stale: 20270345002900 was never a file in this tree; the table has been supabase/migrations/20270345003100_space_standing.sql since it first landed, and the same stale number in the header comment of lib/spaces/standing-rollup.ts is corrected in this pass.\n\nWHAT THE SIGNAL LIST DOES NOT INCLUDE, from the code. lib/spaces/standing.ts declares STANDING_SIGNALS as gatherings, upcoming, rooms, audience, commons, care (six), and the rollup writes gatherings_held, upcoming_gatherings, rooms, audience, commons, care, standing_score, computed_at. Attendance is absent, and the module says why: whether anyone actually turned up to a gathering has no independent record on this platform; there is no checked_in column, and the only trace is an engagement-ledger row written by the path that pays Zaps, which means attended and was paid for attending are the same fact and neither can be read for a Space that does not run Zaps; weighting it would be inventing data. gatherings_held counts gatherings that happened (published, not cancelled, started inside the trailing 365 days), which the data can stand behind. lib/spaces/standing.test.ts pins it (STANDING_SIGNALS must not contain attendance, and the source must not mention it). The day an independent attendance record exists it becomes a seventh signal and every Space re-scores at once; the weights renormalise over the signals present, so none has to change.\n\nTHE PROBE IS NOW A CMD: vercel.json must still schedule refresh-traits on a five-field cron, the route must still import and await refreshSpaceStanding, and the rollup must still upsert space_standing. It cannot see the production row count; that number is this dated read. Evidence close, not a decision; no ADR was written.",
       "verify": {
-        "kind": "manual",
-        "evidence": "space_standing is non-empty and refreshes nightly (cron.refresh_space_standing, spaces > 0). The signal list names what it does NOT include: attendance, and why.",
-        "checked": "2026-09-09"
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(\"LIVE-263 FAILED: \"+m);process.exit(1)};const V=\"vercel.json\",R=\"app/api/cron/refresh-traits/route.ts\",M=\"lib/spaces/standing-rollup.ts\";if(!fs.existsSync(V))process.exit(79);for(const f of [R,M])if(!fs.existsSync(f))fail(f+\" is gone\");const crons=JSON.parse(fs.readFileSync(V,\"utf8\")).crons||[];const c=crons.find((x)=>x&&x.path===\"/api/cron/refresh-traits\");if(!c)fail(\"vercel.json no longer schedules /api/cron/refresh-traits\");if(!/^\\S+ \\S+ \\S+ \\S+ \\S+$/.test(String(c.schedule||\"\")))fail(\"refresh-traits has no five-field cron schedule: \"+c.schedule);const strip=(s)=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\"\").replace(/\\/\\/.*$/gm,\"\");const r=strip(fs.readFileSync(R,\"utf8\"));if(!/import\\s*\\{[^}]*\\brefreshSpaceStanding\\b[^}]*\\}\\s*from\\s*[\"\\x27]@\\/lib\\/spaces\\/standing-rollup[\"\\x27]/.test(r))fail(\"route no longer imports refreshSpaceStanding from lib/spaces/standing-rollup\");if(!/await\\s+refreshSpaceStanding\\s*\\(/.test(r))fail(\"route no longer awaits refreshSpaceStanding()\");const m=strip(fs.readFileSync(M,\"utf8\"));if(!/\\.from\\s*\\(\\s*[\"\\x27]space_standing[\"\\x27]\\s*\\)\\s*\\.upsert\\s*\\(/.test(m))fail(\"rollup no longer upserts space_standing\")'",
+        "note": "Measures the consequence in the tree: vercel.json still schedules /api/cron/refresh-traits on a five-field cron, the route still imports and awaits refreshSpaceStanding (comments stripped), and lib/spaces/standing-rollup.ts still upserts space_standing. Exits 79 only when vercel.json cannot be read; a missing route or rollup module is a failure, not indeterminacy. The production row count is the dated read in the detail."
       },
-      "ownerAction": "config"
+      "closed": "2026-09-21"
     },
     {
       "id": "LIVE-264",
@@ -14620,22 +14619,22 @@
     },
     {
       "id": "HYG-100",
-      "title": "RLS deny policies on money, trust, and Vera tables — confirm they fail closed",
-      "status": "open",
+      "title": "RLS deny policies on money, trust, and Vera tables: confirm they fail closed",
+      "status": "done",
       "priority": "P2",
       "lane": "hygiene",
       "size": "M",
-      "ownerAction": "account",
       "source": {
         "file": "docs/OPEN-THREADS.md",
         "ref": "2026-09-18 survey security; A6 spatial_ref_sys is skip"
       },
-      "detail": "FILED 2026-09-19. Audit medium: prove RLS deny on money/trust/Vera. Do NOT add an \"enable RLS on spatial_ref_sys\" row — OPEN-THREADS A6 already says skip (PostGIS system table). Manual because a real deny needs a role that is not service_role against production or a local stack.",
+      "detail": "FILED 2026-09-19. Audit medium: prove RLS deny on money/trust/Vera. Do NOT add an \"enable RLS on spatial_ref_sys\" row — OPEN-THREADS A6 already says skip (PostGIS system table). Manual because a real deny needs a role that is not service_role against production or a local stack.\n\n── CLOSED 2026-09-21. Dated read against production Supabase (azsqfeonabsbmemvddqd), SQL only, nothing written. RLS is enabled on financial_transactions, trust_scores, trust_signals, vera_config, vera_dispatches, vera_autonomy_decisions, zap_transactions, and ai_usage. THE GRANT LAYER REFUSES FIRST ON FIVE: financial_transactions, trust_scores, trust_signals, vera_config and vera_autonomy_decisions hold no grants to anon or authenticated, so set local role anon; select count(*) and the same under authenticated fail with 42501 permission denied on all five before RLS is consulted. THE OTHER TWO FALL THROUGH TO RLS AND IT HOLDS: vera_dispatches carries one SELECT policy (vera_dispatches: read own, roles public) and zap_transactions one SELECT policy (read own or host reads all); under both roles each returns 0 rows where the service role sees 7 and 349. No INSERT, UPDATE or DELETE policy exists on any table in the set, so a write from either role is refused by RLS. spatial_ref_sys was not touched (OPEN-THREADS A6, PostGIS system table). The hardening note is filed as HYG-112: the two tables that rely on RLS alone still carry the schema default blanket grants, and revoking them makes the grant layer refuse first, the way it already does for the other five. Evidence close, not a decision; no ADR was written.",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-19: not re-run this session. Closes when a dated SQL or pgTAP read shows anon/authenticated cannot select/insert the named money, trust_scores, and Vera tables, and spatial_ref_sys is left alone.",
-        "checked": "2026-09-19"
-      }
+        "evidence": "2026-09-21 SQL read, production azsqfeonabsbmemvddqd: RLS on for financial_transactions, trust_scores, trust_signals, vera_config, vera_dispatches, vera_autonomy_decisions, zap_transactions, ai_usage. Under set local role anon and under authenticated, select count(*) fails 42501 on financial_transactions, trust_scores, trust_signals, vera_config, vera_autonomy_decisions (no grants), and returns 0 rows on vera_dispatches and zap_transactions (SELECT-only policies; service role sees 7 and 349). No INSERT/UPDATE/DELETE policies on any of them. spatial_ref_sys untouched. Re-run the same statements to re-check; a repo probe cannot reach the database. Follow-up hardening is HYG-112.",
+        "checked": "2026-09-21"
+      },
+      "closed": "2026-09-21"
     },
     {
       "id": "HYG-101",
@@ -15699,6 +15698,24 @@
         "note": "Measures the consequence. Every DETAIL_HERO_DEFAULTS prefix resolves to a live route directory, and a tier-detail module on disk has a real page importing it. Comments do not count. Exits 79 when the map cannot be read."
       },
       "closed": "2026-09-21"
+    },
+    {
+      "id": "HYG-112",
+      "title": "vera_dispatches and zap_transactions carry blanket anon/authenticated grants and rely on RLS alone; revoke the default grants so the grant layer refuses first",
+      "status": "open",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "supabase/migrations/20260615000000_on_air.sql",
+        "ref": "HYG-100 evidence read 2026-09-21; zap_transactions is supabase/migrations/20260607040000_zap_ledger_and_recategorize.sql"
+      },
+      "detail": "FILED 2026-09-21 out of HYG-100's close. Of the eight money, trust and Vera tables that read checked, five (financial_transactions, trust_scores, trust_signals, vera_config, vera_autonomy_decisions) hold no grants to anon or authenticated, so a direct read fails at the grant layer with 42501 before RLS is consulted. Two do not: vera_dispatches (migration 20260615000000_on_air.sql) and zap_transactions (migration 20260607040000_zap_ledger_and_recategorize.sql) were created with the schema default blanket grants and one SELECT policy each, so a read from anon or authenticated reaches RLS and returns 0 rows instead of being refused. That is closed today, and it is one layer thin: a future permissive policy, or an edit that widens a USING clause, would expose ledger or dispatch rows with nothing in front of it.\n\nWHAT TO DO: one additive migration in house style. vera_dispatches: revoke all on table public.vera_dispatches from anon, authenticated. Every reader found under lib/ and app/ (lib/vera-dispatch.ts, app/api/zap-prompt/route.ts) uses createAdminClient, so nothing needs re-granting and the read own policy becomes dead but harmless. zap_transactions: revoke all on table public.zap_transactions from anon, authenticated, then grant select on table public.zap_transactions to authenticated, because lib/economy/ledger.ts:59 reads the ledger through the session client (role authenticated) and the read own or host reads all policy is the row filter that read depends on. Writes already go through the admin client only (lib/zaps.ts, app/(main)/admin/members/economy-actions.ts, lib/events/event-drafts.ts, app/join/(induction)/actions.ts). Draft-and-approve: apply_migration is owner-gated (meta.slate.metaScanCleanup.forbidden), so the PR carries the file and the owner applies it. Do not touch spatial_ref_sys.\n\nSits in W2 beside DEF-HARDEN because it is the same class of work: foundation hardening with no member-facing consequence today (RLS holds), which is also why it is P3.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const D=\"supabase/migrations\";if(!fs.existsSync(D))process.exit(79);const strip=(s)=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\"\").replace(/--.*$/gm,\"\");const sql=fs.readdirSync(D).filter((f)=>f.endsWith(\".sql\")).map((f)=>strip(fs.readFileSync(D+\"/\"+f,\"utf8\"))).join(\"\\n\");const missing=[];for(const t of [\"vera_dispatches\",\"zap_transactions\"]){for(const role of [\"anon\",\"authenticated\"]){const re=new RegExp(\"revoke\\\\s+all(\\\\s+privileges)?\\\\s+on\\\\s+(table\\\\s+)?(public\\\\.)?\"+t+\"\\\\s+from\\\\s+[^;]*\\\\b\"+role+\"\\\\b\",\"i\");if(!re.test(sql))missing.push(t+\" from \"+role)}}if(missing.length){console.error(\"HYG-112 NOT DONE: no migration revokes \"+missing.join(\", \"));process.exit(1)}'",
+        "note": "Measures the consequence: some migration under supabase/migrations revokes all on each of the two tables from both anon and authenticated (SQL comments stripped, schema prefix and the privileges keyword optional). Fails today, which is correct for an open row; passes once the migration lands. Exits 79 when the migrations directory cannot be read."
+      }
     }
   ]
 }

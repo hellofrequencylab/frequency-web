@@ -1,6 +1,6 @@
 // SPACE STANDING, the nightly rollup (LIVE-263 - docs/CORE-MODEL.md Phase 10). The v1 half of the
 // earned-exposure score: once a night, compute all six signals for every active Space and write
-// them, plus the resolved score, to `space_standing` (migration 20270345002900).
+// them, plus the resolved score, to `space_standing` (migration 20270345003100).
 //
 // WHY A ROLLUP AT ALL. The directory can afford three grouped counts per page render (that is v0,
 // LIVE-262, and it still runs live so the freshest numbers win). It cannot afford to scan every
