@@ -1,5 +1,5 @@
 import type { CalendarEvent } from './item'
-import { entryStage } from './registry'
+import { entryStage, type EntryStageDef, type EntryStageTone } from './registry'
 
 // THE ADMIN OPERATOR LIST (ADR-1445 C1–C4, ADR-1450, ADR-1454, ADR-1458, ADR-1456).
 // pencilLane is C2. planningLane is C3. productionLane is C4. Cancelled stays on
@@ -18,12 +18,23 @@ function isStaffOnlyNoise(ev: CalendarEvent): boolean {
   return ev.layer === 'private' || ev.layer === 'unavailable'
 }
 
-export function operatorStageLabel(ev: CalendarEvent): string {
+/** The stage an operator row is in. A staged entry says so itself; a published event is Production
+ *  unless it is cancelled; a draft event has no stage yet (null). */
+export function operatorStage(ev: CalendarEvent): EntryStageDef | null {
   const staged = entryStage(ev.stage)
-  if (staged) return staged.label
-  if (ev.isCancelled) return 'Cancelled'
-  if (ev.statusLabel === 'Draft') return 'Draft'
-  return 'Production'
+  if (staged) return staged
+  if (ev.isCancelled) return entryStage('cancelled')
+  if (ev.statusLabel === 'Draft') return null
+  return entryStage('production')
+}
+
+export function operatorStageLabel(ev: CalendarEvent): string {
+  return operatorStage(ev)?.label ?? 'Draft'
+}
+
+/** The tone of the badge that says the row's stage word, from the registry, never from the label. */
+export function operatorStageTone(ev: CalendarEvent): EntryStageTone {
+  return operatorStage(ev)?.badgeTone ?? 'neutral'
 }
 
 export function operatorListHref(ev: CalendarEvent): string | null {
