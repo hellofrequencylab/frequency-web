@@ -12,6 +12,8 @@ import type { CrmTask } from '@/lib/crm/tasks'
 import {
   acceptVeraChecklist,
   addPlanTodo,
+  attachEventToPlan,
+  listPlanLinkableEvents,
   listPlanTodos,
   planReadiness,
   runPlanAgain,
@@ -50,6 +52,10 @@ export function PlanDrawer({
   const [error, setError] = useState<string | null>(null)
   const [proposal, setProposal] = useState<VeraPlanProposal | null>(null)
   const [guestSpaceId, setGuestSpaceId] = useState('')
+  const [linkableEvents, setLinkableEvents] = useState<
+    { id: string; title: string; whenLabel: string; planId: string | null }[]
+  >([])
+  const [linkEventId, setLinkEventId] = useState('')
   const planKey = plan?.id ?? ''
   const [syncedKey, setSyncedKey] = useState(planKey)
   if (planKey !== syncedKey) {
@@ -65,6 +71,8 @@ export function PlanDrawer({
     setHref(null)
     setError(null)
     setGuestSpaceId('')
+    setLinkableEvents([])
+    setLinkEventId('')
   }
 
   useEffect(() => {
@@ -82,6 +90,13 @@ export function PlanDrawer({
       setGaps(r.gaps)
       setHref(r.href)
     })
+    listPlanLinkableEvents(slug)
+      .then((next) => {
+        if (live) setLinkableEvents(next)
+      })
+      .catch(() => {
+        if (live) setLinkableEvents([])
+      })
     return () => {
       live = false
     }
@@ -202,6 +217,53 @@ export function PlanDrawer({
               }
             >
               Add
+            </Button>
+          </div>
+        </div>
+
+        {/* THE REPAIR DOOR (PROG-CAL3). `plan_id` was create-only: `updateEvent` never touched it and
+            nothing could put an event back on its Plan, so one wrong link could only be fixed in
+            SQL. An event that is already on another Plan is offered too, labelled, because moving
+            one is the same repair. */}
+        <div className="grid gap-1">
+          <label htmlFor="plan-link-event" className={labelClasses}>
+            Link an event already on the calendar
+          </label>
+          <div className="flex gap-2">
+            <Select
+              id="plan-link-event"
+              value={linkEventId}
+              options={[
+                { value: '', label: 'Pick an event' },
+                ...linkableEvents.map((ev) => ({
+                  value: ev.id,
+                  label:
+                    ev.planId && ev.planId !== plan.id
+                      ? `${ev.whenLabel} · ${ev.title} (on another Plan)`
+                      : `${ev.whenLabel} · ${ev.title}`,
+                })),
+              ]}
+              onChange={(e) => setLinkEventId(e.target.value)}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              disabled={pending || !linkEventId}
+              onClick={() =>
+                start(async () => {
+                  const res = await attachEventToPlan(slug, plan.id, linkEventId)
+                  if (isError(res)) setError(res.error)
+                  else {
+                    setLinkEventId('')
+                    const r = await planReadiness(slug, plan.id, entryId ?? null)
+                    setGaps(r.gaps)
+                    setHref(r.href)
+                  }
+                })
+              }
+            >
+              Link it
             </Button>
           </div>
         </div>
