@@ -613,6 +613,15 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
   **Collective** ($79) ·
   **Non Profit** ($39) · **Independent** (white-label, ~$249). "Business" and "Non Profit" remain the two
   space *designators* (the public chip); **Collective** and **Independent** are the higher space tiers.
+  - 🔴 **AMENDED ([ADR-1294](DECISIONS.md), [ADR-1438](DECISIONS.md), September 2026): the ladder above is
+    history, not the live set.** **Collective is no longer a plan**: it merged into Business, and Business
+    rose from $29 to $49 with two operator seats. The public Space ladder is **Free · Business · Non
+    Profit** (`ADVERTISED_SPACE_PLANS`, `lib/pricing/display.ts`). **Independent is kept and hand-sold**,
+    never on a public pricing surface (LIVE-227). The brand is still a Community Collective; "the
+    Collective plan" is a retired tier name and no member copy ships it. The commercial law is three lines,
+    [CORE-MODEL.md](CORE-MODEL.md) §1: people join free, businesses host free, you pay when you start
+    charging. Prices are read from the catalog, never typed into copy (ADR-916); the figures in this bullet
+    are the record of a decision, not a source.
 - **Crew's price is "contribute what you want", never "pay what you want"** (owner ruling 2026-08-19,
   [ADR-1084](DECISIONS.md)). The owner's frame: *"I want membership fully accessible, with people
   wanting to contribute. Businesses fund the core of the memberships."* Membership is not the revenue
