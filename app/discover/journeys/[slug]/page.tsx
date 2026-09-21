@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
 import { getPublicJourney, listPublicJourneys } from '@/lib/journey-plans'
 import { readJourneyOutcomes } from '@/lib/journeys/outcomes'
+import { readJourneyGuarantee } from '@/lib/journeys/guarantee'
+import { JourneyGuaranteeBlock } from '@/components/journey/guarantee-block'
 import { getPillars, pillarsById } from '@/lib/pillars'
 import {
   DiscoveryBlocks,
@@ -281,6 +283,11 @@ export default async function DiscoverJourneyPage({
               />
             )}
             <JourneyFaq plan={plan} />
+
+            {/* The refund promise (LIVE-441), last before the CTA: the same block the product
+                sales body renders, reaching the buyer who lands on the Journey itself. Empty
+                unless the host wrote one. */}
+            <JourneyGuaranteeBlock guarantee={readJourneyGuarantee(plan.page_config)} />
 
             {/* The closing CTA, in the same two registers. The free copy is untouched; the paid copy
                 says what it costs and what enrolling buys, and never the word free. */}
