@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input, Textarea, labelClasses } from '@/components/ui/field'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { PLAN_STAGES, PLAN_TARGETS, planTargetDef, type SpacePlan } from '@/lib/calendar/plans'
@@ -16,6 +17,7 @@ import {
   planReadiness,
   runPlanAgain,
   saveSpacePlan,
+  setPlanTodoDone,
   sharePlanWithSpace,
   veraPlanProposal,
 } from './plan-actions'
@@ -88,6 +90,27 @@ export function PlanDrawer({
   }, [open, plan, slug, entryId])
 
   if (!plan) return null
+
+  // One place both halves of the to-do list re-read from: the readiness bar counts OPEN to-dos, so
+  // ticking one off has to move the bar in the same pass or the drawer would still say what is
+  // missing after the person fixed it.
+  const refresh = async (planId: string) => {
+    setTodos(await listPlanTodos(slug, planId))
+    const next = await planReadiness(slug, planId, entryId ?? null)
+    setGaps(next.gaps)
+    setHref(next.href)
+  }
+
+  const toggleTodo = (todoId: string, done: boolean) => {
+    if (!plan) return
+    setError(null)
+    setTodos((cur) => cur.map((t) => (t.id === todoId ? { ...t, status: done ? 'done' : 'open' } : t)))
+    start(async () => {
+      const res = await setPlanTodoDone(slug, plan.id, todoId, done)
+      if (isError(res)) setError(res.error)
+      await refresh(plan.id)
+    })
+  }
 
   const save = (e: FormEvent) => {
     e.preventDefault()
@@ -174,8 +197,17 @@ export function PlanDrawer({
           <ul className="space-y-1 text-body-sm text-text">
             {todos.map((t) => (
               <li key={t.id}>
-                {t.title}
-                {t.dueAt ? ` · ${t.dueAt.slice(0, 10)}` : ''}
+                <Checkbox
+                  checked={t.status === 'done'}
+                  disabled={pending}
+                  onChange={(e) => toggleTodo(t.id, e.target.checked)}
+                  label={
+                    <span className={t.status === 'done' ? 'text-muted line-through' : undefined}>
+                      {t.title}
+                      {t.dueAt ? ` · ${t.dueAt.slice(0, 10)}` : ''}
+                    </span>
+                  }
+                />
               </li>
             ))}
           </ul>
@@ -194,9 +226,10 @@ export function PlanDrawer({
               onClick={() =>
                 start(async () => {
                   const res = await addPlanTodo(slug, plan.id, todoTitle)
-                  if (!isError(res)) {
+                  if (isError(res)) setError(res.error)
+                  else {
                     setTodoTitle('')
-                    setTodos(await listPlanTodos(slug, plan.id))
+                    await refresh(plan.id)
                   }
                 })
               }
@@ -257,9 +290,10 @@ export function PlanDrawer({
               className="mt-2"
               onClick={() =>
                 start(async () => {
-                  await acceptVeraChecklist(slug, plan.id, proposal.checklist)
+                  const res = await acceptVeraChecklist(slug, plan.id, proposal.checklist)
+                  if (isError(res)) setError(res.error)
                   setProposal(null)
-                  setTodos(await listPlanTodos(slug, plan.id))
+                  await refresh(plan.id)
                 })
               }
             >

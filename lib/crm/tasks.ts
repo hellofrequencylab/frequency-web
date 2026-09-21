@@ -279,6 +279,23 @@ export async function createTask(input: CreateTaskInput, spaceId?: string | null
   }
 }
 
+/** The column patch one status move writes. Pure, so the shape is testable without a client:
+ *  an unknown status or an unparseable `dueAt` yields null / no due column rather than a write. */
+export function taskStatusPatch(
+  status: TaskStatus,
+  opts: { dueAt?: string | null; now?: number } = {},
+): Record<string, unknown> | null {
+  if (!TASK_STATUSES.includes(status)) return null
+  const patch: Record<string, unknown> = {
+    status,
+    updated_at: new Date(opts.now ?? Date.now()).toISOString(),
+  }
+  if (typeof opts.dueAt === 'string' && !Number.isNaN(Date.parse(opts.dueAt))) {
+    patch.due_at = new Date(opts.dueAt).toISOString()
+  }
+  return patch
+}
+
 /**
  * Move a task to a new status (open / done / snoozed). Returns true on success. FAIL-SAFE: false on an
  * unknown status or a write error. `updated_at` is bumped so the board reorders. When snoozing, a
@@ -290,11 +307,8 @@ export async function updateTaskStatus(
   opts: { dueAt?: string | null } = {},
 ): Promise<boolean> {
   const id = typeof taskId === 'string' ? taskId.trim() : ''
-  if (!id || !TASK_STATUSES.includes(status)) return false
-  const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() }
-  if (typeof opts.dueAt === 'string' && !Number.isNaN(Date.parse(opts.dueAt))) {
-    patch.due_at = new Date(opts.dueAt).toISOString()
-  }
+  const patch = taskStatusPatch(status, opts)
+  if (!id || !patch) return false
   try {
     const db = createAdminClient() as unknown as {
       from: (t: string) => {
@@ -303,6 +317,46 @@ export async function updateTaskStatus(
     }
     const { error } = await db.from('crm_tasks').update(patch).eq('id', id)
     return !error
+  } catch {
+    return false
+  }
+}
+
+/** The untyped update-builder shape the scoped writer chains over. */
+interface ScopedUpdateQuery {
+  eq: (col: string, val: string) => ScopedUpdateQuery
+  select: (cols: string) => PromiseLike<{ data: { id: string }[] | null; error: unknown }>
+}
+
+/**
+ * Move ONE task to a new status INSIDE a scope the caller has already been authorized for.
+ *
+ * WHY A SECOND WRITER. `updateTaskStatus` takes a bare id, which is right for the platform-staff
+ * Tasks board (one admin, one root Space) and wrong for a Space owner: the id arrives from that
+ * owner’s browser, and crm_tasks is reached through the service-role client, so an id belonging to
+ * ANOTHER Space would be moved with no complaint. Here the `id` predicate is joined by `space_id`
+ * (and `plan_id`, when the caller is working inside one Plan), and the write must MATCH A ROW to
+ * count — a foreign id changes nothing and the caller gets `false` instead of a silent success.
+ */
+export async function updateTaskStatusInScope(
+  taskId: string,
+  status: TaskStatus,
+  scope: { spaceId: string; planId?: string | null },
+): Promise<boolean> {
+  const id = typeof taskId === 'string' ? taskId.trim() : ''
+  const spaceId = typeof scope?.spaceId === 'string' ? scope.spaceId.trim() : ''
+  const patch = taskStatusPatch(status)
+  if (!id || !spaceId || !patch) return false
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { update: (p: Record<string, unknown>) => ScopedUpdateQuery }
+    }
+    let q = db.from('crm_tasks').update(patch).eq('id', id).eq('space_id', spaceId)
+    if (typeof scope.planId === 'string' && scope.planId.trim().length) {
+      q = q.eq('plan_id', scope.planId.trim())
+    }
+    const { data, error } = await q.select('id')
+    return !error && !!data?.length
   } catch {
     return false
   }

@@ -20,7 +20,7 @@ import {
   transitionSpacePlanRows,
 } from '@/lib/calendar/plans-store'
 import { copyPlaybookToPlan, runItAgain } from '@/lib/calendar/playbooks'
-import { createTask, listTasks, type CrmTask } from '@/lib/crm/tasks'
+import { createTask, listTasks, updateTaskStatusInScope, type CrmTask } from '@/lib/crm/tasks'
 import { getCalendarEntryRow } from '@/lib/calendar/entries-store'
 import { parseEntryInput, type EntryInput } from '@/lib/calendar/entries'
 import { productionPrefill, readinessGaps } from '@/lib/calendar/production-prefill'
@@ -44,6 +44,27 @@ async function resolveEditor(slug: string): Promise<{ spaceId: string; profileId
 function revalidate(slug: string) {
   revalidatePath(`/spaces/${slug}/settings/calendar`)
   revalidatePath(`/spaces/${slug}/calendar`)
+}
+
+/**
+ * The gate for anything that writes a PLAN id through the service-role task seam.
+ *
+ * `resolveEditor` proves the caller may edit THIS Space. It says nothing about the plan id the
+ * browser sent, and crm_tasks is written with the admin client, so a plan id belonging to another
+ * Space used to be accepted and stamped onto a to-do nobody in this Space could see. `getSpacePlan`
+ * re-reads the plan on the CALLER session filtered by `space_id`, so the plan must be this Space's
+ * and RLS must also allow it. Every plan-scoped task write goes through here.
+ */
+async function editorPlan(
+  slug: string,
+  planId: string,
+): Promise<{ spaceId: string; profileId: string } | { error: string }> {
+  const editor = await resolveEditor(slug)
+  if (!editor) return { error: 'You do not have access to this calendar.' }
+  if (typeof planId !== 'string' || !UUID_RE.test(planId)) return { error: 'That Plan no longer exists.' }
+  const plan = await getSpacePlan(editor.spaceId, planId)
+  if (!plan) return { error: 'That Plan no longer exists.' }
+  return editor
 }
 
 export async function saveSpacePlan(
@@ -159,9 +180,8 @@ export async function addPlanTodo(
   dueAt?: string | null,
   dueOffsetDays?: number | null,
 ): Promise<ActionResult<void>> {
-  const editor = await resolveEditor(slug)
-  if (!editor) return fail('You do not have access to this calendar.')
-  if (!UUID_RE.test(planId)) return fail('That Plan no longer exists.')
+  const editor = await editorPlan(slug, planId)
+  if ('error' in editor) return fail(editor.error)
   const created = await createTask(
     {
       createdBy: editor.profileId,
@@ -182,6 +202,30 @@ export async function listPlanTodos(slug: string, planId?: string): Promise<CrmT
   if (!editor) return []
   const all = await listTasks({ spaceId: editor.spaceId, planId: planId ?? null, limit: 200 })
   return all
+}
+
+/**
+ * Tick a plan to-do off, or put it back. The other half of `addPlanTodo`: without it the readiness
+ * bar in the drawer counts open to-dos that nothing this Space can reach could ever close, so the
+ * checklist only ever grows. The status write is scoped to this Space AND this Plan, so an id from
+ * elsewhere matches no row and reports a miss instead of moving a stranger's task.
+ */
+export async function setPlanTodoDone(
+  slug: string,
+  planId: string,
+  todoId: string,
+  done: boolean,
+): Promise<ActionResult<void>> {
+  const editor = await editorPlan(slug, planId)
+  if ('error' in editor) return fail(editor.error)
+  if (typeof todoId !== 'string' || !UUID_RE.test(todoId)) return fail('That to-do no longer exists.')
+  const moved = await updateTaskStatusInScope(todoId, done ? 'done' : 'open', {
+    spaceId: editor.spaceId,
+    planId,
+  })
+  if (!moved) return fail('That to-do could not be updated.')
+  revalidate(slug)
+  return ok()
 }
 
 export async function productionHref(
@@ -299,8 +343,8 @@ export async function veraPlanProposal(slug: string, planId: string) {
 }
 
 export async function acceptVeraChecklist(slug: string, planId: string, titles: string[]): Promise<ActionResult<void>> {
-  const editor = await resolveEditor(slug)
-  if (!editor) return fail('You do not have access to this calendar.')
+  const editor = await editorPlan(slug, planId)
+  if ('error' in editor) return fail(editor.error)
   for (const title of titles.slice(0, 20)) {
     await createTask({ createdBy: editor.profileId, title, planId }, editor.spaceId)
   }
