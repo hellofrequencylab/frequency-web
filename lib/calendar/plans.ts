@@ -43,7 +43,9 @@ export interface PlanInput {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const MAX_TITLE = 200
 const MAX_NOTES = 20_000
-const MAX_LINKS = 20
+/** The most links one Plan keeps. Exported because the drawer control must stop offering Add at
+ *  the same number the parser caps at: a row typed past the cap is dropped on save with nothing said. */
+export const PLAN_LINKS_MAX = 20
 
 export function planStage(value: string | null | undefined): PlanStage | null {
   return PLAN_STAGES.includes(value as PlanStage) ? (value as PlanStage) : null
@@ -99,7 +101,7 @@ export function planTarget(value: string | null | undefined): PlanTargetKind | n
 export function parsePlanLinks(raw: unknown): PlanLink[] {
   if (!Array.isArray(raw)) return []
   const out: PlanLink[] = []
-  for (const item of raw.slice(0, MAX_LINKS)) {
+  for (const item of raw.slice(0, PLAN_LINKS_MAX)) {
     if (!item || typeof item !== 'object') continue
     const rec = item as Record<string, unknown>
     const url = typeof rec.url === 'string' ? rec.url.trim() : ''

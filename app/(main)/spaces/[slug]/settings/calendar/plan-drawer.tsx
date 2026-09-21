@@ -4,13 +4,24 @@ import { useEffect, useState, useTransition, type FormEvent } from 'react'
 import Link from 'next/link'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input, Textarea, labelClasses } from '@/components/ui/field'
+import { Input, labelClasses } from '@/components/ui/field'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select } from '@/components/ui/select'
 import { StageTimeline } from '@/components/ui/stage-timeline'
+import { RailManifestFields } from '@/components/admin/rail/rail-manifest-fields'
+import { RailManifestRepeat } from '@/components/admin/rail/rail-manifest-repeat'
+import type { RepeatRow } from '@/components/admin/rail/rail-field-value'
 import { isError } from '@/lib/action-result'
-import { PLAN_TARGET_DEFS, planStage, planStageDef, planTargetDef, type SpacePlan } from '@/lib/calendar/plans'
+import { PLAN_LINKS_MAX, parsePlanLinks, planStageDef, planStage, planTargetDef, type SpacePlan } from '@/lib/calendar/plans'
 import { planStageTimeline } from '@/lib/calendar/stage-timeline'
+import { SPACE_PLAN_MANIFEST } from '@/lib/studio/entities/space-plan'
+import {
+  PLAN_FIELDS_AFTER_STAGE,
+  PLAN_FIELDS_BEFORE_STAGE,
+  PLAN_RAIL,
+  planLinkRows,
+  planLinksFromRows,
+} from './plan-rail-plan'
 import type { CrmTask } from '@/lib/crm/tasks'
 import {
   acceptVeraChecklist,
@@ -51,6 +62,9 @@ export function PlanDrawer({
   const [notes, setNotes] = useState(plan?.notes ?? '')
   const [stage, setStage] = useState(plan?.stage ?? 'plan')
   const [targetKind, setTargetKind] = useState(plan?.targetKind ?? 'event')
+  // The manifest's `links` collection, as the repeat control's rows (PROG-CAL2, ADR-1521). It was
+  // declared, parsed and written `[]` forever, because nothing in the product could type one.
+  const [links, setLinks] = useState<RepeatRow[]>(() => planLinkRows(plan?.links))
   const [todoTitle, setTodoTitle] = useState('')
   // RELATIVE SCHEDULING (ADR-1386 P5). '' means this to-do has a fixed date, or none: the offset is
   // opt-in, because a checklist where every row must be anchored is a worse checklist.
@@ -74,6 +88,7 @@ export function PlanDrawer({
     setNotes(plan?.notes ?? '')
     setStage(plan?.stage ?? 'plan')
     setTargetKind(plan?.targetKind ?? 'event')
+    setLinks(planLinkRows(plan?.links))
     setProposal(null)
     setTodoTitle('')
     setTodoOffsetDays('')
@@ -137,6 +152,16 @@ export function PlanDrawer({
     })
   }
 
+  // THE RAIL'S ONE BAG OF VALUES, keyed by manifest path. The drawer keeps a `useState` per field
+  // because its Save is explicit rather than an autosave snapshot; this is only the translation
+  // between that state and the kernel's field contract, which is why it is exhaustive and dumb.
+  const values: Record<string, string> = { title, notes: notes ?? '', targetKind }
+  const setField = (path: string, next: string) => {
+    if (path === 'title') setTitle(next)
+    else if (path === 'notes') setNotes(next)
+    else if (path === 'targetKind') setTargetKind(next as typeof targetKind)
+  }
+
   // Three steps in place of the old Stage select, from `PLAN_STAGE_DEFS` by way of the planner:
   // every label and hint is the registry's, never restated here.
   const timeline = planStageTimeline({ stage })
@@ -145,11 +170,19 @@ export function PlanDrawer({
     if (next) setStage(next)
   }
 
+  // The same parser the save action runs, so the count below is the server's answer and not a
+  // second opinion about what a link is.
+  const dropped = links.length - parsePlanLinks(planLinksFromRows(links)).length
+
+  /** What a declared section holds, in the manifest's own words. The drawer invents no copy for a
+   *  collection the manifest already describes. */
+  const sectionDesc = (key: string) => SPACE_PLAN_MANIFEST.sections.find((sec) => sec.key === key)?.desc ?? ''
+
   const save = (e: FormEvent) => {
     e.preventDefault()
     setError(null)
     start(async () => {
-      const res = await saveSpacePlan(slug, plan.id, { title, notes, stage, targetKind })
+      const res = await saveSpacePlan(slug, plan.id, { title, notes, stage, targetKind, links: planLinksFromRows(links) })
       if (isError(res)) setError(res.error)
       else {
         onSaved?.(plan.id, stage)
@@ -182,12 +215,11 @@ export function PlanDrawer({
           {deepSettingsHref && <Link href={deepSettingsHref} className="inline-flex text-body-sm font-semibold text-primary-strong hover:underline">Open deep settings</Link>}
         </div>
 
-        <div className="grid gap-1">
-          <label htmlFor="plan-title" className={labelClasses}>
-            Title
-          </label>
-          <Input id="plan-title" required maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} />
-        </div>
+        {/* THE FIELDS ARE THE MANIFEST'S (PROG-CAL2, ADR-1521). Title and Notes are declared before
+            `stage`, so they render before the stepper; "Production opens" is declared after it and
+            renders after. Adding a field to SPACE_PLAN_MANIFEST puts it here, in its declared place,
+            with its declared label and control, which is the Studio contract AGENTS.md states. */}
+        <RailManifestFields fields={PLAN_FIELDS_BEFORE_STAGE} values={values} onChange={setField} disabled={pending} />
         {/* THE STAGE TIMELINE, the Plan half (ADR-1520). The same stepper the entry drawer walks a
             date through (ADR-1504), rendering the same kit component from the same plan shape, so
             the product teaches one concept one way. A step writes `stage` into the SAME form state
@@ -210,23 +242,31 @@ export function PlanDrawer({
             Moving the Plan moves every date on it.
           </p>
         </div>
-        <div className="grid gap-1">
-          <label htmlFor="plan-target" className={labelClasses}>
-            Production opens
-          </label>
-          <Select
-            id="plan-target"
-            value={targetKind}
-            options={PLAN_TARGET_DEFS.map((d) => ({ value: d.kind, label: d.label }))}
-            onChange={(e) => setTargetKind(e.target.value as typeof targetKind)}
-          />
-        </div>
-        <div className="grid gap-1">
-          <label htmlFor="plan-notes" className={labelClasses}>
-            Notes
-          </label>
-          <Textarea id="plan-notes" rows={5} maxLength={20000} value={notes} onChange={(e) => setNotes(e.target.value)} />
-        </div>
+        <RailManifestFields fields={PLAN_FIELDS_AFTER_STAGE} values={values} onChange={setField} disabled={pending} />
+
+        {/* THE LINKS THE ROW PROMISED (PROG-CAL2). One list editor per declared collection, its rows
+            and its per-row controls both from the manifest, capped where `parsePlanLinks` caps. */}
+        {PLAN_RAIL.repeats.map((def) => (
+          <div key={def.arrayPath} className="grid gap-1">
+            <RailManifestRepeat
+              def={def}
+              rows={links}
+              onChange={setLinks}
+              max={PLAN_LINKS_MAX}
+              empty={`Nothing here yet. ${sectionDesc(def.section)}`}
+              disabled={pending}
+            />
+            {/* A control that accepts a value the server then drops in silence is the failure
+                ADR-1307 names, and `parsePlanLinks` drops anything that is not a full web address.
+                So the drawer runs the SAME parser to say so first, rather than parsing twice. */}
+            {dropped > 0 && (
+              <p className="text-meta text-muted">
+                {dropped === 1 ? 'One link needs' : `${dropped} links need`} a full web address starting
+                with https:// before it can be saved.
+              </p>
+            )}
+          </div>
+        ))}
 
         <div className="space-y-2">
           <p className={labelClasses}>To-dos</p>

@@ -84,7 +84,8 @@ async function mount() {
 
 const stageGroup = () => document.body.querySelector('[role="group"][aria-label="Stage"]')!
 const stageButtons = () => Array.from(stageGroup().querySelectorAll('button'))
-const titleInput = () => document.body.querySelector<HTMLInputElement>('#plan-title')!
+// The fields are the manifest's now (ADR-1521), so a control is id'd by its manifest PATH.
+const titleInput = () => document.body.querySelector<HTMLInputElement>('#title')!
 
 /** React owns the input's value, so a typed character has to go in the way the browser sends it. */
 function type(el: HTMLInputElement, value: string) {

@@ -43,6 +43,14 @@ export interface RailManifestRepeatProps {
    * said. The control stops offering Add at the cap and says why instead.
    */
   max?: number
+  /**
+   * The line shown when the list is empty. The default says the rows show on the event page, which
+   * was true of every caller until the Plan drawer (ADR-1521): a Plan's links are the team's own
+   * working references and show nowhere public, so a surface whose rows go somewhere else says
+   * where. A prop and not manifest data, for the same reason a placeholder is: it is tuned to the
+   * surface asking.
+   */
+  empty?: string
   /** Loaded collections for a row field that draws its choices from one. */
   loaded?: FieldOptions
   disabled?: boolean
@@ -70,7 +78,7 @@ function rowTitle(def: RepeatDef, row: RepeatRow, index: number): string {
   }
 }
 
-export function RailManifestRepeat({ def, rows, onChange, max, loaded, disabled }: RailManifestRepeatProps) {
+export function RailManifestRepeat({ def, rows, onChange, max, empty, loaded, disabled }: RailManifestRepeatProps) {
   const saveNow = useRailSaveNow()
   const name = repeatLabel(def)
   const atCap = typeof max === 'number' && rows.length >= max
@@ -94,7 +102,7 @@ export function RailManifestRepeat({ def, rows, onChange, max, loaded, disabled 
       <p className={labelClasses}>{name}</p>
 
       {rows.length === 0 ? (
-        <p className="text-2xs text-muted">Nothing here yet. Add the first one and it shows on the event page.</p>
+        <p className="text-2xs text-muted">{empty ?? 'Nothing here yet. Add the first one and it shows on the event page.'}</p>
       ) : (
         <ul className="space-y-2">
           {rows.map((row, index) => {
