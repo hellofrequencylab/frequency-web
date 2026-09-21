@@ -90,7 +90,7 @@ vi.mock('./fees', () => ({
   platformFeeCents: () => 0,
   platformFeePct: () => 10,
   spaceTakeRateCents: async () => 0,
-  memberTakeRateCents: (gross: number, ...rest: unknown[]) => memberTakeRate.cents(gross, ...rest),
+  memberTakeRateCents: (gross: number) => memberTakeRate.cents(gross),
   resolvedNetworkRate: async () => ({}),
 }))
 vi.mock('./pricing-keys', () => ({
