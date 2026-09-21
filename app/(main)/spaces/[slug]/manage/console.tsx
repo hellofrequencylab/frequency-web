@@ -123,8 +123,9 @@ export function orderWithinGroupByEmphasis(
 // caps in feature-meters.ts were biting on all 16 free Spaces. The badges were not previewing a wall.
 // They were labelling a live one, on a console whose job is to help someone run their business.
 //
-// The owner's answer was to move the product, not the copy: `beta_grace` now runs to 2026-10-01, so the
-// gates stand down through September and every tool on this board really is open. The pills come off
+// The owner's answer was to move the product, not the copy: `beta_grace` was moved to 2026-10-01, then
+// to 2026-12-01 (ADR-1294, confirmed by ADR-1512), so the gates stand down until then and every tool on
+// this board really is open. The live value is the row, never a constant. The pills come off
 // because there is no longer a tier to report, and ONE notice takes their place.
 //
 // 🔴 THE NOTICE IS BOUND TO THE SWITCH IT DESCRIBES, which is the whole point of this shape. Its date is

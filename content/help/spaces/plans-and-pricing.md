@@ -106,13 +106,13 @@ lands in. See [Get paid](/help/spaces/get-paid).
 
 You can change plans whenever you like. See [Billing](/help/spaces/billing) for how that works.
 
-## Open access until October 1
+## Open access until December 1
 
-Frequency is in open beta, so the free allowances below are switched **off until October 1, 2026**.
+Frequency is in open beta, so the free allowances below are switched **off until December 1, 2026**.
 Until then every Space can use every tool on this page, with no limits, whatever plan it is on. The
 one exception is QR codes, which keep their published limit throughout.
 
-You can subscribe any time during the beta at the same price you would pay after it. From October 1
+You can subscribe any time during the beta at the same price you would pay after it. From December 1
 the allowances apply as written, and we will tell you what changes before it changes.
 
 ## What Free gives you

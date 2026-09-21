@@ -89,10 +89,11 @@ when, old to new) in `platform_flag_events`.
   the environment. It answers ONE question: **may we charge.** It does not decide whether paid features
   lock (see the next line, ADR-874).
 - **The paid-gates date (`beta_grace`, at `/admin/pricing` under Beta controls).** The day the paid feature
-  gates start blocking, set to **2026-09-01**. Until it arrives, billing can be fully live and every plan
+  gates start blocking, set to **2026-12-01** (owner ruling 2026-09-21, [ADR-1512](DECISIONS.md); the live
+  value is always the row at `/admin/pricing`, never this sentence). Until it arrives, billing can be fully live and every plan
   can sell while every member and Space keeps their paid features. On that date at 00:00 UTC the ladder
   starts biting, with no further operator action. The date itself is the first enforced day, so the last
-  free day is Aug 31. Clearing the field means "no grace window": paid features would lock the moment
+  free day is Nov 30. Clearing the field means "no grace window": paid features would lock the moment
   billing goes live. **This is the only date on this page that changes access.**
 - **`plan_business_enabled` / `plan_collective_enabled` / `plan_nonprofit_enabled` /
   `plan_independent_enabled`.** Show and sell each Space plan. A plan sells only when its switch **and**
@@ -105,7 +106,7 @@ when, old to new) in `platform_flag_events`.
   use the paid-gates date above instead: it covers every gate at once and turns them all on by itself on
   the day you set, so nothing depends on remembering a dozen toggles.
 
-## The beta "free until Sept 1" setup (current state)
+## The beta "free until Dec 1" setup (current state)
 
 Where things stand today, in one paragraph: **nobody is charged.** The master switch
 (`billing_live`) is **off**, and the code-side preview switch `PLACEHOLDER_PRICING`
@@ -117,9 +118,9 @@ Stripe keys and turn `billing_live` on at `/admin/pricing`, and have an engineer
 
 On top of that, three beta pieces are currently set:
 
-- **The paid-gates date (`beta_grace`) is `2026-09-01`.** This is what makes "explore every level, pay on
-  Sept 1" work. You can turn `billing_live` on **today** and start selling plans: nobody loses a feature,
-  because the gates do not begin until that date. No action is needed on Sept 1; the gates turn themselves
+- **The paid-gates date (`beta_grace`) is `2026-12-01`** (moved from 2026-09-01, then 2026-10-01; [ADR-1512](DECISIONS.md)).
+  This is what makes "explore every level, pay later" work. You can turn `billing_live` on **today** and start selling plans: nobody loses a feature,
+  because the gates do not begin until that date. No action is needed on Dec 1; the gates turn themselves
   on at 00:00 UTC.
 - **The countdown clock (`beta_ends_at`)** is set to `2026-09-01`. It drives the "Summer of Frequency ends
   Sept 1" banner only; it changes nothing about access on its own. The founding beta prices ($19 Business,

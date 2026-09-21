@@ -282,6 +282,7 @@ import {
   type MembershipTier,
 } from './memberships'
 import { annualSavingLabel, resolveBillingInterval, tierPriceView } from './membership-pricing'
+import { membershipTierPriceError, MIN_PAID_TIER_PRICE_CENTS } from '@/lib/billing/membership-tier-price'
 
 beforeEach(() => {
   currentProfileId = 'member-0000-4000-a000-0000000membr'
@@ -490,6 +491,47 @@ describe('setMembershipTiers (action) — permission gating', () => {
     expect(db.deletes).toContain('t0') // the removed row is deleted by id
     expect(db.tiers).toHaveLength(0)
     expect(db.inserts).toHaveLength(0)
+  })
+})
+
+describe('setMembershipTiers (action): the paid price floor (OWN-067 / ADR-1512)', () => {
+  // A paid membership grants Crew (LIVE-223), so a tier priced at a cent is a Crew switch, not a
+  // membership. The floor is MIN_PAID_TIER_PRICE_CENTS (lib/billing/membership-tier-price.ts).
+  it('refuses a $1 monthly tier with the floor message and writes nothing', async () => {
+    const r = await setMembershipTiers('space-1', [tier({ name: 'Cheap', priceCents: 100 })])
+    expect('error' in r).toBe(true)
+    if ('error' in r) expect(r.error).toBe(membershipTierPriceError(100))
+    expect(db.inserts).toHaveLength(0)
+    expect(db.tiers).toHaveLength(0)
+  })
+
+  it('refuses a sub-floor YEARLY price on an otherwise valid tier', async () => {
+    const r = await setMembershipTiers('space-1', [
+      tier({ name: 'Yearly', priceCents: 2500, annualPriceCents: 200 }),
+    ])
+    expect('error' in r).toBe(true)
+    expect(db.inserts).toHaveLength(0)
+  })
+
+  it('refuses the whole save, so a valid sibling tier is not written beside the refused one', async () => {
+    seedActiveTier('t0')
+    const r = await setMembershipTiers('space-1', [
+      tier({ id: 't0', name: 'Fine', priceCents: 2500 }),
+      tier({ name: 'Cheap', priceCents: 50 }),
+    ])
+    expect('error' in r).toBe(true)
+    expect(db.inserts).toHaveLength(0)
+    expect(db.deletes).toHaveLength(0)
+    expect(db.tiers.find((t) => t.id === 't0')?.name).toBe('Unlimited') // untouched
+  })
+
+  it('saves a free tier and a tier AT the floor: free stays free, any real price grants Crew', async () => {
+    const r = await setMembershipTiers('space-1', [
+      tier({ name: 'Open', priceCents: 0 }),
+      tier({ name: 'Floor', priceCents: MIN_PAID_TIER_PRICE_CENTS, annualPriceCents: MIN_PAID_TIER_PRICE_CENTS * 10 }),
+    ])
+    expect('error' in r).toBe(false)
+    expect(db.inserts).toHaveLength(2)
   })
 })
 

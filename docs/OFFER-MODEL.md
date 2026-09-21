@@ -155,8 +155,9 @@ create a Space (the first is free even when gates are live), `setMembershipTiers
 price check** (`lib/spaces/memberships.ts:415`), and `prevent_economy_self_edit` does **not** cover
 `membership_tier`. So an operator can mint a $1 tier and grant themselves and their friends Crew.
 
-Two narrow guards would preserve the ruling while closing the hole, and **both are recommendations,
-not decisions**:
+Two narrow guards preserve the ruling while closing the hole. **Both were ruled YES on 2026-09-21**
+([ADR-1512](DECISIONS.md), `OWN-067`); both had already shipped under `LIVE-223` / `LIVE-224`, and the
+ruling made them contract rather than precaution:
 
 1. **A granted Crew does not buy down the platform take rate.** Keep `memberNetworkTakeRateBps`
    reading the *Stripe* tier. Otherwise a $1 tier is a machine for turning 10% into 8%.
@@ -396,15 +397,16 @@ and `captures` is empty. A "gatherings held" signal that means *people actually 
 
 ## 10. Still open
 
-1. **The two Crew guards in §4** — take-rate reads the Stripe tier; owners cannot self-grant. Both
-   recommended, neither ruled.
-2. **The grace window.** `beta_grace` currently expires 2026-10-01. Since the model is being
-   re-engineered, propose moving it to **2026-12-01** — far enough to build steps 1 through 5, near
-   enough to stay real.
-3. **A name for the earned thing.** The mechanic works unnamed. A name helps an operator care about
-   it, the way a credit score does. `NAMING.md` is locked and says a term it does not cover goes to
-   OPEN QUESTIONS rather than a guess, so this is a canon decision, not a drive-by. **"Standing" is
-   used throughout this document as a plain descriptive word, not a proposed proper noun.**
+All three were **ruled on 2026-09-21** ([ADR-1512](DECISIONS.md), `OWN-067`). Kept here so the ruling
+has a referent:
+
+1. **The two Crew guards in §4**: take-rate reads the Stripe tier; owners cannot self-grant. **Ruled
+   YES.** Both had shipped (`LIVE-223` / `LIVE-224`); the ruling wired the last piece, the paid price
+   floor in `setMembershipTiers`.
+2. **The grace window.** `beta_grace` expired 2026-10-01 when this was written. **Ruled: 2026-12-01.**
+   Already live since 2026-09-08 ([ADR-1294](DECISIONS.md)); the ruling confirms it.
+3. **A name for the earned thing.** **Ruled: "Standing"**, now a [NAMING.md](NAMING.md) entry aligned
+   with the `space_standing` rollup. The lowercase descriptive uses in this document are unchanged.
 
 ---
 

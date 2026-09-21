@@ -59,10 +59,21 @@ describe('the live tiers all clear the floor', () => {
   })
 })
 
-describe('the file says plainly that the write is not yet wired', () => {
-  it('carries the unwired notice, so nobody reads the floor as enforced', () => {
+describe('the floor is wired into the write (OWN-067 / ADR-1512)', () => {
+  const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+
+  it('setMembershipTiers calls membershipTierPriceError on the normalized tiers (not in a comment)', () => {
+    const src = strip(readFileSync(join(__dirname, '..', 'spaces', 'memberships.ts'), 'utf8'))
+    const fn = src.slice(src.indexOf('export async function setMembershipTiers'))
+    const body = fn.slice(0, fn.indexOf('\n}'))
+    expect(body).toContain('membershipTierPriceError(t.priceCents)')
+    expect(body).toContain('membershipTierPriceError(t.annualPriceCents')
+    expect(src).toContain("from '@/lib/billing/membership-tier-price'")
+  })
+
+  it('this file no longer claims the floor is advisory', () => {
     const src = readFileSync(join(__dirname, 'membership-tier-price.ts'), 'utf8')
-    expect(src).toContain('NOT YET WIRED INTO THE WRITE')
-    expect(src).toContain('setMembershipTiers')
+    expect(src).not.toContain('NOT YET WIRED')
+    expect(src).toContain('WIRED INTO THE WRITE')
   })
 })

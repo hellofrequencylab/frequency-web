@@ -306,14 +306,16 @@ today it is collecting nothing.
 
 ---
 
-## 8. The 23-day fuse
+## 8. The fuse, and where it now sits
 
-`beta_grace` is set to **2026-10-01** (`platform_flags`, read 2026-09-08). On that date
-`featureGatesLive()` flips true and the paid ladder starts biting for the first time: the Crew gates on
-individuals, the plan gates on Spaces.
+`beta_grace` was **2026-10-01** when this was written (read 2026-09-08). It is now **2026-12-01**:
+moved in production on 2026-09-08 ([ADR-1294](DECISIONS.md)) and confirmed by owner ruling on
+2026-09-21 ([ADR-1512](DECISIONS.md), `OWN-067`). On that date `featureGatesLive()` flips true and the
+paid ladder starts biting for the first time: the Crew gates on individuals, the plan gates on Spaces.
+The live value is the `pricing_settings.beta_grace` row, never a constant; read the row.
 
-**Whatever is ruled, it must be ruled before 1 October, or the window extended.** Letting the gates
-close on individuals by default, three weeks after deciding they should be free, is the avoidable
+**Whatever is ruled must be ruled before 1 December, or the window extended.** Letting the gates
+close on individuals by default, weeks after deciding they should be free, is the avoidable
 version of this mistake.
 
 ---
@@ -351,11 +353,11 @@ a referent.
 | # | Ruling | Default if unanswered |
 |---|---|---|
 | 1 | Does the Quest stop being a top-level section and become the Collective's own program? | It stays the spine, by inertia |
-| 2 | Do individuals pay for anything, ever? | The gates close on 1 October |
+| 2 | Do individuals pay for anything, ever? | The gates close on 1 December (was 1 October) |
 | 3 | May a **free** Space sell memberships, gated on readiness instead of plan? | No, and the dues engine stays walled |
 | 4 | Is a Circle Run of a Journey the headline way a community runs its program? | ADR-252 stays unsequenced |
 | 5 | Do we build the five operator gaps (sell a course, gate to a tier, member directory, space discussion, analytics)? | Operators keep hitting them |
-| 6 | Extend `beta_grace` past 1 October while this is decided? | It expires |
+| 6 | Extend `beta_grace` past 1 October while this is decided? | Ruled: 1 December ([ADR-1512](DECISIONS.md)) |
 
 ---
 

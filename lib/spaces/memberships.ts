@@ -53,6 +53,7 @@ import { syncTierCircleAccess } from '@/lib/spaces/tier-circle'
 import { stripe } from '@/lib/billing/stripe'
 import { resolveBillingInterval, type BillingInterval } from '@/lib/spaces/membership-pricing'
 import { billingLive } from '@/lib/pricing/settings'
+import { membershipTierPriceError } from '@/lib/billing/membership-tier-price'
 import {
   isPastDueSpaceMembership,
   type PastDueSpaceMembership,
@@ -495,6 +496,16 @@ export async function setMembershipTiers(
 
   // Normalize + drop anything invalid. An empty result is a valid "no tiers" state.
   const clean = normalizeTierSet(tiers)
+
+  // THE PRICE FLOOR (OWN-067 / ADR-1512, the self-grant half of LIVE-223). A paid membership grants
+  // the member Crew (lib/billing/crew-grants.ts), so a tier priced at a cent is not a membership,
+  // it is a switch that turns Crew on. Free stays free; a PAID tier charges at least
+  // MIN_PAID_TIER_PRICE_CENTS on either cadence. Refused as a whole save rather than silently
+  // dropped, so the operator sees the number and the way out instead of a tier that vanished.
+  for (const t of clean) {
+    const priceError = membershipTierPriceError(t.priceCents) ?? membershipTierPriceError(t.annualPriceCents ?? 0)
+    if (priceError) return fail(priceError)
+  }
 
   // annual_price_cents is newer than the generated DB types (ADR-246 seam), so the payload is built
   // loose and the typed chain takes it through one narrow cast at each call site below.

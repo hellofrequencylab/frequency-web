@@ -652,6 +652,36 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
 - **Retired:** the ADR-552 "no third vocabulary / no tier names" lock (this ADR reintroduces named tiers);
   the flat single-Business $49 model (ADR-590, grandfathered).
 
+## Standing: the earned-exposure measure (ADR-1512, September 2026, owner-ruled)
+
+- **Standing** (capitalized, a proper noun) = how much exposure a Space has EARNED on the platform:
+  the one number the Space directory orders by and the operator receipt page explains. It is computed
+  from what a Space DID and never from what it paid. Owner ruling 2026-09-21 ([ADR-1512](DECISIONS.md),
+  closes the naming question [ADR-1293](DECISIONS.md) left open); the mechanic itself is
+  [ADR-1294](DECISIONS.md) ruling 5 and [CORE-MODEL.md](CORE-MODEL.md) Phase 10, "Placement is earned".
+- **The public promise the word carries: exposure is earned, never sold.** No plan, tier, seat,
+  entitlement or Stripe field may enter a Standing input, and the `space_standing` rollup carries no
+  such column. Member and operator copy may say "your Standing" and "Standing rises when..."; it never
+  says "buy", "boost", "sponsor" or "promote" beside it.
+
+| Term | Where | What it is | Never |
+|---|---|---|---|
+| **Standing** | `space_standing.standing_score`, `lib/spaces/standing.ts` | The resolved 0 to 1 score a Space has earned. The directory's default order. | A rank, a tier, a level, a badge you buy |
+| **Signal** | `space_standing` counts: `gatherings_held`, `upcoming_gatherings`, `rooms`, `audience`, `commons`, `care` | One thing the Space did, counted. Six today; attendance joins the day an independent record exists. | A plan or payment fact |
+| **Receipt** | The operator's Standing page | The plain reading of which signals moved a Space's Standing and by how much. | A scorecard that names another Space |
+
+- **Collision guards, and the lowercase word is unchanged everywhere else:**
+  - The Quest's "collective standing" (`components/quest/collective-goal.tsx`) stays the game's word.
+  - A person's "community standing" (`lib/auth.ts` `communityLevel`, ADR-218/221) is the trust ladder,
+    not this.
+  - A "standing relation" (`space_collaborations`, above) and "standing templates" (Circle Meetup,
+    Weekend Gathering) keep their ordinary adjective.
+  - Only a Space has Standing. A person, a Circle or an event does not; do not extend the noun without
+    a ruling.
+- **Retired for this meaning:** "score" in member copy (a Space "has Standing", it does not "have a
+  score"); "featured" as a synonym (the four `featured_at` slots are a CONSEQUENCE of Standing, not the
+  name of it); "ranking" as a noun in member copy.
+
 ## Marketplace & Commerce (ADR-596, July 2026; umbrella revived by ADR-868)
 
 The four consumer commerce surfaces, plus their umbrella. **Member-facing names + public routes

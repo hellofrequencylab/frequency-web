@@ -37946,6 +37946,14 @@ consumers must each be added to **every** select branch, per the regression docu
 rather than a drive-by. "Standing" is used in OFFER-MODEL as a plain descriptive word, not a proposed
 proper noun.
 
+**Addendum (2026-09-21): ACCEPTED.** The three items left open above were ruled YES by the owner on
+2026-09-21 and are recorded in [ADR-1512](DECISIONS.md): both Crew guards stand as contract (both had
+already shipped under `LIVE-223` / `LIVE-224`; the ruling wired the paid price floor into
+`setMembershipTiers`, the one piece still open), `beta_grace` ends 2026-12-01 (live since 2026-09-08,
+[ADR-1294](DECISIONS.md); the ruling confirms it), and the earned measure is named **Standing**
+([NAMING.md](NAMING.md)). The status line above is left as written so the record shows what was
+proposed; this ADR is Accepted in full. `OWN-067` closed the same day.
+
 ## ADR-1294: ACCEPTED — the core model is three lines and four nouns, and the six open questions are ruled (2026-09-08)
 
 **Status:** ✅ **ACCEPTED.** Supersedes the open questions left by [ADR-1292](DECISIONS.md) and
@@ -47584,3 +47592,27 @@ Premise re-tested 2026-09-21: `git log --diff-filter=D` gives one commit for bot
 **Consequences.** A probe that requires a file to exist proves nothing about whether the file is used. When a route is retired, its done-row probes measure the fold, and its shared modules and map rows leave in the same change. HYG-110's probe now fails a cover-map row whose section has no route directory, for any section, and fails a tier-detail module with no real importer.
 
 **Rows.** HYG-110. HYG-046 (probe re-pointed).
+
+## ADR-1512: The three open items of ADR-1293 are ruled: both Crew guards stand, the grace window ends 1 December, and the earned measure is named Standing (OWN-067)
+
+**Status:** Accepted, by owner ruling · 2026-09-21 · backlog `OWN-067` · moves [ADR-1293](DECISIONS.md) from PROPOSED to Accepted (by addendum on that block, not a rewrite) · corroborated by `lib/billing/pricing-keys.ts` (`memberNetworkTakeRateBps` narrows through `billedTier`), `lib/billing/crew-grants.ts` (`isSpaceOperator`, reason `self_grant`), `supabase/migrations/20270345002800_entitlement_grants.sql` (`entitlement_grants_no_self_grant`), `lib/spaces/memberships.ts` (`membershipTierPriceError` inside `setMembershipTiers`), `pricing_settings.beta_grace` read live on 2026-09-21, and the Standing entry in [NAMING.md](NAMING.md)
+
+**Context.** ADR-1293 recorded five of the owner's eight rulings on 2026-09-08 and left three open: whether to adopt the two Crew guards it recommended, whether to extend the grace window, and whether the earned-exposure measure gets a name. `OWN-067` carried the ask.
+
+The premise was re-tested on 2026-09-21 before the ruling was applied ([ADR-1082](DECISIONS.md)), and two of the three questions had moved under the row:
+
+- **Both guards had already shipped**, under `LIVE-223` (2026-09-09) and `LIVE-224`. The take-rate guard: `memberNetworkTakeRateBps` reads `billedTier(sellerTier)`, the Stripe rung, and never the resolved `EffectiveTier`; `lib/billing/granted-crew-take-rate.test.ts` pins a granted Crew at 10% and a Stripe Crew at 8%, and its source-shape case fails any refactor that swaps the tier in. The self-grant guard: `syncCrewEntitlement` refuses the Space's `owner_profile_id` and any active `space_members` admin through `isSpaceOperator` (fail-closed: an unreadable answer refuses the grant), and the `entitlement_grants_no_self_grant` BEFORE INSERT/UPDATE trigger refuses the same row in the database. `membership_tier` deliberately did NOT join `prevent_economy_self_edit`: an earlier draft added it and db-tests showed it blocks the atomic membership and bundle writers, which run with the caller's role. That is why the trigger is the seam and the economy function is not. One piece was unbuilt: `MIN_PAID_TIER_PRICE_CENTS` (300) shipped as a pure module "awaiting one call", and `setMembershipTiers` still had no minimum price check, the exact line ADR-1293 named.
+- **The grace window had already moved.** `pricing_settings.beta_grace` read `{"until":"2026-12-01"}`, written 2026-09-08 23:27:46Z (ADR-1294, "the P0, which was a date") and re-read live on 2026-09-21. Five places still said October or September: `FOCUS-MODEL.md` §8 and §10, `OFFER-MODEL.md` §10, `PRICING-OPERATIONS.md`, the member help page `content/help/spaces/plans-and-pricing.md`, and the comment in `app/(main)/spaces/[slug]/manage/console.tsx`.
+- **The name was genuinely open.** `OFFER-MODEL.md` used "standing" as a plain word and said so. The rollup table shipped under `LIVE-263` as `space_standing` with a `standing_score` column, so the code had picked the word before the canon had.
+
+**Decision.** The owner rules, 2026-09-21, YES on all three:
+
+1. **Both Crew guards are contract, not precaution.** (a) A granted Crew never buys down the platform take rate: `memberNetworkTakeRateBps` keeps reading the Stripe rung through `billedTier` and never a tier granted by a Space's membership tier. (b) A Space's own owner and admins are not grantable by their own membership tier, enforced twice (app and trigger). The ruling closes the last gap: `setMembershipTiers` now calls `membershipTierPriceError` on every normalized tier, monthly and yearly price alike, and refuses the whole save with the floor message ("A paid membership starts at $3. Set it to $0 to keep this tier free."). Free stays $0. Production on 2026-09-21 held 9 tiers with a minimum paid price of 500c and none below the floor, so nothing is migrated. **No migration ships with this ruling**: the trigger already exists and the floor is an app-side check on a write the app alone performs.
+2. **`beta_grace` ends 2026-12-01.** Confirmed, not moved: the row already reads it. No migration re-asserts it; the row is the record (ADR-1294) and `BETA_GRACE_DEFAULT` stays the never-lapsing fail-safe window ([ADR-1324](DECISIONS.md)). Every doc and comment that stated an earlier date is corrected in this pass and points at the row.
+3. **The earned measure is named Standing.** [NAMING.md](NAMING.md) carries the entry in the canon's table style, aligned with the `space_standing` rollup: Standing is the resolved 0 to 1 `standing_score`, a Signal is one of the six counted things a Space did, and the Receipt is the operator's plain reading of them. Collision guards keep the lowercase word where it already lives (the Quest's collective standing, a person's community standing, a standing relation). Only a Space has Standing.
+
+**Rejected.** Extending `prevent_economy_self_edit` to `membership_tier` (re-tested under LIVE-223: it blocks the atomic membership and bundle writers; the trigger is the seam). A migration re-asserting `beta_grace` (a second record of a value the row already holds, and a deploy-time write that would clobber a later operator edit). Applying the floor to the monthly price only (a $1 yearly tier is the same Crew switch). A higher floor (a pricing policy smuggled in as a guard; $3 stops the degenerate case and nothing else). Naming the measure "Score" or "Rank" (a Space earns Standing; it does not have a score or hold a rank, and neither word survives beside "never sold"). Filing the floor as its own row (one call and four tests; smaller than the row it would need).
+
+**Consequences.** ADR-1293 is Accepted in full. An operator who tries to save a $1 tier is told the floor and the way out. The surfaces that state the grace date say December and defer to the row. "Standing" is canon and may appear in member and operator copy; "buy", "boost", "sponsor" and "promote" may not appear beside it. `OWN-067` closes on a `cmd` probe that measures all three rulings as consequences: the take-rate function still narrows through `billedTier`, the grant module still refuses `self_grant`, `setMembershipTiers` still applies the floor on both cadences, NAMING.md carries the Standing entry, this ADR records 2026-12-01, and none of the reconciled docs states the pre-ruling date.
+
+**Rows.** OWN-067 (closed). LIVE-223 and LIVE-224 unchanged; their guards are what the ruling adopted.

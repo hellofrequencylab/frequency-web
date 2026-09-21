@@ -9,16 +9,13 @@
 // PURE + framework-independent, like the rest of the pricing primitives, so the floor is one number
 // with one test rather than a rule half-remembered at three call sites.
 //
-// 🔴 NOT YET WIRED INTO THE WRITE. The write is `setMembershipTiers` in lib/spaces/memberships.ts,
-// which another agent owns in this change. Wiring is one call inside its normalize step, beside the
-// existing plan wall:
-//
-//     const priceError = membershipTierPriceError(t.priceCents)
-//     if (priceError) return fail(priceError)
-//
-// Until then this floor is advisory. Note what is NOT deferred with it: the grant path already
-// refuses a zero-price tier outright, and the `entitlement_grants_no_self_grant` trigger refuses the
-// row in the database, so the entitlement cannot be minted by a free tier regardless of this file.
+// WIRED INTO THE WRITE (OWN-067 / ADR-1512, owner ruling 2026-09-21). `setMembershipTiers` in
+// lib/spaces/memberships.ts calls `membershipTierPriceError` on every normalized tier, monthly and
+// yearly price alike, and refuses the whole save on the first miss. Locked by
+// lib/spaces/memberships.test.ts and by the source-shape test beside this file. Note what this floor
+// is NOT the last line of: the grant path already refuses a zero-price tier outright, and the
+// `entitlement_grants_no_self_grant` trigger refuses the row in the database, so the entitlement
+// cannot be minted by a free tier regardless of this file.
 
 /** A tier priced at zero is a FREE tier, which is always allowed: it grants no Crew and it is how a
  *  Space runs an open membership. The floor applies only once a tier starts charging. */
