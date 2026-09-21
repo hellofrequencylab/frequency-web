@@ -26,6 +26,14 @@
 
 import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
+// The repo's quote-aware comment scanner, not a regex pair. THE NAIVE VERSION WAS WRONG HERE AND
+// it silently weakened this probe's strongest assertion: app/(main)/events/actions.ts contains a
+// LINE comment holding the characters `/*`, and `src.replace(/\/\*[\s\S]*?\*\//g, '')` treats that
+// as the start of a block comment — blanking 34k characters, the entire createEvent insert among
+// them. "deleteCalendarEntryRow must be GONE" would then pass because the region it would appear
+// in had been deleted from the haystack. A single-pass scanner that consumes `//` to end-of-line
+// before it can ever open a block cannot make that mistake.
+import { stripComments } from './check-module-reachability.mjs'
 
 const read = (p) => {
   if (!existsSync(p)) {
@@ -55,14 +63,33 @@ const migrations = readdirSync(MIGRATIONS)
   .join('\n')
 
 /** Comments explain what was removed and why, so an "it must be GONE" assertion has to read the
- *  CODE. Stripping is crude on purpose — it only has to keep a prose mention out of a grep. */
-const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+ *  CODE, never the prose about it. */
 const actionsCode = stripComments(actions)
 
 const bad = []
 const need = (cond, message) => {
   if (!cond) bad.push(message)
 }
+
+// ── 0. INHERITED VERBATIM FROM THE 2026-09-21 REOPEN PROBE ──────────────────────────────────────
+// This script GREW from the inline `node -e` probe the reopen installed, so that its assertions
+// could be commented and added to — it did not replace it. AGENTS.md: "Close a row by making its
+// probe pass. Never delete the probe." The three the reopen measured are reproduced here first,
+// word for word in behaviour and message, and everything below is strictly additional.
+const updateEventBody = actions.split('export async function updateEvent')[1] || ''
+
+need(
+  /transitionSpacePlanRows|transition_space_plan_stage/.test(actions),
+  'publishing an event still does not advance its Plan to production, so every published Plan stays stuck on the board',
+)
+need(
+  !/deleteCalendarEntryRow/.test(actions) || /published_event_id|pencil_archived|archived_at/.test(actions),
+  'publishing still hard-deletes the pencil entry, losing the date history with no archive or back-pointer',
+)
+need(
+  /plan_id/.test(updateEventBody),
+  'updateEvent still cannot set plan_id, so a broken Plan-to-Event link can never be repaired from the app',
+)
 
 // 1. THE PREFILL READS THE MANIFEST, never its own list of what an event needs (ADR-1386
 //    invariant 3), and the Spark accepts both halves of the link.
@@ -136,8 +163,8 @@ need(
   'createEvent / updateEvent do not resolve the plan link through the one authority',
 )
 need(
-  (actions.match(/resolvePlanLink/g) ?? []).length >= 2,
-  'the plan link is still create-only: updateEvent never touches plan_id',
+  /resolvePlanLink/.test(updateEventBody),
+  'the plan link is still create-only: updateEvent never resolves one (a `plan_id` mention alone satisfied the reopen probe, so this reads updateEvent\'s OWN body)',
 )
 need(
   planLink.includes('setEventPlan'),
@@ -148,6 +175,19 @@ need(
 need(
   /entryId:\s*pencilByPlan/.test(board),
   'plan-board builds its "Make it a Production" href without the Pencil, so nothing is prefilled',
+)
+
+// 8. THE PLAN SEAM ANSWERS TO THE HOSTING SPACE, ROOT EXCLUDED. `stampEventSpaceId` stamps the
+//    root tenant onto every event that names no Space, so authorizing the link against the raw
+//    `space_id` (or a hand-rolled `host_space_id ?? space_id`) reads "Frequency" as a real host for
+//    every personal event — the LIVE-075 defect lib/events/host-space.ts was written to end.
+need(
+  /resolveHostingSpaceId\b/.test(actionsCode) && /resolveHostingSpaceIdFromRow/.test(actionsCode),
+  'the Plan seam does not resolve the hosting Space through lib/events/host-space.ts, so the root tenant authorizes Plan links on personal events',
+)
+need(
+  !/host_space_id \?\? evRow|evRow\?\.host_space_id \?\? evRow\?\.space_id/.test(actionsCode),
+  'updateEvent hand-rolls the host_space_id ?? space_id pair instead of using the one resolver, so it skips the root guard',
 )
 
 if (bad.length > 0) {

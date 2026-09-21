@@ -28,9 +28,8 @@ import { productionPrefill, readinessGaps } from '@/lib/calendar/production-pref
 import { EVENT_MANIFEST } from '@/lib/studio/entities/event'
 import { buildVeraProposal } from '@/lib/calendar/vera-plan'
 import { createClient } from '@/lib/supabase/server'
-import { listEventsForSpace } from '@/lib/events/store'
-import { formatEventWhen } from '@/lib/time/zone'
 import { setEventPlan } from '@/lib/events/plan-link'
+import { listPlanLinkableEventRows } from '@/lib/calendar/admin-calendar'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -251,13 +250,10 @@ export async function listPlanLinkableEvents(
 ): Promise<{ id: string; title: string; whenLabel: string; planId: string | null }[]> {
   const editor = await resolveEditor(slug)
   if (!editor) return []
-  const rows = await listEventsForSpace(editor.spaceId, { limit: 100, includeUnpublished: true })
-  return rows.map((ev) => ({
-    id: ev.id,
-    title: ev.title,
-    whenLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'date' }),
-    planId: ev.plan_id ?? null,
-  }))
+  // Through lib/calendar/admin-calendar.ts, the ONE file the publication gate lets opt out of
+  // listEventsForSpace's published-only default (lib/events/space-events-gate.test.ts freezes that
+  // list). Manager-gated by resolveEditor above, exactly like every other caller of that module.
+  return listPlanLinkableEventRows(editor.spaceId)
 }
 
 /** Attach an existing event to this Plan, or detach it when `eventId` is empty. */

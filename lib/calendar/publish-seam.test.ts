@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { ENTRY_COLS } from './entries'
 import { planPublishLag } from './plans'
 import { productionPrefill } from './production-prefill'
@@ -83,7 +84,12 @@ describe('the publish path', () => {
     'supabase/migrations/20270345007400_pencil_becomes_its_production.sql',
     'utf8',
   )
-  const code = actions.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+  // Through the shared scanner (test/source-shape.ts), which exists because 34 source-shape
+  // assertions were found matching their own explanatory comment. Here the naive regex pair was
+  // worse than that: a LINE comment in this file contains the characters `/*`, so the pair blanked
+  // 34k characters — the whole createEvent insert — and `expect(code).not.toContain(...)` passed
+  // against a haystack with the evidence removed.
+  const code = sourceWithoutComments('app/(main)/events/actions.ts')
 
   it('retires the Pencil instead of deleting it', () => {
     expect(code).not.toContain('deleteCalendarEntryRow')
