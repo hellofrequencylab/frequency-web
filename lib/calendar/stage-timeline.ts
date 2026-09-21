@@ -44,6 +44,10 @@ export const ONE_OF_SEVERAL_REASON = 'This is one of several possible dates. Kee
 /** Publish is the Production door, so it opens only once the date is a Production. */
 export const PUBLISH_NOT_YET_REASON = 'Make it a Production first. Publish opens from there.'
 
+/** The Spark opens FROM a saved date (`?pencil=<entryId>`), so a date that has never been saved has
+ *  nothing to open from. The step says so rather than doing nothing when it is pressed. */
+export const UNSAVED_REASON = 'Save this date first. Publish opens the Spark from the saved date.'
+
 export const PUBLISH_LABEL = 'Publish'
 
 export function stageTimeline(opts: {
@@ -51,6 +55,9 @@ export function stageTimeline(opts: {
   stage: string | null | undefined
   /** True when the row still has candidate siblings (`option_group` is set). */
   oneOfSeveral: boolean
+  /** True when this date exists in the table. A date the drawer has not saved yet has no id, so
+   *  the Production door has nothing to open; the step is refused instead of doing nothing. */
+  saved: boolean
 }): StageTimelinePlan {
   const current = entryStage(opts.stage) ?? ENTRY_STAGES[0]
   const cancelled = current.stage === 'cancelled'
@@ -64,8 +71,14 @@ export function stageTimeline(opts: {
     return { key, label: def.label, state, disabled, reason: disabled ? ONE_OF_SEVERAL_REASON : null }
   })
 
-  const ready = current.stage === 'production'
-  const publishReason = ready ? null : opts.oneOfSeveral ? ONE_OF_SEVERAL_REASON : PUBLISH_NOT_YET_REASON
+  const ready = current.stage === 'production' && opts.saved
+  const publishReason = ready
+    ? null
+    : opts.oneOfSeveral
+      ? ONE_OF_SEVERAL_REASON
+      : current.stage === 'production'
+        ? UNSAVED_REASON
+        : PUBLISH_NOT_YET_REASON
   steps.push({
     key: PUBLISH_STEP,
     label: PUBLISH_LABEL,

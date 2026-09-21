@@ -15,7 +15,8 @@
 //   5. the Publish door carries the entry id, the Spark honours `pencil` with no Plan, and the
 //      prefill really carries title, description, location, both dates and the entry's own zone,
 //      while Team notes never reach it;
-//   6. Publish saves before it leaves when the drawer holds unsaved edits;
+//   6. Publish saves before it leaves when the drawer holds unsaved edits, and is refused outright
+//      on a date that has never been saved (the door would have nothing to open);
 //   7. the stepper spends design tokens, never a raw hex, and restates no stage name of its own.
 //
 // Exit 0 = done, 1 = not done, 79 = could not look.
@@ -88,7 +89,7 @@ const need = (cond, message) => {
   if (!cond) bad.push(message)
 }
 const stageDef = (stage) => ENTRY_STAGES.find((d) => d.stage === stage)
-const walk = (stage, oneOfSeveral = false) => stageTimeline({ stage, oneOfSeveral })
+const walk = (stage, oneOfSeveral = false, saved = true) => stageTimeline({ stage, oneOfSeveral, saved })
 const at = (plan, key) => plan.steps.find((s) => s.key === key)
 
 // ── 1. The drawer renders the stepper and no Stage <select> remains ─────────────────────────────
@@ -139,6 +140,10 @@ need(at(walk('planning'), PUBLISH_STEP)?.disabled === true, 'Publish opens befor
 need(walk('planning').reasons.some((r) => /Production/.test(r)), 'Publish is shut before Production without saying what to do first')
 need(at(walk('production'), PUBLISH_STEP)?.disabled === false, 'Publish is shut even at Production, so the door never opens')
 need(at(walk('production'), PUBLISH_STEP)?.state === 'upcoming', 'the Publish door reads as where you are; a door is never a stage')
+const unsaved = walk('production', false, false)
+need(at(unsaved, PUBLISH_STEP)?.disabled === true, 'Publish is live on a date the drawer has never saved, so the step does nothing when it is pressed')
+need(unsaved.reasons.some((r) => /Save this date/i.test(r)), 'a date that must be saved before Publish is not told to save')
+need(/saved: !!draft\?\.id/.test(drawer), 'the drawer no longer tells the row whether this date is saved, so Publish is live on a date with no id')
 
 // ── 4. Steps write the same form state the select wrote; nothing auto-saves on click ───────────
 const stepFn = drawer.match(/const step = \(key: string\) => \{[\s\S]*?\n  \}/)?.[0] ?? ''

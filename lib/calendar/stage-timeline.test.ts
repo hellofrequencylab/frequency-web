@@ -3,6 +3,7 @@ import { ENTRY_STAGES } from './registry'
 import {
   ONE_OF_SEVERAL_REASON,
   PUBLISH_NOT_YET_REASON,
+  UNSAVED_REASON,
   STAGE_PIPELINE,
   productionDoorHref,
   stageTimeline,
@@ -13,7 +14,7 @@ import {
 
 describe('stageTimeline shape', () => {
   it('walks Pencil, Planning, Production, Publish and never Cancelled', () => {
-    const plan = stageTimeline({ stage: 'pencil', oneOfSeveral: false })
+    const plan = stageTimeline({ stage: 'pencil', oneOfSeveral: false, saved: true })
     expect(plan.steps.map((s) => s.key)).toEqual(['pencil', 'planning', 'production', 'publish'])
     expect(plan.steps.map((s) => s.label)).toEqual(['Pencil', 'Planning', 'Production', 'Publish'])
     expect(STAGE_PIPELINE).not.toContain('cancelled')
@@ -22,25 +23,25 @@ describe('stageTimeline shape', () => {
   it('reads the stage labels and hints from the registry, not a second copy', () => {
     for (const key of STAGE_PIPELINE) {
       const def = ENTRY_STAGES.find((d) => d.stage === key)!
-      const plan = stageTimeline({ stage: key, oneOfSeveral: false })
+      const plan = stageTimeline({ stage: key, oneOfSeveral: false, saved: true })
       expect(plan.steps.find((s) => s.key === key)!.label).toBe(def.label)
       expect(plan.hint).toBe(def.hint)
     }
   })
 
   it('marks earlier steps done, the stage current, later steps upcoming', () => {
-    const plan = stageTimeline({ stage: 'planning', oneOfSeveral: false })
+    const plan = stageTimeline({ stage: 'planning', oneOfSeveral: false, saved: true })
     expect(plan.steps.map((s) => s.state)).toEqual(['done', 'current', 'upcoming', 'upcoming'])
   })
 
   it('falls back to Pencil for a missing stage, like the select did', () => {
-    expect(stageTimeline({ stage: null, oneOfSeveral: false }).steps[0].state).toBe('current')
+    expect(stageTimeline({ stage: null, oneOfSeveral: false, saved: true }).steps[0].state).toBe('current')
   })
 })
 
 describe('stageTimeline refusals live in the hint', () => {
   it('holds a date that is one of several at Pencil and says why', () => {
-    const plan = stageTimeline({ stage: 'pencil', oneOfSeveral: true })
+    const plan = stageTimeline({ stage: 'pencil', oneOfSeveral: true, saved: true })
     expect(plan.steps.find((s) => s.key === 'pencil')!.disabled).toBe(false)
     for (const key of ['planning', 'production', 'publish'] as const) {
       const step = plan.steps.find((s) => s.key === key)!
@@ -51,7 +52,7 @@ describe('stageTimeline refusals live in the hint', () => {
   })
 
   it('keeps Publish shut before Production and says what to do first', () => {
-    const plan = stageTimeline({ stage: 'planning', oneOfSeveral: false })
+    const plan = stageTimeline({ stage: 'planning', oneOfSeveral: false, saved: true })
     const publish = plan.steps.find((s) => s.key === 'publish')!
     expect(publish.disabled).toBe(true)
     expect(publish.reason).toBe(PUBLISH_NOT_YET_REASON)
@@ -59,7 +60,7 @@ describe('stageTimeline refusals live in the hint', () => {
   })
 
   it('opens Publish at Production, and the door is never the current step', () => {
-    const plan = stageTimeline({ stage: 'production', oneOfSeveral: false })
+    const plan = stageTimeline({ stage: 'production', oneOfSeveral: false, saved: true })
     const publish = plan.steps.find((s) => s.key === 'publish')!
     expect(publish.disabled).toBe(false)
     expect(publish.state).toBe('upcoming')
@@ -67,9 +68,23 @@ describe('stageTimeline refusals live in the hint', () => {
   })
 })
 
+describe('stageTimeline refuses a door that has nothing to open', () => {
+  it('shuts Publish on a date the drawer has never saved, and says to save it first', () => {
+    const plan = stageTimeline({ stage: 'production', oneOfSeveral: false, saved: false })
+    const publish = plan.steps.find((s) => s.key === 'publish')!
+    expect(publish.disabled).toBe(true)
+    expect(publish.reason).toBe(UNSAVED_REASON)
+    expect(plan.reasons).toEqual([UNSAVED_REASON])
+  })
+
+  it('still says "make it a Production first" before Production, saved or not', () => {
+    expect(stageTimeline({ stage: 'planning', oneOfSeveral: false, saved: false }).reasons).toEqual([PUBLISH_NOT_YET_REASON])
+  })
+})
+
 describe('stageTimeline treats Cancelled as an exit', () => {
   it('has no current step, shows the exit hint, and lets Pencil bring it back', () => {
-    const plan = stageTimeline({ stage: 'cancelled', oneOfSeveral: false })
+    const plan = stageTimeline({ stage: 'cancelled', oneOfSeveral: false, saved: true })
     expect(plan.cancelled).toBe(true)
     expect(plan.steps.some((s) => s.state === 'current')).toBe(false)
     expect(plan.hint).toBe(ENTRY_STAGES.find((d) => d.stage === 'cancelled')!.hint)

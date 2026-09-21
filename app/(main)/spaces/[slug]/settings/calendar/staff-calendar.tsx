@@ -159,7 +159,9 @@ export function StaffCalendar({
   // write `stage` into the SAME form state the select wrote, so every other field the person has
   // typed survives and the change persists on Save exactly as before: nothing auto-saves on click.
   // The fourth step, Publish, is the door to the event Spark ("Make it a Production"), not a stage.
-  const timeline = stage ? stageTimeline({ stage: stage.stage, oneOfSeveral: !!draft?.optionGroup }) : null
+  const timeline = stage
+    ? stageTimeline({ stage: stage.stage, oneOfSeveral: !!draft?.optionGroup, saved: !!draft?.id })
+    : null
   const step = (key: string) => {
     if (key === PUBLISH_STEP) {
       publish()
