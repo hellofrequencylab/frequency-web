@@ -26,6 +26,9 @@
 #     status read could not see it; this is the reading that would have moved (LIVE-336). It never
 #     fails the sweep, and an unarmed or failed read says it COULD NOT LOOK rather than going
 #     quiet.
+#   - the three phase 11 numbers (CORE-MODEL §5, PROG-R11): circles a Space started per Space,
+#     gatherings held, and people a host marked present, from scripts/maintenance/prove-it.mjs.
+#     A series with no threshold; only a read that could not happen reaches the issue.
 #
 # On any new WARN/ERROR it creates-or-updates one issue titled "🔧 Weekly maintenance sweep";
 # a clean run adds nothing (quiet-by-default). Phase 4 layers an AI triage step on top.
@@ -323,6 +326,47 @@ jobs:
           if [ "$CODE" != "0" ]; then echo "$REPORT" > dbusage.txt; fi
           echo "code=$CODE" >> "$GITHUB_OUTPUT"
 
+      # ── The three phase 11 numbers, as a weekly series (PROG-R11, ADR-1510) ────────────────
+      #
+      # CORE-MODEL §5 phase 11: every other number in the model is a guess until three move —
+      # circles a Space started per Space, gatherings actually held, and people a host marked
+      # present. scripts/maintenance/prove-it.mjs is the one query, with its definitions beside
+      # it, and this step is how the reading is taken without anyone writing the query again.
+      # Same credential path and same division of labour as the usage step above.
+      #
+      # A READING, NEVER A GATE. There is no threshold: nobody has ruled what a good number is,
+      # and a series is the point. The only thing routed to the tracking issue is a read that
+      # could NOT happen (79), because a dead instrument during the six-week field test is the
+      # one failure that would go unnoticed otherwise (ADR-970).
+      - name: Phase 11 reading
+        id: proveit
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+        run: |
+          set +e
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_PROJECT_REF" ]; then
+            {
+              echo "🔴 **Could not look** — the three phase 11 numbers were NOT read on this run."
+              echo "Set the SUPABASE_ACCESS_TOKEN secret + SUPABASE_PROJECT_REF var to arm it (ADR-970)."
+            } > proveit.txt
+            echo "code=79" >> "$GITHUB_OUTPUT"
+            { echo "## Phase 11 reading"; cat proveit.txt; echo ""; } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          QUERY=$(node scripts/maintenance/prove-it.mjs --print-query)
+          curl -sS -X POST \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "$(jq -n --arg q "$QUERY" '{query: $q}')" \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" > proveit.json
+          REPORT=$(node scripts/maintenance/prove-it.mjs proveit.json 2>&1)
+          CODE=$?
+          echo "$REPORT"
+          { echo "## Phase 11 reading"; echo "$REPORT"; echo ""; } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$CODE" != "0" ]; then echo "$REPORT" > proveit.txt; fi
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+
       # It is only the coverage VERDICT that needs env, and that half degrades to the same ℹ️ line
       # and exit 0 the credentialed steps use.
       #
@@ -422,7 +466,7 @@ jobs:
       #    `steps.adoption.outputs.code != '0'` for the same reason: 1 is a class above its
       #    baseline on main, anything else is the ratchet itself failing to read.
       - name: Report to a tracking issue on delta
-        if: steps.audit.outputs.code != '0' || steps.advisors.outputs.code == '1' || steps.ledger.outputs.code == '1' || steps.menudrift.outputs.code == '1' || steps.cron.outputs.code != '0' || steps.collective.outputs.code != '0' || steps.adoption.outputs.code != '0' || steps.dbusage.outputs.code != '0'
+        if: steps.audit.outputs.code != '0' || steps.advisors.outputs.code == '1' || steps.ledger.outputs.code == '1' || steps.menudrift.outputs.code == '1' || steps.cron.outputs.code != '0' || steps.collective.outputs.code != '0' || steps.adoption.outputs.code != '0' || steps.dbusage.outputs.code != '0' || steps.proveit.outputs.code != '0'
         uses: actions/github-script@v9
         with:
           script: |
@@ -440,6 +484,7 @@ jobs:
               read('collective.txt') && ('### Community Collective phase gate\n' + read('collective.txt')),
               read('adoption.txt') && ('### Design-debt ratchet (main)\n' + read('adoption.txt')),
               read('dbusage.txt') && ('### Database account usage\n' + read('dbusage.txt')),
+              read('proveit.txt') && ('### Phase 11 reading\n' + read('proveit.txt')),
             ].filter(Boolean).join('\n')
             const title = '🔧 Weekly maintenance sweep'
             const { data: open } = await github.rest.issues.listForRepo({
