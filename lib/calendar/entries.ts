@@ -40,10 +40,15 @@ export interface EntryRow {
   description: string | null
   /** The Plan this date belongs to (ADR-1386). */
   plan_id: string | null
+  /** The Production this Pencil BECAME (PROG-CAL3). Set on publish instead of deleting the row, so
+   *  the date keeps its description, Team notes and hold and back-links its event. A row carrying
+   *  one no longer renders as its own calendar item: the event card IS this date's card now, which
+   *  is what ADR-1386's "rather than sitting beside it as a duplicate" asks for. */
+  published_event_id: string | null
 }
 
 export const ENTRY_COLS =
-  'id, space_id, kind, title, notes, location, all_day, starts_at, ends_at, time_zone, status, blocks_time, visibility, option_group, hold_expires_at, stage, description, plan_id'
+  'id, space_id, kind, title, notes, location, all_day, starts_at, ends_at, time_zone, status, blocks_time, visibility, option_group, hold_expires_at, stage, description, plan_id, published_event_id'
 
 /** The staff form, as plain strings and booleans (what a client sends). */
 export interface EntryInput {
@@ -75,8 +80,10 @@ export interface EntryInput {
   planId?: string | null
 }
 
-/** The columns a create or update writes. `option_group` is set by the action, never by the form. */
-export type EntryWrite = Omit<EntryRow, 'id' | 'space_id' | 'option_group'>
+/** The columns a create or update writes. `option_group` is set by the action, never by the form,
+ *  and `published_event_id` only ever by the publish seam (retirePencilToEvent) — leaving it in
+ *  this type would let an ordinary edit of the drawer silently un-retire a published date. */
+export type EntryWrite = Omit<EntryRow, 'id' | 'space_id' | 'option_group' | 'published_event_id'>
 
 /** The most candidate dates one pencil may carry (the first date included). */
 export const MAX_CANDIDATE_DATES = 6
@@ -268,7 +275,10 @@ export function entryToCalendarItem(
       ? `${fmt.dateLabel(row.starts_at, row.time_zone)}, all day`
       : `${fmt.dateLabel(row.starts_at, row.time_zone)} to ${fmt.dateLabel(lastDayIso, row.time_zone)}, all day`
     : `${fmt.whenLabel(row.starts_at, row.time_zone)} to ${fmt.timeLabel(row.ends_at, row.time_zone)}`
-  const stage = def?.isPencil ? (entryStage(row.stage) ?? entryStage('pencil')) : null
+  // A stored stage is never dropped: a row that carries one renders by it whatever its kind (the
+  // table's trigger keeps stage on pencil-kind rows, so this only matters if that ever loosens).
+  // A pencil-kind row with no stage is a Pencil.
+  const stage = entryStage(row.stage) ?? (def?.isPencil ? entryStage('pencil') : null)
   const holding = stage?.stage === 'pencil'
   const lapsed = holding && !!row.hold_expires_at && opts.now !== undefined && row.hold_expires_at.slice(0, 10) < opts.now
   const badges = [
@@ -293,7 +303,7 @@ export function entryToCalendarItem(
     // An event on its way is labelled by its stage ("Planning"); other entries by their kind.
     sourceLabel: stage?.label ?? def?.label ?? null,
     statusLabel: badges || null,
-    isCancelled: row.status === 'cancelled',
+    isCancelled: row.status === 'cancelled' || stage?.stage === 'cancelled',
     layer: def?.layer ?? 'private',
     entryId: opts.editable ? row.id : null,
     optionGroup: row.option_group,

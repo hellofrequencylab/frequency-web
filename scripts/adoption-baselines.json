@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2155,
+      "baseline": 2154,
       "frozen": {
         "at": "2026-09-21",
-        "value": 2155,
+        "value": 2154,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "Incidental retirement across the 2026-09-08..21 operator-calendar and Collective-copy merges (PRs #2789-#2817), not a deliberate sweep. Banked so the lower floor holds and the sites cannot come back unnoticed.",
-        "from": 2167
+        "reason": "PROG-P5 / ADR-1498: the Starter Circle preview retired its hand-rolled rounded-2xl cover box when its cover moved onto the canonical PageHero. 2155 to 2154.",
+        "from": 2155
       },
       "history": [
         {
@@ -266,6 +266,13 @@
           "to": 2155,
           "direction": "lowered",
           "reason": "Incidental retirement across the 2026-09-08..21 operator-calendar and Collective-copy merges (PRs #2789-#2817), not a deliberate sweep. Banked so the lower floor holds and the sites cannot come back unnoticed."
+        },
+        {
+          "at": "2026-09-21",
+          "from": 2155,
+          "to": 2154,
+          "direction": "lowered",
+          "reason": "PROG-P5 / ADR-1498: the Starter Circle preview retired its hand-rolled rounded-2xl cover box when its cover moved onto the canonical PageHero. 2155 to 2154."
         }
       ]
     },
@@ -604,14 +611,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 404,
+      "baseline": 403,
       "frozen": {
         "at": "2026-09-21",
-        "value": 404,
-        "direction": "raised",
+        "value": 403,
+        "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "Two segmented view switchers from the operator calendar (ADR-1389/1464/1467): components/spaces/calendar-mode-toggle.tsx and calendar-list-view.tsx. Both are aria-pressed controls whose SELECTED state is the bg-primary fill, not primary action buttons. The kit has underline-tabs and switch but no segmented control, so there is no primitive to compose; HYG-105 files that gap.",
-        "from": 403
+        "reason": "LIVE-445 / ADR-1503: calendar-list-view.tsx no longer hand-rolls its selected bg-primary fill; the selected class comes from lib/calendar/registry.ts itemSelectedClass. One of the two sites named in the 2026-09-21 raise retired.",
+        "from": 404
       },
       "history": [
         {
@@ -760,6 +767,13 @@
           "to": 404,
           "direction": "raised",
           "reason": "Two segmented view switchers from the operator calendar (ADR-1389/1464/1467): components/spaces/calendar-mode-toggle.tsx and calendar-list-view.tsx. Both are aria-pressed controls whose SELECTED state is the bg-primary fill, not primary action buttons. The kit has underline-tabs and switch but no segmented control, so there is no primitive to compose; HYG-105 files that gap."
+        },
+        {
+          "at": "2026-09-21",
+          "from": 404,
+          "to": 403,
+          "direction": "lowered",
+          "reason": "LIVE-445 / ADR-1503: calendar-list-view.tsx no longer hand-rolls its selected bg-primary fill; the selected class comes from lib/calendar/registry.ts itemSelectedClass. One of the two sites named in the 2026-09-21 raise retired."
         }
       ]
     },

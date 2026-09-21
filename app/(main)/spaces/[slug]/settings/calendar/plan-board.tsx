@@ -12,10 +12,15 @@ const COLS = PLAN_STAGES.map((stage) => ({
 export function PlanBoard({
   spaceId,
   plans,
+  pencilByPlan,
   onOpen,
 }: {
   spaceId: string
   plans: SpacePlan[]
+  /** The date each Plan opens its Production from (PROG-CAL3). Without it the href carried no
+   *  `pencil=` and `productionPrefill` never ran: the Spark opened holding a title and nothing
+   *  else, no date, no time, no location, no description. */
+  pencilByPlan?: Record<string, string>
   onOpen: (plan: SpacePlan) => void
 }) {
   return (
@@ -27,7 +32,11 @@ export function PlanBoard({
             {plans
               .filter((p) => p.stage === col.stage)
               .map((plan) => {
-                const href = planTargetDef(plan.targetKind).createHref?.({ spaceId, planId: plan.id })
+                const href = planTargetDef(plan.targetKind).createHref?.({
+                  spaceId,
+                  planId: plan.id,
+                  entryId: pencilByPlan?.[plan.id],
+                })
                 return (
                   <li key={plan.id} className="rounded-control border border-border px-3 py-2">
                     <button type="button" className="block w-full text-left text-body-sm font-medium text-text" onClick={() => onOpen(plan)}>

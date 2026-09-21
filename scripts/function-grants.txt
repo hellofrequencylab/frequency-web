@@ -1,4 +1,5 @@
 transition_space_plan_stage  authenticated
+block_type_usage                     internal
 create_penciled_plan         authenticated
 # Function-grant contract — one EXECUTE verdict per live `public` function (LIVE-020, ADR-959).
 # Enforced by `pnpm check:function-grants` (scripts/check-function-grants.mjs).
@@ -91,6 +92,7 @@ apply_bundle_seating_atomic          internal
 apply_membership_event_atomic        internal
 award_gems_atomic                    internal
 award_zaps_atomic                    internal
+block_type_usage                     internal
 capture_guest_rsvp                   public
 capture_signup_lead                  public
 challenge_outcomes                   public
@@ -155,6 +157,7 @@ is_blocked_between                   public
 journey_funnel                       internal
 keep_pencil_date                     authenticated
 lead_entry_points_no_overwrite       public
+library_asset_usage                  internal
 log_crew_completion_atomic           internal
 maintain_engagement_on_reaction      public
 maintain_engagement_on_reply         public

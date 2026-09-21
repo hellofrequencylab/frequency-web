@@ -315,7 +315,7 @@ export const spec: ArticleSpec = {
     },
     {
       q: 'What does Frequency cost to build community here?',
-      a: 'People join free and businesses host free. Joining, Circles, showing up, and starting a Space to host from never cost anything. You pay when you start charging, and even then you keep 100% of your own bookings, always. Frequency is a Community Collective, so we earn only on a sale the network brought you, at a rate that drops as your plan rises. See the plans on the pricing page. Month to month, take your data and leave anytime.',
+      a: 'People join free and businesses host free. Joining, Circles, showing up, and starting a Space to host from never cost anything. You pay when you start charging, and even then you keep 100% of your own bookings, always. Frequency is a Community Collective, so we earn only on a sale the network brought you, never on the people you bring yourself. A plan is what you take when money starts moving, and the rate is what a plan settles at, not what a plan is for. See the plans on the pricing page. Month to month, take your data and leave anytime.',
     },
   ],
 

@@ -63,7 +63,7 @@ export const data: Data = {
         title: 'Frequency is a Community Collective for the people who gather everyone else.',
         titleAccent: 'Community Collective',
         subtitle:
-          "Creators, coaches, healers, and small businesses run their community on Frequency and keep what they earn. You pay 0% on your own bookings, always. We take a small, shrinking cut only on the business the network sends you.",
+          "Creators, coaches, healers, and small businesses run their community on Frequency and keep what they earn. You pay 0% on your own bookings, always. We earn a share only of the business the network sends you.",
         image: '/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg',
         focal: 'center',
         minHeight: 'screen',
