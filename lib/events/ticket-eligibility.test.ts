@@ -5,6 +5,7 @@ import {
   payoutScopeKey,
   PAYOUT_SCOPE_SELF,
   NEEDS_PAYOUT_ACCOUNT,
+  buyerMaySeePrice,
 } from './ticket-eligibility'
 
 // The predicate is pure and total, and it is the ONE thing standing between a host who priced an
@@ -48,5 +49,30 @@ describe('payoutScopeKey', () => {
 
   it('agrees across the two encodings of the SAME space, which is the whole point', () => {
     expect(payoutScopeKey('space:s1')).toBe(payoutScopeKey('s1'))
+  })
+})
+
+
+describe('buyerMaySeePrice', () => {
+  // The rule OWN-074 measured the cost of: a live $55 tickets-mode event whose host has no Connect
+  // account, priced on every card and in every rich result, and unbuyable to everyone.
+  it('withholds a TICKETS-mode price when the payee cannot be paid', () => {
+    for (const payoutsReady of [false, null, undefined]) {
+      expect(buyerMaySeePrice({ ticketsMode: true, payoutsReady })).toBe(false)
+    }
+  })
+
+  it('shows a TICKETS-mode price when the payee is ready', () => {
+    expect(buyerMaySeePrice({ ticketsMode: true, payoutsReady: true })).toBe(true)
+  })
+
+  // 🔴 THE HALF THAT IS EASY TO GET WRONG. An RSVP-mode price is collected AT THE DOOR (LIVE-314):
+  // nothing goes through checkout at RSVP time, the flow already says "Pay the $22 at the door",
+  // and a signed-in member gets full RSVP controls whether or not payouts are connected. Hiding
+  // that number would delete true information and re-close the guest door LIVE-314 opened.
+  it('never withholds an RSVP-mode price, whatever the payout state', () => {
+    for (const payoutsReady of [true, false, null, undefined]) {
+      expect(buyerMaySeePrice({ ticketsMode: false, payoutsReady })).toBe(true)
+    }
   })
 })

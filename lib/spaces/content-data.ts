@@ -28,6 +28,8 @@ import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { listEventsForSpace, listCalendarEngagement } from '@/lib/events/store'
 import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { tierSummariesByEvent, priceLabelFromSummary } from '@/lib/events/tier-prices'
+import { eventPayoutReadyMap } from '@/lib/events/payout-readiness'
+import { buyerMaySeePrice } from '@/lib/events/ticket-eligibility'
 import { listPracticesForSpace } from '@/lib/practices'
 import { listJourneyPlansForSpace } from '@/lib/journey-plans'
 import { listPublicSpaceCircles } from '@/lib/circles/store'
@@ -99,11 +101,19 @@ export type SpaceEventItem = {
    *  object-position, so this block's cards and popup crop the photo exactly like the event page
    *  hero. Absent keeps today's centered crop. */
   coverFocus?: string | null
-  /** Price stat, "Free" / "$X" / "From $X" (same resolution as the events index cards). */
-  priceLabel?: string
+  /** Price stat, "Free" / "$X" / "From $X" (same resolution as the events index cards).
+   *
+   *  🔴 `null` MEANS SAY NOTHING, and it is not "Free" (EVT-PRICE-HONESTY). A tickets-mode price
+   *  is an offer to take money, so it is withheld when the payee cannot receive it. */
+  priceLabel?: string | null
   /** ADR-826 tickets mode (buying is attending): the popup offers price + Get tickets on the event
    *  page instead of an RSVP switch. */
   ticketsMode?: boolean
+  /** Is there actually a ticket to get? (EVT-PRICE-HONESTY.) `ticketsMode` says how you attend;
+   *  this says whether the platform can take the money today. They come apart when the payee has
+   *  no completed Connect account, and a "Get tickets" button in that gap is a promise the event
+   *  page then refuses with TICKETS_NOT_READY. Absent reads as NOT on sale, fail-closed. */
+  ticketsOnSale?: boolean
   isDemo?: boolean
   /** True when the event was called off (events.is_cancelled). The upcoming list drops cancelled
    *  events before they reach a block, so a block that still sees one must paint it as cancelled
@@ -577,17 +587,25 @@ export async function getSpaceUpcomingEvents(spaceId: string): Promise<SpaceEven
     // still reach PostgREST's server-side `max_rows` of 1,000 and silently drop the tail, and a
     // bound that depends on nobody making a long ticket ladder is not a bound. Sharing the helper
     // also means one definition of the label instead of two that must be kept in step by hand.
-    const [engagement, tierSummaries] = await Promise.all([
+    const [engagement, tierSummaries, payoutReady] = await Promise.all([
       listCalendarEngagement(ids),
       tierSummariesByEvent(ids),
+      // Can the person Stripe would pay actually receive this money? (EVT-PRICE-HONESTY.) Batched
+      // for the whole block in two reads, and keyed on the PAYEE rather than the host: a Space's
+      // calendar carries events hosted by the Space (owner pays) beside personally hosted ones.
+      eventPayoutReadyMap(live),
     ])
     return live.map((e) => {
       const eng = engagement.get(e.id)
-      const priceLabel = priceLabelFromSummary(e.price_cents ?? null, tierSummaries[e.id])
+      const label = priceLabelFromSummary(e.price_cents ?? null, tierSummaries[e.id])
       // ADR-826: 'auto'/'tickets' + a real price + ticketing on = buying is attending. 'rsvp' keeps
       // the answer switch for everyone (prices are informational), and a free event always RSVPs.
-      const paid = priceLabel !== 'Free'
+      const paid = label !== 'Free'
       const ticketsMode = TICKETING_ENABLED && paid && (e.join_mode ?? 'auto') !== 'rsvp'
+      // In tickets mode the number IS the offer, so it is withheld when nobody can be paid for it.
+      // An RSVP-mode price is collected at the door and stays visible (LIVE-314).
+      const ticketsOnSale = buyerMaySeePrice({ ticketsMode, payoutsReady: payoutReady[e.id] })
+      const priceLabel = ticketsOnSale ? label : null
       // ADR-825: the data bag is viewer-agnostic, so it carries only what a NON-REGISTERED visitor may
       // see. Hidden address = city-level line; otherwise venue + city (or the free-text location line).
       const cityLine = [e.city, e.region].map((p) => p?.trim()).filter(Boolean).join(', ')
@@ -614,6 +632,7 @@ export async function getSpaceUpcomingEvents(spaceId: string): Promise<SpaceEven
         coverFocus: eng?.coverFocus ?? null,
         priceLabel,
         ticketsMode,
+        ticketsOnSale,
         isDemo: e.is_demo === true,
         isCancelled: e.is_cancelled === true,
       }
