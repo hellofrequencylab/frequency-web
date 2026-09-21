@@ -44,7 +44,7 @@ import type { PageHeroSize, PageHeroVariant, HeroOverlayStyle } from '@/componen
  *  index the band CARRIES the page's `<h1>` (`heroOverlay`), so it must always exist and the null
  *  tail is the band still doing its job. On a detail page the `<h1>` lives in the context header
  *  BELOW the cover, so the cover is decoration — and a grey rectangle with an icon in it over every
- *  Hub, help article and public profile is chrome nobody asked for.
+ *  Channel, help article and public profile is chrome nobody asked for.
  *
  *  The placeholder is an AFFORDANCE, so it belongs on the surface where someone can act on it: a
  *  section whose cover is editable in place (the admin-settings scope kit, §8.5) shows the empty
@@ -95,8 +95,6 @@ export const DETAIL_HERO_DEFAULTS: readonly DetailHeroDefault[] = [
   { prefix: '/circles', image: null, size: 'standard', tail: 'none' },
   { prefix: '/journeys', image: null, size: 'standard', tail: 'none' },
   { prefix: '/people', image: null, size: 'standard', tail: 'none' },
-  { prefix: '/hubs', image: null, size: 'standard', tail: 'none' },
-  { prefix: '/nexuses', image: null, size: 'standard', tail: 'none' },
   { prefix: '/partners', image: null, size: 'standard', tail: 'none' },
   { prefix: '/store', image: null, size: 'standard', tail: 'none' },
   { prefix: '/nearby', image: null, size: 'standard', tail: 'none' },
