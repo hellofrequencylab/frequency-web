@@ -21,12 +21,15 @@ export function CalendarPlansPanel({
   spaceId,
   plans,
   playbooks,
+  pencilByPlan,
   initialPlanId,
 }: {
   slug: string
   spaceId: string
   plans: SpacePlan[]
   playbooks: PlanPlaybook[]
+  /** The date each Plan opens its Production from, so the Spark arrives prefilled (PROG-CAL3). */
+  pencilByPlan?: Record<string, string>
   initialPlanId?: string | null
 }) {
   const [pending, start] = useTransition()
@@ -43,7 +46,7 @@ export function CalendarPlansPanel({
       <p className="text-body-sm text-muted">
         A Plan is the working record behind dates on their way. Someday Plans with no dates live here too.
       </p>
-      <PlanBoard spaceId={spaceId} plans={plans} onOpen={setOpenPlan} />
+      <PlanBoard spaceId={spaceId} plans={plans} pencilByPlan={pencilByPlan} onOpen={setOpenPlan} />
       <div className="flex flex-wrap gap-2">
         <Input
           aria-label="New Plan title"
@@ -150,7 +153,13 @@ export function CalendarPlansPanel({
           {error}
         </p>
       )}
-      <PlanDrawer slug={slug} plan={openPlan} open={openPlan !== null} onClose={() => setOpenPlan(null)} />
+      <PlanDrawer
+        slug={slug}
+        plan={openPlan}
+        entryId={openPlan ? (pencilByPlan?.[openPlan.id] ?? null) : null}
+        open={openPlan !== null}
+        onClose={() => setOpenPlan(null)}
+      />
     </div>
   )
 }

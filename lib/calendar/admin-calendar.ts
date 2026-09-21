@@ -123,3 +123,30 @@ export async function loadAdminCalendar(
 
   return { events, ownedRows, dayNotes, plans }
 }
+
+/** THE SPACE'S EVENTS FOR THE PLAN PICKER (PROG-CAL3): id, title, when, and the Plan each already
+ *  belongs to. The repair door in the Plan drawer lists these so a broken `events.plan_id` can be
+ *  fixed in the app rather than in SQL.
+ *
+ *  🔴 IT LIVES HERE, AND NOT IN plan-actions.ts, BECAUSE OF THE PUBLICATION GATE. `listEventsForSpace`
+ *  reads through the service-role client, so its own query is the only gate there is (the 2026-08-20
+ *  regression: drafts and private events rendered on public Space profiles). `includeUnpublished` is
+ *  the named opt-out, and lib/events/space-events-gate.test.ts freezes the set of files allowed to
+ *  pass it to exactly ONE — this one. A second opt-out elsewhere is how that list stops meaning
+ *  anything, so the unsafe read stays in the module the gate already names.
+ *
+ *  Drafts are the POINT here, not an oversight: a Production is draft until a person presses publish
+ *  in the Spark (ADR-1386's invariant), so the events most likely to need their Plan link repaired
+ *  are precisely the unpublished ones. Same manager-only contract as `loadAdminCalendar` above —
+ *  the caller gates on managing the Space before calling. */
+export async function listPlanLinkableEventRows(
+  spaceId: string,
+): Promise<{ id: string; title: string; whenLabel: string; planId: string | null }[]> {
+  const rows = await listEventsForSpace(spaceId, { limit: 100, includeUnpublished: true })
+  return rows.map((ev) => ({
+    id: ev.id,
+    title: ev.title,
+    whenLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'date' }),
+    planId: ev.plan_id ?? null,
+  }))
+}
