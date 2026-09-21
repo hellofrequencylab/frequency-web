@@ -236,3 +236,42 @@ describe('stages and description (ADR-1388)', () => {
     expect(itemChipClass('private', null)).not.toBe(entryStage('pencil')!.chipClass)
   })
 })
+
+describe('stage presentation is the registry (calendar stage colours)', () => {
+  it('never drops a stored stage, whatever the kind, and a cancelled stage cancels the item', async () => {
+    const r = { ...row({ ...base, kind: 'private' }), stage: 'cancelled' as const, status: 'confirmed' as const }
+    const item = entryToCalendarItem(r, fmt, { editable: false })
+    expect(item.stage).toBe('cancelled')
+    expect(item.isCancelled).toBe(true)
+    expect(item.sourceLabel).toBe('Cancelled')
+  })
+
+  it('paints cancelled grey and struck through ahead of any stage or layer, and never with the brand', async () => {
+    const { ENTRY_STAGES, entryStage, itemChipClass, itemTitleClass, itemSelectedClass, itemBadgeTone, CANCELLED_TEXT_CLASS } =
+      await import('./registry')
+    for (const st of ENTRY_STAGES) {
+      expect(st.chipClass).not.toMatch(/primary|warning|signal|\//)
+    }
+    expect(itemChipClass('events', null, true)).toBe(entryStage('cancelled')!.chipClass)
+    expect(itemChipClass('pencil', 'planning', true)).toBe(entryStage('cancelled')!.chipClass)
+    expect(itemTitleClass('cancelled')).toBe(CANCELLED_TEXT_CLASS)
+    expect(itemTitleClass(null, true)).toBe(CANCELLED_TEXT_CLASS)
+    expect(itemTitleClass('planning')).toBe('')
+    expect(itemSelectedClass('cancelled')).not.toContain('bg-primary')
+    expect(itemSelectedClass('cancelled')).toContain('line-through')
+    expect(itemSelectedClass('production')).toContain('bg-primary-bg')
+    expect(itemBadgeTone('cancelled')).toBe('danger')
+    expect(itemBadgeTone('planning')).toBe('info')
+    expect(itemBadgeTone('production')).toBe('success')
+    expect(itemBadgeTone(null, false)).toBe('neutral')
+  })
+
+  it('separates the four stages by form, not hue alone', async () => {
+    const { ENTRY_STAGES, entryStage: stage } = await import('./registry')
+    expect(stage('pencil')!.chipClass).toContain('border-dashed')
+    expect(stage('planning')!.chipClass).not.toContain('border')
+    expect(stage('production')!.chipClass).toContain('border-success')
+    expect(stage('cancelled')!.chipClass).toContain('line-through')
+    expect(new Set(ENTRY_STAGES.map((d) => d.chipClass)).size).toBe(4)
+  })
+})
