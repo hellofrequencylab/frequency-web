@@ -109,8 +109,6 @@ export const ALLOWLIST = [
     { file: 'lib/crm/tasks.ts', table: 'crm_tasks', column: 'plan_id', kind: 'select' },
     { file: 'lib/crm/tasks.ts', table: 'crm_tasks', column: 'due_offset_days', kind: 'select' },
     { file: 'lib/crm/tasks.ts', table: 'crm_tasks', column: 'plan_id', kind: 'eq' },
-    // LIVE-444 (PROG-CAL5 half): getPlanAnchorDayKey filters the Plan's dates by plan_id.
-    { file: 'lib/calendar/plans-store.ts', table: 'space_calendar_entries', column: 'plan_id', kind: 'eq' },
   ].map((row) => ({
     ...row,
     added: '2026-09-19',
