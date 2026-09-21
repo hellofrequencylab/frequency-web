@@ -137,6 +137,23 @@ type EventSchemaEnrichment = {
    *  one can answer without buying a round trip on an SEO-critical page. So the caller decides
    *  and this publishes; it never guesses `false` and calls that a fact. */
   is_sold_out?: boolean | null
+  /** Can the person Stripe would pay actually receive this money? THREE-STATE, for the same reason
+   *  `is_sold_out` is: `undefined` means "the caller could not determine this" and the Offer is
+   *  published as before, while an explicit `false` means "nobody can be paid for this event" and
+   *  the Offer is OMITTED ENTIRELY.
+   *
+   *  🔴 A PRICE IN STRUCTURED DATA IS THE SAME PROMISE AS A PRICE ON THE PAGE, and it reaches
+   *  further: an Offer is what puts "$55" in a Google rich result and in an answer engine's reply,
+   *  read by people who never open the page. OWN-074 measured a live event doing exactly that --
+   *  priced, indexed, and unbuyable, because its host has no Connect account. The page itself now
+   *  withholds the price in that state (lib/events/ticket-eligibility.buyerMaySeePrice), so
+   *  publishing one here would ALSO be the page-vs-schema contradiction the availability note
+   *  below exists to prevent, with the schema as the one telling the lie.
+   *
+   *  NOT `SoldOut`, which is a different and equally false claim (there are seats; there is no way
+   *  to pay for them), and not a `0.00` price, which reads as free. Saying nothing is the only
+   *  honest option this vocabulary offers. The caller decides; this publishes. */
+  payouts_ready?: boolean | null
 }
 
 const ATTENDANCE_MODE_URL: Record<'in_person' | 'online' | 'hybrid', string> = {
@@ -188,6 +205,10 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
   const priceCents =
     event.ticket_from_cents !== undefined ? event.ticket_from_cents : event.price_cents ?? null
 
+  // An explicit `false` from a caller that CHECKED. `undefined` (the caller could not determine it)
+  // leaves the Offer exactly as it was, so no existing caller changes behaviour by omission.
+  const unsellable = event.payouts_ready === false
+
   return {
     '@context': 'https://schema.org',
     '@type': 'Event',
@@ -238,23 +259,31 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
     // mismatch against the page, which shows the real price. Prefer the tier authority whenever
     // the caller supplied it; see the three-state note on `ticket_from_cents` above.
     // The offer URL is the public event page — tickets are bought there after sign-in.
-    isAccessibleForFree: !(priceCents && priceCents > 0),
-    offers: {
-      '@type': 'Offer',
-      price: priceCents && priceCents > 0 ? (priceCents / 100).toFixed(2) : '0.00',
-      // Upper-cased from the event's own column, mirroring productSchema below so the two Offer
-      // builders in this file cannot denominate the same money two ways.
-      priceCurrency: (event.currency ?? 'usd').toUpperCase(),
-      // A page that says "full" while its structured data says InStock is a direct page-vs-schema
-      // contradiction, and Google reads the mismatch as the page lying. `is_sold_out` is supplied
-      // by whichever caller can see capacity; see the three-state note on the field.
-      availability:
-        event.is_cancelled || event.is_sold_out
-          ? 'https://schema.org/SoldOut'
-          : 'https://schema.org/InStock',
-      url,
-      validFrom: startIso ?? event.starts_at,
-    },
+    //
+    // 🔴 AND THE WHOLE BLOCK DROPS OUT when the caller says nobody can be paid: an Offer is an offer,
+    // `isAccessibleForFree` is a claim about the same money, and both are false where there is no
+    // way to pay. See the three-state note on `payouts_ready`. An `undefined` caller is unchanged.
+    ...(unsellable
+      ? {}
+      : {
+          isAccessibleForFree: !(priceCents && priceCents > 0),
+          offers: {
+            '@type': 'Offer',
+            price: priceCents && priceCents > 0 ? (priceCents / 100).toFixed(2) : '0.00',
+            // Upper-cased from the event's own column, mirroring productSchema below so the two Offer
+            // builders in this file cannot denominate the same money two ways.
+            priceCurrency: (event.currency ?? 'usd').toUpperCase(),
+            // A page that says "full" while its structured data says InStock is a direct page-vs-schema
+            // contradiction, and Google reads the mismatch as the page lying. `is_sold_out` is supplied
+            // by whichever caller can see capacity; see the three-state note on the field.
+            availability:
+              event.is_cancelled || event.is_sold_out
+                ? 'https://schema.org/SoldOut'
+                : 'https://schema.org/InStock',
+            url,
+            validFrom: startIso ?? event.starts_at,
+          },
+        }),
   }
 }
 

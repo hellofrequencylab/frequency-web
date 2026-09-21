@@ -174,6 +174,14 @@ Four things that are easy to get wrong and are each pinned by a test:
   selecting another tier or editing the amount invalidates the session.
 - **A price in a CTA is a promise.** Where there is no price this control may charge — a free tier,
   a members ticket the viewer cannot buy — it names no number at all.
+- **And so is a price anywhere else a stranger reads it** ([ADR-1492](DECISIONS.md)). The same rule
+  runs outside the control: a card, a Space's events block, and the schema.org `Offer` on all three
+  event faces each withhold the number when the payee has no completed Connect account, because
+  `canSellTickets` says the money cannot land. The predicate is `buyerMaySeePrice`
+  (`lib/events/ticket-eligibility.ts`), and the distinction it draws is between an **offer** and a
+  **fact**: in tickets mode the number is an offer to take money, while an RSVP-mode price is
+  collected at the door and stays. Withheld is **nothing**, never `Free`, and the buyer is told
+  `TICKETS_NOT_READY` and nothing about whose account is missing.
 
 `appearanceFromTokens()` draws Stripe's fields from the live CSS custom properties with **no hex
 fallbacks**, and removes the `.Block` stroke around the Link / saved-card panel. A stroke there puts

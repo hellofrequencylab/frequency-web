@@ -42,6 +42,8 @@ import {
 // The ONE ticket pricing authority, reused so this surface and the canonical /events/<slug> page
 // can never publish two different prices for the same event.
 import { ticketFromPriceCents, ticketsSoldOut } from '@/lib/commerce/ticket-projection'
+import { eventPayoutReadyOrUnknown } from '@/lib/events/payout-readiness'
+import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { readEventCoverAspect } from '@/lib/events/cover-aspect'
 
 export type EventEnrichment = {
@@ -78,6 +80,18 @@ export type EventEnrichment = {
    *  cannot see `event_rsvps`, so RSVP-capacity sold-out is knowable only on the canonical
    *  /events/<slug> page, which supplies it there. Absent is the honest answer, not `false`. */
   is_sold_out?: boolean
+  /** Can the person Stripe would pay actually receive this money? ABSENT (undefined) when the read
+   *  could not answer, which leaves the Offer exactly as it was; `false` DROPS the Offer entirely
+   *  (EVT-PRICE-HONESTY, see the three-state note in lib/jsonld.ts).
+   *
+   *  🔴 THIS IS THE CRAWL-FACING HALF OF THE SAME RULE THE PAGE FOLLOWS. OWN-074 measured a live
+   *  $55 event whose host has no Connect account: unbuyable to everyone, signed in or out, and
+   *  still publishing a priced Offer to every search and answer engine. A rich result reaches
+   *  people who never open the page, so it is the furthest-travelling copy of the number.
+   *
+   *  Supplied only for a TICKETS-mode event. In RSVP mode the money is collected at the door
+   *  (LIVE-314), so the price is a fact about the event rather than an offer we make. */
+  payouts_ready?: boolean
   /** The event's cover as a PUBLIC URL, or null (LIVE-133).
    *
    *  The public event page composed the same EventDetailTemplate as the in-app one and passed no
@@ -165,7 +179,7 @@ export async function getEventEnrichment(slug: string): Promise<EventEnrichment 
   const supabase = createPublicClient()
   const { data } = await supabase
     .from('events')
-    .select('id, time_zone, attendance_mode, is_cancelled, category, region, country, currency, cover_image_path, theme')
+    .select('id, time_zone, attendance_mode, is_cancelled, category, region, country, currency, cover_image_path, theme, host_id, host_space_id, join_mode, price_cents')
     .eq('slug', slug)
     .limit(1)
     .maybeSingle()
@@ -173,7 +187,17 @@ export async function getEventEnrichment(slug: string): Promise<EventEnrichment 
   const r = data as unknown as Pick<
     SafeEventRow,
     'time_zone' | 'attendance_mode' | 'is_cancelled' | 'category' | 'region' | 'country' | 'currency'
-  > & { id: string; cover_image_path: string | null; theme: unknown }
+  > & {
+    id: string
+    cover_image_path: string | null
+    theme: unknown
+    // The PAYEE inputs (ADR-819) + the join model (ADR-826), so this can answer whether the Offer
+    // below is one we could honour. Same anon read, four more columns; none of them is published.
+    host_id: string | null
+    host_space_id: string | null
+    join_mode: string | null
+    price_cents: number | null
+  }
 
   // The cover, as a public URL. `getPublicUrl` is pure string construction — no request, no
   // privileges — so it is safe on the anon client. A null path yields null, not a broken <img>.
@@ -201,6 +225,16 @@ export async function getEventEnrichment(slug: string): Promise<EventEnrichment 
   const tiers = (tierRows ?? []) as unknown as (Parameters<typeof ticketFromPriceCents>[0][number] &
     Parameters<typeof ticketsSoldOut>[0][number])[]
 
+  // MAY WE PUBLISH AN OFFER? (EVT-PRICE-HONESTY.) Only asked of a TICKETS-mode priced event, where
+  // the number is an offer to take money rather than a door price (ADR-826, LIVE-314), and only
+  // PUBLISHED when the read actually answered -- `null` leaves the Offer as it was rather than
+  // stripping the price out of every rich result the first time this runs without a service key.
+  const fromCents = tiers.length > 0 ? ticketFromPriceCents(tiers) : (r.price_cents ?? null)
+  const ticketsMode = TICKETING_ENABLED && !!fromCents && fromCents > 0 && (r.join_mode ?? 'auto') !== 'rsvp'
+  const payoutsReady = ticketsMode
+    ? await eventPayoutReadyOrUnknown({ id: r.id, host_id: r.host_id, host_space_id: r.host_space_id })
+    : null
+
   return {
     time_zone: r.time_zone,
     attendance_mode: normalizeMode(r.attendance_mode),
@@ -215,6 +249,7 @@ export async function getEventEnrichment(slug: string): Promise<EventEnrichment 
     ...(tiers.length > 0
       ? { ticket_from_cents: ticketFromPriceCents(tiers), is_sold_out: ticketsSoldOut(tiers) }
       : {}),
+    ...(payoutsReady === null ? {} : { payouts_ready: payoutsReady }),
   }
 }
 

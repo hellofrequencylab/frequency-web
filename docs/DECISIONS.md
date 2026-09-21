@@ -47216,3 +47216,30 @@ Premise re-tested 2026-09-20: `featureAllowed('space_collaborators', { plan: 'bu
 **Consequences.** A later collaborator hosting unlock line that names Collective, a 3-host cap, or revenue splits fails the LIVE-439 probe.
 
 **Rows.** LIVE-439.
+
+## ADR-1492: A price is an OFFER in tickets mode and a FACT in RSVP mode; only the offer is withheld (LIVE-442)
+
+**Status:** Accepted · 2026-09-21 · backlog `LIVE-442` · numbered **1492** because **1491** is the tail-order ruling on this tree and **1478–1490** are claimed on other open PRs · extends [ADR-914](DECISIONS.md) (gate the repeat, not the transaction) and [ADR-826](DECISIONS.md) (one join function per event) · corroborated by `lib/events/ticket-eligibility.ts`, `lib/events/payout-readiness.ts`, `lib/jsonld.ts`
+
+**Context.** `ticketSellerVerdict` is pure, fail-closed and correct, and `canSellTickets` was written for render-time branching. Its doc comment says so. It had **zero** callers in `app/` and `components/`: every buyer-facing surface read the price straight off the row, so the refusal fired only at checkout creation (`lib/billing/tickets.ts:791`, `TICKETS_NOT_READY`). The card said `$55`, the buyer pressed, and the turn-away came after the decision to buy.
+
+Premise re-tested 2026-09-21 (the [ADR-1082](DECISIONS.md) rule) and it SPLIT:
+
+- Still true: `canSellTickets` had no consumer outside its own test; `/events`, the For You lane, a Space's Events block, its event popup, and the schema.org `Offer` on all three event faces all priced events with no readiness input at all. `OWN-074` measured the live case: *Returning Home*, `$55`, tickets mode, host with no Connect account, unbuyable to everyone.
+- **No longer true:** "nothing buyer-facing gates on readiness". The tickets-mode join box on `event-member-page.tsx` already branched on `hostPayoutReady` and already withheld the buy control. What it did NOT do is withhold the price everywhere else, and it said so in bespoke words ("The host hasn't opened ticket sales yet") that attribute the state to the host.
+
+**Decision.**
+
+1. **The test is not "is it priced", it is "is the price an OFFER".** `buyerMaySeePrice({ ticketsMode, payoutsReady })` is the one pure predicate, and it routes through `canSellTickets`, which is what stops the listing verdict drifting from the buy path.
+   - **Tickets mode** (buying is attending): the number is an offer to take money through Stripe, so it is withheld when the payee cannot receive it.
+   - **RSVP mode**: money changes hands AT THE DOOR and nothing goes through checkout at RSVP time ([ADR-826](DECISIONS.md), `LIVE-314`). The number is a fact about the event, like the address, and the flow already says so in words. Hiding it would delete true information and re-close the guest door LIVE-314 opened.
+2. **Withheld is `null`, never `"Free"`.** Those are opposite claims. Every card renders no price stat at all, and the three `?? 'Free'` defaults that would have turned saying nothing back into a claim are gone.
+3. **The payee is resolved in TWO reads for a whole page**, through `getConnectReadyMap` ([ADR-1162](DECISIONS.md), LIVE-126) and keyed on the space OWNER for a space-hosted event ([ADR-819](DECISIONS.md)). Never one Stripe call, never one status read per card.
+4. **Structured data follows the page.** `eventSchema` takes `payouts_ready` as a THREE-STATE field beside `is_sold_out`: `false` omits the `Offer` and `isAccessibleForFree` entirely, `undefined` publishes exactly as before. A rich result reaches people who never open the page, so it is the furthest-travelling copy of the number, and a schema that prices what the page withholds is the page-vs-schema contradiction `is_sold_out` already exists to prevent.
+5. **A stranger is told nothing about the host's account.** Both unbuyable branches now say `TICKETS_NOT_READY`, the same constant the buy path refuses with.
+
+**Rejected.** Publishing `availability: SoldOut` instead of dropping the Offer (there are seats; there is no way to pay for them, and that would contradict a page showing open capacity). Publishing `price: "0.00"` (reads as free). Withholding the RSVP-mode door price (deletes true information and regresses LIVE-314). Flipping `ticketsMode` itself to false when payouts are missing (that would swap the ticket cascade for an RSVP switch and diverge from the detail page, which keeps tickets mode and says the neutral sentence). Hiding the price from a HOST's own management surfaces, which keep it with the setup prompt beside it. Reading an unanswerable payout question as `false` on a crawl-facing route: `eventPayoutReadyOrUnknown` returns `null` there, because collapsing an infrastructure failure onto "nobody can be paid" would strip the price out of every event's rich result at once.
+
+**Consequences.** `lib/events/payout-readiness.ts` is a new entry on the `check:admin-client` baseline, justified in that file's header: it resolves the same two facts the buy path already resolves on the service-role client, and returns one boolean per event id and nothing else. A later card that prices unconditionally, a `?? 'Free'` default, a loader that stops branching, a schema that publishes an Offer regardless, or a re-hand-rolled "the host hasn't..." sentence each fail the `LIVE-442` probe, mutation-tested nine ways on 2026-09-21.
+
+**Rows.** LIVE-442. Does not close OWN-074, which needs two people to finish Connect onboarding; it removes the buyer-facing damage that row has been causing in the meantime.
