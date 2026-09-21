@@ -172,7 +172,6 @@
             "LIVE-413",
             "HYG-075",
             "LIVE-335",
-            "LIVE-394",
             "PROG-CAL5",
             "PROG-CAL7",
             "PROG-CAL2",
@@ -14213,7 +14212,7 @@
     {
       "id": "LIVE-394",
       "title": "Every Journey on the platform shows the same four generic questions",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
@@ -14221,12 +14220,13 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1399, ADR-1400, ADR-1401 (the Journey sales-page waves)"
       },
-      "detail": "`JourneyFaq` hardcodes 3-4 questions derived only from `drip_interval_days` and `certificate_enabled`. There is no authored FAQ anywhere, so the objection-handling section of a premium sales page is identical across every Journey and answers none of the objections specific to one. ADR-1398's own 'Not done' list names it. Same shape as LIVE-393: a repeat group on the manifest, with the generic four kept as the fallback for a Journey that authors none.",
+      "detail": "`JourneyFaq` hardcodes 3-4 questions derived only from `drip_interval_days` and `certificate_enabled`. There is no authored FAQ anywhere, so the objection-handling section of a premium sales page is identical across every Journey and answers none of the objections specific to one. ADR-1398's own 'Not done' list names it. Same shape as LIVE-393: a repeat group on the manifest, with the generic four kept as the fallback for a Journey that authors none.\n\n── CLOSED 2026-09-21 (ADR-1497). A Journey host writes their own questions; the generic four are the fallback, not the page.\n\nHOW, following LIVE-393/ADR-1463 and LIVE-395 exactly rather than inventing a third pattern: lib/journeys/faq.ts is a pure normalize/read/write module over `page_config` story.settings.faq, an ordered list of { q, a } records. No column, no migration, no page_config toggle (ADR-1462). It mirrors writeJourneyOutcomes and writeJourneyGuarantee down to dropping an emptied settings bag, because the three share that object. A row with only a question or only an answer is dropped on both the rail and the server, so a half-written draft never renders. Cap 8, question 160 chars, answer 600.\n\nJOURNEY_MANIFEST declares one `faq` repeat on the story section with two fields (`q` text, `a` longtext), each keyed at a real path on the record (ADR-992). JOURNEY_FAQ_WRITES is its own rail zone because setJourneyFaq rewrites page_config rather than a column; the settings module mounts it through RailManifestRepeat after the guarantee. getJourneyRailData reads it back beside outcomes and guarantee.\n\nJourneyFaq (components/journey/discovery-widgets.tsx) now reads `readJourneyFaq(plan.page_config)` and renders the authored list when it has any rows; genericJourneyFaq(plan) is the old literal, exported and kept whole, used only when the host wrote none. The first authored pair replaces the generic set WHOLE rather than appending: a host who wrote their questions should not find the platform's four ahead of them. All three visitor faces (/journeys/[slug], /discover/journeys/[slug], the product sales body) already pass the full plan, so they pick this up with no edit.\n\nPINNED by lib/journeys/faq.test.ts (normalize, read, write, neighbours untouched, emptied-bag shape identical to outcomes), components/journey/journey-faq.render.test.tsx (fallback when nothing authored, fallback when story exists without faq, authored renders verbatim and none of the generic set), and journey-rail-plan.test.ts (the zone, its two fields, the row round-trip, one save path per write). The probe fails on main's file and passes here.\n\nNOT DONE: Vera does not yet draft a first set of questions from the intro and outcomes; the fields carry veraDrafts so the surface can offer it when the Journey Spark grows a rail draft. The Q&A composer (ListingQna) still sits beside this block on the member page, which is a different thing (buyer-asked, public, threaded) and stays.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const fail=(m)=>{console.error(m);process.exit(1)};const f=s('components/journey/discovery-widgets.tsx');const i=f.indexOf('export function JourneyFaq');if(i<0)fail('JourneyFaq is gone; re-point this probe');const b=f.slice(i,i+900);if(!/plan\\.faq|faqs\\s*=\\s*\\(|authored/.test(b))fail('JourneyFaq still hardcodes its questions, so every Journey shows the same FAQ')\"",
         "note": "Measures the CONSEQUENCE: the block reading an authored source. Fails while the list is a literal."
-      }
+      },
+      "closed": "2026-09-21"
     },
     {
       "id": "LIVE-395",
