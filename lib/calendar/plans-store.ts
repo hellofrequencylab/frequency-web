@@ -8,6 +8,7 @@ import {
 } from './plans'
 import { copyPlaybookToPlan, type PlanPlaybook } from './playbooks'
 import { buildVeraProposal } from './vera-plan'
+import { planAnchorDayKey, type AnchorCandidate } from './relative-schedule'
 import { log } from '@/lib/log'
 
 // PLAN IO (ADR-1386). Caller session, so RLS on space_plans is the lock.
@@ -227,6 +228,37 @@ export async function attachEntryToPlan(
     return planIoFailed('attach_entry', 'That date could not join the Plan.', error)
   }
   return { data: true }
+}
+
+/**
+ * THE PLAN'S ANCHOR DAY: the date every relative to-do counts down to (ADR-1386 P5).
+ *
+ * Read on the CALLER's session, so RLS on space_calendar_entries is the lock, exactly like every
+ * other read in this file. The pick itself is pure (`planAnchorDayKey`) because a Pencil may hold
+ * several candidate dates and a cancelled one is not a date. Null means the Plan has no live date
+ * yet, in which case an offset is stored and simply has nothing to resolve against — it resolves the
+ * moment a date is penciled in and the Plan is re-anchored.
+ */
+export async function getPlanAnchorDayKey(spaceId: string, planId: string): Promise<string | null> {
+  try {
+    const { data, error } = await ((await db())
+      .from('space_calendar_entries')
+      .select('starts_at, status, stage')
+      .eq('space_id', spaceId)
+      .eq('plan_id', planId)
+      .limit(50) as unknown as PromiseLike<{
+      data: AnchorCandidate[] | null
+      error: { message: string } | null
+    }>)
+    if (error || !data) {
+      planReadFailed('anchor_day', error)
+      return null
+    }
+    return planAnchorDayKey(data)
+  } catch (err) {
+    planReadFailed('anchor_day', err)
+    return null
+  }
 }
 
 /** The date each Plan should open its Production from: its earliest date that has NOT already been

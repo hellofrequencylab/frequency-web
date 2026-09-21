@@ -279,6 +279,23 @@ export async function createTask(input: CreateTaskInput, spaceId?: string | null
   }
 }
 
+/** The column patch one status move writes. Pure, so the shape is testable without a client:
+ *  an unknown status or an unparseable `dueAt` yields null / no due column rather than a write. */
+export function taskStatusPatch(
+  status: TaskStatus,
+  opts: { dueAt?: string | null; now?: number } = {},
+): Record<string, unknown> | null {
+  if (!TASK_STATUSES.includes(status)) return null
+  const patch: Record<string, unknown> = {
+    status,
+    updated_at: new Date(opts.now ?? Date.now()).toISOString(),
+  }
+  if (typeof opts.dueAt === 'string' && !Number.isNaN(Date.parse(opts.dueAt))) {
+    patch.due_at = new Date(opts.dueAt).toISOString()
+  }
+  return patch
+}
+
 /**
  * Move a task to a new status (open / done / snoozed). Returns true on success. FAIL-SAFE: false on an
  * unknown status or a write error. `updated_at` is bumped so the board reorders. When snoozing, a
@@ -290,11 +307,8 @@ export async function updateTaskStatus(
   opts: { dueAt?: string | null } = {},
 ): Promise<boolean> {
   const id = typeof taskId === 'string' ? taskId.trim() : ''
-  if (!id || !TASK_STATUSES.includes(status)) return false
-  const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() }
-  if (typeof opts.dueAt === 'string' && !Number.isNaN(Date.parse(opts.dueAt))) {
-    patch.due_at = new Date(opts.dueAt).toISOString()
-  }
+  const patch = taskStatusPatch(status, opts)
+  if (!id || !patch) return false
   try {
     const db = createAdminClient() as unknown as {
       from: (t: string) => {
@@ -306,6 +320,97 @@ export async function updateTaskStatus(
   } catch {
     return false
   }
+}
+
+/** The untyped update-builder shape the scoped writer chains over. */
+interface ScopedUpdateQuery {
+  eq: (col: string, val: string) => ScopedUpdateQuery
+  select: (cols: string) => PromiseLike<{ data: { id: string }[] | null; error: unknown }>
+}
+
+/**
+ * Move ONE task to a new status INSIDE a scope the caller has already been authorized for.
+ *
+ * WHY A SECOND WRITER. `updateTaskStatus` takes a bare id, which is right for the platform-staff
+ * Tasks board (one admin, one root Space) and wrong for a Space owner: the id arrives from that
+ * owner’s browser, and crm_tasks is reached through the service-role client, so an id belonging to
+ * ANOTHER Space would be moved with no complaint. Here the `id` predicate is joined by `space_id`
+ * (and `plan_id`, when the caller is working inside one Plan), and the write must MATCH A ROW to
+ * count — a foreign id changes nothing and the caller gets `false` instead of a silent success.
+ */
+export async function updateTaskStatusInScope(
+  taskId: string,
+  status: TaskStatus,
+  scope: { spaceId: string; planId?: string | null },
+): Promise<boolean> {
+  const id = typeof taskId === 'string' ? taskId.trim() : ''
+  const spaceId = typeof scope?.spaceId === 'string' ? scope.spaceId.trim() : ''
+  const patch = taskStatusPatch(status)
+  if (!id || !spaceId || !patch) return false
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { update: (p: Record<string, unknown>) => ScopedUpdateQuery }
+    }
+    let q = db.from('crm_tasks').update(patch).eq('id', id).eq('space_id', spaceId)
+    if (typeof scope.planId === 'string' && scope.planId.trim().length) {
+      q = q.eq('plan_id', scope.planId.trim())
+    }
+    const { data, error } = await q.select('id')
+    return !error && !!data?.length
+  } catch {
+    return false
+  }
+}
+
+/** The column patch one re-anchor writes. Pure: an unparseable instant yields null, never a write. */
+export function taskDuePatch(dueAt: string, now?: number): Record<string, unknown> | null {
+  if (typeof dueAt !== 'string' || Number.isNaN(Date.parse(dueAt))) return null
+  return {
+    due_at: new Date(dueAt).toISOString(),
+    updated_at: new Date(now ?? Date.now()).toISOString(),
+  }
+}
+
+/**
+ * Re-anchor a batch of to-dos INSIDE one Space and one Plan: the write half of relative scheduling.
+ *
+ * SCOPED FOR THE SAME REASON `updateTaskStatusInScope` IS. crm_tasks is reached through the
+ * service-role client, so an id that arrived from a browser is not evidence of anything. Every
+ * statement here carries `space_id` AND `plan_id` beside the row id, so a to-do belonging to another
+ * Space matches nothing and is counted as a miss rather than moved.
+ *
+ * Returns how many rows actually moved. A partial failure is reported as a smaller number, never as
+ * a clean success — the caller surfaces the shortfall instead of a date silently staying put.
+ */
+export async function reanchorTaskDuesInScope(
+  moves: readonly { id: string; dueAt: string }[],
+  scope: { spaceId: string; planId: string },
+): Promise<number> {
+  const spaceId = typeof scope?.spaceId === 'string' ? scope.spaceId.trim() : ''
+  const planId = typeof scope?.planId === 'string' ? scope.planId.trim() : ''
+  if (!spaceId || !planId || !moves?.length) return 0
+  let moved = 0
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { update: (p: Record<string, unknown>) => ScopedUpdateQuery }
+    }
+    for (const m of moves) {
+      const id = typeof m?.id === 'string' ? m.id.trim() : ''
+      const patch = id ? taskDuePatch(m.dueAt) : null
+      if (!patch) continue
+      const { data, error } = await db
+        .from('crm_tasks')
+        .update(patch)
+        .eq('id', id)
+        .eq('space_id', spaceId)
+        .eq('plan_id', planId)
+        .select('id')
+      if (!error && data?.length) moved += 1
+    }
+  } catch {
+    return moved
+  }
+  return moved
 }
 
 /** Filters for a task read. A Studio read scopes by `spaceId`; a per-contact read adds `contactId`. */
