@@ -11,6 +11,8 @@ import { getCallerProfile, isPlatformStaff } from '@/lib/auth'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { getJourneyView, getPlan, getPlanAuthor } from '@/lib/journey-plans'
 import { readJourneyOutcomes } from '@/lib/journeys/outcomes'
+import { readJourneyGuarantee } from '@/lib/journeys/guarantee'
+import { JourneyGuaranteeBlock } from '@/components/journey/guarantee-block'
 import { getPillars, pillarsById as indexPillars } from '@/lib/pillars'
 import { accentColor, accentTint } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
@@ -355,6 +357,11 @@ export default async function JourneyPlanPage({
               isOwner={canManageJourney}
             />
           )}
+
+          {/* The refund promise (LIVE-441), last before the CTA: the same block the product
+              sales body renders, reaching the buyer who lands on the Journey itself. Empty
+              unless the host wrote one. */}
+          <JourneyGuaranteeBlock guarantee={readJourneyGuarantee(plan.page_config)} />
 
           {/* The repeat CTA closes the page. It is an ANCHOR to the one enrol box, never a second
               copy of it: a repeat CTA on a long sales page is worth having, a second mounted

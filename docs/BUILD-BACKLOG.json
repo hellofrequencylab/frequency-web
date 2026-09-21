@@ -176,7 +176,6 @@
             "HYG-075",
             "LIVE-335",
             "LIVE-394",
-            "LIVE-441",
             "LIVE-396"
           ]
         },
@@ -310,7 +309,8 @@
             "OWN-076",
             "OWN-075",
             "LIVE-399",
-            "OWN-077"
+            "OWN-077",
+            "OWN-079"
           ]
         }
       ],
@@ -15436,7 +15436,7 @@
     {
       "id": "LIVE-441",
       "title": "The testimonials half of the $444 proof problem, and the guarantee only reaches one of the three buyer faces",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
@@ -15444,11 +15444,30 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1398 Not done · ADR-1401 the proof slot · LIVE-395"
       },
-      "detail": "FILED 2026-09-21 when LIVE-395 closed on its guarantee half. Two things are left, and neither is hidden inside the closed row.\n\n1. TESTIMONIALS. ADR-1398 named them beside the guarantee and they are still absent. But ASK THE PRIOR QUESTION FIRST, because the answer may be that this is not a new authoring surface at all: the sales body already takes a `proof` slot (ADR-1401) that renders product REVIEWS keyed to the commerce_products row, placed between the guide and the questions for exactly the reason authored testimonials would want. So the row is not 'add a testimonials field'; it is 'decide whether an authored quote is a different thing from a review, and if it is, say what makes it different before building a second surface for it'. A Journey with real reviews and a second block of host-chosen quotes beside them reads worse than either alone.\n\n2. THE GUARANTEE REACHES ONE FACE OF THREE. components/marketplace/journey-sales-body.tsx renders JourneyGuaranteeBlock; app/(main)/journeys/[slug]/page.tsx and app/discover/journeys/[slug]/page.tsx do not, and both show the same Journey to someone who can buy it. The data is already there — readJourneyGuarantee reads the same page_config those pages already load for readJourneyOutcomes — so this half is small and should land first. It was left out of LIVE-395 as deliberate scope, to close that row on the surface its probe measures rather than widen the change.\n\nEVIDENCE THIS IS WORTH DOING: the production read of 2026-09-21 recorded 24 checkout.session.expired against 1 completed (LIVE-234, LIVE-396).",
+      "detail": "FILED 2026-09-21 when LIVE-395 closed on its guarantee half. Two things are left, and neither is hidden inside the closed row.\n\n1. TESTIMONIALS. ADR-1398 named them beside the guarantee and they are still absent. But ASK THE PRIOR QUESTION FIRST, because the answer may be that this is not a new authoring surface at all: the sales body already takes a `proof` slot (ADR-1401) that renders product REVIEWS keyed to the commerce_products row, placed between the guide and the questions for exactly the reason authored testimonials would want. So the row is not 'add a testimonials field'; it is 'decide whether an authored quote is a different thing from a review, and if it is, say what makes it different before building a second surface for it'. A Journey with real reviews and a second block of host-chosen quotes beside them reads worse than either alone.\n\n2. THE GUARANTEE REACHES ONE FACE OF THREE. components/marketplace/journey-sales-body.tsx renders JourneyGuaranteeBlock; app/(main)/journeys/[slug]/page.tsx and app/discover/journeys/[slug]/page.tsx do not, and both show the same Journey to someone who can buy it. The data is already there — readJourneyGuarantee reads the same page_config those pages already load for readJourneyOutcomes — so this half is small and should land first. It was left out of LIVE-395 as deliberate scope, to close that row on the surface its probe measures rather than widen the change.\n\nEVIDENCE THIS IS WORTH DOING: the production read of 2026-09-21 recorded 24 checkout.session.expired against 1 completed (LIVE-234, LIVE-396).\n\n── CLOSED 2026-09-21 on half 2, which is the half the probe measures and the half that was unambiguous. JourneyGuaranteeBlock now renders on app/(main)/journeys/[slug]/page.tsx and app/discover/journeys/[slug]/page.tsx, immediately before each page's closing CTA — the same position it holds on the product sales body, last after the questions and before the buy. Both faces read the same page_config they were already loading for readJourneyOutcomes, so this added a read of a value already in memory and no query.\n\nHALF 1 DID NOT CLOSE AND IS NOT DROPPED. Whether an authored testimonial is a different thing from a product review is a product ruling, not a build task, which is why it was deliberately kept out of this row's probe — a probe cannot measure whether a question was asked. It moves to OWN-079 in the owner lane with ownerAction 'ruling', so it prints beside the other owner asks instead of hiding in a closed live row. That is the AGENTS.md failure LIVE-234 was corrected for on 2026-09-15; this row is not repeating it.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=(p)=>fs.readFileSync(p,'utf8').replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const a=s('app/(main)/journeys/[slug]/page.tsx');const b=s('app/discover/journeys/[slug]/page.tsx');const ok=/JourneyGuaranteeBlock|readJourneyGuarantee/.test(a)&&/JourneyGuaranteeBlock|readJourneyGuarantee/.test(b);process.exit(ok?0:1)\"",
         "note": "Measures the CONSEQUENCE of half 2, the cheap and unambiguous half: the guarantee reaches the other two buyer faces. Half 1 is a ruling first, so it is deliberately not in the probe — a probe cannot measure whether a question was asked."
+      }
+    },
+    {
+      "id": "OWN-079",
+      "title": "Ruling: is an authored testimonial a different thing from a product review, or is the proof slot already the answer?",
+      "status": "open",
+      "priority": "P2",
+      "lane": "owner",
+      "size": "S",
+      "ownerAction": "ruling",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1398 Not done · ADR-1401 the proof slot · LIVE-395, LIVE-441"
+      },
+      "detail": "FILED 2026-09-21 when LIVE-441 closed its guarantee half. ADR-1398 listed testimonials beside the guarantee as missing from a $444 page. The guarantee now exists (LIVE-395) and reaches all three buyer faces (LIVE-441). Testimonials do not, and before anyone builds an authoring surface for them there is a question only you can answer.\n\nTHE FACTS. components/marketplace/journey-sales-body.tsx already takes a `proof` slot (ADR-1401) that renders PRODUCT REVIEWS keyed to the commerce_products row, and both /journeys/[slug] faces render ProductReviews directly. ADR-1401 placed that slot between the guide and the questions for exactly the reason an authored testimonial would want: proof reads best after the thing being proved and before the objections it answers. So the position, the component and the render path all already exist and are filled by real buyers.\n\nTHE QUESTION, in one line: do you want a SECOND block of host-chosen quotes beside the real reviews?\n\n  A. No — reviews are the proof. Close this; the gap ADR-1398 named is filled by LIVE-395 plus the existing proof slot, and the honest fix for a Journey with no reviews is to get reviews.\n  B. Yes, and they are different — authored quotes can come from outside the platform (a past cohort that ran off-platform, a practitioner endorsement) and carry a name and role a review row cannot. Then it needs its own authoring surface and its own place in the order, and the two blocks need a rule for when both appear.\n  C. Yes, but only as a fallback — show host-authored quotes ONLY while the product has no reviews, so a new Journey is not empty and an established one shows real ones.\n\nWHY THIS IS YOURS. B and C both change what a buyer is told and by whom, which is a trust decision, and C in particular means the page shows different evidence to different visitors depending on review count. No probe can choose between them.\n\nEVIDENCE THAT THE UNDERLYING PROBLEM IS REAL: the production read of 2026-09-21 recorded 24 checkout.session.expired against 1 completed (LIVE-234, LIVE-396), and journey_runs is 0, so no Journey has reviews yet — which is itself an argument for C and against A.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-21: not yet ruled. Closes when the owner picks A, B or C. A closes this row alone; B or C opens a build row carrying the chosen rule and the ordering against the existing proof slot.",
+        "checked": "2026-09-21"
       }
     }
   ]
