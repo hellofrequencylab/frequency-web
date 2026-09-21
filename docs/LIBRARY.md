@@ -18,7 +18,7 @@ gets its own Loom**. It grows for years without a code deploy per asset.
 
 - **In-browser editor:** **Filerobot Image Editor** (OSS) — crop with aspect frames, rotate,
   adjust, filters, compress. ⚠️ **Still the standing choice, now with a price tag attached**
-  ([HYG-109](BUILD-BACKLOG.json), [ADR-1495](DECISIONS.md)). This was picked before anyone measured
+  ([HYG-109](BUILD-BACKLOG.json), [ADR-1496](DECISIONS.md)). This was picked before anyone measured
   what it installs: ~6.8 MB across seven packages — `konva`, `styled-components`, and
   `@scaleflex/ui` + `@scaleflex/icons` pinned at `3.0.0-beta.10` — none of them in the tree, one a
   second styling runtime beside Tailwind 4, one a third-party design system arriving as a
@@ -163,7 +163,7 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   (`lib/library/resolve-refs.ts`) — fail-open to the cache at every grain, no query at all for a
   ref-free document. 🔴 The refresh decodes nothing and must never import `sharp` (same rule as
   ingest).
-- **A Space profile document refreshes on load too** ([ADR-1494](DECISIONS.md), which closes
+- **A Space profile document refreshes on load too** ([ADR-1495](DECISIONS.md), which closes
   PROG-D2). A Space page body is the same kind of Puck document, picked with the same fields, but
   it lives on `spaces.preferences.pageDocs[slug]` and had no refresh: `resolveSpacePageDoc` is pure
   by contract, so the refresh had nowhere to hang. `lib/spaces/page-doc.ts` is that seam — the
@@ -194,7 +194,7 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   (`lib/library/column-image.ts`). Pickers write both halves; readers prefer `library_assets.url`
   and fail open to the cache. A paste or a non-catalog upload nulls the companion. 🔴 Do not
   half-adopt by storing JSON in a text column: every reader of those columns is typed `string`.
-- **One master, many renditions, resolved at REQUEST time** ([ADR-1495](DECISIONS.md), executing the
+- **One master, many renditions, resolved at REQUEST time** ([ADR-1496](DECISIONS.md), executing the
   owner's on-the-fly ruling on HYG-017). Serve web-optimized renditions (thumb 160 / grid 480 /
   hero 1600 / og 1200), never the master, in pages and grids. `renditionUrl(url, kind)`
   (`lib/library/rendition-url.ts`) is the one resolver and `RENDITION_PRESETS`' first production
@@ -273,7 +273,7 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
    see [ADR-1121](DECISIONS.md).
 2. **D2 — AssetField seam** (unified picker; store references; render resolution; backfill
    `site-media`).
-3. **D3 — Editor + versions.** Shipped and closed ([ADR-1495](DECISIONS.md)): version-on-edit and
+3. **D3 — Editor + versions.** Shipped and closed ([ADR-1496](DECISIONS.md)): version-on-edit and
    rollback-via-`is_current` were already live (`lib/library/versions.ts`, three edit sources), and
    the on-the-fly rendition resolver landed with the row. 🔴 The in-browser **crop/rotate editor is
    NOT built** and is now [HYG-109](BUILD-BACKLOG.json), an owner ruling: Filerobot costs ~6.8 MB

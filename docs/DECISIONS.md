@@ -47262,9 +47262,9 @@ Premise re-tested 2026-09-20: `featureAllowed('space_collaborators', { plan: 'bu
 
 **Rows.** LIVE-439.
 
-## ADR-1494: Space profile documents refresh their asset caches on load, which closes PROG-D2 (PROG-D2)
+## ADR-1495: Space profile documents refresh their asset caches on load, which closes PROG-D2 (PROG-D2)
 
-**Status:** Accepted · 2026-09-21 · backlog `PROG-D2` · **renumbered 1492 → 1494 on 2026-09-21** (ported here from #2829): this entry and [ADR-1492](DECISIONS.md) (PROG-R4) merged within minutes holding the same number. PROG-R4 merged first and keeps 1492; this is the later claimant, the renumber `check:adr` itself prescribes · completes [ADR-1130](DECISIONS.md) (the AssetField seam) · beside [ADR-1253](DECISIONS.md) (entity-block writers) and [ADR-1436](DECISIONS.md) (column-backed companions)
+**Status:** Accepted · 2026-09-21 · backlog `PROG-D2` · renumbered **1492 → 1495** on 2026-09-21 by the merge coordinator: this entry and the PROG-R4 entry were authored concurrently on separate branches, each correctly saw 1492 as free, and BOTH MERGED — leaving `main` with two ADR-1492 headings and `check:adr` red on the base branch. PROG-R4 merged first and keeps 1492. 1493 and 1494 are claimed by PRs still in flight, so this took 1495 rather than the next free number, to avoid causing the same collision a second time · completes [ADR-1130](DECISIONS.md) (the AssetField seam) · beside [ADR-1253](DECISIONS.md) (entity-block writers) and [ADR-1436](DECISIONS.md) (column-backed companions)
 
 **Context.** ADR-1130 re-shaped PROG-D2 into three parts and shipped two of them. The one control already existed with 16 consumers. The reference half shipped for Puck documents. The backfill was struck on a live-database census that found nothing to backfill. What ADR-1130 left was a three-item remainder, and this pass measured each item against the tree rather than against the row.
 
@@ -47290,7 +47290,8 @@ Premise re-tested 2026-09-20: `featureAllowed('space_collaborators', { plan: 'bu
 **Consequences.** A ref-free document — every legacy Space, every default page — costs ZERO queries and returns the same object, so the common case is unchanged. A document with refs costs ONE batched `select id, url`; the seam walks 5 modules and reaches no `sharp` and no `next/og`, the same shape `lib/page-editor/data.ts` already has from `app/page.tsx`. A later Space render path that resolves instead of loads fails the PROG-D2 probe. The entity-block layout blob still has no refresh-on-load, which is unchanged and recorded in LIBRARY.md.
 
 **Rows.** PROG-D2 (closed). Beside HYG-029, HYG-066, HYG-068 (all done). D4's usage index stays PROG-D4.
-## ADR-1495: Renditions resolve on the fly, and the Loom editor is split out with its dependency cost measured (PROG-D3)
+
+## ADR-1496: Renditions resolve on the fly, and the Loom editor is split out with its dependency cost measured (PROG-D3)
 
 **Status:** Accepted · 2026-09-21 · backlog `PROG-D3` · numbered **1495** because 1491 through 1494 are all spoken for: **1491** and **1493** are on `main`, **1492** is on `main` TWICE (the PROG-R4 / PROG-D2 collision that #2829 repairs) and **1494** is the number that repair moves PROG-D2 to. This entry was written as 1493 and renumbered rather than left to collide — `check:adr` enforces uniqueness within a tree, so concurrent PRs each pass alone and clash on merge, which is the failure its own header records from 2026-08-17 and which #2822/#2824 hit for real on the day this was written · executes the owner ruling recorded on [HYG-017](BUILD-BACKLOG.json) · beside [ADR-480](DECISIONS.md) (the Loom data model) and [ADR-1130](DECISIONS.md) (the AssetRef seam)
 
