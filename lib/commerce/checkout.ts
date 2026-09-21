@@ -154,6 +154,20 @@ async function resolveCharge(seller: ProductRow, grossCents: number, source: Ord
 export async function createCommerceCheckout(input: CheckoutInput): Promise<CommerceCheckoutResult> {
   if (!input.items?.length) return { error: 'Your cart is empty.' }
   if (!stripe) return { error: 'Payments aren’t turned on yet.' }
+
+  // ── IDENTITY: EXACTLY ONE OF THEM (LIVE-396) ──────────────────────────────────────────────────
+  // The same invariant `commerce_orders` carries in SQL (buyer_profile_id / guest_email) and that
+  // `createTicketCheckout` enforces for its own table. Refusing BOTH and NEITHER here is what keeps
+  // the column pair honest, because this function is the only writer of a new order.
+  const buyerProfileId = input.buyerProfileId || null
+  const guestEmail = (input.guestEmail || '').trim().toLowerCase() || null
+  if (!!buyerProfileId === !!guestEmail) {
+    console.error('[commerce] checkout identity invalid', {
+      hasBuyer: !!buyerProfileId,
+      hasGuest: !!guestEmail,
+    })
+    return { error: CHECKOUT_START_FAILED }
+  }
   const requestedUi: CheckoutUi = input.ui === 'elements' ? 'elements' : 'hosted'
 
   const ids = [...new Set(input.items.map((i) => i.productId))]
@@ -161,6 +175,15 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
   const products = (data ?? []) as ProductRow[]
   if (products.length !== ids.length) return { error: 'Some items are no longer available.' }
   if (products.some((p) => p.status !== 'active')) return { error: 'Some items are no longer on sale.' }
+
+  // 🔴 THE GUEST ENTRY IS JOURNEY-ONLY (LIVE-396). The schema and the claim door are general; this
+  // is not. A Journey is account-bound access that `claim_guest_orders` + `enrolByOrder` can hand
+  // over on sign-in with nothing else owed. A physical good would owe a shipping address, stock and
+  // a returns path to somebody with no account, and none of that is answered. Enforced here because
+  // this is the only writer of a new order, so no future caller can widen it by accident.
+  if (guestEmail && products.some((p) => p.product_kind !== 'journey')) {
+    return { error: 'Sign in to buy this.' }
+  }
 
   // ── Journey seats, checked BEFORE the money (ADR-1397) ────────────────────────────────────────
   // A seat check at fulfilment can only refuse somebody who has already paid: charged, no access,
@@ -176,7 +199,11 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
   for (const p of journeyItems) {
     const offer = await getJourneyOffer(p.journey_plan_id as string)
     if (offer && isSoldOut(offer)) return { error: 'This Journey is full. Check back soon.' }
-    const tier = await checkJourneyTier(p.journey_plan_id as string, input.buyerProfileId)
+    // `null` for a guest is correct and already handled: checkJourneyTier refuses a TIER-GATED
+    // Journey to anyone with no profile (a guest cannot hold a Space membership) and returns ok for
+    // an ungated one. So a guest may buy an open Journey and is turned away from a members-only one
+    // with the message that names the Space and tier.
+    const tier = await checkJourneyTier(p.journey_plan_id as string, buyerProfileId)
     if (!tier.ok) return { error: tier.error }
   }
 
@@ -256,7 +283,10 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
   const { data: orderRow, error: orderErr } = await db()
     .from('commerce_orders')
     .insert({
-      buyer_profile_id: input.buyerProfileId,
+      buyer_profile_id: buyerProfileId,
+      // Exactly one of the pair is non-null at insert; claim_guest_orders() may later set the buyer
+      // beside a surviving address, which is the record of how the order was bought.
+      guest_email: guestEmail,
       owner_kind: seller.owner_kind,
       owner_profile_id: seller.owner_profile_id,
       owner_space_id: seller.owner_space_id,
@@ -303,7 +333,10 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
   // meant to read (lib/commerce/order-receipt.ts); this is what still reaches them when that message
   // cannot be composed. Best-effort by construction: an unresolvable address omits the field and
   // never refuses a checkout.
-  const receiptEmail = await receiptEmailFor(input.buyerProfileId)
+  // A guest has no profile to resolve an address from, and the one they typed IS the address the
+  // receipt must reach — it is the only way to tell them what they bought before they have an
+  // account. Mirrors createTicketCheckout, which resolves the guest address the same way.
+  const receiptEmail = guestEmail ?? (buyerProfileId ? await receiptEmailFor(buyerProfileId) : null)
   const gaMeta = await checkoutGaMetadata()
 
   // LIVE-346: a physical cart needs a carrier address. Nothing on the buy path collects one
@@ -347,10 +380,22 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
             }
           : {}),
         ...(receiptEmail ? { receipt_email: receiptEmail } : {}),
-        metadata: { kind: 'commerce_order', buyer_profile_id: input.buyerProfileId, order_id: orderId },
+        metadata: {
+          kind: 'commerce_order',
+          ...(buyerProfileId ? { buyer_profile_id: buyerProfileId } : { guest_email: guestEmail }),
+          order_id: orderId,
+        },
       },
-      client_reference_id: input.buyerProfileId,
-      metadata: { kind: 'commerce_order', buyer_profile_id: input.buyerProfileId, order_id: orderId, ...gaMeta },
+      // Prefill and lock the address for a guest so the receipt, the Stripe customer and the row all
+      // agree — and so the address the claim later matches on is the one they actually typed.
+      ...(guestEmail ? { customer_email: guestEmail } : {}),
+      ...(buyerProfileId ? { client_reference_id: buyerProfileId } : {}),
+      metadata: {
+        kind: 'commerce_order',
+        ...(buyerProfileId ? { buyer_profile_id: buyerProfileId } : { guest_email: guestEmail }),
+        order_id: orderId,
+        ...gaMeta,
+      },
       ...checkoutReturnFields(ui, {
         successUrl: `${appUrl()}/orders?ok=1&session_id={CHECKOUT_SESSION_ID}`,
         // Cancel back to the surface the buyer was purchasing from, never the free peer board

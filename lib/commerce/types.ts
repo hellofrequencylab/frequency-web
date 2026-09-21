@@ -76,7 +76,21 @@ export interface ProductInput {
 }
 
 export interface CheckoutInput {
-  buyerProfileId: string
+  /**
+   * The signed-in buyer's profile. EXACTLY ONE of this and `guestEmail` is set — the same either/or
+   * `createTicketCheckout` carries (lib/billing/tickets.ts) and that `commerce_orders` carries in
+   * SQL as `buyer_profile_id` / `guest_email`.
+   */
+  buyerProfileId?: string | null
+  /**
+   * A signed-out guest's address (LIVE-396). EXACTLY ONE of this and `buyerProfileId`.
+   *
+   * 🔴 JOURNEY CARTS ONLY, enforced in `createCommerceCheckout`. The schema and the claim door
+   * (`claim_guest_orders`) are general, because `commerce_orders` is the table they belong to — but
+   * the guest ENTRY is deliberately not. Opening signed-out checkout to physical goods would raise
+   * shipping, stock and returns questions nobody has answered, and LIVE-396 asked about Journeys.
+   */
+  guestEmail?: string | null
   items: { productId: string; variantId?: string | null; qty: number }[]
   shipping?: Record<string, unknown>
   /** An explicit network-sourced entry point (ADR-811 §A) a discovery / marketplace surface passes so
