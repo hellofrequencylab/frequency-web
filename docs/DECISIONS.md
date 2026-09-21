@@ -47157,6 +47157,28 @@ Etsy (`DEF-ETSY`) and the app (`PROG-A1`/`A3`/`A4`, `DEF-MOBILE`) were already d
 - **Point 5** leaves `PROG-A3` ("enablement inside RLS") parked, which the 2026-09-07 ruling already flagged: a disabled module's data stays reachable by direct API until the App Platform builds. That flag is unchanged, not new.
 
 **Rows.** No row status changed. `meta.slate.waves` re-ordered; `meta.slate.deferredByName` rewritten to name the three tail groups in order.
+## ADR-1492: Rework phase 4 was already true, so the program row gets a probe instead of a prose verdict (PROG-R4)
+
+**Status:** Accepted · 2026-09-21 · backlog `PROG-R4` · numbered **1492** because **1491** is the owner ruling that sequences the tail (ADR-1491, landed on main the same day) and **1492** is the next free number · extends [ADR-1294](DECISIONS.md) (the core-model rework), [ADR-1438](DECISIONS.md) (LIVE-228) and [ADR-1082](DECISIONS.md) (re-test the premise) · corroborated by `lib/pricing/plans.ts`, `lib/billing/pricing-keys.ts`, `lib/pricing/display.ts`, `lib/pricing/gates.ts`
+
+**Context.** PROG-R4 is the first row of the WR rework wave and the only phase that changes money. Its `verify` was `kind: manual`, evidence "Program phase; proven by its child rows."
+
+Premise re-tested 2026-09-21, against the tree and against production. Every phase-4 item had already shipped under its own row: 3.1 on LIVE-228 (ADR-1438), 3.2 on LIVE-229 (ADR-1435), 3.3 on LIVE-230 (ADR-1335), 3.4 superseded by ADR-1415 and closed as LIVE-410, 3.5 on LIVE-232. All five child probes pass here. The row's own Independent ruling holds too and no child probe covered it: `ADVERTISED_SPACE_PLANS` is `[business, nonprofit]` while `independent_base` stays on `CATALOG_ITEM_KEYS` at $249 and off `RETIRED_CATALOG_ITEM_KEYS`, so the four hand-sold Stripe prices stay live and no public surface offers the tier.
+
+Production read the same day: `spaces.plan` is free 20, business 6, null 1. Zero `collective` rows, so migration `20270345006100` has landed and the six granted Spaces are grandfathered on the business label at $49. `space_subscription_items` is 0 and `space_billing_agreements` is 1, so nobody has been charged and the grandfather is still a grant rather than a subscription.
+
+**Decision.**
+
+1. PROG-R4 closes as done. No product code changes.
+2. Its `manual` verify becomes a `cmd` probe with twelve arms measuring the consequence of all five phase-4 items plus the Independent ruling. The five child probes stay exactly as written; none is deleted.
+3. Three positive controls plant a `collective` plan, a placeholder seat and a retired `independent_base` into copies of the sources and assert the same readers still report them, so a renamed constant degrades to a failure rather than to silent coverage.
+4. PROG-R4 is pruned from `meta.slate.waves` WR in the same edit, per the placement rule (HYG-047).
+
+**Rejected.** Leaving the row open because the phase is large. Leaving the verify `manual`: "proven by its child rows" cannot notice a child being reverted, which is the one-list failure mode reappearing inside the one list. Closing PROG-R5 alongside it — its premise expired on a different reading and it stays open on LIVE-234. Claiming any part of LIVE-234, which is the money proof and stays P0 and owner-gated. Taking number 1491.
+
+**Consequences.** Reverting any phase-4 consequence — Collective back on the plan ladder or the take-rate ladder, the seat back to a placeholder or off $12, the memberships gate back to a Business wall, Independent advertised or retired, the merged tier typed into a public pricing surface — now fails the PROG-R4 probe directly, not only its child's. WR advances to PROG-R6.
+
+**Rows.** PROG-R4.
 
 ## ADR-1490: Email names Business sends from the meter (LIVE-437)
 
