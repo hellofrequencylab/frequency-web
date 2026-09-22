@@ -34,8 +34,11 @@ export async function MyMembershipsSection() {
     )
   }
 
+  // The list, not the EmptyState above it: every row is a space_memberships read with a live
+  // tier and cadence label (HYG-121). A membership added or removed is a height the mask
+  // cannot hold; that is an accepted recapture.
   return (
-    <ul className="space-y-3">
+    <ul data-visual-mask="settings-my-memberships" className="space-y-3">
       {rows.map((row) => (
         <li key={row.id}>
           <EntityCard

@@ -22,8 +22,11 @@ export async function TipsReceivedSection() {
   const tips = await listTipsReceived(me.id)
   if (tips.count === 0) return null
 
+  // The whole card, because every line inside it is a reading: the total, the count and the
+  // recent tips with names, amounts and dates (HYG-121). The card mounts only once a tip has
+  // landed, so its first appearance is a height and an accepted recapture.
   return (
-    <div id="tips" className="mt-4 scroll-mt-24 rounded-card border border-border bg-surface p-5 lift-1">
+    <div id="tips" data-visual-mask="settings-tips-received" className="mt-4 scroll-mt-24 rounded-card border border-border bg-surface p-5 lift-1">
       <div className="flex items-center gap-2">
         <HandCoins className="h-4 w-4 text-subtle" />
         <p className="eyebrow text-subtle">Tips received</p>

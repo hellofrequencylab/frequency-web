@@ -131,8 +131,10 @@ async function DashboardStats({ spaceId, slug }: { spaceId: string; slug: string
     listActiveSpaceMemberIds(spaceId),
   ])
   const memberCount = memberIds.length
+  // The four tiles are four readings (HYG-121); StatCard renders its value `tabular-nums`, so
+  // digits change without the box resizing and the mask holds.
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div data-visual-mask="space-console-stats" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <StatCard
         label="Revenue, last 30 days"
         value={usd(earnings.netCents)}
@@ -174,7 +176,9 @@ async function DashboardProfileStats({ spaceId, slug }: { spaceId: string; slug:
   return (
     <section className="space-y-3">
       <SectionHeader title="Your profile, last 30 days" href={`/spaces/${slug}`} action="Open profile" />
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* The grid, not the section: the SectionHeader is design and stays photographed; the two
+          tiles are a rolling 30-day telemetry read (HYG-121), tabular-nums so the box holds. */}
+      <div data-visual-mask="space-console-profile-stats" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           label="Profile views"
           value={stats.profileViews}
@@ -212,7 +216,9 @@ async function DashboardJourneyStats({ spaceId, slug }: { spaceId: string; slug:
   return (
     <section className="space-y-3">
       <SectionHeader title="Your Journeys" href={offeringsHref} action="Offerings" />
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* The grid, not the section, for the same reason as the profile row: four completion
+          tallies in tabular-nums tiles (HYG-121). */}
+      <div data-visual-mask="space-console-journey-stats" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           label="Enrolled"
           value={stats.enrolled}
@@ -327,7 +333,10 @@ async function DashboardActivity({ spaceId, slug }: { spaceId: string; slug: str
           description="Emails, messages, event check-ins, and joins show up here as they happen."
         />
       ) : (
-        <ul className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
+        /* The <ul>, not the EmptyState beside it (the feed-stream rule): the rows are the touch
+           stream with relativeTime() on every one (HYG-121). A change in the row count is a
+           height the mask cannot hold, and is accepted. */
+        <ul data-visual-mask="space-console-activity" className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
           {items.map((it) => (
             <ActivityRow key={it.id} item={it} />
           ))}
@@ -389,7 +398,10 @@ async function DashboardUpcoming({ spaceId, slug }: { spaceId: string; slug: str
           description="Upcoming events and bookings for your space show up here."
         />
       ) : (
-        <ul className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
+        /* The <ul>, not the EmptyState beside it: the next five events and their dates, and the
+           `upcomingOnly` window slides continuously (HYG-121). A row count change is a height the
+           mask cannot hold, and is accepted. */
+        <ul data-visual-mask="space-console-upcoming" className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
           {events.map((e) => (
             <li key={e.id} className="flex items-center gap-3 px-4 py-2.5">
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
