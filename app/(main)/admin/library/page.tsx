@@ -23,6 +23,7 @@ import { RailGrid } from '@/components/templates'
 import { LibraryUploader } from './library-uploader'
 import { LoomGrid, type LoomView } from './loom-grid'
 import { LoomRail } from './loom-rail'
+import { LoomSavedViews } from './loom-saved-views'
 import { CreateStudio } from './create-studio'
 import { AppsLaneView } from './apps-lane-view'
 import { SplashLaneView } from './splash-lane-view'
@@ -320,6 +321,10 @@ export default async function LoomStudioPage({
                   </Link>
                 ))}
               </div>
+
+              {/* Saved views (PROG-D4): the current folder + filters + sort + view, under a name, per
+                  operator in localStorage. Outside the form's submit path (type="button"). */}
+              <LoomSavedViews />
             </form>
           </div>
         </div>
