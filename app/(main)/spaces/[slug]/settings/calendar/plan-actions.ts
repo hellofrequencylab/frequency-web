@@ -433,7 +433,10 @@ export async function startPlanFromPlaybook(slug: string, playbookId: string): P
   return created
 }
 
-export async function runPlanAgain(slug: string, planId: string): Promise<ActionResult<{ id: string }>> {
+/** Copy a Plan and its checklist into a new Plan at Pencil. Returns the new Plan's id AND title so
+ *  the drawer can say which Plan it made (LIVE-467): a button that writes a row and reports nothing
+ *  is one people press twice. */
+export async function runPlanAgain(slug: string, planId: string): Promise<ActionResult<{ id: string; title: string }>> {
   const editor = await resolveEditor(slug)
   if (!editor) return fail('You do not have access to this calendar.')
   const plan = await getSpacePlan(editor.spaceId, planId)
@@ -460,7 +463,7 @@ export async function runPlanAgain(slug: string, planId: string): Promise<Action
     )
   }
   revalidate(slug)
-  return created
+  return ok({ id: created.data.id, title: seed.title })
 }
 
 /**

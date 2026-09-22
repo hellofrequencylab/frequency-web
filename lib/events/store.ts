@@ -17,7 +17,7 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { upcomingEventFloor } from './upcoming-floor'
-import { SERIES_COLUMNS } from './series'
+import { SERIES_COLUMNS, seriesUpcomingFloor } from './series'
 import { seriesAnchorIsLive, type RepeatAnchorRow } from './calendar-repeats'
 
 /** An event as the by-space read returns it (the columns the offerings/schedule modules need). */
@@ -602,11 +602,15 @@ export async function stampEventSpaceId(spaceId?: string | null): Promise<string
  * Events that BELONG TO a space, soonest-upcoming first. Defaults to the root space (so a caller
  * that passes no spaceId reads the root's events, the canary). Filtered by space_id so an event
  * in space A can never resolve for space B. When `upcomingOnly`, only events starting from now.
+ * When `fromDay` (YYYY-MM-DD, the Space's own wall clock), only events starting on or after that
+ * day: the team calendar's floor (LIVE-467), so the `limit` cuts a bounded window rather than
+ * the oldest N of everything a Space ever ran. When `newestFirst`, the rows come latest-first so
+ * the `limit` drops the OLDEST past events rather than the upcoming ones (callers re-sort).
  * FAIL-SAFE: [] on any error / missing tenant.
  */
 export async function listEventsForSpace(
   spaceId?: string | null,
-  opts: { limit?: number; upcomingOnly?: boolean; includeUnpublished?: boolean } = {},
+  opts: { limit?: number; upcomingOnly?: boolean; includeUnpublished?: boolean; fromDay?: string; newestFirst?: boolean } = {},
 ): Promise<SpaceEvent[]> {
   const sid = spaceId ?? (await loadRootSpaceId())
   if (!sid) return []
@@ -634,7 +638,10 @@ export async function listEventsForSpace(
         .is('removed_at', null)
     }
     if (opts.upcomingOnly) q = q.gte('starts_at', upcomingEventFloor())
-    const { data, error } = await q.order('starts_at', { ascending: true }).limit(limit)
+    // The floor is a day in the Space's own wall clock, written the way the column is (the same
+    // shape upcomingEventFloor produces), so it compares against starts_at's UTC parts correctly.
+    if (opts.fromDay && /^\d{4}-\d{2}-\d{2}$/.test(opts.fromDay)) q = q.gte('starts_at', seriesUpcomingFloor(opts.fromDay))
+    const { data, error } = await q.order('starts_at', { ascending: !opts.newestFirst }).limit(limit)
     if (error) return []
     // The typed rows carry starts_at as string|null and join_mode as plain string; SpaceEvent keeps
     // the narrower app-facing shape every caller already consumes.

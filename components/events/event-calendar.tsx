@@ -649,35 +649,61 @@ export function EventCalendar({
                         </p>
                       )}
                       <div className="flex flex-col gap-1">
-                        {stackDay(cards)[0]?.stacked ? (
-                          <button
-                            type="button"
-                            onClick={() => select(cards[0])}
-                            title={cards.map((c) => c.title).join(', ')}
-                            className={cn(
-                              'w-full rounded-control px-1.5 py-0.5 text-left text-2xs font-medium transition-colors',
-                              itemChipClass(cards[0]?.layer, cards[0]?.stage),
-                            )}
-                          >
-                            <span className="block truncate">{cards.map((c) => c.title).join(' · ')}</span>
-                          </button>
-                        ) : (
-                          cards.slice(0, 3).map((ev, i) => (
-                          <button
-                            key={`${ev.slug}-${i}`}
-                            type="button"
-                            onClick={() => select(ev)}
-                            title={ev.title}
-                            className={cn(
-                              'w-full truncate rounded-control px-1.5 py-0.5 text-left text-2xs font-medium transition-colors',
-                              itemChipClass(ev.layer, ev.stage),
-                              activeSeries !== null && ev.seriesKey === activeSeries && 'ring-2 ring-primary/50',
-                            )}
-                          >
-                            <span className="tabular-nums">{ev.timeLabel}</span> {ev.title}
-                          </button>
-                        )))}
-                        {cards.length > 3 && !stackDay(cards)[0]?.stacked && (
+                        {/* A SEGMENT PER ITEM (LIVE-467). Back-to-back items stack into one block, and
+                            every item in it keeps its own button, so the second gathering on a busy
+                            Sunday opens from the grid like the first. Items that only share the day
+                            are separate chips, and the count past three always shows.
+                            🔴 EVERY GROUP, NOT THE FIRST. A cell is one date, but its items are not
+                            all keyed to it: spanDayKeys files a multi-day item under every date it
+                            covers while the item keeps its START dayKey, so a cell can hold two
+                            dayKeys. stackDay groups by dayKey and sorts ascending, so reading only
+                            [0] drew the continuing item and dropped the date's own, which is how a
+                            freshly pencilled date could vanish behind a retreat that began earlier
+                            (caught by test/e2e/operator-calendar.spec.ts). Flatten every group. */}
+                        {stackDay(cards.slice(0, 3)).flatMap((day) => day.runs).map((run) =>
+                          run.length > 1 ? (
+                            <div
+                              key={`stack-${run[0].slug}-${run[0].dayKey}`}
+                              role="group"
+                              aria-label={`${run.length} back-to-back`}
+                              data-calendar-stack
+                              className={cn('overflow-hidden rounded-control', itemChipClass(run[0].layer, run[0].stage))}
+                            >
+                              {run.map((ev, i) => (
+                                <button
+                                  key={`${ev.slug}-${i}`}
+                                  type="button"
+                                  onClick={() => select(ev)}
+                                  title={ev.title}
+                                  className={cn(
+                                    'block w-full truncate px-1.5 py-0.5 text-left text-2xs font-medium transition-colors',
+                                    i > 0 && 'border-t border-border/60',
+                                    activeSeries !== null && ev.seriesKey === activeSeries && 'ring-2 ring-inset ring-primary/50',
+                                  )}
+                                >
+                                  <span className="tabular-nums">{ev.timeLabel}</span> {ev.title}
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            run.map((ev, i) => (
+                              <button
+                                key={`${ev.slug}-${i}`}
+                                type="button"
+                                onClick={() => select(ev)}
+                                title={ev.title}
+                                className={cn(
+                                  'w-full truncate rounded-control px-1.5 py-0.5 text-left text-2xs font-medium transition-colors',
+                                  itemChipClass(ev.layer, ev.stage),
+                                  activeSeries !== null && ev.seriesKey === activeSeries && 'ring-2 ring-primary/50',
+                                )}
+                              >
+                                <span className="tabular-nums">{ev.timeLabel}</span> {ev.title}
+                              </button>
+                            ))
+                          ),
+                        )}
+                        {cards.length > 3 && (
                           <button
                             type="button"
                             onClick={() => {

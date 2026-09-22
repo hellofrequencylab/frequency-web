@@ -18,6 +18,8 @@ const store: { rows: Record<string, Array<Record<string, unknown>>> } = { rows: 
 const eqCalls: Array<[string, unknown]> = []
 const inCalls: Array<[string, unknown]> = []
 const isCalls: Array<[string, unknown]> = []
+const gteCalls: Array<[string, unknown]> = []
+const orderCalls: Array<[string, unknown]> = []
 let gteCalled = false
 
 function builder() {
@@ -39,11 +41,13 @@ function builder() {
       isCalls.push([col, val])
       return api
     },
-    gte() {
+    gte(col: string, val: unknown) {
       gteCalled = true
+      gteCalls.push([col, val])
       return api
     },
-    order() {
+    order(col: string, opts: unknown) {
+      orderCalls.push([col, opts])
       return api
     },
     async limit() {
@@ -79,6 +83,8 @@ beforeEach(() => {
   eqCalls.length = 0
   inCalls.length = 0
   isCalls.length = 0
+  gteCalls.length = 0
+  orderCalls.length = 0
   gteCalled = false
 })
 
@@ -111,6 +117,31 @@ describe('listEventsForSpace (by-space read)', () => {
     store.rows[SPACE_A] = [{ id: 'a1', space_id: SPACE_A, title: 'A only' }]
     await listEventsForSpace(SPACE_A, { upcomingOnly: true })
     expect(gteCalled).toBe(true)
+  })
+
+  // ── THE TEAM CALENDAR'S FLOOR (LIVE-467) ──────────────────────────────────────────────────────
+  // Ascending with a 200 cap and no lower bound is the OLDEST 200 events a Space ever ran, so past
+  // 200 the upcoming ones fell off every team surface. `fromDay` bounds the read to a window and
+  // `newestFirst` makes the cap drop the oldest past rows rather than the next ones.
+  it('fromDay adds a starts_at floor written the way the column stores wall clock', async () => {
+    store.rows[SPACE_A] = [{ id: 'a1', space_id: SPACE_A, title: 'A only' }]
+    await listEventsForSpace(SPACE_A, { fromDay: '2025-08-01' })
+    expect(gteCalls).toContainEqual(['starts_at', '2025-08-01T00:00:00.000Z'])
+  })
+
+  it('a malformed fromDay adds no floor rather than a bad one', async () => {
+    store.rows[SPACE_A] = [{ id: 'a1', space_id: SPACE_A, title: 'A only' }]
+    await listEventsForSpace(SPACE_A, { fromDay: 'yesterday' })
+    expect(gteCalled).toBe(false)
+  })
+
+  it('newestFirst flips the order so the cap cuts the oldest rows; the default stays soonest first', async () => {
+    store.rows[SPACE_A] = [{ id: 'a1', space_id: SPACE_A, title: 'A only' }]
+    await listEventsForSpace(SPACE_A, { newestFirst: true })
+    expect(orderCalls).toContainEqual(['starts_at', { ascending: false }])
+    orderCalls.length = 0
+    await listEventsForSpace(SPACE_A)
+    expect(orderCalls).toContainEqual(['starts_at', { ascending: true }])
   })
 
   // ── PUBLICATION: the gate is what you get by asking for nothing ────────────────────────────────

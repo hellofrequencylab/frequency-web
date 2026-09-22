@@ -11,7 +11,7 @@ import { Input, Textarea, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { StageTimeline } from '@/components/ui/stage-timeline'
-import { ENTRY_KINDS, ENTRY_STAGES, entryKind, entryStage, type CalendarLayerKey } from '@/lib/calendar/registry'
+import { ENTRY_KINDS, ENTRY_STAGES, entryKind, entryStage, type CalendarLayerKey, type EntryKindDef } from '@/lib/calendar/registry'
 import { MAX_CANDIDATE_DATES, MAX_DESCRIPTION, type EntryInput } from '@/lib/calendar/entries'
 import { PENCIL_REPEAT_CHOICES, pencilRepeatChoice, pencilRuleForChoice, withoutExceptionDate } from '@/lib/calendar/pencil-series'
 import { describeRepeat, parseRepeat } from '@/lib/events/repeat-rule'
@@ -76,6 +76,28 @@ function blankInput(kind: string, dayKey: string): EntryInput {
     planId: null,
     repeat: '',
     exceptionDates: [],
+  }
+}
+
+/** The form re-defaulted for a Type change, in one place for both forms (LIVE-467). A kind that is
+ *  not an event on its way never belongs to a Plan, so switching to Unavailable or Private drops the
+ *  Plan link; before, the link survived the switch and a stray Plan sat on Workflow with no date. */
+function withKind(input: EntryInput, next: EntryKindDef): EntryInput {
+  return {
+    ...input,
+    kind: next.kind,
+    allDay: next.defaults.allDay,
+    blocksTime: next.defaults.blocksTime,
+    showPublicly: next.canShowPublicly ? input.showPublicly : false,
+    status: next.defaultStatus,
+    stage: next.isPencil ? (input.stage ?? 'pencil') : null,
+    planId: next.isPencil ? input.planId : null,
+    title:
+      input.title === 'Unavailable' && next.kind !== 'unavailable'
+        ? ''
+        : input.title === '' && next.kind === 'unavailable'
+          ? 'Unavailable'
+          : input.title,
   }
 }
 
@@ -181,6 +203,14 @@ export function StaffCalendar({
     if (!draft) return
     setError(null)
     startTransition(async () => {
+      if (!draft.id && draft.input.kind !== 'pencil') {
+        // Unavailable time and a Private entry are not events on their way, so they get no Plan
+        // (LIVE-467): before, every "+" and "Pencil it in" made a Plan whatever the Type became.
+        const res = await saveCalendarEntry(slug, null, draft.input)
+        if (isError(res)) setError(res.error)
+        else done()
+        return
+      }
       if (!draft.id) {
         const res = await createPenciledPlan(slug, draft.input.title, draft.input.startDate, draft.input.timeZone)
         if (isError(res)) {
@@ -346,7 +376,23 @@ export function StaffCalendar({
       <Dialog open={draft !== null} onClose={() => !pending && setDraft(null)} ariaLabelledBy="calendar-entry-title" className="max-w-lg">
         {input && !draft?.id ? (
           <form onSubmit={submit} className="space-y-4 rounded-card border border-border bg-surface p-6 lift-3">
-            <h2 id="calendar-entry-title" className="text-lead font-bold text-text">Pencil a date</h2>
+            <h2 id="calendar-entry-title" className="text-lead font-bold text-text">{def?.isPencil ? 'Pencil a date' : 'Add to calendar'}</h2>
+            {/* THE TYPE IS OFFERED HERE, NOT ONLY AFTER THE SAVE (LIVE-467). The short form used to
+                assume an event on its way, so Unavailable time could only be made by pencilling a
+                Plan first and switching the Type afterwards, and the Plan stayed behind. */}
+            <div className="grid gap-1">
+              <label htmlFor="entry-kind" className={labelClasses}>Type</label>
+              <Select
+                id="entry-kind"
+                value={input.kind}
+                options={ENTRY_KINDS.map((k) => ({ value: k.kind, label: k.label }))}
+                onChange={(e) => {
+                  const next = entryKind(e.target.value)
+                  if (!next) return
+                  setDraft((d) => (d ? { ...d, input: withKind(d.input, next) } : d))
+                }}
+              />
+            </div>
             <div className="grid gap-1">
               <label htmlFor="entry-title" className={labelClasses}>Title</label>
               <Input id="entry-title" required maxLength={200} value={input.title} onChange={(e) => set('title', e.target.value)} autoFocus />
@@ -364,13 +410,15 @@ export function StaffCalendar({
             {error && <p role="alert" className="text-body-sm text-danger">{error}</p>}
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="secondary" size="sm" onClick={() => setDraft(null)} disabled={pending}>Cancel</Button>
-              <Button type="submit" size="sm" disabled={pending}>{pending ? 'Saving' : 'Pencil date'}</Button>
+              <Button type="submit" size="sm" disabled={pending}>{pending ? 'Saving' : def?.isPencil ? 'Pencil date' : 'Add it'}</Button>
             </div>
           </form>
         ) : input && (
           <form onSubmit={submit} className="space-y-4 rounded-card border border-border bg-surface p-6 lift-3">
+            {/* Only a SAVED entry reaches this form (a new one takes the short form above), so the
+                heading is always an edit. */}
             <h2 id="calendar-entry-title" className="text-lead font-bold text-text">
-              {draft?.id ? (def?.isPencil ? 'Edit event' : 'Edit entry') : def?.isPencil ? 'Pencil it in' : 'Add to calendar'}
+              {def?.isPencil ? 'Edit event' : 'Edit entry'}
             </h2>
 
             <div className="grid gap-1">
@@ -382,23 +430,7 @@ export function StaffCalendar({
                 onChange={(e) => {
                   const next = entryKind(e.target.value)
                   if (!next) return
-                  setDraft((d) =>
-                    d
-                      ? {
-                          ...d,
-                          input: {
-                            ...d.input,
-                            kind: next.kind,
-                            allDay: next.defaults.allDay,
-                            blocksTime: next.defaults.blocksTime,
-                            showPublicly: next.canShowPublicly ? d.input.showPublicly : false,
-                            status: next.defaultStatus,
-                            stage: next.isPencil ? (d.input.stage ?? 'pencil') : null,
-                            title: d.input.title === 'Unavailable' && next.kind !== 'unavailable' ? '' : d.input.title,
-                          },
-                        }
-                      : d,
-                  )
+                  setDraft((d) => (d ? { ...d, input: withKind(d.input, next) } : d))
                 }}
               />
             </div>
@@ -420,16 +452,32 @@ export function StaffCalendar({
                     This date belongs to a Plan. Moving it here moves the Plan and every date on it.
                   </p>
                 )}
-                {/* Cancelled is an exit, not a step: a pipeline and its exit never share a control (ADR-1504). */}
+                {/* Cancelled is an exit, not a step: a pipeline and its exit never share a control (ADR-1504).
+                    ON A PLAN-LINKED DATE THE EXIT IS THE PLAN'S (LIVE-467). The stage model has one
+                    lifecycle write, and the Plan leads it (transitionPlanStage): Cancelled here
+                    archives the Plan and marks every date on it Cancelled on Save. So the button says
+                    that, rather than "this date" over a change that reaches all of them. */}
                 <div>
                   {timeline.cancelled ? (
                     <Button type="button" variant="ghost" size="sm" onClick={() => set('stage', 'pencil')} disabled={pending}>
                       Bring it back
                     </Button>
                   ) : (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => set('stage', 'cancelled')} disabled={pending}>
-                      Cancel this date
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => set('stage', 'cancelled')}
+                      disabled={pending}
+                      aria-describedby={input.planId ? 'entry-cancel-plan-hint' : undefined}
+                    >
+                      {input.planId ? 'Cancel the Plan' : 'Cancel this date'}
                     </Button>
+                  )}
+                  {input.planId && !timeline.cancelled && (
+                    <p id="entry-cancel-plan-hint" className="mt-1 text-meta text-muted">
+                      Marks the Plan Cancelled with every date on it, and takes it off Workflow when you save. Bring it back returns them all to Pencil.
+                    </p>
                   )}
                 </div>
               </div>
@@ -680,6 +728,7 @@ export function StaffCalendar({
                     type="button"
                     variant="secondary"
                     size="sm"
+                    disabled={pending}
                     onClick={() =>
                       startTransition(async () => {
                         const res = await startPlanFromEntry(slug, draft.id!, input.title || 'Untitled Plan')
@@ -723,6 +772,7 @@ export function StaffCalendar({
                   <Select
                     aria-label="Join an existing Plan"
                     value=""
+                    disabled={pending}
                     options={[{ value: '', label: 'Join a Plan' }, ...plans.map((p) => ({ value: p.id, label: p.title }))]}
                     onChange={(e) => {
                       const planId = e.target.value

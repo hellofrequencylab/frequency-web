@@ -2,13 +2,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { CalendarWorkflowView } from './calendar-workflow-view'
+import { CalendarWorkflowView, CANCEL_PLAN_CONFIRM } from './calendar-workflow-view'
 import { workflowBoard } from '@/lib/calendar/workflow-board'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import type { SpacePlan } from '@/lib/calendar/plans'
 
 const { transitionPlanStage } = vi.hoisted(() => ({
-  transitionPlanStage: vi.fn(async () => ({})),
+  transitionPlanStage: vi.fn(async (..._args: unknown[]) => ({})),
 }))
 vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/plan-actions', () => ({
   transitionPlanStage,
@@ -22,7 +22,15 @@ afterEach(() => {
   if (container) container.remove()
   root = null
   container = null
+  transitionPlanStage.mockReset()
+  transitionPlanStage.mockResolvedValue({})
+  vi.restoreAllMocks()
 })
+
+function changeSelect(select: HTMLSelectElement, value: string) {
+  select.value = value
+  select.dispatchEvent(new Event('change', { bubbles: true }))
+}
 
 const plan: SpacePlan = {
   id: 'plan-1',
@@ -87,5 +95,64 @@ describe('CalendarWorkflowView', () => {
     })
     expect(transitionPlanStage).toHaveBeenCalledWith('lab', 'plan-1', 'production')
     expect(changed).toHaveBeenCalledWith('plan-1', 'production')
+  })
+
+  // LIVE-467, finding 8. One `pending` flag disabled EVERY card's select while any one moved, with
+  // nothing on the moving card to say so; and choosing Cancelled archived the Plan (a Cancelled
+  // transition is `archived: true` in lib/calendar/workflow-board.ts) with no confirm, while the
+  // drawer's Archive asks first.
+  it('a move disables only the card that is moving, and says so on that card', async () => {
+    let release!: () => void
+    transitionPlanStage.mockReturnValue(new Promise<Record<string, never>>((res) => { release = () => res({}) }))
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    const other: SpacePlan = { ...plan, id: 'plan-2', title: 'Retreat', stage: 'plan' }
+    act(() => root!.render(
+      <CalendarWorkflowView columns={workflowBoard([{ ...plan, stage: 'plan' }, other], [event])} slug="lab" canManage />,
+    ))
+    const selects = [...container.querySelectorAll('select')] as HTMLSelectElement[]
+    const moving = selects.find((s) => s.getAttribute('aria-label') === 'Move Open house')!
+    const still = selects.find((s) => s.getAttribute('aria-label') === 'Move Retreat')!
+    await act(async () => { changeSelect(moving, 'production') })
+    expect(moving.disabled).toBe(true)
+    expect(still.disabled).toBe(false)
+    expect(container.querySelector('[data-workflow-card="plan-1"]')?.textContent).toContain('Moving')
+    expect(container.querySelector('[data-workflow-card="plan-2"]')?.textContent).not.toContain('Moving')
+    await act(async () => { release(); await Promise.resolve() })
+    expect(moving.disabled).toBe(false)
+  })
+
+  it('Cancelled asks first, and a declined ask changes nothing', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    act(() => root!.render(
+      <CalendarWorkflowView columns={workflowBoard([{ ...plan, stage: 'plan' }], [event])} slug="lab" canManage />,
+    ))
+    const select = container.querySelector('select') as HTMLSelectElement
+    await act(async () => { changeSelect(select, 'cancelled') })
+    expect(confirm).toHaveBeenCalledWith(CANCEL_PLAN_CONFIRM)
+    expect(CANCEL_PLAN_CONFIRM).toContain('leaves Workflow')
+    expect(transitionPlanStage).not.toHaveBeenCalled()
+    expect(select.value).toBe('plan')
+
+    confirm.mockReturnValue(true)
+    await act(async () => { changeSelect(select, 'cancelled') })
+    expect(transitionPlanStage).toHaveBeenCalledWith('lab', 'plan-1', 'cancelled')
+  })
+
+  it('an ordinary move never asks', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    act(() => root!.render(
+      <CalendarWorkflowView columns={workflowBoard([{ ...plan, stage: 'plan' }], [event])} slug="lab" canManage />,
+    ))
+    await act(async () => { changeSelect(container!.querySelector('select') as HTMLSelectElement, 'production') })
+    expect(confirm).not.toHaveBeenCalled()
+    expect(transitionPlanStage).toHaveBeenCalledWith('lab', 'plan-1', 'production')
   })
 })

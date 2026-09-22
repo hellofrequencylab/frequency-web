@@ -15,7 +15,7 @@ import { createPenciledPlanRows, getSpacePlan, listSpacePlans, transitionSpacePl
 import { planStageTransition } from '@/lib/calendar/workflow-board'
 import { monthGridWindow, safeMonth } from '@/lib/calendar/month-window'
 import { dayInZone, resolveZone } from '@/lib/time/zone'
-import { addPlanTodo, reanchorPlanTodos, transitionPlanStage } from './plan-actions'
+import { addPlanTodo, archiveSpacePlan, reanchorPlanTodos, transitionPlanStage } from './plan-actions'
 
 // VERA AT THE CALENDAR, the two doors (PROG-CAL10, ADR-1386 invariant 1).
 //
@@ -224,9 +224,12 @@ async function applyOne(slug: string, editor: Editor, change: VeraChange): Promi
     case 'archive': {
       const plan = await getSpacePlan(editor.spaceId, change.planId)
       if (!plan) return { error: 'That Plan no longer exists.' }
-      const res = await updateSpacePlan(editor.spaceId, change.planId, { archived_at: new Date().toISOString() })
+      // THE SAME DOOR THE DRAWER'S "ARCHIVE PLAN" USES (LIVE-467). A bare archived_at stamp left the
+      // Plan's pencilled dates on the grid, tied to a Plan no list showed and whose "Open Plan" did
+      // nothing. archiveSpacePlan drops those dates, unlinks the ones that became events, then stamps.
+      const res = await archiveSpacePlan(slug, change.planId)
       if ('error' in res) return { error: res.error }
-      return `Archived "${plan.title}".`
+      return `Archived "${plan.title}". Its pencilled dates left the calendar; a date that became an event kept the event.`
     }
   }
 }

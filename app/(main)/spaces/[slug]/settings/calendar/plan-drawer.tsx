@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition, type FormEvent } from 'react'
+import { useEffect, useState, useTransition, type FormEvent, type KeyboardEvent } from 'react'
 import Link from 'next/link'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -68,9 +68,15 @@ export function PlanDrawer({
   const [todoOffsetDays, setTodoOffsetDays] = useState('')
   const [todoOffsetDir, setTodoOffsetDir] = useState<'before' | 'after'>('before')
   const [todos, setTodos] = useState<CrmTask[]>([])
-  const [gaps, setGaps] = useState<string[]>([])
+  // READINESS IS NULL UNTIL IT IS KNOWN (LIVE-467). An empty list read as "Ready for the next step"
+  // for the whole round trip planReadiness took, and for good once it failed, because the call had
+  // no catch. Null is "Checking"; a failed read says so instead of saying ready.
+  const [gaps, setGaps] = useState<string[] | null>(null)
+  const [readinessFailed, setReadinessFailed] = useState(false)
   const [href, setHref] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  /** What the last action did, for the buttons that used to write a row and say nothing. */
+  const [notice, setNotice] = useState<string | null>(null)
   const [proposal, setProposal] = useState<VeraPlanProposal | null>(null)
   const [guestSpaceId, setGuestSpaceId] = useState('')
   const [linkableEvents, setLinkableEvents] = useState<
@@ -88,9 +94,11 @@ export function PlanDrawer({
     setTodoOffsetDays('')
     setTodoOffsetDir('before')
     setTodos([])
-    setGaps([])
+    setGaps(null)
+    setReadinessFailed(false)
     setHref(null)
     setError(null)
+    setNotice(null)
     setGuestSpaceId('')
     setLinkableEvents([])
     setLinkEventId('')
@@ -106,11 +114,18 @@ export function PlanDrawer({
       .catch(() => {
         if (live) setTodos([])
       })
-    planReadiness(slug, plan.id, entryId ?? null).then((r) => {
-      if (!live) return
-      setGaps(r.gaps)
-      setHref(r.href)
-    })
+    planReadiness(slug, plan.id, entryId ?? null)
+      .then((r) => {
+        if (!live) return
+        setGaps(r.gaps)
+        setReadinessFailed(false)
+        setHref(r.href)
+      })
+      .catch(() => {
+        if (!live) return
+        setGaps(null)
+        setReadinessFailed(true)
+      })
     listPlanLinkableEvents(slug)
       .then((next) => {
         if (live) setLinkableEvents(next)
@@ -128,12 +143,55 @@ export function PlanDrawer({
   // One place both halves of the to-do list re-read from: the readiness bar counts OPEN to-dos, so
   // ticking one off has to move the bar in the same pass or the drawer would still say what is
   // missing after the person fixed it.
+  const refreshReadiness = async (planId: string) => {
+    try {
+      const next = await planReadiness(slug, planId, entryId ?? null)
+      setGaps(next.gaps)
+      setReadinessFailed(false)
+      setHref(next.href)
+    } catch {
+      setGaps(null)
+      setReadinessFailed(true)
+    }
+  }
   const refresh = async (planId: string) => {
     setTodos(await listPlanTodos(slug, planId))
-    const next = await planReadiness(slug, planId, entryId ?? null)
-    setGaps(next.gaps)
-    setHref(next.href)
+    await refreshReadiness(planId)
   }
+
+  // ADD A TO-DO (LIVE-467). One function for the Add button and for Enter in the to-do inputs. Those
+  // inputs sit inside the Save Plan form, so Enter used to submit it and close the drawer with the
+  // to-do never added; Enter now adds the to-do and nothing else.
+  const addTodo = () => {
+    if (!plan || pending || !todoTitle.trim()) return
+    setError(null)
+    start(async () => {
+      const res = await addPlanTodo(slug, plan.id, todoTitle, null, offsetFromForm(todoOffsetDays, todoOffsetDir))
+      if (isError(res)) setError(res.error)
+      else {
+        setTodoTitle('')
+        setTodoOffsetDays('')
+        await refresh(plan.id)
+      }
+    })
+  }
+  const enterAddsTodo = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    addTodo()
+  }
+  /** Enter in a text field that is not the Plan itself never saves and closes the drawer. */
+  const enterDoesNothing = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') e.preventDefault()
+  }
+
+  const readinessLabel = readinessFailed
+    ? 'Could not be checked'
+    : gaps === null
+      ? 'Checking'
+      : gaps.length === 0
+        ? 'Ready for the next step'
+        : `${gaps.length} ${gaps.length === 1 ? 'item' : 'items'} still needed`
 
   const toggleTodo = (todoId: string, done: boolean) => {
     if (!plan) return
@@ -199,10 +257,13 @@ export function PlanDrawer({
           <dl className="grid grid-cols-2 gap-3 rounded-control border border-border bg-surface-elevated p-3 text-body-sm">
             <div><dt className="text-meta text-muted">Stage</dt><dd className="font-semibold text-text">{planStageLabel(values.stage || plan.stage)}</dd></div>
             <div><dt className="text-meta text-muted">Owner</dt><dd className="font-semibold text-text">{plan.ownerProfileId ? 'Assigned teammate' : 'Unassigned'}</dd></div>
-            <div className="col-span-2"><dt className="text-meta text-muted">Readiness</dt><dd className="font-semibold text-text">{gaps.length === 0 ? 'Ready for the next step' : `${gaps.length} ${gaps.length === 1 ? 'item' : 'items'} still needed`}</dd></div>
-            <div className="col-span-2"><dt className="text-meta text-muted">Next action</dt><dd className="font-semibold text-text">{href ? 'Open the production Studio' : gaps[0] ?? 'Keep the Plan current'}</dd></div>
+            <div className="col-span-2"><dt className="text-meta text-muted">Readiness</dt><dd className="font-semibold text-text" data-plan-readiness={readinessFailed ? 'failed' : gaps === null ? 'checking' : 'known'}>{readinessLabel}</dd></div>
+            <div className="col-span-2"><dt className="text-meta text-muted">Next action</dt><dd className="font-semibold text-text">{href ? 'Open the production Studio' : gaps?.[0] ?? 'Keep the Plan current'}</dd></div>
           </dl>
-          {gaps.length > 0 && (
+          {readinessFailed && (
+            <p className="text-body-sm text-muted">Readiness could not be checked. Close the Plan and open it again.</p>
+          )}
+          {gaps && gaps.length > 0 && (
             <div className="rounded-control bg-info-bg px-3 py-2 text-body-sm text-info">
               <p className="font-medium">Still needed before this can go live</p>
               <ul className="mt-1 list-disc pl-5">{gaps.map((g) => <li key={g}>{g}</li>)}</ul>
@@ -269,31 +330,10 @@ export function PlanDrawer({
               aria-label="New to-do"
               value={todoTitle}
               onChange={(e) => setTodoTitle(e.target.value)}
+              onKeyDown={enterAddsTodo}
               placeholder="Add a to-do"
             />
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              disabled={pending || !todoTitle.trim()}
-              onClick={() =>
-                start(async () => {
-                  const res = await addPlanTodo(
-                    slug,
-                    plan.id,
-                    todoTitle,
-                    null,
-                    offsetFromForm(todoOffsetDays, todoOffsetDir),
-                  )
-                  if (isError(res)) setError(res.error)
-                  else {
-                    setTodoTitle('')
-                    setTodoOffsetDays('')
-                    await refresh(plan.id)
-                  }
-                })
-              }
-            >
+            <Button type="button" size="sm" variant="secondary" disabled={pending || !todoTitle.trim()} onClick={addTodo}>
               Add
             </Button>
           </div>
@@ -311,6 +351,7 @@ export function PlanDrawer({
                 className="w-24"
                 value={todoOffsetDays}
                 onChange={(e) => setTodoOffsetDays(e.target.value)}
+                onKeyDown={enterAddsTodo}
                 placeholder="Days"
               />
             </div>
@@ -381,9 +422,7 @@ export function PlanDrawer({
                   if (isError(res)) setError(res.error)
                   else {
                     setLinkEventId('')
-                    const r = await planReadiness(slug, plan.id, entryId ?? null)
-                    setGaps(r.gaps)
-                    setHref(r.href)
+                    await refreshReadiness(plan.id)
                   }
                 })
               }
@@ -399,16 +438,22 @@ export function PlanDrawer({
               <Link href={href}>Make it a Production</Link>
             </Button>
           )}
+          {/* Both write or read on a round trip, so both wait it out (LIVE-467): unguarded, a second
+              tap on Run it again made a second Plan, and Ask Vera asked twice. */}
           <Button
             type="button"
             size="sm"
             variant="secondary"
-            onClick={() =>
+            disabled={pending}
+            onClick={() => {
+              setError(null)
+              setNotice(null)
               start(async () => {
                 const res = await runPlanAgain(slug, plan.id)
                 if (isError(res)) setError(res.error)
+                else setNotice(`New Plan started: "${res.data.title}". Find it on Workflow under Pencil.`)
               })
-            }
+            }}
           >
             Run it again
           </Button>
@@ -416,6 +461,7 @@ export function PlanDrawer({
             type="button"
             size="sm"
             variant="ghost"
+            disabled={pending}
             onClick={() =>
               start(async () => {
                 setProposal(await veraPlanProposal(slug, plan.id))
@@ -442,6 +488,7 @@ export function PlanDrawer({
               type="button"
               size="sm"
               className="mt-2"
+              disabled={pending}
               onClick={() =>
                 start(async () => {
                   const res = await acceptVeraChecklist(slug, plan.id, proposal.checklist)
@@ -465,25 +512,37 @@ export function PlanDrawer({
               id="plan-share"
               value={guestSpaceId}
               onChange={(e) => setGuestSpaceId(e.target.value)}
+              onKeyDown={enterDoesNothing}
               placeholder="Space id"
             />
             <Button
               type="button"
               size="sm"
               variant="secondary"
-              onClick={() =>
+              disabled={pending || !guestSpaceId.trim()}
+              onClick={() => {
+                setError(null)
+                setNotice(null)
                 start(async () => {
                   const res = await sharePlanWithSpace(slug, plan.id, guestSpaceId)
                   if (isError(res)) setError(res.error)
-                  else setGuestSpaceId('')
+                  else {
+                    setGuestSpaceId('')
+                    setNotice('Shared. That Space can open this Plan now.')
+                  }
                 })
-              }
+              }}
             >
               Share
             </Button>
           </div>
         </div>
 
+        {notice && (
+          <p role="status" className="text-body-sm text-text" data-plan-notice>
+            {notice}
+          </p>
+        )}
         {error && (
           <p role="alert" className="text-body-sm text-danger">
             {error}

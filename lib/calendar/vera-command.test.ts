@@ -104,11 +104,11 @@ describe('describeChange', () => {
     expect(lines[5]).toBe('Rename "Winter sits" to "Winter sits, 2026".')
     expect(lines[6]).toBe('Add the to-do "Book the room" to "Winter sits", due 14 days before.')
     expect(lines[7]).toBe('Add the to-do "Send thanks" to "Winter sits", due 1 day after.')
-    expect(lines[8]).toBe('Archive "Winter sits". Nothing is deleted.')
+    expect(lines[8]).toBe('Archive "Winter sits". Its pencilled dates go with it. A date that already became an event keeps the event.')
   })
 
   it('falls back to a plain noun when an id is not in the context', () => {
-    expect(describeChange({ kind: 'archive', planId: ENTRY }, ctx)).toBe('Archive that Plan. Nothing is deleted.')
+    expect(describeChange({ kind: 'archive', planId: ENTRY }, ctx)).toBe('Archive that Plan. Its pencilled dates go with it. A date that already became an event keeps the event.')
     expect(describeChange({ kind: 'move', entryId: PLAN, toDay: '2026-03-19' }, ctx)).toContain('Move that date')
   })
 

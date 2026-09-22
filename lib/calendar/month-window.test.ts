@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   monthGridWindow,
   operatorHorizonWindow,
+  adminEventFloorDay,
+  ADMIN_EVENT_FLOOR_MONTHS,
   OPERATOR_HORIZON_BACK_MONTHS,
   OPERATOR_HORIZON_FORWARD_MONTHS,
 } from './month-window'
@@ -53,5 +55,19 @@ describe('monthGridWindow', () => {
   it('spans the spill days either side of the month, so the grid never loads a hole', () => {
     // September 2026 starts on a Tuesday and ends on a Wednesday.
     expect(monthGridWindow(2026, 9)).toEqual({ fromDay: '2026-08-30', toDay: '2026-10-04' })
+  })
+})
+
+// LIVE-467. The team calendar's EVENTS read needs a floor of its own: with none, ascending and
+// capped at 200, a Space past 200 events lost its upcoming ones from every team surface.
+describe('adminEventFloorDay', () => {
+  it('is the first of the month thirteen months back, so a season and its year of context fit', () => {
+    expect(ADMIN_EVENT_FLOOR_MONTHS).toBe(13)
+    expect(adminEventFloorDay(new Date('2026-09-22T00:00:00Z'))).toBe('2025-08-01')
+    expect(adminEventFloorDay(new Date('2027-01-15T00:00:00Z'))).toBe('2025-12-01')
+  })
+
+  it('reaches further back than the operator entry horizon, so the two never disagree about recent', () => {
+    expect(ADMIN_EVENT_FLOOR_MONTHS).toBeGreaterThanOrEqual(OPERATOR_HORIZON_BACK_MONTHS)
   })
 })
