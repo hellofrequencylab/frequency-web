@@ -5,7 +5,7 @@ import { eventDayKey } from '@/lib/events/calendar-grid'
 import { listStaffCalendarItems } from './entries-store'
 import { listDayNotes } from './day-notes-store'
 import { listDueDateItems } from './due-dates-store'
-import { monthGridWindow } from './month-window'
+import { adminEventFloorDay, monthGridWindow } from './month-window'
 import { listSpacePlans } from './plans-store'
 import type { DayNote } from './day-notes'
 import type { CalendarEvent } from './item'
@@ -21,6 +21,30 @@ import type { SpacePlan } from './plans'
 // visitors never reach this function.
 
 type OwnedRow = Awaited<ReturnType<typeof listEventsForSpace>>[number]
+
+/** The 200 events under the Space that matter to its team, soonest first (LIVE-467). */
+const OWNED_EVENT_LIMIT = 200
+
+/**
+ * THE SPACE'S OWN EVENTS FOR EVERY TEAM SURFACE. One read behind the Admin grid, the List, Workflow,
+ * the console's count and the Plan drawer's "Link an event" picker, so the five never disagree.
+ *
+ * 🔴 BOUNDED BY DATE AND CUT FROM THE OLD END (LIVE-467). `listEventsForSpace` orders ascending and
+ * caps at 200, and with no floor that was the OLDEST 200 events the Space ever ran: past 200, the
+ * upcoming ones were the rows that fell off every one of those surfaces. The floor is thirteen
+ * months back (lib/calendar/month-window.ts); inside it the rows are read newest-first so a Space
+ * that fills the cap loses its oldest past events, never its next ones, and are handed back soonest
+ * first because every consumer reads them that way.
+ */
+async function listOwnedEventRows(spaceId: string, now: Date): Promise<OwnedRow[]> {
+  const rows = await listEventsForSpace(spaceId, {
+    limit: OWNED_EVENT_LIMIT,
+    includeUnpublished: true,
+    fromDay: adminEventFloorDay(now),
+    newestFirst: true,
+  })
+  return rows.slice().sort((a, b) => (a.starts_at < b.starts_at ? -1 : a.starts_at > b.starts_at ? 1 : 0))
+}
 
 export interface AdminCalendar {
   events: CalendarEvent[]
@@ -46,7 +70,7 @@ export async function loadAdminCalendar(
 
   // includeUnpublished: the team's calendar badges drafts on purpose. Every public reader takes the gated
   // default of listEventsForSpace (lib/events/store.ts).
-  const ownedRows = await listEventsForSpace(spaceId, { limit: 200, includeUnpublished: true })
+  const ownedRows = await listOwnedEventRows(spaceId, now)
   const ownedIds = new Set(ownedRows.map((r) => r.id))
   const sharedRows = (await listSpaceCalendarEvents(spaceId, { fromDay: `${year - 1}-01-01` })).filter(
     (r) => !ownedIds.has(r.id),
@@ -141,8 +165,11 @@ export async function loadAdminCalendar(
  *  the caller gates on managing the Space before calling. */
 export async function listPlanLinkableEventRows(
   spaceId: string,
+  now: Date = new Date(),
 ): Promise<{ id: string; title: string; whenLabel: string; planId: string | null }[]> {
-  const rows = await listEventsForSpace(spaceId, { limit: 100, includeUnpublished: true })
+  // The same bounded read the team calendar makes, so the picker offers exactly the events the grid
+  // shows (LIVE-467): before, an unbounded ascending read of 100 could hold none of the upcoming ones.
+  const rows = await listOwnedEventRows(spaceId, now)
   return rows.map((ev) => ({
     id: ev.id,
     title: ev.title,

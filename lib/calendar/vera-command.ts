@@ -249,6 +249,6 @@ export function describeChange(change: VeraChange, ctx: VeraDescribeContext): st
       return `Add the to-do "${change.title}" to ${plan}${due}.`
     }
     case 'archive':
-      return `Archive ${quoted(ctx.plans[change.planId], 'that Plan')}. Nothing is deleted.`
+      return `Archive ${quoted(ctx.plans[change.planId], 'that Plan')}. Its pencilled dates go with it. A date that already became an event keeps the event.`
   }
 }

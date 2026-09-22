@@ -49,6 +49,26 @@ export function operatorHorizonWindow(now: Date): { fromDay: string; toDay: stri
   }
 }
 
+/** How far back the team calendar's EVENTS read reaches, in whole months (LIVE-467). */
+export const ADMIN_EVENT_FLOOR_MONTHS = 13
+
+/**
+ * The first day of the month ADMIN_EVENT_FLOOR_MONTHS back from `now`: the floor under the team
+ * calendar's events read (lib/calendar/admin-calendar.ts).
+ *
+ * 🔴 WHY THE READ NEEDS A FLOOR. `listEventsForSpace` orders by starts_at ascending and caps at
+ * 200 rows. With no lower bound that is the OLDEST 200 events a Space ever ran, so once a Space
+ * passed 200 its upcoming events fell off the Admin grid, the List, Workflow, the console's
+ * "N upcoming events" and the Plan drawer's "Link an event" picker together. Thirteen months keeps
+ * a full year of past context for the manage table and the recap while the cap cuts a window a
+ * season actually fits in, and it is wider than the operator entry horizon so the two never
+ * disagree about what "recent" means.
+ */
+export function adminEventFloorDay(now: Date): string {
+  const back = adjacentMonth(now.getUTCFullYear(), now.getUTCMonth() + 1, -ADMIN_EVENT_FLOOR_MONTHS)
+  return `${back.year}-${pad2(back.month1)}-01`
+}
+
 /** The grid of a month spans up to 6 days either side of it, so load that whole visible range. */
 export function monthGridWindow(year: number, month1: number): { fromDay: string; toDay: string } {
   const first = new Date(Date.UTC(year, month1 - 1, 1))
