@@ -36,6 +36,8 @@ export const SPACE_PLAN_MANIFEST: EntityManifest = {
     { key: 'basics', title: 'The Plan', desc: 'The working record behind one or more gatherings.' },
     { key: 'links', title: 'Links', desc: 'Docs and pages the team needs while they plan.' },
   ],
+  // Field ORDER is the drawer's order (PROG-CAL2 composes the drawer from this). Owner ruling
+  // 2026-09-22: the two short selects sit under Title, side by side; the long Notes box last.
   fields: [
     {
       path: 'title',
@@ -45,14 +47,6 @@ export const SPACE_PLAN_MANIFEST: EntityManifest = {
       required: true,
       placement: 'spark',
       editPlane: 'rail',
-    },
-    {
-      path: 'notes',
-      label: 'Notes',
-      kind: 'longtext',
-      section: 'basics',
-      placement: 'rail',
-      prose: true,
     },
     {
       path: 'stage',
@@ -69,6 +63,14 @@ export const SPACE_PLAN_MANIFEST: EntityManifest = {
       section: 'basics',
       options: TARGET_OPTIONS,
       placement: 'rail',
+    },
+    {
+      path: 'notes',
+      label: 'Notes',
+      kind: 'longtext',
+      section: 'basics',
+      placement: 'rail',
+      prose: true,
     },
   ],
   repeats: [

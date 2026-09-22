@@ -58,8 +58,11 @@ drift apart: `spark` (guided creation) · `inline` (ADR-450's inline canvas) · 
 (ADR-450's Inspector, the default). Same declaration, filtered three ways. The Spark reads
 `sparkFields()`; a rail form reads `railForm(manifest, writes)` from
 `lib/studio/kernel/edit-plan.ts` (ADR-1240) and declares only the columns its save action
-writes. All four Guided rails derive this way: Practice (ADR-1240), Journey (ADR-1246), Circle and
-Event (ADR-1281, 2026-09-08, which closed `HYG-050`). A rail whose server speaks another dialect
+writes. All five rails derive this way: Practice (ADR-1240), Journey (ADR-1246), Circle and
+Event (ADR-1281, 2026-09-08, which closed `HYG-050`), and the Plan drawer on the Space calendar
+(`PROG-CAL2`, 2026-09-22, `plan-rail-plan.ts` beside the drawer). The Plan drawer keeps an explicit
+Save rather than `RailAutosaveForm`: its save action carries a stage transition, and an autosave
+commits a select the instant it changes. A rail whose server speaks another dialect
 keeps the translation beside the plan, restating each action's signature once where a test holds
 it against the manifest: the Journey's JSON-patch key maps, the Circle's and Event's snake_case
 column maps and FormData builders.
