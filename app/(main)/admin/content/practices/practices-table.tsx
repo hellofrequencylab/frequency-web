@@ -552,7 +552,7 @@ export function PracticesTable({
                     )}
                   </div>
                   <span className="mt-0.5 block text-meta text-subtle lg:hidden">
-                    {wt ? `${wt.label} · ` : 'No weight · '}{p.logs_30d} in 30d · {p.creator}
+                    {wt ? `${wt.label} · ` : 'No weight · '}<span data-visual-mask="practice-usage-tallies" className="tabular-nums">{p.logs_30d} in 30d</span> · {p.creator}
                   </span>
                 </div>
                 <span
@@ -562,6 +562,7 @@ export function PracticesTable({
                   <span className="truncate">{p.creator}</span>
                 </span>
                 <span
+                  data-visual-mask="practice-usage-tallies"
                   className="hidden flex-col items-center text-center lg:flex"
                   title={`${p.adopters} adopters · ${p.logs_total} logs all-time`}
                 >
