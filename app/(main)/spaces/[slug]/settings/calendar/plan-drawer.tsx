@@ -22,6 +22,7 @@ import type { CrmTask } from '@/lib/crm/tasks'
 import {
   acceptVeraChecklist,
   addPlanTodo,
+  archiveSpacePlan,
   attachEventToPlan,
   listPlanLinkableEvents,
   listPlanTodos,
@@ -43,6 +44,7 @@ export function PlanDrawer({
   open,
   onClose,
   onSaved,
+  onArchived,
   deepSettingsHref,
 }: {
   slug: string
@@ -51,6 +53,8 @@ export function PlanDrawer({
   open: boolean
   onClose: () => void
   onSaved?: (planId: string, stage: SpacePlan['stage']) => void
+  /** The Plan was put away (HYG-120): drop it, and its tentative dates, from every view. */
+  onArchived?: (planId: string) => void
   deepSettingsHref?: string
 }) {
   const [pending, start] = useTransition()
@@ -159,6 +163,25 @@ export function PlanDrawer({
       if (isError(res)) setError(res.error)
       else {
         onSaved?.(plan.id, stage)
+        onClose()
+      }
+    })
+  }
+
+  function archive() {
+    if (!plan) return
+    if (
+      !window.confirm(
+        'Archive this Plan? Its pencilled dates go with it. A date that already became an event keeps the event. There is no restore button yet, so if you change your mind, ask us and we can bring it back.',
+      )
+    )
+      return
+    setError(null)
+    start(async () => {
+      const res = await archiveSpacePlan(slug, plan.id)
+      if (isError(res)) setError(res.error)
+      else {
+        onArchived?.(plan.id)
         onClose()
       }
     })
@@ -466,13 +489,20 @@ export function PlanDrawer({
             {error}
           </p>
         )}
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="secondary" size="sm" onClick={onClose} disabled={pending}>
-            Close
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {/* The way out for a Plan started by mistake (HYG-120). Reversible in SQL, not yet in the
+              UI, and the confirm says so rather than promising a restore button that does not exist. */}
+          <Button type="button" variant="dangerOutline" size="sm" disabled={pending} onClick={archive}>
+            Archive Plan
           </Button>
-          <Button type="submit" size="sm" disabled={pending}>
-            {pending ? 'Saving' : 'Save Plan'}
-          </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="secondary" size="sm" onClick={onClose} disabled={pending}>
+              Close
+            </Button>
+            <Button type="submit" size="sm" disabled={pending}>
+              {pending ? 'Saving' : 'Save Plan'}
+            </Button>
+          </div>
         </div>
       </form>
     </Dialog>

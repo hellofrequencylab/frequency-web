@@ -74,7 +74,8 @@ if (!listIndex || !/from '\.\/pm-console'|from '@\/lib\/calendar\/pm-console'/.t
 }
 
 // 4. the aliases
-const views = read('lib/calendar/admin-views.ts') ?? fail('lib/calendar/admin-views.ts is gone')
+const views = read('lib/calendar/admin-views.ts')
+if (views === null) fail('lib/calendar/admin-views.ts is gone')
 for (const [value, target, where] of [
   ['projects', 'workflow', 'parseAdminCalendarView'],
   ['timeline', 'admin', 'parseAdminCalendarView'],
@@ -90,7 +91,8 @@ if (!/'projects'/.test(remembered) || !/'timeline'/.test(remembered)) {
 }
 
 // 5. docs follow code
-const doc = read('docs/EVENTS-CALENDAR.md') ?? fail('docs/EVENTS-CALENDAR.md is gone')
+const doc = read('docs/EVENTS-CALENDAR.md')
+if (doc === null) fail('docs/EVENTS-CALENDAR.md is gone')
 if (/switch five views/.test(doc)) fail('docs/EVENTS-CALENDAR.md still says the operator can switch five views; there are four')
 if (/^\| \*\*Timeline\*\* \|/m.test(doc) || /^\| \*\*Projects\*\* \|/m.test(doc)) {
   fail('docs/EVENTS-CALENDAR.md still lists Timeline or Projects as a live view')

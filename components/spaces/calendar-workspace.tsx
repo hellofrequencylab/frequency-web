@@ -96,6 +96,16 @@ export function CalendarWorkspace({
       : event))
   }, [])
 
+  // Archive (HYG-120) mirrors the store: the Plan leaves the board, its pencilled dates leave the
+  // grid, a date that became an event stays and forgets the Plan. The server re-render that follows
+  // the action's revalidatePath then confirms this from the row, through serverSnapshot above.
+  const planArchived = useCallback((archivedPlanId: string) => {
+    setCurrentPlans((all) => all.filter((plan) => plan.id !== archivedPlanId))
+    setCurrentAdminEvents((all) => all
+      .filter((event) => !(event.planId === archivedPlanId && !event.eventId))
+      .map((event) => (event.planId === archivedPlanId ? { ...event, planId: null } : event)))
+  }, [])
+
   const syncUrl = useCallback(
     (next: CalendarAdminView, extras?: { item?: string | null; plan?: string | null; year?: number; month1?: number }) => {
       if (typeof window === 'undefined') return
@@ -236,6 +246,7 @@ export function CalendarWorkspace({
         open={openPlan !== null}
         onClose={closePlan}
         onSaved={(savedPlanId, stage) => stageChanged(savedPlanId, stage)}
+        onArchived={planArchived}
         deepSettingsHref={`/spaces/${slug}/settings/calendar?plan=${planId ?? ''}`}
       />
     </div>

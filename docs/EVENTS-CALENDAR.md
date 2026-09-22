@@ -276,6 +276,9 @@ day's labels. A day note never blocks time and is never a calendar item.
 **Plan** (`PROG-CAL2`, shipped). `space_plans`, owned by the host Space. Calendar entries and events point at a
 plan; `crm_tasks.plan_id` makes plan tasks part of the one team task inbox (`lib/crm/tasks.ts`). The
 plan drawer opens from any calendar item that belongs to a plan and is composed from a Studio manifest.
+Its footer's "Archive Plan" (`archiveSpacePlan`, HYG-120) sets `space_plans.archived_at`, deletes the
+Plan's pencilled dates that never became an event, and unlinks the ones that did; reversible in SQL,
+not yet in the UI. The e2e suite tears its own Plans down through that same door.
 A co-host Space sees a plan only through an accepted share of that plan.
 
 **Production** (`PROG-CAL3`, shipped). "Make it a Production" opens the event Spark (`lib/studio/entities/event.ts`)
