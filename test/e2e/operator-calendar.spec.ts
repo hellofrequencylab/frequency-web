@@ -8,8 +8,20 @@ const storageState = process.env.PW_STORAGE_STATE
 const hasSession = !!storageState && existsSync(storageState)
 const calendarPath = spaceSlug ? `/spaces/${spaceSlug}/calendar` : '/spaces/missing/calendar'
 
+/**
+ * Every Plan a test pencils in, so `afterEach` can put it away. The harness Space is the owner's
+ * REAL Space (owner ruling 2026-09-22: no throwaway Space; `frequency` is the root and never the
+ * target), and before HYG-120 each run left its Plans and dates behind: 27 stacked on one day in a
+ * single evening, enough that test 1 could not find its own title on the grid. The test step holds
+ * no service-role key (e2e.yml gives it only to the mint step), so teardown goes through the
+ * product, which is also why the product has the door.
+ */
+const pencilledTitles: string[] = []
+
 function uniquePlanTitle(): string {
-  return `Browser pencil ${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  const title = `Browser pencil ${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  pencilledTitles.push(title)
+  return title
 }
 
 /**
@@ -81,6 +93,34 @@ test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () 
   test.skip(!spaceSlug, 'PW_SPACE_SLUG must name a Space the e2e member can manage.')
   test.skip(!hasSession, 'PW_STORAGE_STATE must point to a saved member session.')
 
+  /**
+   * TEARDOWN THROUGH THE PRODUCT (HYG-120). Open each pencilled Plan from the List and press
+   * "Archive Plan": the Plan leaves every list and its pencilled date leaves the grid. A title that
+   * never reached the List (the test failed before its save landed) has nothing to archive and is
+   * skipped rather than failing the teardown on top of the test.
+   */
+  test.afterEach(async ({ page }) => {
+    const titles = pencilledTitles.splice(0)
+    if (titles.length === 0) return
+    await page.goto(calendarPath)
+    if ((await page.getByRole('button', { name: 'List', exact: true }).count()) === 0) return
+    await page.getByRole('button', { name: 'List', exact: true }).click()
+    const listPanel = page.locator('[data-calendar-panel="list"]')
+    for (const title of titles) {
+      const row = listPanel.getByRole('button', { name: new RegExp(title) })
+      if ((await row.count()) === 0) continue
+      await row.click()
+      await listPanel.getByRole('button', { name: 'Open Plan' }).click()
+      const drawer = page.getByRole('dialog').filter({ has: page.locator('#plan-title') })
+      await expect(drawer.locator('#plan-title')).toHaveValue(title)
+      page.once('dialog', (dialog) => dialog.accept())
+      await drawer.getByRole('button', { name: 'Archive Plan' }).click()
+      // The same measured save-and-refetch latency pencilDate() documents (LIVE-463).
+      await expect(drawer).toHaveCount(0, { timeout: 20_000 })
+      await expect(row).toHaveCount(0, { timeout: 20_000 })
+    }
+  })
+
   test('creates a title/date-only pencil and finds its Plan in Calendar, List, and Workflow', async ({
     page,
   }, testInfo) => {
@@ -125,7 +165,7 @@ test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () 
     await expect(workflowPanel.locator('[data-workflow-card]').filter({ hasText: title })).toBeVisible()
     await expect(page).toHaveURL(/[?&]view=workflow(?:&|$)/)
 
-    // The test title is unique because deleting only the date would leave its canonical Plan behind.
+    // The title is unique so afterEach can find this Plan in the List and archive it (HYG-120).
   })
 
   test('Guest preview hides the private Plan while preserving operator controls', async ({ page }, testInfo) => {

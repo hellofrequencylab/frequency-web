@@ -9,6 +9,7 @@ import { fail, isError, ok, type ActionResult } from '@/lib/action-result'
 import { parsePlanInput, planPublishLag, planTargetDef, type PlanInput } from '@/lib/calendar/plans'
 import { planStageTransition, type WorkflowStage } from '@/lib/calendar/workflow-board'
 import {
+  archiveSpacePlanRows,
   attachEntryToPlan,
   createPenciledPlanRows,
   getPlanAnchorDayKey,
@@ -118,6 +119,22 @@ export async function transitionPlanStage(
   if (!UUID_RE.test(planId)) return fail('That Plan no longer exists.')
   const moved = await transitionPlanStageForEditor(editor.spaceId, planId, stage)
   if ('error' in moved) return fail(moved.error)
+  revalidate(slug)
+  return ok()
+}
+
+/**
+ * "Archive Plan" (HYG-120). The only way out for a Plan started by mistake, and what the e2e suite
+ * tears its own Plans down with, since the test step holds no service-role key and can only go
+ * through the product. Gated like every other Plan write: `editorPlan` proves the caller may edit
+ * THIS Space and that the id is one of this Space's Plans.
+ */
+export async function archiveSpacePlan(slug: string, planId: string): Promise<ActionResult<void>> {
+  const editor = await editorPlan(slug, planId)
+  if ('error' in editor) return fail(editor.error)
+  // Pencilled dates go, event-backed dates unlink, then archived_at is stamped (plans-store.ts).
+  const res = await archiveSpacePlanRows(editor.spaceId, planId)
+  if ('error' in res) return fail(res.error)
   revalidate(slug)
   return ok()
 }

@@ -154,6 +154,39 @@ export async function updateSpacePlan(
   return { data: mapPlanRow(data[0]) }
 }
 
+/**
+ * PUT A PLAN AWAY (HYG-120). Sets `archived_at`, which is the one column `listSpacePlans` filters on,
+ * so the Plan leaves every list, board and drawer. Its TENTATIVE dates go with it: a pencilled entry
+ * that never became an event is deleted, because a Pencil is a hold and an archived Plan holds
+ * nothing. A date that already became a published event keeps the event and only drops the link,
+ * so nothing a guest can see changes. Entries first, then the Plan, so a failure half-way leaves a
+ * live Plan with fewer dates rather than an archived Plan still stacking the grid. All three writes
+ * run on the caller's session: RLS is the lock, as everywhere in this file. Reversible in SQL
+ * (`archived_at = null`); there is no restore control yet and the drawer copy says so.
+ */
+export async function archiveSpacePlanRows(
+  spaceId: string,
+  planId: string,
+): Promise<{ data: true } | { error: string }> {
+  const client = await db()
+  const dropped = await client
+    .from('space_calendar_entries')
+    .delete()
+    .eq('space_id', spaceId)
+    .eq('plan_id', planId)
+    .is('published_event_id', null)
+  if (dropped.error) return planIoFailed('archive_entries', 'The Plan could not be archived.', dropped.error)
+  const unlinked = await client
+    .from('space_calendar_entries')
+    .update({ plan_id: null })
+    .eq('space_id', spaceId)
+    .eq('plan_id', planId)
+  if (unlinked.error) return planIoFailed('archive_unlink', 'The Plan could not be archived.', unlinked.error)
+  const res = await updateSpacePlan(spaceId, planId, { archived_at: new Date().toISOString() })
+  if ('error' in res) return res
+  return { data: true }
+}
+
 /** Keep the Plan authoritative while mirroring its lifecycle onto every linked calendar entry. */
 export async function transitionSpacePlanRows(
   spaceId: string,

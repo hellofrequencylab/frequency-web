@@ -18,6 +18,7 @@ vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/plan-actions', () => ({
   listPlanTodos: async () => [],
   planReadiness: async () => ({ gaps: [], href: '/events/new?plan=plan-1' }),
   saveSpacePlan: async () => ({ data: undefined }),
+  archiveSpacePlan: async () => ({ data: undefined }),
   transitionPlanStage: async () => ({}),
   // The repair door (PROG-CAL3): the drawer lists the Space's events on open so a broken
   // events.plan_id can be re-attached in the app. Empty here; the render is what this pins.
@@ -175,6 +176,53 @@ describe('CalendarWorkspace', () => {
     expect(document.querySelector('[data-plan-production-summary]')?.textContent).toContain('Readiness')
     expect(window.location.search).toContain('view=list')
     expect(window.location.search).toContain('plan=plan-1')
+  })
+
+  it('archives a Plan from its drawer and drops it, and its pencilled date, from every view (HYG-120)', async () => {
+    const pencil: CalendarEvent = {
+      ...sit,
+      eventId: undefined,
+      entryId: 'entry-1',
+      layer: 'pencil',
+      stage: 'pencil',
+      sourceLabel: 'Pencil',
+    }
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const el = mount(
+      <CalendarWorkspace
+        slug="lab"
+        spaceId="space-1"
+        brandName="Frequency Lab"
+        adminAllowed
+        canManage
+        initialView="workflow"
+        initialListItem={null}
+        initialPlanId="plan-1"
+        initialYear={2026}
+        initialMonth1={9}
+        guestEvents={[]}
+        guestFirstUse={false}
+        adminEvents={[pencil]}
+        dayNotes={[]}
+        plans={[plan]}
+        subscribe={null}
+        loadGuestMonth={async () => []}
+      />,
+    )
+    expect(el.querySelector('[data-workflow-card="plan-1"]')).not.toBeNull()
+    await act(async () => {
+      ;[...document.querySelectorAll('button')].find((button) => button.textContent === 'Archive Plan')?.click()
+      await Promise.resolve()
+    })
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(document.querySelector('[data-plan-production-summary]')).toBeNull()
+    expect(el.querySelector('[data-workflow-card="plan-1"]')).toBeNull()
+    expect(window.location.search).not.toContain('plan=')
+    act(() => {
+      el.querySelectorAll('[aria-label="Calendar views"] button')[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(el.querySelector('[data-calendar-panel="list"]')?.textContent ?? '').not.toContain('New moon production')
+    confirm.mockRestore()
   })
 
   it('reconciles a Plan drawer stage save across Workflow and List immediately', async () => {
