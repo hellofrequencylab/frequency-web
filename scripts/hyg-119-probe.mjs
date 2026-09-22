@@ -44,6 +44,17 @@ if (!existsSync(SPEC)) {
   process.exit(79)
 }
 
+/** Remove `{…}` expressions and `<…>` tags repeatedly until nothing changes, then collapse space. */
+function stripUntilStable(raw) {
+  let out = raw
+  for (;;) {
+    const next = out.replace(/\{[^{}]*\}/g, '').replace(/<[^<>]*>/g, '')
+    if (next === out) break
+    out = next
+  }
+  return out.replace(/\s+/g, ' ').trim()
+}
+
 /** Every button label the calendar surfaces render, as text between a Button/button open and close. */
 const labels = new Set()
 const sources = [
@@ -62,7 +73,13 @@ const sources = [
     // This is the same `(?:[^>=]|=>|=(?!>))` shape check-adoption.mjs's raw-button-bg pattern uses,
     // and for the same reason.
     for (const m of src.matchAll(/<(Button|button)\b(?:[^>=]|=>|=(?!>))*?>([\s\S]*?)<\/\1>/g)) {
-      const text = m[2].replace(/\{[^{}]*\}/g, '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
+      // Strip JSX expressions and nested tags UNTIL STABLE, not in one pass. A single
+      // `.replace(/<[^>]*>/g, '')` leaves `<scr<x>ipt>` as `<script>`: CodeQL's
+      // js/incomplete-multi-character-sanitization, flagged on this line on #2857. This probe only
+      // reads repo source and renders nothing, so nothing was exploitable — but the rule is right
+      // that one pass is not a sanitizer, and a probe should not ship a pattern the scanner will
+      // keep flagging in every PR that touches it.
+      const text = stripUntilStable(m[2])
       // A residual brace means the strip could not flatten nested JSX, so what is left is not a
       // readable name and asserting on it would be noise.
       if (text && text.length < 60 && !/[{}]/.test(text)) labels.add(text)

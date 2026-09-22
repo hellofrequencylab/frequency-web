@@ -105,7 +105,15 @@ test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () 
     await page.getByRole('button', { name: 'Cancel', exact: true }).click()
 
     const calendarPanel = page.locator('[data-calendar-panel="admin"]')
-    await expect(calendarPanel.getByText(title, { exact: true })).toBeVisible()
+    // 🔴 BY TITLE ATTRIBUTE, NOT BY EXACT TEXT. A grid chip renders `<span>{timeLabel}</span> {title}`
+    // (event-calendar.tsx), so its text is never exactly the title; a busy day STACKS its chips into
+    // one button whose text joins every title with ' · '; and past three chips the rest hide behind
+    // "+N more". `getByText(title, { exact: true })` could not match any of those — and the first
+    // run this assertion ever took (pr-compare run 35757524209) hit a day carrying 27 leaked test
+    // pencils, so it was stacked to the hilt. Every chip and every stacked button carries the title
+    // in its `title` attribute (joined with ', ' when stacked), and a substring match reaches both.
+    // The 20 s is the same measured save-and-refetch latency pencilDate() documents (LIVE-463).
+    await expect(calendarPanel.getByTitle(title).first()).toBeVisible({ timeout: 20_000 })
 
     await page.getByRole('button', { name: 'List', exact: true }).click()
     const listPanel = page.locator('[data-calendar-panel="list"]')
