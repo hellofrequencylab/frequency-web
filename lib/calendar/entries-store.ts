@@ -1,11 +1,12 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import { formatEventWhen, eventInstant, dayInZone } from '@/lib/time/zone'
+import { log } from '@/lib/log'
 import type { CalendarEvent } from './item'
 import {
   ENTRY_COLS,
   MAX_CANDIDATE_DATES,
-  entryToCalendarItem,
+  entryItemsInWindow,
   publicUnavailableToItem,
   type EntryFormatters,
   type EntryRow,
@@ -39,6 +40,7 @@ type EntryQuery = PromiseLike<{ data: EntryRow[] | null; error: { message: strin
   eq: (c: string, v: string) => EntryQuery
   neq: (c: string, v: string) => EntryQuery
   is: (c: string, v: null) => EntryQuery
+  not: (c: string, op: 'is', v: null) => EntryQuery
   lt: (c: string, v: string) => EntryQuery
   gt: (c: string, v: string) => EntryQuery
   order: (c: string, o: { ascending: boolean }) => EntryQuery
@@ -68,26 +70,60 @@ export const entryFormatters: EntryFormatters = {
  *  is what "the Pencil's calendar card becomes the event card" actually requires.
  *
  *  Clash-checking wants the same set: a retired date is not competing for the time, the event it
- *  became is, and `findEntryClashes` already reads events separately. */
+ *  became is, and `findEntryClashes` already reads events separately.
+ *
+ *  REPEATING PENCILS (PROG-CAL5) are a second read, merged in: a series is ONE row anchored on its
+ *  first date, so a biweekly Pencil started in January overlaps a March window on none of its
+ *  columns and the overlap filter alone would never show it. Every row carrying a rule and starting
+ *  before the window's end is fetched too, and lib/calendar/pencil-series.ts decides which of its
+ *  landings fall inside the window. The rows come back as MASTERS, unexpanded, so a caller that
+ *  wants occurrences expands them and a caller that wants the row (the drawer, a clash check) has it. */
 export async function listSpaceCalendarEntries(spaceId: string, fromDay: string, toDay: string): Promise<EntryRow[]> {
   try {
-    const { data, error } = await (await db())
-      .from('space_calendar_entries')
-      .select(ENTRY_COLS)
-      .eq('space_id', spaceId)
-      .is('published_event_id', null)
-      .lt('starts_at', `${toDay}T00:00:00Z`)
-      .gt('ends_at', `${fromDay}T00:00:00Z`)
-      .order('starts_at', { ascending: true })
-      .limit(1000)
-    if (error || !data) return []
-    return data
+    const client = await db()
+    const [overlap, repeating] = await Promise.all([
+      client
+        .from('space_calendar_entries')
+        .select(ENTRY_COLS)
+        .eq('space_id', spaceId)
+        .is('published_event_id', null)
+        .lt('starts_at', `${toDay}T00:00:00Z`)
+        .gt('ends_at', `${fromDay}T00:00:00Z`)
+        .order('starts_at', { ascending: true })
+        .limit(1000),
+      client
+        .from('space_calendar_entries')
+        .select(ENTRY_COLS)
+        .eq('space_id', spaceId)
+        .is('published_event_id', null)
+        .not('recurrence_rule', 'is', null)
+        .lt('starts_at', `${toDay}T00:00:00Z`)
+        .order('starts_at', { ascending: true })
+        .limit(1000),
+    ])
+    if (overlap.error || !overlap.data) return []
+    // A read failure on the series half must not read as "no series": the overlap rows are still
+    // right, but a repeating Pencil silently missing from March is exactly the invisible regression
+    // AGENTS.md names, so it goes to the log where a gate can see it.
+    if (repeating.error || !repeating.data) {
+      log.error('calendar.entries.series_read_failed', { space_id: spaceId, from_day: fromDay, to_day: toDay })
+      return overlap.data
+    }
+    const seen = new Set<string>()
+    const merged: EntryRow[] = []
+    for (const r of [...overlap.data, ...repeating.data]) {
+      if (seen.has(r.id)) continue
+      seen.add(r.id)
+      merged.push(r)
+    }
+    return merged.sort((a, b) => (a.starts_at < b.starts_at ? -1 : a.starts_at > b.starts_at ? 1 : 0))
   } catch {
     return []
   }
 }
 
-/** Private entries as calendar items for the staff calendar. */
+/** Private entries as calendar items for the staff calendar. A repeating Pencil arrives as one item
+ *  per occurrence inside the window, each carrying the master's id and its own day (PROG-CAL5). */
 export async function listStaffCalendarItems(
   spaceId: string,
   fromDay: string,
@@ -96,7 +132,7 @@ export async function listStaffCalendarItems(
 ): Promise<CalendarEvent[]> {
   const rows = await listSpaceCalendarEntries(spaceId, fromDay, toDay)
   const now = dayInZone(new Date())
-  return rows.map((r) => entryToCalendarItem(r, entryFormatters, { ...opts, now }))
+  return rows.flatMap((r) => entryItemsInWindow(r, entryFormatters, { ...opts, now }, { fromDay, toDay }))
 }
 
 /** The public "Unavailable" spans for [fromDay, toDay): times only. */
@@ -217,6 +253,25 @@ export async function retirePencilToEvent(
     .eq('kind', 'pencil')
     .select('id')
   if (error || !data?.length) return { error: 'That date could not be marked as published.' }
+  return { data: true }
+}
+
+/** THE STORED SKIP (PROG-CAL5). Writes the whole `exception_dates` list of one repeating entry and
+ *  nothing else on the row, so a skip taken from an occurrence chip never races the drawer's other
+ *  fields. The list arrives already normalised (lib/calendar/pencil-series.ts); the caller's session
+ *  and the table's operator quad decide whether the write lands. */
+export async function setEntryExceptionDates(
+  spaceId: string,
+  entryId: string,
+  dates: string[],
+): Promise<{ data: true } | { error: string }> {
+  const { data, error } = await (await db())
+    .from('space_calendar_entries')
+    .update({ exception_dates: dates })
+    .eq('space_id', spaceId)
+    .eq('id', entryId)
+    .select('id')
+  if (error || !data?.length) return { error: 'That date could not be skipped.' }
   return { data: true }
 }
 

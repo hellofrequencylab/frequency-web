@@ -265,6 +265,20 @@ RLS still decides. `description` (10,000 characters at most) is the public-facin
 event description when the entry is published (PROG-CAL3); `notes` stay internal and the form labels them
 Team notes. Grid chips are styled by stage (`itemChipClass`).
 
+**Repeating Pencils with explicit exceptions** (`PROG-CAL5`). A Pencil may repeat: the drawer's Repeats
+control (Does not repeat, Every week, Every 2 weeks, Every month) writes `recurrence_rule` in the same
+bounded RFC 5545 dialect as `events.recurrence_rule` ([ADR-1299](DECISIONS.md)), and
+`lib/calendar/pencil-series.ts` expands it with the events engine's own `parseRepeat` and `expandRepeat`
+(one grammar, one stepping; a rule outside the subset is treated as absent). A series is one row anchored
+on its first date; the month read fetches every rule-carrying row that starts before the window and
+`entryItemsInWindow` draws one chip per landing, each carrying the master's id and its own
+`occurrenceDate`, so Edit opens the series. A deliberate skip is EXPLICIT: "Skip this date" on an
+occurrence appends that day to `exception_dates` (`date[]`, migration `20270345008000`) through
+`skipPencilDate`, the generator drops every listed day and never re-bases the cadence around the gap, and
+the only way a date comes back is "Put it back" in the drawer, which removes it from the list. Nothing
+infers a skip from a gap. Pencils are never public, so the guest layer and the Unavailable projection are
+untouched; booking blocks and the private `.ics` feed still read the master row only.
+
 **Day notes** (`PROG-CAL1`). `public.space_calendar_day_notes` holds short labels that describe a day
 rather than occupy it: a `weekly` note sets `weekdays` (0 is Sunday) within optional `starts_on` /
 `ends_on` bounds; a `dated` note leaves `weekdays` null and covers `starts_on` through `ends_on`. Day notes

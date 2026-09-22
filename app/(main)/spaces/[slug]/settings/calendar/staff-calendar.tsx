@@ -13,11 +13,13 @@ import { Switch } from '@/components/ui/switch'
 import { StageTimeline } from '@/components/ui/stage-timeline'
 import { ENTRY_KINDS, ENTRY_STAGES, entryKind, entryStage, type CalendarLayerKey } from '@/lib/calendar/registry'
 import { MAX_CANDIDATE_DATES, MAX_DESCRIPTION, type EntryInput } from '@/lib/calendar/entries'
+import { PENCIL_REPEAT_CHOICES, pencilRepeatChoice, pencilRuleForChoice, withoutExceptionDate } from '@/lib/calendar/pencil-series'
+import { describeRepeat, parseRepeat } from '@/lib/events/repeat-rule'
 import { PUBLISH_STEP, productionDoorHref, stageTimeline } from '@/lib/calendar/stage-timeline'
 import type { DayNote } from '@/lib/calendar/day-notes'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import { isError } from '@/lib/action-result'
-import { deleteCalendarEntry, findEntryClashes, loadStaffCalendarMonth, pickPencilDate, saveCalendarEntry } from './entry-actions'
+import { deleteCalendarEntry, findEntryClashes, loadStaffCalendarMonth, pickPencilDate, saveCalendarEntry, skipPencilDate } from './entry-actions'
 import { createPenciledPlan, joinEntryToPlan, startPlanFromEntry } from './plan-actions'
 import { PlanDrawer } from './plan-drawer'
 
@@ -37,6 +39,9 @@ interface Draft {
   input: EntryInput
   optionGroup?: string | null
   saved?: string
+  /** The day this drawer was opened from when the entry repeats (PROG-CAL5): what "Skip this date"
+   *  skips. Null when opened from the master or a one-off. */
+  occurrenceDate?: string | null
 }
 
 function browserZone(): string {
@@ -68,6 +73,8 @@ function blankInput(kind: string, dayKey: string): EntryInput {
     blocksTime: def.defaults.blocksTime,
     showPublicly: false,
     planId: null,
+    repeat: '',
+    exceptionDates: [],
   }
 }
 
@@ -170,10 +177,30 @@ export function StaffCalendar({
     })
   }
 
+  // SKIP THIS DATE (PROG-CAL5). Its own action, like Delete, and it closes the drawer the same way:
+  // the skip is on the row the moment it lands, and a Save from a form that still held the old list
+  // would write the skip straight back out.
+  const skip = () => {
+    if (!draft?.id || !draft.occurrenceDate) return
+    const id = draft.id
+    const day = draft.occurrenceDate
+    setError(null)
+    startTransition(async () => {
+      const res = await skipPencilDate(slug, id, day)
+      if (isError(res)) setError(res.error)
+      else done()
+    })
+  }
+
   const input = draft?.input
   const def = input ? entryKind(input.kind) : null
   const stage = def?.isPencil ? (entryStage(input?.stage) ?? ENTRY_STAGES[0]) : null
   const holding = stage?.stage === 'pencil'
+  // REPEATS (PROG-CAL5): the stored rule as the menu names it, the rule itself for the sentence, and
+  // the skips as the form carries them (round-tripped on Save so an ordinary edit never wipes one).
+  const repeatChoice = pencilRepeatChoice(input?.repeat)
+  const repeatRule = parseRepeat(input?.repeat)
+  const skippedDates = input?.exceptionDates ?? []
 
   // THE STAGE TIMELINE (ADR-1504). Four steps in place of the old Stage select. Steps one to three
   // write `stage` into the SAME form state the select wrote, so every other field the person has
@@ -270,6 +297,7 @@ export function StaffCalendar({
                   input: item.entryInput,
                   optionGroup: item.optionGroup ?? null,
                   saved: JSON.stringify(item.entryInput),
+                  occurrenceDate: item.occurrenceDate ?? null,
                 })
               }
             : undefined
@@ -421,6 +449,57 @@ export function StaffCalendar({
               </div>
             </div>
             <p className="text-meta text-muted">Times are in {input.timeZone.replace(/_/g, ' ')}.</p>
+
+            {def?.isPencil && (
+              <div className="grid gap-1">
+                <label htmlFor="entry-repeat" className={labelClasses}>Repeats</label>
+                <Select
+                  id="entry-repeat"
+                  value={repeatChoice}
+                  options={[
+                    ...PENCIL_REPEAT_CHOICES.map((c) => ({ value: c.value, label: c.label })),
+                    // A rule the menu does not offer stays exactly as stored rather than being
+                    // dropped by the first edit that touches the drawer.
+                    ...(repeatChoice === 'custom' ? [{ value: 'custom', label: 'Custom' }] : []),
+                  ]}
+                  onChange={(e) => {
+                    if (e.target.value === 'custom') return
+                    set('repeat', pencilRuleForChoice(e.target.value) ?? '')
+                  }}
+                  aria-describedby="entry-repeat-hint"
+                />
+                <p id="entry-repeat-hint" className="text-meta text-muted">
+                  {repeatRule
+                    ? `${describeRepeat(repeatRule, `${input.startDate}T00:00:00.000Z`)}, from the first date. Skipped dates stay skipped until you put them back.`
+                    : 'Pick a cadence to pencil this in on a rhythm.'}
+                </p>
+                {draft?.id && draft.occurrenceDate && repeatRule && !skippedDates.includes(draft.occurrenceDate) && (
+                  <div>
+                    <Button type="button" variant="secondary" size="sm" onClick={skip} disabled={pending}>
+                      Skip this date ({draft.occurrenceDate})
+                    </Button>
+                  </div>
+                )}
+                {skippedDates.length > 0 && (
+                  <ul className="grid gap-1" aria-label="Skipped dates">
+                    {skippedDates.map((d) => (
+                      <li key={d} className="flex items-center justify-between gap-2 text-body-sm text-text">
+                        <span>Skipped {d}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => set('exceptionDates', withoutExceptionDate(skippedDates, d))}
+                          disabled={pending}
+                        >
+                          Put it back
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
 
             {holding && (
               <div className="grid gap-1">
