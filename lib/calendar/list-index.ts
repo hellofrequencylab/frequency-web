@@ -8,6 +8,8 @@ import { itemIsCancelled, type EntryStage, type EntryStageTone } from './registr
 
 export type ListIndexItem = {
   key: string
+  /** The item's calendar day (YYYY-MM-DD), so the console's agenda can group a month by day. */
+  dayKey: string
   title: string
   whenLabel: string
   stageLabel: string
@@ -49,6 +51,7 @@ export function listIndexItems(events: CalendarEvent[]): ListIndexItem[] {
       const publicSlug = listPublicSlug(ev)
       return {
         key: listItemKey(ev),
+        dayKey: ev.dayKey,
         title: ev.title,
         whenLabel: ev.whenLabel,
         stageLabel: operatorStageLabel(ev),
@@ -69,6 +72,31 @@ export function listIndexItems(events: CalendarEvent[]): ListIndexItem[] {
         planId: ev.planId ?? null,
       }
     })
+}
+
+export type AgendaDay = { dayKey: string; label: string; items: ListIndexItem[] }
+
+/** The day heading the console's agenda prints, e.g. "Tue, Sep 22". Calendar days, so UTC on purpose. */
+export function agendaDayLabel(dayKey: string): string {
+  const [y, m, d] = dayKey.split('-').map(Number)
+  if (!y || !m || !d) return dayKey
+  return new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(
+    new Date(Date.UTC(y, m - 1, d)),
+  )
+}
+
+/** THE CONSOLE AGENDA (PROG-CAL12): the shown month's items from the List index, grouped by day in
+ *  day order. The index is already sorted by day then title, so the groups fall out in one pass. */
+export function agendaForMonth(items: ListIndexItem[], year: number, month1: number): AgendaDay[] {
+  const prefix = `${year}-${String(month1).padStart(2, '0')}-`
+  const out: AgendaDay[] = []
+  for (const item of items) {
+    if (!item.dayKey.startsWith(prefix)) continue
+    const last = out[out.length - 1]
+    if (last && last.dayKey === item.dayKey) last.items.push(item)
+    else out.push({ dayKey: item.dayKey, label: agendaDayLabel(item.dayKey), items: [item] })
+  }
+  return out
 }
 
 /** Selected row, or the first, or null when the index is empty. */

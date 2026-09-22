@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CalendarEvent } from './item'
-import { listIndexItems, selectListItem } from './list-index'
+import { agendaDayLabel, agendaForMonth, listIndexItems, selectListItem } from './list-index'
 
 function item(partial: Partial<CalendarEvent> & Pick<CalendarEvent, 'slug' | 'title' | 'dayKey'>): CalendarEvent {
   return {
@@ -63,5 +63,23 @@ describe('selectListItem', () => {
     expect(selectListItem(rows, 'b|2026-09-23')?.title).toBe('B')
     expect(selectListItem(rows, 'missing')?.title).toBe('A')
     expect(selectListItem([], 'a|2026-09-22')).toBeNull()
+  })
+})
+
+describe('agendaForMonth (PROG-CAL12)', () => {
+  it('keeps the shown month, grouped by day in day order, with a day heading', () => {
+    const rows = listIndexItems([
+      item({ slug: 'b', title: 'Board night', dayKey: '2026-09-23' }),
+      item({ slug: 'a', title: 'A sit', dayKey: '2026-09-22' }),
+      item({ slug: 'c', title: 'Cider press', dayKey: '2026-09-22' }),
+      item({ slug: 'o', title: 'October only', dayKey: '2026-10-02' }),
+    ])
+    const days = agendaForMonth(rows, 2026, 9)
+    expect(days.map((d) => d.dayKey)).toEqual(['2026-09-22', '2026-09-23'])
+    expect(days[0].label).toBe('Tue, Sep 22')
+    expect(days[0].items.map((i) => i.title)).toEqual(['A sit', 'Cider press'])
+    expect(days[1].items.map((i) => i.title)).toEqual(['Board night'])
+    expect(agendaForMonth(rows, 2026, 11)).toEqual([])
+    expect(agendaDayLabel('nope')).toBe('nope')
   })
 })

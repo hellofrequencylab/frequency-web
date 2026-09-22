@@ -47,18 +47,33 @@ export function firstSearchParam(raw: string | string[] | null | undefined): str
   return raw ?? undefined
 }
 
-export function adminViewHref(
-  slug: string,
-  view: CalendarAdminView,
-  extras: { item?: string | null; plan?: string | null; year?: number; month1?: number } = {},
-): string {
+/** What travels in the operator calendar URL beside `view`: the List selection, the open Plan, and
+ *  whether the Calendar console is up (PROG-CAL12). The console is a flag, not a view: it wraps
+ *  whichever view is showing, so `?console=1` sits beside `view`, `item` and `plan` rather than
+ *  replacing any of them, and a pasted link reopens the console on the same view and drawer. */
+export type AdminViewExtras = {
+  item?: string | null
+  plan?: string | null
+  year?: number
+  month1?: number
+  console?: boolean
+}
+
+export function adminViewHref(slug: string, view: CalendarAdminView, extras: AdminViewExtras = {}): string {
   const base = `/spaces/${slug}/calendar`
   const params = new URLSearchParams()
   if (view !== 'admin') params.set('view', view)
   if (view === 'list' && extras.item) params.set('item', extras.item)
   if (extras.plan) params.set('plan', extras.plan)
+  if (extras.console) params.set('console', '1')
   const query = params.toString()
   return query ? `${base}?${query}` : base
+}
+
+/** `?console=1` (or `true`) opens the Calendar console on load. Anything else, or nothing, is the page. */
+export function parseConsoleFlag(raw: string | string[] | null | undefined): boolean {
+  const value = firstSearchParam(raw)
+  return value === '1' || value === 'true'
 }
 
 export function calendarViewBlurb(view: CalendarAdminView, brandName: string): string {

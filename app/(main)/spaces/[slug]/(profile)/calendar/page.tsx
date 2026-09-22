@@ -18,6 +18,7 @@ import { CalendarWorkspace } from '@/components/spaces/calendar-workspace'
 import {
   calendarViewCookieName,
   firstSearchParam,
+  parseConsoleFlag,
   resolveOperatorCalendarView,
 } from '@/lib/calendar/admin-views'
 
@@ -43,6 +44,7 @@ export default async function SpaceCalendarPage({
     view?: string | string[]
     item?: string | string[]
     plan?: string | string[]
+    console?: string | string[]
     y?: string | string[]
     m?: string | string[]
   }>
@@ -127,6 +129,7 @@ export default async function SpaceCalendarPage({
       initialView={initialView}
       initialListItem={firstSearchParam(query.item) ?? null}
       initialPlanId={firstSearchParam(query.plan) ?? null}
+      initialConsole={parseConsoleFlag(query.console)}
       initialYear={initialYear}
       initialMonth1={initialMonth1}
       guestEvents={guestEvents}
