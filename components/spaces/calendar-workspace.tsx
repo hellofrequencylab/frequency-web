@@ -21,6 +21,7 @@ import type { DayNote } from '@/lib/calendar/day-notes'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import type { WorkflowStage } from '@/lib/calendar/workflow-board'
 import { PlanDrawer } from '@/app/(main)/spaces/[slug]/settings/calendar/plan-drawer'
+import { VeraCalendarBox } from '@/components/spaces/vera-calendar-box'
 
 // OPERATOR CALENDAR SHELL (ADR-1467). Guest and Admin data load once on the
 // server. Switching a view slides the already-mounted panels. The last view
@@ -70,6 +71,10 @@ export function CalendarWorkspace({
   const [currentPlans, setCurrentPlans] = useState(plans)
   const [currentAdminEvents, setCurrentAdminEvents] = useState(adminEvents)
   const [serverSnapshot, setServerSnapshot] = useState({ plans, adminEvents })
+  // Bumped when Vera's accepted proposal lands (PROG-CAL10): the month grid drops its fetched
+  // months the same way it does after a drawer save. The fresh plans and entries for the page's
+  // own month arrive as props in the action's round trip (revalidate), as every save's do.
+  const [veraRefreshKey, setVeraRefreshKey] = useState(0)
   if (plans !== serverSnapshot.plans || adminEvents !== serverSnapshot.adminEvents) {
     setServerSnapshot({ plans, adminEvents })
     setCurrentPlans(plans)
@@ -197,6 +202,16 @@ export function CalendarWorkspace({
   return (
     <div className="space-y-4" data-calendar-workspace data-calendar-view={view}>
       {heading}
+      {canManage ? (
+        <VeraCalendarBox
+          slug={slug}
+          year={initialYear}
+          month1={initialMonth1}
+          plans={currentPlans}
+          events={currentAdminEvents}
+          onApplied={() => setVeraRefreshKey((k) => k + 1)}
+        />
+      ) : null}
       <div className="overflow-hidden">
         <div
           className="flex transition-transform duration-300 ease-out"
@@ -225,6 +240,7 @@ export function CalendarWorkspace({
                       dayNotes={dayNotes}
                       plans={currentPlans}
                       onOpenPlan={selectPlan}
+                      externalRefreshKey={veraRefreshKey}
                     />
                   </div>
                 ) : null}

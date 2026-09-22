@@ -26,6 +26,13 @@ vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/plan-actions', () => ({
   attachEventToPlan: async () => ({ data: undefined }),
 }))
 
+// Ask Vera (PROG-CAL10). The box calls nothing on mount: both doors run only on Send and Accept,
+// so the mock lists the two actions and nothing needs to resolve for the render.
+vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/vera-calendar-actions', () => ({
+  veraCalendarCommand: async () => ({ error: 'not in this test' }),
+  applyVeraChanges: async () => ({ data: { results: [] } }),
+}))
+
 vi.mock('@/components/events/event-share-button', () => ({
   EventShareButton: ({ title }: { title: string }) => <button type="button">Share {title}</button>,
 }))
@@ -107,6 +114,18 @@ describe('CalendarWorkspace', () => {
     expect(el.querySelector('[data-calendar-view="admin"]')).not.toBeNull()
     expect(el.querySelector('[data-calendar-admin-grid]')).not.toBeNull()
     expect(el.querySelector('[data-calendar-pm-console]')).toBeNull()
+    // Ask Vera sits above the panels for the team, collapsed until opened; opening it shows the
+    // mode Select, the ask input and Send, and no proposal until Vera answers.
+    const box = el.querySelector('[data-vera-calendar-box]')
+    expect(box).not.toBeNull()
+    expect(box!.querySelector('#vera-ask')).toBeNull()
+    act(() => {
+      box!.querySelector('button[aria-expanded]')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(box!.querySelector('#vera-ask')).not.toBeNull()
+    expect([...box!.querySelectorAll<HTMLOptionElement>('#vera-mode option')].map((o) => o.textContent)).toEqual(['Pencil', 'Planning', 'Production'])
+    expect(box!.querySelector('[data-vera-proposal]')).toBeNull()
+    expect(box!.textContent).not.toContain('\u2014')
     expect(el.querySelector('a[href*="view=list"]')).toBeNull()
     act(() => {
       el.querySelectorAll('[aria-label="Calendar views"] button')[1]?.dispatchEvent(
@@ -143,6 +162,7 @@ describe('CalendarWorkspace', () => {
     )
     expect(el.querySelector('[data-calendar-view="guest"]')).not.toBeNull()
     expect(el.querySelector('[aria-label="Calendar views"]')).toBeNull()
+    expect(el.querySelector('[data-vera-calendar-box]')).toBeNull()
   })
 
   it('opens the shared Plan drawer from List and synchronizes its URL state', async () => {

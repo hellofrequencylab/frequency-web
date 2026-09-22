@@ -88,6 +88,7 @@ export function StaffCalendar({
   dayNotes,
   plans = [],
   onOpenPlan,
+  externalRefreshKey = 0,
 }: {
   slug: string
   spaceId: string
@@ -99,6 +100,9 @@ export function StaffCalendar({
   dayNotes?: DayNote[]
   plans?: SpacePlan[]
   onOpenPlan?: (planId: string, entryId?: string | null) => void
+  /** Bumped by a write that happened OUTSIDE this drawer (Vera's accepted proposal, PROG-CAL10),
+   *  so a browsed month drops its fetched cache the same way a drawer save does. */
+  externalRefreshKey?: number
 }) {
   const router = useRouter()
   const [draft, setDraft] = useState<Draft | null>(null)
@@ -283,7 +287,7 @@ export function StaffCalendar({
         loadMonth={loadMonth}
         wheelPaging
         layers={LAYERS}
-        refreshKey={refreshKey}
+        refreshKey={refreshKey + externalRefreshKey}
         dayNotes={dayNotes}
         onPickDate={canEdit ? pick : undefined}
         onCreateAt={canEdit ? openNew : undefined}

@@ -81,6 +81,7 @@ export const AI_RATE_LIMITS: Record<string, AiRateLimit> = {
   'entity-review': { limit: 5, window: '1 m' },
   'event-poster-scan': { limit: 5, window: '1 m' },
   'connection-scan': { limit: 5, window: '1 m' },
+  'vera-calendar': { limit: 5, window: '1 m' },   // a Sonnet tool loop of up to three rounds per ask (PROG-CAL10)
 }
 
 /** The window this feature runs on. */
