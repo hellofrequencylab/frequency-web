@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { setSeatAttended, attendancePatch, SEAT_TABLE, type AttendanceDb, type AttendancePatch } from './attendance'
+import {
+  setSeatAttended,
+  attendancePatch,
+  attendanceCount,
+  sumAttendance,
+  SEAT_TABLE,
+  type AttendanceDb,
+  type AttendancePatch,
+} from './attendance'
 
 // HOST-ATTESTED ATTENDANCE (PROG-GD4). The write is the host's observation on the seat row and
 // nothing else. These tests pin the three things that make it independent of the check-in ledger:
@@ -114,5 +122,51 @@ describe('the shape', () => {
   it('attendancePatch touches exactly the two attested columns', () => {
     expect(Object.keys(attendancePatch(true, 'h', NOW)).sort()).toEqual(['attended_at', 'attended_by'])
     expect(Object.keys(attendancePatch(false, 'h')).sort()).toEqual(['attended_at', 'attended_by'])
+  })
+})
+
+// READING THE RECORD BACK (PROG-CAL6): the one rule the Plan recap counts by.
+describe('attendanceCount', () => {
+  const at = '2026-09-20T20:00:00.000Z'
+
+  it('is null when nobody was marked and nobody checked in: no record, not zero', () => {
+    expect(
+      attendanceCount({
+        rsvps: [{ id: 'r1', profile_id: 'p1', attended_at: null }],
+        tickets: [{ id: 't1', buyer_profile_id: null, attended_at: null }],
+        checkedInProfileIds: [],
+      }),
+    ).toBeNull()
+    expect(attendanceCount({ rsvps: [], tickets: [], checkedInProfileIds: [] })).toBeNull()
+  })
+
+  it('counts a marked seat, a guest seat and a self check-in, each once', () => {
+    expect(
+      attendanceCount({
+        rsvps: [
+          { id: 'r1', profile_id: 'p1', attended_at: at },
+          { id: 'r2', profile_id: null, attended_at: at },
+          { id: 'r3', profile_id: 'p3', attended_at: null },
+        ],
+        tickets: [{ id: 't1', buyer_profile_id: null, attended_at: at }],
+        checkedInProfileIds: ['p4'],
+      }),
+    ).toBe(4)
+  })
+
+  it('a member on both records, or on an RSVP and a ticket, is one person', () => {
+    expect(
+      attendanceCount({
+        rsvps: [{ id: 'r1', profile_id: 'p1', attended_at: at }],
+        tickets: [{ id: 't1', buyer_profile_id: 'p1', attended_at: at }],
+        checkedInProfileIds: ['p1', 'p1'],
+      }),
+    ).toBe(1)
+  })
+
+  it('sums across a Plan with several events and stays null only when every record is empty', () => {
+    expect(sumAttendance([null, null])).toBeNull()
+    expect(sumAttendance([null, 3, 2])).toBe(5)
+    expect(sumAttendance([0, null])).toBe(0)
   })
 })

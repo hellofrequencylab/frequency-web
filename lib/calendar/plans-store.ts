@@ -343,6 +343,31 @@ export async function planHasPublishedEntry(spaceId: string, planId: string): Pr
   }
 }
 
+/** The events this Plan's dates BECAME (`space_calendar_entries.published_event_id`, PROG-CAL3), read
+ *  on the caller's session. The other half of the link is `events.plan_id`
+ *  (lib/events/plan-link.ts `listPlanEventIds`); the recap unions both so a link repaired on one
+ *  side only still finds its record. Logged, never swallowed, per this file's header. */
+export async function listPlanPublishedEventIds(spaceId: string, planId: string): Promise<string[]> {
+  try {
+    const { data, error } = await (await db())
+      .from('space_calendar_entries')
+      .select('published_event_id')
+      .eq('space_id', spaceId)
+      .eq('plan_id', planId)
+      .not('published_event_id', 'is', null)
+      .limit(50)
+    if (error || !data) {
+      planReadFailed('published_event_ids', error)
+      return []
+    }
+    const rows = data as unknown as { published_event_id: string | null }[]
+    return rows.map((r) => r.published_event_id).filter((id): id is string => !!id)
+  } catch (err) {
+    planReadFailed('published_event_ids', err)
+    return []
+  }
+}
+
 export async function listPlaybooks(spaceId: string): Promise<PlanPlaybook[]> {
   try {
     const { data, error } = await (await db())

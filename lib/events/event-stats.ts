@@ -23,6 +23,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export type { EventCoreStats } from './event-stats-core'
 export { formatEventMoney } from './event-stats-core'
 import type { EventCoreStats } from './event-stats-core'
+import { attendanceCount, sumAttendance, type AttendedRsvpRow, type AttendedTicketRow } from './attendance'
 
 interface TicketRow {
   amount_cents: number | null
@@ -74,5 +75,59 @@ export async function loadEventCoreStats(eventId: string): Promise<EventCoreStat
     checkedIn,
     capacity: typeof ev?.capacity === 'number' ? ev.capacity : null,
     paid,
+  }
+}
+
+/**
+ * THE ATTENDANCE RECORD FOR A PLAN'S EVENTS (PROG-CAL6): how many people came, or null when no
+ * event in the list carries a mark or a check-in. The same three ledgers the core stats above
+ * read (event_rsvps, succeeded unrefunded event_tickets, the check-in ledger), folded by the one
+ * rule in lib/events/attendance.ts so the Plan recap and the Manage roster count alike.
+ *
+ * Callers authorize FIRST and hand in event ids they have already proven belong to their Space:
+ * this read is scoped to the ids it is given and nothing else, and it is a read of headline
+ * numbers, never of who the people are. Fail-safe to null (the recap then says the record is
+ * empty), never a throw, because a recap is a proposal and not a gate.
+ */
+export async function loadPlanAttendance(eventIds: readonly string[]): Promise<number | null> {
+  const ids = [...new Set(eventIds.filter(Boolean))].slice(0, 50)
+  if (ids.length === 0) return null
+  try {
+    const admin = createAdminClient()
+    // The check-in ledger keys on `event_checkin:<event>:<profile>`, a prefix per event, so it is
+    // read per event with the same `like` the roster uses (app/(main)/events/[slug]/manage/load.ts).
+    const [rsvpRes, ticketRes, checkins] = await Promise.all([
+      admin.from('event_rsvps').select('id, event_id, profile_id, attended_at').in('event_id', ids),
+      admin
+        .from('event_tickets')
+        .select('id, event_id, buyer_profile_id, attended_at')
+        .in('event_id', ids)
+        .eq('status', 'succeeded')
+        .is('refunded_at', null),
+      Promise.all(
+        ids.map((eventId) =>
+          admin
+            .from('engagement_events')
+            .select('actor_profile_id')
+            .eq('event_type', 'practice.verified')
+            .like('idempotency_key', `event_checkin:${eventId}:%`),
+        ),
+      ),
+    ])
+    const rsvps = (rsvpRes.data ?? []) as (AttendedRsvpRow & { event_id: string })[]
+    const tickets = (ticketRes.data ?? []) as (AttendedTicketRow & { event_id: string })[]
+    return sumAttendance(
+      ids.map((eventId, i) =>
+        attendanceCount({
+          rsvps: rsvps.filter((r) => r.event_id === eventId),
+          tickets: tickets.filter((t) => t.event_id === eventId),
+          checkedInProfileIds: ((checkins[i]?.data ?? []) as { actor_profile_id: string | null }[])
+            .map((r) => r.actor_profile_id)
+            .filter((v): v is string => !!v),
+        }),
+      ),
+    )
+  } catch {
+    return null
   }
 }

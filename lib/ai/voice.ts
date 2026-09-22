@@ -39,3 +39,38 @@ export function withVoice(systemPrompt: string, mood?: unknown): string {
   // all, so a caller that never passes one behaves exactly as before.
   return mood ? `${base}\n\n${moodToneDirective(mood)}` : base
 }
+
+// ── THE MECHANICAL HALF OF THE VOICE, FOR COPY NO MODEL WRITES ─────────────────────────────────
+// Some generated copy is composed by plain code, not by a model: Vera's plan proposals
+// (lib/calendar/vera-plan.ts) are heuristics that emit sentences. The primer above is a prompt, so
+// a pure module can never "go through" it by prepending it to anything. What CAN be applied
+// mechanically is the part of the primer that is a rule rather than a judgment: no em or en dashes
+// (periods, commas, parentheses instead), at most one exclamation point and usually none, one space
+// between words. `voiceLine` applies exactly those, so a code path that emits words a member reads
+// has one seam to pass them through, the same way an LLM path has `withVoice`. It never invents
+// words: a sentence that breaks the judgment rules (a vibe-verb, a hype word) is a copy bug to fix
+// at the source, and this helper will not paper over it.
+
+/** Apply the primer's mechanical rules to one line of generated copy. Pure and total. */
+export function voiceLine(text: string): string {
+  return (
+    String(text ?? '')
+      // An en dash between two numbers is a range, so it reads as "to" (9 to 5).
+      // (A replacement function, not a '$1' template: the marketing-figures scanner reads a
+      // literal $1 as a dollar figure, and it is right to.)
+      .replace(/(\d)\s*\u2013\s*(\d)/g, (_m, a: string, b: string) => `${a} to ${b}`)
+      // Every other em or en dash becomes a comma, the primer's first-choice replacement.
+      .replace(/\s*[\u2013\u2014]+\s*/g, ', ')
+      // Usually zero exclamation points: a proposal has nothing to shout about.
+      .replace(/!+/g, '.')
+      // A comma that ended up before a period or another comma is punctuation debris.
+      .replace(/,\s*([.,])/g, (_m, mark: string) => mark)
+      .replace(/\s+/g, ' ')
+      .trim()
+  )
+}
+
+/** `voiceLine` over a list, dropping lines that end up empty. */
+export function voiceLines(lines: readonly string[]): string[] {
+  return lines.map(voiceLine).filter(Boolean)
+}
