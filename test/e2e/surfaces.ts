@@ -1045,6 +1045,26 @@ export const VISUAL_MASK_SITES: readonly {
     kind: 'live',
     why: 'The board’s body, wherever it is hosted — the right rail since ADR-1362. Every pixel is a reading: the next gathering in the member’s Circles with its date chip and location, and the newest posts in their Spaces with authors and relative times. The rail’s own PanelSkeleton covers a capture that lands mid-stream, so the board no longer ships one of its own. The EMPTY state is deliberately unmasked, the same rule the feed stream’s empty pane follows.',
   },
+  // ── /admin/qr, the scans chart (2026-09-22) ─────────────────────────────────────────────
+  // Found the same way the rail column was, and it is the reason to keep looking at the pairs
+  // rather than only at what is currently red: two baseline captures of the SAME commit, at
+  // 22:25Z and 00:28Z, changed eight PNGs. Six were the rail. These two were this chart, and it
+  // was NOT failing pr-compare — it would have started at the next UTC midnight, on somebody
+  // else's pull request.
+  //
+  // ⚠️ WHAT THIS DOES NOT COVER, so the next failure here is read correctly: the four StatCards
+  // above the chart are live tallies too (total scans, unique members, NFC taps, the 30-day
+  // count) and they are deliberately NOT masked — they did not move in the measurement, and this
+  // file's rule is to mask what was measured rather than everything that could move. A digit
+  // changing in those cards is the next candidate and it lands here with its own reading. And if
+  // the window goes from zero scans to some, the section swaps a one-line empty state for a
+  // 112px chart: that is a HEIGHT, and no mask holds a height.
+  {
+    value: 'qr-daily-scans',
+    file: 'app/(main)/admin/qr/analytics.tsx',
+    kind: 'live',
+    why: 'The daily scans bar chart. The 30-day window slides, so every bar steps one column left at the UTC day boundary with no code between two pictures — 3533 differing pixels across one midnight. The box is `h-28` and fixed, so the mask holds it.',
+  },
 ]
 
 /** Escape hatch for the flaky-surface policy: quiet a surface the same week it flakes,
