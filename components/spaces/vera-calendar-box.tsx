@@ -226,7 +226,7 @@ export function VeraCalendarBox({
                     </Button>
                   </>
                 )}
-                {pending && proposal ? <span className="text-meta text-muted">Working</span> : null}
+                {pending ? <span className="text-meta text-muted">Working</span> : null}
               </div>
             </div>
           ) : null}
