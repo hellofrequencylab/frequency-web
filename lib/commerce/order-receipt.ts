@@ -22,6 +22,8 @@ import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { appUrl } from '@/lib/billing/stripe'
+import { journeyWelcomeDoor } from '@/lib/journeys/sales-path'
+import { journeySlugsForOrder } from './journey-fulfilment'
 import {
   notifyEarner,
   receiptAmount,
@@ -121,6 +123,12 @@ export async function sendOrderReceipts(order: SettledOrder): Promise<void> {
     const seller = await resolveSeller(order)
     const sellerName = seller?.name ?? 'Frequency'
     const when = receiptDate()
+    // THE WELCOME (PROG-GD5). A Journey is not "sent on"; it opens. Its button is the Journey's
+    // welcome through the sign-in door, which a signed-in member passes straight through and a
+    // guest goes through once, with the address that paid prefilled: the magic-link tap is the
+    // proof (ADR-854), and the same door the guest's Stripe return uses. Fail-soft to [] so an
+    // unreadable slug costs the Journey framing, never the receipt.
+    const [journeySlug] = await journeySlugsForOrder(order.id)
 
     // ── The buyer's receipt ──────────────────────────────────────────────────────────────────
     const buyerLines: ReceiptLine[] = [
@@ -139,12 +147,21 @@ export async function sendOrderReceipts(order: SettledOrder): Promise<void> {
           ? `Your order from ${sellerName} is paid, ${amount} in total.`
           : `Your order from ${sellerName} is paid.`,
         lines: buyerLines,
-        closing: [
-          `${sellerName} can see the order now and will send it on.`,
-          'My orders keeps every purchase you make on Frequency, with the seller and the total.',
-        ],
-        actionLabel: 'See my orders',
-        actionUrl: `${appUrl()}/orders`,
+        closing: journeySlug
+          ? [
+              order.buyerProfileId
+                ? 'The Journey is yours now. Every phase is open, on your own or with people you bring.'
+                : 'One step left: sign in with this address and the Journey opens. Every phase is yours, on your own or with people you bring.',
+              'My orders keeps every purchase you make on Frequency, with the seller and the total.',
+            ]
+          : [
+              `${sellerName} can see the order now and will send it on.`,
+              'My orders keeps every purchase you make on Frequency, with the seller and the total.',
+            ],
+        actionLabel: journeySlug ? 'Open your Journey' : 'See my orders',
+        actionUrl: journeySlug
+          ? `${appUrl()}${journeyWelcomeDoor(journeySlug, { email: order.buyerProfileId ? null : order.buyerEmail })}`
+          : `${appUrl()}/orders`,
       },
       logTag: LOG,
       context: { orderId: order.id, side: 'buyer' },

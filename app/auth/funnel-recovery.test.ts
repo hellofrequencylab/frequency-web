@@ -79,7 +79,11 @@ describe('precedence: a recovery never overrules something actually asked for', 
   })
 
   it('a claimed seat wins over a funnel, because a seat can be happening right now', () => {
-    expect(callback).toContain('const recovered = seatLanding ?? funnelLanding')
+    // A paid Journey's welcome (PROG-GD5) sits between them: it keeps, so the seat outranks it,
+    // and it is the thing they just paid for, so it outranks "resume what you asked for".
+    // app/auth/order-landing.test.ts pins the middle term; this keeps the seat first and the funnel
+    // last.
+    expect(callback).toMatch(/const recovered = seatLanding \?\? (?:orderLanding \?\? )?funnelLanding/)
   })
 })
 
