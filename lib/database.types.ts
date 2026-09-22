@@ -2999,8 +2999,10 @@ export type Database = {
           created_at: string
           created_by: string | null
           due_at: string | null
+          due_offset_days: number | null
           id: string
           notes: string | null
+          plan_id: string | null
           space_id: string | null
           status: string
           title: string
@@ -3012,8 +3014,10 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           due_at?: string | null
+          due_offset_days?: number | null
           id?: string
           notes?: string | null
+          plan_id?: string | null
           space_id?: string | null
           status?: string
           title: string
@@ -3025,8 +3029,10 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           due_at?: string | null
+          due_offset_days?: number | null
           id?: string
           notes?: string | null
+          plan_id?: string | null
           space_id?: string | null
           status?: string
           title?: string
@@ -3052,6 +3058,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "space_plans"
             referencedColumns: ["id"]
           },
           {
@@ -12801,6 +12814,8 @@ export type Database = {
           metadata: Json
           notes: string | null
           option_group: string | null
+          plan_id: string | null
+          published_event_id: string | null
           recurrence_rule: string | null
           source_id: string | null
           source_kind: string | null
@@ -12827,6 +12842,8 @@ export type Database = {
           metadata?: Json
           notes?: string | null
           option_group?: string | null
+          plan_id?: string | null
+          published_event_id?: string | null
           recurrence_rule?: string | null
           source_id?: string | null
           source_kind?: string | null
@@ -12853,6 +12870,8 @@ export type Database = {
           metadata?: Json
           notes?: string | null
           option_group?: string | null
+          plan_id?: string | null
+          published_event_id?: string | null
           recurrence_rule?: string | null
           source_id?: string | null
           source_kind?: string | null
@@ -12874,7 +12893,96 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "space_calendar_entries_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "space_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_calendar_entries_published_event_id_fkey"
+            columns: ["published_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "space_calendar_entries_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_calendar_private_feeds: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          revoked_at: string | null
+          space_id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          revoked_at?: string | null
+          space_id: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          revoked_at?: string | null
+          space_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_calendar_private_feeds_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_calendar_private_feeds_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_circle_optouts: {
+        Row: {
+          left_at: string
+          profile_id: string
+          space_id: string
+        }
+        Insert: {
+          left_at?: string
+          profile_id: string
+          space_id: string
+        }
+        Update: {
+          left_at?: string
+          profile_id?: string
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_circle_optouts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_circle_optouts_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
@@ -13875,6 +13983,199 @@ export type Database = {
             columns: ["submitted_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_plan_playbooks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          event_defaults: Json
+          event_type: string
+          id: string
+          notes: string | null
+          space_id: string
+          task_titles: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          event_defaults?: Json
+          event_type?: string
+          id?: string
+          notes?: string | null
+          space_id: string
+          task_titles?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          event_defaults?: Json
+          event_type?: string
+          id?: string
+          notes?: string | null
+          space_id?: string
+          task_titles?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_plan_playbooks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_plan_playbooks_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_plan_shares: {
+        Row: {
+          created_at: string
+          guest_space_id: string
+          id: string
+          plan_id: string
+          requested_by: string | null
+          responded_at: string | null
+          responded_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          guest_space_id: string
+          id?: string
+          plan_id: string
+          requested_by?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          guest_space_id?: string
+          id?: string
+          plan_id?: string
+          requested_by?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_plan_shares_guest_space_id_fkey"
+            columns: ["guest_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_plan_shares_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "space_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_plan_shares_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_plan_shares_responded_by_fkey"
+            columns: ["responded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_plans: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          links: Json
+          notes: string | null
+          owner_profile_id: string | null
+          playbook_id: string | null
+          space_id: string
+          stage: string
+          target_kind: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          links?: Json
+          notes?: string | null
+          owner_profile_id?: string | null
+          playbook_id?: string | null
+          space_id: string
+          stage?: string
+          target_kind?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          links?: Json
+          notes?: string | null
+          owner_profile_id?: string | null
+          playbook_id?: string | null
+          space_id?: string
+          stage?: string
+          target_kind?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_plans_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_plans_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_plans_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "space_plan_playbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_plans_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]

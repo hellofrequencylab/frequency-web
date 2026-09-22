@@ -32,7 +32,7 @@ export async function GET(
 
   const admin = createAdminClient()
   const { data: feed, error } = await admin
-    .from('space_calendar_private_feeds' as never)
+    .from('space_calendar_private_feeds')
     .select('space_id, revoked_at')
     .eq('token', token)
     .maybeSingle()
@@ -42,7 +42,7 @@ export async function GET(
   }
 
   const { data: entries } = await admin
-    .from('space_calendar_entries' as never)
+    .from('space_calendar_entries')
     .select('id, title, notes, location, starts_at, ends_at, time_zone, status, plan_id')
     .eq('space_id', row.space_id)
     .neq('status', 'cancelled')

@@ -108,50 +108,11 @@ export const ALLOWLIST = [
       'localized ADR-246 cast at the call site.',
     owner: 'PROG-D4',
   },
-  // PROG-CAL2–8. Migration 20270345006700 is in the tree and is not applied from this session
-  // (no apply_migration). Types regenerate after merge. Retires on the next lib/database.types.ts pass.
-  ...[
-    { file: 'app/(main)/spaces/[slug]/settings/calendar/plan-actions.ts', table: 'space_plan_shares', column: null, kind: 'table' },
-    { file: 'app/(main)/spaces/[slug]/settings/calendar/plan-actions.ts', table: 'space_calendar_private_feeds', column: null, kind: 'table' },
-    { file: 'app/calendar/private/[token]/route.ts', table: 'space_calendar_private_feeds', column: null, kind: 'table' },
-    { file: 'app/calendar/private/[token]/route.ts', table: 'space_calendar_entries', column: 'plan_id', kind: 'select' },
-    { file: 'lib/calendar/entries-store.ts', table: 'space_calendar_entries', column: 'plan_id', kind: 'select' },
-    { file: 'lib/calendar/plans-store.ts', table: 'space_plans', column: null, kind: 'table' },
-    { file: 'lib/calendar/plans-store.ts', table: 'space_calendar_entries', column: 'plan_id', kind: 'update' },
-    { file: 'lib/calendar/plans-store.ts', table: 'space_plan_playbooks', column: null, kind: 'table' },
-    { file: 'lib/crm/tasks.ts', table: 'crm_tasks', column: 'plan_id', kind: 'select' },
-    { file: 'lib/crm/tasks.ts', table: 'crm_tasks', column: 'due_offset_days', kind: 'select' },
-    { file: 'lib/crm/tasks.ts', table: 'crm_tasks', column: 'plan_id', kind: 'eq' },
-  ].map((row) => ({
-    ...row,
-    added: '2026-09-19',
-    reason:
-      'ADR-1468 Space Plans. Columns and tables ship in 20270345006700 and are not in the checked-in generated types until the migration is applied and types regenerate. Do not apply from an agent session.',
-    owner: 'PROG-CAL2',
-  })),
-  // PROG-CAL3. Migration 20270345007400 adds space_calendar_entries.published_event_id (the Pencil
-  // becomes its Production instead of being deleted). It is in the tree and is APPLIED BY THE
-  // COORDINATOR IN THE SAME SITTING AS THE MERGE, never from an agent session -- earlier on
-  // 2026-09-21 a migration applied ahead of its PR left an orphan ledger row that turned
-  // check:migrations red on four open PRs at once. The two plan_id entries are new READS of a column
-  // 20270345006700 already ships (the PROG-CAL2 block above allowlists its select and update);
-  // they pair each Plan with its unpublished date and derive planPublishLag. Every entry here
-  // retires in one pass, by regenerating lib/database.types.ts after the migration lands.
-  ...[
-    { file: 'lib/calendar/entries-store.ts', table: 'space_calendar_entries', column: 'published_event_id', kind: 'select' },
-    { file: 'lib/calendar/entries-store.ts', table: 'space_calendar_entries', column: 'published_event_id', kind: 'is' },
-    { file: 'lib/calendar/entries-store.ts', table: 'space_calendar_entries', column: 'published_event_id', kind: 'update' },
-    { file: 'lib/calendar/plans-store.ts', table: 'space_calendar_entries', column: 'published_event_id', kind: 'is' },
-    { file: 'lib/calendar/plans-store.ts', table: 'space_calendar_entries', column: 'published_event_id', kind: 'not' },
-    { file: 'lib/calendar/plans-store.ts', table: 'space_calendar_entries', column: 'plan_id', kind: 'select' },
-    { file: 'lib/calendar/plans-store.ts', table: 'space_calendar_entries', column: 'plan_id', kind: 'eq' },
-  ].map((row) => ({
-    ...row,
-    added: '2026-09-21',
-    reason:
-      'PROG-CAL3 (ADR-1386 phase 3). published_event_id ships in 20270345007400, applied at merge rather than ahead of it; plan_id ships in 20270345006700 on the same terms. Not in the checked-in generated types until they regenerate. Do not apply from an agent session.',
-    owner: 'PROG-CAL3',
-  })),
+  // The PROG-CAL2 and PROG-CAL3 calendar allowlists (2026-09-19 and 2026-09-21, 18 entries)
+  // are GONE, retired by LIVE-453 rather than expired: lib/database.types.ts now carries the five
+  // Plan tables and the four columns they waived, so this guard walks those call sites for real
+  // instead of being told to look away. Both blocks said in their own text that they retire on
+  // the next regeneration; this is it.
 ]
 
 /** Walk `root` against `typesFile` and return the raw report. Pure: no exit, no console. */

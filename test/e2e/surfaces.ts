@@ -1061,6 +1061,29 @@ export const VISUAL_MASK_SITES: readonly {
     kind: 'live',
     why: 'The daily scans bar chart. The 30-day window slides, so every bar steps one column left at the UTC day boundary with no code between two pictures — 3533 differing pixels across one midnight. The box is `h-28` and fixed, so the mask holds it.',
   },
+  // ── /admin/content/practices, the per-row usage tallies (2026-09-22) ────────────────────────
+  // The same defect as qr-daily-scans one surface further on, and this one was already FAILING
+  // rather than merely going to: `pr-compare` went red on PR #2855 — a types-only change that
+  // touches no file on this surface's render path — across all four looks, 4179 to 4405 pixels,
+  // ratio 0.01. Fourteen hours separated the #2852 recapture from that run.
+  //
+  // WHAT MOVES: `p.logs_30d` is a ROLLING 30-DAY COUNT of member practice logs, rendered twice
+  // per row — once in the lg:hidden compact line and once in the lg:flex tally cell, which also
+  // carries `logs_total` and `adopters`. Real member activity moves digits in a dense table, so
+  // the diff is small per row and spread over many, which is exactly a ratio-0.01 reading.
+  //
+  // WHY A MASK HOLDS IT: both rendered sites are `tabular-nums`, so the box does not resize as
+  // digits change — the property ADR-1522 requires and the reason the QR mask worked.
+  //
+  // DELIBERATELY NARROW: on mobile only the count itself is wrapped, so the weight label and the
+  // creator stay in the picture. Masking the whole line would blind the suite to two stable
+  // values to hide one moving one, which is how a mask list becomes a blindfold.
+  {
+    value: 'practice-usage-tallies',
+    file: 'app/(main)/admin/content/practices/practices-table.tsx',
+    kind: 'live',
+    why: 'Per-row practice usage: `logs_30d` is a rolling 30-day count of member logs, with `logs_total` and `adopters` beside it in the desktop cell. Real logging moves digits across a dense table between any two captures — 4179-4405 pixels on PR #2855, on a diff that touches nothing this surface renders. Both sites are `tabular-nums`, so the box is fixed and the mask holds it.',
+  },
 ]
 
 /** Escape hatch for the flaky-surface policy: quiet a surface the same week it flakes,

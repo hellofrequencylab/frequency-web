@@ -1,5 +1,6 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
+import type { Json } from '@/lib/database.types'
 import {
   PLAN_COLS,
   mapPlanRow,
@@ -28,37 +29,9 @@ import { log } from '@/lib/log'
 // unavailable is the right behaviour — but every one of them now emits a structured line first,
 // so the next failure of this kind is one log query away instead of five days away.
 
-type Untyped = {
-  rpc: (
-    fn: string,
-    args: Record<string, unknown>,
-  ) => PromiseLike<{ data: unknown; error: { message: string } | null }>
-  from: (t: string) => {
-    select: (cols: string) => PlanQuery
-    insert: (rows: Record<string, unknown> | Record<string, unknown>[]) => PromiseLike<{
-      data: unknown[] | null
-      error: { message: string } | null
-    }> & {
-      select: (c: string) => PromiseLike<{ data: PlanRow[] | null; error: { message: string } | null }>
-    }
-    update: (row: Record<string, unknown>) => PlanQuery
-    delete: () => PlanQuery
-  }
-}
 
-type PlanRow = Parameters<typeof mapPlanRow>[0]
-
-type PlanQuery = PromiseLike<{ data: PlanRow[] | null; error: { message: string } | null }> & {
-  select: (c: string) => PlanQuery
-  eq: (c: string, v: string) => PlanQuery
-  is: (c: string, v: null) => PlanQuery
-  not: (c: string, op: 'is', v: null) => PlanQuery
-  order: (c: string, o: { ascending: boolean }) => PlanQuery
-  limit: (n: number) => PlanQuery
-}
-
-async function db(): Promise<Untyped> {
-  return (await createClient()) as unknown as Untyped
+async function db() {
+  return await createClient()
 }
 
 /**
@@ -144,6 +117,10 @@ export async function insertSpacePlan(
     .from('space_plans')
     .insert({
       ...write,
+      // `links` is PlanLink[] and the column is jsonb. PlanLink is a plain {url,label}, so it is
+      // valid JSON; TypeScript cannot prove a structural type against the generated recursive
+      // `Json` union, so the serialisation boundary says so once, here.
+      links: write.links as unknown as Json,
       space_id: spaceId,
       owner_profile_id: profileId,
       created_by: profileId,
@@ -153,6 +130,15 @@ export async function insertSpacePlan(
   return { data: mapPlanRow(data[0]) }
 }
 
+/** `links` is PlanLink[] and the column is jsonb, which the generated types express as `Json`.
+ *  PlanLink is a plain {url,label} so it IS valid JSON; TypeScript cannot prove a structural type
+ *  against the recursive `Json` union. The serialisation boundary says so here, once, rather than
+ *  at every call site — and nowhere else in this file casts the client. */
+function planWritePayload(write: Partial<PlanWrite> & { archived_at?: string | null }) {
+  const { links, ...rest } = write
+  return links === undefined ? rest : { ...rest, links: links as unknown as Json }
+}
+
 export async function updateSpacePlan(
   spaceId: string,
   planId: string,
@@ -160,7 +146,7 @@ export async function updateSpacePlan(
 ): Promise<{ data: SpacePlan } | { error: string }> {
   const { data, error } = await (await db())
     .from('space_plans')
-    .update(write)
+    .update(planWritePayload(write))
     .eq('space_id', spaceId)
     .eq('id', planId)
     .select(PLAN_COLS)
@@ -271,10 +257,8 @@ export async function getPlanAnchorDayKey(spaceId: string, planId: string): Prom
  *  it, because a Plan's date is usually in another month. */
 export async function listPlanPencilEntryIds(spaceId: string): Promise<Record<string, string>> {
   try {
-    const q = (await db()).from('space_calendar_entries') as unknown as {
-      select: (c: string) => PlanQuery
-    }
-    const { data, error } = await q
+    const { data, error } = await (await db())
+      .from('space_calendar_entries')
       .select('id, plan_id, starts_at')
       .eq('space_id', spaceId)
       .eq('kind', 'pencil')
@@ -305,10 +289,8 @@ export async function listPlanPencilEntryIds(spaceId: string): Promise<Record<st
  *  is how the best-effort stage transition on the publish seam gets NOTICED when it fails. */
 export async function planHasPublishedEntry(spaceId: string, planId: string): Promise<boolean> {
   try {
-    const q = (await db()).from('space_calendar_entries') as unknown as {
-      select: (c: string) => PlanQuery
-    }
-    const { data, error } = await q
+    const { data, error } = await (await db())
+      .from('space_calendar_entries')
       .select('id')
       .eq('space_id', spaceId)
       .eq('plan_id', planId)

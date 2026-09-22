@@ -478,14 +478,14 @@ export async function sharePlanWithSpace(
   if (!editor) return fail('You do not have access to this calendar.')
   if (!UUID_RE.test(planId) || !UUID_RE.test(guestSpaceId)) return fail('Pick a Space to share with.')
   const db = await createClient()
-  const { error } = await db.from('space_plan_shares' as never).insert({
+  const { error } = await db.from('space_plan_shares').insert({
     plan_id: planId,
     guest_space_id: guestSpaceId,
     status: 'accepted',
     requested_by: editor.profileId,
     responded_at: new Date().toISOString(),
     responded_by: editor.profileId,
-  } as never)
+  })
   if (error) return fail('That Plan could not be shared.')
   revalidate(slug)
   return ok()
@@ -499,15 +499,15 @@ export async function rotatePrivateCalendarFeed(slug: string): Promise<ActionRes
   const token = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('')
   const db = await createClient()
   await db
-    .from('space_calendar_private_feeds' as never)
-    .update({ revoked_at: new Date().toISOString() } as never)
+    .from('space_calendar_private_feeds')
+    .update({ revoked_at: new Date().toISOString() })
     .eq('space_id', editor.spaceId)
     .is('revoked_at', null)
-  const { error } = await db.from('space_calendar_private_feeds' as never).insert({
+  const { error } = await db.from('space_calendar_private_feeds').insert({
     space_id: editor.spaceId,
     token,
     created_by: editor.profileId,
-  } as never)
+  })
   if (error) return fail('The private feed could not be created.')
   revalidate(slug)
   return ok({ token })

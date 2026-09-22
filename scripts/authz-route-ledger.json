@@ -138,9 +138,9 @@
     },
     "app/calendar/private/[token]/route.ts": {
       "verdict": "token-credential",
-      "reason": "Private Space team ICS (ADR-1468 / PROG-CAL7). The 32-hex token in the path is the credential. Unknown or revoked tokens 404 identically. The handler never takes a Space slug. Admin client is used only to resolve the token, then the feed is scoped to that Space's private entries and to-do dates. Never link-reachable.",
-      "checked": "2026-09-19",
-      "digest": "e2ab5a4d9da0dd74"
+      "reason": "Private Space team ICS (ADR-1468 / PROG-CAL7). The 32-hex token in the path is the credential. Unknown or revoked tokens 404 identically. The handler never takes a Space slug. Admin client is used only to resolve the token, then the feed is scoped to that Space's private entries and to-do dates. Never link-reachable. Re-read 2026-09-22 (LIVE-453) and the verdict is unchanged: that change removed two `as never` casts on .from() once the tables entered lib/database.types.ts, and touched no control flow — the token is still validated as 32 hex before any read, a revoked or unknown token still 404s identically, and every downstream read is still scoped to the space_id that lookup returns.",
+      "checked": "2026-09-22",
+      "digest": "5079861dff67737f"
     },
     "app/events/[slug]/event.ics/route.ts": {
       "verdict": "model-gated",
