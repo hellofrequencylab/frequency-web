@@ -91,7 +91,11 @@ export function SubjectMutesForm({ initial }: { initial: MuteSubjectRow[] }) {
             description="Join a Circle or a Space and it shows up here with its own switch."
           />
         ) : (
-          <div className="divide-y divide-border rounded-card border border-border">
+          /* The list, not the card: header, intro and empty state are design; the rows are the
+             member's space_members read (HYG-121). A row added or removed is a HEIGHT, which
+             full-page capture reports as a dimension mismatch before any pixel is counted and
+             is an accepted recapture. */
+          <div data-visual-mask="settings-subject-mutes" className="divide-y divide-border rounded-card border border-border">
             {rows.map((row) => {
               const key = rowKey(row)
               const pending = pendingKeys.includes(key)

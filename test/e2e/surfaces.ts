@@ -1084,6 +1084,79 @@ export const VISUAL_MASK_SITES: readonly {
     kind: 'live',
     why: 'Per-row practice usage: `logs_30d` is a rolling 30-day count of member logs, with `logs_total` and `adopters` beside it in the desktop cell. Real logging moves digits across a dense table between any two captures — 4179-4405 pixels on PR #2855, on a diff that touches nothing this surface renders. Both sites are `tabular-nums`, so the box is fixed and the mask holds it.',
   },
+  // ── /settings and the Space console, the account-data bands (HYG-121, 2026-09-22) ─────────
+  // OWN-081 added ONE space_members row for the e2e account and twelve captures went red: two
+  // routes, two themes, three viewports. /settings reads that table for its mute list, and
+  // /spaces/<slug>/manage renders at all only for a manager (OWN-081 is what made it render), so
+  // its Dashboard tab is stat tiles, journey stats, the latest activity with relativeTime(), and
+  // Coming up. Every band is a database reading; the next member, Plan or post moves them again.
+  //
+  // THE OWNER RULED: mask the volatile parts, keep /settings full-page. Its design surface
+  // genuinely extends below the fold, unlike /feed, so `viewportOnly` is NOT the remedy here.
+  //
+  // ⚠️ WHAT A MASK CANNOT HOLD, so the next red is read correctly: a NEW mute row or membership
+  // row on /settings, or a row-count change in the console's two lists, is a page HEIGHT. On
+  // /settings full-page capture reports a dimension mismatch before it counts a pixel. Membership
+  // changes are rare; that one is an accepted recapture. The stat grids are `tabular-nums`
+  // StatCards, so digits change without the box resizing and those masks hold.
+  //
+  // NOT masked, deliberately: the settings section chip nav, the Edit profile card, the
+  // appearance section (it IS the render-state axis), PageHeading on the console, HubSearch,
+  // HubNav, and every EmptyState beside a masked list (the feed-stream rule).
+  {
+    value: 'settings-subject-mutes',
+    file: 'app/(main)/settings/notifications/mutes-form.tsx',
+    kind: 'live',
+    why: 'The mute list: one row per Space or Circle the member belongs to, read from space_members (mute-subjects.ts). This is the box OWN-081 moved. The list wrapper only, not the card: header, intro and empty state are design. Names change inside a fixed row; a row added or removed is a height and an accepted recapture.',
+  },
+  {
+    value: 'settings-my-memberships',
+    file: 'app/(main)/settings/memberships/section.tsx',
+    kind: 'live',
+    why: 'The member’s own Space memberships: one EntityCard per row with a live tier name and billing cadence label. The <ul> only; the EmptyState is not masked. A membership added or removed is a height the mask cannot hold, and is accepted.',
+  },
+  {
+    value: 'settings-tips-received',
+    file: 'app/(main)/settings/billing/tips-received-section.tsx',
+    kind: 'live',
+    why: 'The Tips received card: a total, a count and the most recent tips with tipper names, amounts and dates. Every line in it is a reading, so the card is the site. It mounts only once a tip has landed, so its first appearance is a height and an accepted recapture.',
+  },
+  {
+    value: 'settings-live-location-stamp',
+    file: 'components/settings/live-location-toggle.tsx',
+    kind: 'live',
+    why: 'The "Live · last updated" stamp: a plain-text toLocaleString() clock with no <time> element, which the global `time, [datetime]` selector misses. The span only; the min-h status line around it carries three other messages that are fixed copy. It renders in a fixed-height line, so the box holds.',
+  },
+  {
+    value: 'space-console-stats',
+    file: 'components/spaces/dashboard/space-dashboard.tsx',
+    kind: 'live',
+    why: 'The console’s top row: revenue over 30 days, member count, mean health and at-risk count, four DB readings in StatCards. The values are `tabular-nums` and the grid is a fixed 2x2 / 1x4, so the box holds as digits change.',
+  },
+  {
+    value: 'space-console-profile-stats',
+    file: 'components/spaces/dashboard/space-dashboard.tsx',
+    kind: 'live',
+    why: 'Profile views and button clicks over a rolling 30-day window, two telemetry tallies. The grid only, not the section, so the SectionHeader above it stays photographed. `tabular-nums` StatCards; the box holds.',
+  },
+  {
+    value: 'space-console-journey-stats',
+    file: 'components/spaces/dashboard/space-dashboard.tsx',
+    kind: 'live',
+    why: 'Enrolled, finished, still going and finish rate across the Space’s Journeys, four completion tallies. The grid only, not the section, so the SectionHeader stays photographed. `tabular-nums` StatCards; the box holds.',
+  },
+  {
+    value: 'space-console-activity',
+    file: 'components/spaces/dashboard/space-dashboard.tsx',
+    kind: 'live',
+    why: 'Latest activity: up to eight rows of the contact touch stream, each with a summary and relativeTime(). The <ul> only; the EmptyState beside it is not masked. A row-count change is a height the mask cannot hold, and is accepted.',
+  },
+  {
+    value: 'space-console-upcoming',
+    file: 'components/spaces/dashboard/space-dashboard.tsx',
+    kind: 'live',
+    why: 'Coming up: the next five events with their dates, from a `upcomingOnly` window that slides continuously. The <ul> only; the EmptyState beside it is not masked. A row-count change is a height the mask cannot hold, and is accepted.',
+  },
 ]
 
 /** Escape hatch for the flaky-surface policy: quiet a surface the same week it flakes,

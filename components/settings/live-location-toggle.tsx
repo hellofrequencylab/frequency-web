@@ -91,8 +91,11 @@ export function LiveLocationToggle({
         {error && !pending && (
           <span className="inline-flex items-center gap-1 text-danger"><TriangleAlert className="h-3 w-3" /> {error}</span>
         )}
+        {/* A plain-text clock with no <time> element, so the global `time, [datetime]` selector
+            misses it (HYG-121). The span, not the min-h status line around it: the other three
+            messages in that line are fixed copy. */}
         {live && !pending && !error && liveUpdatedAt && (
-          <span className="text-subtle">Live · last updated {new Date(liveUpdatedAt).toLocaleString()}</span>
+          <span data-visual-mask="settings-live-location-stamp" className="text-subtle">Live · last updated {new Date(liveUpdatedAt).toLocaleString()}</span>
         )}
       </div>
 
