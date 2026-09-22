@@ -188,7 +188,7 @@ export function PlanDrawer({
               value={stage}
               options={PLAN_STAGES.map((s) => ({
                 value: s,
-                label: s === 'plan' ? 'Plan' : s === 'pencil' ? 'Pencil' : 'Production',
+                label: s === 'plan' ? 'Planning' : s === 'pencil' ? 'Pencil' : 'Production',
               }))}
               onChange={(e) => setStage(e.target.value as typeof stage)}
             />

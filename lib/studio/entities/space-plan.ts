@@ -13,7 +13,7 @@ import { PLAN_STAGES, PLAN_TARGETS } from '@/lib/calendar/plans'
 
 const STAGE_OPTIONS = PLAN_STAGES.map((value) => ({
   value,
-  label: value === 'plan' ? 'Plan' : value === 'pencil' ? 'Pencil' : 'Production',
+  label: value === 'plan' ? 'Planning' : value === 'pencil' ? 'Pencil' : 'Production',
 }))
 
 const TARGET_OPTIONS = PLAN_TARGETS.map((value) => ({

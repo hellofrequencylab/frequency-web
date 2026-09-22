@@ -6,7 +6,7 @@ import { planTargetDef } from '@/lib/calendar/plans'
 
 const COLS = PLAN_STAGES.map((stage) => ({
   stage,
-  label: stage === 'plan' ? 'Plan' : stage === 'pencil' ? 'Pencil' : 'Production',
+  label: stage === 'plan' ? 'Planning' : stage === 'pencil' ? 'Pencil' : 'Production',
 }))
 
 export function PlanBoard({
