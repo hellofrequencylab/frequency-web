@@ -1,4 +1,4 @@
-// Beta launch switch (TEMPORARY) — "get people in and let them try everything".
+// Beta launch switch (flips OFF at launch, 21 December 2026, LIVE-465) — "get people in and let them try everything".
 //
 // While this is true, every signed-in member is treated as the paid Crew TIER, so all
 // premium member features unlock (the Vault cash-in, Studio, Support console, Connections /

@@ -1,4 +1,4 @@
-// Check-in render — a desktop "door check-in" mockup (ADR-068). TEMPORARY, disposable SVG.
+// Check-in render — a desktop "door check-in" mockup (ADR-068). Disposable SVG, deleted with the induction at launch (21 December 2026, LIVE-464).
 
 import { RenderFrame, InnerCard, Label } from './frame'
 

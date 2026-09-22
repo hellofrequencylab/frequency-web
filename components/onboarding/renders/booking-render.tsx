@@ -1,4 +1,4 @@
-// Booking render — a desktop "booking page" mockup (ADR-068). TEMPORARY, disposable SVG.
+// Booking render — a desktop "booking page" mockup (ADR-068). Disposable SVG, deleted with the induction at launch (21 December 2026, LIVE-464).
 
 import { RenderFrame, InnerCard, Label } from './frame'
 

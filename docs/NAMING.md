@@ -560,7 +560,8 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
   `spotlight.manage` / `spotlight.view`, flags `meta.spotlight.{enabled,published}`,
   audit action `spotlight.toggle`. OFF for everyone by default; turned on per member.
   **Not "Studio"** (locked for the creation tool + the future Calm/Studio *mode* axis)
-  and **not "Signal"** (a retired rank, below). Locked June 2026 (ADR-423).
+  and **not "Signal"** (a retired rank, below; since 2026-09-22 the word names the earned exposure
+  measure instead, see the tier ladder section). Locked June 2026 (ADR-423).
 - **Guestbook** = the notes visitors leave on a Spotlight (ADR-1132). Member-facing
   copy: "guestbook", lowercase mid-sentence ("sign the guestbook", "leave a note");
   an entry is a **note**, never a "comment" or "post" (those belong to the feed).
@@ -622,6 +623,14 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
     [CORE-MODEL.md](CORE-MODEL.md) §1: people join free, businesses host free, you pay when you start
     charging. Prices are read from the catalog, never typed into copy (ADR-916); the figures in this bullet
     are the record of a decision, not a source.
+- **Signal** = the earned exposure measure (owner ruling 2026-09-22, [ADR-1293](DECISIONS.md) accepted):
+  the score that orders the Space directory and fills the featured slots; earned, never purchasable.
+  No plan, tier, entitlement or Stripe field is ever an input. Member-facing copy: "Signal", one
+  capital, as a noun ("your Space's Signal"). Internal: the `space_standing` table,
+  `lib/spaces/standing.ts` and `standing-rollup.ts` keep `standing` as the identifier (ADR-590's
+  precedent: the label changes, the key never does). **Collision guard:** "Signal" was also the second
+  rung of the retired Echo/Signal/Beacon/Conduit/Luminary rank ladder; that sense stays retired, and
+  the word carries only this one live meaning.
 - **Crew's price is "contribute what you want", never "pay what you want"** (owner ruling 2026-08-19,
   [ADR-1084](DECISIONS.md)). The owner's frame: *"I want membership fully accessible, with people
   wanting to contribute. Businesses fund the core of the memberships."* Membership is not the revenue
@@ -811,7 +820,8 @@ Depth/Range/Altitude · deshi/sempai/sensei · "points" ·
 only the *timer* name. "Movement" stays alive as the topical **Channel** (the
 seven topics), as the movement's word in CONTENT-VOICE §6d, and in code/schema
 (`timer_kind = 'movement'`, `lib/movement.ts`, `movement_config`), which are
-internal and unchanged.
+internal and unchanged. **Collision guard (2026-09-22):** "Signal" as the earned exposure measure
+(the tier ladder section) is a live term; only the RANK sense of the word is retired.
 
 **Rewards Economy v3 cuts (ADR-305), retired reward constructs:**
 witnessed / peer awards · secret awards ("Quiet Ones") ·

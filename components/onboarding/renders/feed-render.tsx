@@ -1,4 +1,4 @@
-// Feed render — a desktop "feed page" mockup (ADR-068). TEMPORARY, disposable SVG.
+// Feed render — a desktop "feed page" mockup (ADR-068). Disposable SVG, deleted with the induction at launch (21 December 2026, LIVE-464).
 
 import { RenderFrame, InnerCard, Bar, Label } from './frame'
 

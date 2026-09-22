@@ -66,7 +66,7 @@ const CIRCLE_TEMPLATES: ElementDef[] = [
 ]
 
 // Beta-induction product-page mockups (components/onboarding/renders/*) — landscape browser
-// "screens" of the app. TEMPORARY (ADR-068, removed with the induction at launch); catalogued at
+// "screens" of the app. Removed with the induction at launch, 21 December 2026 (ADR-068, LIVE-465); catalogued at
 // the owner's request so they're browsable while they exist.
 const ONBOARDING_SCREENS: ElementDef[] = [
   { registry: 'render', name: 'feed', title: 'Feed screen', category: 'Onboarding screens', tags: ['onboarding', 'screen', 'induction', 'temporary', 'feed'] },

@@ -37864,10 +37864,10 @@ walled behind the subscription it was meant to make worth buying.
 
 ---
 
-## ADR-1293: PROPOSED — everything freemium, seats carry scale, and exposure is earned rather than sold (2026-09-08)
+## ADR-1293: Accepted — everything freemium, seats carry scale, and exposure is earned rather than sold (2026-09-08)
 
-**Status:** 🔴 **PROPOSED.** Five parts were ruled by the owner on 2026-09-08 and are recorded as such
-below; the rest awaits a ruling. Measurements and the full argument live in
+**Status:** ✅ **Accepted** 2026-09-22 (owner). Five parts were ruled by the owner on 2026-09-08 and are recorded as such
+below; the last three were ruled 2026-09-22 and are recorded in the "Accepted 2026-09-22" paragraph at the end of this entry. Measurements and the full argument live in
 [`OFFER-MODEL.md`](OFFER-MODEL.md); status lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json)
 (`OWN-067`). Draft 2 — supersedes the one-price-plus-add-on-apps shape of the first draft.
 
@@ -37946,10 +37946,23 @@ consumers must each be added to **every** select branch, per the regression docu
 rather than a drive-by. "Standing" is used in OFFER-MODEL as a plain descriptive word, not a proposed
 proper noun.
 
+**Accepted 2026-09-22 (owner), the three open items ruled.** (a) **Both Crew guards ship:** a granted
+Crew never buys down the platform take rate (`memberNetworkTakeRateBps` keeps reading the Stripe tier
+through `billedTier`), and a Space's own owners and admins cannot be granted Crew by their own tier.
+Both were already in the tree as LIVE-223 and LIVE-224 when the ruling landed; `LIVE-466` records that
+the ruling and the code agree and pins both guards from the source. (b) **The grace window needs no
+change:** `pricing_settings.beta_grace.until` already reads 2026-12-01, updated 2026-09-08 23:27Z and
+measured 2026-09-22, so the "expires 2026-10-01" premise above was stale by the time it was read.
+(c) **The earned exposure measure is named Signal** (`docs/NAMING.md`, the tier ladder section): the
+score that orders the Space directory and fills the featured slots, earned and never purchasable. Code
+keeps `space_standing` and `lib/spaces/standing.ts` as identifiers; the label changes, the key never
+does. Backlog `OWN-067` closed the same day.
+
 ## ADR-1294: ACCEPTED — the core model is three lines and four nouns, and the six open questions are ruled (2026-09-08)
 
 **Status:** ✅ **ACCEPTED.** Supersedes the open questions left by [ADR-1292](DECISIONS.md) and
-[ADR-1293](DECISIONS.md), both of which stay PROPOSED as the argument that produced this. The plan
+[ADR-1293](DECISIONS.md), both of which stayed PROPOSED as the argument that produced this (ADR-1293 was
+accepted 2026-09-22 once its last three questions were ruled). The plan
 lives in [`CORE-MODEL.md`](CORE-MODEL.md); status lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json)
 (`PROG-R0`…`PROG-R11`).
 
@@ -47817,3 +47830,52 @@ wrong one. `PROG-CAL8` loses the open question that blocked it. No stored value 
 label-only ruling, and `stage` has been `planning` in the column since ADR-1388.
 
 **Rows.** LIVE-461 (closed 2026-09-22). Unblocks PROG-CAL8.
+
+## ADR-1524: Spotlight fee parity, one Site per paid tier, and hero zones sample their own media (2026-09-22)
+
+**Status:** Accepted · 2026-09-22 · owner ruling · backlog `OWN-060` (closed the same day) ·
+settles Editor O-2 and O-3 (`docs/EDITOR-ARCHITECTURE.md` §10.3) and Profile O2
+(`docs/PROFILE-REDESIGN-PLAN.md` §O) · beside [ADR-1325](DECISIONS.md), which ruled O-3's
+subdomain-versus-custom-domain half and O-4 on 2026-09-14
+
+**Context.** `OWN-060` was filed on 2026-09-06 so that six owner questions the live plans asked
+before their phases start would be asked before the phase was picked up rather than discovered
+inside it. Three were ruled on 2026-09-08 (O-2, O-5, Profile O1), two on 2026-09-14 (O-3's domain
+half and O-4, ADR-1325). Profile O2 was the last one open, and O-2 and O-3 were each carrying a
+half that had been answered in a row's detail but never in this ledger. Ruled in one sitting so
+the row could close on a record rather than on a promise.
+
+**Decision.**
+
+1. **O-2: a member's Spotlight commerce carries the SAME platform fee as a Space's.** One fee
+   across both surfaces. Two fees would create a routing incentive, and a seller choosing a
+   surface to minimise our fee is a seller spending attention on our pricing table instead of on
+   their thing. The implementing change (PROG-E7) reads the fee from ONE source for both paths,
+   so a later edit cannot reintroduce the split by touching one of two constants.
+
+2. **O-3: every paid tier, including the entry tier, unlocks Sites. One Site each.** "Any paid
+   plan" means `isPaid`, not a named tier, and the entry tier is in. The quota is one Site per
+   Space today and may grow by tier later; when it does, the quota is a number read from the
+   catalog, never a second gate. Free Spaces keep the in-app profile only, and the subdomain
+   versus custom-domain split stays as ADR-1325 ruled it. Gates PROG-E10.
+
+3. **Profile O2: the two hero zones MAY resolve to different tones.** Each zone samples its own
+   media. The "both zones step to the higher plate rung" rule still makes the TREATMENT uniform;
+   the TONE is allowed to differ, which is what "always choose the best contrasting colour" means
+   literally. Fixture V4 (name dark, buttons light) is an accepted look, not a defect. The sensor
+   keeps resolving per zone; nothing runs over the union of both zones' tiles.
+
+**Rejected.** A lower fee for Spotlight to seed member commerce (it is the routing incentive
+above, and the fee is not the lever that grows member commerce). Sites on the entry tier with a
+quota of zero (a cap of zero is a lock wearing an allowance's clothes, the same reading ADR-1293
+gave the five zero meters). One tone across both hero zones (a one-line change in the sensor,
+declined: it trades legibility on split covers for a consistency nobody asked for).
+
+**Consequences.** PROG-E7 carries O-2's one-source rule as an acceptance condition. PROG-E10's
+Sites gate reads `isPaid` and enforces one Site per Space until a per-tier quota exists. The
+profile hero work keeps per-zone sampling and records V4 as accepted. `OWN-060` closes with all
+six questions on the record: O-1 inside PROG-E7, O-2, O-3 and Profile O2 here, O-4 and the domain
+half of O-3 in ADR-1325, O-5 and Profile O1 on the row's 2026-09-08 ruling.
+
+**Rows.** OWN-060 (closed 2026-09-22). Consequences land on PROG-E7, PROG-E10 and the profile
+hero work when each is picked up.

@@ -1,4 +1,4 @@
-// Events render — a desktop "events page" mockup (ADR-068). TEMPORARY, disposable SVG.
+// Events render — a desktop "events page" mockup (ADR-068). Disposable SVG, deleted with the induction at launch (21 December 2026, LIVE-464).
 
 import { RenderFrame, InnerCard, Label } from './frame'
 

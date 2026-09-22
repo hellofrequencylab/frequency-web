@@ -1,4 +1,4 @@
-// CRM render — a desktop "Resonance CRM" mockup (ADR-068). TEMPORARY, disposable SVG.
+// CRM render — a desktop "Resonance CRM" mockup (ADR-068). Disposable SVG, deleted with the induction at launch (21 December 2026, LIVE-464).
 // The member list on the left, an email compose panel on the right — "send your event to your list".
 
 import { RenderFrame, InnerCard, Bar, Label } from './frame'
