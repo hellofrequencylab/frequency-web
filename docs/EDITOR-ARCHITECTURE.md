@@ -347,6 +347,12 @@ treat it as disposable and rebuildable. **It is a safety mechanism, not a report
 consolidating blocks without being able to answer "which tenants use this" is how tenant pages break
 silently.
 
+> ✅ **The scan half shipped 2026-09-21 as a live query, not a table** ([ADR-1502](DECISIONS.md)):
+> `public.block_type_usage(text)` (migration `20270345007500`) answers "which tenants place block
+> Y" per store, and `pnpm block-usage [type]` prints it. That is the number E2 reads before every
+> retirement. The `app_instances` trigger half is `LIVE-454`, blocked on E0 re-creating that
+> table (dropped by `20270316000000`); until then a Layer-3 placement has no table to be counted in.
+
 ### The pattern to copy
 
 `element_settings` + `lib/elements/{registry,config,store}.ts` + `/admin/elements` + `check:elements`
