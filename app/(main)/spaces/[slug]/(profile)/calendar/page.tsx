@@ -6,7 +6,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { SITE_URL } from '@/lib/site'
 import { loadPublicSpaceWindow } from '@/lib/calendar/public-month'
-import { guestFeedState, guestLiveItems } from '@/lib/calendar/guest-live'
+import { guestFeedState } from '@/lib/calendar/guest-live'
 import { monthGridWindow, operatorHorizonWindow } from '@/lib/calendar/month-window'
 import { loadSpaceCalendarMonth } from './actions'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
@@ -79,7 +79,10 @@ export default async function SpaceCalendarPage({
   )
 
   const grid = monthGridWindow(initialYear, initialMonth1)
-  const guestEvents = guestLiveItems(await loadPublicSpaceWindow(space.id, grid.fromDay, grid.toDay))
+  // The Guest feed (ADR-1457): loadPublicSpaceWindow folds every month, this first one and each
+  // browsed one, through guestLiveItems, so pencil and planning never reach a guest. Applying it
+  // again here changed nothing and read as a second gate (LIVE-468).
+  const guestEvents = await loadPublicSpaceWindow(space.id, grid.fromDay, grid.toDay)
   const feed = guestFeedState(guestEvents)
 
   if (!adminAllowed) {

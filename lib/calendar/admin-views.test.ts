@@ -7,9 +7,7 @@ import {
   parseAdminCalendarView,
   parseConsoleFlag,
   parseRememberedCalendarView,
-  parseTimelineMonth,
   resolveOperatorCalendarView,
-  timelineMonthLabel,
 } from './admin-views'
 import { adjacentMonth } from './month-window'
 
@@ -99,11 +97,11 @@ describe('calendarViewBlurb', () => {
   })
 })
 
-describe('parseTimelineMonth', () => {
-  it('reads y/m and falls back when they are out of range', () => {
-    expect(parseTimelineMonth('2026', '9', { year: 2026, month1: 1 })).toEqual({ year: 2026, month1: 9 })
-    expect(parseTimelineMonth('nope', '9', { year: 2026, month1: 1 })).toEqual({ year: 2026, month1: 1 })
-    expect(timelineMonthLabel(2026, 9)).toBe('September 2026')
+describe('the Timeline helpers went with the Timeline view (HYG-118, LIVE-468)', () => {
+  it('exports no parseTimelineMonth or timelineMonthLabel: nothing outside this test ever read them', async () => {
+    const mod: Record<string, unknown> = await import('./admin-views')
+    expect(mod.parseTimelineMonth).toBeUndefined()
+    expect(mod.timelineMonthLabel).toBeUndefined()
   })
 })
 

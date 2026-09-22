@@ -28,6 +28,7 @@ import { spanDayKeys } from '@/lib/calendar/entries'
 import { notesForDay, type DayNote } from '@/lib/calendar/day-notes'
 import { monthKey } from '@/lib/calendar/month-window'
 import { stackDay } from '@/lib/calendar/sunday-stack'
+import { shortDateLabel } from '@/lib/calendar/short-date'
 import { useMonthGestures } from './use-month-gestures'
 import type { CalendarEvent } from '@/lib/calendar/item'
 
@@ -624,7 +625,7 @@ export function EventCalendar({
                       <div className="mb-1 flex items-center justify-between gap-1">
                         {onCreateAt ? (
                           <IconButton
-                            label={`Add an entry on ${cell.date}`}
+                            label={`Add a date on ${shortDateLabel(cell.date)}`}
                             onClick={() => onCreateAt(cell.date)}
                             className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
                           >
@@ -885,7 +886,7 @@ function CalendarPreview({
             onClick={onToggleTz}
             className="ml-6 mt-1 text-meta font-medium text-primary-strong underline-offset-2 hover:underline"
           >
-            {showViewer ? 'Show in event timezone' : 'Show in my timezone'}
+            {showViewer ? 'Show in event time zone' : 'Show in my time zone'}
           </button>
         )}
         {item.location && (

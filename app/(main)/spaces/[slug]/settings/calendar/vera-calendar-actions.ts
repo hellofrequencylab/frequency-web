@@ -14,6 +14,7 @@ import { parsePlanInput } from '@/lib/calendar/plans'
 import { createPenciledPlanRows, getSpacePlan, listSpacePlans, transitionSpacePlanRows, updateSpacePlan } from '@/lib/calendar/plans-store'
 import { planStageTransition } from '@/lib/calendar/workflow-board'
 import { monthGridWindow, safeMonth } from '@/lib/calendar/month-window'
+import { shortDateLabel } from '@/lib/calendar/short-date'
 import { dayInZone, resolveZone } from '@/lib/time/zone'
 import { addPlanTodo, archiveSpacePlan, reanchorPlanTodos, transitionPlanStage } from './plan-actions'
 
@@ -186,9 +187,9 @@ async function applyMove(slug: string, editor: Editor, change: Extract<VeraChang
   if ('error' in res) return { error: res.error }
   if (row.plan_id) {
     const anchored = await reanchorPlanTodos(slug, row.plan_id)
-    if ('error' in anchored) return { error: `"${row.title}" moved to ${change.toDay}, but its to-dos did not follow. Open the Plan and check them.` }
+    if ('error' in anchored) return { error: `"${row.title}" moved to ${shortDateLabel(change.toDay)}, but its to-dos did not follow. Open the Plan and check them.` }
   }
-  return `Moved "${row.title}" to ${change.toDay}.`
+  return `Moved "${row.title}" to ${shortDateLabel(change.toDay)}.`
 }
 
 async function applyOne(slug: string, editor: Editor, change: VeraChange): Promise<string | { error: string }> {
@@ -251,7 +252,7 @@ export async function applyVeraChanges(slug: string, raw: unknown): Promise<Acti
     // Every id was shape-checked by the parser; ownership is checked again by each store read on
     // the caller's session (getSpacePlan / getCalendarEntryRow filter by this Space, then RLS).
     if ('planId' in change && change.planId && !UUID_RE.test(change.planId)) {
-      results.push({ index: i, ok: false, message: 'That Plan id is not one of ours.' })
+      results.push({ index: i, ok: false, message: 'That Plan could not be found.' })
       continue
     }
     try {

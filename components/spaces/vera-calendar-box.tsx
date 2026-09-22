@@ -7,6 +7,7 @@ import { Field, Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { describeChange, isVeraMode, VERA_MODE_OPTIONS, type VeraChange, type VeraMode } from '@/lib/calendar/vera-command'
+import { browserZone } from '@/lib/calendar/browser-zone'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import {
@@ -37,14 +38,6 @@ function rememberMode(slug: string, mode: VeraMode) {
     window.localStorage.setItem(MODE_KEY(slug), mode)
   } catch {
     /* a private window is fine; the default is Pencil */
-  }
-}
-
-function browserZone(): string {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Los_Angeles'
-  } catch {
-    return 'America/Los_Angeles'
   }
 }
 
@@ -145,7 +138,7 @@ export function VeraCalendarBox({
         <div id={panelId} className="space-y-3 border-t border-border px-4 py-3">
           <form onSubmit={send} className="space-y-2">
             <div className="flex flex-wrap items-end gap-2">
-              <Field label="Mode" className="w-40">
+              <Field label="Stage" className="w-40">
                 <Select
                   id="vera-mode"
                   options={VERA_MODE_OPTIONS}

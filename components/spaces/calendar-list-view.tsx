@@ -6,10 +6,10 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Button } from '@/components/ui/button'
 import { StatusChip } from '@/components/admin/status'
-import { EventCoreStatsCards } from '@/components/events/event-core-stats'
+import { StatCard } from '@/components/ui/stat-card'
 import { EventShareButton } from '@/components/events/event-share-button'
 import { AddToCalendar, buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
-import { truncatedListStats, type ListIndexItem } from '@/lib/calendar/list-index'
+import { listGlanceStats, type ListIndexItem } from '@/lib/calendar/list-index'
 import { itemSelectedClass, itemTitleClass } from '@/lib/calendar/registry'
 import { cn } from '@/lib/utils'
 
@@ -38,7 +38,7 @@ export function CalendarListView({
       <EmptyState
         variant="first-use"
         title="Nothing to run yet."
-        description="Pencil a date on the Admin view. Published events land here too."
+        description="Pencil a date on the Calendar view. Published events land here too."
       />
     )
   }
@@ -104,6 +104,7 @@ function CalendarListViewer({
 }) {
   const openHref = item.href
   const publicSlug = item.publicSlug
+  const glance = listGlanceStats(item)
   const googleUrl =
     publicSlug && item.startInstantIso
       ? buildGoogleCalendarUrl({
@@ -152,12 +153,18 @@ function CalendarListViewer({
         </section>
       )}
 
-      <section aria-labelledby="calendar-list-stats" className="space-y-3">
-        <h4 id="calendar-list-stats" className="text-body-sm font-bold text-text">
-          At a glance
-        </h4>
-        <EventCoreStatsCards stats={truncatedListStats(item)} variant="panel" />
-      </section>
+      {glance.length > 0 && (
+        <section aria-labelledby="calendar-list-stats" className="space-y-3">
+          <h4 id="calendar-list-stats" className="text-body-sm font-bold text-text">
+            At a glance
+          </h4>
+          <div className="grid grid-cols-2 gap-1.5">
+            {glance.map((s) => (
+              <StatCard key={s.key} label={s.label} value={s.value} size="sm" bordered />
+            ))}
+          </div>
+        </section>
+      )}
 
       {(item.planId && onOpenPlan) || openHref ? (
         <div className="flex flex-wrap gap-2">

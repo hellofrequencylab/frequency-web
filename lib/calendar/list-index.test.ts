@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CalendarEvent } from './item'
-import { agendaDayLabel, agendaForMonth, listIndexItems, selectListItem } from './list-index'
+import { agendaDayLabel, agendaForMonth, listGlanceStats, listIndexItems, selectListItem } from './list-index'
 
 function item(partial: Partial<CalendarEvent> & Pick<CalendarEvent, 'slug' | 'title' | 'dayKey'>): CalendarEvent {
   return {
@@ -51,6 +51,25 @@ describe('listIndexItems', () => {
     ])
     expect(row?.publicSlug).toBeNull()
     expect(row?.href).toBe('/events/draft-gathering/manage?section=settings')
+  })
+})
+
+describe('listGlanceStats (LIVE-468)', () => {
+  it('shows Going for an event, which is the one number the index reads, and nothing made up', () => {
+    const [row] = listIndexItems([
+      item({ slug: 'open-house', title: 'Open house', dayKey: '2026-09-24', eventId: 'evt-1', publicationState: 'published', goingCount: 12 }),
+    ])
+    const stats = listGlanceStats(row!)
+    expect(stats).toEqual([{ key: 'going', label: 'Going', value: 12 }])
+    // The old shape hard-coded these to 0 for every row; nothing here reads them, so nothing shows them.
+    expect(JSON.stringify(stats)).not.toMatch(/Interested|Waitlist|Checked in|Sold|Revenue|Capacity/)
+  })
+
+  it('has nothing at a glance for a date that is not an event yet', () => {
+    const [row] = listIndexItems([
+      item({ slug: 'entry-1', title: 'New moon sit', dayKey: '2026-09-22', stage: 'pencil', layer: 'pencil', entryId: 'e1' }),
+    ])
+    expect(listGlanceStats(row!)).toEqual([])
   })
 })
 

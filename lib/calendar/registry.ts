@@ -144,7 +144,7 @@ export const ENTRY_STAGES: readonly EntryStageDef[] = [
   {
     stage: 'pencil',
     label: 'Pencil',
-    hint: 'A date you are holding. Nothing is decided yet.',
+    hint: 'A tentative date. Nothing is decided yet.',
     status: 'tentative',
     chipClass: PENCIL_CHIP_CLASS,
     badgeTone: 'neutral',

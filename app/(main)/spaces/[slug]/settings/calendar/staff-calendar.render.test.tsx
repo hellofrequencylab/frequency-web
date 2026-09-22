@@ -9,7 +9,7 @@ import type { EntryInput } from '@/lib/calendar/entries'
 // LIVE-467, findings 3, 7 and 9, in the entry drawer:
 //   3. "Cancel this date" on a Plan-linked date is the Plan's exit (entry-actions escalates a stage
 //      change to transitionPlanStage, whose Cancelled row is `archived: true`), so it now says so;
-//   7. "Start a Plan" and "Join a Plan" had no pending guard, so a double tap made two Plans;
+//   7. "Start a plan" and "Join a Plan" had no pending guard, so a double tap made two Plans;
 //   9. "+" and "Pencil it in" always made a Plan, because the short form had no Type: Unavailable
 //      time could only be made by pencilling a Plan and switching afterwards, and the Plan stayed.
 
@@ -193,13 +193,13 @@ describe('StaffCalendar: the Cancelled exit says what it reaches', () => {
   })
 })
 
-describe('StaffCalendar: Start a Plan waits for its round trip', () => {
+describe('StaffCalendar: Start a plan waits for its round trip', () => {
   it('is disabled while the Plan is being started, so a second tap cannot start another', async () => {
     let release!: () => void
     mocks.startPlanFromEntry.mockReturnValue(new Promise((res) => { release = () => res({ data: { id: 'plan-1' } }) }))
     await mount(calendar([pencilItem()]))
     await openEdit()
-    const start = button('Start a Plan')!
+    const start = button('Start a plan')!
     expect(start.disabled).toBe(false)
     await act(async () => start.click())
     expect(start.disabled).toBe(true)

@@ -1,5 +1,3 @@
-import { monthKey, safeMonth } from './month-window'
-
 // Operator views are Calendar, List, and Workflow. Guest is a separate audience preview.
 // Legacy timeline/projects URL values are accepted and safely mapped below.
 
@@ -20,7 +18,7 @@ export const CALENDAR_ADMIN_VIEW_DEFS: readonly {
   {
     view: 'admin',
     label: 'Calendar',
-    blurb: 'The same month as Guest, with every draft, pencil, private date, and unpublished gathering your team can see.',
+    blurb: 'The month as your team sees it: every draft, Pencil, Private entry, Unavailable time and unpublished gathering.',
   },
   {
     view: 'list',
@@ -79,21 +77,6 @@ export function parseConsoleFlag(raw: string | string[] | null | undefined): boo
 export function calendarViewBlurb(view: CalendarAdminView, brandName: string): string {
   const def = CALENDAR_ADMIN_VIEW_DEFS.find((d) => d.view === view)
   return (def?.blurb ?? '').replace('{brand}', brandName)
-}
-
-export function parseTimelineMonth(
-  yearRaw: string | string[] | null | undefined,
-  monthRaw: string | string[] | null | undefined,
-  fallback: { year: number; month1: number },
-): { year: number; month1: number } {
-  return safeMonth(firstSearchParam(yearRaw), firstSearchParam(monthRaw)) ?? fallback
-}
-
-export function timelineMonthLabel(year: number, month1: number): string {
-  const key = monthKey(year, month1)
-  const [y, m] = key.split('-')
-  const date = new Date(Date.UTC(Number(y), Number(m) - 1, 1))
-  return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date)
 }
 
 /** Per-Space cookie so the last operator view survives a later visit (ADR-1467). */
