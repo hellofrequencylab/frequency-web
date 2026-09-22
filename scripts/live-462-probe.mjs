@@ -17,10 +17,14 @@
 // timestamped to the second the test clicked. The server never failed; only the client said so.
 //
 // ── WHAT THIS MEASURES ──────────────────────────────────────────────────────────────────────────
-// Not "is there a useEffect" — that is a spelling. It checks that no `router.refresh()` in this
-// component sits inside a `startTransition` body, which is the property that makes the drawer
-// freeze, and that the refresh still happens at all (a fix that simply deleted it would leave the
-// month grid stale after every write, which is a worse bug wearing this one's clothes).
+// Not "is there a useEffect" — that is a spelling. Two properties, either of which breaking brings
+// the freeze back or trades it for a stale month:
+//   • the component never calls router.refresh() at all. In a Server Function, revalidatePath
+//     "updates the UI immediately (if viewing the affected path)" (this Next version's own
+//     revalidatePath.md:19), so the action's round trip already carries the fresh tree and a client
+//     refresh is a second full render — inside a transition, it is the freeze;
+//   • and every write action the drawer calls still ends in revalidate(slug), which is the thing
+//     that actually keeps the month and the Plan list fresh once the client refresh is gone.
 //
 // Exit 0 = done, 1 = not done, 79 = could not look.
 
@@ -46,47 +50,55 @@ if (!/disabled=\{pending\}/.test(code)) {
   process.exit(79)
 }
 
-// 2. No router.refresh() inside a startTransition body. Bodies are matched by brace balance from
-//    each `startTransition(` so a refresh nested in any branch of one is still caught.
-for (const m of code.matchAll(/startTransition\(/g)) {
-  let i = code.indexOf('{', m.index)
-  if (i < 0) continue
-  let depth = 0
-  let end = i
-  for (; end < code.length; end++) {
-    if (code[end] === '{') depth++
-    else if (code[end] === '}') {
-      depth--
-      if (depth === 0) break
-    }
-  }
-  const body = code.slice(i, end + 1)
-  if (/router\.refresh\(\)/.test(body)) {
-    fail(
-      'router.refresh() is called inside a startTransition body. `pending` stays true until the ' +
-        'transition commits and every drawer control is disabled={pending}, so a SUCCESSFUL save ' +
-        'freezes the form until a full Server Component re-render returns. Refresh from an effect ' +
-        'on refreshKey instead, outside the transition.',
-    )
-  }
-  // Nor via a helper called in the transition that refreshes on its own behalf.
-  for (const call of body.matchAll(/\b(\w+)\(\)/g)) {
-    const helper = code.match(new RegExp(`const ${call[1]} = \\(\\) => \\{([\\s\\S]*?)\\n  \\}`))
-    if (helper && /router\.refresh\(\)/.test(helper[1])) {
-      fail(
-        `${call[1]}() is called inside a startTransition body and calls router.refresh() itself, ` +
-          'which puts the refresh back inside the transition by the back door and re-freezes the drawer.',
-      )
-    }
+// 2. NO CLIENT REFRESH IN THIS FILE. Any router.refresh() — in a transition, in a helper, in an
+//    effect — is a second render the action already did, and inside the transition it is the freeze.
+if (/router\.refresh\(\)/.test(code)) {
+  fail(
+    'router.refresh() is back in staff-calendar.tsx. The write actions already revalidate both ' +
+      'calendar routes inside the action, which re-renders the viewed page in the same round trip; ' +
+      'a client refresh on top is a second full render, and inside startTransition it re-freezes ' +
+      'every disabled={pending} control until it returns.',
+  )
+}
+
+// 3. AND THE WRITES STILL REVALIDATE. Deleting the client refresh is only safe because the actions
+//    refresh the page themselves; a write that stops doing so leaves the month stale after a save,
+//    which is the worse bug wearing this one's clothes.
+const actions = readFileSync('app/(main)/spaces/[slug]/settings/calendar/plan-actions.ts', 'utf8')
+const entryActions = existsSync('app/(main)/spaces/[slug]/settings/calendar/entry-actions.ts')
+  ? readFileSync('app/(main)/spaces/[slug]/settings/calendar/entry-actions.ts', 'utf8')
+  : ''
+const both = actions + '\n' + entryActions
+if (!/function revalidate\(slug: string\) \{[\s\S]*?revalidatePath\(`\/spaces\/\$\{slug\}\/calendar`\)/.test(both)) {
+  fail('revalidate(slug) no longer revalidates /spaces/<slug>/calendar, the route the drawer is used on, so nothing refreshes the page after a save now that the client refresh is gone')
+}
+for (const name of ['createPenciledPlan', 'saveCalendarEntry', 'deleteCalendarEntry']) {
+  const at = both.indexOf(`export async function ${name}(`)
+  if (at < 0) fail(`${name} is gone; re-read this probe`)
+  const next = both.indexOf('\nexport async function ', at + 10)
+  const fnBody = both.slice(at, next < 0 ? both.length : next)
+  if (!fnBody.includes('revalidate(slug)')) {
+    fail(`${name} no longer calls revalidate(slug), so the page it was called from is stale after the write — the client refresh that used to paper over that is gone by design`)
   }
 }
 
-// 3. The refresh must still happen. Deleting it would leave the month grid stale after every write.
-if (!/router\.refresh\(\)/.test(code)) {
-  fail('router.refresh() is gone entirely, so the month grid no longer reloads after a write — a worse bug than the one this row fixed')
+// 4. THE SECOND HALF OF THE SAME DEFECT: a successful save must leave the operator able to ACT.
+//    "Open Plan" used to be gated on finding the Plan inside the `plans` server prop, which on the
+//    one path that matters — opening the Plan the save just created — has not caught up. `find`
+//    returned undefined, the guard fell through to `setOpenPlan(null)`, and the button did nothing
+//    at all. `onOpenPlan` takes an ID (calendar-workspace.tsx's `selectPlan` only sets state and
+//    writes `?plan=`), so requiring the object was never necessary.
+const openPlan = code.slice(code.indexOf('Open Plan') - 1400, code.indexOf('Open Plan'))
+if (!openPlan.includes('onOpenPlan')) {
+  console.error('LIVE-462: could not find the Open Plan handler; re-read this probe before trusting it')
+  process.exit(79)
 }
-if (!/useEffect\([\s\S]{0,200}?router\.refresh\(\)/.test(code)) {
-  fail('router.refresh() no longer runs from an effect, so nothing guarantees it is outside the transition')
+if (/if \(onOpenPlan && plan\)/.test(openPlan) || /onOpenPlan && plans\.find/.test(openPlan)) {
+  fail(
+    'the Open Plan button is gated on finding the Plan in the `plans` server prop. That prop is ' +
+      'stale for the Plan the save just created, so the button silently does nothing on exactly ' +
+      'the path it exists for. Pass input.planId straight to onOpenPlan, which takes an id.',
+  )
 }
 
-console.log('✓ LIVE-462: no router.refresh() inside a transition that gates the drawer, and the refresh still runs.')
+console.log('✓ LIVE-462: no client refresh in the drawer, every write still revalidates the calendar routes, and Open Plan is not gated on a stale server prop.')

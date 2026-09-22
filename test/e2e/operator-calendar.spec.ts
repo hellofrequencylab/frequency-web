@@ -54,6 +54,27 @@ async function openOperatorCalendar(page: Page) {
   await expect(page.locator('[data-calendar-admin-grid]')).toBeVisible()
 }
 
+/**
+ * Press "Pencil date" and wait for the WRITE, not the click.
+ *
+ * 🔴 WHY THE TIMEOUT IS SIZED AND NOT DEFAULT. Saving a pencil is a server action that inserts two
+ * rows and then revalidates both calendar routes, which re-renders the viewed page in the same
+ * round trip. Measured on the pr-compare preview on 2026-09-22 (run 35754107782, six saves): the
+ * title's Date.now() to the row's created_at was 7.6 s to 10.9 s, and the client only sees success
+ * after the re-render that follows the insert. playwright.config.ts sets `timeout: 60_000` and no
+ * `expect.timeout`, so a bare `expect(...).toBeVisible()` here gives up at 5 s while a `click()` on
+ * the same page waits out the full minute — which is exactly why one test's click survived the
+ * same save that failed the assertion in the test beside it. (LIVE-462 removed a second, redundant
+ * client render from that path; LIVE-463 carries what is left of the latency.)
+ *
+ * "Open Plan" is the proof the save landed: it renders only for a saved entry that carries a Plan
+ * id, which is what the action returns. Waiting on it asserts the consequence, not a delay.
+ */
+async function pencilDate(page: Page) {
+  await page.getByRole('button', { name: 'Pencil date', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Open Plan', exact: true })).toBeVisible({ timeout: 20_000 })
+}
+
 test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () => {
   test.use({ storageState })
   test.skip(!baseURL, 'PW_BASE_URL is required for real-browser calendar acceptance coverage.')
@@ -72,9 +93,7 @@ test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () 
     await expect(page.getByRole('dialog')).toBeVisible()
     await page.locator('#entry-title').fill(title)
     await page.locator('#entry-start-date').fill(new Date().toLocaleDateString('en-CA'))
-    await page.getByRole('button', { name: 'Pencil date', exact: true }).click()
-
-    await expect(page.getByRole('button', { name: 'Open Plan' })).toBeVisible()
+    await pencilDate(page)
     // 🔴 `exact: true`, and it is load-bearing at all three Cancel sites. getByRole's `name`
     // defaults to exact:false, which is case-insensitive SUBSTRING matching, and the saved entry
     // drawer renders two buttons whose names one prefixes the other: the footer's "Cancel"
@@ -109,7 +128,7 @@ test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () 
     await page.getByRole('button', { name: 'Pencil it in' }).click()
     await page.locator('#entry-title').fill(privateTitle)
     await page.locator('#entry-start-date').fill(new Date().toLocaleDateString('en-CA'))
-    await page.getByRole('button', { name: 'Pencil date', exact: true }).click()
+    await pencilDate(page)
     await page.getByRole('button', { name: 'Cancel', exact: true }).click()
 
     await page.getByRole('button', { name: 'Guest preview' }).click()
@@ -155,7 +174,7 @@ test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () 
     await page.getByRole('button', { name: 'Pencil it in' }).click()
     await page.locator('#entry-title').fill(title)
     await page.locator('#entry-start-date').fill(new Date().toLocaleDateString('en-CA'))
-    await page.getByRole('button', { name: 'Pencil date', exact: true }).click()
+    await pencilDate(page)
 
     const drawer = page.getByRole('dialog').filter({ has: page.locator('#plan-title') })
     const summary = drawer.locator('[data-plan-production-summary]')
