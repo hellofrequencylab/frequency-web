@@ -138,9 +138,9 @@
     },
     "app/calendar/private/[token]/route.ts": {
       "verdict": "token-credential",
-      "reason": "Private Space team ICS (ADR-1468 / PROG-CAL7). The 32-hex token in the path is the credential. Unknown or revoked tokens 404 identically. The handler never takes a Space slug. Admin client is used only to resolve the token, then the feed is scoped to that Space's private entries and to-do dates. Never link-reachable. Re-read 2026-09-22 (LIVE-453) and the verdict is unchanged: that change removed two `as never` casts on .from() once the tables entered lib/database.types.ts, and touched no control flow — the token is still validated as 32 hex before any read, a revoked or unknown token still 404s identically, and every downstream read is still scoped to the space_id that lookup returns.",
+      "reason": "Private Space team ICS (ADR-1468 / PROG-CAL7). The 32-hex token in the path is the credential. Unknown or revoked tokens 404 identically. The handler never takes a Space slug. Admin client is used only to resolve the token, then the feed is scoped to that Space's private entries and to-do dates. Never link-reachable. Re-read 2026-09-22 (LIVE-453) and the verdict is unchanged: that change removed two `as never` casts on .from() once the tables entered lib/database.types.ts, and touched no control flow — the token is still validated as 32 hex before any read, a revoked or unknown token still 404s identically, and every downstream read is still scoped to the space_id that lookup returns. Re-read 2026-09-22 (PROG-CAL13) and the verdict is unchanged: the entries select gains recurrence_rule and exception_dates and each row is built through the pure entryFeedFields so a repeating Pencil is one VEVENT with RRULE and EXDATE. The token check, the 404 on unknown or revoked tokens and the space_id scoping are byte-identical; the two new columns come from the same scoped query.",
       "checked": "2026-09-22",
-      "digest": "5079861dff67737f"
+      "digest": "bb05795e937dcba1"
     },
     "app/events/[slug]/event.ics/route.ts": {
       "verdict": "model-gated",

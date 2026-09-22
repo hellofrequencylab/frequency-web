@@ -33,6 +33,7 @@ import { payoutsLive } from '@/lib/billing/connect'
 import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { blockingRange, type EntryRow } from '@/lib/calendar/entries'
+import { expandPencilSeries, seriesRule } from '@/lib/calendar/pencil-series'
 import { eventInstant } from '@/lib/time/zone'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
@@ -816,35 +817,74 @@ async function readOverrides(scheduleId: string | null): Promise<SlotOverride[]>
   }
 }
 
+/** The columns a blocking entry needs: its span and zone, whether it blocks, whether it is cancelled,
+ *  and (PROG-CAL13) its cadence and the days it deliberately skips. `id` dedupes the two reads. */
+type BlockRow = Pick<
+  EntryRow,
+  'id' | 'starts_at' | 'ends_at' | 'time_zone' | 'blocks_time' | 'status' | 'recurrence_rule' | 'exception_dates'
+>
+const BLOCK_COLS = 'id, starts_at, ends_at, time_zone, blocks_time, status, recurrence_rule, exception_dates'
+type BlockQuery = {
+  select: (c: string) => BlockQuery
+  eq: (c: string, v: unknown) => BlockQuery
+  gt: (c: string, v: string) => BlockQuery
+  lt: (c: string, v: string) => BlockQuery
+  not: (c: string, op: string, v: unknown) => BlockQuery
+  limit: (n: number) => PromiseLike<{ data: BlockRow[] | null; error: unknown }>
+}
+/** How far ahead a repeating blocking entry is expanded, in days: the ceiling of `bookingWindowDays`
+ *  (mapScheduleRow clamps it to 365), so every landing inside any Space's booking window is a block
+ *  whatever horizon the slot builder is handed. The generator never offers a slot past its own
+ *  horizon, so a landing beyond it costs nothing. */
+const BLOCK_HORIZON_DAYS = 365
+
 /** The Space's UNAVAILABLE time from its private calendar (ADR-1385): every entry that blocks time and
  *  is not cancelled, ending after `fromISO`, as true instant ranges. They join the booked ranges, so a
  *  slot overlapping one is not offered and cannot be booked; existing bookings are never touched.
  *  Service-role (a member choosing a slot cannot read the private layer); FAIL-SAFE to []. The table's
- *  stored ends_at is a wall clock that can sit up to a day off the true instant, hence the day of slack. */
+ *  stored ends_at is a wall clock that can sit up to a day off the true instant, hence the day of slack.
+ *
+ *  A REPEATING ENTRY IS ONE SERIES HERE TOO (PROG-CAL13). A series is one row anchored on its first
+ *  date, so a biweekly entry that started in January ends (on its columns) long before today and the
+ *  overlap read alone would never see it. A second read fetches every rule-carrying blocking row that
+ *  starts before the horizon, and lib/calendar/pencil-series.ts expands each through the same
+ *  generator the staff calendar draws from, honouring `exception_dates`: every landing from `fromISO`
+ *  to BLOCK_HORIZON_DAYS out is a block, and a deliberately skipped date is NOT. A rule-less row is
+ *  handed through untouched, exactly as before. */
 async function readCalendarBlocks(spaceId: string, fromISO: string): Promise<Array<{ startMs: number; endMs: number }>> {
   try {
-    const slack = new Date(new Date(fromISO).getTime() - 86400000).toISOString()
-    const db = createAdminClient() as unknown as {
-      from: (t: string) => {
-        select: (c: string) => {
-          eq: (c: string, v: unknown) => {
-            eq: (c: string, v: unknown) => {
-              gt: (c: string, v: string) => { limit: (n: number) => PromiseLike<{ data: EntryRow[] | null; error: unknown }> }
-            }
-          }
-        }
-      }
+    const fromMs = new Date(fromISO).getTime()
+    const slack = new Date(fromMs - 86400000).toISOString()
+    // The expansion window, in day keys: from the day of slack (an occurrence running into today still
+    // blocks) to the day after the horizon (exclusive), so the last day is fully covered.
+    const window = {
+      fromDay: slack.slice(0, 10),
+      toDay: new Date(fromMs + (BLOCK_HORIZON_DAYS + 1) * 86400000).toISOString().slice(0, 10),
     }
-    const { data, error } = await db
-      .from('space_calendar_entries')
-      .select('starts_at, ends_at, time_zone, blocks_time, status')
-      .eq('space_id', spaceId)
-      .eq('blocks_time', true)
-      .gt('ends_at', slack)
-      .limit(500)
-    if (error || !data) return []
-    return data
-      .map((r) => blockingRange(r, eventInstant))
+    const db = createAdminClient() as unknown as { from: (t: string) => BlockQuery }
+    const blocking = () =>
+      db.from('space_calendar_entries').select(BLOCK_COLS).eq('space_id', spaceId).eq('blocks_time', true)
+    const [overlap, repeating] = await Promise.all([
+      blocking().gt('ends_at', slack).limit(500),
+      blocking().not('recurrence_rule', 'is', null).lt('starts_at', `${window.toDay}T00:00:00Z`).limit(500),
+    ])
+    if (overlap.error || !overlap.data) return []
+    // The series read failing must not read as "no series", but the overlap rows are still right and
+    // a booking surface has to answer, so it degrades to the one-off blocks rather than to none.
+    const rows: BlockRow[] = [...overlap.data]
+    const seen = new Set(rows.map((r) => r.id))
+    for (const r of repeating.error || !repeating.data ? [] : repeating.data) {
+      if (seen.has(r.id)) continue
+      seen.add(r.id)
+      rows.push(r)
+    }
+    return rows
+      .flatMap((r) =>
+        seriesRule(r)
+          ? // EVERY LANDING BLOCKS, and a skipped day does not: the generator has already dropped it.
+            expandPencilSeries(r, window).map((o) => blockingRange({ ...r, starts_at: o.starts_at, ends_at: o.ends_at }, eventInstant))
+          : [blockingRange(r, eventInstant)],
+      )
       .filter((r): r is { startMs: number; endMs: number } => r !== null)
   } catch {
     return []

@@ -3,23 +3,12 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { buildVevent, icsEventInstants, renderCalendar } from '@/lib/events/ics'
+import { buildVevent, renderCalendar } from '@/lib/events/ics'
+import { entryFeedFields, type FeedEntryRow } from '@/lib/calendar/entry-feed'
 import { dueTaskToCalendarItem } from '@/lib/calendar/due-dates'
 import { listTasks } from '@/lib/crm/tasks'
 
 export const dynamic = 'force-dynamic'
-
-type EntryRow = {
-  id: string
-  title: string
-  notes: string | null
-  location: string | null
-  starts_at: string
-  ends_at: string
-  time_zone: string | null
-  status: string
-  plan_id: string | null
-}
 
 export async function GET(
   _req: NextRequest,
@@ -43,7 +32,7 @@ export async function GET(
 
   const { data: entries } = await admin
     .from('space_calendar_entries')
-    .select('id, title, notes, location, starts_at, ends_at, time_zone, status, plan_id')
+    .select('id, title, notes, location, starts_at, ends_at, time_zone, status, plan_id, recurrence_rule, exception_dates')
     .eq('space_id', row.space_id)
     .neq('status', 'cancelled')
     .limit(400)
@@ -51,19 +40,15 @@ export async function GET(
   const todos = await listTasks({ spaceId: row.space_id, limit: 200 })
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 
+  // A REPEATING PENCIL IS ONE VEVENT (PROG-CAL13): the anchor plus its RRULE and one EXDATE per
+  // skipped day, in the entry's zone, so the subscriber's calendar draws the series and keeps the gap.
+  // Every zone a series is stamped in needs a VTIMEZONE block; renderCalendar dedupes them.
+  const tzids: string[] = []
   const vevents = [
-    ...((entries as EntryRow[] | null) ?? []).map((ev) => {
-      const { start, end } = icsEventInstants(ev.starts_at, ev.ends_at, ev.time_zone)
-      return buildVevent({
-        uid: ev.id,
-        start,
-        end,
-        summary: ev.title,
-        url: `${appUrl}/spaces`,
-        location: ev.location,
-        description: ev.notes,
-        cancelled: ev.status === 'cancelled',
-      })
+    ...((entries as FeedEntryRow[] | null) ?? []).map((ev) => {
+      const fields = entryFeedFields(ev, `${appUrl}/spaces`)
+      if (fields.rrule && fields.tzid) tzids.push(fields.tzid)
+      return buildVevent(fields)
     }),
     ...todos
       .map((t) => (t.dueAt ? dueTaskToCalendarItem({ id: t.id, title: t.title, dueAt: t.dueAt, planId: t.planId }) : null))
@@ -87,6 +72,7 @@ export async function GET(
     name: 'Space team calendar',
     description: 'Private team dates. This feed is token-keyed and revocable.',
     vevents,
+    tzids,
   })
   return new NextResponse(body, {
     status: 200,

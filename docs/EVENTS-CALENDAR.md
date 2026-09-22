@@ -186,7 +186,8 @@ else. Its column list is the gate; it must never gain a detail column.
 **Bookings.** `readCalendarBlocks` in `lib/spaces/booking.ts` reads every non-cancelled entry with
 `blocks_time` and adds its true-instant range to the booked ranges the slot builder already honours. A
 slot that overlaps is neither offered nor bookable. An existing booking inside the range is never
-touched. The read is service-role and fails safe to no blocks.
+touched. The read is service-role and fails safe to no blocks. A repeating entry contributes every
+landing inside the horizon, minus its `exception_dates` (`PROG-CAL13`, below).
 
 **Admin Calendar views** ([ADR-1389](DECISIONS.md), [ADR-1450](DECISIONS.md), [ADR-1454](DECISIONS.md), [ADR-1456](DECISIONS.md), [ADR-1457](DECISIONS.md), [ADR-1458](DECISIONS.md), [ADR-1464](DECISIONS.md), [ADR-1467](DECISIONS.md)). A viewer who
 edits the Space (with the Calendar function), or platform staff previewing it, lands on **Admin**
@@ -277,7 +278,14 @@ occurrence appends that day to `exception_dates` (`date[]`, migration `202703450
 `skipPencilDate`, the generator drops every listed day and never re-bases the cadence around the gap, and
 the only way a date comes back is "Put it back" in the drawer, which removes it from the list. Nothing
 infers a skip from a gap. Pencils are never public, so the guest layer and the Unavailable projection are
-untouched; booking blocks and the private `.ics` feed still read the master row only.
+untouched. A repeating entry is one series everywhere else too (`PROG-CAL13`): `readCalendarBlocks` in
+`lib/spaces/booking.ts` fetches every rule-carrying blocking row that starts before its horizon (the
+365-day ceiling of `bookingWindowDays`) and expands it through `expandPencilSeries`, so every landing
+blocks a slot and a skipped date does not; and the private `.ics` feed emits a repeating entry as ONE
+VEVENT (`lib/calendar/entry-feed.ts`): the anchor in the TZID local form, its `RRULE` through
+`rruleForRepeat` (the emitter events already export with), and one `EXDATE` per skipped day at the
+master's wall clock in the entry's zone, so a subscriber's calendar draws the series itself and keeps
+the gap.
 
 **Day notes** (`PROG-CAL1`). `public.space_calendar_day_notes` holds short labels that describe a day
 rather than occupy it: a `weekly` note sets `weekdays` (0 is Sunday) within optional `starts_on` /
