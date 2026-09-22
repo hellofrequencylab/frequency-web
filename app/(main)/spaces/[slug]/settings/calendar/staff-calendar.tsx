@@ -24,7 +24,8 @@ import { createPenciledPlan, joinEntryToPlan, startPlanFromEntry } from './plan-
 import { PlanDrawer } from './plan-drawer'
 
 // THE STAFF CALENDAR (ADR-1385, ADR-1388). The Space's public events and its private layer on one grid,
-// with layer toggles, the vertical wheel paging months, and a drawer to add, edit and delete private
+// with layer toggles, the vertical wheel paging months where the host asks for it (the Calendar console,
+// PROG-CAL12; the page pages by its buttons only), and a drawer to add, edit and delete private
 // entries: events on their way (moving through Pencil, Planning, Production, Cancelled), Unavailable time
 // and Private entries. Writes go through ./entry-actions, which run on the caller's own session, so the
 // table's RLS is the lock.
@@ -89,6 +90,12 @@ export function StaffCalendar({
   plans = [],
   onOpenPlan,
   externalRefreshKey = 0,
+  wheelPaging = false,
+  month,
+  onMonthChange,
+  newEntryRequest = 0,
+  pencilButton = true,
+  fill = false,
 }: {
   slug: string
   spaceId: string
@@ -103,6 +110,19 @@ export function StaffCalendar({
   /** Bumped by a write that happened OUTSIDE this drawer (Vera's accepted proposal, PROG-CAL10),
    *  so a browsed month drops its fetched cache the same way a drawer save does. */
   externalRefreshKey?: number
+  /** Let the vertical wheel and a sideways swipe page months (PROG-CAL12). The page calendar leaves
+   *  this off, so it is navigated by its buttons only; the console turns it on. */
+  wheelPaging?: boolean
+  /** The host's month, when the host owns it (the console header and its agenda read the same one). */
+  month?: { year: number; month1: number }
+  onMonthChange?: (next: { year: number; month1: number }) => void
+  /** Bump to open a blank pencil on today, from a control outside this component (the console's
+   *  "Pencil it in" and its N key). Read at render, the same way `externalRefreshKey` is. */
+  newEntryRequest?: number
+  /** Render the "Pencil it in" button above the grid. Off when the host draws its own. */
+  pencilButton?: boolean
+  /** Stretch the grid to the host's height (the console). */
+  fill?: boolean
 }) {
   const router = useRouter()
   const [draft, setDraft] = useState<Draft | null>(null)
@@ -117,6 +137,17 @@ export function StaffCalendar({
     setDraft({ id: null, input: blankInput('pencil', dayKey) })
   }
   const today = () => new Date().toLocaleDateString('en-CA')
+  // An outside "Pencil it in" (the console header, its N key) lands here as a bumped counter, so the
+  // drawer opens from the same `blankInput` the button above the grid uses. Render-time compare, no
+  // effect cascade: the same shape EventCalendar uses for its `refreshKey`.
+  const [seenEntryRequest, setSeenEntryRequest] = useState(newEntryRequest)
+  if (seenEntryRequest !== newEntryRequest) {
+    setSeenEntryRequest(newEntryRequest)
+    if (canEdit) {
+      setError(null)
+      setDraft({ id: null, input: blankInput('pencil', today()) })
+    }
+  }
 
   const set = <K extends keyof EntryInput>(key: K, value: EntryInput[K]) =>
     setDraft((d) => (d ? { ...d, input: { ...d.input, [key]: value } } : d))
@@ -272,8 +303,8 @@ export function StaffCalendar({
   }
 
   return (
-    <div className="space-y-2">
-      {canEdit && (
+    <div className={fill ? 'flex h-full min-h-0 flex-col gap-2' : 'space-y-2'}>
+      {canEdit && pencilButton && (
         <div className="flex justify-end">
           <Button variant="secondary" size="sm" onClick={() => openNew(today())}>
             <Plus className="h-4 w-4" aria-hidden /> Pencil it in
@@ -285,7 +316,11 @@ export function StaffCalendar({
         initialYear={initialYear}
         initialMonth1={initialMonth1}
         loadMonth={loadMonth}
-        wheelPaging
+        wheelPaging={wheelPaging}
+        swipePaging={wheelPaging}
+        month={month}
+        onMonthChange={onMonthChange}
+        fill={fill}
         layers={LAYERS}
         refreshKey={refreshKey + externalRefreshKey}
         dayNotes={dayNotes}

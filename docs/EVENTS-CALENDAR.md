@@ -203,6 +203,8 @@ edits the Space (with the Calendar function), or platform staff previewing it, l
 
 Operators load Guest and Admin data once so a view switch does not remount. Unsigned members always get Guest and never hit `loadAdminCalendar`. The Pencil, Planning and Production lane helpers live in `lib/calendar/pm-console.ts`, which the List index reads; the Calendar tab Admin view is the guest-style month.
 
+**The Calendar console** (PROG-CAL12, owner ask 2026-09-22; `components/spaces/calendar-console.tsx`). The full-screen edit mode of the Space calendar. It is the same `CalendarWorkspace` panel set and the same Plan drawer, placed inside a viewport-filling `Dialog` (`align="full"`) instead of inline on the page: the shown month's agenda down the left, grouped by day, each row selecting the item the List view selects and carrying Open Plan; the controls across the top (month and the viewer's time zone, Prev / Today / Next, Guest preview and the view toggle, Pencil it in, Ask Vera collapsed, the shortcuts sheet, Close). Month, view, List selection and the open Plan live in the workspace, so they travel in and out unchanged. It opens only from the "Open the console" control beside the view toggle or the F key (never a scroll, hover, double click, resize, rotation or remembered preference; a one-line dismissable hint says so on the first visit), and it exits on Esc (the drawer first when it is up, then the console), the Close control, or the browser's Back button: opening pushes a history entry carrying `?console=1` beside `view`, `item` and `plan` (`adminViewHref`, `parseConsoleFlag`), so a pasted link reopens it on the same month, view and drawer. On the page the staff grid pages by its buttons only (the month picker, Prev / Today / Next): no wheel, no swipe. Inside the console the vertical wheel and a sideways swipe page months too, and Left / Right, T, N and ? are the console's keys. It is a takeover layout, not the Fullscreen API: `lib/fullscreen.ts` records the owner's decision (2026-06-22) that `Element.requestFullscreen` is never called.
+
 **Retired views (HYG-118, 2026-09-22).** Timeline (a linear month scale) and Projects (a kanban over `ENTRY_STAGES`) shipped as files that no route ever mounted; ADR-1503 had already called one of them orphaned. Both were deleted with their server action (`moveCalendarProjectStage`) and helpers. Their URL values are still accepted: `?view=timeline` resolves to Admin and `?view=projects` to Workflow, in the query and in the remembered-view cookie (`parseAdminCalendarView`, `parseRememberedCalendarView`), so an old bookmark lands somewhere real.
 
 **Loading a month.** The first month and every browsed month use the same public reader:
@@ -216,9 +218,11 @@ computes the visible grid window, including the spill days either side.
 **Navigation** (`components/events/event-calendar.tsx`, `components/events/use-month-gestures.ts`).
 
 - A sideways trackpad swipe, a sideways wheel, or a clearly horizontal touch swipe pages ONE month,
-  then locks until the input has been quiet for 250ms (at most 800ms), which swallows momentum.
-- A vertical wheel pages months only where the mount opts in (`vertical`): the staff calendar. A public
-  calendar lives inside a scrolling page and never captures the vertical wheel.
+  then locks until the input has been quiet for 250ms (at most 800ms), which swallows momentum. The
+  Space page's staff grid turns this off (`horizontal: false`): on the page it pages by its buttons only.
+- A vertical wheel pages months only where the mount opts in (`vertical`): the staff calendar inside
+  the Calendar console. A public calendar lives inside a scrolling page and never captures the vertical
+  wheel, and neither does the staff grid on the page.
 - PageUp and PageDown step a month; with Shift, a year. ArrowLeft and ArrowRight step a month when
   the calendar itself is focused. Escape closes the month-and-year jump. A month and year panel jumps
   anywhere. Today appears when the viewer is off the current month.

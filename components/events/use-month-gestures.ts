@@ -5,7 +5,8 @@ import { useEffect, useRef, type RefObject } from 'react'
 // MONTH GESTURES for the calendar grid (ADR-1385). One month per deliberate gesture, never a run of
 // months from a trackpad's momentum. The rules come from the research behind the ADR:
 //   · A sideways trackpad swipe or a sideways wheel pages months. It barely competes with page scroll,
-//     so it is on everywhere.
+//     so it is on by default. A mount can turn it off (`horizontal: false`): the Space page's staff grid
+//     pages by its buttons only (owner ruling, PROG-CAL12), and turns every gesture on in the console.
 //   · A VERTICAL wheel pages months only when the mount opts in (`vertical`, the staff calendar, where
 //     the grid is the work surface). A public calendar sits in a scrolling page, and a wheel that stops
 //     scrolling the page reads as a bug.
@@ -22,18 +23,26 @@ const SWIPE_MIN_PX = 50
 export function useMonthGestures(
   ref: RefObject<HTMLElement | null>,
   onStep: (delta: 1 | -1) => void,
-  opts: { vertical?: boolean; /** Re-attach when this changes (the surface re-mounted). */ remountKey?: unknown } = {},
+  opts: {
+    vertical?: boolean
+    /** The sideways wheel and the touch swipe. Default on; `false` leaves only the buttons and keys. */
+    horizontal?: boolean
+    /** Re-attach when this changes (the surface re-mounted). */
+    remountKey?: unknown
+  } = {},
 ) {
   const stepRef = useRef(onStep)
   useEffect(() => {
     stepRef.current = onStep
   }, [onStep])
   const vertical = !!opts.vertical
+  const horizontalOn = opts.horizontal !== false
   const remountKey = opts.remountKey
 
   useEffect(() => {
     const el = ref.current
     if (!el) return
+    if (!vertical && !horizontalOn) return // buttons only: nothing to listen for
     let acc = 0
     let lockedSince = 0
     let lastEventAt = 0
@@ -44,7 +53,7 @@ export function useMonthGestures(
       const dx = e.deltaX * unit
       const dy = e.deltaY * unit
       const horizontal = Math.abs(dx) > Math.abs(dy)
-      if (!horizontal && !vertical) return
+      if (horizontal ? !horizontalOn : !vertical) return
       const delta = horizontal ? dx : dy
       e.preventDefault()
       const now = performance.now()
@@ -90,12 +99,14 @@ export function useMonthGestures(
     }
 
     el.addEventListener('wheel', onWheel, { passive: false })
-    el.addEventListener('touchstart', onTouchStart, { passive: true })
-    el.addEventListener('touchend', onTouchEnd, { passive: true })
+    if (horizontalOn) {
+      el.addEventListener('touchstart', onTouchStart, { passive: true })
+      el.addEventListener('touchend', onTouchEnd, { passive: true })
+    }
     return () => {
       el.removeEventListener('wheel', onWheel)
       el.removeEventListener('touchstart', onTouchStart)
       el.removeEventListener('touchend', onTouchEnd)
     }
-  }, [ref, vertical, remountKey])
+  }, [ref, vertical, horizontalOn, remountKey])
 }

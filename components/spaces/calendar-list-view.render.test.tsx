@@ -29,6 +29,7 @@ function mount(node: React.ReactNode) {
 
 const sit: ListIndexItem = {
   key: 'sit|2026-09-22',
+  dayKey: '2026-09-22',
   title: 'New moon sit',
   whenLabel: 'Tue, 2026-09-22, 7:00 PM PDT',
   stageLabel: 'Production',

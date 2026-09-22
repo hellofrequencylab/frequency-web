@@ -63,8 +63,17 @@ export function Dialog({
    *    fields should not black out the screen. Added for `CreateModal` (ADR-1100), whose hand-rolled
    *    overlay was `items-end sm:items-center` — the shape at least four other hand-rolled sheets in the
    *    tree also reach for. NOTE the panel owns its own bottom safe-area padding here, because only the
-   *    panel knows which of its bands is last. */
-  align?: 'top' | 'center' | 'sheet' | 'bottom'
+   *    panel knows which of its bands is last.
+   *  - `full`: a viewport-filling takeover at EVERY width, never a card. Added for the Calendar console
+   *    (PROG-CAL12), where `sheet` was one breakpoint short: it fills the phone and then reverts to a
+   *    centred card at `sm+`, and a console that shrinks to a card on a laptop is not a console. The
+   *    overlay does not scroll (the panel's own regions do, each with its overscroll contained) and
+   *    it sits one tier LOWER (`z-[70]`) than the other aligns, so a Dialog opened from inside it (the
+   *    Plan drawer, the entry form, a shortcuts sheet) always paints on top whatever order the two
+   *    portals reached <body> in. This is the dvh takeover of lib/fullscreen.ts, not the Fullscreen
+   *    API: the owner ruled (2026-06-22) that Element.requestFullscreen is never called. The panel
+   *    supplies `h-full`. */
+  align?: 'top' | 'center' | 'sheet' | 'bottom' | 'full'
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
   // A stable identity for this instance, used to find it in the dialog stack (topmost check).
@@ -192,14 +201,17 @@ export function Dialog({
         // the opaque sheet while still scroll-locking the body and trapping focus off-screen — so uploading
         // or editing a Space image from mobile looked completely dead. Lightboxes (z-[100]), drawers
         // (z-[150]/[160]) and the impersonation banner (z-[200]) still sit above it, as intended.
-        'fixed inset-0 z-[80] flex justify-center overflow-y-auto bg-ink/60 backdrop-blur-sm',
+        'fixed inset-0 flex justify-center bg-ink/60 backdrop-blur-sm',
+        align === 'full' ? 'z-[70] overflow-hidden' : 'z-[80] overflow-y-auto',
         // `sheet` goes edge-to-edge on mobile (panel fills the viewport), then a centered card at sm+.
         //
         // SAFE AREAS BELONG HERE, not in each caller. This primitive padded by a flat 16px (and
         // `sheet` by nothing at all), so on a notched phone a sheet's controls sat on the home
         // indicator and a centred dialog's did too -- which is why report-dialog, invite-launcher
         // and capture-launcher each re-solved it by hand and each landed somewhere different.
-        align === 'sheet'
+        align === 'full'
+          ? 'items-stretch p-0 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]'
+          : align === 'sheet'
           ? 'items-stretch p-0 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:items-center sm:p-8'
           : align === 'bottom'
           ? // No bottom padding on mobile: the panel must TOUCH the edge or it is not a bottom sheet.
@@ -229,7 +241,13 @@ export function Dialog({
         tabIndex={-1}
         className={cn(
           'w-full outline-none motion-safe:animate-[slideUp_0.3s_ease-out]',
-          align === 'sheet' || align === 'bottom' ? 'sm:my-auto' : align === 'center' ? 'my-auto' : 'mt-[6vh]',
+          align === 'full'
+            ? 'min-h-0'
+            : align === 'sheet' || align === 'bottom'
+            ? 'sm:my-auto'
+            : align === 'center'
+            ? 'my-auto'
+            : 'mt-[6vh]',
           className,
         )}
       >

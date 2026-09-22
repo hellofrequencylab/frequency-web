@@ -45,7 +45,45 @@ afterEach(() => {
   if (container) container.remove()
   root = null
   container = null
+  try {
+    window.localStorage.removeItem('freq-cal-console-hint')
+  } catch {
+    // no store in this environment
+  }
 })
+
+function keydown(key: string, target: EventTarget = document.body) {
+  target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+}
+
+/** jsdom queues a history traversal (history.back) as a task, and not always the very next one:
+ *  wait for the URL to say the traversal landed, so a queued Back can never leak into the next test. */
+async function settleUrl(done: () => boolean) {
+  for (let i = 0; i < 50 && !done(); i++) await new Promise<void>((resolve) => setTimeout(resolve, 0))
+}
+
+function operatorProps(overrides: Partial<Parameters<typeof CalendarWorkspace>[0]> = {}) {
+  return {
+    slug: 'lab',
+    spaceId: 'space-1',
+    brandName: 'Frequency Lab',
+    adminAllowed: true,
+    canManage: true,
+    initialView: 'admin' as const,
+    initialListItem: null,
+    initialPlanId: null,
+    initialYear: 2026,
+    initialMonth1: 9,
+    guestEvents: [sit],
+    guestFirstUse: false,
+    adminEvents: [sit],
+    dayNotes: [],
+    plans: [plan],
+    subscribe: null,
+    loadGuestMonth: async () => [],
+    ...overrides,
+  }
+}
 
 function mount(node: React.ReactNode) {
   container = document.createElement('div')
@@ -163,6 +201,11 @@ describe('CalendarWorkspace', () => {
     expect(el.querySelector('[data-calendar-view="guest"]')).not.toBeNull()
     expect(el.querySelector('[aria-label="Calendar views"]')).toBeNull()
     expect(el.querySelector('[data-vera-calendar-box]')).toBeNull()
+    // The console is edit mode: a guest never sees its door, its hint, or the F key.
+    expect(el.querySelector('[data-calendar-console-open]')).toBeNull()
+    expect(el.querySelector('[data-calendar-console-hint]')).toBeNull()
+    act(() => keydown('f'))
+    expect(document.querySelector('[data-calendar-console]')).toBeNull()
   })
 
   it('opens the shared Plan drawer from List and synchronizes its URL state', async () => {
@@ -291,5 +334,148 @@ describe('CalendarWorkspace', () => {
       el.querySelectorAll('[aria-label="Calendar views"] button')[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(el.querySelector('[data-calendar-list-viewer]')?.textContent).toContain('Production')
+  })
+
+  // THE CALENDAR CONSOLE (PROG-CAL12).
+  it('opens the console from its control into the same panel set, with the month agenda by day', () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    const el = mount(<CalendarWorkspace {...operatorProps()} />)
+    const control = el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')
+    expect(control).not.toBeNull()
+    expect(control!.getAttribute('aria-label')).toBe('Open the console')
+    expect(control!.title).toContain('F')
+    expect(el.querySelector('[data-calendar-console-hint]')?.textContent).toContain('Press F')
+    expect(document.querySelector('[data-calendar-console]')).toBeNull()
+    // Never auto-enter: the hint is a sentence, not a door.
+    expect(document.querySelectorAll('[data-calendar-panel]').length).toBe(4)
+    act(() => control!.click())
+    const console_ = document.querySelector('[data-calendar-console]')
+    expect(console_).not.toBeNull()
+    expect(window.location.search).toContain('console=1')
+    // ONE calendar: the four panels moved into the console, nothing was mounted twice.
+    expect(document.querySelectorAll('[data-calendar-panel]').length).toBe(4)
+    expect(console_!.querySelectorAll('[data-calendar-panel]').length).toBe(4)
+    expect(document.querySelectorAll('[data-calendar-root]').length).toBe(2)
+    expect(console_!.querySelector('[data-calendar-admin-grid]')).not.toBeNull()
+    expect(el.querySelector('[data-calendar-admin-grid]')).toBeNull()
+    // The header carries the view toggle, the month, Pencil it in, Ask Vera and the two controls.
+    expect(console_!.querySelector('[aria-label="Calendar views"]')).not.toBeNull()
+    expect(console_!.textContent).toContain('September 2026')
+    expect([...console_!.querySelectorAll('button')].some((b) => b.textContent?.trim() === 'Pencil it in')).toBe(true)
+    expect(console_!.querySelector('[data-vera-calendar-box]')).not.toBeNull()
+    expect(console_!.querySelector('[aria-label="Close the console"]')).not.toBeNull()
+    expect(console_!.querySelector('[aria-label="Keyboard shortcuts"]')).not.toBeNull()
+    // The agenda: this month's items, grouped under a day heading, with Open Plan on a planned item.
+    const agenda = console_!.querySelector('[data-calendar-agenda]')!
+    expect(agenda.textContent).toContain('Tue, Sep 22')
+    expect(agenda.textContent).toContain('New moon sit')
+    expect([...agenda.querySelectorAll('button')].some((b) => b.textContent === 'Open Plan')).toBe(true)
+    expect(console_!.textContent).not.toContain('\u2014')
+    // The console's Open Plan opens the shared drawer on top.
+    act(() => {
+      ;[...agenda.querySelectorAll('button')].find((b) => b.textContent === 'Open Plan')!.click()
+    })
+    expect(document.querySelector('#plan-title')).not.toBeNull()
+    expect(window.location.search).toContain('plan=plan-1')
+    expect(window.location.search).toContain('console=1')
+  })
+
+  it('opens on F, pages the month with the arrow keys, and Esc closes it and returns focus to the control', async () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    const el = mount(<CalendarWorkspace {...operatorProps()} />)
+    const control = el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!
+    // F while typing is a letter, not a door.
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    act(() => keydown('f', input))
+    expect(document.querySelector('[data-calendar-console]')).toBeNull()
+    input.remove()
+    act(() => keydown('f'))
+    const console_ = document.querySelector('[data-calendar-console]')
+    expect(console_).not.toBeNull()
+    act(() => keydown('ArrowRight'))
+    expect(document.querySelector('[data-calendar-console]')!.textContent).toContain('October 2026')
+    expect(document.querySelector('[data-calendar-agenda]')!.textContent).toContain('Nothing on the calendar in October 2026')
+    act(() => keydown('t'))
+    // Today's month in this environment, whichever it is, is not what the fixture shows unless it is.
+    expect(document.querySelector('[data-calendar-console]')).not.toBeNull()
+    act(() => keydown('?'))
+    expect(document.querySelector('#calendar-console-keys')).not.toBeNull()
+    act(() => keydown('Escape'))
+    expect(document.querySelector('#calendar-console-keys')).toBeNull()
+    expect(document.querySelector('[data-calendar-console]')).not.toBeNull()
+    await act(async () => {
+      keydown('Escape')
+      await settleUrl(() => !window.location.search.includes('console='))
+    })
+    expect(document.querySelector('[data-calendar-console]')).toBeNull()
+    expect(document.activeElement).toBe(control)
+    expect(window.location.search).not.toContain('console=')
+    // The panels are back on the page, still one set.
+    expect(el.querySelectorAll('[data-calendar-panel]').length).toBe(4)
+    expect(el.querySelector('[data-calendar-admin-grid]')).not.toBeNull()
+  })
+
+  it('reopens from ?console=1 on the same view and drawer, and Esc closes the drawer before the console', async () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar?view=workflow&plan=plan-1&console=1')
+    mount(<CalendarWorkspace {...operatorProps({ initialView: 'workflow', initialPlanId: 'plan-1', initialConsole: true })} />)
+    const console_ = document.querySelector('[data-calendar-console]')
+    expect(console_).not.toBeNull()
+    expect(console_!.querySelector('[data-calendar-panel="workflow"]')?.getAttribute('aria-hidden')).toBe('false')
+    expect(document.querySelector('#plan-title')).not.toBeNull()
+    await act(async () => {
+      keydown('Escape')
+      await settleUrl(() => !window.location.search.includes('plan='))
+    })
+    expect(document.querySelector('#plan-title')).toBeNull()
+    expect(document.querySelector('[data-calendar-console]')).not.toBeNull()
+    // A pasted link has no console entry of its own on the stack, so this exit rewrites the URL in
+    // place rather than going Back.
+    await act(async () => {
+      keydown('Escape')
+      await settleUrl(() => !window.location.search.includes('console='))
+    })
+    expect(document.querySelector('[data-calendar-console]')).toBeNull()
+    expect(window.location.search).not.toContain('console=')
+    expect(window.location.search).toContain('view=workflow')
+  })
+
+  it('dismisses the first-visit hint into localStorage and never opens the console itself', () => {
+    const el = mount(<CalendarWorkspace {...operatorProps()} />)
+    const hint = el.querySelector('[data-calendar-console-hint]')
+    expect(hint).not.toBeNull()
+    act(() => hint!.querySelector<HTMLButtonElement>('[aria-label="Dismiss the hint"]')!.click())
+    expect(el.querySelector('[data-calendar-console-hint]')).toBeNull()
+    expect(window.localStorage.getItem('freq-cal-console-hint')).toBe('1')
+    expect(document.querySelector('[data-calendar-console]')).toBeNull()
+  })
+
+  it('never hands Next its own history state back, so a synced URL survives (regression, PROG-CAL12)', async () => {
+    // Next patches history.replaceState and RETURNS EARLY when the state it is given already carries
+    // __NA, without telling the router the URL moved; the router then restores its stale canonical
+    // URL and a freshly written ?plan= disappears. This pins the shape: every state we pass is our
+    // own marker or null, never the object Next left on the entry.
+    const seen: unknown[] = []
+    const original = window.history.replaceState.bind(window.history)
+    window.history.replaceState = ((data: unknown, unused: string, url?: string) => {
+      seen.push(data)
+      return original(data as never, unused, url)
+    }) as typeof window.history.replaceState
+    // What Next leaves on an entry it owns.
+    original({ __NA: true, __PRIVATE_NEXTJS_INTERNALS_TREE: ['x'] } as never, '', window.location.href)
+    try {
+      const el = mount(<CalendarWorkspace {...operatorProps({ initialView: 'admin' })} />)
+      const list = Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'List')!
+      await act(async () => {
+        list.click()
+        await Promise.resolve()
+      })
+      expect(seen.length).toBeGreaterThan(0)
+      for (const data of seen) {
+        expect(data == null || !(data as Record<string, unknown>).__NA).toBe(true)
+      }
+    } finally {
+      window.history.replaceState = original
+    }
   })
 })

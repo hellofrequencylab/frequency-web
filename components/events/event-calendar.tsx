@@ -89,12 +89,16 @@ export function EventCalendar({
   repeats,
   loadMonth,
   wheelPaging = false,
+  swipePaging = true,
   layers,
   onCreateAt,
   onEditEntry,
   refreshKey = 0,
   dayNotes,
   onPickDate,
+  month,
+  onMonthChange,
+  fill = false,
 }: {
   events: CalendarEvent[]
   initialYear: number
@@ -107,8 +111,11 @@ export function EventCalendar({
   onSelectEvent?: (ev: CalendarEvent) => void
   /** Fetch one month's items the page did not load. Absent = the page's own set is everything. */
   loadMonth?: (year: number, month1: number) => Promise<CalendarEvent[]>
-  /** Let the VERTICAL wheel page months over the grid (the staff calendar only). */
+  /** Let the VERTICAL wheel page months over the grid (the staff calendar in the console only). */
   wheelPaging?: boolean
+  /** Let a sideways wheel or a touch swipe page months. On everywhere but the Space page's staff
+   *  grid, which pages by its buttons only (PROG-CAL12). */
+  swipePaging?: boolean
   /** Layers the viewer can toggle. Shown when two or more are passed. */
   layers?: CalendarLayerKey[]
   /** Staff: start a new private entry on a day. */
@@ -121,8 +128,18 @@ export function EventCalendar({
   dayNotes?: DayNote[]
   /** Staff: keep this candidate date of a pencil and drop its siblings. */
   onPickDate?: (item: CalendarEvent) => void
+  /** CONTROLLED MONTH (PROG-CAL12). When the host passes `month`, the grid shows that month and reports
+   *  every step, jump and Today through `onMonthChange` instead of keeping the month itself, so a
+   *  header outside the grid (the Calendar console's Prev / Today / Next, its agenda, its keys) and
+   *  the grid always agree. Absent, the grid owns its month as it always has. */
+  month?: { year: number; month1: number }
+  onMonthChange?: (next: { year: number; month1: number }) => void
+  /** Stretch to the host's height: the week rows share whatever is left below the header, so a
+   *  full-viewport mount (the console) is a wall of days rather than a card with a gap under it. */
+  fill?: boolean
 }) {
-  const [{ year, month1 }, setMonth] = useState({ year: initialYear, month1: initialMonth1 })
+  const [internalMonth, setInternalMonth] = useState({ year: initialYear, month1: initialMonth1 })
+  const { year, month1 } = month ?? internalMonth
   const [selected, setSelected] = useState<CalendarEvent | null>(null)
   const [inViewerTz, setInViewerTz] = useState(false)
   const [view, setView] = useState<'grid' | 'list'>(initialView)
@@ -132,6 +149,14 @@ export function EventCalendar({
   const [hiddenLayers, setHiddenLayers] = useState<ReadonlySet<CalendarLayerKey>>(new Set())
   const [previewKey, setPreviewKey] = useState<string | null>(null)
   const [slide, setSlide] = useState<'next' | 'prev' | null>(null)
+  // The slide follows the month actually shown, whoever changed it (the arrows here, a swipe, or a
+  // controlling host), so a console key press eases in the same way a click on the grid's arrows does.
+  const shownKey = monthKey(year, month1)
+  const [seenKey, setSeenKey] = useState(shownKey)
+  if (seenKey !== shownKey) {
+    setSlide(shownKey > seenKey ? 'next' : 'prev')
+    setSeenKey(shownKey)
+  }
 
   // Months fetched through loadMonth, keyed 'YYYY-MM'. The page's initial month is already on hand.
   const [fetched, setFetched] = useState<ReadonlyMap<string, CalendarEvent[]>>(new Map())
@@ -159,11 +184,12 @@ export function EventCalendar({
     const localMonth1 = Number(local.slice(5, 7))
     if (!localYear || !localMonth1 || (localYear === initialYear && localMonth1 === initialMonth1)) return
     const timer = window.setTimeout(() => {
-      setMonth({ year: localYear, month1: localMonth1 })
+      setInternalMonth({ year: localYear, month1: localMonth1 })
+      onMonthChange?.({ year: localYear, month1: localMonth1 })
       setJumpYear(localYear)
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [initialYear, initialMonth1])
+  }, [initialYear, initialMonth1, onMonthChange])
 
   useEffect(() => {
     if (!loadMonth) return
@@ -204,17 +230,17 @@ export function EventCalendar({
   const todayMonth1 = Number(today.slice(5, 7))
   const onCurrentMonth = year === todayYear && month1 === todayMonth1
 
-  const goTo = useCallback((next: { year: number; month1: number }, dir?: 'next' | 'prev') => {
-    setMonth(next)
-    setSlide(dir ?? null)
-  }, [])
-  const step = useCallback(
-    (delta: number) => goTo(addMonth(year, month1, delta), delta > 0 ? 'next' : 'prev'),
-    [goTo, year, month1],
+  const goTo = useCallback(
+    (next: { year: number; month1: number }) => {
+      setInternalMonth(next)
+      onMonthChange?.(next)
+    },
+    [onMonthChange],
   )
+  const step = useCallback((delta: number) => goTo(addMonth(year, month1, delta)), [goTo, year, month1])
 
   const gridRef = useRef<HTMLDivElement>(null)
-  useMonthGestures(gridRef, step, { vertical: wheelPaging, remountKey: view })
+  useMonthGestures(gridRef, step, { vertical: wheelPaging, horizontal: swipePaging, remountKey: view })
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement
@@ -331,7 +357,10 @@ export function EventCalendar({
       data-calendar-root
       tabIndex={0}
       aria-label="Calendar"
-      className="@container rounded-card border border-border bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className={cn(
+        '@container rounded-card border border-border bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+        fill && 'flex h-full min-h-0 flex-col',
+      )}
       onKeyDown={onKeyDown}
     >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
@@ -563,16 +592,17 @@ export function EventCalendar({
 
           {/* The gesture surface stays mounted across months (its listeners live on it); the inner
               wrapper re-keys per month so the slide replays. */}
-          <div ref={gridRef} className="touch-pan-y overflow-hidden">
+          <div ref={gridRef} className={cn('touch-pan-y overflow-hidden', fill && 'flex min-h-0 flex-1 flex-col')}>
           <div
             key={monthKey(year, month1)}
             className={cn(
               slide === 'next' && 'motion-safe:animate-[calendarSlideNext_180ms_ease-out]',
               slide === 'prev' && 'motion-safe:animate-[calendarSlidePrev_180ms_ease-out]',
+              fill && 'flex min-h-0 flex-1 flex-col',
             )}
           >
             {weeks.map((week) => (
-              <div key={week[0].date} className="grid grid-cols-7 border-b border-border last:border-b-0">
+              <div key={week[0].date} className={cn('grid grid-cols-7 border-b border-border last:border-b-0', fill && 'flex-1')}>
                 {week.map((cell) => {
                   const dayEvents = byDay.get(cell.date) ?? []
                   const cancelled = dayEvents.filter((ev) => ev.isCancelled)

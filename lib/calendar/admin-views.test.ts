@@ -5,6 +5,7 @@ import {
   calendarViewCookieName,
   CALENDAR_ADMIN_VIEWS,
   parseAdminCalendarView,
+  parseConsoleFlag,
   parseRememberedCalendarView,
   parseTimelineMonth,
   resolveOperatorCalendarView,
@@ -62,6 +63,30 @@ describe('adminViewHref', () => {
     expect(adminViewHref('lab', 'workflow', { plan: 'plan-1' })).toBe(
       '/spaces/lab/calendar?view=workflow&plan=plan-1',
     )
+  })
+})
+
+describe('the console flag (PROG-CAL12)', () => {
+  it('rides beside view, item and plan, and round-trips through the parser', () => {
+    const href = adminViewHref('lab', 'list', { item: 'sit|2026-09-22', plan: 'plan-1', console: true })
+    expect(href).toBe('/spaces/lab/calendar?view=list&item=sit%7C2026-09-22&plan=plan-1&console=1')
+    const params = new URL(href, 'https://example.test').searchParams
+    expect(parseConsoleFlag(params.get('console'))).toBe(true)
+    expect(params.get('view')).toBe('list')
+    expect(params.get('plan')).toBe('plan-1')
+    expect(adminViewHref('lab', 'admin', { console: true })).toBe('/spaces/lab/calendar?console=1')
+  })
+
+  it('is absent from the URL unless it is on, and off for anything but 1 or true', () => {
+    expect(adminViewHref('lab', 'admin', { console: false })).toBe('/spaces/lab/calendar')
+    expect(adminViewHref('lab', 'workflow', { plan: 'plan-1', console: false })).toBe('/spaces/lab/calendar?view=workflow&plan=plan-1')
+    expect(parseConsoleFlag('1')).toBe(true)
+    expect(parseConsoleFlag('true')).toBe(true)
+    expect(parseConsoleFlag(['1', '0'])).toBe(true)
+    expect(parseConsoleFlag('0')).toBe(false)
+    expect(parseConsoleFlag('yes')).toBe(false)
+    expect(parseConsoleFlag(undefined)).toBe(false)
+    expect(parseConsoleFlag(null)).toBe(false)
   })
 })
 
