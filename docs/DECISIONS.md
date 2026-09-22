@@ -47673,3 +47673,21 @@ Also measured, and NOT built here: "progressive profiling spends the lead payloa
 **Consequences.** ✅ A guest who pays now sees, in order: the sign-in page with their address prefilled and the Journey as `next`; their inbox; the welcome. ✅ The receipt's button opens the Journey for a member and the sign-in door for a guest. ✅ A magic link opened in another browser lands on the welcome, not the feed. ✅ `PROG-GD5` closes on a `cmd` probe that measures all five consequences and was mutation-tested six ways. ⚠️ The welcome runs two writes on GET behind auth (settle, claim), the same shape as the ticket return; the receipt link itself (`/sign-in?next=…`) has no side effect, so a mail scanner's pre-click settles nothing. ⚠️ `/orders` is still a member page a signed-out click bounces to `/` for every non-Journey order; that is the general (main)-layout-versus-proxy shape and is out of this row's scope. Tests: `lib/journeys/sales-path.test.ts`, `lib/commerce/claim-guest-orders-on-sign-in.test.ts` (the landing), `lib/commerce/checkout.test.ts` (the guest success URL, bare placeholder), `lib/commerce/order-receipt.test.ts` (the Journey button), `app/auth/order-landing.test.ts` (precedence), `app/(main)/journeys/[slug]/welcome/welcome-page.test.ts` (settle-then-claim, the doors, no form).
 
 **Rows.** PROG-GD5 (closed). LIVE-450 (filed: the lead payload is stamped, never spent). LIVE-396 (unchanged; the door this lands).
+
+## ADR-1513: Two inert onboarding flags are deleted, and the walkthrough stays inactive (LIVE-260)
+
+**Status:** Accepted · 2026-09-21 · owner ruling · backlog `LIVE-260` · corroborated by `supabase/migrations/20270345007600_delete_the_two_inert_onboarding_flags.sql` and by `lib/platform-flags.test.ts`, which lists `lib/platform-flags.ts` as the only flag reader left
+
+**Context.** CORE-MODEL ([ADR-1294](DECISIONS.md)) step 7.3 said to turn the onboarding lights on by flipping `platform_flags.auto_popups_enabled` and `next_steps_enabled` and activating a walkthrough row. LIVE-240 then deleted the two engines those flags gated along with their readers, so the checklist and Vera's deck render unconditionally. The premise expired ([ADR-1082](DECISIONS.md)): there were no lights left to flip, only two rows that decide nothing and show in the admin console as switches. The stored `onboarding-next-steps` walkthrough is inactive with four slides, two tagged with criteria LIVE-259 retired; `lib/onboarding/steps.ts` now refuses such a funnel whole, so activating it could no longer truncate the checklist. An empty `new-walkthrough` draft sat beside it.
+
+**Decision.** The owner rules, 2026-09-21:
+
+1. **The two inert `platform_flags` rows are deleted** by migration, idempotently, with the six sibling keys the same seed inserted asserted intact.
+2. **`onboarding-next-steps` stays inactive.** The code default (photo, Circle, Event, host) is the model. Nothing is activated by this change.
+3. **The empty `new-walkthrough` draft is deleted only while it has zero slides.** A draft an operator has since authored is left alone.
+
+**Rejected.** Leaving the rows as harmless (a switch that does nothing is still a switch an operator can flip). Activating the walkthrough to make the ruling visible (the default already renders; the row's authored copy needs retagging first, which is an editor task, not a migration). Deleting `platform_flag_events` rows for the two keys (that is history; the live row was state).
+
+**Consequences.** `LIVE-260` closes. Its probe asserts the migration exists and deletes both keys, that it activates nothing, and that no non-test file under `app/`, `lib/` or `components/` names either key, read comment-blind, so a reintroduced reader fails the build before a missing row can decide anything.
+
+**Rows.** LIVE-260 (closed).
