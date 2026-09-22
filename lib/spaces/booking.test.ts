@@ -225,6 +225,97 @@ function profilesBuilder() {
   }
 }
 
+type CalendarEntryRow = {
+  id: string
+  space_id: string
+  starts_at: string
+  ends_at: string
+  time_zone: string
+  status: string
+  blocks_time: boolean
+  recurrence_rule: string | null
+  exception_dates: string[]
+}
+type ScheduleRow = {
+  id: string
+  space_id: string
+  timezone: string | null
+  buffer_before_minutes: number
+  buffer_after_minutes: number
+  min_notice_minutes: number
+  booking_window_days: number
+  active: boolean
+}
+const calendarDb: { entries: CalendarEntryRow[]; schedules: ScheduleRow[] } = { entries: [], schedules: [] }
+
+/** readCalendarBlocks' two reads: the overlap read (`gt ends_at`) and the series read (`not
+ *  recurrence_rule is null` + `lt starts_at`). Every filter is applied so the test proves a master that
+ *  ENDED before the window is fetched only because it carries a rule. */
+function calendarEntriesBuilder() {
+  const filters: { space_id?: string; blocks_time?: boolean; gtEnds?: string; ltStarts?: string; ruleNotNull?: boolean } = {}
+  const api = {
+    select() {
+      return api
+    },
+    eq(col: string, val: unknown) {
+      if (col === 'space_id') filters.space_id = val as string
+      if (col === 'blocks_time') filters.blocks_time = val as boolean
+      return api
+    },
+    gt(col: string, val: string) {
+      if (col === 'ends_at') filters.gtEnds = val
+      return api
+    },
+    lt(col: string, val: string) {
+      if (col === 'starts_at') filters.ltStarts = val
+      return api
+    },
+    not(col: string, op: string, val: unknown) {
+      if (col === 'recurrence_rule' && op === 'is' && val === null) filters.ruleNotNull = true
+      return api
+    },
+    limit() {
+      return api
+    },
+    then(resolve: (r: { data: CalendarEntryRow[] | null; error: null }) => unknown) {
+      const data = calendarDb.entries.filter(
+        (r) =>
+          r.space_id === filters.space_id &&
+          (filters.blocks_time === undefined || r.blocks_time === filters.blocks_time) &&
+          (filters.gtEnds === undefined || r.ends_at > filters.gtEnds) &&
+          (filters.ltStarts === undefined || r.starts_at < filters.ltStarts) &&
+          (!filters.ruleNotNull || r.recurrence_rule !== null),
+      )
+      return Promise.resolve(resolve({ data, error: null }))
+    },
+  }
+  return api
+}
+
+function schedulesBuilder() {
+  const filters: { space_id?: string } = {}
+  const api = {
+    select() {
+      return api
+    },
+    eq(col: string, val: unknown) {
+      if (col === 'space_id') filters.space_id = val as string
+      return api
+    },
+    order() {
+      return api
+    },
+    limit() {
+      return api
+    },
+    async maybeSingle() {
+      const data = calendarDb.schedules.find((r) => r.space_id === filters.space_id && r.active) ?? null
+      return { data, error: null }
+    },
+  }
+  return api
+}
+
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from(table: string) {
@@ -232,6 +323,8 @@ vi.mock('@/lib/supabase/admin', () => ({
       if (table === 'space_bookings') return bookingsBuilder()
       if (table === 'space_service_types') return serviceTypesBuilder()
       if (table === 'profiles') return profilesBuilder()
+      if (table === 'space_calendar_entries') return calendarEntriesBuilder()
+      if (table === 'space_availability_schedules') return schedulesBuilder()
       throw new Error(`unexpected table ${table}`)
     },
   }),
@@ -271,6 +364,8 @@ beforeEach(() => {
   db.inserts = []
   db.deletes = []
   db.failNextInsert = false
+  calendarDb.entries = []
+  calendarDb.schedules = []
 })
 
 // A reference "now": a fixed Tuesday so weekday math is deterministic.
@@ -530,6 +625,97 @@ describe('listOpenSlots (action)', () => {
 
   it('returns [] when the Space has no availability', async () => {
     expect(await listOpenSlots('space-1')).toEqual([])
+  })
+})
+
+describe('readCalendarBlocks expands a repeating blocking entry (PROG-CAL13)', () => {
+  // Tuesdays 10:00 to 12:00 UTC in half-hour slots, over a 60-day booking window, seen from the
+  // fixed Tuesday NOW (2026-06-23 09:00Z). Tuesdays in the window: 06-23, 06-30, ..., 08-18.
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(NOW)
+    db.availability.push({ id: 'a0', space_id: 'space-1', weekday: 2, start_minute: 600, end_minute: 720, slot_minutes: 30, timezone: 'UTC' })
+    calendarDb.schedules.push({
+      id: 'sched-1',
+      space_id: 'space-1',
+      timezone: null,
+      buffer_before_minutes: 0,
+      buffer_after_minutes: 0,
+      min_notice_minutes: 0,
+      booking_window_days: 60,
+      active: true,
+    })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  const entry = (over: Partial<CalendarEntryRow> = {}): CalendarEntryRow => ({
+    id: 'entry-1',
+    space_id: 'space-1',
+    // 10:00 to 11:00 on Tuesday 9 June, TWO WEEKS BEFORE the window: the master row itself has ended,
+    // so only the series read can find it.
+    starts_at: '2026-06-09T10:00:00.000Z',
+    ends_at: '2026-06-09T11:00:00.000Z',
+    time_zone: 'UTC',
+    status: 'confirmed',
+    blocks_time: true,
+    recurrence_rule: 'FREQ=WEEKLY;INTERVAL=2',
+    exception_dates: [],
+    ...over,
+  })
+  const offered = (slots: { startsAt: string }[], day: string, time: string) =>
+    slots.some((s) => s.startsAt === `${day}T${time}:00.000Z`)
+
+  it('blocks EVERY landing of a biweekly entry except the deliberately skipped one', async () => {
+    calendarDb.entries.push(entry({ exception_dates: ['2026-07-21'] }))
+    const slots = await listOpenSlots('space-1')
+    expect(slots.length).toBeGreaterThan(0)
+    // Landings inside the window: 06-23, 07-07, 07-21 (skipped), 08-04, 08-18. The 10:00 and 10:30
+    // slots fall inside the 10:00 to 11:00 block; 11:00 does not.
+    for (const day of ['2026-06-23', '2026-07-07', '2026-08-04', '2026-08-18']) {
+      expect(offered(slots, day, '10:00'), `${day} 10:00 should be blocked`).toBe(false)
+      expect(offered(slots, day, '10:30'), `${day} 10:30 should be blocked`).toBe(false)
+      expect(offered(slots, day, '11:00'), `${day} 11:00 should stay open`).toBe(true)
+    }
+    // THE STORED SKIP: the skipped landing is bookable, and the cadence is not re-based around it.
+    expect(offered(slots, '2026-07-21', '10:00')).toBe(true)
+    expect(offered(slots, '2026-07-21', '10:30')).toBe(true)
+    // The off weeks were never landings.
+    for (const day of ['2026-06-30', '2026-07-14', '2026-07-28', '2026-08-11']) {
+      expect(offered(slots, day, '10:00'), `${day} 10:00 should stay open`).toBe(true)
+    }
+  })
+
+  it('a rule-less blocking entry blocks its one date only, as before', async () => {
+    calendarDb.entries.push(entry({ starts_at: '2026-06-30T10:00:00.000Z', ends_at: '2026-06-30T11:00:00.000Z', recurrence_rule: null }))
+    const slots = await listOpenSlots('space-1')
+    expect(offered(slots, '2026-06-30', '10:00')).toBe(false)
+    expect(offered(slots, '2026-07-07', '10:00')).toBe(true)
+    expect(offered(slots, '2026-07-14', '10:00')).toBe(true)
+  })
+
+  it('a rule-less entry that already ended is not fetched, and a non-blocking series blocks nothing', async () => {
+    calendarDb.entries.push(entry({ id: 'ended', recurrence_rule: null }))
+    calendarDb.entries.push(entry({ id: 'soft', blocks_time: false }))
+    const slots = await listOpenSlots('space-1')
+    for (const day of ['2026-06-23', '2026-07-07', '2026-08-04']) expect(offered(slots, day, '10:00')).toBe(true)
+  })
+
+  it('a cancelled series blocks nothing', async () => {
+    calendarDb.entries.push(entry({ status: 'cancelled' }))
+    const slots = await listOpenSlots('space-1')
+    for (const day of ['2026-06-23', '2026-07-07', '2026-08-04']) expect(offered(slots, day, '10:00')).toBe(true)
+  })
+
+  it('createBooking refuses a slot on a landing and takes one on the skipped date', async () => {
+    calendarDb.entries.push(entry({ exception_dates: ['2026-07-21'] }))
+    const blocked = await createBooking('space-1', '2026-07-07T10:00:00.000Z')
+    expect('error' in blocked).toBe(true)
+    if ('error' in blocked) expect(blocked.error).toMatch(/too close|no longer available/i)
+    const taken = await createBooking('space-1', '2026-07-21T10:00:00.000Z')
+    expect('error' in taken).toBe(false)
   })
 })
 
