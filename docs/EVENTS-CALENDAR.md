@@ -190,18 +190,19 @@ touched. The read is service-role and fails safe to no blocks.
 
 **Admin Calendar views** ([ADR-1389](DECISIONS.md), [ADR-1450](DECISIONS.md), [ADR-1454](DECISIONS.md), [ADR-1456](DECISIONS.md), [ADR-1457](DECISIONS.md), [ADR-1458](DECISIONS.md), [ADR-1464](DECISIONS.md), [ADR-1467](DECISIONS.md)). A viewer who
 edits the Space (with the Calendar function), or platform staff previewing it, lands on **Admin**
-(or the last view in the per-Space cookie) and can switch five views from one segmented control
+(or the last view in the per-Space cookie) and can switch four views from one segmented control
 (`CalendarModeToggle`) inside `CalendarWorkspace`. The switch slides; it does not reload the page.
 
 | View | What it is |
 |---|---|
 | **Guest** | The existing public month (`guestLiveItems`). Live chips plus the C0 cancelled footer. Pencil and planning stay off. `?view=guest`. |
-| **Admin** | The same sliding month as Guest (`StaffCalendar` over `loadAdminCalendar`). Drafts, pencils, private entries, unpublished and internal dates Guest does not see. Not `CalendarPmConsole`. Stage lanes live on Projects. Default URL. |
+| **Admin** | The same sliding month as Guest (`StaffCalendar` over `loadAdminCalendar`). Drafts, pencils, private entries, unpublished and internal dates Guest does not see. The stage board is Workflow. Default URL. |
 | **List** | A condensed gathering index on the left. The right interior is the event control console: title with stage pill top-right, primary facts, share links, stats, Go to event. Not the Studio editor. `?view=list&item=`. |
-| **Timeline** | The month as a linear time scale (days on the X axis, one row per gathering). Not a 7-column month grid. `?view=timeline&y=&m=`. |
-| **Projects** | A kanban over `ENTRY_STAGES` (Pencil, Planning, Production, Cancelled). An event on its way moves stage through the existing entry write. No new table. `?view=projects`. |
+| **Workflow** | Every Plan, grouped by its production stage (`workflowBoard` over `PLAN_STAGE_TRANSITIONS`). A Plan moves stage through `transitionPlanStage`; "Open Plan" opens the same drawer Calendar and List open. `?view=workflow`. |
 
-Operators load Guest and Admin data once so a view switch does not remount. Unsigned members always get Guest and never hit `loadAdminCalendar`. Pencil, Planning, and Production lanes stay on `CalendarPmConsole` for tests; the Calendar tab Admin view is the guest-style month. Projects is the stage board.
+Operators load Guest and Admin data once so a view switch does not remount. Unsigned members always get Guest and never hit `loadAdminCalendar`. The Pencil, Planning and Production lane helpers live in `lib/calendar/pm-console.ts`, which the List index reads; the Calendar tab Admin view is the guest-style month.
+
+**Retired views (HYG-118, 2026-09-22).** Timeline (a linear month scale) and Projects (a kanban over `ENTRY_STAGES`) shipped as files that no route ever mounted; ADR-1503 had already called one of them orphaned. Both were deleted with their server action (`moveCalendarProjectStage`) and helpers. Their URL values are still accepted: `?view=timeline` resolves to Admin and `?view=projects` to Workflow, in the query and in the remembered-view cookie (`parseAdminCalendarView`, `parseRememberedCalendarView`), so an old bookmark lands somewhere real.
 
 **Loading a month.** The first month and every browsed month use the same public reader:
 `loadPublicSpaceWindow` (`lib/calendar/public-month.ts`), which composes `listSpaceCalendarEvents`,

@@ -6,7 +6,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
-import { candidateWrites, entryDaySpan, entryToInput, MAX_CANDIDATE_DATES, parseEntryInput, type EntryInput } from '@/lib/calendar/entries'
+import { candidateWrites, entryDaySpan, MAX_CANDIDATE_DATES, parseEntryInput, type EntryInput } from '@/lib/calendar/entries'
 import { parseDayNoteInput, type DayNoteInput } from '@/lib/calendar/day-notes'
 import { deleteDayNote, insertDayNote, listDayNotes, updateDayNote } from '@/lib/calendar/day-notes-store'
 import { listSpaceCalendarEvents } from '@/lib/events/store'
@@ -21,7 +21,6 @@ import {
   updateCalendarEntryRow,
 } from '@/lib/calendar/entries-store'
 import { monthGridWindow, safeMonth } from '@/lib/calendar/month-window'
-import { canAcceptProjectMove } from '@/lib/calendar/project-board'
 import { entryKind, entryStage } from '@/lib/calendar/registry'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import { listDueDateItems } from '@/lib/calendar/due-dates-store'
@@ -150,23 +149,6 @@ export async function pickPencilDate(slug: string, entryId: string): Promise<Act
   if ('error' in res) return fail(res.error)
   revalidate(slug)
   return ok()
-}
-
-/** Move an event on its way to another stage (Projects kanban). Reuses saveCalendarEntry. */
-export async function moveCalendarProjectStage(
-  slug: string,
-  entryId: string,
-  stage: string,
-): Promise<ActionResult<void>> {
-  const editor = await resolveEditor(slug)
-  if (!editor) return fail('You do not have access to this calendar.')
-  if (!UUID_RE.test(entryId)) return fail('That entry no longer exists.')
-  const current = await getCalendarEntryRow(editor.spaceId, entryId)
-  if (!current) return fail('That entry no longer exists.')
-  if (!canAcceptProjectMove(current.kind, stage)) {
-    return fail('Only an event on its way can change stage.')
-  }
-  return saveCalendarEntry(slug, entryId, { ...entryToInput(current), stage })
 }
 
 /** What the entry being edited would overlap: events on this Space's calendar and its other entries.

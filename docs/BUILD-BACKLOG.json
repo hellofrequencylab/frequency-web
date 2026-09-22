@@ -187,7 +187,9 @@
             "HYG-105",
             "LIVE-450",
             "HYG-115",
-            "LIVE-463"
+            "LIVE-463",
+            "HYG-120",
+            "HYG-121"
           ]
         },
         {
@@ -302,8 +304,7 @@
             "OWN-075",
             "LIVE-399",
             "OWN-077",
-            "HYG-109",
-            "OWN-081"
+            "HYG-109"
           ]
         }
       ],
@@ -15028,8 +15029,8 @@
       "detail": "Admin PM console lists pencil-stage gatherings as their own lane, not mixed into live chips. Candidate dates stay on the grid for the team. Guest never sees them (LIVE-419). After C1 (LIVE-415).\n\nWHAT SHIPPED. pencilLane (lib/calendar/pm-console.ts) is the Admin Pencil lane. CalendarPmConsole renders it above the mixed board. Planning and Production stay on that board until C3 and C4. StaffCalendar is still the date map, so candidate dates stay on the grid. Did not declare planningLane or productionLane. Did not fold Guest through guestLiveItems (LIVE-419).",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"components/spaces/calendar-pm-console.tsx\",\"utf8\");if(!s.includes(\"pencilLane\"))process.exit(1)'",
-        "note": "Passes when the PM console has a pencilLane. Written 2026-09-19."
+        "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"lib/calendar/pm-console.ts\",\"utf8\");if(!s.includes(\"pencilLane\"))process.exit(1)'",
+        "note": "Passes when the PM console has a pencilLane. Written 2026-09-19. Repointed 2026-09-22 (HYG-118): the lane helper this asserts is DEFINED in lib/calendar/pm-console.ts (live via lib/calendar/list-index.ts); components/spaces/calendar-pm-console.tsx only re-rendered it and was never mounted (ADR-1486), so the probe was reading a copy. The consequence is unchanged: the lane exists."
       },
       "closed": "2026-09-19"
     },
@@ -15047,8 +15048,8 @@
       "detail": "Admin PM console lists planning-stage gatherings as their own lane. After C2 (LIVE-416).\n\nWHAT SHIPPED. planningLane (lib/calendar/pm-console.ts) is the Admin Planning lane. CalendarPmConsole renders it above the mixed board, beside pencilLane (LIVE-416). Production stays on that board until C4. Did not declare productionLane. Did not fold Guest through guestLiveItems (LIVE-419).",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"components/spaces/calendar-pm-console.tsx\",\"utf8\");if(!s.includes(\"planningLane\"))process.exit(1)'",
-        "note": "Passes when the PM console has a planningLane. Written 2026-09-19."
+        "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"lib/calendar/pm-console.ts\",\"utf8\");if(!s.includes(\"planningLane\"))process.exit(1)'",
+        "note": "Passes when the PM console has a planningLane. Written 2026-09-19. Repointed 2026-09-22 (HYG-118): the lane helper this asserts is DEFINED in lib/calendar/pm-console.ts (live via lib/calendar/list-index.ts); components/spaces/calendar-pm-console.tsx only re-rendered it and was never mounted (ADR-1486), so the probe was reading a copy. The consequence is unchanged: the lane exists."
       },
       "closed": "2026-09-19"
     },
@@ -15066,8 +15067,8 @@
       "detail": "Admin PM console lists production-stage gatherings as their own lane. This is the live show the guest calendar already paints. After C3 (LIVE-417).\n\nWHAT SHIPPED. productionLane (lib/calendar/pm-console.ts) is the Admin Production lane. CalendarPmConsole renders it beside pencilLane and planningLane. Cancelled stays on the board. Did not fold Guest through guestLiveItems (LIVE-419).",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"components/spaces/calendar-pm-console.tsx\",\"utf8\");if(!s.includes(\"productionLane\"))process.exit(1)'",
-        "note": "Passes when the PM console has a productionLane. Written 2026-09-19."
+        "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"lib/calendar/pm-console.ts\",\"utf8\");if(!s.includes(\"productionLane\"))process.exit(1)'",
+        "note": "Passes when the PM console has a productionLane. Written 2026-09-19. Repointed 2026-09-22 (HYG-118): the lane helper this asserts is DEFINED in lib/calendar/pm-console.ts (live via lib/calendar/list-index.ts); components/spaces/calendar-pm-console.tsx only re-rendered it and was never mounted (ADR-1486), so the probe was reading a copy. The consequence is unchanged: the lane exists."
       },
       "closed": "2026-09-19"
     },
@@ -15951,7 +15952,7 @@
     {
       "id": "OWN-081",
       "title": "The e2e account cannot manage the Space PW_SPACE_SLUG names, so two operator surfaces have never been tested and one of them photographs a 404",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "owner",
       "size": "XS",
@@ -15959,13 +15960,14 @@
         "file": "test/e2e/operator-calendar.spec.ts",
         "ref": "skipUnlessOperator message; app-space-console baselines; LIVE-459; ADR-1522"
       },
-      "detail": "FILED 2026-09-22 out of LIVE-459, which only made the symptom honest. THE FACT: the account behind PW_MEMBER_EMAIL is not an owner, admin or editor of the Space named by the PW_SPACE_SLUG repo variable, and is not a platform janitor, so resolveSpaceManageAccess answers no on both arms.\n\nTWO CONSEQUENCES, both of which read as coverage today.\n\n(1) THE SPACE CONSOLE BASELINE IS A PHOTOGRAPH OF \"That space isn't here\". Opened and looked at on 2026-09-22: app-space-console--dawn-light-desktop.png shows the member shell, the left nav, the site footer, and in the content column the not-found card from app/(main)/spaces/not-found.tsx with its \"Back to spaces\" button. app/(main)/spaces/[slug]/manage/page.tsx calls notFound() for everyone who is not a manager, deliberately, so the route never leaks its existence. So the visual suite has been comparing two pictures of a 404 and reporting a green check for a surface it has never seen. That is the shape-not-truth failure this list names in four ADRs, arriving through the account rather than through a probe.\n\n(2) THE OPERATOR CALENDAR SUITE SKIPS. Since LIVE-459 the legacy-URL case skips with the cause named instead of failing; before it, it failed on every open pull request. Either way the operator calendar is unmeasured in a browser.\n\nTHE ASK, and it is one of two lines. Either grant the PW_MEMBER_EMAIL account owner, admin or editor on the Space PW_SPACE_SLUG names, or repoint PW_SPACE_SLUG at a Space that account already manages. The second is cheaper and needs no production write. Note that HYG-027 already moved this account to team_members 'admin' for the /admin role floor; per-Space management is a different axis and that grant did not touch it.\n\n⚠️ DO NOT CLOSE THIS BY LOOSENING THE GATE. Widening resolveSpaceManageAccess, or letting the console render for a non-manager, changes who can see a live console in order to suit a test. That was already rejected once on HYG-027 for /admin/crm and the reasoning is identical.\n\nCLOSES WHEN a capture taken after the grant photographs the Space console rather than the not-found card (open the PNG and look, per the rule this list keeps re-learning), and the operator calendar suite reports zero skips for this cause.",
+      "detail": "FILED 2026-09-22 out of LIVE-459, which only made the symptom honest. THE FACT: the account behind PW_MEMBER_EMAIL is not an owner, admin or editor of the Space named by the PW_SPACE_SLUG repo variable, and is not a platform janitor, so resolveSpaceManageAccess answers no on both arms.\n\nTWO CONSEQUENCES, both of which read as coverage today.\n\n(1) THE SPACE CONSOLE BASELINE IS A PHOTOGRAPH OF \"That space isn't here\". Opened and looked at on 2026-09-22: app-space-console--dawn-light-desktop.png shows the member shell, the left nav, the site footer, and in the content column the not-found card from app/(main)/spaces/not-found.tsx with its \"Back to spaces\" button. app/(main)/spaces/[slug]/manage/page.tsx calls notFound() for everyone who is not a manager, deliberately, so the route never leaks its existence. So the visual suite has been comparing two pictures of a 404 and reporting a green check for a surface it has never seen. That is the shape-not-truth failure this list names in four ADRs, arriving through the account rather than through a probe.\n\n(2) THE OPERATOR CALENDAR SUITE SKIPS. Since LIVE-459 the legacy-URL case skips with the cause named instead of failing; before it, it failed on every open pull request. Either way the operator calendar is unmeasured in a browser.\n\nTHE ASK, and it is one of two lines. Either grant the PW_MEMBER_EMAIL account owner, admin or editor on the Space PW_SPACE_SLUG names, or repoint PW_SPACE_SLUG at a Space that account already manages. The second is cheaper and needs no production write. Note that HYG-027 already moved this account to team_members 'admin' for the /admin role floor; per-Space management is a different axis and that grant did not touch it.\n\n⚠️ DO NOT CLOSE THIS BY LOOSENING THE GATE. Widening resolveSpaceManageAccess, or letting the console render for a non-manager, changes who can see a live console in order to suit a test. That was already rejected once on HYG-027 for /admin/crm and the reasoning is identical.\n\nCLOSES WHEN a capture taken after the grant photographs the Space console rather than the not-found card (open the PNG and look, per the rule this list keeps re-learning), and the operator calendar suite reports zero skips for this cause.\n\nCLOSED 2026-09-22 with the grant above. See the evidence block.",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-22: read the committed baseline rather than inferred from a count. test/e2e/__screenshots__/visual.spec.ts/app-space-console--dawn-light-desktop.png and its dark twin, captured in #2852 against a fresh preview, both render the not-found card headed \"That space isn't here\" with the \"Back to spaces\" button, plus the site footer, inside the member shell; the right rail is one magenta column (LIVE-457). The gate that produces it is app/(main)/spaces/[slug]/manage/page.tsx, which calls notFound() when neither canManage nor staffViewing holds. The same account fact is what components/spaces/calendar-workspace.tsx reacts to with its data-calendar-view=\"guest\" early return, which is why the operator calendar suite skips (LIVE-459). No production write was made to test this. Closes on a capture that photographs the console.",
+        "evidence": "2026-09-22: read the committed baseline rather than inferred from a count. test/e2e/__screenshots__/visual.spec.ts/app-space-console--dawn-light-desktop.png and its dark twin, captured in #2852 against a fresh preview, both render the not-found card headed \"That space isn't here\" with the \"Back to spaces\" button, plus the site footer, inside the member shell; the right rail is one magenta column (LIVE-457). The gate that produces it is app/(main)/spaces/[slug]/manage/page.tsx, which calls notFound() when neither canManage nor staffViewing holds. The same account fact is what components/spaces/calendar-workspace.tsx reacts to with its data-calendar-view=\"guest\" early return, which is why the operator calendar suite skips (LIVE-459). No production write was made to test this. Closes on a capture that photographs the console.\n\nCLOSED 2026-09-22. The account fact is fixed in the data: one space_members row, profile `frequency` (78d47bae-c4c8-4d1c-80a0-ac69aaf98ef8) -> role editor, status active, on the danieltyack Space (9f58e07e-8912-4c3e-8551-d15b275dc768), created 15:37:53Z. Least privilege: editor is the floor canEditProfile reads (lib/spaces/entitlements.ts:348), which is what both resolveSpaceManageAccess and the calendar's adminAllowed gate on.\n\nMEASURED, NOT INFERRED, three ways. (1) The committed app-space-console baselines went from 28-45 KB photographs of \"That space isn't here\" to 44-104 KB photographs of a real console in the 8cfbbe8 recapture on #2857. (2) test/e2e/operator-calendar.spec.ts stopped standing itself down: on pr-compare run 35749817453 (the first after the grant) its tests RAN and three failed on latent defects that had never been exercised (LIVE-462, HYG-119) — a skipped test banks defects at interest, and this row's closing is what presented the bill. (3) The space_plans rows those runs created carry created_by = the e2e profile, timestamped to the click.\n\nThe pollution that followed (27 'Browser pencil' Plans on the owner's real Space) was deleted at 17:12Z with the owner's authorization; the owner ruled against a throwaway Space (the e2e account is a profile, not a Space, and `frequency` is the ROOT Space) and for teardown in the suite instead, which is its own row.",
         "checked": "2026-09-22"
       },
-      "ownerAction": "account"
+      "ownerAction": "account",
+      "closed": "2026-09-22"
     },
     {
       "id": "HYG-115",
@@ -16096,6 +16098,61 @@
         "kind": "cmd",
         "cmd": "node scripts/hyg-119-probe.mjs",
         "note": "Consequence probe (scripts/hyg-119-probe.mjs). Extracts button labels from the files that render the operator calendar and cross-checks them against every non-exact `getByRole('button', {name})` in the spec. Two things it got wrong on the way to being right, both fixed and both worth recording: the label regex first used `[^>]*` for the attribute region, which stops at the `=>` of an onClick handler, so \"Pencil it in\" came back as \"openNew(today())}> Pencil it in\" (now the `(?:[^>=]|=>|=(?!>))` shape check-adoption.mjs uses for the same reason); and it first scanned all of components/spaces/, reporting \"Cancel booking\" and \"Cancel Run\" as collisions with the drawer's \"Cancel\" — buttons the test can never see. A probe that cries about things that cannot happen is one people learn to ignore, so the scan is scoped to the calendar surfaces. Mutation-tested: reverting one site to non-exact fails it by name and lists the colliding labels."
+      }
+    },
+    {
+      "id": "HYG-118",
+      "title": "Three calendar views no route ever mounted, their helpers, and the server action only they called",
+      "status": "done",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "M",
+      "closed": "2026-09-22",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1486 (\"do not mount CalendarPmConsole\"), ADR-1503 (timeline view orphaned); lane C1a of the 2026-09-22 calendar sprint"
+      },
+      "detail": "WHAT WAS DEAD, VERIFIED FILE BY FILE BEFORE ANYTHING WAS DELETED. components/spaces/calendar-projects-view.tsx, calendar-timeline-view.tsx and calendar-pm-console.tsx had no importer outside their own tests; the shell (calendar-workspace.tsx) mounts StaffCalendar, CalendarListView, CalendarWorkflowView and PlanDrawer and nothing else, and two tests actively asserted the PM console was NOT mounted. lib/calendar/month-timeline.ts was imported only by the dead timeline view, type-only. lib/calendar/project-board.ts was live on paper — canAcceptProjectMove reached entry-actions.ts:166 — but that call sits inside moveCalendarProjectStage, whose only caller was the dead Projects view. The chain was decided end to end (owner ruling 2026-09-22: delete the whole chain), not file by file: view, action, guard, helpers, and their six colocated tests. Eleven files.\n\nWHAT WAS NOT DEAD, AND WHY THIS ROW SAYS SO LOUDLY. lib/calendar/pm-console.ts. The first survey in this lane called it an orphan. It is imported by lib/calendar/list-index.ts and feeds the List view; only its lane helpers (pencilLane / planningLane / productionLane) lost their last renderer. It stays, and the probe fails if it goes.\n\nTHE LINKS AN IMPORT GRAPH CANNOT SEE, which is the class of link that made the first survey wrong: components/spaces/calendar-admin-views.test.ts readFileSync'd all five candidates by literal path, so deleting any one hard-failed two assertions about the live shell; rewritten around the live four-view set, and it now asserts the retired files are ABSENT. Three BUILD-BACKLOG probes (LIVE-416/417/418) readFileSync'd calendar-pm-console.tsx for lane names DEFINED in lib/calendar/pm-console.ts; repointed at the definition, consequence unchanged. calendar-workspace.render.test.tsx mocked the retired action; line removed.\n\nWHAT MUST KEEP WORKING, AND DOES. ?view=projects resolves to Workflow and ?view=timeline to Admin, in the query parser and the remembered-view cookie parser (lib/calendar/admin-views.ts), pinned by admin-views.test.ts and test/e2e/operator-calendar.spec.ts. An old bookmark lands somewhere real. Nothing reachable lost a capability: the drawer still moves an entry's stage; the Workflow board moves a Plan's.\n\nDOCS FOLLOW CODE. docs/EVENTS-CALENDAR.md claimed five operator views including Timeline and Projects, with live URLs, and never mentioned Workflow — the view that exists. Rewritten: four views, a Workflow row, and a retired-views note that explains where the old URL values go.\n\nThe adoption ratchet moved with the sweep (literal-radius 2154 -> 2152) and was re-frozen with this reason.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/hyg-118-probe.mjs",
+        "note": "Consequence probe (scripts/hyg-118-probe.mjs), five arms: the eleven files are gone (a file with no importers still costs fan-out); no live source references any retired name (a re-added caller is the chain returning); lib/calendar/pm-console.ts still exists AND is still imported by list-index.ts (the correction that matters — a sweep that 'finishes the job' by deleting it breaks List); ?view=projects -> workflow and ?view=timeline -> admin still parse in both the query and cookie parsers; and docs/EVENTS-CALENDAR.md says four views with a Workflow row and no Timeline/Projects row. Mutation-tested 2026-09-22 after the audit agent's read-only pass."
+      }
+    },
+    {
+      "id": "HYG-120",
+      "title": "The e2e suite leaves every Plan it creates in the owner’s real Space, and a Plan cannot be archived from its drawer",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "test/e2e/operator-calendar.spec.ts",
+        "ref": "owner ruling 2026-09-22 (teardown, not a throwaway Space); OWN-081 closing evidence"
+      },
+      "detail": "TWO FACTS, ONE FIX. (1) Three mutating tests in operator-calendar.spec.ts each pencil a date, which creates a space_plans row plus a space_calendar_entries row in the Space PW_SPACE_SLUG names — the owner's real danieltyack Space — and nothing removes them; the spec's own comment says the title is unique BECAUSE deleting only the date would leave its canonical Plan behind. 27 accumulated in one evening (deleted 17:12Z 2026-09-22, owner-authorized), all on today's date, which also stacked the month grid to the point that test 1's grid assertion could not find its own title. (2) There is no product path to remove a Plan: the drawer has Close and Save Plan, deleteCalendarEntry removes a date but not its Plan, and space_plans.archived_at exists (listSpacePlans filters `.is('archived_at', null)`, updateSpacePlan accepts it) with no action and no control that sets it. An operator who starts a Plan by mistake keeps it for ever.\n\nTHE OWNER RULED against a throwaway Space (the e2e account is a profile, not a Space; awesomepossum owns none; `frequency` is the ROOT Space and must never be the target) and FOR teardown.\n\nWHAT THIS ROW OWES. An archiveSpacePlan(slug, planId) action beside saveSpacePlan, gated by editorPlan(slug, planId) like every other Plan write, setting archived_at; an \"Archive Plan\" control in the drawer footer (dangerOutline, beside Close, with a confirm — it is reversible in SQL but not yet in the UI, say so in the copy per CONTENT-VOICE); and an afterEach in the spec that opens the Plan it created and archives it, so the harness Space ends each run as it began. The test-step env carries no service-role key (e2e.yml gives it only to the mint step), so teardown must go through the product, which is also why the product needs the door.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const a=fs.readFileSync(\"app/(main)/spaces/[slug]/settings/calendar/plan-actions.ts\",\"utf8\");if(!/export async function archiveSpacePlan\\(/.test(a))fail(\"no archiveSpacePlan action: a Plan started by mistake cannot be put away, and the e2e suite has nothing to tear down with\");const i=a.indexOf(\"export async function archiveSpacePlan(\");const j=a.indexOf(\"\\nexport async function \",i+10);const b=a.slice(i,j<0?a.length:j);if(!/editorPlan\\(slug, planId\\)|resolveEditor\\(slug\\)/.test(b))fail(\"archiveSpacePlan does not prove the caller may edit this Space before writing\");if(!/archived_at/.test(b))fail(\"archiveSpacePlan does not set archived_at, so listSpacePlans keeps listing the Plan\");const d=fs.readFileSync(\"app/(main)/spaces/[slug]/settings/calendar/plan-drawer.tsx\",\"utf8\");if(!/archiveSpacePlan/.test(d))fail(\"the drawer has no control that archives a Plan\");const s=fs.readFileSync(\"test/e2e/operator-calendar.spec.ts\",\"utf8\");if(!/afterEach\\(/.test(s)||!/Archive Plan/.test(s))fail(\"operator-calendar.spec.ts has no afterEach that archives the Plan it created, so every run leaves rows in the owner\\u2019s Space\")'",
+        "note": "Measures the door and the discipline: the action exists and is gated and sets archived_at; the drawer reaches it; and the spec tears down through it. Fails today on the first arm."
+      }
+    },
+    {
+      "id": "HYG-121",
+      "title": "/settings and the Space console photograph live account data, so their baselines drift on every membership or activity change",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "test/e2e/surfaces.ts",
+        "ref": "owner ruling 2026-09-22: mask the volatile parts, keep /settings full-page; pr-compare run 35749817453 (12 failures)"
+      },
+      "detail": "WHAT MOVED AND WHY. OWN-081's one space_members row changed two baselines twelve ways (2 routes × 2 themes × 3 viewports). /settings reads space_members for its mute list (app/(main)/settings/notifications/mute-subjects.ts:103-108); /spaces/<slug>/manage renders at all only for a manager, and its default Dashboard tab is stat tiles, journey stats, latest activity with relativeTime(), and Coming up — every band a database reading. The recapture in 8cfbbe8 fixed tonight; the next member, Plan or post moves them again.\n\nTHE OWNER RULED: mask the volatile parts, keep /settings full-page (its design surface genuinely extends below the fold, unlike /feed). One thing a mask cannot do, stated so the next red is read correctly: a NEW mute row on /settings is a page-HEIGHT change, and full-page capture reports a dimension mismatch before it counts a pixel. Membership changes are rare; that one is an accepted recapture.\n\nTHE SITES (each needs a VISUAL_MASK_SITES row in test/e2e/surfaces.ts or visual-masks.test.ts fails): settings-subject-mutes on the list wrapper at notifications/mutes-form.tsx:94 (not the card; header, intro and empty state are design); settings-my-memberships at memberships/section.tsx:38; settings-tips-received at billing/tips-received-section.tsx:26; settings-live-location-stamp at components/settings/live-location-toggle.tsx:95 (a plain-text clock the global `time` selector misses); space-console-stats at components/spaces/dashboard/space-dashboard.tsx:135 (tabular-nums, the box holds); space-console-profile-stats at :177; space-console-journey-stats at :215; space-console-activity on the <ul> at :330 and space-console-upcoming on the <ul> at :392 — the EmptyStates beside them stay unmasked, per the feed-stream rule. NOT to mask: the section chip nav, the Edit profile card, appearance (it IS the render-state axis), PageHeading on the console, HubSearch, HubNav.\n\nBaselines must be recaptured after the masks land: a mask changes the rendered pixels (ADR-1522).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const need=[[\"app/(main)/settings/notifications/mutes-form.tsx\",\"settings-subject-mutes\"],[\"components/spaces/dashboard/space-dashboard.tsx\",\"space-console-stats\"],[\"components/spaces/dashboard/space-dashboard.tsx\",\"space-console-activity\"],[\"components/spaces/dashboard/space-dashboard.tsx\",\"space-console-upcoming\"]];for(const [f,v] of need){const s=fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";if(!s.includes(\"data-visual-mask=\\\"\"+v+\"\\\"\"))fail(f+\" does not carry data-visual-mask=\\\"\"+v+\"\\\", so that live region still moves the baseline on every data change\")}const reg=fs.readFileSync(\"test/e2e/surfaces.ts\",\"utf8\");for(const [,v] of need){if(!new RegExp(\"value: [\\u0027\\\"]\"+v+\"[\\u0027\\\"]\").test(reg))fail(\"VISUAL_MASK_SITES has no row for \"+v+\", and visual-masks.test.ts fails a mask with no row\")}'",
+        "note": "Measures the four masks that carry the most drift (the mute list that OWN-081 moved, and the three console bands that move on every Plan, contact and event) at their exact sites, plus their registry rows. The remaining five are named in the detail and land in the same change; the probe asks for the load-bearing ones so it cannot be satisfied by masking something else. Fails today on the first arm."
       }
     }
   ]

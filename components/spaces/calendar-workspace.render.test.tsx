@@ -11,7 +11,6 @@ vi.mock('next/navigation', () => ({
 }))
 
 vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/entry-actions', () => ({
-  moveCalendarProjectStage: async () => ({}),
   loadStaffCalendarMonth: async () => [],
 }))
 
