@@ -51,7 +51,17 @@ export function Analytics({ data }: { data: AnalyticsData }) {
         {windowTotal === 0 ? (
           <p className="mt-3 py-6 text-center text-meta text-muted">No scans yet in this window.</p>
         ) : (
-          <div className="mt-4 h-28" role="img" aria-label="Daily scans, last 30 days">
+          // `data-visual-mask`: the 30-day window SLIDES, so every bar steps one column left at
+          // the UTC day boundary with no code between the two pictures. Measured: the two
+          // baseline captures of the same commit at 22:25Z on 2026-09-21 and 00:28Z on
+          // 2026-09-22 differ by 3533 px here, all of it inside this box. The box itself is
+          // `h-28` and fixed, so a mask holds it — see VISUAL_MASK_SITES.
+          <div
+            data-visual-mask="qr-daily-scans"
+            className="mt-4 h-28"
+            role="img"
+            aria-label="Daily scans, last 30 days"
+          >
             <WeekBars values={data.daily.map((d) => d.count)} height={112} />
           </div>
         )}
