@@ -829,6 +829,7 @@ lib/library/resolve-refs.ts
 lib/library/splash-registry.ts
 lib/library/store.ts
 lib/library/styles.ts
+lib/library/usage.ts
 lib/library/versions.ts
 lib/listing-seeder/claim.ts
 lib/listing-seeder/dedupe.ts

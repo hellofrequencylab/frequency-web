@@ -8,6 +8,7 @@ import { getRootSpaceId, insertSpaceLibraryImage, findLibraryAssetBySha256 } fro
 import { ingestImageBytes } from '@/lib/library/ingest'
 import { readImageDescriptor } from '@/lib/library/image-describe'
 import { classifyLoomUpload, fallbackExtFor, fallbackMimeFor } from '@/lib/library/upload-kinds'
+import { findLibraryAssetUsage } from '@/lib/library/usage'
 
 // ── THE LOOM STUDIO DOOR: every action on this route carries the PAGE's gate ─────────────────
 // `requireAdmin('janitor', { staff: 'marketing' })`, the same call `page.tsx` makes, because a
@@ -147,6 +148,20 @@ export async function archiveLibraryAsset(id: string): Promise<{ ok: true } | { 
 export async function deleteLibraryAsset(id: string): Promise<{ ok: true } | { error: string }> {
   await requireAdmin('janitor', { staff: 'marketing' })
   if (!id) return { error: 'Missing asset id.' }
+
+  // SAFE DELETE (PROG-D4, ADR-1502): an asset that a stored block document still references is not
+  // deleted; the operator archives it, or removes it from those pages first. Every ref would keep
+  // rendering its cached url after a delete (ADR-1130's fail-open), so the page would not go blank
+  // today, but the next Loom replace or rollback would have nothing to re-point and the "follows the
+  // new file" promise those actions make would break silently. A FAILED usage read also refuses:
+  // deleting what you could not prove unused is the destructive half of the ADR-979 bug.
+  const usage = await findLibraryAssetUsage(id)
+  if (!usage.ok) return { error: 'Could not check where this asset is used. Try again.' }
+  if (usage.pages > 0) {
+    return {
+      error: `This asset is placed on ${usage.pages} page${usage.pages === 1 ? '' : 's'}. Archive it instead, or remove it from those pages first.`,
+    }
+  }
 
   const admin = createAdminClient()
   const { data } = await admin
