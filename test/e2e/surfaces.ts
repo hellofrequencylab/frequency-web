@@ -371,12 +371,8 @@ export function publicSurfaces(): readonly Surface[] {
 const LIVE_DATA_PATHS: readonly string[] = []
 
 /**
- * THE RIGHT RAIL AS ONE BOX (2026-09-22; e2e-manual runs 93 and 94 are the measurement).
- *
- * ⚠️ THIS CHANGE CARRIES NO LEDGER ROW AND NO ADR YET, and that is a sequencing call rather than
- * an oversight: it landed in the pull request whose only job is to unblock five others, and a
- * touch on docs/BUILD-BACKLOG.json or docs/DECISIONS.md would have re-conflicted every one of
- * them. The row and the ADR are owed in the first change after that queue drains.
+ * THE RIGHT RAIL AS ONE BOX (LIVE-457, [ADR-1522](../../docs/DECISIONS.md); 2026-09-22,
+ * e2e-manual runs 93 and 94 are the measurement).
  *
  * 🔴 WHAT WAS MEASURED, because this is the fourth theory this failure attracted and the first
  * three were wrong. Two `update_baselines` captures of the SAME commit, two hours apart, against
@@ -1045,7 +1041,7 @@ export const VISUAL_MASK_SITES: readonly {
     kind: 'live',
     why: 'The board’s body, wherever it is hosted — the right rail since ADR-1362. Every pixel is a reading: the next gathering in the member’s Circles with its date chip and location, and the newest posts in their Spaces with authors and relative times. The rail’s own PanelSkeleton covers a capture that lands mid-stream, so the board no longer ships one of its own. The EMPTY state is deliberately unmasked, the same rule the feed stream’s empty pane follows.',
   },
-  // ── /admin/qr, the scans chart (2026-09-22) ─────────────────────────────────────────────
+  // ── /admin/qr, the scans chart (LIVE-458, ADR-1522, 2026-09-22) ─────────────────────────────────────────────
   // Found the same way the rail column was, and it is the reason to keep looking at the pairs
   // rather than only at what is currently red: two baseline captures of the SAME commit, at
   // 22:25Z and 00:28Z, changed eight PNGs. Six were the rail. These two were this chart, and it
