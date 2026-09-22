@@ -108,6 +108,42 @@ describe('what each audience sees', () => {
     expect(item.endDayKey).toBe('2026-12-26')
   })
 
+  it('draws a repeating Pencil once per landing in the window, minus its skips, each opening the master (PROG-CAL5)', async () => {
+    const { entryItemsInWindow } = await import('./entries')
+    const pencil = row({
+      ...base,
+      kind: 'pencil',
+      allDay: false,
+      startDate: '2026-10-05',
+      endDate: '2026-10-05',
+      startTime: '19:00',
+      endTime: '21:00',
+      repeat: 'FREQ=WEEKLY;INTERVAL=2',
+      exceptionDates: ['2026-11-02'],
+    })
+    expect(pencil.recurrence_rule).toBe('FREQ=WEEKLY;INTERVAL=2')
+    expect(pencil.exception_dates).toEqual(['2026-11-02'])
+    const items = entryItemsInWindow(pencil, fmt, { editable: true }, { fromDay: '2026-10-25', toDay: '2026-12-06' })
+    expect(items.map((i) => i.dayKey)).toEqual(['2026-11-16', '2026-11-30'])
+    expect(items.map((i) => i.slug)).toEqual([`entry-${pencil.id}-2026-11-16`, `entry-${pencil.id}-2026-11-30`])
+    for (const i of items) {
+      expect(i.entryId).toBe(pencil.id)
+      expect(i.occurrenceDate).toBe(i.dayKey)
+      // The drawer edits the SERIES: the form is the master's, anchored on the first date.
+      expect(i.entryInput?.startDate).toBe('2026-10-05')
+      expect(i.entryInput?.repeat).toBe('FREQ=WEEKLY;INTERVAL=2')
+      expect(i.entryInput?.exceptionDates).toEqual(['2026-11-02'])
+      expect(i.statusLabel).toContain('Every 2 weeks')
+    }
+    // A one-off is one item, and a non-Pencil never repeats however the form was filled.
+    expect(entryItemsInWindow(row(base), fmt, { editable: true }, { fromDay: '2026-12-01', toDay: '2027-01-01' })).toHaveLength(1)
+    expect(row({ ...base, repeat: 'FREQ=WEEKLY' }).recurrence_rule).toBeNull()
+    // Nothing in the round trip infers a skip or drops one.
+    const back = entryToInput(pencil)
+    expect(back.exceptionDates).toEqual(['2026-11-02'])
+    expect(row(back).exception_dates).toEqual(['2026-11-02'])
+  })
+
   it('gives the public a bare Unavailable span with no details', () => {
     const r = row(base)
     const item = publicUnavailableToItem(

@@ -22,6 +22,8 @@ const entry: EntryRow = {
   description: 'We gather at dusk.',
   plan_id: 'p1',
   published_event_id: null,
+  recurrence_rule: null,
+  exception_dates: [],
 }
 
 describe('productionPrefill', () => {

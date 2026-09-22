@@ -59,4 +59,8 @@ export interface CalendarEvent {
   entryInput?: EntryInput | null
   /** The Plan this calendar item belongs to. */
   planId?: string | null
+  /** REPEATING PENCILS (PROG-CAL5): when this item is one occurrence of a series, the YYYY-MM-DD day
+   *  it stands on. `entryId` and `entryInput` are the MASTER's, so Edit opens the series and "Skip
+   *  this date" appends this day to its exceptions. Absent on a one-off. */
+  occurrenceDate?: string | null
 }

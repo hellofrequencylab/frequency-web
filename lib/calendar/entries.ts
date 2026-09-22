@@ -1,4 +1,6 @@
 import type { CalendarEvent } from './item'
+import { repeatChipLabel } from '@/lib/events/repeat-rule'
+import { expandPencilSeries, normaliseExceptionDates, pencilRepeatRule, seriesRule, type SeriesWindow } from './pencil-series'
 import {
   entryKind,
   entryStage,
@@ -45,10 +47,16 @@ export interface EntryRow {
    *  one no longer renders as its own calendar item: the event card IS this date's card now, which
    *  is what ADR-1386's "rather than sitting beside it as a duplicate" asks for. */
   published_event_id: string | null
+  /** REPEATING PENCILS (PROG-CAL5): the RFC 5545 rule in the ADR-1299 dialect, or null for a
+   *  one-off. Parsed and expanded by lib/calendar/pencil-series.ts, never here. */
+  recurrence_rule: string | null
+  /** The day keys a repeating entry deliberately skips. Stored, never inferred: the generator drops
+   *  them and only a person removing one brings the date back. Empty on a one-off. */
+  exception_dates: string[]
 }
 
 export const ENTRY_COLS =
-  'id, space_id, kind, title, notes, location, all_day, starts_at, ends_at, time_zone, status, blocks_time, visibility, option_group, hold_expires_at, stage, description, plan_id, published_event_id'
+  'id, space_id, kind, title, notes, location, all_day, starts_at, ends_at, time_zone, status, blocks_time, visibility, option_group, hold_expires_at, stage, description, plan_id, published_event_id, recurrence_rule, exception_dates'
 
 /** The staff form, as plain strings and booleans (what a client sends). */
 export interface EntryInput {
@@ -78,6 +86,13 @@ export interface EntryInput {
   candidateDates?: string[] | null
   /** The Plan this date belongs to, if any. */
   planId?: string | null
+  /** Pencils: how the date repeats, as an RRULE value of the ADR-1299 subset ('' or null for a
+   *  one-off). The drawer writes one of PENCIL_REPEAT_CHOICES; anything the parser refuses is stored
+   *  as null rather than half-honoured. */
+  repeat?: string | null
+  /** Pencils: the YYYY-MM-DD days the series skips. Round-tripped by the drawer so an ordinary save
+   *  never wipes a skip; "Skip this date" appends through its own action. */
+  exceptionDates?: string[] | null
 }
 
 /** The columns a create or update writes. `option_group` is set by the action, never by the form,
@@ -176,6 +191,12 @@ export function parseEntryInput(input: EntryInput): { data: EntryWrite } | { err
         typeof input.planId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.planId)
           ? input.planId
           : null,
+      // Only an event on its way repeats (the drawer offers Repeats to nothing else), and the rule is
+      // stored in its canonical spelling so two equal rules compare equal as strings.
+      recurrence_rule: def.isPencil ? pencilRepeatRule(input.repeat) : null,
+      // Skips are kept even when the cadence is switched off: setting a series back to "Does not
+      // repeat" by mistake and then restoring it must not lose the dates a person chose to skip.
+      exception_dates: normaliseExceptionDates(input.exceptionDates),
     },
   }
 }
@@ -196,6 +217,9 @@ export function candidateWrites(first: EntryWrite, dates: readonly string[] | nu
       ...first,
       starts_at: new Date(new Date(first.starts_at).getTime() + shift).toISOString(),
       ends_at: new Date(new Date(first.ends_at).getTime() + shift).toISOString(),
+      // A candidate keeps the cadence (it is the same series, started elsewhere) and none of the
+      // skips, which belong to the dates of the first candidate's own run.
+      exception_dates: [],
     })
   }
   if (out.length + 1 > MAX_CANDIDATE_DATES) return { error: `A pencil can hold ${MAX_CANDIDATE_DATES} dates at most.` }
@@ -238,6 +262,8 @@ export function entryToInput(row: EntryRow): EntryInput {
     holdExpiresOn: row.hold_expires_at ? row.hold_expires_at.slice(0, 10) : '',
     candidateDates: [],
     planId: row.plan_id,
+    repeat: row.recurrence_rule ?? '',
+    exceptionDates: [...(row.exception_dates ?? [])],
   }
 }
 
@@ -313,6 +339,38 @@ export function entryToCalendarItem(
     description: row.description,
     planId: row.plan_id,
   }
+}
+
+/**
+ * THE ITEMS ONE ROW DRAWS IN A GRID WINDOW (PROG-CAL5). A one-off row is one item, as before. A
+ * repeating row is one item PER OCCURRENCE inside [fromDay, toDay), each carrying the MASTER's
+ * `entryId` and form (so Edit opens the series) plus its own `occurrenceDate` (so "Skip this date"
+ * knows which day it is standing on). Skipped days are already gone: the generator dropped them from
+ * `exception_dates`, and nothing here puts one back.
+ *
+ * Slugs are `entry-<id>-<day>` so two occurrences of one series never share a React key, and the
+ * label the grid shows says how often the series lands.
+ */
+export function entryItemsInWindow(
+  row: EntryRow,
+  fmt: EntryFormatters,
+  opts: { editable: boolean; now?: string },
+  window: SeriesWindow,
+): CalendarEvent[] {
+  const rule = seriesRule(row)
+  if (!rule) return [entryToCalendarItem(row, fmt, opts)]
+  const cadence = repeatChipLabel(rule, row.starts_at)
+  const master = opts.editable ? entryToInput(row) : null
+  return expandPencilSeries(row, window).map((o) => {
+    const item = entryToCalendarItem({ ...row, starts_at: o.starts_at, ends_at: o.ends_at }, fmt, opts)
+    return {
+      ...item,
+      slug: `entry-${row.id}-${o.dayKey}`,
+      statusLabel: [item.statusLabel, cadence].filter(Boolean).join(' · ') || null,
+      entryInput: master,
+      occurrenceDate: o.dayKey,
+    }
+  })
 }
 
 /** A public "Unavailable" span (from public.space_public_unavailable): times only, never details. */

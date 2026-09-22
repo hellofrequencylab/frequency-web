@@ -7,6 +7,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
 import { candidateWrites, entryDaySpan, MAX_CANDIDATE_DATES, parseEntryInput, type EntryInput } from '@/lib/calendar/entries'
+import { asDayKey, expandPencilSeries, seriesRule, withExceptionDate } from '@/lib/calendar/pencil-series'
 import { parseDayNoteInput, type DayNoteInput } from '@/lib/calendar/day-notes'
 import { deleteDayNote, insertDayNote, listDayNotes, updateDayNote } from '@/lib/calendar/day-notes-store'
 import { listSpaceCalendarEvents } from '@/lib/events/store'
@@ -18,6 +19,7 @@ import {
   keepPencilDateRow,
   listSpaceCalendarEntries,
   listStaffCalendarItems,
+  setEntryExceptionDates,
   updateCalendarEntryRow,
 } from '@/lib/calendar/entries-store'
 import { monthGridWindow, safeMonth } from '@/lib/calendar/month-window'
@@ -126,6 +128,25 @@ export async function deleteCalendarEntry(slug: string, entryId: string): Promis
   return ok()
 }
 
+/** SKIP ONE DATE OF A REPEATING PENCIL (PROG-CAL5). Appends the occurrence's day to the master's
+ *  `exception_dates`, and that is the whole write: the rule is untouched, the cadence carries on
+ *  around the gap, and the date comes back only when a person removes it in the drawer. Gated
+ *  exactly like deleteCalendarEntry: the caller edits this Space, and the table's RLS is the lock. */
+export async function skipPencilDate(slug: string, entryId: string, dayKey: string): Promise<ActionResult<void>> {
+  const editor = await resolveEditor(slug)
+  if (!editor) return fail('You do not have access to this calendar.')
+  if (!UUID_RE.test(entryId)) return fail('That entry no longer exists.')
+  const day = asDayKey(dayKey)
+  if (!day) return fail('Pick a valid date to skip.')
+  const current = await getCalendarEntryRow(editor.spaceId, entryId)
+  if (!current) return fail('That entry no longer exists.')
+  if (!seriesRule(current)) return fail('This date does not repeat, so there is nothing to skip. Delete it instead.')
+  const res = await setEntryExceptionDates(editor.spaceId, entryId, withExceptionDate(current.exception_dates, day))
+  if ('error' in res) return fail(res.error)
+  revalidate(slug)
+  return ok()
+}
+
 /** One month of private entries for the staff calendar. [] for anyone who cannot edit the Space. */
 export async function loadStaffCalendarMonth(slug: string, year: number, month1: number): Promise<CalendarEvent[]> {
   const month = safeMonth(year, month1)
@@ -179,7 +200,9 @@ export async function findEntryClashes(slug: string, entryId: string | null, inp
   }
   for (const en of entries) {
     if (en.id === entryId || en.status === 'cancelled') continue
-    if (overlaps(en.starts_at, en.ends_at)) out.push(`${entryStage(en.stage)?.label ?? entryKind(en.kind)?.label ?? 'Entry'}: ${en.title}`)
+    // A repeating entry competes for the time on each of its landings in these days, skips excluded.
+    const label = `${entryStage(en.stage)?.label ?? entryKind(en.kind)?.label ?? 'Entry'}: ${en.title}`
+    if (expandPencilSeries(en, { fromDay: dayKey, toDay }).some((o) => overlaps(o.starts_at, o.ends_at))) out.push(label)
   }
   return out.slice(0, 6)
 }

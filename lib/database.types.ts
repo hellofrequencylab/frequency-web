@@ -12817,6 +12817,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           ends_at: string
+          exception_dates: string[]
           hold_expires_at: string | null
           id: string
           kind: string
@@ -12845,6 +12846,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           ends_at: string
+          exception_dates?: string[]
           hold_expires_at?: string | null
           id?: string
           kind: string
@@ -12873,6 +12875,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           ends_at?: string
+          exception_dates?: string[]
           hold_expires_at?: string | null
           id?: string
           kind?: string
