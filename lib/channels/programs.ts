@@ -38,6 +38,9 @@ export interface ProgramChannel {
   /** The retire/pause switch (topical_channels.is_active). False = the Channel
    *  page 404s and startChapter refuses new Chapters (ADR-865). */
   isActive: boolean
+  /** The Space Plan this Program was produced from (topical_channels.space_plan_id, PROG-CAL9).
+   *  NULL for every Program built outside the Pencil / Planning / Production spine. */
+  spacePlanId: string | null
 }
 
 export interface ChapterSummary {
@@ -55,7 +58,8 @@ export interface ChapterSummary {
   distanceKm: number | null
 }
 
-const CHANNEL_COLS = 'id, name, slug, description, cover_image, category, owner_space_id, template_id, is_active'
+const CHANNEL_COLS =
+  'id, name, slug, description, cover_image, category, owner_space_id, template_id, is_active, space_plan_id'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -75,6 +79,7 @@ function rowToProgram(row: Record<string, unknown>): ProgramChannel {
     ownerSpaceId: row.owner_space_id == null ? null : String(row.owner_space_id),
     templateId: String(row.template_id),
     isActive: row.is_active !== false,
+    spacePlanId: row.space_plan_id == null ? null : String(row.space_plan_id),
   }
 }
 
@@ -341,6 +346,12 @@ export async function createSpaceProgram(input: {
   oneLiner: string
   sourceCircleId: string
   category?: string // one of the existing topical_channels categories; default 'business-support'
+  /** The Space Plan this Program is being produced from (PROG-CAL9). AUTHORIZED BY THE CALLER
+   *  (createSpaceProgramAction resolves it through getSpacePlan against the same spaceId), never
+   *  here: this layer runs on the service role and trusts its caller for authz, as its header says.
+   *  Goes on the INSERT, not in a follow-up write, so a Program either exists carrying its Plan or
+   *  does not exist, the same shape lib/journey-plans.ts createPlan settled for the Journey half. */
+  spacePlanId?: string | null
 }): Promise<{ channelId: string; channelSlug: string; templateId: string }> {
   const admin = db()
 
@@ -402,6 +413,7 @@ export async function createSpaceProgram(input: {
       template_id: templateId,
       is_active: true,
       display_order: 1000,
+      ...(input.spacePlanId ? { space_plan_id: input.spacePlanId } : {}),
     })
     .select('id, slug')
     .single()

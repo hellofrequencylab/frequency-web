@@ -133,11 +133,19 @@ describe('planTargetDef', () => {
   it('opens the Program on the page that exists, not the segment that has only a layout', () => {
     // The old href was /spaces/<id>/settings, where there is no page.tsx at all.
     const href = planTargetDef('program').createHref?.(opts)
-    expect(href).toBe('/spaces/royal-temple/settings/program')
+    expect(href).toBe('/spaces/royal-temple/settings/program?plan=p')
     expect(existsSync(join(ROOT, 'app/(main)/spaces/[slug]/settings/program/page.tsx'))).toBe(true)
-    // NO ?plan=. Nothing on that page reads one yet, and a parameter nothing reads is the same
-    // class of lie as an href nothing serves (PROG-CAL9 carries the Program's half of the seam).
-    expect(href).not.toContain('plan=')
+  })
+
+  it('carries the Plan to the Program door, and the Program page reads it (PROG-CAL9)', () => {
+    // PROG-CAL8 left this door WITHOUT the Plan on purpose: nothing on the page read one, and a
+    // parameter nothing reads is the same class of lie as an href nothing serves. Both ends are
+    // pinned here so neither can move without the other.
+    const href = planTargetDef('program').createHref?.(opts) ?? ''
+    expect(href).toMatch(/[?&]plan=p\b/)
+    const page = readFileSync(join(ROOT, 'app/(main)/spaces/[slug]/settings/program/page.tsx'), 'utf8')
+    expect(page).toMatch(/searchParams: Promise<\{[^}]*\bplan\?: string/)
+    expect(page).toContain('getSpacePlan(space.id, planId)')
   })
 
   it('carries the Plan to every door that has somewhere to put it', () => {

@@ -484,6 +484,36 @@ describe('createSpaceProgram', () => {
     expect(state.circles.find((c) => c.id === FLAGSHIP)!.topical_channel_id).toBe(res.channelId)
   })
 
+  it('stamps the Plan it was produced from on the channel INSERT, and only when given one (PROG-CAL9)', async () => {
+    const PLAN = 'eeeeeeee-0000-4000-a000-0000000plan1'
+    await createSpaceProgram({
+      spaceId: SPACE,
+      profileId: PROFILE,
+      name: 'Meld',
+      oneLiner: 'Community coworking.',
+      sourceCircleId: FLAGSHIP,
+      spacePlanId: PLAN,
+    })
+    const ch = state.inserts.find((i) => i.table === 'topical_channels')!.row
+    // On the insert itself, never a follow-up write that could fail silently.
+    expect(ch.space_plan_id).toBe(PLAN)
+    // The blueprint is not a Production of anything; the link belongs to the Channel only.
+    const tpl = state.inserts.find((i) => i.table === 'circle_templates')!.row
+    expect('space_plan_id' in tpl).toBe(false)
+  })
+
+  it('writes no space_plan_id at all when created outside the Plan spine', async () => {
+    await createSpaceProgram({
+      spaceId: SPACE,
+      profileId: PROFILE,
+      name: 'Meld',
+      oneLiner: 'Community coworking.',
+      sourceCircleId: FLAGSHIP,
+    })
+    const ch = state.inserts.find((i) => i.table === 'topical_channels')!.row
+    expect('space_plan_id' in ch).toBe(false)
+  })
+
   it('a source circle without a circle_profiles row gets sane empty fallbacks', async () => {
     state.circleProfiles = []
     await createSpaceProgram({

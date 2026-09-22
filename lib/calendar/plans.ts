@@ -225,12 +225,12 @@ export const PLAN_TARGET_DEFS: readonly PlanTargetDef[] = [
     // The Program owner surface, which is a real page at this exact segment — the old href pointed
     // at `/spaces/<id>/settings`, where there is only a layout and no page at all.
     //
-    // NO `?plan=`. Nothing on that page reads one yet, and a parameter nothing reads is the same
-    // class of lie as an href nothing serves: it would look wired in every diff and in the URL bar
-    // while the Plan stayed on Planning for ever. PROG-CAL9 carries the Program's half of the
-    // seam — a back-link column and the stage advance — and adds the param in the change that
-    // reads it.
-    createHref: ({ spaceSlug }) => `/spaces/${spaceSlug}/settings/program`,
+    // The Plan rides along (PROG-CAL9). It landed in the same change that made the page READ it:
+    // the page names the Plan on screen and threads it into createSpaceProgramAction, which
+    // authorizes it through getSpacePlan, writes `topical_channels.space_plan_id` on the insert and
+    // advances the Plan to Production. A parameter nothing read would have been the same class of
+    // lie as an href nothing serves, which is why PROG-CAL8 left it out.
+    createHref: ({ spaceSlug, planId }) => `/spaces/${spaceSlug}/settings/program?plan=${planId}`,
   },
   { kind: 'maintenance', label: 'Maintenance', createHref: null },
 ]
