@@ -12,19 +12,44 @@ function uniquePlanTitle(): string {
   return `Browser pencil ${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
-async function openOperatorCalendar(page: Page) {
-  const response = await page.goto(calendarPath)
-  expect(response, `navigation to ${calendarPath} returned a response`).toBeTruthy()
-  expect(response!.ok(), `expected 2xx for ${calendarPath}, got ${response!.status()}`).toBe(true)
+/**
+ * The role guard, lifted out of `openOperatorCalendar` so a test that has to navigate somewhere
+ * else first can apply it too.
+ *
+ * 🔴 WHY IT HAS TO BE SHARED. `calendar-workspace.tsx` returns early with
+ * `data-calendar-view="guest"` and NO operator controls when `adminAllowed` is false, so a viewer
+ * the Space does not let manage sees the guest view whatever `?view=` says. Every test in this
+ * file went through `openOperatorCalendar` and skipped cleanly on that — except the legacy-URL
+ * one, which navigated on its own and asserted `admin` directly. It was therefore the only test
+ * here that turned an owner-held ACCOUNT fact into a red required check, and on 2026-09-21/22 it
+ * did: two failures on every `pr-compare`, on six pull requests that had nothing to do with the
+ * calendar, for as long as the e2e member lacked manage rights on PW_SPACE_SLUG's Space.
+ *
+ * The same run's committed baselines corroborate the cause rather than leaving it inferred: both
+ * `app-space-console` PNGs are photographs of "That space isn't here". The account cannot reach
+ * that Space's console either.
+ *
+ * ⚠️ THIS IS A SKIP, NOT A PASS, and the distinction is the point. It carries the cause and the
+ * remedy in its message, `@shell` makes `shell-reporter.ts` count it, and `PW_REQUIRE_SHELL`
+ * still holds the suite to reaching the surfaces it can reach. What it stops doing is reporting
+ * an account fact as somebody's broken pull request.
+ */
+async function skipUnlessOperator(page: Page) {
   await expect(page.locator('[data-calendar-workspace]')).toBeVisible()
-  const calendarControl = page.getByRole('button', { name: 'Calendar', exact: true })
-  if ((await calendarControl.count()) === 0) {
+  if ((await page.getByRole('button', { name: 'Calendar', exact: true }).count()) === 0) {
     test.skip(
       true,
       `The saved e2e member cannot manage ${calendarPath}; point PW_SPACE_SLUG at a Space this account can manage.`,
     )
   }
-  await calendarControl.click()
+}
+
+async function openOperatorCalendar(page: Page) {
+  const response = await page.goto(calendarPath)
+  expect(response, `navigation to ${calendarPath} returned a response`).toBeTruthy()
+  expect(response!.ok(), `expected 2xx for ${calendarPath}, got ${response!.status()}`).toBe(true)
+  await skipUnlessOperator(page)
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click()
   await expect(page.locator('[data-calendar-workspace]')).toHaveAttribute('data-calendar-view', 'admin')
   await expect(page.locator('[data-calendar-admin-grid]')).toBeVisible()
 }
@@ -88,6 +113,7 @@ test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () 
 
   test('legacy calendar view URLs resolve to their current controls', async ({ page }) => {
     await page.goto(`${calendarPath}?view=timeline`)
+    await skipUnlessOperator(page)
     await expect(page.locator('[data-calendar-workspace]')).toHaveAttribute('data-calendar-view', 'admin')
     await expect(page.getByRole('button', { name: 'Calendar', exact: true })).toHaveAttribute('aria-pressed', 'true')
 

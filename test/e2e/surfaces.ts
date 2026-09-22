@@ -371,6 +371,58 @@ export function publicSurfaces(): readonly Surface[] {
 const LIVE_DATA_PATHS: readonly string[] = []
 
 /**
+ * THE RIGHT RAIL AS ONE BOX (2026-09-22; e2e-manual runs 93 and 94 are the measurement).
+ *
+ * ⚠️ THIS CHANGE CARRIES NO LEDGER ROW AND NO ADR YET, and that is a sequencing call rather than
+ * an oversight: it landed in the pull request whose only job is to unblock five others, and a
+ * touch on docs/BUILD-BACKLOG.json or docs/DECISIONS.md would have re-conflicted every one of
+ * them. The row and the ADR are owed in the first change after that queue drains.
+ *
+ * 🔴 WHAT WAS MEASURED, because this is the fourth theory this failure attracted and the first
+ * three were wrong. Two `update_baselines` captures of the SAME commit, two hours apart, against
+ * two previews (runs 93 and 94). Exactly eight PNGs changed, and six of them are the six that
+ * `pr-compare` fails: /settings, /nearby and the Space console at desktop in both modes. Every
+ * differing pixel in all six sits in `x: 940..1245` — the rail column, nothing else on the page.
+ * The counts match what pr-compare reports to within a rounding error (/nearby 49266 against
+ * 49266; /settings 57396 against 57343; the console 8130 against 8077).
+ *
+ * WHAT MOVES. The masked panel blocks, measured down the rail on /settings:
+ *
+ *   run 93   242-440  467-567  593-799(207)  802-927  953-1234  1260-1530
+ *   run 94   242-440  467-567  593-718(126)  744-869  896-1176  1203-1473
+ *
+ * One panel is 207px in one capture and 126px in the next. Everything below it shifts up 57px.
+ * `/nearby` shows the same thing on a different panel (490 -> 433). These are live lists — the
+ * next gathering in the member's Circles, the newest posts in their Spaces (see the
+ * `community-panel` entry in VISUAL_MASK_SITES) — and a list with one fewer row is a shorter box.
+ *
+ * ⚠️ SO EVERY REMEDY THAT WAS REACHED FOR FIRST IS RULED OUT BY THE MEASUREMENT, and they are
+ * named here so nobody reaches for them again:
+ *   · `viewportOnly` — the Space console ALREADY carries it and fails anyway; the drift is at
+ *     y 719..799, inside the first screen. It is not a page-height failure: not one of the six
+ *     is a dimension mismatch. Playwright would have said so before counting a pixel.
+ *   · A COLOUR regression — ruled out by the two captures differing with no code between them.
+ *   · RECAPTURING — run 94 is that experiment. It moved the baseline to the other sample and
+ *     changed nothing, because `update_baselines` commits, the commit builds a new preview, and
+ *     the comparison is never against the deployment the picture came from.
+ *   · Masking each panel — already done (`rail-panel`), and it is why the rail is already a
+ *     column of magenta in every committed baseline. A mask paints a box and moves nothing.
+ *
+ * WHAT THIS DOES INSTEAD. One mask over the rail's `<aside data-rail-column>`, which is a flex
+ * child stretched to the content column's height — so its BOX is stable while its children
+ * resize inside it. The cost is stated rather than hidden and it is genuinely small: every panel
+ * in that column was already masked, so the pixels given up are the ~26px gaps between magenta
+ * rectangles, the rail's own ground, and the two static buttons at its head (Report a bug,
+ * Invite a friend) on these three surfaces.
+ *
+ * 🔴 `/feed` DELIBERATELY DOES NOT GET THIS. Its rail did not move between the two captures (it
+ * is not among the eight changed PNGs — `railFor('/feed')` plans different panels), so it still
+ * photographs the rail head for real. Per-surface and measured, the way `/discover` was not:
+ * when a fourth surface starts drifting, it joins this list with its own reading attached.
+ */
+const RAIL_COLUMN_MASK: readonly string[] = ['[data-rail-column]']
+
+/**
  * The member-shell surfaces (Lift 6a's "app trio" + the Space console).
  *
  * Sign-in is magic-link only (app/sign-in/actions.ts → signInWithOtp), so there is no
@@ -423,7 +475,7 @@ export function appSurfaces(
     // greeting is a few pixels wider than the title block, so the h1 may take a third line
     // between 12:00 and 18:00 Pacific. None of those is a mask's to fix.
     { path: '/feed', slug: 'app-feed', audience: 'member', viewportOnly: true },
-    { path: '/settings', slug: 'app-settings', audience: 'member' },
+    { path: '/settings', slug: 'app-settings', audience: 'member', masks: RAIL_COLUMN_MASK },
     // Around You. Listed KNOWING it will SKIP until the seeded member account and its three repo
     // secrets exist (UX-MATURITY-PLAN lift 6a, an owner action), and that is the point rather than
     // an oversight: a listed-but-skipping surface is NAMED in the shell reporter's `unphotographed`
@@ -478,7 +530,7 @@ export function appSurfaces(
     // rendered band in a real browser (it is what caught the `aria-hidden` focus trap the first
     // version of this header shipped with). What is genuinely unmeasured is the band's APPEARANCE,
     // and an owner's eye on the Vercel preview is the check for it.
-    { path: '/nearby', slug: 'app-nearby', audience: 'member' },
+    { path: '/nearby', slug: 'app-nearby', audience: 'member', masks: RAIL_COLUMN_MASK },
   ]
   if (roomPath) {
     surfaces.push({ path: roomPath, slug: 'app-room', audience: 'member' })
@@ -499,6 +551,7 @@ export function appSurfaces(
       slug: 'app-space-console',
       audience: 'member',
       viewportOnly: true,
+      masks: RAIL_COLUMN_MASK,
     })
   }
   return surfaces
@@ -991,6 +1044,26 @@ export const VISUAL_MASK_SITES: readonly {
     file: 'components/feed/community-board.tsx',
     kind: 'live',
     why: 'The board’s body, wherever it is hosted — the right rail since ADR-1362. Every pixel is a reading: the next gathering in the member’s Circles with its date chip and location, and the newest posts in their Spaces with authors and relative times. The rail’s own PanelSkeleton covers a capture that lands mid-stream, so the board no longer ships one of its own. The EMPTY state is deliberately unmasked, the same rule the feed stream’s empty pane follows.',
+  },
+  // ── /admin/qr, the scans chart (2026-09-22) ─────────────────────────────────────────────
+  // Found the same way the rail column was, and it is the reason to keep looking at the pairs
+  // rather than only at what is currently red: two baseline captures of the SAME commit, at
+  // 22:25Z and 00:28Z, changed eight PNGs. Six were the rail. These two were this chart, and it
+  // was NOT failing pr-compare — it would have started at the next UTC midnight, on somebody
+  // else's pull request.
+  //
+  // ⚠️ WHAT THIS DOES NOT COVER, so the next failure here is read correctly: the four StatCards
+  // above the chart are live tallies too (total scans, unique members, NFC taps, the 30-day
+  // count) and they are deliberately NOT masked — they did not move in the measurement, and this
+  // file's rule is to mask what was measured rather than everything that could move. A digit
+  // changing in those cards is the next candidate and it lands here with its own reading. And if
+  // the window goes from zero scans to some, the section swaps a one-line empty state for a
+  // 112px chart: that is a HEIGHT, and no mask holds a height.
+  {
+    value: 'qr-daily-scans',
+    file: 'app/(main)/admin/qr/analytics.tsx',
+    kind: 'live',
+    why: 'The daily scans bar chart. The 30-day window slides, so every bar steps one column left at the UTC day boundary with no code between two pictures — 3533 differing pixels across one midnight. The box is `h-28` and fixed, so the mask holds it.',
   },
 ]
 
