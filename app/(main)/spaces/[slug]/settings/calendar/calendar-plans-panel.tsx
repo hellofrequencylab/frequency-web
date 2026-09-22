@@ -46,7 +46,7 @@ export function CalendarPlansPanel({
       <p className="text-body-sm text-muted">
         A Plan is the working record behind dates on their way. Someday Plans with no dates live here too.
       </p>
-      <PlanBoard spaceId={spaceId} plans={plans} pencilByPlan={pencilByPlan} onOpen={setOpenPlan} />
+      <PlanBoard spaceId={spaceId} spaceSlug={slug} plans={plans} pencilByPlan={pencilByPlan} onOpen={setOpenPlan} />
       <div className="flex flex-wrap gap-2">
         <Input
           aria-label="New Plan title"

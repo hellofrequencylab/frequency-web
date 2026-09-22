@@ -6,16 +6,20 @@ import { planTargetDef } from '@/lib/calendar/plans'
 
 const COLS = PLAN_STAGES.map((stage) => ({
   stage,
-  label: stage === 'plan' ? 'Plan' : stage === 'pencil' ? 'Pencil' : 'Production',
+  label: stage === 'plan' ? 'Planning' : stage === 'pencil' ? 'Pencil' : 'Production',
 }))
 
 export function PlanBoard({
   spaceId,
+  spaceSlug,
   plans,
   pencilByPlan,
   onOpen,
 }: {
+  /** Both names for the Space: each target's door resolves the one its destination reads, and
+   *  handing every door the id is what left the Journey and Program doors dead (PROG-CAL8). */
   spaceId: string
+  spaceSlug: string
   plans: SpacePlan[]
   /** The date each Plan opens its Production from (PROG-CAL3). Without it the href carried no
    *  `pencil=` and `productionPrefill` never ran: the Spark opened holding a title and nothing
@@ -34,6 +38,7 @@ export function PlanBoard({
               .map((plan) => {
                 const href = planTargetDef(plan.targetKind).createHref?.({
                   spaceId,
+                  spaceSlug,
                   planId: plan.id,
                   entryId: pencilByPlan?.[plan.id],
                 })

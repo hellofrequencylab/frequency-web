@@ -54,6 +54,27 @@ async function openOperatorCalendar(page: Page) {
   await expect(page.locator('[data-calendar-admin-grid]')).toBeVisible()
 }
 
+/**
+ * Press "Pencil date" and wait for the WRITE, not the click.
+ *
+ * 🔴 WHY THE TIMEOUT IS SIZED AND NOT DEFAULT. Saving a pencil is a server action that inserts two
+ * rows and then revalidates both calendar routes, which re-renders the viewed page in the same
+ * round trip. Measured on the pr-compare preview on 2026-09-22 (run 35754107782, six saves): the
+ * title's Date.now() to the row's created_at was 7.6 s to 10.9 s, and the client only sees success
+ * after the re-render that follows the insert. playwright.config.ts sets `timeout: 60_000` and no
+ * `expect.timeout`, so a bare `expect(...).toBeVisible()` here gives up at 5 s while a `click()` on
+ * the same page waits out the full minute — which is exactly why one test's click survived the
+ * same save that failed the assertion in the test beside it. (LIVE-462 removed a second, redundant
+ * client render from that path; LIVE-463 carries what is left of the latency.)
+ *
+ * "Open Plan" is the proof the save landed: it renders only for a saved entry that carries a Plan
+ * id, which is what the action returns. Waiting on it asserts the consequence, not a delay.
+ */
+async function pencilDate(page: Page) {
+  await page.getByRole('button', { name: 'Pencil date', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Open Plan', exact: true })).toBeVisible({ timeout: 20_000 })
+}
+
 test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () => {
   test.use({ storageState })
   test.skip(!baseURL, 'PW_BASE_URL is required for real-browser calendar acceptance coverage.')
@@ -72,13 +93,27 @@ test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () 
     await expect(page.getByRole('dialog')).toBeVisible()
     await page.locator('#entry-title').fill(title)
     await page.locator('#entry-start-date').fill(new Date().toLocaleDateString('en-CA'))
-    await page.getByRole('button', { name: 'Pencil date', exact: true }).click()
-
-    await expect(page.getByRole('button', { name: 'Open Plan' })).toBeVisible()
-    await page.getByRole('button', { name: 'Cancel' }).click()
+    await pencilDate(page)
+    // 🔴 `exact: true`, and it is load-bearing at all three Cancel sites. getByRole's `name`
+    // defaults to exact:false, which is case-insensitive SUBSTRING matching, and the saved entry
+    // drawer renders two buttons whose names one prefixes the other: the footer's "Cancel"
+    // (dismiss the form, staff-calendar.tsx:599) and the stage row's "Cancel this date" (the
+    // Cancelled exit, :344). Strict mode then fails with two matches. The second only appears once
+    // the entry has been SAVED, which is why this never fired while these tests were skipping for
+    // want of manage rights on PW_SPACE_SLUG's Space — the account fact this file's own
+    // skipUnlessOperator note describes. Granting it made three latent selector bugs real.
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
 
     const calendarPanel = page.locator('[data-calendar-panel="admin"]')
-    await expect(calendarPanel.getByText(title, { exact: true })).toBeVisible()
+    // 🔴 BY TITLE ATTRIBUTE, NOT BY EXACT TEXT. A grid chip renders `<span>{timeLabel}</span> {title}`
+    // (event-calendar.tsx), so its text is never exactly the title; a busy day STACKS its chips into
+    // one button whose text joins every title with ' · '; and past three chips the rest hide behind
+    // "+N more". `getByText(title, { exact: true })` could not match any of those — and the first
+    // run this assertion ever took (pr-compare run 35757524209) hit a day carrying 27 leaked test
+    // pencils, so it was stacked to the hilt. Every chip and every stacked button carries the title
+    // in its `title` attribute (joined with ', ' when stacked), and a substring match reaches both.
+    // The 20 s is the same measured save-and-refetch latency pencilDate() documents (LIVE-463).
+    await expect(calendarPanel.getByTitle(title).first()).toBeVisible({ timeout: 20_000 })
 
     await page.getByRole('button', { name: 'List', exact: true }).click()
     const listPanel = page.locator('[data-calendar-panel="list"]')
@@ -101,8 +136,8 @@ test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () 
     await page.getByRole('button', { name: 'Pencil it in' }).click()
     await page.locator('#entry-title').fill(privateTitle)
     await page.locator('#entry-start-date').fill(new Date().toLocaleDateString('en-CA'))
-    await page.getByRole('button', { name: 'Pencil date', exact: true }).click()
-    await page.getByRole('button', { name: 'Cancel' }).click()
+    await pencilDate(page)
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
 
     await page.getByRole('button', { name: 'Guest preview' }).click()
     await expect(page.locator('[data-calendar-workspace]')).toHaveAttribute('data-calendar-view', 'guest')
@@ -147,7 +182,7 @@ test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () 
     await page.getByRole('button', { name: 'Pencil it in' }).click()
     await page.locator('#entry-title').fill(title)
     await page.locator('#entry-start-date').fill(new Date().toLocaleDateString('en-CA'))
-    await page.getByRole('button', { name: 'Pencil date', exact: true }).click()
+    await pencilDate(page)
 
     const drawer = page.getByRole('dialog').filter({ has: page.locator('#plan-title') })
     const summary = drawer.locator('[data-plan-production-summary]')
@@ -172,7 +207,7 @@ test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () 
     const planId = new URL(page.url()).searchParams.get('plan')
     expect(planId).toBeTruthy()
     await closeAndKeepView('admin')
-    await page.getByRole('button', { name: 'Cancel' }).click()
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
 
     await page.getByRole('button', { name: 'List', exact: true }).click()
     const listPanel = page.locator('[data-calendar-panel="list"]')

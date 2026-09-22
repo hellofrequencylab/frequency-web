@@ -110,10 +110,28 @@ export function StaffCalendar({
   const set = <K extends keyof EntryInput>(key: K, value: EntryInput[K]) =>
     setDraft((d) => (d ? { ...d, input: { ...d.input, [key]: value } } : d))
 
+  /**
+   * A write landed. Close the drawer and bump `refreshKey`, which the month grid re-fetches on.
+   *
+   * 🔴 NO `router.refresh()` HERE, OR ANYWHERE IN THIS FILE (LIVE-462). Every write action this
+   * drawer calls ends in `revalidate(slug)` — `revalidatePath` on both calendar routes — and in a
+   * Server Function that "updates the UI immediately (if viewing the affected path)"
+   * (node_modules/next/dist/docs/01-app/03-api-reference/04-functions/revalidatePath.md). The fresh
+   * tree, `plans` included, arrives in the action's own round trip. A client refresh on top of it
+   * was a SECOND full server render of a 16-month operator horizon after every save.
+   *
+   * It was worse than wasteful. Every control in this drawer is `disabled={pending}`, `pending` is
+   * `useTransition`'s, and the refresh ran INSIDE `startTransition` — so a successful save froze
+   * the whole form until that second render came back. On a cold deployment that is seconds of a
+   * form reading "Saving" over a row already in the database, with Delete sitting beside Save.
+   *
+   * Found by operator-calendar.spec.ts the first run it was ever allowed to take: three tests
+   * failing after "Pencil date" with "element is not enabled" then "element was detached from the
+   * DOM", while the space_plans rows they created sat in the database timestamped to the click.
+   */
   const done = () => {
     setDraft(null)
     setRefreshKey((k) => k + 1)
-    router.refresh()
   }
 
   const submit = (e: FormEvent) => {
@@ -128,8 +146,10 @@ export function StaffCalendar({
         } else {
           const input = { ...draft.input, planId: res.data.id }
           setDraft({ id: res.data.entryId, input, saved: JSON.stringify(input) })
+          // Keeps the drawer OPEN on the saved row: the Pencil now has a Plan, so "Open Plan"
+          // appears. The month grid re-fetches on `refreshKey`; the rest of the page was already
+          // refreshed by the action's own revalidate(slug) — see the note on done().
           setRefreshKey((k) => k + 1)
-          router.refresh()
         }
         return
       }
@@ -559,9 +579,23 @@ export function StaffCalendar({
                     variant="secondary"
                     size="sm"
                     onClick={() => {
-                      const plan = plans.find((p) => p.id === input.planId) ?? null
-                       if (onOpenPlan && plan) onOpenPlan(plan.id, draft?.id)
-                       else setOpenPlan(plan)
+                      // 🔴 `onOpenPlan` TAKES AN ID, SO IT MUST NOT BE GATED ON FINDING THE OBJECT
+                      // (LIVE-462). `plans` is a server prop, and the Plan this button is for was
+                      // created seconds ago by the save directly above — so on the one path that
+                      // matters most, opening the Plan you just made, `plans` has not caught up and
+                      // `find` returns undefined. The old guard then fell through to
+                      // `setOpenPlan(null)`, and the button DID NOTHING. No error, no drawer, no
+                      // log: the exact swallowed no-op AGENTS.md calls an invisible regression.
+                      //
+                      // The consumer (`selectPlan` in calendar-workspace.tsx) only ever uses the
+                      // id — it sets state and writes `?plan=` — so the id is all this needs.
+                      // `input.planId` is non-null here by the render guard above.
+                      if (onOpenPlan) {
+                        onOpenPlan(input.planId!, draft?.id)
+                        return
+                      }
+                      // The local fallback genuinely needs the object, and tolerates not having it.
+                      setOpenPlan(plans.find((p) => p.id === input.planId) ?? null)
                     }}
                   >
                     Open Plan

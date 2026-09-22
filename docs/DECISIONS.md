@@ -47763,3 +47763,57 @@ There is a fifth finding, and it is about the instrument rather than the picture
 **Consequences.** Three member surfaces and one operator surface give up a strip of below-fold and between-panel pixels, named above, in exchange for a comparison that is about the product rather than about the hour. `/feed` keeps its rail picture. `/admin/qr` stops being a midnight time bomb for an unrelated pull request. The operator calendar is UNMEASURED in a browser until `OWN-081` clears, and it now says so as a counted skip rather than as a red check, which is a smaller claim honestly made rather than a larger one falsely. `app-space-console`'s coverage number is a floor and not a score until the same grant lands, and the way to check that is to open the PNG and look, which is the rule this list keeps re-learning. `HYG-115` stays open, so a capture can still leave its checks parked; until it closes, the manual step is unchanged and is in `e2e-manual.yml`'s header: after a capture lands, LOOK at the pull request's checklist for the new SHA.
 
 **Rows.** LIVE-457, LIVE-458, LIVE-459 (all closed 2026-09-22). OWN-081 (open, P1, `ownerAction: account`). HYG-115 (open, P2). Beside LIVE-186 (make `pr-compare` required, still owner-gated) and LIVE-213 (preview and production render two different fixed elements).
+
+## ADR-1523: The stage nouns are Pencil, Planning, Production — NAMING.md wins over ADR-1386 §2 (2026-09-22)
+
+**Status:** Accepted · **Amends** [ADR-1386](DECISIONS.md) (ruling 2, the stage nouns) ·
+**Settles** the open question `PROG-CAL8` carried (“docs/NAMING.md has to rule before this phase
+starts”) · Backlog `LIVE-461` · corroborated by `docs/NAMING.md` §Calendar,
+`lib/calendar/registry.ts`, `lib/studio/entities/space-plan.ts`
+
+**Context.** Two canons said opposite things about the middle stage, and both were live.
+
+- [ADR-1386](DECISIONS.md) ruling 2, verbatim: “**The stage names are Pencil, Plan, Production.**”
+  Repeated in its Decision section: “Pencil, Plan and Production are the stage nouns.”
+- `docs/NAMING.md` §Calendar: “**Planning** (stage 2) = the date is decided and the team is putting
+  it together (stage `planning`)”, and “**The stages together** are written in order, ‘Pencil,
+  Planning, Production’.”
+
+The disagreement was not academic. It had already split the CODE three ways, and one component
+contradicted itself: `plan-drawer.tsx` rendered the read-only Stage row as **Planning** and offered
+**Plan** in the picker directly below it, for the same field.
+
+**Why NAMING.md wins, on two independent grounds.**
+
+1. **AGENTS.md states the precedence outright:** “**Names:** `docs/NAMING.md` always wins.”
+2. **ADR-1386 was already superseded on this point by a later ADR of its own program.**
+   [ADR-1388](DECISIONS.md) introduced the stage COLUMN and its four values — `pencil`, `planning`,
+   `production`, `cancelled` — so the stored value has read `planning` since the day stages shipped.
+   ADR-1386's noun was the one that never moved. The database, the registry (`ENTRY_STAGES`), the
+   workflow board and `content/help/groups/events.md` were all already on **Planning**; only three
+   label expressions were not.
+
+**Decision.** The stage nouns are **Pencil, Planning, Production**, with **Cancelled** as the exit
+(ADR-1388). ADR-1386 ruling 2 is **struck** on the noun and stands on everything else it says: the
+three-stage lifecycle, Production being the real published event rather than a new object, and the
+verbs (“Pencil it in”, “Make it a Production”).
+
+**The collision guard stays, and it is why this is worth an ADR rather than a find-and-replace.**
+`docs/NAMING.md` already separates the two senses: **Plan** (capital P) is the OBJECT — the working
+record, `space_plans`, “Start a plan” — and **Planning** is the STAGE. The three sites fixed here
+were all the stage; the object keeps its name everywhere it appears (`SPACE_PLAN_MANIFEST.label`,
+the drawer eyebrow, the “Plans” section header, the e2e “Open Plan” control). A sweep that replaced
+the word everywhere would have broken the distinction this ruling exists to protect.
+
+**Rejected.** Amending NAMING.md to say “Plan” instead (it would reintroduce the collision with the
+membership **plans page**, ADR-1374, which NAMING.md names as the reason for the guard). Leaving the
+three sites as they were and treating the contradiction as cosmetic (it is the label an operator
+reads on the board column, the stage picker and the Studio manifest — three of the four places the
+stage is ever named).
+
+**Consequences.** `lib/studio/entities/space-plan.ts` now agrees with `lib/calendar/registry.ts`, so
+a manifest-composed Plan drawer (`PROG-CAL2`) inherits the correct label instead of importing the
+wrong one. `PROG-CAL8` loses the open question that blocked it. No stored value changes: this is a
+label-only ruling, and `stage` has been `planning` in the column since ADR-1388.
+
+**Rows.** LIVE-461 (closed 2026-09-22). Unblocks PROG-CAL8.

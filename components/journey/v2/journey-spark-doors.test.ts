@@ -78,6 +78,6 @@ describe('the framework keeps an author-chosen length', () => {
   })
 
   it('and the action still receives those weeks', () => {
-    expect(CODE).toContain('createMasterFrameworkAction({ weeks, spaceSlug })')
+    expect(CODE).toContain('createMasterFrameworkAction({ weeks, spaceSlug, spacePlanId: spacePlan?.id ?? null })')
   })
 })

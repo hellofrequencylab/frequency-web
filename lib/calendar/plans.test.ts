@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
 import {
   derivePlanStage,
@@ -5,8 +7,11 @@ import {
   parsePlanInput,
   parsePlanLinks,
   planTargetDef,
+  PLAN_TARGETS,
 } from './plans'
 import { parseEntryInput } from './entries'
+
+const ROOT = join(import.meta.dirname, '..', '..')
 
 describe('parsePlanInput', () => {
   it('requires a title', () => {
@@ -88,8 +93,10 @@ describe('keepExplicitExceptions', () => {
 })
 
 describe('planTargetDef', () => {
+  const opts = { spaceId: '9f58e07e-8912-4c3e-8551-d15b275dc768', spaceSlug: 'royal-temple', planId: 'p', entryId: 'e' }
+
   it('opens the event Spark with plan and pencil ids', () => {
-    const href = planTargetDef('event').createHref?.({ spaceId: 's', planId: 'p', entryId: 'e' })
+    const href = planTargetDef('event').createHref?.(opts)
     expect(href).toContain('/events/new?')
     expect(href).toContain('plan=p')
     expect(href).toContain('pencil=e')
@@ -97,5 +104,52 @@ describe('planTargetDef', () => {
 
   it('has no Studio for maintenance', () => {
     expect(planTargetDef('maintenance').createHref).toBeNull()
+  })
+
+  // ── THE DOORS OPEN (PROG-CAL8) ────────────────────────────────────────────────────────────────
+  // Two of the four "Make it a Production" doors were dead for three days because every one of them
+  // was handed the Space's UUID while their destinations resolve a SLUG. The failure was silent in
+  // exactly the way an href always is: nothing type-checks a string against a route.
+
+  it('sends each door the identifier its destination actually resolves', () => {
+    // /events/new compares ?space= against the ids of the scopes the caller runs: an id is correct.
+    expect(planTargetDef('event').createHref?.(opts)).toContain(`space=${opts.spaceId}`)
+    // /journeys/new resolves ?space= with getVisibleSpaceBySlug (.eq('slug', norm)). A UUID never
+    // matched, so the page redirected to /spaces and the owner landed on the Spaces directory.
+    expect(planTargetDef('journey').createHref?.(opts)).toContain(`space=${opts.spaceSlug}`)
+  })
+
+  it('never puts a UUID in a [slug] route segment, which is a 404 by construction', () => {
+    for (const kind of PLAN_TARGETS) {
+      const href = planTargetDef(kind).createHref?.(opts)
+      if (!href) continue
+      const segment = href.match(/^\/spaces\/([^/?]+)/)?.[1]
+      if (segment) {
+        expect(segment, `${kind} puts a UUID in the [slug] segment of ${href}`).toBe(opts.spaceSlug)
+      }
+    }
+  })
+
+  it('opens the Program on the page that exists, not the segment that has only a layout', () => {
+    // The old href was /spaces/<id>/settings, where there is no page.tsx at all.
+    const href = planTargetDef('program').createHref?.(opts)
+    expect(href).toBe('/spaces/royal-temple/settings/program')
+    expect(existsSync(join(ROOT, 'app/(main)/spaces/[slug]/settings/program/page.tsx'))).toBe(true)
+    // NO ?plan=. Nothing on that page reads one yet, and a parameter nothing reads is the same
+    // class of lie as an href nothing serves (PROG-CAL9 carries the Program's half of the seam).
+    expect(href).not.toContain('plan=')
+  })
+
+  it('carries the Plan to every door that has somewhere to put it', () => {
+    // The journey door has sent &plan= since 2026-09-19 to a page that did not declare it. Both
+    // ends are pinned here so neither can move without the other.
+    const journeyHref = planTargetDef('journey').createHref?.(opts) ?? ''
+    expect(journeyHref).toContain('plan=p')
+    const page = readFileSync(join(ROOT, 'app/(main)/journeys/new/page.tsx'), 'utf8')
+    expect(page).toMatch(/searchParams: Promise<\{[^}]*\bplan\?: string/)
+    // And the modal above it forwards searchParams verbatim, so its type must be just as wide or
+    // the Production road loses the Plan on the one entry point that matters.
+    const modal = readFileSync(join(ROOT, 'app/(main)/@wizard/(.)journeys/new/page.tsx'), 'utf8')
+    expect(modal).toMatch(/searchParams: Promise<\{[^}]*\bplan\?: string/)
   })
 })

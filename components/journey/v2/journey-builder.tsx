@@ -189,6 +189,7 @@ function JourneyDetails({ status, visibility, details }: { status: string; visib
 export function JourneyBuilder({
   draft = false,
   spaceSlug = null,
+  spacePlanId = null,
   slug = null,
   planId = null,
   status = 'draft',
@@ -210,7 +211,12 @@ export function JourneyBuilder({
   /** When set (draft mode reached from a Space's manager), the drafted Journey is stamped to that
    *  Space rather than the caller's personal account. */
   spaceSlug?: string | null
+  /** 🔴 NOT `planId` — that one, right below, is THIS Journey's own id (`journey_plans.id`), which
+   *  is the collision docs/NAMING.md's guards exist for. This is the `space_plans` row the Journey
+   *  is being produced from (PROG-CAL8): the manual road off "Make it a Production". */
+  spacePlanId?: string | null
   slug?: string | null
+  /** This Journey's own id. */
   planId?: string | null
   status?: string
   visibility?: PlanVisibility
@@ -285,7 +291,7 @@ export function JourneyBuilder({
   const createFromTitle = (title: string) => {
     if (!title.trim() || creating) return
     setCreating(true)
-    start(() => createJourneyDraftAction(title.trim(), spaceSlug))
+    start(() => createJourneyDraftAction(title.trim(), spaceSlug, spacePlanId))
   }
 
   const eyebrow = (
