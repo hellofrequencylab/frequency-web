@@ -652,8 +652,15 @@ export function EventCalendar({
                         {/* A SEGMENT PER ITEM (LIVE-467). Back-to-back items stack into one block, and
                             every item in it keeps its own button, so the second gathering on a busy
                             Sunday opens from the grid like the first. Items that only share the day
-                            are separate chips, and the count past three always shows. */}
-                        {(stackDay(cards.slice(0, 3))[0]?.runs ?? []).map((run) =>
+                            are separate chips, and the count past three always shows.
+                            🔴 EVERY GROUP, NOT THE FIRST. A cell is one date, but its items are not
+                            all keyed to it: spanDayKeys files a multi-day item under every date it
+                            covers while the item keeps its START dayKey, so a cell can hold two
+                            dayKeys. stackDay groups by dayKey and sorts ascending, so reading only
+                            [0] drew the continuing item and dropped the date's own, which is how a
+                            freshly pencilled date could vanish behind a retreat that began earlier
+                            (caught by test/e2e/operator-calendar.spec.ts). Flatten every group. */}
+                        {stackDay(cards.slice(0, 3)).flatMap((day) => day.runs).map((run) =>
                           run.length > 1 ? (
                             <div
                               key={`stack-${run[0].slug}-${run[0].dayKey}`}

@@ -95,4 +95,24 @@ describe('EventCalendar grid: one button per item on a busy day', () => {
     expect(el.textContent).toContain('+2 more')
     expect(chipTitles(el).filter((t) => t.startsWith('Item '))).toHaveLength(3)
   })
+
+  it('shows a date own item even when a multi-day event covers that cell (LIVE-467 regression)', () => {
+    // spanDayKeys files a multi-day item under every date it covers while the item keeps its START
+    // dayKey, so one cell can hold two dayKeys. Reading only the first of stackDay's groups drew the
+    // continuing item and dropped the date's own: a freshly pencilled date vanished behind a retreat
+    // that began earlier, which the operator e2e caught on a real Space.
+    const el = mount(
+      <EventCalendar
+        events={[
+          item({ slug: 'retreat', title: 'Long retreat', dayKey: '2026-09-22', endDayKey: '2026-09-24', startInstantIso: '2026-09-22T09:00:00.000Z' }),
+          item({ slug: 'pencil', title: 'Fresh pencil', dayKey: '2026-09-23', startInstantIso: '2026-09-23T19:00:00.000Z' }),
+        ]}
+        initialYear={2026}
+        initialMonth1={9}
+      />,
+    )
+    const titles = Array.from(el.querySelectorAll('[title]')).map((e) => e.getAttribute('title'))
+    expect(titles.some((t) => t?.includes('Fresh pencil'))).toBe(true)
+    expect(titles.some((t) => t?.includes('Long retreat'))).toBe(true)
+  })
 })
