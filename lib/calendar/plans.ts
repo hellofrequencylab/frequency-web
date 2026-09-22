@@ -43,7 +43,11 @@ export interface PlanInput {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const MAX_TITLE = 200
 const MAX_NOTES = 20_000
-const MAX_LINKS = 20
+/** The most links a Plan keeps. Exported because the drawer's repeat control needs the SERVER cap:
+ *  `parsePlanLinks` slices to it, so a 21st row typed in the drawer would be dropped on save with
+ *  nothing said — the exact failure `RailManifestRepeat`'s `max` exists to prevent (PROG-CAL2). */
+export const PLAN_MAX_LINKS = 20
+const MAX_LINKS = PLAN_MAX_LINKS
 
 export function planStage(value: string | null | undefined): PlanStage | null {
   return PLAN_STAGES.includes(value as PlanStage) ? (value as PlanStage) : null

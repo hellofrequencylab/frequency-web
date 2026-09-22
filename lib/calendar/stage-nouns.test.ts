@@ -28,7 +28,8 @@ const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8')
 /** Every place a `'plan'` stage VALUE is turned into a word a person reads. */
 const LABEL_SITES = [
   { file: 'app/(main)/spaces/[slug]/settings/calendar/plan-board.tsx', what: 'the board column heading' },
-  { file: 'app/(main)/spaces/[slug]/settings/calendar/plan-drawer.tsx', what: "the drawer's stage picker" },
+  // The drawer is no longer a site: PROG-CAL2 composed it from the manifest, so it holds no stage
+  // label of its own. The case below pins that it stays that way.
 ] as const
 
 describe('the stage nouns are Pencil, Planning, Production (ADR-1523)', () => {
@@ -42,6 +43,15 @@ describe('the stage nouns are Pencil, Planning, Production (ADR-1523)', () => {
       ).toBe(false)
       expect(src).toMatch(/['"]plan['"]\s*\?\s*['"]Planning['"]/)
     }
+  })
+
+  it('the drawer spells no stage of its own: it reads the manifest (PROG-CAL2)', () => {
+    // Before PROG-CAL2 this file's own comment anticipated the rebuild: "if the manifest were left
+    // saying Plan, the rebuild would import the wrong label and undo the fix silently". The rebuild
+    // landed; a ternary creeping back in would be the drawer disagreeing with itself again.
+    const src = read('app/(main)/spaces/[slug]/settings/calendar/plan-drawer.tsx')
+    expect(src).not.toMatch(/['"]plan['"]\s*\?\s*['"]/)
+    expect(src).toContain('@/lib/studio/entities/space-plan')
   })
 
   it('the Studio manifest agrees, so a manifest-composed drawer inherits the right word', () => {

@@ -4,11 +4,20 @@ import { useEffect, useState, useTransition, type FormEvent } from 'react'
 import Link from 'next/link'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input, Textarea, labelClasses } from '@/components/ui/field'
+import { Input, labelClasses } from '@/components/ui/field'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select } from '@/components/ui/select'
+import { RailManifestFields } from '@/components/admin/rail/rail-manifest-fields'
+import { RailManifestRepeat } from '@/components/admin/rail/rail-manifest-repeat'
+import type { RepeatRow } from '@/components/admin/rail/rail-field-value'
 import { isError } from '@/lib/action-result'
-import { PLAN_STAGES, PLAN_TARGETS, planTargetDef, type SpacePlan } from '@/lib/calendar/plans'
+import { PLAN_MAX_LINKS, planTargetDef, type SpacePlan } from '@/lib/calendar/plans'
+// The drawer is a rail composed from this declaration (ADR-1468, PROG-CAL2): the eyebrow, the
+// section headings and every field come from the manifest, through PLAN_RAIL. No field is declared
+// in this file; plan-rail-plan.test.ts fails if one is.
+import { SPACE_PLAN_MANIFEST } from '@/lib/studio/entities/space-plan'
+import { PLAN_RAIL, planStageLabel } from './plan-rail-plan'
+import { repeatLabel } from '@/lib/studio/kernel/manifest'
 import type { CrmTask } from '@/lib/crm/tasks'
 import {
   acceptVeraChecklist,
@@ -45,10 +54,10 @@ export function PlanDrawer({
   deepSettingsHref?: string
 }) {
   const [pending, start] = useTransition()
-  const [title, setTitle] = useState(plan?.title ?? '')
-  const [notes, setNotes] = useState(plan?.notes ?? '')
-  const [stage, setStage] = useState(plan?.stage ?? 'plan')
-  const [targetKind, setTargetKind] = useState(plan?.targetKind ?? 'event')
+  // The manifest fields' values, keyed by manifest path, and the one repeat's rows. Both are built
+  // from the Plan by helpers below so the key-reset block and the initial state cannot drift.
+  const [values, setValues] = useState<Record<string, string>>(() => planValues(plan))
+  const [links, setLinks] = useState<RepeatRow[]>(() => planLinkRows(plan))
   const [todoTitle, setTodoTitle] = useState('')
   // RELATIVE SCHEDULING (ADR-1386 P5). '' means this to-do has a fixed date, or none: the offset is
   // opt-in, because a checklist where every row must be anchored is a worse checklist.
@@ -68,10 +77,8 @@ export function PlanDrawer({
   const [syncedKey, setSyncedKey] = useState(planKey)
   if (planKey !== syncedKey) {
     setSyncedKey(planKey)
-    setTitle(plan?.title ?? '')
-    setNotes(plan?.notes ?? '')
-    setStage(plan?.stage ?? 'plan')
-    setTargetKind(plan?.targetKind ?? 'event')
+    setValues(planValues(plan))
+    setLinks(planLinkRows(plan))
     setProposal(null)
     setTodoTitle('')
     setTodoOffsetDays('')
@@ -139,7 +146,16 @@ export function PlanDrawer({
     e.preventDefault()
     setError(null)
     start(async () => {
-      const res = await saveSpacePlan(slug, plan.id, { title, notes, stage, targetKind })
+      const stage = (values.stage || plan.stage) as SpacePlan['stage']
+      const res = await saveSpacePlan(slug, plan.id, {
+        title: values.title ?? '',
+        notes: values.notes ?? '',
+        stage,
+        targetKind: values.targetKind ?? plan.targetKind,
+        // The repeat's rows, as the action's PlanLink shape. parsePlanLinks keeps only http(s) urls
+        // and caps at PLAN_MAX_LINKS; the control's `max` stops Add at the same cap.
+        links: links.map((row) => ({ url: row.url ?? '', label: row.label ?? '' })),
+      })
       if (isError(res)) setError(res.error)
       else {
         onSaved?.(plan.id, stage)
@@ -153,12 +169,12 @@ export function PlanDrawer({
       <form onSubmit={save} className="space-y-4 rounded-card border border-border bg-surface p-6 lift-3">
         <div className="space-y-3" data-plan-production-summary>
           <div>
-            <p className="text-meta font-semibold uppercase tracking-wide text-muted">Plan</p>
+            <p className="text-meta font-semibold uppercase tracking-wide text-muted">{SPACE_PLAN_MANIFEST.label}</p>
             <h2 id="plan-drawer-title" className="text-lead font-bold text-text">{plan.title}</h2>
             <p className="text-meta text-muted">{planTargetDef(plan.targetKind).label} production record</p>
           </div>
           <dl className="grid grid-cols-2 gap-3 rounded-control border border-border bg-surface-elevated p-3 text-body-sm">
-            <div><dt className="text-meta text-muted">Stage</dt><dd className="font-semibold capitalize text-text">{stage === 'plan' ? 'Planning' : stage}</dd></div>
+            <div><dt className="text-meta text-muted">Stage</dt><dd className="font-semibold text-text">{planStageLabel(values.stage || plan.stage)}</dd></div>
             <div><dt className="text-meta text-muted">Owner</dt><dd className="font-semibold text-text">{plan.ownerProfileId ? 'Assigned teammate' : 'Unassigned'}</dd></div>
             <div className="col-span-2"><dt className="text-meta text-muted">Readiness</dt><dd className="font-semibold text-text">{gaps.length === 0 ? 'Ready for the next step' : `${gaps.length} ${gaps.length === 1 ? 'item' : 'items'} still needed`}</dd></div>
             <div className="col-span-2"><dt className="text-meta text-muted">Next action</dt><dd className="font-semibold text-text">{href ? 'Open the production Studio' : gaps[0] ?? 'Keep the Plan current'}</dd></div>
@@ -172,48 +188,33 @@ export function PlanDrawer({
           {deepSettingsHref && <Link href={deepSettingsHref} className="inline-flex text-body-sm font-semibold text-primary-strong hover:underline">Open deep settings</Link>}
         </div>
 
-        <div className="grid gap-1">
-          <label htmlFor="plan-title" className={labelClasses}>
-            Title
-          </label>
-          <Input id="plan-title" required maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="grid gap-1">
-            <label htmlFor="plan-stage" className={labelClasses}>
-              Stage
-            </label>
-            <Select
-              id="plan-stage"
-              value={stage}
-              options={PLAN_STAGES.map((s) => ({
-                value: s,
-                label: s === 'plan' ? 'Planning' : s === 'pencil' ? 'Pencil' : 'Production',
-              }))}
-              onChange={(e) => setStage(e.target.value as typeof stage)}
+        {/* THE MANIFEST FORM (PROG-CAL2). Field order, labels, kinds and option lists are
+            SPACE_PLAN_MANIFEST's; the ids keep the `plan-` prefix the e2e spec and the workspace
+            render test point at. Stage sits beside "Production opens" because both are short kinds
+            and RailManifestFields pairs consecutive short fields, not because this file says so. */}
+        {PLAN_RAIL.fields.length > 0 && (
+          <div className="space-y-3">
+            {SPACE_PLAN_MANIFEST.sections?.[0] && (
+              <p className={labelClasses}>{SPACE_PLAN_MANIFEST.sections[0].title}</p>
+            )}
+            <RailManifestFields
+              idPrefix="plan-"
+              fields={PLAN_RAIL.fields}
+              values={values}
+              onChange={(path, next) => setValues((v) => ({ ...v, [path]: next }))}
+              disabled={pending}
             />
           </div>
-          <div className="grid gap-1">
-            <label htmlFor="plan-target" className={labelClasses}>
-              Production opens
-            </label>
-            <Select
-              id="plan-target"
-              value={targetKind}
-              options={PLAN_TARGETS.map((s) => ({
-                value: s,
-                label: s === 'event' ? 'Event' : s === 'journey' ? 'Journey' : s === 'program' ? 'Program' : 'Maintenance',
-              }))}
-              onChange={(e) => setTargetKind(e.target.value as typeof targetKind)}
-            />
+        )}
+        {PLAN_RAIL.repeats.map((def) => (
+          <div key={def.arrayPath} className="space-y-2">
+            <p className={labelClasses}>{repeatLabel(def)}</p>
+            <RailManifestRepeat def={def} rows={links} onChange={setLinks} max={PLAN_MAX_LINKS} disabled={pending} />
+            {/* parsePlanLinks drops anything that is not http(s) without a word, and the repeat has
+                no per-row error channel yet; this line is the honest substitute. */}
+            <p className="text-meta text-muted">Web addresses starting with http:// or https://.</p>
           </div>
-        </div>
-        <div className="grid gap-1">
-          <label htmlFor="plan-notes" className={labelClasses}>
-            Notes
-          </label>
-          <Textarea id="plan-notes" rows={5} maxLength={20000} value={notes} onChange={(e) => setNotes(e.target.value)} />
-        </div>
+        ))}
 
         <div className="space-y-2">
           <p className={labelClasses}>To-dos</p>
@@ -476,4 +477,19 @@ export function PlanDrawer({
       </form>
     </Dialog>
   )
+}
+
+/** The manifest fields' current values, from the Plan. Null columns read as empty. */
+function planValues(plan: SpacePlan | null): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const f of PLAN_RAIL.fields) {
+    const v = plan ? (plan as unknown as Record<string, unknown>)[f.path] : null
+    out[f.path] = typeof v === 'string' ? v : v == null ? '' : String(v)
+  }
+  return out
+}
+
+/** The Plan's links as the repeat control's rows. */
+function planLinkRows(plan: SpacePlan | null): RepeatRow[] {
+  return (plan?.links ?? []).map((l) => ({ url: l.url, label: l.label }))
 }

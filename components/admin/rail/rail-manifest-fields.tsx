@@ -43,6 +43,14 @@ export interface RailManifestFieldsProps {
   /** Loaded collections for `optionsFrom` fields, keyed by the collection name. */
   loaded?: FieldOptions
   disabled?: boolean
+  /**
+   * Prefix for each control's DOM id (`htmlFor` and `id` only, never `name`). A surface that
+   * already has tests, labels or deep links pointing at ids of its own — the Plan drawer's
+   * `#plan-title` / `#plan-stage` — keeps them while rendering from the manifest; and two manifest
+   * forms on one page stop colliding on `#title`. FormData keys are unaffected: `name` stays the
+   * manifest path, which is what every autosave rail's action reads.
+   */
+  idPrefix?: string
 }
 
 /** Consecutive short fields fold into one row; everything else stands alone. */
@@ -64,22 +72,26 @@ export function RailManifestFields({
   hints,
   loaded,
   disabled,
+  idPrefix,
 }: RailManifestFieldsProps) {
   return (
     <>
       {rows(fields).map((row) => {
-        const cells = row.map((def) => (
+        const cells = row.map((def) => {
+          const controlId = idPrefix ? `${idPrefix}${def.path}` : def.path
+          return (
           <div key={def.path} className="block space-y-1.5">
             {/* A toggle carries its own label inside the control, and a `repeat` is a GROUP of
                 controls that names itself — a `<label>` pointing at a group names nothing
                 (ADR-966), so neither gets one from here. */}
             {def.kind !== 'toggle' && def.kind !== 'repeat' && (
-              <label htmlFor={def.path} className={labelClasses}>
+              <label htmlFor={controlId} className={labelClasses}>
                 {def.label}
               </label>
             )}
             <FieldControl
               def={def}
+              id={controlId}
               name={def.path}
               // A LIST kind's control takes and returns an array; the values bag and the FormData
               // carry one string. `rail-field-value.ts` owns both halves of that conversion —
@@ -97,7 +109,8 @@ export function RailManifestFields({
               siblings={values}
             />
           </div>
-        ))
+          )
+        })
         return row.length > 1 ? (
           <div key={row.map((f) => f.path).join('+')} className="grid grid-cols-2 gap-3">
             {cells}
