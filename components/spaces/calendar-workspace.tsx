@@ -168,18 +168,31 @@ export function CalendarWorkspace({
       .map((event) => (event.planId === archivedPlanId ? { ...event, planId: null } : event)))
   }, [])
 
-  // The URL mirrors view, item, plan and the console flag. The history STATE is kept as it is, so the
-  // console's own entry (CONSOLE_STATE) survives a view switch or a drawer opened inside it.
+  // The URL mirrors view, item, plan and the console flag, and the console's own marker survives a
+  // view switch or a drawer opened inside it.
+  //
+  // ⚠️ NEVER HAND NEXT'S OWN STATE BACK TO replaceState. Next patches history (app-router.js) and its
+  // patch returns EARLY, without telling the router the URL moved, whenever the state it is given
+  // already carries `__NA`. The router's canonicalUrl then stays on the old address and its next
+  // commit replaceStates the browser back to it, so `?plan=` written while a drawer opened vanished a
+  // moment later (caught by test/e2e/operator-calendar.spec.ts). Passing OUR marker alone, or null,
+  // keeps the patch on its normal path: it copies `__NA` and the internals tree onto whatever object
+  // it is handed, so nothing of Next's is lost and the router learns the new URL.
+  const consoleStateOnly = useCallback(() => {
+    const state = window.history.state as Record<string, unknown> | null
+    return state && state[CONSOLE_STATE] ? { [CONSOLE_STATE]: true } : null
+  }, [])
+
   const syncUrl = useCallback(
     (next: CalendarAdminView, extras?: { item?: string | null; plan?: string | null; year?: number; month1?: number }) => {
       if (typeof window === 'undefined') return
       window.history.replaceState(
-        window.history.state,
+        consoleStateOnly(),
         '',
         adminViewHref(slug, next, { ...extras, plan: extras?.plan === undefined ? planId : extras.plan, console: consoleOpen }),
       )
     },
-    [slug, planId, consoleOpen],
+    [slug, planId, consoleOpen, consoleStateOnly],
   )
 
   const selectPlan = useCallback((nextPlanId: string, entryId?: string | null) => {
@@ -245,8 +258,9 @@ export function CalendarWorkspace({
     const state = window.history.state as Record<string, unknown> | null
     if (state && state[CONSOLE_STATE]) window.history.back()
     else {
+      // null, not `state`: see the warning on syncUrl. The marker is being dropped here anyway.
       window.history.replaceState(
-        state,
+        null,
         '',
         adminViewHref(slug, view, { item: view === 'list' ? listKey : null, plan: planId, console: false }),
       )
@@ -272,8 +286,9 @@ export function CalendarWorkspace({
       if (consoleOpen && !marked) {
         restoreFocusRef.current = true
         setConsoleOpen(false)
+        // null, not `state`: see the warning on syncUrl. The entry we landed on is not the console's.
         window.history.replaceState(
-          state,
+          null,
           '',
           adminViewHref(slug, view, { item: view === 'list' ? listKey : null, plan: planId, console: false }),
         )

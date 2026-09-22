@@ -449,4 +449,33 @@ describe('CalendarWorkspace', () => {
     expect(window.localStorage.getItem('freq-cal-console-hint')).toBe('1')
     expect(document.querySelector('[data-calendar-console]')).toBeNull()
   })
+
+  it('never hands Next its own history state back, so a synced URL survives (regression, PROG-CAL12)', async () => {
+    // Next patches history.replaceState and RETURNS EARLY when the state it is given already carries
+    // __NA, without telling the router the URL moved; the router then restores its stale canonical
+    // URL and a freshly written ?plan= disappears. This pins the shape: every state we pass is our
+    // own marker or null, never the object Next left on the entry.
+    const seen: unknown[] = []
+    const original = window.history.replaceState.bind(window.history)
+    window.history.replaceState = ((data: unknown, unused: string, url?: string) => {
+      seen.push(data)
+      return original(data as never, unused, url)
+    }) as typeof window.history.replaceState
+    // What Next leaves on an entry it owns.
+    original({ __NA: true, __PRIVATE_NEXTJS_INTERNALS_TREE: ['x'] } as never, '', window.location.href)
+    try {
+      const el = mount(<CalendarWorkspace {...operatorProps({ initialView: 'admin' })} />)
+      const list = Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'List')!
+      await act(async () => {
+        list.click()
+        await Promise.resolve()
+      })
+      expect(seen.length).toBeGreaterThan(0)
+      for (const data of seen) {
+        expect(data == null || !(data as Record<string, unknown>).__NA).toBe(true)
+      }
+    } finally {
+      window.history.replaceState = original
+    }
+  })
 })
