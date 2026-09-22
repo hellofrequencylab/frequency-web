@@ -88,6 +88,7 @@
     "help:coverage": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-coverage.mts",
     "help:index": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-index.mts",
     "help:drift": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-drift.mts",
+    "block-usage": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/block-usage.mts",
     "seed:demo-space": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/seed-demo-space.mts"
   },
   "dependencies": {
