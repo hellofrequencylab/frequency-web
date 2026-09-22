@@ -35,6 +35,7 @@ import {
   veraPlanProposal,
 } from './plan-actions'
 import { describeOffset, offsetFromForm } from '@/lib/calendar/relative-schedule'
+import { shortDateLabel } from '@/lib/calendar/short-date'
 import type { VeraPlanProposal } from '@/lib/calendar/vera-plan'
 
 export function PlanDrawer({
@@ -230,7 +231,7 @@ export function PlanDrawer({
     if (!plan) return
     if (
       !window.confirm(
-        'Archive this Plan? Its pencilled dates go with it. A date that already became an event keeps the event. There is no restore button yet, so if you change your mind, ask us and we can bring it back.',
+        'Archive this Plan? Its penciled dates go with it. A date that already became an event keeps the event. There is no restore button yet, so if you change your mind, ask us and we can bring it back.',
       )
     )
       return
@@ -316,7 +317,7 @@ export function PlanDrawer({
                     label={
                       <span className={t.status === 'done' ? 'text-muted line-through' : undefined}>
                         {t.title}
-                        {t.dueAt ? ` · ${t.dueAt.slice(0, 10)}` : ''}
+                        {t.dueAt ? ` · ${shortDateLabel(t.dueAt)}` : ''}
                         {anchor ? <span className="text-muted"> {`· ${anchor} the date`}</span> : null}
                       </span>
                     }
@@ -481,7 +482,7 @@ export function PlanDrawer({
               ))}
             </ul>
             {proposal.suggestedDayKeys.length > 0 && (
-              <p className="mt-2 text-muted">Dates to try: {proposal.suggestedDayKeys.join(', ')}</p>
+              <p className="mt-2 text-muted">Dates to try: {proposal.suggestedDayKeys.map((d) => shortDateLabel(d)).join(' · ')}</p>
             )}
             {proposal.recap && <p className="mt-2">{proposal.recap}</p>}
             <Button

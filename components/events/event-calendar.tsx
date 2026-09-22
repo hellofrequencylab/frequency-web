@@ -28,6 +28,7 @@ import { spanDayKeys } from '@/lib/calendar/entries'
 import { notesForDay, type DayNote } from '@/lib/calendar/day-notes'
 import { monthKey } from '@/lib/calendar/month-window'
 import { stackDay } from '@/lib/calendar/sunday-stack'
+import { shortDateLabel } from '@/lib/calendar/short-date'
 import { useMonthGestures } from './use-month-gestures'
 import type { CalendarEvent } from '@/lib/calendar/item'
 
@@ -624,7 +625,7 @@ export function EventCalendar({
                       <div className="mb-1 flex items-center justify-between gap-1">
                         {onCreateAt ? (
                           <IconButton
-                            label={`Add an entry on ${cell.date}`}
+                            label={`Add a date on ${shortDateLabel(cell.date)}`}
                             onClick={() => onCreateAt(cell.date)}
                             className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
                           >
@@ -704,12 +705,19 @@ export function EventCalendar({
                           ),
                         )}
                         {cards.length > 3 && (
+                          /* THE COUNT NAMES WHAT IT HIDES. A cell draws at most three chips, so on a busy
+                             day everything past the third was reachable only by opening the List and had
+                             no name at all: a sighted reader saw "+27 more" and a screen reader heard the
+                             same. The hidden titles ride the button's own name, so hovering says what is
+                             under there and assistive tech reads it out. */
                           <button
                             type="button"
                             onClick={() => {
                               goTo({ year: Number(cell.date.slice(0, 4)), month1: Number(cell.date.slice(5, 7)) })
                               setView('list')
                             }}
+                            aria-label={`${cards.length - 3} more on this day: ${cards.slice(3).map((ev) => ev.title).join(', ')}`}
+                            title={cards.slice(3).map((ev) => ev.title).join(', ')}
                             className="px-1.5 text-left text-2xs font-medium text-muted hover:text-text"
                           >
                             +{cards.length - 3} more
@@ -885,7 +893,7 @@ function CalendarPreview({
             onClick={onToggleTz}
             className="ml-6 mt-1 text-meta font-medium text-primary-strong underline-offset-2 hover:underline"
           >
-            {showViewer ? 'Show in event timezone' : 'Show in my timezone'}
+            {showViewer ? 'Show in event time zone' : 'Show in my time zone'}
           </button>
         )}
         {item.location && (

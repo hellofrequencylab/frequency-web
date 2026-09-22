@@ -18,7 +18,6 @@ import {
   insertSpacePlan,
   listPlaybooks,
   listPlanPublishedEventIds,
-  listSpacePlans,
   planHasPublishedEntry,
   updateSpacePlan,
   transitionSpacePlanRows,
@@ -318,25 +317,6 @@ export async function setPlanTodoDone(
   return ok()
 }
 
-export async function productionHref(
-  slug: string,
-  planId: string,
-  entryId?: string,
-): Promise<ActionResult<{ href: string }>> {
-  const editor = await resolveEditor(slug)
-  if (!editor) return fail('You do not have access to this calendar.')
-  const plan = await getSpacePlan(editor.spaceId, planId)
-  if (!plan) return fail('That Plan no longer exists.')
-  const href = planTargetDef(plan.targetKind).createHref?.({
-    spaceId: editor.spaceId,
-    spaceSlug: slug,
-    planId: plan.id,
-    entryId,
-  })
-  if (!href) return fail('This Plan does not open a Studio. Mark the work done on the Plan itself.')
-  return ok({ href })
-}
-
 export async function planReadiness(
   slug: string,
   planId: string,
@@ -574,16 +554,4 @@ export async function rotatePrivateCalendarFeed(slug: string): Promise<ActionRes
   if (error) return fail('The private feed could not be created.')
   revalidate(slug)
   return ok({ token })
-}
-
-export async function loadCalendarPlans(slug: string) {
-  const editor = await resolveEditor(slug)
-  if (!editor) return []
-  return listSpacePlans(editor.spaceId)
-}
-
-export async function loadPlaybooks(slug: string) {
-  const editor = await resolveEditor(slug)
-  if (!editor) return []
-  return listPlaybooks(editor.spaceId)
 }

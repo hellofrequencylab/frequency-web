@@ -191,17 +191,19 @@ landing inside the horizon, minus its `exception_dates` (`PROG-CAL13`, below).
 
 **Admin Calendar views** ([ADR-1389](DECISIONS.md), [ADR-1450](DECISIONS.md), [ADR-1454](DECISIONS.md), [ADR-1456](DECISIONS.md), [ADR-1457](DECISIONS.md), [ADR-1458](DECISIONS.md), [ADR-1464](DECISIONS.md), [ADR-1467](DECISIONS.md)). A viewer who
 edits the Space (with the Calendar function), or platform staff previewing it, lands on **Admin**
-(or the last view in the per-Space cookie) and can switch four views from one segmented control
-(`CalendarModeToggle`) inside `CalendarWorkspace`. The switch slides; it does not reload the page.
+(or the last view in the per-Space cookie) and can switch between four views inside `CalendarWorkspace`:
+a **Guest preview** button beside a three-way toggle (Calendar, List, Workflow) in `CalendarModeToggle`.
+Both are hand-rolled buttons until HYG-105 lands a kit segmented control; the switch slides and does
+not reload the page.
 
 | View | What it is |
 |---|---|
 | **Guest** | The existing public month (`guestLiveItems`). Live chips plus the C0 cancelled footer. Pencil and planning stay off. `?view=guest`. |
-| **Admin** | The same sliding month as Guest (`StaffCalendar` over `loadAdminCalendar`). Drafts, pencils, private entries, unpublished and internal dates Guest does not see. The stage board is Workflow. Default URL. |
+| **Admin** (labelled **Calendar**) | The team's month (`StaffCalendar` over `loadAdminCalendar`). Drafts, Pencils, Private entries, unpublished and internal dates Guest does not see. Guest and Admin start on the same month and then each keeps its own position: they are two `EventCalendar` mounts, not one shared month. The stage board is Workflow. Default URL. |
 | **List** | A condensed gathering index on the left. The right interior is the event control console: title with stage pill top-right, primary facts, share links, stats, Go to event. Not the Studio editor. `?view=list&item=`. |
 | **Workflow** | Every Plan, grouped by its production stage (`workflowBoard` over `PLAN_STAGE_TRANSITIONS`). A Plan moves stage through `transitionPlanStage`; "Open Plan" opens the same drawer Calendar and List open. `?view=workflow`. |
 
-Operators load Guest and Admin data once so a view switch does not remount. Unsigned members always get Guest and never hit `loadAdminCalendar`. The Pencil, Planning and Production lane helpers live in `lib/calendar/pm-console.ts`, which the List index reads; the Calendar tab Admin view is the guest-style month.
+Operators load Guest and Admin data once so a view switch does not remount. Unsigned members always get Guest and never hit `loadAdminCalendar`. The Pencil, Planning and Production lane helpers live in `lib/calendar/pm-console.ts`, which the List index reads; the Calendar tab Admin view (labelled Calendar) is the team's month in the same grid chrome as Guest.
 
 **The Calendar console** (PROG-CAL12, owner ask 2026-09-22; `components/spaces/calendar-console.tsx`). The full-screen edit mode of the Space calendar. It is the same `CalendarWorkspace` panel set and the same Plan drawer, placed inside a viewport-filling `Dialog` (`align="full"`) instead of inline on the page: the shown month's agenda down the left, grouped by day, each row selecting the item the List view selects and carrying Open Plan; the controls across the top (month and the viewer's time zone, Prev / Today / Next, Guest preview and the view toggle, Pencil it in, Ask Vera collapsed, the shortcuts sheet, Close). Month, view, List selection and the open Plan live in the workspace, so they travel in and out unchanged. It opens only from the "Open the console" control beside the view toggle or the F key (never a scroll, hover, double click, resize, rotation or remembered preference; a one-line dismissable hint says so on the first visit), and it exits on Esc (the drawer first when it is up, then the console), the Close control, or the browser's Back button: opening pushes a history entry carrying `?console=1` beside `view`, `item` and `plan` (`adminViewHref`, `parseConsoleFlag`), so a pasted link reopens it on the same month, view and drawer. On the page the staff grid pages by its buttons only (the month picker, Prev / Today / Next): no wheel, no swipe. Inside the console the vertical wheel and a sideways swipe page months too, and Left / Right, T, N and ? are the console's keys. It is a takeover layout, not the Fullscreen API: `lib/fullscreen.ts` records the owner's decision (2026-06-22) that `Element.requestFullscreen` is never called.
 
@@ -209,11 +211,13 @@ Operators load Guest and Admin data once so a view switch does not remount. Unsi
 
 **Loading a month.** The first month and every browsed month use the same public reader:
 `loadPublicSpaceWindow` (`lib/calendar/public-month.ts`), which composes `listSpaceCalendarEvents`,
-the Unavailable projection, and `guestLiveItems`. The Calendar tab Guest branch still calls
-`guestLiveItems` itself so that contract stays on the page. `guestFeedState` decides the first-use
-empty (kit `EmptyState`): cancelled-only and Unavailable-only feeds keep the grid and do not claim
-the calendar is empty. Staff months stay on the entry actions. `lib/calendar/month-window.ts`
-computes the visible grid window, including the spill days either side.
+the Unavailable projection, and `guestLiveItems`. That reader is the one place the guest gate runs;
+the Calendar tab Guest branch calls the reader and does not fold through `guestLiveItems` a second
+time (LIVE-468). `guestFeedState` counts the feed it gets back (live, cancelled, Unavailable) and
+declares first-use only when all three are zero, so a cancelled-only or Unavailable-only feed keeps
+the grid; the kit `EmptyState` under the grid reads `isFirstUse`. Staff months stay on the entry
+actions. `lib/calendar/month-window.ts` computes the visible grid window, including the spill days
+either side.
 
 **Navigation** (`components/events/event-calendar.tsx`, `components/events/use-month-gestures.ts`).
 
@@ -236,25 +240,27 @@ as a plan task's due date, a shift or a booking, is one row in `CALENDAR_LAYERS`
 maps its rows to `CalendarEvent`. The grid, the list and the preview need no change. A new kind of
 private entry is one `ENTRY_KINDS` row plus one value in the check constraint.
 
-## Pencil, Plan, Production (ADR-1386)
+## Pencil, Planning, Production (ADR-1386, ADR-1523)
 
 The lifecycle that turns an idea into a published event without retyping it. The owner rulings and the
 invariants are in [ADR-1386](DECISIONS.md); each phase is a backlog row (`PROG-CAL1` to `PROG-CAL8`)
 whose detail carries the full specification and whose probe says when it is done. The member-facing
-words are fixed in `docs/NAMING.md`.
+words are fixed in `docs/NAMING.md`: the STAGES are Pencil, Planning, Production ([ADR-1523](DECISIONS.md)
+struck the "Pencil, Plan, Production" clause), and capital-P **Plan** is the OBJECT, the working record
+a date carries through every stage.
 
 ```
- Pencil ───────────────▶ Plan ───────────────────────▶ Production
- a tentative private     the working record: notes,    the published event, created
- date (entry kind        links, files, crm_tasks rows  through the existing event Spark
- 'pencil'), candidates   with plan_id; holds many      prefilled from the plan; links
- share option_group      dates and many events         back to it; replaces the Pencil card
+ Pencil ───────────────▶ Planning ───────────────────▶ Production
+ a tentative private     the date is decided and the   the published event, created
+ date (entry kind        team is putting it together   through the existing event Spark
+ 'pencil'), candidates   in its Plan (space_plans:      prefilled from the Plan; links
+ share option_group      notes, links, to-dos, people)  back to it; replaces the Pencil card
 ```
 
 **Pencil** (`PROG-CAL1`). An entry of kind `pencil` on the private layer: tentative, team only, and not
 blocking bookings unless staff say so. Candidate dates for one Pencil share `option_group`; picking one
 keeps that row and removes its siblings. `hold_expires_at` is an optional lapse date the staff calendar
-flags. Pencilling over an event, Unavailable time or another entry raises a clash warning and is still
+flags. Penciling over an event, Unavailable time or another entry raises a clash warning and is still
 allowed.
 
 **Stages and description** ([ADR-1388](DECISIONS.md)). The staff drawer calls a kind `pencil` entry an
@@ -303,7 +309,7 @@ day's labels. A day note never blocks time and is never a calendar item.
 plan; `crm_tasks.plan_id` makes plan tasks part of the one team task inbox (`lib/crm/tasks.ts`). The
 plan drawer opens from any calendar item that belongs to a plan and is composed from a Studio manifest.
 Its footer's "Archive Plan" (`archiveSpacePlan`, HYG-120) sets `space_plans.archived_at`, deletes the
-Plan's pencilled dates that never became an event, and unlinks the ones that did; reversible in SQL,
+Plan's penciled dates that never became an event, and unlinks the ones that did; reversible in SQL,
 not yet in the UI. The e2e suite tears its own Plans down through that same door.
 A co-host Space sees a plan only through an accepted share of that plan.
 
@@ -314,8 +320,9 @@ readiness bar is derived from the manifest's required fields plus the plan's ope
 always the person's own press in the Spark.
 
 **Views, playbooks, Vera, together, beyond events** (`PROG-CAL4`–`PROG-CAL8`, shipped). A board of Plans by stage
-on Calendar settings; My tasks filterable by plan; to-do dates as the `todos` layer; back-to-back items stacked
-on the grid; playbooks and relative dues; Vera proposals that never publish; a token-keyed private feed at
+on Calendar settings; My tasks filterable by plan; to-do dates as the `todos` layer; a day with several items
+drawn as one stacked block on the grid (`stackDay` in `lib/calendar/sunday-stack.ts` groups by day; `areBackToBack`
+is the abutting test); playbooks and relative dues; Vera proposals that never publish; a token-keyed private feed at
 `/calendar/private/<token>`; the same Plan spine for Journey, Program, and maintenance targets.
 
 **What Vera actually reads** (`PROG-CAL6`, closed 2026-09-22). `lib/calendar/vera-plan.ts` is pure and only as

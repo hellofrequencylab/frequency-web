@@ -59,7 +59,7 @@ export async function saveCalendarEntry(
 ): Promise<ActionResult<void>> {
   const editor = await resolveEditor(slug)
   if (!editor) return fail('You do not have access to this calendar.')
-  if (entryId !== null && !UUID_RE.test(entryId)) return fail('That entry no longer exists.')
+  if (entryId !== null && !UUID_RE.test(entryId)) return fail('That date no longer exists.')
   const parsed = parseEntryInput(input)
   if ('error' in parsed) return fail(parsed.error)
   const w = parsed.data
@@ -74,13 +74,13 @@ export async function saveCalendarEntry(
     res = await insertCalendarEntries(editor.spaceId, [w, ...extra], editor.profileId)
   } else {
     const current = await getCalendarEntryRow(editor.spaceId, entryId)
-    if (!current) return fail('That entry no longer exists.')
+    if (!current) return fail('That date no longer exists.')
     const inGroup = current.option_group ? await countOptionGroup(editor.spaceId, current.option_group) : 1
     // A date that is one of several must be settled before it moves on, or the other dates would be
     // left behind as stray Pencils of something that is already Planning.
     if (inGroup > 1 && w.kind !== current.kind) return fail('This is one of several possible dates. Keep one date before you change its type.')
     if (inGroup > 1 && w.stage !== 'pencil') return fail('This is one of several possible dates. Keep one date before you move it past Pencil.')
-    if (inGroup + extra.length > MAX_CANDIDATE_DATES) return fail(`A pencil can hold ${MAX_CANDIDATE_DATES} dates at most.`)
+    if (inGroup + extra.length > MAX_CANDIDATE_DATES) return fail(`A Pencil can carry ${MAX_CANDIDATE_DATES} dates at most.`)
     if (current.plan_id && w.stage && w.stage !== current.stage) {
       const planStage = w.stage === 'planning' ? 'plan' : w.stage
       const moved = await transitionPlanStage(slug, current.plan_id, planStage)
@@ -121,7 +121,7 @@ export async function saveCalendarEntry(
 export async function deleteCalendarEntry(slug: string, entryId: string): Promise<ActionResult<void>> {
   const editor = await resolveEditor(slug)
   if (!editor) return fail('You do not have access to this calendar.')
-  if (!UUID_RE.test(entryId)) return fail('That entry no longer exists.')
+  if (!UUID_RE.test(entryId)) return fail('That date no longer exists.')
   const res = await deleteCalendarEntryRow(editor.spaceId, entryId)
   if ('error' in res) return fail(res.error)
   revalidate(slug)
@@ -135,11 +135,11 @@ export async function deleteCalendarEntry(slug: string, entryId: string): Promis
 export async function skipPencilDate(slug: string, entryId: string, dayKey: string): Promise<ActionResult<void>> {
   const editor = await resolveEditor(slug)
   if (!editor) return fail('You do not have access to this calendar.')
-  if (!UUID_RE.test(entryId)) return fail('That entry no longer exists.')
+  if (!UUID_RE.test(entryId)) return fail('That date no longer exists.')
   const day = asDayKey(dayKey)
   if (!day) return fail('Pick a valid date to skip.')
   const current = await getCalendarEntryRow(editor.spaceId, entryId)
-  if (!current) return fail('That entry no longer exists.')
+  if (!current) return fail('That date no longer exists.')
   if (!seriesRule(current)) return fail('This date does not repeat, so there is nothing to skip. Delete it instead.')
   const res = await setEntryExceptionDates(editor.spaceId, entryId, withExceptionDate(current.exception_dates, day))
   if ('error' in res) return fail(res.error)
@@ -165,7 +165,7 @@ export async function loadStaffCalendarMonth(slug: string, year: number, month1:
 export async function pickPencilDate(slug: string, entryId: string): Promise<ActionResult<void>> {
   const editor = await resolveEditor(slug)
   if (!editor) return fail('You do not have access to this calendar.')
-  if (!UUID_RE.test(entryId)) return fail('That entry no longer exists.')
+  if (!UUID_RE.test(entryId)) return fail('That date no longer exists.')
   const res = await keepPencilDateRow(editor.spaceId, entryId)
   if ('error' in res) return fail(res.error)
   revalidate(slug)

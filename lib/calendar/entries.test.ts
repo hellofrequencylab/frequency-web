@@ -69,8 +69,8 @@ describe('parseEntryInput', () => {
   })
 
   it('refuses bad input with a plain sentence', () => {
-    expect(parseEntryInput({ ...base, kind: 'party' })).toEqual({ error: 'Choose what kind of entry this is.' })
-    expect(parseEntryInput({ ...base, title: '  ' })).toEqual({ error: 'Give the entry a title.' })
+    expect(parseEntryInput({ ...base, kind: 'party' })).toEqual({ error: 'Choose what kind of date this is.' })
+    expect(parseEntryInput({ ...base, title: '  ' })).toEqual({ error: 'Give the date a title.' })
     expect(parseEntryInput({ ...base, startDate: '2026-02-31' })).toEqual({ error: 'Pick a valid date.' })
     expect(parseEntryInput({ ...base, endDate: '2026-12-01' })).toEqual({ error: 'The end date is before the start date.' })
     expect(parseEntryInput({ ...base, allDay: false, endDate: '2026-12-24', startTime: '10:00', endTime: '09:00' })).toEqual({
@@ -199,7 +199,7 @@ describe('pencils (ADR-1386)', () => {
     if ('error' in extra) throw new Error(extra.error)
     expect(extra.map((e) => [e.starts_at, e.ends_at])).toEqual([['2026-10-19T19:00:00.000Z', '2026-10-19T21:00:00.000Z']])
     expect(candidateWrites(r, ['2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16', '2026-10-17', '2026-10-18'])).toEqual({
-      error: 'A pencil can hold 6 dates at most.',
+      error: 'A Pencil can carry 6 dates at most.',
     })
   })
 })

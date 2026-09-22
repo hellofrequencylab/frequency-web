@@ -1,4 +1,5 @@
 import type { CalendarEvent } from './item'
+import { shortDateLabel } from './short-date'
 import { repeatChipLabel } from '@/lib/events/repeat-rule'
 import { expandPencilSeries, normaliseExceptionDates, pencilRepeatRule, seriesRule, type SeriesWindow } from './pencil-series'
 import {
@@ -130,9 +131,9 @@ function trimOrNull(v: string | null | undefined, max: number): string | null {
 /** Validate the staff form into the columns to write. Errors are plain sentences for the form. */
 export function parseEntryInput(input: EntryInput): { data: EntryWrite } | { error: string } {
   const def = entryKind(input.kind)
-  if (!def) return { error: 'Choose what kind of entry this is.' }
+  if (!def) return { error: 'Choose what kind of date this is.' }
   const title = trimOrNull(input.title, 200)
-  if (!title) return { error: 'Give the entry a title.' }
+  if (!title) return { error: 'Give the date a title.' }
   const startDay = dateMs(input.startDate)
   const endDay = dateMs(input.endDate || input.startDate)
   if (startDay === null || endDay === null) return { error: 'Pick a valid date.' }
@@ -169,7 +170,7 @@ export function parseEntryInput(input: EntryInput): { data: EntryWrite } | { err
     holdExpiresAt = new Date(lapse).toISOString()
   }
   const timeZone = (input.timeZone ?? '').trim()
-  if (!timeZone) return { error: 'The entry needs a time zone.' }
+  if (!timeZone) return { error: 'The date needs a time zone.' }
 
   return {
     data: {
@@ -222,7 +223,7 @@ export function candidateWrites(first: EntryWrite, dates: readonly string[] | nu
       exception_dates: [],
     })
   }
-  if (out.length + 1 > MAX_CANDIDATE_DATES) return { error: `A pencil can hold ${MAX_CANDIDATE_DATES} dates at most.` }
+  if (out.length + 1 > MAX_CANDIDATE_DATES) return { error: `A Pencil can carry ${MAX_CANDIDATE_DATES} dates at most.` }
   return out
 }
 
@@ -310,7 +311,7 @@ export function entryToCalendarItem(
   const badges = [
     row.status === 'tentative' && !stage ? 'Tentative' : null,
     holding && row.option_group ? 'One of several dates' : null,
-    holding && row.hold_expires_at ? (lapsed ? 'Lapsed' : `Lapses ${row.hold_expires_at.slice(5, 10).replace('-', '/')}`) : null,
+    holding && row.hold_expires_at ? (lapsed ? 'Lapsed' : `Lapses ${shortDateLabel(row.hold_expires_at)}`) : null,
     row.visibility === 'public_unavailable' ? 'Shown publicly' : null,
   ]
     .filter(Boolean)

@@ -11,8 +11,6 @@ import {
 // `?view=` stays in the URL via history.replaceState so a share still works.
 // Guest is a separate audience preview beside this box, so in Guest no segment is selected.
 
-export type CalendarMode = CalendarAdminView
-
 const SEGMENTS = CALENDAR_ADMIN_VIEW_DEFS.filter((o) => o.view !== 'guest').map((o) => ({
   value: o.view,
   label: o.label,

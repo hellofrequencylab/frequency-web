@@ -1,4 +1,3 @@
-import type { EventCoreStats } from '@/lib/events/event-stats-core'
 import type { CalendarEvent } from './item'
 import { isOperatorListItem, operatorListHref, operatorStageLabel, operatorStageTone } from './pm-console'
 import { itemIsCancelled, type EntryStage, type EntryStageTone } from './registry'
@@ -109,17 +108,17 @@ export function selectListItem(items: ListIndexItem[], selectedKey: string | nul
   return items[0] ?? null
 }
 
-/** Headline numbers the List viewer can show without opening Manage. */
-export function truncatedListStats(item: ListIndexItem): EventCoreStats {
-  return {
-    sold: 0,
-    revenueCents: 0,
-    currency: 'usd',
-    going: item.goingCount,
-    interested: 0,
-    waitlist: 0,
-    checkedIn: 0,
-    capacity: null,
-    paid: false,
-  }
+export type ListGlanceStat = { key: 'going'; label: string; value: number }
+
+/** The headline numbers the List viewer can stand behind without opening Manage (LIVE-468).
+ *
+ *  Going is the one number this index actually carries: an event's `goingCount` is read from its
+ *  RSVPs by the month readers. Nothing here reads tickets, Interested, Waitlist or check-ins, so
+ *  none of them is shown; the previous shape hard-coded every one of them to 0 (and "paid" to
+ *  false), which put "Interested 0 · Waitlist 0 · Checked in 0" under every row, Pencils included,
+ *  and hid Sold on every paid event. A date that is not an event yet has no RSVPs, so it has nothing
+ *  at a glance and the section stays off. */
+export function listGlanceStats(item: ListIndexItem): ListGlanceStat[] {
+  if (!item.eventId) return []
+  return [{ key: 'going', label: 'Going', value: item.goingCount }]
 }

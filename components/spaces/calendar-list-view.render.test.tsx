@@ -76,6 +76,33 @@ describe('CalendarListView', () => {
     expect(el.textContent).not.toContain('—')
   })
 
+  it('shows only the number it has: Going for an event, and no glance at all for a Pencil (LIVE-468)', () => {
+    const el = mount(<CalendarListView items={[sit]} selected={sit} onSelect={() => {}} />)
+    expect(el.textContent).toContain('At a glance')
+    expect(el.textContent).toContain('Going')
+    // These were hard-coded to 0 under every row; the index never reads them, so it never shows them.
+    for (const madeUp of ['Interested', 'Waitlist', 'Checked in', 'Sold', 'Revenue', 'Capacity']) {
+      expect(el.textContent).not.toContain(madeUp)
+    }
+    const pencil: ListIndexItem = {
+      ...sit,
+      key: 'entry-2|2026-09-30',
+      title: 'Harvest sit',
+      stageLabel: 'Pencil',
+      stageTone: 'neutral',
+      stage: 'pencil',
+      href: null,
+      editHref: null,
+      publicSlug: null,
+      eventId: null,
+      entryId: 'entry-2',
+      goingCount: 0,
+    }
+    const el2 = mount(<CalendarListView items={[pencil]} selected={pencil} onSelect={() => {}} />)
+    expect(el2.textContent).not.toContain('At a glance')
+    expect(el2.textContent).not.toContain('Going')
+  })
+
   it('uses the kit empty when there is nothing to run', () => {
     const el = mount(<CalendarListView items={[]} selected={null} onSelect={() => {}} />)
     expect(el.textContent).toContain('Nothing to run yet.')

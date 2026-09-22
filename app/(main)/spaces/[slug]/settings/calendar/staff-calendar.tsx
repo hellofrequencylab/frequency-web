@@ -16,6 +16,8 @@ import { MAX_CANDIDATE_DATES, MAX_DESCRIPTION, type EntryInput } from '@/lib/cal
 import { PENCIL_REPEAT_CHOICES, pencilRepeatChoice, pencilRuleForChoice, withoutExceptionDate } from '@/lib/calendar/pencil-series'
 import { describeRepeat, parseRepeat } from '@/lib/events/repeat-rule'
 import { PUBLISH_STEP, productionDoorHref, stageTimeline } from '@/lib/calendar/stage-timeline'
+import { shortDateLabel } from '@/lib/calendar/short-date'
+import { browserZone } from '@/lib/calendar/browser-zone'
 import type { DayNote } from '@/lib/calendar/day-notes'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import { isError } from '@/lib/action-result'
@@ -43,14 +45,6 @@ interface Draft {
   /** The day this drawer was opened from when the entry repeats (PROG-CAL5): what "Skip this date"
    *  skips. Null when opened from the master or a one-off. */
   occurrenceDate?: string | null
-}
-
-function browserZone(): string {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Los_Angeles'
-  } catch {
-    return 'America/Los_Angeles'
-  }
 }
 
 function blankInput(kind: string, dayKey: string): EntryInput {
@@ -418,7 +412,7 @@ export function StaffCalendar({
             {/* Only a SAVED entry reaches this form (a new one takes the short form above), so the
                 heading is always an edit. */}
             <h2 id="calendar-entry-title" className="text-lead font-bold text-text">
-              {def?.isPencil ? 'Edit event' : 'Edit entry'}
+              {def?.isPencil ? 'Edit event' : 'Edit date'}
             </h2>
 
             <div className="grid gap-1">
@@ -563,7 +557,7 @@ export function StaffCalendar({
                 {draft?.id && draft.occurrenceDate && repeatRule && !skippedDates.includes(draft.occurrenceDate) && (
                   <div>
                     <Button type="button" variant="secondary" size="sm" onClick={skip} disabled={pending}>
-                      Skip this date ({draft.occurrenceDate})
+                      Skip this date ({shortDateLabel(draft.occurrenceDate)})
                     </Button>
                   </div>
                 )}
@@ -571,7 +565,7 @@ export function StaffCalendar({
                   <ul className="grid gap-1" aria-label="Skipped dates">
                     {skippedDates.map((d) => (
                       <li key={d} className="flex items-center justify-between gap-2 text-body-sm text-text">
-                        <span>Skipped {d}</span>
+                        <span>Skipped {shortDateLabel(d)}</span>
                         <Button
                           type="button"
                           variant="ghost"
@@ -737,7 +731,7 @@ export function StaffCalendar({
                       })
                     }
                   >
-                    Start a Plan
+                    Start a plan
                   </Button>
                 )}
                 {draft?.id && input.planId && (

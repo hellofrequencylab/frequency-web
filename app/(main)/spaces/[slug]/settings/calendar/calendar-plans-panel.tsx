@@ -66,7 +66,7 @@ export function CalendarPlansPanel({
             })
           }
         >
-          Start a Plan
+          Start a plan
         </Button>
       </div>
 

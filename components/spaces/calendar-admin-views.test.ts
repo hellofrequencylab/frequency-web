@@ -24,6 +24,7 @@ describe('Admin Calendar views (ADR-1464, ADR-1467, HYG-118)', () => {
   const toggle = readFileSync('components/spaces/calendar-mode-toggle.tsx', 'utf8')
   const shell = readFileSync('components/spaces/calendar-workspace.tsx', 'utf8')
   const views = readFileSync('lib/calendar/admin-views.ts', 'utf8')
+  const publicMonth = readFileSync('lib/calendar/public-month.ts', 'utf8')
   // The stage lanes' one live home. lib/calendar/list-index.ts reads this module, so it is not a
   // leftover — the previous pass in this lane wrongly called it an orphan.
   const lanes = readFileSync('lib/calendar/pm-console.ts', 'utf8')
@@ -42,7 +43,12 @@ describe('Admin Calendar views (ADR-1464, ADR-1467, HYG-118)', () => {
     expect(page).toContain('loadAdminCalendar(')
     expect(page.indexOf('loadAdminCalendar(')).toBeGreaterThan(page.indexOf('if (!adminAllowed)'))
     expect(page).toContain('CalendarWorkspace')
+    // The Guest feed goes through guestLiveItems ONCE, inside the one public reader every month uses
+    // (ADR-1457, LIVE-468). The page names the seam and calls that reader; it does not gate again.
     expect(page).toContain('guestLiveItems')
+    expect(page).toContain('loadPublicSpaceWindow(')
+    expect(page).not.toContain('guestLiveItems(')
+    expect(publicMonth).toMatch(/return guestLiveItems\(/)
     expect(page).not.toContain("view !== 'guest'")
     expect(shell).toContain('StaffCalendar')
     expect(shell).toContain('data-calendar-admin-grid')

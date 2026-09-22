@@ -41,8 +41,13 @@ function item(over: Partial<CalendarEvent> & Pick<CalendarEvent, 'slug' | 'title
   }
 }
 
+// A chip names exactly one item. The overflow count also carries a title now (it lists what it
+// hides), so it is excluded here by the comma that joins those names.
 const chipTitles = (el: HTMLElement) =>
-  [...el.querySelectorAll('button[title]')].map((b) => b.getAttribute('title')).filter((t): t is string => !!t)
+  [...el.querySelectorAll('button[title]')]
+    .filter((b) => !/\+\d+ more/.test(b.textContent ?? ''))
+    .map((b) => b.getAttribute('title'))
+    .filter((t): t is string => !!t)
 
 describe('EventCalendar grid: one button per item on a busy day', () => {
   it('two gatherings on one day are two buttons, each opening its own item', () => {
@@ -114,5 +119,19 @@ describe('EventCalendar grid: one button per item on a busy day', () => {
     const titles = Array.from(el.querySelectorAll('[title]')).map((e) => e.getAttribute('title'))
     expect(titles.some((t) => t?.includes('Fresh pencil'))).toBe(true)
     expect(titles.some((t) => t?.includes('Long retreat'))).toBe(true)
+  })
+
+  it('names what the overflow count hides, so nothing on a busy day is nameless', () => {
+    // A cell draws at most three chips. Everything past the third used to be reachable only through
+    // the List and carried no name at all, for a reader or for assistive tech.
+    const many = Array.from({ length: 6 }, (_, i) =>
+      item({ slug: `s${i}`, title: `Gathering ${i}`, dayKey: '2026-09-22', startInstantIso: `2026-09-22T${10 + i}:00:00.000Z` }),
+    )
+    const el = mount(<EventCalendar events={many} initialYear={2026} initialMonth1={9} />)
+    const more = Array.from(el.querySelectorAll('button')).find((b) => /\+3 more/.test(b.textContent ?? ''))
+    expect(more, 'the count is shown').toBeTruthy()
+    expect(more!.getAttribute('title')).toContain('Gathering 3')
+    expect(more!.getAttribute('title')).toContain('Gathering 5')
+    expect(more!.getAttribute('aria-label')).toContain('3 more on this day')
   })
 })
