@@ -123,6 +123,9 @@ export const SUSPENSION_EXEMPT: Record<string, string> = {
   library_versions: 'operator-authored (library)',
   space_venue_holds: 'a Space-side scheduling record, not a member post',
   space_calendar_entries: 'operator-authored private calendar layer (ADR-1385), team-only and never public',
+  space_plans:
+    'operator-authored planning record (ADR-1386), team-only and never public; a Plan reaches the\n     public only by a person pressing publish in the event Spark, which is a `events` write and IS covered',
+  space_plan_playbooks: 'operator-authored template for the above; never public, never a member post',
   // Private to the member: a suspension blocks contribution to the community, not the member's
   // own settings, notes and logs. Blocking these would also break the account-management flows.
   network_contact_notes: 'private CRM note visible only to its author',
