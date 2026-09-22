@@ -95,3 +95,67 @@ export async function setSeatAttended(db: AttendanceDb, input: SetSeatAttendedIn
   if (error) return { ok: false, error: error.message }
   return { ok: true }
 }
+
+// ── READING THE RECORD BACK: HOW MANY PEOPLE CAME (PROG-CAL6) ─────────────────────────────────
+// The recap Vera drafts for a Plan in production asks one number of an event: how many people
+// were there. Two records answer it, and this fold is the ONE rule for combining them, so the
+// recap and any later reader count the same way:
+//
+//   * the host's mark on a seat (`attended_at` on event_rsvps / event_tickets, written above), and
+//   * the member's own verified check-in (the engagement ledger row `checkInEvent` writes, keyed
+//     on (event, profile), read as a set of profile ids the same way the Manage roster reads it).
+//
+// One person is counted once: a member who checked in AND was marked by the host shares a
+// profile id across both records, and a ticket bought by someone who also holds an RSVP row
+// shares one too. A seat with no profile (a guest RSVP, a guest ticket) counts by its row id.
+// Plus-ones and ticket quantity are NOT multiplied: the mark is on the seat, and the record says
+// nothing about who else walked in with it.
+//
+// NULL MEANS NO RECORD. When nobody was marked and nobody checked in, the honest answer is not
+// zero (a room can be full and the host never touch the roster) but "attendance was not
+// recorded", so the fold returns null and the recap says exactly that. Pure, so the rule is
+// testable without a client; the read that feeds it lives in lib/events/event-stats.ts.
+
+export interface AttendedRsvpRow {
+  id: string
+  profile_id: string | null
+  attended_at: string | null
+}
+
+export interface AttendedTicketRow {
+  id: string
+  buyer_profile_id: string | null
+  attended_at: string | null
+}
+
+export interface AttendanceRecordInput {
+  rsvps: readonly AttendedRsvpRow[]
+  tickets: readonly AttendedTicketRow[]
+  /** Profile ids with a verified self check-in for the event. */
+  checkedInProfileIds: readonly string[]
+}
+
+/** People counted present by either record, once each, or null when the record is empty. */
+export function attendanceCount(input: AttendanceRecordInput): number | null {
+  const people = new Set<string>()
+  for (const r of input.rsvps) {
+    if (!r.attended_at) continue
+    people.add(r.profile_id ? `p:${r.profile_id}` : `rsvp:${r.id}`)
+  }
+  for (const t of input.tickets) {
+    if (!t.attended_at) continue
+    people.add(t.buyer_profile_id ? `p:${t.buyer_profile_id}` : `ticket:${t.id}`)
+  }
+  for (const id of input.checkedInProfileIds) if (id) people.add(`p:${id}`)
+  return people.size === 0 ? null : people.size
+}
+
+/** Fold several events' records into one number for a Plan: null only when EVERY record is empty. */
+export function sumAttendance(counts: readonly (number | null)[]): number | null {
+  let total: number | null = null
+  for (const c of counts) {
+    if (c == null) continue
+    total = (total ?? 0) + c
+  }
+  return total
+}

@@ -150,3 +150,15 @@ export async function listPlanLinkableEventRows(
     planId: ev.plan_id ?? null,
   }))
 }
+
+/** THE DAYS THIS SPACE'S OWN EVENTS OCCUPY, for Vera's date suggestion (PROG-CAL6): the stored
+ *  wall clock of every upcoming event under the Space, drafts included, because a draft Production
+ *  on a date is a date the team is holding. Same gate story as `listPlanLinkableEventRows` above:
+ *  the publication opt-out stays in this one file, and the caller is a manager of the Space. Only
+ *  times leave here (no title, no location); lib/calendar/availability.ts turns them into day keys. */
+export async function listSpaceEventSpans(
+  spaceId: string,
+): Promise<{ starts_at: string | null; ends_at: string | null; is_cancelled: boolean | null }[]> {
+  const rows = await listEventsForSpace(spaceId, { limit: 500, upcomingOnly: true, includeUnpublished: true })
+  return rows.map((ev) => ({ starts_at: ev.starts_at, ends_at: ev.ends_at, is_cancelled: ev.is_cancelled }))
+}

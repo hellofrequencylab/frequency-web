@@ -306,6 +306,20 @@ on Calendar settings; My tasks filterable by plan; to-do dates as the `todos` la
 on the grid; playbooks and relative dues; Vera proposals that never publish; a token-keyed private feed at
 `/calendar/private/<token>`; the same Plan spine for Journey, Program, and maintenance targets.
 
+**What Vera actually reads** (`PROG-CAL6`, closed 2026-09-22). `lib/calendar/vera-plan.ts` is pure and only as
+honest as what `veraPlanProposal` (`app/(main)/spaces/[slug]/settings/calendar/plan-actions.ts`) hands it.
+Dates: the busy set is this Space's calendar for the 90 days after the day suggestions start from (the Plan's
+anchor day while it is still ahead, else today): private entries and day notes on the caller's session, and the
+Space's own events, drafts included, through `listSpaceEventSpans` in `lib/calendar/admin-calendar.ts`. The
+mapping from rows to day keys is `busyDayKeysFor` in `lib/calendar/availability.ts`, read off each row's stored
+wall clock like the month grid, so a suggestion never lands on a Pencil, an Unavailable span, an event or a noted
+day. Recap: for a Plan in production the attendance is the record of the events the Plan became (both
+`events.plan_id` and `published_event_id`), counted by `attendanceCount` in `lib/events/attendance.ts` from host
+marks and verified self check-ins, one person once; null only when that record is empty. The recap says nothing
+about running late because nothing in the data records when an event ended. Voice: every string Vera emits goes
+through `voiceLine` in `lib/ai/voice.ts`, the mechanical half of the primer, with no model call. Vera still never
+publishes, sends or books; the proposal is shown and the team accepts it.
+
 **Production seams for the non-event targets** (`PROG-CAL8`, `PROG-CAL9`, shipped). Each target in `PLAN_TARGET_DEFS`
 (`lib/calendar/plans.ts`) declares the door "Make it a Production" opens, sending the identifier its destination
 resolves (a slug for `/journeys/new` and `/spaces/<slug>/settings/program`, an id for `/events/new`) plus `plan=`.

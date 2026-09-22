@@ -91,3 +91,27 @@ export async function setEventPlan(
   if (error) return { error: 'That event could not be linked to the Plan.' }
   return { data: true }
 }
+
+/** THE EVENTS A PLAN BECAME (PROG-CAL6): every `events.plan_id` link to this Plan, kept to the
+ *  events this Space owns or hosts, the same membership test `setEventPlan` makes before it writes.
+ *  Read here, beside the write, so the two halves of the link agree on what belongs. The Plan is
+ *  authorized through the caller's own session first; a Plan the caller cannot read lists nothing.
+ *  Fail-safe to [] (the recap then reads no record), never a throw. */
+export async function listPlanEventIds(spaceId: string, planId: string): Promise<string[]> {
+  if (!UUID_RE.test(planId) || !UUID_RE.test(spaceId)) return []
+  const plan = await getSpacePlan(spaceId, planId)
+  if (!plan) return []
+  try {
+    const { data, error } = await createAdminClient()
+      .from('events')
+      .select('id, space_id, host_space_id')
+      .eq('plan_id', plan.id)
+      .is('removed_at', null)
+      .limit(50)
+    if (error || !data) return []
+    const rows = data as { id: string; space_id: string | null; host_space_id: string | null }[]
+    return rows.filter((e) => e.space_id === spaceId || e.host_space_id === spaceId).map((e) => e.id)
+  } catch {
+    return []
+  }
+}

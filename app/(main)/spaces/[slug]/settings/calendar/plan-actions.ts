@@ -17,6 +17,7 @@ import {
   insertPlaybook,
   insertSpacePlan,
   listPlaybooks,
+  listPlanPublishedEventIds,
   listSpacePlans,
   planHasPublishedEntry,
   updateSpacePlan,
@@ -31,14 +32,18 @@ import {
   type CrmTask,
 } from '@/lib/crm/tasks'
 import { moveAnchoredDues, normalizeOffsetDays, resolveDueFromOffset } from '@/lib/calendar/relative-schedule'
-import { getCalendarEntryRow } from '@/lib/calendar/entries-store'
+import { getCalendarEntryRow, listSpaceCalendarEntries } from '@/lib/calendar/entries-store'
+import { listDayNotes } from '@/lib/calendar/day-notes-store'
 import { parseEntryInput, type EntryInput } from '@/lib/calendar/entries'
 import { productionPrefill, readinessGaps } from '@/lib/calendar/production-prefill'
+import { availabilityWindow, busyDayKeysFor } from '@/lib/calendar/availability'
 import { EVENT_MANIFEST } from '@/lib/studio/entities/event'
 import { buildVeraProposal } from '@/lib/calendar/vera-plan'
 import { createClient } from '@/lib/supabase/server'
-import { setEventPlan } from '@/lib/events/plan-link'
-import { listPlanLinkableEventRows } from '@/lib/calendar/admin-calendar'
+import { listPlanEventIds, setEventPlan } from '@/lib/events/plan-link'
+import { loadPlanAttendance } from '@/lib/events/event-stats'
+import { listPlanLinkableEventRows, listSpaceEventSpans } from '@/lib/calendar/admin-calendar'
+import { dayInZone } from '@/lib/time/zone'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -458,24 +463,60 @@ export async function runPlanAgain(slug: string, planId: string): Promise<Action
   return created
 }
 
+/**
+ * ASK VERA (ADR-1386 P6, PROG-CAL6). Everything here is a proposal the drawer shows unpublished;
+ * nothing is written. The two inputs that make the proposal honest are read HERE, from this Space
+ * and no other, because the library (lib/calendar/vera-plan.ts) is pure and can only be as true as
+ * what it is handed:
+ *
+ *   AVAILABILITY. The busy set is this Space's real calendar for the 90 days after the day
+ *   suggestions start from (the Plan's own date when it is still ahead, else today): its private
+ *   entries (Pencils, Unavailable time) and day notes on the caller's session, and its own events,
+ *   drafts included, through the one module the publication gate lets read them. An empty set here
+ *   used to be a literal, so Vera offered dates the team was already holding.
+ *
+ *   THE RECAP. For a Plan in production the attendance is read from the record of the events the
+ *   Plan became (both halves of the link, `events.plan_id` and `published_event_id`), counted by
+ *   lib/events/attendance.ts. Null means that record is empty, computed, not assumed. "Ran late" is
+ *   gone from the recap: nothing in the data says when an event actually ended.
+ */
 export async function veraPlanProposal(slug: string, planId: string) {
   const editor = await resolveEditor(slug)
   if (!editor) return null
   const plan = await getSpacePlan(editor.spaceId, planId)
   if (!plan) return null
   const todos = await listTasks({ spaceId: editor.spaceId, planId, limit: 50 })
-  const today = new Date().toISOString().slice(0, 10)
+  const today = dayInZone(new Date())
+  const anchorDay = await getPlanAnchorDayKey(editor.spaceId, plan.id)
+  const fromDayKey = anchorDay && anchorDay > today ? anchorDay : today
+  const window = availabilityWindow(fromDayKey)
+  const [entries, events, dayNotes] = await Promise.all([
+    listSpaceCalendarEntries(editor.spaceId, window.fromDay, window.toDay),
+    listSpaceEventSpans(editor.spaceId),
+    listDayNotes(editor.spaceId),
+  ])
+  const busyDayKeys = busyDayKeysFor({ entries, events, dayNotes, fromDay: window.fromDay, toDay: window.toDay })
   return buildVeraProposal({
     pastTaskTitles: todos.map((t) => t.title),
-    busyDayKeys: [],
+    busyDayKeys,
     preferredWeekdays: [0, 6],
-    fromDayKey: today,
+    fromDayKey,
     gaps: readinessGaps({
       required: EVENT_MANIFEST.fields.filter((f) => f.required).map((f) => ({ path: f.path, label: f.label, value: plan.title })),
       openTodoCount: todos.filter((t) => t.status === 'open').length,
     }),
-    recap: plan.stage === 'production' ? { title: plan.title, attendance: null, ranLate: false } : null,
+    recap: plan.stage === 'production' ? { title: plan.title, attendance: await planAttendance(editor.spaceId, plan.id) } : null,
   })
+}
+
+/** The count behind the recap: the union of both halves of the Plan-to-event link, then the record. */
+async function planAttendance(spaceId: string, planId: string): Promise<number | null> {
+  const [linked, published] = await Promise.all([
+    listPlanEventIds(spaceId, planId),
+    listPlanPublishedEventIds(spaceId, planId),
+  ])
+  const eventIds = [...new Set([...linked, ...published])]
+  return eventIds.length ? loadPlanAttendance(eventIds) : null
 }
 
 export async function acceptVeraChecklist(slug: string, planId: string, titles: string[]): Promise<ActionResult<void>> {
