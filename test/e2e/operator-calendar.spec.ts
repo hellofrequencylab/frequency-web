@@ -75,7 +75,15 @@ test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () 
     await page.getByRole('button', { name: 'Pencil date', exact: true }).click()
 
     await expect(page.getByRole('button', { name: 'Open Plan' })).toBeVisible()
-    await page.getByRole('button', { name: 'Cancel' }).click()
+    // 🔴 `exact: true`, and it is load-bearing at all three Cancel sites. getByRole's `name`
+    // defaults to exact:false, which is case-insensitive SUBSTRING matching, and the saved entry
+    // drawer renders two buttons whose names one prefixes the other: the footer's "Cancel"
+    // (dismiss the form, staff-calendar.tsx:599) and the stage row's "Cancel this date" (the
+    // Cancelled exit, :344). Strict mode then fails with two matches. The second only appears once
+    // the entry has been SAVED, which is why this never fired while these tests were skipping for
+    // want of manage rights on PW_SPACE_SLUG's Space — the account fact this file's own
+    // skipUnlessOperator note describes. Granting it made three latent selector bugs real.
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
 
     const calendarPanel = page.locator('[data-calendar-panel="admin"]')
     await expect(calendarPanel.getByText(title, { exact: true })).toBeVisible()
@@ -102,7 +110,7 @@ test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () 
     await page.locator('#entry-title').fill(privateTitle)
     await page.locator('#entry-start-date').fill(new Date().toLocaleDateString('en-CA'))
     await page.getByRole('button', { name: 'Pencil date', exact: true }).click()
-    await page.getByRole('button', { name: 'Cancel' }).click()
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
 
     await page.getByRole('button', { name: 'Guest preview' }).click()
     await expect(page.locator('[data-calendar-workspace]')).toHaveAttribute('data-calendar-view', 'guest')
@@ -172,7 +180,7 @@ test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () 
     const planId = new URL(page.url()).searchParams.get('plan')
     expect(planId).toBeTruthy()
     await closeAndKeepView('admin')
-    await page.getByRole('button', { name: 'Cancel' }).click()
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
 
     await page.getByRole('button', { name: 'List', exact: true }).click()
     const listPanel = page.locator('[data-calendar-panel="list"]')

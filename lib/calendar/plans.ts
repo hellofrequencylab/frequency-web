@@ -163,17 +163,44 @@ export function mapPlanRow(r: {
   }
 }
 
+/** What a target's create door is handed. BOTH identifiers, deliberately.
+ *
+ *  🔴 THE TWO NAMES FOR A SPACE ARE NOT INTERCHANGEABLE, and pretending they were is the whole of
+ *  PROG-CAL8's defect. This used to take `spaceId` alone, and `resolveEditor` sets that to
+ *  `space.id` — a UUID. Two of the four doors led somewhere that resolves a SLUG:
+ *
+ *    • `/journeys/new?space=` is read by `getVisibleSpaceBySlug`, which queries `.eq('slug', norm)`.
+ *      A UUID never matched, so the page took its `!space` branch and `redirect('/spaces')` fired.
+ *      The owner pressed "Make it a Production" and landed on the Spaces directory.
+ *    • `/spaces/<seg>/settings/...` is a `[slug]` segment. A UUID there is a 404.
+ *
+ *  So each target is handed both and uses the one its destination actually resolves, rather than
+ *  every door being bent to one identifier that only the event door ever wanted. `/events/new`
+ *  genuinely compares `?space=` against `s.id` (see its `defaultGroupId`), and changing that would
+ *  break the Duplicate and circle roads that share the param. The asymmetry is in the destinations;
+ *  hiding it here is what made it invisible. */
+export interface PlanTargetHrefOpts {
+  /** The Space's UUID. For a destination that resolves a Space by id. */
+  spaceId: string
+  /** The Space's URL slug. For a `[slug]` route segment, or a page that looks the Space up by slug. */
+  spaceSlug: string
+  planId: string
+  entryId?: string
+}
+
 export interface PlanTargetDef {
   kind: PlanTargetKind
   label: string
   /** Studio create path when this target has one. Null for maintenance. */
-  createHref: ((opts: { spaceId: string; planId: string; entryId?: string }) => string) | null
+  createHref: ((opts: PlanTargetHrefOpts) => string) | null
 }
 
 export const PLAN_TARGET_DEFS: readonly PlanTargetDef[] = [
   {
     kind: 'event',
     label: 'Event',
+    // `?space=` here is an ID on purpose: /events/new matches it against the ids of the scopes the
+    // caller runs. This door always worked.
     createHref: ({ spaceId, planId, entryId }) => {
       const q = new URLSearchParams({ space: spaceId, plan: planId })
       if (entryId) q.set('pencil', entryId)
@@ -183,12 +210,23 @@ export const PLAN_TARGET_DEFS: readonly PlanTargetDef[] = [
   {
     kind: 'journey',
     label: 'Journey',
-    createHref: ({ spaceId, planId }) => `/journeys/new?space=${spaceId}&plan=${planId}`,
+    // `?space=` here is a SLUG: that is the documented contract of /journeys/new, whose Space road
+    // swaps the gate from the member tier to managing the named Space. `?plan=` is read there too
+    // now, and the Journey it creates carries `journey_plans.space_plan_id` back to this Plan.
+    createHref: ({ spaceSlug, planId }) => `/journeys/new?space=${spaceSlug}&plan=${planId}`,
   },
   {
     kind: 'program',
     label: 'Program',
-    createHref: ({ spaceId, planId }) => `/spaces/${spaceId}/settings?plan=${planId}`,
+    // The Program owner surface, which is a real page at this exact segment — the old href pointed
+    // at `/spaces/<id>/settings`, where there is only a layout and no page at all.
+    //
+    // NO `?plan=`. Nothing on that page reads one yet, and a parameter nothing reads is the same
+    // class of lie as an href nothing serves: it would look wired in every diff and in the URL bar
+    // while the Plan stayed on Planning for ever. PROG-CAL9 carries the Program's half of the
+    // seam — a back-link column and the stage advance — and adds the param in the change that
+    // reads it.
+    createHref: ({ spaceSlug }) => `/spaces/${spaceSlug}/settings/program`,
   },
   { kind: 'maintenance', label: 'Maintenance', createHref: null },
 ]

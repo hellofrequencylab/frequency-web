@@ -398,6 +398,13 @@ export async function createPlan(input: {
   /** The owning Space (tenancy axis, Phase 0). Defaults to the root space when omitted, so
    *  existing single-tenant callers keep stamping journeys to root and behave as today. */
   spaceId?: string | null
+  /** The Space Plan this Journey was produced from (`journey_plans.space_plan_id`, PROG-CAL8).
+   *  Set on the INSERT rather than by a follow-up write: a Journey that exists without its
+   *  back-link is a Journey nothing can trace to the Plan it came from, and a second write is a
+   *  second thing that can fail silently. Null for every Journey built outside the Plan spine.
+   *  The caller authorizes it — see resolveCreateContext in app/(main)/journeys/create-actions.ts,
+   *  which reads the Plan through the caller's own session so RLS decides. */
+  spacePlanId?: string | null
 }): Promise<JourneyPlan | null> {
   // Stamp the owning Space (defaults to root via loadRootSpaceId). space_id is newer than the
   // generated DB types — set it on the insert payload via an untyped cast (ADR-246); omit when
@@ -414,6 +421,7 @@ export async function createPlan(input: {
       author_id: input.authorId,
       visibility: 'private',
       ...(spaceId ? { space_id: spaceId } : {}),
+      ...(input.spacePlanId ? { space_plan_id: input.spacePlanId } : {}),
     } as never)
     .select(PLAN_COLS)
     .maybeSingle()

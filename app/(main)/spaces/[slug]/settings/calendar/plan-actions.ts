@@ -307,6 +307,7 @@ export async function productionHref(
   if (!plan) return fail('That Plan no longer exists.')
   const href = planTargetDef(plan.targetKind).createHref?.({
     spaceId: editor.spaceId,
+    spaceSlug: slug,
     planId: plan.id,
     entryId,
   })
@@ -336,6 +337,7 @@ export async function planReadiness(
   const openTodoCount = todos.filter((t) => t.status === 'open').length
   const href = planTargetDef(plan.targetKind).createHref?.({
     spaceId: editor.spaceId,
+    spaceSlug: slug,
     planId: plan.id,
     entryId: entryId ?? undefined,
   })

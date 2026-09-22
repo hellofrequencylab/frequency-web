@@ -110,11 +110,42 @@ export function StaffCalendar({
   const set = <K extends keyof EntryInput>(key: K, value: EntryInput[K]) =>
     setDraft((d) => (d ? { ...d, input: { ...d.input, [key]: value } } : d))
 
+  /**
+   * A write landed. Close the drawer and ask for fresh server data.
+   *
+   * 🔴 IT DOES NOT CALL router.refresh() ITSELF, and that is the whole point — see the effect on
+   * `refreshKey` below.
+   */
   const done = () => {
     setDraft(null)
     setRefreshKey((k) => k + 1)
-    router.refresh()
   }
+
+  /**
+   * THE REFRESH RUNS OUTSIDE THE TRANSITION (LIVE-462).
+   *
+   * Both write paths in this component bump `refreshKey` from INSIDE `startTransition`, and both
+   * used to call `router.refresh()` there too. `useTransition`'s `pending` stays true until
+   * everything the transition scheduled has committed, and every control in the entry drawer is
+   * `disabled={pending}` — so a SUCCESSFUL save left the whole drawer frozen until a full Server
+   * Component re-render of the month came back. On a warm dev machine that is a blink. On a cold
+   * deployment holding a 16-month operator horizon it is seconds, and the host sees "Saving" long
+   * after the row is saved.
+   *
+   * It was not a theory. `operator-calendar.spec.ts` caught it the first run it was ever allowed to
+   * take (OWN-081 gave the e2e account manage rights; before that the whole file skipped): three
+   * failures, all after "Pencil date", all reporting "element is not enabled" on retry after retry
+   * and then "element was detached from the DOM" as the refresh finally landed. The Plans the test
+   * created ARE in the database, at the second the test clicked — so the server never failed. Only
+   * the client said so.
+   *
+   * An effect body is not part of the transition that scheduled the update, so `pending` clears
+   * when the action resolves and the refresh is a separate, ungated render.
+   */
+  useEffect(() => {
+    if (refreshKey === 0) return
+    router.refresh()
+  }, [refreshKey, router])
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
@@ -128,8 +159,10 @@ export function StaffCalendar({
         } else {
           const input = { ...draft.input, planId: res.data.id }
           setDraft({ id: res.data.entryId, input, saved: JSON.stringify(input) })
+          // Keeps the drawer OPEN on the saved row (the Pencil now has a Plan, so "Open Plan"
+          // appears); the refresh is left to the effect above rather than held inside this
+          // transition, which is what kept every control disabled after a successful save.
           setRefreshKey((k) => k + 1)
-          router.refresh()
         }
         return
       }

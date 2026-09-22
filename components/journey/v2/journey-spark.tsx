@@ -159,11 +159,17 @@ function clampWeeks(raw: string): number {
 export function JourneySpark({
   templates = [],
   spaceSlug = null,
+  spacePlan = null,
 }: {
   templates?: JourneyTemplateMeta[]
   /** When set, this same guided create is reached from a Space's Journeys manager: the new Journey is
    *  stamped to that Space (owner authoring), not the caller's personal account. */
   spaceSlug?: string | null
+  /** The Space Plan this Journey is being produced from (PROG-CAL8): the Plan board's "Make it a
+   *  Production" road. Already resolved and authorized by the page. Every door below carries its id
+   *  so the Journey is created holding `space_plan_id`, whichever road the author takes — the Spark,
+   *  a template, the Master Framework or the manual builder. Null on the ordinary create. */
+  spacePlan?: { id: string; title: string } | null
 }) {
   const router = useRouter()
   // 'doors' is screen one for every entity. 'source' is the guided path (the prompt field and the
@@ -243,7 +249,7 @@ export function JourneySpark({
         .join('\n\n'),
   })
 
-  if (stage === 'manual') return <JourneyBuilder draft spaceSlug={spaceSlug} />
+  if (stage === 'manual') return <JourneyBuilder draft spaceSlug={spaceSlug} spacePlanId={spacePlan?.id ?? null} />
 
   const weeks = clampWeeks(weeksText)
   const source = sourceText.trim()
@@ -331,6 +337,7 @@ export function JourneySpark({
           coverImage: cover?.url ?? null,
         },
         spaceSlug,
+        spacePlan?.id ?? null,
       ),
     )
   }
@@ -341,7 +348,7 @@ export function JourneySpark({
   const framework = () => {
     setError(null)
     start(async () => {
-      const res = await createMasterFrameworkAction({ weeks, spaceSlug })
+      const res = await createMasterFrameworkAction({ weeks, spaceSlug, spacePlanId: spacePlan?.id ?? null })
       if (isError(res)) setError(res.error)
       else router.push(`/journeys/${res.data.slug}/edit`)
     })
@@ -356,7 +363,7 @@ export function JourneySpark({
       setStage('framework')
       return
     }
-    start(() => createJourneyFromTemplateAction(id, spaceSlug))
+    start(() => createJourneyFromTemplateAction(id, spaceSlug, spacePlan?.id ?? null))
   }
 
   // Read a WHOLE stack of files at once (the outline plus any supporting docs). Vera extracts each

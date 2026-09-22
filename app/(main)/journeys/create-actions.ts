@@ -23,7 +23,8 @@ import { isSeedMood, moodToAccent } from '@/lib/importer/moods'
 import { composeJourneyAction } from '@/app/(main)/journeys/[slug]/edit/actions'
 import { composeIntoPhase } from '@/lib/journeys/compose'
 import { extractOverviewText } from '@/lib/journeys/extract-text'
-import { log } from '@/lib/log'
+import { getSpacePlan, transitionSpacePlanRows } from '@/lib/calendar/plans-store'
+import { briefError, log } from '@/lib/log'
 
 /**
  * A child insert that failed, reported rather than dropped (LIVE-173).
@@ -54,10 +55,25 @@ function seedFailed(step: string, planId: string, error: { message: string }): v
  *    MANAGING that Space (owner / admin / editor — canEditProfile), NOT the member tier, and the
  *    Journey is stamped to that Space. So a free member who runs a Space can build for their members.
  * Returns the author id + owning space id (null = personal/root), or an error string.
+ *
+ * ── THE PLAN THIS JOURNEY IS BEING PRODUCED FROM (PROG-CAL8) ───────────────────────────────────
+ * `spacePlanId` is the `space_plans` row behind "Make it a Production" on the Plan board. It is
+ * resolved HERE, beside the Space, because the two answers are one question: a Plan belongs to a
+ * Space, and a Journey may only carry a Plan the Space it is stamped to actually runs.
+ *
+ * `getSpacePlan` is the authority and reads through the CALLER'S OWN session, so RLS on
+ * `space_plans` decides — exactly the shape `resolvePlanLink` (lib/events/plan-link.ts) settled for
+ * the event half. A Plan the caller cannot see, or one belonging to another Space, comes back null
+ * and the link is simply not made: the Journey is still created, because the author's work must not
+ * be lost to a bad query string, and `space_plan_id` staying NULL is the honest record of that.
+ *
+ * Personal Journeys (no `spaceSlug`) take no Plan at all. There is no Space for it to belong to and
+ * therefore nothing to authorize against.
  */
 async function resolveCreateContext(
   spaceSlug?: string | null,
-): Promise<{ authorId: string; spaceId: string | null } | { error: string }> {
+  spacePlanId?: string | null,
+): Promise<{ authorId: string; spaceId: string | null; spacePlanId: string | null } | { error: string }> {
   const caller = await getCallerProfile()
   if (!caller) return { error: 'Sign in to build a Journey.' }
   if (spaceSlug) {
@@ -65,12 +81,56 @@ async function resolveCreateContext(
     if (!space) return { error: 'Space not found.' }
     const caps = await getSpaceCapabilities(space, caller.id)
     if (!caps.canEditProfile) return { error: 'You do not manage this space.' }
-    return { authorId: caller.id, spaceId: space.id }
+    const plan = spacePlanId && UUID_RE.test(spacePlanId) ? await getSpacePlan(space.id, spacePlanId) : null
+    return { authorId: caller.id, spaceId: space.id, spacePlanId: plan?.id ?? null }
   }
   // Defense in depth only: journey.create is granted to every signed-in member, and the
   // signed-out case already returned above.
   if (!(await canCreate('journey.create'))) return { error: 'Sign in to build a Journey.' }
-  return { authorId: caller.id, spaceId: null }
+  return { authorId: caller.id, spaceId: null, spacePlanId: null }
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * THE JOURNEY HALF OF THE PRODUCTION SEAM (PROG-CAL8), the exact counterpart of
+ * `closeProductionSeam` in app/(main)/events/actions.ts.
+ *
+ * The back-link is NOT written here — `createPlan` puts `space_plan_id` on the insert, so a Journey
+ * either exists carrying its Plan or does not exist. What is left is the other half of what
+ * publishing means: the Plan has reached Production and the Workflow board must stop showing it
+ * under Planning.
+ *
+ * 🔴 WHY BEST-EFFORT AND NOT A THROW. By the time this runs the Journey row is COMMITTED through a
+ * governed proposal that has already been claimed and closed out, and every caller ends in
+ * `redirect()`. Throwing would not undo the Journey; it would drop the author on a fallback page
+ * while the Journey they just built sits in the library unreachable from where they were. That is
+ * strictly worse than a lagging stage column.
+ *
+ * AGENTS.md: "every fail-safe needs a gate that notices it fired." Two do. One structured line per
+ * failure, on its own event name, so it is queryable rather than buried. And the lag is DERIVABLE:
+ * a Plan with a Journey carrying its `space_plan_id` reached Production whatever its stage column
+ * says, which is the same shape `planPublishLag` already surfaces in the Plan drawer for events.
+ */
+async function closeJourneyProductionSeam(
+  spaceId: string | null,
+  journeyId: string,
+  spacePlanId: string | null,
+): Promise<void> {
+  if (!spaceId || !spacePlanId) return
+  try {
+    const moved = await transitionSpacePlanRows(spaceId, spacePlanId, 'production')
+    if ('error' in moved) {
+      log.error('calendar.production_plan_stage_not_advanced', { spaceId, journeyId, planId: spacePlanId })
+    }
+  } catch (e) {
+    log.error('calendar.production_plan_stage_not_advanced', {
+      spaceId,
+      journeyId,
+      planId: spacePlanId,
+      error: briefError(e),
+    })
+  }
 }
 
 /** Where a failed create redirects back to: the Space's Journeys manager, else the library. */
@@ -82,8 +142,12 @@ function createFallback(spaceSlug?: string | null): string {
  *  title from the single-page editor. Seeds 3 empty phases so the curriculum opens ready to edit,
  *  then drops the author into the editor. `spaceSlug` stamps the Journey to a Space (the Space
  *  manager's "New journey" reaches this same flow); omitted, it is a personal Journey. */
-export async function createJourneyDraftAction(title: string, spaceSlug?: string | null): Promise<void> {
-  const ctx = await resolveCreateContext(spaceSlug)
+export async function createJourneyDraftAction(
+  title: string,
+  spaceSlug?: string | null,
+  spacePlanId?: string | null,
+): Promise<void> {
+  const ctx = await resolveCreateContext(spaceSlug, spacePlanId)
   if ('error' in ctx) redirect(createFallback(spaceSlug))
   const clean = title.trim().slice(0, 120)
   if (!clean) redirect(spaceSlug ? createFallback(spaceSlug) : '/journeys/new')
@@ -97,7 +161,12 @@ export async function createJourneyDraftAction(title: string, spaceSlug?: string
     spaceId: ctx.spaceId,
     rationale: 'Journey editor, deferred-title road: the author named the Journey and committed it.',
     commit: async () => {
-      const created = await createPlan({ authorId: ctx.authorId, title: clean, spaceId: ctx.spaceId })
+      const created = await createPlan({
+        authorId: ctx.authorId,
+        title: clean,
+        spaceId: ctx.spaceId,
+        spacePlanId: ctx.spacePlanId,
+      })
       if (!created) throw new Error('Could not create the Journey.')
       return created
     },
@@ -119,6 +188,7 @@ export async function createJourneyDraftAction(title: string, spaceSlug?: string
   )
   if (phaseError) seedFailed('draft.phases', plan.id, phaseError)
 
+  await closeJourneyProductionSeam(ctx.spaceId, plan.id, ctx.spacePlanId)
   redirect(`/journeys/${plan.slug}/edit`)
 }
 
@@ -225,8 +295,8 @@ export async function createJourneyFromSparkAction(input: {
    * image the Journey wears. Null / absent is the normal case: a Journey with no cover is fine.
    */
   coverImage?: string | null
-}, spaceSlug?: string | null): Promise<void> {
-  const ctx = await resolveCreateContext(spaceSlug)
+}, spaceSlug?: string | null, spacePlanId?: string | null): Promise<void> {
+  const ctx = await resolveCreateContext(spaceSlug, spacePlanId)
   if ('error' in ctx) redirect(createFallback(spaceSlug))
   const authorId = ctx.authorId
   const title = input.title.trim().slice(0, 120)
@@ -252,7 +322,13 @@ export async function createJourneyFromSparkAction(input: {
     spaceId: ctx.spaceId,
     rationale: 'Journey builder, spark road: the author reviewed the identity and committed it.',
     commit: async () => {
-      const created = await createPlan({ authorId, title, summary, spaceId: ctx.spaceId })
+      const created = await createPlan({
+        authorId,
+        title,
+        summary,
+        spaceId: ctx.spaceId,
+        spacePlanId: ctx.spacePlanId,
+      })
       if (!created) throw new Error('Could not create the Journey.')
       return created
     },
@@ -362,11 +438,16 @@ export async function createJourneyFromSparkAction(input: {
     }
   }
 
+  await closeJourneyProductionSeam(ctx.spaceId, plan.id, ctx.spacePlanId)
   redirect(`/journeys/${plan.slug}/edit`)
 }
 
-export async function createJourneyFromTemplateAction(templateId: string | null, spaceSlug?: string | null): Promise<void> {
-  const ctx = await resolveCreateContext(spaceSlug)
+export async function createJourneyFromTemplateAction(
+  templateId: string | null,
+  spaceSlug?: string | null,
+  spacePlanId?: string | null,
+): Promise<void> {
+  const ctx = await resolveCreateContext(spaceSlug, spacePlanId)
   if ('error' in ctx) redirect(createFallback(spaceSlug))
 
   const template = templateId ? getTemplate(templateId) : null
@@ -383,6 +464,7 @@ export async function createJourneyFromTemplateAction(templateId: string | null,
         title,
         emoji: template?.emoji ?? null,
         spaceId: ctx.spaceId,
+        spacePlanId: ctx.spacePlanId,
       })
       if (!created) throw new Error('Could not create the Journey.')
       return created
@@ -417,6 +499,7 @@ export async function createJourneyFromTemplateAction(templateId: string | null,
     }
   }
 
+  await closeJourneyProductionSeam(ctx.spaceId, plan.id, ctx.spacePlanId)
   redirect(`/journeys/${plan.slug}/edit`)
 }
 
@@ -433,12 +516,20 @@ export async function createMasterFrameworkAction(input: {
   fixed?: boolean
   /** Stamp the Journey to a Space (the Space manager's guided create); omitted, it is personal. */
   spaceSlug?: string | null
+  /** The Space Plan this Journey is being produced from (PROG-CAL8). */
+  spacePlanId?: string | null
 }): Promise<ActionResult<{ slug: string }>> {
-  const ctx = await resolveCreateContext(input.spaceSlug)
+  const ctx = await resolveCreateContext(input.spaceSlug, input.spacePlanId)
   if ('error' in ctx) return fail(ctx.error)
 
   const title = input.title?.trim().slice(0, 120) || MASTER_FRAMEWORK.name
-  const plan = await createPlan({ authorId: ctx.authorId, title, emoji: MASTER_FRAMEWORK.emoji, spaceId: ctx.spaceId })
+  const plan = await createPlan({
+    authorId: ctx.authorId,
+    title,
+    emoji: MASTER_FRAMEWORK.emoji,
+    spaceId: ctx.spaceId,
+    spacePlanId: ctx.spacePlanId,
+  })
   if (!plan) return fail('Could not create the Journey. Try again in a moment.')
 
   // Resolve real Pillar ids the way the composer does, then stamp the framework's blocks in order
@@ -463,5 +554,6 @@ export async function createMasterFrameworkAction(input: {
     if (realId) idMap.set(b.tempId, realId)
   }
 
+  await closeJourneyProductionSeam(ctx.spaceId, plan.id, ctx.spacePlanId)
   return ok({ slug: plan.slug })
 }

@@ -6555,6 +6555,7 @@ export type Database = {
           slug: string
           source_overview: string | null
           space_id: string | null
+          space_plan_id: string | null
           space_tier_id: string | null
           status: string
           summary: string | null
@@ -6602,6 +6603,7 @@ export type Database = {
           slug: string
           source_overview?: string | null
           space_id?: string | null
+          space_plan_id?: string | null
           space_tier_id?: string | null
           status?: string
           summary?: string | null
@@ -6649,6 +6651,7 @@ export type Database = {
           slug?: string
           source_overview?: string | null
           space_id?: string | null
+          space_plan_id?: string | null
           space_tier_id?: string | null
           status?: string
           summary?: string | null
@@ -6694,6 +6697,13 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_plans_space_plan_id_fkey"
+            columns: ["space_plan_id"]
+            isOneToOne: false
+            referencedRelation: "space_plans"
             referencedColumns: ["id"]
           },
           {
