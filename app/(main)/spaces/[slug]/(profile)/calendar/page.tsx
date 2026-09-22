@@ -7,7 +7,7 @@ import { setActiveSpace } from '@/lib/spaces/active-space'
 import { SITE_URL } from '@/lib/site'
 import { loadPublicSpaceWindow } from '@/lib/calendar/public-month'
 import { guestFeedState, guestLiveItems } from '@/lib/calendar/guest-live'
-import { monthGridWindow, yearHorizonWindow } from '@/lib/calendar/month-window'
+import { monthGridWindow, operatorHorizonWindow } from '@/lib/calendar/month-window'
 import { loadSpaceCalendarMonth } from './actions'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
@@ -112,7 +112,9 @@ export default async function SpaceCalendarPage({
     year: initialYear,
     month1: initialMonth1,
     now,
-    entryWindow: yearHorizonWindow(initialYear),
+    // List and Workflow derive from this one read and never page, so the window is anchored on
+    // today and runs well past the end of a season (lib/calendar/month-window.ts says why).
+    entryWindow: operatorHorizonWindow(now),
   })
 
   return (

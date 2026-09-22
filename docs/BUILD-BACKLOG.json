@@ -10603,6 +10603,24 @@
       }
     },
     {
+      "id": "LIVE-460",
+      "title": "List and Workflow could only see the calendar year, so 98 of a Space's 128 dates were invisible on the two views built to survey them",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/spaces/[slug]/(profile)/calendar/page.tsx",
+        "ref": "2026-09-22 calendar survey; ADR-1467; PROG-CAL4"
+      },
+      "detail": "FOUND AND FIXED 2026-09-22 during a full survey of the calendar and project-management build, measured against production rather than inferred.\n\nTHE DEFECT. The operator Calendar tab loaded its private entries over `yearHorizonWindow(initialYear)` — January 1 to January 1 of whatever calendar year the VIEWER happened to be in. The month grid pages on its own through `loadStaffCalendarMonth`, so it was never affected. List and Workflow are different: `CalendarWorkspace` derives `items` and `workflowColumns` from `currentAdminEvents`, which is seeded once from that one server read and never refetched. Anything outside the window was therefore invisible on those two views no matter how far the grid scrolled.\n\nTHE READING. Royal Temple's seeded schedule runs Fall Equinox 2026 to Fall Equinox 2027. Counted live on 2026-09-22: 128 entries, of which 30 fell inside `2026-01-01 .. 2027-01-01` and **98 did not**. An owner could scroll the grid to March 2027, see their dates, switch to List, and find them gone. The failure was worst in December, when the old window had one month of runway left.\n\nWHY A CALENDAR YEAR WAS THE WRONG SHAPE, stated so it generalises: a season is not a calendar year, and planning runs forward. A window anchored on January is arbitrary with respect to the work; a window anchored on TODAY and asymmetric (a short tail of context, a long forward horizon) is what a planning surface is for.\n\nWHAT SHIPPED. `operatorHorizonWindow(now)` in lib/calendar/month-window.ts: three months back to fifteen months forward, from the first of each month, with the two spans as named exported constants so the probe can measure the real shipped numbers instead of restating them. `yearHorizonWindow` is REMOVED rather than left beside it, so the wrong window cannot be picked again by autocomplete. lib/calendar/month-window.test.ts is new and measures coverage the way a window is actually read — does this date survive it — including the exact 2027-09-24 date the old window dropped, and it pins the December case that the calendar-year shape handled worst.\n\nNOT FIXED HERE, and deliberately: paging the grid past the horizon still does not grow the List and Workflow source. Fifteen months of runway makes that unreachable in practice for a Space planning a season; merging month loads into `currentAdminEvents` is a larger change and would be its own row if a Space ever plans past it.\n\nID NOTE. Filed as LIVE-457 and renumbered to LIVE-460 before this branch was pushed: #2853 (opened 2026-09-22 03:35Z) claims LIVE-457, LIVE-458, LIVE-459, OWN-081 and HYG-115 for the baseline-mask ledger. The later-opened pull request renumbers (ADR-1509, HYG-113), and this one had not been opened, so it moved rather than contesting them.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const strip=(s)=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\"\").replace(/^\\s*\\/\\/.*$/gm,\"\");const mw=fs.readFileSync(\"lib/calendar/month-window.ts\",\"utf8\");const page=fs.readFileSync(\"app/(main)/spaces/[slug]/(profile)/calendar/page.tsx\",\"utf8\");const fwd=Number((mw.match(/OPERATOR_HORIZON_FORWARD_MONTHS\\s*=\\s*(\\d+)/)||[])[1]);if(!(fwd>=13))fail(\"the operator entry window reaches \"+fwd+\" months forward, so a Space whose season runs a full year ahead loses its far dates on List and Workflow again: those two views derive from ONE server read and never page\");if(!/entryWindow:\\s*operatorHorizonWindow\\(now\\)/.test(strip(page)))fail(\"the operator Calendar tab no longer anchors its entry window on today, so List and Workflow are bounded by something other than the horizon the tests pin\");if(/yearHorizonWindow/.test(strip(mw)+strip(page)))fail(\"the calendar-year window is back in live code: it spanned January to January of the viewers own year and hid 98 of Royal Temples 128 dates while the month grid showed them\");'",
+        "note": "Measures the consequence an owner meets (a date a year out survives the window the two derived views read) rather than the presence of a helper, per HYG-108. The forward span is read out of the shipped constant and arithmetic-checked, the page is checked to be wired to it, and the removed calendar-year window is checked not to have come back."
+      }
+    },
+    {
       "id": "HYG-085",
       "title": "Delete the two /dev showcase routes",
       "status": "done",

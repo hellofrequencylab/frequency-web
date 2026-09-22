@@ -10,7 +10,7 @@ import {
   resolveOperatorCalendarView,
   timelineMonthLabel,
 } from './admin-views'
-import { adjacentMonth, yearHorizonWindow } from './month-window'
+import { adjacentMonth } from './month-window'
 
 describe('CALENDAR_ADMIN_VIEWS', () => {
   it('keeps Guest preview separate from Calendar, List, and Workflow', () => {
@@ -82,10 +82,9 @@ describe('parseTimelineMonth', () => {
   })
 })
 
-describe('adjacentMonth / yearHorizonWindow', () => {
-  it('steps December to January and names a year window', () => {
+describe('adjacentMonth', () => {
+  it('steps December to January', () => {
     expect(adjacentMonth(2026, 1, -1)).toEqual({ year: 2025, month1: 12 })
     expect(adjacentMonth(2026, 12, 1)).toEqual({ year: 2027, month1: 1 })
-    expect(yearHorizonWindow(2026)).toEqual({ fromDay: '2026-01-01', toDay: '2027-01-01' })
   })
 })
