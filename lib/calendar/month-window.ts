@@ -21,9 +21,32 @@ export function adjacentMonth(year: number, month1: number, delta: number): { ye
   return { year: Math.floor(idx / 12), month1: (idx % 12) + 1 }
 }
 
-/** The [fromDay, toDay) span of one calendar year, for Admin list and Projects. */
-export function yearHorizonWindow(year: number): { fromDay: string; toDay: string } {
-  return { fromDay: `${year}-01-01`, toDay: `${year + 1}-01-01` }
+/** How far back and forward the operator's List and Workflow reach, in whole months. */
+export const OPERATOR_HORIZON_BACK_MONTHS = 3
+export const OPERATOR_HORIZON_FORWARD_MONTHS = 15
+
+/**
+ * The [fromDay, toDay) span the operator Calendar tab loads its entries over.
+ *
+ * 🔴 WHY IT IS NOT A CALENDAR YEAR. This replaced `yearHorizonWindow(year)`, which spanned
+ * January to January of the year the viewer happened to be in. The month GRID pages on its own
+ * (`loadStaffCalendarMonth`), but List and Workflow are derived once from this window and never
+ * refetch, so anything outside it was invisible on those two views however far the grid scrolled.
+ *
+ * A season is not a calendar year, and planning runs forward. Royal Temple's seeded schedule runs
+ * Fall Equinox 2026 to Fall Equinox 2027: on 2026-09-22 the old window held 30 of its 128 dates
+ * and hid the other 98 — the Space's whole year of work, on the two views built to survey it.
+ *
+ * A window ANCHORED ON TODAY and asymmetric (a short tail, a long horizon) is what the surface is
+ * for: the recent past is context, the future is the job.
+ */
+export function operatorHorizonWindow(now: Date): { fromDay: string; toDay: string } {
+  const back = adjacentMonth(now.getUTCFullYear(), now.getUTCMonth() + 1, -OPERATOR_HORIZON_BACK_MONTHS)
+  const forward = adjacentMonth(now.getUTCFullYear(), now.getUTCMonth() + 1, OPERATOR_HORIZON_FORWARD_MONTHS)
+  return {
+    fromDay: `${back.year}-${pad2(back.month1)}-01`,
+    toDay: `${forward.year}-${pad2(forward.month1)}-01`,
+  }
 }
 
 /** The grid of a month spans up to 6 days either side of it, so load that whole visible range. */
