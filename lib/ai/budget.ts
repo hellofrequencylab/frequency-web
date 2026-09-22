@@ -113,6 +113,8 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'conversation-draft': 2,       // draft a reply for one conversation, dropped into the composer for a human to send (Haiku)
   'conversation-summarize': 1,   // one short summary of a conversation thread (Haiku; on-demand)
   'conversation-triage': 1,      // classify a conversation's priority (Haiku; tiny, on-demand)
+  // ── Vera at the calendar (PROG-CAL10; operator-facing, one bounded tool loop per ask) ────────
+  'vera-calendar': 3,            // plain-words ask to a list of proposed calendar changes (Sonnet; up to 3 tool rounds per ask)
 }
 
 export function dailyCapFor(feature: string, fallbackUsd = 1): number {

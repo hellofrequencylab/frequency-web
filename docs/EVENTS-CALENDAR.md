@@ -320,6 +320,21 @@ about running late because nothing in the data records when an event ended. Voic
 through `voiceLine` in `lib/ai/voice.ts`, the mechanical half of the primer, with no model call. Vera still never
 publishes, sends or books; the proposal is shown and the team accepts it.
 
+**Vera on the calendar** (`PROG-CAL10`, shipped 2026-09-22). An "Ask Vera" row sits above the operator
+panels for the team that can edit the calendar (`components/spaces/vera-calendar-box.tsx`). A person picks
+the mode new things start in (Pencil, Planning or Production), types the ask in plain words ("Pencil a
+sound bath on every new moon this winter"), and Vera answers with a PROPOSAL: one line per change, from a
+closed vocabulary (`lib/calendar/vera-command.ts`: pencil one Plan on many dates, move a date, set a
+stage, retitle, add a to-do, archive), each line with a box. Propose then accept is the invariant
+(ADR-1386 P6): `veraCalendarCommand` reads this Space's Plans and the visible month's dates and returns
+the proposal without writing anything; only `applyVeraChanges`, on the ticked lines, re-parses the list
+through `parseVeraChanges` and drives each change through the existing calendar actions and stores on
+the caller's session, reporting one result per line. Nothing in the vocabulary publishes. "Every new
+moon" is computed, never guessed: `lib/calendar/moon.ts` (Meeus ch. 49) answers a `lunar_dates` tool the
+model must call first, in the Space's zone (`lib/ai/vera-calendar.ts`, Sonnet, at most three rounds,
+budget and rate limited under `vera-calendar`). Not in the first cut: a follow-up question from Vera,
+editing arbitrary Plan fields, undo, and reading attendance to pick dates.
+
 **Production seams for the non-event targets** (`PROG-CAL8`, `PROG-CAL9`, shipped). Each target in `PLAN_TARGET_DEFS`
 (`lib/calendar/plans.ts`) declares the door "Make it a Production" opens, sending the identifier its destination
 resolves (a slug for `/journeys/new` and `/spaces/<slug>/settings/program`, an id for `/events/new`) plus `plan=`.
