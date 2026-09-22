@@ -224,10 +224,10 @@
     "/settings [dawn-light, desktop]": 0,
     "/settings [dawn-light, mobile]": 0,
     "/spaces [dawn-dark, contrast only, desktop]": 2,
-    "/spaces [dawn-light, desktop]": 2,
-    "/spaces [dawn-light, mobile]": 2,
+    "/spaces [dawn-light, desktop]": 0,
+    "/spaces [dawn-light, mobile]": 0,
     "/spaces [midnight-dark, contrast only, desktop]": 2,
-    "/spaces [midnight-light, contrast only, desktop]": 2,
+    "/spaces [midnight-light, contrast only, desktop]": 0,
     "/spaces/danieltyack/manage [dawn-dark, contrast only, desktop]": 0,
     "/spaces/danieltyack/manage [dawn-light, desktop]": 0,
     "/spaces/danieltyack/manage [dawn-light, mobile]": 0,
@@ -299,6 +299,12 @@
     "/admin/content/practices [dawn-light, mobile]": 0,
     "/admin/qr [dawn-dark, contrast only, desktop]": 0,
     "/admin/qr [dawn-light, desktop]": 0,
-    "/admin/qr [dawn-light, mobile]": 0
+    "/admin/qr [dawn-light, mobile]": 0,
+    "/tools-for-community-builders [dawn-light, desktop]": 0,
+    "/tools-for-community-builders [dawn-light, mobile]": 0,
+    "/tools-for-community-builders [midnight-light, contrast only, desktop]": 0,
+    "/what-is-frequency [dawn-light, desktop]": 0,
+    "/what-is-frequency [dawn-light, mobile]": 0,
+    "/what-is-frequency [midnight-light, contrast only, desktop]": 0
   }
 }

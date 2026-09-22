@@ -1296,7 +1296,14 @@ export default function AppShell({
                   // branches, one rule — the content column's own gutter is what separates them
                   // now. (`relative` came off with the mid-edge handle it existed for; the fold
                   // tick lives on the dock tab at the foot of this column instead.)
-                  <aside className="flex w-72 shrink-0 flex-col py-6">
+                  // `data-rail-column` is a CAMERA HOOK, not styling and not behaviour: it is the
+                  // one stable box around the rail's panels. This <aside> stretches to the flex
+                  // row's height (set by the content column beside it), so its bounding box does
+                  // not move when a panel inside it resizes — which is exactly what the visual
+                  // suite needs and what masking each panel could never give. See the note on the
+                  // member-shell surfaces in test/e2e/surfaces.ts for the measurement. Removing
+                  // this attribute makes those three surfaces go red, not silently green.
+                  <aside data-rail-column className="flex w-72 shrink-0 flex-col py-6">
                     {sidebar}
                     {/* The rail's end. DockBar measures this to know when to stop being pinned to
                         the window and come to rest against the last rail card instead. Zero-height
