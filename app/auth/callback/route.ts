@@ -87,6 +87,10 @@ export async function GET(request: Request) {
       // user at sign-in (app/sign-in/actions.ts), which is the one carrier that survives the jump
       // between browsers, so it can be read back here. Null means "use the normal destination".
       let funnelLanding: string | null = null
+      // THE WELCOME (PROG-GD5). The third recovery for the same cookie-less arrival: a guest who
+      // paid for a Journey and opened the magic link in another browser. A claim that just attached
+      // a Journey names that Journey's welcome; null means "use the normal destination".
+      let orderLanding: string | null = null
       // THE LAST-SIGN-IN HINT (ADR-1392): how this person came in, with a masked address, so the
       // sign-in page can point a returning member at the same door. Null when it cannot be read.
       let signInHint: string | null = null
@@ -169,10 +173,11 @@ export async function GET(request: Request) {
             // `enrolByOrder` for each, because adoptPlan is the single authority for what enrolling
             // means and SQL alone would grant a degraded enrolment missing its practices.
             //
-            // SESSION client, for the reason all three neighbours carry. Returns void ON PURPOSE:
-            // the seat claim already owns the destination. Swallows its own failures.
+            // SESSION client, for the reason all three neighbours carry. Swallows its own failures.
+            // Returns the welcome of the Journey it just attached, or null (PROG-GD5): the second
+            // landing decision after the seat claim, and for the same cookie-less reason.
             // Cast per ADR-246: the RPC postdates the generated types.
-            await claimGuestOrdersOnSignIn(supabase as unknown as OrderSessionClient)
+            orderLanding = await claimGuestOrdersOnSignIn(supabase as unknown as OrderSessionClient)
           }
 
           // Read the funnel back through the SAME map that wrote it. `user_metadata` is
@@ -194,12 +199,14 @@ export async function GET(request: Request) {
       // and a guest standing at the event would otherwise be dropped on the feed with their newly
       // claimed seat and no sign of the room they are in.
       //
-      // 🔴 SEAT BEFORE FUNNEL, and the order is not arbitrary. A claimed seat can be an event
-      // happening RIGHT NOW (that is the whole point of claimGuestSeatsOnSignIn); a funnel
-      // recovery is only ever "resume the thing you asked for", which keeps. Both are recoveries
-      // for the SAME missing cookie, so neither may overrule a destination that was actually asked
-      // for — hence both sit behind `!hasExplicitNext`.
-      const recovered = seatLanding ?? funnelLanding
+      // 🔴 SEAT, THEN WELCOME, THEN FUNNEL, and the order is not arbitrary. A claimed seat can be
+      // an event happening RIGHT NOW (that is the whole point of claimGuestSeatsOnSignIn); a
+      // Journey welcome (PROG-GD5) is a purchase that keeps, but it is the thing they just paid
+      // for and the reason they are signing in at all; a funnel recovery is only ever "resume the
+      // thing you asked for", which keeps too. All three are recoveries for the SAME missing
+      // cookie, so none may overrule a destination that was actually asked for — hence all sit
+      // behind `!hasExplicitNext`.
+      const recovered = seatLanding ?? orderLanding ?? funnelLanding
       const destination = !hasExplicitNext && recovered ? recovered : next
 
       const res = NextResponse.redirect(`${origin}${destination}`)

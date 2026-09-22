@@ -34,16 +34,26 @@ import 'server-only'
 // `enrolByOrder` is the opposite and makes its own admin client, because granting access is
 // operator work the buyer's own session has no business being able to do.
 //
-// ── BEST-EFFORT, AND NOT A LANDING ───────────────────────────────────────────────────────────────
+// ── BEST-EFFORT, AND A LANDING (PROG-GD5) ────────────────────────────────────────────────────────
 // Swallowed on every path including failure. The caller is the auth callback: an unattached order
-// is recoverable on the next sign-in, a failed login is not. Returns void ON PURPOSE — like the
-// lead conversion and the ticket claim, and unlike the seat claim, it must not influence where
-// anyone lands; the seat claim already owns that decision.
+// is recoverable on the next sign-in, a failed login is not.
+//
+// This used to return void ON PURPOSE, deferring to the seat claim as the one landing decision. The
+// welcome changed that, for the same reason the seat claim decides anything at all: the commonest
+// guest opens the magic link in a DIFFERENT browser than the one that paid (the emailed link opens
+// in Mail or Safari, the checkout ran inside an in-app webview), arrives with no `fq_post_login`
+// cookie and no `?next=`, and would otherwise be dropped on /feed with a Journey they paid $444 for
+// and no sign of it. So a claim that just attached a Journey returns that Journey's welcome
+// (`journeyWelcomePath`), and the callback uses it ONLY to fill the /feed default, after the seat
+// landing (an event happening right now outranks a welcome that keeps) and before the funnel.
+// Null means "nowhere in particular", including on every failure.
 //
 // Idempotent by construction: the SQL only touches orders with a NULL buyer, and `enrolByOrder`
-// no-ops on an existing enrolment. A second sign-in claims nothing and is not an error.
+// no-ops on an existing enrolment. A second sign-in claims nothing, lands nowhere, and is not an
+// error.
 
-import { enrolByOrder } from './journey-fulfilment'
+import { enrolByOrder, journeySlugsForOrder } from './journey-fulfilment'
+import { journeyWelcomePath } from '@/lib/journeys/sales-path'
 
 /**
  * The narrow structural handle this module needs from the SESSION-scoped Supabase client. Untyped
@@ -84,8 +94,10 @@ function orderIds(data: unknown): string[] {
  *
  * @param session the SESSION-scoped Supabase client — see the note above on why the admin client
  *                would claim nothing while reporting success.
+ * @returns the welcome path of the first Journey this sign-in attached, or null when nothing was
+ *          claimed, nothing claimed was a Journey, or anything failed. See "A LANDING" above.
  */
-export async function claimGuestOrdersOnSignIn(session: OrderSessionClient): Promise<void> {
+export async function claimGuestOrdersOnSignIn(session: OrderSessionClient): Promise<string | null> {
   let ids: string[] = []
   try {
     // No arguments: the function takes none. The address it acts on is the one auth.users has
@@ -96,24 +108,26 @@ export async function claimGuestOrdersOnSignIn(session: OrderSessionClient): Pro
       // Logged rather than ignored: a fail-safe nobody can see fired is an invisible regression,
       // and this one stands between somebody and a Journey they paid for.
       console.error('[guest-order-claim] claim_guest_orders failed', { message: error.message })
-      return
+      return null
     }
     ids = orderIds(result && typeof result === 'object' && 'data' in result ? result.data : null)
   } catch (e) {
     console.error('[guest-order-claim] claim_guest_orders threw', {
       error: e instanceof Error ? e.message : String(e),
     })
-    return
+    return null
   }
 
-  if (ids.length === 0) return
+  if (ids.length === 0) return null
 
   // Sequential on purpose: these are a handful of rows at most, and `adoptPlan` writes several rows
   // per Journey. One failure must not stop the rest, so each is caught on its own — a member with
   // two guest purchases must not lose the second because the first had a deleted plan.
+  const fulfilled: string[] = []
   for (const orderId of ids) {
     try {
       await enrolByOrder(orderId)
+      fulfilled.push(orderId)
     } catch (e) {
       console.error('[guest-order-claim] enrolByOrder failed after claim', {
         orderId,
@@ -121,4 +135,16 @@ export async function claimGuestOrdersOnSignIn(session: OrderSessionClient): Pro
       })
     }
   }
+
+  // The landing: the FIRST fulfilled order's first Journey. The oldest purchase is the one the
+  // receipt they are most likely holding names; a second Journey is reachable from the welcome and
+  // from Journeys, so it is never lost by not being the landing. Only an order whose enrolment ran
+  // can be the landing, because the welcome page refuses a Journey the viewer is not enrolled in.
+  // `journeySlugsForOrder` fails soft to [], which reads as "no landing" rather than as an error on
+  // the login path.
+  for (const orderId of fulfilled) {
+    const [slug] = await journeySlugsForOrder(orderId)
+    if (slug) return journeyWelcomePath(slug)
+  }
+  return null
 }
