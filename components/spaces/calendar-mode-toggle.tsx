@@ -1,16 +1,22 @@
 'use client'
 
-import { cn } from '@/lib/utils'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import {
   CALENDAR_ADMIN_VIEW_DEFS,
   type CalendarAdminView,
 } from '@/lib/calendar/admin-views'
 
-// ADMIN CALENDAR VIEWS (ADR-1389, ADR-1464, ADR-1467). Segmented control.
+// ADMIN CALENDAR VIEWS (ADR-1389, ADR-1464, ADR-1467). The kit's segmented box (HYG-105).
 // Buttons, not Links: the parent shell slides views without a page load.
 // `?view=` stays in the URL via history.replaceState so a share still works.
+// Guest is a separate audience preview beside this box, so in Guest no segment is selected.
 
 export type CalendarMode = CalendarAdminView
+
+const SEGMENTS = CALENDAR_ADMIN_VIEW_DEFS.filter((o) => o.view !== 'guest').map((o) => ({
+  value: o.view,
+  label: o.label,
+}))
 
 export function CalendarModeToggle({
   mode,
@@ -19,25 +25,5 @@ export function CalendarModeToggle({
   mode: CalendarAdminView
   onSelect: (view: CalendarAdminView) => void
 }) {
-  return (
-    <nav
-      aria-label="Calendar views"
-      className="inline-flex max-w-full flex-wrap items-center rounded-control border border-border p-0.5"
-    >
-      {CALENDAR_ADMIN_VIEW_DEFS.filter((o) => o.view !== 'guest').map((o) => (
-        <button
-          key={o.view}
-          type="button"
-          onClick={() => onSelect(o.view)}
-          aria-pressed={mode === o.view}
-          className={cn(
-            'rounded-control px-3 py-1 text-body-sm font-semibold transition-colors',
-            mode === o.view ? 'bg-primary text-on-primary' : 'text-muted hover:text-text',
-          )}
-        >
-          {o.label}
-        </button>
-      ))}
-    </nav>
-  )
+  return <SegmentedControl label="Calendar views" value={mode} onChange={onSelect} segments={SEGMENTS} />
 }

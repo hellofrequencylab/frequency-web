@@ -60,7 +60,10 @@ describe('CalendarListView', () => {
       />,
     )
     expect(el.querySelector('[data-calendar-list-view]')).not.toBeNull()
-    expect(el.querySelector('[aria-label="Gatherings"]')?.className).toContain('lg:w-52')
+    // The index is the kit's segmented box, stacked, inside the rail column (HYG-105).
+    const rail = el.querySelector('[aria-label="Gatherings"]')
+    expect(rail?.getAttribute('role')).toBe('group')
+    expect(rail?.parentElement?.className).toContain('lg:w-52')
     const viewer = el.querySelector('[data-calendar-list-viewer]')
     const header = viewer?.querySelector('header')
     expect(header?.textContent).toContain('New moon sit')

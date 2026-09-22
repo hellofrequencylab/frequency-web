@@ -142,6 +142,10 @@ the contract; keep them server-friendly (no client hooks unless interaction requ
 - `EntityHeader`: context band: `{ title, avatar?, badges?, facts?: {label,value}[],
   actions?, back? }`. Description (key/value) list for facts, not a two-col table.
 - `UnderlineTabs` (`@/components/ui/underline-tabs`): `{ tabs: {href, label, count?}[] }`, each tab a real URL segment.
+- `SegmentedControl` / `SegmentedLinks` (`@/components/ui/segmented-control`): the view-switcher form, a segmented
+  box (HYG-105). `{ label, value, onChange, segments: {value, label}[] }` as `aria-pressed` buttons for an in-page
+  switch; `{ label, links: {href, label}[], activeHref }` as `aria-current` links for navigation. Pills are retired
+  as a switcher; a second-level row under the box stays `UnderlineTabs`.
 - `FormSection`: annotated settings group `{ title, description, children }` (left
   copy, right controls), stacked.
 - `DangerModal`: `{ title, body, confirmLabel, onConfirm, requireTyping? }`. Named
