@@ -167,7 +167,6 @@
         {
           "name": "W0c · P1/P2 — calendar C2–C5 (ADR-1445) first, then FOCUS remainder, gems, scan cheap-DB, Journey sales tail.",
           "ids": [
-            "HYG-105",
             "LIVE-469",
             "PROG-CAL15",
             "PROG-CAL11",
@@ -186,7 +185,6 @@
           "ids": [
             "LIVE-221",
             "LIVE-273",
-            "HYG-092",
             "LIVE-450",
             "HYG-115",
             "LIVE-463"
@@ -12918,7 +12916,7 @@
     {
       "id": "HYG-092",
       "title": "The Marketplace area nav is pills, and the owner superseded pills; converting it would put two underline rows on one page",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "hygiene",
       "size": "XS",
@@ -12927,12 +12925,13 @@
         "file": "components/marketplace/facet-nav.tsx",
         "ref": "the rounded-pill area links"
       },
-      "detail": "FILED 2026-09-15 out of LIVE-243's re-test. ADR-937 ruling 4 says \"UnderlineTabs is the one tab vocabulary, consoles included\" and \"the pill convention is superseded\". components/marketplace/facet-nav.tsx:31 renders its five area links as rounded-pill, so the Marketplace area nav is the pill convention still standing. It cannot simply be converted, which is why this is a ruling and not a sweep: UnderlineTabs ALREADY occupies the second-level facet row inside these same surfaces (category tabs on the events surface, kind tabs on /classifieds, groups on /market), so making the area nav underlined too would stack two underline rows on one page and the reader would not know which level they are on.\n\nOWNER: rule on the chrome grammar for a two-level browse surface. Either (a) the area nav stays pills as a deliberate exception to ADR-937 and the ADR records the exception, or (b) the area nav becomes UnderlineTabs and the second-level row moves to a different grammar (pills, a segmented control, a select), or (c) the two levels merge. Any of the three is one small change; the wrong one costs a re-theme round.",
+      "detail": "FILED 2026-09-15 out of LIVE-243's re-test. ADR-937 ruling 4 says \"UnderlineTabs is the one tab vocabulary, consoles included\" and \"the pill convention is superseded\". components/marketplace/facet-nav.tsx:31 renders its five area links as rounded-pill, so the Marketplace area nav is the pill convention still standing. It cannot simply be converted, which is why this is a ruling and not a sweep: UnderlineTabs ALREADY occupies the second-level facet row inside these same surfaces (category tabs on the events surface, kind tabs on /classifieds, groups on /market), so making the area nav underlined too would stack two underline rows on one page and the reader would not know which level they are on.\n\nOWNER: rule on the chrome grammar for a two-level browse surface. Either (a) the area nav stays pills as a deliberate exception to ADR-937 and the ADR records the exception, or (b) the area nav becomes UnderlineTabs and the second-level row moves to a different grammar (pills, a segmented control, a select), or (c) the two levels merge. Any of the three is one small change; the wrong one costs a re-theme round.\n\nHYG-092 IS RESOLVED BY THE SAME RULING and closes with this row. That row asked the owner to rule the grammar of a two-level browse surface, because the Marketplace area nav was the last pill row standing and converting it to UnderlineTabs would have put two underline rows on one page. The ruling picked the third door: the area nav is the segmented box and the second-level facet row stays UnderlineTabs, so a browse surface reads box above, underline below, and never two of either. ADR-937 ruling 4 stands unamended; pills are retired rather than excepted.",
       "verify": {
         "kind": "manual",
-        "evidence": "Unruled. ADR-937 ruling 4 supersedes pills; facet-nav.tsx:31 still renders rounded-pill, and UnderlineTabs holds the second-level row on the same pages. Needs an owner ruling on the two-level grammar before either side moves.",
-        "checked": "2026-09-15"
-      }
+        "evidence": "RULED AND BUILT 2026-09-22 with HYG-105. The owner ruled the segmented box, so the Marketplace area nav in components/marketplace/facet-nav.tsx composes SegmentedLinks from components/ui/segmented-control.tsx and the second-level facet row stays UnderlineTabs. No pill row remains on a browse surface and ADR-937 ruling 4 stands unamended.",
+        "checked": "2026-09-22"
+      },
+      "closed": "2026-09-22"
     },
     {
       "id": "OWN-074",
@@ -15627,7 +15626,7 @@
     {
       "id": "HYG-105",
       "title": "The kit has no segmented control, so every view switcher hand-rolls a raw <button> whose selected state is a bg-primary fill",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "hygiene",
       "size": "S",
@@ -15635,13 +15634,14 @@
         "file": "scripts/adoption-baselines.json",
         "ref": "raw-button-bg raised 403 → 404 on 2026-09-21"
       },
-      "detail": "FILED 2026-09-21 from the adoption ratchet going red on main. The operator-calendar work added two segmented view switchers — components/spaces/calendar-mode-toggle.tsx and the item rail in components/spaces/calendar-list-view.tsx — and both are aria-pressed controls whose SELECTED state paints bg-primary inside a raw <button> opening tag. That is what raw-button-bg counts, so the count went 403 → 404.\n\nNEITHER SITE IS A MISUSE. They are not primary action buttons that should have composed Button; they are segmented controls, and the kit has no segmented control to compose. components/ui/ ships underline-tabs.tsx (a different form) and switch.tsx (binary on/off). So the ratchet is counting a real gap in the kit, not sloppy work, which is exactly the 'a count ratchet fires on legitimate growth' case .github/workflows/ci.yml reasons about when it keeps check:adoption advisory (ADR-970). The rise was therefore BANKED on 2026-09-21 with that reason rather than papered over, and it stays flagged ⚠️ raised on every run until a sweep brings it down.\n\nWHAT CLOSES THIS: a SegmentedControl primitive in components/ui that carries the aria-pressed group semantics and the selected fill once, with both calendar sites composing it. THE FORM IS NOT FREE: HYG-092 records that the owner superseded pills, so whether a segmented control is a pill row, an underline row, or something else is a design ruling that should be taken before the primitive is built, not after.\n\nNOTE ON HOW THIS GOT IN, kept as context and NOT as an argument to make the gate blocking: the rise was printed into the run summary of every PR that carried it, and the merging agent did not read it. ci.yml already anticipates that case and says the remedy would be deleting the advisory, not blocking on it. Do not file a 'make check:adoption required' row against this; argue with ADR-970 first.\n\nSEQUENCED 2026-09-22 (final calendar plan). Owner ruled the form on 2026-09-22: a SEGMENTED BOX. Lands right after the Calendar console (PROG-CAL12), converting the calendar view switcher, the console's copy of it, and the Marketplace pills together, so the console never ships a hand-rolled switcher that is replaced a week later.",
+      "detail": "FILED 2026-09-21 from the adoption ratchet going red on main. The operator-calendar work added two segmented view switchers — components/spaces/calendar-mode-toggle.tsx and the item rail in components/spaces/calendar-list-view.tsx — and both are aria-pressed controls whose SELECTED state paints bg-primary inside a raw <button> opening tag. That is what raw-button-bg counts, so the count went 403 → 404.\n\nNEITHER SITE IS A MISUSE. They are not primary action buttons that should have composed Button; they are segmented controls, and the kit has no segmented control to compose. components/ui/ ships underline-tabs.tsx (a different form) and switch.tsx (binary on/off). So the ratchet is counting a real gap in the kit, not sloppy work, which is exactly the 'a count ratchet fires on legitimate growth' case .github/workflows/ci.yml reasons about when it keeps check:adoption advisory (ADR-970). The rise was therefore BANKED on 2026-09-21 with that reason rather than papered over, and it stays flagged ⚠️ raised on every run until a sweep brings it down.\n\nWHAT CLOSES THIS: a SegmentedControl primitive in components/ui that carries the aria-pressed group semantics and the selected fill once, with both calendar sites composing it. THE FORM IS NOT FREE: HYG-092 records that the owner superseded pills, so whether a segmented control is a pill row, an underline row, or something else is a design ruling that should be taken before the primitive is built, not after.\n\nNOTE ON HOW THIS GOT IN, kept as context and NOT as an argument to make the gate blocking: the rise was printed into the run summary of every PR that carried it, and the merging agent did not read it. ci.yml already anticipates that case and says the remedy would be deleting the advisory, not blocking on it. Do not file a 'make check:adoption required' row against this; argue with ADR-970 first.\n\nSEQUENCED 2026-09-22 (final calendar plan). Owner ruled the form on 2026-09-22: a SEGMENTED BOX. Lands right after the Calendar console (PROG-CAL12), converting the calendar view switcher, the console's copy of it, and the Marketplace pills together, so the console never ships a hand-rolled switcher that is replaced a week later.\n\nCLOSED 2026-09-22. components/ui/segmented-control.tsx is the kit's segmented box: one bordered box, the options as segments flush inside it, the selected segment filled, in the form the owner ruled. It ships in two shapes with one look. SegmentedControl is the in-page state switch, role=\"group\" with a name and each segment a plain button carrying aria-pressed, so Tab moves between segments the way it moves between any buttons and no roving tabindex is invented. SegmentedLinks is navigation, a named nav of real links with aria-current=\"page\" on the one you are on, so the row stays crawlable and middle-clickable. A segment can own its selected look through selectedClassName, which is what lets the calendar List rail keep the stage fills from lib/calendar/registry.ts, where a cancelled gathering must never go brand blue. The fill and idle strings live in constants so no opening tag carries bg-primary itself and the ratchet cannot count the fix as the bug.\n\nThree sites compose it: the calendar view switcher (components/spaces/calendar-mode-toggle.tsx), the item rail in components/spaces/calendar-list-view.tsx, and the Marketplace area nav in components/marketplace/facet-nav.tsx. The Calendar console takes the page's view controls as one node, so converting the toggle converted the console with it and the console never shipped a hand-rolled switcher. raw-button-bg went 403 to 402 in scripts/adoption-baselines.json, which is the sweep the ratchet had been waiting for since the rise was banked on 2026-09-21. The primitive ships a colocated state test naming rest, hover, focus-visible and pressed, which is what check:elements asks of a Navigation-class primitive.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const has=p=>fs.existsSync(p);const prim=['components/ui/segmented-control.tsx','components/ui/segmented.tsx'].find(has);if(!prim)process.exit(1);const t=fs.readFileSync('components/spaces/calendar-mode-toggle.tsx','utf8');const l=fs.readFileSync('components/spaces/calendar-list-view.tsx','utf8');const name=prim.split('/').pop().replace('.tsx','');const composed=t.includes(name)&&l.includes(name);process.exit(composed?0:1)\"",
         "note": "Measures the consequence in the tree: a segmented-control primitive exists in the kit AND both calendar switchers compose it. Fails today because no such primitive exists, which is what keeps the row open."
       },
-      "notes": "The 403 → 404 rise is banked in scripts/adoption-baselines.json with its own dated reason. Closing this row should bring the count back DOWN, which is the sweep the ratchet is waiting for."
+      "notes": "The 403 → 404 rise is banked in scripts/adoption-baselines.json with its own dated reason. Closing this row should bring the count back DOWN, which is the sweep the ratchet is waiting for.",
+      "closed": "2026-09-22"
     },
     {
       "id": "HYG-106",

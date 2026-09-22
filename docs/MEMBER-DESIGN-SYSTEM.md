@@ -158,6 +158,14 @@ Pages never toggle it.
 - **`SectionHeader`**: titled section within a page (title · count · action).
 - **`UnderlineTabs`**: the ONE tab vocabulary for Detail (and any tabbed page: profile,
   search, network contacts, library, market). No pill/button tab variants anywhere.
+- **`SegmentedControl` / `SegmentedLinks`** (`@/components/ui/segmented-control`, HYG-105, owner
+  ruling 2026-09-22): the ONE view-switcher form, a segmented box. One bordered box, the options
+  as segments flush inside it, the selected segment filled with the brand pair. Buttons with
+  `aria-pressed` for an in-page state switch (the calendar views, the List rail, stacked), real
+  links with `aria-current` for navigation (the Marketplace area nav). Pills are retired as a
+  switcher: on a two-level browse surface the area box sits above and `UnderlineTabs` holds the
+  second level, so the two grammars never stack (HYG-092). Never hand-roll a `<button>` whose
+  selected state is a `bg-primary` fill; compose this.
 - **Standing kit (game tiles):** **`StandingHero`** (the dashboard centerpiece: rank crest +
   the four counts as feature tiles + the climb ladder, §2; the member analog of the admin
   KPI hero, **5** files) · `StandingTiles` (the compact four-count render for the feed/rail,

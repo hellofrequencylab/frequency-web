@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { Maximize2, X } from 'lucide-react'
 import { EventCalendar } from '@/components/events/event-calendar'
+import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { IconButton } from '@/components/ui/icon-button'
 import { StaffCalendar } from '@/app/(main)/spaces/[slug]/settings/calendar/staff-calendar'
@@ -351,9 +352,15 @@ export function CalendarWorkspace({
     <>
       {adminAllowed && (
         <>
-          <button type="button" aria-pressed={view === 'guest'} onClick={() => selectView('guest')} className="rounded-control border border-border px-3 py-1 text-body-sm font-semibold text-muted hover:text-text">
+          <Button
+            type="button"
+            size="sm"
+            variant={view === 'guest' ? 'primary' : 'secondary'}
+            aria-pressed={view === 'guest'}
+            onClick={() => selectView('guest')}
+          >
             Guest preview
-          </button>
+          </Button>
           <CalendarModeToggle mode={view} onSelect={selectView} />
         </>
       )}

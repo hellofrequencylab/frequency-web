@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { SegmentedLinks } from '@/components/ui/segmented-control'
 import { browsableAreas, type MarketArea } from '@/lib/marketplace/visibility'
 
 // The one faceted nav across every commerce surface (Classifieds · Housing · Market ·
@@ -19,6 +19,12 @@ import { browsableAreas, type MarketArea } from '@/lib/marketplace/visibility'
 // Events index rather than the commerce one. EventsSurface was already parameterised for this
 // (its own doc comment names "the commerce tab, where these host actions do not belong") and
 // index-data.ts already declares the price facet; the shape was anticipated and never wired.
+//
+// THE ROW IS THE KIT'S SEGMENTED BOX, NOT PILLS (HYG-092, HYG-105, owner ruling 2026-09-22). The
+// area nav is the first level of a two-level browse surface; the second level (kind tabs on
+// /classifieds, groups on /market, category tabs on the events surface) stays UnderlineTabs, the one
+// tab vocabulary (ADR-937 ruling 4). Box above, underline below: a reader always knows which level
+// they are on, and the last pill row is gone.
 
 const AREAS = [
   { key: 'all', area: 'market', href: '/classifieds', label: 'Classifieds' },
@@ -39,26 +45,12 @@ export async function MarketplaceFacets({ active }: { active: MarketplaceArea })
   const open = new Set(await browsableAreas())
   const areas = AREAS.filter((a) => a.area === null || open.has(a.area))
   return (
-    <nav className="flex flex-wrap gap-2" aria-label="Browse areas">
-      {areas.map((a) => {
-        const on = a.key === active
-        return (
-          <Link
-            key={a.key}
-            href={a.href}
-            scroll={false}
-            aria-current={on ? 'page' : undefined}
-            className={
-              'rounded-pill px-3 py-1.5 text-body-sm font-medium transition-colors ' +
-              (on
-                ? 'bg-primary text-on-primary'
-                : 'border border-border text-muted hover:bg-surface-elevated hover:text-text')
-            }
-          >
-            {a.label}
-          </Link>
-        )
-      })}
-    </nav>
+    <SegmentedLinks
+      label="Browse areas"
+      size="md"
+      scroll={false}
+      activeHref={areas.find((a) => a.key === active)?.href}
+      links={areas.map((a) => ({ href: a.href, label: a.label }))}
+    />
   )
 }

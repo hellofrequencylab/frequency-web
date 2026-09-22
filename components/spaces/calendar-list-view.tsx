@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SectionHeader } from '@/components/ui/section-header'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Button } from '@/components/ui/button'
 import { StatusChip } from '@/components/admin/status'
 import { EventCoreStatsCards } from '@/components/events/event-core-stats'
@@ -44,37 +45,44 @@ export function CalendarListView({
 
   return (
     <div className="flex flex-col gap-5 lg:flex-row lg:items-start" data-calendar-list-view>
-      <nav aria-label="Gatherings" className="w-full shrink-0 lg:w-52">
+      <div className="w-full shrink-0 lg:w-52">
         <SectionHeader title="Gatherings" count={items.length} />
-        <ul className="mt-3 space-y-1">
-          {items.map((item) => {
+        {/* The kit's segmented box, stacked (HYG-105). The selected row's fill is still the registry's:
+            a cancelled gathering is selected by its edge alone, never the brand fill (ADR-1503). */}
+        <SegmentedControl
+          label="Gatherings"
+          orientation="vertical"
+          size="md"
+          className="mt-3"
+          value={selected?.key ?? null}
+          onChange={onSelect}
+          segments={items.map((item) => {
             const current = selected?.key === item.key
             const titleClass = itemTitleClass(item.stage, item.isCancelled)
-            return (
-              <li key={item.key}>
-                <button
-                  type="button"
-                  onClick={() => onSelect(item.key)}
-                  aria-pressed={current}
-                  data-calendar-list-row={item.isCancelled ? 'cancelled' : (item.stage ?? 'event')}
-                  className={cn(
-                    'block w-full rounded-card border px-2.5 py-1.5 text-left transition-colors',
-                    current
-                      ? itemSelectedClass(item.stage, item.isCancelled)
-                      : cn('border-border bg-surface hover:border-border-strong hover:bg-surface-elevated', titleClass),
-                  )}
-                >
-                  <span className={cn('block truncate text-body-sm font-semibold', titleClass)}>
+            return {
+              value: item.key,
+              selectedClassName: itemSelectedClass(item.stage, item.isCancelled),
+              className: 'min-w-0',
+              data: { 'data-calendar-list-row': item.isCancelled ? 'cancelled' : (item.stage ?? 'event') },
+              label: (
+                <>
+                  <span
+                    className={cn(
+                      'block truncate text-body-sm font-semibold',
+                      // An idle row's title reads at full strength; a selected row's takes the fill's colour.
+                      titleClass || (current ? '' : 'text-text'),
+                    )}
+                  >
                     {item.isCancelled && <span className="sr-only">Cancelled. </span>}
                     {item.title}
                   </span>
                   <span className="mt-0.5 block truncate text-meta text-muted">{item.whenLabel}</span>
-                </button>
-              </li>
-            )
+                </>
+              ),
+            }
           })}
-        </ul>
-      </nav>
+        />
+      </div>
 
       <section className="min-w-0 flex-1" aria-labelledby="calendar-list-viewer">
         {selected ? (
