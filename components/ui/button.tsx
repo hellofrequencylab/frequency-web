@@ -72,13 +72,15 @@ const SIZE: Record<ButtonSize, string> = {
 // size, and `@utility tap-target` consumes it as a min-block-size / min-inline-size pair. It
 // simply was never composed here.
 //
-// ⚠️ THIS PARAGRAPH CLAIMED A MEDIA QUERY THAT DOES NOT EXIST, and the claim decided whether a
-// sweep moves layout. It said `--tap-min` "is 32px and rises to 44px under
+// ⚠️ THIS PARAGRAPH ONCE CLAIMED A MEDIA QUERY THAT DID NOT EXIST, and the claim decided whether
+// a sweep moves layout. It said `--tap-min` "is 32px and rises to 44px under
 // `@media (pointer: coarse)`", so both sizes were "under the 44px touch floor" and converting a
-// site grew it on a phone. There is no pointer-coarse rule anywhere in the CSS — grep it — and
-// `--tap-min` moves on the `data-generation` axis alone (26px at the dense end, 56px at the
-// spacious end, 32px at the default). At the DEFAULT generation the floor is therefore 32px on
-// every viewport, which raises `sm` (29.75 → 32px) and leaves `md` (38.25px) untouched.
+// site grew it on a phone. Until LIVE-469 there was no pointer-coarse rule anywhere in the CSS,
+// and `--tap-min` moved on the `data-generation` axis alone (26px at the dense end, 56px at the
+// spacious end, 32px at the default). The rule exists now (app/globals.css, "The touch floor"):
+// on a coarse pointer the DEFAULT generation's floor is 44px, so `sm` and `md` both grow on a
+// phone. With a mouse nothing changed: the floor is 32px on every viewport, which raises `sm`
+// (29.75 → 32px) and leaves `md` (38.25px) untouched.
 //
 // The consequence, and why it is written here rather than in a commit body: a `primary × md`
 // conversion is DIMENSION-INVARIANT. It gains `lift-1`'s two box-shadows and `press`, both of

@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useMemo, useState, useTransition, type FormEvent } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, useTransition, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Field, Input } from '@/components/ui/field'
@@ -122,6 +122,15 @@ export function VeraCalendarBox({
   const anyChecked = proposal?.checked.some(Boolean) ?? false
   const done = results !== null
 
+  // FOCUS LANDS ON THE RESULTS (LIVE-469). Accept is replaced by Clear the moment the results
+  // arrive, and the focus that pressed it would fall to the body. The list of lines (each now
+  // carrying its result) takes it instead, so the next Tab is Clear and a screen reader is
+  // already on what changed.
+  const linesRef = useRef<HTMLUListElement>(null)
+  useEffect(() => {
+    if (done) linesRef.current?.focus()
+  }, [done])
+
   return (
     <section data-vera-calendar-box className="rounded-card border border-border bg-surface">
       <button
@@ -180,7 +189,9 @@ export function VeraCalendarBox({
           {proposal ? (
             <div data-vera-proposal className="space-y-3">
               {proposal.note ? <p className="text-body-sm text-text">{proposal.note}</p> : null}
-              <ul className="space-y-2">
+              {/* Live so each line's result is read as it lands; focusable so Accept can hand
+                  focus here (see linesRef). */}
+              <ul ref={linesRef} tabIndex={-1} aria-live="polite" data-vera-lines className="space-y-2 rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                 {proposal.changes.map((change, i) => {
                   const r = resultFor(i)
                   return (
@@ -219,7 +230,10 @@ export function VeraCalendarBox({
                     </Button>
                   </>
                 )}
-                {pending ? <span className="text-meta text-muted">Working</span> : null}
+                {/* Always mounted: a live region only announces changes to what it already holds. */}
+                <span role="status" className="text-meta text-muted">
+                  {pending ? 'Working' : null}
+                </span>
               </div>
             </div>
           ) : null}

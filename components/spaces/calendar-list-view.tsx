@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -33,6 +34,26 @@ export function CalendarListView({
   onSelect: (key: string) => void
   onOpenPlan?: (planId: string, entryId?: string | null) => void
 }) {
+  // THE CONSOLE COMES TO THE TAP (LIVE-469). Below lg the index and the console stack, and the
+  // console re-renders below the whole index, so on a phone a tap looked like nothing happened.
+  // When the selection changes after mount and the two are stacked, the console takes focus (its
+  // heading reads the pick) and scrolls into view. Side by side, nothing moves. Selection changes
+  // from anywhere count (the rail, the console's agenda), which is why this watches the key and
+  // not the rail's clicks; a panel that is inert (another view is showing) is left alone.
+  const viewerRef = useRef<HTMLElement>(null)
+  const selectedKey = selected?.key ?? null
+  const seenKeyRef = useRef(selectedKey)
+  useEffect(() => {
+    if (seenKeyRef.current === selectedKey) return
+    seenKeyRef.current = selectedKey
+    const el = viewerRef.current
+    if (!selectedKey || !el || el.closest('[inert]')) return
+    const stacked = typeof window.matchMedia !== 'function' || !window.matchMedia('(min-width: 64rem)').matches
+    if (!stacked) return
+    el.focus({ preventScroll: true })
+    if (typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }, [selectedKey])
+
   if (items.length === 0) {
     return (
       <EmptyState
@@ -84,7 +105,7 @@ export function CalendarListView({
         />
       </div>
 
-      <section className="min-w-0 flex-1" aria-labelledby="calendar-list-viewer">
+      <section ref={viewerRef} tabIndex={-1} className="min-w-0 flex-1 focus-visible:outline-none" aria-labelledby="calendar-list-viewer">
         {selected ? (
           <CalendarListViewer item={selected} onOpenPlan={onOpenPlan} />
         ) : (

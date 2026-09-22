@@ -617,6 +617,21 @@
   --tracking-eyebrow-soft:   0.08em;
 }
 
+/* ── The touch floor (LIVE-469) ──────────────────────────────────────────────
+   32px is the right density for a mouse and too small for a thumb: the platform floor is
+   44 (Apple HIG, WCAG 2.5.5). IconButton, Checkbox, Select and the rail fold control all
+   said "44px on a coarse pointer" in their comments, and nothing in this file set it, so
+   every calendar control on a phone stayed a 32px target. This is the one rule that makes
+   those comments true. It raises the DEFAULT generation only: the per-generation presets
+   below come later in the source and still decide their own floor (spacious 48, kids up to
+   56, and the dense `bold` dip, which is a density choice for controls in flow). A fixed
+   control never reads this axis at all (components/sidebar/game-stats-dock.tsx, Q6). */
+@media (pointer: coarse) {
+  :root {
+    --tap-min: 44px;
+  }
+}
+
 /* Always-light lock. The cinematic beta induction is a branded cream experience
    that must hold its light palette even when the visitor's app/OS is in dark mode
    (a dark induction reads as "broken"). Re-asserts the light surface/text/border

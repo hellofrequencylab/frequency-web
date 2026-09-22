@@ -154,4 +154,49 @@ describe('CalendarListView', () => {
     const live = el.querySelector('[data-calendar-list-row="planning"]') as HTMLButtonElement
     expect(live.className).toContain('bg-primary-bg')
   })
+
+  it('brings the console to the tap when the two are stacked (LIVE-469)', () => {
+    // A phone stacks the index above the console, so a pick used to re-render a screen below the
+    // fold and look like nothing happened. Stacked, the console takes focus and scrolls itself in.
+    const matchMedia = vi.fn((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }))
+    const original = window.matchMedia
+    Object.defineProperty(window, 'matchMedia', { value: matchMedia, writable: true, configurable: true })
+    const scrolled = vi.fn()
+    Element.prototype.scrollIntoView = scrolled as unknown as Element['scrollIntoView']
+    try {
+      const el = mount(<CalendarListView items={[sit]} selected={null} onSelect={() => {}} />)
+      const viewer = el.querySelector<HTMLElement>('section[aria-labelledby="calendar-list-viewer"]')!
+      act(() => root!.render(<CalendarListView items={[sit]} selected={sit} onSelect={() => {}} />))
+      expect(document.activeElement).toBe(viewer)
+      expect(scrolled).toHaveBeenCalled()
+    } finally {
+      Object.defineProperty(window, 'matchMedia', { value: original, writable: true, configurable: true })
+    }
+  })
+
+  it('leaves the page alone when the index and console sit side by side (LIVE-469)', () => {
+    const matchMedia = vi.fn((query: string) => ({
+      matches: true,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }))
+    const original = window.matchMedia
+    Object.defineProperty(window, 'matchMedia', { value: matchMedia, writable: true, configurable: true })
+    const scrolled = vi.fn()
+    Element.prototype.scrollIntoView = scrolled as unknown as Element['scrollIntoView']
+    try {
+      mount(<CalendarListView items={[sit]} selected={null} onSelect={() => {}} />)
+      act(() => root!.render(<CalendarListView items={[sit]} selected={sit} onSelect={() => {}} />))
+      expect(scrolled).not.toHaveBeenCalled()
+      expect(document.activeElement).toBe(document.body)
+    } finally {
+      Object.defineProperty(window, 'matchMedia', { value: original, writable: true, configurable: true })
+    }
+  })
 })

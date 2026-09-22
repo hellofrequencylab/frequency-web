@@ -478,4 +478,16 @@ describe('CalendarWorkspace', () => {
       window.history.replaceState = original
     }
   })
+
+  it('gives only the showing panel a height, so a short view never scrolls into blank space (LIVE-469)', () => {
+    const el = mount(<CalendarWorkspace {...operatorProps({ initialView: 'admin' })} />)
+    const row = el.querySelector('[data-calendar-panel]')!.parentElement!
+    // The four sit in one flex row. Without items-start the row stretches every panel to the
+    // tallest, which is how a long List index left the Calendar scrolling past its own grid.
+    expect(row.className).toContain('items-start')
+    for (const panel of Array.from(el.querySelectorAll<HTMLElement>('[data-calendar-panel]'))) {
+      const showing = panel.getAttribute('aria-hidden') === 'false'
+      expect(panel.className.includes('h-0'), `${panel.dataset.calendarPanel} height`).toBe(!showing)
+    }
+  })
 })
