@@ -1,5 +1,5 @@
 // Shared desktop "website screen" mockup frame for the Funnels induction renders
-// (ADR-068). TEMPORARY — deleted with the induction at launch. A landscape
+// (ADR-068). Deleted with the induction at launch (21 December 2026, LIVE-464). A landscape
 // browser window (chrome + sidebar nav + content area). DAWN tokens only.
 
 import type { ReactNode } from 'react'

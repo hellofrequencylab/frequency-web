@@ -183,7 +183,8 @@ monthly; the trend matters more than any single month.
 > two of these five had already expired. Re-test a blocker's premise before treating it as one.
 >
 > To fill the rest: read the current invoice for each vendor below, put the monthly figure in the
-> table, state the snapshot month, and state whether the denominator is WAM or MAU. Source for each
+> table and state the snapshot month. The §3b denominator is MAU (ruled 2026-09-22) and §3b is
+> filled at 1,000 profiles, not before. Source for each
 > DOLLAR figure: the vendor's own billing console (not estimated). The ask is carried as a backlog
 > row (`OWN-062`) rather than sitting as `⏳ owner` in a document nobody is accountable for.
 >
@@ -211,7 +212,7 @@ quantity H3 is trying to hold flat or bend down as the denominator grows.
 
 | Metric | Value | How it is derived |
 |---|---|---|
-| Active members (denominator) | ⏳ owner | WAM or MAU at snapshot (state which) |
+| Active members (denominator) | MAU (ruled 2026-09-22); filled at 1,000 profiles | MAU at snapshot; §3b is gated on 1,000 profiles (`OWN-062`) |
 | Total infra spend / month | ⏳ owner | sum of §3a |
 | **Cost per 1k members / month** | **⏳ owner** | total spend / (members / 1000) |
 | Supabase per 1k | ⏳ owner | Supabase spend / (members / 1000) |

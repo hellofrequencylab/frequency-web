@@ -1,4 +1,4 @@
-// Tickets render — a desktop "event tickets" mockup (ADR-068). TEMPORARY, disposable SVG.
+// Tickets render — a desktop "event tickets" mockup (ADR-068). Disposable SVG, deleted with the induction at launch (21 December 2026, LIVE-464).
 // Ticket tiers on the left, a scannable QR pass on the right — the two halves of "sell it, scan it".
 
 import { RenderFrame, InnerCard, Label } from './frame'

@@ -1,4 +1,4 @@
-// Donate render — a desktop "fundraiser page" mockup (ADR-068). TEMPORARY, disposable SVG.
+// Donate render — a desktop "fundraiser page" mockup (ADR-068). Disposable SVG, deleted with the induction at launch (21 December 2026, LIVE-464).
 
 import { RenderFrame, InnerCard, Label, Bar } from './frame'
 
