@@ -292,4 +292,14 @@ on Calendar settings; My tasks filterable by plan; to-do dates as the `todos` la
 on the grid; playbooks and relative dues; Vera proposals that never publish; a token-keyed private feed at
 `/calendar/private/<token>`; the same Plan spine for Journey, Program, and maintenance targets.
 
+**Production seams for the non-event targets** (`PROG-CAL8`, `PROG-CAL9`, shipped). Each target in `PLAN_TARGET_DEFS`
+(`lib/calendar/plans.ts`) declares the door "Make it a Production" opens, sending the identifier its destination
+resolves (a slug for `/journeys/new` and `/spaces/<slug>/settings/program`, an id for `/events/new`) plus `plan=`.
+The destination authorizes the Plan through `getSpacePlan` against the Space it is creating for, writes the
+back-link on the insert (`journey_plans.space_plan_id`, `topical_channels.space_plan_id`; named for the table they
+point at, since `plan_id` already means the Journey on its children and would be misread beside a Channel's
+`template_id`), then advances the Plan best-effort with one `calendar.production_plan_stage_not_advanced` log line
+per failure (`closeProductionSeam`, `closeJourneyProductionSeam`, `closeProgramProductionSeam`). A `plan=` the
+Space does not run is reported on the page, never dropped. Maintenance declares no door on purpose.
+
 Voice: all calendar copy follows `docs/CONTENT-VOICE.md` (no em/en dashes) + `docs/NAMING.md`.

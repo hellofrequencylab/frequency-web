@@ -7,6 +7,14 @@
 // /spaces/<slug>/settings* pattern in page-chrome.ts, so no rail edit is needed. v1 was create-only;
 // ADR-869 makes this a real editor: display copy, blueprint refresh, and pause/resume are self-serve.
 // Deleting a Program stays a crew call (the quiet note at the bottom says so).
+//
+// ── AND `?plan=<space_plans.id>`, THE PRODUCTION ROAD (PROG-CAL9, ADR-1386) ─────────────────────
+// "Make it a Production" on the Plan board opens this page for a Plan whose target kind is
+// `program`. The Plan is resolved HERE only to name itself on screen and to ride into the create
+// form. The authority that decides whether the link may be MADE lives in actions.ts, which
+// re-resolves it through the same `getSpacePlan` on the caller's own session at write time; a
+// page-level read is never a permit. A `?plan=` this Space does not run is reported, never
+// dropped, the same way /journeys/new reports one.
 
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -26,6 +34,7 @@ import { resolveSpaceTeaseGate } from '@/lib/pricing/tease-gate'
 import { programTeaseBody, programTeaseCta } from '@/lib/spaces/program-wall'
 import { listCirclesForSpace } from '@/lib/circles/store'
 import { listSpacePrograms, listChapters } from '@/lib/channels/programs'
+import { getSpacePlan } from '@/lib/calendar/plans-store'
 import {
   createSpaceProgramAction,
   updateSpaceProgramAction,
@@ -48,9 +57,10 @@ export default async function SpaceProgramPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ error?: string; saved?: string }>
+  searchParams: Promise<{ error?: string; saved?: string; plan?: string }>
 }) {
-  const [{ slug }, { error, saved }] = await Promise.all([params, searchParams])
+  const [{ slug }, { error, saved, plan: planParam }] = await Promise.all([params, searchParams])
+  const planId = typeof planParam === 'string' ? planParam.trim() : ''
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
 
@@ -89,6 +99,14 @@ export default async function SpaceProgramPage({
     (c) => c.status !== 'draft' && c.status !== 'archived',
   )
   const errorMsg = error ? ERROR_COPY[error] : null
+
+  // The Plan this Program is being produced from. Null when there is no `?plan=`, when it is not
+  // one this Space runs, or when RLS does not let this caller see it.
+  const spacePlan = planId ? await getSpacePlan(space.id, planId) : null
+  // A `?plan=` that could not be honoured. Said out loud, never swallowed: the operator would
+  // otherwise create the Program believing it was the Plan's Production and find the Plan still
+  // sitting under Planning afterwards, with nothing anywhere explaining why.
+  const droppedPlanLink = !!planId && !spacePlan
 
   // BETA FOUNDER PUSH (ADR-875) / Phase E tease (ADR-466). Running a Program is Business depth. While
   // the beta grace window is open this Space HAS it without paying, so the resolver hands back the warm
@@ -129,6 +147,20 @@ export default async function SpaceProgramPage({
         {!errorMsg && saved && (
           <p className="rounded-lg border border-success/30 bg-success-bg px-3 py-2 text-body-sm text-success">
             Saved.
+          </p>
+        )}
+        {spacePlan && (
+          <p className="rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-muted">
+            Producing <span className="font-medium text-text">{spacePlan.title}</span>.
+            {programs.length > 0
+              ? ' This space already runs a Program, so this page edits the one you have.'
+              : ' Creating the Program below moves that Plan to Production.'}
+          </p>
+        )}
+        {droppedPlanLink && (
+          <p className="rounded-lg border border-warning/40 bg-warning-bg/30 px-3 py-2 text-body-sm text-text">
+            You opened this from a Plan this space does not run, so the Program below will not be
+            linked to it. Open the Plan from the space Calendar and try again.
           </p>
         )}
 
@@ -247,7 +279,7 @@ export default async function SpaceProgramPage({
           />
         ) : (
           <form
-            action={createSpaceProgramAction.bind(null, slug)}
+            action={createSpaceProgramAction.bind(null, slug, spacePlan?.id ?? null)}
             className="space-y-4 rounded-card border border-border bg-surface p-6"
           >
             <SectionHeader title="Create your Program" />

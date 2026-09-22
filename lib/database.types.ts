@@ -15847,6 +15847,7 @@ export type Database = {
           owner_space_id: string | null
           pillar_id: string | null
           slug: string
+          space_plan_id: string | null
           template_id: string | null
           theme: Json
         }
@@ -15862,6 +15863,7 @@ export type Database = {
           owner_space_id?: string | null
           pillar_id?: string | null
           slug: string
+          space_plan_id?: string | null
           template_id?: string | null
           theme?: Json
         }
@@ -15877,6 +15879,7 @@ export type Database = {
           owner_space_id?: string | null
           pillar_id?: string | null
           slug?: string
+          space_plan_id?: string | null
           template_id?: string | null
           theme?: Json
         }
@@ -15893,6 +15896,13 @@ export type Database = {
             columns: ["owner_space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topical_channels_space_plan_id_fkey"
+            columns: ["space_plan_id"]
+            isOneToOne: false
+            referencedRelation: "space_plans"
             referencedColumns: ["id"]
           },
           {
