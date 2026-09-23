@@ -366,7 +366,31 @@ derived from `EntryInput` until a date manifest exists, the value is checked aga
 options by the kernel (`lib/studio/kernel/field-value.ts`, never a rule per field), the tool schema lists
 the paths on every request, the proposal line reads the manifest label, and the apply merges the current
 row and writes through `parsePlanInput` or `saveCalendarEntry` so the product's own validation is the
-gate. Not yet: undo, and reading attendance to pick dates.
+gate. The write itself is keyed by the MANIFEST's own path and laid down by an object spread onto a
+copy, never by an assignment through a computed index carrying a string the model sent: CodeQL called
+the first shape of that remote property injection, and "the vocabulary already refuses an undeclared
+path" is the sentence every prototype-pollution postmortem opens with. Not yet: undo, and reading
+attendance to pick dates.
+
+**Two gates, not one** (owner ask 2026-09-23: "I don't want Vera changing things without explicit
+permission"). Accept was the whole gate and every line arrived ticked, so the default action was
+apply-all and an archive sat in the same list as a retitle. Two things changed. A DESTRUCTIVE change
+(`isDestructiveChange`: archive, and a stage move to Cancelled) now arrives UNTICKED, and ticking it is
+not enough: it carries its own confirmation whose visible words name the consequence, and
+`applyVeraChanges` REFUSES that line when the confirmation did not come back with it. The refusal is the
+server's, so a browser that skips the second box changes nothing, and it is per line, so a refused
+archive does not stop the retitle beside it. Archive earns this because `archiveSpacePlanRows` deletes:
+every penciled date the Plan holds is dropped, the ones that became events are unlinked and survive, and
+the Plan is restorable only in SQL while the dates are not restorable at all. Second, a `field` change
+that would overwrite something SAYS SO, with the size of what it replaces or the value itself when it is
+short, so a line reading "Set Team notes" cannot hide 20,000 characters behind a full stop. Both need
+the server's knowledge of the rows, so `veraCalendarCommand` now returns a `VeraDescribeContext` built
+from the rows it already read; that is also what stops a line reading "Archive that Plan.", since the
+browser holds only the month it is showing and the server knows every title it named. Still true and
+worth restating: one writer, reached from one Accept, on the caller's session with RLS as the lock, and
+every word a person reads on a proposal line is written by the server, never by the model. Not yet:
+any record of what Vera changed. After Accept a Vera edit is indistinguishable from a hand edit, which
+is the versioning half of the same owner ask and its own row.
 
 **Production seams for the non-event targets** (`PROG-CAL8`, `PROG-CAL9`, shipped). Each target in `PLAN_TARGET_DEFS`
 (`lib/calendar/plans.ts`) declares the door "Make it a Production" opens, sending the identifier its destination

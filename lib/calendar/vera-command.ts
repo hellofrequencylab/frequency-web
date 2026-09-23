@@ -18,6 +18,22 @@
 //   field     ONE attribute of one existing Plan or date, named by its manifest path
 // A change that cannot be expressed here cannot be proposed, which is the point.
 //
+// TWO GATES, NOT ONE (owner ruling: "I don't want Vera changing things without explicit
+// permission"). Accept was the whole gate, and every line arrived ticked, so the default action was
+// apply-all and an archive sat in the same list as a retitle. Now:
+//   1. A DESTRUCTIVE change (`isDestructiveChange`) arrives UNTICKED and ticking it is not enough.
+//      It carries its own confirmation (`destructiveConfirmation`), whose visible words name the
+//      consequence, and `applyVeraChanges` refuses the line when that confirmation did not come
+//      back with it. The refusal is the server's, so a browser that skips the second box changes
+//      nothing.
+//   2. A `field` change that would overwrite something says so. The preview line carries what the
+//      current value holds (`VeraDescribeContext.current`), so "Set Team notes to ..." reads as the
+//      replacement it is instead of hiding 20,000 characters behind a full stop.
+// Both need the SERVER's knowledge of the rows, which is why `VeraDescribeContext` is built by
+// `buildVeraDescribeContext` on the propose door and returned with the proposal, rather than
+// assembled from whatever the browser happens to be holding. That is also what stops a line
+// reading "Archive that Plan.": the server knows every title it named.
+//
 // A CLARIFICATION (PROG-CAL11 slice 1) is the one other thing Vera may answer with: when the ask
 // is ambiguous in a way that changes the outcome ("move the sound bath" and there are three), she
 // returns one plain question with the candidates instead of guessing, the box shows it, and the
@@ -84,6 +100,69 @@ export type VeraChange =
 export type VeraChangeKind = VeraChange['kind']
 
 export const VERA_CHANGE_KINDS: readonly VeraChangeKind[] = ['pencil', 'move', 'stage', 'retitle', 'todo', 'archive', 'field']
+
+/**
+ * THE CHANGES THAT NEED THEIR OWN PERMISSION.
+ *
+ * `archive` deletes rows: `archiveSpacePlanRows` drops every penciled date the Plan holds, unlinks
+ * the ones that became events, then stamps the Plan. The Plan is restorable in SQL; the dates are
+ * not restorable at all, and there is no restore control in the product. `stage: cancelled` takes
+ * the Plan out of every list and board (the transition stamps `archived_at` too) and marks every
+ * linked date Cancelled. Neither is something a person should be able to do by leaving a pre-ticked
+ * box alone, so both arrive unticked and both need the confirmation below.
+ */
+export function isDestructiveChange(change: VeraChange): boolean {
+  return change.kind === 'archive' || (change.kind === 'stage' && change.stage === 'cancelled')
+}
+
+/** The words of a destructive line's own confirmation. Both are visible: `label` beside the box and
+ *  `detail` under it, inside the same `<label>`, so what a person reads is what a screen reader
+ *  announces and no aria-label overrides a visible one. */
+export interface VeraConfirmation {
+  label: string
+  detail: string
+}
+
+/** What the person must agree to before a destructive line can be applied, in plain words and
+ *  naming the Plan. Null for everything that is not destructive. */
+export function destructiveConfirmation(change: VeraChange, ctx: VeraDescribeContext): VeraConfirmation | null {
+  if (change.kind === 'archive') {
+    return {
+      label: `Yes, archive ${quoted(ctx.plans[change.planId], 'that Plan')} and delete its penciled dates.`,
+      detail:
+        'Those dates are deleted, not hidden, and there is no restore control here. A date that already became an event keeps the event and loses its link to the Plan.',
+    }
+  }
+  if (change.kind === 'stage' && change.stage === 'cancelled') {
+    return {
+      label: `Yes, mark ${quoted(ctx.plans[change.planId], 'that Plan')} Cancelled, every linked date included.`,
+      detail:
+        'The Plan leaves every list and board here, the same as archiving it, and there is no restore control. Its dates are not deleted: each one reads Cancelled.',
+    }
+  }
+  return null
+}
+
+/** The line a destructive change gets back when its confirmation did not come with it. */
+export function destructiveRefusal(change: VeraChange): string {
+  return change.kind === 'archive'
+    ? 'Nothing was archived. Tick the confirmation under that line, which says what archiving deletes, then accept again.'
+    : 'Nothing was cancelled. Tick the confirmation under that line, which says what cancelling does, then accept again.'
+}
+
+/**
+ * Which lines came back confirmed. The browser sends positions in the list it is applying, so
+ * anything that is not a whole number inside that list is dropped: an unreadable confirmation is no
+ * confirmation, and the line it belonged to is refused rather than applied.
+ */
+export function parseVeraConfirmed(raw: unknown, count: number): Set<number> {
+  const out = new Set<number>()
+  if (!Array.isArray(raw)) return out
+  for (const value of raw) {
+    if (typeof value === 'number' && Number.isInteger(value) && value >= 0 && value < count) out.add(value)
+  }
+  return out
+}
 
 /**
  * One path Vera may set, with what a person calls it and how the kernel checks it. `field` is a
@@ -427,10 +506,95 @@ export function parseVeraClarification(raw: unknown): { clarification: VeraClari
   return { clarification: { question, options, allowFreeText: o.allowFreeText === true } }
 }
 
-/** Titles the description lines can name, keyed by id. Missing ids fall back to a plain noun. */
+/**
+ * What a preview line needs to describe itself honestly: the titles it may name, keyed by id, and
+ * what a `field` change would overwrite. Built on the SERVER by `buildVeraDescribeContext` and
+ * returned with the proposal, because the browser holds only the month it is looking at and would
+ * otherwise leave a line reading "Archive that Plan." Missing ids still fall back to a plain noun,
+ * which is now a last resort rather than the ordinary case.
+ */
 export interface VeraDescribeContext {
   plans: Record<string, string>
   entries: Record<string, string>
+  /** Keyed by `veraFieldKey`: what the targeted field holds right now, when it holds anything. */
+  current?: Record<string, VeraCurrentValue>
+}
+
+/** What a `field` change would overwrite: how much text is there, and the text itself when it is
+ *  short enough to read on the line. */
+export interface VeraCurrentValue {
+  chars: number
+  /** The whole current value, or null when it is too long to put on one line. */
+  text: string | null
+}
+
+/** One object's title and its current values, keyed by the same paths a `field` change names. */
+export interface VeraSubject {
+  title: string
+  values: Readonly<Record<string, unknown>>
+}
+
+export type VeraSubjects = Record<VeraFieldTarget, Readonly<Record<string, VeraSubject>>>
+
+/** The key a `field` change's current value is filed under. */
+export function veraFieldKey(target: VeraFieldTarget, id: string, path: string): string {
+  return `${target}:${id}:${path}`
+}
+
+/** Longer than this and the current value is reported by size rather than quoted. */
+const MAX_QUOTED_CURRENT = 80
+
+function heldValue(value: unknown): VeraCurrentValue | null {
+  if (typeof value !== 'string') return null
+  const held = value.trim()
+  if (!held) return null
+  return { chars: held.length, text: held.length <= MAX_QUOTED_CURRENT ? held.replace(/\s+/g, ' ') : null }
+}
+
+/** "20,000" without reaching for a locale, so the line reads the same everywhere. */
+function grouped(n: number): string {
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
+/**
+ * The context for one proposal, from the rows the propose door already loaded. Only the ids the
+ * proposal actually names are carried, so the payload is the size of the proposal and not the size
+ * of the Space, and only the paths in the vocabulary are ever read off a subject.
+ */
+export function buildVeraDescribeContext(changes: readonly VeraChange[], subjects: VeraSubjects): VeraDescribeContext {
+  const ctx: VeraDescribeContext = { plans: {}, entries: {}, current: {} }
+  const name = (target: VeraFieldTarget, id: string) => {
+    const subject = subjects[target]?.[id]
+    if (!subject) return
+    if (target === 'plan') ctx.plans[id] = subject.title
+    else ctx.entries[id] = subject.title
+  }
+  for (const change of changes) {
+    switch (change.kind) {
+      case 'pencil':
+        if (change.planId) name('plan', change.planId)
+        break
+      case 'move':
+        name('entry', change.entryId)
+        break
+      case 'stage':
+      case 'retitle':
+      case 'todo':
+      case 'archive':
+        name('plan', change.planId)
+        break
+      case 'field': {
+        name(change.target, change.id)
+        // A repeat row is ADDED, so nothing is overwritten and there is nothing to warn about.
+        const spec = veraFieldSpec(change.target, change.path)
+        if (!spec || spec.row) break
+        const held = heldValue(subjects[change.target]?.[change.id]?.values[change.path])
+        if (held) ctx.current![veraFieldKey(change.target, change.id, change.path)] = held
+        break
+      }
+    }
+  }
+  return ctx
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -458,6 +622,13 @@ function to12h(hhmm: string): string {
 
 function quoted(title: string | undefined, fallback: string): string {
   return title ? `"${title}"` : fallback
+}
+
+/** The sentence that admits a field change is an overwrite. Empty when there is nothing to lose. */
+function overwriteNote(held: VeraCurrentValue | null, verb: 'replaces' | 'deletes'): string {
+  if (!held || held.chars === 0) return ''
+  const what = held.text === null ? `the ${grouped(held.chars)} characters there now` : `what is there now: "${held.text}"`
+  return ` That ${verb} ${what}.`
 }
 
 /** One plain line per change, for the review list. Camp counselor: plain, no long dashes, no
@@ -497,8 +668,11 @@ export function describeChange(change: VeraChange, ctx: VeraDescribeContext): st
       const what = change.target === 'plan' ? quoted(ctx.plans[change.id], 'that Plan') : quoted(ctx.entries[change.id], 'that date')
       if (!spec) return `Set ${label} on ${what}.`
       if (spec.row) return `Add to ${label} on ${what}: ${fieldValueText(spec, change.value)}.`
-      if (change.value === null) return `Clear ${label} on ${what}.`
-      return `Set ${label} on ${what} to ${fieldValueText(spec, change.value)}.`
+      // A non-row field is a FULL REPLACEMENT of what is there (a Notes column holds 20,000
+      // characters), so the line says so and says how much, rather than letting a full stop hide it.
+      const held = ctx.current?.[veraFieldKey(change.target, change.id, change.path)] ?? null
+      if (change.value === null) return `Clear ${label} on ${what}.${overwriteNote(held, 'deletes')}`
+      return `Set ${label} on ${what} to ${fieldValueText(spec, change.value)}.${overwriteNote(held, 'replaces')}`
     }
   }
 }

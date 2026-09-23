@@ -8,14 +8,20 @@ import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
 import { parseVeraTranscript, proposeCalendarChanges, type VeraCalendarContext, type VeraTranscript } from '@/lib/ai/vera-calendar'
 import {
+  buildVeraDescribeContext,
+  destructiveRefusal,
   fieldValueText,
+  isDestructiveChange,
   isVeraMode,
   parseVeraChanges,
+  parseVeraConfirmed,
   veraFieldList,
   veraFieldSpec,
   withVeraField,
   type VeraChange,
   type VeraClarificationOption,
+  type VeraDescribeContext,
+  type VeraSubject,
 } from '@/lib/calendar/vera-command'
 import { entryDaySpan, entryToInput, parseEntryInput, type EntryInput, type EntryRow, type EntryWrite } from '@/lib/calendar/entries'
 import { getCalendarEntryRow, insertCalendarEntries, listSpaceCalendarEntries, updateCalendarEntryRow } from '@/lib/calendar/entries-store'
@@ -31,14 +37,32 @@ import { addPlanTodo, archiveSpacePlan, reanchorPlanTodos, transitionPlanStage }
 // VERA AT THE CALENDAR, the two doors (PROG-CAL10, ADR-1386 invariant 1).
 //
 // `veraCalendarCommand` READS: it builds this Space's context on the caller's session and returns
-// the proposal, or a question when Vera needs one answered first (PROG-CAL11 slice 1). Nothing is
-// written here, whatever the model says, and the conversation that a question opens is NOT stored:
-// the transcript rides in the box's state, comes back with the answer as untrusted input, and is
-// shape- and size-checked before the model sees it again. `applyVeraChanges` WRITES, and
-// only what the person ticked: the list comes back from the browser as untrusted input, is
-// re-parsed through `parseVeraChanges`, and each change is then driven through the EXISTING
-// calendar actions and stores on the caller's own session, so RLS stays the lock. One result per
-// change: a partial failure is reported line by line and never swallowed. No admin client here.
+// the proposal, or a question when Vera needs one answered first (PROG-CAL11 slice 1). NOTHING ON
+// THE CALENDAR IS WRITTEN HERE, whatever the model says. Two writes do happen behind this door and
+// saying otherwise was a lie this comment used to tell: `proposeCalendarChanges` records the token
+// spend as one `ai_usage` row through the service-role client (lib/ai/usage.ts), and the
+// conversation a question opens is still NOT stored anywhere. The transcript rides in the box's
+// state, comes back with the answer as untrusted input, and is shape- and size-checked before the
+// model sees it again.
+//
+// `applyVeraChanges` WRITES, and only what the person ticked: the list comes back from the browser
+// as untrusted input, is re-parsed through `parseVeraChanges`, and each change is then driven
+// through the EXISTING calendar actions and stores on the caller's own session, so RLS stays the
+// lock. One result per change: a partial failure is reported line by line and never swallowed.
+//
+// NO ADMIN CLIENT ON A NEW PATH, and one on an old one that is worth naming: the `todo` kind ends
+// at `crm_tasks`, a service-role, staff-scoped table, through `addPlanTodo`. That path is
+// authz-delegated, not open: `editorPlan` (plan-actions.ts) re-reads the Plan on the CALLER's
+// session filtered by `space_id` before the stamped insert, so a Plan id from another Space is
+// refused. Every other kind here writes on the caller's session only.
+//
+// THE SECOND GATE (owner ruling: Vera changes nothing without explicit permission). Accept alone
+// was too coarse, so `isDestructiveChange` (archive, and a stage move to Cancelled) needs its own
+// confirmation: the browser sends the positions it confirmed, and a destructive line whose position
+// is not among them is REFUSED here, on its own result line. The client also arms that box, but the
+// refusal is the server's, so a browser that skips it changes nothing. The proposal comes back with
+// a `VeraDescribeContext` built from the rows this door already read, so every preview line can name
+// its Plan and say what a field change would overwrite.
 //
 // A `field` change (PROG-CAL11 slice 2) is applied by reading the row, changing ONE attribute on
 // the product's own form shape, and writing through the product's own parser and action
@@ -80,7 +104,16 @@ export interface VeraCommandInput {
 }
 
 export type VeraCommandResult =
-  | { kind: 'proposal'; changes: VeraChange[]; note: string; timeZone: string }
+  | {
+      kind: 'proposal'
+      changes: VeraChange[]
+      note: string
+      timeZone: string
+      /** Built here, from the rows this door read: the titles every line names, and what a `field`
+       *  line would overwrite. The browser holds only the month it is showing, so a preview built
+       *  from it could name neither. */
+      context: VeraDescribeContext
+    }
   | {
       kind: 'clarification'
       question: string
@@ -126,7 +159,14 @@ export async function veraCalendarCommand(slug: string, input: VeraCommandInput)
     answer: transcript ? input.answer : null,
   })
   if ('error' in res) return fail(res.error)
-  return ok({ ...res, timeZone })
+  if (res.kind === 'clarification') return ok({ ...res, timeZone })
+  // Only the paths in the vocabulary are ever read off a subject (buildVeraDescribeContext), so
+  // handing it the whole row cannot widen what reaches the browser.
+  const planSubjects: Record<string, VeraSubject> = {}
+  for (const p of plans) planSubjects[p.id] = { title: p.title, values: p as unknown as Record<string, unknown> }
+  const entrySubjects: Record<string, VeraSubject> = {}
+  for (const r of rows) entrySubjects[r.id] = { title: r.title, values: entryToInput(r) as unknown as Record<string, unknown> }
+  return ok({ ...res, timeZone, context: buildVeraDescribeContext(res.changes, { plan: planSubjects, entry: entrySubjects }) })
 }
 
 export interface VeraApplyResult {
@@ -339,14 +379,21 @@ async function applyOne(slug: string, editor: Editor, change: VeraChange): Promi
 /**
  * Apply the changes a person ticked. `raw` is whatever the browser sent, so it is parsed again
  * here with the same strict parser the proposal went through; a list that does not parse applies
- * nothing. Each change reports on its own line, and the calendar is revalidated once at the end
+ * nothing. `rawConfirmed` is the positions in that same list whose destructive confirmation came
+ * back with them; a destructive line without its position is refused on its own line and nothing
+ * else on the list is disturbed. Each change reports on its own line, and the calendar is revalidated once at the end
  * so the fresh tree comes back in this action's own round trip (no client refresh needed).
  */
-export async function applyVeraChanges(slug: string, raw: unknown): Promise<ActionResult<{ results: VeraApplyResult[] }>> {
+export async function applyVeraChanges(
+  slug: string,
+  raw: unknown,
+  rawConfirmed?: unknown,
+): Promise<ActionResult<{ results: VeraApplyResult[] }>> {
   const editor = await resolveEditor(slug)
   if (!editor) return fail('You do not have access to this calendar.')
   const parsed = parseVeraChanges(raw)
   if ('error' in parsed) return fail(parsed.error)
+  const confirmed = parseVeraConfirmed(rawConfirmed, parsed.changes.length)
   const results: VeraApplyResult[] = []
   for (let i = 0; i < parsed.changes.length; i++) {
     const change = parsed.changes[i]
@@ -354,6 +401,12 @@ export async function applyVeraChanges(slug: string, raw: unknown): Promise<Acti
     // the caller's session (getSpacePlan / getCalendarEntryRow filter by this Space, then RLS).
     if ('planId' in change && change.planId && !UUID_RE.test(change.planId)) {
       results.push({ index: i, ok: false, message: 'That Plan could not be found.' })
+      continue
+    }
+    // The second gate. A ticked destructive line is still not enough: without the confirmation that
+    // named what it deletes, nothing on it runs.
+    if (isDestructiveChange(change) && !confirmed.has(i)) {
+      results.push({ index: i, ok: false, message: destructiveRefusal(change) })
       continue
     }
     try {

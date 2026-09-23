@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { SPACE_PLAN_MANIFEST } from '@/lib/studio/entities/space-plan'
 import {
+  buildVeraDescribeContext,
   describeChange,
+  destructiveConfirmation,
+  destructiveRefusal,
+  isDestructiveChange,
+  parseVeraConfirmed,
+  veraFieldKey,
   MAX_CLARIFICATION_OPTIONS,
   MAX_VERA_CHANGES,
   MIN_CLARIFICATION_OPTIONS,
@@ -265,6 +271,30 @@ describe('describeChange', () => {
     expect(describeChange({ kind: 'move', entryId: PLAN, toDay: '2026-03-19' }, ctx)).toContain('Move that date')
   })
 
+  // THE LINE SAYS IT IS A REPLACEMENT. "Set Team notes to ..." hid the fact that a notes column
+  // holding 20,000 characters was about to be thrown away. The current value reaches the line
+  // through the context the server builds, so the line can say what it costs.
+  it('says what a field change overwrites, quoting a short value and sizing a long one', () => {
+    const long = 'x'.repeat(20_000)
+    const current = {
+      ...ctx,
+      current: {
+        [veraFieldKey('plan', PLAN, 'notes')]: { chars: 20_000, text: null },
+        [veraFieldKey('entry', ENTRY, 'location')]: { chars: 8, text: 'The barn' },
+      },
+    }
+    expect(describeChange({ kind: 'field', target: 'plan', id: PLAN, path: 'notes', value: 'Bring the gong.' }, current)).toBe(
+      'Set Notes on "Winter sits" to "Bring the gong.". That replaces the 20,000 characters there now.',
+    )
+    expect(describeChange({ kind: 'field', target: 'plan', id: PLAN, path: 'notes', value: null }, current)).toBe(
+      'Clear Notes on "Winter sits". That deletes the 20,000 characters there now.',
+    )
+    expect(describeChange({ kind: 'field', target: 'entry', id: ENTRY, path: 'location', value: 'The field' }, current)).toBe(
+      'Set Location on "Sound bath" to "The field". That replaces what is there now: "The barn".',
+    )
+    // An empty field is not a replacement, so the line stays as short as the change is.
+    expect(describeChange({ kind: 'field', target: 'plan', id: PLAN, path: 'notes', value: long.slice(0, 5) }, ctx)).toBe('Set Notes on "Winter sits" to "xxxxx".')
+  })
   it('offers the three working stages as modes, labelled by the canon', () => {
     expect(VERA_MODE_OPTIONS.map((o) => `${o.value}:${o.label}`)).toEqual(['pencil:Pencil', 'plan:Planning', 'production:Production'])
   })
@@ -307,4 +337,84 @@ describe('withVeraField', () => {
     expect(veraFieldList({}, links)).toEqual([])
     expect(veraFieldList({ links: 'not a list' }, links)).toEqual([])
   })
+})
+
+describe('buildVeraDescribeContext', () => {
+  const subjects = {
+    plan: { [PLAN]: { title: 'Winter sits', values: { title: 'Winter sits', notes: 'Keep it small.', targetKind: 'event' } } },
+    entry: { [ENTRY]: { title: 'Sound bath', values: { title: 'Sound bath', location: '', description: 'x'.repeat(200) } } },
+  }
+
+  // The preview used to be built from the month the browser happened to be showing, so a Plan or a
+  // date outside it came out as "that Plan" and a person could tick an archive without knowing what
+  // it was. The server knows the titles, so it returns them.
+  it('names every object the proposal touches, so no line reads "that Plan"', () => {
+    const changes: VeraChange[] = [
+      { kind: 'archive', planId: PLAN },
+      { kind: 'move', entryId: ENTRY, toDay: '2026-03-19' },
+      { kind: 'pencil', title: 'Solstice', days: ['2026-12-21'], timeZone: 'UTC', planId: PLAN },
+    ]
+    const built = buildVeraDescribeContext(changes, subjects)
+    expect(built.plans[PLAN]).toBe('Winter sits')
+    expect(built.entries[ENTRY]).toBe('Sound bath')
+    for (const change of changes) expect(describeChange(change, built)).not.toContain('that Plan')
+    expect(describeChange(changes[0], built)).toContain('Archive "Winter sits"')
+    expect(describeChange(changes[1], built)).toContain('Move "Sound bath"')
+  })
+
+  it('carries what a non-empty field holds, and nothing for an empty one or a row that is added', () => {
+    const built = buildVeraDescribeContext(
+      [
+        { kind: 'field', target: 'plan', id: PLAN, path: 'notes', value: 'new' },
+        { kind: 'field', target: 'entry', id: ENTRY, path: 'location', value: 'The barn' },
+        { kind: 'field', target: 'entry', id: ENTRY, path: 'description', value: 'new' },
+        { kind: 'field', target: 'plan', id: PLAN, path: 'links', value: { url: 'https://example.com', label: 'Run sheet' } },
+      ],
+      subjects,
+    )
+    expect(built.current?.[veraFieldKey('plan', PLAN, 'notes')]).toEqual({ chars: 14, text: 'Keep it small.' })
+    expect(built.current?.[veraFieldKey('entry', ENTRY, 'location')]).toBeUndefined()
+    expect(built.current?.[veraFieldKey('entry', ENTRY, 'description')]).toEqual({ chars: 200, text: null })
+    expect(built.current?.[veraFieldKey('plan', PLAN, 'links')]).toBeUndefined()
+  })
+
+  it('leaves an id it does not hold out rather than inventing a title', () => {
+    const built = buildVeraDescribeContext([{ kind: 'archive', planId: ENTRY }], subjects)
+    expect(built.plans[ENTRY]).toBeUndefined()
+  })
+})
+
+describe('the destructive gate', () => {
+  // Archive deletes the Plan's penciled dates with no restore control, and Cancelled takes the Plan
+  // out of every list. Neither may be applied by leaving a pre-ticked box alone.
+  it('counts archive and a move to Cancelled as destructive, and nothing else', () => {
+    expect(isDestructiveChange({ kind: 'archive', planId: PLAN })).toBe(true)
+    expect(isDestructiveChange({ kind: 'stage', planId: PLAN, stage: 'cancelled' })).toBe(true)
+    expect(isDestructiveChange({ kind: 'stage', planId: PLAN, stage: 'production' })).toBe(false)
+    expect(isDestructiveChange({ kind: 'retitle', planId: PLAN, title: 'Winter sits, 2026' })).toBe(false)
+    expect(isDestructiveChange({ kind: 'field', target: 'plan', id: PLAN, path: 'notes', value: null })).toBe(false)
+  })
+
+  it('names the consequence in plain words, with the Plan in it and no long dash', () => {
+    const archive = destructiveConfirmation({ kind: 'archive', planId: PLAN }, ctx)
+    expect(archive).not.toBeNull()
+    expect(archive!.label).toBe('Yes, archive "Winter sits" and delete its penciled dates.')
+    expect(archive!.detail).toContain('no restore control')
+    const cancel = destructiveConfirmation({ kind: 'stage', planId: PLAN, stage: 'cancelled' }, ctx)
+    expect(cancel!.label).toContain('Winter sits')
+    expect(cancel!.detail).toContain('not deleted')
+    for (const words of [archive!.label, archive!.detail, cancel!.label, cancel!.detail, destructiveRefusal({ kind: 'archive', planId: PLAN })]) {
+      expect(words).not.toMatch(/[\u2013\u2014!]/)
+    }
+    expect(destructiveConfirmation({ kind: 'stage', planId: PLAN, stage: 'production' }, ctx)).toBeNull()
+  })
+
+  it('takes only whole positions inside the list as confirmations', () => {
+    expect([...parseVeraConfirmed([0, 2], 3)]).toEqual([0, 2])
+    expect([...parseVeraConfirmed([0, 0], 3)]).toEqual([0])
+    expect([...parseVeraConfirmed([-1, 3, 1.5, '0', null, true], 3)]).toEqual([])
+    expect([...parseVeraConfirmed(undefined, 3)]).toEqual([])
+    expect([...parseVeraConfirmed('all', 3)]).toEqual([])
+  })
+
 })
