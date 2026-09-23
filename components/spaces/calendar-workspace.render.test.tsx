@@ -527,6 +527,114 @@ describe('CalendarWorkspace', () => {
     }
   })
 
+  // PROG-CAL13. The console header owns the month, the paging cluster and the view switcher, so the
+  // grid inside it draws none of the three. The page grid keeps all three: nothing else draws them
+  // there.
+  it('draws the month, the paging cluster and the view switcher ONCE inside the console', () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    const el = mount(<CalendarWorkspace {...operatorProps()} />)
+    const pageGrid = el.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root]')!
+    expect(pageGrid.querySelectorAll('[aria-label="Previous month"]').length).toBe(1)
+    expect(pageGrid.querySelector('[aria-label="Calendar view"]')).not.toBeNull()
+    expect([...pageGrid.querySelectorAll('button')].some((b) => b.textContent?.includes('September 2026'))).toBe(true)
+
+    act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
+    const console_ = document.querySelector<HTMLElement>('[data-calendar-console]')!
+    // One month label, in the console's own heading.
+    expect(console_.querySelectorAll('#calendar-console-title').length).toBe(1)
+    expect([...console_.querySelectorAll('button')].some((b) => b.textContent?.includes('September 2026'))).toBe(false)
+    // One paging cluster, and no second grid / list switcher under it.
+    expect(console_.querySelectorAll('[aria-label="Previous month"]').length).toBe(1)
+    expect(console_.querySelectorAll('[aria-label="Next month"]').length).toBe(1)
+    expect(console_.querySelector('[aria-label="Calendar view"]')).toBeNull()
+    // The filters stay: they are the grid's, not the console's.
+    expect(console_.querySelector('[aria-label="Show on the calendar"]')).not.toBeNull()
+    // The month still fits the row it was given rather than its own content.
+    const grid = console_.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root]')!
+    expect(grid.className).toContain('flex-1')
+    expect(grid.className).toContain('min-h-0')
+  })
+
+  // Ask Vera left the full-width band above the grid for the foot of the side bar (owner ask
+  // 2026-09-23). It is MOVED, never rewritten into a second place: same node, agenda above it, and
+  // the agenda is the part that scrolls.
+  it('parks Ask Vera at the foot of the side bar, as the same box the page had', () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    const el = mount(<CalendarWorkspace {...operatorProps()} />)
+    const vera = el.querySelector('[data-vera-calendar-box]')
+    expect(vera).not.toBeNull()
+    act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
+    const console_ = document.querySelector<HTMLElement>('[data-calendar-console]')!
+    const foot = console_.querySelector<HTMLElement>('[data-calendar-console-vera]')!
+    expect(foot.contains(vera!)).toBe(true)
+    expect(document.querySelectorAll('[data-vera-calendar-box]').length).toBe(1)
+    // It is not on the stage any more, and it is not above the grid.
+    expect(console_.querySelector('[data-calendar-console-stage]')!.contains(vera!)).toBe(false)
+    const sidebar = console_.querySelector<HTMLElement>('[data-calendar-sidebar]')!
+    const agenda = sidebar.querySelector<HTMLElement>('[data-calendar-agenda]')!
+    expect(agenda.compareDocumentPosition(foot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // The agenda takes the height and scrolls; Vera holds the foot and never takes the column, so a
+    // long proposal scrolls in its own box rather than pushing the agenda off screen.
+    expect(agenda.className).toContain('overflow-y-auto')
+    expect(agenda.className).toContain('flex-1')
+    expect(foot.className).toContain('shrink-0')
+    expect(foot.className).toContain('max-h-')
+    expect(foot.className).toContain('overflow-y-auto')
+  })
+
+  // A viewer who can see the calendar but not edit it gets the agenda alone, with no empty footer.
+  it('leaves the side bar as the agenda alone when the viewer cannot edit', () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    const el = mount(<CalendarWorkspace {...operatorProps({ canManage: false })} />)
+    act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
+    const console_ = document.querySelector<HTMLElement>('[data-calendar-console]')!
+    expect(console_.querySelector('[data-calendar-console-vera]')).toBeNull()
+    expect(console_.querySelector('[data-calendar-agenda]')).not.toBeNull()
+  })
+
+  // MONTHS RUN UP AND DOWN (owner ask 2026-09-23). Down is the next month, Up the one before, the
+  // same direction the wheel already paged them; Left and Right keep working exactly as they did.
+  it('pages the month on Up and Down, and leaves the arrows to anything that is scrolling', () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    mount(<CalendarWorkspace {...operatorProps()} />)
+    act(() => keydown('f'))
+    const title = () => document.querySelector('#calendar-console-title')!.textContent
+    expect(title()).toContain('September 2026')
+    act(() => keydown('ArrowDown'))
+    expect(title()).toContain('October 2026')
+    act(() => keydown('ArrowUp'))
+    expect(title()).toContain('September 2026')
+    act(() => keydown('ArrowUp'))
+    expect(title()).toContain('August 2026')
+    act(() => keydown('ArrowRight'))
+    expect(title()).toContain('September 2026')
+    // An arrow typed into a field is a caret move, not a month.
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    act(() => keydown('ArrowDown', input))
+    expect(title()).toContain('September 2026')
+    input.remove()
+    // An arrow aimed at something that can still scroll that way belongs to the scroll. The agenda
+    // and a busy day's own cell are read with these keys, so the month must not move under them.
+    const agenda = document.querySelector<HTMLElement>('[data-calendar-agenda]')!
+    agenda.style.overflowY = 'auto'
+    Object.defineProperty(agenda, 'scrollHeight', { value: 900, configurable: true })
+    Object.defineProperty(agenda, 'clientHeight', { value: 200, configurable: true })
+    act(() => keydown('ArrowDown', agenda.querySelector('button')!))
+    expect(title()).toContain('September 2026')
+    // Scrolled to the bottom, the agenda has no room left and the month takes the key back.
+    agenda.scrollTop = 700
+    act(() => keydown('ArrowDown', agenda.querySelector('button')!))
+    expect(title()).toContain('October 2026')
+    act(() => keydown('ArrowUp'))
+    // And the shortcut sheet says so, on the row that already named the month keys.
+    act(() => keydown('?'))
+    const keys = document.querySelector('#calendar-console-keys')!.closest('[role="dialog"]')!
+    expect(keys.textContent).toContain('Up')
+    expect(keys.textContent).toContain('Down')
+    act(() => keydown('Escape'))
+  })
+
   it('gives only the showing panel a height, so a short view never scrolls into blank space (LIVE-469)', () => {
     const el = mount(<CalendarWorkspace {...operatorProps({ initialView: 'admin' })} />)
     const row = el.querySelector('[data-calendar-panel]')!.parentElement!

@@ -9,11 +9,30 @@ import { useEffect, useRef, type RefObject } from 'react'
 //     pages by its buttons only (owner ruling, PROG-CAL12), and turns every gesture on in the console.
 //   · A VERTICAL wheel pages months only when the mount opts in (`vertical`, the staff calendar, where
 //     the grid is the work surface). A public calendar sits in a scrolling page, and a wheel that stops
-//     scrolling the page reads as a bug.
+//     scrolling the page reads as a bug. It gives way to anything under the pointer that can still
+//     scroll (`verticalScrollTaker`): a busy day's cell owns its own overflow, so reading down it must
+//     never page the month away.
 //   · A touch swipe pages when it is clearly horizontal (at least 50px, and 1.5x its vertical travel).
 //     The grid sets `touch-action: pan-y`, so vertical swipes still scroll the page.
 //   · After a step the gesture is LOCKED until the wheel has been quiet for 250ms (max 800ms), which is
 //     what swallows momentum. Deltas are normalised from lines and pages to pixels first.
+
+/** True when a vertical move of `delta` belongs to something the reader is scrolling rather than to
+ *  the month: an element between `from` and `stopAt` that still has room to scroll that way. A busy
+ *  day's cell summarises its overflow inside itself and the console's agenda scrolls on its own, so
+ *  a wheel or an arrow aimed at either of those must not page the month out from under it. */
+export function verticalScrollTaker(from: EventTarget | null, delta: number, stopAt?: Element | null): boolean {
+  let el = from instanceof Element ? from : null
+  while (el && el !== stopAt) {
+    const overflowY = typeof window !== 'undefined' ? window.getComputedStyle(el).overflowY : 'visible'
+    if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight - el.clientHeight > 1) {
+      const room = delta > 0 ? el.scrollHeight - el.clientHeight - el.scrollTop : el.scrollTop
+      if (room > 1) return true
+    }
+    el = el.parentElement
+  }
+  return false
+}
 
 const STEP_PX = 60
 const QUIET_MS = 250
@@ -55,6 +74,8 @@ export function useMonthGestures(
       const horizontal = Math.abs(dx) > Math.abs(dy)
       if (horizontal ? !horizontalOn : !vertical) return
       const delta = horizontal ? dx : dy
+      // A cell that scrolls its own items, or a scrolling agenda under the pointer, keeps its wheel.
+      if (!horizontal && verticalScrollTaker(e.target, delta, el)) return
       e.preventDefault()
       const now = performance.now()
       const quiet = now - lastEventAt > QUIET_MS
