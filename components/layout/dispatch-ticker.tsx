@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { Megaphone, Zap, ChevronLeft, ChevronRight } from 'lucide-react'
+import { anyModalOpen, noModalOpen, subscribeModals } from '@/lib/ui/modal-stack'
 
 export type TickerItem = {
   id: string
@@ -59,7 +60,39 @@ export function DispatchTicker({ items }: { items: TickerItem[] }) {
   // under the focused element again — the exact defect, reintroduced by the fix.
   const [hoverPaused, setHoverPaused] = useState(false)
   const [focusPaused, setFocusPaused] = useState(false)
-  const paused = hoverPaused || focusPaused
+
+  // 🔴 THE THIRD LATCH: A MODAL IS COVERING THIS BAR (LIVE-482, the FOURTH blink report).
+  //
+  // The owner, on the Space calendar console: "the glitch / blink is way better now but still
+  // happening every 8 seconds or so. It's more of a consistent blink than a glitch now." Periodic
+  // is the whole clue, and it was measured rather than guessed. Mounting the real CalendarWorkspace
+  // with the console open and driving fake timers forward for thirty seconds, the ONLY thing in the
+  // entire document that changes is this bar, and it changes at 5000ms, 10000ms, 15000ms and on
+  // forever. The console's own markup and the month grid stay byte-identical, same nodes throughout,
+  // which rules out a remount, a re-render and a replayed animation inside the console.
+  //
+  // Two things follow, and each on its own is enough reason to stop.
+  //
+  // ONE, THE BLINK. The console is a Dialog at `align="overlay"`: `fixed inset-0`, `bg-ink/60` and
+  // `backdrop-blur-sm` over the whole viewport. A backdrop filter is not painted once. The browser
+  // re-samples and re-blurs whatever sits behind it whenever that changes, and what sits behind it
+  // is this bar, rewriting its headline every five seconds, forever, under a wash nobody can read
+  // it through. Five seconds is also exactly what a brief flash looks like when a person counts it
+  // as "every 8 seconds or so".
+  //
+  // TWO, THE PAUSE CONTRACT ABOVE IS VOID HERE, and that half needs no compositing argument at all.
+  // The whole point of the two latches above is WCAG 2.2.2: auto-updating content needs a mechanism
+  // to pause it. Under a modal there is no mechanism. The overlay swallows every pointer event, so
+  // `onMouseEnter` never fires; the Dialog traps Tab inside its panel, so focus can never land here
+  // and `onFocus` never fires; and the prev/next arrows cannot be clicked for the same reason as
+  // the first. All three affordances are behind the glass with the thing they control.
+  //
+  // It is a JS latch because it has to be. The note at the top of this file already records that
+  // this bar's motion is a setInterval, which no CSS selector can pause, so the same test that is a
+  // pseudo-class for a tooltip has to be asked in JavaScript here.
+  const modalPaused = useSyncExternalStore(subscribeModals, anyModalOpen, noModalOpen)
+
+  const paused = hoverPaused || focusPaused || modalPaused
 
   useEffect(() => {
     if (items.length <= 1 || paused) return
