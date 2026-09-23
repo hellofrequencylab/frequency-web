@@ -186,7 +186,8 @@
             "LIVE-273",
             "LIVE-450",
             "HYG-115",
-            "LIVE-463"
+            "LIVE-463",
+            "LIVE-476"
           ]
         },
         {
@@ -16473,6 +16474,24 @@
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const rd=(f)=>{try{return fs.readFileSync(f,\"utf8\")}catch(e){return \"\"}};const grid=rd(\"components/events/event-calendar.tsx\");const con=rd(\"components/spaces/calendar-console.tsx\");const ws=rd(\"components/spaces/calendar-workspace.tsx\");const ges=rd(\"components/events/use-month-gestures.ts\");if(!grid||!con||!ws)fail(\"a console file is gone\");if(!/hostChrome/.test(grid)||!/hostChrome=\\{consoleOpen\\}/.test(ws))fail(\"the grid draws its own month header inside the console again, so the console pays twice for the same chrome and the month stops fitting\");if(!/onAnimationEnd/.test(grid))fail(\"the month slide class is never cleared again, so every console open replays it: the blink is back\");if(/min-h-20\\s+sm:min-h-28/.test(grid)&&!/min-h-0/.test(grid))fail(\"the cell floor is back, which is what pushed the last two weeks off the bottom\");if(!/data-calendar-console-vera/.test(con)||!/veraRef/.test(con))fail(\"Ask Vera is not the side bar footer any more\");if(!/ArrowUp/.test(con)||!/ArrowDown/.test(con))fail(\"Up and Down no longer page the month in the console\");if(!/verticalScrollTaker/.test(ges))fail(\"the vertical wheel no longer yields to a scrolling cell, so a busy day cannot be scrolled\");process.exit(0)'",
         "note": "Six consequences: the grid gives up its chrome inside the console (the duplicate header), the slide class is cleared when it ends (the blink), the cell floor is gone (why the month did not fit), Vera is the side bar footer, Up and Down page the month, and the vertical wheel yields to a scroller. Mutation-tested on each arm."
+      }
+    },
+    {
+      "id": "LIVE-476",
+      "title": "/admin/qr renders at two different full-page heights and alternates between them, so it cannot be photographed whole",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "test/e2e/surfaces.ts",
+        "ref": "carried out of LIVE-475; four consecutive PRs red on four unrelated diffs"
+      },
+      "detail": "CARRIED OUT OF LIVE-475, WHICH FIXED THE HARNESS AND NOT THIS. /admin/qr renders at two different full-page heights, 14521 and 14567, alternating between consecutive captures a quarter of a second apart. 14521 is the committed baseline and is byte-identical to it. The surface is viewportOnly as of 2026-09-23 (owner ruling) so it no longer blocks every PR, and it still photographs its first screen every run. This row is the flip itself.\n\nWHAT IS RULED OUT, with the evidence, so nobody re-walks it. (1) By arithmetic over the committed PNG: the comparator pads both images and diffs the whole canvas, so the differing-pixel count inverts. A 46px band entering at the TOP would differ by about 996,772 pixels against the ~47,000 observed, which puts the insertion between y=13,526 and y=14,060 and makes every frame identical above y about 13,500. That kills LIVE-469 coarse-pointer touch floor, the min-h-[calc(100vh-3.5rem)] and --tab-bar-clearance asymmetry, and every Suspense fallback={null} on the surface. (2) The scans chart empty state was made dimension-invariant and the flip survived it, so the chart swap is not it. (3) fullPage does NOT resize the layout viewport in playwright-core 1.63: screenshotPage measures with _fullPageSize and ends at Page.captureScreenshot with captureBeyondViewport, and there is no Emulation.setDeviceMetricsOverride in that path. (4) The viewport-unit model is refuted by its own arithmetic as well as by (3): with the real root size (1rem = 17px here, not 16) it predicts a delta of 46 + X, where X is everything in flow outside that container, and X is ZERO on desktop (the viewport that PASSES) and at least 112.5 on mobile (the one that FAILS). It predicts instability where the suite is green and none where it is red.\n\nTHE STRONGEST REMAINING LEAD, flagged and not claimed. playwright.config.ts sets animations: disabled, and _preparePageForScreenshot calls finish() on every finite animation WITH NO RESTORE and cancel() then play() on every infinite one, installing transitionrun and animationstart listeners for the duration. _fullPageSize() is measured AFTER prepare and BEFORE restore. So the captured height is always the animations-suppressed height while the page between attempts is the animations-running one. That is a per-attempt, capture-induced, alternating state change, verified in this version. If anything on this surface has a finite transition or an infinite animation that affects layout HEIGHT, it produces exactly this signature.\n\nONE NUMERICAL COINCIDENCE, recorded so it is checked rather than rediscovered: 2.75rem is 46.75px at this root size, and globals.css documents a 46.75px element by name (the chat tab, h-11). That element is `fixed` and so cannot move the document height, but it is the only 46-ish quantity in the shell token set, and whether a non-fixed sibling shares the 2.75rem measure has not been checked.\n\nHOW THE NEXT OCCURRENCE WILL READ. LIVE-475 shipped the diagnostic: any capture-induced two-height failure now names the surface, both heights, the delta, and the boxes whose height is declared against the viewport. So this row should be worked from a real run message rather than from arithmetic over a PNG.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const rd=(f)=>{try{return fs.readFileSync(f,\"utf8\")}catch(e){return \"\"}};const s=rd(\"test/e2e/surfaces.ts\");if(!s)fail(\"surfaces.ts is gone\");if(/VIEWPORT_ONLY_OPERATOR_PATHS/.test(s)&&/\\/admin\\/qr/.test(s))fail(\"the /admin/qr flip is still unfixed: the surface is still photographing its first screen only, which is the workaround and not the fix\");process.exit(0)'",
+        "note": "Measures the consequence that matters: the surface is still on the workaround. It fails while /admin/qr is viewportOnly and passes only when the flip is fixed and the flag is deleted, which is the one change that puts the other 13,700px back under the camera. Fails today, by design."
       }
     }
   ]

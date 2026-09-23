@@ -60,7 +60,9 @@ import {
   operatorLandedElsewhere,
   operatorSurfaces,
   publicSurfaces,
+  explainCaptureFailure,
   settle,
+  unsettledMessage,
   type RenderState,
   type ServerErrorLog,
   type Surface,
@@ -100,7 +102,10 @@ async function capture(
     )
   }
 
-  await settle(page)
+  // What `settle()` SAW is checked at the shutter, below, and not here: an operator surface that
+  // bounced to /feed, or a surface whose data reads 5xx'd, is a better explanation of a moving
+  // height than the surface itself is, and both of those are diagnosed in the next few lines.
+  const settleReport = await settle(page)
   // 🔴 THE LAST THING BEFORE THE SHUTTER: is this still the page we came for? The check above ran
   // before `settle()`, and a requireAdmin() bounce lands inside that window — which is how eight
   // photographs of /feed were committed under operator route names on 2026-09-10. See
@@ -113,13 +118,74 @@ async function capture(
   // 62 public comparisons then failed against it at 1 to 2 percent. Last thing before the
   // shutter, so it covers everything `settle()` waited for, and BEFORE it, so a degraded surface
   // leaves no PNG behind — there is nothing to review in a photograph of an outage.
-  assertNoServerErrors(serverErrors, `${surface.path} [${state.id} · ${test.info().project.name}]`)
+  const label = `${surface.path} [${state.id} · ${test.info().project.name}]`
+  assertNoServerErrors(serverErrors, label)
+  // 🔴 AND FINALLY: did the page actually STOP MOVING? `settle()` waits on `scrollHeight`
+  // behind a 15s budget, and that budget used to expire in silence — no throw, no annotation, no
+  // counter. The page then reached the camera unsettled and `toHaveScreenshot` failed with
+  // `Failed to take two consecutive stable screenshots`, which names neither the surface's height
+  // nor the fact that a wait had given up; two PRs went into re-deriving `/admin/qr`'s
+  // 14521 ↔ 14567 flip by hand out of the committed PNG. This is the gate that notices that
+  // fail-safe firing (AGENTS.md: every fail-safe needs a gate that notices it fired), and it is
+  // the LAST thing before the shutter so it covers everything the waits above waited for.
+  //
+  // It THROWS rather than skipping. A surface that renders at two heights for one commit is a
+  // defect on the surface, not an absent capability like a denied operator route, and a skip
+  // would let the flake keep its silence while quietly dropping a baseline from the run.
+  //
+  // ── 🔴 THE ONE EXCEPTION, AND IT IS NOT A LOOPHOLE ────────────────────────────────
+  //
+  // THE GATE IS NOT OPTIONAL. Do not reach for `viewportOnly` to quiet a surface this gate has
+  // caught; `Surface.viewportOnly`'s own note already says it in the general case ("Do NOT set
+  // this to paper over a flaky surface with real layout drift; the fix there is the drift"),
+  // and doing it here would trade ~14,000px of coverage for a silence. The exception below is
+  // about what the CAMERA CAN SEE, and nothing else.
+  //
+  // A `viewportOnly` capture photographs the first screen only. A height moving 8,000px below
+  // the fold therefore cannot reach the picture at all, so there is no baseline for it to
+  // spoil and nothing for the gate to protect. Throwing would only be noise.
+  //
+  // And it would be LOUD noise on day one. `/feed` carries `viewportOnly` PRECISELY BECAUSE a
+  // full-page shot of it never settles: it is an infinite stream, and surfaces.ts records the
+  // measurement ("the height instability that made the run look flaky was /feed being an
+  // infinite stream, which is why `/feed` itself is `viewportOnly` — a full-page shot of it
+  // never settles", in the operatorLandedElsewhere note). An unconditional throw here would
+  // fail /feed in all four looks on the first run, for a picture that was never affected. That
+  // is the shape of the 46-passing-tests mistake the 🔴 scroll-pass note in `settle()` exists
+  // to stop anyone repeating: a real fix for one problem, shipped with a guess about another.
+  //
+  // The fail-safe is still NOTICED on those surfaces. It lands as a `unsettled-height`
+  // annotation carrying the full message, visible in the HTML report and in the JSON, so a
+  // viewport-only surface that starts oscillating leaves a record instead of a silence.
+  const unsettled = unsettledMessage(settleReport, label)
+  if (unsettled) {
+    if (surface.viewportOnly) {
+      test.info().annotations.push({ type: 'unsettled-height', description: unsettled })
+    } else {
+      throw new Error(unsettled)
+    }
+  }
   // `viewportOnly` surfaces photograph the first screen. See the note on Surface.viewportOnly:
   // a full-page baseline of a live, shared stream measures WHEN it was taken, not how it looks.
-  await expect(page).toHaveScreenshot(`${surface.slug}--${state.id}.png`, {
-    fullPage: !surface.viewportOnly,
-    mask: masksFor(page, surface),
-  })
+  //
+  // 🔴 AND IF IT FAILS, SAY WHAT MOVED. The gate above measures the page at the normal
+  // viewport, and on PR #2878 that was not enough: /admin/qr was genuinely still at 390\u00d7844
+  // and started flipping 14521 \u2194 14567 only once `toHaveScreenshot` began capturing past the
+  // viewport. `settle()` reported nothing because there was nothing to report. Playwright then
+  // failed with a bare timeout, and the two heights were visible ONLY inside its call log.
+  //
+  // So the failure is caught and re-thrown with the diagnosis attached: both heights, and the
+  // boxes on this surface whose height is a function of the viewport height (a CSSOM read \u2014
+  // nothing is resized, nothing is mutated). Anything that is NOT that signature is re-thrown
+  // untouched, so an ordinary pixel diff still reads exactly as it did.
+  try {
+    await expect(page).toHaveScreenshot(`${surface.slug}--${state.id}.png`, {
+      fullPage: !surface.viewportOnly,
+      mask: masksFor(page, surface),
+    })
+  } catch (error) {
+    throw await explainCaptureFailure(page, error, label)
+  }
 }
 
 test.describe('visual', { tag: '@visual' }, () => {

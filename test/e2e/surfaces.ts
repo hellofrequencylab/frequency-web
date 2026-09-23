@@ -633,11 +633,47 @@ const OPERATOR_PATHS: readonly { readonly path: string; readonly why: string }[]
  *    readings of 0 in `a11y-baselines.json` (the zero-tolerance join rule, made explicit) that
  *    the first staff-session run measures for real (HYG-027, ADR-1239).
  */
+/**
+ * `/admin/qr` PHOTOGRAPHS ITS FIRST SCREEN ONLY, and this is the one place in the file that
+ * records why, because `viewportOnly` is a coverage trade and a silent one reads as coverage.
+ *
+ * THE MEASUREMENT. Four consecutive PRs went red here on four unrelated diffs, none of which
+ * touches anything this page renders: #2873 (flaky, lucky on the retry), #2874, #2875, #2878.
+ * Every run the same pair of heights, 14521 and 14567, and the same differing-pixel count.
+ *
+ * IT IS NOT DRIFT AND A RECAPTURE CANNOT FIX IT. `toHaveScreenshot` compares each capture with
+ * the PREVIOUS capture to prove the page is still, and gets the flip back, so it never takes
+ * two consecutive stable frames. The page is BOTH heights; a baseline is one of them. Whichever
+ * we committed would be red from the other side, which is why the obvious move was refused.
+ *
+ * WHAT IS RULED OUT, so nobody re-walks it. By arithmetic over the committed PNG (the comparator
+ * pads both images and diffs the whole canvas, so the pixel count inverts): a 46px band entering
+ * at the TOP would differ by ~996,772 pixels against the ~47,000 observed, which puts the
+ * insertion at the foot of the Analytics block and makes every frame identical above y~13,500.
+ * That kills the coarse-pointer touch floor, the `--tab-bar-clearance` asymmetry and every
+ * `<Suspense fallback={null}>` on the surface. Two further theories died with evidence: the
+ * chart's empty state was made dimension-invariant and the flip survived it, and `fullPage` was
+ * shown NOT to resize the layout viewport in playwright-core 1.63 (`captureBeyondViewport`, no
+ * `setDeviceMetricsOverride` in that path), which refutes the viewport-unit explanation. Its
+ * arithmetic refutes it too: that model predicts a delta of 46 + X where X is zero on DESKTOP,
+ * the viewport that passes, and >=112.5 on mobile, the one that fails.
+ *
+ * WHY THE FLAG RATHER THAN A SKIP. This is the same remedy `/feed` carries, for the reason the
+ * flag exists: a page whose full-page height is not a function of its own content cannot be
+ * photographed whole, and a picture of the first screen is still a real gate on the chrome, the
+ * heading, the stat cards and the controls, which is what this surface was chosen for (it leads
+ * the operator tree on raw buttons). What is given up is ~13,700px below the fold, stated here
+ * rather than performed silently. The flip keeps its own row; when it is found, delete this
+ * entry and the surface goes back to full-page in the same change.
+ */
+const VIEWPORT_ONLY_OPERATOR_PATHS: readonly string[] = ['/admin/qr']
+
 export function operatorSurfaces(): readonly Surface[] {
   return OPERATOR_PATHS.map(({ path }) => ({
     path,
     slug: slugFor(path),
     audience: 'operator' as const,
+    ...(VIEWPORT_ONLY_OPERATOR_PATHS.includes(path) ? { viewportOnly: true } : {}),
   }))
 }
 
@@ -1052,9 +1088,18 @@ export const VISUAL_MASK_SITES: readonly {
   // above the chart are live tallies too (total scans, unique members, NFC taps, the 30-day
   // count) and they are deliberately NOT masked — they did not move in the measurement, and this
   // file's rule is to mask what was measured rather than everything that could move. A digit
-  // changing in those cards is the next candidate and it lands here with its own reading. And if
-  // the window goes from zero scans to some, the section swaps a one-line empty state for a
-  // 112px chart: that is a HEIGHT, and no mask holds a height.
+  // changing in those cards is the next candidate and it lands here with its own reading.
+  //
+  // ✅ CLOSED, and it is the reason to write the next prediction down too: the paragraph that
+  // used to end this note said that if the window went from zero scans to some, the section
+  // would swap a one-line empty state for a 112px chart, that this is a HEIGHT, and that no
+  // mask holds a height. It then happened — `[mobile] visual · operator console › /admin/qr`
+  // went red on two unrelated PRs with byte-identical numbers. The fix is NOT another mask:
+  // `analytics.tsx` now renders the empty state in the SAME `mt-4 h-28` box as the chart, so
+  // the section is dimension-invariant and the branch is no longer visible to the camera.
+  // The measured swap was 55.25px and the observed flip is 46px, so this closes a real
+  // dimension flip on the surface WITHOUT being proven to be the whole of that flip; the
+  // `settleHeight` report below is what will name the next one instead of guessing at it.
   {
     value: 'qr-daily-scans',
     file: 'app/(main)/admin/qr/analytics.tsx',
@@ -1240,51 +1285,596 @@ export function masksFor(page: Page, surface: Surface): Locator[] {
  * baseline diff that is one contiguous band at identical dimensions as SUSPECTED FROZEN IMAGE
  * and crop both before judging it: the new capture is likely the correct one.
  */
-export async function settle(page: Page): Promise<void> {
+export async function settle(page: Page): Promise<SettleReport> {
   await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {})
   // `.then(() => undefined)`: FontFaceSet is not serialisable across the protocol.
   await page.evaluate(() => document.fonts.ready.then(() => undefined))
-  await settleHeight(page)
+  return await settleHeight(page)
+}
+
+/** What `settle()` SAW while it waited. Returned rather than swallowed — see `settleHeight`. */
+export interface SettleReport {
+  /** `scrollHeight` held one value for the quiet window before the budget ran out. */
+  settled: boolean
+  /** The height LEFT a value and later came back to it. This is the flip-flop signature, and
+   *  it is a different fact from `settled`: an oscillation whose plateaus outlast the quiet
+   *  window reports `settled: true` and is still not photographable. */
+  oscillated: boolean
+  /** Distinct `scrollHeight` values in first-seen order, capped at `HEIGHT_SAMPLE_CAP`. */
+  heights: number[]
+  /** How many distinct values there were, including any past the cap. */
+  distinct: number
+  /** The height the page was left at. */
+  final: number
+  /** How long the height wait actually ran. */
+  waitedMs: number
+  /** Every box that changed size between the two plateaus, ancestors included, straight from
+   *  the page. Empty unless the height oscillated AND both plateaus were sampled before the
+   *  budget ran out. `smallestEnclosing()` is what makes this readable. */
+  moved: MovedBox[]
+  /** The answer: the boxes that MADE the change rather than carried it, deepest first, capped.
+   *  This is the diagnosis, and the reason the message is worth failing a run on. */
+  movers: { path: string; desc: string; from: number; to: number }[]
+}
+
+/** One box that changed height between the two plateaus. `from: 0` means it was absent from
+ *  that plateau entirely, which is the branch-swap shape rather than a box that collapsed. */
+export interface MovedBox {
+  /** Position in the tree, e.g. `body>div[1]>section[2]>p[0]`. Stable across a re-render of
+   *  the subtree, which element identity is not. */
+  path: string
+  /** tag + #id + up to two classes + the first few words of text. */
+  desc: string
+  from: number
+  to: number
+  delta: number
 }
 
 /**
- * Wait for `scrollHeight` to hold a single value. Observation only — this must not touch the
- * page, scroll it, or otherwise change what the camera is about to see (see the 🔴 note in
- * `settle`).
+ * The boxes that MADE the height change, out of the raw list that includes every ancestor.
+ *
+ * Why this is not just "the deepest one". An ancestor of a box that grew always grows by the
+ * same amount, so the raw diff reports the whole chain — the shell, main, the column, the
+ * section — and buries the one line worth reading. A box is therefore dropped when the movers
+ * INSIDE it already account for its whole delta: it is carrying the change, not making it.
+ *
+ * Summing needs care. The movers inside a box form a chain, so adding all of them counts the
+ * same change once per level; only the TOP layer within the box is summed. That one rule covers
+ * both real shapes: a child that grew (sum = its delta), and a branch swap where one node left
+ * and a taller one arrived in its place (sum = the taller minus the shorter).
+ *
+ * Pure and exported because it is the one genuinely subtle step in the diagnosis, and a rule
+ * nobody can test is a rule that quietly stops working.
+ */
+export function smallestEnclosing(moved: readonly MovedBox[], cap = MOVER_CAP) {
+  const inside = (box: MovedBox, other: MovedBox) => other.path.startsWith(`${box.path}>`)
+  return moved
+    .filter((box) => {
+      const within = moved.filter((other) => inside(box, other))
+      const top = within.filter((other) => !within.some((mid) => inside(mid, other)))
+      if (top.length === 0) return true
+      const explained = top.reduce((sum, other) => sum + other.delta, 0)
+      return Math.abs(explained - box.delta) >= 0.5
+    })
+    .sort((x, y) => y.path.split('>').length - x.path.split('>').length)
+    .slice(0, cap)
+    .map(({ path, desc, from, to }) => ({ path, desc, from, to }))
+}
+
+/** Enough numbers to read a flip-flop, few enough that a page animating its own height
+ *  cannot return a thousand of them into a failure message. */
+const HEIGHT_SAMPLE_CAP = 12
+
+/** Ceilings on the element diff below. It only runs on a page that has ALREADY flipped, and
+ *  everything it produces crosses the CDP wire, so each one is a cap on a payload rather than a
+ *  tuning knob: at most this many nodes walked per plateau, this many boxes named, this much
+ *  text per box. Three boxes is what fits in a failure message somebody will actually read. */
+const NODE_WALK_CAP = 6000
+const RAW_MOVED_CAP = 200
+const MOVER_CAP = 3
+const MOVER_TEXT_CAP = 40
+
+/**
+ * Wait for `scrollHeight` to hold a single value, and REPORT WHAT IT SAW. Observation only —
+ * this must not touch the page, scroll it, or otherwise change what the camera is about to
+ * see (see the 🔴 note in `settle`).
  *
  * The whole wait runs INSIDE one `page.evaluate` on purpose: polling height over the CDP wire
  * would put a round trip between each reading, so a page growing steadily could report the
  * same number twice by luck of timing and be declared stable — a flake that would surface
  * only under load. In-page, the readings are ~100ms apart and mean what they say.
  *
- * It resolves rather than throws on timeout. A surface that genuinely never settles should
- * fail as a SCREENSHOT diff, naming the surface and showing the pixels, not as an opaque
- * helper timeout several frames removed from the thing that moved.
+ * 🔴 IT USED TO RETURN `void`, AND BOTH HALVES OF THAT WERE WRONG (2026-09-23).
+ *
+ *  1. It was written for MONOTONIC GROWTH and could only see that. It kept ONE previous
+ *     height and reset a clock whenever the value changed, so "stopped" and "ALTERNATING"
+ *     were the same observation to it: a page flipping 14521 ↔ 14567 with plateaus longer
+ *     than `quietFor` was declared settled, on whichever plateau it happened to be sitting.
+ *     That is why this now tracks the distinct values and whether the height came BACK to one
+ *     it had already left. Growth never revisits a height; an oscillation always does.
+ *  2. The old contract said it should resolve rather than throw on timeout, because "a surface
+ *     that genuinely never settles should fail as a SCREENSHOT diff, naming the surface and
+ *     showing the pixels, not as an opaque helper timeout". That reasoning is refuted by the
+ *     thing it predicted. `/admin/qr` at 390 did exactly this, and the screenshot did NOT name
+ *     it: `toHaveScreenshot` retried, caught the flip back on every attempt, and failed with
+ *     `Failed to take two consecutive stable screenshots` — an opaque timeout several frames
+ *     away from what moved, with two PRs' worth of people re-deriving the same 46,975 pixels.
+ *     A budget that expires with no throw, no annotation and no counter is a fail-safe nothing
+ *     notices firing, which AGENTS.md forbids in as many words.
+ *
+ * So the wait still never throws HERE — the throw belongs at the shutter, where the surface,
+ * the render state and the project are all in hand — but it now hands back the evidence, and
+ * `unsettledMessage()` turns it into the sentence the next person needs. Keep it that way: the
+ * reason this helper does not assert is the same reason it does not scroll.
  */
-async function settleHeight(page: Page): Promise<void> {
-  await page.evaluate(
-    async ({ timeout, quietFor }) => {
+async function settleHeight(page: Page): Promise<SettleReport> {
+  const result = await page.evaluate(
+    async ({ timeout, quietFor, cap, nodeCap, rawCap, textCap }) => {
       const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
       const height = () => document.documentElement.scrollHeight
 
+      /* ── The element pass ── ARMED ONLY AFTER A FLIP, AND OBSERVATION ONLY ───────────────
+       * Everything below READS: `getBoundingClientRect`, `getComputedStyle`, `children`,
+       * `textContent`. Nothing assigns to `.style`, touches `classList`, sets an attribute,
+       * scrolls, focuses or clicks. That is not a preference, it is the same rule the 🔴 note
+       * in `settle()` records at the cost of 46 passing tests: this helper must not change what
+       * the camera is about to see. A read of computed style is safe; a write is not. */
+
+      /** One element's height and its description. Keyed, in the maps below, by a POSITION
+       *  PATH (`body>div[1]>p[0]`) rather than by the element itself: React can replace the
+       *  node when a branch swaps, and identity would then match nothing. The path is built
+       *  DURING the walk rather than by climbing from each element, which would be
+       *  O(nodes × depth) on a 14,000px page. */
+      type Box = { h: number; d: string }
+
+      /** tag + #id + up to two classes + the first few words, so the failure names something a
+       *  person can find in the source. `className` is an SVGAnimatedString on SVG, hence the
+       *  typeof guard. */
+      const describe = (el: Element): string => {
+        const tag = el.tagName.toLowerCase()
+        const id = el.id ? `#${el.id}` : ''
+        const raw = typeof el.className === 'string' ? el.className : ''
+        const cls = raw
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((c) => `.${c}`)
+          .join('')
+        const text = (el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, textCap)
+        return `${tag}${id}${cls}${text ? ` "${text}"` : ''}`
+      }
+
+      /** Every in-flow box on the page with its own height, keyed by tree position. Out-of-flow
+       *  elements (`fixed` / `absolute`) are RECORDED nowhere because they cannot move the
+       *  document's height, but the walk still DESCENDS through them: an in-flow subtree under an
+       *  absolutely positioned wrapper is still in flow relative to that wrapper. */
+      const snapshot = (): Map<string, Box> => {
+        const out = new Map<string, Box>()
+        if (!document.body) return out
+        const stack: { el: Element; path: string }[] = [{ el: document.body, path: 'body' }]
+        let visited = 0
+        while (stack.length > 0 && visited < nodeCap) {
+          const node = stack.pop()
+          if (!node) break
+          const kids = node.el.children
+          for (let i = 0; i < kids.length; i += 1) {
+            const kid = kids[i]
+            if (!kid) continue
+            visited += 1
+            if (visited >= nodeCap) break
+            const path = `${node.path}>${kid.tagName.toLowerCase()}[${i}]`
+            const h = kid.getBoundingClientRect().height
+            const position = getComputedStyle(kid).position
+            if (h > 0 && position !== 'fixed' && position !== 'absolute') {
+              out.set(path, { h: Math.round(h * 100) / 100, d: describe(kid) })
+            }
+            stack.push({ el: kid, path })
+          }
+        }
+        return out
+      }
+
+      /** Every box whose OWN height differs between the two plateaus. Deliberately DUMB: it
+       *  reports the ancestors too, because deciding which of them is merely carrying the
+       *  change is a fiddly rule that belongs where it can be unit-tested, and this list is
+       *  small (a depth of ancestors plus a few leaves) so it costs little on the wire. See
+       *  `smallestEnclosing`, which is what turns this into the sentence. */
+      const rawMoved = (a: Map<string, Box>, b: Map<string, Box>) => {
+        const moved: { path: string; desc: string; from: number; to: number; delta: number }[] = []
+        for (const path of new Set([...a.keys(), ...b.keys()])) {
+          if (moved.length >= rawCap) break
+          const from = a.get(path)?.h ?? 0
+          const to = b.get(path)?.h ?? 0
+          if (Math.abs(to - from) < 0.5) continue
+          moved.push({ path, desc: (b.get(path) ?? a.get(path))!.d, from, to, delta: to - from })
+        }
+        return moved
+      }
+
+      const startedAt = Date.now()
+      // Every distinct height, first-seen order. `seen` is what gets printed; `distinct`
+      // counts past the cap so a truncated list can say so honestly.
+      const seen: number[] = []
+      let distinct = 0
+      let oscillated = false
+      const note = (value: number) => {
+        if (seen.includes(value)) {
+          // Already seen and we are arriving at it AGAIN: the height went away and came back.
+          oscillated = true
+          return
+        }
+        distinct += 1
+        if (seen.length < cap) seen.push(value)
+      }
+
+      // One snapshot per plateau, taken ONLY once `oscillated` is set. A surface that settles
+      // normally never walks the tree at all and pays exactly the height polling it paid before.
+      const plateaus = new Map<number, Map<string, Box>>()
+      let moved: { path: string; desc: string; from: number; to: number; delta: number }[] = []
+      let diffed = false
+
       // `quietFor` of no change is what counts as settled; a page that is still growing
       // resets the clock every time it does.
-      const startedAt = Date.now()
       let last = height()
+      note(last)
       let lastChangedAt = Date.now()
+      let settled = false
       while (Date.now() - startedAt < timeout) {
         await sleep(100)
         const current = height()
         if (current !== last) {
           last = current
+          note(current)
           lastChangedAt = Date.now()
         } else if (Date.now() - lastChangedAt >= quietFor) {
-          return
+          settled = true
+          // 🔴 DO NOT LEAVE YET IF THE DIAGNOSIS IS HALF-TAKEN. An oscillation can come to
+          // rest on one of its two plateaus, and breaking here would return "14521 and 14567"
+          // with no element named — exactly the message that costs the next person a PNG and a
+          // calculator. Hold the remaining budget open for the other plateau instead.
+          if (!oscillated || diffed) break
+        }
+        if (oscillated && !diffed) {
+          if (!plateaus.has(current)) plateaus.set(current, snapshot())
+          if (plateaus.size >= 2) {
+            const [first, second] = [...plateaus.values()]
+            moved = rawMoved(first!, second!)
+            diffed = true
+            if (settled) break
+          }
         }
       }
+      return {
+        settled,
+        oscillated,
+        heights: seen,
+        distinct,
+        final: last,
+        waitedMs: Date.now() - startedAt,
+        moved,
+      }
     },
-    { timeout: 15_000, quietFor: 600 },
+    {
+      timeout: 15_000,
+      quietFor: 600,
+      cap: HEIGHT_SAMPLE_CAP,
+      nodeCap: NODE_WALK_CAP,
+      rawCap: RAW_MOVED_CAP,
+      textCap: MOVER_TEXT_CAP,
+    },
   )
+  // The ranking runs HERE, not in the page: it is the one genuinely subtle step, and out here
+  // it is an exported pure function with its own tests instead of a closure no test can reach.
+  return { ...result, movers: smallestEnclosing(result.moved) }
+}
+
+/** `15000` → `15s`, `3400` → `3.4s`. Readable in a failure message, exact enough to act on. */
+function seconds(ms: number): string {
+  return `${Number((ms / 1000).toFixed(1))}s`
+}
+
+/** `[a, b]` → `a and b`; `[a, b, c]` → `a, b and c`. */
+function andList(values: readonly (string | number)[]): string {
+  if (values.length <= 1) return String(values[0] ?? '')
+  return `${values.slice(0, -1).join(', ')} and ${values[values.length - 1]}`
+}
+
+/**
+ * The gate that notices `settleHeight`'s budget fired (AGENTS.md: "every fail-safe needs a
+ * gate that notices it fired"). Returns the sentence to fail with, or null when the page's
+ * height really did come to rest on one value.
+ *
+ * Pure, so it is unit-tested with no browser — same idiom as `operatorLandedElsewhere`.
+ *
+ * TWO failures, one message, because they are the same defect seen at two speeds: a height
+ * still moving when the budget ran out, and a height that came to rest only because the
+ * camera looked during one half of a flip. Both mean the page renders at more than one size
+ * for the same commit, and a full-page baseline of such a page measures WHEN it was taken.
+ */
+export function unsettledMessage(report: SettleReport, label: string): string | null {
+  if (report.settled && !report.oscillated) return null
+  const hidden = report.distinct - report.heights.length
+  const parts = report.heights.map(String)
+  if (hidden > 0) parts.push(`${hidden} more`)
+  const heights = andList(parts)
+  const size = (px: number) => (px === 0 ? 'absent' : `${px}px`)
+  const movers = report.movers.map((m) => `${m.desc} ${size(m.from)} then ${size(m.to)}`)
+  return [
+    `${label} never settled: ${heights} over ${seconds(report.waitedMs)}.`,
+    report.oscillated
+      ? 'The height came BACK to a value it had already left, so this is an oscillation and not slow growth: something on this surface renders at two different sizes between two renders of the same commit. A mask cannot hold a height, and neither can a longer wait.'
+      : 'The height was still moving when the wait ran out of budget.',
+    // THE POINT OF THE WHOLE GATE. Without this clause the message hands the next person the two
+    // numbers they already had and none of what is 46px, and the surface stays blocked while
+    // somebody does arithmetic over a committed PNG for the third time.
+    movers.length > 0
+      ? `The box that changed: ${andList(movers)}.`
+      : 'No box could be named: the page came to rest on one plateau before the second could be sampled, so re-run to catch the flip with both halves in hand.',
+    'No photograph was taken: a full-page baseline of a page that is still moving records the moment, not the surface. Make both branches of that box the same size rather than masking it.',
+  ].join(' ')
+}
+
+/* ── THE FLIP THE WAIT CANNOT SEE: a height that only moves WHILE THE SHUTTER IS OPEN ─────
+ *
+ * MEASURED on PR #2878 (2026-09-23), and it is the reason the section below exists.
+ * `settleHeight` watched `/admin/qr` at 390×844, saw one height, and returned honestly — no
+ * oscillation, no timeout, nothing to report. `toHaveScreenshot` then took over and its own call
+ * log showed the flip arriving with the camera:
+ *
+ *     - taking page screenshot
+ *     - Expected an image 390px by 14521px, received 390px by 14567px.
+ *     - waiting 100ms before taking screenshot
+ *     - taking page screenshot
+ *     - Expected an image 390px by 14567px, received 390px by 14521px.
+ *
+ * So the oscillation is INDUCED BY THE CAPTURE, not by the page. `fullPage: true` in Chromium
+ * photographs past the viewport, which re-resolves anything sized against the viewport HEIGHT
+ * for the duration of the shot and reverts it afterwards: `vh` / `dvh` / `svh` / `lvh` lengths,
+ * `@media (min-height)` blocks, `env()` safe-area values, anything reading `innerHeight`. A
+ * helper that measures at 844 can NEVER see that, however long it waits, because at 844 the
+ * page is genuinely still.
+ *
+ * 🔴 AND THERE IS NO OBSERVATION-ONLY WAY TO MEASURE IT IN ADVANCE. Reproducing the
+ * condition means making the viewport as tall as the document, and every route to that mutates
+ * the page: `page.setViewportSize()` resizes it for real and does not revert, and taking a
+ * throwaway `fullPage` screenshot is the camera firing early — which on this codebase is the
+ * lazy-content hazard the 🔴 note in `settle()` records, since a viewport that suddenly
+ * contains the whole document puts every IntersectionObserver target "in view" at once. Neither
+ * is worth 14,000px of coverage, so this does NOT predict the flip.
+ *
+ * It catches it where it is already visible instead. `toHaveScreenshot`'s own failure carries
+ * both heights; `capture()` catches that error, `capturedHeights()` recognises the signature,
+ * and `viewportDependentBoxes()` then asks the page which of its boxes are tied to the viewport
+ * height — a pure CSSOM read, no mutation — so the rethrown message names the surface, both
+ * heights AND the candidate boxes. The opaque timeout becomes the diagnosis, without anyone
+ * having had to predict it.
+ */
+
+/** A box on the page whose height is tied to the VIEWPORT height, which is the one thing a
+ *  `fullPage` capture changes. */
+export interface ViewportBox {
+  /** Position path, same scheme as `MovedBox.path`. */
+  path: string
+  /** tag + #id + up to two classes. */
+  desc: string
+  /** The declaration that ties it to the viewport, e.g. `min-height: calc(100vh - 3.5rem)`. */
+  rule: string
+  /** What that box measures RIGHT NOW, at the normal viewport. */
+  height: number
+}
+
+/** Height-ish properties only. `width: 100vh` cannot move a page's height, and listing every
+ *  declaration that merely mentions a viewport unit would bury the one that matters. */
+export const VIEWPORT_HEIGHT_PROPERTIES = [
+  'height',
+  'min-height',
+  'max-height',
+  'padding-top',
+  'padding-bottom',
+  'margin-top',
+  'margin-bottom',
+  'top',
+  'bottom',
+  'inset',
+  'flex-basis',
+  'gap',
+  'row-gap',
+  'grid-template-rows',
+] as const
+
+/** Ceilings on the CSSOM scan. It runs only on a failed capture, and its output goes into a
+ *  message a person reads, so both are caps on a payload rather than tuning knobs. */
+const VIEWPORT_RULE_CAP = 4000
+const VIEWPORT_BOX_CAP = 6
+
+/**
+ * Every box on the page whose height is declared against the viewport height, with what it
+ * measures right now. OBSERVATION ONLY: it reads `document.styleSheets`, runs
+ * `querySelectorAll`, and calls `getBoundingClientRect`. It changes nothing, and in particular
+ * it does NOT resize the viewport to see what would happen — see the 🔴 note above.
+ *
+ * A cross-origin stylesheet throws on `.cssRules` and a Tailwind arbitrary-value selector can
+ * be invalid to `querySelectorAll`, so both are caught per rule rather than per sheet: one bad
+ * entry must not blank the whole diagnosis.
+ */
+export async function viewportDependentBoxes(page: Page): Promise<ViewportBox[]> {
+  return await page.evaluate(
+    ({ properties, ruleCap, boxCap }) => {
+      const viewportUnit = /\d(vh|dvh|svh|lvh)\b/
+      type Found = { path: string; desc: string; rule: string; height: number }
+      // TWO buckets, and the order is the message's quality. A declaration written IN viewport
+      // units is the direct answer; a rule that merely sits inside a height media query is a
+      // weaker candidate, and there can be a great many of them. Sharing one capped list would
+      // let the weak kind crowd out the strong kind purely by stylesheet order.
+      const direct: Found[] = []
+      const viaMedia: Found[] = []
+      const seen = new Set<string>()
+
+      /** Climb to body. Only ever called for the handful of matching elements, so the cost
+       *  that made the settle walk build paths downward does not apply here. */
+      const pathOf = (el: Element): string => {
+        const parts: string[] = []
+        let node: Element | null = el
+        while (node && node !== document.body && parts.length < 16) {
+          const parent: Element | null = node.parentElement
+          const i = parent ? [...parent.children].indexOf(node) : 0
+          parts.unshift(`${node.tagName.toLowerCase()}[${i}]`)
+          node = parent
+        }
+        return ['body', ...parts].join('>')
+      }
+
+      const describe = (el: Element): string => {
+        const raw = typeof el.className === 'string' ? el.className : ''
+        const cls = raw
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((c) => `.${c}`)
+          .join('')
+        return `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ''}${cls}`
+      }
+
+      const record = (selector: string, declaration: string, bucket: Found[]) => {
+        let matches: Element[]
+        try {
+          matches = [...document.querySelectorAll(selector)]
+        } catch {
+          return // A selector querySelectorAll cannot parse. Not our business.
+        }
+        for (const el of matches) {
+          if (bucket.length >= boxCap) return
+          const path = pathOf(el)
+          const key = `${path}|${declaration}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          bucket.push({
+            path,
+            desc: describe(el),
+            rule: declaration,
+            height: Math.round(el.getBoundingClientRect().height * 100) / 100,
+          })
+        }
+      }
+
+      let scanned = 0
+      const walkRules = (rules: CSSRuleList, heightMedia: string) => {
+        for (const rule of [...rules]) {
+          if (scanned >= ruleCap || direct.length >= boxCap) return
+          scanned += 1
+          // \U0001f534 A STYLE RULE IS ALSO A GROUPING RULE, and assuming otherwise made this
+          // whole diagnosis return an empty list. CSS nesting gave `CSSStyleRule` a `cssRules`
+          // of its own, so an `if (rule.cssRules) { recurse; continue }` branch swallows EVERY
+          // plain rule on the page: the list is empty, truthy, and `continue` then skips the
+          // declarations. Caught by running the real callback body against a jsdom tree; it
+          // would have failed silently on the preview and printed "no box found" forever.
+          // So: read the declarations off anything that HAS them, and recurse separately.
+          const styleRule = rule as CSSStyleRule
+          if (styleRule.style && styleRule.selectorText) {
+            for (const property of properties) {
+              const value = styleRule.style.getPropertyValue(property)
+              if (!value) continue
+              if (viewportUnit.test(value)) {
+                record(styleRule.selectorText, `${property}: ${value}`, direct)
+              } else if (heightMedia) {
+                record(
+                  styleRule.selectorText,
+                  `${property}: ${value} inside @media (${heightMedia})`,
+                  viaMedia,
+                )
+              }
+            }
+          }
+          const grouping = rule as CSSGroupingRule
+          if (grouping.cssRules && grouping.cssRules.length > 0) {
+            // A `@media (min-height: ...)` block re-resolves with the viewport exactly the way a
+            // `vh` length does, so it is carried down and every rule inside it qualifies.
+            const condition = (rule as CSSMediaRule).conditionText ?? ''
+            const isHeightMedia = /\b(min-|max-)?height\s*:/.test(condition)
+            walkRules(grouping.cssRules, isHeightMedia ? condition : heightMedia)
+          }
+        }
+      }
+
+      for (const sheet of [...document.styleSheets]) {
+        try {
+          if (sheet.cssRules) walkRules(sheet.cssRules, '')
+        } catch {
+          // Cross-origin sheet. Nothing readable, nothing to say.
+        }
+      }
+      return [...direct, ...viaMedia].slice(0, boxCap)
+    },
+    {
+      properties: VIEWPORT_HEIGHT_PROPERTIES as unknown as string[],
+      ruleCap: VIEWPORT_RULE_CAP,
+      boxCap: VIEWPORT_BOX_CAP,
+    },
+  )
+}
+
+/**
+ * The distinct image HEIGHTS Playwright named in a screenshot failure, in first-seen order.
+ *
+ * Its call log prints `Expected an image 390px by 14521px, received 390px by 14567px.` once per
+ * attempt, so two or more distinct heights here IS the capture-flip signature and one height is
+ * an ordinary pixel diff that this must not speak for. Pure, so it is unit-tested against the
+ * real recorded log rather than against a guess at the wording.
+ */
+export function capturedHeights(text: string): number[] {
+  const heights: number[] = []
+  for (const match of text.matchAll(/(\d+)px by (\d+)px/g)) {
+    const height = Number(match[2])
+    if (Number.isFinite(height) && !heights.includes(height)) heights.push(height)
+  }
+  return heights
+}
+
+/**
+ * The sentence for a height that only moved while the shutter was open. Pure.
+ *
+ * It says WHY the wait was silent, because the first question anybody will ask of this message
+ * is why `settle()` did not catch it, and the answer is the finding: at the normal viewport the
+ * page really is still.
+ */
+export function captureFlipMessage(
+  label: string,
+  heights: readonly number[],
+  boxes: readonly ViewportBox[],
+): string {
+  const spread = Math.max(...heights) - Math.min(...heights)
+  const named = boxes.map((b) => `${b.desc} { ${b.rule} } currently ${b.height}px at ${b.path}`)
+  return [
+    `${label} changed height DURING capture: ${andList([...heights])}, a ${spread}px difference.`,
+    'The height wait saw a still page and was right to: this flip is INDUCED BY THE CAMERA. A `fullPage` capture photographs past the viewport, so anything sized against the viewport HEIGHT re-resolves at the document height while the shutter is open and reverts once it closes.',
+    named.length > 0
+      ? `Boxes on this surface whose height is tied to the viewport, which is what changes: ${andList(named)}.`
+      : 'No viewport-height-dependent box was found in the stylesheets, so look instead for script that reads `innerHeight`, an `env()` safe-area value, or an IntersectionObserver that fires when the whole document is suddenly in view.',
+    'Fix the box, not the wait: no mask, no timeout and no retry can hold a height that is a function of the viewport. Playwright\'s own failure follows.',
+  ].join(' ')
+}
+
+/**
+ * Turn a screenshot failure that carries the two-height signature into the diagnosis, and leave
+ * every other screenshot failure exactly as it was.
+ *
+ * Returns the error to throw. It never swallows: the original is kept as `cause` and its text is
+ * appended, so an ordinary pixel diff reads the way it always did.
+ */
+export async function explainCaptureFailure(
+  page: Page,
+  error: unknown,
+  label: string,
+): Promise<unknown> {
+  const text = error instanceof Error ? `${error.message}` : String(error)
+  const heights = capturedHeights(text)
+  if (heights.length < 2) return error
+  // The diagnosis is best-effort by design: if the page has gone (closed, crashed, navigated)
+  // we must still rethrow the real failure rather than replace it with our own stack.
+  const boxes = await viewportDependentBoxes(page).catch(() => [] as ViewportBox[])
+  return new Error(`${captureFlipMessage(label, heights, boxes)}\n\n${text}`, { cause: error })
 }
 
 /**
