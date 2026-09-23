@@ -159,6 +159,7 @@ export function EventCalendar({
   onHiddenLayersChange,
   fill = false,
   hostChrome = false,
+  hostViewSwitch = false,
   audience = 'member',
 }: {
   events: CalendarEvent[]
@@ -222,6 +223,8 @@ export function EventCalendar({
    *  CHROME THE HOST CANNOT DRAW, below). The filters, the failed-month line and every key stay too.
    *  On the page, where nothing else owns them, this is off and the grid draws its full header. */
   hostChrome?: boolean
+  /** The host draws the grid / list switcher itself, so this grid does not (LIVE-490). */
+  hostViewSwitch?: boolean
   /** Who is reading (lib/calendar/registry.ts). The staff calendar passes `team`, so a published
    *  date reads "Production" there and "Event" on a member-facing mount. docs/NAMING.md draws that
    *  line; the colour and the form are the same row of the registry either way. */
@@ -500,7 +503,7 @@ export function EventCalendar({
   const showLayerToggles = (layers?.length ?? 0) > 1
   // What this grid draws for itself under a host that owns the chrome. Pure, and in
   // lib/events/calendar-grid.ts so it can be RUN rather than read (see the note there).
-  const chrome = calendarChrome(hostChrome)
+  const chrome = calendarChrome(hostChrome, hostViewSwitch)
 
   // THIS GRID'S OWN VIEW SWITCHER: the month grid, or the same calendar as a chronological list.
   // The markup is components/events/calendar-chrome.tsx, because the Calendar console's header

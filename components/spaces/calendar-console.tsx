@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
 import { StatusChip } from '@/components/admin/status'
 import { addMonth, monthLabel } from '@/lib/events/calendar-grid'
-import { CalendarLayerChips, CalendarViewSwitch, MonthJumpPanel, countByMonthKey, monthCount } from '@/components/events/calendar-chrome'
+import { CalendarLayerChips, MonthJumpPanel, countByMonthKey, monthCount } from '@/components/events/calendar-chrome'
 import { verticalScrollTaker } from '@/components/events/use-month-gestures'
 import { agendaForMonth, type ListIndexItem } from '@/lib/calendar/list-index'
 import { itemSelectedClass, itemTitleClass, type CalendarLayerKey } from '@/lib/calendar/registry'
@@ -92,8 +92,8 @@ export function CalendarConsole({
   month,
   onMonthChange,
   viewControls,
-  gridView,
-  onGridViewChange,
+  hasMonth = true,
+  surfaceTitle = 'Calendar',
   layers,
   hiddenLayers,
   onToggleLayer,
@@ -120,8 +120,12 @@ export function CalendarConsole({
    *  them, so they arrive as state the workspace holds rather than as a copy of the grid's.
    *  `gridView` is absent on a panel that is not a calendar (List, Workflow), and `layers` is
    *  absent on a panel with only the public layer (Guest preview). */
-  gridView?: 'grid' | 'list'
-  onGridViewChange?: (next: 'grid' | 'list') => void
+  /** Whether the showing surface HAS a month (lib/calendar/admin-views.ts). False on the all-time
+   *  List and on Workflow, where the month label and Prev / Today / Next steer nothing: the owner
+   *  was looking at a bar that said "September 2026" over a list running into October (LIVE-490). */
+  hasMonth?: boolean
+  /** What the heading says when there is no month to say. Names the surface being read. */
+  surfaceTitle?: string
   layers?: readonly CalendarLayerKey[]
   hiddenLayers?: ReadonlySet<CalendarLayerKey>
   onToggleLayer?: (key: CalendarLayerKey) => void
@@ -272,13 +276,26 @@ export function CalendarConsole({
           data-calendar-console-header
           className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-border px-3 py-1.5 sm:px-4 lg:col-span-2"
         >
-          {/* WHEN. */}
+          {/* WHEN, and only where there IS a when (LIVE-490). The all-time List and the Workflow
+              board have no month, so the label, its jump and Prev / Today / Next hide there rather
+              than sit in the bar doing nothing. Nothing is stranded by this: neither of those
+              panels draws a month grid, so there is no control coming off a grid that the host has
+              stopped drawing -- the LIVE-475 dead end this header exists to avoid. */}
           <div data-calendar-console-month className="relative flex min-w-0 items-center gap-2">
             {/* ONE ANNOUNCEMENT, ALWAYS THIS ONE. The grids inside the console run with `hostChrome`,
                 so none of them draws a month title and none of them speaks: this heading is the
                 month, and it says so once whichever panel is showing. The button inside it is the
                 month-and-year jump, which is where a reader looks for it. */}
+            {/* 🔴 THIS HEADING ALWAYS EXISTS, whatever the surface: it is the console dialog's
+                `aria-labelledby` target, so hiding it on a monthless surface would leave the dialog
+                with no accessible name at all. On a surface that HAS a month it is the month, and
+                the button inside it is the month-and-year jump. On one that does not, it names what
+                you are actually looking at instead -- which is the thing the bar was failing to say
+                while it showed "September 2026" over an all-time list. */}
             <h2 id="calendar-console-title" className="min-w-0 truncate text-lead font-bold text-text">
+              {!hasMonth ? (
+                <span>{surfaceTitle}</span>
+              ) : (
               <button
                 ref={monthButtonRef}
                 data-calendar-console-month-jump
@@ -295,7 +312,9 @@ export function CalendarConsole({
                 <span aria-live="polite">{label}</span>
                 <ChevronDown className={cn('h-4 w-4 shrink-0 text-muted transition-transform', jumpOpen && 'rotate-180')} aria-hidden />
               </button>
+              )}
             </h2>
+            {hasMonth ? (
             <span
               className="shrink-0 text-meta text-muted"
               title={
@@ -306,8 +325,10 @@ export function CalendarConsole({
             >
               {zone.words}
             </span>
+            ) : null}
           </div>
 
+          {hasMonth ? (
           <div data-calendar-console-paging className="flex items-center gap-0.5 rounded-control border border-border p-0.5">
             <IconButton label="Previous month" onClick={() => step(-1)}>
               <ChevronLeft className="h-4 w-4" aria-hidden />
@@ -319,6 +340,7 @@ export function CalendarConsole({
               <ChevronRight className="h-4 w-4" aria-hidden />
             </IconButton>
           </div>
+          ) : null}
 
           {/* WHAT. Only on a panel that has layers to hide: the Guest preview shows one. */}
           {layers && layers.length > 1 && onToggleLayer ? (
@@ -329,13 +351,19 @@ export function CalendarConsole({
 
           <div className="ml-auto flex flex-wrap items-center gap-2">
             {/* HOW. Only on a panel that IS a calendar: List and Workflow have no month to switch. */}
-            {gridView && onGridViewChange ? (
-              <span data-calendar-console-view-switch className="inline-flex">
-                <CalendarViewSwitch view={gridView} onView={onGridViewChange} />
-              </span>
-            ) : null}
-            {/* ACTIONS. */}
-            {viewControls}
+            {/* HOW, and it is ONE control now (LIVE-490). This slot used to hold the grid / list
+                switcher while the Calendar / List / Workflow toggle sat in ACTIONS below -- two
+                controls, both saying "List", over different sets, and the switcher was only handed
+                to the Calendar and Guest panels so the bar changed SHAPE as you moved between them.
+                `viewControls` carries the single surface control (and the Guest audience preview)
+                and it is drawn on every panel, so the bar keeps one shape.
+
+                The marker stays: `calendarChrome(true)` still takes the switcher off the grid, and
+                this is the host genuinely drawing it, which is what HOST_DRAWN_CONTROL_MARKS and
+                the LIVE-478 probe check. */}
+            <span data-calendar-console-view-switch className="inline-flex flex-wrap items-center gap-2">
+              {viewControls}
+            </span>
             {onPencil && (
               <Button type="button" variant="secondary" size="sm" onClick={onPencil}>
                 <Plus className="h-4 w-4" aria-hidden /> Pencil it in

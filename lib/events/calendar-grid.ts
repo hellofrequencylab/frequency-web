@@ -115,11 +115,17 @@ export interface CalendarChrome {
  * makes it measurable rather than a promise in a comment: for every control this function takes
  * away, the console header has to carry that control's marker, or the LIVE-478 probe fails.
  */
-export function calendarChrome(hostChrome: boolean): CalendarChrome {
+export function calendarChrome(hostChrome: boolean, hostViewSwitch = false): CalendarChrome {
   return {
     monthTitle: !hostChrome,
     paging: !hostChrome,
-    viewSwitch: !hostChrome,
+    // THE SWITCHER CAN COME OFF ON ITS OWN (LIVE-490). A host may draw the grid / list switcher
+    // WITHOUT owning the rest of the chrome: the calendar workspace draws one surface control --
+    // Grid, List, Workflow -- above the grid whether or not the console is open, so on the page the
+    // grid drawing its own ⊞/☰ beside it put the word "List" in the bar twice, over two different
+    // sets. That is the confusion this row removed. Everything else still moves as one, and the
+    // same rule governs this flag as the other four: it may only be taken by a host that draws it.
+    viewSwitch: !hostChrome && !hostViewSwitch,
     monthJump: !hostChrome,
     layerFilters: !hostChrome,
   }

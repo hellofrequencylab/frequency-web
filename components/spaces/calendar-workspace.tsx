@@ -26,6 +26,12 @@ import {
   CALENDAR_ADMIN_VIEWS,
   rememberCalendarView,
   type CalendarAdminView,
+  surfaceOf,
+  listScopeOf,
+  viewForSurface,
+  surfaceHasMonth,
+  type CalendarSurface,
+  type CalendarListScope,
 } from '@/lib/calendar/admin-views'
 import { listIndexItems, selectListItem } from '@/lib/calendar/list-index'
 import { workflowBoard } from '@/lib/calendar/workflow-board'
@@ -282,6 +288,39 @@ export function CalendarWorkspace({
      [adminAllowed, slug, listKey, selected?.key, syncUrl],
   )
 
+  // ONE CONTROL OVER TWO PIECES OF STATE (LIVE-490). The panel (`view`) and the grid's own
+  // grid/list switch (`gridView`) are unchanged underneath -- every `?view=` deep link still
+  // resolves -- but a reader now steers ONE thing: which SURFACE they are looking at, and, on the
+  // List surface, how much of it. The two controls that both said "List" are this one control.
+  const surface = surfaceOf(view, gridView)
+  const listScope = listScopeOf(view)
+  const audience: 'guest' | 'staff' = view === 'guest' ? 'guest' : 'staff'
+
+  const applySurface = useCallback(
+    (nextSurface: CalendarSurface, nextScope: CalendarListScope) => {
+      if (!adminAllowed) return
+      const { view: nextView, gridView: nextGrid } = viewForSurface(nextSurface, nextScope, audience)
+      setGridView(nextGrid)
+      setView(nextView)
+      rememberCalendarView(slug, nextView)
+      // The all-time index is the one surface that carries a selected item in the URL, the way the
+      // List panel always did; every other surface drops it.
+      if (nextView === 'list') syncUrl(nextView, { item: listKey ?? selected?.key })
+      else syncUrl(nextView)
+    },
+    [adminAllowed, audience, slug, listKey, selected?.key, syncUrl],
+  )
+
+  const selectSurface = useCallback(
+    (next: CalendarSurface) => applySurface(next, listScope),
+    [applySurface, listScope],
+  )
+
+  const selectListScope = useCallback(
+    (next: CalendarListScope) => applySurface('list', next),
+    [applySurface],
+  )
+
   const selectList = useCallback(
     (key: string) => {
       setListKey(key)
@@ -424,6 +463,7 @@ export function CalendarWorkspace({
         onViewChange={setGridView}
         fill={consoleOpen}
         hostChrome={consoleOpen}
+        hostViewSwitch
       />
       {guestFirstUse && (
         <EmptyState
@@ -450,7 +490,12 @@ export function CalendarWorkspace({
           >
             Guest preview
           </Button>
-          <CalendarModeToggle mode={view} onSelect={selectView} />
+          <CalendarModeToggle
+            surface={view === 'guest' ? null : surface}
+            onSelect={selectSurface}
+            scope={listScope}
+            onScope={selectListScope}
+          />
         </>
       )}
     </>
@@ -569,6 +614,7 @@ export function CalendarWorkspace({
                     pencilButton={!consoleOpen}
                     fill={consoleOpen}
                     hostChrome={consoleOpen}
+                    hostViewSwitch
                     moveByDrag={consoleOpen}
                     moveNotice={moveLine}
                     onMoveResult={setMoveLine}
@@ -607,8 +653,8 @@ export function CalendarWorkspace({
           month={month}
           onMonthChange={setMonth}
           viewControls={viewControls}
-          gridView={view === 'admin' || view === 'guest' ? gridView : undefined}
-          onGridViewChange={view === 'admin' || view === 'guest' ? setGridView : undefined}
+          hasMonth={surfaceHasMonth(surface, listScope)}
+          surfaceTitle={surface === 'workflow' ? 'Workflow' : 'Gatherings'}
           layers={view === 'admin' ? STAFF_CALENDAR_LAYERS : undefined}
           hiddenLayers={hiddenLayers}
           onToggleLayer={view === 'admin' ? toggleLayer : undefined}

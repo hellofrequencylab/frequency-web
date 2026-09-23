@@ -125,6 +125,7 @@ export function StaffCalendar({
   pencilButton = true,
   fill = false,
   hostChrome = false,
+  hostViewSwitch = false,
   moveByDrag = false,
   moveNotice = null,
   onMoveResult,
@@ -171,6 +172,8 @@ export function StaffCalendar({
    *  taking two away that no host drew is the console dead end LIVE-475 fixed. Passed straight
    *  through, and gated by `HOST_DRAWN_CONTROL_MARKS`. */
   hostChrome?: boolean
+  /** Passed straight through: the workspace draws one surface control above this grid (LIVE-490). */
+  hostViewSwitch?: boolean
   /** MOVE A DATE BY DRAGGING IT (PROG-CAL15), the console's edit. Off here and on the Space page,
    *  where the calendar stays click-to-open; the console turns it on. */
   moveByDrag?: boolean
@@ -417,6 +420,7 @@ export function StaffCalendar({
         onHiddenLayersChange={onHiddenLayersChange}
         fill={fill}
         hostChrome={hostChrome}
+        hostViewSwitch={hostViewSwitch}
         layers={STAFF_CALENDAR_LAYERS}
         audience="team"
         refreshKey={refreshKey + externalRefreshKey}
