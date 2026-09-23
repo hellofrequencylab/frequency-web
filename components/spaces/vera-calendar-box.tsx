@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useId, useMemo, useRef, useState, useTransition, type FormEvent } from 'react'
+import { Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Field, Input } from '@/components/ui/field'
@@ -12,6 +13,8 @@ import {
   isDestructiveChange,
   isVeraMode,
   VERA_MODE_OPTIONS,
+  VERA_SUGGESTIONS,
+  VERA_UNDO_HINT,
   type VeraChange,
   type VeraDescribeContext,
   type VeraMode,
@@ -315,17 +318,35 @@ export function VeraCalendarBox({
     if (done) linesRef.current?.focus()
   }, [done])
 
+  // THE SUGGESTED TEXT IS A PROMPT YOU CAN PRESS (LIVE-485, owner ask 2026-09-23). The collapsed row
+  // used to read "Pencil, move or retitle in plain words", which names three verbs and teaches none
+  // of them. It now shows a real ask, and opening the box offers the whole set as chips: pressing
+  // one FILLS THE FIELD and never sends it, and each carries the tooltip that says what the
+  // proposal would hold. The list is lib/calendar/vera-command.ts, beside the changes it maps to,
+  // so a suggestion can never drift into something Vera cannot do.
+  const lead = VERA_SUGGESTIONS[0]
+
   return (
-    <section data-vera-calendar-box className="rounded-card border border-border bg-surface">
+    <section
+      data-vera-calendar-box
+      // MORE PROMINENT (owner ask 2026-09-23). Vera's own tint and a real elevation, so the box
+      // reads as the door it is rather than as one more bordered card at the foot of the column.
+      className="rounded-card border border-primary/30 bg-surface lift-1"
+    >
       <button
         type="button"
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+        className="flex w-full items-center justify-between gap-3 rounded-card px-4 py-3 text-left transition-colors hover:bg-surface-elevated"
       >
-        <span className="text-body font-semibold text-text">Ask Vera</span>
-        <span className="text-meta text-muted">{open ? 'Hide' : 'Pencil, move or retitle in plain words'}</span>
+        <span className="flex min-w-0 items-center gap-2 text-body font-semibold text-text">
+          <Sparkles className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+          Ask Vera
+        </span>
+        <span data-vera-lead className="min-w-0 truncate text-meta text-muted" title={open ? undefined : lead.does}>
+          {open ? 'Hide' : `Try: ${lead.ask.toLowerCase()}`}
+        </span>
       </button>
       {open ? (
         <div id={panelId} className="space-y-3 border-t border-border px-4 py-3">
@@ -353,7 +374,7 @@ export function VeraCalendarBox({
                   disabled={pending}
                   maxLength={600}
                   autoComplete="off"
-                  placeholder="Pencil a sound bath on every new moon this winter"
+                  placeholder={lead.ask}
                   onChange={(e) => setAsk(e.target.value)}
                 />
               </Field>
@@ -361,8 +382,26 @@ export function VeraCalendarBox({
                 {pending && !proposal && !clarification ? 'Asking' : 'Send'}
               </Button>
             </div>
+            {/* THE SUGGESTED TEXT. Each chip fills the field and stops there, so the person still
+                reads what they are about to send and can change a word of it first. The visible
+                words ARE the accessible name, and the tooltip is the extra sentence rather than a
+                replacement for it (WCAG 2.5.3). */}
+            <div data-vera-suggestions role="group" aria-label="Things to ask Vera" className="flex flex-wrap items-center gap-1.5">
+              {VERA_SUGGESTIONS.map((s) => (
+                <button
+                  key={s.ask}
+                  type="button"
+                  title={s.does}
+                  disabled={pending}
+                  onClick={() => setAsk(s.ask)}
+                  className="tap-target rounded-pill border border-border px-3 py-1 text-meta text-muted transition-colors hover:border-border-strong hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+                >
+                  {s.ask}
+                </button>
+              ))}
+            </div>
             <p className="text-meta text-muted">
-              Vera proposes and you decide. Nothing changes until you accept it, and nothing here publishes an event. Anything that deletes arrives unticked and asks you to confirm it in so many words. New moons and full moons are computed, not guessed.
+              Vera proposes and you decide. Nothing changes until you accept it, and nothing here publishes an event. Anything that deletes arrives unticked and asks you to confirm it in so many words. New moons and full moons are computed, not guessed. {VERA_UNDO_HINT}
             </p>
           </form>
           {error ? (

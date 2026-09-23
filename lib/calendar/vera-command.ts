@@ -312,6 +312,55 @@ export const VERA_MODE_OPTIONS: readonly { value: VeraMode; label: string }[] = 
   (t) => !t.archived,
 ).map((t) => ({ value: t.planStage, label: t.label }))
 
+/** One thing a person can ask Vera for, as they would type it, with the tooltip that says what
+ *  she would come back with. */
+export interface VeraSuggestion {
+  /** The words, ready to send. Pressing the chip puts these in the field; it never sends them. */
+  ask: string
+  /** The tooltip. What the proposal would hold, and what it would not do on its own. */
+  does: string
+}
+
+/**
+ * WHAT VERA CAN ACTUALLY DO, SAID AS THINGS YOU WOULD TYPE (LIVE-485, owner ask 2026-09-23: "make
+ * the Ask Vera box more prominent with a tool tip prompt in the suggested text").
+ *
+ * The box used to summarise itself as "Pencil, move or retitle in plain words", which names three
+ * verbs and teaches none of them: a person who has not used it still does not know what a good ask
+ * looks like. These are real asks, one per shape of change the box can actually apply today
+ * (`VERA_CHANGE_KINDS`), and each carries the sentence that becomes its tooltip. Nothing here is a
+ * wish list: every one of them maps to a change `parseVeraChange` accepts.
+ *
+ * Undo is deliberately NOT one of them. It is not something you ask for in words. It is the Undo
+ * control in "What Vera changed" (PROG-CAL11 slice 3), so the box says where that lives instead of
+ * suggesting a sentence that would come back as a clarification.
+ */
+export const VERA_SUGGESTIONS: readonly VeraSuggestion[] = [
+  {
+    ask: 'Pencil a sound bath every new moon this winter',
+    does: 'One Plan with a date on each new moon. The moons are computed, not guessed.',
+  },
+  {
+    ask: 'Move the Thursday sit to the following Tuesday',
+    does: 'The new date for a date you already have. Nothing moves until you accept it.',
+  },
+  {
+    ask: 'Rename the new moon Plan to Winter Reset',
+    does: 'A new title on the Plan, and every date hanging off it comes with it.',
+  },
+  {
+    ask: 'Add a to-do to book the room two weeks before',
+    does: 'A to-do on the Plan, due against its date rather than a date you type.',
+  },
+  {
+    ask: 'Put the Sunday reset into Production',
+    does: 'The Plan moves along its stages. Cancelling it always asks you twice.',
+  },
+]
+
+/** Where an accepted batch goes back, in the box's own words. Not an ask: it is a control. */
+export const VERA_UNDO_HINT = 'Changed your mind after you accepted something? Open What Vera changed and put the whole batch back.'
+
 export function stageLabel(stage: string): string {
   return PLAN_STAGE_TRANSITIONS.find((t) => t.stage === stage)?.label ?? stage
 }

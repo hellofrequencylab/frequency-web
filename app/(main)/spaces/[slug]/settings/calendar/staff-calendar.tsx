@@ -33,7 +33,9 @@ import { PlanDrawer } from './plan-drawer'
 // and Private entries. Writes go through ./entry-actions, which run on the caller's own session, so the
 // table's RLS is the lock.
 
-const LAYERS: CalendarLayerKey[] = ['events', 'pencil', 'private', 'unavailable', 'todos']
+/** The layers this grid offers. Exported because the Calendar console's header draws the chips for
+ *  it now (LIVE-485), and a second hand-written list would be the two-copies bug again. */
+export const STAFF_CALENDAR_LAYERS: CalendarLayerKey[] = ['events', 'pencil', 'private', 'unavailable', 'todos']
 
 /** The drawer's working copy of one entry. `saved` is the input as last written, so the Publish
  *  step can tell whether typed fields would be lost by leaving; `optionGroup` says the date still
@@ -110,6 +112,10 @@ export function StaffCalendar({
   wheelPaging = false,
   month,
   onMonthChange,
+  gridView,
+  onGridViewChange,
+  hiddenLayers,
+  onHiddenLayersChange,
   newEntryRequest = 0,
   pencilButton = true,
   fill = false,
@@ -137,6 +143,13 @@ export function StaffCalendar({
   /** The host's month, when the host owns it (the console header and its agenda read the same one). */
   month?: { year: number; month1: number }
   onMonthChange?: (next: { year: number; month1: number }) => void
+  /** The grid's own month-or-list view and its hidden layers, when a host owns them (LIVE-485: the
+   *  Calendar console's header draws both controls, so it has to hold what they toggle). Passed
+   *  straight through; absent, the grid keeps both itself. */
+  gridView?: 'grid' | 'list'
+  onGridViewChange?: (next: 'grid' | 'list') => void
+  hiddenLayers?: ReadonlySet<CalendarLayerKey>
+  onHiddenLayersChange?: (next: ReadonlySet<CalendarLayerKey>) => void
   /** Bump to open a blank pencil on today, from a control outside this component (the console's
    *  "Pencil it in" and its N key). Read at render, the same way `externalRefreshKey` is. */
   newEntryRequest?: number
@@ -144,10 +157,11 @@ export function StaffCalendar({
   pencilButton?: boolean
   /** Stretch the grid to the host's height (the console). */
   fill?: boolean
-  /** The host draws the month label and the paging cluster, so the grid draws neither (the console
-   *  header owns both). The grid keeps its own grid / list switcher and its month-and-year jump:
-   *  nothing else draws those, and dropping them was the console dead end LIVE-475 fixed. Passed
-   *  straight through. */
+  /** The host draws the month label, the paging cluster, the month jump, the grid / list switcher
+   *  and the layer chips, so the grid draws none of them (LIVE-485: the console folded all five
+   *  into one header bar). A control may only come off here because the host genuinely draws it:
+   *  taking two away that no host drew is the console dead end LIVE-475 fixed. Passed straight
+   *  through, and gated by `HOST_DRAWN_CONTROL_MARKS`. */
   hostChrome?: boolean
   /** MOVE A DATE BY DRAGGING IT (PROG-CAL15), the console's edit. Off here and on the Space page,
    *  where the calendar stays click-to-open; the console turns it on. */
@@ -389,9 +403,13 @@ export function StaffCalendar({
         swipePaging={wheelPaging}
         month={month}
         onMonthChange={onMonthChange}
+        view={gridView}
+        onViewChange={onGridViewChange}
+        hiddenLayers={hiddenLayers}
+        onHiddenLayersChange={onHiddenLayersChange}
         fill={fill}
         hostChrome={hostChrome}
-        layers={LAYERS}
+        layers={STAFF_CALENDAR_LAYERS}
         refreshKey={refreshKey + externalRefreshKey}
         dayNotes={dayNotes}
         onPickDate={canEdit ? pick : undefined}

@@ -532,39 +532,118 @@ describe('CalendarWorkspace', () => {
     }
   })
 
-  // PROG-CAL13. The console header owns the month and the paging cluster, so the grid inside it
-  // draws neither. The page grid keeps both: nothing else draws them there.
+  // ONE HEADER BAR (LIVE-485, owner ask 2026-09-23: "condense all sorting and controls into an
+  // intuitive header bar"). Everything that steers the calendar is in the console's own header now:
+  // the month (which opens the month-and-year jump), Prev / Today / Next, the layer chips, the grid
+  // / list switcher, and the actions. The grid inside draws none of it. The page grid keeps all of
+  // it, because nothing else draws it there.
   //
-  // 🔴 THE VIEW SWITCHER IS NOT THE CONSOLE'S (LIVE-475). The console header's `viewControls` are the
-  // WORKSPACE's four-panel toggle (Guest / Calendar / List / Workflow). The grid's own grid / list
-  // switcher has no other home, so it stays inside the grid in both chrome modes, and it is the only
-  // way back to the month from list mode inside the console.
-  it('draws the month and the paging cluster ONCE inside the console, and keeps the grid switcher', () => {
+  // 🔴 A HOST MAY ONLY TAKE A CONTROL IT DRAWS (LIVE-475). Taking the switcher and the jump off the
+  // grid while nothing replaced them shipped a reachable dead end, so every control this test says
+  // the grid gives up is checked to be present in the header, exactly once, by the name it had.
+  it('folds every grid control into ONE console header bar, each drawn exactly once', () => {
     window.history.replaceState(null, '', '/spaces/lab/calendar')
     const el = mount(<CalendarWorkspace {...operatorProps()} />)
     const pageGrid = el.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root]')!
+    // On the page the grid draws all five itself.
     expect(pageGrid.querySelectorAll('[aria-label="Previous month"]').length).toBe(1)
     expect(pageGrid.querySelector('[aria-label="Calendar view"]')).not.toBeNull()
+    expect(pageGrid.querySelector('[aria-label="Show on the calendar"]')).not.toBeNull()
     expect([...pageGrid.querySelectorAll('button')].some((b) => b.textContent?.includes('September 2026'))).toBe(true)
 
     act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
     const console_ = document.querySelector<HTMLElement>('[data-calendar-console]')!
-    // One month label, in the console's own heading.
-    expect(console_.querySelectorAll('#calendar-console-title').length).toBe(1)
-    expect([...console_.querySelectorAll('button')].some((b) => b.textContent?.includes('September 2026'))).toBe(false)
-    // One paging cluster, drawn by the console alone.
-    expect(console_.querySelectorAll('[aria-label="Previous month"]').length).toBe(1)
-    expect(console_.querySelectorAll('[aria-label="Next month"]').length).toBe(1)
-    // The grid's own switcher is still there, exactly once, on the panel that is showing.
+    const header = console_.querySelector<HTMLElement>('[data-calendar-console-header]')!
     const shownGrid = console_.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root]')!
-    expect(shownGrid.querySelectorAll('[aria-label="Calendar view"]').length).toBe(1)
-    expect(shownGrid.querySelector('button[aria-label="Jump to a month"]')).not.toBeNull()
-    // The filters stay: they are the grid's, not the console's.
-    expect(console_.querySelector('[aria-label="Show on the calendar"]')).not.toBeNull()
-    // The month still fits the row it was given rather than its own content.
-    const grid = console_.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root]')!
-    expect(grid.className).toContain('flex-1')
-    expect(grid.className).toContain('min-h-0')
+
+    // ONE BAR: every one of these is in the header, and none of them is anywhere else.
+    for (const [what, selector] of [
+      ['the month', '#calendar-console-title'],
+      ['the month jump', '[data-calendar-console-month-jump]'],
+      ['Prev', '[aria-label="Previous month"]'],
+      ['Next', '[aria-label="Next month"]'],
+      ['the layer chips', '[aria-label="Show on the calendar"]'],
+      ['the grid list switcher', '[aria-label="Calendar view"]'],
+      ['the four-panel toggle', '[aria-label="Calendar views"]'],
+      ['the shortcut sheet', '[aria-label="Keyboard shortcuts"]'],
+      ['Close', '[aria-label="Close the console"]'],
+    ] as const) {
+      expect(console_.querySelectorAll(selector).length, what).toBe(1)
+      expect(header.querySelector(selector), what).not.toBeNull()
+    }
+    expect([...header.querySelectorAll('button')].some((b) => b.textContent?.trim() === 'Pencil it in')).toBe(true)
+
+    // And the grid inside draws none of them: no second month, no second switcher, no second band
+    // of chips. That is the four rows of furniture the month was losing its height to.
+    expect(shownGrid.querySelector('[aria-label="Calendar view"]')).toBeNull()
+    expect(shownGrid.querySelector('[aria-label="Show on the calendar"]')).toBeNull()
+    expect(shownGrid.querySelector('[aria-label="Previous month"]')).toBeNull()
+    expect([...shownGrid.querySelectorAll('button')].some((b) => b.textContent?.includes('September 2026'))).toBe(false)
+
+    // The month still fits the row it was given rather than its own content, and the row it is
+    // given has a DEFINITE height, which is what makes `self-stretch` under it mean anything.
+    expect(shownGrid.className).toContain('flex-1')
+    expect(shownGrid.className).toContain('min-h-0')
+    const slider = console_.querySelector('[data-calendar-panel]')!.parentElement!
+    expect(slider.className).toContain('h-full')
+    expect(slider.className).not.toContain('min-h-full')
+    // VERTICAL IS THE ONLY AXIS: nothing in the stage scrolls sideways.
+    expect(console_.querySelector('[data-calendar-console-stage]')!.className).toContain('overflow-x-hidden')
+  })
+
+  // The console header's controls are LIVE, not decoration: each one moves the grid that is showing.
+  it('drives the grid from the header bar: the month jump, the switcher and the layer chips', () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    const el = mount(<CalendarWorkspace {...operatorProps()} />)
+    act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
+    const console_ = () => document.querySelector<HTMLElement>('[data-calendar-console]')!
+    const grid = () => console_().querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root]')!
+    const title = () => console_().querySelector('#calendar-console-title')!.textContent
+
+    // MORE THAN ONE MONTH AT A TIME. The jump opens from the month itself and lands on the month
+    // pressed, which is the control the grid gave up.
+    expect(console_().querySelector('[role="dialog"][aria-label="Jump to a month"]')).toBeNull()
+    act(() => console_().querySelector<HTMLButtonElement>('[data-calendar-console-month-jump]')!.click())
+    const jump = console_().querySelector<HTMLElement>('[role="dialog"][aria-label="Jump to a month"]')!
+    expect(jump).not.toBeNull()
+    act(() => {
+      ;[...jump.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim().startsWith('Dec'))!.click()
+    })
+    expect(title()).toContain('December 2026')
+    expect(console_().querySelector('[role="dialog"][aria-label="Jump to a month"]')).toBeNull()
+
+    // THE LAYER CHIPS. Pressing one hides that layer in the grid below; the grid draws no chips.
+    const chip = (label: string) =>
+      [...console_().querySelectorAll<HTMLButtonElement>('[aria-label="Show on the calendar"] button')].find(
+        (b) => b.textContent?.trim() === label,
+      )!
+    act(() => console_().querySelector<HTMLButtonElement>('[aria-label="Previous month"]')!.click())
+    expect(chip('Events').getAttribute('aria-pressed')).toBe('true')
+    act(() => chip('Events').click())
+    expect(chip('Events').getAttribute('aria-pressed')).toBe('false')
+    act(() => chip('Events').click())
+    expect(chip('Events').getAttribute('aria-pressed')).toBe('true')
+
+    // THE GRID / LIST SWITCHER, from the header.
+    act(() => console_().querySelector<HTMLButtonElement>('[aria-label="List view"]')!.click())
+    expect(grid().querySelector('[data-calendar-list]')).not.toBeNull()
+    act(() => console_().querySelector<HTMLButtonElement>('[aria-label="Grid view"]')!.click())
+    expect(grid().querySelector('[data-calendar-list]')).toBeNull()
+  })
+
+  // A panel with no month has no month controls to offer: the switcher and the chips are not drawn
+  // dead, they are not drawn at all.
+  it('drops the grid switcher and the chips on a panel that is not a calendar', () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    const el = mount(<CalendarWorkspace {...operatorProps({ initialView: 'workflow' })} />)
+    act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
+    const console_ = document.querySelector<HTMLElement>('[data-calendar-console]')!
+    expect(console_.querySelector('[aria-label="Calendar view"]')).toBeNull()
+    expect(console_.querySelector('[aria-label="Show on the calendar"]')).toBeNull()
+    // The month, the paging and the way out are all still there.
+    expect(console_.querySelector('#calendar-console-title')).not.toBeNull()
+    expect(console_.querySelector('[aria-label="Previous month"]')).not.toBeNull()
+    expect(console_.querySelector('[aria-label="Close the console"]')).not.toBeNull()
   })
 
   // HYG-105's consequence, in the DOM rather than in an import path. Both calendar switchers are
@@ -582,11 +661,14 @@ describe('CalendarWorkspace', () => {
     expect(railBoxes.length).toBeGreaterThan(0)
   })
 
-  // 🔴 THE DEAD END LIVE-475 CLOSED. Switch the page grid to its List, press Fullscreen, and before
-  // this there was no control anywhere that came back to the month: the console header's view
-  // controls are the workspace's four panels, not the grid's two views, and closing the console was
-  // the only exit. This pins the exit, from inside the console, in list mode.
-  it('comes back to the month from the grid list, inside the console', () => {
+  // 🔴 THE DEAD END LIVE-475 CLOSED, RE-PINNED ON ITS NEW HOME (LIVE-485). Switch the page grid to
+  // its List, press Fullscreen, and before LIVE-475 there was no control anywhere that came back to
+  // the month: the console header's view controls are the workspace's four panels, not the grid's
+  // two views, and closing the console was the only exit. LIVE-475 answered it by keeping the
+  // switcher inside the grid; LIVE-485 moved it into the console's header, where it is one of the
+  // four groups. Either way this is the test that says list mode inside the console has a way out,
+  // and a way to move more than one month.
+  it('comes back to the month from the grid list, inside the console, and moves more than one month', () => {
     window.history.replaceState(null, '', '/spaces/lab/calendar')
     const el = mount(<CalendarWorkspace {...operatorProps()} />)
     const pageGrid = el.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root]')!
@@ -596,10 +678,13 @@ describe('CalendarWorkspace', () => {
     act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
     const console_ = document.querySelector<HTMLElement>('[data-calendar-console]')!
     const inConsole = console_.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root]')!
-    // The list travelled in with the panel set, and the way out travelled with it.
+    // The list travelled in with the panel set, and the way out is in the header that took it over.
     expect(inConsole.querySelector('[data-calendar-list]')).not.toBeNull()
-    const back = inConsole.querySelector<HTMLButtonElement>('[aria-label="Grid view"]')
+    const header = console_.querySelector<HTMLElement>('[data-calendar-console-header]')!
+    const back = header.querySelector<HTMLButtonElement>('[aria-label="Grid view"]')
     expect(back).not.toBeNull()
+    // And the month jump, the other half of the dead end: more than one month, from in here.
+    expect(header.querySelector('[data-calendar-console-month-jump]')).not.toBeNull()
     act(() => back!.click())
     expect(inConsole.querySelector('[data-calendar-list]')).toBeNull()
     expect(inConsole.querySelector('[data-calendar-stack], .group')).not.toBeNull()
@@ -617,6 +702,9 @@ describe('CalendarWorkspace', () => {
       act(() => {
         el.dispatchEvent(new WheelEvent('wheel', { deltaY: 240, deltaMode: 0, bubbles: true, cancelable: true }))
       })
+    // NAME THE MONTH, not "the first polite live region in the grid". The grid gained a second one
+    // when a date became movable (PROG-CAL15, the line a move leaves), and it is rendered FIRST, so
+    // a loose selector that used to mean the month title started reading an empty region instead.
     const pageMonth = () =>
       el.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root] button [aria-live="polite"]')!.textContent
 

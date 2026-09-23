@@ -15,7 +15,7 @@ import { Maximize2 } from 'lucide-react'
 import { EventCalendar } from '@/components/events/event-calendar'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { StaffCalendar } from '@/app/(main)/spaces/[slug]/settings/calendar/staff-calendar'
+import { StaffCalendar, STAFF_CALENDAR_LAYERS } from '@/app/(main)/spaces/[slug]/settings/calendar/staff-calendar'
 import { CalendarModeToggle } from '@/components/spaces/calendar-mode-toggle'
 import { CalendarListView } from '@/components/spaces/calendar-list-view'
 import { CalendarWorkflowView } from '@/components/spaces/calendar-workflow-view'
@@ -30,6 +30,7 @@ import {
 import { listIndexItems, selectListItem } from '@/lib/calendar/list-index'
 import { workflowBoard } from '@/lib/calendar/workflow-board'
 import type { CalendarEvent } from '@/lib/calendar/item'
+import type { CalendarLayerKey } from '@/lib/calendar/registry'
 import type { DayNote } from '@/lib/calendar/day-notes'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import type { WorkflowStage } from '@/lib/calendar/workflow-board'
@@ -142,6 +143,21 @@ export function CalendarWorkspace({
   const [planEntryId, setPlanEntryId] = useState<string | null>(null)
   // The shown month, owned here so the grids, the console header and its agenda read one value.
   const [month, setMonth] = useState({ year: initialYear, month1: initialMonth1 })
+  // ONE HEADER BAR (LIVE-485). The grid's month-or-list view and its hidden layers are owned here
+  // for the same reason `month` is: the console header draws both controls now, and a control drawn
+  // outside the grid cannot hold state that lives inside it. On the page the grid draws them itself
+  // and reports through the same two setters, so a switch made on the page is still the one the
+  // console opens on.
+  const [gridView, setGridView] = useState<'grid' | 'list'>('grid')
+  const [hiddenLayers, setHiddenLayers] = useState<ReadonlySet<CalendarLayerKey>>(() => new Set())
+  const toggleLayer = useCallback((key: CalendarLayerKey) => {
+    setHiddenLayers((cur) => {
+      const next = new Set(cur)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }, [])
   const [consoleOpen, setConsoleOpen] = useState(adminAllowed && initialConsole)
   const [newEntryRequest, setNewEntryRequest] = useState(0)
   const [currentPlans, setCurrentPlans] = useState(plans)
@@ -397,6 +413,8 @@ export function CalendarWorkspace({
         loadMonth={loadGuestMonth}
         month={month}
         onMonthChange={setMonth}
+        view={gridView}
+        onViewChange={setGridView}
         fill={consoleOpen}
         hostChrome={consoleOpen}
       />
@@ -492,10 +510,19 @@ export function CalendarWorkspace({
   // into blank space beneath them. `items-start` stops the row stretching the others to match, and
   // an inert panel is `h-0 overflow-hidden` so it adds no height at all. In the console the showing
   // panel stretches itself instead (`self-stretch`), which is what lets the grid fill the row.
+  //
+  // 🔴 AND THE ROW NEEDS A DEFINITE HEIGHT FOR `self-stretch` TO MEAN ANYTHING (LIVE-485). This
+  // slider used to carry `min-h-full`. A single-line flex container only hands its own cross size to
+  // its line when that cross size is DEFINITE, and a `min-height` is not one: the line was sized to
+  // the tallest item instead, so `self-stretch` stretched the showing panel to its own content and
+  // `h-full` under it had no definite parent to resolve against. The month then drew at its natural
+  // height with the rest of the stage left empty under it, which is the dead space the owner was
+  // looking at. `h-full` in the console makes the cross size definite; a panel taller than the
+  // console (a long List index) still overflows it and the wrapper above scrolls, vertically.
   const panels = (
     <div className={cn('overflow-hidden', consoleOpen && 'min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain')}>
       <div
-        className={cn('flex items-start transition-transform duration-300 ease-out motion-reduce:transition-none', consoleOpen && 'min-h-full')}
+        className={cn('flex items-start transition-transform duration-300 ease-out motion-reduce:transition-none', consoleOpen && 'h-full')}
         style={{ transform: `translateX(-${index * 100}%)` }}
       >
         {CALENDAR_ADMIN_VIEWS.map((panel) => {
@@ -525,6 +552,10 @@ export function CalendarWorkspace({
                     wheelPaging={consoleOpen}
                     month={month}
                     onMonthChange={setMonth}
+                    gridView={gridView}
+                    onGridViewChange={setGridView}
+                    hiddenLayers={hiddenLayers}
+                    onHiddenLayersChange={setHiddenLayers}
                     newEntryRequest={newEntryRequest}
                     pencilButton={!consoleOpen}
                     fill={consoleOpen}
@@ -567,6 +598,11 @@ export function CalendarWorkspace({
           month={month}
           onMonthChange={setMonth}
           viewControls={viewControls}
+          gridView={view === 'admin' || view === 'guest' ? gridView : undefined}
+          onGridViewChange={view === 'admin' || view === 'guest' ? setGridView : undefined}
+          layers={view === 'admin' ? STAFF_CALENDAR_LAYERS : undefined}
+          hiddenLayers={hiddenLayers}
+          onToggleLayer={view === 'admin' ? toggleLayer : undefined}
           items={items}
           selectedKey={selected?.key ?? null}
           onSelectItem={selectAgendaItem}

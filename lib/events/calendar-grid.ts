@@ -75,6 +75,10 @@ export function eventDayKey(startsAt: string | null | undefined): string | null 
 /** The weekday column headers for a Sunday-start grid. */
 export const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
 
+/** The twelve short month names, for a month-and-year jump and a list view's date pill. One copy,
+ *  because the grid and the console header both draw a jump now. */
+export const SHORT_MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
+
 // ── THE GRID'S TWO HOST DECISIONS (PROG-CAL13, corrected by LIVE-475) ─────────────────────────
 //
 // Both used to be inline ternaries in components/events/event-calendar.tsx, which meant the only way
@@ -84,26 +88,55 @@ export const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] 
 
 /** What the grid draws for itself, given a host that says it owns the chrome. */
 export interface CalendarChrome {
-  /** The month title (and the aria-live that reads it). The console header draws its own. */
+  /** The month title (and the aria-live that reads it). */
   monthTitle: boolean
-  /** Previous / Today / Next. The console header draws its own. */
+  /** Previous / Today / Next. */
   paging: boolean
-  /** THIS grid's grid-vs-list switcher. Not the workspace's four-panel toggle: no host draws it. */
+  /** THIS grid's grid-vs-list switcher. Not the workspace's four-panel toggle. */
   viewSwitch: boolean
-  /** The month-and-year jump. No host draws one, and one month per press is not a substitute. */
+  /** The month-and-year jump. */
   monthJump: boolean
+  /** The layer chips: Events, In the works, Private, Unavailable, To-dos. */
+  layerFilters: boolean
 }
 
 /**
- * 🔴 A HOST OWNS THE MONTH, NEVER THE EXIT (LIVE-475). The first cut of `hostChrome` dropped the
- * grid's WHOLE header, and the two controls in it that no host draws went with it. That shipped a
- * reachable dead end: switch the page grid to List, press Fullscreen, and you were in list mode
- * inside a full-screen console with no way back to the month and no way to move more than one month
- * at a time — closing the console was the only exit. The duplicated chrome (the month label and the
- * paging cluster) is what the console was paying for twice, and that is all `hostChrome` takes.
+ * 🔴 A HOST MAY ONLY TAKE A CONTROL IT ACTUALLY DRAWS (LIVE-475, re-read by LIVE-485).
+ *
+ * The first cut of `hostChrome` dropped the grid's WHOLE header, and the two controls in it that
+ * no host drew went with it. That shipped a reachable dead end: switch the page grid to List,
+ * press Fullscreen, and you were in list mode inside a full-screen console with no way back to
+ * the month and no way to move more than one month at a time. LIVE-475 answered it by giving the
+ * grid its switcher and its jump back in BOTH modes, which was right while no host drew them.
+ *
+ * The console header now draws all five (owner ask 2026-09-23, "condense all sorting and controls
+ * into an intuitive header bar"), so all five come off the grid under a host. The rule that
+ * survives untouched is the one the dead end taught, and `HOST_DRAWN_CONTROL_MARKS` below is what
+ * makes it measurable rather than a promise in a comment: for every control this function takes
+ * away, the console header has to carry that control's marker, or the LIVE-478 probe fails.
  */
 export function calendarChrome(hostChrome: boolean): CalendarChrome {
-  return { monthTitle: !hostChrome, paging: !hostChrome, viewSwitch: true, monthJump: true }
+  return {
+    monthTitle: !hostChrome,
+    paging: !hostChrome,
+    viewSwitch: !hostChrome,
+    monthJump: !hostChrome,
+    layerFilters: !hostChrome,
+  }
+}
+
+/**
+ * The `data-` marker the host header must carry for each control `calendarChrome` takes off the
+ * grid. A probe runs `calendarChrome(true)`, and for every `false` it finds, reads
+ * components/spaces/calendar-console.tsx for the matching marker: a control may only be taken away
+ * by a host that draws it. This is the LIVE-475 dead end turned into a gate.
+ */
+export const HOST_DRAWN_CONTROL_MARKS: Readonly<Record<keyof CalendarChrome, string>> = {
+  monthTitle: 'data-calendar-console-month',
+  paging: 'data-calendar-console-paging',
+  viewSwitch: 'data-calendar-console-view-switch',
+  monthJump: 'data-calendar-console-month-jump',
+  layerFilters: 'data-calendar-console-layers',
 }
 
 /**

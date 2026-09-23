@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { monthMatrix, monthLabel, addMonth, eventDayKey, WEEKDAY_LABELS, calendarChrome, cellFloorClass } from './calendar-grid'
+import { monthMatrix, monthLabel, addMonth, eventDayKey, WEEKDAY_LABELS, calendarChrome, cellFloorClass, HOST_DRAWN_CONTROL_MARKS, SHORT_MONTH_LABELS } from './calendar-grid'
 
 describe('monthLabel', () => {
   it('names the month and year', () => {
@@ -86,22 +86,38 @@ describe('WEEKDAY_LABELS', () => {
   })
 })
 
-// THE GRID'S TWO HOST DECISIONS (PROG-CAL13, LIVE-475). Pure, so both the component and the backlog
-// probe that guards them read the same function rather than the same spelling.
+// THE GRID'S HOST DECISIONS (PROG-CAL13, LIVE-475, widened by LIVE-485). Pure, so both the
+// component and the backlog probe that guards them read the same function rather than the same
+// spelling.
 describe('calendarChrome', () => {
   it('draws everything on the page', () => {
-    expect(calendarChrome(false)).toEqual({ monthTitle: true, paging: true, viewSwitch: true, monthJump: true })
+    expect(calendarChrome(false)).toEqual({
+      monthTitle: true,
+      paging: true,
+      viewSwitch: true,
+      monthJump: true,
+      layerFilters: true,
+    })
   })
 
-  // 🔴 The console dead end: a host owns the month label and the paging cluster, and NOTHING outside
-  // the grid draws the grid's own view switcher or its month jump. Dropping those two left list mode
-  // inside the console with no way back to the month and no way to move more than one month.
-  it('gives up only the chrome a host actually draws', () => {
+  // 🔴 THE RULE THE CONSOLE DEAD END TAUGHT (LIVE-475): a host may only take a control it actually
+  // draws. It used to be enforced by KEEPING the switcher and the jump in both modes, because no
+  // host drew them. The console header draws all five now (LIVE-485), so all five come off, and
+  // HOST_DRAWN_CONTROL_MARKS is what keeps "the host draws it" honest: every control this gives up
+  // names the marker the console header has to carry, and the LIVE-478 probe checks it is there.
+  it('gives up every control to a host, and names the marker that host must carry', () => {
     const chrome = calendarChrome(true)
-    expect(chrome.monthTitle).toBe(false)
-    expect(chrome.paging).toBe(false)
-    expect(chrome.viewSwitch).toBe(true)
-    expect(chrome.monthJump).toBe(true)
+    expect(chrome).toEqual({
+      monthTitle: false,
+      paging: false,
+      viewSwitch: false,
+      monthJump: false,
+      layerFilters: false,
+    })
+    // Nothing is taken away without a marker to point at.
+    for (const key of Object.keys(chrome) as (keyof typeof chrome)[]) {
+      expect(HOST_DRAWN_CONTROL_MARKS[key], key).toMatch(/^data-calendar-console-/)
+    }
   })
 })
 
@@ -114,5 +130,13 @@ describe('cellFloorClass', () => {
   it('keeps a floor when the grid sizes to its own content', () => {
     expect(cellFloorClass(false)).toContain('min-h-20')
     expect(cellFloorClass(false)).toContain('sm:min-h-28')
+  })
+})
+
+describe('SHORT_MONTH_LABELS', () => {
+  it('is the twelve months, once, so the grid jump and the console jump read the same list', () => {
+    expect(SHORT_MONTH_LABELS.length).toBe(12)
+    expect(SHORT_MONTH_LABELS[0]).toBe('Jan')
+    expect(SHORT_MONTH_LABELS[11]).toBe('Dec')
   })
 })
