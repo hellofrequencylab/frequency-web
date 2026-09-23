@@ -29,6 +29,13 @@ vi.mock('@/lib/calendar/entries-store', () => ({
   listSpaceCalendarEntries: vi.fn(async () => []),
   updateCalendarEntryRow: vi.fn(),
 }))
+// The record every accepted batch writes (PROG-CAL11 slice 3). Mocked here so these tests reach
+// no client of their own; what the record CARRIES is pinned in vera-undo-actions.test.ts.
+vi.mock('@/lib/calendar/vera-log-store', () => ({
+  getVeraChangeRecord: vi.fn(async () => null),
+  listVeraChangeRecords: vi.fn(async () => []),
+  recordVeraChanges: vi.fn(async () => ({ data: { id: 'record-1' } })),
+}))
 vi.mock('./entry-actions', () => ({ saveCalendarEntry: vi.fn() }))
 vi.mock('./plan-actions', () => ({
   addPlanTodo: vi.fn(),

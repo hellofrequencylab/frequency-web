@@ -16,14 +16,18 @@ import {
   type VeraDescribeContext,
   type VeraMode,
 } from '@/lib/calendar/vera-command'
+import { shortDateLabel } from '@/lib/calendar/short-date'
 import { browserZone } from '@/lib/calendar/browser-zone'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import {
   applyVeraChanges,
+  listVeraChangeLog,
+  undoVeraChanges,
   veraCalendarCommand,
   type VeraApplyResult,
   type VeraCommandResult,
+  type VeraLogEntry,
 } from '@/app/(main)/spaces/[slug]/settings/calendar/vera-calendar-actions'
 
 // ASK VERA (PROG-CAL10). A disclosure row above the calendar panels, for the team that can edit
@@ -47,6 +51,13 @@ import {
 // context it reads is the one the proposal came back with: the server knows every title it named
 // and how much a `field` line would overwrite. The month this box happens to be holding is merged
 // underneath as a fallback and nothing more.
+//
+// WHAT VERA CHANGED, AND UNDO (PROG-CAL11 slice 3). Under the ask is a disclosure holding the
+// change log: one group per accepted batch, every line the sentence the SERVER wrote when the
+// change landed, and a line that could not be reversed saying so in its own words. Undo on a batch
+// is not a button that acts: it asks the server for the reverses and drops them into this box as an
+// ordinary PROPOSAL, with the same lines, the same ticking and the same second box on anything
+// destructive. Nothing leaves the log: a batch that was undone says so and keeps its lines.
 //
 // CLARIFY BEFORE PROPOSING (PROG-CAL11 slice 1). When the ask is ambiguous, Vera answers with a
 // QUESTION instead: it renders under [data-vera-clarification] with the options as buttons (and a
@@ -76,6 +87,8 @@ function rememberMode(slug: string, mode: VeraMode) {
 type Proposal = {
   changes: VeraChange[]
   note: string
+  /** Set when this proposal is an Undo: the batch it reverses, sent back on Accept. */
+  undoOf?: string
   /** Ticked, per line. A destructive line starts false: apply-all is not a default. */
   checked: boolean[]
   /** The destructive line's own confirmation, per line. Cleared whenever its line is unticked. */
@@ -106,6 +119,7 @@ export function VeraCalendarBox({
 }) {
   const panelId = useId()
   const questionId = useId()
+  const logId = useId()
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<VeraMode>(() => (typeof window === 'undefined' ? 'pencil' : (rememberedMode(slug) ?? 'pencil')))
   const [ask, setAsk] = useState('')
@@ -114,6 +128,10 @@ export function VeraCalendarBox({
   const [clarification, setClarification] = useState<Clarification | null>(null)
   const [freeText, setFreeText] = useState('')
   const [results, setResults] = useState<VeraApplyResult[] | null>(null)
+  const [logOpen, setLogOpen] = useState(false)
+  const [logEntries, setLogEntries] = useState<VeraLogEntry[] | null>(null)
+  const [logVersion, setLogVersion] = useState(0)
+  const [logError, setLogError] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
   const ctx = useMemo(() => {
@@ -150,6 +168,7 @@ export function VeraCalendarBox({
     setProposal({
       changes: data.changes,
       note: data.note,
+      undoOf: data.undoOf,
       // UNTICKED WHERE IT MATTERS: a line that deletes is never armed by default.
       checked: data.changes.map((change) => !isDestructiveChange(change)),
       confirmed: data.changes.map(() => false),
@@ -224,8 +243,9 @@ export function VeraCalendarBox({
     // parses. A destructive line whose position is missing is refused there, not here.
     const confirmed = pickedIndexes.map((i, at) => (proposal.confirmed[i] ? at : -1)).filter((at) => at >= 0)
     setError(null)
+    setLogError(null)
     start(async () => {
-      const res = await applyVeraChanges(slug, picked, confirmed)
+      const res = await applyVeraChanges(slug, picked, confirmed, proposal.undoOf)
       if ('error' in res) {
         setError(res.error)
         return
@@ -233,7 +253,30 @@ export function VeraCalendarBox({
       // Results index the PICKED list; map them back onto the proposal's lines.
       const mapped = res.data.results.map((r) => ({ ...r, index: pickedIndexes[r.index] ?? r.index }))
       setResults(mapped)
-      if (mapped.some((r) => r.ok)) onApplied?.(mapped)
+      // A batch that landed but was not written to the log is said out loud rather than left to be
+      // discovered when Undo does not offer it.
+      if (res.data.logError) setLogError(res.data.logError)
+      if (mapped.some((r) => r.ok)) {
+        onApplied?.(mapped)
+        setLogVersion((v) => v + 1)
+      }
+    })
+  }
+
+  /** Undo a batch: the server hands back the reverses and they land here as an ordinary proposal,
+   *  which still has to be ticked and accepted. Nothing is reversed by pressing this. */
+  const undo = (id: string) => {
+    if (pending) return
+    setError(null)
+    setResults(null)
+    setClarification(null)
+    start(async () => {
+      const res = await undoVeraChanges(slug, id)
+      if ('error' in res) {
+        setError(res.error)
+        return
+      }
+      receive(res.data)
     })
   }
 
@@ -242,6 +285,21 @@ export function VeraCalendarBox({
     setResults(null)
     setError(null)
   }
+
+  // The log is read only when its disclosure is open, and again after a batch lands, so the
+  // ordinary path (ask, accept) costs no extra round trip.
+  useEffect(() => {
+    if (!logOpen) return
+    let live = true
+    void listVeraChangeLog(slug).then((res) => {
+      if (!live) return
+      if ('error' in res) setLogEntries([])
+      else setLogEntries(res.data.entries)
+    })
+    return () => {
+      live = false
+    }
+  }, [logOpen, slug, logVersion])
 
   const resultFor = (i: number) => results?.find((r) => r.index === i) ?? null
   const anyChecked = proposal?.checked.some(Boolean) ?? false
@@ -310,6 +368,11 @@ export function VeraCalendarBox({
           {error ? (
             <p role="alert" className="text-body-sm font-medium text-danger">
               {error}
+            </p>
+          ) : null}
+          {logError ? (
+            <p role="status" className="text-body-sm text-text">
+              {logError}
             </p>
           ) : null}
           {clarification ? (
@@ -428,6 +491,64 @@ export function VeraCalendarBox({
               </div>
             </div>
           ) : null}
+          {/* THE CHANGE LOG (PROG-CAL11 slice 3). Its own disclosure, closed by default and read
+              only when it is opened, so the ordinary ask-and-accept path costs no extra round
+              trip. Every batch stays here, the undone ones included. */}
+          <div data-vera-log className="space-y-2 border-t border-border pt-3">
+            <button
+              type="button"
+              aria-expanded={logOpen}
+              aria-controls={logId}
+              onClick={() => setLogOpen((o) => !o)}
+              className="flex w-full items-center justify-between gap-3 text-left"
+            >
+              <span className="text-body-sm font-semibold text-text">What Vera changed</span>
+              <span className="text-meta text-muted">{logOpen ? 'Hide' : 'Show the record'}</span>
+            </button>
+            {logOpen ? (
+              <ul id={logId} className="space-y-2">
+                {(logEntries ?? []).length === 0 ? (
+                  <li className="text-meta text-muted">
+                    {logEntries === null
+                      ? 'Reading the record.'
+                      : 'Nothing accepted here yet. Every batch you accept is kept, along with what it would take to put it back.'}
+                  </li>
+                ) : (
+                  (logEntries ?? []).map((entry) => (
+                    <li key={entry.id} data-vera-log-entry={entry.id} className="space-y-1 rounded-card border border-border p-2">
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <time dateTime={entry.at} className="text-meta font-semibold text-text">
+                          {shortDateLabel(entry.at.slice(0, 10))}
+                          {entry.undoOf ? ', an undo' : ''}
+                        </time>
+                        {/* One slot, whatever it holds: a batch that was undone says so, a batch
+                            with nothing reversible says that, and the rest offer Undo. */}
+                        <span className="text-meta text-muted">
+                          {entry.undoneBy ? (
+                            'Undone'
+                          ) : entry.reversible === 0 ? (
+                            'Nothing here can be put back'
+                          ) : (
+                            <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={() => undo(entry.id)}>
+                              Undo
+                            </Button>
+                          )}
+                        </span>
+                      </div>
+                      <ul className="space-y-1">
+                        {entry.lines.map((line, i) => (
+                          <li key={i} className="text-meta text-muted">
+                            {line.message}
+                            {line.reason ? <span className="block">{line.reason}</span> : null}
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                  ))
+                )}
+              </ul>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </section>
