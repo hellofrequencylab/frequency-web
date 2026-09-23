@@ -6,8 +6,8 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
-import { proposeCalendarChanges, type VeraCalendarContext } from '@/lib/ai/vera-calendar'
-import { isVeraMode, parseVeraChanges, type VeraChange } from '@/lib/calendar/vera-command'
+import { parseVeraTranscript, proposeCalendarChanges, type VeraCalendarContext, type VeraTranscript } from '@/lib/ai/vera-calendar'
+import { isVeraMode, parseVeraChanges, type VeraChange, type VeraClarificationOption } from '@/lib/calendar/vera-command'
 import { entryDaySpan, parseEntryInput, type EntryInput, type EntryRow, type EntryWrite } from '@/lib/calendar/entries'
 import { getCalendarEntryRow, insertCalendarEntries, listSpaceCalendarEntries, updateCalendarEntryRow } from '@/lib/calendar/entries-store'
 import { parsePlanInput } from '@/lib/calendar/plans'
@@ -21,7 +21,10 @@ import { addPlanTodo, archiveSpacePlan, reanchorPlanTodos, transitionPlanStage }
 // VERA AT THE CALENDAR, the two doors (PROG-CAL10, ADR-1386 invariant 1).
 //
 // `veraCalendarCommand` READS: it builds this Space's context on the caller's session and returns
-// the proposal. Nothing is written here, whatever the model says. `applyVeraChanges` WRITES, and
+// the proposal, or a question when Vera needs one answered first (PROG-CAL11 slice 1). Nothing is
+// written here, whatever the model says, and the conversation that a question opens is NOT stored:
+// the transcript rides in the box's state, comes back with the answer as untrusted input, and is
+// shape- and size-checked before the model sees it again. `applyVeraChanges` WRITES, and
 // only what the person ticked: the list comes back from the browser as untrusted input, is
 // re-parsed through `parseVeraChanges`, and each change is then driven through the EXISTING
 // calendar actions and stores on the caller's own session, so RLS stays the lock. One result per
@@ -55,19 +58,36 @@ export interface VeraCommandInput {
   month1: number
   /** The browser zone, as the staff drawer already sends it. Resolved to a real IANA zone here. */
   timeZone?: string | null
+  /** A continuation: the transcript the last clarification returned, exactly as it came. */
+  transcript?: unknown
+  /** A continuation: the chosen option's value, or the typed answer. */
+  answer?: string | null
 }
 
-export interface VeraCommandResult {
-  changes: VeraChange[]
-  note: string
-  timeZone: string
-}
+export type VeraCommandResult =
+  | { kind: 'proposal'; changes: VeraChange[]; note: string; timeZone: string }
+  | {
+      kind: 'clarification'
+      question: string
+      options: VeraClarificationOption[]
+      allowFreeText: boolean
+      /** Send this back with the answer. Held in the box for the session; never stored. */
+      transcript: VeraTranscript
+      timeZone: string
+    }
 
-/** Ask Vera. Read only: the proposal comes back for a person to review. */
+/** Ask Vera. Read only: the proposal, or her question, comes back for a person to answer. */
 export async function veraCalendarCommand(slug: string, input: VeraCommandInput): Promise<ActionResult<VeraCommandResult>> {
   const editor = await resolveEditor(slug)
   if (!editor) return fail('You do not have access to this calendar.')
   if (!input || typeof input !== 'object') return fail('Say what should happen on the calendar.')
+  let transcript: VeraTranscript | null = null
+  if (input.transcript !== undefined && input.transcript !== null) {
+    const parsed = parseVeraTranscript(input.transcript)
+    if ('error' in parsed) return fail(parsed.error)
+    transcript = parsed.transcript
+    if (typeof input.answer !== 'string' || !input.answer.trim()) return fail('Pick one of the options, or type an answer.')
+  }
   const mode = isVeraMode(input.mode) ? input.mode : 'pencil'
   const month = safeMonth(input.year, input.month1)
   const now = new Date()
@@ -83,9 +103,15 @@ export async function veraCalendarCommand(slug: string, input: VeraCommandInput)
     entries: rows.map((r) => ({ id: r.id, title: r.title, day: entryDaySpan(r).dayKey, stage: r.stage, planId: r.plan_id })),
     profileId: editor.profileId,
   }
-  const res = await proposeCalendarChanges({ ask: typeof input.ask === 'string' ? input.ask : '', mode, context })
+  const res = await proposeCalendarChanges({
+    ask: typeof input.ask === 'string' ? input.ask : '',
+    mode,
+    context,
+    transcript,
+    answer: transcript ? input.answer : null,
+  })
   if ('error' in res) return fail(res.error)
-  return ok({ changes: res.proposal.changes, note: res.proposal.note, timeZone })
+  return ok({ ...res, timeZone })
 }
 
 export interface VeraApplyResult {
@@ -230,7 +256,7 @@ async function applyOne(slug: string, editor: Editor, change: VeraChange): Promi
       // nothing. archiveSpacePlan drops those dates, unlinks the ones that became events, then stamps.
       const res = await archiveSpacePlan(slug, change.planId)
       if ('error' in res) return { error: res.error }
-      return `Archived "${plan.title}". Its pencilled dates left the calendar; a date that became an event kept the event.`
+      return `Archived "${plan.title}". Its penciled dates left the calendar; a date that became an event kept the event.`
     }
   }
 }

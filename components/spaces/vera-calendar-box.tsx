@@ -14,6 +14,7 @@ import {
   applyVeraChanges,
   veraCalendarCommand,
   type VeraApplyResult,
+  type VeraCommandResult,
 } from '@/app/(main)/spaces/[slug]/settings/calendar/vera-calendar-actions'
 
 // ASK VERA (PROG-CAL10). A disclosure row above the calendar panels, for the team that can edit
@@ -21,6 +22,12 @@ import {
 // Vera answers with a PROPOSAL: one line per change, each with a box. Accept applies the ticked
 // lines through the existing calendar actions; Discard throws the proposal away. Nothing here
 // publishes, and nothing changes until Accept (ADR-1386 invariant 1).
+//
+// CLARIFY BEFORE PROPOSING (PROG-CAL11 slice 1). When the ask is ambiguous, Vera answers with a
+// QUESTION instead: it renders under [data-vera-clarification] with the options as buttons (and a
+// free-text field when she allows one). Choosing one sends the transcript she returned plus the
+// answer back through the same action, and the reply is a proposal or, at most once more, another
+// question. The transcript lives in this component's state and nowhere else: Start over drops it.
 
 const MODE_KEY = (slug: string) => `vera-calendar-mode:${slug}`
 
@@ -42,6 +49,8 @@ function rememberMode(slug: string, mode: VeraMode) {
 }
 
 type Proposal = { changes: VeraChange[]; note: string; checked: boolean[] }
+/** Vera's question as the action returns it, minus the zone the proposal path carries. */
+type Clarification = Omit<Extract<VeraCommandResult, { kind: 'clarification' }>, 'timeZone'>
 
 export function VeraCalendarBox({
   slug,
@@ -60,11 +69,14 @@ export function VeraCalendarBox({
   onApplied?: (results: VeraApplyResult[]) => void
 }) {
   const panelId = useId()
+  const questionId = useId()
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<VeraMode>(() => (typeof window === 'undefined' ? 'pencil' : (rememberedMode(slug) ?? 'pencil')))
   const [ask, setAsk] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [proposal, setProposal] = useState<Proposal | null>(null)
+  const [clarification, setClarification] = useState<Clarification | null>(null)
+  const [freeText, setFreeText] = useState('')
   const [results, setResults] = useState<VeraApplyResult[] | null>(null)
   const [pending, start] = useTransition()
 
@@ -76,12 +88,25 @@ export function VeraCalendarBox({
     return { plans: planTitles, entries: entryTitles }
   }, [plans, events])
 
+  /** One reply, either shape, lands the same way: the other shape is cleared. */
+  const receive = (data: VeraCommandResult) => {
+    if (data.kind === 'clarification') {
+      setProposal(null)
+      setClarification({ kind: 'clarification', question: data.question, options: data.options, allowFreeText: data.allowFreeText, transcript: data.transcript })
+      return
+    }
+    setClarification(null)
+    setProposal({ changes: data.changes, note: data.note, checked: data.changes.map(() => true) })
+  }
+
   const send = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const text = ask.trim()
     if (!text || pending) return
     setError(null)
     setResults(null)
+    setClarification(null)
+    setFreeText('')
     start(async () => {
       const res = await veraCalendarCommand(slug, { ask: text, mode, year, month1, timeZone: browserZone() })
       if ('error' in res) {
@@ -89,8 +114,47 @@ export function VeraCalendarBox({
         setError(res.error)
         return
       }
-      setProposal({ changes: res.data.changes, note: res.data.note, checked: res.data.changes.map(() => true) })
+      receive(res.data)
     })
+  }
+
+  /** Answer Vera's question: the transcript she returned goes back with the answer, and nothing
+   *  else is kept. The ask text stays in the field in case the person wants to rephrase it. */
+  const answer = (value: string) => {
+    const text = value.trim()
+    if (!clarification || !text || pending) return
+    setError(null)
+    setResults(null)
+    setFreeText('')
+    start(async () => {
+      const res = await veraCalendarCommand(slug, {
+        ask: ask.trim(),
+        mode,
+        year,
+        month1,
+        timeZone: browserZone(),
+        transcript: clarification.transcript,
+        answer: text,
+      })
+      if ('error' in res) {
+        setError(res.error)
+        return
+      }
+      receive(res.data)
+    })
+  }
+
+  const answerFreeText = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    answer(freeText)
+  }
+
+  const startOver = () => {
+    setClarification(null)
+    setFreeText('')
+    setProposal(null)
+    setResults(null)
+    setError(null)
   }
 
   const accept = () => {
@@ -174,7 +238,7 @@ export function VeraCalendarBox({
                 />
               </Field>
               <Button type="submit" disabled={pending || !ask.trim()}>
-                {pending && !proposal ? 'Asking' : 'Send'}
+                {pending && !proposal && !clarification ? 'Asking' : 'Send'}
               </Button>
             </div>
             <p className="text-meta text-muted">
@@ -185,6 +249,43 @@ export function VeraCalendarBox({
             <p role="alert" className="text-body-sm font-medium text-danger">
               {error}
             </p>
+          ) : null}
+          {clarification ? (
+            <div data-vera-clarification role="group" aria-labelledby={questionId} className="space-y-3">
+              <p id={questionId} className="text-body-sm text-text">
+                {clarification.question}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                {clarification.options.map((option) => (
+                  <Button key={option.value} type="button" variant="secondary" size="sm" disabled={pending} onClick={() => answer(option.value)}>
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+              {clarification.allowFreeText ? (
+                <form onSubmit={answerFreeText} className="flex flex-wrap items-end gap-2">
+                  <Field label="Or say it your way" className="min-w-0 flex-1">
+                    <Input
+                      id="vera-answer"
+                      value={freeText}
+                      disabled={pending}
+                      maxLength={600}
+                      autoComplete="off"
+                      onChange={(e) => setFreeText(e.target.value)}
+                    />
+                  </Field>
+                  <Button type="submit" variant="secondary" disabled={pending || !freeText.trim()}>
+                    Answer
+                  </Button>
+                </form>
+              ) : null}
+              <div className="flex flex-wrap items-center gap-2">
+                <Button type="button" variant="ghost" size="sm" onClick={startOver} disabled={pending}>
+                  Start over
+                </Button>
+                {pending ? <span className="text-meta text-muted">Asking</span> : null}
+              </div>
+            </div>
           ) : null}
           {proposal ? (
             <div data-vera-proposal className="space-y-3">

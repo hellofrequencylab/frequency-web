@@ -4,12 +4,25 @@
 // proposal to the box, a person ticks the lines, and only `applyVeraChanges` (on the caller's own
 // session) touches the calendar. Vera never publishes, sends or books on her own.
 //
-// Two tools, one bounded loop (at most MAX_ROUNDS model calls per ask):
-//   lunar_dates       the model MAY call this first. The server computes the days with
-//                     lib/calendar/moon.ts (Meeus) in the Space's zone and feeds them back, so
-//                     "every new moon" is arithmetic, never a recollection.
-//   propose_changes   the model MUST answer with this. Its input is the change vocabulary, parsed
-//                     strictly by parseVeraChanges; anything off-shape is refused as an honest error.
+// Three tools, one bounded loop (at most MAX_ROUNDS model calls per ask):
+//   lunar_dates        the model MAY call this first. The server computes the days with
+//                      lib/calendar/moon.ts (Meeus) in the Space's zone and feeds them back, so
+//                      "every new moon" is arithmetic, never a recollection.
+//   ask_clarification  the model calls this INSTEAD of proposing when the ask is ambiguous in a
+//                      way that changes the outcome (PROG-CAL11 slice 1). The server does not loop
+//                      again: the question goes back to the box with the TRANSCRIPT so far, the
+//                      person answers, and the next call continues the same conversation. At most
+//                      MAX_CLARIFICATIONS questions per ask; after that the tool is withheld and
+//                      the model has to propose or say it could not.
+//   propose_changes    the model MUST end with this. Its input is the change vocabulary, parsed
+//                      strictly by parseVeraChanges; anything off-shape is refused as an honest error.
+//
+// THE TRANSCRIPT IS SESSION-ONLY. It is the API messages array (the ask, then the assistant
+// tool_use turns and the user tool_result turns), held in the box's state and sent back with the
+// answer. It is never stored anywhere, and it is untrusted on the way back: `parseVeraTranscript`
+// checks its shape and size before it is sent to the model. The first message carries only the
+// ASK; the Space context is rebuilt fresh on every call and prepended on the server, so a
+// continuation sees today's calendar and the transcript stays small.
 //
 // Context is THIS Space only: the visible window's dates and its Plans, by id, title, day and stage.
 // No other Space's data reaches the prompt (ADR-1386 P6). Usage lands in the ledger under one
@@ -27,23 +40,35 @@ import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 import { lunarPhaseDates, type LunarPhase } from '@/lib/calendar/moon'
 import {
+  MAX_CLARIFICATION_OPTIONS,
   MAX_PENCIL_DAYS,
   MAX_VERA_CHANGES,
+  MIN_CLARIFICATION_OPTIONS,
   parseVeraChanges,
+  parseVeraClarification,
   stageLabel,
   VERA_STAGES,
   type VeraChange,
+  type VeraClarificationOption,
   type VeraMode,
 } from '@/lib/calendar/vera-command'
 
 export const VERA_CALENDAR_FEATURE = 'vera-calendar'
 /** The most model calls one ask may spend: a lunar lookup, a second lookup, the proposal. */
 export const MAX_ROUNDS = 3
+/** The most questions Vera may ask per request before she has to propose or say she cannot. */
+export const MAX_CLARIFICATIONS = 2
+/** The transcript a continuation may carry back: messages and bytes. Two questions, each with a
+ *  lunar lookup before it, is nine messages; the ceilings leave room and no more. */
+export const MAX_TRANSCRIPT_MESSAGES = 12
+export const MAX_TRANSCRIPT_BYTES = 24 * 1024
 const MAX_ASK = 600
+const MAX_ANSWER = 600
 const MAX_CONTEXT_ROWS = 120
 const MAX_LUNAR_SPAN_DAYS = 400
 
 export const LUNAR_TOOL_NAME = 'lunar_dates'
+export const CLARIFY_TOOL_NAME = 'ask_clarification'
 export const PROPOSE_TOOL_NAME = 'propose_changes'
 
 /** What the box sends and the action fills in. Every field is this Space's or the viewer's. */
@@ -58,11 +83,25 @@ export interface VeraCalendarContext {
   profileId?: string | null
 }
 
-export interface VeraCalendarProposal {
-  changes: VeraChange[]
-  /** One plain line from Vera about what she proposed and what she was not sure of. */
-  note: string
-}
+/** The conversation so far, in the API messages shape, with the first message carrying only the
+ *  ask. Session-only: it lives in the box's state and is never written anywhere. */
+export type VeraTranscript = CompleteMessage[]
+
+export type VeraCalendarReply =
+  | {
+      kind: 'proposal'
+      changes: VeraChange[]
+      /** One plain line from Vera about what she proposed and what she was not sure of. */
+      note: string
+    }
+  | {
+      kind: 'clarification'
+      question: string
+      options: VeraClarificationOption[]
+      allowFreeText: boolean
+      /** What the box sends back with the answer so the next call continues this conversation. */
+      transcript: VeraTranscript
+    }
 
 const LUNAR_TOOL: Anthropic.Tool = {
   name: LUNAR_TOOL_NAME,
@@ -76,6 +115,32 @@ const LUNAR_TOOL: Anthropic.Tool = {
       toDay: { type: 'string', description: 'Last day of the range, inclusive, YYYY-MM-DD. At most about a year after fromDay.' },
     },
     required: ['phase', 'fromDay', 'toDay'],
+  },
+}
+
+const CLARIFY_TOOL: Anthropic.Tool = {
+  name: CLARIFY_TOOL_NAME,
+  description:
+    'Ask the person ONE question before proposing, only when the request is ambiguous in a way that changes the outcome: several Plans or dates in the context match what they named, a timed thing has no time, or a day could fall in two different years. Offer the candidates as options. Never call this when a sensible default exists; assume the default and say so in the note of propose_changes instead.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      question: { type: 'string', description: 'One plain question, at most 200 characters. No long dashes, no exclamation marks.' },
+      options: {
+        type: 'array',
+        description: `${MIN_CLARIFICATION_OPTIONS} to ${MAX_CLARIFICATION_OPTIONS} answers the person can pick, drawn from the context.`,
+        items: {
+          type: 'object',
+          properties: {
+            label: { type: 'string', description: 'What the person sees, at most 60 characters: a Plan title with its date, a time, a year.' },
+            value: { type: 'string', description: 'What comes back as the answer, at most 120 characters: the Plan or date id from the context when the option is one, otherwise a short plain value.' },
+          },
+          required: ['label', 'value'],
+        },
+      },
+      allowFreeText: { type: 'boolean', description: 'true when a typed answer none of the options cover would help (a time, a title). Default false.' },
+    },
+    required: ['question', 'options'],
   },
 }
 
@@ -141,7 +206,9 @@ Rules that never bend:
 - Resolve relative words ("this winter", "next month", "the second Saturday") against today's date and the Space time zone given in the context, and write every day as YYYY-MM-DD.
 - Keep titles plain and in sentence case. No long dashes anywhere. No exclamation marks.
 - If the request cannot be expressed with the six kinds of change, propose what can be and say what could not in the note.
-- Always answer by calling ${PROPOSE_TOOL_NAME}. Do not answer in prose.`
+- When the request is ambiguous in a way that changes the outcome (several Plans or dates in the context match what was named, a timed thing has no time, a day could fall in two years), call ${CLARIFY_TOOL_NAME} INSTEAD of ${PROPOSE_TOOL_NAME}: one plain question, ${MIN_CLARIFICATION_OPTIONS} to ${MAX_CLARIFICATION_OPTIONS} options drawn from the context, with the id as the value where one exists. Never ask when a sensible default exists; take the default and say so in the note. At most ${MAX_CLARIFICATIONS} questions per request; once they are spent, propose with the best reading.
+- The answer to a question comes back as that tool's result. Continue from it; do not ask the same thing again.
+- Always answer by calling ${PROPOSE_TOOL_NAME} or ${CLARIFY_TOOL_NAME}. Do not answer in prose.`
 
 function contextText(ctx: VeraCalendarContext, mode: VeraMode): string {
   const lines: string[] = [
@@ -178,22 +245,106 @@ export function runLunarTool(input: Record<string, unknown>, timeZone: string): 
   return { ok: true, days: lunarPhaseDates(phase, fromDay, toDay, timeZone) }
 }
 
-export type ProposeCalendarChangesResult = { proposal: VeraCalendarProposal } | { error: string }
+export type ProposeCalendarChangesResult = VeraCalendarReply | { error: string }
+
+const TRANSCRIPT_BLOCK_TYPES = new Set(['text', 'tool_use', 'tool_result'])
+const TRANSCRIPT_ERROR = 'That conversation with Vera could not be picked up again. Start over and ask afresh.'
+
+function isTranscriptBlock(b: unknown): boolean {
+  if (!b || typeof b !== 'object' || Array.isArray(b)) return false
+  const o = b as Record<string, unknown>
+  if (typeof o.type !== 'string' || !TRANSCRIPT_BLOCK_TYPES.has(o.type)) return false
+  if (o.type === 'text') return typeof o.text === 'string'
+  if (o.type === 'tool_use') return typeof o.id === 'string' && typeof o.name === 'string' && !!o.input && typeof o.input === 'object'
+  return typeof o.tool_use_id === 'string' && (typeof o.content === 'string' || Array.isArray(o.content))
+}
 
 /**
- * The plain-words ask, as a proposal. Honest errors, never a silent empty list: the box shows the
- * sentence that comes back, whether it is "Vera is switched off here" or "that was more than 40
- * changes", so a person always knows why nothing was proposed.
+ * Check a transcript that came back from the browser: an array of at most MAX_TRANSCRIPT_MESSAGES
+ * messages, at most MAX_TRANSCRIPT_BYTES as JSON, roles strictly alternating from a user message
+ * whose content is the ask as a plain string, every later content a string or a list of text,
+ * tool_use and tool_result blocks, and the last message an assistant turn (so an answer can
+ * follow it). Anything else is refused with one honest sentence; nothing is repaired.
+ */
+export function parseVeraTranscript(raw: unknown): { transcript: VeraTranscript } | { error: string } {
+  if (!Array.isArray(raw) || raw.length === 0) return { error: TRANSCRIPT_ERROR }
+  if (raw.length > MAX_TRANSCRIPT_MESSAGES) return { error: TRANSCRIPT_ERROR }
+  let bytes = 0
+  try {
+    bytes = Buffer.byteLength(JSON.stringify(raw), 'utf8')
+  } catch {
+    return { error: TRANSCRIPT_ERROR }
+  }
+  if (bytes > MAX_TRANSCRIPT_BYTES) return { error: TRANSCRIPT_ERROR }
+  const transcript: VeraTranscript = []
+  for (let i = 0; i < raw.length; i++) {
+    const m = raw[i]
+    if (!m || typeof m !== 'object' || Array.isArray(m)) return { error: TRANSCRIPT_ERROR }
+    const { role, content } = m as { role?: unknown; content?: unknown }
+    const expected = i % 2 === 0 ? 'user' : 'assistant'
+    if (role !== expected) return { error: TRANSCRIPT_ERROR }
+    if (i === 0) {
+      if (typeof content !== 'string' || !content.trim() || content.length > MAX_ASK) return { error: TRANSCRIPT_ERROR }
+    } else if (typeof content !== 'string') {
+      if (!Array.isArray(content) || content.length === 0 || !content.every(isTranscriptBlock)) return { error: TRANSCRIPT_ERROR }
+    }
+    transcript.push({ role: expected, content: content as CompleteMessage['content'] })
+  }
+  if (transcript[transcript.length - 1].role !== 'assistant') return { error: TRANSCRIPT_ERROR }
+  return { transcript }
+}
+
+function toolUsesOf(content: CompleteMessage['content']): Anthropic.ToolUseBlockParam[] {
+  if (typeof content === 'string') return []
+  return content.filter((b): b is Anthropic.ToolUseBlockParam => (b as { type?: string }).type === 'tool_use')
+}
+
+/** How many questions the transcript already holds. */
+function clarificationsIn(transcript: VeraTranscript): number {
+  let n = 0
+  for (const m of transcript) if (m.role === 'assistant') n += toolUsesOf(m.content).filter((b) => b.name === CLARIFY_TOOL_NAME).length
+  return n
+}
+
+function cleanNote(raw: unknown): string {
+  return typeof raw === 'string' ? raw.replace(/[\u2013\u2014]/g, ',').replace(/!/g, '.').replace(/\s+/g, ' ').trim().slice(0, 400) : ''
+}
+
+/**
+ * The plain-words ask, as a proposal or a question. Honest errors, never a silent empty list: the
+ * box shows the sentence that comes back, whether it is "Vera is switched off here" or "that was
+ * more than 40 changes", so a person always knows why nothing was proposed.
+ *
+ * A first call carries the ask alone. A continuation carries the `transcript` the last reply
+ * returned and the person's `answer`; the ask is then read from the transcript's first message
+ * and the answer is fed to the model as the result of its own question.
  */
 export async function proposeCalendarChanges(input: {
   ask: string
   mode: VeraMode
   context: VeraCalendarContext
+  transcript?: VeraTranscript | null
+  answer?: string | null
 }): Promise<ProposeCalendarChangesResult> {
   if (!aiEnabled()) return { error: 'Vera is switched off here, so nothing can be proposed. Add dates by hand from Pencil it in.' }
-  const ask = input.ask.replace(/\s+/g, ' ').trim().slice(0, MAX_ASK)
-  if (!ask) return { error: 'Say what should happen on the calendar, and when.' }
   const ctx = input.context
+  const prior = input.transcript ?? null
+  const ask = (prior ? String(prior[0].content) : input.ask).replace(/\s+/g, ' ').trim().slice(0, MAX_ASK)
+  if (!ask) return { error: 'Say what should happen on the calendar, and when.' }
+
+  // A continuation answers the LAST question in the transcript, by its tool_use id. A transcript
+  // that does not end on a question has nothing to answer, so it is refused rather than guessed at.
+  let answerResult: Anthropic.ToolResultBlockParam | null = null
+  if (prior) {
+    const answer = typeof input.answer === 'string' ? input.answer.replace(/\s+/g, ' ').trim().slice(0, MAX_ANSWER) : ''
+    if (!answer) return { error: 'Pick one of the options, or type an answer.' }
+    const asked = toolUsesOf(prior[prior.length - 1].content).find((b) => b.name === CLARIFY_TOOL_NAME)
+    if (!asked) return { error: TRANSCRIPT_ERROR }
+    answerResult = { type: 'tool_result', tool_use_id: asked.id, content: JSON.stringify({ answer }) }
+  }
+  const askedSoFar = prior ? clarificationsIn(prior) : 0
+  const mayAsk = askedSoFar < MAX_CLARIFICATIONS
+
   if (await featureOverBudget(VERA_CALENDAR_FEATURE, ctx.spaceId)) {
     return { error: 'Vera has done her share of calendar work for today. Try again tomorrow, or add the dates by hand.' }
   }
@@ -201,14 +352,19 @@ export async function proposeCalendarChanges(input: {
     return { error: 'Vera is catching up. Give it a minute and ask again.' }
   }
 
-  const messages: CompleteMessage[] = [
-    {
-      role: 'user',
-      content: `${contextText(ctx, input.mode)}\n\nThe request:\n${ask}\n\nWork it out, then call ${PROPOSE_TOOL_NAME}.`,
-    },
-  ]
+  // What the model sees: the fresh context and the ask as the first message, then the prior turns
+  // and the answer. What goes back to the box: the same turns with the first message holding the
+  // ask ALONE, so the context is never carried by the browser and is rebuilt on every call.
+  const opening = `${contextText(ctx, input.mode)}\n\nThe request:\n${ask}\n\nWork it out, then call ${PROPOSE_TOOL_NAME}${mayAsk ? ` (or ${CLARIFY_TOOL_NAME} if you must)` : ''}.`
+  const transcript: VeraTranscript = prior ? [{ role: 'user', content: ask }, ...prior.slice(1)] : [{ role: 'user', content: ask }]
+  if (answerResult) transcript.push({ role: 'user', content: [answerResult] })
+  const messages: CompleteMessage[] = transcript.map((m, i) => (i === 0 ? { role: 'user', content: opening } : m))
+  const tools = mayAsk ? [LUNAR_TOOL, CLARIFY_TOOL, PROPOSE_TOOL] : [LUNAR_TOOL, PROPOSE_TOOL]
+
   let usage: TokenUsage = { inputTokens: 0, outputTokens: 0 }
-  let outcome: ProposeCalendarChangesResult = { error: 'Vera could not turn that into a proposal. Try naming the dates or the Plan.' }
+  let outcome: ProposeCalendarChangesResult = mayAsk
+    ? { error: 'Vera could not turn that into a proposal. Try naming the dates or the Plan.' }
+    : { error: 'Vera could not narrow this down. Try naming the Plan or the date, and ask again.' }
 
   try {
     for (let round = 0; round < MAX_ROUNDS; round++) {
@@ -217,7 +373,7 @@ export async function proposeCalendarChanges(input: {
         maxTokens: 4000,
         system: withVoice(SYSTEM_STABLE),
         cacheSystem: true,
-        tools: [LUNAR_TOOL, PROPOSE_TOOL],
+        tools,
         toolChoice: { type: 'any' },
         messages,
       })
@@ -226,12 +382,19 @@ export async function proposeCalendarChanges(input: {
       const proposal = toolUses.find((b) => b.name === PROPOSE_TOOL_NAME)
       if (proposal) {
         const parsed = parseVeraChanges(proposal.input)
+        outcome = 'error' in parsed ? { error: parsed.error } : { kind: 'proposal', changes: parsed.changes, note: cleanNote((proposal.input as { note?: unknown }).note) }
+        break
+      }
+      const question = mayAsk ? toolUses.find((b) => b.name === CLARIFY_TOOL_NAME) : undefined
+      if (question) {
+        const parsed = parseVeraClarification(question.input)
         if ('error' in parsed) {
-          outcome = { error: parsed.error }
+          outcome = { error: `${parsed.error} Try naming the Plan or the date, and ask again.` }
         } else {
-          const raw = (proposal.input as { note?: unknown }).note
-          const note = typeof raw === 'string' ? raw.replace(/[\u2013\u2014]/g, ',').replace(/!/g, '.').replace(/\s+/g, ' ').trim().slice(0, 400) : ''
-          outcome = { proposal: { changes: parsed.changes, note } }
+          // Only the question's own block goes back: a text block or a stray lunar call beside it
+          // would be an assistant turn the answer does not address.
+          transcript.push({ role: 'assistant', content: [{ type: 'tool_use', id: question.id, name: question.name, input: question.input }] })
+          outcome = { kind: 'clarification', ...parsed.clarification, transcript }
         }
         break
       }
@@ -243,8 +406,10 @@ export async function proposeCalendarChanges(input: {
           ? { type: 'tool_result', tool_use_id: call.id, content: JSON.stringify({ phase: (call.input as { phase?: string }).phase, timeZone: ctx.timeZone, days: r.days }) }
           : { type: 'tool_result', tool_use_id: call.id, content: r.error, is_error: true }
       })
-      messages.push({ role: 'assistant', content: res.content })
-      messages.push({ role: 'user', content: results })
+      const lookupTurn: CompleteMessage = { role: 'assistant', content: lookups.map((b) => ({ type: 'tool_use' as const, id: b.id, name: b.name, input: b.input })) }
+      const resultTurn: CompleteMessage = { role: 'user', content: results }
+      messages.push(lookupTurn, resultTurn)
+      transcript.push(lookupTurn, resultTurn)
     }
   } catch {
     outcome = { error: 'Vera could not reach the model just now. Try again in a moment.' }

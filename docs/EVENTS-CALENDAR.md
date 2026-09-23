@@ -353,8 +353,13 @@ through `parseVeraChanges` and drives each change through the existing calendar 
 the caller's session, reporting one result per line. Nothing in the vocabulary publishes. "Every new
 moon" is computed, never guessed: `lib/calendar/moon.ts` (Meeus ch. 49) answers a `lunar_dates` tool the
 model must call first, in the Space's zone (`lib/ai/vera-calendar.ts`, Sonnet, at most three rounds,
-budget and rate limited under `vera-calendar`). Not in the first cut: a follow-up question from Vera,
-editing arbitrary Plan fields, undo, and reading attendance to pick dates.
+budget and rate limited under `vera-calendar`). Clarify before proposing (`PROG-CAL11` slice 1): when the
+ask is ambiguous in a way that changes the outcome (three sound baths, a timed thing with no time), the
+model calls a third tool, `ask_clarification`, and the box renders the question with its options under
+`[data-vera-clarification]`; the answer goes back with the transcript Vera returned, which lives in the
+box's state for the session only and is shape- and size-checked on the way in (`parseVeraTranscript`),
+at most two questions per ask before Vera must propose or say she could not. Not yet: editing arbitrary
+Plan fields, undo, and reading attendance to pick dates.
 
 **Production seams for the non-event targets** (`PROG-CAL8`, `PROG-CAL9`, shipped). Each target in `PLAN_TARGET_DEFS`
 (`lib/calendar/plans.ts`) declares the door "Make it a Production" opens, sending the identifier its destination

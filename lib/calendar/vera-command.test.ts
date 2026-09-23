@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   describeChange,
+  MAX_CLARIFICATION_OPTIONS,
   MAX_VERA_CHANGES,
+  MIN_CLARIFICATION_OPTIONS,
   parseVeraChanges,
+  parseVeraClarification,
   VERA_MODE_OPTIONS,
   type VeraChange,
 } from './vera-command'
@@ -77,6 +80,56 @@ describe('parseVeraChanges', () => {
   })
 })
 
+describe('parseVeraClarification', () => {
+  const two = [
+    { label: 'Sound bath, Oct 10', value: ENTRY },
+    { label: 'Sound bath, Nov 10', value: PLAN },
+  ]
+
+  it('accepts a question with two to five options and cleans the voice', () => {
+    const r = parseVeraClarification({
+      question: '  Which sound bath \u2014 the one in October or November?  ',
+      options: [{ label: ' Oct 10 \u2013 evening! ', value: ENTRY }, { label: 'Nov 10', value: PLAN }],
+      allowFreeText: true,
+    })
+    expect(r).toEqual({
+      clarification: {
+        question: 'Which sound bath, the one in October or November?',
+        options: [
+          { label: 'Oct 10, evening.', value: ENTRY },
+          { label: 'Nov 10', value: PLAN },
+        ],
+        allowFreeText: true,
+      },
+    })
+    // allowFreeText is false unless it is literally true; five options is the most.
+    expect(parseVeraClarification({ question: 'Which?', options: two, allowFreeText: 'yes' })).toMatchObject({ clarification: { allowFreeText: false } })
+    const five = Array.from({ length: MAX_CLARIFICATION_OPTIONS }, (_, i) => ({ label: `Option ${i + 1}`, value: `v${i + 1}` }))
+    expect('clarification' in parseVeraClarification({ question: 'Which?', options: five })).toBe(true)
+  })
+
+  it('rejects one option, six options, a duplicate value and a 300-character question', () => {
+    expect(parseVeraClarification({ question: 'Which?', options: [two[0]] })).toMatchObject({ error: expect.stringContaining(`fewer than ${MIN_CLARIFICATION_OPTIONS}`) })
+    const six = Array.from({ length: MAX_CLARIFICATION_OPTIONS + 1 }, (_, i) => ({ label: `Option ${i + 1}`, value: `v${i + 1}` }))
+    expect(parseVeraClarification({ question: 'Which?', options: six })).toMatchObject({ error: expect.stringContaining(`more than ${MAX_CLARIFICATION_OPTIONS}`) })
+    expect(parseVeraClarification({ question: 'Which?', options: [two[0], { label: 'Again', value: ENTRY }] })).toMatchObject({ error: expect.stringContaining('repeats') })
+    expect(parseVeraClarification({ question: 'w'.repeat(300), options: two })).toMatchObject({ error: expect.stringContaining('too long') })
+  })
+
+  it('rejects a missing question, a bare label, an over-long label or value, and a non-object', () => {
+    expect(parseVeraClarification({ question: '', options: two })).toMatchObject({ error: expect.stringContaining('no words') })
+    expect(parseVeraClarification({ options: two })).toMatchObject({ error: expect.any(String) })
+    expect(parseVeraClarification({ question: 'Which?' })).toMatchObject({ error: expect.stringContaining('no options') })
+    expect(parseVeraClarification({ question: 'Which?', options: [two[0], { label: '', value: 'x' }] })).toMatchObject({ error: expect.stringContaining('no label') })
+    expect(parseVeraClarification({ question: 'Which?', options: [two[0], { label: 'x', value: '' }] })).toMatchObject({ error: expect.stringContaining('no value') })
+    expect(parseVeraClarification({ question: 'Which?', options: [two[0], { label: 'l'.repeat(61), value: 'x' }] })).toMatchObject({ error: expect.stringContaining('too long') })
+    expect(parseVeraClarification({ question: 'Which?', options: [two[0], { label: 'x', value: 'v'.repeat(121) }] })).toMatchObject({ error: expect.stringContaining('too long') })
+    expect(parseVeraClarification({ question: 'Which?', options: [two[0], 'Nov 10'] })).toMatchObject({ error: expect.stringContaining('not an option') })
+    expect(parseVeraClarification('Which?')).toMatchObject({ error: expect.any(String) })
+    expect(parseVeraClarification(null)).toMatchObject({ error: expect.any(String) })
+  })
+})
+
 describe('describeChange', () => {
   const changes: VeraChange[] = [
     { kind: 'pencil', title: 'Sound bath', days: ['2026-01-18', '2026-02-17', '2026-03-19'], startTime: '19:00', endTime: '20:30', timeZone: 'UTC', stage: 'plan' },
@@ -104,11 +157,11 @@ describe('describeChange', () => {
     expect(lines[5]).toBe('Rename "Winter sits" to "Winter sits, 2026".')
     expect(lines[6]).toBe('Add the to-do "Book the room" to "Winter sits", due 14 days before.')
     expect(lines[7]).toBe('Add the to-do "Send thanks" to "Winter sits", due 1 day after.')
-    expect(lines[8]).toBe('Archive "Winter sits". Its pencilled dates go with it. A date that already became an event keeps the event.')
+    expect(lines[8]).toBe('Archive "Winter sits". Its penciled dates go with it. A date that already became an event keeps the event.')
   })
 
   it('falls back to a plain noun when an id is not in the context', () => {
-    expect(describeChange({ kind: 'archive', planId: ENTRY }, ctx)).toBe('Archive that Plan. Its pencilled dates go with it. A date that already became an event keeps the event.')
+    expect(describeChange({ kind: 'archive', planId: ENTRY }, ctx)).toBe('Archive that Plan. Its penciled dates go with it. A date that already became an event keeps the event.')
     expect(describeChange({ kind: 'move', entryId: PLAN, toDay: '2026-03-19' }, ctx)).toContain('Move that date')
   })
 
