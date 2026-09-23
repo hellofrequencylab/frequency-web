@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act } from 'react'
+import { act, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { CalendarWorkflowView, CANCEL_PLAN_CONFIRM } from './calendar-workflow-view'
 import { workflowBoard } from '@/lib/calendar/workflow-board'
@@ -154,5 +154,37 @@ describe('CalendarWorkflowView', () => {
     await act(async () => { changeSelect(container!.querySelector('select') as HTMLSelectElement, 'production') })
     expect(confirm).not.toHaveBeenCalled()
     expect(transitionPlanStage).toHaveBeenCalledWith('lab', 'plan-1', 'production')
+  })
+
+  it('puts focus back on the card it just moved, never the body (LIVE-469)', async () => {
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    // The real surface re-renders its columns from the same transition, so this mirrors it: the
+    // board owns the stage and the view is told about the move through onStageChanged.
+    function Board() {
+      const [stage, setStage] = useState<'plan' | 'production'>('plan')
+      return (
+        <CalendarWorkflowView
+          columns={workflowBoard([{ ...plan, stage }], [event])}
+          slug="lab"
+          canManage
+          onStageChanged={(_id, next) => setStage(next as 'plan' | 'production')}
+        />
+      )
+    }
+    act(() => root!.render(<Board />))
+    const select = container!.querySelector<HTMLSelectElement>('[data-workflow-card="plan-1"] select')!
+    select.focus()
+    await act(async () => {
+      select.value = 'production'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    // The card is a different <li> and a different <select> by now; the focus that started the
+    // move must land on the card again, not on <body>.
+    expect(document.activeElement).not.toBe(document.body)
+    expect(container!.contains(document.activeElement)).toBe(true)
   })
 })

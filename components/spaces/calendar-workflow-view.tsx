@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -32,12 +32,30 @@ export function CalendarWorkflowView({
   // moved, with nothing on the moving card to say so. The Plan being moved is the one that waits.
   const [pendingPlanId, setPendingPlanId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+  // FOCUS FOLLOWS THE CARD (LIVE-469). A stage change re-renders the card under another column (a
+  // new <li>, a new <select>), or removes it when the stage is Cancelled, and the select that was
+  // focused is gone with it. The Plan id waits here; once the transition has settled and the
+  // columns have re-rendered, focus lands on that card's select again, or on the board when the
+  // card left it. A ref rather than state: nothing here should re-render.
+  const refocusPlanId = useRef<string | null>(null)
+  useEffect(() => {
+    const planId = refocusPlanId.current
+    // LIVE-467 replaced the one board-wide `pending` flag with a per-card id, so the settle signal
+    // is that card no longer being the moving one.
+    if (!planId || pendingPlanId === planId) return
+    refocusPlanId.current = null
+    const root = rootRef.current
+    if (!root) return
+    const select = root.querySelector<HTMLSelectElement>(`[data-workflow-card="${planId}"] select`)
+    ;(select ?? root).focus()
+  }, [columns, pendingPlanId])
   const total = columns.reduce((count, column) => count + column.cards.length, 0)
   if (!total) {
     return <EmptyState variant="first-use" title="Nothing in Workflow yet." description="Pencil a date to create a Plan and see it move through production." />
   }
   return (
-    <div className="space-y-4" data-calendar-workflow-view>
+    <div ref={rootRef} tabIndex={-1} className="space-y-4 focus-visible:outline-none" data-calendar-workflow-view>
       <SectionHeader title="Workflow" count={total} />
       {error && <p role="alert" className="text-body-sm text-danger">{error}</p>}
       <div className="grid gap-3 md:grid-cols-3">
@@ -70,6 +88,8 @@ export function CalendarWorkflowView({
                                 return
                               }
                               setError(null)
+                              // Focus comes back to this card once the columns settle (LIVE-469).
+                              refocusPlanId.current = card.plan.id
                               setPendingPlanId(card.plan.id)
                               start(async () => {
                                 try {

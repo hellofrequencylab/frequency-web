@@ -416,10 +416,16 @@ export function CalendarWorkspace({
 
   // THE PANEL SET. In the console the wrapper is the scroll container (x clipped for the slide, y its
   // own, overscroll contained) and the grid fills whatever height the row has.
+  //
+  // ONLY THE SHOWING PANEL HAS A HEIGHT (LIVE-469). The four sit in one flex row, and a row is as
+  // tall as its tallest child, so a long List index once left Calendar, Guest and Workflow scrolling
+  // into blank space beneath them. `items-start` stops the row stretching the others to match, and
+  // an inert panel is `h-0 overflow-hidden` so it adds no height at all. In the console the showing
+  // panel stretches itself instead (`self-stretch`), which is what lets the grid fill the row.
   const panels = (
     <div className={cn('overflow-hidden', consoleOpen && 'h-full overflow-x-hidden overflow-y-auto overscroll-contain')}>
       <div
-        className={cn('flex transition-transform duration-300 ease-out motion-reduce:transition-none', consoleOpen && 'min-h-full')}
+        className={cn('flex items-start transition-transform duration-300 ease-out motion-reduce:transition-none', consoleOpen && 'min-h-full')}
         style={{ transform: `translateX(-${index * 100}%)` }}
       >
         {CALENDAR_ADMIN_VIEWS.map((panel) => {
@@ -427,7 +433,7 @@ export function CalendarWorkspace({
           return (
             <section
               key={panel}
-              className="w-full shrink-0"
+              className={cn('w-full shrink-0', active ? consoleOpen && 'self-stretch' : 'h-0 overflow-hidden')}
               aria-hidden={!active}
               {...(!active ? { inert: true } : {})}
               data-calendar-panel={panel}

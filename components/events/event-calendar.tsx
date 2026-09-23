@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import Link from 'next/link'
 import {
   ChevronLeft,
@@ -36,15 +36,20 @@ export type { CalendarEvent } from '@/lib/calendar/item'
 
 // The month-grid calendar (Events EC2, upgraded by ADR-1385). Renders a Space's (or the platform's)
 // calendar items on a month grid or a list. Every mount gets the same navigation:
-//   · arrows, a Today button that appears once you leave the current month, and a month-and-year
-//     jump behind the month title
+//   · arrows, a Today button that stays put (disabled while the current month is showing, so a
+//     keyboard user never loses the control under their focus), and a month-and-year jump behind
+//     the month title
 //   · PageUp / PageDown for a month, Shift for a year, anywhere inside the calendar
 //   · ArrowLeft / ArrowRight step a month when the calendar itself is focused
 //   · Escape closes the month-and-year jump
 //   · a sideways trackpad swipe or a touch swipe (and, where the mount opts in, the vertical wheel)
 //     through components/events/use-month-gestures.ts
+// FOCUS NEVER DROPS TO THE BODY (LIVE-469): Today, a month picked in the jump panel and Escape on
+// that panel all land focus on the month title button, the one control that is always there and
+// that reads the month just shown.
 // A mount that passes `loadMonth` fetches each month it has not loaded yet, so browsing back or far
-// forward is never a falsely empty grid. The LIST is a list on the left and a preview of the selected
+// forward is never a falsely empty grid: a fetch that fails says so above the grid, with a retry,
+// instead of quietly showing an empty month. The LIST is a list on the left and a preview of the selected
 // item on the right once the calendar itself is wide enough (a container query, because these pages
 // sit beside the rail); narrower, a row opens the same popup as the grid. Items carry a `layer`
 // (lib/calendar/registry.ts): public events, and on the staff calendar the private layers. Pure grid
@@ -162,7 +167,13 @@ export function EventCalendar({
   // Months fetched through loadMonth, keyed 'YYYY-MM'. The page's initial month is already on hand.
   const [fetched, setFetched] = useState<ReadonlyMap<string, CalendarEvent[]>>(new Map())
   const [loading, setLoading] = useState(false)
+  // The month whose fetch failed, if the shown one did. Its error line (with Try again) is the
+  // difference between "nothing this month" and "the month never arrived".
+  const [failedKey, setFailedKey] = useState<string | null>(null)
+  const [retryTick, setRetryTick] = useState(0)
   const requested = useRef(new Set<string>())
+  const monthButtonRef = useRef<HTMLButtonElement>(null)
+  const popupTitleId = useId()
   const [cacheEpoch, setCacheEpoch] = useState(refreshKey)
   if (cacheEpoch !== refreshKey) {
     // A save changed what fetched months hold: drop them (render-time state reset, no effect cascade).
@@ -202,12 +213,18 @@ export function EventCalendar({
     let live = true
     let done = false
     setLoading(true)
+    setFailedKey(null)
     loadMonth(year, month1)
       .then((items) => {
         done = true
         if (live) setFetched((cur) => new Map(cur).set(key, items))
       })
-      .catch(() => asked.delete(key))
+      .catch(() => {
+        // Forget the request so Try again (or coming back) fetches it, and say so: an empty grid
+        // that is really a failed fetch is the one thing this component promises never to show.
+        asked.delete(key)
+        if (live) setFailedKey(key)
+      })
       .finally(() => {
         if (live) setLoading(false)
       })
@@ -216,7 +233,7 @@ export function EventCalendar({
       // Left the month before it arrived: forget the request so coming back fetches it again.
       if (!done) asked.delete(key)
     }
-  }, [loadMonth, year, month1, initialYear, initialMonth1, refreshKey])
+  }, [loadMonth, year, month1, initialYear, initialMonth1, refreshKey, retryTick])
 
   const select = useCallback(
     (ev: CalendarEvent) => {
@@ -249,6 +266,7 @@ export function EventCalendar({
     if (e.key === 'Escape' && jumpOpen) {
       e.preventDefault()
       setJumpOpen(false)
+      monthButtonRef.current?.focus()
       return
     }
     if (e.key === 'PageDown' || e.key === 'PageUp') {
@@ -367,6 +385,7 @@ export function EventCalendar({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
         <div className="relative flex items-center gap-1">
           <button
+            ref={monthButtonRef}
             type="button"
             onClick={() => {
               setJumpYear(year)
@@ -379,22 +398,31 @@ export function EventCalendar({
             <span aria-live="polite">{monthLabel(year, month1)}</span>
             <ChevronDown className={cn('h-4 w-4 text-muted transition-transform', jumpOpen && 'rotate-180')} aria-hidden />
           </button>
-          {loading && <span className="text-meta text-muted">Loading</span>}
+          {/* Always mounted: a live region announces changes to what it already holds, so it has
+              to be in the tree before Loading appears in it. */}
+          <span role="status" className="text-meta text-muted">
+            {loading ? 'Loading' : null}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1">
             <IconButton label="Previous month" onClick={() => step(-1)}>
               <ChevronLeft className="h-4 w-4" aria-hidden />
             </IconButton>
-            {!onCurrentMonth && (
-              <button
-                type="button"
-                onClick={() => goTo({ year: todayYear, month1: todayMonth1 })}
-                className="rounded-control px-2.5 py-1 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-              >
-                Today
-              </button>
-            )}
+            {/* Stays mounted on the current month (disabled), so it never vanishes from under the
+                focus that just pressed it; that focus moves to the month title, which reads the
+                month it landed on. */}
+            <button
+              type="button"
+              disabled={onCurrentMonth}
+              onClick={() => {
+                goTo({ year: todayYear, month1: todayMonth1 })
+                monthButtonRef.current?.focus()
+              }}
+              className="tap-target rounded-control px-2.5 py-1 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-muted"
+            >
+              Today
+            </button>
             <IconButton label="Next month" onClick={() => step(1)}>
               <ChevronRight className="h-4 w-4" aria-hidden />
             </IconButton>
@@ -444,6 +472,8 @@ export function EventCalendar({
                   onClick={() => {
                     goTo({ year: jumpYear, month1: m1 })
                     setJumpOpen(false)
+                    // The panel unmounts with this button in it: focus goes to the month title.
+                    monthButtonRef.current?.focus()
                   }}
                   aria-current={isShown ? 'date' : undefined}
                   aria-label={`${monthLabel(jumpYear, m1)}${count ? `, ${count} on the calendar` : ''}`}
@@ -459,6 +489,24 @@ export function EventCalendar({
             })}
           </div>
         </div>
+      )}
+
+      {/* A FAILED MONTH says so. The grid below still paints, holding only what the page had on
+          hand, and this line is what keeps that from reading as an empty month. */}
+      {failedKey === shownKey && (
+        <p role="alert" data-calendar-load-error className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2 text-body-sm text-danger">
+          <span>{monthLabel(year, month1)} did not load.</span>
+          <button
+            type="button"
+            onClick={() => {
+              setFailedKey(null)
+              setRetryTick((n) => n + 1)
+            }}
+            className={buttonClasses('secondary', 'sm')}
+          >
+            Try again
+          </button>
+        </p>
       )}
 
       {showLayerToggles && (
@@ -623,21 +671,27 @@ export function EventCalendar({
                       )}
                     >
                       <div className="mb-1 flex items-center justify-between gap-1">
+                        {/* Below sm a 44px touch target plus the day pill does not fit a ~46px
+                            cell, so the per-day + steps aside: "Pencil it in" above the grid (or
+                            in the console header) is the phone's door, and the day pill keeps its
+                            right edge on its own. */}
                         {onCreateAt ? (
-                          <IconButton
-                            label={`Add a date on ${shortDateLabel(cell.date)}`}
-                            onClick={() => onCreateAt(cell.date)}
-                            className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
-                          >
-                            <Plus className="h-3.5 w-3.5" aria-hidden />
-                          </IconButton>
+                          <span className="hidden sm:contents">
+                            <IconButton
+                              label={`Add a date on ${shortDateLabel(cell.date)}`}
+                              onClick={() => onCreateAt(cell.date)}
+                              className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
+                            >
+                              <Plus className="h-3.5 w-3.5" aria-hidden />
+                            </IconButton>
+                          </span>
                         ) : (
                           <span />
                         )}
                         <span
                           aria-current={isToday ? 'date' : undefined}
                           className={cn(
-                            'inline-flex h-6 min-w-6 items-center justify-center rounded-pill px-1 text-meta font-medium',
+                            'ml-auto inline-flex h-6 min-w-6 items-center justify-center rounded-pill px-1 text-meta font-medium',
                             isToday ? 'bg-primary text-on-primary' : cell.inMonth ? 'text-text' : 'text-subtle',
                           )}
                         >
@@ -682,7 +736,11 @@ export function EventCalendar({
                                     activeSeries !== null && ev.seriesKey === activeSeries && 'ring-2 ring-inset ring-primary/50',
                                   )}
                                 >
-                                  <span className="tabular-nums">{ev.timeLabel}</span> {ev.title}
+                                  {/* Below sm a cell is about 46px wide: the time alone would fill it and truncate the title to
+                                      nothing, so the time stays for a screen reader and steps out of the visible chip
+                                      until there is room for both (LIVE-469). */}
+                                  <span className="sr-only tabular-nums sm:not-sr-only">{ev.timeLabel} </span>
+                                  {ev.title}
                                 </button>
                               ))}
                             </div>
@@ -699,7 +757,11 @@ export function EventCalendar({
                                   activeSeries !== null && ev.seriesKey === activeSeries && 'ring-2 ring-primary/50',
                                 )}
                               >
-                                <span className="tabular-nums">{ev.timeLabel}</span> {ev.title}
+                                {/* Below sm a cell is about 46px wide: the time alone would fill it and truncate the title to
+                                      nothing, so the time stays for a screen reader and steps out of the visible chip
+                                      until there is room for both (LIVE-469). */}
+                                  <span className="sr-only tabular-nums sm:not-sr-only">{ev.timeLabel} </span>
+                                  {ev.title}
                               </button>
                             ))
                           ),
@@ -773,11 +835,14 @@ export function EventCalendar({
         </>
       )}
 
-      <Dialog open={selected !== null} onClose={() => setSelected(null)} ariaLabel="Details" className="max-w-md">
+      {/* Named by the entry's own title, so a screen reader hears "New moon sit, dialog" rather
+          than one "Details" for every popup on the grid. */}
+      <Dialog open={selected !== null} onClose={() => setSelected(null)} ariaLabelledBy={popupTitleId} className="max-w-md">
         {selected && (
           <div className="overflow-hidden rounded-card border border-border bg-surface lift-3">
             <CalendarPreview
               item={selected}
+              titleId={popupTitleId}
               inViewerTz={inViewerTz}
               onToggleTz={() => setInViewerTz((v) => !v)}
               onClose={() => setSelected(null)}
@@ -853,11 +918,14 @@ function CalendarPreview({
   onOpenHost,
   onEditEntry,
   onPickDate,
+  titleId,
 }: {
   item: CalendarEvent
   inViewerTz: boolean
   onToggleTz: () => void
   onClose?: () => void
+  /** The popup's `aria-labelledby` target: the title names the dialog. Absent in the list pane. */
+  titleId?: string
   /** The host-owned popup (the Space page Events block), opened from the preview pane. */
   onOpenHost?: (ev: CalendarEvent) => void
   onEditEntry?: (item: CalendarEvent) => void
@@ -881,7 +949,7 @@ function CalendarPreview({
       )}
       <div className="p-6">
         {item.isCancelled && <p className="mb-2 text-meta font-semibold text-danger">Cancelled</p>}
-        <h3 className="text-lead font-bold leading-tight text-text">{item.title}</h3>
+        <h3 id={titleId} className="text-lead font-bold leading-tight text-text">{item.title}</h3>
         <Badges ev={item} />
         <div className="mt-3 flex items-start gap-2 text-body-sm text-muted">
           <CalendarDays className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
