@@ -44,6 +44,13 @@
 import { test, expect } from './fixtures'
 import type { Page } from '@playwright/test'
 import {
+  captureEnvironmentMismatch,
+  classifyCaptureEnvironment,
+  isCaptureRun,
+  readCaptureStamp,
+  writeCaptureStamp,
+} from './capture-env'
+import {
   ADVISORY_OPERATOR_PATHS,
   NARROW_PROJECT,
   PUBLIC_RENDER_STATES,
@@ -71,6 +78,36 @@ import {
 
 const baseURL = process.env.PW_BASE_URL
 
+/** Set once the environment gate below has agreed, per worker process. It is NOT set when the
+ *  gate throws, so every test in the run names the cause rather than only the first one. */
+let baselineEnvironmentAgreed = false
+
+/**
+ * 🔴 IS THIS FOLDER'S BASELINE VALID AGAINST THE DEPLOYMENT WE ARE POINTED AT? (LIVE-213.)
+ *
+ * The committed set carries the environment it was photographed on (test/e2e/capture-env.ts, and
+ * the reasoning is written there). Preview and production do not render the same chrome, so a
+ * capture taken on one and compared against the other is red by thousands of pixels on every
+ * page, 128 of 144 surfaces on 2026-09-08, with nothing in the failure naming the cause.
+ *
+ * This runs BEFORE the navigation, not at the shutter, so a mismatched run photographs nothing at
+ * all: on a `--update-snapshots` dispatch that is what stops half a folder being photographed on
+ * production and half on a preview, which is the shape a `capture_shell`-off recapture has.
+ */
+function assertBaselineEnvironment(): void {
+  if (baselineEnvironmentAgreed) return
+  const capturing = isCaptureRun(test.info().config.updateSnapshots)
+  const mismatch = captureEnvironmentMismatch(readCaptureStamp(), baseURL, { capturing })
+  if (mismatch) throw new Error(mismatch)
+  if (capturing) {
+    const environment = classifyCaptureEnvironment(baseURL)
+    // An unrecognised base URL leaves no stamp rather than a wrong one. A stamp that says
+    // `unknown` would read as a claim, and the only honest claim here is silence.
+    if (environment !== 'unknown') writeCaptureStamp({ environment, baseUrl: baseURL ?? '' })
+  }
+  baselineEnvironmentAgreed = true
+}
+
 /** One capture. `state.id` is in the filename so all four looks are separately reviewable:
  *  test/e2e/__screenshots__/visual.spec.ts/<slug>--<state>-<project>.png */
 async function capture(
@@ -79,6 +116,7 @@ async function capture(
   state: RenderState,
   serverErrors: ServerErrorLog,
 ): Promise<void> {
+  assertBaselineEnvironment()
   await applyRenderState(page, state)
   await page.goto(surface.path, { waitUntil: 'load' })
   await assertNotProtectionWall(page)
