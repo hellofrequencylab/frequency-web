@@ -40,6 +40,16 @@ export interface PlanInput {
   playbookId?: string | null
 }
 
+/**
+ * The columns a person edits on a Plan, as `PlanInput` names them: what the drawer's rail form
+ * writes through `saveSpacePlan` (ADR-1468, PROG-CAL2) and what Vera may set one at a time
+ * (PROG-CAL11). `playbookId` is also a written column but is not here on purpose: a Plan takes
+ * its playbook when it is started from one (`startPlanFromPlaybook`), so neither the drawer nor
+ * Vera has any business changing it. Lives beside `PlanInput` so the list and the type cannot drift
+ * apart without the test beside the drawer noticing.
+ */
+export const PLAN_WRITES = ['title', 'notes', 'stage', 'targetKind', 'links'] as const satisfies readonly (keyof PlanInput)[]
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const MAX_TITLE = 200
 const MAX_NOTES = 20_000

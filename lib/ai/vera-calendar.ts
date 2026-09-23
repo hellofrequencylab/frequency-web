@@ -16,6 +16,8 @@
 //                      the model has to propose or say it could not.
 //   propose_changes    the model MUST end with this. Its input is the change vocabulary, parsed
 //                      strictly by parseVeraChanges; anything off-shape is refused as an honest error.
+//                      Built per request (`proposeTool`), because the paths its `field` kind may
+//                      name are read from the Plan manifest (PROG-CAL11 slice 2).
 //
 // THE TRANSCRIPT IS SESSION-ONLY. It is the API messages array (the ask, then the assistant
 // tool_use turns and the user tool_result turns), held in the box's state and sent back with the
@@ -47,9 +49,11 @@ import {
   parseVeraChanges,
   parseVeraClarification,
   stageLabel,
+  veraFieldVocabulary,
   VERA_STAGES,
   type VeraChange,
   type VeraClarificationOption,
+  type VeraFieldSpec,
   type VeraMode,
 } from '@/lib/calendar/vera-command'
 
@@ -144,54 +148,82 @@ const CLARIFY_TOOL: Anthropic.Tool = {
   },
 }
 
-const PROPOSE_TOOL: Anthropic.Tool = {
-  name: PROPOSE_TOOL_NAME,
-  description:
-    'Answer with the list of proposed calendar changes. Nothing is applied by this call: a person reviews each line and accepts or discards it.',
-  input_schema: {
-    type: 'object',
-    properties: {
-      changes: {
-        type: 'array',
-        description: `The proposed changes, in the order they should be applied. At most ${MAX_VERA_CHANGES}.`,
-        items: {
-          type: 'object',
-          properties: {
-            kind: {
-              type: 'string',
-              enum: ['pencil', 'move', 'stage', 'retitle', 'todo', 'archive'],
-              description:
-                'pencil: put a titled date (or many dates of one Plan) on the calendar. move: move one existing date to another day. stage: set a Plan and its dates to a stage. retitle: rename a Plan. todo: add a to-do to a Plan. archive: put a Plan away.',
+/** One line of the tool description per settable path: what it is called, what it takes. */
+function fieldSpecLine(spec: VeraFieldSpec): string {
+  if (spec.row) return `${spec.path} (${spec.label}: one row to add, with ${spec.row.fields.map((f) => `${f.path} as ${f.kind}`).join(' and ')})`
+  const f = spec.field
+  const takes = f.options ? `one of ${f.options.map((o) => o.value).join(' | ')}` : f.kind === 'toggle' ? 'true or false' : f.kind
+  return `${spec.path} (${spec.label}: ${takes}${f.required ? ', never empty' : ''})`
+}
+
+/**
+ * The proposal tool, built when it is asked for rather than once at import, so the paths a `field`
+ * change may name are read from the manifest on every request (PROG-CAL11 slice 2): a field added
+ * to SPACE_PLAN_MANIFEST is in the schema Vera sees with no change here.
+ */
+export function proposeTool(): Anthropic.Tool {
+  const vocabulary = veraFieldVocabulary()
+  const paths = [...new Set([...vocabulary.plan, ...vocabulary.entry].map((s) => s.path))]
+  return {
+    name: PROPOSE_TOOL_NAME,
+    description:
+      'Answer with the list of proposed calendar changes. Nothing is applied by this call: a person reviews each line and accepts or discards it.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        changes: {
+          type: 'array',
+          description: `The proposed changes, in the order they should be applied. At most ${MAX_VERA_CHANGES}.`,
+          items: {
+            type: 'object',
+            properties: {
+              kind: {
+                type: 'string',
+                enum: ['pencil', 'move', 'stage', 'retitle', 'todo', 'archive', 'field'],
+                description:
+                  'pencil: put a titled date (or many dates of one Plan) on the calendar. move: move one existing date to another day. stage: set a Plan and its dates to a stage. retitle: rename a Plan. todo: add a to-do to a Plan. archive: put a Plan away. field: set ONE attribute of ONE existing Plan or date (a location, a description, notes, what a Production opens, a link to add).',
+              },
+              target: { type: 'string', enum: ['plan', 'entry'], description: 'field: whether id names a Plan or a date (entry) from the context.' },
+              id: { type: 'string', description: 'field: the Plan or date id from the context.' },
+              path: {
+                type: 'string',
+                enum: paths,
+                description: `field: the attribute to set. On a Plan: ${vocabulary.plan.map(fieldSpecLine).join('; ')}. On a date: ${vocabulary.entry.map(fieldSpecLine).join('; ')}. Use the stage kind for a stage and the move kind for a day; use retitle for a Plan title.`,
+              },
+              value: {
+                description:
+                  'field: the new value, typed to the attribute: text for text and longtext, true or false for a toggle, an option value for a select, an object for a row to add, or null to clear an optional attribute.',
+              },
+              title: { type: 'string', description: 'pencil / retitle / todo: the title. Plain, sentence case, no long dashes.' },
+              days: {
+                type: 'array',
+                items: { type: 'string' },
+                description: `pencil: every day, YYYY-MM-DD in the Space zone. One Plan holds many dates, so a repeating thing is ONE pencil change with many days (at most ${MAX_PENCIL_DAYS}).`,
+              },
+              startTime: { type: 'string', description: 'pencil: HH:MM, 24 hour, in the Space zone. Omit with endTime for all day.' },
+              endTime: { type: 'string', description: 'pencil: HH:MM, 24 hour. Omit with startTime for all day.' },
+              timeZone: { type: 'string', description: 'pencil: the Space time zone exactly as given in the context.' },
+              planId: { type: 'string', description: 'pencil: an EXISTING Plan id from the context to add the dates to; omit to start a new Plan. stage / retitle / todo / archive: the Plan id from the context.' },
+              stage: {
+                type: 'string',
+                enum: [...VERA_STAGES],
+                description: 'stage: the stage to set (pencil, plan, production, cancelled). pencil: the stage a NEW Plan starts in (pencil, plan or production); use the mode the person chose unless they said otherwise.',
+              },
+              entryId: { type: 'string', description: 'move: the id of the date to move, from the context.' },
+              toDay: { type: 'string', description: 'move: the day to move it to, YYYY-MM-DD.' },
+              dueOffsetDays: { type: 'integer', description: 'todo: days relative to the Plan date; negative means before. Omit for no due date.' },
             },
-            title: { type: 'string', description: 'pencil / retitle / todo: the title. Plain, sentence case, no long dashes.' },
-            days: {
-              type: 'array',
-              items: { type: 'string' },
-              description: `pencil: every day, YYYY-MM-DD in the Space zone. One Plan holds many dates, so a repeating thing is ONE pencil change with many days (at most ${MAX_PENCIL_DAYS}).`,
-            },
-            startTime: { type: 'string', description: 'pencil: HH:MM, 24 hour, in the Space zone. Omit with endTime for all day.' },
-            endTime: { type: 'string', description: 'pencil: HH:MM, 24 hour. Omit with startTime for all day.' },
-            timeZone: { type: 'string', description: 'pencil: the Space time zone exactly as given in the context.' },
-            planId: { type: 'string', description: 'pencil: an EXISTING Plan id from the context to add the dates to; omit to start a new Plan. stage / retitle / todo / archive: the Plan id from the context.' },
-            stage: {
-              type: 'string',
-              enum: [...VERA_STAGES],
-              description: 'stage: the stage to set (pencil, plan, production, cancelled). pencil: the stage a NEW Plan starts in (pencil, plan or production); use the mode the person chose unless they said otherwise.',
-            },
-            entryId: { type: 'string', description: 'move: the id of the date to move, from the context.' },
-            toDay: { type: 'string', description: 'move: the day to move it to, YYYY-MM-DD.' },
-            dueOffsetDays: { type: 'integer', description: 'todo: days relative to the Plan date; negative means before. Omit for no due date.' },
+            required: ['kind'],
           },
-          required: ['kind'],
+        },
+        note: {
+          type: 'string',
+          description: 'One or two plain sentences for the person: what you proposed and anything you had to assume. No long dashes, no exclamation marks.',
         },
       },
-      note: {
-        type: 'string',
-        description: 'One or two plain sentences for the person: what you proposed and anything you had to assume. No long dashes, no exclamation marks.',
-      },
+      required: ['changes', 'note'],
     },
-    required: ['changes', 'note'],
-  },
+  }
 }
 
 const SYSTEM_STABLE = `You are Vera, helping a Space team work its private calendar. The team is in the Pencil, Planning, Production lifecycle: a Pencil is a tentative private date, Planning means the date is decided and the team is putting it together, Production means it is ready to run, and Cancelled is the exit. A Plan is the working record that holds one or MANY dates.
@@ -205,7 +237,8 @@ Rules that never bend:
 - A repeating thing on one Plan is ONE pencil change with many days, not many changes.
 - Resolve relative words ("this winter", "next month", "the second Saturday") against today's date and the Space time zone given in the context, and write every day as YYYY-MM-DD.
 - Keep titles plain and in sentence case. No long dashes anywhere. No exclamation marks.
-- If the request cannot be expressed with the six kinds of change, propose what can be and say what could not in the note.
+- A field change sets ONE attribute of ONE existing Plan or date from the context, by the attribute's path and a value of its type; a Plan's stage, a date's day and a Plan's title have their own kinds and are never field changes. Setting the same attribute twice is two changes; leave the second out.
+- If the request cannot be expressed with the seven kinds of change, propose what can be and say what could not in the note.
 - When the request is ambiguous in a way that changes the outcome (several Plans or dates in the context match what was named, a timed thing has no time, a day could fall in two years), call ${CLARIFY_TOOL_NAME} INSTEAD of ${PROPOSE_TOOL_NAME}: one plain question, ${MIN_CLARIFICATION_OPTIONS} to ${MAX_CLARIFICATION_OPTIONS} options drawn from the context, with the id as the value where one exists. Never ask when a sensible default exists; take the default and say so in the note. At most ${MAX_CLARIFICATIONS} questions per request; once they are spent, propose with the best reading.
 - The answer to a question comes back as that tool's result. Continue from it; do not ask the same thing again.
 - Always answer by calling ${PROPOSE_TOOL_NAME} or ${CLARIFY_TOOL_NAME}. Do not answer in prose.`
@@ -359,7 +392,8 @@ export async function proposeCalendarChanges(input: {
   const transcript: VeraTranscript = prior ? [{ role: 'user', content: ask }, ...prior.slice(1)] : [{ role: 'user', content: ask }]
   if (answerResult) transcript.push({ role: 'user', content: [answerResult] })
   const messages: CompleteMessage[] = transcript.map((m, i) => (i === 0 ? { role: 'user', content: opening } : m))
-  const tools = mayAsk ? [LUNAR_TOOL, CLARIFY_TOOL, PROPOSE_TOOL] : [LUNAR_TOOL, PROPOSE_TOOL]
+  const propose = proposeTool()
+  const tools = mayAsk ? [LUNAR_TOOL, CLARIFY_TOOL, propose] : [LUNAR_TOOL, propose]
 
   let usage: TokenUsage = { inputTokens: 0, outputTokens: 0 }
   let outcome: ProposeCalendarChangesResult = mayAsk

@@ -19,15 +19,15 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { SPACE_PLAN_MANIFEST } from '@/lib/studio/entities/space-plan'
+import { PLAN_WRITES } from '@/lib/calendar/plans'
 import { railForm, type RailForm } from '@/lib/studio/kernel/edit-plan'
 
 /**
- * The columns `saveSpacePlan` writes, as `PlanInput` names them. `playbookId` is also a written
- * column but is not here on purpose: the drawer never edits it (a Plan takes its playbook when it is
- * started from one, `startPlanFromPlaybook`), so listing it would put a control on the rail for a
- * value the drawer has no business changing.
+ * The columns `saveSpacePlan` writes, as `PlanInput` names them. Declared beside `PlanInput` in
+ * lib/calendar/plans.ts (PROG-CAL11 moved it there so Vera's vocabulary reads the same list without
+ * a lib module importing from app/), and re-exported here because this is the drawer's plan.
  */
-export const PLAN_WRITES = ['title', 'notes', 'stage', 'targetKind', 'links'] as const
+export { PLAN_WRITES }
 
 export const PLAN_RAIL: RailForm = railForm(SPACE_PLAN_MANIFEST, PLAN_WRITES)
 

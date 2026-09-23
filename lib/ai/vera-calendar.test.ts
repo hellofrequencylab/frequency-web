@@ -62,12 +62,15 @@ import {
   parseVeraTranscript,
   PROPOSE_TOOL_NAME,
   proposeCalendarChanges,
+  proposeTool,
   runLunarTool,
   VERA_CALENDAR_FEATURE,
   type VeraCalendarContext,
   type VeraTranscript,
 } from './vera-calendar'
 import { FEATURE_DAILY_CAP_USD } from './budget'
+import { SPACE_PLAN_MANIFEST } from '@/lib/studio/entities/space-plan'
+import { veraFieldVocabulary } from '@/lib/calendar/vera-command'
 
 const PLAN = '11111111-2222-4333-8444-555555555555'
 
@@ -203,6 +206,64 @@ describe('proposeCalendarChanges', () => {
     state.replies = []
     const r = await proposeCalendarChanges({ ask: 'anything', mode: 'plan', context })
     expect(r).toMatchObject({ error: expect.stringContaining('could not reach') })
+  })
+})
+
+// EDIT ANY FIELD (PROG-CAL11 slice 2): the tool schema is built per request from the manifest.
+describe('the field kind in the tool schema', () => {
+  type Items = { properties: Record<string, { enum?: string[]; description?: string }> }
+  const items = (tool: { input_schema: unknown }): Items =>
+    ((tool.input_schema as { properties: { changes: { items: Items } } }).properties.changes.items)
+
+  it('lists every manifest path Vera may set, with the manifest label and options in the description', () => {
+    const schema = items(proposeTool())
+    expect(schema.properties.kind.enum).toContain('field')
+    const vocabulary = veraFieldVocabulary()
+    for (const spec of [...vocabulary.plan, ...vocabulary.entry]) expect(schema.properties.path.enum).toContain(spec.path)
+    // The Plan side IS the manifest: every rail-writable field but stage, and the links repeat.
+    expect(schema.properties.path.enum).toEqual(expect.arrayContaining(['title', 'targetKind', 'notes', 'links', 'location', 'description', 'allDay']))
+    expect(schema.properties.path.enum).not.toContain('stage')
+    expect(schema.properties.path.enum).not.toContain('playbookId')
+    const description = schema.properties.path.description ?? ''
+    const target = SPACE_PLAN_MANIFEST.fields.find((f) => f.path === 'targetKind')
+    expect(description).toContain(`targetKind (${target?.label}: one of ${target?.options?.map((o) => o.value).join(' | ')})`)
+    expect(description).toContain('links (Links: one row to add, with url as url and label as text)')
+    expect(description).toContain('title (Title: text, never empty)')
+    expect(schema.properties.target.enum).toEqual(['plan', 'entry'])
+  })
+
+  it('sends that schema on the request, and parses a field change the model proposes', async () => {
+    state.replies = [
+      {
+        content: [
+          toolUse(PROPOSE_TOOL_NAME, {
+            changes: [
+              { kind: 'field', target: 'plan', id: PLAN, path: 'targetKind', value: 'journey' },
+              { kind: 'field', target: 'entry', id: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee', path: 'location', value: 'The barn' },
+            ],
+            note: 'Set the target and the room.',
+          }),
+        ],
+      },
+    ]
+    const r = await proposeCalendarChanges({ ask: 'Make winter sits a journey and put the sound bath in the barn', mode: 'plan', context })
+    expect(r).toEqual({
+      kind: 'proposal',
+      changes: [
+        { kind: 'field', target: 'plan', id: PLAN, path: 'targetKind', value: 'journey' },
+        { kind: 'field', target: 'entry', id: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee', path: 'location', value: 'The barn' },
+      ],
+      note: 'Set the target and the room.',
+    })
+    const sent = (state.calls[0].tools as { name: string; input_schema: unknown }[]).find((t) => t.name === PROPOSE_TOOL_NAME)!
+    expect(items(sent).properties.path.enum).toContain('targetKind')
+    expect(JSON.stringify(state.calls[0].system)).toContain('A field change sets ONE attribute of ONE existing Plan or date')
+  })
+
+  it('refuses a field value outside the manifest options as an error the box can show', async () => {
+    state.replies = [{ content: [toolUse(PROPOSE_TOOL_NAME, { changes: [{ kind: 'field', target: 'plan', id: PLAN, path: 'targetKind', value: 'workshop' }], note: 'Done.' })] }]
+    const r = await proposeCalendarChanges({ ask: 'make it a workshop', mode: 'plan', context })
+    expect(r).toMatchObject({ error: expect.stringContaining('Production opens must be one of') })
   })
 })
 
