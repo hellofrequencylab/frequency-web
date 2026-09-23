@@ -64,16 +64,18 @@ export function Dialog({
    *    overlay was `items-end sm:items-center` — the shape at least four other hand-rolled sheets in the
    *    tree also reach for. NOTE the panel owns its own bottom safe-area padding here, because only the
    *    panel knows which of its bands is last.
-   *  - `full`: a viewport-filling takeover at EVERY width, never a card. Added for the Calendar console
-   *    (PROG-CAL12), where `sheet` was one breakpoint short: it fills the phone and then reverts to a
-   *    centred card at `sm+`, and a console that shrinks to a card on a laptop is not a console. The
-   *    overlay does not scroll (the panel's own regions do, each with its overscroll contained) and
-   *    it sits one tier LOWER (`z-[70]`) than the other aligns, so a Dialog opened from inside it (the
-   *    Plan drawer, the entry form, a shortcuts sheet) always paints on top whatever order the two
-   *    portals reached <body> in. This is the dvh takeover of lib/fullscreen.ts, not the Fullscreen
-   *    API: the owner ruled (2026-06-22) that Element.requestFullscreen is never called. The panel
-   *    supplies `h-full`. */
-  align?: 'top' | 'center' | 'sheet' | 'bottom' | 'full'
+   *  - `overlay`: a full-screen OVERLAY with a panel in it. The dimmed page stays visible as a margin
+   *    all the way around (~2.5% of the smaller viewport side at `sm+`, a hairline 8px inset below it,
+   *    both floored by the safe area), and the panel fills everything inside that margin. It replaced
+   *    the edge-to-edge takeover this align used to be: the owner asked (2026-09-22) for "a white
+   *    surround over a darkened background. The background edge should show a little." The panel is the
+   *    caller's card (surface, radius, shadow) and supplies `h-full`. The overlay itself does not
+   *    scroll (the panel's own regions do, each with its overscroll contained), so the page behind it
+   *    never moves. It sits one tier LOWER (`z-[70]`) than the other aligns, so a Dialog opened from
+   *    inside it (the Plan drawer, the entry form, a shortcuts sheet) always paints on top whatever
+   *    order the two portals reached <body> in. This is the dvh takeover of lib/fullscreen.ts, not the
+   *    Fullscreen API: the owner ruled (2026-06-22) that Element.requestFullscreen is never called. */
+  align?: 'top' | 'center' | 'sheet' | 'bottom' | 'overlay'
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
   // A stable identity for this instance, used to find it in the dialog stack (topmost check).
@@ -202,15 +204,19 @@ export function Dialog({
         // or editing a Space image from mobile looked completely dead. Lightboxes (z-[100]), drawers
         // (z-[150]/[160]) and the impersonation banner (z-[200]) still sit above it, as intended.
         'fixed inset-0 flex justify-center bg-ink/60 backdrop-blur-sm',
-        align === 'full' ? 'z-[70] overflow-hidden' : 'z-[80] overflow-y-auto',
+        align === 'overlay' ? 'z-[70] overflow-hidden' : 'z-[80] overflow-y-auto',
         // `sheet` goes edge-to-edge on mobile (panel fills the viewport), then a centered card at sm+.
         //
         // SAFE AREAS BELONG HERE, not in each caller. This primitive padded by a flat 16px (and
         // `sheet` by nothing at all), so on a notched phone a sheet's controls sat on the home
         // indicator and a centred dialog's did too -- which is why report-dialog, invite-launcher
         // and capture-launcher each re-solved it by hand and each landed somewhere different.
-        align === 'full'
-          ? 'items-stretch p-0 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]'
+        align === 'overlay'
+          ? // The margin IS the design: a phone gets a hairline 8px so the panel keeps its screen, a
+            // desk gets 2.5vmin (~2.7% of a 1080p height, ~2.5% of its width) so the dimmed page reads
+            // as a frame. Every side is a max() against its own safe-area inset, so a notch or a home
+            // indicator only ever WIDENS the frame and the panel's corners stay clear of both.
+            'items-stretch pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:pl-[max(2.5vmin,env(safe-area-inset-left))] sm:pr-[max(2.5vmin,env(safe-area-inset-right))] sm:pt-[max(2.5vmin,env(safe-area-inset-top))] sm:pb-[max(2.5vmin,env(safe-area-inset-bottom))]'
           : align === 'sheet'
           ? 'items-stretch p-0 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:items-center sm:p-8'
           : align === 'bottom'
@@ -241,7 +247,7 @@ export function Dialog({
         tabIndex={-1}
         className={cn(
           'w-full outline-none motion-safe:animate-[slideUp_0.3s_ease-out]',
-          align === 'full'
+          align === 'overlay'
             ? 'min-h-0'
             : align === 'sheet' || align === 'bottom'
             ? 'sm:my-auto'
