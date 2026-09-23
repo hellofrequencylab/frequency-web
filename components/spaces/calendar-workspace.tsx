@@ -114,6 +114,7 @@ export function CalendarWorkspace({
   adminEvents,
   dayNotes,
   plans,
+  spaceTimeZone = null,
   subscribe,
   loadGuestMonth,
 }: {
@@ -134,6 +135,10 @@ export function CalendarWorkspace({
   adminEvents: CalendarEvent[]
   dayNotes: DayNote[]
   plans: SpacePlan[]
+  /** The Space's own zone (spaces.time_zone, LIVE-471). One value, read once on the server, so the
+   *  console header, the staff drawer and Ask Vera cannot name three different zones. Null when the
+   *  Space has never said, and only then does the viewer's browser zone decide. */
+  spaceTimeZone?: string | null
   subscribe: ReactNode
   loadGuestMonth: (year: number, month1: number) => Promise<CalendarEvent[]>
 }) {
@@ -500,6 +505,7 @@ export function CalendarWorkspace({
       month1={month.month1}
       plans={currentPlans}
       events={currentAdminEvents}
+      spaceTimeZone={spaceTimeZone}
       onApplied={() => setVeraRefreshKey((k) => k + 1)}
     />
   ) : null
@@ -547,6 +553,7 @@ export function CalendarWorkspace({
                     initialYear={initialYear}
                     initialMonth1={initialMonth1}
                     canEdit={canManage}
+                    spaceTimeZone={spaceTimeZone}
                     dayNotes={dayNotes}
                     plans={currentPlans}
                     onOpenPlan={selectPlan}
@@ -611,6 +618,7 @@ export function CalendarWorkspace({
           onOpenPlan={selectPlan}
           onPencil={canManage ? pencilIn : undefined}
           resultLine={moveLine}
+          spaceTimeZone={spaceTimeZone}
           stageRef={consoleStageRef}
           veraRef={veraHost ? consoleVeraRef : undefined}
         />

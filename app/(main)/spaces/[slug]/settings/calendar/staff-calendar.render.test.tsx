@@ -363,3 +363,88 @@ describe('StaffCalendar: a date moves by dragging it', () => {
     expect(mocks.saveCalendarEntry).not.toHaveBeenCalled()
   })
 })
+
+// ── A NEW DATE IS WRITTEN IN THE SPACE'S ZONE (LIVE-471) ────────────────────────────────────────
+// The row: a travelling operator pencilled dates in their own browser zone, so Saturday saved from
+// an airport in Lisbon landed as Lisbon wall-clock in a calendar the team reads in Pacific Time.
+
+/** Pin what this jsdom "browser" says its zone is, the way the drawer reads it. */
+function pinBrowserZone(timeZone: string) {
+  const real = Intl.DateTimeFormat.prototype.resolvedOptions
+  vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockImplementation(function (
+    this: Intl.DateTimeFormat,
+  ) {
+    return { ...real.call(this), timeZone }
+  })
+}
+
+describe('StaffCalendar: a new date lands in the Space zone', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('pencils in the SPACE zone while the operator is in another one', async () => {
+    pinBrowserZone('Europe/Lisbon')
+    await mount(
+      <StaffCalendar
+        slug="lab"
+        spaceId="space-1"
+        events={[]}
+        initialYear={2026}
+        initialMonth1={9}
+        canEdit
+        plans={[]}
+        spaceTimeZone="America/Los_Angeles"
+      />,
+    )
+    await act(async () => button('Pencil it in')!.click())
+    await act(async () => setInput(document.querySelector('#entry-title') as HTMLInputElement, 'Solstice'))
+    await act(async () => {
+      document.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    const [, , , timeZone] = mocks.createPenciledPlan.mock.calls[0] as [string, string, string, string]
+    expect(timeZone).toBe('America/Los_Angeles')
+    expect(timeZone).not.toBe('Europe/Lisbon')
+  })
+
+  it('writes an Unavailable span in the Space zone too, not only a Pencil', async () => {
+    pinBrowserZone('Europe/Lisbon')
+    await mount(
+      <StaffCalendar
+        slug="lab"
+        spaceId="space-1"
+        events={[]}
+        initialYear={2026}
+        initialMonth1={9}
+        canEdit
+        plans={[]}
+        spaceTimeZone="America/New_York"
+      />,
+    )
+    await act(async () => button('Pencil it in')!.click())
+    await act(async () => changeSelect(document.querySelector('#entry-kind') as HTMLSelectElement, 'unavailable'))
+    await act(async () => {
+      document.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    const [, , input] = mocks.saveCalendarEntry.mock.calls[0] as [string, string | null, EntryInput]
+    expect(input.timeZone).toBe('America/New_York')
+  })
+
+  it('falls back to the browser zone ONLY when the Space has never said', async () => {
+    pinBrowserZone('Europe/Lisbon')
+    await mount(calendar())
+    await act(async () => button('Pencil it in')!.click())
+    await act(async () => setInput(document.querySelector('#entry-title') as HTMLInputElement, 'Solstice'))
+    await act(async () => {
+      document.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    const [, , , timeZone] = mocks.createPenciledPlan.mock.calls[0] as [string, string, string, string]
+    expect(timeZone).toBe('Europe/Lisbon')
+  })
+
+  it('tells the person which zone in plain words, not as a database key', async () => {
+    await mount(calendar([pencilItem({ entryInput: entryInput({ timeZone: 'America/Los_Angeles' }) })]))
+    await openEdit()
+    const text = document.body.textContent ?? ''
+    expect(text).toContain('Times are in Pacific Time.')
+    expect(text).not.toContain('America/Los_Angeles')
+  })
+})

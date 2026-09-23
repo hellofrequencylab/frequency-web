@@ -35,6 +35,9 @@ import type { EntityManifest, FieldOption } from '@/lib/studio/kernel/manifest'
 // so the closed sets below come from the real source of truth and cannot drift out of step with it.
 import { provisionableTypes } from '@/lib/spaces/profile-config'
 import { SPACE_THEMES } from '@/lib/theme/space-themes'
+// A third pure data module: the zone table behind "Pacific Time" (LIVE-471). It imports nothing at
+// all either, so the manifest stays safe in a client surface.
+import { ZONE_CHOICES } from '@/lib/time/zone-words'
 
 /** Render a scalar as display text. Mirrors the kernel's own reader. PURE + total. */
 function str(v: unknown): string {
@@ -181,6 +184,22 @@ export const SPACE_MANIFEST: EntityManifest = {
     // ── Contact and hours. The member's own details, so Vera never drafts them. ──
     { path: 'profileData.address', label: 'Address', kind: 'address', section: 'contact', veraDrafts: false },
     { path: 'profileData.hours', label: 'Hours', kind: 'hours', section: 'contact', veraDrafts: false },
+    // THE SPACE'S OWN TIME ZONE (LIVE-471, spaces.time_zone, migration 20270345008300). A real column
+    // on the Space, not a `profileData.*` node: it decides what a date MEANS, so it is edited beside
+    // the calendar it governs (the Time zone control on /settings/calendar) rather than on a business
+    // card. Declared here because the contract says a column an edit path persists has to be a field.
+    // Vera never drafts it: a zone is a fact about where a team works, and a guess at it writes wrong
+    // hours into real dates. Empty is legitimate (the Space has never said), so it is omitted rather
+    // than shown blank on a review board.
+    {
+      path: 'timeZone',
+      label: 'Time zone',
+      kind: 'select',
+      section: 'contact',
+      options: ZONE_CHOICES,
+      veraDrafts: false,
+      omitWhenEmpty: true,
+    },
     { path: 'profileData.phone', label: 'Phone', kind: 'phone', section: 'contact', veraDrafts: false },
     { path: 'profileData.email', label: 'Email', kind: 'email', section: 'contact', veraDrafts: false },
     { path: 'profileData.website', label: 'Website', kind: 'url', section: 'contact', veraDrafts: false },

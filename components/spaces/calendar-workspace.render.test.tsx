@@ -880,3 +880,46 @@ describe('CalendarWorkspace: the console moves a date and says what happened', (
     expect(console_.textContent).toContain('September 2026')
   })
 })
+
+// ── THE CONSOLE HEADER NAMES THE SPACE'S ZONE, IN PLAIN WORDS (LIVE-471) ────────────────────────
+// PROG-CAL12 already showed a zone beside the month. It showed the VIEWER's, as an abbreviation
+// ("PDT"), which is both the wrong zone for a travelling operator and the wrong words for anyone.
+
+describe('the console header zone (LIVE-471)', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  /** Pin what this jsdom "browser" says its zone is. */
+  function pinBrowserZone(timeZone: string) {
+    const real = Intl.DateTimeFormat.prototype.resolvedOptions
+    vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockImplementation(function (
+      this: Intl.DateTimeFormat,
+    ) {
+      return { ...real.call(this), timeZone }
+    })
+  }
+
+  it('shows the Space zone in words beside the month, not the operator zone and not an abbreviation', () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    pinBrowserZone('Europe/Lisbon')
+    const el = mount(<CalendarWorkspace {...operatorProps({ spaceTimeZone: 'America/Los_Angeles' })} />)
+    act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
+    const header = document.querySelector('[data-calendar-console] header')!
+    expect(header.textContent).toContain('September 2026')
+    expect(header.textContent).toContain('Pacific Time')
+    expect(header.textContent).not.toContain('PDT')
+    expect(header.textContent).not.toContain('PST')
+    expect(header.textContent).not.toContain('America/Los_Angeles')
+    expect(header.textContent).not.toContain('Lisbon')
+  })
+
+  it('names the viewer zone, and says it is the viewer zone, when the Space has never said', () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    pinBrowserZone('Europe/Lisbon')
+    const el = mount(<CalendarWorkspace {...operatorProps({ spaceTimeZone: null })} />)
+    act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
+    const header = document.querySelector('[data-calendar-console] header')!
+    expect(header.textContent).toContain('Western European Time')
+    const zone = [...header.querySelectorAll('span')].find((s) => s.textContent === 'Western European Time')
+    expect(zone?.title).toContain('has not set a time zone')
+  })
+})

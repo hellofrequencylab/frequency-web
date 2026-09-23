@@ -420,4 +420,20 @@ point at, since `plan_id` already means the Journey on its children and would be
 per failure (`closeProductionSeam`, `closeJourneyProductionSeam`, `closeProgramProductionSeam`). A `plan=` the
 Space does not run is reported on the page, never dropped. Maintenance declares no door on purpose.
 
+**The Space has a time zone** (`LIVE-471`, owner ruling 2026-09-22, migration `20270345008300`). `spaces.time_zone`
+is the IANA zone a Space keeps its SCHEDULE in. It is STORED, never derived: a Space with two venues in different
+zones has no derived answer, and a co-host in another country would otherwise change the zone by existing. Before
+it existed, a new Pencil and an Ask Vera proposal both took the operator's BROWSER zone, so a date penciled from
+an airport saved that airport's wall clock into a calendar the team reads somewhere else, and the console header
+agreed with the airport. The order a new date resolves its zone in is `newDateZone()` in
+`lib/calendar/browser-zone.ts`, and there is only one: the Space's zone, then the viewer's browser zone when the
+Space has never said, then the house zone when the browser cannot say either. The migration backfilled every
+existing Space once, from the zone its own events are held in, then its owner's profile zone, then the house zone.
+Edited on `/spaces/<slug>/settings/calendar` (the Time zone field, saving through the calendar's own gated
+`setSpaceTimeZone`), declared as a field on the Space manifest, and shown beside the month in the console header.
+Every surface that names a zone at a person reads `zoneWords()` (`lib/time/zone-words.ts`): "Pacific Time", never
+`America/Los_Angeles` and never `PDT`, which would also read as two different zones across one year. A zone with
+no named words is called by its own city ("Kathmandu Time"); only a value that is not a zone at all reads
+"Local time".
+
 Voice: all calendar copy follows `docs/CONTENT-VOICE.md` (no em/en dashes) + `docs/NAMING.md`.

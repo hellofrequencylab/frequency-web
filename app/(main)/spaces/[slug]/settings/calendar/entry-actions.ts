@@ -23,6 +23,8 @@ import {
   updateCalendarEntryRow,
 } from '@/lib/calendar/entries-store'
 import { monthGridWindow, safeMonth } from '@/lib/calendar/month-window'
+import { writeSpaceTimeZone } from '@/lib/spaces/space-zone'
+import { isValidTimeZone } from '@/lib/time/zone'
 import { entryKind, entryStage } from '@/lib/calendar/registry'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import { listDueDateItems } from '@/lib/calendar/due-dates-store'
@@ -50,6 +52,26 @@ async function resolveEditor(slug: string): Promise<{ spaceId: string; profileId
 function revalidate(slug: string) {
   revalidatePath(`/spaces/${slug}/settings/calendar`)
   revalidatePath(`/spaces/${slug}/calendar`)
+}
+
+/** THE SPACE'S OWN TIME ZONE (LIVE-471). The zone every new Pencil and every Vera proposal is
+ *  written in, and the words the console header prints beside the month. An empty string CLEARS it
+ *  back to "never said", where the calendar falls back to the viewer's browser zone.
+ *
+ *  Gated exactly like every other write on this page (`resolveEditor`: the caller can edit this
+ *  Space and it has the Calendar function), and the name is validated against the runtime tz
+ *  database before it is stored, so a typo can never become the zone a team's dates are kept in. */
+export async function setSpaceTimeZone(slug: string, zone: string): Promise<ActionResult<void>> {
+  const editor = await resolveEditor(slug)
+  if (!editor) return fail('You do not have access to this calendar.')
+  const next = typeof zone === 'string' ? zone.trim() : ''
+  if (next && !isValidTimeZone(next)) {
+    return fail('That is not a time zone we know. Try a name like America/New_York.')
+  }
+  const saved = await writeSpaceTimeZone(editor.spaceId, next || null)
+  if (!saved) return fail('Could not save your time zone. Try again.')
+  revalidate(slug)
+  return ok()
 }
 
 export async function saveCalendarEntry(

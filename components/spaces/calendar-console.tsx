@@ -11,7 +11,7 @@ import { CalendarLayerChips, CalendarViewSwitch, MonthJumpPanel, countByMonthKey
 import { verticalScrollTaker } from '@/components/events/use-month-gestures'
 import { agendaForMonth, type ListIndexItem } from '@/lib/calendar/list-index'
 import { itemSelectedClass, itemTitleClass, type CalendarLayerKey } from '@/lib/calendar/registry'
-import { timezoneLabel } from '@/lib/spaces/booking-format'
+import { headerZone } from '@/lib/time/header-zone'
 import { cn } from '@/lib/utils'
 
 // THE CALENDAR CONSOLE (PROG-CAL12, owner ask 2026-09-22). The Space calendar's full-screen edit mode:
@@ -64,12 +64,14 @@ const SHORTCUTS: readonly { keys: string[]; what: string }[] = [
   { keys: ['Esc'], what: 'Put a date being moved back, then close the drawer, then the console' },
 ]
 
-function viewerZone(): { name: string; short: string } {
+/** THE VIEWER'S OWN ZONE, raw, for the header to fall back to. `browserZone()` is not used here
+ *  because it substitutes the HOUSE zone when Intl cannot say, and a header that has nothing to
+ *  report should say "Local time" rather than claim Pacific over a calendar nobody set. */
+function viewerZoneName(): string {
   try {
-    const name = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
-    return { name, short: timezoneLabel(name) }
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || ''
   } catch {
-    return { name: 'UTC', short: 'UTC' }
+    return ''
   }
 }
 
@@ -101,6 +103,7 @@ export function CalendarConsole({
   onOpenPlan,
   onPencil,
   resultLine,
+  spaceTimeZone = null,
   stageRef,
   veraRef,
 }: {
@@ -133,6 +136,9 @@ export function CalendarConsole({
    *  speaks it through its own live region, so this line is the sighted half and does not announce
    *  a second time. Empty until something happens. */
   resultLine?: string | null
+  /** The Space's own zone (spaces.time_zone, LIVE-471): what the header names beside the month, and
+   *  what a new date is written in. Null when the Space has never said. */
+  spaceTimeZone?: string | null
   /** Where the workspace parks the live panel set. See THE STAGE SLOT above. */
   stageRef: Ref<HTMLDivElement>
   /** Where the workspace parks Ask Vera: the foot of the side bar. Absent for a viewer who cannot
@@ -147,9 +153,11 @@ export function CalendarConsole({
   // `hostChrome` only because this header carries it: see HOST_DRAWN_CONTROL_MARKS.
   const [jumpOpen, setJumpOpen] = useState(false)
   const [jumpYear, setJumpYear] = useState(month.year)
-  // The console only ever renders on the client (Dialog portals there), so the browser's zone is safe
-  // to read once. It is the zone new pencils default to and the zone the today ring is drawn in.
-  const [zone] = useState(viewerZone)
+  // The Space's zone needs nothing read at all; only the fallback touches the browser, and the
+  // console only ever renders on the client (Dialog portals there), so that read is safe. Memoised
+  // on the Space's zone so a save in Space settings is reflected without closing the console, and so
+  // the header and the drawer always name the same zone a new date is written in.
+  const zone = useMemo(() => headerZone(spaceTimeZone, viewerZoneName()), [spaceTimeZone])
 
   const { year, month1 } = month
   const label = monthLabel(year, month1)
@@ -288,8 +296,15 @@ export function CalendarConsole({
                 <ChevronDown className={cn('h-4 w-4 shrink-0 text-muted transition-transform', jumpOpen && 'rotate-180')} aria-hidden />
               </button>
             </h2>
-            <span className="shrink-0 text-meta text-muted" title={`Today and new dates use ${zone.name}`}>
-              {zone.short}
+            <span
+              className="shrink-0 text-meta text-muted"
+              title={
+                zone.isSpaceZone
+                  ? `This Space keeps its calendar in ${zone.name}. Today and new dates use it.`
+                  : `This Space has not set a time zone, so today and new dates use yours${zone.name ? ` (${zone.name})` : ''}.`
+              }
+            >
+              {zone.words}
             </span>
           </div>
 
