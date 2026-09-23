@@ -619,6 +619,25 @@ visual job on every open branch. The eight `/discover` captures still run full-p
 advisory visual tier (`@advisory`, not `@shell` — `@shell` is the authed-app reporter). A
 diff there is information. Recapture when the design moved, not when a Circle listed.
 
+**LIVE-476 (2026-09-23): `/admin/qr` rides the same tier, for a cause nobody has found.**
+It blocked four consecutive pull requests that touched nothing it renders: first a full-page
+height flip (14521 ↔ 14567), settled by the first-screen-only capture in
+`VIEWPORT_ONLY_OPERATOR_PATHS`, and then, on the first screen, a small **stable** diff on
+DESKTOP only: 951 px dawn-light, 1029 px dawn-dark, identical across three attempts, mobile
+green. It is not live-tally drift: `qr_scans` has had no new row since 2026-09-18, so the four
+StatCards in the picture are frozen. The diff image has never been read. So the gate was
+downgraded, not fixed: the surface is dropped from the blocking operator loop by
+`ADVISORY_OPERATOR_PATHS` and photographed in its own `@advisory` describe, which runs every
+pull request and reports in the job summary.
+
+Two things follow, and both are easy to get wrong. **The capture still happens**, advisory is
+not skipped, and `visual-tiers.test.ts` fails in-tree if the advisory describe disappears.
+**And the coverage banner knows**: the describe carries no `@shell` tag, so
+`ADVISORY_OPERATOR_SURFACES` in `surfaces.ts` tells `shell-coverage.ts` to report the surface as
+*photographed, advisory, LIVE-476* rather than as unphotographed, and `PW_REQUIRE_OPERATOR`
+cannot go red for it. **Do not recapture this surface to clear a diff.** Read the picture and
+put what you find on LIVE-476.
+
 ## A visual failure that has nothing to do with your diff
 
 `pr-compare` judges the **merge result** against baselines taken from the **branch**. Vercel builds

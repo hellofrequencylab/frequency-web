@@ -44,6 +44,7 @@
 import { test, expect } from './fixtures'
 import type { Page } from '@playwright/test'
 import {
+  ADVISORY_OPERATOR_PATHS,
   NARROW_PROJECT,
   PUBLIC_RENDER_STATES,
   SHELL_RENDER_STATES,
@@ -315,7 +316,72 @@ test.describe('visual · operator console', { tag: ['@visual', '@shell'] }, () =
 
   for (const state of SHELL_RENDER_STATES) {
     test.describe(state.id, () => {
-      for (const surface of operatorSurfaces()) {
+      // LIVE-476: `/admin/qr` is photographed in the advisory describe below, for the reason
+      // /discover left the blocking public loop. It is dropped HERE, at the site, with the
+      // reason named, rather than removed from `operatorSurfaces()`. The roster stays whole so
+      // a11y, overflow and the coverage ledger keep seeing the surface.
+      for (const surface of operatorSurfaces().filter(
+        (s) => !ADVISORY_OPERATOR_PATHS.includes(s.path),
+      )) {
+        test(`${surface.path} matches baseline`, async ({ page, serverErrors }) => {
+          await capture(page, surface, state, serverErrors)
+        })
+      }
+    })
+  }
+})
+
+// THE ADVISORY OPERATOR SURFACES: photographed every run, and no longer voting (LIVE-476).
+//
+// `/admin/qr` blocked four consecutive pull requests, none of which touched anything this page
+// renders. The first cause was the full-page height flip; the first-screen-only capture settled
+// that, and the surface came back red anyway with a SMALL STABLE desktop diff: 951 px dawn-light,
+// 1029 px dawn-dark, identical across three attempts, mobile green throughout. That is not drift
+// and it is not a live tally: `qr_scans` has had no new row since 2026-09-18, so the four
+// StatCards in the picture are frozen. WHAT IT IS, NOBODY KNOWS: the diff image lives on an
+// artifact host this environment's egress policy blocks, so it has never been read.
+//
+// So the gate is firing on pull requests that did not cause it, and this repo already has the
+// rule for that, written above the /discover describe: A GATE THAT CANNOT FIRE TRUTHFULLY STAYS
+// ADVISORY. This is not a fix and it is not a skip. The capture still runs on every pull request
+// in `pnpm test:e2e:visual:advisory`, the diff still uploads, and e2e.yml's "Report the advisory
+// tier" step names this surface in the job summary where a reviewer already looks.
+//
+// Tagged @advisory, NOT @shell, for the reason /discover is not: @shell is what
+// shell-reporter.ts counts as the authed app, and a running advisory capture would let that
+// reporter call the operator console covered. The ledger learns about this surface a different
+// way, ADVISORY_OPERATOR_SURFACES in surfaces.ts, so the banner says "photographed in the
+// ADVISORY tier (LIVE-476)" instead of the false "unphotographed".
+//
+// SAME storage state and SAME skips as the blocking operator describe above: this is the same
+// session and the same surface, on a different step's exit code.
+//
+// AND NOTHING IS RECAPTURED BY THIS MOVE, which was checked rather than assumed.
+// `snapshotPathTemplate` in playwright.config.ts is `{testDir}/__screenshots__/{testFileName}/
+// {arg}-{projectName}{ext}`, and the describe title is not in it, so the four committed
+// `admin-qr--*` PNGs are the same four files this describe compares against. A recapture here
+// would hide the very diff this row exists to explain.
+test.describe('visual · operator console · advisory', { tag: ['@visual', '@advisory'] }, () => {
+  test.use({ storageState: STORAGE_STATE })
+
+  test.skip(
+    !baseURL,
+    'PW_BASE_URL is not set. Point it at a Vercel preview or a running dev server to run the visual suite.',
+  )
+  test.skip(
+    !STORAGE_STATE,
+    'PW_STORAGE_STATE is not set (or the file is missing). The operator surfaces ride the SAME member session as the app shell — point it at a saved storage state for an account that is platform staff.',
+  )
+  test.skip(
+    () => test.info().project.name === NARROW_PROJECT,
+    'The operator console is not a narrow-phone surface; see the note above and ADR-1270.',
+  )
+
+  for (const state of SHELL_RENDER_STATES) {
+    test.describe(state.id, () => {
+      for (const surface of operatorSurfaces().filter((s) =>
+        ADVISORY_OPERATOR_PATHS.includes(s.path),
+      )) {
         test(`${surface.path} matches baseline`, async ({ page, serverErrors }) => {
           await capture(page, surface, state, serverErrors)
         })
