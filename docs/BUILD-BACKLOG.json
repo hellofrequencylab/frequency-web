@@ -14879,11 +14879,11 @@
         "file": "docs/OPEN-THREADS.md",
         "ref": "2026-09-18 survey security; A6 spatial_ref_sys is skip"
       },
-      "detail": "FILED 2026-09-19. Audit medium: prove RLS deny on money/trust/Vera. Do NOT add an \"enable RLS on spatial_ref_sys\" row — OPEN-THREADS A6 already says skip (PostGIS system table). Manual because a real deny needs a role that is not service_role against production or a local stack.",
+      "detail": "FILED 2026-09-19. Audit medium: prove RLS deny on money/trust/Vera. Do NOT add an \"enable RLS on spatial_ref_sys\" row — OPEN-THREADS A6 already says skip (PostGIS system table). Manual because a real deny needs a role that is not service_role against production or a local stack. 2026-09-23: the repeatable half shipped. The surface is enumerated and classed in scripts/rls-deny-surface.txt (47 money/trust/Vera + 15 reasoned carriers), the deny matrix is gated statically by pnpm check:rls-deny (in the ci.yml guards array, fails both ways), and the two pgTAP files that PROVE it, money_trust_vera_policy_matrix.test.sql (definition, from pg_policies) and money_trust_vera_deny.test.sql (behavioral: 16 tables seeded, an anon seat and an authenticated stranger seat refused every command, owner seats as positive controls, plus the space_vera_changes append-only arms), are in the db-tests suite so every future migration re-runs them. THE ROW STAYS OPEN because NEITHER pgTAP FILE HAS EVER BEEN EXECUTED: the agent environment has no Supabase CLI and no database, so the deny is written down and gated, not yet witnessed.",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-19: not re-run this session. Closes when a dated SQL or pgTAP read shows anon/authenticated cannot select/insert the named money, trust_scores, and Vera tables, and spatial_ref_sys is left alone.",
-        "checked": "2026-09-19"
+        "evidence": "2026-09-23: the two pgTAP files exist and are wired into db-tests; NEITHER HAS RUN. No Supabase CLI and no database in this environment, so the anon/authenticated deny is asserted and never witnessed. ONE COMMAND CLOSES THIS ROW, on a machine with Docker: `pnpm exec supabase db start && pnpm test:rls`, or read the db-tests job on the pull request that carries supabase/tests/money_trust_vera_*.sql, which boots a fresh stack, applies every migration and runs both files. Paste the tap output (85 + 5 assertions) here with its date. Until then the claim is \"written and gated\", not \"proven\". scripts/check-rls-deny.mjs runs in CI already and is a different, weaker claim: it reads SQL text. spatial_ref_sys is left alone (OPEN-THREADS A6) and the guard test asserts it stays out of the census.",
+        "checked": "2026-09-23"
       }
     },
     {

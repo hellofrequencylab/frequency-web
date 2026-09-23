@@ -30,7 +30,15 @@ forever on a status nothing will report.
 ## What's here / what to add
 
 - `rls_enabled.test.sql` — smoke test: RLS is ON for every security-critical table. ✅ seeded.
-- **Per-role policy tests** (add next): set the JWT claims for `anon` / a member / a host, then
+- `money_trust_vera_policy_matrix.test.sql` -- the DENY MATRIX for all 47 money / trust / Vera
+  tables, read out of `pg_policies` after a fresh apply: the commands listed as denied must have
+  no permissive policy, and the commands left allowed must still have one. Its rows are kept in
+  step with `scripts/rls-deny-surface.txt` by `pnpm check:rls-deny`, which parses this file.
+- `money_trust_vera_deny.test.sql` -- the behavioral half of the same claim (HYG-100): 16 of those
+  tables seeded with real rows, then an `anon` seat and an authenticated STRANGER seat made to
+  try every command, plus owner seats as positive controls. Includes the append-only proof for
+  `space_vera_changes`: even the team that wrote a Vera change-log row cannot edit or delete it.
+- **Per-role policy tests** (add more): set the JWT claims for `anon` / a member / a host, then
   assert each can or cannot `select`/`insert`/`update` a given row. Pattern:
   ```sql
   set local role authenticated;
