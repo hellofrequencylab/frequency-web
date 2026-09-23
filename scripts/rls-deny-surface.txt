@@ -1,0 +1,138 @@
+# RLS DENY SURFACE -- one verdict per money / trust / Vera table (HYG-100).
+# Enforced by `pnpm check:rls-deny` (scripts/check-rls-deny.mjs), wired into ci.yml.
+#
+#   <table>  <class>  <denied commands, comma separated, or "-" for none>
+#
+# CLASSES
+#   money    the row IS money, or points at where money lands: a settled amount, a Connect /
+#            Stripe identifier, a stored price a seller depends on, a ticket, an internal-currency
+#            ledger, or a grant that spends one.
+#   trust    standing, roles, permissions, moderation, audit. What the product believes about a
+#            person or a Space, which is the other thing nobody may quietly rewrite.
+#   vera     Vera's own memory: her config, her autonomy decisions, her dispatches, and the change
+#            log that records what she did to a calendar.
+#   carrier  matched the census heuristic but is NOT one of the three. A price on a catalogue row,
+#            a back-reference to a ticket, a support thread that matched on the word. Every
+#            carrier line carries its reason below. A carrier gets no deny matrix here; its wall
+#            is somewhere else and the comment says where.
+#
+# DENIED IS EXACT, BOTH WAYS. For a money / trust / vera line, the commands listed must be exactly
+# the commands with NO permissive policy after every migration has been replayed in order. Adding
+# a policy to a denied command fails this gate in the pull request that adds it -- that is the
+# whole point, and it is what stops `space_vera_changes` from quietly gaining the update policy
+# that would turn an append-only record into an editable one. REMOVING the last policy from an
+# allowed command fails too: a money table nobody can read any more is a feature going dark, not a
+# table going safe (check:rls's `lastPolicyDropped` arm says the same thing about a different
+# question).
+#
+# WHAT "DENIED" MEANS AT RUNTIME, since the two arms do not look alike:
+#   insert  -> SQLSTATE 42501, "new row violates row-level security policy". A raised error.
+#   update  -> zero rows. The USING clause of a command with no policy admits nothing, so the
+#   delete     statement succeeds having touched nothing. NO ERROR IS RAISED, which is exactly why
+#              this is worth a test: an app that does not check the row count cannot tell the
+#              difference between "denied" and "already done".
+#   select  -> zero rows, same reason.
+#
+# 47 classed (32 money, 11 trust, 4 vera) + 15 carrier = 62, seeded 2026-09-23 from
+# lib/database.types.ts and the migration replay. The classed count is floored in the gate.
+
+# ── money ───────────────────────────────────────────────────────────────────────────────────────
+# The pattern almost every one of these follows: a SELECT policy scoped to the person the money
+# belongs to, and NO write policy at all, because every write arrives through a Stripe webhook or
+# a server action on the service-role client. So the usual matrix is insert,update,delete.
+commerce_order_items                 money      insert,update,delete
+commerce_orders                      money      insert,update,delete
+commerce_products                    money      insert,update,delete
+commerce_variants                    money      insert,update,delete
+# RLS on, zero policies: reachable only by the service-role client (scripts/rls-deny-all.txt).
+creator_tips                         money      select,insert,update,delete
+entitlement_grants                   money      insert,update,delete
+event_ticket_types                   money      insert,update,delete
+event_tickets                        money      insert,update,delete
+financial_transactions               money      select,insert,update,delete
+founding_members                     money      select,insert,update,delete
+gem_config                           money      insert,update,delete
+gem_gifts                            money      insert,update,delete
+gem_transactions                     money      insert,update,delete
+# The one money table with member-authored writes: an offer is made and withdrawn by its author,
+# so insert and update are policied. Delete is not -- an offer is history once it exists.
+listing_offers                       money      delete
+partner_redemptions                  money      insert,update,delete
+pricing_stripe_prices                money      select,insert,update,delete
+profile_personas                     money      insert,update,delete
+# profiles and spaces are PUBLICLY READABLE rows that happen to carry the Connect account and the
+# billing customer. Their deny matrix is therefore about WRITES, and it says the thing that
+# matters: no stranger can repoint where a person's or a Space's money goes. It says NOTHING about
+# who can read stripe_account_id -- that is a COLUMN grant, ADR-964, and check:grants' blind spot
+# as much as this gate's. Do not read these two lines as "the Connect account is private".
+profiles                             money      insert,delete
+spaces                               money      insert,update,delete
+reward_grants                        money      insert,update,delete
+space_benefit_redemptions            money      select,insert,update,delete
+space_billing_agreements             money      insert,update,delete
+space_donations                      money      select,insert,update,delete
+space_memberships                    money      insert,update,delete
+space_subscription_items             money      insert,update,delete
+space_ticket_rsvps                   money      insert,update,delete
+store_redemptions                    money      insert,update,delete
+stripe_webhook_events                money      select,insert,update,delete
+supporter_contributions              money      insert,update,delete
+tips                                 money      insert,update,delete
+zap_config                           money      insert,update,delete
+zap_transactions                     money      insert,update,delete
+
+# ── trust ───────────────────────────────────────────────────────────────────────────────────────
+admin_audit_log                      trust      insert,update,delete
+area_permissions                     trust      insert,update,delete
+beta_audit_log                       trust      select,insert,update,delete
+blocked_users                        trust      insert,update,delete
+capability_permissions               trust      insert,update,delete
+# A report is filed by a member and worked by staff, so insert and update are policied. Delete
+# never is: a moderation report that can be deleted is a moderation report that can be buried.
+marketplace_reports                  trust      update,delete
+reports                              trust      delete
+space_standing                       trust      select,insert,update,delete
+team_members                         trust      select,insert,update,delete
+trust_scores                         trust      select,insert,update,delete
+trust_signals                        trust      select,insert,update,delete
+
+# ── vera ────────────────────────────────────────────────────────────────────────────────────────
+# THE APPEND-ONLY LINE. space_vera_changes (20270345008200, PROG-CAL11 slice 3) has a select
+# policy and an insert policy and deliberately no update or delete policy, so Postgres -- not the
+# code's good manners -- is what refuses to rewrite the record of what Vera did to a calendar. An
+# Undo is a NEW row pointing at the one it reversed. If this line ever needs editing, something
+# has gone wrong upstream of it.
+space_vera_changes                   vera       update,delete
+vera_autonomy_decisions              vera       select,insert,update,delete
+vera_config                          vera       select,insert,update,delete
+vera_dispatches                      vera       insert,update,delete
+
+# ── carrier -- matched the heuristic, ruled NOT money / trust / Vera ─────────────────────────────
+# comms_conversations, support_tickets, support_ticket_messages: matched on the word "ticket".
+# These are support threads. The event ticket is event_tickets.
+comms_conversations                  carrier    -
+support_tickets                      carrier    -
+support_ticket_messages              carrier    -
+# event_rsvps.from_ticket_id is a back-reference to the purchase. The money row is event_tickets.
+event_rsvps                          carrier    -
+# events.price_cents is an asking price on a gathering. It is also the ONE table here reached by
+# the dynamic `execute format(...)` policy loop in 20260711100000, which a text replay cannot see
+# -- so a deny matrix asserted from this repo would be wrong about it by construction.
+events                               carrier    -
+# Asking prices and budgets on listings, not money that moved.
+housing_listings                     carrier    -
+housing_seeker_profiles              carrier    -
+# Operator-authored catalogues with full CRUD for the team that owns the Space. Their wall is
+# TENANCY (one Space cannot reach another's), which is proven seat by seat in
+# supabase/tests/space_tenancy_walls.test.sql rather than restated as a deny matrix here.
+space_donation_asks                  carrier    -
+space_membership_tiers               carrier    -
+space_service_types                  carrier    -
+space_ticket_tiers                   carrier    -
+store_items                          carrier    -
+# recordings and recording_attachments carry a `price` on a media catalogue row. Both are already
+# service-role-only (scripts/rls-deny-all.txt); neither is a record of a payment.
+recordings                           carrier    -
+recording_attachments                carrier    -
+# push_subscriptions matched on the word "subscription". It holds a Web Push endpoint.
+push_subscriptions                   carrier    -

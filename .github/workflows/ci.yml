@@ -317,6 +317,15 @@ jobs:
           # for those rows were string greps over the .sql file, which a migration no database can
           # execute passes perfectly. The new guard builds the policy reference graph and looks
           # for a cycle. SOURCE-only (reads supabase/migrations), so this array is its home.
+          # 2026-09-23: rls-deny joined (HYG-100). check:rls proves a table has RLS on and a policy
+          # standing; check:grants proves it carries a grant verdict. Neither says WHICH COMMANDS a
+          # non-owner is refused, which is the only question anyone asks about a ledger row, a trust
+          # score or the Vera change log. This guard replays supabase/migrations and asserts an
+          # exact deny matrix for all 47 money / trust / Vera tables against scripts/
+          # rls-deny-surface.txt, both ways: a policy ADDED to a denied command fails, and so does
+          # an allowed command losing its last policy. SOURCE-only (migrations + the generated
+          # types + the two pgTAP files it keeps in step), so this array is its home. That a deny
+          # actually DENIES is db-tests' word, not this guard's.
           # 2026-09-21: id-collisions joined (HYG-111, ADR-1509). It is the only guard here that
           # looks OUTSIDE the tree: on a pull_request run it reads every other open PR's ledger
           # and backlog through the API and fails the later-opened PR when two introduce the same
@@ -325,7 +334,7 @@ jobs:
           guards=(
             authz canon menu gate-parity workflows labels a11y-names help tokens phantom bridge contrast
             headers seo rls grants admin-client client-boundary migrations adr docs-links templates
-            backlog one-list schema-contract rls-recursion id-collisions
+            backlog one-list schema-contract rls-recursion id-collisions rls-deny
           )
           # RUN IN PARALLEL, REPORT IN ORDER. The guards are independent node processes that only
           # read the tree, so nothing about them needed to be sequential — it just was. Run wall
