@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { CalendarWorkspace } from './calendar-workspace'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import type { SpacePlan } from '@/lib/calendar/plans'
+import { calendarViewBlurb } from '@/lib/calendar/admin-views'
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: () => {}, push: () => {} }),
@@ -45,11 +46,6 @@ afterEach(() => {
   if (container) container.remove()
   root = null
   container = null
-  try {
-    window.localStorage.removeItem('freq-cal-console-hint')
-  } catch {
-    // no store in this environment
-  }
 })
 
 function keydown(key: string, target: EventTarget = document.body) {
@@ -201,9 +197,8 @@ describe('CalendarWorkspace', () => {
     expect(el.querySelector('[data-calendar-view="guest"]')).not.toBeNull()
     expect(el.querySelector('[aria-label="Calendar views"]')).toBeNull()
     expect(el.querySelector('[data-vera-calendar-box]')).toBeNull()
-    // The console is edit mode: a guest never sees its door, its hint, or the F key.
+    // The console is edit mode: a guest never sees its door or the F key.
     expect(el.querySelector('[data-calendar-console-open]')).toBeNull()
-    expect(el.querySelector('[data-calendar-console-hint]')).toBeNull()
     act(() => keydown('f'))
     expect(document.querySelector('[data-calendar-console]')).toBeNull()
   })
@@ -342,11 +337,15 @@ describe('CalendarWorkspace', () => {
     const el = mount(<CalendarWorkspace {...operatorProps()} />)
     const control = el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')
     expect(control).not.toBeNull()
-    expect(control!.getAttribute('aria-label')).toBe('Open the console')
+    // OWNER RULING 2026-09-22: the control reads Fullscreen, so that word IS its accessible name.
+    // No aria-label overrides it, which keeps the visible label and the name the same string and
+    // clears the WCAG 2.5.3 mismatch a separate name would have left.
+    expect(control!.getAttribute('aria-label')).toBeNull()
+    expect(control!.textContent).toContain('Fullscreen')
     expect(control!.title).toContain('F')
-    expect(el.querySelector('[data-calendar-console-hint]')?.textContent).toContain('Press F')
+    expect(control!.textContent).toContain('Fullscreen')
     expect(document.querySelector('[data-calendar-console]')).toBeNull()
-    // Never auto-enter: the hint is a sentence, not a door.
+    // Never auto-enter: the title is a sentence, not a door.
     expect(document.querySelectorAll('[data-calendar-panel]').length).toBe(4)
     act(() => control!.click())
     const console_ = document.querySelector('[data-calendar-console]')
@@ -440,14 +439,63 @@ describe('CalendarWorkspace', () => {
     expect(window.location.search).toContain('view=workflow')
   })
 
-  it('dismisses the first-visit hint into localStorage and never opens the console itself', () => {
+  // TWO LINES (owner ask 2026-09-22). The heading and its blurb are one line, every control is the
+  // next, and the first-visit hint row is gone: its sentence lives on the Fullscreen control's own
+  // title, which is where a person looking for the door would read it anyway.
+  it('condenses the header to two lines and carries the console hint on the control, not a row', () => {
     const el = mount(<CalendarWorkspace {...operatorProps()} />)
-    const hint = el.querySelector('[data-calendar-console-hint]')
-    expect(hint).not.toBeNull()
-    act(() => hint!.querySelector<HTMLButtonElement>('[aria-label="Dismiss the hint"]')!.click())
     expect(el.querySelector('[data-calendar-console-hint]')).toBeNull()
-    expect(window.localStorage.getItem('freq-cal-console-hint')).toBe('1')
+    const control = el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!
+    expect(control.textContent).toContain('Fullscreen')
+    expect(control.title).toBe('Open the console (F)')
+    // OWNER RULING 2026-09-22: the visible word Fullscreen is the control's accessible name, so no
+    // aria-label overrides it. The title still carries the shortcut and what the control opens.
+    expect(control.getAttribute('aria-label')).toBeNull()
+    // Line one: the heading and the blurb share one row. Line two: every control shares the next.
+    const head = el.querySelector('[data-calendar-workspace]')!.firstElementChild!
+    const [line1, line2] = [head.children[0]!, head.children[1]!]
+    expect(line1.querySelector('h2')?.textContent).toBe('Calendar')
+    // The blurb is the registry's, not a string copied here: LIVE-468 rewrote this wording and a
+    // pinned copy would have gone stale the moment it landed. What line one owes is the blurb for
+    // the showing view, beside the heading.
+    expect(line1.querySelector('p')?.textContent).toBe(calendarViewBlurb('admin', 'Frequency Lab'))
+    expect(line2.contains(control)).toBe(true)
+    expect(line2.querySelector('[aria-label="Calendar views"]')).not.toBeNull()
+    expect(head.children.length).toBe(2)
+    // Never auto-enter, and nothing about the header opens it.
     expect(document.querySelector('[data-calendar-console]')).toBeNull()
+  })
+
+  // 🔴 THE BLINK (owner report 2026-09-22). Opening and closing the console used to move the panel
+  // set between two React parents, which is an unmount and a remount, not a move: both grids, the
+  // Vera box and the open entry form were destroyed and rebuilt on every toggle. The stage now
+  // lives at one position in the tree and only its DOM home moves, so the SAME nodes travel.
+  it('moves the live panel set into the console and back without remounting it (regression)', async () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    const el = mount(<CalendarWorkspace {...operatorProps()} />)
+    const grid = el.querySelector('[data-calendar-root]')
+    const vera = el.querySelector('[data-vera-calendar-box]')
+    const panels = [...el.querySelectorAll('[data-calendar-panel]')]
+    expect(grid).not.toBeNull()
+    expect(panels.length).toBe(4)
+    const control = el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!
+    act(() => control.click())
+    const console_ = document.querySelector('[data-calendar-console]')!
+    // Same nodes, new home.
+    expect(document.querySelector('[data-calendar-root]')).toBe(grid)
+    expect(document.querySelector('[data-vera-calendar-box]')).toBe(vera)
+    expect([...console_.querySelectorAll('[data-calendar-panel]')]).toEqual(panels)
+    expect(console_.contains(grid)).toBe(true)
+    expect(el.contains(grid)).toBe(false)
+    // And back again on the way out.
+    await act(async () => {
+      keydown('Escape')
+      await settleUrl(() => !window.location.search.includes('console='))
+    })
+    expect(document.querySelector('[data-calendar-console]')).toBeNull()
+    expect(el.querySelector('[data-calendar-root]')).toBe(grid)
+    expect(el.querySelector('[data-vera-calendar-box]')).toBe(vera)
+    expect([...el.querySelectorAll('[data-calendar-panel]')]).toEqual(panels)
   })
 
   it('never hands Next its own history state back, so a synced URL survives (regression, PROG-CAL12)', async () => {

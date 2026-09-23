@@ -1,11 +1,20 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
-import { Maximize2, X } from 'lucide-react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react'
+import { createPortal } from 'react-dom'
+import { Maximize2 } from 'lucide-react'
 import { EventCalendar } from '@/components/events/event-calendar'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { IconButton } from '@/components/ui/icon-button'
 import { StaffCalendar } from '@/app/(main)/spaces/[slug]/settings/calendar/staff-calendar'
 import { CalendarModeToggle } from '@/components/spaces/calendar-mode-toggle'
 import { CalendarListView } from '@/components/spaces/calendar-list-view'
@@ -32,46 +41,54 @@ import { cn } from '@/lib/utils'
 // server. Switching a view slides the already-mounted panels. The last view
 // is a cookie. Unsigned visitors never receive this shell with admin events.
 //
-// THE CONSOLE (PROG-CAL12). The same panel set, placed in one of two homes: inline on the page, or
-// inside CalendarConsole, a viewport-filling Dialog. There is ONE panel tree and ONE Plan drawer
-// either way; the workspace keeps the month, the view, the List selection and the open Plan, and
-// the panels read them wherever they sit. On the page the staff grid pages by its buttons only
-// (owner ruling); in the console the wheel and a swipe page too. `?console=1` travels with `view`,
-// `item` and `plan`, pushed as a history entry on open so the Back button is an exit.
+// THE CONSOLE (PROG-CAL12, redesigned 2026-09-22). The same panel set, shown in one of two homes:
+// inline on the page, or inside CalendarConsole, a full-screen overlay. There is ONE panel tree and
+// ONE Plan drawer either way; the workspace keeps the month, the view, the List selection and the
+// open Plan, and the panels read them wherever they sit. On the page the staff grid pages by its
+// buttons only (owner ruling); in the console the wheel and a swipe page too. `?console=1` travels
+// with `view`, `item` and `plan`, pushed as a history entry on open so the Back button is an exit.
+//
+// 🔴 THE BLINK, AND WHY THE STAGE IS A PORTAL NOW (owner report 2026-09-22: "both event edit and
+// full screen calendar console are super glitchy, blinking on and off"). The panel set used to be
+// written into the tree TWICE, once as `<CalendarConsole>{panels}</CalendarConsole>` and once as a
+// bare `<>{vera}{panels}</>`, with a ternary choosing between them. React reconciles children by
+// their POSITION under a parent, so flipping that ternary is not a move: it unmounts the whole
+// calendar and mounts a fresh one. Every open and every close destroyed both EventCalendar grids,
+// StaffCalendar, VeraCalendarBox, every month those grids had fetched, and (because the entry form
+// is a Dialog rendered by StaffCalendar) the entry being edited, then rebuilt all of it while the
+// console's own panel replayed its 0.3s slide. Proven in calendar-workspace.render.test.tsx by DOM
+// node identity: the `[data-calendar-root]` node before the toggle was not the node after it.
+//
+// The fix is to stop moving it in the React tree. The set is rendered at ONE position, into a
+// portal whose container (`makeStageHost`) is a plain div this component owns and React never
+// renders; a layout effect appends that div to the page slot or to the console's stage. The React
+// parent never changes, so nothing unmounts, and because the move happens in the layout phase of
+// the same commit the browser paints once. The host is held back until after hydration (the
+// `isClient` shape components/ui/dialog.tsx already uses) so the server still ships the calendar
+// inside its page slot and the first client render matches that HTML exactly.
 
 /** Marks the history entry the console pushed, so popstate can tell Back from any other traversal. */
 const CONSOLE_STATE = '__frequencyCalendarConsole'
 
-// FIRST-VISIT HINT. One line under the header until dismissed; the dismissal is a per-browser
-// convenience in localStorage, read through useSyncExternalStore so the server render (no hint) and
-// the client agree, and every touch of storage is wrapped: a blocked store means no hint, never a
-// throw. It only ever says the console exists; it never opens it.
-const HINT_KEY = 'freq-cal-console-hint'
-const hintListeners = new Set<() => void>()
-function readHintDismissed(): boolean {
-  try {
-    return window.localStorage.getItem(HINT_KEY) === '1'
-  } catch {
-    return true
-  }
+// True on the client, false during SSR + the first hydration pass, without a setState-in-effect.
+const emptySubscribe = () => () => {}
+const onTheClient = () => true
+const duringHydration = () => false
+
+// The layout phase on the client, a plain effect on the server, where react-dom/server warns about
+// useLayoutEffect and the move below has no DOM to make anyway. The idiom dock-bar.tsx and the
+// space-canvas editor mount already use.
+const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
+
+/** The stage's portal container: a plain div this component owns and React never renders, so moving
+ *  it between homes is a DOM move and nothing in the tree above or below it unmounts. `display:
+ *  contents` as an inline style, not a class, because no class scanner would ever see it. */
+function makeStageHost(): HTMLDivElement | null {
+  if (typeof document === 'undefined') return null
+  const el = document.createElement('div')
+  el.style.display = 'contents'
+  return el
 }
-function subscribeHint(cb: () => void): () => void {
-  hintListeners.add(cb)
-  window.addEventListener('storage', cb)
-  return () => {
-    hintListeners.delete(cb)
-    window.removeEventListener('storage', cb)
-  }
-}
-function dismissHint(): void {
-  try {
-    window.localStorage.setItem(HINT_KEY, '1')
-  } catch {
-    // a blocked store: the hint goes for this render and comes back next visit, which is fine
-  }
-  hintListeners.forEach((cb) => cb())
-}
-const hintDismissedOnServer = () => true
 
 export function CalendarWorkspace({
   slug,
@@ -137,7 +154,17 @@ export function CalendarWorkspace({
   // Set by every exit; the effect below puts focus back on the control that opened the console once
   // the console's own Dialog has finished restoring (its cleanup runs first).
   const restoreFocusRef = useRef(false)
-  const hintDismissed = useSyncExternalStore(subscribeHint, readHintDismissed, hintDismissedOnServer)
+
+  // THE STAGE HOST. See the 🔴 note at the top of this file: one panel set, one React parent, and a
+  // plain div that moves between the page slot and the console's stage.
+  const isClient = useSyncExternalStore(emptySubscribe, onTheClient, duringHydration)
+  const [stageHostEl] = useState(makeStageHost)
+  // Held back until after hydration so the server's HTML (the stage rendered straight into its page
+  // slot) is exactly what the first client render produces. Guests never get one: they have no
+  // console to move a stage into.
+  const stageHost = isClient && adminAllowed ? stageHostEl : null
+  const stageSlotRef = useRef<HTMLDivElement>(null)
+  const consoleStageRef = useRef<HTMLDivElement>(null)
 
   const items = useMemo(() => (adminAllowed ? listIndexItems(currentAdminEvents) : []), [adminAllowed, currentAdminEvents])
   const selected = useMemo(() => selectListItem(items, listKey), [items, listKey])
@@ -324,6 +351,20 @@ export function CalendarWorkspace({
     openControlRef.current?.focus()
   }, [consoleOpen])
 
+  // THE MOVE. Layout phase, so it lands before the browser paints: the console's DOM went in during
+  // the same commit's mutation phase, and its ref is attached by the time a parent's layout effect
+  // runs. One paint, no torn frame, and nothing in the panel set unmounts either way.
+  useIsoLayoutEffect(() => {
+    if (!stageHost) return
+    const home = stageSlotRef.current
+    const target = (consoleOpen ? consoleStageRef.current : home) ?? home
+    if (target && stageHost.parentNode !== target) target.appendChild(stageHost)
+    return () => {
+      // The console is going away this commit; put the stage back on the page before it does.
+      if (home && stageHost.parentNode !== home) home.appendChild(stageHost)
+    }
+  }, [consoleOpen, stageHost])
+
   const pencilIn = useCallback(() => setNewEntryRequest((n) => n + 1), [])
 
   const guestBody = (
@@ -367,25 +408,31 @@ export function CalendarWorkspace({
     </>
   )
 
+  // TWO LINES, NOT FIVE (owner ask 2026-09-22). Line one is the name of the page with the blurb
+  // beside it from `sm` up; line two is every control, in one wrapping row. The first-visit hint
+  // that used to sit on a third line is gone: it only ever said the console exists and how to reach
+  // it, which is what the Fullscreen control's own title says, so the sentence moved onto the
+  // control and the row (and its localStorage dismissal) retired.
   const heading = (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div>
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h2 className="text-lead font-bold text-text">Calendar</h2>
         <p className="text-body-sm text-muted">{calendarViewBlurb(view, brandName)}</p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {viewControls}
         {adminAllowed && (
-          <IconButton
+          <Button
             ref={openControlRef}
+            type="button"
+            size="sm"
+            variant="secondary"
             data-calendar-console-open
-            label="Open the console"
             title="Open the console (F)"
-            variant="bordered"
             onClick={openConsole}
           >
-            <Maximize2 className="h-4 w-4" aria-hidden />
-          </IconButton>
+            <Maximize2 className="h-4 w-4" aria-hidden /> Fullscreen
+          </Button>
         )}
         {subscribe}
       </div>
@@ -474,17 +521,24 @@ export function CalendarWorkspace({
     </div>
   )
 
+  // THE STAGE: Ask Vera collapsed, then the panel set. Written ONCE, at one position in the tree,
+  // whichever home it is parked in.
+  const stage = (
+    <div className={consoleOpen ? 'flex min-h-0 flex-1 flex-col gap-3' : 'space-y-4'}>
+      {vera ? <div className="shrink-0">{vera}</div> : null}
+      <div className={consoleOpen ? 'min-h-0 flex-1' : undefined}>{panels}</div>
+    </div>
+  )
+
   return (
     <div className="space-y-4" data-calendar-workspace data-calendar-view={view} data-calendar-console-open={consoleOpen || undefined}>
       {heading}
-      {!hintDismissed && (
-        <div data-calendar-console-hint className="flex items-center justify-between gap-2 rounded-control border border-border bg-surface-elevated px-3 py-1.5 text-meta text-muted">
-          <span>Press F or open the console for the full editor.</span>
-          <IconButton label="Dismiss the hint" onClick={dismissHint}>
-            <X className="h-3.5 w-3.5" aria-hidden />
-          </IconButton>
-        </div>
-      )}
+      {/* The page's home for the stage. Before hydration the stage renders straight into it; after,
+          it holds the portal host, which the layout effect above parks here or in the console. */}
+      <div ref={stageSlotRef} data-calendar-stage className={cn(consoleOpen && 'hidden')}>
+        {stageHost ? null : stage}
+      </div>
+      {stageHost ? createPortal(stage, stageHost) : null}
       {consoleOpen ? (
         <CalendarConsole
           open
@@ -498,16 +552,9 @@ export function CalendarWorkspace({
           onSelectItem={selectAgendaItem}
           onOpenPlan={selectPlan}
           onPencil={canManage ? pencilIn : undefined}
-          vera={vera}
-        >
-          {panels}
-        </CalendarConsole>
-      ) : (
-        <>
-          {vera}
-          {panels}
-        </>
-      )}
+          stageRef={consoleStageRef}
+        />
+      ) : null}
       <PlanDrawer
         slug={slug}
         plan={openPlan}
