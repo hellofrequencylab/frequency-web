@@ -47879,3 +47879,58 @@ half of O-3 in ADR-1325, O-5 and Profile O1 on the row's 2026-09-08 ruling.
 
 **Rows.** OWN-060 (closed 2026-09-22). Consequences land on PROG-E7, PROG-E10 and the profile
 hero work when each is picked up.
+
+## ADR-1525: A visual baseline carries the environment that photographed it, and the camera refuses to compare across two (LIVE-213, LIVE-487)
+
+**Status:** Accepted · 2026-09-23 · backlog `LIVE-487` (closed here), `LIVE-213` (open on its owner
+half) · beside [ADR-1277](DECISIONS.md), which measured the divergence and masked the two elements
+it could reach
+
+**Context.** Preview and production do not render the same chrome. The support-chat widget mounts
+only where `SUPPORT_CHAT=1`, which is set for the Production environment and not for Preview; the
+Vercel preview toolbar is injected into every preview response and never into a production one.
+On 2026-09-08 a production-sourced capture was compared against a preview and 128 of 144 surfaces
+went red, by about 2,500 px on every public page, with nothing in the failure naming the cause. A
+day was spent attributing it to a component that was never in the tree.
+
+ADR-1277 fixed the half a request header can reach: `playwright.config.ts` sends
+`x-vercel-skip-toolbar`, so the camera never sees the toolbar in either environment. The other half
+is not reachable from code. `supportChatFlagEnabled()` is read by three PRERENDERED server layouts,
+so on Vercel the value is evaluated at build time; making it request-scoped would force dynamic
+rendering on three public root layouts, which is the root-layout fan-out `AGENTS.md` says to fix
+rather than to add, in service of a test concern. Parity is therefore one owner value.
+
+**Decision.** The committed baseline folder carries a stamp naming the environment it was
+photographed on, and `visual.spec.ts` refuses a comparison across environments instead of printing
+one as a product regression.
+
+1. `test/e2e/__screenshots__/captured-on.json` records `{ environment, baseUrl }`. It sits INSIDE
+   the folder `e2e-manual.yml` already commits, so the capture that wrote it commits it, and no
+   second `git add` can fall out of step with the pictures.
+2. `test/e2e/capture-env.ts` classifies a base URL into `production` / `preview` / `local` /
+   `unknown` and produces the diagnosis. `unknown` never gates: a red raised on a guess is the
+   red-that-means-nothing of [ADR-970](DECISIONS.md).
+3. `capture()` asserts it BEFORE the navigation, so a mismatched run photographs nothing at all.
+   It fires in both directions: on a compare run the message says the failure is not the pull
+   request's, and on a `--update-snapshots` run it refuses to leave half a folder photographed on
+   one deployment and half on the other, which is the shape a `capture_shell`-off recapture has.
+4. Moving the whole set to another environment is a commit that DELETES the stamp. One visible
+   line in a diff, rather than an environment variable that rots.
+
+**Rejected.** Masking more chrome (a mask paints an opaque box, so it hides whatever else moves
+inside it, and it cannot answer "these are two different deployments" at all). Widening the
+tolerance (the budget is 400 px and the divergence is thousands; ADR-1258). Making
+`SUPPORT_CHAT` a request-scoped read (the fan-out above). Recapturing to make today's red go away
+(the standing rule, and the reason this file exists rather than 144 new PNGs).
+
+**Consequences.** `LIVE-213` keeps its owner half: set `SUPPORT_CHAT=1` for the Preview
+environment and the two deployments agree, at which point the stamp still records provenance but
+never has to fire. Its closing reading is unchanged and still needs two dispatches on one commit.
+The committed set is stamped `preview`, which is what it is: every capture commit whose provenance
+is recorded in this repository's history names a `*.vercel.app` URL, and `e2e.yml` points
+`pr-compare` at the pull request's preview, so the stamp and the camera agree and nothing is
+deadlocked.
+
+**Rows.** LIVE-487 (closed here). LIVE-213 stays open on `SUPPORT_CHAT` for Preview and its
+two-dispatch reading. LIVE-476 is untouched by this: its stable desktop diff is not an environment
+difference, and the measurement that shows it is recorded on the row.

@@ -791,6 +791,14 @@ jobs:
           fi
           git config user.email noreply@anthropic.com
           git config user.name Claude
+          # ⚠️ `test/e2e/__screenshots__/` CARRIES THE CAPTURE STAMP AS WELL AS THE PNGs (LIVE-213,
+          # ADR-1525). `captured-on.json` names the environment this capture photographed, the run
+          # writes it beside the pictures, and this `git add` takes it for free, which is why it
+          # lives in the folder rather than next to it. If this dispatch pointed `base_url` at an
+          # environment the committed set was NOT photographed on, the capture refused BEFORE the
+          # first navigation and there is nothing here to commit: see the message it printed. A
+          # deliberate move of the whole set to another environment is a commit that deletes the
+          # stamp, which is one visible line in a diff.
           git add test/e2e/__screenshots__/ test/e2e/template-fingerprints.json
           if git diff --cached --quiet; then
             echo "No baseline changes to commit."
