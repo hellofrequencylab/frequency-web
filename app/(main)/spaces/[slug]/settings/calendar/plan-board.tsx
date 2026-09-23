@@ -1,13 +1,11 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { PLAN_STAGES, type SpacePlan } from '@/lib/calendar/plans'
+import { PLAN_STAGES, planStageLabel, type SpacePlan } from '@/lib/calendar/plans'
 import { planTargetDef } from '@/lib/calendar/plans'
 
-const COLS = PLAN_STAGES.map((stage) => ({
-  stage,
-  label: stage === 'plan' ? 'Planning' : stage === 'pencil' ? 'Pencil' : 'Production',
-}))
+// The column heading is the stage's one word (LIVE-470); this file declares none of its own.
+const COLS = PLAN_STAGES.map((stage) => ({ stage, label: planStageLabel(stage) }))
 
 export function PlanBoard({
   spaceId,

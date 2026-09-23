@@ -9,12 +9,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { EntityManifest } from '../kernel/manifest'
-import { PLAN_STAGES, PLAN_TARGETS } from '@/lib/calendar/plans'
+import { PLAN_STAGES, PLAN_TARGETS, planStageLabel } from '@/lib/calendar/plans'
 
-const STAGE_OPTIONS = PLAN_STAGES.map((value) => ({
-  value,
-  label: value === 'plan' ? 'Planning' : value === 'pencil' ? 'Pencil' : 'Production',
-}))
+// The stage WORD is the calendar registry's, through planStageLabel: the picker in this drawer and
+// the chip on the grid are the same stage, so they are the same word (LIVE-470).
+const STAGE_OPTIONS = PLAN_STAGES.map((value) => ({ value, label: planStageLabel(value) }))
 
 const TARGET_OPTIONS = PLAN_TARGETS.map((value) => ({
   value,

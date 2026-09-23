@@ -8,6 +8,8 @@ import type { WorkflowColumn } from '@/lib/calendar/workflow-board'
 import { PLAN_STAGE_TRANSITIONS, type WorkflowStage } from '@/lib/calendar/workflow-board'
 import { transitionPlanStage } from '@/app/(main)/spaces/[slug]/settings/calendar/plan-actions'
 import { Select } from '@/components/ui/select'
+import { StatusChip } from '@/components/admin/status'
+import { planStagePresentation } from '@/lib/calendar/plans'
 
 /** What choosing Cancelled on a card does, said before it happens. The drawer's Archive confirm is
  *  the model (plan-drawer.tsx): the Plan leaves Workflow and every date on it is marked Cancelled. */
@@ -65,9 +67,18 @@ export function CalendarWorkflowView({
             <ul className="mt-3 space-y-2">
               {column.cards.map((card) => {
                 const moving = pendingPlanId === card.plan.id
+                // COLOUR PLUS THE WORD (LIVE-470). A Workflow card carried no stage styling at all,
+                // so the only thing saying where a Plan stood was the column it happened to sit in.
+                // The pill is the registry's, the same one the List and the popup show.
+                const look = planStagePresentation(card.stage)
                 return (
                   <li key={card.key}>
                     <article className="rounded-card border border-border bg-surface-elevated p-3" data-workflow-card={card.plan.id}>
+                      <span className="mb-1.5 block" data-workflow-card-stage={look.key}>
+                        <StatusChip tone={look.tone} size="sm">
+                          {look.word}
+                        </StatusChip>
+                      </span>
                       <h3 className="text-body-sm font-semibold text-text">{card.plan.title}</h3>
                       <p className="mt-1 text-meta text-muted">{card.primaryEvent?.whenLabel ?? 'No date attached'}</p>
                       <p className="mt-2 text-meta text-muted">{card.events.length} {card.events.length === 1 ? 'date' : 'dates'}</p>

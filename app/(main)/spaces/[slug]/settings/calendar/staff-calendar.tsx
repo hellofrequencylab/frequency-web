@@ -410,6 +410,7 @@ export function StaffCalendar({
         fill={fill}
         hostChrome={hostChrome}
         layers={STAFF_CALENDAR_LAYERS}
+        audience="team"
         refreshKey={refreshKey + externalRefreshKey}
         dayNotes={dayNotes}
         onPickDate={canEdit ? pick : undefined}

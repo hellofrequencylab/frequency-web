@@ -32,7 +32,7 @@ import { workflowBoard } from '@/lib/calendar/workflow-board'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import type { CalendarLayerKey } from '@/lib/calendar/registry'
 import type { DayNote } from '@/lib/calendar/day-notes'
-import type { SpacePlan } from '@/lib/calendar/plans'
+import { planStageLabel, type SpacePlan } from '@/lib/calendar/plans'
 import type { WorkflowStage } from '@/lib/calendar/workflow-board'
 import { PlanDrawer } from '@/app/(main)/spaces/[slug]/settings/calendar/plan-drawer'
 import { VeraCalendarBox } from '@/components/spaces/vera-calendar-box'
@@ -210,7 +210,9 @@ export function CalendarWorkspace({
           ...event,
           stage: stage === 'plan' ? 'planning' : stage,
           isCancelled: stage === 'cancelled',
-          sourceLabel: stage === 'plan' ? 'Planning' : stage[0].toUpperCase() + stage.slice(1),
+          // The stage's one word (LIVE-470). This line used to title-case the raw value and
+          // special-case `plan`, which is a fifth spelling of the registry's table.
+          sourceLabel: planStageLabel(stage),
         }
       : event))
   }, [])

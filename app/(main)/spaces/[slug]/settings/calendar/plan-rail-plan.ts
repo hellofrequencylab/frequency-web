@@ -35,8 +35,9 @@ export const PLAN_RAIL: RailForm = railForm(SPACE_PLAN_MANIFEST, PLAN_WRITES)
  * The word a stage VALUE is shown as, from the one place that declares it. The production summary's
  * Stage row used to spell this with its own ternary, which is how the drawer came to disagree with
  * itself (LIVE-461: "Planning" in the summary, "Plan" in the picker below it).
+ *
+ * LIVE-470 took the last step: the word no longer comes from this drawer's manifest options, it
+ * comes from lib/calendar/registry.ts, and the manifest's own options are built from the same call.
+ * Re-exported here because this is still the drawer's plan and the drawer imports it by this name.
  */
-export function planStageLabel(stage: string): string {
-  const field = SPACE_PLAN_MANIFEST.fields.find((f) => f.path === 'stage')
-  return field?.options?.find((o) => o.value === stage)?.label ?? stage
-}
+export { planStageLabel } from '@/lib/calendar/plans'

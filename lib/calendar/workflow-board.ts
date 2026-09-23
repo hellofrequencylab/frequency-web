@@ -1,5 +1,5 @@
 import type { CalendarEvent } from './item'
-import type { PlanStage, SpacePlan } from './plans'
+import { planStageLabel, type PlanStage, type SpacePlan } from './plans'
 import type { EntryStage } from './registry'
 
 export type WorkflowStage = PlanStage | 'cancelled'
@@ -12,11 +12,13 @@ export type PlanStageTransition = {
   label: string
 }
 
+// Every `label` here is planStageLabel's, which is the calendar registry's (LIVE-470). This file
+// used to spell the four words out, which made it the fourth of five places they could drift.
 export const PLAN_STAGE_TRANSITIONS: readonly PlanStageTransition[] = [
-  { stage: 'pencil', planStage: 'pencil', entryStage: 'pencil', archived: false, label: 'Pencil' },
-  { stage: 'plan', planStage: 'plan', entryStage: 'planning', archived: false, label: 'Planning' },
-  { stage: 'production', planStage: 'production', entryStage: 'production', archived: false, label: 'Production' },
-  { stage: 'cancelled', planStage: 'plan', entryStage: 'cancelled', archived: true, label: 'Cancelled' },
+  { stage: 'pencil', planStage: 'pencil', entryStage: 'pencil', archived: false, label: planStageLabel('pencil') },
+  { stage: 'plan', planStage: 'plan', entryStage: 'planning', archived: false, label: planStageLabel('plan') },
+  { stage: 'production', planStage: 'production', entryStage: 'production', archived: false, label: planStageLabel('production') },
+  { stage: 'cancelled', planStage: 'plan', entryStage: 'cancelled', archived: true, label: planStageLabel('cancelled') },
 ]
 
 export function planStageTransition(stage: string): PlanStageTransition | null {
@@ -32,9 +34,9 @@ export type WorkflowCard = {
 }
 export type WorkflowColumn = { stage: PlanStage; label: string; cards: WorkflowCard[] }
 const STAGES: readonly { stage: PlanStage; label: string }[] = [
-  { stage: 'pencil', label: 'Pencil' },
-  { stage: 'plan', label: 'Planning' },
-  { stage: 'production', label: 'Production' },
+  { stage: 'pencil', label: planStageLabel('pencil') },
+  { stage: 'plan', label: planStageLabel('plan') },
+  { stage: 'production', label: planStageLabel('production') },
 ]
 
 /** One canonical card per active Plan, with linked calendar dates attached. */
