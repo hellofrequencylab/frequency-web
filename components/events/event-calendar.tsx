@@ -105,6 +105,7 @@ export function EventCalendar({
   month,
   onMonthChange,
   fill = false,
+  hostChrome = false,
 }: {
   events: CalendarEvent[]
   initialYear: number
@@ -141,8 +142,15 @@ export function EventCalendar({
   month?: { year: number; month1: number }
   onMonthChange?: (next: { year: number; month1: number }) => void
   /** Stretch to the host's height: the week rows share whatever is left below the header, so a
-   *  full-viewport mount (the console) is a wall of days rather than a card with a gap under it. */
+   *  full-viewport mount (the console) is a wall of days rather than a card with a gap under it.
+   *  A day with more items than its share can show scrolls inside its own cell. */
   fill?: boolean
+  /** THE HOST DRAWS THE CHROME (PROG-CAL13). The month label, the paging cluster and the grid / list
+   *  switcher come off, because the host's own header already carries all three: inside the Calendar
+   *  console the page was paying for each of them twice and the month itself was cut off partway
+   *  through the fourth week. The filters, the failed-month line and every key stay. On the page,
+   *  where nothing else owns them, this is off and the grid draws its own header as it always has. */
+  hostChrome?: boolean
 }) {
   const [internalMonth, setInternalMonth] = useState({ year: initialYear, month1: initialMonth1 })
   const { year, month1 } = month ?? internalMonth
@@ -172,6 +180,7 @@ export function EventCalendar({
   const [failedKey, setFailedKey] = useState<string | null>(null)
   const [retryTick, setRetryTick] = useState(0)
   const requested = useRef(new Set<string>())
+  const rootRef = useRef<HTMLDivElement>(null)
   const monthButtonRef = useRef<HTMLButtonElement>(null)
   const popupTitleId = useId()
   const [cacheEpoch, setCacheEpoch] = useState(refreshKey)
@@ -257,6 +266,13 @@ export function EventCalendar({
   )
   const step = useCallback((delta: number) => goTo(addMonth(year, month1, delta)), [goTo, year, month1])
 
+  /** Where focus lands after Today, a month picked in the jump panel and Escape on that panel
+   *  (LIVE-469: it must never fall to the body). The month title is that anchor, and when the host
+   *  draws the title instead the calendar itself takes it: it is `tabIndex={0}` and reads "Calendar". */
+  const focusMonthAnchor = useCallback(() => {
+    ;(monthButtonRef.current ?? rootRef.current)?.focus()
+  }, [])
+
   const gridRef = useRef<HTMLDivElement>(null)
   useMonthGestures(gridRef, step, { vertical: wheelPaging, horizontal: swipePaging, remountKey: view })
 
@@ -266,7 +282,7 @@ export function EventCalendar({
     if (e.key === 'Escape' && jumpOpen) {
       e.preventDefault()
       setJumpOpen(false)
-      monthButtonRef.current?.focus()
+      focusMonthAnchor()
       return
     }
     if (e.key === 'PageDown' || e.key === 'PageUp') {
@@ -275,9 +291,15 @@ export function EventCalendar({
       step(e.shiftKey ? sign * 12 : sign)
       return
     }
-    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.target === e.currentTarget) {
+    // MONTHS RUN DOWN THE PAGE, NOT ACROSS (owner ask 2026-09-23). Down is the next month and Up is
+    // the one before, matching the vertical wheel; Left and Right keep doing exactly what they did.
+    // Only when the calendar itself holds focus, so arrowing between controls inside it is untouched.
+    if (
+      (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') &&
+      e.target === e.currentTarget
+    ) {
       e.preventDefault()
-      step(e.key === 'ArrowRight' ? 1 : -1)
+      step(e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1)
     }
   }
 
@@ -373,83 +395,95 @@ export function EventCalendar({
 
   return (
     <div
+      ref={rootRef}
       data-calendar-root
       tabIndex={0}
       aria-label="Calendar"
       className={cn(
         '@container rounded-card border border-border bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-        fill && 'flex h-full min-h-0 flex-col',
+        fill && 'flex min-h-0 flex-1 flex-col',
       )}
       onKeyDown={onKeyDown}
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
-        <div className="relative flex items-center gap-1">
-          <button
-            ref={monthButtonRef}
-            type="button"
-            onClick={() => {
-              setJumpYear(year)
-              setJumpOpen((o) => !o)
-            }}
-            aria-expanded={jumpOpen}
-            aria-haspopup="dialog"
-            className="inline-flex items-center gap-1 rounded-control px-1.5 py-1 text-body-lg font-semibold text-text transition-colors hover:bg-surface-elevated"
-          >
-            <span aria-live="polite">{monthLabel(year, month1)}</span>
-            <ChevronDown className={cn('h-4 w-4 text-muted transition-transform', jumpOpen && 'rotate-180')} aria-hidden />
-          </button>
-          {/* Always mounted: a live region announces changes to what it already holds, so it has
-              to be in the tree before Loading appears in it. */}
-          <span role="status" className="text-meta text-muted">
-            {loading ? 'Loading' : null}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
-            <IconButton label="Previous month" onClick={() => step(-1)}>
-              <ChevronLeft className="h-4 w-4" aria-hidden />
-            </IconButton>
-            {/* Stays mounted on the current month (disabled), so it never vanishes from under the
-                focus that just pressed it; that focus moves to the month title, which reads the
-                month it landed on. */}
+      {/* THE HEADER IS THE HOST'S WHEN THERE IS ONE (PROG-CAL13). Inside the Calendar console the
+          month label, the Prev / Today / Next cluster and the grid / list switcher are all drawn once
+          in the console's own header, so the grid draws none of them and the month gets the height
+          they were costing it twice over. The Loading live region is NOT chrome: a month that has not
+          arrived has to be announced wherever the grid is mounted, so it stays either way. */}
+      {hostChrome ? (
+        <span role="status" className="sr-only">
+          {loading ? 'Loading' : null}
+        </span>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <div className="relative flex items-center gap-1">
             <button
+              ref={monthButtonRef}
               type="button"
-              disabled={onCurrentMonth}
               onClick={() => {
-                goTo({ year: todayYear, month1: todayMonth1 })
-                monthButtonRef.current?.focus()
+                setJumpYear(year)
+                setJumpOpen((o) => !o)
               }}
-              className="tap-target rounded-control px-2.5 py-1 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-muted"
+              aria-expanded={jumpOpen}
+              aria-haspopup="dialog"
+              className="inline-flex items-center gap-1 rounded-control px-1.5 py-1 text-body-lg font-semibold text-text transition-colors hover:bg-surface-elevated"
             >
-              Today
+              <span aria-live="polite">{monthLabel(year, month1)}</span>
+              <ChevronDown className={cn('h-4 w-4 text-muted transition-transform', jumpOpen && 'rotate-180')} aria-hidden />
             </button>
-            <IconButton label="Next month" onClick={() => step(1)}>
-              <ChevronRight className="h-4 w-4" aria-hidden />
-            </IconButton>
+            {/* Always mounted: a live region announces changes to what it already holds, so it has
+                to be in the tree before Loading appears in it. */}
+            <span role="status" className="text-meta text-muted">
+              {loading ? 'Loading' : null}
+            </span>
           </div>
-          <div className="inline-flex items-center rounded-control border border-border p-0.5" role="group" aria-label="Calendar view">
-            <IconButton
-              label="Grid view"
-              variant={view === 'grid' ? 'filled' : 'plain'}
-              onClick={() => setView('grid')}
-              aria-pressed={view === 'grid'}
-            >
-              <LayoutGrid className="h-4 w-4" aria-hidden />
-            </IconButton>
-            <IconButton
-              label="List view"
-              variant={view === 'list' ? 'filled' : 'plain'}
-              onClick={() => setView('list')}
-              aria-pressed={view === 'list'}
-            >
-              <List className="h-4 w-4" aria-hidden />
-            </IconButton>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <IconButton label="Previous month" onClick={() => step(-1)}>
+                <ChevronLeft className="h-4 w-4" aria-hidden />
+              </IconButton>
+              {/* Stays mounted on the current month (disabled), so it never vanishes from under the
+                  focus that just pressed it; that focus moves to the month title, which reads the
+                  month it landed on. */}
+              <button
+                type="button"
+                disabled={onCurrentMonth}
+                onClick={() => {
+                  goTo({ year: todayYear, month1: todayMonth1 })
+                  focusMonthAnchor()
+                }}
+                className="tap-target rounded-control px-2.5 py-1 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-muted"
+              >
+                Today
+              </button>
+              <IconButton label="Next month" onClick={() => step(1)}>
+                <ChevronRight className="h-4 w-4" aria-hidden />
+              </IconButton>
+            </div>
+            <div className="inline-flex items-center rounded-control border border-border p-0.5" role="group" aria-label="Calendar view">
+              <IconButton
+                label="Grid view"
+                variant={view === 'grid' ? 'filled' : 'plain'}
+                onClick={() => setView('grid')}
+                aria-pressed={view === 'grid'}
+              >
+                <LayoutGrid className="h-4 w-4" aria-hidden />
+              </IconButton>
+              <IconButton
+                label="List view"
+                variant={view === 'list' ? 'filled' : 'plain'}
+                onClick={() => setView('list')}
+                aria-pressed={view === 'list'}
+              >
+                <List className="h-4 w-4" aria-hidden />
+              </IconButton>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* MONTH + YEAR JUMP: twelve months of a year, each marked when it holds anything on hand. */}
-      {jumpOpen && (
+      {jumpOpen && !hostChrome && (
         <div role="dialog" aria-label="Jump to a month" className="border-b border-border px-4 py-3">
           <div className="mb-2 flex items-center justify-between">
             <IconButton label="Previous year" onClick={() => setJumpYear((y) => y - 1)}>
@@ -473,7 +507,7 @@ export function EventCalendar({
                     goTo({ year: jumpYear, month1: m1 })
                     setJumpOpen(false)
                     // The panel unmounts with this button in it: focus goes to the month title.
-                    monthButtonRef.current?.focus()
+                    focusMonthAnchor()
                   }}
                   aria-current={isShown ? 'date' : undefined}
                   aria-label={`${monthLabel(jumpYear, m1)}${count ? `, ${count} on the calendar` : ''}`}
@@ -644,6 +678,16 @@ export function EventCalendar({
           <div ref={gridRef} className={cn('touch-pan-y overflow-hidden', fill && 'flex min-h-0 flex-1 flex-col')}>
           <div
             key={monthKey(year, month1)}
+            // 🔴 THE CLASS MUST NOT OUTLIVE THE ANIMATION (PROG-CAL13). `slide` used to be set on a
+            // month change and never cleared, so this wrapper carried its animation class forever.
+            // The console's whole point is that its panel set is MOVED between two DOM homes, and
+            // taking an element out of the document cancels its animations while putting it back
+            // starts them again from zero: every open and every close replayed the month slide under
+            // the dialog's own entrance. That is the flicker left after LIVE-472. Clearing it here
+            // means the class is present only while it is actually animating.
+            onAnimationEnd={(e) => {
+              if (e.target === e.currentTarget) setSlide(null)
+            }}
             className={cn(
               slide === 'next' && 'motion-safe:animate-[calendarSlideNext_180ms_ease-out]',
               slide === 'prev' && 'motion-safe:animate-[calendarSlidePrev_180ms_ease-out]',
@@ -657,6 +701,9 @@ export function EventCalendar({
                   const cancelled = dayEvents.filter((ev) => ev.isCancelled)
                   const liveEvents = dayEvents.filter((ev) => !ev.isCancelled)
                   const cards = liveEvents.filter((ev) => !ev.isLaterDate)
+                  // Three at most in a cell that has a floor and sends the rest to the List; every one
+                  // of them when the cell fills and scrolls its own overflow instead.
+                  const shown = fill ? cards : cards.slice(0, 3)
                   const dots = liveEvents.filter((ev) => ev.isLaterDate)
                   const pending = pendingByDay.get(cell.date) ?? []
                   const isToday = cell.date === today
@@ -666,7 +713,11 @@ export function EventCalendar({
                     <div
                       key={cell.date}
                       className={cn(
-                        'group flex min-h-20 flex-col border-r border-border p-1.5 last:border-r-0 sm:min-h-28',
+                        'group flex flex-col border-r border-border p-1.5 last:border-r-0',
+                        // A FILLING GRID HAS NO FLOOR (PROG-CAL13). Six rows share the height the host
+                        // gives them, so a cell that insisted on 20/28 units of its own is what pushed
+                        // the last week of the month off the bottom of the console.
+                        fill ? 'min-h-0' : 'min-h-20 sm:min-h-28',
                         !cell.inMonth && 'bg-surface-elevated/40',
                       )}
                     >
@@ -703,7 +754,10 @@ export function EventCalendar({
                           {labels.join(' · ')}
                         </p>
                       )}
-                      <div className="flex flex-col gap-1">
+                      {/* THE OVERFLOW LIVES IN THE CELL. Filling, the day's items scroll here rather
+                          than sending the reader to another view, and the wheel that scrolls them is
+                          the one gesture that does not page the month (use-month-gestures). */}
+                      <div className={cn('flex flex-col gap-1', fill && 'min-h-0 flex-1 overflow-y-auto overscroll-contain')}>
                         {/* A SEGMENT PER ITEM (LIVE-467). Back-to-back items stack into one block, and
                             every item in it keeps its own button, so the second gathering on a busy
                             Sunday opens from the grid like the first. Items that only share the day
@@ -715,7 +769,7 @@ export function EventCalendar({
                             [0] drew the continuing item and dropped the date's own, which is how a
                             freshly pencilled date could vanish behind a retreat that began earlier
                             (caught by test/e2e/operator-calendar.spec.ts). Flatten every group. */}
-                        {stackDay(cards.slice(0, 3)).flatMap((day) => day.runs).map((run) =>
+                        {stackDay(shown).flatMap((day) => day.runs).map((run) =>
                           run.length > 1 ? (
                             <div
                               key={`stack-${run[0].slug}-${run[0].dayKey}`}
@@ -766,7 +820,7 @@ export function EventCalendar({
                             ))
                           ),
                         )}
-                        {cards.length > 3 && (
+                        {!fill && cards.length > 3 && (
                           /* THE COUNT NAMES WHAT IT HIDES. A cell draws at most three chips, so on a busy
                              day everything past the third was reachable only by opening the List and had
                              no name at all: a sighted reader saw "+27 more" and a screen reader heard the

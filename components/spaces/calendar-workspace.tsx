@@ -66,6 +66,12 @@ import { cn } from '@/lib/utils'
 // the same commit the browser paints once. The host is held back until after hydration (the
 // `isClient` shape components/ui/dialog.tsx already uses) so the server still ships the calendar
 // inside its page slot and the first client render matches that HTML exactly.
+//
+// TWO HOSTS, NOT ONE (PROG-CAL13). Ask Vera used to ride inside the stage, which put it in a
+// full-width band above the grid in both homes. The owner asked for it at the FOOT OF THE SIDE BAR,
+// which is a different place in the console and the same place on the page, so it gets a host of its
+// own and travels the same live way: one React position, one DOM move, the same node either side.
+// Moving it by writing it into two places would be the very bug this file exists to document.
 
 /** Marks the history entry the console pushed, so popstate can tell Back from any other traversal. */
 const CONSOLE_STATE = '__frequencyCalendarConsole'
@@ -159,12 +165,16 @@ export function CalendarWorkspace({
   // plain div that moves between the page slot and the console's stage.
   const isClient = useSyncExternalStore(emptySubscribe, onTheClient, duringHydration)
   const [stageHostEl] = useState(makeStageHost)
-  // Held back until after hydration so the server's HTML (the stage rendered straight into its page
-  // slot) is exactly what the first client render produces. Guests never get one: they have no
-  // console to move a stage into.
+  const [veraHostEl] = useState(makeStageHost)
+  // Held back until after hydration so the server's HTML (the panels rendered straight into their
+  // page slot) is exactly what the first client render produces. Guests never get one: they have no
+  // console to move a stage into, and a viewer who cannot edit gets no Vera host.
   const stageHost = isClient && adminAllowed ? stageHostEl : null
+  const veraHost = isClient && adminAllowed && canManage ? veraHostEl : null
   const stageSlotRef = useRef<HTMLDivElement>(null)
+  const veraSlotRef = useRef<HTMLDivElement>(null)
   const consoleStageRef = useRef<HTMLDivElement>(null)
+  const consoleVeraRef = useRef<HTMLDivElement>(null)
 
   const items = useMemo(() => (adminAllowed ? listIndexItems(currentAdminEvents) : []), [adminAllowed, currentAdminEvents])
   const selected = useMemo(() => selectListItem(items, listKey), [items, listKey])
@@ -355,20 +365,27 @@ export function CalendarWorkspace({
   // the same commit's mutation phase, and its ref is attached by the time a parent's layout effect
   // runs. One paint, no torn frame, and nothing in the panel set unmounts either way.
   useIsoLayoutEffect(() => {
-    if (!stageHost) return
-    const home = stageSlotRef.current
-    const target = (consoleOpen ? consoleStageRef.current : home) ?? home
-    if (target && stageHost.parentNode !== target) target.appendChild(stageHost)
-    return () => {
-      // The console is going away this commit; put the stage back on the page before it does.
-      if (home && stageHost.parentNode !== home) home.appendChild(stageHost)
+    const moves: [HTMLDivElement | null, HTMLDivElement | null, HTMLDivElement | null][] = [
+      [stageHost, consoleStageRef.current, stageSlotRef.current],
+      [veraHost, consoleVeraRef.current, veraSlotRef.current],
+    ]
+    for (const [host, consoleHome, pageHome] of moves) {
+      if (!host) continue
+      const target = (consoleOpen ? consoleHome : pageHome) ?? pageHome
+      if (target && host.parentNode !== target) target.appendChild(host)
     }
-  }, [consoleOpen, stageHost])
+    return () => {
+      // The console is going away this commit; put both hosts back on the page before it does.
+      for (const [host, , pageHome] of moves) {
+        if (host && pageHome && host.parentNode !== pageHome) pageHome.appendChild(host)
+      }
+    }
+  }, [consoleOpen, stageHost, veraHost])
 
   const pencilIn = useCallback(() => setNewEntryRequest((n) => n + 1), [])
 
   const guestBody = (
-    <>
+    <div className={consoleOpen ? 'flex h-full min-h-0 flex-col gap-3' : 'space-y-4'}>
       <EventCalendar
         events={guestEvents}
         initialYear={initialYear}
@@ -376,6 +393,8 @@ export function CalendarWorkspace({
         loadMonth={loadGuestMonth}
         month={month}
         onMonthChange={setMonth}
+        fill={consoleOpen}
+        hostChrome={consoleOpen}
       />
       {guestFirstUse && (
         <EmptyState
@@ -384,7 +403,7 @@ export function CalendarWorkspace({
           description={`${brandName} has not published a gathering. Subscribe and new dates will land in your own calendar.`}
         />
       )}
-    </>
+    </div>
   )
 
   // One definition of the view controls, rendered in the page heading and again in the console header.
@@ -470,7 +489,7 @@ export function CalendarWorkspace({
   // an inert panel is `h-0 overflow-hidden` so it adds no height at all. In the console the showing
   // panel stretches itself instead (`self-stretch`), which is what lets the grid fill the row.
   const panels = (
-    <div className={cn('overflow-hidden', consoleOpen && 'h-full overflow-x-hidden overflow-y-auto overscroll-contain')}>
+    <div className={cn('overflow-hidden', consoleOpen && 'min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain')}>
       <div
         className={cn('flex items-start transition-transform duration-300 ease-out motion-reduce:transition-none', consoleOpen && 'min-h-full')}
         style={{ transform: `translateX(-${index * 100}%)` }}
@@ -505,6 +524,7 @@ export function CalendarWorkspace({
                     newEntryRequest={newEntryRequest}
                     pencilButton={!consoleOpen}
                     fill={consoleOpen}
+                    hostChrome={consoleOpen}
                   />
                 </div>
               ) : null}
@@ -521,31 +541,24 @@ export function CalendarWorkspace({
     </div>
   )
 
-  // THE STAGE: Ask Vera collapsed, then the panel set. Written ONCE, at one position in the tree,
-  // whichever home it is parked in.
-  const stage = (
-    <div className={consoleOpen ? 'flex min-h-0 flex-1 flex-col gap-3' : 'space-y-4'}>
-      {vera ? <div className="shrink-0">{vera}</div> : null}
-      <div className={consoleOpen ? 'min-h-0 flex-1' : undefined}>{panels}</div>
-    </div>
-  )
-
   return (
     <div className="space-y-4" data-calendar-workspace data-calendar-view={view} data-calendar-console-open={consoleOpen || undefined}>
       {heading}
-      {/* The page's home for the stage. Before hydration the stage renders straight into it; after,
-          it holds the portal host, which the layout effect above parks here or in the console. */}
-      <div ref={stageSlotRef} data-calendar-stage className={cn(consoleOpen && 'hidden')}>
-        {stageHost ? null : stage}
+      {/* The page's homes for the two travelling hosts, in the order the page reads: Ask Vera above
+          the panels. Before hydration each renders straight into its slot; after, each slot holds a
+          portal host, which the layout effect above parks here or in the console. */}
+      <div data-calendar-stage className={cn('space-y-4', consoleOpen && 'hidden')}>
+        {vera ? <div ref={veraSlotRef}>{veraHost ? null : vera}</div> : null}
+        <div ref={stageSlotRef}>{stageHost ? null : panels}</div>
       </div>
-      {stageHost ? createPortal(stage, stageHost) : null}
+      {veraHost ? createPortal(vera, veraHost) : null}
+      {stageHost ? createPortal(panels, stageHost) : null}
       {consoleOpen ? (
         <CalendarConsole
           open
           onClose={requestConsoleClose}
           month={month}
           onMonthChange={setMonth}
-          view={view}
           viewControls={viewControls}
           items={items}
           selectedKey={selected?.key ?? null}
@@ -553,6 +566,7 @@ export function CalendarWorkspace({
           onOpenPlan={selectPlan}
           onPencil={canManage ? pencilIn : undefined}
           stageRef={consoleStageRef}
+          veraRef={veraHost ? consoleVeraRef : undefined}
         />
       ) : null}
       <PlanDrawer

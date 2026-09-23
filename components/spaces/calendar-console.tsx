@@ -6,10 +6,10 @@ import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
 import { addMonth, monthLabel } from '@/lib/events/calendar-grid'
+import { verticalScrollTaker } from '@/components/events/use-month-gestures'
 import { agendaForMonth, type ListIndexItem } from '@/lib/calendar/list-index'
 import { itemSelectedClass, itemTitleClass } from '@/lib/calendar/registry'
 import { timezoneLabel } from '@/lib/spaces/booking-format'
-import type { CalendarAdminView } from '@/lib/calendar/admin-views'
 import { cn } from '@/lib/utils'
 
 // THE CALENDAR CONSOLE (PROG-CAL12, owner ask 2026-09-22). The Space calendar's full-screen edit mode:
@@ -27,7 +27,13 @@ import { cn } from '@/lib/utils'
 // click, resize, rotation or remembered preference. Exit is Esc (layered: the Plan drawer first when
 // it is up), the Close control, and the browser's Back button, all owned by the workspace so the URL
 // (`?console=1`) and focus restore stay in one place. The keys below live here because they are the
-// console's: Left / Right page months, T is today, N pencils a date, ? opens the shortcut sheet.
+// console's: Up / Down and Left / Right page months, T is today, N pencils a date, ? opens the
+// shortcut sheet.
+//
+// THE PANEL IS A FIXED HEIGHT AND THE MONTH FITS IN IT (PROG-CAL13). Header, side bar and stage are
+// grid tracks, the stage row is `minmax(0,1fr)`, and the grid inside sizes to the row rather than to
+// its content, so all six weeks are on screen and nothing here grows a scrollbar to reach the last
+// one. The side bar is the agenda over Ask Vera: the agenda scrolls, Vera is a footer that does not.
 //
 // THE STAGE SLOT. `stageRef` is the element the workspace parks its live panel set in. The workspace
 // keeps that set at ONE position in the React tree and moves only its DOM home, so opening and closing
@@ -43,7 +49,7 @@ export function keyTargetIsTyping(target: EventTarget | null): boolean {
 
 const SHORTCUTS: readonly { keys: string[]; what: string }[] = [
   { keys: ['F'], what: 'Open the console from the page' },
-  { keys: ['Left', 'Right'], what: 'Previous or next month' },
+  { keys: ['Up', 'Down', 'Left', 'Right'], what: 'Previous or next month' },
   { keys: ['T'], what: 'Back to today' },
   { keys: ['N'], what: 'Pencil it in' },
   { keys: ['?'], what: 'These shortcuts' },
@@ -72,7 +78,6 @@ export function CalendarConsole({
   onClose,
   month,
   onMonthChange,
-  view,
   viewControls,
   items,
   selectedKey,
@@ -80,13 +85,13 @@ export function CalendarConsole({
   onOpenPlan,
   onPencil,
   stageRef,
+  veraRef,
 }: {
   open: boolean
   /** Esc and the Close control. The workspace layers it: the Plan drawer closes first when it is up. */
   onClose: () => void
   month: { year: number; month1: number }
   onMonthChange: (next: { year: number; month1: number }) => void
-  view: CalendarAdminView
   /** The page's own Guest preview toggle and CalendarModeToggle, so the two headers cannot drift. */
   viewControls: ReactNode
   /** The List index (`listIndexItems`); the agenda keeps the shown month of it. */
@@ -96,8 +101,11 @@ export function CalendarConsole({
   onOpenPlan: (planId: string, entryId?: string | null) => void
   /** "Pencil it in" and the N key. Absent for a viewer who cannot edit. */
   onPencil?: () => void
-  /** Where the workspace parks Ask Vera and the live panel set. See THE STAGE SLOT above. */
+  /** Where the workspace parks the live panel set. See THE STAGE SLOT above. */
   stageRef: Ref<HTMLDivElement>
+  /** Where the workspace parks Ask Vera: the foot of the side bar. Absent for a viewer who cannot
+   *  edit, and then the side bar is the agenda alone. Moved the same live way the stage is. */
+  veraRef?: Ref<HTMLDivElement>
 }) {
   const rootRef = useRef<HTMLDivElement>(null)
   const [helpOpen, setHelpOpen] = useState(false)
@@ -116,10 +124,6 @@ export function CalendarConsole({
     const now = new Date()
     onMonthChange({ year: now.getFullYear(), month1: now.getMonth() + 1 })
   }, [onMonthChange])
-  // A grid panel (Guest or Calendar) announces the month through its own aria-live label; while List
-  // or Workflow is showing, those grids are aria-hidden and this label speaks instead, so a month
-  // change is announced exactly once either way.
-  const gridShowing = view === 'admin' || view === 'guest'
 
   useEffect(() => {
     if (!open) return
@@ -140,6 +144,16 @@ export function CalendarConsole({
         case 'ArrowRight':
           step(1)
           break
+        // MONTHS RUN DOWN THE PANEL (owner ask 2026-09-23), the same direction the wheel pages them,
+        // and Left / Right keep doing what they always did. Anything under the key that can still
+        // scroll that way keeps it: the agenda and a busy day's own cell are read with these keys.
+        case 'ArrowUp':
+        case 'ArrowDown': {
+          const delta = e.key === 'ArrowDown' ? 1 : -1
+          if (verticalScrollTaker(e.target, delta, rootRef.current)) return
+          step(delta)
+          break
+        }
         case 't':
         case 'T':
           today()
@@ -183,10 +197,13 @@ export function CalendarConsole({
             never reads as one more action in the cluster. */}
         <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border px-3 py-2 sm:px-4 lg:col-span-2">
           <div className="flex min-w-0 items-baseline gap-2">
+            {/* ONE ANNOUNCEMENT, ALWAYS THIS ONE. The grids inside the console run with `hostChrome`,
+                so none of them draws a month title and none of them speaks: this heading is the
+                month, and it says so once whichever panel is showing. */}
             <h2
               id="calendar-console-title"
               className="truncate text-lead font-bold text-text"
-              aria-live={gridShowing ? undefined : 'polite'}
+              aria-live="polite"
             >
               {label}
             </h2>
@@ -224,62 +241,80 @@ export function CalendarConsole({
           </div>
         </header>
 
-        {/* THE AGENDA: the shown month, grouped by day. A strip above the grid on a phone, a column on a
-            desk, and ONE hairline divider between it and the stage rather than a filled sidebar. Rows
-            select the same item the List view selects; Open Plan opens the shared drawer. */}
-        <aside
-          data-calendar-agenda
-          aria-label={`Agenda for ${label}`}
-          className="max-h-44 min-h-0 overflow-y-auto overscroll-contain border-b border-border lg:max-h-none lg:border-b-0 lg:border-r"
+        {/* THE SIDE BAR: the shown month's agenda, with Ask Vera along its foot (owner ask
+            2026-09-23, which took Vera out of the full-width band that was costing the grid a row).
+            The agenda takes the height and scrolls; Vera is a footer that stays put, so a long month
+            never pushes it off screen and a proposal opens against a column that is still there. A
+            strip above the grid on a phone, a column on a desk, and ONE hairline between it and the
+            stage rather than a filled sidebar. Rows select the same item the List view selects. */}
+        <div
+          data-calendar-sidebar
+          className="flex max-h-52 min-h-0 flex-col border-b border-border lg:max-h-none lg:border-b-0 lg:border-r"
         >
-          {days.length === 0 ? (
-            <p className="px-4 py-4 text-body-sm text-muted">Nothing on the calendar in {label}. Pencil a date to start.</p>
-          ) : (
-            days.map((day) => (
-              <section key={day.dayKey} aria-label={day.label} className="pb-2">
-                <h3 className="sticky top-0 z-10 border-b border-border bg-surface px-4 pb-1.5 pt-3 text-body-sm font-semibold text-text">
-                  {day.label}
-                </h3>
-                <ul className="space-y-1 px-2 pt-1.5">
-                  {day.items.map((item) => {
-                    const current = selectedKey === item.key
-                    const titleClass = itemTitleClass(item.stage, item.isCancelled)
-                    return (
-                      <li key={item.key} className="flex items-stretch gap-1">
-                        <button
-                          type="button"
-                          onClick={() => onSelectItem(item.key)}
-                          aria-pressed={current}
-                          className={cn(
-                            'min-w-0 flex-1 rounded-card border px-2.5 py-1.5 text-left transition-colors motion-reduce:transition-none',
-                            current
-                              ? itemSelectedClass(item.stage, item.isCancelled)
-                              : cn('border-border bg-surface hover:border-border-strong hover:bg-surface-elevated', titleClass),
+          <aside
+            data-calendar-agenda
+            aria-label={`Agenda for ${label}`}
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+          >
+            {days.length === 0 ? (
+              <p className="px-4 py-4 text-body-sm text-muted">Nothing on the calendar in {label}. Pencil a date to start.</p>
+            ) : (
+              days.map((day) => (
+                <section key={day.dayKey} aria-label={day.label} className="pb-2">
+                  <h3 className="sticky top-0 z-10 border-b border-border bg-surface px-4 pb-1.5 pt-3 text-body-sm font-semibold text-text">
+                    {day.label}
+                  </h3>
+                  <ul className="space-y-1 px-2 pt-1.5">
+                    {day.items.map((item) => {
+                      const current = selectedKey === item.key
+                      const titleClass = itemTitleClass(item.stage, item.isCancelled)
+                      return (
+                        <li key={item.key} className="flex items-stretch gap-1">
+                          <button
+                            type="button"
+                            onClick={() => onSelectItem(item.key)}
+                            aria-pressed={current}
+                            className={cn(
+                              'min-w-0 flex-1 rounded-card border px-2.5 py-1.5 text-left transition-colors motion-reduce:transition-none',
+                              current
+                                ? itemSelectedClass(item.stage, item.isCancelled)
+                                : cn('border-border bg-surface hover:border-border-strong hover:bg-surface-elevated', titleClass),
+                            )}
+                          >
+                            <span className={cn('block truncate text-body-sm font-semibold', titleClass)}>
+                              {item.isCancelled && <span className="sr-only">Cancelled. </span>}
+                              {item.title}
+                            </span>
+                            <span className="mt-0.5 block truncate text-meta text-muted">{item.whenLabel}</span>
+                          </button>
+                          {item.planId && (
+                            <Button type="button" variant="ghost" size="sm" onClick={() => onOpenPlan(item.planId!, item.entryId)}>
+                              Open Plan
+                            </Button>
                           )}
-                        >
-                          <span className={cn('block truncate text-body-sm font-semibold', titleClass)}>
-                            {item.isCancelled && <span className="sr-only">Cancelled. </span>}
-                            {item.title}
-                          </span>
-                          <span className="mt-0.5 block truncate text-meta text-muted">{item.whenLabel}</span>
-                        </button>
-                        {item.planId && (
-                          <Button type="button" variant="ghost" size="sm" onClick={() => onOpenPlan(item.planId!, item.entryId)}>
-                            Open Plan
-                          </Button>
-                        )}
-                      </li>
-                    )
-                  })}
-                </ul>
-              </section>
-            ))
-          )}
-        </aside>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </section>
+              ))
+            )}
+          </aside>
+          {/* Ask Vera holds the foot of the column: `shrink-0`, so a long agenda never squeezes it
+              out, and capped with its own scroll, so a long PROPOSAL scrolls here instead of taking
+              the column and pushing the agenda off screen. */}
+          {veraRef ? (
+            <div
+              ref={veraRef}
+              data-calendar-console-vera
+              className="max-h-36 shrink-0 overflow-y-auto overscroll-contain border-t border-border p-2 lg:max-h-[55%]"
+            />
+          ) : null}
+        </div>
 
-        {/* THE STAGE. The workspace parks Ask Vera and its live panel set here; the panel set brings its
-            own scroll (overscroll contained), so the console body never moves the page behind it. */}
-        <div ref={stageRef} data-calendar-console-stage className="flex min-h-0 flex-col p-3 sm:p-4" />
+        {/* THE STAGE. The workspace parks its live panel set here; the panel set brings its own scroll
+            (overscroll contained), so the console body never moves the page behind it. */}
+        <div ref={stageRef} data-calendar-console-stage className="flex min-h-0 flex-col p-2 sm:p-3" />
       </div>
 
       <Dialog open={helpOpen} onClose={() => setHelpOpen(false)} ariaLabelledBy="calendar-console-keys" align="center" className="max-w-sm">

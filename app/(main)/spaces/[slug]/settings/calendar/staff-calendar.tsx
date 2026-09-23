@@ -112,6 +112,7 @@ export function StaffCalendar({
   newEntryRequest = 0,
   pencilButton = true,
   fill = false,
+  hostChrome = false,
 }: {
   slug: string
   spaceId: string
@@ -139,6 +140,9 @@ export function StaffCalendar({
   pencilButton?: boolean
   /** Stretch the grid to the host's height (the console). */
   fill?: boolean
+  /** The host draws the month label, the paging cluster and the grid / list switcher, so the grid
+   *  draws none of them (the console header owns all three). Passed straight through. */
+  hostChrome?: boolean
 }) {
   const router = useRouter()
   const [draft, setDraft] = useState<Draft | null>(null)
@@ -345,6 +349,7 @@ export function StaffCalendar({
         month={month}
         onMonthChange={onMonthChange}
         fill={fill}
+        hostChrome={hostChrome}
         layers={LAYERS}
         refreshKey={refreshKey + externalRefreshKey}
         dayNotes={dayNotes}
