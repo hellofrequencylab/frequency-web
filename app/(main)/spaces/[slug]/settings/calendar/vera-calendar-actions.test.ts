@@ -28,7 +28,7 @@ describe('Vera archives a Plan through the same door the drawer uses', () => {
 
   it('the result line says what happened to the dates', () => {
     const body = caseBody(actions, 'archive')
-    expect(body).toContain('Its pencilled dates left the calendar')
+    expect(body).toContain('Its penciled dates left the calendar')
     expect(body).not.toContain('Nothing is deleted')
   })
 })

@@ -16,6 +16,12 @@
 //   todo      a to-do on a Plan, fixed or anchored N days before the Plan's date
 //   archive   a Plan out of the working set
 // A change that cannot be expressed here cannot be proposed, which is the point.
+//
+// A CLARIFICATION (PROG-CAL11 slice 1) is the one other thing Vera may answer with: when the ask
+// is ambiguous in a way that changes the outcome ("move the sound bath" and there are three), she
+// returns one plain question with the candidates instead of guessing, the box shows it, and the
+// answer joins the next turn. `parseVeraClarification` holds that shape to the same strictness as
+// the changes: a question with two to five options, or nothing.
 
 import { PLAN_STAGE_TRANSITIONS, type WorkflowStage } from './workflow-board'
 import type { PlanStage } from './plans'
@@ -49,10 +55,35 @@ export const VERA_CHANGE_KINDS: readonly VeraChangeKind[] = ['pencil', 'move', '
 
 /** The most changes one proposal may carry. A bigger ask is two asks. */
 export const MAX_VERA_CHANGES = 40
+
 /** The most dates one pencil change may carry (a year of new moons is 13; a weekly season is 26). */
 export const MAX_PENCIL_DAYS = 60
 const MAX_TITLE = 200
 const MAX_OFFSET_DAYS = 365
+
+/**
+ * A question Vera asks before proposing, when guessing would change the outcome. The options are
+ * drawn from the context (a Plan, a date, a time), `value` is what comes back as the answer (an id
+ * where one exists, so the model matches it exactly), and `allowFreeText` lets the person type an
+ * answer none of the options cover.
+ */
+export interface VeraClarificationOption {
+  label: string
+  value: string
+}
+
+export interface VeraClarification {
+  question: string
+  options: VeraClarificationOption[]
+  allowFreeText: boolean
+}
+
+/** The fewest and the most options one clarification may offer. One option is not a question. */
+export const MIN_CLARIFICATION_OPTIONS = 2
+export const MAX_CLARIFICATION_OPTIONS = 5
+const MAX_CLARIFICATION_QUESTION = 200
+const MAX_CLARIFICATION_LABEL = 60
+const MAX_CLARIFICATION_VALUE = 120
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const DAY_RE = /^(\d{4})-(\d{2})-(\d{2})$/
@@ -187,6 +218,51 @@ export function parseVeraChanges(raw: unknown): { changes: VeraChange[] } | { er
   return { changes }
 }
 
+/** One line of the house voice: long dashes become commas, exclamation marks become periods,
+ *  whitespace collapses. Returns null for anything that is not a non-empty string. */
+function cleanLine(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const t = value
+    .replace(/\s*[\u2013\u2014]\s*/g, ', ')
+    .replace(/!/g, '.')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return t || null
+}
+
+/**
+ * Validate a clarification strictly, whether it came from the model or back from the browser.
+ * The question is one line of at most MAX_CLARIFICATION_QUESTION characters; there are two to
+ * five options, each with a short label and a distinct value; nothing is truncated to fit, because
+ * a question that had to be cut is a question the person cannot answer well.
+ */
+export function parseVeraClarification(raw: unknown): { clarification: VeraClarification } | { error: string } {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { error: 'Vera asked a question that could not be read.' }
+  const o = raw as Rec
+  const question = cleanLine(o.question)
+  if (!question) return { error: 'Vera asked a question with no words in it.' }
+  if (question.length > MAX_CLARIFICATION_QUESTION) return { error: 'Vera asked a question that was too long to show.' }
+  if (!Array.isArray(o.options)) return { error: 'Vera asked a question with no options.' }
+  if (o.options.length < MIN_CLARIFICATION_OPTIONS) return { error: `Vera asked a question with fewer than ${MIN_CLARIFICATION_OPTIONS} options.` }
+  if (o.options.length > MAX_CLARIFICATION_OPTIONS) return { error: `Vera asked a question with more than ${MAX_CLARIFICATION_OPTIONS} options.` }
+  const options: VeraClarificationOption[] = []
+  const seen = new Set<string>()
+  for (let i = 0; i < o.options.length; i++) {
+    const item = o.options[i]
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return { error: `Option ${i + 1} is not an option.` }
+    const label = cleanLine((item as Rec).label)
+    const value = cleanLine((item as Rec).value)
+    if (!label) return { error: `Option ${i + 1} has no label.` }
+    if (label.length > MAX_CLARIFICATION_LABEL) return { error: `Option ${i + 1} has a label that is too long.` }
+    if (!value) return { error: `Option ${i + 1} has no value.` }
+    if (value.length > MAX_CLARIFICATION_VALUE) return { error: `Option ${i + 1} has a value that is too long.` }
+    if (seen.has(value)) return { error: `Option ${i + 1} repeats an earlier option.` }
+    seen.add(value)
+    options.push({ label, value })
+  }
+  return { clarification: { question, options, allowFreeText: o.allowFreeText === true } }
+}
+
 /** Titles the description lines can name, keyed by id. Missing ids fall back to a plain noun. */
 export interface VeraDescribeContext {
   plans: Record<string, string>
@@ -249,6 +325,6 @@ export function describeChange(change: VeraChange, ctx: VeraDescribeContext): st
       return `Add the to-do "${change.title}" to ${plan}${due}.`
     }
     case 'archive':
-      return `Archive ${quoted(ctx.plans[change.planId], 'that Plan')}. Its pencilled dates go with it. A date that already became an event keeps the event.`
+      return `Archive ${quoted(ctx.plans[change.planId], 'that Plan')}. Its penciled dates go with it. A date that already became an event keeps the event.`
   }
 }
