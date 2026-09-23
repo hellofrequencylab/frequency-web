@@ -21,11 +21,15 @@ const transcript = [
 const mocks = vi.hoisted(() => ({
   command: vi.fn(),
   apply: vi.fn(),
+  undo: vi.fn(),
+  log: vi.fn(),
 }))
 
 vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/vera-calendar-actions', () => ({
   veraCalendarCommand: mocks.command,
   applyVeraChanges: mocks.apply,
+  undoVeraChanges: mocks.undo,
+  listVeraChangeLog: mocks.log,
 }))
 
 let container: HTMLDivElement | null = null
@@ -34,6 +38,9 @@ let root: Root | null = null
 beforeEach(() => {
   mocks.command.mockReset()
   mocks.apply.mockReset()
+  mocks.undo.mockReset()
+  mocks.log.mockReset()
+  mocks.log.mockResolvedValue({ data: { entries: [] } })
 })
 
 afterEach(() => {
@@ -269,7 +276,8 @@ describe('VeraCalendarBox, the confirmation gate', () => {
     act(() => lineBoxes(el)[1].click())
     expect(buttonNamed(proposal, 'Accept')!.disabled).toBe(false)
     await settle(() => buttonNamed(proposal, 'Accept')!.click())
-    expect(mocks.apply).toHaveBeenCalledWith('lab', [ARCHIVE, RETITLE], [0])
+    // The fourth argument is the batch an Undo reverses; an ordinary proposal has none.
+    expect(mocks.apply).toHaveBeenCalledWith('lab', [ARCHIVE, RETITLE], [0], undefined)
   })
 
   it('takes the confirmation back when the line it belongs to is unticked', async () => {
@@ -297,5 +305,118 @@ describe('VeraCalendarBox, the confirmation gate', () => {
     // Nothing destructive here, so the line is ticked and there is no second box to find.
     expect(lineBoxes(el)[0].checked).toBe(true)
     expect(el.querySelector('[data-vera-confirm]')).toBeNull()
+  })
+})
+
+// THE CHANGE LOG AND UNDO (PROG-CAL11 slice 3). The record is read only when its disclosure is
+// opened, so the ordinary ask-and-accept path costs no extra round trip. Undo is not a button that
+// acts: it asks the server for the reverses and they arrive as an ordinary PROPOSAL with the same
+// lines, the same ticking and the same second box on anything destructive. Nothing leaves the log:
+// a batch that was undone says so and keeps its lines.
+
+const logRow = {
+  id: '77777777-7777-4777-8777-777777777777',
+  at: '2026-09-23T10:00:00.000Z',
+  lines: [
+    { message: 'Renamed "Winter sits" to "Autumn retreat".', reason: null },
+    { message: 'Added the to-do "Book the room".', reason: 'Undo cannot remove a to-do. Open the Plan and delete it there.' },
+  ],
+  reversible: 1,
+  undoOf: null,
+  undoneBy: null,
+}
+
+const openLog = async (el: HTMLElement) => {
+  act(() => {
+    el.querySelector('button[aria-expanded]')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  })
+  await settle(() => {
+    el.querySelector<HTMLButtonElement>('[data-vera-log] button')!.click()
+  })
+  return el.querySelector('[data-vera-log]')!
+}
+
+describe('VeraCalendarBox, the change log', () => {
+  it('reads the record only when it is opened, and shows what each line could not put back', async () => {
+    mocks.log.mockResolvedValue({ data: { entries: [logRow] } })
+    const el = mount()
+    act(() => {
+      el.querySelector('button[aria-expanded]')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    // Opening Ask Vera is not opening the log: nothing is read until the disclosure is used.
+    expect(mocks.log).not.toHaveBeenCalled()
+    await settle(() => {
+      el.querySelector<HTMLButtonElement>('[data-vera-log] button')!.click()
+    })
+    const log = el.querySelector('[data-vera-log]')!
+    expect(mocks.log).toHaveBeenCalledWith('lab')
+    expect(log.textContent).toContain('Renamed "Winter sits" to "Autumn retreat".')
+    expect(log.textContent).toContain('Undo cannot remove a to-do.')
+    expect(buttonNamed(log, 'Undo')).not.toBeUndefined()
+    expect(el.textContent).not.toMatch(/[–—]/)
+  })
+
+  it('offers no Undo on a batch that was already undone, and keeps its lines', async () => {
+    mocks.log.mockResolvedValue({ data: { entries: [{ ...logRow, undoneBy: 'x' }] } })
+    const log = await openLog(mount())
+    expect(buttonNamed(log, 'Undo')).toBeUndefined()
+    expect(log.textContent).toContain('Undone')
+    expect(log.textContent).toContain('Renamed "Winter sits" to "Autumn retreat".')
+  })
+
+  it('offers no Undo when nothing in the batch can come back, and says so', async () => {
+    mocks.log.mockResolvedValue({ data: { entries: [{ ...logRow, reversible: 0 }] } })
+    const log = await openLog(mount())
+    expect(buttonNamed(log, 'Undo')).toBeUndefined()
+    expect(log.textContent).toContain('Nothing here can be put back')
+  })
+
+  it('turns Undo into a proposal that still has to be ticked and accepted', async () => {
+    mocks.log.mockResolvedValue({ data: { entries: [logRow] } })
+    const el = mount()
+    const log = await openLog(el)
+    mocks.undo.mockResolvedValueOnce({
+      data: {
+        kind: 'proposal',
+        changes: [{ kind: 'retitle', planId: PLAN, title: 'Winter sits' }],
+        note: 'Putting back the one change in that batch. This is a proposal like any other: tick what you want, then accept.',
+        timeZone: 'UTC',
+        context: { plans: { [PLAN]: 'Autumn retreat' }, entries: {} },
+        undoOf: logRow.id,
+      },
+    })
+    await settle(() => buttonNamed(log, 'Undo')!.click())
+    expect(mocks.undo).toHaveBeenCalledWith('lab', logRow.id)
+    // Nothing was applied by pressing Undo: what arrived is a proposal.
+    expect(mocks.apply).not.toHaveBeenCalled()
+    const proposal = el.querySelector('[data-vera-proposal]')!
+    expect(proposal.textContent).toContain('Rename "Autumn retreat" to "Winter sits".')
+    expect(proposal.textContent).toContain('This is a proposal like any other')
+
+    // Accepting it sends the batch it reverses, so the new record points back at it.
+    mocks.apply.mockResolvedValueOnce({ data: { results: [{ index: 0, ok: true, message: 'Renamed it back.' }] } })
+    await settle(() => buttonNamed(proposal, 'Accept')!.click())
+    expect(mocks.apply).toHaveBeenCalledWith('lab', [{ kind: 'retitle', planId: PLAN, title: 'Winter sits' }], [], logRow.id)
+    // The record is read again once the batch lands, so the log shows the undo without a refresh.
+    expect(mocks.log).toHaveBeenCalledTimes(2)
+  })
+
+  it('says out loud when a batch landed but was not written to the record', async () => {
+    mocks.command.mockResolvedValueOnce({
+      data: { kind: 'proposal', changes: [{ kind: 'retitle', planId: PLAN, title: 'Autumn retreat, 2026' }], note: '', timeZone: 'UTC', context: { plans: {}, entries: {} } },
+    })
+    const el = mount()
+    openAndAsk(el, 'Rename it')
+    await settle(() => {
+      el.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    mocks.apply.mockResolvedValueOnce({
+      data: {
+        results: [{ index: 0, ok: true, message: 'Renamed it.' }],
+        logError: 'The changes landed, but they were not written to the change log, so Undo will not offer them.',
+      },
+    })
+    await settle(() => buttonNamed(el.querySelector('[data-vera-proposal]')!, 'Accept')!.click())
+    expect(el.querySelector('[role="status"]')!.textContent).toContain('Undo will not offer them')
   })
 })

@@ -32,6 +32,8 @@ vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/plan-actions', () => ({
 vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/vera-calendar-actions', () => ({
   veraCalendarCommand: async () => ({ error: 'not in this test' }),
   applyVeraChanges: async () => ({ data: { results: [] } }),
+  undoVeraChanges: async () => ({ error: 'not in this test' }),
+  listVeraChangeLog: async () => ({ data: { entries: [] } }),
 }))
 
 vi.mock('@/components/events/event-share-button', () => ({

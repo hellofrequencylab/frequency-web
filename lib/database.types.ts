@@ -14760,6 +14760,55 @@ export type Database = {
           },
         ]
       }
+      space_vera_changes: {
+        Row: {
+          applied_by: string | null
+          created_at: string
+          id: string
+          space_id: string
+          steps: Json
+          undo_of: string | null
+        }
+        Insert: {
+          applied_by?: string | null
+          created_at?: string
+          id?: string
+          space_id: string
+          steps?: Json
+          undo_of?: string | null
+        }
+        Update: {
+          applied_by?: string | null
+          created_at?: string
+          id?: string
+          space_id?: string
+          steps?: Json
+          undo_of?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_vera_changes_applied_by_fkey"
+            columns: ["applied_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_vera_changes_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_vera_changes_undo_of_fkey"
+            columns: ["undo_of"]
+            isOneToOne: false
+            referencedRelation: "space_vera_changes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spaces: {
         Row: {
           about: string | null

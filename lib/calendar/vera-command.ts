@@ -48,6 +48,14 @@
 // to the manifest is the whole change and Vera can set it the same day. The kernel stays entity-
 // blind: this module imports the manifest and the kernel; the kernel never imports this.
 //
+// UNDO IS A PROPOSAL (PROG-CAL11 slice 3). Every accepted proposal is recorded, step by step, with
+// the change that puts each step back: `reverseChange` builds that from the value the ACTION read
+// off the row before it wrote, which is why the before values are captured there and not here. A
+// step this vocabulary cannot reverse (a to-do has no delete verb, an archive deleted its dates)
+// carries `irreversibleReason` instead of a reverse, so the log says what it cannot do rather than
+// leaving a gap. Undo is then `undoChanges`: the reverses, in reverse order, handed back as an
+// ordinary proposal that goes through the same two gates and lands through the same actions.
+//
 // There is no manifest for a calendar date yet (lib/studio/entities has none), so the date side is
 // an explicit allowlist declared in the manifest's own field shape, derived from `EntryInput`
 // (lib/calendar/entries.ts), and checked by the same kernel call. The day a date manifest lands,
@@ -672,4 +680,185 @@ export function describeChange(change: VeraChange, ctx: VeraDescribeContext): st
       return `Set ${label} on ${what} to ${fieldValueText(spec, change.value)}.${overwriteNote(held, 'replaces')}`
     }
   }
+}
+
+// ── UNDO (PROG-CAL11 slice 3) ────────────────────────────────────────────────────────────────
+//
+// The owner asked for versioning alongside the confirmation gates: "I don't want Vera changing
+// things without explicit permission." The gate half is above. This half is the record. Every
+// accepted proposal writes one row that keeps, per change, WHAT LANDED and WHAT PUTS IT BACK, and
+// the record is append only (no update or delete policy exists on the table). Undo reads that row,
+// takes the reverses in reverse order, and hands them back as an ordinary proposal: the same
+// preview lines, the same two gates, the same actions. Nothing here reverses anything by itself.
+
+/**
+ * What the calendar held before one change was applied, as the action read it off the row. It is
+ * captured in vera-calendar-actions.ts because that is the only place that knows it: by the time a
+ * record is written, the old value is gone.
+ */
+export type VeraBefore =
+  /** A pencil that STARTED a Plan: the Plan it created, which is the thing to take back. */
+  | { kind: 'pencil'; createdPlanId: string }
+  | { kind: 'move'; day: string }
+  | { kind: 'stage'; stage: WorkflowStage }
+  | { kind: 'retitle'; title: string }
+  | { kind: 'field'; value: VeraFieldValue }
+
+/**
+ * The working stage a Plan row's own `stage` column means, as a change Vera can propose. A
+ * cancelled Plan's row reads `plan` (the transition table maps Cancelled onto the Planning column
+ * and stamps `archived_at`), so the reverse of a cancel is a working stage and never Cancelled
+ * again: putting a Plan back is not a second way to cancel it.
+ */
+export function workingStage(planStage: string): WorkflowStage | null {
+  return PLAN_STAGE_TRANSITIONS.find((t) => !t.archived && t.planStage === planStage)?.stage ?? null
+}
+
+/**
+ * What a `field` change's reverse would set: the value the field holds NOW, put through the same
+ * kernel check the forward value went through. Null when this vocabulary cannot carry it back (a
+ * repeat row is added rather than replaced, and a held value the field's own rules refuse is not a
+ * value Vera can set), and the caller then records a reason instead.
+ */
+export function veraBeforeFieldValue(spec: VeraFieldSpec, held: unknown): VeraFieldValue | null {
+  if (spec.row) return null
+  const checked = checkFieldValue(spec.field, held)
+  return 'problem' in checked ? null : checked.value
+}
+
+/**
+ * The change that puts `change` back, in the SAME vocabulary, or null when this vocabulary cannot
+ * say it. Pure: the before values come from the action. A pencil that started a Plan reverses to
+ * archiving that Plan, which is destructive on purpose, so the undo line arrives unticked and asks
+ * for its own confirmation exactly as any other archive does.
+ */
+export function reverseChange(change: VeraChange, before: VeraBefore | null): VeraChange | null {
+  switch (change.kind) {
+    case 'pencil':
+      return before?.kind === 'pencil' ? { kind: 'archive', planId: before.createdPlanId } : null
+    case 'move':
+      return before?.kind === 'move' ? { kind: 'move', entryId: change.entryId, toDay: before.day } : null
+    case 'stage':
+      return before?.kind === 'stage' ? { kind: 'stage', planId: change.planId, stage: before.stage } : null
+    case 'retitle':
+      return before?.kind === 'retitle' ? { kind: 'retitle', planId: change.planId, title: before.title } : null
+    case 'field':
+      return before?.kind === 'field' ? { kind: 'field', target: change.target, id: change.id, path: change.path, value: before.value } : null
+    // A to-do has no delete verb here, and archiving deleted the Plan's penciled dates outright.
+    case 'todo':
+    case 'archive':
+      return null
+  }
+}
+
+/** Why a change has no reverse, in plain words, for the person reading the log. */
+export function irreversibleReason(change: VeraChange): string {
+  switch (change.kind) {
+    case 'pencil':
+      return 'Undo cannot take dates off a Plan that was already there. Delete those dates on the calendar.'
+    case 'todo':
+      return 'Undo cannot remove a to-do. Open the Plan and delete it there.'
+    case 'archive':
+      return 'Undo cannot bring an archived Plan back. Its penciled dates were deleted when it was archived.'
+    case 'move':
+      return 'Undo cannot tell what day that date was on before.'
+    case 'stage':
+      return 'Undo cannot tell what stage that Plan was in before.'
+    case 'retitle':
+      return 'Undo cannot tell what that Plan was called before.'
+    case 'field': {
+      const spec = veraFieldSpec(change.target, change.path)
+      const label = spec?.label ?? change.path
+      const noun = veraTargetNoun(change.target)
+      return spec?.row
+        ? `Undo cannot take a row off ${label}. Remove it on the ${noun}.`
+        : `Undo cannot put ${label} back to what it held. Set it on the ${noun} yourself.`
+    }
+  }
+}
+
+/** One applied change in the record: what landed, what it said, and what puts it back. */
+export interface VeraLogStep {
+  change: VeraChange
+  /** The sentence the action returned when the change landed. */
+  message: string
+  /** The change that reverses it, or null. */
+  reverse: VeraChange | null
+  /** Why not, when `reverse` is null. */
+  reason: string | null
+}
+
+/** One accepted proposal, as the console reads it back. */
+export interface VeraLogRecord {
+  id: string
+  /** When it was accepted, ISO. */
+  at: string
+  steps: VeraLogStep[]
+  /** The record this one reversed, when it was an Undo. */
+  undoOf: string | null
+  /** The later record that reversed this one, when there is one. Derived from the list. */
+  undoneBy: string | null
+}
+
+/** The most steps one record carries, and the most records the console reads back. */
+export const MAX_LOG_RECORDS = 20
+/** The longest a recorded sentence may be. Longer is cut on the way in, not on the way out. */
+export const MAX_LOG_MESSAGE = 400
+
+function logChange(raw: unknown): VeraChange | null {
+  const parsed = parseVeraChanges([raw])
+  return 'error' in parsed ? null : parsed.changes[0]
+}
+
+/**
+ * Read a record's steps back. The rows are ours, and they are parsed anyway: the closed vocabulary
+ * moves under a record the day a kind is renamed, and a step that no longer parses must drop out
+ * of the log rather than reach an action as a half-understood change. A step whose REVERSE no
+ * longer parses keeps its line and loses its Undo, with a reason, which is the same honesty the
+ * write path owes.
+ */
+export function parseVeraLogSteps(raw: unknown): VeraLogStep[] {
+  if (!Array.isArray(raw)) return []
+  const steps: VeraLogStep[] = []
+  for (const item of raw.slice(0, MAX_VERA_CHANGES)) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue
+    const o = item as Record<string, unknown>
+    const change = logChange(o.change)
+    if (!change) continue
+    const reverse = o.reverse === null || o.reverse === undefined ? null : logChange(o.reverse)
+    const message = typeof o.message === 'string' ? o.message.slice(0, MAX_LOG_MESSAGE) : ''
+    const reason = reverse ? null : typeof o.reason === 'string' && o.reason ? o.reason.slice(0, MAX_LOG_MESSAGE) : irreversibleReason(change)
+    steps.push({ change, message, reverse, reason })
+  }
+  return steps
+}
+
+/**
+ * The Undo proposal for one record: every reverse it carries, LAST FIRST. Order is the whole
+ * point. A batch that retitled a Plan and then moved its date has to put the date back before the
+ * retitle if the two ever touch the same row, and running the list forwards would replay the batch
+ * rather than reverse it.
+ */
+export function undoChanges(steps: readonly VeraLogStep[]): VeraChange[] {
+  const out: VeraChange[] = []
+  for (let i = steps.length - 1; i >= 0; i--) {
+    const reverse = steps[i].reverse
+    if (reverse) out.push(reverse)
+  }
+  return out
+}
+
+/** The line at the top of an Undo proposal. Says how much of the batch it can put back, and says
+ *  that it is still a proposal: Undo asks in exactly the way every other change asks. */
+export function undoNote(steps: readonly VeraLogStep[]): string {
+  const total = steps.length
+  const back = undoChanges(steps).length
+  if (back === 0) return 'Nothing in that batch can be put back from here. Each line says why.'
+  const head =
+    back === total
+      ? total === 1
+        ? 'Putting back the one change in that batch.'
+        : `Putting back all ${total} changes in that batch, last one first.`
+      : `Putting back ${back} of the ${total} changes in that batch, last one first. The rest say why they cannot come back.`
+  return `${head} This is a proposal like any other: tick what you want, then accept.`
 }

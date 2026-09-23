@@ -13,13 +13,21 @@ import {
   MIN_CLARIFICATION_OPTIONS,
   parseVeraChanges,
   parseVeraClarification,
+  irreversibleReason,
+  parseVeraLogSteps,
+  reverseChange,
+  undoChanges,
+  undoNote,
+  veraBeforeFieldValue,
   veraFieldList,
   veraFieldSpec,
   veraFieldVocabulary,
   withVeraField,
+  workingStage,
   VERA_CHANGE_KINDS,
   VERA_MODE_OPTIONS,
   type VeraChange,
+  type VeraLogStep,
 } from './vera-command'
 
 const PLAN = '11111111-2222-4333-8444-555555555555'
@@ -419,4 +427,168 @@ describe('the destructive gate', () => {
     expect([...parseVeraConfirmed('all', 3)]).toEqual([])
   })
 
+})
+
+// ── UNDO (PROG-CAL11 slice 3) ────────────────────────────────────────────────────────────────
+//
+// The owner asked for versioning beside the confirmation gates. These pin the pure half: the
+// change that puts each kind back, built from the value the action read BEFORE it wrote; the
+// kinds this vocabulary cannot reverse, which say so in their own words instead of going quiet;
+// and the order, which is the whole point of reversing a batch rather than replaying it.
+
+const OTHER_PLAN = '99999999-8888-4777-8666-555555555555'
+
+describe('reverseChange', () => {
+  it('puts a move, a retitle, a stage and a field back to what the action read first', () => {
+    expect(reverseChange({ kind: 'move', entryId: ENTRY, toDay: '2026-03-19' }, { kind: 'move', day: '2026-03-12' })).toEqual({
+      kind: 'move',
+      entryId: ENTRY,
+      toDay: '2026-03-12',
+    })
+    expect(reverseChange({ kind: 'retitle', planId: PLAN, title: 'New' }, { kind: 'retitle', title: 'Winter sits' })).toEqual({
+      kind: 'retitle',
+      planId: PLAN,
+      title: 'Winter sits',
+    })
+    expect(reverseChange({ kind: 'stage', planId: PLAN, stage: 'cancelled' }, { kind: 'stage', stage: 'production' })).toEqual({
+      kind: 'stage',
+      planId: PLAN,
+      stage: 'production',
+    })
+    expect(
+      reverseChange({ kind: 'field', target: 'plan', id: PLAN, path: 'notes', value: 'Bring the gong.' }, { kind: 'field', value: 'Keep it small.' }),
+    ).toEqual({ kind: 'field', target: 'plan', id: PLAN, path: 'notes', value: 'Keep it small.' })
+  })
+
+  it('reverses a pencil that STARTED a Plan by taking that Plan back, and nothing else', () => {
+    const pencil: VeraChange = { kind: 'pencil', title: 'Sound bath', days: ['2026-01-18'], timeZone: 'UTC' }
+    // The Plan the apply door created, not the one the change named.
+    expect(reverseChange(pencil, { kind: 'pencil', createdPlanId: OTHER_PLAN })).toEqual({ kind: 'archive', planId: OTHER_PLAN })
+    // Dates added to a Plan that was already there: there is no verb for taking one date off.
+    expect(reverseChange({ ...pencil, planId: PLAN }, null)).toBeNull()
+    expect(irreversibleReason({ ...pencil, planId: PLAN })).toContain('already there')
+  })
+
+  it('has no reverse for a to-do or an archive, and says why in plain words', () => {
+    expect(reverseChange({ kind: 'todo', planId: PLAN, title: 'Book the room' }, null)).toBeNull()
+    expect(reverseChange({ kind: 'archive', planId: PLAN }, null)).toBeNull()
+    expect(irreversibleReason({ kind: 'todo', planId: PLAN, title: 'Book the room' })).toContain('Open the Plan')
+    expect(irreversibleReason({ kind: 'archive', planId: PLAN })).toContain('deleted')
+  })
+
+  it('names the field by its manifest label, and tells a repeat row apart from a value', () => {
+    expect(irreversibleReason({ kind: 'field', target: 'plan', id: PLAN, path: 'links', value: { url: 'https://x.test' } })).toContain('take a row off')
+    const notes = irreversibleReason({ kind: 'field', target: 'plan', id: PLAN, path: 'notes', value: null })
+    expect(notes).toContain('Set it on the Plan')
+    expect(notes).not.toContain('notes')
+  })
+
+  it('refuses a before value that belongs to another kind rather than inventing one', () => {
+    expect(reverseChange({ kind: 'move', entryId: ENTRY, toDay: '2026-03-19' }, { kind: 'retitle', title: 'Winter sits' })).toBeNull()
+    expect(reverseChange({ kind: 'retitle', planId: PLAN, title: 'New' }, null)).toBeNull()
+  })
+
+  it('writes every reason in the house voice, with no long dash and no exclamation', () => {
+    const all: VeraChange[] = [
+      { kind: 'pencil', title: 'x', days: ['2026-01-18'], timeZone: 'UTC' },
+      { kind: 'move', entryId: ENTRY, toDay: '2026-03-19' },
+      { kind: 'stage', planId: PLAN, stage: 'plan' },
+      { kind: 'retitle', planId: PLAN, title: 'New' },
+      { kind: 'todo', planId: PLAN, title: 'Book the room' },
+      { kind: 'archive', planId: PLAN },
+      { kind: 'field', target: 'entry', id: ENTRY, path: 'location', value: 'The barn' },
+    ]
+    for (const change of all) expect(irreversibleReason(change)).not.toMatch(/[–—!]/)
+    expect(VERA_CHANGE_KINDS.every((kind) => all.some((c) => c.kind === kind))).toBe(true)
+  })
+})
+
+describe('workingStage', () => {
+  it('maps a Plan row stage onto the change that puts it there', () => {
+    expect(workingStage('pencil')).toBe('pencil')
+    expect(workingStage('plan')).toBe('plan')
+    expect(workingStage('production')).toBe('production')
+  })
+
+  it('never hands back Cancelled, so putting a Plan back cannot cancel it a second time', () => {
+    // A cancelled Plan's own row reads `plan`: the transition table maps Cancelled onto Planning
+    // and stamps archived_at. Reversing a cancel must therefore be a working stage.
+    expect(workingStage('cancelled')).toBeNull()
+    expect(workingStage('plan')).not.toBe('cancelled')
+  })
+})
+
+describe('veraBeforeFieldValue', () => {
+  const notes = veraFieldSpec('plan', 'notes')!
+  const links = veraFieldSpec('plan', 'links')!
+
+  it('checks the held value through the field own rules', () => {
+    expect(veraBeforeFieldValue(notes, 'Keep it small.')).toBe('Keep it small.')
+    // Nothing there is a value too: putting a field back means clearing it again.
+    expect(veraBeforeFieldValue(notes, null)).toBeNull()
+  })
+
+  it('has nothing to carry back for a repeat, because a row is added rather than replaced', () => {
+    expect(veraBeforeFieldValue(links, [{ url: 'https://x.test', label: 'x' }])).toBeNull()
+  })
+
+  it('refuses a held value the field own rules would not take', () => {
+    const target = veraFieldSpec('plan', 'targetKind')!
+    expect(veraBeforeFieldValue(target, 'journey')).toBe('journey')
+    expect(veraBeforeFieldValue(target, 'not-a-target')).toBeNull()
+  })
+})
+
+describe('undoChanges and the record', () => {
+  const step = (change: VeraChange, reverse: VeraChange | null): VeraLogStep => ({
+    change,
+    message: 'It landed.',
+    reverse,
+    reason: reverse ? null : irreversibleReason(change),
+  })
+
+  const steps: VeraLogStep[] = [
+    step({ kind: 'retitle', planId: PLAN, title: 'New' }, { kind: 'retitle', planId: PLAN, title: 'Winter sits' }),
+    step({ kind: 'todo', planId: PLAN, title: 'Book the room' }, null),
+    step({ kind: 'move', entryId: ENTRY, toDay: '2026-03-19' }, { kind: 'move', entryId: ENTRY, toDay: '2026-03-12' }),
+  ]
+
+  it('takes the reverses LAST FIRST and leaves out what cannot come back', () => {
+    expect(undoChanges(steps)).toEqual([
+      { kind: 'move', entryId: ENTRY, toDay: '2026-03-12' },
+      { kind: 'retitle', planId: PLAN, title: 'Winter sits' },
+    ])
+  })
+
+  it('says how much of the batch it can put back, and that it is still a proposal', () => {
+    const note = undoNote(steps)
+    expect(note).toContain('2 of the 3')
+    expect(note).toContain('last one first')
+    expect(note).toContain('accept')
+    expect(note).not.toMatch(/[–—!]/)
+    expect(undoNote([steps[1]])).toContain('Nothing in that batch can be put back')
+    expect(undoNote([steps[0]])).toContain('the one change')
+  })
+
+  it('reads a stored record back through the same strict parser', () => {
+    const read = parseVeraLogSteps([
+      { change: { kind: 'retitle', planId: PLAN, title: 'New' }, message: 'Renamed it.', reverse: { kind: 'retitle', planId: PLAN, title: 'Winter sits' }, reason: null },
+      // A change the vocabulary no longer understands drops out rather than reaching an action.
+      { change: { kind: 'detonate', planId: PLAN }, message: 'Boom.', reverse: null, reason: null },
+      'not a step',
+    ])
+    expect(read).toHaveLength(1)
+    expect(read[0].reverse).toEqual({ kind: 'retitle', planId: PLAN, title: 'Winter sits' })
+    expect(parseVeraLogSteps(null)).toEqual([])
+  })
+
+  it('keeps a line whose reverse no longer parses, and gives it a reason rather than a hole', () => {
+    const read = parseVeraLogSteps([
+      { change: { kind: 'move', entryId: ENTRY, toDay: '2026-03-19' }, message: 'Moved it.', reverse: { kind: 'move', entryId: ENTRY, toDay: 'yesterday' }, reason: null },
+    ])
+    expect(read).toHaveLength(1)
+    expect(read[0].reverse).toBeNull()
+    expect(read[0].reason).toBe(irreversibleReason({ kind: 'move', entryId: ENTRY, toDay: '2026-03-19' }))
+    expect(undoChanges(read)).toEqual([])
+  })
 })
