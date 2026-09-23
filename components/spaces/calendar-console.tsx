@@ -1,14 +1,15 @@
 'use client'
 
-import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode, type Ref } from 'react'
-import { ChevronLeft, ChevronRight, CircleHelp, Plus, X } from 'lucide-react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type Ref } from 'react'
+import { ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Plus, X } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
 import { addMonth, monthLabel } from '@/lib/events/calendar-grid'
+import { CalendarLayerChips, CalendarViewSwitch, MonthJumpPanel, countByMonthKey, monthCount } from '@/components/events/calendar-chrome'
 import { verticalScrollTaker } from '@/components/events/use-month-gestures'
 import { agendaForMonth, type ListIndexItem } from '@/lib/calendar/list-index'
-import { itemSelectedClass, itemTitleClass } from '@/lib/calendar/registry'
+import { itemSelectedClass, itemTitleClass, type CalendarLayerKey } from '@/lib/calendar/registry'
 import { timezoneLabel } from '@/lib/spaces/booking-format'
 import { cn } from '@/lib/utils'
 
@@ -71,6 +72,9 @@ function viewerZone(): { name: string; short: string } {
   }
 }
 
+/** No layer is hidden. A module constant, so the default identity never changes between renders. */
+const NO_HIDDEN_LAYERS: ReadonlySet<CalendarLayerKey> = new Set()
+
 function Key({ children }: { children: ReactNode }) {
   return (
     <kbd className="rounded-control border border-border bg-surface px-1.5 py-0.5 text-3xs font-semibold leading-none text-muted">
@@ -85,6 +89,11 @@ export function CalendarConsole({
   month,
   onMonthChange,
   viewControls,
+  gridView,
+  onGridViewChange,
+  layers,
+  hiddenLayers,
+  onToggleLayer,
   items,
   selectedKey,
   onSelectItem,
@@ -101,6 +110,17 @@ export function CalendarConsole({
   onMonthChange: (next: { year: number; month1: number }) => void
   /** The page's own Guest preview toggle and CalendarModeToggle, so the two headers cannot drift. */
   viewControls: ReactNode
+  /** ONE HEADER BAR (LIVE-485, owner ask 2026-09-23). The grid's own controls come up here: the
+   *  month-and-year jump (drawn from `items` and `month`), the grid / list switcher and the layer
+   *  chips. Because the grid gives them up under `hostChrome`, this header has to genuinely carry
+   *  them, so they arrive as state the workspace holds rather than as a copy of the grid's.
+   *  `gridView` is absent on a panel that is not a calendar (List, Workflow), and `layers` is
+   *  absent on a panel with only the public layer (Guest preview). */
+  gridView?: 'grid' | 'list'
+  onGridViewChange?: (next: 'grid' | 'list') => void
+  layers?: readonly CalendarLayerKey[]
+  hiddenLayers?: ReadonlySet<CalendarLayerKey>
+  onToggleLayer?: (key: CalendarLayerKey) => void
   /** The List index (`listIndexItems`); the agenda keeps the shown month of it. */
   items: ListIndexItem[]
   selectedKey: string | null
@@ -119,7 +139,13 @@ export function CalendarConsole({
   veraRef?: Ref<HTMLDivElement>
 }) {
   const rootRef = useRef<HTMLDivElement>(null)
+  const monthButtonRef = useRef<HTMLButtonElement>(null)
   const [helpOpen, setHelpOpen] = useState(false)
+  // THE MONTH-AND-YEAR JUMP, drawn HERE now (LIVE-485). It used to be a control inside the grid
+  // body, on the second band of chrome the owner asked to fold away. The grid gives it up under
+  // `hostChrome` only because this header carries it: see HOST_DRAWN_CONTROL_MARKS.
+  const [jumpOpen, setJumpOpen] = useState(false)
+  const [jumpYear, setJumpYear] = useState(month.year)
   // The console only ever renders on the client (Dialog portals there), so the browser's zone is safe
   // to read once. It is the zone new pencils default to and the zone the today ring is drawn in.
   const [zone] = useState(viewerZone)
@@ -187,6 +213,16 @@ export function CalendarConsole({
   }, [open, step, today, onPencil])
 
   const days = agendaForMonth(items, year, month1)
+  // Which months hold something, for the dots under the jump panel's month names. The agenda index
+  // is everything the console knows about, which is the same set the side bar is grouping.
+  const countByMonth = useMemo(() => countByMonthKey(items), [items])
+
+  const closeJump = useCallback(() => {
+    setJumpOpen(false)
+    // FOCUS NEVER DROPS TO THE BODY (LIVE-469). The panel unmounts with the pressed button inside
+    // it, so focus goes back to the control that opened it, which reads the month now showing.
+    monthButtonRef.current?.focus()
+  }, [])
 
   return (
     <Dialog
@@ -203,27 +239,60 @@ export function CalendarConsole({
         data-calendar-console
         className="grid h-full min-h-0 grid-cols-1 grid-rows-[auto_auto_minmax(0,1fr)] text-text lg:grid-cols-[19rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)]"
       >
-        {/* THE HEADER, in three groups reading left to right: what you are looking at, how to move
-            through it, and what you can do to it. Close is last and carries its own border so it
-            never reads as one more action in the cluster. */}
-        <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border px-3 py-2 sm:px-4 lg:col-span-2">
-          <div className="flex min-w-0 items-baseline gap-2">
+        {/* 🔴 ONE HEADER BAR (LIVE-485, owner ask 2026-09-23: "condense all sorting and controls
+            into an intuitive header bar"). Everything that steers the calendar is in this one bar,
+            grouped by the job it does rather than by where it used to be drawn:
+
+              WHEN    the month (a button, which opens the month-and-year jump), the viewer's zone,
+                      and Prev / Today / Next
+              WHAT    the layer chips, on a panel that has layers
+              HOW     the grid / list switcher, on a panel that is a calendar
+              ACTIONS Guest preview and the four-panel toggle, Pencil it in, the shortcut sheet,
+                      and Close, which carries its own border so it never reads as one more action
+
+            Before this, WHEN and ACTIONS were here and WHAT and HOW were two more bands INSIDE the
+            grid body, under the console's own header: four rows of furniture before a single date.
+
+            🔴 AND THE HEADER HAS TO GENUINELY CARRY THEM. `calendarChrome(true)` takes all five off
+            the grid, and the one thing this console has already shipped as a dead end is taking a
+            control away that no host drew (LIVE-475: list mode with no way back to the month). Each
+            group below carries the `data-calendar-console-*` marker `HOST_DRAWN_CONTROL_MARKS`
+            names, and the LIVE-478 probe fails the build if the grid gives up a control whose
+            marker is not here. */}
+        <header
+          data-calendar-console-header
+          className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-border px-3 py-1.5 sm:px-4 lg:col-span-2"
+        >
+          {/* WHEN. */}
+          <div data-calendar-console-month className="relative flex min-w-0 items-center gap-2">
             {/* ONE ANNOUNCEMENT, ALWAYS THIS ONE. The grids inside the console run with `hostChrome`,
                 so none of them draws a month title and none of them speaks: this heading is the
-                month, and it says so once whichever panel is showing. */}
-            <h2
-              id="calendar-console-title"
-              className="truncate text-lead font-bold text-text"
-              aria-live="polite"
-            >
-              {label}
+                month, and it says so once whichever panel is showing. The button inside it is the
+                month-and-year jump, which is where a reader looks for it. */}
+            <h2 id="calendar-console-title" className="min-w-0 truncate text-lead font-bold text-text">
+              <button
+                ref={monthButtonRef}
+                data-calendar-console-month-jump
+                type="button"
+                onClick={() => {
+                  setJumpYear(year)
+                  setJumpOpen((o) => !o)
+                }}
+                aria-expanded={jumpOpen}
+                aria-haspopup="dialog"
+                title="Jump to a month"
+                className="tap-target inline-flex items-center gap-1 rounded-control px-1.5 py-0.5 transition-colors hover:bg-surface-elevated"
+              >
+                <span aria-live="polite">{label}</span>
+                <ChevronDown className={cn('h-4 w-4 shrink-0 text-muted transition-transform', jumpOpen && 'rotate-180')} aria-hidden />
+              </button>
             </h2>
             <span className="shrink-0 text-meta text-muted" title={`Today and new dates use ${zone.name}`}>
               {zone.short}
             </span>
           </div>
 
-          <div className="flex items-center gap-0.5 rounded-control border border-border p-0.5">
+          <div data-calendar-console-paging className="flex items-center gap-0.5 rounded-control border border-border p-0.5">
             <IconButton label="Previous month" onClick={() => step(-1)}>
               <ChevronLeft className="h-4 w-4" aria-hidden />
             </IconButton>
@@ -235,7 +304,21 @@ export function CalendarConsole({
             </IconButton>
           </div>
 
+          {/* WHAT. Only on a panel that has layers to hide: the Guest preview shows one. */}
+          {layers && layers.length > 1 && onToggleLayer ? (
+            <div data-calendar-console-layers className="flex min-w-0 items-center">
+              <CalendarLayerChips layers={layers} hidden={hiddenLayers ?? NO_HIDDEN_LAYERS} onToggle={onToggleLayer} />
+            </div>
+          ) : null}
+
           <div className="ml-auto flex flex-wrap items-center gap-2">
+            {/* HOW. Only on a panel that IS a calendar: List and Workflow have no month to switch. */}
+            {gridView && onGridViewChange ? (
+              <span data-calendar-console-view-switch className="inline-flex">
+                <CalendarViewSwitch view={gridView} onView={onGridViewChange} />
+              </span>
+            ) : null}
+            {/* ACTIONS. */}
             {viewControls}
             {onPencil && (
               <Button type="button" variant="secondary" size="sm" onClick={onPencil}>
@@ -261,7 +344,34 @@ export function CalendarConsole({
           >
             {resultLine ?? ''}
           </p>
+
+          {/* THE JUMP PANEL, under the bar and spanning it, so opening it never reflows the controls.
+              Escape closes it and hands focus back to the month button. */}
+          {jumpOpen ? (
+            <div
+              className="w-full border-t border-border pb-1 pt-2"
+              onKeyDown={(e) => {
+                if (e.key !== 'Escape') return
+                e.preventDefault()
+                e.stopPropagation()
+                closeJump()
+              }}
+            >
+              <MonthJumpPanel
+                shownYear={year}
+                shownMonth1={month1}
+                jumpYear={jumpYear}
+                onJumpYear={setJumpYear}
+                countFor={(y, m1) => monthCount(countByMonth, y, m1)}
+                onPick={(next) => {
+                  onMonthChange(next)
+                  closeJump()
+                }}
+              />
+            </div>
+          ) : null}
         </header>
+
 
         {/* THE SIDE BAR: the shown month's agenda, with Ask Vera along its foot (owner ask
             2026-09-23, which took Vera out of the full-width band that was costing the grid a row).
@@ -324,19 +434,26 @@ export function CalendarConsole({
           </aside>
           {/* Ask Vera holds the foot of the column: `shrink-0`, so a long agenda never squeezes it
               out, and capped with its own scroll, so a long PROPOSAL scrolls here instead of taking
-              the column and pushing the agenda off screen. */}
+              the column and pushing the agenda off screen. The cap is a little higher than it was
+              (owner ask 2026-09-23, "make the Ask Vera box more prominent"): enough that the ask,
+              its Send and the row of suggested asks are all on screen without scrolling to them. */}
           {veraRef ? (
             <div
               ref={veraRef}
               data-calendar-console-vera
-              className="max-h-36 shrink-0 overflow-y-auto overscroll-contain border-t border-border p-2 lg:max-h-[55%]"
+              className="max-h-48 shrink-0 overflow-y-auto overscroll-contain border-t border-border p-2 lg:max-h-[60%]"
             />
           ) : null}
         </div>
 
         {/* THE STAGE. The workspace parks its live panel set here; the panel set brings its own scroll
-            (overscroll contained), so the console body never moves the page behind it. */}
-        <div ref={stageRef} data-calendar-console-stage className="flex min-h-0 flex-col p-2 sm:p-3" />
+            (overscroll contained), so the console body never moves the page behind it.
+            VERTICAL IS THE ONLY AXIS (owner ask 2026-09-23, LIVE-485). Up and Down page the month,
+            the wheel pages it, a busy day's cell scrolls its own items, and a long List index
+            scrolls the stage. Nothing here scrolls sideways: `overflow-x-hidden` is stated at the
+            stage boundary rather than left to whichever child happens to carry it, so a panel added
+            later cannot quietly introduce a second axis. */}
+        <div ref={stageRef} data-calendar-console-stage className="flex min-h-0 flex-col overflow-x-hidden p-2 sm:p-3" />
       </div>
 
       <Dialog open={helpOpen} onClose={() => setHelpOpen(false)} ariaLabelledBy="calendar-console-keys" align="center" className="max-w-sm">

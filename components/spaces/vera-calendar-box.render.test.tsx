@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { VeraCalendarBox } from './vera-calendar-box'
+import { VERA_CHANGE_KINDS, VERA_SUGGESTIONS, VERA_UNDO_HINT } from '@/lib/calendar/vera-command'
 
 // Ask Vera, clarify before proposing (PROG-CAL11 slice 1). The two doors are mocked at the
 // actions module: what this pins is the box's own behaviour. A clarification renders its question
@@ -418,5 +419,70 @@ describe('VeraCalendarBox, the change log', () => {
     })
     await settle(() => buttonNamed(el.querySelector('[data-vera-proposal]')!, 'Accept')!.click())
     expect(el.querySelector('[role="status"]')!.textContent).toContain('Undo will not offer them')
+  })
+})
+
+// THE SUGGESTED TEXT IS A PROMPT YOU CAN PRESS (LIVE-485, owner ask 2026-09-23: "make the Ask Vera
+// box more prominent with a tool tip prompt in the suggested text"). The collapsed row used to read
+// "Pencil, move or retitle in plain words", which names three verbs and teaches none of them.
+describe('VeraCalendarBox, the suggested text', () => {
+  it('shows a real ask while it is closed, with the tooltip that says what it would do', () => {
+    const el = mount()
+    const lead = el.querySelector<HTMLElement>('[data-vera-lead]')!
+    expect(lead.textContent).toContain(VERA_SUGGESTIONS[0].ask.toLowerCase())
+    expect(lead.title).toBe(VERA_SUGGESTIONS[0].does)
+    // The abstract summary it replaced.
+    expect(el.textContent).not.toContain('Pencil, move or retitle in plain words')
+  })
+
+  it('offers every suggestion as a named, tooltipped chip that FILLS the field and never sends it', () => {
+    const el = mount()
+    act(() => {
+      el.querySelector('button[aria-expanded]')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    const chips = [...el.querySelectorAll<HTMLButtonElement>('[data-vera-suggestions] button')]
+    expect(chips.length).toBe(VERA_SUGGESTIONS.length)
+    for (const [i, chip] of chips.entries()) {
+      // The visible words ARE the accessible name (WCAG 2.5.3), and the tooltip is the extra
+      // sentence rather than a replacement for it.
+      expect(chip.textContent).toBe(VERA_SUGGESTIONS[i].ask)
+      expect(chip.getAttribute('aria-label')).toBeNull()
+      expect(chip.title).toBe(VERA_SUGGESTIONS[i].does)
+    }
+    const input = el.querySelector<HTMLInputElement>('#vera-ask')!
+    expect(input.value).toBe('')
+    act(() => chips[1].click())
+    expect(input.value).toBe(VERA_SUGGESTIONS[1].ask)
+    // Filling is not asking: nothing was sent.
+    expect(mocks.command).not.toHaveBeenCalled()
+  })
+
+  // A suggestion Vera cannot act on is worse than none: it teaches the wrong sentence. Undo is
+  // deliberately absent, because it is a control in the change log and not something you type.
+  it('suggests only things the box can actually apply, and points Undo at its own control', () => {
+    const el = mount()
+    act(() => {
+      el.querySelector('button[aria-expanded]')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(VERA_SUGGESTIONS.length).toBeGreaterThan(0)
+    for (const s of VERA_SUGGESTIONS) {
+      expect(s.ask.length).toBeGreaterThan(0)
+      expect(s.does.length).toBeGreaterThan(0)
+      expect(s.ask).not.toContain('—')
+      expect(s.does).not.toContain('—')
+      expect(s.ask.toLowerCase()).not.toContain('undo')
+    }
+    expect(VERA_CHANGE_KINDS).toContain('pencil')
+    expect(el.textContent).toContain(VERA_UNDO_HINT)
+    expect(el.textContent).toContain('What Vera changed')
+  })
+
+  it('carries its own tint and a real elevation, so it reads as the door it is', () => {
+    const el = mount()
+    const box = el.querySelector<HTMLElement>('[data-vera-calendar-box]')!
+    expect(box.className).toContain('border-primary/30')
+    expect(box.className).toContain('lift-1')
+    // No hardcoded colour anywhere on it: tokens only (docs/PRESENTATION.md).
+    expect(box.className).not.toMatch(/#[0-9a-fA-F]{3,8}/)
   })
 })

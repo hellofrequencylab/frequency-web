@@ -10,20 +10,19 @@ import {
   ArrowUpRight,
   CalendarDays,
   Users,
-  LayoutGrid,
-  List,
   Plus,
   Pencil,
 } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { buttonClasses } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { monthMatrix, monthLabel, addMonth, calendarChrome, cellFloorClass, WEEKDAY_LABELS } from '@/lib/events/calendar-grid'
+import { monthMatrix, monthLabel, addMonth, calendarChrome, cellFloorClass, WEEKDAY_LABELS, SHORT_MONTH_LABELS } from '@/lib/events/calendar-grid'
+import { CalendarLayerChips, CalendarViewSwitch, MonthJumpPanel, countByMonthKey, monthCount } from '@/components/events/calendar-chrome'
 import { eventCoverFocusStyle } from '@/lib/events/cover-focus'
 import { IconButton } from '@/components/ui/icon-button'
 import { CalendarRepeatsStrip } from '@/components/events/calendar-repeats-strip'
 import type { CalendarRepeatSeries } from '@/lib/events/calendar-repeats'
-import { CALENDAR_LAYERS, itemChipClass, type CalendarLayerKey } from '@/lib/calendar/registry'
+import { itemChipClass, type CalendarLayerKey } from '@/lib/calendar/registry'
 import { spanDayKeys } from '@/lib/calendar/entries'
 import { notesForDay, type DayNote } from '@/lib/calendar/day-notes'
 import { monthKey } from '@/lib/calendar/month-window'
@@ -85,7 +84,7 @@ function localToday(): string {
   }
 }
 
-const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const SHORT_MONTHS = SHORT_MONTH_LABELS
 const itemKey = (ev: CalendarEvent) => `${ev.slug}|${ev.dayKey}`
 
 export function EventCalendar({
@@ -108,6 +107,10 @@ export function EventCalendar({
   moveNotice,
   month,
   onMonthChange,
+  view: viewProp,
+  onViewChange,
+  hiddenLayers: hiddenLayersProp,
+  onHiddenLayersChange,
   fill = false,
   hostChrome = false,
 }: {
@@ -153,6 +156,13 @@ export function EventCalendar({
    *  the grid always agree. Absent, the grid owns its month as it always has. */
   month?: { year: number; month1: number }
   onMonthChange?: (next: { year: number; month1: number }) => void
+  /** CONTROLLED VIEW AND CONTROLLED LAYERS (LIVE-485), the same shape `month` already has. The
+   *  Calendar console's header draws the grid / list switcher and the layer chips now, so the host
+   *  has to hold what they toggle; absent, the grid keeps both itself exactly as it always has. */
+  view?: 'grid' | 'list'
+  onViewChange?: (next: 'grid' | 'list') => void
+  hiddenLayers?: ReadonlySet<CalendarLayerKey>
+  onHiddenLayersChange?: (next: ReadonlySet<CalendarLayerKey>) => void
   /** Stretch to the host's height: the week rows share whatever is left below the header, so a
    *  full-viewport mount (the console) is a wall of days rather than a card with a gap under it.
    *  A day with more items than its share can show scrolls inside its own cell. */
@@ -170,11 +180,30 @@ export function EventCalendar({
   const { year, month1 } = month ?? internalMonth
   const [selected, setSelected] = useState<CalendarEvent | null>(null)
   const [inViewerTz, setInViewerTz] = useState(false)
-  const [view, setView] = useState<'grid' | 'list'>(initialView)
+  const [internalView, setInternalView] = useState<'grid' | 'list'>(initialView)
+  const view = viewProp ?? internalView
+  const setView = useCallback(
+    (next: 'grid' | 'list') => {
+      setInternalView(next)
+      onViewChange?.(next)
+    },
+    [onViewChange],
+  )
   const [activeSeries, setActiveSeries] = useState<string | null>(null)
   const [jumpOpen, setJumpOpen] = useState(false)
   const [jumpYear, setJumpYear] = useState(initialYear)
-  const [hiddenLayers, setHiddenLayers] = useState<ReadonlySet<CalendarLayerKey>>(new Set())
+  const [internalHiddenLayers, setInternalHiddenLayers] = useState<ReadonlySet<CalendarLayerKey>>(new Set())
+  const hiddenLayers = hiddenLayersProp ?? internalHiddenLayers
+  const toggleLayer = useCallback(
+    (key: CalendarLayerKey) => {
+      const next = new Set(hiddenLayers)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      setInternalHiddenLayers(next)
+      onHiddenLayersChange?.(next)
+    },
+    [hiddenLayers, onHiddenLayersChange],
+  )
   const [previewKey, setPreviewKey] = useState<string | null>(null)
   const [slide, setSlide] = useState<'next' | 'prev' | null>(null)
   // The slide follows the month actually shown, whoever changed it (the arrows here, a swipe, or a
@@ -376,14 +405,7 @@ export function EventCalendar({
   }, [all])
 
   // Items per month (by first day) for the jump panel's markers.
-  const countByMonth = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const ev of all) {
-      const k = ev.dayKey.slice(0, 7)
-      map.set(k, (map.get(k) ?? 0) + 1)
-    }
-    return map
-  }, [all])
+  const countByMonth = useMemo(() => countByMonthKey(all), [all])
 
   // THE LIST: everything on hand from the first day of the browsed month on, soonest first, grouped
   // by month. It follows the grid, so switching views keeps your place.
@@ -429,29 +451,9 @@ export function EventCalendar({
   const chrome = calendarChrome(hostChrome)
 
   // THIS GRID'S OWN VIEW SWITCHER: the month grid, or the same calendar as a chronological list.
-  // Nothing outside this component draws it (the workspace's CalendarModeToggle is a different
-  // control over a different set: Guest / Calendar / List / Workflow), so it is drawn in both
-  // chrome modes and defined once here rather than written out twice.
-  const viewSwitch = (
-    <div className="inline-flex items-center rounded-control border border-border p-0.5" role="group" aria-label="Calendar view">
-      <IconButton
-        label="Grid view"
-        variant={view === 'grid' ? 'filled' : 'plain'}
-        onClick={() => setView('grid')}
-        aria-pressed={view === 'grid'}
-      >
-        <LayoutGrid className="h-4 w-4" aria-hidden />
-      </IconButton>
-      <IconButton
-        label="List view"
-        variant={view === 'list' ? 'filled' : 'plain'}
-        onClick={() => setView('list')}
-        aria-pressed={view === 'list'}
-      >
-        <List className="h-4 w-4" aria-hidden />
-      </IconButton>
-    </div>
-  )
+  // The markup is components/events/calendar-chrome.tsx, because the Calendar console's header
+  // draws the very same control now and two copies of it would drift (LIVE-485).
+  const viewSwitch = <CalendarViewSwitch view={view} onView={setView} />
 
   return (
     <div
@@ -471,42 +473,28 @@ export function EventCalendar({
       <p data-calendar-move-live aria-live="polite" className="sr-only">
         {moveNotice ?? ''}
       </p>
-      {/* THE HEADER IS THE HOST'S WHEN THERE IS ONE (PROG-CAL13). Inside the Calendar console the
-          month label and the Prev / Today / Next cluster are drawn once in the console's own header,
-          so the grid draws neither and the month gets the height they were costing it twice over.
-          The Loading live region is NOT chrome: a month that has not arrived has to be announced
-          wherever the grid is mounted, so it stays either way.
+      {/* THE HEADER IS THE HOST'S WHEN THERE IS ONE (PROG-CAL13, widened by LIVE-485). Inside the
+          Calendar console every one of these controls is drawn once, in the console's own header
+          bar: the month label, the Prev / Today / Next cluster, the month-and-year jump, the grid /
+          list switcher and the layer chips. So the grid draws none of them and the month gets back
+          the four bands of furniture they were costing it.
 
-          🔴 THE CHROME THE HOST CANNOT DRAW (LIVE-475). The first cut of `hostChrome` dropped the
-          WHOLE header, and with it the two controls no host draws: this grid's own grid / list
-          switcher (which is not the workspace's four-panel toggle) and the month-and-year jump. That
-          shipped a reachable dead end: switch the page grid to List, press Fullscreen, and you were
-          in list mode inside a full-screen console with no way back to the month and no way to move
-          more than one month at a time, with closing the console the only exit. Both controls are
-          drawn here in either mode. They cost one slim row, which is not what the month was losing
-          height to: the duplicated month label and paging cluster are still gone. */}
-      {!chrome.monthTitle && !chrome.paging ? (
-        <div className="flex items-center justify-end gap-2 border-b border-border px-3 py-1.5">
-          <span role="status" className="sr-only">
-            {loading ? 'Loading' : null}
-          </span>
-          {chrome.monthJump && (
-            <IconButton
-              ref={monthButtonRef}
-              label="Jump to a month"
-              title="Jump to a month"
-              onClick={() => {
-                setJumpYear(year)
-                setJumpOpen((o) => !o)
-              }}
-              aria-expanded={jumpOpen}
-              aria-haspopup="dialog"
-            >
-              <CalendarDays className="h-4 w-4" aria-hidden />
-            </IconButton>
-          )}
-          {chrome.viewSwitch && viewSwitch}
-        </div>
+          🔴 A HOST MAY ONLY TAKE A CONTROL IT DRAWS (LIVE-475). The first cut of `hostChrome`
+          dropped this whole header, and the switcher and the jump went with it although NOTHING
+          outside this component drew either one. That shipped a reachable dead end: switch the page
+          grid to List, press Fullscreen, and you were in list mode inside a full-screen console
+          with no way back to the month and no way to move more than one month at a time, with
+          closing the console the only exit. The console header genuinely carries both now, which is
+          what lets them come off here, and `HOST_DRAWN_CONTROL_MARKS` in lib/events/calendar-grid.ts
+          is the gate that keeps that true rather than a promise in a comment.
+
+          The Loading live region is NOT chrome: a month that has not arrived has to be announced
+          wherever the grid is mounted, so it stays either way, and under a host it is the only
+          thing left of this header. */}
+      {!chrome.monthTitle && !chrome.paging && !chrome.viewSwitch && !chrome.monthJump ? (
+        <span role="status" className="sr-only">
+          {loading ? 'Loading' : null}
+        </span>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
           <div className="relative flex items-center gap-1">
@@ -558,47 +546,24 @@ export function EventCalendar({
         </div>
       )}
 
-      {/* MONTH + YEAR JUMP: twelve months of a year, each marked when it holds anything on hand. */}
+      {/* MONTH + YEAR JUMP: twelve months of a year, each marked when it holds anything on hand.
+          The panel itself is components/events/calendar-chrome.tsx, shared with the console header's
+          own jump so the two mark the same months and carry the same names. */}
       {jumpOpen && chrome.monthJump && (
-        <div role="dialog" aria-label="Jump to a month" className="border-b border-border px-4 py-3">
-          <div className="mb-2 flex items-center justify-between">
-            <IconButton label="Previous year" onClick={() => setJumpYear((y) => y - 1)}>
-              <ChevronLeft className="h-4 w-4" aria-hidden />
-            </IconButton>
-            <span className="text-body-sm font-semibold text-text tabular-nums">{jumpYear}</span>
-            <IconButton label="Next year" onClick={() => setJumpYear((y) => y + 1)}>
-              <ChevronRight className="h-4 w-4" aria-hidden />
-            </IconButton>
-          </div>
-          <div className="grid grid-cols-4 gap-1 @md:grid-cols-6">
-            {SHORT_MONTHS.map((name, i) => {
-              const m1 = i + 1
-              const isShown = jumpYear === year && m1 === month1
-              const count = countByMonth.get(monthKey(jumpYear, m1)) ?? 0
-              return (
-                <button
-                  key={name}
-                  type="button"
-                  onClick={() => {
-                    goTo({ year: jumpYear, month1: m1 })
-                    setJumpOpen(false)
-                    // The panel unmounts with this button in it: focus goes to the month title.
-                    focusMonthAnchor()
-                  }}
-                  aria-current={isShown ? 'date' : undefined}
-                  aria-label={`${monthLabel(jumpYear, m1)}${count ? `, ${count} on the calendar` : ''}`}
-                  className={cn(
-                    'flex flex-col items-center gap-0.5 rounded-control px-2 py-1.5 text-body-sm font-medium transition-colors',
-                    isShown ? 'bg-primary text-on-primary' : 'text-text hover:bg-surface-elevated',
-                  )}
-                >
-                  {name}
-                  <span className={cn('h-1 w-1 rounded-pill', count ? (isShown ? 'bg-on-primary' : 'bg-primary') : 'bg-transparent')} />
-                </button>
-              )
-            })}
-          </div>
-        </div>
+        <MonthJumpPanel
+          shownYear={year}
+          shownMonth1={month1}
+          jumpYear={jumpYear}
+          onJumpYear={setJumpYear}
+          countFor={(y, m1) => monthCount(countByMonth, y, m1)}
+          onPick={(next) => {
+            goTo(next)
+            setJumpOpen(false)
+            // The panel unmounts with this button in it: focus goes to the month title.
+            focusMonthAnchor()
+          }}
+          className="border-b border-border px-4 py-3"
+        />
       )}
 
       {/* A FAILED MONTH says so. The grid below still paints, holding only what the page had on
@@ -619,33 +584,15 @@ export function EventCalendar({
         </p>
       )}
 
-      {showLayerToggles && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2" role="group" aria-label="Show on the calendar">
-          {CALENDAR_LAYERS.filter((l) => layers!.includes(l.key)).map((l) => {
-            const on = !hiddenLayers.has(l.key)
-            return (
-              <button
-                key={l.key}
-                type="button"
-                aria-pressed={on}
-                onClick={() =>
-                  setHiddenLayers((cur) => {
-                    const next = new Set(cur)
-                    if (next.has(l.key)) next.delete(l.key)
-                    else next.add(l.key)
-                    return next
-                  })
-                }
-                className={cn(
-                  'rounded-pill border px-3 py-1 text-meta font-medium transition-colors',
-                  on ? cn('border-transparent', l.chipClass) : 'border-border text-muted hover:text-text',
-                )}
-              >
-                {l.label}
-              </button>
-            )
-          })}
-        </div>
+      {/* THE LAYER CHIPS, where no host draws them. Inside the console they are in its header bar
+          (LIVE-485), which is what took this band off the top of the month. */}
+      {showLayerToggles && chrome.layerFilters && (
+        <CalendarLayerChips
+          layers={layers!}
+          hidden={hiddenLayers}
+          onToggle={toggleLayer}
+          className="border-b border-border px-4 py-2"
+        />
       )}
 
       {view === 'list' && (
