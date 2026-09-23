@@ -109,7 +109,13 @@ describe('VeraCalendarBox, clarify before proposing', () => {
 
     // Choosing an option continues the same conversation: the transcript goes back with the value.
     mocks.command.mockResolvedValueOnce({
-      data: { kind: 'proposal', changes: [{ kind: 'archive', planId: PLAN_B }], note: 'Archived the sequel.', timeZone: 'UTC' },
+      data: {
+        kind: 'proposal',
+        changes: [{ kind: 'archive', planId: PLAN_B }],
+        note: 'Archived the sequel.',
+        timeZone: 'UTC',
+        context: { plans: { [PLAN_B]: 'Sound bath, the sequel' }, entries: {} },
+      },
     })
     await settle(() => buttonNamed(box!, 'Sound bath, the sequel (Pencil)')!.click())
     expect(mocks.command).toHaveBeenCalledTimes(2)
@@ -121,8 +127,10 @@ describe('VeraCalendarBox, clarify before proposing', () => {
     expect(proposal).not.toBeNull()
     expect(proposal!.textContent).toContain('Archived the sequel.')
     // LIVE-467 corrected this line: archiving a Plan takes its penciled dates with it, and saying
-    // "Nothing is deleted" was not true of what a reader would see on the grid.
-    expect(proposal!.textContent).toContain('Archive that Plan. Its penciled dates go with it.')
+    // "Nothing is deleted" was not true of what a reader would see on the grid. The name is the
+    // SERVER's: this box was mounted with no Plans at all and still says which one it is.
+    expect(proposal!.textContent).toContain('Archive "Sound bath, the sequel". Its penciled dates go with it.')
+    expect(proposal!.textContent).not.toContain('that Plan')
     expect(buttonNamed(proposal!, 'Accept')).toBeDefined()
     expect(mocks.apply).not.toHaveBeenCalled()
   })
@@ -205,5 +213,89 @@ describe('VeraCalendarBox, clarify before proposing', () => {
     await settle(() => buttonNamed(el.querySelector('[data-vera-clarification]')!, 'B')!.click())
     expect(el.querySelector('[role="alert"]')!.textContent).toContain('could not narrow this down')
     expect(el.querySelector('[data-vera-clarification]')).not.toBeNull()
+  })
+})
+
+// THE SECOND GATE (owner ruling: Vera changes nothing without explicit permission). A destructive
+// line arrives unticked; ticking it reveals its own confirmation, whose visible words name what is
+// lost; Accept waits for that second box. What a line SAYS comes from the context the server
+// returned with the proposal, which is how a Plan this box has never held still gets named and how
+// a field change admits it is overwriting something.
+
+const lineBoxes = (el: ParentNode) => [...el.querySelectorAll<HTMLInputElement>('[data-vera-lines] input[type="checkbox"]')]
+
+describe('VeraCalendarBox, the confirmation gate', () => {
+  const ARCHIVE = { kind: 'archive', planId: PLAN }
+  const RETITLE = { kind: 'retitle', planId: PLAN, title: 'Autumn retreat, 2026' }
+
+  async function propose(changes: unknown[], context: unknown) {
+    mocks.command.mockResolvedValueOnce({ data: { kind: 'proposal', changes, note: '', timeZone: 'UTC', context } })
+    const el = mount()
+    openAndAsk(el, 'Archive the autumn retreat')
+    await settle(() => {
+      el.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    return el
+  }
+
+  it('arrives unticked, names the Plan the browser never held, and asks before it will apply', async () => {
+    const el = await propose([ARCHIVE, RETITLE], { plans: { [PLAN]: 'Autumn retreat' }, entries: {} })
+    const proposal = el.querySelector('[data-vera-proposal]')!
+    expect(proposal.textContent).toContain('Archive "Autumn retreat"')
+    expect(proposal.textContent).not.toContain('that Plan')
+
+    // Apply-all is not the default: the archive is off, the retitle is on.
+    const boxes = lineBoxes(el)
+    expect(boxes[0].checked).toBe(false)
+    expect(boxes[1].checked).toBe(true)
+    expect(el.querySelector('[data-vera-confirm]')).toBeNull()
+    expect(buttonNamed(proposal, 'Accept')!.disabled).toBe(false)
+
+    // Ticking the archive is not enough: its own confirmation appears and Accept goes out of reach.
+    act(() => boxes[0].click())
+    const confirm = el.querySelector('[data-vera-confirm="0"]')
+    expect(confirm).not.toBeNull()
+    const label = confirm!.querySelector('label')!
+    expect(label.textContent).toContain('Yes, archive "Autumn retreat" and delete its penciled dates.')
+    expect(label.textContent).toContain('no restore control')
+    // The visible words ARE the accessible name: no aria-label overrides them.
+    expect(confirm!.querySelector('input')!.getAttribute('aria-label')).toBeNull()
+    expect(buttonNamed(proposal, 'Accept')!.disabled).toBe(true)
+    expect(proposal.textContent).toContain('Tick the confirmation under the marked line before you accept.')
+    expect(el.textContent).not.toContain('\u2014')
+
+    // Confirmed, Accept sends the archive with its position, so the action will not refuse it.
+    mocks.apply.mockResolvedValueOnce({ data: { results: [{ index: 0, ok: true, message: 'Archived it.' }, { index: 1, ok: true, message: 'Renamed it.' }] } })
+    act(() => lineBoxes(el)[1].click())
+    expect(buttonNamed(proposal, 'Accept')!.disabled).toBe(false)
+    await settle(() => buttonNamed(proposal, 'Accept')!.click())
+    expect(mocks.apply).toHaveBeenCalledWith('lab', [ARCHIVE, RETITLE], [0])
+  })
+
+  it('takes the confirmation back when the line it belongs to is unticked', async () => {
+    const el = await propose([ARCHIVE], { plans: { [PLAN]: 'Autumn retreat' }, entries: {} })
+    act(() => lineBoxes(el)[0].click())
+    act(() => lineBoxes(el)[1].click())
+    expect(lineBoxes(el)[1].checked).toBe(true)
+
+    act(() => lineBoxes(el)[0].click())
+    expect(el.querySelector('[data-vera-confirm]')).toBeNull()
+
+    // Ticking it again starts the confirmation over rather than remembering the old yes.
+    act(() => lineBoxes(el)[0].click())
+    expect(lineBoxes(el)[1].checked).toBe(false)
+    expect(buttonNamed(el.querySelector('[data-vera-proposal]')!, 'Accept')!.disabled).toBe(true)
+  })
+
+  it('says a field change is a replacement, and how much it replaces', async () => {
+    const el = await propose(
+      [{ kind: 'field', target: 'plan', id: PLAN, path: 'notes', value: 'Bring the small gong.' }],
+      { plans: { [PLAN]: 'Autumn retreat' }, entries: {}, current: { [`plan:${PLAN}:notes`]: { chars: 3200, text: null } } },
+    )
+    const proposal = el.querySelector('[data-vera-proposal]')!
+    expect(proposal.textContent).toContain('Set Notes on "Autumn retreat" to "Bring the small gong.". That replaces the 3,200 characters there now.')
+    // Nothing destructive here, so the line is ticked and there is no second box to find.
+    expect(lineBoxes(el)[0].checked).toBe(true)
+    expect(el.querySelector('[data-vera-confirm]')).toBeNull()
   })
 })
