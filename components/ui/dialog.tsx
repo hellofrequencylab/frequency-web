@@ -4,6 +4,7 @@ import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { usePortaledSpaceTheme } from './use-portaled-space-theme'
+import { isTopModal, modalDepth, popModal, pushModal } from '@/lib/ui/modal-stack'
 
 // True on the client, false during SSR + the first hydration pass — without a setState-in-effect (which the
 // repo's lint forbids). Lets the portal render only once we're safely on the client, matching the server's
@@ -20,8 +21,15 @@ function useIsClient() {
 // A stack of the currently-open dialogs, innermost last. Only the TOPMOST dialog reacts to ESC / Tab, so a
 // stacked dialog (e.g. the Loom picker opened over the on-canvas photo popup — both portal to document.body,
 // so neither is a DOM descendant of the other) never also drives the one beneath it: one ESC closed BOTH,
-// and the outer's focus trap fought the inner's on every Tab. Module-scoped: shared across every instance.
-const dialogStack: symbol[] = []
+// and the outer's focus trap fought the inner's on every Tab.
+//
+// THE STACK IS PUBLISHED NOW (LIVE-482), in `lib/ui/modal-stack.ts`. It used to be a private array in this
+// file, which left the rest of the app unable to ask whether a modal was covering it. An overlay that
+// portals to <body>, paints over the whole viewport, traps Tab and swallows pointer events does not merely
+// hide the chrome beneath it, it makes that chrome unreachable, so ambient motion down there has no pause
+// affordance left and (because this overlay carries a backdrop filter) forces a full re-blur on every frame
+// it changes. The dispatch ticker reads the signal and holds still. The semantics here are unchanged: same
+// order, same topmost rule, same release-at-zero for the scroll lock.
 
 // Shared modal/overlay shell — one place for the backdrop, centering, ESC +
 // backdrop-click to close, body scroll-lock, focus trap + restore, and dialog
@@ -103,7 +111,7 @@ export function Dialog({
     if (!open) return
     const panel = panelRef.current
     const id = idRef.current!
-    dialogStack.push(id)
+    pushModal(id)
 
     // Remember what was focused before we opened (the trigger), so keyboard and
     // screen-reader users land back where they left off when the dialog closes.
@@ -127,7 +135,7 @@ export function Dialog({
     function onKey(e: KeyboardEvent) {
       // Only the topmost dialog handles keys, so ESC/Tab in a stacked dialog never also fires the one
       // beneath it (which would double-close, and make the two focus traps fight over Tab).
-      if (dialogStack[dialogStack.length - 1] !== id) return
+      if (!isTopModal(id)) return
       if (e.key === 'Escape') {
         onCloseRef.current()
         return
@@ -161,11 +169,10 @@ export function Dialog({
     document.body.style.overflow = 'hidden'
     return () => {
       document.removeEventListener('keydown', onKey)
-      const i = dialogStack.lastIndexOf(id)
-      if (i !== -1) dialogStack.splice(i, 1)
+      popModal(id)
       // Only unlock the page when NO dialog remains open; a nested dialog closing must not release the
       // scroll-lock while the one beneath it is still up (its own prevOverflow was captured as 'hidden').
-      document.body.style.overflow = dialogStack.length === 0 ? prevOverflow : 'hidden'
+      document.body.style.overflow = modalDepth() === 0 ? prevOverflow : 'hidden'
       // Restore focus to the trigger on close, if it is still in the document
       // and outside the (now-closing) panel.
       if (previouslyFocused && document.contains(previouslyFocused) && !panel?.contains(previouslyFocused)) {
