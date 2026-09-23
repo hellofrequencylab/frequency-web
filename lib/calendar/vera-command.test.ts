@@ -7,7 +7,10 @@ import {
   MIN_CLARIFICATION_OPTIONS,
   parseVeraChanges,
   parseVeraClarification,
+  veraFieldList,
+  veraFieldSpec,
   veraFieldVocabulary,
+  withVeraField,
   VERA_CHANGE_KINDS,
   VERA_MODE_OPTIONS,
   type VeraChange,
@@ -264,5 +267,44 @@ describe('describeChange', () => {
 
   it('offers the three working stages as modes, labelled by the canon', () => {
     expect(VERA_MODE_OPTIONS.map((o) => `${o.value}:${o.label}`)).toEqual(['pencil:Pencil', 'plan:Planning', 'production:Production'])
+  })
+})
+
+// ── The field write is a spread onto a copy, keyed by the vocabulary ────────────────────────────
+// CodeQL flagged the first shape of this: `merged[change.path] = change.value`, a write through a
+// computed index whose key had travelled in from a model. The vocabulary already refused any path
+// it does not declare, so nothing could reach a write by another name, but a computed-index write
+// is one refactor away from being the thing that matters, and "the allowlist upstream covers it"
+// is the sentence every prototype-pollution postmortem opens with. These pin the shape rather than
+// the reasoning: the key comes from the spec, the input is copied rather than mutated, and a path
+// spelled like a prototype key is refused outright.
+describe('withVeraField', () => {
+  const spec = veraFieldSpec('plan', 'notes')!
+
+  it('returns a copy and leaves the caller input alone', () => {
+    const input = { title: 'Winter sits', notes: null }
+    const next = withVeraField(input, spec, 'Bring blankets.')
+    expect(next).toEqual({ title: 'Winter sits', notes: 'Bring blankets.' })
+    expect(input.notes).toBeNull()
+    expect(next).not.toBe(input)
+  })
+
+  it('lays the field down as an own property, never on a prototype', () => {
+    const next = withVeraField({ notes: null }, spec, 'A note.')!
+    expect(Object.prototype.hasOwnProperty.call(next, 'notes')).toBe(true)
+  })
+
+  it('refuses a path spelled like a prototype key, whatever declared it', () => {
+    for (const path of ['__proto__', 'constructor', 'prototype']) {
+      expect(withVeraField({ title: 'x' }, { ...spec, path }, 'anything')).toBeNull()
+    }
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined()
+  })
+
+  it('reads a repeat field as a list, and an absent one as empty', () => {
+    const links = veraFieldSpec('plan', 'links')!
+    expect(veraFieldList({ links: [{ url: 'https://a.test' }] }, links)).toHaveLength(1)
+    expect(veraFieldList({}, links)).toEqual([])
+    expect(veraFieldList({ links: 'not a list' }, links)).toEqual([])
   })
 })

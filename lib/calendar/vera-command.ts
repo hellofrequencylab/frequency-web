@@ -133,6 +133,34 @@ export function veraFieldSpec(target: VeraFieldTarget, path: string): VeraFieldS
   return veraFieldVocabulary()[target].find((s) => s.path === path) ?? null
 }
 
+/**
+ * Keys that are never a field path, refused by name. `veraFieldSpec` above is the real allowlist
+ * and nothing reaches a write by a path the manifest never declared. This is the second lock, and
+ * it is here because a manifest is edited by people: the day one declares a path called
+ * `constructor`, the failure should be a refusal rather than a mangled object.
+ */
+const UNSAFE_FIELD_KEYS: ReadonlySet<string> = new Set(['__proto__', 'constructor', 'prototype'])
+
+/**
+ * One declared field set on a COPY of an entity's own form input.
+ *
+ * The key is `spec.path`, which this module built out of the manifest, never the raw string the
+ * model sent: `veraFieldSpec` is what turns one into the other, and a path the vocabulary does not
+ * declare has already been refused by the time a spec exists. The write is an object SPREAD rather
+ * than an assignment through a computed index, so the result is always a fresh object carrying the
+ * field as its own property, and the caller's input is never mutated underneath it.
+ */
+export function withVeraField<T extends object>(input: T, spec: VeraFieldSpec, value: unknown): T | null {
+  if (UNSAFE_FIELD_KEYS.has(spec.path)) return null
+  return { ...input, [spec.path]: value } as T
+}
+
+/** What a repeat field holds now, read by its declared path. */
+export function veraFieldList<T extends object>(input: T, spec: VeraFieldSpec): unknown[] {
+  const held = (input as Record<string, unknown>)[spec.path]
+  return Array.isArray(held) ? held : []
+}
+
 /** The noun a target is called in a sentence a person reads. */
 export function veraTargetNoun(target: VeraFieldTarget): string {
   return target === 'plan' ? 'Plan' : 'date'
@@ -232,10 +260,13 @@ function cleanText(value: string): string {
   return value.replace(/\s*[\u2013\u2014]\s*/g, ', ')
 }
 
+/** `Object.fromEntries` rather than a loop of computed-index writes: every key it lays down is an
+ *  own property of a fresh object, whatever the key happens to spell. `checkRepeatRow` has already
+ *  refused any key the repeat did not declare, so this is the same second lock as UNSAFE_FIELD_KEYS. */
 function cleanRow(row: RepeatRowValue): RepeatRowValue {
-  const out: RepeatRowValue = {}
-  for (const [k, v] of Object.entries(row)) out[k] = typeof v === 'string' ? cleanText(v) : v
-  return out
+  return Object.fromEntries(
+    Object.entries(row).map(([k, v]) => [k, typeof v === 'string' ? cleanText(v) : v]),
+  ) as RepeatRowValue
 }
 
 type Rec = Record<string, unknown>

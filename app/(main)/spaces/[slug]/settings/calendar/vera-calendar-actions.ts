@@ -11,7 +11,9 @@ import {
   fieldValueText,
   isVeraMode,
   parseVeraChanges,
+  veraFieldList,
   veraFieldSpec,
+  withVeraField,
   type VeraChange,
   type VeraClarificationOption,
 } from '@/lib/calendar/vera-command'
@@ -253,14 +255,9 @@ async function applyPlanField(editor: Editor, change: Extract<VeraChange, { kind
     targetKind: plan.targetKind,
     playbookId: plan.playbookId,
   }
-  const merged = input as unknown as Record<string, unknown>
-  if (spec.row) {
-    const current = Array.isArray(merged[change.path]) ? (merged[change.path] as unknown[]) : []
-    merged[change.path] = [...current, change.value]
-  } else {
-    merged[change.path] = change.value
-  }
-  const parsed = parsePlanInput(input)
+  const next = withVeraField(input, spec, spec.row ? [...veraFieldList(input, spec), change.value] : change.value)
+  if (!next) return { error: `${spec.label} is not a field Vera can set on a Plan.` }
+  const parsed = parsePlanInput(next)
   if ('error' in parsed) return { error: parsed.error }
   if (spec.row && parsed.data.links.length <= plan.links.length) {
     return { error: `That link was not kept on "${plan.title}". It needs a full web address starting with http, and a Plan holds 20 links at most.` }
@@ -286,8 +283,8 @@ async function applyEntryField(slug: string, editor: Editor, change: Extract<Ver
   if (row.published_event_id) return { error: `"${row.title}" is already a published event. Change it in the event Studio.` }
   const spec = veraFieldSpec('entry', change.path)
   if (!spec || spec.row) return { error: `${change.path} is not a field Vera can set on a date.` }
-  const input = entryToInput(row)
-  ;(input as unknown as Record<string, unknown>)[change.path] = change.value
+  const input = withVeraField(entryToInput(row), spec, change.value)
+  if (!input) return { error: `${spec.label} is not a field Vera can set on a date.` }
   const res = await saveCalendarEntry(slug, change.id, input)
   if ('error' in res) return { error: res.error }
   if (change.value === null) return `Cleared ${spec.label} on "${row.title}".`
