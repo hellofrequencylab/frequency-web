@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ENTRY_STAGES } from './registry'
+import { planStageLabel } from './plans'
 import { PLAN_STAGE_TRANSITIONS } from './workflow-board'
 import { SPACE_PLAN_MANIFEST } from '@/lib/studio/entities/space-plan'
 
@@ -18,9 +19,10 @@ import { SPACE_PLAN_MANIFEST } from '@/lib/studio/entities/space-plan'
 // contradiction lived long enough that ONE component disagreed with itself: plan-drawer.tsx
 // rendered "Planning" in its read-only Stage row and offered "Plan" in the picker below it.
 //
-// The label expressions are ternaries inside components, so this reads the source for those two
-// and the exported table for the manifest. That is deliberate: a render test would mount two
-// client components to assert one string each, and would still miss the manifest.
+// LIVE-470 finished the job the comment above describes. There are no ternaries left: every site
+// calls `planStageLabel`, which reads lib/calendar/registry.ts. So the cases below assert the
+// COLLAPSE (no site spells a stage word of its own) and the word the one source hands back,
+// instead of asserting the shape of each site's ternary.
 
 const ROOT = join(import.meta.dirname, '..', '..')
 const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8')
@@ -28,21 +30,33 @@ const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8')
 /** Every place a `'plan'` stage VALUE is turned into a word a person reads. */
 const LABEL_SITES = [
   { file: 'app/(main)/spaces/[slug]/settings/calendar/plan-board.tsx', what: 'the board column heading' },
+  { file: 'lib/calendar/workflow-board.ts', what: "the Workflow board's columns and transitions" },
+  { file: 'components/spaces/calendar-workspace.tsx', what: "the workspace's optimistic source label" },
+  { file: 'lib/studio/entities/space-plan.ts', what: "the Studio manifest's stage options" },
   // The drawer is no longer a site: PROG-CAL2 composed it from the manifest, so it holds no stage
   // label of its own. The case below pins that it stays that way.
 ] as const
 
 describe('the stage nouns are Pencil, Planning, Production (ADR-1523)', () => {
-  it('has no site left that labels the plan stage "Plan"', () => {
+  it('has no site left that spells a stage word of its own (LIVE-470)', () => {
     for (const site of LABEL_SITES) {
       const src = read(site.file)
       expect(
-        /['"]plan['"]\s*\?\s*['"]Plan['"]/.test(src),
-        `${site.file} labels the plan stage "Plan" in ${site.what}. NAMING.md reserves capital-P ` +
-          `Plan for the OBJECT; the stage is "Planning" (ADR-1523).`,
+        /['"]plan['"]\s*\?\s*['"]Plan/.test(src),
+        `${site.file} labels the plan stage by hand in ${site.what}. NAMING.md reserves capital-P ` +
+          `Plan for the OBJECT, the stage is "Planning" (ADR-1523), and LIVE-470 put the word in ` +
+          `one place: call planStageLabel.`,
       ).toBe(false)
-      expect(src).toMatch(/['"]plan['"]\s*\?\s*['"]Planning['"]/)
+      expect(src, `${site.file} should read the one label source`).toContain('planStageLabel')
     }
+  })
+
+  it('hands every site the same three words, from the calendar registry', () => {
+    expect(planStageLabel('pencil')).toBe('Pencil')
+    expect(planStageLabel('plan')).toBe('Planning')
+    expect(planStageLabel('production')).toBe('Production')
+    // The Workflow board's fourth option is not a Plan stage at all; it still gets its word here.
+    expect(planStageLabel('cancelled')).toBe('Cancelled')
   })
 
   it('the drawer spells no stage of its own: it reads the manifest (PROG-CAL2)', () => {

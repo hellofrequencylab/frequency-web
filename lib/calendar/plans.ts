@@ -1,6 +1,8 @@
 // SPACE PLANS, the pure half (ADR-1386). A Plan is the working record behind one or more
 // Pencils and Productions. No React, no Supabase.
 
+import { calendarPresentation, entryStage, type CalendarPresentation, type EntryStage } from './registry'
+
 export const PLAN_STAGES = ['pencil', 'plan', 'production'] as const
 export type PlanStage = (typeof PLAN_STAGES)[number]
 
@@ -61,6 +63,36 @@ const MAX_LINKS = PLAN_MAX_LINKS
 
 export function planStage(value: string | null | undefined): PlanStage | null {
   return PLAN_STAGES.includes(value as PlanStage) ? (value as PlanStage) : null
+}
+
+/** The entry stage a Plan stage IS. A Plan and the dates on it are the same three steps under two
+ *  spellings (`plan` in `space_plans.stage`, `planning` in `space_calendar_entries.stage`), so the
+ *  word and the colour come from one row of lib/calendar/registry.ts for both. */
+export const PLAN_STAGE_ENTRY: Record<PlanStage, EntryStage> = {
+  pencil: 'pencil',
+  plan: 'planning',
+  production: 'production',
+}
+
+/**
+ * 🔴 THE ONE PLACE A STAGE VALUE BECOMES A WORD (LIVE-470).
+ *
+ * Five files used to spell this out by hand: the Studio manifest, the Calendar settings board, the
+ * Workflow board's two tables, the workspace's optimistic `sourceLabel` and the drawer's summary.
+ * That is how they drifted (LIVE-461: "Planning" in the drawer's summary, "Plan" in the picker
+ * right below it). They all read this now, and this reads the registry, so a stage has one word
+ * across the board, the drawer, the grid chip, the List pill and the popup.
+ *
+ * Takes a `WorkflowStage` too, so the board's Cancelled option needs no special case.
+ */
+export function planStageLabel(stage: string): string {
+  const mapped = PLAN_STAGE_ENTRY[stage as PlanStage]
+  return entryStage(mapped ?? stage)?.label ?? stage
+}
+
+/** The form, colour and word a Plan stage shows in, straight from the calendar registry. */
+export function planStagePresentation(stage: string): CalendarPresentation {
+  return calendarPresentation({ stage: PLAN_STAGE_ENTRY[stage as PlanStage] ?? stage }, 'team')
 }
 
 export function planTarget(value: string | null | undefined): PlanTargetKind | null {

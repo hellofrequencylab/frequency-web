@@ -11,7 +11,11 @@ import { X } from 'lucide-react'
 //   <Badge>12</Badge>
 //   <Banner tone="critical" title="Form could not be saved">Two fields are empty.</Banner>
 
-export type StatusTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral'
+// `brand`, `broadcast` and `move` joined the vocabulary with LIVE-470: the calendar needs a pill
+// for every colour its grid chips take, or the List and the popup would have had to keep a colour
+// table of their own beside lib/calendar/registry.ts. Each is the token family's declared chip
+// pair, measured by scripts/check-contrast.mjs in both skins and both modes.
+export type StatusTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'brand' | 'broadcast' | 'move'
 
 const TONE: Record<StatusTone, string> = {
   success: 'bg-success-bg text-success',
@@ -19,6 +23,9 @@ const TONE: Record<StatusTone, string> = {
   danger: 'bg-danger-bg text-danger',
   info: 'bg-info-bg text-info',
   neutral: 'bg-surface-elevated text-muted',
+  brand: 'bg-primary-bg text-primary-strong',
+  broadcast: 'bg-broadcast-bg text-broadcast-strong',
+  move: 'bg-move-bg text-move-strong',
 }
 
 /** A small status pill. The one status vocabulary across admin. */

@@ -1,5 +1,5 @@
 import type { CalendarEvent } from './item'
-import { entryStage, type EntryStageDef, type EntryStageTone } from './registry'
+import { calendarPresentation, entryStage, type EntryStageDef, type EntryStageTone } from './registry'
 
 // THE ADMIN OPERATOR LIST (ADR-1445 C1–C4, ADR-1450, ADR-1454, ADR-1458, ADR-1456).
 // pencilLane is C2. planningLane is C3. productionLane is C4. Cancelled stays on
@@ -28,13 +28,16 @@ export function operatorStage(ev: CalendarEvent): EntryStageDef | null {
   return entryStage('production')
 }
 
+/** The word this row's pill says. The ONE presentation (LIVE-470), read with the team's audience:
+ *  this list is a planning surface, so a published event is a "Production" here and an "Event" on
+ *  a member-facing calendar. Same row of the table either way. */
 export function operatorStageLabel(ev: CalendarEvent): string {
-  return operatorStage(ev)?.label ?? 'Draft'
+  return calendarPresentation(ev, 'team').word
 }
 
 /** The tone of the badge that says the row's stage word, from the registry, never from the label. */
 export function operatorStageTone(ev: CalendarEvent): EntryStageTone {
-  return operatorStage(ev)?.badgeTone ?? 'neutral'
+  return calendarPresentation(ev, 'team').tone
 }
 
 export function operatorListHref(ev: CalendarEvent): string | null {

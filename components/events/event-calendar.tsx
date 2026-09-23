@@ -1,6 +1,15 @@
 'use client'
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type KeyboardEvent,
+} from 'react'
 import Link from 'next/link'
 import {
   ChevronLeft,
@@ -22,7 +31,16 @@ import { eventCoverFocusStyle } from '@/lib/events/cover-focus'
 import { IconButton } from '@/components/ui/icon-button'
 import { CalendarRepeatsStrip } from '@/components/events/calendar-repeats-strip'
 import type { CalendarRepeatSeries } from '@/lib/events/calendar-repeats'
-import { itemChipClass, type CalendarLayerKey } from '@/lib/calendar/registry'
+import {
+  calendarPresentation,
+  calendarPrintsWord,
+  calendarWord,
+  isNarrowGrid,
+  NARROW_GRID_WIDTH,
+  type CalendarAudience,
+  type CalendarLayerKey,
+} from '@/lib/calendar/registry'
+import { StatusChip } from '@/components/admin/status'
 import { spanDayKeys } from '@/lib/calendar/entries'
 import { notesForDay, type DayNote } from '@/lib/calendar/day-notes'
 import { monthKey } from '@/lib/calendar/month-window'
@@ -85,6 +103,34 @@ function localToday(): string {
 }
 
 const SHORT_MONTHS = SHORT_MONTH_LABELS
+
+// THE 360px RULE, as behaviour (LIVE-470). At NARROW_GRID_WIDTH a day cell is about 46px wide, so
+// the chip prints the registry's SHORT word instead of the full one. A media query rather than a
+// resize listener: one matcher per calendar, no layout read, nothing on the scroll path. Read
+// through useSyncExternalStore, so the viewport stays an EXTERNAL store and no effect writes state.
+const NARROW_QUERY = `(max-width: ${NARROW_GRID_WIDTH}px)`
+
+function subscribeNarrowGrid(onChange: () => void): () => void {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return () => {}
+  const query = window.matchMedia(NARROW_QUERY)
+  query.addEventListener('change', onChange)
+  return () => query.removeEventListener('change', onChange)
+}
+
+function readNarrowGrid(): boolean {
+  if (typeof window === 'undefined') return false
+  if (typeof window.matchMedia === 'function') return window.matchMedia(NARROW_QUERY).matches
+  // No media queries here. Measure the width itself rather than give up on the rule.
+  return isNarrowGrid(window.innerWidth)
+}
+
+/** The server cannot know the viewport, so it renders the FULL word and hydration corrects it. A
+ *  chip that is briefly too wide is the safe half of that trade; one with no word is not. */
+const serverNarrowGrid = () => false
+
+function useNarrowGrid(): boolean {
+  return useSyncExternalStore(subscribeNarrowGrid, readNarrowGrid, serverNarrowGrid)
+}
 const itemKey = (ev: CalendarEvent) => `${ev.slug}|${ev.dayKey}`
 
 export function EventCalendar({
@@ -113,6 +159,7 @@ export function EventCalendar({
   onHiddenLayersChange,
   fill = false,
   hostChrome = false,
+  audience = 'member',
 }: {
   events: CalendarEvent[]
   initialYear: number
@@ -175,8 +222,13 @@ export function EventCalendar({
    *  CHROME THE HOST CANNOT DRAW, below). The filters, the failed-month line and every key stay too.
    *  On the page, where nothing else owns them, this is off and the grid draws its full header. */
   hostChrome?: boolean
+  /** Who is reading (lib/calendar/registry.ts). The staff calendar passes `team`, so a published
+   *  date reads "Production" there and "Event" on a member-facing mount. docs/NAMING.md draws that
+   *  line; the colour and the form are the same row of the registry either way. */
+  audience?: CalendarAudience
 }) {
   const [internalMonth, setInternalMonth] = useState({ year: initialYear, month1: initialMonth1 })
+  const narrowGrid = useNarrowGrid()
   const { year, month1 } = month ?? internalMonth
   const [selected, setSelected] = useState<CalendarEvent | null>(null)
   const [inViewerTz, setInViewerTz] = useState(false)
@@ -629,7 +681,7 @@ export function EventCalendar({
                             <span
                               className={cn(
                                 'flex w-11 shrink-0 flex-col items-center rounded-control py-1',
-                                itemChipClass(ev.layer, ev.stage),
+                                calendarPresentation(ev, audience).chipClass,
                               )}
                               aria-hidden
                             >
@@ -642,7 +694,7 @@ export function EventCalendar({
                               </span>
                               <span className="mt-0.5 block text-meta text-muted">{ev.whenLabel}</span>
                               {ev.location && <span className="mt-0.5 block truncate text-meta text-muted">{ev.location}</span>}
-                              <Badges ev={ev} />
+                              <Badges ev={ev} audience={audience} />
                             </span>
                             {ev.goingCount > 0 && (
                               <span className="mt-0.5 shrink-0 text-meta text-muted tabular-nums">{ev.goingCount} going</span>
@@ -666,6 +718,7 @@ export function EventCalendar({
               <div className="sticky top-0">
                 <CalendarPreview
                   item={preview}
+                  audience={audience}
                   inViewerTz={inViewerTz}
                   onToggleTz={() => setInViewerTz((v) => !v)}
                   onOpenHost={onSelectEvent}
@@ -810,7 +863,7 @@ export function EventCalendar({
                               role="group"
                               aria-label={`${run.length} back-to-back`}
                               data-calendar-stack
-                              className={cn('overflow-hidden rounded-control', itemChipClass(run[0].layer, run[0].stage))}
+                              className={cn('overflow-hidden rounded-control', calendarPresentation(run[0], audience).chipClass)}
                             >
                               {run.map((ev, i) => (
                                 <button
@@ -824,6 +877,7 @@ export function EventCalendar({
                                   onDragEnd={move.enabled ? move.endDrag : undefined}
                                   onPointerDown={move.enabled ? (e) => move.pressChip(e, ev, itemKey(ev)) : undefined}
                                   onKeyDown={move.enabled ? (e) => move.chipKeyDown(e, ev) : undefined}
+                                  data-calendar-chip={calendarPresentation(ev, audience).key}
                                   className={cn(
                                     'block w-full truncate px-1.5 py-0.5 text-left text-2xs font-medium transition-colors',
                                     i > 0 && 'border-t border-border/60',
@@ -841,6 +895,7 @@ export function EventCalendar({
                                       nothing, so the time stays for a screen reader and steps out of the visible chip
                                       until there is room for both (LIVE-469). */}
                                   <span className="sr-only tabular-nums sm:not-sr-only">{ev.timeLabel} </span>
+                                  <ChipWord item={ev} audience={audience} narrow={narrowGrid} />
                                   {ev.title}
                                 </button>
                               ))}
@@ -858,9 +913,10 @@ export function EventCalendar({
                                 onDragEnd={move.enabled ? move.endDrag : undefined}
                                 onPointerDown={move.enabled ? (e) => move.pressChip(e, ev, itemKey(ev)) : undefined}
                                 onKeyDown={move.enabled ? (e) => move.chipKeyDown(e, ev) : undefined}
+                                data-calendar-chip={calendarPresentation(ev, audience).key}
                                 className={cn(
                                   'w-full truncate rounded-control px-1.5 py-0.5 text-left text-2xs font-medium transition-colors',
-                                  itemChipClass(ev.layer, ev.stage),
+                                  calendarPresentation(ev, audience).chipClass,
                                   activeSeries !== null && ev.seriesKey === activeSeries && 'ring-2 ring-primary/50',
                                   // See the note on the stacked chip above: touch-action is read when
                                   // the finger lands, so a chip that can be carried never pans the grid.
@@ -872,6 +928,7 @@ export function EventCalendar({
                                       nothing, so the time stays for a screen reader and steps out of the visible chip
                                       until there is room for both (LIVE-469). */}
                                   <span className="sr-only tabular-nums sm:not-sr-only">{ev.timeLabel} </span>
+                                  <ChipWord item={ev} audience={audience} narrow={narrowGrid} />
                                   {ev.title}
                               </button>
                             ))
@@ -953,6 +1010,7 @@ export function EventCalendar({
           <div className="overflow-hidden rounded-card border border-border bg-surface lift-3">
             <CalendarPreview
               item={selected}
+              audience={audience}
               titleId={popupTitleId}
               inViewerTz={inViewerTz}
               onToggleTz={() => setInViewerTz((v) => !v)}
@@ -1002,18 +1060,65 @@ function cancelledCellFooter(items: CalendarEvent[], onSelect: (ev: CalendarEven
   )
 }
 
-function Badges({ ev }: { ev: CalendarEvent }) {
-  if (!ev.sourceLabel && !ev.statusLabel) return null
+/** THE WORD ON THE GRID CHIP (LIVE-470). Rides inside the chip, in the chip's own colour, and
+ *  abbreviates rather than disappearing once the cell is down to about 46px: the title gives up the
+ *  few pixels (owner ruling 2026-09-22).
+ *
+ *  🔴 NOTHING AT ALL ON A MEMBER CALENDAR (owner ruling 2026-09-23). The word is what tells a
+ *  Planning date from a Private entry from a To-do, and a public Space calendar holds only events,
+ *  so there the word would repeat on every chip and separate nothing. The colour still comes from
+ *  the registry on both. If this ever looks like an oversight, read `calendarPrintsWord`. */
+function ChipWord({
+  item,
+  audience,
+  narrow,
+}: {
+  item: CalendarEvent
+  audience: CalendarAudience
+  narrow: boolean
+}) {
+  if (!calendarPrintsWord(audience)) return null
+  const look = calendarPresentation(item, audience)
+  return (
+    <>
+      <span data-calendar-chip-word={look.key} className="text-3xs font-bold">
+        {calendarWord(look, narrow)}
+      </span>{' '}
+    </>
+  )
+}
+
+function Badges({ ev, audience = 'member' }: { ev: CalendarEvent; audience?: CalendarAudience }) {
+  // COLOUR PLUS THE WORD, in the popup and in the built-in list row. The pill is the shared
+  // StatusChip in the registry's tone, so the popup can no longer paint a Production the same grey
+  // as a Draft (LIVE-470). A `statusLabel` or `sourceLabel` that only repeats the stage word is
+  // dropped: an entry's sourceLabel already IS its stage.
+  //
+  // The pill follows the same audience rule as the chip (2026-09-23): a member-facing mount of this
+  // calendar shows one kind of thing on every row, so it goes back to the badges it always had and
+  // says no stage word. The staff popup and the staff list row keep it.
+  const look = calendarPresentation(ev, audience)
+  const word = calendarPrintsWord(audience) ? look : null
+  const status = ev.statusLabel && ev.statusLabel !== word?.word ? ev.statusLabel : null
+  const source = ev.sourceLabel && ev.sourceLabel !== word?.word ? ev.sourceLabel : null
+  if (!word && !status && !source) return null
   return (
     <span className="mt-1 flex flex-wrap items-center gap-1">
-      {ev.statusLabel && (
-        <span className="inline-block rounded-control bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-muted">
-          {ev.statusLabel}
+      {word && (
+        <span data-calendar-stage={word.key}>
+          <StatusChip tone={word.tone} size="sm">
+            {word.word}
+          </StatusChip>
         </span>
       )}
-      {ev.sourceLabel && (
+      {status && (
+        <span className="inline-block rounded-control bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-muted">
+          {status}
+        </span>
+      )}
+      {source && (
         <span className="inline-block rounded-control bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
-          {ev.sourceLabel}
+          {source}
         </span>
       )}
     </span>
@@ -1030,8 +1135,10 @@ function CalendarPreview({
   onEditEntry,
   onPickDate,
   titleId,
+  audience = 'member',
 }: {
   item: CalendarEvent
+  audience?: CalendarAudience
   inViewerTz: boolean
   onToggleTz: () => void
   onClose?: () => void
@@ -1061,7 +1168,7 @@ function CalendarPreview({
       <div className="p-6">
         {item.isCancelled && <p className="mb-2 text-meta font-semibold text-danger">Cancelled</p>}
         <h3 id={titleId} className="text-lead font-bold leading-tight text-text">{item.title}</h3>
-        <Badges ev={item} />
+        <Badges ev={item} audience={audience} />
         <div className="mt-3 flex items-start gap-2 text-body-sm text-muted">
           <CalendarDays className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <span>{whenText}</span>

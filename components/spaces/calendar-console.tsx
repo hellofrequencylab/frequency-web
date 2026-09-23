@@ -5,6 +5,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Plus, X } from 'luc
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
+import { StatusChip } from '@/components/admin/status'
 import { addMonth, monthLabel } from '@/lib/events/calendar-grid'
 import { CalendarLayerChips, CalendarViewSwitch, MonthJumpPanel, countByMonthKey, monthCount } from '@/components/events/calendar-chrome'
 import { verticalScrollTaker } from '@/components/events/use-month-gestures'
@@ -418,6 +419,12 @@ export function CalendarConsole({
                               {item.title}
                             </span>
                             <span className="mt-0.5 block truncate text-meta text-muted">{item.whenLabel}</span>
+                            {/* COLOUR PLUS THE WORD (LIVE-470). The agenda is a team surface and the
+                                row already carries the registry's word and tone; saying them is what
+                                keeps this list from being the one place a stage goes unnamed. */}
+                            <span className="mt-1 block" data-console-item-stage={item.stage ?? (item.isCancelled ? 'cancelled' : 'event')}>
+                              <StatusChip tone={item.stageTone} size="sm">{item.stageLabel}</StatusChip>
+                            </span>
                           </button>
                           {item.planId && (
                             <Button type="button" variant="ghost" size="sm" onClick={() => onOpenPlan(item.planId!, item.entryId)}>

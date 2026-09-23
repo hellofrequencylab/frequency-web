@@ -7,7 +7,8 @@ import { CalendarListView } from './calendar-list-view'
 vi.mock('@/components/events/event-share-button', () => ({
   EventShareButton: ({ title }: { title: string }) => <button type="button">Share {title}</button>,
 }))
-import type { ListIndexItem } from '@/lib/calendar/list-index'
+import { listIndexItems, type ListIndexItem } from '@/lib/calendar/list-index'
+import { CALENDAR_PRESENTATIONS } from '@/lib/calendar/registry'
 
 let container: HTMLDivElement | null = null
 let root: Root | null = null
@@ -177,6 +178,32 @@ describe('CalendarListView', () => {
     } finally {
       Object.defineProperty(window, 'matchMedia', { value: original, writable: true, configurable: true })
     }
+  })
+
+  it('says the stage word in the registry\'s tone, the same one the grid chip takes (LIVE-470)', () => {
+    const planning = listIndexItems([
+      {
+        slug: 'entry-9',
+        title: 'Solstice',
+        dayKey: '2026-12-21',
+        timeLabel: '7:00 PM',
+        whenLabel: 'Mon, Dec 21, 7:00 PM PST',
+        startInstantIso: '2026-12-21T19:00:00.000Z',
+        location: null,
+        goingCount: 0,
+        coverUrl: null,
+        isCancelled: false,
+        layer: 'pencil',
+        stage: 'planning',
+        entryId: 'entry-9',
+      },
+    ])[0]
+    expect(planning.stageLabel).toBe(CALENDAR_PRESENTATIONS.planning.word)
+    expect(planning.stageTone).toBe(CALENDAR_PRESENTATIONS.planning.tone)
+    const el = mount(<CalendarListView items={[planning]} selected={planning} onSelect={() => {}} />)
+    const pill = el.querySelector('[data-calendar-list-viewer] header span:last-child')
+    expect(pill?.textContent).toBe('Planning')
+    expect(pill?.className).toContain('bg-info-bg')
   })
 
   it('leaves the page alone when the index and console sit side by side (LIVE-469)', () => {

@@ -5,7 +5,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { CalendarWorkflowView, CANCEL_PLAN_CONFIRM } from './calendar-workflow-view'
 import { workflowBoard } from '@/lib/calendar/workflow-board'
 import type { CalendarEvent } from '@/lib/calendar/item'
-import type { SpacePlan } from '@/lib/calendar/plans'
+import { planStagePresentation, type SpacePlan } from '@/lib/calendar/plans'
 
 const { transitionPlanStage } = vi.hoisted(() => ({
   transitionPlanStage: vi.fn(async (..._args: unknown[]) => ({})),
@@ -154,6 +154,25 @@ describe('CalendarWorkflowView', () => {
     await act(async () => { changeSelect(container!.querySelector('select') as HTMLSelectElement, 'production') })
     expect(confirm).not.toHaveBeenCalled()
     expect(transitionPlanStage).toHaveBeenCalledWith('lab', 'plan-1', 'production')
+  })
+
+  it('says the stage in the registry\'s word and colour, not by column alone (LIVE-470)', () => {
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    act(() => root!.render(
+      <CalendarWorkflowView columns={workflowBoard([plan, { ...plan, id: 'plan-2', title: 'Solstice', stage: 'plan' }], [event])} />,
+    ))
+    const pills = [...container!.querySelectorAll('[data-workflow-card-stage]')]
+    // Before this row a Workflow card carried no stage styling at all, so the only thing saying
+    // where a Plan stood was which column it happened to sit in.
+    expect(pills.map((n) => n.getAttribute('data-workflow-card-stage'))).toEqual(['planning', 'production'])
+    expect(pills.map((n) => n.textContent)).toEqual([
+      planStagePresentation('plan').word,
+      planStagePresentation('production').word,
+    ])
+    expect(pills[0].querySelector('span')?.className).toContain('bg-info-bg')
+    expect(pills[1].querySelector('span')?.className).toContain('bg-success-bg')
   })
 
   it('puts focus back on the card it just moved, never the body (LIVE-469)', async () => {
