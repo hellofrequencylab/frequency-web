@@ -43,6 +43,18 @@ describe('stackDay', () => {
     expect(day.runs.map((run) => run.map((i) => i.slug))).toEqual([['a'], ['b']])
   })
 
+  // 🔴 THE TIMED HALF OF THE SAME RULE (LIVE-475). Every case above uses items with no instant, so
+  // they all run down areBackToBack's null branch: widening the 12-hour window to "any gap" left the
+  // whole suite green while two morning-and-evening gatherings merged back into one chip.
+  it('does not stack two TIMED items on one day that are hours apart', () => {
+    const morning = item({ slug: 'am', title: 'Morning sit', dayKey: '2026-10-04', startInstantIso: '2026-10-04T02:00:00Z' })
+    const evening = item({ slug: 'pm', title: 'Evening talk', dayKey: '2026-10-04', startInstantIso: '2026-10-04T20:00:00Z' })
+    expect(areBackToBack(morning, evening)).toBe(false)
+    const [day] = stackDay([morning, evening])
+    expect(day.stacked).toBe(false)
+    expect(day.runs.map((run) => run.map((i) => i.slug))).toEqual([['am'], ['pm']])
+  })
+
   it('stacks by the same rule areBackToBack states, in start order', () => {
     const late = item({ slug: 'late', title: 'Late', dayKey: '2026-10-04', startInstantIso: '2026-10-04T20:00:00Z' })
     const early = item({ slug: 'early', title: 'Early', dayKey: '2026-10-04', startInstantIso: '2026-10-04T18:00:00Z' })

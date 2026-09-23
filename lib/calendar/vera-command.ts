@@ -55,6 +55,7 @@
 
 import { PLAN_STAGE_TRANSITIONS, type WorkflowStage } from './workflow-board'
 import { PLAN_WRITES, type PlanStage } from './plans'
+import { shortDateLabel } from './short-date'
 import { SPACE_PLAN_MANIFEST } from '@/lib/studio/entities/space-plan'
 import { railForm } from '@/lib/studio/kernel/edit-plan'
 import { checkFieldValue, checkRepeatRow, type RepeatRowValue, type ScalarFieldValue } from '@/lib/studio/kernel/field-value'
@@ -241,7 +242,7 @@ export function veraFieldList<T extends object>(input: T, spec: VeraFieldSpec): 
 }
 
 /** The noun a target is called in a sentence a person reads. */
-export function veraTargetNoun(target: VeraFieldTarget): string {
+function veraTargetNoun(target: VeraFieldTarget): string {
   return target === 'plan' ? 'Plan' : 'date'
 }
 
@@ -597,18 +598,14 @@ export function buildVeraDescribeContext(changes: readonly VeraChange[], subject
   return ctx
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-/** "Jan 18" from "2026-01-18". A bad key comes back as typed rather than throwing on a label. */
-export function shortDay(day: string): string {
-  const m = DAY_RE.exec(day)
-  if (!m) return day
-  return `${MONTHS[Number(m[2]) - 1] ?? m[2]} ${Number(m[3])}`
-}
+// ONE SHORT DATE, HERE TOO (LIVE-475). This panel used to carry a SECOND short-day formatter of its
+// own ("Oct 4"), so a proposal line read "Oct 4, 2026" while the result line printed under it by the
+// same panel read "Sun, Oct 4" — two spellings of one day, a few pixels apart, while
+// lib/calendar/short-date.ts called itself "the one formatter". There is one now.
 
 function listDays(days: readonly string[]): string {
   const years = new Set(days.map((d) => d.slice(0, 4)))
-  const parts = days.map((d) => (years.size > 1 ? `${shortDay(d)}, ${d.slice(0, 4)}` : shortDay(d)))
+  const parts = days.map((d) => (years.size > 1 ? `${shortDateLabel(d)}, ${d.slice(0, 4)}` : shortDateLabel(d)))
   const joined = parts.length <= 1 ? parts.join('') : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
   return years.size > 1 ? joined : `${joined}, ${days[0].slice(0, 4)}`
 }
@@ -646,7 +643,7 @@ export function describeChange(change: VeraChange, ctx: VeraDescribeContext): st
       return `Pencil "${change.title}" ${dates}${when}${where}.`
     }
     case 'move':
-      return `Move ${quoted(ctx.entries[change.entryId], 'that date')} to ${shortDay(change.toDay)}, ${change.toDay.slice(0, 4)}. Its anchored to-dos move with it.`
+      return `Move ${quoted(ctx.entries[change.entryId], 'that date')} to ${shortDateLabel(change.toDay)}, ${change.toDay.slice(0, 4)}. Its anchored to-dos move with it.`
     case 'stage': {
       const plan = quoted(ctx.plans[change.planId], 'that Plan')
       return change.stage === 'cancelled' ? `Mark ${plan} Cancelled, every linked date included.` : `Set ${plan} to ${stageLabel(change.stage)}, every linked date included.`

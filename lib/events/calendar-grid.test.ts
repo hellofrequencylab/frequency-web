@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  monthMatrix,
-  monthLabel,
-  addMonth,
-  eventDayKey,
-  WEEKDAY_LABELS,
-} from './calendar-grid'
+import { monthMatrix, monthLabel, addMonth, eventDayKey, WEEKDAY_LABELS, calendarChrome, cellFloorClass } from './calendar-grid'
 
 describe('monthLabel', () => {
   it('names the month and year', () => {
@@ -89,5 +83,36 @@ describe('WEEKDAY_LABELS', () => {
     expect(WEEKDAY_LABELS).toHaveLength(7)
     expect(WEEKDAY_LABELS[0]).toBe('Sun')
     expect(WEEKDAY_LABELS[6]).toBe('Sat')
+  })
+})
+
+// THE GRID'S TWO HOST DECISIONS (PROG-CAL13, LIVE-475). Pure, so both the component and the backlog
+// probe that guards them read the same function rather than the same spelling.
+describe('calendarChrome', () => {
+  it('draws everything on the page', () => {
+    expect(calendarChrome(false)).toEqual({ monthTitle: true, paging: true, viewSwitch: true, monthJump: true })
+  })
+
+  // 🔴 The console dead end: a host owns the month label and the paging cluster, and NOTHING outside
+  // the grid draws the grid's own view switcher or its month jump. Dropping those two left list mode
+  // inside the console with no way back to the month and no way to move more than one month.
+  it('gives up only the chrome a host actually draws', () => {
+    const chrome = calendarChrome(true)
+    expect(chrome.monthTitle).toBe(false)
+    expect(chrome.paging).toBe(false)
+    expect(chrome.viewSwitch).toBe(true)
+    expect(chrome.monthJump).toBe(true)
+  })
+})
+
+describe('cellFloorClass', () => {
+  it('has no floor when the grid fills its host', () => {
+    expect(cellFloorClass(true)).toBe('min-h-0')
+    expect(/min-h-(?!0\b)[\w.[\]]+/.test(cellFloorClass(true))).toBe(false)
+  })
+
+  it('keeps a floor when the grid sizes to its own content', () => {
+    expect(cellFloorClass(false)).toContain('min-h-20')
+    expect(cellFloorClass(false)).toContain('sm:min-h-28')
   })
 })
