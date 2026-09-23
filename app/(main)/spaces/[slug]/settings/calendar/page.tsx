@@ -17,7 +17,6 @@ import { loadAdminCalendar } from '@/lib/calendar/admin-calendar'
 import { formatEventWhen } from '@/lib/time/zone'
 import { DayNotesField } from './day-notes-field'
 import { SpaceTimeZoneField } from './space-time-zone-field'
-import { readSpaceTimeZone } from '@/lib/spaces/space-zone'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
 import { EventShareApprovals } from '@/components/events/event-share-approvals'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -70,8 +69,9 @@ export default async function SpaceCalendarConsolePage({
     : await loadAdminCalendar(space.id, { canManage, year: initialYear, month1: initialMonth1, now })
 
   // THE SPACE'S OWN ZONE (LIVE-471): what a new Pencil is written in, and what the field below edits.
-  // Null when the Space has never said, and only then does the viewer's browser zone decide.
-  const spaceTimeZone = featureLocked ? null : await readSpaceTimeZone(space.id)
+  // Null when the Space has never said, and only then does the viewer's browser zone decide. It
+  // rides the Space row already loaded above, so this costs no query of its own.
+  const spaceTimeZone = featureLocked ? null : space.timeZone
 
   const plans = featureLocked || !canManage ? [] : await listSpacePlans(space.id)
   const playbooks = featureLocked || !canManage ? [] : await listPlaybooks(space.id)

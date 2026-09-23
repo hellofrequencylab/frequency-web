@@ -14,7 +14,6 @@ import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 import { getSpaceCapabilities, resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { loadAdminCalendar } from '@/lib/calendar/admin-calendar'
-import { readSpaceTimeZone } from '@/lib/spaces/space-zone'
 import { CalendarWorkspace } from '@/components/spaces/calendar-workspace'
 import {
   calendarViewCookieName,
@@ -82,8 +81,8 @@ export default async function SpaceCalendarPage({
   // THE SPACE'S OWN ZONE (LIVE-471), read once here so the console header, the staff drawer and Ask
   // Vera all name the same one. Null when the Space has never said; those surfaces then fall back to
   // the viewer's browser zone, which is what they all did before this row. Only the operator's half
-  // of this page reads it, so a guest's calendar view does not pay for the query.
-  const spaceTimeZone = adminAllowed ? await readSpaceTimeZone(space.id) : null
+  // of this page reads it, so a guest's calendar view never names it. It rides the Space row already loaded above.
+  const spaceTimeZone = adminAllowed ? space.timeZone : null
 
   const grid = monthGridWindow(initialYear, initialMonth1)
   // The Guest feed (ADR-1457): loadPublicSpaceWindow folds every month, this first one and each

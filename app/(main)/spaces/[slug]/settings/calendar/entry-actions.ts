@@ -23,7 +23,7 @@ import {
   updateCalendarEntryRow,
 } from '@/lib/calendar/entries-store'
 import { monthGridWindow, safeMonth } from '@/lib/calendar/month-window'
-import { writeSpaceTimeZone } from '@/lib/spaces/space-zone'
+import { writeSpaceTimeZone } from '@/lib/spaces/store'
 import { isValidTimeZone } from '@/lib/time/zone'
 import { entryKind, entryStage } from '@/lib/calendar/registry'
 import type { CalendarEvent } from '@/lib/calendar/item'

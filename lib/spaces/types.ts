@@ -50,6 +50,9 @@ export function spaceManageHref(type: SpaceType, slug: string): string {
 }
 
 export interface Space {
+  /** The Space's own schedule zone (IANA), or null when it has never said (LIVE-471).
+   *  Null is meaningful, not a default: only then does the viewer's browser zone decide. */
+  timeZone: string | null
   id: string
   /** URL handle. */
   slug: string

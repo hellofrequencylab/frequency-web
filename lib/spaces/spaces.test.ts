@@ -6,6 +6,7 @@ import type { Space } from './types'
 function makeSpace(over: Partial<Space>): Space {
   return {
     id: 's1',
+    timeZone: null,
     slug: 'demo',
     name: 'Demo',
     type: 'business',
