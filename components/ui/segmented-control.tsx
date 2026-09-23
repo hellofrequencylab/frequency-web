@@ -38,6 +38,11 @@ import { cn } from '@/lib/utils'
 // their own outer corners rather than the box hiding overflow, because the global focus ring is an
 // outer box-shadow and an `overflow-hidden` box would eat it.
 
+// THE KIT'S OWN MARKER (LIVE-475). Both forms stamp `data-segmented` on the box. A switcher that
+// merely IMPORTS this module and then hand-rolls its buttons again renders no such attribute, which
+// is the difference between "the adoption is real" and "the import path is still spelled correctly" —
+// the shape-not-truth failure HYG-105's first probe shipped with.
+
 export type SegmentedSize = 'sm' | 'md'
 export type SegmentedOrientation = 'horizontal' | 'vertical'
 
@@ -95,7 +100,7 @@ export function SegmentedControl<V extends string>({
   className?: string
 }) {
   return (
-    <div role="group" aria-label={label} className={cn(BOX, BOX_BY_ORIENTATION[orientation], className)}>
+    <div role="group" data-segmented="buttons" aria-label={label} className={cn(BOX, BOX_BY_ORIENTATION[orientation], className)}>
       {segments.map((segment) => {
         const selected = segment.value === value
         return (
@@ -140,7 +145,7 @@ export function SegmentedLinks({
   className?: string
 }) {
   return (
-    <nav aria-label={label} className={cn(BOX, BOX_BY_ORIENTATION.horizontal, className)}>
+    <nav aria-label={label} data-segmented="links" className={cn(BOX, BOX_BY_ORIENTATION.horizontal, className)}>
       {links.map((link) => {
         const current = link.href === activeHref
         return (

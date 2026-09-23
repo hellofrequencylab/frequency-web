@@ -48,12 +48,16 @@ export function firstSearchParam(raw: string | string[] | null | undefined): str
 /** What travels in the operator calendar URL beside `view`: the List selection, the open Plan, and
  *  whether the Calendar console is up (PROG-CAL12). The console is a flag, not a view: it wraps
  *  whichever view is showing, so `?console=1` sits beside `view`, `item` and `plan` rather than
- *  replacing any of them, and a pasted link reopens the console on the same view and drawer. */
+ *  replacing any of them, and a pasted link reopens the console on the same view and drawer.
+ *
+ *  🔴 THE MONTH IS NOT IN HERE (LIVE-475). It used to declare `year` and `month1`, `syncUrl`
+ *  forwarded them, `adminViewHref` never read them and no caller ever passed them: three layers of
+ *  a parameter that looked wired and was not, and the gap behind a docs line claiming a pasted link
+ *  restored the month. A link lands on the month the page derives. Putting the month back means
+ *  deciding what a Back press after six month steps does, which is a ruling, not a field. */
 export type AdminViewExtras = {
   item?: string | null
   plan?: string | null
-  year?: number
-  month1?: number
   console?: boolean
 }
 

@@ -527,10 +527,14 @@ describe('CalendarWorkspace', () => {
     }
   })
 
-  // PROG-CAL13. The console header owns the month, the paging cluster and the view switcher, so the
-  // grid inside it draws none of the three. The page grid keeps all three: nothing else draws them
-  // there.
-  it('draws the month, the paging cluster and the view switcher ONCE inside the console', () => {
+  // PROG-CAL13. The console header owns the month and the paging cluster, so the grid inside it
+  // draws neither. The page grid keeps both: nothing else draws them there.
+  //
+  // 🔴 THE VIEW SWITCHER IS NOT THE CONSOLE'S (LIVE-475). The console header's `viewControls` are the
+  // WORKSPACE's four-panel toggle (Guest / Calendar / List / Workflow). The grid's own grid / list
+  // switcher has no other home, so it stays inside the grid in both chrome modes, and it is the only
+  // way back to the month from list mode inside the console.
+  it('draws the month and the paging cluster ONCE inside the console, and keeps the grid switcher', () => {
     window.history.replaceState(null, '', '/spaces/lab/calendar')
     const el = mount(<CalendarWorkspace {...operatorProps()} />)
     const pageGrid = el.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root]')!
@@ -543,16 +547,84 @@ describe('CalendarWorkspace', () => {
     // One month label, in the console's own heading.
     expect(console_.querySelectorAll('#calendar-console-title').length).toBe(1)
     expect([...console_.querySelectorAll('button')].some((b) => b.textContent?.includes('September 2026'))).toBe(false)
-    // One paging cluster, and no second grid / list switcher under it.
+    // One paging cluster, drawn by the console alone.
     expect(console_.querySelectorAll('[aria-label="Previous month"]').length).toBe(1)
     expect(console_.querySelectorAll('[aria-label="Next month"]').length).toBe(1)
-    expect(console_.querySelector('[aria-label="Calendar view"]')).toBeNull()
+    // The grid's own switcher is still there, exactly once, on the panel that is showing.
+    const shownGrid = console_.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root]')!
+    expect(shownGrid.querySelectorAll('[aria-label="Calendar view"]').length).toBe(1)
+    expect(shownGrid.querySelector('button[aria-label="Jump to a month"]')).not.toBeNull()
     // The filters stay: they are the grid's, not the console's.
     expect(console_.querySelector('[aria-label="Show on the calendar"]')).not.toBeNull()
     // The month still fits the row it was given rather than its own content.
     const grid = console_.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root]')!
     expect(grid.className).toContain('flex-1')
     expect(grid.className).toContain('min-h-0')
+  })
+
+  // HYG-105's consequence, in the DOM rather than in an import path. Both calendar switchers are
+  // the kit's segmented box, so each renders the primitive's own `data-segmented` marker. Keeping
+  // the import and hand-rolling the buttons again renders no marker and fails here.
+  it('renders both calendar switchers as the kit segmented control', () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    const el = mount(<CalendarWorkspace {...operatorProps()} />)
+    const views = el.querySelector('[data-segmented][aria-label="Calendar views"]')
+    expect(views).not.toBeNull()
+    expect(views!.getAttribute('data-segmented')).toBe('buttons')
+    expect([...views!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Calendar', 'List', 'Workflow'])
+    // The List rail's own row switcher, in the panel that is mounted beside the grid.
+    const railBoxes = [...el.querySelectorAll('[data-calendar-panel="list"] [data-segmented]')]
+    expect(railBoxes.length).toBeGreaterThan(0)
+  })
+
+  // 🔴 THE DEAD END LIVE-475 CLOSED. Switch the page grid to its List, press Fullscreen, and before
+  // this there was no control anywhere that came back to the month: the console header's view
+  // controls are the workspace's four panels, not the grid's two views, and closing the console was
+  // the only exit. This pins the exit, from inside the console, in list mode.
+  it('comes back to the month from the grid list, inside the console', () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    const el = mount(<CalendarWorkspace {...operatorProps()} />)
+    const pageGrid = el.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root]')!
+    act(() => pageGrid.querySelector<HTMLButtonElement>('[aria-label="List view"]')!.click())
+    expect(pageGrid.querySelector('[data-calendar-list]')).not.toBeNull()
+
+    act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
+    const console_ = document.querySelector<HTMLElement>('[data-calendar-console]')!
+    const inConsole = console_.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root]')!
+    // The list travelled in with the panel set, and the way out travelled with it.
+    expect(inConsole.querySelector('[data-calendar-list]')).not.toBeNull()
+    const back = inConsole.querySelector<HTMLButtonElement>('[aria-label="Grid view"]')
+    expect(back).not.toBeNull()
+    act(() => back!.click())
+    expect(inConsole.querySelector('[data-calendar-list]')).toBeNull()
+    expect(inConsole.querySelector('[data-calendar-stack], .group')).not.toBeNull()
+  })
+
+  // PROG-CAL12, owner ruling 2026-09-22: BUTTONS ONLY on the page (no wheel, no swipe), and the
+  // wheel only inside the console. Nothing in the suite held that ruling, so `wheelPaging={consoleOpen}`
+  // could be flattened to a bare `wheelPaging` and every calendar test stayed green.
+  it('never pages the month on a vertical wheel over the PAGE staff grid, and does inside the console', () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    const el = mount(<CalendarWorkspace {...operatorProps()} />)
+    const surface = (root: ParentNode) =>
+      root.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root] .touch-pan-y')!
+    const wheel = (el: HTMLElement) =>
+      act(() => {
+        el.dispatchEvent(new WheelEvent('wheel', { deltaY: 240, deltaMode: 0, bubbles: true, cancelable: true }))
+      })
+    const pageMonth = () =>
+      el.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root] [aria-live="polite"]')!.textContent
+
+    expect(pageMonth()).toBe('September 2026')
+    wheel(surface(el))
+    expect(pageMonth()).toBe('September 2026')
+
+    act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
+    const console_ = document.querySelector<HTMLElement>('[data-calendar-console]')!
+    const title = () => console_.querySelector('#calendar-console-title')!.textContent
+    expect(title()).toBe('September 2026')
+    wheel(surface(console_))
+    expect(title()).toBe('October 2026')
   })
 
   // Ask Vera left the full-width band above the grid for the foot of the side bar (owner ask

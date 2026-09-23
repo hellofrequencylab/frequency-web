@@ -74,3 +74,44 @@ export function eventDayKey(startsAt: string | null | undefined): string | null 
 
 /** The weekday column headers for a Sunday-start grid. */
 export const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
+
+// ── THE GRID'S TWO HOST DECISIONS (PROG-CAL13, corrected by LIVE-475) ─────────────────────────
+//
+// Both used to be inline ternaries in components/events/event-calendar.tsx, which meant the only way
+// to check either one was to read the source and hope the spelling had not moved. They are pure
+// decisions, so they live here with the rest of the grid's pure math, the component reads them, and
+// the backlog probe that guards them can RUN them instead of grepping for them.
+
+/** What the grid draws for itself, given a host that says it owns the chrome. */
+export interface CalendarChrome {
+  /** The month title (and the aria-live that reads it). The console header draws its own. */
+  monthTitle: boolean
+  /** Previous / Today / Next. The console header draws its own. */
+  paging: boolean
+  /** THIS grid's grid-vs-list switcher. Not the workspace's four-panel toggle: no host draws it. */
+  viewSwitch: boolean
+  /** The month-and-year jump. No host draws one, and one month per press is not a substitute. */
+  monthJump: boolean
+}
+
+/**
+ * 🔴 A HOST OWNS THE MONTH, NEVER THE EXIT (LIVE-475). The first cut of `hostChrome` dropped the
+ * grid's WHOLE header, and the two controls in it that no host draws went with it. That shipped a
+ * reachable dead end: switch the page grid to List, press Fullscreen, and you were in list mode
+ * inside a full-screen console with no way back to the month and no way to move more than one month
+ * at a time — closing the console was the only exit. The duplicated chrome (the month label and the
+ * paging cluster) is what the console was paying for twice, and that is all `hostChrome` takes.
+ */
+export function calendarChrome(hostChrome: boolean): CalendarChrome {
+  return { monthTitle: !hostChrome, paging: !hostChrome, viewSwitch: true, monthJump: true }
+}
+
+/**
+ * The day cell's height floor. A FILLING GRID HAS NO FLOOR (PROG-CAL13): six week rows share the
+ * height the host gives them, so a cell that insists on 20/28 units of its own is what pushed the
+ * last two weeks of the month off the bottom of the console. On the page the grid sizes to its
+ * content and the floor is what keeps a cell from collapsing to its day pill.
+ */
+export function cellFloorClass(fill: boolean): string {
+  return fill ? 'min-h-0' : 'min-h-20 sm:min-h-28'
+}

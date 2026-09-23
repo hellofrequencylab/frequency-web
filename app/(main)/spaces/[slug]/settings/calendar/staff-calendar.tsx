@@ -140,8 +140,10 @@ export function StaffCalendar({
   pencilButton?: boolean
   /** Stretch the grid to the host's height (the console). */
   fill?: boolean
-  /** The host draws the month label, the paging cluster and the grid / list switcher, so the grid
-   *  draws none of them (the console header owns all three). Passed straight through. */
+  /** The host draws the month label and the paging cluster, so the grid draws neither (the console
+   *  header owns both). The grid keeps its own grid / list switcher and its month-and-year jump:
+   *  nothing else draws those, and dropping them was the console dead end LIVE-475 fixed. Passed
+   *  straight through. */
   hostChrome?: boolean
 }) {
   const router = useRouter()

@@ -18,7 +18,7 @@ import {
 import { Dialog } from '@/components/ui/dialog'
 import { buttonClasses } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { monthMatrix, monthLabel, addMonth, WEEKDAY_LABELS } from '@/lib/events/calendar-grid'
+import { monthMatrix, monthLabel, addMonth, calendarChrome, cellFloorClass, WEEKDAY_LABELS } from '@/lib/events/calendar-grid'
 import { eventCoverFocusStyle } from '@/lib/events/cover-focus'
 import { IconButton } from '@/components/ui/icon-button'
 import { CalendarRepeatsStrip } from '@/components/events/calendar-repeats-strip'
@@ -145,11 +145,13 @@ export function EventCalendar({
    *  full-viewport mount (the console) is a wall of days rather than a card with a gap under it.
    *  A day with more items than its share can show scrolls inside its own cell. */
   fill?: boolean
-  /** THE HOST DRAWS THE CHROME (PROG-CAL13). The month label, the paging cluster and the grid / list
-   *  switcher come off, because the host's own header already carries all three: inside the Calendar
-   *  console the page was paying for each of them twice and the month itself was cut off partway
-   *  through the fourth week. The filters, the failed-month line and every key stay. On the page,
-   *  where nothing else owns them, this is off and the grid draws its own header as it always has. */
+  /** THE HOST DRAWS THE MONTH (PROG-CAL13, corrected by LIVE-475). The month label and the Prev /
+   *  Today / Next cluster come off, because the host's own header already carries both: inside the
+   *  Calendar console the page was paying for each of them twice and the month itself was cut off
+   *  partway through the fourth week. The grid / list switcher and the month-and-year jump STAY,
+   *  because no host draws either of them and dropping them left the console a dead end (see THE
+   *  CHROME THE HOST CANNOT DRAW, below). The filters, the failed-month line and every key stay too.
+   *  On the page, where nothing else owns them, this is off and the grid draws its full header. */
   hostChrome?: boolean
 }) {
   const [internalMonth, setInternalMonth] = useState({ year: initialYear, month1: initialMonth1 })
@@ -392,6 +394,34 @@ export function EventCalendar({
   }
 
   const showLayerToggles = (layers?.length ?? 0) > 1
+  // What this grid draws for itself under a host that owns the chrome. Pure, and in
+  // lib/events/calendar-grid.ts so it can be RUN rather than read (see the note there).
+  const chrome = calendarChrome(hostChrome)
+
+  // THIS GRID'S OWN VIEW SWITCHER: the month grid, or the same calendar as a chronological list.
+  // Nothing outside this component draws it (the workspace's CalendarModeToggle is a different
+  // control over a different set: Guest / Calendar / List / Workflow), so it is drawn in both
+  // chrome modes and defined once here rather than written out twice.
+  const viewSwitch = (
+    <div className="inline-flex items-center rounded-control border border-border p-0.5" role="group" aria-label="Calendar view">
+      <IconButton
+        label="Grid view"
+        variant={view === 'grid' ? 'filled' : 'plain'}
+        onClick={() => setView('grid')}
+        aria-pressed={view === 'grid'}
+      >
+        <LayoutGrid className="h-4 w-4" aria-hidden />
+      </IconButton>
+      <IconButton
+        label="List view"
+        variant={view === 'list' ? 'filled' : 'plain'}
+        onClick={() => setView('list')}
+        aria-pressed={view === 'list'}
+      >
+        <List className="h-4 w-4" aria-hidden />
+      </IconButton>
+    </div>
+  )
 
   return (
     <div
@@ -406,14 +436,41 @@ export function EventCalendar({
       onKeyDown={onKeyDown}
     >
       {/* THE HEADER IS THE HOST'S WHEN THERE IS ONE (PROG-CAL13). Inside the Calendar console the
-          month label, the Prev / Today / Next cluster and the grid / list switcher are all drawn once
-          in the console's own header, so the grid draws none of them and the month gets the height
-          they were costing it twice over. The Loading live region is NOT chrome: a month that has not
-          arrived has to be announced wherever the grid is mounted, so it stays either way. */}
-      {hostChrome ? (
-        <span role="status" className="sr-only">
-          {loading ? 'Loading' : null}
-        </span>
+          month label and the Prev / Today / Next cluster are drawn once in the console's own header,
+          so the grid draws neither and the month gets the height they were costing it twice over.
+          The Loading live region is NOT chrome: a month that has not arrived has to be announced
+          wherever the grid is mounted, so it stays either way.
+
+          🔴 THE CHROME THE HOST CANNOT DRAW (LIVE-475). The first cut of `hostChrome` dropped the
+          WHOLE header, and with it the two controls no host draws: this grid's own grid / list
+          switcher (which is not the workspace's four-panel toggle) and the month-and-year jump. That
+          shipped a reachable dead end: switch the page grid to List, press Fullscreen, and you were
+          in list mode inside a full-screen console with no way back to the month and no way to move
+          more than one month at a time, with closing the console the only exit. Both controls are
+          drawn here in either mode. They cost one slim row, which is not what the month was losing
+          height to: the duplicated month label and paging cluster are still gone. */}
+      {!chrome.monthTitle && !chrome.paging ? (
+        <div className="flex items-center justify-end gap-2 border-b border-border px-3 py-1.5">
+          <span role="status" className="sr-only">
+            {loading ? 'Loading' : null}
+          </span>
+          {chrome.monthJump && (
+            <IconButton
+              ref={monthButtonRef}
+              label="Jump to a month"
+              title="Jump to a month"
+              onClick={() => {
+                setJumpYear(year)
+                setJumpOpen((o) => !o)
+              }}
+              aria-expanded={jumpOpen}
+              aria-haspopup="dialog"
+            >
+              <CalendarDays className="h-4 w-4" aria-hidden />
+            </IconButton>
+          )}
+          {chrome.viewSwitch && viewSwitch}
+        </div>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
           <div className="relative flex items-center gap-1">
@@ -460,30 +517,13 @@ export function EventCalendar({
                 <ChevronRight className="h-4 w-4" aria-hidden />
               </IconButton>
             </div>
-            <div className="inline-flex items-center rounded-control border border-border p-0.5" role="group" aria-label="Calendar view">
-              <IconButton
-                label="Grid view"
-                variant={view === 'grid' ? 'filled' : 'plain'}
-                onClick={() => setView('grid')}
-                aria-pressed={view === 'grid'}
-              >
-                <LayoutGrid className="h-4 w-4" aria-hidden />
-              </IconButton>
-              <IconButton
-                label="List view"
-                variant={view === 'list' ? 'filled' : 'plain'}
-                onClick={() => setView('list')}
-                aria-pressed={view === 'list'}
-              >
-                <List className="h-4 w-4" aria-hidden />
-              </IconButton>
-            </div>
+            {chrome.viewSwitch && viewSwitch}
           </div>
         </div>
       )}
 
       {/* MONTH + YEAR JUMP: twelve months of a year, each marked when it holds anything on hand. */}
-      {jumpOpen && !hostChrome && (
+      {jumpOpen && chrome.monthJump && (
         <div role="dialog" aria-label="Jump to a month" className="border-b border-border px-4 py-3">
           <div className="mb-2 flex items-center justify-between">
             <IconButton label="Previous year" onClick={() => setJumpYear((y) => y - 1)}>
@@ -716,8 +756,9 @@ export function EventCalendar({
                         'group flex flex-col border-r border-border p-1.5 last:border-r-0',
                         // A FILLING GRID HAS NO FLOOR (PROG-CAL13). Six rows share the height the host
                         // gives them, so a cell that insisted on 20/28 units of its own is what pushed
-                        // the last week of the month off the bottom of the console.
-                        fill ? 'min-h-0' : 'min-h-20 sm:min-h-28',
+                        // the last week of the month off the bottom of the console. The decision is
+                        // pure and lives in lib/events/calendar-grid.ts, where a probe can run it.
+                        cellFloorClass(fill),
                         !cell.inMonth && 'bg-surface-elevated/40',
                       )}
                     >

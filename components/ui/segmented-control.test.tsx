@@ -50,6 +50,9 @@ describe('SegmentedControl (buttons)', () => {
     const group = el.querySelector('[role="group"]')
     expect(group?.getAttribute('aria-label')).toBe('Calendar views')
     expect(group?.className).toContain('border-border')
+    // THE KIT'S OWN MARKER (LIVE-475): what a caller's render test reads to tell a real adoption
+    // from an import that is still spelled correctly over a hand-rolled row.
+    expect(group?.getAttribute('data-segmented')).toBe('buttons')
     const buttons = [...el.querySelectorAll('button')]
     expect(buttons.map((b) => b.textContent)).toEqual(['Calendar', 'List', 'Workflow'])
     expect(buttons.map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'false'])
@@ -108,6 +111,7 @@ describe('SegmentedLinks (navigation)', () => {
     )
     const nav = el.querySelector('nav')
     expect(nav?.getAttribute('aria-label')).toBe('Browse areas')
+    expect(nav?.getAttribute('data-segmented')).toBe('links')
     const links = [...el.querySelectorAll('a')]
     expect(links.map((a) => a.textContent)).toEqual(['Classifieds', 'Housing'])
     expect(links.map((a) => a.getAttribute('href'))).toEqual(['/classifieds', '/housing'])

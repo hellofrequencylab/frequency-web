@@ -6,9 +6,16 @@ import { EventCalendar, type CalendarEvent } from './event-calendar'
 
 // PROG-CAL13. Two things the Calendar console asks of the grid, and one thing that was flickering.
 //
-// `hostChrome`: the console header already draws the month, the Prev / Today / Next cluster and the
-// grid / list switcher, so the grid must draw none of them. It kept drawing all three, which is why
-// the console paid for the same month label twice and the month was cut off in the fourth week.
+// `hostChrome`: the console header already draws the month and the Prev / Today / Next cluster, so
+// the grid must draw neither. It kept drawing both, which is why the console paid for the same month
+// label twice and the month was cut off in the fourth week.
+//
+// 🔴 AND IT MUST STILL DRAW THE OTHER TWO (LIVE-475). The first cut took the whole header off, which
+// took the grid / list switcher and the month-and-year jump with it — and NOTHING outside this
+// component draws either one (the console header's view controls are the workspace's four-panel
+// toggle, a different control over a different set). Switching the page grid to List and then
+// pressing Fullscreen left a reader in list mode with no way back to the month and no way to move
+// more than one month at a time, with closing the console the only exit.
 //
 // `fill`: the six week rows share the height the host gives them, so no cell may insist on a floor
 // of its own, and a day holding more than its share scrolls INSIDE its cell rather than sending the
@@ -66,17 +73,49 @@ describe('EventCalendar under a host that draws the chrome', () => {
     expect(el.querySelector('[aria-label="Calendar view"]')).not.toBeNull()
   })
 
-  it('draws none of the three when the host says it owns them, and still announces a loading month', () => {
+  it('drops the month label and the paging cluster when the host says it owns them, and still announces a loading month', () => {
     const el = mount(<EventCalendar events={[]} initialYear={2026} initialMonth1={9} hostChrome />)
     expect([...el.querySelectorAll('button')].some((b) => b.textContent?.includes('September 2026'))).toBe(false)
     expect(el.querySelectorAll('[aria-label="Previous month"]').length).toBe(0)
     expect(el.querySelectorAll('[aria-label="Next month"]').length).toBe(0)
-    expect(el.querySelector('[aria-label="Calendar view"]')).toBeNull()
     // The live region is not chrome: a month that has not arrived is announced wherever it mounts.
     expect(el.querySelector('[role="status"]')).not.toBeNull()
     // The days are still there, and the weekday header with them.
     expect(el.textContent).toContain('Sun')
     expect(weekRows(el).length).toBeGreaterThan(4)
+  })
+
+  // 🔴 THE EXIT (LIVE-475). Under a host that owns the chrome, the two controls no host draws stay:
+  // the way back to the month from list mode, and the way to move more than one month at a time.
+  it('keeps its own view switcher and its month jump when the host owns the chrome', () => {
+    const el = mount(<EventCalendar events={[]} initialYear={2026} initialMonth1={9} hostChrome />)
+    const switcher = el.querySelector('[aria-label="Calendar view"]')
+    expect(switcher).not.toBeNull()
+    expect(switcher!.querySelector('[aria-label="Grid view"]')).not.toBeNull()
+    expect(el.querySelector('button[aria-label="Jump to a month"]')).not.toBeNull()
+  })
+
+  // The dead end itself: in list mode, under a host that owns the chrome, a control returns to the
+  // month. Before LIVE-475 there was none, and closing the console was the only way out.
+  it('returns to the month from list mode while the host owns the chrome', () => {
+    const el = mount(<EventCalendar events={busy} initialYear={2026} initialMonth1={9} initialView="list" fill hostChrome />)
+    expect(el.querySelector('[data-calendar-list]')).not.toBeNull()
+    act(() => {
+      el.querySelector<HTMLButtonElement>('[aria-label="Grid view"]')!.click()
+    })
+    expect(el.querySelector('[data-calendar-list]')).toBeNull()
+    expect(weekRows(el).length).toBeGreaterThan(4)
+  })
+
+  // More than one month at a time, without the grid's own month title to hang the jump on.
+  it('jumps a whole month from the host-chrome strip', () => {
+    const el = mount(<EventCalendar events={[]} initialYear={2026} initialMonth1={9} hostChrome />)
+    act(() => {
+      el.querySelector<HTMLButtonElement>('button[aria-label="Jump to a month"]')!.click()
+    })
+    const panel = el.querySelector('[aria-label="Jump to a month"][role="dialog"]')
+    expect(panel).not.toBeNull()
+    expect([...panel!.querySelectorAll('button')].some((b) => b.textContent?.trim().startsWith('Dec'))).toBe(true)
   })
 
   it('gives the week rows the host height and lets a busy cell scroll its own items', () => {

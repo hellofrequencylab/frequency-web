@@ -255,9 +255,11 @@ describe('describeChange', () => {
       expect(line).not.toMatch(/[\u2013\u2014!]/)
       expect(line.endsWith('.')).toBe(true)
     }
-    expect(lines[0]).toBe('Pencil "Sound bath" on 3 dates: Jan 18, Feb 17 and Mar 19, 2026, 7 PM to 8:30 PM as a new Plan at Planning.')
-    expect(lines[1]).toBe('Pencil "Solstice" on Dec 21, 2026, all day on the Plan "Winter sits".')
-    expect(lines[2]).toContain('Move "Sound bath" to Mar 19, 2026')
+    // ONE SHORT DATE (LIVE-475): the weekday comes from lib/calendar/short-date.ts, the same
+    // formatter the result lines under this preview use. This panel used to carry a second one.
+    expect(lines[0]).toBe('Pencil "Sound bath" on 3 dates: Sun, Jan 18, Tue, Feb 17 and Thu, Mar 19, 2026, 7 PM to 8:30 PM as a new Plan at Planning.')
+    expect(lines[1]).toBe('Pencil "Solstice" on Mon, Dec 21, 2026, all day on the Plan "Winter sits".')
+    expect(lines[2]).toContain('Move "Sound bath" to Thu, Mar 19, 2026')
     expect(lines[3]).toBe('Set "Winter sits" to Production, every linked date included.')
     expect(lines[4]).toContain('Cancelled')
     expect(lines[5]).toBe('Rename "Winter sits" to "Winter sits, 2026".')
