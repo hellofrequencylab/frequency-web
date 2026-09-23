@@ -23,3 +23,6 @@ export async function DispatchTickerSlot({ profileId }: { profileId: string }) {
     />
   )
 }
+
+// Its Suspense fallback is `DispatchTickerReserve` in components/layout/chrome-reserves.tsx: a null
+// fallback reserves zero height, so the bar would APPEND above the page content instead of swapping in.

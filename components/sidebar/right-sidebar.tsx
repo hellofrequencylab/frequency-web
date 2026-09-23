@@ -1,4 +1,4 @@
-import { Suspense, cache } from 'react'
+import { Fragment, Suspense, cache } from 'react'
 import { headers } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SEASON_RANKS, rankForCompletion } from '@/lib/season-ranks'
@@ -74,6 +74,9 @@ interface RightSidebarProps {
 export async function MobileGameStats({ profileId }: { profileId: string }) {
   return <GameStatsPanel data={await loadGameStats(profileId)} showSummary />
 }
+
+// Its Suspense fallback is `MobileGameStatsReserve` in components/layout/chrome-reserves.tsx: this
+// never returns null, so a reserved box is always replaced by the panel rather than deleted.
 
 // Assemble the player's "progress cockpit" — best-effort; any one source failing
 // degrades to an empty/teaser state. Shared by the desktop dock + the mobile menu.
@@ -270,16 +273,31 @@ async function PagePanels({ profileId, role, pathname }: RightSidebarProps & { p
   }
 
   const ctx = { profileId, circleIds, isCrew }
+  // 🔴 NO PER-PANEL <Suspense> HERE, AND NO ROUTE IN A BOUNDARY KEY. This used to be
+  // `<Suspense key={key} fallback={<PanelSkeleton />}>` around each panel, where `key` came from
+  // `pageRailPanels(pathname)` — so a different route meant a different KEY SET, which means
+  // brand-new boundaries, and a brand-new boundary shows its fallback even inside a transition.
+  // Measured against real Suspense: a settled `/feed` rail showing two panels, re-rendered in
+  // `startTransition` with the `/events` key set and pending data, showed THREE SKELETONS AND ZERO
+  // PANELS; the control — the same key set with new pending data — kept every panel on screen and
+  // showed no skeleton at all. A boundary that already has content does not flash. A new one does.
+  //
+  // What made that fire with nobody touching anything: a LAYOUT does not re-render on navigation,
+  // so this rail keeps the panel set from wherever the layout last rendered. The next thing that
+  // re-renders the layout does it at the CURRENT path, the key set changes underneath, and the
+  // whole rail drops to skeletons. `components/presence/heartbeat.tsx` fires a `pingPresence`
+  // server action every 90 seconds while the tab is visible, with no user input at all, and a
+  // server action that lands on a Supabase token refresh writes cookies and re-renders the layout.
+  // That is the blink that appears to come from nowhere.
+  //
+  // The panels stream under the ONE stable boundary this component already sits in (below), whose
+  // key never encodes the route. Do not put the route back into a boundary identity.
   return (
     <>
       {keys.map((key) => {
         const def = RAIL_PANELS[key]
         if (!def || (def.gate && !def.gate(ctx))) return null
-        return (
-          <Suspense key={key} fallback={<PanelSkeleton />}>
-            {def.render(ctx)}
-          </Suspense>
-        )
+        return <Fragment key={key}>{def.render(ctx)}</Fragment>
       })}
     </>
   )
@@ -327,7 +345,15 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
         </Suspense>
         {/* Site-wide demo notice — pinned ABOVE the Quest box when demo content is
             present (it self-hides otherwise). */}
-        <DemoNotice />
+        {/* Its OWN boundary, same spelling as its neighbours. It is an async server component that
+            reads the demo flag, the viewer's preference and two profile counts, and mounted bare its
+            nearest boundary was the layout's whole-rail one — so the rail's first paint waited on the
+            demo flag. `fallback={null}`, not a skeleton: it renders nothing for almost every viewer,
+            and a grey card that resolves to nothing reads as a broken load (the rule this file already
+            states for ControlCenterPanel below). */}
+        <Suspense fallback={null}>
+          <DemoNotice />
+        </Suspense>
         {/* Quest control center: the next onboarding/setup step ONLY (when live). The game
             numbers moved to the Vault dock (three-docks law — nothing is offered twice), so
             this renders nothing when there is no step. Hidden on Quest surfaces, where the
@@ -343,16 +369,27 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
             threaded by (main)/layout.tsx), so collapsing or scrolling the rail can never take
             the member's numbers away with it. */}
         {/* Your activity — under Season Standing, except on /practices which already shows it. */}
+        {/* fallback null, not a skeleton, for the same reason spelled out on ControlCenterPanel
+            above: ActivityPanel returns NULL when the member has no practice logged, so the
+            skeleton painted an `h-32` grey card and then deleted it with nothing taking its
+            place. A placeholder is only honest where something is coming. */}
         {showActivity && (
-          <Suspense fallback={<PanelSkeleton />}>
+          <Suspense fallback={null}>
             <ActivityPanel profileId={profileId} />
           </Suspense>
         )}
-        {/* Page panels — stats specific to this route. */}
-        <Suspense fallback={<PanelSkeleton />}>
+        {/* Page panels — stats specific to this route. THE rail's one stable boundary: its identity
+            does not encode the route (see the note in PagePanels), so a re-render at a new pathname
+            swaps its contents without ever showing a fallback again. */}
+        {/* fallback null as well: the registry panels self-hide on empty data and the leaderboard is
+            gated off for non-crew, so this group legitimately resolves to nothing on many routes. */}
+        <Suspense fallback={null}>
           <PagePanels profileId={profileId} role={role} pathname={pathname} />
         </Suspense>
         {/* The viewer's Frequency Signature — except on profile pages, which already show it. */}
+        {/* KEEPS ITS SKELETON, deliberately, and it is the one of the four that should. SignaturePanel
+            returns its <section> unconditionally — there is no empty case — so the placeholder is
+            always replaced by content rather than deleted, which is what a skeleton is for. */}
         {showSignature && (
           <Suspense fallback={<PanelSkeleton />}>
             <SignaturePanel profileId={profileId} />
