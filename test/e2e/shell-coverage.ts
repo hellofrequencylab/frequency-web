@@ -70,6 +70,21 @@ export interface ShellCoverageInput {
    *  log" — pointing away from the one row that explains it. Observed on the 2026-08-31 run that
    *  named all seven operator routes under exactly that sentence. */
   operatorSurfaces?: readonly string[]
+  /** Roster paths whose captures live in the ADVISORY tier, mapped to the backlog row that owns
+   *  the downgrade (`ADVISORY_OPERATOR_SURFACES` in surfaces.ts).
+   *
+   *  🔴 WHY THE LEDGER NEEDS THIS AND CANNOT WORK IT OUT. An advisory describe is tagged
+   *  `@advisory` and NOT `@shell`, deliberately: a running advisory capture must not be able to
+   *  make this reporter call the authed app covered. The consequence is that in the BLOCKING
+   *  shell run there is no observation for that path at all, and the only two answers this file
+   *  had were "photographed" and "unphotographed". Announcing `/admin/qr` as unphotographed is
+   *  false in the other direction, it IS photographed one step later, and with
+   *  PW_REQUIRE_OPERATOR set it would turn a surface that WAS looked at into a red run.
+   *
+   *  So it gets a third answer, and the row travels with it, because "advisory" without the row
+   *  that owns it is how a temporary downgrade becomes permanent. The roster is NOT shrunk: the
+   *  path stays in `surfaces`, stays in the denominator, and is named in the banner every run. */
+  advisorySurfaces?: Readonly<Record<string, string>>
 }
 
 /**
@@ -86,8 +101,16 @@ export interface ShellCoverage {
   skipped: number
   /** Member surfaces with at least one test that ran. */
   photographed: readonly string[]
-  /** Member surfaces named individually — the thing a reader needs and never gets. */
+  /** Member surfaces named individually — the thing a reader needs and never gets.
+   *
+   *  ⚠️ An ADVISORY surface is NOT in here. It was photographed, in another step, and calling it
+   *  unphotographed would be the same kind of lie this file exists to stop, pointed the other
+   *  way. It is in `advisory` instead, with its row. */
   unphotographed: readonly string[]
+  /** Roster surfaces this run did not photograph BECAUSE their capture lives in the advisory
+   *  tier, each with the backlog row that owns the downgrade. Photographed, reported, and not
+   *  voting: three different things from "not looked at". */
+  advisory: readonly { readonly path: string; readonly row: string }[]
   /** Titles that failed because a baseline has never been captured. */
   missingBaselines: readonly string[]
   /** True when the Space console is missing from the matrix because no slug is configured. */
@@ -168,7 +191,17 @@ export function summarizeShellCoverage(input: ShellCoverageInput): ShellCoverage
   const ran = observations.filter((o) => o.status === 'ran')
   const skipped = observations.filter((o) => o.status === 'skipped')
   const photographed = input.surfaces.filter((path) => ran.some((o) => o.surface === path))
-  const unphotographed = input.surfaces.filter((path) => !photographed.includes(path))
+  // Three buckets, not two. A path this run did not photograph is either genuinely unseen or it
+  // is an advisory capture that rode another step, and the difference decides both the banner's
+  // wording and whether PW_REQUIRE_OPERATOR may go red. See ShellCoverageInput.advisorySurfaces.
+  const advisoryRoster = input.advisorySurfaces ?? {}
+  const missing = input.surfaces.filter((path) => !photographed.includes(path))
+  const advisory = missing
+    .filter((path) => Object.prototype.hasOwnProperty.call(advisoryRoster, path))
+    .map((path) => ({ path, row: advisoryRoster[path] }))
+  const unphotographed = missing.filter(
+    (path) => !Object.prototype.hasOwnProperty.call(advisoryRoster, path),
+  )
   const { reason, remedy } = reasonFor(input, unphotographed)
 
   const verdict: ShellVerdict =
@@ -195,6 +228,7 @@ export function summarizeShellCoverage(input: ShellCoverageInput): ShellCoverage
     skipped: skipped.length,
     photographed,
     unphotographed,
+    advisory,
     spaceConsoleAbsent: !input.spaceSlug,
     operatorsDenied,
     missingBaselines: observations.filter((o) => o.missingBaseline).map((o) => o.title),
@@ -230,7 +264,11 @@ export function renderShellCoverage(coverage: ShellCoverage): ShellReport {
   }
 
   const label = suiteLabel(coverage.specs)
-  const surfaceCount = coverage.photographed.length + coverage.unphotographed.length
+  // The advisory surfaces stay IN the denominator. Dropping them would make the count line up by
+  // shrinking the roster, which is the move this whole module exists to refuse; they are counted
+  // here and then named, with their row, in the advisory block below.
+  const surfaceCount =
+    coverage.photographed.length + coverage.unphotographed.length + coverage.advisory.length
   const lines: string[] = []
   const annotations: string[] = []
 
@@ -248,6 +286,9 @@ export function renderShellCoverage(coverage: ShellCoverage): ShellReport {
       '| Surface | Covered? |',
       '| :--- | :--- |',
       ...coverage.unphotographed.map((path) => `| \`${path}\` | 🔴 not photographed |`),
+      ...coverage.advisory.map(
+        ({ path, row }) => `| \`${path}\` | 🟡 photographed, advisory, ${row} |`,
+      ),
       ...coverage.photographed.map((path) => `| \`${path}\` | ✅ photographed |`),
       '',
       `**Why.** ${coverage.reason}`,
@@ -268,7 +309,7 @@ export function renderShellCoverage(coverage: ShellCoverage): ShellReport {
     // that says "covered" over seven unaudited /admin routes is the HYG-026 silence in a new
     // coat. Name every route, name the cause, name the grant.
     const member = coverage.photographed.length
-    const memberTotal = surfaceCount - coverage.operatorsDenied.length
+    const memberTotal = surfaceCount - coverage.operatorsDenied.length - coverage.advisory.length
     lines.push(
       `### ⚠️ App shell covered, operator console NOT looked at (${label})`,
       '',
@@ -314,6 +355,28 @@ export function renderShellCoverage(coverage: ShellCoverage): ShellReport {
           `${coverage.unphotographed.join(', ')} did not run. ${coverage.reason}`,
       )
     }
+  }
+
+  // ── PHOTOGRAPHED, ADVISORY, AND NAMED ────────────────────────────────────────────────────
+  // The third answer. Without this block a surface whose capture moved to the advisory tier
+  // reads as one this run never looked at, which is the #2048 lie with the sign flipped: it
+  // sends a reader hunting for a missing capture that is sitting one step away. Every advisory
+  // surface is named, with the row that owns the downgrade, so "advisory" stays a debt someone
+  // is carrying rather than a permanent state nobody remembers agreeing to.
+  if (coverage.advisory.length > 0) {
+    lines.push(
+      '',
+      `**${coverage.advisory.length} surface(s) were photographed in the ADVISORY tier, not here.** ` +
+        'The capture ran, the comparison ran, and a diff there does not fail the job. It is ' +
+        'reported by the advisory step in the job summary and its diffs upload with the rest:',
+      '',
+      ...coverage.advisory.map(({ path, row }) => `- \`${path}\`: photographed, advisory, ${row}`),
+    )
+    annotations.push(
+      `::notice title=Photographed in the advisory tier (${label})::` +
+        `${coverage.advisory.map(({ path, row }) => `${path} (${row})`).join(', ')} ` +
+        'still runs and still reports, and does not block. This is NOT an unphotographed surface.',
+    )
   }
 
   if (coverage.spaceConsoleAbsent) {
@@ -373,6 +436,17 @@ export function renderShellCoverage(coverage: ShellCoverage): ShellReport {
             '',
           ]
 
+  // Same third answer in the terminal, so a local run is not told a surface went unseen either.
+  if (coverage.advisory.length > 0) {
+    consoleLines.splice(
+      consoleLines.length - 1,
+      0,
+      `      Photographed in the ADVISORY tier (does not block): ${coverage.advisory
+        .map(({ path, row }) => `${path} (${row})`)
+        .join(', ')}`,
+    )
+  }
+
   return { markdown, annotations, console: consoleLines.join('\n') }
 }
 
@@ -393,6 +467,12 @@ function flagOn(value: string | undefined): boolean {
  * Neither is on by default: before the precondition, silence is loud (the banner above); after it,
  * silence is red, so a grant that is later revoked cannot quietly re-open the blind spot. Pure so
  * `shell-coverage.test.ts` can prove both directions without a Playwright run.
+ *
+ * ⚠️ AN ADVISORY SURFACE CANNOT FIRE EITHER OF THESE, and that is a property rather than a case
+ * handled here: `operatorsDenied` is built from `unphotographed`, and an advisory path is not in
+ * `unphotographed`. It was photographed. A ratchet that went red for a surface the run DID look
+ * at would teach people that PW_REQUIRE_OPERATOR means nothing, which is the same disease as the
+ * silence it was built to cure. `shell-coverage.test.ts` holds that direction as a test.
  */
 export function requiredFailure(
   coverage: ShellCoverage,

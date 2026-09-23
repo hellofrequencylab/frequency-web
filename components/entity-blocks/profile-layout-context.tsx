@@ -105,13 +105,20 @@ interface EntityLayoutContextValue {
 const EntityLayoutCtx = createContext<EntityLayoutContextValue | null>(null)
 
 /** The generic entity-layout store. Keyed by `kind` and persisting through an injected `save` action, so
- *  the member and space builders share ONE implementation, each mounted in the right place. */
+ *  the member and space builders share ONE implementation, each mounted in the right place.
+ *
+ *  `identity` is the store's SUBJECT (e.g. `member`, `space:acme`). When it changes, this component
+ *  resets its own state in place instead of being remounted from above — see the reset block below
+ *  for why the remount could not stay. Callers that only ever drive one subject (the email studio,
+ *  the nurture step editor, the Space canvas editor) leave it undefined and never reset. */
 export function EntityLayoutProvider({
   kind,
+  identity,
   save,
   children,
 }: {
   kind: EntityKind
+  identity?: string
   save: SaveLayout
   children: ReactNode
 }) {
@@ -153,7 +160,75 @@ export function EntityLayoutProvider({
   const HISTORY_MAX = 100
   const COALESCE_MS = 500
 
+  // ── RESET IN PLACE WHEN THE SUBJECT CHANGES ────────────────────────────────────────────────
+  //
+  // 🔴 THIS IS WHY THE SHELL STOPPED BLINKING. `EntityLayoutMount` (below) used to return TWO
+  // DIFFERENT COMPONENT TYPES from the same position — `<SpaceLayoutProvider key={slug}>` on a
+  // Space builder route, `<ProfileLayoutProvider>` everywhere else — and that mount wraps the
+  // WHOLE content row in the app shell: the left rail, `#main`, and the right-rail column
+  // (app-shell.tsx, `<EntityLayoutMount>`). React reconciles by TYPE at a position, so flipping
+  // the type unmounts and rebuilds everything under it, and the `key` did the same again on a
+  // space→space navigation. Measured on the real shell by node identity: `/feed` → `/channels`
+  // keeps the same rail column, rail body, left nav and `#main` nodes; `/feed` → `/spaces/acme`
+  // replaced all four and re-ran the rail's mount effects. The header survived only because it
+  // renders ABOVE this mount. That is the LIVE-472 two-parents shape for the third time in this
+  // repo, and the rule it keeps teaching is: THE POSITION MUST NEVER CHANGE TYPE.
+  //
+  // So the type is fixed now and the store resets ITSELF, in two halves that are split by what the
+  // lint here will allow rather than by taste.
+  //
+  // HALF ONE — the STATE, adjusted during render. React's documented shape for "reset state when a
+  // prop changes", and the same spelling app-shell.tsx uses for the mobile drawer's Vault
+  // disclosure. An effect would render the stale value once, commit it, then re-render, and
+  // `react-hooks/set-state-in-effect` rejects it by name.
+  const [identityWas, setIdentityWas] = useState(identity)
+  if (identityWas !== identity) {
+    setIdentityWas(identity)
+    setSeeded(false)
+    setRows([])
+    setHidden([])
+    setContent({})
+    setStyle({})
+    setSelectedId(null)
+    setSelectedItemIndex(null)
+    setCanUndo(false)
+    setDirty(false)
+    setError(null)
+  }
+
+  // HALF TWO — the REFS, reset lazily by the first callback that touches them. They cannot be
+  // cleared during render (`react-hooks/refs`: "Cannot update ref during render"), and they must
+  // not be cleared in an effect either, because effects are the wrong side of the one ordering that
+  // matters here: a child's seed effect runs BEFORE this parent's, so a parent effect would wipe
+  // the layout the new subject had just seeded. Every callback below opens with this instead, so
+  // the bag is always the current subject's by the time anything reads it.
+  //
+  // It is also what keeps the OUTGOING flush honest. The unmount-flush effect further down depends
+  // on `flush`, which depends on `save`, so a subject change re-runs it — and React runs the
+  // previous effect's CLEANUP before any new setup, with the previous closure. That cleanup
+  // therefore calls the OUTGOING `flush`, whose `syncSubject` is bound to the outgoing identity and
+  // no-ops, so it finds the outgoing `pending` still intact and writes it through the outgoing
+  // subject's own `save`. That is exactly what the deleted `key` bought — Space A's mid-debounce
+  // edit must never be persisted onto Space B — and it is bought here by NOT clearing `pending`
+  // early rather than by new machinery.
+  const subject = useRef(identity)
+  const syncSubject = useCallback(() => {
+    if (subject.current === identity) return
+    subject.current = identity
+    if (timer.current) {
+      clearTimeout(timer.current)
+      timer.current = null
+    }
+    pending.current = null
+    seededRef.current = false
+    applyingUndo.current = false
+    latest.current = { rows: [], hidden: [], content: {}, style: {} }
+    history.current = []
+    lastPushAt.current = 0
+  }, [identity])
+
   const flush = useCallback(async () => {
+    syncSubject()
     const next = pending.current
     if (!next) return
     pending.current = null
@@ -170,10 +245,11 @@ export function EntityLayoutProvider({
       // awaits, so a mid-flight edit repopulates it and must keep the page marked dirty.
       setDirty(pending.current !== null)
     }
-  }, [save])
+  }, [save, syncSubject])
 
   const apply = useCallback(
     (next: BuilderLayout) => {
+      syncSubject()
       // Record the state we are about to replace onto the undo stack — unless this apply IS an undo, or it is
       // the very first seed (nothing meaningful to go back to). Coalesce edits landing within COALESCE_MS so a
       // burst of typing collapses into one undo step; a change after a pause starts a new one.
@@ -207,7 +283,7 @@ export function EntityLayoutProvider({
       if (timer.current) clearTimeout(timer.current)
       timer.current = setTimeout(() => void flush(), SAVE_DEBOUNCE_MS)
     },
-    [flush],
+    [flush, syncSubject],
   )
 
   // Merge-safe content/style: fold the one field bag over the FRESHEST layout (latest ref), then apply.
@@ -215,9 +291,10 @@ export function EntityLayoutProvider({
   // field that settled a beat earlier (the stale-closure bug).
   const applyContent = useCallback(
     (blockId: string, props: Record<string, unknown> | undefined) => {
+      syncSubject()
       apply(setBlockContent(latest.current, blockId, props && Object.keys(props).length ? props : undefined))
     },
-    [apply],
+    [apply, syncSubject],
   )
   // The FIELD-level merge. applyContent takes a WHOLE bag, so a caller that assembles that bag from its
   // render-time `store.content` snapshot loses any field written earlier in the same tick — React has not
@@ -227,6 +304,7 @@ export function EntityLayoutProvider({
   // so each field lands on top of the last one no matter how fast they arrive.
   const patchContent = useCallback(
     (blockId: string, patch: Record<string, unknown>) => {
+      syncSubject()
       const next = { ...(latest.current.content?.[blockId] ?? {}) }
       for (const [key, value] of Object.entries(patch)) {
         const empty = value === undefined || value === '' || (Array.isArray(value) && value.length === 0)
@@ -235,16 +313,18 @@ export function EntityLayoutProvider({
       }
       apply(setBlockContent(latest.current, blockId, Object.keys(next).length ? next : undefined))
     },
-    [apply],
+    [apply, syncSubject],
   )
   const applyStyle = useCallback(
     (blockId: string, s: BlockStyle | undefined) => {
+      syncSubject()
       apply(setBlockStyle(latest.current, blockId, s && Object.keys(s).length ? s : undefined))
     },
-    [apply],
+    [apply, syncSubject],
   )
 
   const undo = useCallback(() => {
+    syncSubject()
     const prev = history.current.pop()
     if (!prev) return
     // Re-apply the popped state WITHOUT pushing it back onto the stack (applyingUndo guards the push in
@@ -254,7 +334,7 @@ export function EntityLayoutProvider({
     applyingUndo.current = false
     lastPushAt.current = 0
     setCanUndo(history.current.length > 0)
-  }, [apply])
+  }, [apply, syncSubject])
 
   const seed = useCallback(
     (
@@ -263,6 +343,7 @@ export function EntityLayoutProvider({
       c?: Record<string, Record<string, unknown>>,
       s?: Record<string, BlockStyle>,
     ) => {
+      syncSubject()
       if (seededRef.current) return
       seededRef.current = true
       latest.current = { rows: r, hidden: h, content: c ?? {}, style: s ?? {} }
@@ -272,10 +353,14 @@ export function EntityLayoutProvider({
       setStyle(s ?? {})
       setSeeded(true)
     },
-    [],
+    [syncSubject],
   )
 
   // Flush any pending save on unmount / navigation so a mid-debounce edit is never lost.
+  // 🔴 ITS DEPS ALSO CARRY THE SUBJECT HANDOFF. `flush` changes whenever `save` does, so a subject
+  // change re-runs this effect, and React runs the previous cleanup first with the previous
+  // closure — which is how the outgoing subject's pending edit reaches the outgoing subject's own
+  // action. See the note on `syncSubject` above; do not narrow these deps.
   useEffect(() => {
     return () => {
       if (timer.current) clearTimeout(timer.current)
@@ -302,45 +387,46 @@ export function EntityLayoutProvider({
   )
 }
 
-/** The MEMBER layout provider — persists the caller's own profile grid (session-derived, self-only). */
-export function ProfileLayoutProvider({ children }: { children: ReactNode }) {
-  return (
-    <EntityLayoutProvider kind="member" save={saveMemberGridLayout}>
-      {children}
-    </EntityLayoutProvider>
-  )
-}
-
-/** The SPACE layout provider — persists a Space's public-page grid, owner-gated by slug server-side. */
-export function SpaceLayoutProvider({ slug, children }: { slug: string; children: ReactNode }) {
-  const save = useCallback<SaveLayout>((payload) => saveSpaceGridLayout(slug, payload), [slug])
-  return (
-    <EntityLayoutProvider kind="space" save={save}>
-      {children}
-    </EntityLayoutProvider>
-  )
-}
+/* The two per-kind wrapper components that used to live here (`ProfileLayoutProvider`,
+   `SpaceLayoutProvider`) are GONE, and their absence is the fix rather than a tidy-up. They existed
+   only so `EntityLayoutMount` could pick one, and a position that picks between two component types
+   is a position that remounts everything beneath it. Their bodies are now the two branches of the
+   `kind` / `identity` / `save` props that mount passes to the ONE provider. Re-adding either would
+   re-open the same door. */
 
 /** Mount exactly ONE layout provider for the current route: the SPACE store on a Space profile ROOT
  *  (`/spaces/<slug>`, the builder archetype), the MEMBER store everywhere else. This keeps the store that
- *  wraps both the page body and the admin rail in lockstep with the page the builder edits. */
+ *  wraps both the page body and the admin rail in lockstep with the page the builder edits.
+ *
+ *  🔴 ONE COMPONENT TYPE, NO KEY, EVER. This mount wraps the app shell's entire content row — left rail,
+ *  `#main`, right-rail column — so ANY change of type or key at this position tears down and rebuilds the
+ *  visible chrome. It used to return `<SpaceLayoutProvider key={slug}>` or `<ProfileLayoutProvider>`
+ *  depending on the pathname, and navigating into or between Spaces replaced every one of those nodes
+ *  (measured by node identity) while `/feed` → `/channels` replaced none. What used to be the type switch
+ *  and the key is now the `identity` PROP, which `EntityLayoutProvider` resets on in place; what used to
+ *  be a remount's unmount-flush is the handoff there. Both halves are documented at that reset block.
+ *  Do not reintroduce a branch, a key, or a second provider component here. */
 export function EntityLayoutMount({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const scope = adminScopeFor(pathname)
-  if (railArchetypeFor(pathname) === 'builder' && scope?.kind === 'space' && scope.id) {
-    // KEYED by slug: this mount lives ABOVE the [slug] segment in the app shell, so without a key React
-    // preserves the SAME provider instance across a space->space soft navigation. The store is "first
-    // mounter wins" (seed() no-ops once seeded), so Space A's rows/content/styles kept rendering on
-    // Space B until a hard refresh - and worse, an edit on Space B could debounce-save Space A's layout
-    // over B's. The key remounts the store per space: the old instance's unmount flush persists any
-    // pending edit through its own (correctly bound) save, then the new instance seeds fresh.
-    return (
-      <SpaceLayoutProvider key={`space:${scope.id}`} slug={scope.id}>
-        {children}
-      </SpaceLayoutProvider>
-    )
-  }
-  return <ProfileLayoutProvider>{children}</ProfileLayoutProvider>
+  // The Space builder ROOT and nothing else; null means the member store. Plain derived values, so the
+  // hooks below run in the same order on every route (the branch used to be a `return`, which is what
+  // made two component types possible in the first place).
+  const spaceSlug =
+    railArchetypeFor(pathname) === 'builder' && scope?.kind === 'space' && scope.id ? scope.id : null
+  const save = useCallback<SaveLayout>(
+    (payload) => (spaceSlug ? saveSpaceGridLayout(spaceSlug, payload) : saveMemberGridLayout(payload)),
+    [spaceSlug],
+  )
+  return (
+    <EntityLayoutProvider
+      kind={spaceSlug ? 'space' : 'member'}
+      identity={spaceSlug ? `space:${spaceSlug}` : 'member'}
+      save={save}
+    >
+      {children}
+    </EntityLayoutProvider>
+  )
 }
 
 /** Read the shared entity-layout store. Returns null when no provider is mounted (fail-safe: a consumer

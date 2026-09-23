@@ -2010,6 +2010,18 @@
 /* ── Base ────────────────────────────────────────────────────────────────── */
 html {
   font-family: var(--font-nunito, 'Nunito', sans-serif);
+    /* SCROLLBAR GUTTER: HELD BACK ON PURPOSE (LIVE-477, split out 2026-09-23).
+     `scrollbar-gutter: stable` on `html` is the right fix for the reflow every dialog causes: the
+     scroll lock removes the document scrollbar, and because the DOCUMENT is what scrolls here, the
+     sticky header and the rail track shift by its width on every open and close. Six surfaces take
+     that lock with the same omission and one declaration fixes all six.
+
+     It is NOT here yet because reserving the gutter narrows the content area on every page, which
+     legitimately moves EVERY committed visual baseline: `/discover` came back 259,977 pixels
+     different on a PR that touches nothing it renders. That is a real, intended diff, not drift, so
+     the recapture is honest work rather than a cover-up, and it is a whole-repo recapture that
+     wants its own change and its own reading. LIVE-479 carries it. The other two causes of the
+     blink, which have no visual footprint, shipped without it. */
   /* Site-wide "breathe + a touch larger": the rem-based Tailwind scale (font AND
      spacing) derives from this root size, so a single gentle bump softens type and
      opens up padding/gaps everywhere at once. ~16px → ~17px. Reversible one-liner.

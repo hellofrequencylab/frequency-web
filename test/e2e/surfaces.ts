@@ -677,6 +677,46 @@ export function operatorSurfaces(): readonly Surface[] {
   }))
 }
 
+/**
+ * THE OPERATOR SURFACES THAT ARE PHOTOGRAPHED BUT DO NOT VOTE (owner ruling 2026-09-23).
+ *
+ * An advisory surface is STILL CAPTURED, still compared and still reported. What it does not do
+ * is fail a pull request. `/discover` went first (LIVE-373) and its describe in visual.spec.ts
+ * states the rule this list obeys: A GATE THAT CANNOT FIRE TRUTHFULLY STAYS ADVISORY.
+ *
+ * 🔴 THIS IS NOT A SKIP LIST AND IT MUST NEVER BECOME ONE. The roster stays whole:
+ * `operatorSurfaces()` is unchanged, `coverageSurfaces()` is unchanged, a11y and overflow are
+ * unchanged, and the capture still runs on every pull request in the `@advisory` step. The one
+ * thing that changes is which step's exit code the result lands in. A path that stopped being
+ * photographed altogether would be the HYG-026 silence again, so `visual-tiers.test.ts` asserts
+ * in-tree, on every pull request, that each path here has an advisory describe capturing it.
+ *
+ * ⚠️ AND THE COVERAGE LEDGER HAS TO BE TOLD. `shell-reporter.ts` counts `@shell` tests against
+ * `operatorSurfaces()`, and the advisory describes are deliberately NOT `@shell` (the same
+ * reason /discover is not: a running advisory capture must not let the reporter call the authed
+ * app covered). So in the blocking shell run these paths are collected by nobody, and without
+ * this list the banner would call them "unphotographed", false in the other direction, and
+ * with `PW_REQUIRE_OPERATOR` set it would go red for a surface that WAS photographed. The value
+ * is the backlog row that owns the downgrade, so the banner can cite it: see
+ * `summarizeShellCoverage`, which reports these as advisory rather than as missing.
+ *
+ * The row is the debt. Clear the row, delete the entry, and the surface votes again.
+ */
+export const ADVISORY_OPERATOR_SURFACES: Readonly<Record<string, string>> = {
+  // LIVE-476. Four consecutive pull requests that touched nothing this page renders went red
+  // here. First the full-page height flip (14521 ↔ 14567), settled by the first-screen-only
+  // capture above; then, on the first screen, a small STABLE desktop diff: 951 px dawn-light,
+  // 1029 px dawn-dark, identical across three attempts, mobile green. The cause is NOT KNOWN.
+  // Live tallies are ruled out by measurement, not by argument: the four StatCards on this page
+  // read `qr_scans`, which has had no new row since 2026-09-18 and none at all since the
+  // baseline was captured, so the numbers in the picture are frozen.
+  '/admin/qr': 'LIVE-476',
+}
+
+/** The advisory operator paths, as a list. `visual.spec.ts` filters both operator loops on this
+ *  so the blocking loop and the advisory describe can never drift apart. */
+export const ADVISORY_OPERATOR_PATHS: readonly string[] = Object.keys(ADVISORY_OPERATOR_SURFACES)
+
 /* ── The narrow phone, and the header band (HYG-057, ADR-1270) ──────────────── */
 
 /** The Playwright project that photographs at 320px. Named once, so a spec can ask

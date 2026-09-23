@@ -38,11 +38,23 @@ import {
   summarizeShellCoverage,
   type ShellObservation,
 } from './shell-coverage'
-import { ROLE_FLOOR_MARKER, STORAGE_STATE, appSurfaces, operatorSurfaces } from './surfaces'
+import {
+  ADVISORY_OPERATOR_SURFACES,
+  ROLE_FLOOR_MARKER,
+  STORAGE_STATE,
+  appSurfaces,
+  operatorSurfaces,
+} from './surfaces'
 
 /** The tag that marks a test as covering an AUTHED surface. Applied to the `member shell`
  *  describes in visual.spec.ts and a11y.spec.ts, and to the `operator console` describe in
- *  visual.spec.ts (ADR-1128). */
+ *  visual.spec.ts (ADR-1128).
+ *
+ *  ⚠️ NOT applied to the ADVISORY operator describe, on purpose and for the same reason
+ *  /discover carries no `@shell`: a capture that rides the non-blocking step must not be able to
+ *  make this reporter call the authed app covered. Those surfaces reach the ledger through
+ *  `ADVISORY_OPERATOR_SURFACES` below, which is how the banner can say "photographed, advisory,
+ *  LIVE-476" instead of the false "unphotographed". */
 const SHELL_TAG = '@shell'
 
 /** Every authed surface path this reporter can attribute an observation to.
@@ -118,6 +130,11 @@ export default class ShellCoverageReporter implements Reporter {
       // handing it the operator list would let a reason about the /admin role floor be
       // attached to a run that never asked for an operator surface in the first place.
       operatorSurfaces: this.operatorCollected ? operatorSurfaces().map((s) => s.path) : [],
+      // The advisory roster, ALWAYS: it is a fact about where a surface is photographed, not
+      // about what this run collected. Without it the blocking shell run announces /admin/qr as
+      // unphotographed, which is false: it is captured one step later in the @advisory tier
+      // (LIVE-476). The roster itself is untouched; only the wording and the ratchet change.
+      advisorySurfaces: ADVISORY_OPERATOR_SURFACES,
     })
 
     const report = renderShellCoverage(coverage)

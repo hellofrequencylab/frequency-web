@@ -579,6 +579,15 @@ export function DockBar({
     // stop working after the first fold/unfold, silently. The `sentinel?.parentElement` guard is
     // load-bearing for the same reason and stays: while folded there is no sentinel at all, and
     // `new ResizeObserver(...).observe(null)` throws rather than doing nothing.
+    //
+    // 🔴 THE OTHER WAY THIS NODE USED TO GO AWAY IS NOW CLOSED, and it is worth recording because
+    // nothing here could have noticed it. `components/entity-blocks/profile-layout-context.tsx`'s
+    // EntityLayoutMount used to render two different component TYPES at the position that wraps the
+    // whole content row, so navigating into or between Spaces unmounted and rebuilt the right rail —
+    // sentinel included — without `folded` or `measure` changing. This effect therefore did not
+    // re-run, and the observer spent the rest of the session watching a detached element: the bar
+    // silently stopped riding up to the rail's end. That mount is one fixed component type now, so a
+    // fold is once again the only thing that replaces this node, and `folded` covers a fold.
     const sentinel = document.getElementById(RAIL_END_SENTINEL_ID)
     const ro = sentinel?.parentElement ? new ResizeObserver(schedule) : null
     if (ro && sentinel?.parentElement) ro.observe(sentinel.parentElement)

@@ -23,6 +23,7 @@ import { loadActiveThemeCss, resolveActiveOccasionSlug } from '@/lib/theme/serve
 import RightSidebar, { MobileGameStats, VaultDockSlot } from '@/components/sidebar/right-sidebar'
 import { isQuestSurface } from '@/lib/layout/rail-panels'
 import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
+import { DispatchTickerReserve, MobileGameStatsReserve } from '@/components/layout/chrome-reserves'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
 import { getMessagesUnreadCount } from '@/app/(main)/messages/popover-actions'
@@ -504,7 +505,7 @@ export default async function MainLayout({
   // isQuestSurface is applied on BOTH so the Quest page, which owns these figures itself, stays
   // the single source at every width.
   const mobileStats = isQuestSurface(currentPath ?? '') ? null : (
-    <Suspense fallback={null}>
+    <Suspense fallback={<MobileGameStatsReserve />}>
       <MobileGameStats profileId={profile.id} />
     </Suspense>
   )
@@ -512,6 +513,10 @@ export default async function MainLayout({
   // The ≥ 768 home: the bottom-right canvas tab. Same coordinates as the operator page dock,
   // which is the point — DAWN's docks card says bottom-right is "The Vault (member) OR this
   // page (operator)", and showSidebar is false on /admin, so only one can ever mount.
+  // `fallback={null}` and it STAYS null, judged rather than overlooked: this renders inside DockBar,
+  // which is `fixed bottom-0 right-3` (components/layout/dock-bar.tsx). A fixed box is out of normal
+  // flow, so this boundary has no height to reserve and nothing above or below it to push. The
+  // reserve rule is about flow, and this is the one chrome boundary that is not in it.
   const dock = (
     <Suspense fallback={null}>
       <VaultDockSlot profileId={profile.id} />
@@ -519,8 +524,14 @@ export default async function MainLayout({
   )
 
   // Community news ticker — streams in independently, never blocks the shell.
+  // Its fallback RESERVES the bar's height rather than being `null`. A null fallback reserves zero,
+  // so the bar does not swap in, it APPENDS — and this boundary sits directly above the page content
+  // in the shell's centre column, so what a member sees is the top of the page jumping. The trade,
+  // named rather than hidden: a member with NO dispatches now gets that reserve collapsing once when
+  // the boundary resolves to nothing, where before they saw no movement at all. Same 41px either
+  // way, and it is the populated case — nearly every member — that the report is about.
   const ticker = (
-    <Suspense fallback={null}>
+    <Suspense fallback={<DispatchTickerReserve />}>
       <DispatchTickerSlot profileId={profile.id} />
     </Suspense>
   )

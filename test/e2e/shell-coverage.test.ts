@@ -406,6 +406,148 @@ describe('requiredFailure: two opt-in ratchets, one per owner precondition', () 
   })
 })
 
+// ── "PHOTOGRAPHED, ADVISORY, LIVE-476" IS A THIRD ANSWER, AND THE LEDGER HAD ONLY TWO ──────────
+//
+// 🔴 THE BUG THIS PREVENTS, stated before it can happen. /admin/qr blocked four consecutive pull
+// requests that touched nothing it renders, so the owner moved it to the advisory tier: the
+// capture still runs, in the @advisory step, and it no longer votes. That describe is NOT tagged
+// @shell, deliberately: a running advisory capture must not make this reporter call the authed
+// app covered, which is the same rule /discover follows.
+//
+// The consequence is that the BLOCKING shell run collects no observation for that path. With two
+// buckets the banner would have called it unphotographed, which is false in the other direction:
+// it IS photographed, one step later. Worse, `operatorsDenied` would have picked it up and
+// PW_REQUIRE_OPERATOR would have turned a surface the run DID look at into a red run, teaching
+// everybody that the ratchet means nothing, which is the disease, not the cure.
+//
+// ADR-949 again: the assertion that makes this more than decoration is the NEGATIVE CONTROL at
+// the bottom. An operator route that is NOT on the advisory roster must still read as
+// unphotographed, still be denied, and still fire the ratchet. Otherwise this is a silencer.
+describe('an advisory surface is photographed elsewhere, not unphotographed', () => {
+  const ADVISORY = { '/admin/qr': 'LIVE-476' }
+  const base = {
+    baseURL: 'https://preview.example.vercel.app',
+    storageStateVar: '/tmp/state.json',
+    storageState: '/tmp/state.json',
+    specs: ['visual.spec.ts'],
+    spaceSlug: 'demo',
+    operatorSurfaces: OPERATORS,
+    surfaces: [...SURFACES, ...OPERATORS],
+    advisorySurfaces: ADVISORY,
+  }
+
+  /** The blocking shell run after the move: the member shell ran, the two voting operator routes
+   *  ran, and /admin/qr was never collected because its describe carries @advisory. */
+  function blockingShellRun(): ShellObservation[] {
+    return [
+      ...ranRun(),
+      ...OPERATORS.filter((p) => p !== '/admin/qr').map((s) => run(s, 'ran')),
+    ]
+  }
+
+  it('🔴 calls it advisory with its row, and NEVER unphotographed', () => {
+    const coverage = summarizeShellCoverage({ ...base, observations: blockingShellRun() })
+
+    expect(coverage.verdict).toBe('covered')
+    expect(coverage.unphotographed).toEqual([])
+    expect(coverage.advisory).toEqual([{ path: '/admin/qr', row: 'LIVE-476' }])
+
+    const { markdown, annotations, console: terminal } = renderShellCoverage(coverage)
+    expect(markdown).toContain('photographed, advisory, LIVE-476')
+    expect(markdown).not.toContain('Still unphotographed')
+    expect(markdown).not.toContain('not photographed')
+    expect(annotations).toHaveLength(1)
+    expect(annotations[0]).toContain('::notice title=Photographed in the advisory tier')
+    expect(annotations[0]).toContain('LIVE-476')
+    expect(terminal).toContain('ADVISORY tier')
+    expect(terminal).toContain('/admin/qr (LIVE-476)')
+  })
+
+  it('keeps it in the DENOMINATOR: the roster is not quietly shrunk to make a count line up', () => {
+    const coverage = summarizeShellCoverage({ ...base, observations: blockingShellRun() })
+    const total = SURFACES.length + OPERATORS.length
+    expect(coverage.photographed).toHaveLength(total - 1)
+    // 6 of 7, not 6 of 6. The seventh is named on its own line with the row that owns it.
+    expect(renderShellCoverage(coverage).markdown).toContain(`${total - 1} of ${total}`)
+  })
+
+  it('does NOT read as a denied operator console, and PW_REQUIRE_OPERATOR does not fire on it', () => {
+    const coverage = summarizeShellCoverage({ ...base, observations: blockingShellRun() })
+    expect(coverage.operatorsDenied).toEqual([])
+    expect(coverage.reason).not.toContain('/admin role floor')
+    expect(requiredFailure(coverage, { requireOperator: '1', requireShell: '1' })).toBeNull()
+    expect(renderShellCoverage(coverage).markdown).toContain('✅ App shell covered')
+  })
+
+  it('names it in a PARTIAL run too, where every other surface really was missed', () => {
+    const coverage = summarizeShellCoverage({
+      baseURL: 'https://preview.example.vercel.app',
+      surfaces: [...SURFACES, ...OPERATORS],
+      observations: [...skippedRun(), ...OPERATORS.filter((p) => p !== '/admin/qr').map((s) => run(s, 'skipped'))],
+      operatorSurfaces: OPERATORS,
+      advisorySurfaces: ADVISORY,
+    })
+    expect(coverage.verdict).toBe('partial')
+    const { markdown } = renderShellCoverage(coverage)
+    expect(markdown).toContain('| `/admin/qr` | 🟡 photographed, advisory, LIVE-476 |')
+    expect(markdown).toContain('| `/feed` | 🔴 not photographed |')
+  })
+
+  it('🔴 NEGATIVE CONTROL: an operator route NOT on the roster is still denied, still red', () => {
+    // If this passed, the mechanism would be a blanket silencer rather than a per-surface,
+    // row-backed downgrade, and that is the failure mode worth a test of its own.
+    const coverage = summarizeShellCoverage({
+      ...base,
+      observations: [...ranRun(), ...OPERATORS.map(deniedRun)],
+    })
+    expect(coverage.advisory).toEqual([{ path: '/admin/qr', row: 'LIVE-476' }])
+    expect(coverage.operatorsDenied).toEqual(['/admin', '/admin/library'])
+    expect(coverage.reason).toContain('HYG-027')
+    const failure = requiredFailure(coverage, { requireOperator: '1' })
+    expect(failure).toContain('::error title=Operator console not audited')
+    expect(failure).toContain('/admin/library')
+    expect(failure).not.toContain('/admin/qr')
+  })
+
+  // 🔴 THE POSITIVE CONTROL ON THE BUG ITSELF. Drop the roster and the SAME run reports the
+  // surface as unphotographed, headlines the operator console as not looked at, and
+  // PW_REQUIRE_OPERATOR turns it red, for a surface that was photographed in the advisory step.
+  // This is what the three assertions above are worth, measured rather than asserted.
+  it('without the roster, the very same run announces it unseen and the ratchet goes red', () => {
+    const coverage = summarizeShellCoverage({
+      ...base,
+      advisorySurfaces: undefined,
+      observations: blockingShellRun(),
+    })
+    expect(coverage.advisory).toEqual([])
+    expect(coverage.unphotographed).toEqual(['/admin/qr'])
+    expect(coverage.operatorsDenied).toEqual(['/admin/qr'])
+    const { markdown } = renderShellCoverage(coverage)
+    expect(markdown).toContain('operator console NOT looked at')
+    expect(markdown).toContain('| `/admin/qr` | 🔴')
+    expect(requiredFailure(coverage, { requireOperator: '1' })).toContain('/admin/qr')
+  })
+})
+
+// The pure half is proven above. This is the wiring: a roster nothing passes to the summarizer
+// changes nothing, and the surface would be announced as unseen on every run.
+describe('the reporter and the surface list actually carry the advisory roster', () => {
+  const dir = join(__dirname)
+
+  it('shell-reporter.ts hands ADVISORY_OPERATOR_SURFACES to the summarizer', () => {
+    const src = readFileSync(join(dir, 'shell-reporter.ts'), 'utf8')
+    expect(src).toContain('ADVISORY_OPERATOR_SURFACES')
+    expect(src).toMatch(/advisorySurfaces:\s*ADVISORY_OPERATOR_SURFACES/)
+  })
+
+  it('surfaces.ts keeps /admin/qr in the operator roster while naming it advisory', () => {
+    const src = readFileSync(join(dir, 'surfaces.ts'), 'utf8')
+    expect(src).toContain("{ path: '/admin/qr',")
+    expect(src).toMatch(/ADVISORY_OPERATOR_SURFACES[\s\S]{0,1200}'\/admin\/qr':\s*'LIVE-476'/)
+    expect(src).toContain('export const ADVISORY_OPERATOR_PATHS')
+  })
+})
+
 // ── THE PURE FUNCTION IS PROVEN ABOVE; THIS IS THE PROOF THAT THE WORKFLOWS FEED IT ──────────────
 //
 // 🔴 requiredFailure() cannot fire on a value nothing passes it, and for a year one of the two
