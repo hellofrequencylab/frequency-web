@@ -2010,31 +2010,18 @@
 /* ── Base ────────────────────────────────────────────────────────────────── */
 html {
   font-family: var(--font-nunito, 'Nunito', sans-serif);
-  /* 🔴 RESERVE THE SCROLLBAR'S TRACK, ALWAYS. The DOCUMENT is what scrolls in the authed shell
-     (components/layout/app-shell.tsx: "The document itself scrolls (not an inner pane)"), and the
-     header + both rails stay put on top of it via `sticky`. Six overlays lock that scroll by
-     setting `document.body.style.overflow = 'hidden'` — components/ui/dialog.tsx,
-     components/search/search-overlay.tsx, components/on-air/mindless.tsx,
-     components/spotlight/blocks/gallery-lightbox.tsx, components/page-editor/mobile/bottom-sheet.tsx
-     and the shell's own mobile drawer. With no gutter reserved, locking DELETES the scrollbar and
-     unlocking puts it back, so the viewport grows and shrinks by its width on every open and every
-     close. The sticky full-width header and the `shrink-0` right-rail column ride that change —
-     and the rail column carries `transition-[width] duration-200`, so it ANIMATES the shift rather
-     than jumping it, and dock-bar.tsx's ResizeObserver re-measures off the back of it. That is the
-     "pop up makes the top and the right rail move" report.
+    /* SCROLLBAR GUTTER: HELD BACK ON PURPOSE (LIVE-477, split out 2026-09-23).
+     `scrollbar-gutter: stable` on `html` is the right fix for the reflow every dialog causes: the
+     scroll lock removes the document scrollbar, and because the DOCUMENT is what scrolls here, the
+     sticky header and the rail track shift by its width on every open and close. Six surfaces take
+     that lock with the same omission and one declaration fixes all six.
 
-     ONE line here, not padding compensation at each lock site: the compensation spelling has to be
-     repeated at all six, and it still gets the sticky header wrong (padding on <body> does not move
-     a `position: sticky` child that is laid out against the viewport).
-
-     `stable`, NOT `stable both-edges`. `both-edges` mirrors the reserve onto the inline-start side
-     too, which in this LTR layout would inset the whole page by a scrollbar width against nothing.
-     Plain `stable` reserves only the side the scrollbar actually occupies.
-
-     Scoped to `html` on purpose: it reserves the gutter for the ROOT scroller only. Inner scrollers
-     are untouched, so `.admin-subnav-scroll` (scrollbar-width: none + edge mask, below) and every
-     other overflow box keep their own behaviour. */
-  scrollbar-gutter: stable;
+     It is NOT here yet because reserving the gutter narrows the content area on every page, which
+     legitimately moves EVERY committed visual baseline: `/discover` came back 259,977 pixels
+     different on a PR that touches nothing it renders. That is a real, intended diff, not drift, so
+     the recapture is honest work rather than a cover-up, and it is a whole-repo recapture that
+     wants its own change and its own reading. LIVE-479 carries it. The other two causes of the
+     blink, which have no visual footprint, shipped without it. */
   /* Site-wide "breathe + a touch larger": the rem-based Tailwind scale (font AND
      spacing) derives from this root size, so a single gentle bump softens type and
      opens up padding/gaps everywhere at once. ~16px → ~17px. Reversible one-liner.
