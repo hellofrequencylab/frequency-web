@@ -147,7 +147,10 @@ describe('EventCalendar under a host that draws the chrome', () => {
   it('pages the month on Up and Down as well as Left and Right, when the calendar itself has focus', () => {
     const el = mount(<EventCalendar events={[]} initialYear={2026} initialMonth1={9} />)
     const grid = el.querySelector<HTMLElement>('[data-calendar-root]')!
-    const shown = () => el.querySelector('[aria-live="polite"]')!.textContent
+    // NAME THE MONTH, not "the first polite live region in the grid". The grid gained a second one
+    // when a date became movable (PROG-CAL15, the line a move leaves), and a loose selector that
+    // happened to mean the month title started reading an empty region instead.
+    const shown = () => el.querySelector('button [aria-live="polite"]')!.textContent
     const press = (key: string) =>
       act(() => {
         grid.focus()
