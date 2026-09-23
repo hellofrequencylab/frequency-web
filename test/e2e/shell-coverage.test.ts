@@ -11,7 +11,17 @@ import {
   summarizeShellCoverage,
   type ShellObservation,
 } from './shell-coverage'
-import { operatorLandedElsewhere, ROLE_FLOOR_MARKER } from './surfaces'
+import {
+  captureFlipMessage,
+  capturedHeights,
+  operatorLandedElsewhere,
+  ROLE_FLOOR_MARKER,
+  smallestEnclosing,
+  unsettledMessage,
+  type MovedBox,
+  type SettleReport,
+  type ViewportBox,
+} from './surfaces'
 
 /** The four member-shell surfaces, exactly as appSurfaces() yields them with a Space slug. */
 const SURFACES = ['/feed', '/channels', '/settings', '/spaces/demo/manage']
@@ -512,5 +522,372 @@ describe('operatorLandedElsewhere: the check that runs at the shutter', () => {
       // The whole point is the ORDER: before settle() it is the check that already failed.
       expect(src.indexOf('await settle(page)')).toBeLessThan(src.indexOf('operatorLandedElsewhere(page, surface)'))
     }
+  })
+})
+// ── THE HEIGHT THAT NEVER STOPPED: the fail-safe that used to fire in silence ───────────────
+//
+// MEASURED (2026-09-23): `[mobile] visual · operator console › /admin/qr matches baseline` went
+// red on two unrelated pull requests with byte-identical numbers — the full-page height flipping
+// between 14521 and 14567, a diff of 46,975 pixels every time. `settleHeight` in surfaces.ts kept
+// ONE previous height and a quiet clock, so it could only see monotonic growth: an alternation
+// whose plateaus outlast the quiet window reads as settled. And when its 15s budget expired it
+// returned with no throw, no annotation and no counter, so the page reached the camera unsettled
+// and the failure surfaced several frames later as `Failed to take two consecutive stable
+// screenshots`, naming neither the surface's height nor the wait that had given up.
+//
+// `settleReport` now carries the distinct heights and whether the height came BACK to one it had
+// already left; `unsettledMessage` turns that into the sentence. It is pure, so it is tested the
+// way `operatorLandedElsewhere` is — no browser, on every PR — and per ADR-949 the test that
+// matters most is the negative control: a page that really did come to rest must stay quiet.
+describe('unsettledMessage: the gate that notices settleHeight gave up', () => {
+  const report = (over: Partial<SettleReport> = {}): SettleReport => ({
+    settled: true,
+    oscillated: false,
+    heights: [14521],
+    distinct: 1,
+    final: 14521,
+    waitedMs: 800,
+    moved: [],
+    movers: [],
+    ...over,
+  })
+
+  /** The real one, as `settleHeight` would hand it back for /admin/qr. */
+  const flip = (): SettleReport =>
+    report({
+      settled: true,
+      oscillated: true,
+      heights: [14521, 14567],
+      distinct: 2,
+      waitedMs: 15_000,
+      movers: [
+        {
+          path: 'body>div[1]>main[0]>div[2]>section[1]>div[1]',
+          desc: 'div.mt-4.flex "No scans yet in this window."',
+          from: 80.75,
+          to: 136,
+        },
+      ],
+    })
+
+  it('NEGATIVE CONTROL: a height that came to rest on one value says nothing', () => {
+    expect(unsettledMessage(report(), '/admin/qr')).toBeNull()
+    // Monotonic growth that then settled is the normal case: every `<Suspense fallback={null}>`
+    // on the surface appends, so several distinct heights on the way to one is not a defect.
+    expect(unsettledMessage(report({ heights: [8497, 9272, 9390], distinct: 3 }), '/feed')).toBeNull()
+  })
+
+  it('names the surface and BOTH heights when the page alternated', () => {
+    const message = unsettledMessage(flip(), '/admin/qr')
+    expect(message).toContain('/admin/qr never settled: 14521 and 14567 over 15s')
+    // The two numbers are the whole point: without them the next person re-derives them by
+    // arithmetic over the committed PNG, which is what actually happened twice.
+    expect(message).toContain('came BACK to a value it had already left')
+  })
+
+  it('\u{1F534} NAMES THE ELEMENT, which is the only reason this gate pays for itself', () => {
+    // The heights alone are what we ALREADY KNEW after two red pull requests. A message that
+    // stops there blocks the surface deterministically and still sends the next person to a
+    // calculator and a committed PNG. The box, its two sizes and its text are the deliverable.
+    const message = unsettledMessage(flip(), '/admin/qr')
+    expect(message).toContain('The box that changed:')
+    expect(message).toContain('div.mt-4.flex "No scans yet in this window." 80.75px then 136px')
+  })
+
+  it('reports a box that exists on only ONE plateau as absent, not as 0px', () => {
+    // The branch-swap shape: the two halves are different nodes, so one side has no box at all.
+    // "0px" would read as a box that collapsed, which is a different defect.
+    const message = unsettledMessage(
+      report({
+        oscillated: true,
+        heights: [14521, 14567],
+        distinct: 2,
+        movers: [{ path: 'body>p[0]', desc: 'p.text-meta "No scans yet"', from: 0, to: 55.25 }],
+      }),
+      '/admin/qr',
+    )
+    expect(message).toContain('p.text-meta "No scans yet" absent then 55.25px')
+  })
+
+  it('says so honestly when it could NOT name a box, instead of implying it found nothing', () => {
+    const message = unsettledMessage(
+      report({ oscillated: true, heights: [14521, 14567], distinct: 2, movers: [] }),
+      '/admin/qr',
+    )
+    expect(message).toContain('No box could be named')
+    expect(message).not.toContain('The box that changed')
+  })
+
+  it('fires on an oscillation EVEN WHEN the quiet window was satisfied', () => {
+    // The defect the old helper could not see. `settled` is true — the camera looked during one
+    // plateau — and the page still renders at two sizes for one commit.
+    expect(unsettledMessage(report({ settled: true, oscillated: true, heights: [10, 20], distinct: 2 }), '/x'))
+      .not.toBeNull()
+  })
+
+  it('fires when the budget simply ran out, and says which of the two it was', () => {
+    const message = unsettledMessage(
+      report({ settled: false, oscillated: false, heights: [100, 200, 300], distinct: 3, waitedMs: 15_000 }),
+      '/x',
+    )
+    expect(message).toContain('100, 200 and 300')
+    expect(message).toContain('still moving when the wait ran out')
+    expect(message).not.toContain('came BACK')
+  })
+
+  it('says so rather than lying when the sample list was capped', () => {
+    const message = unsettledMessage(
+      report({ settled: false, heights: [1, 2], distinct: 40, waitedMs: 15_000 }),
+      '/x',
+    )
+    expect(message).toContain('and 38 more')
+  })
+
+  it('is wired into the visual suite at the shutter, and throws there', () => {
+    const src = readFileSync(join(process.cwd(), 'test/e2e/visual.spec.ts'), 'utf8')
+    expect(src).toContain('unsettledMessage(settleReport, label)')
+    expect(src).toContain('throw new Error(unsettled)')
+    // AFTER settle(), or it would be reading a report that does not exist yet; and BEFORE the
+    // shutter, or the opaque screenshot timeout has already happened.
+    expect(src.indexOf('await settle(page)')).toBeLessThan(src.indexOf('unsettledMessage(settleReport, label)'))
+    expect(src.indexOf('unsettledMessage(settleReport, label)')).toBeLessThan(src.indexOf('await expect(page).toHaveScreenshot('))
+    // 🔴 And it must stay OFF the viewportOnly surfaces: /feed is an infinite stream that
+    // deliberately never settles, and gating it here would fail four green captures on day one.
+    expect(src).toContain('surface.viewportOnly')
+    expect(src).toContain("type: 'unsettled-height'")
+  })
+
+  it('settleHeight still reports instead of asserting, and still never touches the page', () => {
+    const src = readFileSync(join(process.cwd(), 'test/e2e/surfaces.ts'), 'utf8')
+    const helper = src.slice(src.indexOf('async function settleHeight'), src.indexOf('function seconds('))
+    expect(helper.length).toBeGreaterThan(0)
+    // The observation-only rule (the 🔴 scroll-pass note in settle()): a scroll pass here cost
+    // 46 passing tests once, and the report must not have bought it back by another name.
+    // The element pass added reads — getBoundingClientRect, getComputedStyle, textContent — and
+    // this list is what keeps it to reads. `getComputedStyle` itself is ALLOWED and is used: it
+    // is a read. `.style.` and `classList` are the write halves of the same idea, and either one
+    // would repaint the page under the camera.
+    //
+    // Comments are stripped first, or the 🔴 note that tells the next person NOT to write to
+    // `classList` would itself fail this test — and the fix for that would be to delete the
+    // warning, which is precisely backwards.
+    const code = helper.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/.*$/gm, ' ')
+    for (const forbidden of [
+      'scrollTo',
+      'scrollIntoView',
+      'scrollBy',
+      'window.scroll',
+      'click(',
+      'focus(',
+      '.style.',
+      'classList',
+      'setAttribute',
+      'requestFullscreen',
+    ]) {
+      expect(code, `settleHeight must not change the page (${forbidden})`).not.toContain(forbidden)
+    }
+    // POSITIVE CONTROL for the stripper: it must not have blanked the body it is scanning.
+    expect(code).toContain('getComputedStyle(kid).position')
+    // And the cost guard: the tree is walked only on a page that has ALREADY flipped, so a
+    // surface that settles normally pays nothing beyond the height polling it always paid.
+    expect(code).toContain('if (oscillated && !diffed)')
+    // It reports; the throw lives at the shutter where the surface is named.
+    expect(helper).not.toContain('throw ')
+  })
+})
+// ── WHICH BOX MADE THE CHANGE, out of the whole ancestor chain that carried it ────────────
+//
+// The raw in-page diff reports every element whose height differs between the two plateaus,
+// which on a real page means html, body, the shell, main, the column, the section AND the one
+// box that actually changed — all with the same delta. A message that prints that list is no
+// better than the one that printed only two numbers. This is the rule that reduces it.
+describe('smallestEnclosing: the box that made the change, not the ones carrying it', () => {
+  const box = (path: string, from: number, to: number, desc = path): MovedBox => ({
+    path,
+    desc,
+    from,
+    to,
+    delta: to - from,
+  })
+
+  it('drops a whole ancestor chain and keeps the one box that grew', () => {
+    // The /admin/qr shape: five levels each +55.25, one inner box that went 80.75 → 136.
+    const kept = smallestEnclosing([
+      box('body>div[0]', 14400, 14455.25, 'div#shell'),
+      box('body>div[0]>main[0]', 14300, 14355.25, 'main#main'),
+      box('body>div[0]>main[0]>section[1]', 200, 255.25, 'section.rounded-2xl'),
+      box('body>div[0]>main[0]>section[1]>div[1]', 80.75, 136, 'div.mt-4.h-28 "Daily scans"'),
+    ])
+    expect(kept).toHaveLength(1)
+    expect(kept[0]!.desc).toBe('div.mt-4.h-28 "Daily scans"')
+    expect(kept[0]!.from).toBe(80.75)
+    expect(kept[0]!.to).toBe(136)
+  })
+
+  it('handles the BRANCH SWAP, where one node leaves and a taller one takes its place', () => {
+    // Different nodes at the same position, so neither child\'s delta equals the parent\'s; only
+    // the SUM of the two explains it. This is the shape the qr empty state had.
+    const kept = smallestEnclosing([
+      box('body>div[0]', 14400, 14456.75, 'div#shell'),
+      box('body>div[0]>p[1]', 55.25, 0, 'p.text-meta "No scans yet"'),
+      box('body>div[0]>div[1]', 0, 112, 'div.mt-4.h-28 "Daily scans"'),
+    ])
+    expect(kept.map((k) => k.desc)).toEqual([
+      'p.text-meta "No scans yet"',
+      'div.mt-4.h-28 "Daily scans"',
+    ])
+    // 🔴 The shell is the ancestor CARRYING both, and dropping it is the whole point: with it
+    // present the cap of three would have spent a third of the message on `div#shell`.
+    expect(kept.some((k) => k.desc === 'div#shell')).toBe(false)
+  })
+
+  it('KEEPS an ancestor whose delta its children do not explain', () => {
+    // A parent that grew 100 with only a 20px child inside it changed on its own account — its
+    // own padding, gap or min-height. Dropping it would hide the real mover.
+    const kept = smallestEnclosing([
+      box('body>div[0]', 100, 200, 'div.parent'),
+      box('body>div[0]>span[0]', 10, 30, 'span.child'),
+    ])
+    expect(kept.map((k) => k.desc)).toContain('div.parent')
+  })
+
+  it('reports the deepest first and caps the list', () => {
+    const kept = smallestEnclosing(
+      [
+        box('body>a[0]', 1, 50),
+        box('body>a[0]>b[0]>c[0]', 1, 90),
+        box('body>x[1]', 1, 20),
+        box('body>y[2]', 1, 30),
+      ],
+      2,
+    )
+    expect(kept).toHaveLength(2)
+    expect(kept[0]!.path).toBe('body>a[0]>b[0]>c[0]')
+  })
+
+  it('NEGATIVE CONTROL: nothing moved, nothing named', () => {
+    expect(smallestEnclosing([])).toEqual([])
+  })
+
+  it('does not mistake a SIBLING for a descendant on a shared path prefix', () => {
+    // `body>div[1]` is not inside `body>div[1]0`, and a naive startsWith without the `>` would
+    // say it was. Path prefixes are only containment at a separator.
+    const kept = smallestEnclosing([box('body>div[1]', 10, 60), box('body>div[10]', 10, 60)])
+    expect(kept).toHaveLength(2)
+  })
+})
+// ── THE FLIP THAT ONLY HAPPENS WHILE THE SHUTTER IS OPEN (PR #2878, 2026-09-23) ──────────
+//
+// The height gate above measures the page at 390×844 and, on this surface, correctly found
+// nothing: /admin/qr really is still at that viewport. `toHaveScreenshot` then flipped it
+// 14521 ↔ 14567 by capturing past the viewport, and Playwright reported a bare timeout with
+// the two heights buried in its call log. These are the pieces that turn that log into the
+// same actionable message.
+describe('capture-induced height flip: reading it out of Playwright own failure', () => {
+  // 🔴 THE REAL LOG, pasted from the PR #2878 run. Testing the parser against invented
+  // wording would prove only that the parser matches the invention.
+  const REAL_LOG = [
+    'Error: Timed out 5000ms waiting for expect(locator).toHaveScreenshot(expected)',
+    '',
+    'Call log:',
+    '  - Expect "toHaveScreenshot" with timeout 5000ms',
+    '    - taking page screenshot',
+    '    - Expected an image 390px by 14521px, received 390px by 14567px.',
+    '    - waiting 100ms before taking screenshot',
+    '    - taking page screenshot',
+    '    - Expected an image 390px by 14567px, received 390px by 14521px.',
+    '    - waiting 250ms before taking screenshot',
+    '    - Timeout 5000ms exceeded.',
+  ].join('\n')
+
+  it('reads BOTH heights out of the real call log', () => {
+    expect(capturedHeights(REAL_LOG)).toEqual([14521, 14567])
+  })
+
+  it('NEGATIVE CONTROL: an ordinary pixel diff names one height and must not be claimed', () => {
+    // This is the message for a real visual regression. Speaking for it would relabel every
+    // genuine baseline diff on the suite as a viewport bug.
+    const pixelDiff = [
+      'Error: expect(page).toHaveScreenshot(admin-qr--dawn-light.png)',
+      '',
+      '  28139 pixels (ratio 0.01 of all image pixels) are different.',
+      '  Expected an image 390px by 14521px, received 390px by 14521px.',
+    ].join('\n')
+    expect(capturedHeights(pixelDiff)).toEqual([14521])
+    expect(capturedHeights('no images here at all')).toEqual([])
+  })
+
+  it('names the heights, the spread, and the boxes tied to the viewport', () => {
+    const boxes: ViewportBox[] = [
+      {
+        path: 'body>div[0]>div[3]>div[0]>div[0]',
+        desc: 'div.mx-auto.flex',
+        rule: 'min-height: calc(100vh - 3.5rem)',
+        height: 14415.5,
+      },
+    ]
+    const message = captureFlipMessage('/admin/qr [dawn-light \u00b7 mobile]', [14521, 14567], boxes)
+    expect(message).toContain('changed height DURING capture: 14521 and 14567, a 46px difference')
+    expect(message).toContain('div.mx-auto.flex { min-height: calc(100vh - 3.5rem) } currently 14415.5px')
+    // 🔴 It must explain the SILENCE, because "why did settle() not catch this" is the first
+    // question anybody reading it will ask, and the answer is the finding itself.
+    expect(message).toContain('INDUCED BY THE CAMERA')
+  })
+
+  it('says what to look at instead when no such box is in the stylesheets', () => {
+    const message = captureFlipMessage('/admin/qr', [14521, 14567], [])
+    expect(message).toContain('innerHeight')
+    expect(message).not.toContain('Boxes on this surface')
+  })
+
+  it('is wired around the shutter, and leaves other failures alone', () => {
+    const src = readFileSync(join(process.cwd(), 'test/e2e/visual.spec.ts'), 'utf8')
+    expect(src).toContain('await explainCaptureFailure(page, error, label)')
+    // The try must WRAP toHaveScreenshot, or the failure never reaches the diagnosis.
+    expect(src.indexOf('try {')).toBeLessThan(src.indexOf('await expect(page).toHaveScreenshot('))
+    expect(src.indexOf('await expect(page).toHaveScreenshot(')).toBeLessThan(
+      src.indexOf('await explainCaptureFailure(page, error, label)'),
+    )
+  })
+
+  it('the CSSOM scan is observation only, like the height wait', () => {
+    const src = readFileSync(join(process.cwd(), 'test/e2e/surfaces.ts'), 'utf8')
+    const helper = src.slice(
+      src.indexOf('export async function viewportDependentBoxes'),
+      src.indexOf('export function capturedHeights'),
+    )
+    expect(helper.length).toBeGreaterThan(0)
+    const code = helper.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/.*$/gm, ' ')
+    // 🔴 `setViewportSize` is the one that matters here. Resizing the page to reproduce what
+    // the camera does would MUTATE it and would not revert, and taking a throwaway fullPage
+    // screenshot to induce the condition is the camera firing early — the lazy-content hazard
+    // the scroll-pass note in settle() records. This helper reads the CSSOM instead.
+    for (const forbidden of [
+      'setViewportSize',
+      'screenshot(',
+      'scrollTo',
+      'scrollIntoView',
+      'scrollBy',
+      'click(',
+      'classList',
+      'setAttribute',
+      'insertRule',
+      'deleteRule',
+      '.style.setProperty',
+      '.style.removeProperty',
+      '.style.cssText',
+    ]) {
+      expect(code, `viewportDependentBoxes must not change the page (${forbidden})`).not.toContain(
+        forbidden,
+      )
+    }
+    // 🔴 `.style.` cannot be banned outright HERE the way it is in the height wait, because
+    // reading a rule\'s declarations is the entire job: `styleRule.style.getPropertyValue(...)`.
+    // So the ban is on the WRITE forms above, plus assignment, which is the one that would
+    // actually restyle the page under the camera.
+    expect(code, 'no assignment to a style property').not.toMatch(/\.style\.[A-Za-z]+\s*=[^=]/)
+    expect(code, 'the declarations are READ, which is the point').toContain('getPropertyValue')
+    // POSITIVE CONTROL for the stripper.
+    expect(code).toContain('document.styleSheets')
   })
 })

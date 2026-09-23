@@ -49,7 +49,17 @@ export function Analytics({ data }: { data: AnalyticsData }) {
       <section className="rounded-2xl border border-border bg-surface p-4 lift-1">
         <h2 className="text-body-sm font-bold text-text">Scans · last 30 days</h2>
         {windowTotal === 0 ? (
-          <p className="mt-3 py-6 text-center text-meta text-muted">No scans yet in this window.</p>
+          // 🔴 THE SAME BOX AS THE CHART, ON PURPOSE: `mt-4 h-28`, both branches. This used to be
+          // a `mt-3 py-6` one-liner, and the swap between the two was a 55px BINARY HEIGHT that no
+          // mask and no wait can hold — `VISUAL_MASK_SITES` in test/e2e/surfaces.ts predicted this
+          // flake in as many words before it happened ("if the window goes from zero scans to
+          // some, the section swaps a one-line empty state for a 112px chart: that is a HEIGHT,
+          // and no mask holds a height"). A surface whose height depends on live data cannot hold
+          // a full-page baseline, so the fix is to make the section dimension-invariant rather
+          // than to mask it. Keep the two boxes identical if you touch either one.
+          <div className="mt-4 flex h-28 items-center justify-center rounded-control border border-dashed border-border bg-surface-elevated/40 px-4 text-center">
+            <p className="text-meta text-muted">No scans yet in this window.</p>
+          </div>
         ) : (
           // `data-visual-mask`: the 30-day window SLIDES, so every bar steps one column left at
           // the UTC day boundary with no code between the two pictures. Measured: the two
