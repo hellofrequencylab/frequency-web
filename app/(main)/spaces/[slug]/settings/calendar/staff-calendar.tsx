@@ -18,6 +18,7 @@ import { describeRepeat, parseRepeat } from '@/lib/events/repeat-rule'
 import { PUBLISH_STEP, productionDoorHref, stageTimeline } from '@/lib/calendar/stage-timeline'
 import { shortDateLabel } from '@/lib/calendar/short-date'
 import { browserZone } from '@/lib/calendar/browser-zone'
+import type { EntryMove } from '@/lib/calendar/date-move'
 import type { DayNote } from '@/lib/calendar/day-notes'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import { isError } from '@/lib/action-result'
@@ -113,6 +114,9 @@ export function StaffCalendar({
   pencilButton = true,
   fill = false,
   hostChrome = false,
+  moveByDrag = false,
+  moveNotice = null,
+  onMoveResult,
 }: {
   slug: string
   spaceId: string
@@ -145,6 +149,14 @@ export function StaffCalendar({
    *  nothing else draws those, and dropping them was the console dead end LIVE-475 fixed. Passed
    *  straight through. */
   hostChrome?: boolean
+  /** MOVE A DATE BY DRAGGING IT (PROG-CAL15), the console's edit. Off here and on the Space page,
+   *  where the calendar stays click-to-open; the console turns it on. */
+  moveByDrag?: boolean
+  /** The host's line about the last move, handed to the grid so it is announced where the move
+   *  happened. The host shows the same sentence in its header. */
+  moveNotice?: string | null
+  /** One line per move, moved or not, for the host header. A move is never silent. */
+  onMoveResult?: (line: string) => void
 }) {
   const router = useRouter()
   const [draft, setDraft] = useState<Draft | null>(null)
@@ -322,6 +334,33 @@ export function StaffCalendar({
   }, [clashKey, slug])
   const shownClashes = clashKey ? clashes : []
 
+  // MOVE A DATE BY DRAGGING IT, OR BY SHIFT AND AN ARROW (PROG-CAL15).
+  //
+  // THE SAME SEAM THE DRAWER USES, deliberately. The grid decides nothing: it hands over a planned
+  // move (lib/calendar/date-move.ts) and this takes it to `saveCalendarEntry`, the one entry update,
+  // which re-anchors the Plan's to-dos when the day changes (ADR-1386 P5) and applies every refusal
+  // the drawer gets. A date that became a published event is not an entry any more, so the plan
+  // comes back refused before any write is attempted and the line says which door to use.
+  //
+  // THE GRID IS TOLD EITHER WAY. `refreshKey` bumps on success AND on failure: it is what drops the
+  // day the grid is holding optimistically, so a refused write puts the chip back where it was
+  // rather than leaving it sitting on a day the database never took.
+  const moveEntry = useCallback(
+    (planned: EntryMove) => {
+      if (!planned.ok) {
+        onMoveResult?.(planned.line)
+        return
+      }
+      setError(null)
+      startTransition(async () => {
+        const res = await saveCalendarEntry(slug, planned.entryId, planned.input)
+        onMoveResult?.(isError(res) ? `Nothing moved. ${res.error}` : planned.line)
+        setRefreshKey((k) => k + 1)
+      })
+    },
+    [slug, onMoveResult],
+  )
+
   const pick = (item: CalendarEvent) => {
     if (!item.entryId) return
     const id = item.entryId
@@ -356,6 +395,8 @@ export function StaffCalendar({
         refreshKey={refreshKey + externalRefreshKey}
         dayNotes={dayNotes}
         onPickDate={canEdit ? pick : undefined}
+        onMoveEntry={canEdit && moveByDrag ? moveEntry : undefined}
+        moveNotice={moveNotice}
         onCreateAt={canEdit ? openNew : undefined}
         onEditEntry={
           canEdit

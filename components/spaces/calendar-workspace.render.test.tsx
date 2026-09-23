@@ -11,8 +11,11 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: () => {}, push: () => {} }),
 }))
 
+const actions = vi.hoisted(() => ({ saveCalendarEntry: vi.fn(async (..._args: unknown[]) => ({ data: undefined })) }))
+
 vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/entry-actions', () => ({
   loadStaffCalendarMonth: async () => [],
+  saveCalendarEntry: actions.saveCalendarEntry,
 }))
 
 vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/plan-actions', () => ({
@@ -615,7 +618,7 @@ describe('CalendarWorkspace', () => {
         el.dispatchEvent(new WheelEvent('wheel', { deltaY: 240, deltaMode: 0, bubbles: true, cancelable: true }))
       })
     const pageMonth = () =>
-      el.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root] [aria-live="polite"]')!.textContent
+      el.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root] button [aria-live="polite"]')!.textContent
 
     expect(pageMonth()).toBe('September 2026')
     wheel(surface(el))
@@ -719,5 +722,73 @@ describe('CalendarWorkspace', () => {
       const showing = panel.getAttribute('aria-hidden') === 'false'
       expect(panel.className.includes('h-0'), `${panel.dataset.calendarPanel} height`).toBe(!showing)
     }
+  })
+})
+
+// MOVING A DATE IN THE CONSOLE (PROG-CAL15). The console is the only home the move lives in, and the
+// line it leaves is in its header: one sentence, whichever way the date was picked up.
+describe('CalendarWorkspace: the console moves a date and says what happened', () => {
+  const pencilInput = {
+    kind: 'pencil',
+    title: 'Open house',
+    holdExpiresOn: '',
+    candidateDates: [],
+    stage: 'pencil',
+    description: '',
+    notes: '',
+    location: '',
+    allDay: true,
+    startDate: '2026-09-20',
+    endDate: '2026-09-20',
+    startTime: '09:00',
+    endTime: '10:00',
+    timeZone: 'UTC',
+    status: 'tentative',
+    blocksTime: false,
+    showPublicly: false,
+    planId: 'plan-1',
+    repeat: '',
+    exceptionDates: [],
+  }
+  const pencil: CalendarEvent = {
+    slug: 'entry-1',
+    title: 'Open house',
+    dayKey: '2026-09-20',
+    timeLabel: 'All day',
+    whenLabel: 'Sun, Sep 20, all day',
+    startInstantIso: null,
+    location: null,
+    goingCount: 0,
+    coverUrl: null,
+    isCancelled: false,
+    layer: 'pencil',
+    stage: 'pencil',
+    entryId: 'entry-1',
+    entryInput: pencilInput,
+    planId: 'plan-1',
+  }
+
+  it('carries Shift and an arrow to the entry seam and prints one result line in the header', async () => {
+    actions.saveCalendarEntry.mockClear()
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    const el = mount(<CalendarWorkspace {...operatorProps({ adminEvents: [pencil], guestEvents: [] })} />)
+    // On the page the calendar stays click-to-open: no chip is draggable until the console is open.
+    expect(document.querySelector('button[title="Open house"]')!.getAttribute('draggable')).toBeNull()
+    act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
+    const console_ = document.querySelector('[data-calendar-console]')!
+    const line = console_.querySelector('[data-calendar-move-result]')!
+    // Always mounted, and out of the way until there is something to say.
+    expect(line.className).toContain('hidden')
+    const chip = console_.querySelector<HTMLButtonElement>('button[title="Open house"]')!
+    expect(chip.getAttribute('draggable')).toBe('true')
+    await act(async () => {
+      chip.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true, bubbles: true, cancelable: true }))
+    })
+    expect(actions.saveCalendarEntry).toHaveBeenCalledTimes(1)
+    expect(line.textContent).toBe('Moved Open house to Mon, Sep 21.')
+    expect(line.className).not.toContain('hidden')
+    expect(console_.textContent).not.toContain('\u2014')
+    // The month did not page: the chip took the key, the console did not.
+    expect(console_.textContent).toContain('September 2026')
   })
 })

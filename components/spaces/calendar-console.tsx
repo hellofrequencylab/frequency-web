@@ -52,8 +52,14 @@ const SHORTCUTS: readonly { keys: string[]; what: string }[] = [
   { keys: ['Up', 'Down', 'Left', 'Right'], what: 'Previous or next month' },
   { keys: ['T'], what: 'Back to today' },
   { keys: ['N'], what: 'Pencil it in' },
+  // MOVING A DATE IS A KEY, NOT ONLY A DRAG (PROG-CAL15). A date on the grid takes focus like any
+  // other button, and these two rows are the whole move: the shape of the grid is a week, so a
+  // sideways Shift is a day and an up or down Shift is the same weekday next week or last.
+  { keys: ['Shift', 'Left', 'Right'], what: 'Move the focused date a day' },
+  { keys: ['Shift', 'Up', 'Down'], what: 'Move the focused date a week' },
+  { keys: ['Enter'], what: 'Open the focused date' },
   { keys: ['?'], what: 'These shortcuts' },
-  { keys: ['Esc'], what: 'Close the drawer, then the console' },
+  { keys: ['Esc'], what: 'Put a date being moved back, then close the drawer, then the console' },
 ]
 
 function viewerZone(): { name: string; short: string } {
@@ -84,6 +90,7 @@ export function CalendarConsole({
   onSelectItem,
   onOpenPlan,
   onPencil,
+  resultLine,
   stageRef,
   veraRef,
 }: {
@@ -101,6 +108,10 @@ export function CalendarConsole({
   onOpenPlan: (planId: string, entryId?: string | null) => void
   /** "Pencil it in" and the N key. Absent for a viewer who cannot edit. */
   onPencil?: () => void
+  /** ONE MOVE, ONE LINE (PROG-CAL15): what the last date move did, or why it did not. The grid
+   *  speaks it through its own live region, so this line is the sighted half and does not announce
+   *  a second time. Empty until something happens. */
+  resultLine?: string | null
   /** Where the workspace parks the live panel set. See THE STAGE SLOT above. */
   stageRef: Ref<HTMLDivElement>
   /** Where the workspace parks Ask Vera: the foot of the side bar. Absent for a viewer who cannot
@@ -239,6 +250,17 @@ export function CalendarConsole({
               <X className="h-4 w-4" aria-hidden />
             </IconButton>
           </div>
+
+          {/* WHAT THE LAST MOVE DID. Its own line under the controls, so a long sentence never
+              reflows the cluster above it. ALWAYS MOUNTED and hidden by a class when there is
+              nothing to say: an element that comes and goes re-inserts a DOM node on a state change,
+              which is what left the console blinking twice already (LIVE-474, LIVE-477). */}
+          <p
+            data-calendar-move-result
+            className={cn('w-full text-body-sm text-muted', !resultLine && 'hidden')}
+          >
+            {resultLine ?? ''}
+          </p>
         </header>
 
         {/* THE SIDE BAR: the shown month's agenda, with Ask Vera along its foot (owner ask

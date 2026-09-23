@@ -30,6 +30,8 @@ import { monthKey } from '@/lib/calendar/month-window'
 import { stackDay } from '@/lib/calendar/sunday-stack'
 import { shortDateLabel } from '@/lib/calendar/short-date'
 import { useMonthGestures } from './use-month-gestures'
+import { DAY_CELL_ATTR, useDateMove } from './use-date-move'
+import { withMovedDay, type EntryMove } from '@/lib/calendar/date-move'
 import type { CalendarEvent } from '@/lib/calendar/item'
 
 export type { CalendarEvent } from '@/lib/calendar/item'
@@ -102,6 +104,8 @@ export function EventCalendar({
   refreshKey = 0,
   dayNotes,
   onPickDate,
+  onMoveEntry,
+  moveNotice,
   month,
   onMonthChange,
   fill = false,
@@ -135,6 +139,14 @@ export function EventCalendar({
   dayNotes?: DayNote[]
   /** Staff: keep this candidate date of a pencil and drop its siblings. */
   onPickDate?: (item: CalendarEvent) => void
+  /** MOVING A DATE BY HAND (PROG-CAL15), the console's edit and nowhere else's. Passed, every chip
+   *  can be dragged onto another day and a focused chip moves with Shift and an arrow; absent, the
+   *  grid is click-to-open exactly as it always was. The grid never writes: it hands the host a
+   *  planned move (or a refusal, with the line to show) and the host takes it to the move seam. */
+  onMoveEntry?: (move: EntryMove) => void
+  /** The one line the host has to say about the last move, announced here because this is where the
+   *  move happened. The console shows the same sentence in its header. */
+  moveNotice?: string | null
   /** CONTROLLED MONTH (PROG-CAL12). When the host passes `month`, the grid shows that month and reports
    *  every step, jump and Today through `onMonthChange` instead of keeping the month itself, so a
    *  header outside the grid (the Calendar console's Prev / Today / Next, its agenda, its keys) and
@@ -185,11 +197,16 @@ export function EventCalendar({
   const rootRef = useRef<HTMLDivElement>(null)
   const monthButtonRef = useRef<HTMLButtonElement>(null)
   const popupTitleId = useId()
+  // Dates this grid has moved and the server has not confirmed yet: entry id -> its new day.
+  // Dropped with the fetched months, because the same `refreshKey` bump is the host saying the
+  // answer is on the server now (PROG-CAL15).
+  const [heldMoves, setHeldMoves] = useState<ReadonlyMap<string, string>>(new Map())
   const [cacheEpoch, setCacheEpoch] = useState(refreshKey)
   if (cacheEpoch !== refreshKey) {
     // A save changed what fetched months hold: drop them (render-time state reset, no effect cascade).
     setCacheEpoch(refreshKey)
     setFetched(new Map())
+    if (heldMoves.size > 0) setHeldMoves(new Map())
   }
 
   useEffect(() => {
@@ -314,10 +331,23 @@ export function EventCalendar({
       if (seen.has(k)) continue
       seen.add(k)
       if (hiddenLayers.has(ev.layer ?? 'events')) continue
-      out.push(ev)
+      const held = ev.entryId ? heldMoves.get(ev.entryId) : undefined
+      out.push(held ? withMovedDay(ev, held) : ev)
     }
     return out
-  }, [events, fetched, hiddenLayers])
+  }, [events, fetched, hiddenLayers, heldMoves])
+
+  // MOVING A DATE BY HAND (PROG-CAL15). Off unless the host passed `onMoveEntry`. A planned move is
+  // held here on the way past, so the chip is on its new day in the same frame the person let go of
+  // it, and a second Shift press is measured from where the date now is.
+  const handleMove = useCallback(
+    (planned: EntryMove) => {
+      if (planned.ok) setHeldMoves((cur) => new Map(cur).set(planned.entryId, planned.toDayKey))
+      onMoveEntry?.(planned)
+    },
+    [onMoveEntry],
+  )
+  const move = useDateMove(onMoveEntry ? handleMove : undefined, { year, month1 }, rootRef, all)
 
   const series = useMemo(() => repeats ?? [], [repeats])
   const pendingByDay = useMemo(() => {
@@ -435,6 +465,12 @@ export function EventCalendar({
       )}
       onKeyDown={onKeyDown}
     >
+      {/* THE MOVE IS SPOKEN HERE (PROG-CAL15). Always mounted, empty until a date is moved: a live
+          region only announces changes to what it already holds, so it has to be in the tree before
+          the first sentence arrives. It is the same sentence the console header shows, said once. */}
+      <p data-calendar-move-live aria-live="polite" className="sr-only">
+        {moveNotice ?? ''}
+      </p>
       {/* THE HEADER IS THE HOST'S WHEN THERE IS ONE (PROG-CAL13). Inside the Calendar console the
           month label and the Prev / Today / Next cluster are drawn once in the console's own header,
           so the grid draws neither and the month gets the height they were costing it twice over.
@@ -749,9 +785,18 @@ export function EventCalendar({
                   const isToday = cell.date === today
                   const dayNum = Number(cell.date.slice(8, 10))
                   const labels = dayNotes?.length ? notesForDay(dayNotes, cell.date) : []
+                  const isDropTarget = move.dropDay === cell.date
                   return (
                     <div
                       key={cell.date}
+                      // THE DAY IS THE TARGET (PROG-CAL15). The cell takes the drop, and says so
+                      // while something is over it: a ring drawn INSIDE its own border, so the
+                      // highlight never nudges a neighbour or reflows the week.
+                      {...{ [DAY_CELL_ATTR]: cell.date }}
+                      data-drop-target={isDropTarget || undefined}
+                      onDragOver={move.enabled ? (e) => move.overDay(e, cell.date) : undefined}
+                      onDragLeave={move.enabled ? (e) => move.leaveDay(e, cell.date) : undefined}
+                      onDrop={move.enabled ? (e) => move.dropOnDay(e, cell.date) : undefined}
                       className={cn(
                         'group flex flex-col border-r border-border p-1.5 last:border-r-0',
                         // A FILLING GRID HAS NO FLOOR (PROG-CAL13). Six rows share the height the host
@@ -760,6 +805,7 @@ export function EventCalendar({
                         // pure and lives in lib/events/calendar-grid.ts, where a probe can run it.
                         cellFloorClass(fill),
                         !cell.inMonth && 'bg-surface-elevated/40',
+                        isDropTarget && 'bg-primary/10 ring-2 ring-inset ring-primary',
                       )}
                     >
                       <div className="mb-1 flex items-center justify-between gap-1">
@@ -825,10 +871,23 @@ export function EventCalendar({
                                   type="button"
                                   onClick={() => select(ev)}
                                   title={ev.title}
+                                  draggable={move.enabled || undefined}
+                                  data-move-chip={move.enabled ? ev.entryId ?? undefined : undefined}
+                                  onDragStart={move.enabled ? (e) => move.startDrag(e, ev, itemKey(ev)) : undefined}
+                                  onDragEnd={move.enabled ? move.endDrag : undefined}
+                                  onPointerDown={move.enabled ? (e) => move.pressChip(e, ev, itemKey(ev)) : undefined}
+                                  onKeyDown={move.enabled ? (e) => move.chipKeyDown(e, ev) : undefined}
                                   className={cn(
                                     'block w-full truncate px-1.5 py-0.5 text-left text-2xs font-medium transition-colors',
                                     i > 0 && 'border-t border-border/60',
                                     activeSeries !== null && ev.seriesKey === activeSeries && 'ring-2 ring-inset ring-primary/50',
+                                    // A CARRIED CHIP OWNS ITS TOUCH (PROG-CAL15). touch-action is read
+                                    // when the finger lands, not when the long press fires, so it has to
+                                    // be off the chip BEFORE the press: otherwise the grid pans away
+                                    // under the very finger that is carrying a date. Only the chip, and
+                                    // only where moving is on, so the cell and the month still scroll.
+                                    move.enabled && 'touch-none',
+                                    move.carrying === itemKey(ev) && 'opacity-60',
                                   )}
                                 >
                                   {/* Below sm a cell is about 46px wide: the time alone would fill it and truncate the title to
@@ -846,10 +905,20 @@ export function EventCalendar({
                                 type="button"
                                 onClick={() => select(ev)}
                                 title={ev.title}
+                                draggable={move.enabled || undefined}
+                                data-move-chip={move.enabled ? ev.entryId ?? undefined : undefined}
+                                onDragStart={move.enabled ? (e) => move.startDrag(e, ev, itemKey(ev)) : undefined}
+                                onDragEnd={move.enabled ? move.endDrag : undefined}
+                                onPointerDown={move.enabled ? (e) => move.pressChip(e, ev, itemKey(ev)) : undefined}
+                                onKeyDown={move.enabled ? (e) => move.chipKeyDown(e, ev) : undefined}
                                 className={cn(
                                   'w-full truncate rounded-control px-1.5 py-0.5 text-left text-2xs font-medium transition-colors',
                                   itemChipClass(ev.layer, ev.stage),
                                   activeSeries !== null && ev.seriesKey === activeSeries && 'ring-2 ring-primary/50',
+                                  // See the note on the stacked chip above: touch-action is read when
+                                  // the finger lands, so a chip that can be carried never pans the grid.
+                                  move.enabled && 'touch-none',
+                                  move.carrying === itemKey(ev) && 'opacity-60',
                                 )}
                               >
                                 {/* Below sm a cell is about 46px wide: the time alone would fill it and truncate the title to

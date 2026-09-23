@@ -151,6 +151,9 @@ export function CalendarWorkspace({
   // months the same way it does after a drawer save. The fresh plans and entries for the page's
   // own month arrive as props in the action's round trip (revalidate), as every save's do.
   const [veraRefreshKey, setVeraRefreshKey] = useState(0)
+  // THE ONE LINE A MOVE LEAVES (PROG-CAL15). The grid announces it, the console header shows it, and
+  // it is the same string: it is held here because those are two different children of this shell.
+  const [moveLine, setMoveLine] = useState('')
   if (plans !== serverSnapshot.plans || adminEvents !== serverSnapshot.adminEvents) {
     setServerSnapshot({ plans, adminEvents })
     setCurrentPlans(plans)
@@ -278,6 +281,7 @@ export function CalendarWorkspace({
   const openConsole = useCallback(() => {
     if (!adminAllowed || consoleOpen) return
     setConsoleOpen(true)
+    setMoveLine('')
     if (typeof window === 'undefined') return
     window.history.pushState(
       { [CONSOLE_STATE]: true },
@@ -525,6 +529,9 @@ export function CalendarWorkspace({
                     pencilButton={!consoleOpen}
                     fill={consoleOpen}
                     hostChrome={consoleOpen}
+                    moveByDrag={consoleOpen}
+                    moveNotice={moveLine}
+                    onMoveResult={setMoveLine}
                   />
                 </div>
               ) : null}
@@ -565,6 +572,7 @@ export function CalendarWorkspace({
           onSelectItem={selectAgendaItem}
           onOpenPlan={selectPlan}
           onPencil={canManage ? pencilIn : undefined}
+          resultLine={moveLine}
           stageRef={consoleStageRef}
           veraRef={veraHost ? consoleVeraRef : undefined}
         />

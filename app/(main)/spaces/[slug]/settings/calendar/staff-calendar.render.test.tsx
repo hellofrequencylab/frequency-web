@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act } from 'react'
+import { act, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { StaffCalendar } from './staff-calendar'
 import type { CalendarEvent } from '@/lib/calendar/item'
@@ -14,7 +14,7 @@ import type { EntryInput } from '@/lib/calendar/entries'
 //      time could only be made by pencilling a Plan and switching afterwards, and the Plan stayed.
 
 const mocks = vi.hoisted(() => ({
-  saveCalendarEntry: vi.fn(async (..._args: unknown[]) => ({ data: undefined })),
+  saveCalendarEntry: vi.fn(async (..._args: unknown[]): Promise<{ data: undefined } | { error: string }> => ({ data: undefined })),
   createPenciledPlan: vi.fn(async (..._args: unknown[]) => ({ data: { id: 'plan-1', entryId: 'entry-1' } })),
   startPlanFromEntry: vi.fn(async (..._args: unknown[]) => ({ data: { id: 'plan-1' } })),
 }))
@@ -206,5 +206,160 @@ describe('StaffCalendar: Start a plan waits for its round trip', () => {
     await act(async () => start.click())
     expect(mocks.startPlanFromEntry).toHaveBeenCalledTimes(1)
     await act(async () => { release(); await Promise.resolve() })
+  })
+})
+
+// MOVING A DATE BY HAND (PROG-CAL15). The console's one direct edit: pick a Pencil up and put it on
+// another day, by drag or by Shift with an arrow. Both hands end at the same seam (saveCalendarEntry,
+// which re-anchors the Plan's to-dos), and every attempt leaves exactly one line.
+
+/** The console, in miniature: it owns the result line, hands it back to the grid to announce, and
+ *  would show the same sentence in its header. */
+function MoveHost({ events }: { events: CalendarEvent[] }) {
+  const [line, setLine] = useState('')
+  return (
+    <>
+      <p data-host-line>{line}</p>
+      <StaffCalendar
+        slug="lab"
+        spaceId="space-1"
+        events={events}
+        initialYear={2026}
+        initialMonth1={9}
+        canEdit
+        plans={[]}
+        moveByDrag
+        moveNotice={line}
+        onMoveResult={setLine}
+      />
+    </>
+  )
+}
+
+const chip = (title = 'Open house') => document.querySelector<HTMLButtonElement>(`button[title="${title}"]`)!
+const cell = (day: string) => document.querySelector<HTMLElement>(`[data-day-cell="${day}"]`)!
+const spoken = () => document.querySelector('[data-calendar-move-live]')?.textContent ?? ''
+const hostLine = () => document.querySelector('[data-host-line]')?.textContent ?? ''
+
+function fire(el: Element, type: string, init: Record<string, unknown> = {}) {
+  el.dispatchEvent(Object.assign(new Event(type, { bubbles: true, cancelable: true }), init))
+}
+
+function press(el: Element, key: string, shiftKey: boolean) {
+  el.dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey, bubbles: true, cancelable: true }))
+}
+
+describe('StaffCalendar: a date moves by Shift and an arrow', () => {
+  it('moves a day sideways through the entry seam and says so, once', async () => {
+    await mount(<MoveHost events={[pencilItem({ planId: 'plan-1' })]} />)
+    await act(async () => press(chip(), 'ArrowRight', true))
+    expect(mocks.saveCalendarEntry).toHaveBeenCalledTimes(1)
+    const [slug, entryId, input] = mocks.saveCalendarEntry.mock.calls[0] as [string, string, EntryInput]
+    expect([slug, entryId]).toEqual(['lab', 'entry-1'])
+    expect(input).toMatchObject({ startDate: '2026-09-21', endDate: '2026-09-21', planId: 'plan-1', title: 'Open house' })
+    expect(hostLine()).toBe('Moved Open house to Mon, Sep 21.')
+    expect(spoken()).toBe('Moved Open house to Mon, Sep 21.')
+  })
+
+  it('moves a week with Shift and Down', async () => {
+    await mount(<MoveHost events={[pencilItem()]} />)
+    await act(async () => press(chip(), 'ArrowDown', true))
+    const [, , input] = mocks.saveCalendarEntry.mock.calls[0] as [string, string, EntryInput]
+    expect(input.startDate).toBe('2026-09-27')
+  })
+
+  it('leaves a bare arrow to the month, so paging still belongs to the grid', async () => {
+    await mount(<MoveHost events={[pencilItem()]} />)
+    await act(async () => press(chip(), 'ArrowRight', false))
+    expect(mocks.saveCalendarEntry).not.toHaveBeenCalled()
+    expect(hostLine()).toBe('')
+  })
+
+  it('puts the date on its new day at once, so a second press moves it a second day', async () => {
+    let land!: () => void
+    mocks.saveCalendarEntry.mockReturnValueOnce(new Promise((res) => { land = () => res({ data: undefined }) }))
+    await mount(<MoveHost events={[pencilItem()]} />)
+    await act(async () => press(chip(), 'ArrowRight', true))
+    // Held on the 21st while the write is in flight, not snapped back to the 20th.
+    expect(cell('2026-09-21').contains(chip())).toBe(true)
+    await act(async () => press(chip(), 'ArrowRight', true))
+    const [, , second] = mocks.saveCalendarEntry.mock.calls[1] as [string, string, EntryInput]
+    expect(second.startDate).toBe('2026-09-22')
+    await act(async () => { land(); await Promise.resolve() })
+  })
+
+  it('says what happened when the write is refused, and nothing is left sitting on the new day', async () => {
+    mocks.saveCalendarEntry.mockResolvedValueOnce({ error: 'That date no longer exists.' })
+    await mount(<MoveHost events={[pencilItem()]} />)
+    await act(async () => press(chip(), 'ArrowRight', true))
+    expect(hostLine()).toBe('Nothing moved. That date no longer exists.')
+    expect(cell('2026-09-20').contains(chip())).toBe(true)
+  })
+
+  it('refuses a date that is already a published event before it writes anything', async () => {
+    const published: CalendarEvent = {
+      ...pencilItem(),
+      title: 'New moon sit',
+      slug: 'new-moon-sit',
+      layer: 'events',
+      stage: null,
+      entryId: null,
+      entryInput: null,
+      eventId: 'evt-1',
+    }
+    await mount(<MoveHost events={[published]} />)
+    await act(async () => press(chip('New moon sit'), 'ArrowRight', true))
+    expect(mocks.saveCalendarEntry).not.toHaveBeenCalled()
+    expect(hostLine()).toBe('New moon sit is a published event now. Open the event to change its date.')
+  })
+})
+
+describe('StaffCalendar: a date moves by dragging it', () => {
+  it('marks the day under the pointer and writes the drop through the same seam', async () => {
+    await mount(<MoveHost events={[pencilItem()]} />)
+    expect(chip().getAttribute('draggable')).toBe('true')
+    await act(async () => fire(chip(), 'dragstart'))
+    await act(async () => fire(cell('2026-09-24'), 'dragover'))
+    expect(cell('2026-09-24').getAttribute('data-drop-target')).toBe('true')
+    expect(cell('2026-09-25').getAttribute('data-drop-target')).toBeNull()
+    await act(async () => fire(cell('2026-09-24'), 'drop'))
+    const [, , input] = mocks.saveCalendarEntry.mock.calls[0] as [string, string, EntryInput]
+    expect(input.startDate).toBe('2026-09-24')
+    expect(hostLine()).toBe('Moved Open house to Thu, Sep 24.')
+    // The target let go with the date.
+    expect(cell('2026-09-24').getAttribute('data-drop-target')).toBeNull()
+  })
+
+  it('refuses a drop on the next month rather than moving a date out of the month on screen', async () => {
+    await mount(<MoveHost events={[pencilItem()]} />)
+    await act(async () => fire(chip(), 'dragstart'))
+    await act(async () => fire(cell('2026-10-01'), 'drop'))
+    expect(mocks.saveCalendarEntry).not.toHaveBeenCalled()
+    expect(hostLine()).toBe('Thu, Oct 1 is in another month. Open that month first, then move the date.')
+  })
+
+  it('puts the date back on Esc, and a drop after that moves nothing', async () => {
+    await mount(<MoveHost events={[pencilItem()]} />)
+    await act(async () => fire(chip(), 'dragstart'))
+    await act(async () => fire(cell('2026-09-24'), 'dragover'))
+    expect(cell('2026-09-24').getAttribute('data-drop-target')).toBe('true')
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    })
+    expect(cell('2026-09-24').getAttribute('data-drop-target')).toBeNull()
+    await act(async () => fire(cell('2026-09-24'), 'drop'))
+    expect(mocks.saveCalendarEntry).not.toHaveBeenCalled()
+    expect(hostLine()).toBe('')
+  })
+
+  it('leaves the calendar click-to-open where no host asked for moving', async () => {
+    await mount(calendar([pencilItem()]))
+    expect(chip().getAttribute('draggable')).toBeNull()
+    await act(async () => press(chip(), 'ArrowRight', true))
+    expect(mocks.saveCalendarEntry).not.toHaveBeenCalled()
+    await act(async () => fire(chip(), 'dragstart'))
+    await act(async () => fire(cell('2026-09-24'), 'drop'))
+    expect(cell('2026-09-24').getAttribute('data-drop-target')).toBeNull()
+    expect(mocks.saveCalendarEntry).not.toHaveBeenCalled()
   })
 })

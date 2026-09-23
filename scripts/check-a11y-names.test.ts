@@ -192,8 +192,19 @@ describe('check:a11y-names — wrapper discovery', () => {
   })
 })
 
+// ONE SCAN, SHARED. `runAudit()` parses every .tsx in the repo through the TypeScript compiler API
+// (1878 files as of 2026-09-23), and this file called it FOUR times: once per real-tree describe and
+// twice more inside the ceiling block. That cost ~45s against vitest's 30s per-test timeout, so the
+// file passed alone and tipped over under full-suite load. It was read as flake twice before anyone
+// counted the scans. The tree cannot change mid-run, so the scan is memoised here rather than the
+// timeout being raised: a ceiling that is too small for honest work is a different bug from a scan
+// that is run four times for one answer. Kept in the TEST, not in runAudit itself, because a caller
+// passing its own `roots` must still get a fresh read.
+let auditOnce: ReturnType<typeof runAudit> | null = null
+const audit = () => (auditOnce ??= runAudit())
+
 describe('check:a11y-names — against the REAL tree', () => {
-  const result = runAudit()
+  const result = audit()
 
   it('scans the repo, so this suite cannot pass over nothing', () => {
     expect(result.files).toBeGreaterThanOrEqual(MIN_FILES)
@@ -247,7 +258,7 @@ describe('check:a11y-names — the weak-name ratchet', () => {
   })
 
   it('the ceiling is a number the repo can actually meet', () => {
-    const weak = runAudit().named.get('placeholder (weak)') ?? 0
+    const weak = audit().named.get('placeholder (weak)') ?? 0
     expect(weak, 'lower MAX_PLACEHOLDER_ONLY in the same change that lowers the count').toBeLessThanOrEqual(
       MAX_PLACEHOLDER_ONLY,
     )
@@ -256,7 +267,7 @@ describe('check:a11y-names — the weak-name ratchet', () => {
   it('the tally and the collected sites are the same fact, counted twice', () => {
     // The ceiling is applied to `weak.length`; the run PRINTS `named.get('placeholder (weak)')`.
     // If those two ever drift, the number in the failure message stops pointing at the files in it.
-    const { named, weak } = runAudit()
+    const { named, weak } = audit()
     expect(weak.length).toBe(named.get('placeholder (weak)') ?? 0)
   })
 })
@@ -428,7 +439,7 @@ describe('check:a11y-names — the forwarded label reaches the caller (HYG-018, 
 })
 
 describe('check:a11y-names — forwarding, against the REAL tree', () => {
-  const result = runAudit()
+  const result = audit()
 
   it('resolves the forwarder chain it claims to, seed included', () => {
     expect(result.forwarders.size).toBeGreaterThanOrEqual(MIN_FORWARDERS)
