@@ -15,6 +15,7 @@
 //   retitle   a Plan's title
 //   todo      a to-do on a Plan, fixed or anchored N days before the Plan's date
 //   archive   a Plan out of the working set
+//   field     ONE attribute of one existing Plan or date, named by its manifest path
 // A change that cannot be expressed here cannot be proposed, which is the point.
 //
 // A CLARIFICATION (PROG-CAL11 slice 1) is the one other thing Vera may answer with: when the ask
@@ -22,11 +23,33 @@
 // returns one plain question with the candidates instead of guessing, the box shows it, and the
 // answer joins the next turn. `parseVeraClarification` holds that shape to the same strictness as
 // the changes: a question with two to five options, or nothing.
+//
+// THE VOCABULARY READS THE MANIFEST (PROG-CAL11 slice 2). A `field` change names a path and a
+// value, and the paths Vera may name are not written here: for a Plan they are the rail-writable
+// fields of SPACE_PLAN_MANIFEST (`railForm`, minus `stage`, which has its own kind), and its `links`
+// repeat takes one row. A value is checked against the field's own kind and options by the kernel
+// (`checkFieldValue` / `checkRepeatRow`), never by a hand-written rule per field, so adding a field
+// to the manifest is the whole change and Vera can set it the same day. The kernel stays entity-
+// blind: this module imports the manifest and the kernel; the kernel never imports this.
+//
+// There is no manifest for a calendar date yet (lib/studio/entities has none), so the date side is
+// an explicit allowlist declared in the manifest's own field shape, derived from `EntryInput`
+// (lib/calendar/entries.ts), and checked by the same kernel call. The day a date manifest lands,
+// `ENTRY_FIELDS` becomes `railForm(...)` of it and nothing else here changes.
 
 import { PLAN_STAGE_TRANSITIONS, type WorkflowStage } from './workflow-board'
-import type { PlanStage } from './plans'
+import { PLAN_WRITES, type PlanStage } from './plans'
+import { SPACE_PLAN_MANIFEST } from '@/lib/studio/entities/space-plan'
+import { railForm } from '@/lib/studio/kernel/edit-plan'
+import { checkFieldValue, checkRepeatRow, type RepeatRowValue, type ScalarFieldValue } from '@/lib/studio/kernel/field-value'
+import { repeatLabel, type FieldDef, type RepeatDef } from '@/lib/studio/kernel/manifest'
 
 export type VeraMode = PlanStage
+
+/** What a `field` change sets: one scalar, or one row of a repeat (a link to add). */
+export type VeraFieldValue = ScalarFieldValue | RepeatRowValue
+
+export type VeraFieldTarget = 'plan' | 'entry'
 
 export type VeraChange =
   | {
@@ -48,10 +71,88 @@ export type VeraChange =
   | { kind: 'retitle'; planId: string; title: string }
   | { kind: 'todo'; planId: string; title: string; dueOffsetDays?: number | null }
   | { kind: 'archive'; planId: string }
+  | {
+      kind: 'field'
+      target: VeraFieldTarget
+      /** The Plan's or the date's id. */
+      id: string
+      /** A path from `veraFieldVocabulary()`: a manifest field, or a repeat whose value is one row. */
+      path: string
+      value: VeraFieldValue
+    }
 
 export type VeraChangeKind = VeraChange['kind']
 
-export const VERA_CHANGE_KINDS: readonly VeraChangeKind[] = ['pencil', 'move', 'stage', 'retitle', 'todo', 'archive']
+export const VERA_CHANGE_KINDS: readonly VeraChangeKind[] = ['pencil', 'move', 'stage', 'retitle', 'todo', 'archive', 'field']
+
+/**
+ * One path Vera may set, with what a person calls it and how the kernel checks it. `field` is a
+ * manifest field (its value is one scalar); `row` is a manifest repeat (its value is one row to add).
+ */
+export type VeraFieldSpec =
+  | { target: VeraFieldTarget; path: string; label: string; field: Omit<FieldDef, 'section'>; row?: undefined }
+  | { target: VeraFieldTarget; path: string; label: string; row: RepeatDef; field?: undefined }
+
+/**
+ * The date side of the vocabulary, in the manifest's field shape, derived from `EntryInput`. Labels
+ * are the drawer's (app/(main)/spaces/[slug]/settings/calendar/staff-calendar.tsx). Not here on
+ * purpose: `kind`, `stage`, `status` and `planId` (each has its own change kind or its own seam),
+ * `startDate` / `endDate` (`move` owns the day), `repeat` / `exceptionDates` / `candidateDates`
+ * (a series is edited in the drawer). `showPublicly` is `EntryInput`'s name for the visibility;
+ * `parseEntryInput` owns the mapping to the column and refuses it on a kind that cannot show.
+ */
+const ENTRY_FIELDS: readonly Omit<FieldDef, 'section'>[] = [
+  { path: 'title', label: 'Title', kind: 'text', required: true },
+  { path: 'location', label: 'Location', kind: 'text' },
+  { path: 'description', label: 'Description', kind: 'longtext', prose: true },
+  { path: 'notes', label: 'Team notes', kind: 'longtext' },
+  { path: 'allDay', label: 'All day', kind: 'toggle' },
+  { path: 'startTime', label: 'Start time', kind: 'text' },
+  { path: 'endTime', label: 'End time', kind: 'text' },
+  { path: 'showPublicly', label: 'Shown publicly', kind: 'toggle' },
+]
+
+/**
+ * The paths a `field` change may name, per target, read from the manifest at call time so a field
+ * added to SPACE_PLAN_MANIFEST (and written by `saveSpacePlan`) appears to Vera with no change here.
+ * `stage` is left out because the `stage` kind moves every linked date with the Plan, which a bare
+ * column write would not.
+ */
+export function veraFieldVocabulary(): Record<VeraFieldTarget, VeraFieldSpec[]> {
+  const rail = railForm(SPACE_PLAN_MANIFEST, PLAN_WRITES)
+  const plan: VeraFieldSpec[] = [
+    ...rail.fields.filter((f) => f.path !== 'stage').map((f): VeraFieldSpec => ({ target: 'plan', path: f.path, label: f.label, field: f })),
+    ...rail.repeats.map((r): VeraFieldSpec => ({ target: 'plan', path: r.arrayPath, label: repeatLabel(r), row: r })),
+  ]
+  const entry: VeraFieldSpec[] = ENTRY_FIELDS.map((f) => ({ target: 'entry', path: f.path, label: f.label, field: f }))
+  return { plan, entry }
+}
+
+/** The spec for one path on one target, or null when Vera may not set it. */
+export function veraFieldSpec(target: VeraFieldTarget, path: string): VeraFieldSpec | null {
+  return veraFieldVocabulary()[target].find((s) => s.path === path) ?? null
+}
+
+/** The noun a target is called in a sentence a person reads. */
+export function veraTargetNoun(target: VeraFieldTarget): string {
+  return target === 'plan' ? 'Plan' : 'date'
+}
+
+/**
+ * A field value as a person reads it on a proposal line: an option by its label, a toggle as on or
+ * off, a row by its filled fields, text in quotes, and a cleared value as the word.
+ */
+export function fieldValueText(spec: VeraFieldSpec, value: VeraFieldValue): string {
+  if (value === null) return 'nothing'
+  if (typeof value === 'object') {
+    const parts = (spec.row?.fields ?? []).map((f) => value[f.path]).filter((v): v is string | number | boolean => v !== null && v !== undefined)
+    return parts.map((v) => (typeof v === 'string' ? `"${v}"` : String(v))).join(', ')
+  }
+  if (typeof value === 'boolean') return value ? 'on' : 'off'
+  if (typeof value === 'number') return String(value)
+  const option = spec.field?.options?.find((o) => o.value === value)
+  return option ? option.label : `"${value}"`
+}
 
 /** The most changes one proposal may carry. A bigger ask is two asks. */
 export const MAX_VERA_CHANGES = 40
@@ -125,6 +226,18 @@ function cleanTitle(value: unknown): string | null {
   return t ? t.slice(0, MAX_TITLE) : null
 }
 
+/** Text the model wrote for a field, in the house voice: long dashes become commas. Line breaks
+ *  stay, because a Notes value may be several lines. */
+function cleanText(value: string): string {
+  return value.replace(/\s*[\u2013\u2014]\s*/g, ', ')
+}
+
+function cleanRow(row: RepeatRowValue): RepeatRowValue {
+  const out: RepeatRowValue = {}
+  for (const [k, v] of Object.entries(row)) out[k] = typeof v === 'string' ? cleanText(v) : v
+  return out
+}
+
 type Rec = Record<string, unknown>
 
 function parseOne(raw: unknown, at: number): { change: VeraChange } | { error: string } {
@@ -192,6 +305,26 @@ function parseOne(raw: unknown, at: number): { change: VeraChange } | { error: s
     case 'archive': {
       if (!isUuid(o.planId)) return { error: `Change ${at} names a Plan id that is not one of ours.` }
       return { change: { kind: 'archive', planId: o.planId } }
+    }
+    case 'field': {
+      const target: VeraFieldTarget | null = o.target === 'plan' || o.target === 'entry' ? o.target : null
+      if (!target) return { error: `Change ${at} needs a target: a Plan or a date.` }
+      if (!isUuid(o.id)) return { error: `Change ${at} names a ${veraTargetNoun(target)} id that is not one of ours.` }
+      const path = typeof o.path === 'string' ? o.path.trim() : ''
+      const spec = path ? veraFieldSpec(target, path) : null
+      if (!spec) {
+        const allowed = veraFieldVocabulary()[target].map((s) => s.path).join(', ')
+        return { error: `Change ${at} names a field, "${path || 'none'}", that Vera cannot set on a ${veraTargetNoun(target)}. The fields are ${allowed}.` }
+      }
+      // The kernel checks the value against the field's own kind and options; nothing per field here.
+      if (spec.row) {
+        const checked = checkRepeatRow(spec.row, o.value)
+        if ('problem' in checked) return { error: `Change ${at}: ${checked.problem}` }
+        return { change: { kind: 'field', target, id: o.id, path, value: cleanRow(checked.row) } }
+      }
+      const checked = checkFieldValue(spec.field, o.value)
+      if ('problem' in checked) return { error: `Change ${at}: ${checked.problem}` }
+      return { change: { kind: 'field', target, id: o.id, path, value: typeof checked.value === 'string' ? cleanText(checked.value) : checked.value } }
     }
     default:
       return { error: `Change ${at} is a kind of change Vera cannot make here.` }
@@ -326,5 +459,15 @@ export function describeChange(change: VeraChange, ctx: VeraDescribeContext): st
     }
     case 'archive':
       return `Archive ${quoted(ctx.plans[change.planId], 'that Plan')}. Its penciled dates go with it. A date that already became an event keeps the event.`
+    case 'field': {
+      // The label is the manifest's, never the path: a person reads "Production opens", not targetKind.
+      const spec = veraFieldSpec(change.target, change.path)
+      const label = spec?.label ?? change.path
+      const what = change.target === 'plan' ? quoted(ctx.plans[change.id], 'that Plan') : quoted(ctx.entries[change.id], 'that date')
+      if (!spec) return `Set ${label} on ${what}.`
+      if (spec.row) return `Add to ${label} on ${what}: ${fieldValueText(spec, change.value)}.`
+      if (change.value === null) return `Clear ${label} on ${what}.`
+      return `Set ${label} on ${what} to ${fieldValueText(spec, change.value)}.`
+    }
   }
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { SPACE_PLAN_MANIFEST } from '@/lib/studio/entities/space-plan'
 import {
   describeChange,
   MAX_CLARIFICATION_OPTIONS,
@@ -6,6 +7,8 @@ import {
   MIN_CLARIFICATION_OPTIONS,
   parseVeraChanges,
   parseVeraClarification,
+  veraFieldVocabulary,
+  VERA_CHANGE_KINDS,
   VERA_MODE_OPTIONS,
   type VeraChange,
 } from './vera-command'
@@ -77,6 +80,100 @@ describe('parseVeraChanges', () => {
   it('takes the long dashes out of a title the model wrote', () => {
     const r = parseVeraChanges([{ kind: 'retitle', planId: PLAN, title: 'Winter sits \u2014 the sequel' }])
     expect(r).toEqual({ changes: [{ kind: 'retitle', planId: PLAN, title: 'Winter sits, the sequel' }] })
+  })
+})
+
+// EDIT ANY FIELD (PROG-CAL11 slice 2): the paths come from the manifest, the value check from the
+// kernel. Nothing in these tests names a rule the manifest does not declare.
+describe('a field change reads the manifest', () => {
+  it('offers every rail-writable Plan field but stage, plus the links repeat, and the date allowlist', () => {
+    expect(VERA_CHANGE_KINDS).toContain('field')
+    const v = veraFieldVocabulary()
+    expect(v.plan.map((s) => s.path)).toEqual(['title', 'targetKind', 'notes', 'links'])
+    // The specs ARE the manifest's declarations, so a label or option change there is the whole change.
+    const notes = SPACE_PLAN_MANIFEST.fields.find((f) => f.path === 'notes')
+    expect(v.plan.find((s) => s.path === 'notes')?.field).toBe(notes)
+    expect(v.plan.find((s) => s.path === 'links')?.row).toBe(SPACE_PLAN_MANIFEST.repeats?.[0])
+    expect(v.entry.map((s) => s.path)).toEqual(['title', 'location', 'description', 'notes', 'allDay', 'startTime', 'endTime', 'showPublicly'])
+  })
+
+  it('parses a field change on a manifest path, cleaning the voice, and a links row', () => {
+    const r = parseVeraChanges([
+      { kind: 'field', target: 'plan', id: PLAN, path: 'notes', value: 'Bring the gong \u2014 the big one.' },
+      { kind: 'field', target: 'plan', id: PLAN, path: 'targetKind', value: 'journey' },
+      { kind: 'field', target: 'plan', id: PLAN, path: 'links', value: { url: 'https://example.com/run-sheet', label: 'Run sheet' } },
+      { kind: 'field', target: 'entry', id: ENTRY, path: 'location', value: '  The barn ' },
+      { kind: 'field', target: 'entry', id: ENTRY, path: 'allDay', value: false },
+      { kind: 'field', target: 'entry', id: ENTRY, path: 'notes', value: null },
+    ])
+    expect(r).toEqual({
+      changes: [
+        { kind: 'field', target: 'plan', id: PLAN, path: 'notes', value: 'Bring the gong, the big one.' },
+        { kind: 'field', target: 'plan', id: PLAN, path: 'targetKind', value: 'journey' },
+        { kind: 'field', target: 'plan', id: PLAN, path: 'links', value: { url: 'https://example.com/run-sheet', label: 'Run sheet' } },
+        { kind: 'field', target: 'entry', id: ENTRY, path: 'location', value: 'The barn' },
+        { kind: 'field', target: 'entry', id: ENTRY, path: 'allDay', value: false },
+        { kind: 'field', target: 'entry', id: ENTRY, path: 'notes', value: null },
+      ],
+    })
+  })
+
+  it('refuses an unknown path by name, on either target, and stage on a Plan', () => {
+    expect(parseVeraChanges([{ kind: 'field', target: 'plan', id: PLAN, path: 'location', value: 'x' }])).toMatchObject({
+      error: expect.stringContaining('"location"'),
+    })
+    expect(parseVeraChanges([{ kind: 'field', target: 'plan', id: PLAN, path: 'location', value: 'x' }])).toMatchObject({
+      error: expect.stringContaining('title, targetKind, notes, links'),
+    })
+    expect(parseVeraChanges([{ kind: 'field', target: 'plan', id: PLAN, path: 'stage', value: 'plan' }])).toMatchObject({ error: expect.stringContaining('"stage"') })
+    expect(parseVeraChanges([{ kind: 'field', target: 'plan', id: PLAN, path: 'playbookId', value: PLAN }])).toMatchObject({ error: expect.stringContaining('"playbookId"') })
+    expect(parseVeraChanges([{ kind: 'field', target: 'entry', id: ENTRY, path: 'targetKind', value: 'event' }])).toMatchObject({ error: expect.stringContaining('"targetKind"') })
+    expect(parseVeraChanges([{ kind: 'field', target: 'entry', id: ENTRY, path: 'startDate', value: '2026-01-01' }])).toMatchObject({ error: expect.stringContaining('"startDate"') })
+    expect(parseVeraChanges([{ kind: 'field', target: 'plan', id: PLAN, value: 'x' }])).toMatchObject({ error: expect.stringContaining('none') })
+  })
+
+  it('refuses a value outside a select\'s options, naming the field by its label', () => {
+    const r = parseVeraChanges([{ kind: 'field', target: 'plan', id: PLAN, path: 'targetKind', value: 'workshop' }])
+    expect(r).toMatchObject({ error: expect.stringContaining('Production opens must be one of: Event, Journey, Program, Maintenance') })
+    expect(parseVeraChanges([{ kind: 'field', target: 'plan', id: PLAN, path: 'title', value: '' }])).toMatchObject({ error: expect.stringContaining('Title cannot be empty') })
+    expect(parseVeraChanges([{ kind: 'field', target: 'entry', id: ENTRY, path: 'allDay', value: 'yes' }])).toMatchObject({ error: expect.stringContaining('All day') })
+    expect(parseVeraChanges([{ kind: 'field', target: 'entry', id: ENTRY, path: 'location', value: 12 }])).toMatchObject({ error: expect.stringContaining('Location') })
+  })
+
+  it('refuses a links value in the wrong shape', () => {
+    expect(parseVeraChanges([{ kind: 'field', target: 'plan', id: PLAN, path: 'links', value: 'https://example.com' }])).toMatchObject({ error: expect.stringContaining('Links takes a row') })
+    expect(parseVeraChanges([{ kind: 'field', target: 'plan', id: PLAN, path: 'links', value: { href: 'https://example.com' } }])).toMatchObject({ error: expect.stringContaining('"href"') })
+    expect(parseVeraChanges([{ kind: 'field', target: 'plan', id: PLAN, path: 'links', value: { url: 'example.com', label: 'x' } }])).toMatchObject({ error: expect.stringContaining('URL needs a full web address') })
+    expect(parseVeraChanges([{ kind: 'field', target: 'plan', id: PLAN, path: 'links', value: { url: '', label: '' } }])).toMatchObject({ error: expect.stringContaining('empty') })
+  })
+
+  it('refuses a missing target and an id that is not ours', () => {
+    expect(parseVeraChanges([{ kind: 'field', id: PLAN, path: 'notes', value: 'x' }])).toMatchObject({ error: expect.stringContaining('target') })
+    expect(parseVeraChanges([{ kind: 'field', target: 'space', id: PLAN, path: 'notes', value: 'x' }])).toMatchObject({ error: expect.stringContaining('target') })
+    expect(parseVeraChanges([{ kind: 'field', target: 'plan', id: 'plan-1', path: 'notes', value: 'x' }])).toMatchObject({ error: expect.stringContaining('Plan id that is not one of ours') })
+    expect(parseVeraChanges([{ kind: 'field', target: 'entry', id: 'e-1', path: 'notes', value: 'x' }])).toMatchObject({ error: expect.stringContaining('date id that is not one of ours') })
+  })
+
+  it('describes a field change by the manifest label, never the path', () => {
+    const lines = [
+      describeChange({ kind: 'field', target: 'plan', id: PLAN, path: 'targetKind', value: 'journey' }, ctx),
+      describeChange({ kind: 'field', target: 'plan', id: PLAN, path: 'notes', value: 'Bring the gong.' }, ctx),
+      describeChange({ kind: 'field', target: 'plan', id: PLAN, path: 'notes', value: null }, ctx),
+      describeChange({ kind: 'field', target: 'plan', id: PLAN, path: 'links', value: { url: 'https://example.com/run-sheet', label: 'Run sheet' } }, ctx),
+      describeChange({ kind: 'field', target: 'entry', id: ENTRY, path: 'location', value: 'The barn' }, ctx),
+      describeChange({ kind: 'field', target: 'entry', id: ENTRY, path: 'allDay', value: true }, ctx),
+      describeChange({ kind: 'field', target: 'entry', id: PLAN, path: 'showPublicly', value: false }, ctx),
+    ]
+    expect(lines[0]).toBe('Set Production opens on "Winter sits" to Journey.')
+    expect(lines[1]).toBe('Set Notes on "Winter sits" to "Bring the gong.".')
+    expect(lines[2]).toBe('Clear Notes on "Winter sits".')
+    expect(lines[3]).toBe('Add to Links on "Winter sits": "https://example.com/run-sheet", "Run sheet".')
+    expect(lines[4]).toBe('Set Location on "Sound bath" to "The barn".')
+    expect(lines[5]).toBe('Set All day on "Sound bath" to on.')
+    expect(lines[6]).toBe('Set Shown publicly on that date to off.')
+    for (const line of lines) {
+      expect(line).not.toMatch(/targetKind|showPublicly|allDay|[\u2013\u2014!]/)
+    }
   })
 })
 

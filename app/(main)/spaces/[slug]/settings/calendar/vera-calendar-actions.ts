@@ -7,15 +7,23 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
 import { parseVeraTranscript, proposeCalendarChanges, type VeraCalendarContext, type VeraTranscript } from '@/lib/ai/vera-calendar'
-import { isVeraMode, parseVeraChanges, type VeraChange, type VeraClarificationOption } from '@/lib/calendar/vera-command'
-import { entryDaySpan, parseEntryInput, type EntryInput, type EntryRow, type EntryWrite } from '@/lib/calendar/entries'
+import {
+  fieldValueText,
+  isVeraMode,
+  parseVeraChanges,
+  veraFieldSpec,
+  type VeraChange,
+  type VeraClarificationOption,
+} from '@/lib/calendar/vera-command'
+import { entryDaySpan, entryToInput, parseEntryInput, type EntryInput, type EntryRow, type EntryWrite } from '@/lib/calendar/entries'
 import { getCalendarEntryRow, insertCalendarEntries, listSpaceCalendarEntries, updateCalendarEntryRow } from '@/lib/calendar/entries-store'
-import { parsePlanInput } from '@/lib/calendar/plans'
+import { parsePlanInput, type PlanInput } from '@/lib/calendar/plans'
 import { createPenciledPlanRows, getSpacePlan, listSpacePlans, transitionSpacePlanRows, updateSpacePlan } from '@/lib/calendar/plans-store'
 import { planStageTransition } from '@/lib/calendar/workflow-board'
 import { monthGridWindow, safeMonth } from '@/lib/calendar/month-window'
 import { shortDateLabel } from '@/lib/calendar/short-date'
 import { dayInZone, resolveZone } from '@/lib/time/zone'
+import { saveCalendarEntry } from './entry-actions'
 import { addPlanTodo, archiveSpacePlan, reanchorPlanTodos, transitionPlanStage } from './plan-actions'
 
 // VERA AT THE CALENDAR, the two doors (PROG-CAL10, ADR-1386 invariant 1).
@@ -29,6 +37,11 @@ import { addPlanTodo, archiveSpacePlan, reanchorPlanTodos, transitionPlanStage }
 // re-parsed through `parseVeraChanges`, and each change is then driven through the EXISTING
 // calendar actions and stores on the caller's own session, so RLS stays the lock. One result per
 // change: a partial failure is reported line by line and never swallowed. No admin client here.
+//
+// A `field` change (PROG-CAL11 slice 2) is applied by reading the row, changing ONE attribute on
+// the product's own form shape, and writing through the product's own parser and action
+// (`parsePlanInput` + `updateSpacePlan` for a Plan, `saveCalendarEntry` for a date), so the
+// validation that gates a by-hand edit gates Vera's too.
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const DAY_MS = 86_400_000
@@ -218,12 +231,77 @@ async function applyMove(slug: string, editor: Editor, change: Extract<VeraChang
   return `Moved "${row.title}" to ${shortDateLabel(change.toDay)}.`
 }
 
+/**
+ * ONE ATTRIBUTE OF ONE PLAN (PROG-CAL11 slice 2). The current row is read first and the whole
+ * PlanInput is rebuilt from it with ONE attribute changed, then written through `parsePlanInput`
+ * exactly as the drawer's save does, so the product's own validation (title length, the link cap,
+ * the url shape) is the gate and nothing here re-states a rule. `stage` never comes through here:
+ * the `stage` kind owns it, because a Plan's stage moves every linked date and a column write would
+ * not. A `links` value is one row to ADD; a row the parser drops (no usable url) is reported, not
+ * swallowed, because an accepted line that changed nothing is the invisible kind of failure.
+ */
+async function applyPlanField(editor: Editor, change: Extract<VeraChange, { kind: 'field' }>): Promise<string | { error: string }> {
+  const plan = await getSpacePlan(editor.spaceId, change.id)
+  if (!plan) return { error: 'That Plan no longer exists.' }
+  const spec = veraFieldSpec('plan', change.path)
+  if (!spec) return { error: `${change.path} is not a field Vera can set on a Plan.` }
+  const input: PlanInput = {
+    title: plan.title,
+    notes: plan.notes,
+    links: plan.links,
+    stage: plan.stage,
+    targetKind: plan.targetKind,
+    playbookId: plan.playbookId,
+  }
+  const merged = input as unknown as Record<string, unknown>
+  if (spec.row) {
+    const current = Array.isArray(merged[change.path]) ? (merged[change.path] as unknown[]) : []
+    merged[change.path] = [...current, change.value]
+  } else {
+    merged[change.path] = change.value
+  }
+  const parsed = parsePlanInput(input)
+  if ('error' in parsed) return { error: parsed.error }
+  if (spec.row && parsed.data.links.length <= plan.links.length) {
+    return { error: `That link was not kept on "${plan.title}". It needs a full web address starting with http, and a Plan holds 20 links at most.` }
+  }
+  const { stage: _stage, ...details } = parsed.data
+  const res = await updateSpacePlan(editor.spaceId, change.id, details)
+  if ('error' in res) return { error: res.error }
+  if (spec.row) return `Added to ${spec.label} on "${plan.title}": ${fieldValueText(spec, change.value)}.`
+  if (change.value === null) return `Cleared ${spec.label} on "${plan.title}".`
+  return `Set ${spec.label} on "${plan.title}" to ${fieldValueText(spec, change.value)}.`
+}
+
+/**
+ * ONE ATTRIBUTE OF ONE DATE. The row is read, turned into the drawer's own form (`entryToInput`),
+ * one attribute is changed, and the form goes through `saveCalendarEntry`, the same action the
+ * drawer's Save calls, so candidate-date rules, the Plan stage follow-through and the to-do
+ * re-anchor all apply as they would by hand. A date that already became a published event is
+ * refused here as it is on `move`: its record lives in the event Studio now.
+ */
+async function applyEntryField(slug: string, editor: Editor, change: Extract<VeraChange, { kind: 'field' }>): Promise<string | { error: string }> {
+  const row = await getCalendarEntryRow(editor.spaceId, change.id)
+  if (!row) return { error: 'That date no longer exists.' }
+  if (row.published_event_id) return { error: `"${row.title}" is already a published event. Change it in the event Studio.` }
+  const spec = veraFieldSpec('entry', change.path)
+  if (!spec || spec.row) return { error: `${change.path} is not a field Vera can set on a date.` }
+  const input = entryToInput(row)
+  ;(input as unknown as Record<string, unknown>)[change.path] = change.value
+  const res = await saveCalendarEntry(slug, change.id, input)
+  if ('error' in res) return { error: res.error }
+  if (change.value === null) return `Cleared ${spec.label} on "${row.title}".`
+  return `Set ${spec.label} on "${row.title}" to ${fieldValueText(spec, change.value)}.`
+}
+
 async function applyOne(slug: string, editor: Editor, change: VeraChange): Promise<string | { error: string }> {
   switch (change.kind) {
     case 'pencil':
       return applyPencil(slug, editor, change)
     case 'move':
       return applyMove(slug, editor, change)
+    case 'field':
+      return change.target === 'plan' ? applyPlanField(editor, change) : applyEntryField(slug, editor, change)
     case 'stage': {
       const plan = await getSpacePlan(editor.spaceId, change.planId)
       if (!plan) return { error: 'That Plan no longer exists.' }

@@ -358,8 +358,15 @@ ask is ambiguous in a way that changes the outcome (three sound baths, a timed t
 model calls a third tool, `ask_clarification`, and the box renders the question with its options under
 `[data-vera-clarification]`; the answer goes back with the transcript Vera returned, which lives in the
 box's state for the session only and is shape- and size-checked on the way in (`parseVeraTranscript`),
-at most two questions per ask before Vera must propose or say she could not. Not yet: editing arbitrary
-Plan fields, undo, and reading attendance to pick dates.
+at most two questions per ask before Vera must propose or say she could not. Edit any field (`PROG-CAL11`
+slice 2): a `field` change sets one attribute of one existing Plan or date by its manifest path, where the
+Plan paths are read from `SPACE_PLAN_MANIFEST` through the kernel's `railForm` (every rail-writable field
+but stage, plus one `links` row to add), the date paths are an allowlist in the manifest's field shape
+derived from `EntryInput` until a date manifest exists, the value is checked against the field's kind and
+options by the kernel (`lib/studio/kernel/field-value.ts`, never a rule per field), the tool schema lists
+the paths on every request, the proposal line reads the manifest label, and the apply merges the current
+row and writes through `parsePlanInput` or `saveCalendarEntry` so the product's own validation is the
+gate. Not yet: undo, and reading attendance to pick dates.
 
 **Production seams for the non-event targets** (`PROG-CAL8`, `PROG-CAL9`, shipped). Each target in `PLAN_TARGET_DEFS`
 (`lib/calendar/plans.ts`) declares the door "Make it a Production" opens, sending the identifier its destination
