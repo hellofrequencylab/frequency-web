@@ -1,3 +1,4 @@
+import { ALL_DAY_LABEL } from './item'
 import type { CalendarEvent } from './item'
 import { shortDateLabel } from './short-date'
 import { repeatChipLabel } from '@/lib/events/repeat-rule'
@@ -321,7 +322,7 @@ export function entryToCalendarItem(
     title: row.title,
     dayKey,
     endDayKey: endDayKey === dayKey ? null : endDayKey,
-    timeLabel: row.all_day ? 'All day' : fmt.timeLabel(row.starts_at, row.time_zone),
+    timeLabel: row.all_day ? ALL_DAY_LABEL : fmt.timeLabel(row.starts_at, row.time_zone),
     whenLabel,
     startInstantIso: row.all_day ? null : fmt.instantIso(row.starts_at, row.time_zone),
     location: row.location,
@@ -387,7 +388,7 @@ export function publicUnavailableToItem(
     title: 'Unavailable',
     dayKey,
     endDayKey: endDayKey === dayKey ? null : endDayKey,
-    timeLabel: row.all_day ? 'All day' : fmt.timeLabel(row.starts_at, row.time_zone),
+    timeLabel: row.all_day ? ALL_DAY_LABEL : fmt.timeLabel(row.starts_at, row.time_zone),
     whenLabel: row.all_day
       ? endDayKey === dayKey
         ? `${fmt.dateLabel(row.starts_at, row.time_zone)}, all day`

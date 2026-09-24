@@ -49,6 +49,7 @@ import { shortDateLabel } from '@/lib/calendar/short-date'
 import { useMonthGestures } from './use-month-gestures'
 import { DAY_CELL_ATTR, useDateMove } from './use-date-move'
 import { withMovedDay, type EntryMove } from '@/lib/calendar/date-move'
+import { isDayBand, bandEdges } from '@/lib/calendar/item'
 import type { CalendarEvent } from '@/lib/calendar/item'
 
 export type { CalendarEvent } from '@/lib/calendar/item'
@@ -782,7 +783,15 @@ export function EventCalendar({
                   const cards = liveEvents.filter((ev) => !ev.isLaterDate)
                   // Three at most in a cell that has a floor and sends the rest to the List; every one
                   // of them when the cell fills and scrolls its own overflow instead.
-                  const shown = fill ? cards : cards.slice(0, 3)
+                  // 🔴 TWO KINDS, TWO PLACES (LIVE-491). A band owns whole days and rides the TOP
+                  // of the square as one uniform line; a timed chip happens at a moment and stacks
+                  // below it. The split is pure (lib/calendar/item.ts) so a probe can run it.
+                  const bands = cards.filter(isDayBand)
+                  const timed = cards.filter((ev) => !isDayBand(ev))
+                  // The three-chip floor counts TIMED items only: a band is one line whatever the
+                  // cell's height, and hiding a retreat behind "+2 more" is how a week of closure
+                  // became invisible. Bands always draw.
+                  const shown = fill ? timed : timed.slice(0, 3)
                   const dots = liveEvents.filter((ev) => ev.isLaterDate)
                   const pending = pendingByDay.get(cell.date) ?? []
                   const isToday = cell.date === today
@@ -839,10 +848,65 @@ export function EventCalendar({
                           {dayNum}
                         </span>
                       </div>
-                      {labels.length > 0 && (
-                        <p className="-mt-0.5 mb-1 truncate px-0.5 text-2xs text-muted" title={labels.join(', ')}>
-                          {labels.join(' · ')}
-                        </p>
+                      {/* 🔴 THE BAND RIDES THE TOP (LIVE-491, owner ask 2026-09-24: "full day events
+                          ride at the top of the square"). One uniform line per whole-day item,
+                          ABOVE the timed chips and above the scroller, so it never scrolls out of
+                          a busy day and a week-long closure is the first thing the square says.
+
+                          IT READS AS ONE LINE ACROSS THE DAYS IT COVERS, the way a calendar draws
+                          a span: `-mx-1.5` cancels the cell's own padding so the bar reaches both
+                          edges and meets its neighbour with no gap, and the rounding is applied
+                          ONLY where the run genuinely begins and ends (bandEdges). A continuation
+                          day draws a square-ended bar, so Monday to Friday reads as one rule
+                          rather than five separate pills.
+
+                          THE TITLE IS SAID ONCE PER WEEK ROW, at the start of the run or at the
+                          first column of the week, which is where a reader picks the line up after
+                          it wraps. A continuation cell keeps the bar and drops the words, and the
+                          full title stays on `title` and on the accessible name either way. */}
+                      {bands.length > 0 && (
+                        <div className="-mx-1.5 mb-1 flex flex-col gap-px">
+                          {bands.map((ev, i) => {
+                            const { startsHere, endsHere } = bandEdges(ev, cell.date)
+                            const opensWeek = cell.date === week[0].date
+                            return (
+                              <button
+                                key={`band-${ev.slug}-${i}`}
+                                type="button"
+                                onClick={() => select(ev)}
+                                title={ev.title}
+                                aria-label={`${ev.title}, ${ev.timeLabel}`}
+                                draggable={move.enabled || undefined}
+                                data-move-chip={move.enabled ? ev.entryId ?? undefined : undefined}
+                                onDragStart={move.enabled ? (e) => move.startDrag(e, ev, itemKey(ev)) : undefined}
+                                onDragEnd={move.enabled ? move.endDrag : undefined}
+                                onPointerDown={move.enabled ? (e) => move.pressChip(e, ev, itemKey(ev)) : undefined}
+                                onKeyDown={move.enabled ? (e) => move.chipKeyDown(e, ev) : undefined}
+                                data-calendar-band={calendarPresentation(ev, audience).key}
+                                data-band-start={startsHere || undefined}
+                                data-band-end={endsHere || undefined}
+                                className={cn(
+                                  'w-full truncate px-1.5 py-0.5 text-left text-2xs font-medium transition-colors',
+                                  calendarPresentation(ev, audience).chipClass,
+                                  startsHere && 'rounded-l-control',
+                                  endsHere && 'rounded-r-control',
+                                  activeSeries !== null && ev.seriesKey === activeSeries && 'ring-2 ring-primary/50',
+                                  move.enabled && 'touch-none',
+                                  move.carrying === itemKey(ev) && 'opacity-60',
+                                )}
+                              >
+                                {startsHere || opensWeek ? (
+                                  <>
+                                    <ChipWord item={ev} audience={audience} narrow={narrowGrid} />
+                                    {ev.title}
+                                  </>
+                                ) : (
+                                  <span className="sr-only">{ev.title}</span>
+                                )}
+                              </button>
+                            )
+                          })}
+                        </div>
                       )}
                       {/* THE OVERFLOW LIVES IN THE CELL. Filling, the day's items scroll here rather
                           than sending the reader to another view, and the wheel that scrolls them is
@@ -937,7 +1001,7 @@ export function EventCalendar({
                             ))
                           ),
                         )}
-                        {!fill && cards.length > 3 && (
+                        {!fill && timed.length > 3 && (
                           /* THE COUNT NAMES WHAT IT HIDES. A cell draws at most three chips, so on a busy
                              day everything past the third was reachable only by opening the List and had
                              no name at all: a sighted reader saw "+27 more" and a screen reader heard the
@@ -949,11 +1013,11 @@ export function EventCalendar({
                               goTo({ year: Number(cell.date.slice(0, 4)), month1: Number(cell.date.slice(5, 7)) })
                               setView('list')
                             }}
-                            aria-label={`${cards.length - 3} more on this day: ${cards.slice(3).map((ev) => ev.title).join(', ')}`}
-                            title={cards.slice(3).map((ev) => ev.title).join(', ')}
+                            aria-label={`${timed.length - 3} more on this day: ${timed.slice(3).map((ev) => ev.title).join(', ')}`}
+                            title={timed.slice(3).map((ev) => ev.title).join(', ')}
                             className="px-1.5 text-left text-2xs font-medium text-muted hover:text-text"
                           >
-                            +{cards.length - 3} more
+                            +{timed.length - 3} more
                           </button>
                         )}
                         {(dots.length > 0 || pending.length > 0) && (
@@ -996,6 +1060,23 @@ export function EventCalendar({
                         )}
                       </div>
                       {cancelled.length > 0 && cancelledCellFooter(cancelled, select)}
+                      {/* 🔴 THE DAY NOTE SITS AT THE FOOT (LIVE-491, owner ask 2026-09-24: "move any
+                          day notes (Quiet Hours, Flex Day, Etc.) to the bottom of any given
+                          square"). It used to sit directly under the date, which put the quietest
+                          thing in the square -- a standing label that is the same every Monday --
+                          above the things that actually change. `mt-auto` holds it to the bottom of
+                          the flex column, so it stays on the floor of the cell whether the day is
+                          empty or full, and it sits OUTSIDE the scroller so a busy day cannot
+                          scroll it out of sight. */}
+                      {labels.length > 0 && (
+                        <p
+                          data-day-note
+                          className="mt-auto truncate px-0.5 pt-1 text-2xs text-muted"
+                          title={labels.join(', ')}
+                        >
+                          {labels.join(' · ')}
+                        </p>
+                      )}
                     </div>
                   )
                 })}
