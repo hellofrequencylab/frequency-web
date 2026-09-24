@@ -39,6 +39,7 @@ const read = (p: string) => readFileSync(new URL(p, import.meta.url), 'utf8')
 const LAYOUT = read('../../app/(main)/spaces/[slug]/(profile)/layout.tsx')
 const BUTTON = read('../ui/button.tsx')
 const MENU = read('./space-profile-menu.tsx')
+const GLOBALS = read('../../app/globals.css')
 
 describe('the button primitive exposes geometry without palette', () => {
   it('exports buttonGeometry', () => {
@@ -102,13 +103,40 @@ describe('the tab bar rises with the viewer like the chrome around it', () => {
 })
 
 describe('the tab bar is a scroller, not a squeeze', () => {
-  // A flex child defaults to `flex-shrink: 1`. Without `shrink-0` the browser compressed every pill
-  // below its intrinsic width until the row FIT, so `overflow-x-auto` never had anything to scroll —
-  // and `whitespace-nowrap`, which forbids the text reflowing into that narrower box, laid each label
-  // over its neighbour ("CalendarCircles", "DiscussReviews") on a 390px phone. The invariant that
-  // produced the layout is "the pills never give way", so that is what is held here.
+  // WHY `shrink-0` IS LOAD-BEARING, since the obvious reading says it is redundant.
+  //
+  // A flex child defaults to `flex-shrink: 1`, but it ALSO gets `min-width: auto`, which floors it at
+  // its min-content width — and `whitespace-nowrap` makes min-content the whole label. A nowrap pill
+  // is therefore normally self-protecting, and `shrink-0` really would be a no-op. Reproduced in
+  // isolation it is: seven pills, no overlap, scroller intact.
+  //
+  // `tap-target` is what defeats that. It sets BOTH axes (app/globals.css):
+  //     min-block-size: var(--tap-min);  min-inline-size: var(--tap-min);
+  // and an explicit `min-inline-size` REPLACES `min-width: auto`, so the min-content floor is gone and
+  // the pill may shrink to `--tap-min`. It was added to this row for VERTICAL rhythm (the describe
+  // above); the horizontal floor came along silently and took the protection with it. Measured at the
+  // default generation, 390px, seven tabs: pills collapse 65-98px → a uniform 56px, six of seven
+  // labels overflow their own box (worst by 30px), rendering "CalendarCircles" / "DiscussReviews",
+  // and the row FITS, so nothing scrolls and the tabs past the edge are unreachable.
+  //
+  // So the invariant is a COUPLING, not a lone class: while the pill carries `tap-target`, it must
+  // carry `shrink-0` too. Both halves are asserted, and the globals.css side is read directly so that
+  // removing `min-inline-size` there surfaces here rather than silently making this test pointless.
   it('the profile tab pills refuse to shrink', () => {
     expect(MENU).toMatch(/'shrink-0 whitespace-nowrap rounded-control/)
+  })
+
+  it('the pill that carries the tap floor carries the shrink floor with it', () => {
+    const cls = MENU.slice(MENU.indexOf("'shrink-0 whitespace-nowrap"))
+    const line = cls.slice(0, cls.indexOf('\n'))
+    expect(line, 'tap-target and shrink-0 must stay on the same pill class').toContain('tap-target')
+  })
+
+  it('tap-target is still the thing that removes the min-content floor', () => {
+    // If this ever stops being true, the coupling above is no longer required — but it must be a
+    // deliberate edit, not a silent drift that leaves the comment above lying.
+    const util = GLOBALS.slice(GLOBALS.indexOf('@utility tap-target'))
+    expect(util.slice(0, util.indexOf('}'))).toContain('min-inline-size')
   })
 
   it('the row that holds them is still the scroller', () => {
