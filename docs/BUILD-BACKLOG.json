@@ -173,7 +173,8 @@
             "HYG-075",
             "LIVE-335",
             "PROG-CAL7",
-            "LIVE-480"
+            "LIVE-480",
+            "LIVE-496"
           ]
         },
         {
@@ -189,7 +190,11 @@
             "LIVE-479",
             "LIVE-481",
             "LIVE-483",
-            "LIVE-484"
+            "LIVE-484",
+            "LIVE-497",
+            "LIVE-498",
+            "LIVE-499",
+            "HYG-122"
           ]
         },
         {
@@ -16806,6 +16811,93 @@
         "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs -e 'const fs=require(\"fs\")\nconst fail=(m)=>{console.error(m);process.exit(1)}\nimport(\"@/lib/layout/header-offset.ts\").then((h)=>{\nconst files=[\"components/layout/app-shell.tsx\",\"components/layout/admin-bar/admin-bar.tsx\",\"app/(main)/admin/layout.tsx\",\"components/admin/admin-rail-drawer-column.tsx\"]\nfor(const f of files){\nif(h.reDerivesHeaderHeight(fs.readFileSync(f,\"utf8\")))fail(f+\" re-derives the app header height by hand again. The hand-written copies drop the safe-area inset the header actually occupies, so the shell asks for 100vh + inset and every page is taller than the viewport on every device that has one -- a phantom scrollbar, and a document height that cannot sit still under a full-page capture\")}\nconst shell=fs.readFileSync(\"components/layout/app-shell.tsx\",\"utf8\")\nif(!shell.includes(\"min-h-dvh\"))fail(\"the shell root no longer measures its minimum in dvh, so the content row below it is subtracting a header from a different viewport than the root is filling\")\nif(!shell.includes(\"min-h-[calc(100dvh-\"+h.APP_HEADER_H+\")]\"))fail(\"the content row no longer subtracts the header TOKEN in the same unit as the root, which is the mismatch that made header + content exceed one viewport\")\nconst css=fs.readFileSync(\"app/globals.css\",\"utf8\")\nif(!/--app-header-h:\\s*calc\\(3\\.5rem \\+ env\\(safe-area-inset-top\\)\\)/.test(css))fail(\"--app-header-h no longer carries the inset, so every consumer measuring off it is now wrong in the same direction the hand-written copies were\")\nprocess.exit(0)\n}).catch((e)=>{console.error(String(e&&e.message?e.message:e));process.exit(1)})'"
       },
       "closed": "2026-09-24"
+    },
+    {
+      "id": "LIVE-496",
+      "title": "The one List still has no hero: the detail pane shows stats and a link where the owner asked for the gathering itself",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/spaces/calendar-list-view.tsx",
+        "ref": "owner ask 2026-09-23, the second half of it"
+      },
+      "detail": "OWNER ASK 2026-09-23, verbatim: \"Consider that there are two different List views, consolidate that into one experience with a list on the left and card, with hero image and all stats on the right.\"\n\nTHE FIRST HALF SHIPPED AND THIS HALF DID NOT. The two List views are one experience now: LIVE-490 made Grid / List / Workflow a single surface control with the List surface carrying its own This month / All scope, so the index on the left is one list reached one way. What did not ship is the right: the detail pane draws a StatCard row and a Go to event link, and no hero. `components/spaces/calendar-list-view.tsx` imports StatCard and renders no image at all -- there is no `coverUrl`, no `<Image>`, nothing that shows the gathering the row is about.\n\nIT IS NOT A DESIGN QUESTION, because the data is already there: calendar items carry `coverUrl` and the grid popup already reads it. What is missing is the pane rendering it.\n\nWHY IT IS P3 RATHER THAN FORGOTTEN: the surface works and is reachable, the consolidation the ask was mostly about is done, and this is the part that makes it feel like the gathering rather than a row of numbers. A patch for it exists from 2026-09-23 but predates LIVE-490 and LIVE-494 and would have to be re-derived against the shared chrome rather than applied.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\")\nconst fail=(m)=>{console.error(m);process.exit(1)}\nconst v=(()=>{try{return fs.readFileSync(\"components/spaces/calendar-list-view.tsx\",\"utf8\")}catch(e){return null}})()\nif(v===null)fail(\"components/spaces/calendar-list-view.tsx is gone, so the one List has no detail pane at all\")\nconst code=v.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\" \").replace(/^\\s*\\/\\/.*$/gm,\" \")\nif(!/coverUrl/.test(code))fail(\"the List detail pane still renders no hero: it shows stats and a link where the owner asked for the gathering, and the data is already on the item\")\nprocess.exit(0)'"
+      }
+    },
+    {
+      "id": "LIVE-497",
+      "title": "captureFlipMessage tells the reader to fix a mechanism this repository had already disproved, and it cost a pull request",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "test/e2e/surfaces.ts",
+        "ref": "found by following its advice on LIVE-492 and losing a PR to it"
+      },
+      "detail": "THE DEFECT IS IN THE DIAGNOSTIC, not in a surface. When a full-page capture reports two heights, `captureFlipMessage` says: \"A fullPage capture photographs past the viewport, so anything sized against the viewport HEIGHT re-resolves at the document height while the shutter is open\", then names the viewport-height boxes on the page and says \"Fix the box, not the wait\".\n\nTHAT MECHANISM IS REFUTED IN THIS SAME FILE. The /admin/qr note records that `fullPage` was shown NOT to resize the layout viewport in playwright-core 1.63 (`captureBeyondViewport`, no `setDeviceMetricsOverride` in that path), \"which refutes the viewport-unit explanation\", and gives the arithmetic that kills it too. The message asserts it anyway, with confidence and with a list of files to go and edit.\n\nWHAT IT COST, measured rather than supposed: a whole pull request. LIVE-492 was worked by following this message literally -- the boxes it named were fixed (that is LIVE-493, a real defect in its own right) -- and `pr-compare` on the commit carrying the fix failed IDENTICALLY, same four cases, same pair of heights. The arithmetic never fitted either: the spread was 4px against a vault drawer whose `max-h-[50dvh]` would swing ~3,400px on that document, with two of the five named boxes rendering at 0px.\n\nTHE FIX IS ONE OF TWO. Either the message carries the refutation (\"this mechanism was disproved for playwright-core 1.63; treat the named boxes as a lead, not a cause\") or it stops asserting a cause and reports only what it measured: these heights, these viewport-dependent boxes, nothing about why. The second is better. A diagnostic that names a cause it cannot establish is worse than one that names none, because it stops the reader looking.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\")\nconst fail=(m)=>{console.error(m);process.exit(1)}\nconst s=(()=>{try{return fs.readFileSync(\"test/e2e/surfaces.ts\",\"utf8\")}catch(e){return null}})()\nif(s===null)fail(\"test/e2e/surfaces.ts is gone, so the capture diagnostic cannot be read\")\nconst i=s.indexOf(\"export function captureFlipMessage\")\nif(i<0)fail(\"captureFlipMessage is gone; if the diagnostic was replaced, retire this row against what replaced it\")\nconst body=s.slice(i, i+3000)\nconst asserts=/re-resolves at the document height/.test(body)\nconst refutes=/refut|disprov|playwright-core 1\\.63|captureBeyondViewport|a lead, not a cause/.test(body)\nif(asserts&&!refutes)fail(\"captureFlipMessage still states the viewport-unit mechanism as the cause and tells the reader to fix the boxes it names, with no mention that this tree already disproved that mechanism for playwright-core 1.63. Following it cost the whole first attempt at LIVE-492\")\nprocess.exit(0)'"
+      }
+    },
+    {
+      "id": "LIVE-498",
+      "title": "Total Blocking Time on the home page is 453ms against a 300ms budget, fifty times the reading the budget was set from",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lighthouserc.json",
+        "ref": "the lighthouse job, red on every PR that runs it"
+      },
+      "detail": "THE READING. `/` measures TBT 453ms against a 300ms budget, -51% headroom, and it is the ONLY breach: LCP 792ms, CLS 0.000, FCP 419ms and 0.85MB weight are all comfortably inside, and the other three audited URLs (/pricing, /the-community, /loneliness) all read TBT 0ms. The two warn-level audits that also read 0, unused-javascript and uses-responsive-images, do not block.\n\nIT IS A REGRESSION, AND A LARGE ONE. `lighthouserc.json` records the measured baseline from run 30934494633 on 2026-08-04: `/` at TBT 9ms. So this is roughly fifty times the number the budget was derived from -- while PAGE WEIGHT FELL, 1.23MB to 0.85MB. Fewer bytes and fifty times the main-thread time is not a payload regression; it is execution or decode.\n\nWHAT WAS RULED OUT by a full walk of the client graph, using the repo’s own `walkRouteClientGraph` out of scripts/check-shell-weight.mjs: `/` reaches 196 client modules and its eager graph is a strict SUBSET of /the-community’s, which reads 2ms. No maplibre, no react-markdown, no tiptap, no Stripe.js, no static supabase-js. framer-motion, chart libraries, carousel and date libraries are not dependencies at all. No `<Script strategy=\"beforeInteractive\">` anywhere. Google Analytics cannot fire on a preview. Sentry Replay is not configured. The header’s lazy supabase-js under `detectClientAuth` is on all four URLs. So there is no client component or third-party script that runs on `/` and nowhere else.\n\nTHE LEAD THAT SURVIVED: the home page body is NOT IN THE REPOSITORY. `app/page.tsx` reads `getPublishedData(\"home\")` from Supabase `pages.published_data`, and the file says so. An operator publishing in the editor changes everything `/` renders with no commit and no diff. Two numbers point that way together: weight fell while LCP improved, and `uses-responsive-images` fell from a recorded 0.5 to 0 -- an image-SHAPE regression on `/` specifically, which is images whose intrinsic size greatly exceeds their display size. Oversized bitmap decode is real main-thread time, and the lighthouse job runs headless with no GPU on a shared runner, where that lands hard. The only other source-visible discriminator is ValueBand, the one block type `/` renders that no other audited URL does, inserted into the live document on 2026-09-15 -- but it is a server component whose animations are hover-only and `/pricing` mounts the same Reveal with TBT 0.\n\nTHE ONE READ THAT WOULD SETTLE IT, rather than another walk of the source: the lighthouse job already uploads `.lighthouseci/lhr-*.json`. For a `/` run, `audits[\"bootup-time\"].details.items`, `audits[\"main-thread-work-breakdown\"]`, `audits[\"long-tasks\"]` and `audits[\"uses-responsive-images\"].details.items` name the script and the image in one read. Do that before touching anything.\n\nNOT THIS REPOSITORY’S PULL REQUESTS. It is red on main and therefore on every PR that triggers the job; it is nobody’s diff.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "lighthouse job on PR #2888, run 36042151790: \"| / | TBT | 453ms | 300ms | -51% | fails |\", with /pricing, /the-community and /loneliness all at TBT 0ms and every other metric on / inside budget. lighthouserc.json records the 2026-08-04 baseline for / as TBT 9ms at 1.23MB; the same run measures 0.85MB. Cannot be probed from a checkout: it needs a Lighthouse run against a deployed preview, and the page body is database state rather than repository state.",
+        "checked": "2026-09-24"
+      }
+    },
+    {
+      "id": "LIVE-499",
+      "title": "No gate measures client JavaScript on the marketing routes, so a regression on the home page reaches production silently",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "scripts/check-shell-weight.mjs",
+        "ref": "found while diagnosing LIVE-498"
+      },
+      "detail": "THE HOLE. Arm C of `scripts/check-shell-weight.mjs` is the only per-route client-JS guard in the repository, and `HOT_ROUTE_ENTRIES` names four `app/(main)` routes. `/` and every `app/(marketing)` route are covered by nothing. `scripts/check-build-budget.mjs` measures the SERVER artifact (the `.nft.json` fan-out), not client JavaScript, so it does not fill the gap.\n\nWHY IT MATTERS HERE RATHER THAN IN THE ABSTRACT: LIVE-498 is a fifty-fold main-thread regression on the home page that no gate noticed. AGENTS.md states the rule this breaks -- \"Every fail-safe needs a gate that notices it fired\" -- and the home page is the single most consequential route the project has.\n\nA MEASUREMENT WORTH HAVING, from the same walk: `/` reaches 196 client modules and roughly 2.10MB of client source, because `lib/page-editor/config.tsx` statically imports all fourteen block-kit barrels. That is identical on all four audited marketing URLs, so it is debt rather than the LIVE-498 regression -- but it is exactly the kind of number a budget should be holding still.\n\nAND A SECOND HOLE BESIDE IT, worth naming because a budget will not close it: the home page body is `pages.published_data`, read from the database. Nothing in the filesystem can gate what an operator publishes. `app/page.tsx` already says this about the CTA-label canon. `scripts/stored-block-types.json` is the only census of that document and its own recaptureLog records it drifting for four weeks once already.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\")\nconst fail=(m)=>{console.error(m);process.exit(1)}\nconst s=(()=>{try{return fs.readFileSync(\"scripts/check-shell-weight.mjs\",\"utf8\")}catch(e){return null}})()\nif(s===null)fail(\"scripts/check-shell-weight.mjs is gone, so nothing measures per-route client JavaScript at all\")\nconst i=s.indexOf(\"HOT_ROUTE_ENTRIES\")\nif(i<0)fail(\"HOT_ROUTE_ENTRIES is gone; if the per-route client-JS budget moved, retire this row against wherever it went\")\nconst block=s.slice(i, i+900)\nconst marketing=/app\\/page\\.tsx|\\(marketing\\)/.test(block)\nif(!marketing)fail(\"no marketing route is in the per-route client-JS budget: the home page, the most consequential route in the project, is measured by nothing, which is how a fifty-fold main-thread regression (LIVE-498) reached production unnoticed\")\nprocess.exit(0)'"
+      }
+    },
+    {
+      "id": "HYG-122",
+      "title": "The safeupdate pgTAP guard has skipped every run since it was written, and nothing notices that its coverage is absent",
+      "status": "open",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "supabase/tests/refresh_resonance_density_cells_safeupdate.test.sql",
+        "ref": "read while auditing db-tests"
+      },
+      "detail": "THE TEST IS HONEST AND THAT IS NOT THE PROBLEM. It pins a real production defect -- the nightly density rollup opened with a bare DELETE, `authenticator` carries `session_preload_libraries=safeupdate`, and that hook raises 21000 on a WHERE-less DELETE, so the cron failed every run from 2026-08-22 until the delete gained a `where true`. psql never saw it because psql never loads the hook. So the file loads the hook itself, and it is careful about it: the `load` is wrapped in a DO block, a failure is caught, every assertion is SKIPPED with the exact sqlstate and message printed in the TAP output, and a positive control proves the hook is really active before the function is trusted. It cannot pass vacuously and it cannot fail the suite for an unrelated reason. That is good work.\n\nTHE PROBLEM IS THAT NOBODY READS THE SKIP. `load` needs superuser or the library in $libdir/plugins, and the library may simply be absent from the test image. When it cannot load, the file prints its reason and skips -- run after run, indefinitely, while the suite stays green and the coverage ledger counts the file. That is the AGENTS.md rule inverted: \"Every fail-safe needs a gate that notices it fired.\" This fail-safe fires silently.\n\nWHAT IS NOT ESTABLISHED, and it is the first thing to find out: whether the hook has EVER loaded in CI. It is a one-line read of a db-tests run’s TAP output for the diag line this file prints. If it does load, this row is wrong and retires. If it does not, the choice is to install the library in the test image or to record the surface as uncovered rather than letting a permanent skip read as a passing test.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Read 2026-09-24. supabase/tests/refresh_resonance_density_cells_safeupdate.test.sql wraps `load safeupdate` in a DO block, catches the failure, records l7a.safeupdate_loaded=false with the sqlstate, and skips all three assertions with the reason printed. Nothing in .github/workflows/db-tests.yml or any check:* script reads the TAP output for a permanent skip, so a suite in which this file has never once exercised the function is indistinguishable from one in which it has. Whether it has actually ever loaded in CI is the open question and needs one read of a db-tests run.",
+        "checked": "2026-09-24"
+      }
     }
   ]
 }
