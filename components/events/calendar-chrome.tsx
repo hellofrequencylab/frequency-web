@@ -1,6 +1,7 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, LayoutGrid, List } from 'lucide-react'
+import type { Ref } from 'react'
+import { ChevronDown, ChevronLeft, ChevronRight, LayoutGrid, List } from 'lucide-react'
 import { IconButton } from '@/components/ui/icon-button'
 import { monthLabel, SHORT_MONTH_LABELS } from '@/lib/events/calendar-grid'
 import { monthKey } from '@/lib/calendar/month-window'
@@ -46,21 +47,41 @@ export function CalendarViewSwitch({
   )
 }
 
-/** What shows on the calendar: Events, In the works, Private, Unavailable, To-dos. A pressed chip
- *  is showing; pressing it again hides that layer. Shown where two or more layers are offered. */
+/**
+ * What shows on the calendar: Events, In the works, Private, Unavailable, To-dos. A pressed chip
+ * is showing; pressing it again hides that layer. Shown where two or more layers are offered.
+ *
+ * TWO DENSITIES, THE SAME FIVE WORDS (owner ruling 2026-09-24). This is the widest group in either
+ * header, and the console has to fit ONE row, so `micro` takes the padding and the type down.
+ * What it deliberately does NOT do is drop the labels for dots or fold the five into a "showing
+ * 3 of 5" menu: the visible word IS each chip's accessible name (WCAG 2.5.3), and a colour with a
+ * tooltip has no visible label to match. `text-2xs` is the repo's sub-xs CHROME floor and is
+ * unscaled by the type preset on purpose (app/globals.css) -- a toggle is chrome, not content.
+ *
+ * 🔴 `tap-target` STAYS ON BOTH. It is a min-size, not a padding, and it grows to `--tap-min` on a
+ * coarse pointer. "Micro" is the type and the box, never the thing a thumb has to hit.
+ */
 export function CalendarLayerChips({
   layers,
   hidden,
   onToggle,
+  density = 'comfortable',
   className,
 }: {
   layers: readonly CalendarLayerKey[]
   hidden: ReadonlySet<CalendarLayerKey>
   onToggle: (key: CalendarLayerKey) => void
+  /** `micro` in a header that must hold one row; `comfortable` where there is room. */
+  density?: 'comfortable' | 'micro'
   className?: string
 }) {
+  const micro = density === 'micro'
   return (
-    <div className={cn('flex flex-wrap items-center gap-1.5', className)} role="group" aria-label="Show on the calendar">
+    <div
+      className={cn('flex items-center', micro ? 'gap-1' : 'flex-wrap gap-1.5', className)}
+      role="group"
+      aria-label="Show on the calendar"
+    >
       {CALENDAR_LAYERS.filter((l) => layers.includes(l.key)).map((l) => {
         const on = !hidden.has(l.key)
         return (
@@ -70,7 +91,8 @@ export function CalendarLayerChips({
             aria-pressed={on}
             onClick={() => onToggle(l.key)}
             className={cn(
-              'tap-target rounded-pill border px-3 py-1 text-meta font-medium transition-colors',
+              'tap-target shrink-0 whitespace-nowrap rounded-pill border font-medium transition-colors',
+              micro ? 'px-2 py-0.5 text-2xs' : 'px-3 py-1 text-meta',
               on ? cn('border-transparent', l.chipClass) : 'border-border text-muted hover:text-text',
             )}
           >
@@ -78,6 +100,131 @@ export function CalendarLayerChips({
           </button>
         )
       })}
+    </div>
+  )
+}
+
+/**
+ * THE MONTH, AND THE BUTTON THAT JUMPS TO ANOTHER ONE — one definition (LIVE-494).
+ *
+ * This existed TWICE and had already drifted apart, which is the exact failure the note at the top
+ * of this file warns about. The grid drew `text-body-lg font-semibold` in a plain button; the
+ * console drew `text-lead font-bold` inside an `<h2>`. Same control, two sizes, two elements.
+ *
+ * 🔴 THE HEADING ELEMENT IS LOAD-BEARING IN THE CONSOLE. `calendar-console.tsx` points the dialog's
+ * `aria-labelledby` at this heading's id, so it must render even on a surface with no month -- an
+ * all-time List or the Workflow board -- where it names what is being read instead. That is why
+ * `hasMonth` swaps the CONTENT and never the heading itself.
+ *
+ * ONE LIVE REGION. The month label carries `aria-live="polite"` wherever it is drawn, and exactly
+ * one copy may be mounted: `calendarChrome()` takes this off the grid whenever a host draws it, so
+ * the page and the console never speak the month at the same time.
+ */
+export function CalendarMonthTitle({
+  headingId,
+  label,
+  hasMonth = true,
+  fallbackTitle,
+  jumpOpen,
+  onToggleJump,
+  buttonRef,
+  jumpMark,
+  density = 'comfortable',
+  className,
+}: {
+  /** Set where something points `aria-labelledby` at this heading (the console dialog does). */
+  headingId?: string
+  /** "October 2026". */
+  label: string
+  /** False on a surface with no month; the heading then names the surface. */
+  hasMonth?: boolean
+  /** What the heading says when there is no month. */
+  fallbackTitle?: string
+  jumpOpen: boolean
+  onToggleJump: () => void
+  buttonRef?: Ref<HTMLButtonElement>
+  /** A `data-` attribute the host stamps on the TRIGGER, so `HOST_DRAWN_CONTROL_MARKS` marks the
+   *  control itself rather than the box around it. The console passes its marker here; a site that
+   *  takes no chrome off the grid passes nothing. */
+  jumpMark?: string
+  density?: 'comfortable' | 'micro'
+  className?: string
+}) {
+  const micro = density === 'micro'
+  return (
+    <h2
+      id={headingId}
+      className={cn('min-w-0 truncate text-text', micro ? 'text-body font-semibold' : 'text-body-lg font-semibold', className)}
+    >
+      {hasMonth ? (
+        <button
+          ref={buttonRef}
+          {...(jumpMark ? { [jumpMark]: true } : {})}
+          type="button"
+          onClick={onToggleJump}
+          aria-expanded={jumpOpen}
+          aria-haspopup="dialog"
+          title="Jump to a month"
+          className={cn(
+            'tap-target inline-flex items-center gap-1 rounded-control transition-colors hover:bg-surface-elevated',
+            micro ? 'px-1 py-0.5' : 'px-1.5 py-1',
+          )}
+        >
+          <span aria-live="polite">{label}</span>
+          <ChevronDown className={cn('h-4 w-4 shrink-0 text-muted transition-transform', jumpOpen && 'rotate-180')} aria-hidden />
+        </button>
+      ) : (
+        <span>{fallbackTitle}</span>
+      )}
+    </h2>
+  )
+}
+
+/**
+ * PREVIOUS / TODAY / NEXT — one definition (LIVE-494), and it settles a real drift.
+ *
+ * The grid disabled Today on the month already showing; the console never did. The grid's is the
+ * one that survives, and its own comment says why: a control that VANISHES from under the focus
+ * that just pressed it is a focus bug, so it stays mounted and goes `disabled` instead, and focus
+ * moves to the month title, which reads the month it landed on.
+ *
+ * ‹ and › are `IconButton`, which is a 32px `tap-target` that GROWS on a coarse pointer. The micro
+ * density takes the box and the type down around them and never the hit area.
+ */
+export function CalendarPaging({
+  onStep,
+  onToday,
+  onCurrentMonth,
+  density = 'comfortable',
+  className,
+}: {
+  onStep: (delta: -1 | 1) => void
+  onToday: () => void
+  /** The month showing IS this month, so Today would do nothing. */
+  onCurrentMonth: boolean
+  density?: 'comfortable' | 'micro'
+  className?: string
+}) {
+  const micro = density === 'micro'
+  return (
+    <div className={cn('flex shrink-0 items-center', micro ? 'gap-0' : 'gap-1', className)}>
+      <IconButton label="Previous month" onClick={() => onStep(-1)}>
+        <ChevronLeft className="h-4 w-4" aria-hidden />
+      </IconButton>
+      <button
+        type="button"
+        disabled={onCurrentMonth}
+        onClick={onToday}
+        className={cn(
+          'tap-target rounded-control font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-muted',
+          micro ? 'px-1.5 py-0.5 text-2xs' : 'px-2.5 py-1 text-body-sm',
+        )}
+      >
+        Today
+      </button>
+      <IconButton label="Next month" onClick={() => onStep(1)}>
+        <ChevronRight className="h-4 w-4" aria-hidden />
+      </IconButton>
     </div>
   )
 }
