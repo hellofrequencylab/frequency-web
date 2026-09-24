@@ -59,7 +59,7 @@ export function SpaceProfileMenu({
       //     bands 46-56px), and the primary navigation of a Space profile was opting out of exactly
       //     the accommodation those viewers selected.
       // Padding stays as the resting size; min-block-size only ever raises.
-      'whitespace-nowrap rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors tap-target',
+      'shrink-0 whitespace-nowrap rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors tap-target',
       active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text',
     )
 
@@ -68,9 +68,31 @@ export function SpaceProfileMenu({
       {/* The menu bar: pinned under the global header. A rule UNDER it (below the menu line), and none
           above it, over an opaque canvas backdrop so content scrolls cleanly beneath. */}
       {/* ── THE BAR SCROLLS, AND NOW IT LOOKS LIKE IT DOES ────────────────────────────────────
-          The tabs are `whitespace-nowrap` with no width, so they overflow into the `overflow-x-auto`
-          scroller rather than wrapping or clipping — that part was always right. What was missing was
-          any SIGN of it. Mobile browsers hide the scrollbar at rest, so on a 360px phone a Space with
+          🔴 `shrink-0` is load-bearing here, and the reason is NOT the obvious one. Read this before
+          removing it as redundant, because the obvious reading says it IS redundant.
+          The obvious reading: a flex child defaults to `flex-shrink: 1`, so the pills shrink. True but
+          incomplete, and on its own it is WRONG — a flex item also gets `min-width: auto`, which floors
+          it at its MIN-CONTENT width, and `whitespace-nowrap` makes min-content the full label. A
+          nowrap pill is therefore normally self-protecting, and `shrink-0` would be a no-op. Built
+          exactly that way in isolation, it is: seven pills, no overlap, scroller intact.
+          What defeats it is `tap-target` (app/globals.css), which sets BOTH axes:
+            min-block-size: var(--tap-min);  min-inline-size: var(--tap-min);
+          That explicit `min-inline-size` REPLACES `min-width: auto`, so the min-content floor is gone
+          and the pill may shrink all the way to `--tap-min`. The utility was added to this row for
+          VERTICAL rhythm (see the note on itemClasses below); the horizontal floor came along
+          silently and took the protection with it.
+          Measured at the default generation (--tap-min 32px), 390px wide, seven tabs: the pills
+          collapse from 65-98px to a uniform 56px, six of the seven labels overflow their own box, the
+          worst by 30px, and they render as "CalendarCircles" / "DiscussReviews". The row also fits, so
+          `overflow-x-auto` has nothing to scroll and the tabs past the edge are unreachable. The
+          shrinkage is WORST at the densest generations (bold 26px, balanced 32px) and mildest at the
+          kids bands, because a higher `--tap-min` is a wider floor.
+          So `shrink-0` is what restores the floor that `tap-target` removed. It is also why the Manage
+          item, which already carried `shrink-0`, was the one item that stayed legible — see its note below.
+          An earlier version of this note claimed the tabs "overflow into the `overflow-x-auto` scroller
+          rather than wrapping or clipping — that part was always right." It was not right.
+          The gutter bleed is the SECOND half, and it was never the whole fix. Mobile browsers hide the
+          scrollbar at rest, so on a 360px phone a Space with
           seven tabs (Home/Book/Events/Practices/Calendar/Circles/Reviews ≈ 536px) put roughly 210px of
           its own navigation past the right edge with nothing to suggest it was reachable.
           The fix is the gutter bleed: `-mx-4 px-4` (and the `sm:` pair) widens the scroller to the full
