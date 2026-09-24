@@ -59,7 +59,7 @@ export function SpaceProfileMenu({
       //     bands 46-56px), and the primary navigation of a Space profile was opting out of exactly
       //     the accommodation those viewers selected.
       // Padding stays as the resting size; min-block-size only ever raises.
-      'whitespace-nowrap rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors tap-target',
+      'shrink-0 whitespace-nowrap rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors tap-target',
       active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text',
     )
 
@@ -68,9 +68,21 @@ export function SpaceProfileMenu({
       {/* The menu bar: pinned under the global header. A rule UNDER it (below the menu line), and none
           above it, over an opaque canvas backdrop so content scrolls cleanly beneath. */}
       {/* ── THE BAR SCROLLS, AND NOW IT LOOKS LIKE IT DOES ────────────────────────────────────
-          The tabs are `whitespace-nowrap` with no width, so they overflow into the `overflow-x-auto`
-          scroller rather than wrapping or clipping — that part was always right. What was missing was
-          any SIGN of it. Mobile browsers hide the scrollbar at rest, so on a 360px phone a Space with
+          🔴 `shrink-0` on the pills is what MAKES this a scroller, and its absence was a real defect,
+          not a cosmetic one. An earlier version of this note claimed the tabs "overflow into the
+          `overflow-x-auto` scroller rather than wrapping or clipping — that part was always right".
+          It was not right. A flex child defaults to `flex-shrink: 1`, so the browser squeezed every
+          pill BELOW its intrinsic width until the row fit the container. The row therefore never
+          overflowed, `overflow-x-auto` never had anything to scroll, and `whitespace-nowrap` — which
+          forbids the text from reflowing into the narrower box it had just been given — pushed each
+          label straight over its neighbour. On a 390px phone the seven-tab Space rendered
+          "CalendarCircles" and "DiscussReviews" as overlapping glyphs, with the row NOT scrollable.
+          The `shrink-0` below is the fix: the pills keep their intrinsic width, the row genuinely
+          exceeds the container, and the scroller (plus the gutter bleed described next) does its job.
+          It is also why the Manage item already carried `shrink-0` and was the one item that stayed
+          legible — see its own note below.
+          The gutter bleed is the SECOND half, and it was never the whole fix. Mobile browsers hide the
+          scrollbar at rest, so on a 360px phone a Space with
           seven tabs (Home/Book/Events/Practices/Calendar/Circles/Reviews ≈ 536px) put roughly 210px of
           its own navigation past the right edge with nothing to suggest it was reachable.
           The fix is the gutter bleed: `-mx-4 px-4` (and the `sm:` pair) widens the scroller to the full

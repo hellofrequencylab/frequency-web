@@ -101,6 +101,27 @@ describe('the tab bar rises with the viewer like the chrome around it', () => {
   })
 })
 
+describe('the tab bar is a scroller, not a squeeze', () => {
+  // A flex child defaults to `flex-shrink: 1`. Without `shrink-0` the browser compressed every pill
+  // below its intrinsic width until the row FIT, so `overflow-x-auto` never had anything to scroll —
+  // and `whitespace-nowrap`, which forbids the text reflowing into that narrower box, laid each label
+  // over its neighbour ("CalendarCircles", "DiscussReviews") on a 390px phone. The invariant that
+  // produced the layout is "the pills never give way", so that is what is held here.
+  it('the profile tab pills refuse to shrink', () => {
+    expect(MENU).toMatch(/'shrink-0 whitespace-nowrap rounded-control/)
+  })
+
+  it('the row that holds them is still the scroller', () => {
+    expect(MENU).toMatch(/overflow-x-auto overscroll-x-contain/)
+  })
+
+  // The owner's console entry carried `shrink-0` from the start; the tabs beside it did not. Both
+  // must, or the bar is only half fixed.
+  it('the Manage item keeps its own shrink floor', () => {
+    expect(MENU).toMatch(/flex shrink-0 items-center gap-1 border-l/)
+  })
+})
+
 describe('the Edit control says Edit', () => {
   it('drops the redundant "Space" from the label', () => {
     expect(LAYOUT).toMatch(/label=\{manage\.staffViewing \? 'Edit \(staff\)' : 'Edit'\}/)
