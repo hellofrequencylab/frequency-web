@@ -462,7 +462,12 @@ describe('CalendarWorkspace', () => {
   // TWO LINES (owner ask 2026-09-22). The heading and its blurb are one line, every control is the
   // next, and the first-visit hint row is gone: its sentence lives on the Fullscreen control's own
   // title, which is where a person looking for the door would read it anyway.
-  it('condenses the header to two lines and carries the console hint on the control, not a row', () => {
+  // THE PAGE CONTROL SECTION IS TWO ROWS (LIVE-494, owner ask 2026-09-24: "no more than two
+  // rows"). It used to be five bands above the month -- the heading with its own control row, Ask
+  // Vera, Pencil it in, the grid's month-and-paging strip and the grid's layer chips -- for the
+  // same set the console has fitted on ONE line since LIVE-485. The heading is a heading again,
+  // and every control is in one bar of exactly two rows, in the console's group order.
+  it('draws the page controls as ONE bar of two rows, in the console group order', () => {
     const el = mount(<CalendarWorkspace {...operatorProps()} />)
     expect(el.querySelector('[data-calendar-console-hint]')).toBeNull()
     const control = el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!
@@ -471,19 +476,51 @@ describe('CalendarWorkspace', () => {
     // OWNER RULING 2026-09-22: the visible word Fullscreen is the control's accessible name, so no
     // aria-label overrides it. The title still carries the shortcut and what the control opens.
     expect(control.getAttribute('aria-label')).toBeNull()
-    // Line one: the heading and the blurb share one row. Line two: every control shares the next.
-    const head = el.querySelector('[data-calendar-workspace]')!.firstElementChild!
-    const [line1, line2] = [head.children[0]!, head.children[1]!]
-    expect(line1.querySelector('h2')?.textContent).toBe('Calendar')
-    // The blurb is the registry's, not a string copied here: LIVE-468 rewrote this wording and a
-    // pinned copy would have gone stale the moment it landed. What line one owes is the blurb for
-    // the showing view, beside the heading.
-    expect(line1.querySelector('p')?.textContent).toBe(calendarViewBlurb('admin', 'Frequency Lab'))
-    expect(line2.contains(control)).toBe(true)
-    expect(line2.querySelector('[aria-label="How to see the calendar"]')).not.toBeNull()
-    expect(head.children.length).toBe(2)
+
+    // The heading is ONE line now: the name of the page and the blurb, and no controls. The blurb
+    // is the registry's, not a string copied here -- LIVE-468 rewrote this wording and a pinned
+    // copy would have gone stale the moment it landed.
+    const heading = el.querySelector('[data-calendar-workspace]')!.firstElementChild!
+    expect(heading.querySelector('h2')?.textContent).toBe('Calendar')
+    expect(heading.querySelector('p')?.textContent).toBe(calendarViewBlurb('admin', 'Frequency Lab'))
+    expect(heading.querySelector('[data-calendar-console-open]')).toBeNull()
+    expect(heading.querySelector('[aria-label="How to see the calendar"]')).toBeNull()
+
+    // TWO ROWS, and exactly two: WHEN + HOW, then WHAT + ACTIONS. `head.children.length` used to
+    // pin this on the heading; it pins it on the bar now, and counts only the control rows -- the
+    // month-jump panel is a third child of the bar and is only in the tree while it is open.
+    const bar = el.querySelector<HTMLElement>('[data-calendar-page-header]')!
+    expect(bar.querySelector('[role="dialog"]')).toBeNull()
+    expect(bar.children.length).toBe(2)
+    const [row1, row2] = [bar.children[0]!, bar.children[1]!]
+
+    // Row one is WHEN then HOW.
+    expect(row1.querySelector('[data-calendar-page-month]')).not.toBeNull()
+    expect(row1.querySelector('[data-calendar-page-paging]')).not.toBeNull()
+    expect(row1.querySelector('[aria-label="How to see the calendar"]')).not.toBeNull()
+    // Row two is WHAT then ACTIONS.
+    expect(row2.querySelector('[aria-label="Show on the calendar"]')).not.toBeNull()
+    expect(row2.contains(control)).toBe(true)
+    expect([...row2.querySelectorAll('button')].some((b) => b.textContent?.includes('Pencil it in'))).toBe(true)
+
     // Never auto-enter, and nothing about the header opens it.
     expect(document.querySelector('[data-calendar-console]')).toBeNull()
+  })
+
+  // A VISITOR GETS THE BAR TOO. The grid runs with `hostChrome` on the page for everyone, so
+  // without this a signed-out visitor would be looking at a month grid with no way to leave the
+  // month it opened on. What they do not get is the groups that would be empty for them.
+  it('gives a visitor the month and its paging, and none of the operator groups', () => {
+    const el = mount(<CalendarWorkspace {...operatorProps()} adminAllowed={false} canManage={false} />)
+    const bar = el.querySelector<HTMLElement>('[data-calendar-page-header]')!
+    expect(bar.querySelector('[data-calendar-page-month] button [aria-live="polite"]')?.textContent).toBe('September 2026')
+    expect(bar.querySelector('[aria-label="Previous month"]')).not.toBeNull()
+    expect(bar.querySelector('[aria-label="Next month"]')).not.toBeNull()
+    expect(bar.querySelector('[aria-label="How to see the calendar"]')).toBeNull()
+    expect(bar.querySelector('[aria-label="Show on the calendar"]')).toBeNull()
+    expect(bar.querySelector('[data-calendar-console-open]')).toBeNull()
+    // And the grid it steers draws none of them itself, so there is exactly one of each.
+    expect(el.querySelectorAll('[aria-label="Previous month"]').length).toBe(1)
   })
 
   // 🔴 THE BLINK (owner report 2026-09-22). Opening and closing the console used to move the panel
@@ -560,14 +597,30 @@ describe('CalendarWorkspace', () => {
     window.history.replaceState(null, '', '/spaces/lab/calendar')
     const el = mount(<CalendarWorkspace {...operatorProps()} />)
     const pageGrid = el.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root]')!
-    // On the page the grid draws its own month, paging, jump and chips -- but NOT a view switcher
-    // (LIVE-490): the workspace draws ONE surface control above it whether or not the console is
-    // open, and the grid drawing ⊞/☰ beside it put "List" in the bar twice, over two different sets.
-    expect(pageGrid.querySelectorAll('[aria-label="Previous month"]').length).toBe(1)
+    const pageBar = el.querySelector<HTMLElement>('[data-calendar-page-header]')!
+    // THE PAGE IS A HOST NOW TOO (LIVE-494). It used to be the one place the grid still drew its
+    // own month, paging, jump and chips, because nothing above it did; the page control bar draws
+    // all four, so the grid draws none of them HERE either. The rule is the same one the console
+    // obeys and the reason is the same: a host may only take a control it actually draws, so each
+    // group below is checked to be in the bar, once, before the grid is checked not to have it.
+    for (const [what, selector] of [
+      ['the month', '[data-calendar-page-month]'],
+      ['the month jump', '[data-calendar-page-month-jump]'],
+      ['Prev', '[aria-label="Previous month"]'],
+      ['Next', '[aria-label="Next month"]'],
+      ['the layer chips', '[aria-label="Show on the calendar"]'],
+      ['the surface control', '[aria-label="How to see the calendar"]'],
+    ] as const) {
+      expect(el.querySelectorAll(selector).length, what).toBe(1)
+      expect(pageBar.querySelector(selector), what).not.toBeNull()
+      expect(pageGrid.querySelector(selector), what).toBeNull()
+    }
+    // And the grid never draws the ⊞/☰ switcher on the page (LIVE-490): the bar carries ONE
+    // surface control, and the grid drawing its own beside it put "List" in the bar twice, over
+    // two different sets.
     expect(pageGrid.querySelector('[aria-label="Calendar view"]')).toBeNull()
-    expect(el.querySelector('[aria-label="How to see the calendar"]')).not.toBeNull()
-    expect(pageGrid.querySelector('[aria-label="Show on the calendar"]')).not.toBeNull()
-    expect([...pageGrid.querySelectorAll('button')].some((b) => b.textContent?.includes('September 2026'))).toBe(true)
+    expect([...pageGrid.querySelectorAll('button')].some((b) => b.textContent?.includes('September 2026'))).toBe(false)
+    expect([...pageBar.querySelectorAll('button')].some((b) => b.textContent?.includes('September 2026'))).toBe(true)
 
     act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
     const console_ = document.querySelector<HTMLElement>('[data-calendar-console]')!
@@ -783,8 +836,13 @@ describe('CalendarWorkspace', () => {
     // NAME THE MONTH, not "the first polite live region in the grid". The grid gained a second one
     // when a date became movable (PROG-CAL15, the line a move leaves), and it is rendered FIRST, so
     // a loose selector that used to mean the month title started reading an empty region instead.
+    //
+    // IT IS READ OFF THE PAGE BAR NOW (LIVE-494). The page draws the month in its own two-row
+    // control header and both page grids run with `hostChrome`, so the grid holds no month to
+    // read. What this test asserts is unchanged, and is the whole point of LIVE-489: a vertical
+    // wheel over the PAGE grid must not page the month, and the same wheel inside the console must.
     const pageMonth = () =>
-      el.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root] button [aria-live="polite"]')!.textContent
+      el.querySelector<HTMLElement>('[data-calendar-page-month] button [aria-live="polite"]')!.textContent
 
     expect(pageMonth()).toBe('September 2026')
     wheel(surface(el))

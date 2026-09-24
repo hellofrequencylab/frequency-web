@@ -146,6 +146,25 @@ export const HOST_DRAWN_CONTROL_MARKS: Readonly<Record<keyof CalendarChrome, str
 }
 
 /**
+ * THE SAME RULE, FOR THE SECOND HOST (LIVE-494). Until this row the page was the one place the
+ * grid still drew its own chrome, so there was only ever one host to check. The page now draws a
+ * two-row control bar above the panel slider and passes `hostChrome` to both of its mounts, which
+ * makes it a host in exactly the sense `HOST_DRAWN_CONTROL_MARKS` was written for -- and an
+ * unchecked one would be the LIVE-475 dead end again with the page in the console's role.
+ *
+ * The names are the console's with `console` swapped for `page`, deliberately: two hosts drawing
+ * the same five controls should be greppable as a pair, and a reader who knows one knows the other.
+ */
+export const PAGE_DRAWN_CONTROL_MARKS: Readonly<Record<keyof CalendarChrome, string>> = {
+  monthTitle: 'data-calendar-page-month',
+  paging: 'data-calendar-page-paging',
+  viewSwitch: 'data-calendar-page-view-switch',
+  monthJump: 'data-calendar-page-month-jump',
+  layerFilters: 'data-calendar-page-layers',
+}
+
+
+/**
  * The day cell's height floor. A FILLING GRID HAS NO FLOOR (PROG-CAL13): six week rows share the
  * height the host gives them, so a cell that insists on 20/28 units of its own is what pushed the
  * last two weeks of the month off the bottom of the console. On the page the grid sizes to its

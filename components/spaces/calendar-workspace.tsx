@@ -11,8 +11,18 @@ import {
   type ReactNode,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { Maximize2 } from 'lucide-react'
+import { Maximize2, Plus } from 'lucide-react'
 import { EventCalendar } from '@/components/events/event-calendar'
+import {
+  CalendarLayerChips,
+  CalendarMonthTitle,
+  CalendarPaging,
+  MonthJumpPanel,
+  countByMonthKey,
+  monthCount,
+} from '@/components/events/calendar-chrome'
+import { addMonth, monthLabel } from '@/lib/events/calendar-grid'
+import { headerZone } from '@/lib/time/header-zone'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StaffCalendar, STAFF_CALENDAR_LAYERS } from '@/app/(main)/spaces/[slug]/settings/calendar/staff-calendar'
@@ -462,7 +472,10 @@ export function CalendarWorkspace({
         view={gridView}
         onViewChange={setGridView}
         fill={consoleOpen}
-        hostChrome={consoleOpen}
+        /* THE PAGE IS A HOST TOO NOW (LIVE-494), so this is unconditional rather than
+           `consoleOpen`: whichever bar is showing -- the page's two rows or the console's one --
+           draws the month, the paging, the jump and the chips, and the grid draws none of them. */
+        hostChrome
         hostViewSwitch
       />
       {guestFirstUse && (
@@ -507,28 +520,168 @@ export function CalendarWorkspace({
   // it, which is what the Fullscreen control's own title says, so the sentence moved onto the
   // control and the row (and its localStorage dismissal) retired.
   const heading = (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 className="text-lead font-bold text-text">Calendar</h2>
-        <p className="text-body-sm text-muted">{calendarViewBlurb(view, brandName)}</p>
+    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <h2 className="text-lead font-bold text-text">Calendar</h2>
+      <p className="text-body-sm text-muted">{calendarViewBlurb(view, brandName)}</p>
+    </div>
+  )
+
+  // ── THE PAGE CONTROL BAR (LIVE-494, owner ask 2026-09-24: "no more than two rows") ──────────
+  //
+  // The page used to spend FIVE bands above the month: the heading with its own control row, Ask
+  // Vera, Pencil it in, the grid's month-and-paging strip, and the grid's layer chips. The console
+  // has fitted the same set on ONE line since LIVE-485, because its header draws all of it and the
+  // grid inside draws none. The page never got that treatment -- LIVE-485 scoped it out in so many
+  // words ("on the page, where nothing else draws them, the grid's own header is unchanged") --
+  // so the two halves of the same calendar were arranged by where each control happened to be
+  // implemented. They are the same four groups in the same order now, at two densities:
+  //
+  //   page     row 1  WHEN (month, zone, Prev / Today / Next)   ...  HOW (surface + Guest)
+  //            row 2  WHAT (the layer chips)                    ...  ACTIONS
+  //   console  row 1  WHEN ... WHAT ... HOW ... ACTIONS, all on one line at `micro`
+  //
+  // 🔴 IT IS ABOVE THE SLIDER, NOT INSIDE THE GRID CARD, and that is a correctness rule rather
+  // than a layout taste. The page keeps all four panels mounted at once, so a bar drawn inside the
+  // grid renders TWICE (Guest and Calendar are both mounted); and List and Workflow are not grid
+  // mounts at all, so scoping it to the showing panel would leave those two surfaces with no
+  // surface control and no way back to the month -- the reachable dead end LIVE-475 exists to
+  // prevent. Above the slider there is exactly one bar and it is there on every panel.
+  //
+  // 🔴 AND THE PAGE IS NOW A HOST, so it carries the `HOST_DRAWN_CONTROL_MARKS` markers for every
+  // control it takes off the grid, exactly as the console does. `calendarChrome(true)` is passed
+  // by the page mounts whether or not the console is open. The LIVE-478 probe reads both host
+  // files now; a control taken from the grid that neither host draws still fails the build.
+  const pageMonthButtonRef = useRef<HTMLButtonElement | null>(null)
+  const [pageJumpOpen, setPageJumpOpen] = useState(false)
+  const [pageJumpYear, setPageJumpYear] = useState(month.year)
+  const pageCountByMonth = useMemo(() => countByMonthKey(items), [items])
+  const closePageJump = useCallback(() => {
+    setPageJumpOpen(false)
+    pageMonthButtonRef.current?.focus()
+  }, [])
+  const pageStep = useCallback(
+    (delta: number) => setMonth(addMonth(month.year, month.month1, delta)),
+    [month.year, month.month1],
+  )
+  const pageToday = useCallback(() => {
+    const now = new Date()
+    setMonth({ year: now.getFullYear(), month1: now.getMonth() + 1 })
+  }, [])
+  const nowForPage = new Date()
+  const pageOnCurrentMonth =
+    month.year === nowForPage.getFullYear() && month.month1 === nowForPage.getMonth() + 1
+
+  // The zone, named on the page too. THE SPACE'S ZONE ONLY, never the viewer fallback: headerZone
+  // falls back to the browser's zone and the browser cannot be read in the SSR pass. The console
+  // gets away with it because Dialog portals it client-side; this bar does not. A Space that has
+  // not set a zone says nothing here rather than saying two different things in two renders.
+  // The same two derivations the console call makes, named once so the page bar and the console
+  // cannot disagree about whether the surface showing has a month.
+  const pageSurfaceTitle = surface === 'workflow' ? 'Workflow' : 'Gatherings'
+
+  const pageZone = spaceTimeZone ? headerZone(spaceTimeZone, null) : null
+
+  // A VISITOR GETS THIS BAR TOO, and that is not a nicety. The grid runs with `hostChrome` on the
+  // page now, so it draws no month, no paging and no jump for ANYONE; if the bar were gated on
+  // `adminAllowed` a signed-out visitor would be left looking at a month grid with no way to leave
+  // the month it opened on. What a visitor does not get is the groups that have nothing in them
+  // for them: there is no surface to switch, no layer to hide and no console to open. A guest
+  // always has a month, because the only surface they can see is the grid.
+  const pageHasMonth = adminAllowed ? surfaceHasMonth(surface, listScope) : true
+
+  const pageBar = (
+    <div data-calendar-page-header className="flex flex-col gap-1.5 rounded-card border border-border bg-surface px-3 py-2 sm:px-4">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+        <div data-calendar-page-month data-calendar-page-month-jump className="relative flex min-w-0 items-center gap-1.5">
+          <CalendarMonthTitle
+            label={monthLabel(month.year, month.month1)}
+            hasMonth={pageHasMonth}
+            fallbackTitle={pageSurfaceTitle}
+            jumpOpen={pageJumpOpen}
+            onToggleJump={() => {
+              setPageJumpYear(month.year)
+              setPageJumpOpen((o) => !o)
+            }}
+            buttonRef={pageMonthButtonRef}
+          />
+          {pageHasMonth && pageZone ? (
+            <span
+              className="shrink-0 text-2xs text-muted"
+              title={`This Space keeps its calendar in ${pageZone.name}. Today and new dates use it.`}
+            >
+              {pageZone.words}
+            </span>
+          ) : null}
+          {pageHasMonth ? (
+            <div data-calendar-page-paging className="shrink-0">
+              <CalendarPaging onStep={pageStep} onToday={pageToday} onCurrentMonth={pageOnCurrentMonth} />
+            </div>
+          ) : null}
+        </div>
+        {adminAllowed ? (
+          <div data-calendar-page-view-switch className="flex shrink-0 flex-wrap items-center gap-2">
+            {viewControls}
+          </div>
+        ) : null}
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        {viewControls}
-        {adminAllowed && (
-          <Button
-            ref={openControlRef}
-            type="button"
-            size="sm"
-            variant="secondary"
-            data-calendar-console-open
-            title="Open the console (F)"
-            onClick={openConsole}
-          >
-            <Maximize2 className="h-4 w-4" aria-hidden /> Fullscreen
-          </Button>
+
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+        {adminAllowed && view === 'admin' ? (
+          <div data-calendar-page-layers className="flex min-w-0 items-center">
+            <CalendarLayerChips layers={STAFF_CALENDAR_LAYERS} hidden={hiddenLayers} onToggle={toggleLayer} density="micro" />
+          </div>
+        ) : (
+          <span />
         )}
-        {subscribe}
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {canManage && (
+            <Button type="button" size="sm" variant="secondary" onClick={pencilIn}>
+              <Plus className="h-4 w-4" aria-hidden /> Pencil it in
+            </Button>
+          )}
+          {adminAllowed && (
+            <Button
+              ref={openControlRef}
+              type="button"
+              size="sm"
+              variant="secondary"
+              data-calendar-console-open
+              title="Open the console (F)"
+              onClick={openConsole}
+            >
+              <Maximize2 className="h-4 w-4" aria-hidden /> Fullscreen
+            </Button>
+          )}
+          {subscribe}
+        </div>
       </div>
+
+      {/* The jump panel spans the bar under both rows, so opening it never reflows the controls.
+          Escape closes it and hands focus back to the month button, the same contract the console
+          header keeps. */}
+      {pageJumpOpen && pageHasMonth ? (
+        <div
+          className="border-t border-border pb-1 pt-2"
+          onKeyDown={(e) => {
+            if (e.key !== 'Escape') return
+            e.preventDefault()
+            e.stopPropagation()
+            closePageJump()
+          }}
+        >
+          <MonthJumpPanel
+            shownYear={month.year}
+            shownMonth1={month.month1}
+            jumpYear={pageJumpYear}
+            onJumpYear={setPageJumpYear}
+            countFor={(y, m1) => monthCount(pageCountByMonth, y, m1)}
+            onPick={(next) => {
+              setMonth(next)
+              closePageJump()
+            }}
+          />
+        </div>
+      ) : null}
     </div>
   )
 
@@ -536,6 +689,7 @@ export function CalendarWorkspace({
     return (
       <div className="space-y-4" data-calendar-workspace data-calendar-view="guest">
         {heading}
+        {pageBar}
         {guestBody}
       </div>
     )
@@ -611,9 +765,12 @@ export function CalendarWorkspace({
                     hiddenLayers={hiddenLayers}
                     onHiddenLayersChange={setHiddenLayers}
                     newEntryRequest={newEntryRequest}
-                    pencilButton={!consoleOpen}
+                    /* Pencil it in is a control, so it lives in the control bar with the rest of
+                       them. It was a band of its own above the grid, which is one of the five the
+                       page was spending before this row. */
+                    pencilButton={false}
                     fill={consoleOpen}
-                    hostChrome={consoleOpen}
+                    hostChrome
                     hostViewSwitch
                     moveByDrag={consoleOpen}
                     moveNotice={moveLine}
@@ -641,6 +798,7 @@ export function CalendarWorkspace({
           the panels. Before hydration each renders straight into its slot; after, each slot holds a
           portal host, which the layout effect above parks here or in the console. */}
       <div data-calendar-stage className={cn('space-y-4', consoleOpen && 'hidden')}>
+        {pageBar}
         {vera ? <div ref={veraSlotRef}>{veraHost ? null : vera}</div> : null}
         <div ref={stageSlotRef}>{stageHost ? null : panels}</div>
       </div>
