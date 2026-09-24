@@ -11,13 +11,14 @@ import { RailManifestFields } from '@/components/admin/rail/rail-manifest-fields
 import { RailManifestRepeat } from '@/components/admin/rail/rail-manifest-repeat'
 import type { RepeatRow } from '@/components/admin/rail/rail-field-value'
 import { isError } from '@/lib/action-result'
-import { PLAN_MAX_LINKS, planTargetDef, type SpacePlan } from '@/lib/calendar/plans'
+import { PLAN_MAX_FILES, PLAN_MAX_LINKS, planTargetDef, type SpacePlan } from '@/lib/calendar/plans'
+import { assetRefFromField, assetRefToField } from '@/lib/library/asset-ref'
 // The drawer is a rail composed from this declaration (ADR-1468, PROG-CAL2): the eyebrow, the
 // section headings and every field come from the manifest, through PLAN_RAIL. No field is declared
 // in this file; plan-rail-plan.test.ts fails if one is.
 import { SPACE_PLAN_MANIFEST } from '@/lib/studio/entities/space-plan'
 import { PLAN_RAIL, planStageLabel } from './plan-rail-plan'
-import { repeatLabel } from '@/lib/studio/kernel/manifest'
+import { REPEAT_ITEM_SELF } from '@/lib/studio/kernel/manifest'
 import type { CrmTask } from '@/lib/crm/tasks'
 import {
   acceptVeraChecklist,
@@ -62,7 +63,10 @@ export function PlanDrawer({
   // The manifest fields' values, keyed by manifest path, and the one repeat's rows. Both are built
   // from the Plan by helpers below so the key-reset block and the initial state cannot drift.
   const [values, setValues] = useState<Record<string, string>>(() => planValues(plan))
-  const [links, setLinks] = useState<RepeatRow[]>(() => planLinkRows(plan))
+  // The repeat groups' rows, keyed by the group's own path. ONE bag rather than one useState per
+  // collection: the manifest decides which groups exist (links, and since PROG-CAL14 images), and a
+  // drawer that named them one at a time is the hand-built drawer PROG-CAL2 deleted.
+  const [rows, setRows] = useState<Record<string, RepeatRow[]>>(() => planRepeatRows(plan))
   const [todoTitle, setTodoTitle] = useState('')
   // RELATIVE SCHEDULING (ADR-1386 P5). '' means this to-do has a fixed date, or none: the offset is
   // opt-in, because a checklist where every row must be anchored is a worse checklist.
@@ -89,7 +93,7 @@ export function PlanDrawer({
   if (planKey !== syncedKey) {
     setSyncedKey(planKey)
     setValues(planValues(plan))
-    setLinks(planLinkRows(plan))
+    setRows(planRepeatRows(plan))
     setProposal(null)
     setTodoTitle('')
     setTodoOffsetDays('')
@@ -215,9 +219,12 @@ export function PlanDrawer({
         notes: values.notes ?? '',
         stage,
         targetKind: values.targetKind ?? plan.targetKind,
-        // The repeat's rows, as the action's PlanLink shape. parsePlanLinks keeps only http(s) urls
-        // and caps at PLAN_MAX_LINKS; the control's `max` stops Add at the same cap.
-        links: links.map((row) => ({ url: row.url ?? '', label: row.label ?? '' })),
+        // The repeats' rows, as the action's own shapes. parsePlanLinks keeps only http(s) urls and
+        // parsePlanFiles only real Loom references; both cap where the controls' `max` stops Add.
+        links: (rows.links ?? []).map((row) => ({ url: row.url ?? '', label: row.label ?? '' })),
+        files: (rows.files ?? [])
+          .map((row) => assetRefFromField(row[REPEAT_ITEM_SELF]))
+          .filter((ref): ref is NonNullable<typeof ref> => ref !== null),
       })
       if (isError(res)) setError(res.error)
       else {
@@ -291,13 +298,21 @@ export function PlanDrawer({
             />
           </div>
         )}
+        {/* EVERY REPEAT THE PLAN DECLARES (PROG-CAL2, PROG-CAL14). The group's heading, its rows'
+            fields and its controls are the manifest's; what this file says is only the server cap
+            and the one line naming what the parser will drop, because the repeat has no per-row
+            error channel yet. A group added to the manifest and written by the action appears
+            here with nothing to change. */}
         {PLAN_RAIL.repeats.map((def) => (
           <div key={def.arrayPath} className="space-y-2">
-            <p className={labelClasses}>{repeatLabel(def)}</p>
-            <RailManifestRepeat def={def} rows={links} onChange={setLinks} max={PLAN_MAX_LINKS} disabled={pending} />
-            {/* parsePlanLinks drops anything that is not http(s) without a word, and the repeat has
-                no per-row error channel yet; this line is the honest substitute. */}
-            <p className="text-meta text-muted">Web addresses starting with http:// or https://.</p>
+            <RailManifestRepeat
+              def={def}
+              rows={rows[def.arrayPath] ?? []}
+              onChange={(next) => setRows((cur) => ({ ...cur, [def.arrayPath]: next }))}
+              max={REPEAT_CAP[def.arrayPath]}
+              disabled={pending}
+            />
+            {REPEAT_NOTE[def.arrayPath] && <p className="text-meta text-muted">{REPEAT_NOTE[def.arrayPath]}</p>}
           </div>
         ))}
 
@@ -579,7 +594,25 @@ function planValues(plan: SpacePlan | null): Record<string, string> {
   return out
 }
 
-/** The Plan's links as the repeat control's rows. */
-function planLinkRows(plan: SpacePlan | null): RepeatRow[] {
-  return (plan?.links ?? []).map((l) => ({ url: l.url, label: l.label }))
+/** The SERVER's cap per repeat group, so Add stops where the parser stops. A row typed past the
+ *  cap would be dropped on save with nothing said, which is what `max` exists to prevent. */
+const REPEAT_CAP: Record<string, number | undefined> = {
+  links: PLAN_MAX_LINKS,
+  files: PLAN_MAX_FILES,
+}
+
+/** What each repeat's parser silently drops, said out loud under the group. */
+const REPEAT_NOTE: Record<string, string | undefined> = {
+  links: 'Web addresses starting with http:// or https://.',
+  files: 'Pictures you have already put in the Loom. Upload one in the picker and it shows up here.',
+}
+
+/** The Plan's repeat collections as the controls' rows, keyed by the manifest's own paths. An
+ *  image is carried as the reference transport its control reads (lib/library/asset-ref.ts), so
+ *  the id survives the round trip instead of the drawer keeping a url the Loom cannot trace. */
+function planRepeatRows(plan: SpacePlan | null): Record<string, RepeatRow[]> {
+  return {
+    links: (plan?.links ?? []).map((l) => ({ url: l.url, label: l.label })),
+    files: (plan?.files ?? []).map((f) => ({ [REPEAT_ITEM_SELF]: assetRefToField(f) })),
+  }
 }

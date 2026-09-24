@@ -329,10 +329,15 @@ async function applyPlanField(editor: Editor, change: Extract<VeraChange, { kind
   if (!plan) return { error: 'That Plan no longer exists.' }
   const spec = veraFieldSpec('plan', change.path)
   if (!spec) return { error: `${change.path} is not a field Vera can set on a Plan.` }
+  // 🔴 EVERY WRITTEN COLUMN IS CARRIED, because the whole input is rebuilt and the whole parsed
+  // output is written: a column left out of this literal is a column BLANKED the next time Vera
+  // edits any other field. `files` is here for that reason and no other (PROG-CAL14): Vera cannot
+  // name it, and she would still have wiped a team's attached images by setting a note.
   const input: PlanInput = {
     title: plan.title,
     notes: plan.notes,
     links: plan.links,
+    files: plan.files,
     stage: plan.stage,
     targetKind: plan.targetKind,
     playbookId: plan.playbookId,

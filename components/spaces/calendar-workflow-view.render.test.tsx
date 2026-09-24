@@ -39,6 +39,7 @@ const plan: SpacePlan = {
   stage: 'production',
   notes: null,
   links: [],
+  files: [],
   targetKind: 'event',
   playbookId: null,
   ownerProfileId: null,

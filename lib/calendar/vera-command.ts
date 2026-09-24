@@ -205,12 +205,21 @@ const ENTRY_FIELDS: readonly Omit<FieldDef, 'section'>[] = [
  * added to SPACE_PLAN_MANIFEST (and written by `saveSpacePlan`) appears to Vera with no change here.
  * `stage` is left out because the `stage` kind moves every linked date with the Plan, which a bare
  * column write would not.
+ *
+ * 🔴 AN ASSET GROUP IS NOT VOCABULARY, and that is a rule about the KIND, not about one entity
+ * (PROG-CAL14). A Plan's Images group holds references to rows in the Loom. Vera proposes values as
+ * text, so the only id she could put in one is an invented id, and an invented id is a reference to
+ * nothing that the usage index would then count and safe delete would then refuse a delete for.
+ * Attaching a picture is a pick from a library a person is looking at, so it stays a person's job
+ * and Vera's vocabulary is unchanged by the group existing.
  */
 export function veraFieldVocabulary(): Record<VeraFieldTarget, VeraFieldSpec[]> {
   const rail = railForm(SPACE_PLAN_MANIFEST, PLAN_WRITES)
   const plan: VeraFieldSpec[] = [
     ...rail.fields.filter((f) => f.path !== 'stage').map((f): VeraFieldSpec => ({ target: 'plan', path: f.path, label: f.label, field: f })),
-    ...rail.repeats.map((r): VeraFieldSpec => ({ target: 'plan', path: r.arrayPath, label: repeatLabel(r), row: r })),
+    ...rail.repeats
+      .filter((r) => !r.fields.some((f) => f.kind === 'asset'))
+      .map((r): VeraFieldSpec => ({ target: 'plan', path: r.arrayPath, label: repeatLabel(r), row: r })),
   ]
   const entry: VeraFieldSpec[] = ENTRY_FIELDS.map((f) => ({ target: 'entry', path: f.path, label: f.label, field: f }))
   return { plan, entry }

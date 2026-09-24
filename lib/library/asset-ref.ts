@@ -75,6 +75,46 @@ export function assetValueFromPick(pick: AssetPick): AssetValue {
   return pick.assetId ? { assetId: pick.assetId, url: pick.url } : pick.url
 }
 
+// ── The field transport (PROG-CAL14) ─────────────────────────────────────────
+
+/** UUID shape: the only asset ids the transport below accepts, and the only ones the refresh will
+ *  query. A stored document is author-controlled data; filtering here means one malformed id cannot
+ *  fail the whole `.in()` batch (fail-open would then skip EVERY ref on the page). */
+const ASSET_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * ONE AssetRef as a single string, for a surface whose field values ARE strings.
+ *
+ * The rail carries every field value as one string (components/admin/rail/rail-field-value.ts:
+ * a FormData is strings and the autosave form reads its own snapshot back), so an `asset` field
+ * cannot hand its control an object. It hands it `"<assetId> <url>"`: the reference first, the
+ * cached url after the one space. A url has no space in it, and `assetRefFromField` refuses one
+ * that does, so the round trip is lossless.
+ *
+ * Empty string means nothing is chosen. PURE and total, and the inverse of `assetRefFromField`,
+ * so a control cannot half-adopt the seam by keeping the url and dropping the id (ADR-1253).
+ */
+export function assetRefToField(ref: AssetRef | null | undefined): string {
+  if (!ref || !ref.assetId || !ref.url) return ''
+  return `${ref.assetId} ${ref.url}`
+}
+
+/**
+ * The transport read back as a reference, or null when the string carries no usable one. A value
+ * that is not a well-formed id and an http(s) url is REFUSED rather than half-parsed: a stored id
+ * that points at nothing is the one thing the usage index and safe delete cannot survive.
+ */
+export function assetRefFromField(raw: string | null | undefined): AssetRef | null {
+  const text = (raw ?? '').trim()
+  const gap = text.indexOf(' ')
+  if (gap <= 0) return null
+  const assetId = text.slice(0, gap)
+  const url = text.slice(gap + 1).trim()
+  if (!ASSET_ID_RE.test(assetId)) return null
+  if (!/^https?:\/\//i.test(url) || /\s/.test(url)) return null
+  return { assetId, url }
+}
+
 // A React element must never be walked (its props are not ours) — same guard the
 // BlockRender walk uses.
 function isReactElement(value: object): boolean {
@@ -111,15 +151,10 @@ export function deepResolveAssetRefs(value: unknown): unknown {
   return changed ? next : value
 }
 
-// UUID shape — the only asset ids the refresh will query. A stored document is
-// author-controlled data; filtering here means one malformed id cannot fail the
-// whole `.in()` batch (fail-open would then skip EVERY ref on the page).
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
 /** Every distinct, well-formed asset id referenced anywhere in `value`. */
 export function collectAssetRefIds(value: unknown, into: Set<string> = new Set()): Set<string> {
   if (isAssetRef(value)) {
-    if (UUID_RE.test(value.assetId)) into.add(value.assetId)
+    if (ASSET_ID_RE.test(value.assetId)) into.add(value.assetId)
     return into
   }
   if (!value || typeof value !== 'object') return into

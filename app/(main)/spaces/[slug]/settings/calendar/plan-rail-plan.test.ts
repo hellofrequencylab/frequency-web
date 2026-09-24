@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { SPACE_PLAN_MANIFEST } from '@/lib/studio/entities/space-plan'
 import type { PlanInput } from '@/lib/calendar/plans'
+import { repeatLabel } from '@/lib/studio/kernel/manifest'
 import { PLAN_RAIL, PLAN_WRITES, planStageLabel } from './plan-rail-plan'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -20,11 +21,22 @@ import { PLAN_RAIL, PLAN_WRITES, planStageLabel } from './plan-rail-plan'
 const ROOT = join(import.meta.dirname, '..', '..', '..', '..', '..', '..')
 
 describe('the Plan drawer plan', () => {
-  it('renders the four rail fields in manifest order, and the links repeat', () => {
+  it('renders the four rail fields in manifest order, and both repeats', () => {
     // Owner ruling 2026-09-22: Stage and Production opens under Title, Notes last. The manifest
     // holds that order; this line notices if it moves.
     expect(PLAN_RAIL.fields.map((f) => f.path)).toEqual(['title', 'stage', 'targetKind', 'notes'])
-    expect(PLAN_RAIL.repeats.map((r) => r.arrayPath)).toEqual(['links'])
+    expect(PLAN_RAIL.repeats.map((r) => r.arrayPath)).toEqual(['links', 'files'])
+  })
+
+  it('reaches the images group through the asset picker, not through a control of its own', () => {
+    // PROG-CAL14, and the PROG-CAL2 seam is the point: the drawer gains a whole collection because
+    // the MANIFEST declares one, and its control is the kit's `asset` kind, which opens the same
+    // Loom popup every image field opens. Nothing here is a Plan-shaped upload path.
+    const files = PLAN_RAIL.repeats.find((r) => r.arrayPath === 'files')
+    expect(files?.fields.map((f) => f.kind)).toEqual(['asset'])
+    // The owner ruling 2026-09-22 says it in the LABEL: the picker is image-only, so this is
+    // Images and does not promise documents.
+    expect(repeatLabel(files!)).toBe('Images')
   })
 
   it('honours every written column: nothing saveSpacePlan writes is missing from the drawer', () => {
@@ -36,7 +48,7 @@ describe('the Plan drawer plan', () => {
     // started from one; the drawer has no business changing it, so it is not on the rail. If a
     // future field is added to PlanInput and forgotten here, this is the line that notices.
     type Edited = Exclude<keyof PlanInput, 'playbookId'>
-    const edited: readonly Edited[] = ['title', 'notes', 'links', 'stage', 'targetKind']
+    const edited: readonly Edited[] = ['title', 'notes', 'links', 'files', 'stage', 'targetKind']
     expect([...PLAN_WRITES].sort()).toEqual([...edited].sort())
   })
 
@@ -48,6 +60,17 @@ describe('the Plan drawer plan', () => {
     expect(planStageLabel('plan')).toBe('Planning')
     expect(planStageLabel('pencil')).toBe('Pencil')
     expect(planStageLabel('production')).toBe('Production')
+  })
+
+  it('renders every repeat the plan declares, rather than one it names', () => {
+    // The drawer used to hand the links rows to EVERY group it mapped over, so a second group
+    // would have rendered the links twice and saved nothing. The rows are keyed by the group's own
+    // path now, which is what let the Images group arrive with no control written for it.
+    const src = readFileSync(join(ROOT, 'app/(main)/spaces/[slug]/settings/calendar/plan-drawer.tsx'), 'utf8')
+    expect(src).toContain('rows={rows[def.arrayPath] ?? []}')
+    expect(src).not.toMatch(/rows=\{links\}/)
+    // And the save path carries the images, or the group would edit a collection nothing writes.
+    expect(src).toMatch(/files: \(rows\.files \?\? \[\]\)/)
   })
 
   it('leaves no hand-built Plan field in the drawer file', () => {

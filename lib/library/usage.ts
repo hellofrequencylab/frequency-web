@@ -7,7 +7,8 @@ import { pathForSlug } from '@/lib/page-editor/data'
 // THE USAGE INDEX (PROG-D4, ADR-1502): "which pages use this asset?"
 //
 // The read half of the seam ADR-1130 opened. A block document stores an asset
-// as { assetId, url } (lib/library/asset-ref.ts); this module asks the database
+// as { assetId, url } (lib/library/asset-ref.ts), and since PROG-CAL14 so does a
+// Space Plan's Images group; this module asks the database
 // which stored documents carry a ref to a given id, through the SECURITY INVOKER
 // function `library_asset_usage(uuid)` (supabase/migrations/20270345007500). The
 // scan is live: there is no table to refresh, so a document saved a second ago is
@@ -34,7 +35,7 @@ import { pathForSlug } from '@/lib/page-editor/data'
 
 /** One row of `library_asset_usage`, as PostgREST returns it. */
 export type AssetUsageRow = {
-  store: 'pages' | 'space_page' | 'space_layout' | string
+  store: 'pages' | 'space_page' | 'space_layout' | 'space_plan' | string
   space_id: string | null
   space_slug: string | null
   space_type: string | null
@@ -99,6 +100,18 @@ export function placeForUsageRow(row: AssetUsageRow): AssetUsagePlace {
         key,
         label: `Space profile blocks: ${spaceSlug}`,
         href: spaceSlug ? `/spaces/${spaceSlug}` : null,
+        live: row.live,
+        hits: row.hits,
+      }
+    // A Plan holds images the team attached (PROG-CAL14). `doc_key` is the Plan's id, which is a
+    // key and not copy, so it is never printed: the label names the Space whose calendar the Plan
+    // lives on, and `live` is false for a Plan that has been archived. The link goes to that
+    // calendar, which is the only door a Plan opens from.
+    case 'space_plan':
+      return {
+        key,
+        label: `Plan in ${spaceSlug || 'a Space'}`,
+        href: spaceSlug ? `/spaces/${spaceSlug}/settings/calendar` : null,
         live: row.live,
         hits: row.hits,
       }
