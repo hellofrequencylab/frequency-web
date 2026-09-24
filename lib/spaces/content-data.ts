@@ -157,6 +157,21 @@ export type SpaceCircleItem = {
   name: string
   about: string | null
   memberCount: number
+  /** The rest of the card (Circles block redesign). The reader's own COLS (lib/circles/store.ts) has
+   *  always selected every one of these; this projection simply stopped dropping them. They are what
+   *  turns the block's cards into the SAME CircleCard the /circles index and the Space's Circles tab
+   *  draw, instead of the bespoke name+about+count list it drew before. NO new query. */
+  memberCap: number
+  type: 'in-person' | 'online'
+  status: string
+  /** AXIS 2 (ADR-1015). A LISTED CLOSED circle is a real card, but offering it Join is a lie, so the
+   *  card swaps the button for a link to its own page. Carrying it is what makes that honest. */
+  access: string | null
+  imageUrl: string | null
+  /** The place line. Null for an online circle, where the card says "Online" on its own. */
+  neighborhood: string | null
+  /** The Space Circle (ADR-1391/1393) — it leads the list, and the card can say so. */
+  isSpacePrimary: boolean
 }
 
 /** A Space-admin reply published under a member review (Reviews redesign). Null on a review with no
@@ -821,6 +836,13 @@ export async function getSpaceCommunity(spaceId: string): Promise<SpaceCircleIte
       name: c.name,
       about: c.about ?? null,
       memberCount: c.member_count ?? 0,
+      memberCap: c.member_cap ?? 0,
+      type: c.type === 'online' ? ('online' as const) : ('in-person' as const),
+      status: c.status,
+      access: c.access ?? null,
+      imageUrl: c.image_url ?? null,
+      neighborhood: c.neighborhood ?? null,
+      isSpacePrimary: c.is_space_primary === true,
     }))
   } catch {
     return []
