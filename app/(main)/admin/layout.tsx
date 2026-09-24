@@ -57,7 +57,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               EVERY breakpoint — the sub-nav row it absorbed is inside this same container. */}
           {/* Owner directive (ADR-790): the search command bar sits ON TOP, the world sub-nav menu BELOW
               it — so the Resonance CRM (and every world) reads "search, then the tab menu under it". */}
-          <div className="sticky top-[var(--app-header-h)] z-20 mb-6 border-b border-border bg-[var(--color-canvas)]">
+          <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 mb-6 border-b border-border bg-[var(--color-canvas)]">
             <div className="py-2.5">
               <AdminSearchBar role={role} webRole={webRole} staffRole={staffRole} />
             </div>
