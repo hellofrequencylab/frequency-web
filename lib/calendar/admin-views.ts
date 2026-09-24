@@ -111,3 +111,74 @@ export function rememberCalendarView(slug: string, view: CalendarAdminView): voi
   if (typeof document === 'undefined') return
   document.cookie = `${calendarViewCookieName(slug)}=${view}; Path=/; Max-Age=31536000; SameSite=Lax`
 }
+
+// ─── ONE CONTROL, NOT TWO (LIVE-490, owner ask 2026-09-23: the List states "are super confused and
+// need to be minimized ... into one system / controls") ──────────────────────────────────────────
+//
+// "List" used to name TWO controls in the same header bar, over different sets:
+//   · the grid / list switcher (components/events/calendar-chrome.tsx), which showed THIS MONTH as
+//     an agenda, and
+//   · the Calendar / List / Workflow panel toggle, whose List is the ALL-TIME index of gatherings.
+// calendar-chrome.tsx carried a comment warning they were not the same control. A comment is not a
+// fix: a reader still met one word meaning two things, and the bar changed SHAPE between panels
+// because the switcher was only handed to the Calendar and Guest panels.
+//
+// So the two collapse into ONE surface a reader picks from -- Grid, List, Workflow -- and the List
+// surface carries its own scope (this month, or everything). Guest stays OUTSIDE this control: it
+// is an audience preview, not a way of looking, and it has neither Workflow nor the all-time index.
+//
+// The panel values above are unchanged, so every existing `?view=` deep link still resolves: this
+// is a projection over them, not a replacement.
+
+/** How the calendar is being looked at. Guest is an audience, not a surface, so it is not here. */
+export const CALENDAR_SURFACES = ['grid', 'list', 'workflow'] as const
+export type CalendarSurface = (typeof CALENDAR_SURFACES)[number]
+
+/** What the List surface is listing. Only ever read when the surface is `list`. */
+export type CalendarListScope = 'month' | 'all'
+
+export const CALENDAR_SURFACE_DEFS: readonly { surface: CalendarSurface; label: string }[] = [
+  { surface: 'grid', label: 'Grid' },
+  { surface: 'list', label: 'List' },
+  { surface: 'workflow', label: 'Workflow' },
+] as const
+
+/** The surface a (panel, grid-view) pair is showing. The all-time List panel and a Calendar panel
+ *  switched to its agenda are BOTH the List surface; the scope below is what separates them. */
+export function surfaceOf(view: CalendarAdminView, gridView: 'grid' | 'list'): CalendarSurface {
+  if (view === 'workflow') return 'workflow'
+  if (view === 'list') return 'list'
+  return gridView === 'list' ? 'list' : 'grid'
+}
+
+/** `all` only on the dedicated index panel; a Calendar or Guest agenda is always this month's. */
+export function listScopeOf(view: CalendarAdminView): CalendarListScope {
+  return view === 'list' ? 'all' : 'month'
+}
+
+/** The panel + grid-view a surface maps back onto, keeping the viewer's audience.
+ *  `audience` is 'guest' only while the Guest preview is showing; Guest has no all-time index and
+ *  no Workflow, so both fall back to the team's panel the way selecting them always did. */
+export function viewForSurface(
+  surface: CalendarSurface,
+  scope: CalendarListScope,
+  audience: 'guest' | 'staff',
+): { view: CalendarAdminView; gridView: 'grid' | 'list' } {
+  if (surface === 'workflow') return { view: 'workflow', gridView: 'grid' }
+  if (surface === 'list') {
+    if (scope === 'all' && audience === 'staff') return { view: 'list', gridView: 'list' }
+    return { view: audience === 'guest' ? 'guest' : 'admin', gridView: 'list' }
+  }
+  return { view: audience === 'guest' ? 'guest' : 'admin', gridView: 'grid' }
+}
+
+/** Whether the header's WHEN group (the month, its jump, and Prev / Today / Next) steers anything.
+ *  An all-time index and the Workflow board have no month, so drawing a month beside them is a
+ *  control that does nothing -- which is what the owner was looking at in the List panel, where the
+ *  bar still said "September 2026" over a list running into October. A control that is drawn is a
+ *  control that works, so these hide rather than sit there dead. */
+export function surfaceHasMonth(surface: CalendarSurface, scope: CalendarListScope): boolean {
+  if (surface === 'workflow') return false
+  if (surface === 'list') return scope === 'month'
+  return true
+}

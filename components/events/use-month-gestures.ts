@@ -66,6 +66,22 @@ export function useMonthGestures(
     let lockedSince = 0
     let lastEventAt = 0
 
+    // 🔴 WHERE THE WHEEL'S SCROLL-TAKER STOPS LOOKING (LIVE-489, owner report 2026-09-23: "the
+    // calendar is still glitching but only when I move the mouse"). The taker walks UP from what the
+    // wheel hit until it reaches this boundary, so the boundary decides which scrollers it can see.
+    //
+    // It used to be the grid itself, which meant only the grid's own DESCENDANTS counted -- a busy
+    // day's cell, the agenda. But vertical paging is on in exactly one place, the console, and the
+    // console's scroll container (`panels`, overflow-y-auto) is portaled in ABOVE the grid: an
+    // ANCESTOR, which the walk reached its boundary before ever seeing. So whenever the console's
+    // content overflowed, a wheel meant to scroll it was preventDefault'd and paged the month
+    // instead. On a trackpad that is a light flick (STEP_PX is 60), which is what read as the
+    // calendar glitching under the pointer.
+    //
+    // The console's KEY handler never had this bug: it passes the console root and so walks past
+    // the scroller correctly. This takes the same boundary, which is all the asymmetry ever was.
+    const scrollBoundary = el.closest('[data-calendar-console]') ?? el
+
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) return // pinch-zoom and browser zoom are not month changes
       const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? el.clientHeight || 600 : 1
@@ -75,7 +91,7 @@ export function useMonthGestures(
       if (horizontal ? !horizontalOn : !vertical) return
       const delta = horizontal ? dx : dy
       // A cell that scrolls its own items, or a scrolling agenda under the pointer, keeps its wheel.
-      if (!horizontal && verticalScrollTaker(e.target, delta, el)) return
+      if (!horizontal && verticalScrollTaker(e.target, delta, scrollBoundary)) return
       e.preventDefault()
       const now = performance.now()
       const quiet = now - lastEventAt > QUIET_MS

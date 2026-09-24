@@ -115,11 +115,17 @@ export interface CalendarChrome {
  * makes it measurable rather than a promise in a comment: for every control this function takes
  * away, the console header has to carry that control's marker, or the LIVE-478 probe fails.
  */
-export function calendarChrome(hostChrome: boolean): CalendarChrome {
+export function calendarChrome(hostChrome: boolean, hostViewSwitch = false): CalendarChrome {
   return {
     monthTitle: !hostChrome,
     paging: !hostChrome,
-    viewSwitch: !hostChrome,
+    // THE SWITCHER CAN COME OFF ON ITS OWN (LIVE-490). A host may draw the grid / list switcher
+    // WITHOUT owning the rest of the chrome: the calendar workspace draws one surface control --
+    // Grid, List, Workflow -- above the grid whether or not the console is open, so on the page the
+    // grid drawing its own ⊞/☰ beside it put the word "List" in the bar twice, over two different
+    // sets. That is the confusion this row removed. Everything else still moves as one, and the
+    // same rule governs this flag as the other four: it may only be taken by a host that draws it.
+    viewSwitch: !hostChrome && !hostViewSwitch,
     monthJump: !hostChrome,
     layerFilters: !hostChrome,
   }
@@ -138,6 +144,25 @@ export const HOST_DRAWN_CONTROL_MARKS: Readonly<Record<keyof CalendarChrome, str
   monthJump: 'data-calendar-console-month-jump',
   layerFilters: 'data-calendar-console-layers',
 }
+
+/**
+ * THE SAME RULE, FOR THE SECOND HOST (LIVE-494). Until this row the page was the one place the
+ * grid still drew its own chrome, so there was only ever one host to check. The page now draws a
+ * two-row control bar above the panel slider and passes `hostChrome` to both of its mounts, which
+ * makes it a host in exactly the sense `HOST_DRAWN_CONTROL_MARKS` was written for -- and an
+ * unchecked one would be the LIVE-475 dead end again with the page in the console's role.
+ *
+ * The names are the console's with `console` swapped for `page`, deliberately: two hosts drawing
+ * the same five controls should be greppable as a pair, and a reader who knows one knows the other.
+ */
+export const PAGE_DRAWN_CONTROL_MARKS: Readonly<Record<keyof CalendarChrome, string>> = {
+  monthTitle: 'data-calendar-page-month',
+  paging: 'data-calendar-page-paging',
+  viewSwitch: 'data-calendar-page-view-switch',
+  monthJump: 'data-calendar-page-month-jump',
+  layerFilters: 'data-calendar-page-layers',
+}
+
 
 /**
  * The day cell's height floor. A FILLING GRID HAS NO FLOOR (PROG-CAL13): six week rows share the

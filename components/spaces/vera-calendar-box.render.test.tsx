@@ -486,3 +486,58 @@ describe('VeraCalendarBox, the suggested text', () => {
     expect(box.className).not.toMatch(/#[0-9a-fA-F]{3,8}/)
   })
 })
+
+// ── VERA PROPOSES IN THE SPACE'S ZONE (LIVE-471) ────────────────────────────────────────────────
+// Ask Vera read the operator's BROWSER zone, so "put something in on Saturday morning" meant
+// Saturday morning wherever the operator happened to be that week, not where the Space is.
+
+/** Pin what this jsdom "browser" says its zone is, the way the box read it before this row. */
+function pinBrowserZone(timeZone: string) {
+  const real = Intl.DateTimeFormat.prototype.resolvedOptions
+  vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockImplementation(function (
+    this: Intl.DateTimeFormat,
+  ) {
+    return { ...real.call(this), timeZone }
+  })
+}
+
+function mountWithZone(spaceTimeZone: string | null) {
+  container = document.createElement('div')
+  document.body.appendChild(container)
+  root = createRoot(container)
+  act(() =>
+    root!.render(
+      <VeraCalendarBox slug="lab" year={2026} month1={9} plans={[]} events={[]} spaceTimeZone={spaceTimeZone} />,
+    ),
+  )
+  return container!
+}
+
+describe('VeraCalendarBox: what zone a proposal is read in', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('sends the SPACE zone, not the zone the operator is sitting in', async () => {
+    pinBrowserZone('Europe/Lisbon')
+    mocks.command.mockResolvedValueOnce({ data: { kind: 'proposal', changes: [], note: 'Nothing to do.' } })
+    const el = mountWithZone('America/Los_Angeles')
+    openAndAsk(el, 'Pencil something in on Saturday morning')
+    await settle(() => {
+      el.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    expect(mocks.command).toHaveBeenCalledTimes(1)
+    const [, payload] = mocks.command.mock.calls[0] as [string, { timeZone: string }]
+    expect(payload.timeZone).toBe('America/Los_Angeles')
+  })
+
+  it('falls back to the browser zone ONLY when the Space has never said', async () => {
+    pinBrowserZone('Europe/Lisbon')
+    mocks.command.mockResolvedValueOnce({ data: { kind: 'proposal', changes: [], note: 'Nothing to do.' } })
+    const el = mountWithZone(null)
+    openAndAsk(el, 'Pencil something in on Saturday morning')
+    await settle(() => {
+      el.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    const [, payload] = mocks.command.mock.calls[0] as [string, { timeZone: string }]
+    expect(payload.timeZone).toBe('Europe/Lisbon')
+  })
+})

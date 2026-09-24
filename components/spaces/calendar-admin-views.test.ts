@@ -61,8 +61,12 @@ describe('Admin Calendar views (ADR-1464, ADR-1467, HYG-118)', () => {
   })
 
   it('switches views with buttons, not a Link navigation', () => {
-    expect(toggle).toContain('Calendar views')
-    expect(toggle).toContain('CALENDAR_ADMIN_VIEW_DEFS')
+    // ONE CONTROL (LIVE-490): the box is now the SURFACE -- Grid / List / Workflow -- and no longer
+    // the panel list, because the panel list carried a "List" that collided with the grid / list
+    // switcher's own. What this test has always been about is unchanged and asserted below: it
+    // switches with buttons, never a Link navigation.
+    expect(toggle).toContain('How to see the calendar')
+    expect(toggle).toContain('CALENDAR_SURFACE_DEFS')
     expect(toggle).toContain('onSelect')
     expect(toggle).not.toContain('adminViewHref')
     expect(toggle).not.toContain("from 'next/link'")

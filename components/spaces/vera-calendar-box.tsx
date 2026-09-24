@@ -20,7 +20,7 @@ import {
   type VeraMode,
 } from '@/lib/calendar/vera-command'
 import { shortDateLabel } from '@/lib/calendar/short-date'
-import { browserZone } from '@/lib/calendar/browser-zone'
+import { newDateZone } from '@/lib/calendar/browser-zone'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import {
@@ -110,6 +110,7 @@ export function VeraCalendarBox({
   month1,
   plans,
   events,
+  spaceTimeZone = null,
   onApplied,
 }: {
   slug: string
@@ -117,6 +118,9 @@ export function VeraCalendarBox({
   month1: number
   plans: SpacePlan[]
   events: CalendarEvent[]
+  /** The Space's own zone (spaces.time_zone, LIVE-471). Every date Vera proposes is read and written
+   *  in it; the viewer's browser zone decides only when the Space has never said. */
+  spaceTimeZone?: string | null
   /** Called once at least one change landed, so the shell can refresh what it derives. */
   onApplied?: (results: VeraApplyResult[]) => void
 }) {
@@ -188,7 +192,7 @@ export function VeraCalendarBox({
     setClarification(null)
     setFreeText('')
     start(async () => {
-      const res = await veraCalendarCommand(slug, { ask: text, mode, year, month1, timeZone: browserZone() })
+      const res = await veraCalendarCommand(slug, { ask: text, mode, year, month1, timeZone: newDateZone(spaceTimeZone) })
       if ('error' in res) {
         setProposal(null)
         setError(res.error)
@@ -212,7 +216,7 @@ export function VeraCalendarBox({
         mode,
         year,
         month1,
-        timeZone: browserZone(),
+        timeZone: newDateZone(spaceTimeZone),
         transcript: clarification.transcript,
         answer: text,
       })

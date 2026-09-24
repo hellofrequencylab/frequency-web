@@ -1,17 +1,24 @@
 'use client'
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type Ref } from 'react'
-import { ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Plus, X } from 'lucide-react'
+import { CircleHelp, Plus, X } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
 import { StatusChip } from '@/components/admin/status'
 import { addMonth, monthLabel } from '@/lib/events/calendar-grid'
-import { CalendarLayerChips, CalendarViewSwitch, MonthJumpPanel, countByMonthKey, monthCount } from '@/components/events/calendar-chrome'
+import {
+  CalendarLayerChips,
+  CalendarMonthTitle,
+  CalendarPaging,
+  MonthJumpPanel,
+  countByMonthKey,
+  monthCount,
+} from '@/components/events/calendar-chrome'
 import { verticalScrollTaker } from '@/components/events/use-month-gestures'
 import { agendaForMonth, type ListIndexItem } from '@/lib/calendar/list-index'
 import { itemSelectedClass, itemTitleClass, type CalendarLayerKey } from '@/lib/calendar/registry'
-import { timezoneLabel } from '@/lib/spaces/booking-format'
+import { headerZone } from '@/lib/time/header-zone'
 import { cn } from '@/lib/utils'
 
 // THE CALENDAR CONSOLE (PROG-CAL12, owner ask 2026-09-22). The Space calendar's full-screen edit mode:
@@ -64,12 +71,14 @@ const SHORTCUTS: readonly { keys: string[]; what: string }[] = [
   { keys: ['Esc'], what: 'Put a date being moved back, then close the drawer, then the console' },
 ]
 
-function viewerZone(): { name: string; short: string } {
+/** THE VIEWER'S OWN ZONE, raw, for the header to fall back to. `browserZone()` is not used here
+ *  because it substitutes the HOUSE zone when Intl cannot say, and a header that has nothing to
+ *  report should say "Local time" rather than claim Pacific over a calendar nobody set. */
+function viewerZoneName(): string {
   try {
-    const name = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
-    return { name, short: timezoneLabel(name) }
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || ''
   } catch {
-    return { name: 'UTC', short: 'UTC' }
+    return ''
   }
 }
 
@@ -90,8 +99,8 @@ export function CalendarConsole({
   month,
   onMonthChange,
   viewControls,
-  gridView,
-  onGridViewChange,
+  hasMonth = true,
+  surfaceTitle = 'Calendar',
   layers,
   hiddenLayers,
   onToggleLayer,
@@ -101,6 +110,7 @@ export function CalendarConsole({
   onOpenPlan,
   onPencil,
   resultLine,
+  spaceTimeZone = null,
   stageRef,
   veraRef,
 }: {
@@ -117,8 +127,12 @@ export function CalendarConsole({
    *  them, so they arrive as state the workspace holds rather than as a copy of the grid's.
    *  `gridView` is absent on a panel that is not a calendar (List, Workflow), and `layers` is
    *  absent on a panel with only the public layer (Guest preview). */
-  gridView?: 'grid' | 'list'
-  onGridViewChange?: (next: 'grid' | 'list') => void
+  /** Whether the showing surface HAS a month (lib/calendar/admin-views.ts). False on the all-time
+   *  List and on Workflow, where the month label and Prev / Today / Next steer nothing: the owner
+   *  was looking at a bar that said "September 2026" over a list running into October (LIVE-490). */
+  hasMonth?: boolean
+  /** What the heading says when there is no month to say. Names the surface being read. */
+  surfaceTitle?: string
   layers?: readonly CalendarLayerKey[]
   hiddenLayers?: ReadonlySet<CalendarLayerKey>
   onToggleLayer?: (key: CalendarLayerKey) => void
@@ -133,6 +147,9 @@ export function CalendarConsole({
    *  speaks it through its own live region, so this line is the sighted half and does not announce
    *  a second time. Empty until something happens. */
   resultLine?: string | null
+  /** The Space's own zone (spaces.time_zone, LIVE-471): what the header names beside the month, and
+   *  what a new date is written in. Null when the Space has never said. */
+  spaceTimeZone?: string | null
   /** Where the workspace parks the live panel set. See THE STAGE SLOT above. */
   stageRef: Ref<HTMLDivElement>
   /** Where the workspace parks Ask Vera: the foot of the side bar. Absent for a viewer who cannot
@@ -147,9 +164,11 @@ export function CalendarConsole({
   // `hostChrome` only because this header carries it: see HOST_DRAWN_CONTROL_MARKS.
   const [jumpOpen, setJumpOpen] = useState(false)
   const [jumpYear, setJumpYear] = useState(month.year)
-  // The console only ever renders on the client (Dialog portals there), so the browser's zone is safe
-  // to read once. It is the zone new pencils default to and the zone the today ring is drawn in.
-  const [zone] = useState(viewerZone)
+  // The Space's zone needs nothing read at all; only the fallback touches the browser, and the
+  // console only ever renders on the client (Dialog portals there), so that read is safe. Memoised
+  // on the Space's zone so a save in Space settings is reflected without closing the console, and so
+  // the header and the drawer always name the same zone a new date is written in.
+  const zone = useMemo(() => headerZone(spaceTimeZone, viewerZoneName()), [spaceTimeZone])
 
   const { year, month1 } = month
   const label = monthLabel(year, month1)
@@ -162,6 +181,11 @@ export function CalendarConsole({
     const now = new Date()
     onMonthChange({ year: now.getFullYear(), month1: now.getMonth() + 1 })
   }, [onMonthChange])
+  // Today is disabled on the month already showing (LIVE-494). Read at render rather than memoised
+  // on nothing: a console left open across midnight on the last day of a month would otherwise keep
+  // a stale answer, and the cost is two integer reads.
+  const nowForToday = new Date()
+  const onCurrentMonth = year === nowForToday.getFullYear() && month1 === nowForToday.getMonth() + 1
 
   useEffect(() => {
     if (!open) return
@@ -262,65 +286,113 @@ export function CalendarConsole({
             marker is not here. */}
         <header
           data-calendar-console-header
-          className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-border px-3 py-1.5 sm:px-4 lg:col-span-2"
+          /* ONE ROW (owner ask 2026-09-24). This used to be `flex-wrap`, and at every width the
+             owner actually uses it wrapped to two: the WHEN group and the chips took the first
+             line and everything else fell to a second. Nothing is hidden to fix that -- the groups
+             are drawn at the `micro` density instead, and the row is `nowrap` with its own
+             horizontal scroll as the only escape hatch, so a phone-width console slides the bar
+             sideways rather than growing a second line that eats the month.
+
+             🔴 `overflow-x-auto` IS NOT A SCROLLBAR HERE ON ANY REAL WIDTH: the groups measure
+             under the console's minimum at `sm` and up. It exists so that an unexpected width, a
+             long zone name or a type-scale preset degrades by sliding instead of by reflowing the
+             stage under it. */
+          className="flex min-w-0 flex-col border-b border-border px-3 py-1.5 sm:px-4 lg:col-span-2"
         >
-          {/* WHEN. */}
-          <div data-calendar-console-month className="relative flex min-w-0 items-center gap-2">
+          {/* THE CONTROL ROW ITSELF. `nowrap`, so the groups below cannot fall to a second line;
+              the result line and the jump panel are SIBLINGS of this row, not members of it, which
+              is what they used to rely on `flex-wrap` and a `w-full` child to achieve. */}
+          <div className="flex min-w-0 flex-nowrap items-center gap-x-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {/* WHEN, and only where there IS a when (LIVE-490). The all-time List and the Workflow
+              board have no month, so the label, its jump and Prev / Today / Next hide there rather
+              than sit in the bar doing nothing. Nothing is stranded by this: neither of those
+              panels draws a month grid, so there is no control coming off a grid that the host has
+              stopped drawing -- the LIVE-475 dead end this header exists to avoid. */}
+          <div
+            data-calendar-console-month
+            className="relative flex min-w-0 shrink items-center gap-1.5"
+          >
             {/* ONE ANNOUNCEMENT, ALWAYS THIS ONE. The grids inside the console run with `hostChrome`,
                 so none of them draws a month title and none of them speaks: this heading is the
                 month, and it says so once whichever panel is showing. The button inside it is the
                 month-and-year jump, which is where a reader looks for it. */}
-            <h2 id="calendar-console-title" className="min-w-0 truncate text-lead font-bold text-text">
-              <button
-                ref={monthButtonRef}
-                data-calendar-console-month-jump
-                type="button"
-                onClick={() => {
-                  setJumpYear(year)
-                  setJumpOpen((o) => !o)
-                }}
-                aria-expanded={jumpOpen}
-                aria-haspopup="dialog"
-                title="Jump to a month"
-                className="tap-target inline-flex items-center gap-1 rounded-control px-1.5 py-0.5 transition-colors hover:bg-surface-elevated"
-              >
-                <span aria-live="polite">{label}</span>
-                <ChevronDown className={cn('h-4 w-4 shrink-0 text-muted transition-transform', jumpOpen && 'rotate-180')} aria-hidden />
-              </button>
-            </h2>
-            <span className="shrink-0 text-meta text-muted" title={`Today and new dates use ${zone.name}`}>
-              {zone.short}
+            {/* 🔴 THIS HEADING ALWAYS EXISTS, whatever the surface: it is the console dialog's
+                `aria-labelledby` target, so hiding it on a monthless surface would leave the dialog
+                with no accessible name at all. On a surface that HAS a month it is the month, and
+                the button inside it is the month-and-year jump. On one that does not, it names what
+                you are actually looking at instead -- which is the thing the bar was failing to say
+                while it showed "September 2026" over an all-time list. */}
+            {/* ONE DEFINITION, SHARED WITH THE GRID (LIVE-494). This heading and the grid's own
+                were two hand-written copies of the same control at two different sizes; they are
+                one component now and the size is a density. `data-calendar-console-month-jump`
+                rides the group rather than the trigger, because the trigger is no longer written
+                here -- the marker still says what it always said, that the CONSOLE draws this. */}
+            <CalendarMonthTitle
+              headingId="calendar-console-title"
+              label={label}
+              hasMonth={hasMonth}
+              fallbackTitle={surfaceTitle}
+              jumpOpen={jumpOpen}
+              onToggleJump={() => {
+                setJumpYear(year)
+                setJumpOpen((o) => !o)
+              }}
+              buttonRef={monthButtonRef}
+              /* THE MARKER RIDES THE TRIGGER, not the box around it. `CalendarMonthTitle` stamps
+                 it only when there IS a jump, so on a surface with no month this header claims no
+                 control it does not draw -- which is the one thing HOST_DRAWN_CONTROL_MARKS is
+                 there to catch. The literal stays in this file, which is what the LIVE-478 probe
+                 reads. */
+              jumpMark="data-calendar-console-month-jump"
+              density="micro"
+            />
+            {hasMonth ? (
+            <span
+              className="shrink-0 text-2xs text-muted"
+              title={
+                zone.isSpaceZone
+                  ? `This Space keeps its calendar in ${zone.name}. Today and new dates use it.`
+                  : `This Space has not set a time zone, so today and new dates use yours${zone.name ? ` (${zone.name})` : ''}.`
+              }
+            >
+              {zone.words}
             </span>
+            ) : null}
           </div>
 
-          <div data-calendar-console-paging className="flex items-center gap-0.5 rounded-control border border-border p-0.5">
-            <IconButton label="Previous month" onClick={() => step(-1)}>
-              <ChevronLeft className="h-4 w-4" aria-hidden />
-            </IconButton>
-            <Button type="button" variant="ghost" size="sm" onClick={today}>
-              Today
-            </Button>
-            <IconButton label="Next month" onClick={() => step(1)}>
-              <ChevronRight className="h-4 w-4" aria-hidden />
-            </IconButton>
+          {hasMonth ? (
+          /* The bordered box is gone with the wrap: at `micro` the three sit directly in the row,
+             which is a group less furniture in a bar that has to hold everything on one line.
+             Today now DISABLES on the month already showing, which the grid's copy always did and
+             this one never did -- see the note on CalendarPaging for why the grid's is the one
+             that survived. */
+          <div data-calendar-console-paging className="shrink-0">
+            <CalendarPaging onStep={step} onToday={today} onCurrentMonth={onCurrentMonth} density="micro" />
           </div>
+          ) : null}
 
           {/* WHAT. Only on a panel that has layers to hide: the Guest preview shows one. */}
           {layers && layers.length > 1 && onToggleLayer ? (
-            <div data-calendar-console-layers className="flex min-w-0 items-center">
-              <CalendarLayerChips layers={layers} hidden={hiddenLayers ?? NO_HIDDEN_LAYERS} onToggle={onToggleLayer} />
+            <div data-calendar-console-layers className="flex min-w-0 shrink-0 items-center">
+              <CalendarLayerChips layers={layers} hidden={hiddenLayers ?? NO_HIDDEN_LAYERS} onToggle={onToggleLayer} density="micro" />
             </div>
           ) : null}
 
           <div className="ml-auto flex flex-wrap items-center gap-2">
             {/* HOW. Only on a panel that IS a calendar: List and Workflow have no month to switch. */}
-            {gridView && onGridViewChange ? (
-              <span data-calendar-console-view-switch className="inline-flex">
-                <CalendarViewSwitch view={gridView} onView={onGridViewChange} />
-              </span>
-            ) : null}
-            {/* ACTIONS. */}
-            {viewControls}
+            {/* HOW, and it is ONE control now (LIVE-490). This slot used to hold the grid / list
+                switcher while the Calendar / List / Workflow toggle sat in ACTIONS below -- two
+                controls, both saying "List", over different sets, and the switcher was only handed
+                to the Calendar and Guest panels so the bar changed SHAPE as you moved between them.
+                `viewControls` carries the single surface control (and the Guest audience preview)
+                and it is drawn on every panel, so the bar keeps one shape.
+
+                The marker stays: `calendarChrome(true)` still takes the switcher off the grid, and
+                this is the host genuinely drawing it, which is what HOST_DRAWN_CONTROL_MARKS and
+                the LIVE-478 probe check. */}
+            <span data-calendar-console-view-switch className="inline-flex flex-wrap items-center gap-2">
+              {viewControls}
+            </span>
             {onPencil && (
               <Button type="button" variant="secondary" size="sm" onClick={onPencil}>
                 <Plus className="h-4 w-4" aria-hidden /> Pencil it in
@@ -333,6 +405,8 @@ export function CalendarConsole({
             <IconButton variant="bordered" label="Close the console" title="Close the console (Esc)" onClick={onClose}>
               <X className="h-4 w-4" aria-hidden />
             </IconButton>
+          </div>
+
           </div>
 
           {/* WHAT THE LAST MOVE DID. Its own line under the controls, so a long sentence never

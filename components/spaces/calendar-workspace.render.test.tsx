@@ -148,8 +148,11 @@ describe('CalendarWorkspace', () => {
         loadGuestMonth={async () => []}
       />,
     )
-    const labels = [...el.querySelectorAll('[aria-label="Calendar views"] button')].map((n) => n.textContent)
-    expect(labels).toEqual(['Calendar', 'List', 'Workflow'])
+    // ONE CONTROL (LIVE-490). The box names the SURFACE -- how the calendar is being looked at --
+    // instead of the panel list, whose "List" meant the all-time index while a second control in
+    // the same bar said "List" for this month's agenda.
+    const labels = [...el.querySelectorAll('[aria-label="How to see the calendar"] button')].map((n) => n.textContent)
+    expect(labels).toEqual(['Grid', 'List', 'Workflow'])
     expect(el.querySelector('[data-calendar-view="admin"]')).not.toBeNull()
     expect(el.querySelector('[data-calendar-admin-grid]')).not.toBeNull()
     expect(el.querySelector('[data-calendar-pm-console]')).toBeNull()
@@ -167,7 +170,19 @@ describe('CalendarWorkspace', () => {
     expect(box!.textContent).not.toContain('\u2014')
     expect(el.querySelector('a[href*="view=list"]')).toBeNull()
     act(() => {
-      el.querySelectorAll('[aria-label="Calendar views"] button')[1]?.dispatchEvent(
+      el.querySelectorAll('[aria-label="How to see the calendar"] button')[1]?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+    })
+    // List opens on THIS MONTH, which is what the header's month and paging are steering, and the
+    // scope control appears beside it. The all-time index is one click further in, under All --
+    // it is no longer a separate panel wearing the same word.
+    expect(el.querySelector('[data-calendar-view="admin"]')).not.toBeNull()
+    const scope = [...el.querySelectorAll('button')].map((b) => b.textContent)
+    expect(scope).toContain('This month')
+    expect(scope).toContain('All')
+    act(() => {
+      ;[...el.querySelectorAll('button')].find((b) => b.textContent === 'All')?.dispatchEvent(
         new MouseEvent('click', { bubbles: true }),
       )
     })
@@ -200,7 +215,7 @@ describe('CalendarWorkspace', () => {
       />,
     )
     expect(el.querySelector('[data-calendar-view="guest"]')).not.toBeNull()
-    expect(el.querySelector('[aria-label="Calendar views"]')).toBeNull()
+    expect(el.querySelector('[aria-label="How to see the calendar"]')).toBeNull()
     expect(el.querySelector('[data-vera-calendar-box]')).toBeNull()
     // The console is edit mode: a guest never sees its door or the F key.
     expect(el.querySelector('[data-calendar-console-open]')).toBeNull()
@@ -282,7 +297,7 @@ describe('CalendarWorkspace', () => {
     expect(el.querySelector('[data-workflow-card="plan-1"]')).toBeNull()
     expect(window.location.search).not.toContain('plan=')
     act(() => {
-      el.querySelectorAll('[aria-label="Calendar views"] button')[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      el.querySelectorAll('[aria-label="How to see the calendar"] button')[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(el.querySelector('[data-calendar-panel="list"]')?.textContent ?? '').not.toContain('New moon production')
     confirm.mockRestore()
@@ -327,11 +342,11 @@ describe('CalendarWorkspace', () => {
       await Promise.resolve()
     })
     act(() => {
-      el.querySelectorAll('[aria-label="Calendar views"] button')[2]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      el.querySelectorAll('[aria-label="How to see the calendar"] button')[2]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(el.querySelector('[data-workflow-column="production"] [data-workflow-card="plan-1"]')).not.toBeNull()
     act(() => {
-      el.querySelectorAll('[aria-label="Calendar views"] button')[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      el.querySelectorAll('[aria-label="How to see the calendar"] button')[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(el.querySelector('[data-calendar-list-viewer]')?.textContent).toContain('Production')
   })
@@ -363,7 +378,7 @@ describe('CalendarWorkspace', () => {
     expect(console_!.querySelector('[data-calendar-admin-grid]')).not.toBeNull()
     expect(el.querySelector('[data-calendar-admin-grid]')).toBeNull()
     // The header carries the view toggle, the month, Pencil it in, Ask Vera and the two controls.
-    expect(console_!.querySelector('[aria-label="Calendar views"]')).not.toBeNull()
+    expect(console_!.querySelector('[aria-label="How to see the calendar"]')).not.toBeNull()
     expect(console_!.textContent).toContain('September 2026')
     expect([...console_!.querySelectorAll('button')].some((b) => b.textContent?.trim() === 'Pencil it in')).toBe(true)
     expect(console_!.querySelector('[data-vera-calendar-box]')).not.toBeNull()
@@ -447,7 +462,12 @@ describe('CalendarWorkspace', () => {
   // TWO LINES (owner ask 2026-09-22). The heading and its blurb are one line, every control is the
   // next, and the first-visit hint row is gone: its sentence lives on the Fullscreen control's own
   // title, which is where a person looking for the door would read it anyway.
-  it('condenses the header to two lines and carries the console hint on the control, not a row', () => {
+  // THE PAGE CONTROL SECTION IS TWO ROWS (LIVE-494, owner ask 2026-09-24: "no more than two
+  // rows"). It used to be five bands above the month -- the heading with its own control row, Ask
+  // Vera, Pencil it in, the grid's month-and-paging strip and the grid's layer chips -- for the
+  // same set the console has fitted on ONE line since LIVE-485. The heading is a heading again,
+  // and every control is in one bar of exactly two rows, in the console's group order.
+  it('draws the page controls as ONE bar of two rows, in the console group order', () => {
     const el = mount(<CalendarWorkspace {...operatorProps()} />)
     expect(el.querySelector('[data-calendar-console-hint]')).toBeNull()
     const control = el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!
@@ -456,19 +476,51 @@ describe('CalendarWorkspace', () => {
     // OWNER RULING 2026-09-22: the visible word Fullscreen is the control's accessible name, so no
     // aria-label overrides it. The title still carries the shortcut and what the control opens.
     expect(control.getAttribute('aria-label')).toBeNull()
-    // Line one: the heading and the blurb share one row. Line two: every control shares the next.
-    const head = el.querySelector('[data-calendar-workspace]')!.firstElementChild!
-    const [line1, line2] = [head.children[0]!, head.children[1]!]
-    expect(line1.querySelector('h2')?.textContent).toBe('Calendar')
-    // The blurb is the registry's, not a string copied here: LIVE-468 rewrote this wording and a
-    // pinned copy would have gone stale the moment it landed. What line one owes is the blurb for
-    // the showing view, beside the heading.
-    expect(line1.querySelector('p')?.textContent).toBe(calendarViewBlurb('admin', 'Frequency Lab'))
-    expect(line2.contains(control)).toBe(true)
-    expect(line2.querySelector('[aria-label="Calendar views"]')).not.toBeNull()
-    expect(head.children.length).toBe(2)
+
+    // The heading is ONE line now: the name of the page and the blurb, and no controls. The blurb
+    // is the registry's, not a string copied here -- LIVE-468 rewrote this wording and a pinned
+    // copy would have gone stale the moment it landed.
+    const heading = el.querySelector('[data-calendar-workspace]')!.firstElementChild!
+    expect(heading.querySelector('h2')?.textContent).toBe('Calendar')
+    expect(heading.querySelector('p')?.textContent).toBe(calendarViewBlurb('admin', 'Frequency Lab'))
+    expect(heading.querySelector('[data-calendar-console-open]')).toBeNull()
+    expect(heading.querySelector('[aria-label="How to see the calendar"]')).toBeNull()
+
+    // TWO ROWS, and exactly two: WHEN + HOW, then WHAT + ACTIONS. `head.children.length` used to
+    // pin this on the heading; it pins it on the bar now, and counts only the control rows -- the
+    // month-jump panel is a third child of the bar and is only in the tree while it is open.
+    const bar = el.querySelector<HTMLElement>('[data-calendar-page-header]')!
+    expect(bar.querySelector('[role="dialog"]')).toBeNull()
+    expect(bar.children.length).toBe(2)
+    const [row1, row2] = [bar.children[0]!, bar.children[1]!]
+
+    // Row one is WHEN then HOW.
+    expect(row1.querySelector('[data-calendar-page-month]')).not.toBeNull()
+    expect(row1.querySelector('[data-calendar-page-paging]')).not.toBeNull()
+    expect(row1.querySelector('[aria-label="How to see the calendar"]')).not.toBeNull()
+    // Row two is WHAT then ACTIONS.
+    expect(row2.querySelector('[aria-label="Show on the calendar"]')).not.toBeNull()
+    expect(row2.contains(control)).toBe(true)
+    expect([...row2.querySelectorAll('button')].some((b) => b.textContent?.includes('Pencil it in'))).toBe(true)
+
     // Never auto-enter, and nothing about the header opens it.
     expect(document.querySelector('[data-calendar-console]')).toBeNull()
+  })
+
+  // A VISITOR GETS THE BAR TOO. The grid runs with `hostChrome` on the page for everyone, so
+  // without this a signed-out visitor would be looking at a month grid with no way to leave the
+  // month it opened on. What they do not get is the groups that would be empty for them.
+  it('gives a visitor the month and its paging, and none of the operator groups', () => {
+    const el = mount(<CalendarWorkspace {...operatorProps()} adminAllowed={false} canManage={false} />)
+    const bar = el.querySelector<HTMLElement>('[data-calendar-page-header]')!
+    expect(bar.querySelector('[data-calendar-page-month] button [aria-live="polite"]')?.textContent).toBe('September 2026')
+    expect(bar.querySelector('[aria-label="Previous month"]')).not.toBeNull()
+    expect(bar.querySelector('[aria-label="Next month"]')).not.toBeNull()
+    expect(bar.querySelector('[aria-label="How to see the calendar"]')).toBeNull()
+    expect(bar.querySelector('[aria-label="Show on the calendar"]')).toBeNull()
+    expect(bar.querySelector('[data-calendar-console-open]')).toBeNull()
+    // And the grid it steers draws none of them itself, so there is exactly one of each.
+    expect(el.querySelectorAll('[aria-label="Previous month"]').length).toBe(1)
   })
 
   // 🔴 THE BLINK (owner report 2026-09-22). Opening and closing the console used to move the panel
@@ -545,11 +597,30 @@ describe('CalendarWorkspace', () => {
     window.history.replaceState(null, '', '/spaces/lab/calendar')
     const el = mount(<CalendarWorkspace {...operatorProps()} />)
     const pageGrid = el.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root]')!
-    // On the page the grid draws all five itself.
-    expect(pageGrid.querySelectorAll('[aria-label="Previous month"]').length).toBe(1)
-    expect(pageGrid.querySelector('[aria-label="Calendar view"]')).not.toBeNull()
-    expect(pageGrid.querySelector('[aria-label="Show on the calendar"]')).not.toBeNull()
-    expect([...pageGrid.querySelectorAll('button')].some((b) => b.textContent?.includes('September 2026'))).toBe(true)
+    const pageBar = el.querySelector<HTMLElement>('[data-calendar-page-header]')!
+    // THE PAGE IS A HOST NOW TOO (LIVE-494). It used to be the one place the grid still drew its
+    // own month, paging, jump and chips, because nothing above it did; the page control bar draws
+    // all four, so the grid draws none of them HERE either. The rule is the same one the console
+    // obeys and the reason is the same: a host may only take a control it actually draws, so each
+    // group below is checked to be in the bar, once, before the grid is checked not to have it.
+    for (const [what, selector] of [
+      ['the month', '[data-calendar-page-month]'],
+      ['the month jump', '[data-calendar-page-month-jump]'],
+      ['Prev', '[aria-label="Previous month"]'],
+      ['Next', '[aria-label="Next month"]'],
+      ['the layer chips', '[aria-label="Show on the calendar"]'],
+      ['the surface control', '[aria-label="How to see the calendar"]'],
+    ] as const) {
+      expect(el.querySelectorAll(selector).length, what).toBe(1)
+      expect(pageBar.querySelector(selector), what).not.toBeNull()
+      expect(pageGrid.querySelector(selector), what).toBeNull()
+    }
+    // And the grid never draws the ⊞/☰ switcher on the page (LIVE-490): the bar carries ONE
+    // surface control, and the grid drawing its own beside it put "List" in the bar twice, over
+    // two different sets.
+    expect(pageGrid.querySelector('[aria-label="Calendar view"]')).toBeNull()
+    expect([...pageGrid.querySelectorAll('button')].some((b) => b.textContent?.includes('September 2026'))).toBe(false)
+    expect([...pageBar.querySelectorAll('button')].some((b) => b.textContent?.includes('September 2026'))).toBe(true)
 
     act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
     const console_ = document.querySelector<HTMLElement>('[data-calendar-console]')!
@@ -563,8 +634,8 @@ describe('CalendarWorkspace', () => {
       ['Prev', '[aria-label="Previous month"]'],
       ['Next', '[aria-label="Next month"]'],
       ['the layer chips', '[aria-label="Show on the calendar"]'],
-      ['the grid list switcher', '[aria-label="Calendar view"]'],
-      ['the four-panel toggle', '[aria-label="Calendar views"]'],
+      // ONE control where there were two, and it is drawn exactly once like everything else here.
+      ['the surface control', '[aria-label="How to see the calendar"]'],
       ['the shortcut sheet', '[aria-label="Keyboard shortcuts"]'],
       ['Close', '[aria-label="Close the console"]'],
     ] as const) {
@@ -624,10 +695,14 @@ describe('CalendarWorkspace', () => {
     act(() => chip('Events').click())
     expect(chip('Events').getAttribute('aria-pressed')).toBe('true')
 
-    // THE GRID / LIST SWITCHER, from the header.
-    act(() => console_().querySelector<HTMLButtonElement>('[aria-label="List view"]')!.click())
+    // THE SURFACE CONTROL, from the header (LIVE-490): the one control that used to be two.
+    const surfaceBtn = (label: string) =>
+      [...console_().querySelectorAll<HTMLButtonElement>('[aria-label="How to see the calendar"] button')].find(
+        (b) => b.textContent?.trim() === label,
+      )!
+    act(() => surfaceBtn('List').click())
     expect(grid().querySelector('[data-calendar-list]')).not.toBeNull()
-    act(() => console_().querySelector<HTMLButtonElement>('[aria-label="Grid view"]')!.click())
+    act(() => surfaceBtn('Grid').click())
     expect(grid().querySelector('[data-calendar-list]')).toBeNull()
   })
 
@@ -640,9 +715,19 @@ describe('CalendarWorkspace', () => {
     const console_ = document.querySelector<HTMLElement>('[data-calendar-console]')!
     expect(console_.querySelector('[aria-label="Calendar view"]')).toBeNull()
     expect(console_.querySelector('[aria-label="Show on the calendar"]')).toBeNull()
-    // The month, the paging and the way out are all still there.
-    expect(console_.querySelector('#calendar-console-title')).not.toBeNull()
-    expect(console_.querySelector('[aria-label="Previous month"]')).not.toBeNull()
+    // AND THE MONTH GOES TOO (LIVE-490). Workflow has no month, so the label, its jump and
+    // Prev / Today / Next are not drawn dead beside it -- the owner was reading a bar that said
+    // "September 2026" over a board that ignores it.
+    expect(console_.querySelector('[data-calendar-console-month-jump]')).toBeNull()
+    expect(console_.querySelector('[data-calendar-console-paging]')).toBeNull()
+    expect(console_.querySelector('[aria-label="Previous month"]')).toBeNull()
+    // The heading still EXISTS -- it is the dialog's accessible name -- and now says what is being
+    // read instead of a month that means nothing here.
+    const title = console_.querySelector('#calendar-console-title')
+    expect(title).not.toBeNull()
+    expect(title!.textContent).toContain('Workflow')
+    // The ways out are both still there: the surface control and Close.
+    expect(console_.querySelector('[aria-label="How to see the calendar"]')).not.toBeNull()
     expect(console_.querySelector('[aria-label="Close the console"]')).not.toBeNull()
   })
 
@@ -652,13 +737,49 @@ describe('CalendarWorkspace', () => {
   it('renders both calendar switchers as the kit segmented control', () => {
     window.history.replaceState(null, '', '/spaces/lab/calendar')
     const el = mount(<CalendarWorkspace {...operatorProps()} />)
-    const views = el.querySelector('[data-segmented][aria-label="Calendar views"]')
+    const views = el.querySelector('[data-segmented][aria-label="How to see the calendar"]')
     expect(views).not.toBeNull()
     expect(views!.getAttribute('data-segmented')).toBe('buttons')
-    expect([...views!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Calendar', 'List', 'Workflow'])
+    expect([...views!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Grid', 'List', 'Workflow'])
     // The List rail's own row switcher, in the panel that is mounted beside the grid.
     const railBoxes = [...el.querySelectorAll('[data-calendar-panel="list"] [data-segmented]')]
     expect(railBoxes.length).toBeGreaterThan(0)
+  })
+
+  // 🔴 THE STATE THE OWNER PHOTOGRAPHED (LIVE-490, screenshot of ?view=list): the all-time index
+  // with the header still saying "September 2026" and offering Prev / Today / Next over a list that
+  // runs into October. One word, "List", named this AND the month agenda, from two different
+  // controls. This pins the fix: one control, the scope is a choice inside it, and the month is not
+  // drawn where it steers nothing -- without stranding the reader, which is the LIVE-475 rule.
+  it('drops the dead month on the all-time List, and still offers a way back', () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    const el = mount(<CalendarWorkspace {...operatorProps({ initialView: 'list' })} />)
+    act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
+    const console_ = document.querySelector<HTMLElement>('[data-calendar-console]')!
+    const header = console_.querySelector<HTMLElement>('[data-calendar-console-header]')!
+
+    // Exactly ONE control in the bar offers "List"; there is no second one meaning something else.
+    const listButtons = [...header.querySelectorAll('button')].filter((b) => b.textContent?.trim() === 'List')
+    expect(listButtons.length).toBe(1)
+    expect(console_.querySelector('[aria-label="Calendar view"]')).toBeNull()
+
+    // The month is gone, because it steered nothing here.
+    expect(header.querySelector('[data-calendar-console-month-jump]')).toBeNull()
+    expect(header.querySelector('[data-calendar-console-paging]')).toBeNull()
+    // The heading still names the dialog, and says what is being read.
+    expect(console_.querySelector('#calendar-console-title')!.textContent).toContain('Gatherings')
+
+    // The scope is a choice INSIDE the List surface, and it is showing everything.
+    const scopeBtn = (label: string) =>
+      [...header.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === label)!
+    expect(scopeBtn('All').getAttribute('aria-pressed')).toBe('true')
+    expect(scopeBtn('This month')).toBeTruthy()
+
+    // NOT A DEAD END: narrowing to the month brings the month controls back with it.
+    act(() => scopeBtn('This month').click())
+    const header2 = document.querySelector<HTMLElement>('[data-calendar-console-header]')!
+    expect(header2.querySelector('[data-calendar-console-month-jump]')).not.toBeNull()
+    expect(header2.querySelector('[data-calendar-console-paging]')).not.toBeNull()
   })
 
   // 🔴 THE DEAD END LIVE-475 CLOSED, RE-PINNED ON ITS NEW HOME (LIVE-485). Switch the page grid to
@@ -672,7 +793,13 @@ describe('CalendarWorkspace', () => {
     window.history.replaceState(null, '', '/spaces/lab/calendar')
     const el = mount(<CalendarWorkspace {...operatorProps()} />)
     const pageGrid = el.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root]')!
-    act(() => pageGrid.querySelector<HTMLButtonElement>('[aria-label="List view"]')!.click())
+    // Into list mode from the ONE surface control the workspace draws (LIVE-490). The grid no
+    // longer carries a switcher of its own, so this is now the only way in -- which is the point.
+    const pageSurface = (label: string) =>
+      [...el.querySelectorAll<HTMLButtonElement>('[aria-label="How to see the calendar"] button')].find(
+        (b) => b.textContent?.trim() === label,
+      )!
+    act(() => pageSurface('List').click())
     expect(pageGrid.querySelector('[data-calendar-list]')).not.toBeNull()
 
     act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
@@ -681,10 +808,14 @@ describe('CalendarWorkspace', () => {
     // The list travelled in with the panel set, and the way out is in the header that took it over.
     expect(inConsole.querySelector('[data-calendar-list]')).not.toBeNull()
     const header = console_.querySelector<HTMLElement>('[data-calendar-console-header]')!
-    const back = header.querySelector<HTMLButtonElement>('[aria-label="Grid view"]')
+    const back = [...header.querySelectorAll<HTMLButtonElement>('[aria-label="How to see the calendar"] button')].find(
+      (b) => b.textContent?.trim() === 'Grid',
+    )
     expect(back).not.toBeNull()
-    // And the month jump, the other half of the dead end: more than one month, from in here.
+    // And the month jump, the other half of the dead end: more than one month, from in here. The
+    // month-scoped List is a surface that HAS a month, so the WHEN group is still drawn for it.
     expect(header.querySelector('[data-calendar-console-month-jump]')).not.toBeNull()
+    expect(header.querySelector('[data-calendar-console-paging]')).not.toBeNull()
     act(() => back!.click())
     expect(inConsole.querySelector('[data-calendar-list]')).toBeNull()
     expect(inConsole.querySelector('[data-calendar-stack], .group')).not.toBeNull()
@@ -705,8 +836,13 @@ describe('CalendarWorkspace', () => {
     // NAME THE MONTH, not "the first polite live region in the grid". The grid gained a second one
     // when a date became movable (PROG-CAL15, the line a move leaves), and it is rendered FIRST, so
     // a loose selector that used to mean the month title started reading an empty region instead.
+    //
+    // IT IS READ OFF THE PAGE BAR NOW (LIVE-494). The page draws the month in its own two-row
+    // control header and both page grids run with `hostChrome`, so the grid holds no month to
+    // read. What this test asserts is unchanged, and is the whole point of LIVE-489: a vertical
+    // wheel over the PAGE grid must not page the month, and the same wheel inside the console must.
     const pageMonth = () =>
-      el.querySelector<HTMLElement>('[data-calendar-admin-grid] [data-calendar-root] button [aria-live="polite"]')!.textContent
+      el.querySelector<HTMLElement>('[data-calendar-page-month] button [aria-live="polite"]')!.textContent
 
     expect(pageMonth()).toBe('September 2026')
     wheel(surface(el))
@@ -878,5 +1014,48 @@ describe('CalendarWorkspace: the console moves a date and says what happened', (
     expect(console_.textContent).not.toContain('\u2014')
     // The month did not page: the chip took the key, the console did not.
     expect(console_.textContent).toContain('September 2026')
+  })
+})
+
+// ── THE CONSOLE HEADER NAMES THE SPACE'S ZONE, IN PLAIN WORDS (LIVE-471) ────────────────────────
+// PROG-CAL12 already showed a zone beside the month. It showed the VIEWER's, as an abbreviation
+// ("PDT"), which is both the wrong zone for a travelling operator and the wrong words for anyone.
+
+describe('the console header zone (LIVE-471)', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  /** Pin what this jsdom "browser" says its zone is. */
+  function pinBrowserZone(timeZone: string) {
+    const real = Intl.DateTimeFormat.prototype.resolvedOptions
+    vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockImplementation(function (
+      this: Intl.DateTimeFormat,
+    ) {
+      return { ...real.call(this), timeZone }
+    })
+  }
+
+  it('shows the Space zone in words beside the month, not the operator zone and not an abbreviation', () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    pinBrowserZone('Europe/Lisbon')
+    const el = mount(<CalendarWorkspace {...operatorProps({ spaceTimeZone: 'America/Los_Angeles' })} />)
+    act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
+    const header = document.querySelector('[data-calendar-console] header')!
+    expect(header.textContent).toContain('September 2026')
+    expect(header.textContent).toContain('Pacific Time')
+    expect(header.textContent).not.toContain('PDT')
+    expect(header.textContent).not.toContain('PST')
+    expect(header.textContent).not.toContain('America/Los_Angeles')
+    expect(header.textContent).not.toContain('Lisbon')
+  })
+
+  it('names the viewer zone, and says it is the viewer zone, when the Space has never said', () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    pinBrowserZone('Europe/Lisbon')
+    const el = mount(<CalendarWorkspace {...operatorProps({ spaceTimeZone: null })} />)
+    act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
+    const header = document.querySelector('[data-calendar-console] header')!
+    expect(header.textContent).toContain('Western European Time')
+    const zone = [...header.querySelectorAll('span')].find((s) => s.textContent === 'Western European Time')
+    expect(zone?.title).toContain('has not set a time zone')
   })
 })

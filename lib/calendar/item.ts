@@ -64,3 +64,39 @@ export interface CalendarEvent {
    *  this date" appends this day to its exceptions. Absent on a one-off. */
   occurrenceDate?: string | null
 }
+
+// ─── THE DAY BAND (LIVE-491, owner ask 2026-09-24) ───────────────────────────────────────────
+// "Make all day / multiple day events a uniform line across the square (similar to google cal)"
+// and "full day events ride at the top of the square".
+//
+// A day cell holds two KINDS of item and they read differently. An item with a time is a chip: it
+// happens AT a moment, and its time is the first thing worth reading. An item that owns whole days
+// -- an all-day entry, or anything spanning more than one date -- is a BAND: it has no moment, it
+// has an extent, and the thing worth reading is how far it runs. Drawing the second as the first is
+// what made a retreat look like a 12:00 appointment repeated five times.
+//
+// The label is the one place the string lives, so the two adapters in lib/calendar/entries.ts and
+// this predicate cannot drift apart on a spelling.
+
+/** The time-label an all-day item carries instead of a clock time. */
+export const ALL_DAY_LABEL = 'All day'
+
+/** True when the item covers more than the single date it starts on. */
+export function spansDays(item: Pick<CalendarEvent, 'dayKey' | 'endDayKey'>): boolean {
+  return !!item.endDayKey && item.endDayKey !== item.dayKey
+}
+
+/** True when the item owns whole days rather than a moment, so it draws as a band at the top of
+ *  the cell instead of a timed chip below. */
+export function isDayBand(item: Pick<CalendarEvent, 'dayKey' | 'endDayKey' | 'timeLabel'>): boolean {
+  return item.timeLabel === ALL_DAY_LABEL || spansDays(item)
+}
+
+/** Where `date` sits inside the item's run, which is what decides the band's shape: a band is
+ *  rounded only where it genuinely begins and ends, so consecutive days read as ONE line. */
+export function bandEdges(
+  item: Pick<CalendarEvent, 'dayKey' | 'endDayKey'>,
+  date: string,
+): { startsHere: boolean; endsHere: boolean } {
+  return { startsHere: item.dayKey === date, endsHere: (item.endDayKey || item.dayKey) === date }
+}

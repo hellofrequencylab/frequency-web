@@ -17,8 +17,9 @@ import { PENCIL_REPEAT_CHOICES, pencilRepeatChoice, pencilRuleForChoice, without
 import { describeRepeat, parseRepeat } from '@/lib/events/repeat-rule'
 import { PUBLISH_STEP, productionDoorHref, stageTimeline } from '@/lib/calendar/stage-timeline'
 import { shortDateLabel } from '@/lib/calendar/short-date'
-import { browserZone } from '@/lib/calendar/browser-zone'
+import { newDateZone } from '@/lib/calendar/browser-zone'
 import type { EntryMove } from '@/lib/calendar/date-move'
+import { zoneWords } from '@/lib/time/zone-words'
 import type { DayNote } from '@/lib/calendar/day-notes'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import { isError } from '@/lib/action-result'
@@ -50,7 +51,10 @@ interface Draft {
   occurrenceDate?: string | null
 }
 
-function blankInput(kind: string, dayKey: string): EntryInput {
+/** A fresh entry, in the zone the Space keeps its schedule in (LIVE-471). `spaceTimeZone` is the
+ *  Space's stored zone; `newDateZone` falls back to the viewer's browser zone only when the Space
+ *  has never said, which is what this whole drawer used to do unconditionally. */
+function blankInput(kind: string, dayKey: string, spaceTimeZone: string | null | undefined): EntryInput {
   const def = entryKind(kind) ?? ENTRY_KINDS[0]
   return {
     kind: def.kind,
@@ -66,7 +70,7 @@ function blankInput(kind: string, dayKey: string): EntryInput {
     endDate: dayKey,
     startTime: '09:00',
     endTime: '10:00',
-    timeZone: browserZone(),
+    timeZone: newDateZone(spaceTimeZone),
     status: def.defaultStatus,
     blocksTime: def.defaults.blocksTime,
     showPublicly: false,
@@ -105,6 +109,7 @@ export function StaffCalendar({
   initialYear,
   initialMonth1,
   canEdit,
+  spaceTimeZone = null,
   dayNotes,
   plans = [],
   onOpenPlan,
@@ -120,6 +125,7 @@ export function StaffCalendar({
   pencilButton = true,
   fill = false,
   hostChrome = false,
+  hostViewSwitch = false,
   moveByDrag = false,
   moveNotice = null,
   onMoveResult,
@@ -131,6 +137,9 @@ export function StaffCalendar({
   initialMonth1: number
   /** False for a platform staff preview: the calendar is read-only. */
   canEdit: boolean
+  /** The Space's own zone (spaces.time_zone, LIVE-471): what a new date is written in. Null when
+   *  the Space has never said, and only then does the viewer's browser zone decide. */
+  spaceTimeZone?: string | null
   dayNotes?: DayNote[]
   plans?: SpacePlan[]
   onOpenPlan?: (planId: string, entryId?: string | null) => void
@@ -163,6 +172,8 @@ export function StaffCalendar({
    *  taking two away that no host drew is the console dead end LIVE-475 fixed. Passed straight
    *  through, and gated by `HOST_DRAWN_CONTROL_MARKS`. */
   hostChrome?: boolean
+  /** Passed straight through: the workspace draws one surface control above this grid (LIVE-490). */
+  hostViewSwitch?: boolean
   /** MOVE A DATE BY DRAGGING IT (PROG-CAL15), the console's edit. Off here and on the Space page,
    *  where the calendar stays click-to-open; the console turns it on. */
   moveByDrag?: boolean
@@ -182,7 +193,7 @@ export function StaffCalendar({
   const loadMonth = useCallback((y: number, m: number) => loadStaffCalendarMonth(slug, y, m), [slug])
   const openNew = (dayKey: string) => {
     setError(null)
-    setDraft({ id: null, input: blankInput('pencil', dayKey) })
+    setDraft({ id: null, input: blankInput('pencil', dayKey, spaceTimeZone) })
   }
   const today = () => new Date().toLocaleDateString('en-CA')
   // An outside "Pencil it in" (the console header, its N key) lands here as a bumped counter, so the
@@ -193,7 +204,7 @@ export function StaffCalendar({
     setSeenEntryRequest(newEntryRequest)
     if (canEdit) {
       setError(null)
-      setDraft({ id: null, input: blankInput('pencil', today()) })
+      setDraft({ id: null, input: blankInput('pencil', today(), spaceTimeZone) })
     }
   }
 
@@ -409,6 +420,7 @@ export function StaffCalendar({
         onHiddenLayersChange={onHiddenLayersChange}
         fill={fill}
         hostChrome={hostChrome}
+        hostViewSwitch={hostViewSwitch}
         layers={STAFF_CALENDAR_LAYERS}
         audience="team"
         refreshKey={refreshKey + externalRefreshKey}
@@ -596,7 +608,7 @@ export function StaffCalendar({
                 )}
               </div>
             </div>
-            <p className="text-meta text-muted">Times are in {input.timeZone.replace(/_/g, ' ')}.</p>
+            <p className="text-meta text-muted">Times are in {zoneWords(input.timeZone)}.</p>
 
             {def?.isPencil && (
               <div className="grid gap-1">

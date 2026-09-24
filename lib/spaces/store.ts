@@ -8,6 +8,8 @@ import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadLibraryAssetUrls } from '@/lib/library/asset-urls'
 import { columnImageUrl } from '@/lib/library/column-image'
+import { isValidTimeZone } from '@/lib/time/zone'
+import { log } from '@/lib/log'
 import { normalizeSpaceType } from './types'
 import type { Space, SpaceStatus } from './types'
 
@@ -30,10 +32,16 @@ const COLS =
 // `about` joins the tail for the Space Circle's info board (ADR-1393), which needed the Space's own
 // description on the Circle page. Same untyped-tail rules as its neighbours: FREE content framing,
 // never a gate, null-safe when absent.
-const COLS_FULL = `${COLS}, feature_roles, mode_variant, preferences, cover_image_url, cover_image_asset_id, tagline, city, about`
+// `time_zone` (LIVE-471, migration 20270345008300) joins the untyped tail: the zone the Space keeps
+// its SCHEDULE in, which the calendar writes new dates in and the console header names in words.
+// It rides the EXISTING space read rather than a query of its own, so the calendar pages pay
+// nothing for it. NULL is meaningful and is not a default: it means this Space has never said, and
+// only then does the viewer's browser zone decide (lib/time/header-zone.ts).
+const COLS_FULL = `${COLS}, feature_roles, mode_variant, preferences, cover_image_url, cover_image_asset_id, tagline, city, about, time_zone`
 
 type SpaceRow = {
   about?: string | null
+  time_zone?: string | null
   id: string
   slug: string
   name: string
@@ -81,6 +89,10 @@ function mapSpace(r: SpaceRow, live: ReadonlyMap<string, string> = new Map()): S
     // loosely (`unknown`). `feature_roles` defaults to {} when the column is absent (pre-migration).
     entitlements: r.entitlements ?? {},
     featureRoles: r.feature_roles ?? {},
+    // The Space's own schedule zone (LIVE-471). VALIDATED here rather than trusted: a stored name
+    // the runtime tz database does not know reads as "never said", so a bad row can never become
+    // the zone a team's dates are kept in. Null-safe pre-migration (the column is on the tail).
+    timeZone: isValidTimeZone(r.time_zone ?? null) ? (r.time_zone as string) : null,
     // The billing plan label feeds the live plan-ladder gate (lib/spaces/function-access.ts). Null
     // pre-write reads as 'free' there; while billing is OFF it never gates anything.
     plan: r.plan ?? null,
@@ -251,4 +263,29 @@ export async function resolveSpaceForHost(host: string | null): Promise<Space | 
     if (byDomain) return byDomain
   }
   return getRootSpace()
+}
+
+/** Write a Space's schedule zone (LIVE-471). `null` clears it back to "never said", where the
+ *  calendar falls back to the viewer's browser zone. Returns false when the write failed.
+ *
+ *  THIS LIVES HERE, beside the read, because `spaces` carries RLS with a SELECT policy and NO
+ *  update policy: a session-client update is denied by construction, so the write needs this
+ *  module's already-justified service-role client (scripts/admin-client-baseline.txt) rather than
+ *  a new file that would widen the RLS-bypass surface. Gating is the CALLER's: the only caller
+ *  resolves an editor for the Space first, and validates the name before it ever reaches here. */
+export async function writeSpaceTimeZone(spaceId: string, zone: string | null): Promise<boolean> {
+  if (!spaceId) return false
+  if (zone !== null && !isValidTimeZone(zone)) return false
+  try {
+    const { error } = await createAdminClient().from('spaces').update({ time_zone: zone }).eq('id', spaceId)
+    if (error) {
+      // Loud, not silent (AGENTS.md: a swallowed error is an invisible regression).
+      log.warn('space_zone_write_failed', { spaceId, message: error.message })
+      return false
+    }
+    return true
+  } catch (err) {
+    log.warn('space_zone_write_threw', { spaceId, message: err instanceof Error ? err.message : 'unknown' })
+    return false
+  }
 }

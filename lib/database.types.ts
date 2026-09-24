@@ -14860,6 +14860,7 @@ export type Database = {
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           tagline: string | null
+          time_zone: string | null
           type: string
           updated_at: string
           visibility: string
@@ -14914,6 +14915,7 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           tagline?: string | null
+          time_zone?: string | null
           type: string
           updated_at?: string
           visibility?: string
@@ -14968,6 +14970,7 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           tagline?: string | null
+          time_zone?: string | null
           type?: string
           updated_at?: string
           visibility?: string

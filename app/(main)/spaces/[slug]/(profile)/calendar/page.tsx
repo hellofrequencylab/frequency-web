@@ -78,6 +78,12 @@ export default async function SpaceCalendarPage({
     />
   )
 
+  // THE SPACE'S OWN ZONE (LIVE-471), read once here so the console header, the staff drawer and Ask
+  // Vera all name the same one. Null when the Space has never said; those surfaces then fall back to
+  // the viewer's browser zone, which is what they all did before this row. Only the operator's half
+  // of this page reads it, so a guest's calendar view never names it. It rides the Space row already loaded above.
+  const spaceTimeZone = adminAllowed ? space.timeZone : null
+
   const grid = monthGridWindow(initialYear, initialMonth1)
   // The Guest feed (ADR-1457): loadPublicSpaceWindow folds every month, this first one and each
   // browsed one, through guestLiveItems, so pencil and planning never reach a guest. Applying it
@@ -140,6 +146,7 @@ export default async function SpaceCalendarPage({
       adminEvents={admin.events}
       dayNotes={admin.dayNotes}
       plans={admin.plans}
+      spaceTimeZone={spaceTimeZone}
       subscribe={subscribe}
       loadGuestMonth={loadSpaceCalendarMonth.bind(null, slug)}
     />
