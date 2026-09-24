@@ -711,6 +711,59 @@ export const ADVISORY_OPERATOR_SURFACES: Readonly<Record<string, string>> = {
   // read `qr_scans`, which has had no new row since 2026-09-18 and none at all since the
   // baseline was captured, so the numbers in the picture are frozen.
   '/admin/qr': 'LIVE-476',
+  // LIVE-492, and the OWNER AUTHORISED this downgrade on 2026-09-24 after the second cause was
+  // ruled out. `pr-compare` is a required status check, so a surface that cannot be photographed
+  // truthfully was making EVERY pull request in the repository unmergeable.
+  //
+  // IT IS TWO FAILURES, NOT ONE, and reading the run as one cost an attempt. Four cases fail and
+  // they split by viewport:
+  //
+  //   MOBILE (390) is the camera-induced flip: "changed height DURING capture: 7752 and 7756, a
+  //   4px difference". `toHaveScreenshot` compares each capture with the previous one to prove the
+  //   page is still and gets the flip back, so it never takes two consecutive stable frames. The
+  //   page is BOTH heights and a baseline is one of them, which is why a recapture is refused here
+  //   for the same reason it was refused on /admin/qr.
+  //
+  //   DESKTOP (1280) is NOT a flip at all. Its call log reads "captured a stable screenshot" with
+  //   no dimension mismatch, and then a STABLE diff: 982 px dawn-light, 1008 px dawn-dark,
+  //   identical across all three attempts. Compare LIVE-476's reading on /admin/qr's first screen
+  //   -- 951 px dawn-light, 1029 px dawn-dark, also stable across three. Same defect class, same
+  //   magnitude, one surface over. The cause of THAT one is still not known either.
+  //
+  // 🔴 SO `viewportOnly` WOULD NOT HAVE FIXED THIS SURFACE. It addresses a height that is not a
+  // function of the page's own content, and the desktop half is not that -- it is a stable
+  // difference inside a stable frame, which a first-screen capture would carry straight through.
+  // The advisory tier is the only remedy that covers both halves, which settles a choice this
+  // entry would otherwise look like it made on taste.
+  //
+  // WHAT IS RULED OUT, so nobody re-walks it:
+  //  · THE HEADER OFFSET. Four hand-written copies of the app header's height had dropped
+  //    env(safe-area-inset-top), so the shell asked for 100vh + inset. That is a real defect and
+  //    it is fixed (LIVE-493) -- and it is NOT this. `pr-compare` on 34577e9, the commit carrying
+  //    the fix, failed IDENTICALLY: same four cases, same pair of heights.
+  //  · THE MECHANISM THE DIAGNOSTIC NAMES. `captureFlipMessage` blames boxes sized against the
+  //    viewport height, and this file already refutes that one surface up: `fullPage` was shown
+  //    NOT to resize the layout viewport in playwright-core 1.63 (`captureBeyondViewport`, no
+  //    `setDeviceMetricsOverride` in that path). The message asserts it anyway, which is a finding
+  //    of its own and cost a whole pull request.
+  //  · THE ARITHMETIC AGREES. 4px is far too small for any box it named: the vault drawer's
+  //    `max-h-[50dvh]` would swing ~3,400px on a 7752px document, and two of the five render at 0.
+  //
+  // STILL UNWALKED: script reading `innerHeight`, or an IntersectionObserver that fires when the
+  // whole document is suddenly in view -- the two leads the diagnostic's OTHER branch names. This
+  // surface is module-driven (`PageModules`), so either would live in the modules rather than the
+  // page.
+  //
+  // AND EVEN IF IT HAD, `viewportOnly` IS THE WRONG TRADE HERE. It gives up everything below the
+  // first screen, and on this surface that is ~7,100px of a dense table -- the 43 raw <button>
+  // population this page was CHOSEN for. It would have kept the vote and thrown away the subject.
+  // Advisory keeps the whole picture, still captures it, still reports it, and gives up only the
+  // vote. That is the trade this file's own rule asks for: a gate that cannot fire truthfully
+  // stays advisory.
+  //
+  // The row is the debt and it stays OPEN. Clear LIVE-492, delete this entry, and the surface
+  // votes again.
+  '/admin/content/practices': 'LIVE-492',
 }
 
 /** The advisory operator paths, as a list. `visual.spec.ts` filters both operator loops on this

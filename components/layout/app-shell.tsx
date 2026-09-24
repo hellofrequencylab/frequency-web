@@ -1067,7 +1067,7 @@ export default function AppShell({
               editor (which owns its own top bar + full-height layout) sits truly edge-to-edge. */}
           <div className={edgeToEdge
             ? 'flex w-full items-stretch'
-            : 'mx-auto flex w-full max-w-[105rem] items-stretch gap-8 lg:gap-10 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-3.5rem)]'}>
+            : 'mx-auto flex w-full max-w-[105rem] items-stretch gap-8 lg:gap-10 px-4 sm:px-6 lg:px-8 min-h-[calc(100dvh-var(--app-header-h))]'}>
 
             {/* Left nav — NEVER scrolls out of view. Pinned under the header
                 (sticky top-14) with its window ending exactly where the fixed
