@@ -373,7 +373,7 @@ export function AdminBar({
         </div>
 
         {/* The panel cover is full column height, but its CONTENT sticks to the viewport. */}
-        <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] flex max-h-[calc(100vh-3.5rem)] flex-col">
+        <div className="sticky top-[var(--app-header-h)] flex max-h-[calc(100dvh-var(--app-header-h))] flex-col">
           {/* The fixed top bar (search + close) sits ABOVE the scroll region, so nothing can render above
               the search on scroll — the search bar IS the top of the rail (ADR-516 Phase E). */}
           <AdminBarTopBar
