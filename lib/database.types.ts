@@ -14121,6 +14121,7 @@ export type Database = {
           archived_at: string | null
           created_at: string
           created_by: string | null
+          files: Json
           id: string
           links: Json
           notes: string | null
@@ -14136,6 +14137,7 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           created_by?: string | null
+          files?: Json
           id?: string
           links?: Json
           notes?: string | null
@@ -14151,6 +14153,7 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           created_by?: string | null
+          files?: Json
           id?: string
           links?: Json
           notes?: string | null

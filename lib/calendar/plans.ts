@@ -1,6 +1,7 @@
 // SPACE PLANS, the pure half (ADR-1386). A Plan is the working record behind one or more
 // Pencils and Productions. No React, no Supabase.
 
+import { isAssetRef, type AssetRef } from '@/lib/library/asset-ref'
 import { calendarPresentation, entryStage, type CalendarPresentation, type EntryStage } from './registry'
 
 export const PLAN_STAGES = ['pencil', 'plan', 'production'] as const
@@ -14,6 +15,14 @@ export interface PlanLink {
   label: string
 }
 
+/**
+ * ONE image a Plan holds (PROG-CAL14): a reference to a Loom asset, never an upload of its own.
+ * The SAME `{ assetId, url }` shape every block document stores (ADR-1130), which is what lets the
+ * usage index find a Plan by asset id and what keeps the thumbnail painting from the cached url
+ * when nothing re-resolves it.
+ */
+export type PlanFile = AssetRef
+
 export interface SpacePlan {
   id: string
   spaceId: string
@@ -21,6 +30,8 @@ export interface SpacePlan {
   stage: PlanStage
   notes: string | null
   links: PlanLink[]
+  /** Loom images attached to this Plan, in the order the team put them. */
+  files: PlanFile[]
   targetKind: PlanTargetKind
   playbookId: string | null
   ownerProfileId: string | null
@@ -31,12 +42,13 @@ export interface SpacePlan {
 }
 
 export const PLAN_COLS =
-  'id, space_id, title, stage, notes, links, target_kind, playbook_id, owner_profile_id, created_by, archived_at, created_at, updated_at'
+  'id, space_id, title, stage, notes, links, files, target_kind, playbook_id, owner_profile_id, created_by, archived_at, created_at, updated_at'
 
 export interface PlanInput {
   title: string
   notes?: string | null
   links?: PlanLink[] | null
+  files?: PlanFile[] | null
   stage?: string | null
   targetKind?: string | null
   playbookId?: string | null
@@ -50,7 +62,7 @@ export interface PlanInput {
  * Vera has any business changing it. Lives beside `PlanInput` so the list and the type cannot drift
  * apart without the test beside the drawer noticing.
  */
-export const PLAN_WRITES = ['title', 'notes', 'stage', 'targetKind', 'links'] as const satisfies readonly (keyof PlanInput)[]
+export const PLAN_WRITES = ['title', 'notes', 'stage', 'targetKind', 'links', 'files'] as const satisfies readonly (keyof PlanInput)[]
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const MAX_TITLE = 200
@@ -60,6 +72,9 @@ const MAX_NOTES = 20_000
  *  nothing said — the exact failure `RailManifestRepeat`'s `max` exists to prevent (PROG-CAL2). */
 export const PLAN_MAX_LINKS = 20
 const MAX_LINKS = PLAN_MAX_LINKS
+/** The most images a Plan keeps. Exported for the same reason as PLAN_MAX_LINKS: the repeat
+ *  control stops offering Add here, so a row typed past the cap is never dropped in silence. */
+export const PLAN_MAX_FILES = 10
 
 export function planStage(value: string | null | undefined): PlanStage | null {
   return PLAN_STAGES.includes(value as PlanStage) ? (value as PlanStage) : null
@@ -113,6 +128,32 @@ export function parsePlanLinks(raw: unknown): PlanLink[] {
   return out
 }
 
+/**
+ * The images a Plan keeps, from whatever was handed in (PROG-CAL14).
+ *
+ * A stored id that points at nothing is worse than no image at all: the usage index would count a
+ * ref the Loom cannot resolve, and safe delete would refuse a delete for a phantom. So a row is
+ * kept only when it is a real reference, an id in UUID shape beside an http(s) url, and the same
+ * asset twice is kept once (two refs to one picture would double its usage count and buy nothing).
+ * Everything else is dropped rather than repaired, exactly as `parsePlanLinks` drops a bad url.
+ */
+export function parsePlanFiles(raw: unknown): PlanFile[] {
+  if (!Array.isArray(raw)) return []
+  const out: PlanFile[] = []
+  const seen = new Set<string>()
+  for (const item of raw.slice(0, PLAN_MAX_FILES)) {
+    if (!isAssetRef(item)) continue
+    const assetId = item.assetId.trim()
+    const url = item.url.trim()
+    if (!UUID_RE.test(assetId)) continue
+    if (!/^https?:\/\//i.test(url) || url.length > 2000) continue
+    if (seen.has(assetId)) continue
+    seen.add(assetId)
+    out.push({ assetId, url })
+  }
+  return out
+}
+
 /** Derive the Plan stage from the dates and events it already holds. A someday Plan stays `plan`. */
 export function derivePlanStage(opts: {
   entryStages: readonly (string | null | undefined)[]
@@ -161,6 +202,7 @@ export function parsePlanInput(input: PlanInput): { data: PlanWrite } | { error:
       title,
       notes,
       links: parsePlanLinks(input.links),
+      files: parsePlanFiles(input.files),
       stage,
       target_kind: targetKind,
       playbook_id: playbookId,
@@ -172,6 +214,7 @@ export type PlanWrite = {
   title: string
   notes: string | null
   links: PlanLink[]
+  files: PlanFile[]
   stage: PlanStage
   target_kind: PlanTargetKind
   playbook_id: string | null
@@ -184,6 +227,7 @@ export function mapPlanRow(r: {
   stage: string
   notes: string | null
   links: unknown
+  files: unknown
   target_kind: string
   playbook_id: string | null
   owner_profile_id: string | null
@@ -199,6 +243,7 @@ export function mapPlanRow(r: {
     stage: planStage(r.stage) ?? 'plan',
     notes: r.notes,
     links: parsePlanLinks(r.links),
+    files: parsePlanFiles(r.files),
     targetKind: planTarget(r.target_kind) ?? 'event',
     playbookId: r.playbook_id,
     ownerProfileId: r.owner_profile_id,

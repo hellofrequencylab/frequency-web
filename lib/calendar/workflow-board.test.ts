@@ -5,7 +5,7 @@ import { planStageTransition, workflowBoard } from './workflow-board'
 import { readFileSync } from 'node:fs'
 
 const makePlan = (id: string, title: string, stage: SpacePlan['stage']): SpacePlan => ({
-  id, spaceId: 'space-1', title, stage, notes: null, links: [], targetKind: 'event',
+  id, spaceId: 'space-1', title, stage, notes: null, links: [], files: [], targetKind: 'event',
   playbookId: null, ownerProfileId: null, createdBy: null, archivedAt: null,
   createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
 })

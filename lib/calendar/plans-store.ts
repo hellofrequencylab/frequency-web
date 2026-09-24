@@ -119,8 +119,10 @@ export async function insertSpacePlan(
       ...write,
       // `links` is PlanLink[] and the column is jsonb. PlanLink is a plain {url,label}, so it is
       // valid JSON; TypeScript cannot prove a structural type against the generated recursive
-      // `Json` union, so the serialisation boundary says so once, here.
+      // `Json` union, so the serialisation boundary says so once, here. `files` is the same story
+      // with a plain {assetId,url} (PROG-CAL14).
       links: write.links as unknown as Json,
+      files: write.files as unknown as Json,
       space_id: spaceId,
       owner_profile_id: profileId,
       created_by: profileId,
@@ -130,13 +132,19 @@ export async function insertSpacePlan(
   return { data: mapPlanRow(data[0]) }
 }
 
-/** `links` is PlanLink[] and the column is jsonb, which the generated types express as `Json`.
- *  PlanLink is a plain {url,label} so it IS valid JSON; TypeScript cannot prove a structural type
- *  against the recursive `Json` union. The serialisation boundary says so here, once, rather than
- *  at every call site — and nowhere else in this file casts the client. */
+/** `links` is PlanLink[] and `files` is PlanFile[]; both columns are jsonb, which the generated
+ *  types express as `Json`. A PlanLink is a plain {url,label} and a PlanFile a plain {assetId,url},
+ *  so both ARE valid JSON; TypeScript cannot prove a structural type against the recursive `Json`
+ *  union. The serialisation boundary says so here, once, rather than at every call site, and
+ *  nowhere else in this file casts the client. An absent key is left absent, so a partial write
+ *  still only touches the columns it names. */
 function planWritePayload(write: Partial<PlanWrite> & { archived_at?: string | null }) {
-  const { links, ...rest } = write
-  return links === undefined ? rest : { ...rest, links: links as unknown as Json }
+  const { links, files, ...rest } = write
+  return {
+    ...rest,
+    ...(links === undefined ? {} : { links: links as unknown as Json }),
+    ...(files === undefined ? {} : { files: files as unknown as Json }),
+  }
 }
 
 export async function updateSpacePlan(

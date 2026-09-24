@@ -71,6 +71,7 @@ function plan(over: Record<string, unknown> = {}) {
     stage: 'plan',
     notes: LONG_NOTES,
     links: [],
+    files: [],
     targetKind: 'event',
     playbookId: null,
     ownerProfileId: null,

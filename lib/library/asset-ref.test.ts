@@ -7,6 +7,8 @@ import {
   collectAssetRefIds,
   applyAssetUrls,
   assetValueFromPick,
+  assetRefToField,
+  assetRefFromField,
 } from './asset-ref'
 
 // The AssetField seam (PROG-D2, ADR-1130). The properties proven here are the ones the
@@ -118,5 +120,46 @@ describe('applyAssetUrls — the cache refresh', () => {
   it('returns the SAME document when every cache is already current', () => {
     const doc = { a: REF }
     expect(applyAssetUrls(doc, new Map([[REF.assetId, REF.url]]))).toBe(doc)
+  })
+})
+
+// ── THE FIELD TRANSPORT (PROG-CAL14) ─────────────────────────────────────────────────────────
+// A rail field value is ONE string, so an `asset` field carries its reference as one. The property
+// that matters is that the ID SURVIVES the round trip: a transport that kept only the url would be
+// the half-adopted seam ADR-1253 exists to stop, and the Loom would never see the record.
+
+describe('assetRefToField / assetRefFromField', () => {
+  const ID = 'aaaaaaaa-0000-4000-a000-00000000000a'
+
+  it('round-trips a reference through one string', () => {
+    const ref = { assetId: ID, url: 'https://cdn.test/plan/flyer.jpg' }
+    const wire = assetRefToField(ref)
+    expect(wire).toBe(`${ID} https://cdn.test/plan/flyer.jpg`)
+    expect(assetRefFromField(wire)).toEqual(ref)
+  })
+
+  it('drops the alt rather than carrying a second copy of it (ADR-1130)', () => {
+    expect(assetRefFromField(assetRefToField({ assetId: ID, url: 'https://cdn/a.jpg', alt: 'A gong' }))).toEqual({
+      assetId: ID,
+      url: 'https://cdn/a.jpg',
+    })
+  })
+
+  it('reads nothing chosen as the empty string, both ways', () => {
+    expect(assetRefToField(null)).toBe('')
+    expect(assetRefToField({ assetId: ID, url: '' })).toBe('')
+    expect(assetRefFromField('')).toBeNull()
+    expect(assetRefFromField(undefined)).toBeNull()
+  })
+
+  it('refuses a value that is not a real reference instead of half-parsing one', () => {
+    // A bare url: this is exactly what an `image` field stores, and storing it here would be an
+    // image nothing can trace back to the Loom.
+    expect(assetRefFromField('https://cdn/a.jpg')).toBeNull()
+    // An id that is not a uuid, and a url that is not http(s).
+    expect(assetRefFromField('not-an-id https://cdn/a.jpg')).toBeNull()
+    expect(assetRefFromField(`${ID} javascript:alert(1)`)).toBeNull()
+    // A url with a space in it would not round-trip, so it is refused rather than truncated.
+    expect(assetRefFromField(`${ID} https://cdn/a b.jpg`)).toBeNull()
   })
 })

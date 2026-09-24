@@ -68,6 +68,7 @@ function plan(over: Record<string, unknown> = {}) {
     stage: 'production',
     notes: 'Keep it small.',
     links: [],
+    files: [],
     targetKind: 'event',
     playbookId: null,
     ownerProfileId: null,

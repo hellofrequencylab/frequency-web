@@ -116,6 +116,7 @@ const plan: SpacePlan = {
   stage: 'plan',
   notes: null,
   links: [],
+  files: [],
   targetKind: 'event',
   playbookId: null,
   ownerProfileId: null,
@@ -521,6 +522,28 @@ describe('CalendarWorkspace', () => {
     expect(bar.querySelector('[data-calendar-console-open]')).toBeNull()
     // And the grid it steers draws none of them itself, so there is exactly one of each.
     expect(el.querySelectorAll('[aria-label="Previous month"]').length).toBe(1)
+  })
+
+  // 🔴 TEARING DOWN WITH THE CONSOLE OPEN (LIVE-481). The stage host is a plain div this component
+  // owns, and a layout effect appends it to the console's DOM while the console is open -- so at
+  // teardown the panel set is living somewhere other than the page slot it belongs to. The layout
+  // effect's cleanup returns it first. This test was written while attempting LIVE-481's proposed
+  // fix (drop the portal, re-parent a RENDERED host) and it is kept because the hazard it guards is
+  // real either way: a `removeChild` against the wrong parent is a hard NotFoundError, a crash
+  // rather than a flicker. See LIVE-481 for why that attempt was abandoned.
+  it('tears down cleanly while the console is open', () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    const el = mount(<CalendarWorkspace {...operatorProps()} />)
+    act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
+    expect(document.querySelector('[data-calendar-console]')).not.toBeNull()
+    // The panel set is living inside the console's DOM at this point, not the page slot.
+    const console_ = document.querySelector('[data-calendar-console]')!
+    expect(console_.querySelector('[data-calendar-root]')).not.toBeNull()
+    // The teardown `afterEach` does anyway, done here so the throw lands in THIS test.
+    expect(() => {
+      act(() => root!.unmount())
+      root = null
+    }).not.toThrow()
   })
 
   // 🔴 THE BLINK (owner report 2026-09-22). Opening and closing the console used to move the panel

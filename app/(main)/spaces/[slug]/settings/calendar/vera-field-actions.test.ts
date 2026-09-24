@@ -6,7 +6,8 @@ import { isError } from '@/lib/action-result'
 // A `field` change is applied by reading the row first, changing ONE attribute on the product's own
 // form shape, and writing through the product's own parser and action: `parsePlanInput` then
 // `updateSpacePlan` for a Plan, `saveCalendarEntry` for a date. These tests pin that the CURRENT row
-// is merged (a notes change carries the title, the links and the target along unchanged), that the
+// is merged (a notes change carries the title, the links, the images and the target along
+// unchanged), that the
 // write is the parser's output and not the raw value, that a links row is ADDED rather than
 // replacing the list, and that a row the parser would drop is reported rather than swallowed.
 
@@ -55,6 +56,7 @@ const PLAN = '11111111-1111-4111-8111-111111111111'
 const ENTRY = '33333333-3333-4333-8333-333333333333'
 const PLAYBOOK = '44444444-4444-4444-8444-444444444444'
 const LINK = { url: 'https://example.com/venue', label: 'Venue' }
+const IMAGE = { assetId: 'aaaaaaaa-0000-4000-a000-00000000000a', url: 'https://cdn.test/flyer.jpg' }
 
 function plan(over: Record<string, unknown> = {}) {
   return {
@@ -64,6 +66,7 @@ function plan(over: Record<string, unknown> = {}) {
     stage: 'plan',
     notes: 'Keep it small.',
     links: [LINK],
+    files: [IMAGE],
     targetKind: 'event',
     playbookId: PLAYBOOK,
     ownerProfileId: null,
@@ -127,10 +130,20 @@ describe('applyVeraChanges with a Plan field', () => {
       title: 'Autumn retreat',
       notes: 'Bring the gong.',
       links: [LINK],
+      files: [IMAGE],
       target_kind: 'event',
       playbook_id: PLAYBOOK,
     })
     expect(vi.mocked(updateSpacePlan).mock.calls[0][2]).not.toHaveProperty('stage')
+  })
+
+  // PROG-CAL14. The whole input is rebuilt from the row and the whole parsed output is written, so
+  // a column this rebuild forgets is a column Vera BLANKS by setting an unrelated one. The images a
+  // team attached are that column: Vera cannot name the group at all, and could still have emptied
+  // it by writing a note.
+  it('keeps the images a team attached when it writes any other field', async () => {
+    await applyVeraChanges('royal-temple', [field('plan', PLAN, 'notes', 'Bring the gong.')])
+    expect(vi.mocked(updateSpacePlan).mock.calls[0][2]).toMatchObject({ files: [IMAGE] })
   })
 
   it('sets a select by its option value and clears an optional field to null', async () => {

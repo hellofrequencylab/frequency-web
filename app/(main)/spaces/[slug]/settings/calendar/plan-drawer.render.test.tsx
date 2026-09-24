@@ -55,6 +55,7 @@ const plan: SpacePlan = {
   stage: 'plan',
   notes: null,
   links: [],
+  files: [],
   targetKind: 'event',
   playbookId: null,
   ownerProfileId: null,
@@ -180,5 +181,46 @@ describe('PlanDrawer: Run it again and Share wait for their round trip and say w
     await flush()
     expect(mocks.sharePlanWithSpace).toHaveBeenCalledWith('lab', 'plan-1', 'guest-space')
     expect(document.querySelector('[data-plan-notice]')?.textContent).toContain('Shared')
+  })
+})
+
+// PROG-CAL14: A PLAN HOLDS IMAGES, and the drawer gained the whole collection because the MANIFEST
+// declares it. Nothing in plan-drawer.tsx names an image, a picker or an upload; what is asserted
+// here is that an owner can see what is attached and that saving carries it.
+describe('PlanDrawer: the Images group comes from the manifest, through the Loom picker', () => {
+  const IMAGE = { assetId: 'aaaaaaaa-0000-4000-a000-00000000000a', url: 'https://cdn.test/flyer.jpg' }
+  const withImage: SpacePlan = { ...plan, files: [IMAGE] }
+
+  it('shows the group, the attached picture, and the one door to the Loom', async () => {
+    await mount(<PlanDrawer slug="lab" plan={withImage} open onClose={() => {}} />)
+    // The heading is the manifest's label (the owner ruling: Images, not Files).
+    expect([...document.querySelectorAll('p')].some((p) => p.textContent === 'Images')).toBe(true)
+    // The cached url paints the thumbnail with no lookup, which is why the ref keeps one.
+    expect(document.querySelector(`img[src="${IMAGE.url}"]`)).not.toBeNull()
+    // One door, and it is the Loom: the slot offers Change for the picture it holds. A file input
+    // here would be the new upload path the owner ruling forbids.
+    expect(button('Change')).toBeTruthy()
+    expect(document.querySelector('input[type="file"]')).toBeNull()
+  })
+
+  it('saves the reference, not the url, so the Loom can still find the Plan', async () => {
+    await mount(<PlanDrawer slug="lab" plan={withImage} open onClose={() => {}} />)
+    await act(async () => button('Save Plan').click())
+    await flush()
+    expect(mocks.saveSpacePlan).toHaveBeenCalledWith('lab', 'plan-1', expect.objectContaining({ files: [IMAGE] }))
+  })
+
+  it('carries the links and the images apart, rather than one collection into both groups', async () => {
+    // The drawer used to hand the links rows to every repeat it mapped over. With two groups that
+    // is not a cosmetic bug: the Images group would have edited the links and saved nothing.
+    const both: SpacePlan = { ...withImage, links: [{ url: 'https://example.com/venue', label: 'Venue' }] }
+    await mount(<PlanDrawer slug="lab" plan={both} open onClose={() => {}} />)
+    await act(async () => button('Save Plan').click())
+    await flush()
+    expect(mocks.saveSpacePlan).toHaveBeenCalledWith(
+      'lab',
+      'plan-1',
+      expect.objectContaining({ links: [{ url: 'https://example.com/venue', label: 'Venue' }], files: [IMAGE] }),
+    )
   })
 })

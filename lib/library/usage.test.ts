@@ -105,6 +105,23 @@ describe('placeForUsageRow', () => {
     expect(p.key).toBe('space_layout:s1:profileLayoutDraft:draft')
   })
 
+  it('names a Plan by its Space and links to the calendar, never printing the Plan id', () => {
+    // PROG-CAL14: a Plan holds Loom images, so the Loom has to be able to say so before an operator
+    // retires one. `doc_key` is the Plan's uuid, which is a key and not copy; an archived Plan is
+    // still a usage site (archiving is reversible and the Plan keeps its images) and reads as not
+    // live so the drawer can say which it is.
+    const open = placeForUsageRow({ ...base, store: 'space_plan', doc_key: 'plan-uuid-1' })
+    expect(open).toMatchObject({
+      label: 'Plan in royal-temple',
+      href: '/spaces/royal-temple/settings/calendar',
+      live: true,
+    })
+    expect(open.label).not.toContain('plan-uuid-1')
+    expect(open.key).toBe('space_plan:s1:plan-uuid-1:live')
+    const archived = placeForUsageRow({ ...base, store: 'space_plan', doc_key: 'plan-uuid-2', live: false })
+    expect(archived.live).toBe(false)
+  })
+
   it('keeps an unknown store visible rather than dropping it', () => {
     expect(placeForUsageRow({ ...base, store: 'later_store', doc_key: 'x' })).toMatchObject({ label: 'later_store: x', href: null })
   })

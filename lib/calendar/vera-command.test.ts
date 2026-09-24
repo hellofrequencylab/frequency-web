@@ -111,6 +111,13 @@ describe('a field change reads the manifest', () => {
     const notes = SPACE_PLAN_MANIFEST.fields.find((f) => f.path === 'notes')
     expect(v.plan.find((s) => s.path === 'notes')?.field).toBe(notes)
     expect(v.plan.find((s) => s.path === 'links')?.row).toBe(SPACE_PLAN_MANIFEST.repeats?.[0])
+    // PROG-CAL14: the Plan grew an Images group, and Vera's vocabulary did NOT grow with it. The
+    // rule is about the KIND, not about this entity: the only id Vera could put in an asset row is
+    // an invented one, and an invented id is a reference to nothing that the usage index would
+    // count and safe delete would then refuse a delete for. Attaching a picture stays a person's
+    // pick from a library they are looking at.
+    expect(SPACE_PLAN_MANIFEST.repeats?.some((r) => r.arrayPath === 'files')).toBe(true)
+    expect(v.plan.map((s) => s.path)).not.toContain('files')
     expect(v.entry.map((s) => s.path)).toEqual(['title', 'location', 'description', 'notes', 'allDay', 'startTime', 'endTime', 'showPublicly'])
   })
 

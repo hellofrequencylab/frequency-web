@@ -3,6 +3,8 @@ import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
 import {
   derivePlanStage,
+  parsePlanFiles,
+  PLAN_MAX_FILES,
   keepExplicitExceptions,
   parsePlanInput,
   parsePlanLinks,
@@ -66,6 +68,68 @@ describe('parsePlanLinks', () => {
     expect(parsePlanLinks([{ url: 'https://example.com/doc', label: 'Doc' }])).toEqual([
       { url: 'https://example.com/doc', label: 'Doc' },
     ])
+  })
+})
+
+// ── A PLAN CAN HOLD IMAGES (PROG-CAL14) ──────────────────────────────────────────────────────
+// The Images group stores REFERENCES to Loom assets, so the parser's job is to let nothing through
+// that the Loom cannot trace: a stored id pointing at nothing would be counted by the usage index
+// and would make safe delete refuse a delete for a phantom.
+
+describe('parsePlanFiles', () => {
+  const ID = 'aaaaaaaa-0000-4000-a000-00000000000a'
+  const OTHER = 'bbbbbbbb-0000-4000-a000-00000000000b'
+
+  it('keeps a real Loom reference, id and cached url together', () => {
+    expect(parsePlanFiles([{ assetId: ID, url: 'https://cdn.test/flyer.jpg' }])).toEqual([
+      { assetId: ID, url: 'https://cdn.test/flyer.jpg' },
+    ])
+  })
+
+  it('drops a bare url, which is what an image field would have stored', () => {
+    expect(parsePlanFiles(['https://cdn.test/flyer.jpg'])).toEqual([])
+    expect(parsePlanFiles([{ url: 'https://cdn.test/flyer.jpg' }])).toEqual([])
+  })
+
+  it('drops an id that is not a Loom id, and a url that is not http(s)', () => {
+    expect(parsePlanFiles([{ assetId: 'flyer.jpg', url: 'https://cdn.test/flyer.jpg' }])).toEqual([])
+    expect(parsePlanFiles([{ assetId: ID, url: 'javascript:alert(1)' }])).toEqual([])
+  })
+
+  it('keeps one row per asset, so two refs to one picture do not double its usage count', () => {
+    const twice = parsePlanFiles([
+      { assetId: ID, url: 'https://cdn.test/a.jpg' },
+      { assetId: ID, url: 'https://cdn.test/a.jpg?v=2' },
+      { assetId: OTHER, url: 'https://cdn.test/b.jpg' },
+    ])
+    expect(twice.map((f) => f.assetId)).toEqual([ID, OTHER])
+  })
+
+  it('caps the collection where the drawer stops offering Add', () => {
+    const many = Array.from({ length: PLAN_MAX_FILES + 4 }, (_, i) => ({
+      assetId: `aaaaaaaa-0000-4000-a000-0000000000${String(i).padStart(2, '0')}`,
+      url: `https://cdn.test/${i}.jpg`,
+    }))
+    expect(parsePlanFiles(many)).toHaveLength(PLAN_MAX_FILES)
+  })
+
+  it('reads anything that is not a list as no images at all', () => {
+    expect(parsePlanFiles(null)).toEqual([])
+    expect(parsePlanFiles({ assetId: ID, url: 'https://cdn.test/a.jpg' })).toEqual([])
+  })
+
+  it('is what parsePlanInput writes, so nothing reaches the column unvalidated', () => {
+    const parsed = parsePlanInput({
+      title: 'Fall retreat',
+      files: [
+        { assetId: ID, url: 'https://cdn.test/flyer.jpg' },
+        { assetId: 'nope', url: 'https://cdn.test/other.jpg' },
+      ],
+    })
+    expect('data' in parsed && parsed.data.files).toEqual([{ assetId: ID, url: 'https://cdn.test/flyer.jpg' }])
+    // A Plan with no images is an empty list, never null: the column is `not null default '[]'`.
+    const bare = parsePlanInput({ title: 'Fall retreat' })
+    expect('data' in bare && bare.data.files).toEqual([])
   })
 })
 

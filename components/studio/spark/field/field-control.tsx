@@ -22,6 +22,7 @@ import { ImageIcon, X } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { LoomPicker } from '@/components/loom/loom-picker'
+import { assetRefFromField, assetRefToField } from '@/lib/library/asset-ref'
 import { RepeatPicker } from '@/components/events/repeat-picker'
 import type { FieldDef, FieldKind } from '@/lib/studio/kernel/manifest'
 import { cn } from '@/lib/utils'
@@ -393,6 +394,21 @@ function renderControl({
         />
       )
 
+    // A REFERENCE to one Loom asset (PROG-CAL14). Same picker, same scope, same popup as `image`:
+    // what differs is the value, which keeps the asset id beside the cached url so the record can
+    // be found by the usage index before that asset is retired.
+    case 'asset':
+      return (
+        <LoomAssetSlot
+          value={asText(value)}
+          onChange={(next) => onChange(next)}
+          label={def.label}
+          scopeKey={scopeKey}
+          disabled={disabled}
+          id={common.id}
+        />
+      )
+
     case 'images':
       return (
         <LoomImageSlot
@@ -537,6 +553,97 @@ function LoomImageSlot({
           multiple={multiple}
           onSelectAsset={(pick) => onChange(pick.url as string & string[])}
           onSelectMany={(urls) => onChange([...list, ...urls] as string & string[])}
+        />
+      )}
+    </div>
+  )
+}
+
+/**
+ * ONE Loom asset, held as a REFERENCE (PROG-CAL14, ADR-1130).
+ *
+ * The same popup as `LoomImageSlot` above, scoped to images, with one difference that is the whole
+ * point of the kind: what it stores. An `image` field keeps the url the picker returned, so the
+ * record it is saved on is invisible to the usage index and an operator can retire that asset with
+ * nothing warning them. This keeps `"<assetId> <url>"` (lib/library/asset-ref.ts), so the reference
+ * is stored and the cached url still paints the thumbnail with no lookup.
+ *
+ * A pick with NO library row cannot be referenced, and it is REFUSED out loud rather than dropped:
+ * a silent no-op is the swallowed fail-safe AGENTS.md warns about. Scoped to `kinds={['image']}`,
+ * every asset in the popup has a row, so the line is a guard, not a routine state.
+ */
+function LoomAssetSlot({
+  value,
+  onChange,
+  label,
+  scopeKey,
+  disabled,
+  id,
+}: {
+  value: string
+  onChange: (next: string) => void
+  label: string
+  scopeKey?: string
+  disabled?: boolean
+  id?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [refused, setRefused] = useState(false)
+  const ref = assetRefFromField(value)
+
+  return (
+    <div>
+      {ref && (
+        <div className="mb-2 flex items-center gap-2">
+          {/* A plain img, not next/image: an operator-chosen Loom url at thumbnail size inside an
+              editor, where optimization buys nothing and the allow-list would need every host. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={ref.url} alt="" className="h-10 w-10 shrink-0 rounded-control border border-border object-cover" />
+          <span className="min-w-0 flex-1 truncate text-2xs text-muted">{ref.url}</span>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => {
+              setRefused(false)
+              onChange('')
+            }}
+            className="shrink-0 rounded-control border border-border p-1 text-muted transition-colors hover:text-text disabled:opacity-50"
+          >
+            <X className="h-3 w-3" aria-hidden />
+            <span className="sr-only">Remove {label}</span>
+          </button>
+        </div>
+      )}
+
+      <button
+        id={id}
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+      >
+        <ImageIcon className="h-3.5 w-3.5" aria-hidden />
+        {ref ? 'Change' : 'Choose from the Loom'}
+      </button>
+
+      {refused && (
+        <p role="status" className="mt-1.5 text-2xs text-muted">
+          That picture is not in the Loom yet, so it cannot be attached. Upload it in the popup and pick it again.
+        </p>
+      )}
+
+      {open && (
+        <LoomPicker
+          open={open}
+          onClose={() => setOpen(false)}
+          title={`Choose ${label}`}
+          scopeKey={scopeKey}
+          kinds={['image']}
+          onSelectAsset={(pick) => {
+            const next = pick.assetId ? assetRefToField({ assetId: pick.assetId, url: pick.url }) : ''
+            setRefused(!next)
+            if (next) onChange(next)
+          }}
         />
       )}
     </div>

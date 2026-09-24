@@ -210,8 +210,27 @@ export function Dialog({
         // the opaque sheet while still scroll-locking the body and trapping focus off-screen — so uploading
         // or editing a Space image from mobile looked completely dead. Lightboxes (z-[100]), drawers
         // (z-[150]/[160]) and the impersonation banner (z-[200]) still sit above it, as intended.
-        'fixed inset-0 flex justify-center bg-ink/60 backdrop-blur-sm',
-        align === 'overlay' ? 'z-[70] overflow-hidden' : 'z-[80] overflow-y-auto',
+        'fixed inset-0 flex justify-center bg-ink/60',
+        // 🔴 NO BACKDROP FILTER ON THE TAKEOVER (LIVE-495, owner report 2026-09-24: "Popup screen
+        // is still super glitchy ... not a timer ... when I moved the mouse").
+        //
+        // `backdrop-filter` makes the browser re-rasterise everything behind this element whenever
+        // anything behind it repaints -- and a hover anywhere in the app shell is a repaint. At
+        // `align="overlay"` this is `fixed inset-0` over a WHOLE signed-in page whose own sticky
+        // header carries a second `backdrop-blur-sm` (components/layout/app-shell.tsx), so the two
+        // filters stack across the full viewport. That is the stutter: it is compositing, not
+        // React. Nothing in the console changes state on a mouse move -- its only pointer handler
+        // is `onDragOver`, which fires mid-drag and not otherwise.
+        //
+        // It costs nothing to give up here, which is the other half of why this is the right cut.
+        // `align="overlay"` is the calendar console and the panel covers all but a thin margin of
+        // the page, so the blur was painting a few millimetres of edge at `sm` radius. The DIM
+        // stays, and the dim is what the design asked for: LIVE-472's ruling was "a panel on a
+        // dimmed page, not edge to edge", and `bg-ink/60` is that dimming.
+        //
+        // The smaller aligns keep it: a centred card covers little, so the filter is cheap there
+        // and the separation is worth more.
+        align === 'overlay' ? 'z-[70] overflow-hidden' : 'z-[80] overflow-y-auto backdrop-blur-sm',
         // `sheet` goes edge-to-edge on mobile (panel fills the viewport), then a centered card at sm+.
         //
         // SAFE AREAS BELONG HERE, not in each caller. This primitive padded by a flat 16px (and

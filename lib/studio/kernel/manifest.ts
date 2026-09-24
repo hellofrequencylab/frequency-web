@@ -84,6 +84,13 @@ export const FIELD_KINDS = [
   // media
   'image',
   'images',
+  // A REFERENCE to one Loom asset, not a url. Distinct from `image`, whose value is the cached url
+  // and nothing else: a reference survives a version rollback, and it is what the usage index reads
+  // when it answers "which records use this asset?" before a delete (ADR-1130, ADR-1502, PROG-D4).
+  // An `image` field is the right kind for a painted picture whose column is TEXT; this is the kind
+  // for a field whose whole job is to say WHICH asset, so retiring that asset can see it first.
+  // Its control is the same Loom picker every image field opens, so it adds no upload path.
+  'asset',
   // flags
   'toggle',
 ] as const
