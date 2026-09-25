@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Users, UserPlus, CalendarDays, Building2, ArrowUpRight } from 'lucide-react'
 import { EntityCard } from '@/components/cards/entity-card'
+import { BrandAnchor } from '@/components/spaces/brand-anchor'
 import type { NetworkedSpace } from '@/lib/spaces/discovery'
 import { FoundingBusinessBadge } from '@/lib/community-roles'
 
@@ -17,6 +18,12 @@ import { FoundingBusinessBadge } from '@/lib/community-roles'
 // and action read over any operator cover. The per-Space brand_accent is deliberately NOT painted here
 // (D4: "the accent is a guest, not the host"). Operator images (cover + logo) are arbitrary URLs, so
 // they render via a plain <img> (like BrandMark), not next/image.
+//
+// The logo chip is NOT drawn here: it is `BrandAnchor`, the same component the Space profile header
+// draws, at `size="card"`. See that file for the rules it carries (a photo fills the chip, a logo sits
+// whole on it with a contrast halo, the operator's `logoBackdrop` decides whether there is a plate at
+// all, and the chip rides `--radius-cover` because it and the cover are the two pieces of identity
+// media). A local copy of that treatment is what this card used to hold, and it was wrong on all four.
 
 // The full-bleed banner: the operator's cover image, or a calm DAWN gradient placeholder so a Space
 // without a cover still reads as a finished card (never a blank grey box). Decorative (alt="").
@@ -31,29 +38,6 @@ function SpaceCover({ coverUrl }: { coverUrl: string | null }) {
     <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg">
       <Building2 className="h-7 w-7 text-primary-strong/40" aria-hidden />
     </div>
-  )
-}
-
-// The brand anchor overlaid bottom-left on the cover: the operator's logo, or a neutral icon chip.
-// Decorative (alt=""): the card title already carries the Space name, so it is not announced twice.
-function SpaceLogo({ logoUrl }: { logoUrl: string | null }) {
-  if (logoUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element -- operator-supplied Space logo URL, not a build-time asset (matches BrandMark / circle-cover)
-      <img
-        src={logoUrl}
-        alt=""
-        className="h-12 w-12 rounded-control border border-border bg-surface object-contain lift-1"
-      />
-    )
-  }
-  return (
-    <span
-      className="flex h-12 w-12 items-center justify-center rounded-control border border-border bg-surface text-subtle lift-1"
-      aria-hidden
-    >
-      <Building2 className="h-5 w-5" />
-    </span>
   )
 }
 
@@ -87,9 +71,19 @@ export function SpaceCard({ space }: { space: NetworkedSpace }) {
           <span className="absolute left-3 top-3 rounded-pill bg-surface/90 px-2.5 py-0.5 text-2xs font-semibold text-text lift-1 backdrop-blur-sm">
             {space.kindLabel}
           </span>
-          {/* LOGO, bottom-left. */}
+          {/* LOGO, bottom-left — the SAME BrandAnchor chip the Space profile header draws, at the card
+              box (`size="card"`). It used to be a local copy that fit every image with object-contain on
+              an always-on plate, so a photo avatar sat letterboxed between white bars and a transparent
+              mark got the white square its operator had turned off. Composing the real chip is what makes
+              the fit rule, the contrast halo, the identity-media radius and the operator's backdrop choice
+              ONE fact instead of two that drift. */}
           <span className="absolute bottom-3 left-3">
-            <SpaceLogo logoUrl={space.logoUrl} />
+            <BrandAnchor
+              name={space.name}
+              logoUrl={space.logoUrl}
+              backdrop={space.logoBackdrop}
+              size="card"
+            />
           </span>
         </>
       }

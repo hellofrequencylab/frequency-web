@@ -95,3 +95,43 @@ describe('every surface that draws the chip passes the viewer the same answer', 
     }
   })
 })
+
+describe('the directory card draws the SAME chip, not a copy of it', () => {
+  // 🔴 What this pins, from the reading that prompted it: the card used to hand-roll the chip with
+  // `object-contain` on an always-on `bg-surface` plate. A photo avatar therefore rendered letterboxed
+  // between white bars, and a Space that had turned the plate OFF still got a white square around its
+  // transparent mark on every card in the directory — the first place a visitor meets it. Composing
+  // BrandAnchor is the fix; re-authoring the treatment locally is the regression.
+  const CARD = readFileSync(new URL('./space-card.tsx', import.meta.url), 'utf8')
+
+  it('composes BrandAnchor at the card size', () => {
+    expect(CARD).toContain("import { BrandAnchor }")
+    expect(CARD).toContain('size="card"')
+  })
+
+  it('passes the operator\'s backdrop choice through, so the toggle reaches the card too', () => {
+    expect(CARD).toContain('backdrop={space.logoBackdrop}')
+    // The card is a pure presenter; the READ that answers it lives in the directory query.
+    const discovery = readFileSync(new URL('../../lib/spaces/discovery.ts', import.meta.url), 'utf8')
+    expect(discovery).toContain('logoBackdrop: readLogoBackdrop(r.preferences)')
+  })
+
+  it('does not re-author the fit / plate treatment locally', () => {
+    // The exact strings that used to stand in the card's own SpaceLogo. Naming them is what stops a
+    // well-meaning "just style the little logo here" from reintroducing both defects at once.
+    expect(CARD).not.toMatch(/function SpaceLogo\b/)
+    // The retired chip, named so a "restore the little logo" edit cannot quietly bring it back.
+    expect(CARD).not.toContain('rounded-control border border-border bg-surface')
+    // Exactly ONE raw <img> is left in the card — the cover. The logo's is BrandAnchor's now.
+    expect(CARD.match(/no-img-element/g) ?? []).toHaveLength(1)
+  })
+
+  it('scales only the box between the two sizes', () => {
+    // Fit, halo, plate and radius are decided once for both; a size that also changed one of those
+    // would be the old drift with a nicer name.
+    const sizes = SOURCE.slice(SOURCE.indexOf('const SIZES'), SOURCE.indexOf('export function BrandAnchor'))
+    for (const banned of ['object-', 'bg-surface', 'border-', 'rounded-']) {
+      expect(sizes, `the size map must not carry ${banned}`).not.toContain(banned)
+    }
+  })
+})
