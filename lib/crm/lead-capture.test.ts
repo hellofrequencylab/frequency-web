@@ -66,12 +66,20 @@ vi.mock('@/lib/crm/interactions', () => ({ recordContactInteraction: recordInter
 // consent unless the door is consent-native). No IO — network-free.
 
 describe('door taxonomy', () => {
-  it('recognizes exactly the five doors', () => {
-    expect([...LEAD_DOORS]).toEqual(['space_qr', 'warm_intro', 'event', 'lead_magnet', 'share_back'])
+  it('recognizes exactly the six doors', () => {
+    expect([...LEAD_DOORS]).toEqual([
+      'space_qr',
+      'warm_intro',
+      'event',
+      'lead_magnet',
+      'share_back',
+      'contact_form',
+    ])
     for (const d of LEAD_DOORS) expect(isLeadDoor(d)).toBe(true)
     expect(isLeadDoor('nope')).toBe(false)
     expect(isLeadDoor(null)).toBe(false)
     expect(doorLabel('space_qr')).toBe('QR scan')
+    expect(doorLabel('contact_form')).toBe('Contact form')
   })
 })
 
@@ -90,6 +98,27 @@ describe('consent posture (capture != marketing consent)', () => {
   it('a warm intro is mailable only once accepted (double opt-in)', () => {
     expect(isMailableDoor('warm_intro')).toBe(false)
     expect(isMailableDoor('warm_intro', { introAccepted: true })).toBe(true)
+  })
+
+  // THE CONTACT FORM'S WHOLE CONSENT STORY. Writing to a Space is not asking to be marketed at, so
+  // the door is NOT consent-native: the sender's own tick on the form is the only thing that lifts
+  // it. Same shape as the two conditional doors above (offerUnlocked / introAccepted), deliberately
+  // — a new door must not invent a second way to express consent.
+  it('a contact form is mailable ONLY when the sender ticked the box', () => {
+    expect(isMailableDoor('contact_form')).toBe(false)
+    expect(isMailableDoor('contact_form', { optedIn: false })).toBe(false)
+    expect(isMailableDoor('contact_form', { optedIn: true })).toBe(true)
+  })
+
+  it('an unticked contact form seals an unknown lead; a ticked one subscribes', () => {
+    expect(consentStateForDoor('contact_form', 'unknown')).toBe('unknown')
+    expect(consentStateForDoor('contact_form', 'unknown', { optedIn: true })).toBe('subscribed')
+  })
+
+  // The opt-out is permanent and outranks the tick: someone who unsubscribed and later sends a
+  // message with the box ticked must NOT be resurrected onto the mailing list.
+  it('a ticked box never resurrects an unsubscribed lead', () => {
+    expect(consentStateForDoor('contact_form', 'unsubscribed', { optedIn: true })).toBe('unsubscribed')
   })
 
   it('default sealed lead stays unknown; mailable door lifts unknown -> subscribed', () => {

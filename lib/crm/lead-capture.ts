@@ -48,7 +48,7 @@ import type { Json } from '@/lib/database.types'
 // ── Doors ─────────────────────────────────────────────────────────────────────────────────────────
 
 /** The lead-grab door taxonomy. Kept in lock-step with lead_entry_points.kind in the migration. */
-export const LEAD_DOORS = ['space_qr', 'warm_intro', 'event', 'lead_magnet', 'share_back'] as const
+export const LEAD_DOORS = ['space_qr', 'warm_intro', 'event', 'lead_magnet', 'share_back', 'contact_form'] as const
 export type LeadDoor = (typeof LEAD_DOORS)[number]
 
 export function isLeadDoor(v: unknown): v is LeadDoor {
@@ -68,6 +68,8 @@ export function doorLabel(door: LeadDoor): string {
       return 'Lead magnet'
     case 'share_back':
       return 'Share back'
+    case 'contact_form':
+      return 'Contact form'
   }
 }
 
@@ -79,6 +81,9 @@ export interface DoorConsentOpts {
   offerUnlocked?: boolean
   /** The warm intro was accepted (double-opt-in complete). */
   introAccepted?: boolean
+  /** The sender TICKED the opt-in box on a contact form. Sending a message is not consent to be
+   *  marketed at, so the contact-form door is mailable only when the person said so themselves. */
+  optedIn?: boolean
 }
 
 /**
@@ -90,6 +95,9 @@ export function isMailableDoor(door: LeadDoor, opts: DoorConsentOpts = {}): bool
   if (door === 'lead_magnet') return true
   if (door === 'space_qr') return !!opts.offerUnlocked
   if (door === 'warm_intro') return !!opts.introAccepted
+  // A contact form carries its OWN opt-in checkbox: writing to someone is not asking to hear from
+  // them, so the tick is the only thing that makes the lead mailable.
+  if (door === 'contact_form') return !!opts.optedIn
   // event + share_back are never mailable on capture alone.
   return false
 }
@@ -490,6 +498,8 @@ export interface CaptureLeadInput {
   codeId?: string | null
   offerUnlocked?: boolean
   introAccepted?: boolean
+  /** The contact-form opt-in tick (see DoorConsentOpts.optedIn). */
+  optedIn?: boolean
   /** Timeline touch channel (qr / in_person / event / system). Defaults by door. */
   channel?: string | null
   metadata?: Record<string, unknown> | null
@@ -525,7 +535,11 @@ export async function captureLead(input: CaptureLeadInput): Promise<CaptureResul
     const phoneKey = normalizePhoneKey(input.phone)
     if (!email && !phoneKey) return null // nothing to claim on later
 
-    const opts: DoorConsentOpts = { offerUnlocked: input.offerUnlocked, introAccepted: input.introAccepted }
+    const opts: DoorConsentOpts = {
+      offerUnlocked: input.offerUnlocked,
+      introAccepted: input.introAccepted,
+      optedIn: input.optedIn,
+    }
     const where = clip(input.where, MAX_WHERE)
     const label = clip(input.label ?? doorLabel(input.door), MAX_LABEL)
 

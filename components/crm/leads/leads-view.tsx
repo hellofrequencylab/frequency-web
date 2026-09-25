@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { QrCode, UserCheck, UserPlus, Gift, CalendarDays, Handshake, Sparkles, CircleCheck, CircleDashed } from 'lucide-react'
+import { QrCode, UserCheck, UserPlus, Gift, CalendarDays, Handshake, Sparkles, MessageSquare, CircleCheck, CircleDashed } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -36,6 +36,11 @@ const DOOR_META: Record<LeadDoor, { label: string; Icon: LucideIcon; blurb: stri
     label: 'Share back',
     Icon: Sparkles,
     blurb: 'A reciprocal exchange where both sides shared details.',
+  },
+  contact_form: {
+    label: 'Contact form',
+    Icon: MessageSquare,
+    blurb: 'They wrote to you from your Space page. Writing is not consent, so they are mailable only if they ticked the box.',
   },
 }
 

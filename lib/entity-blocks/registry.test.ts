@@ -51,6 +51,8 @@ describe('unified entity-block registry', () => {
       'accentBeat',
       'displayHeading',
       'prose',
+      // A form posts into a Space's CRM, so there is no member or email equivalent to share it with.
+      'contactForm',
     ])
     // Email-only content blocks (Phase 4): the data-bound `productCard` resolves live commerce data at send
     // time, so it belongs only to the email kind (a Space already shows its catalog via the `offerings` data

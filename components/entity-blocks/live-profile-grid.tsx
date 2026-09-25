@@ -170,7 +170,10 @@ export function LiveProfileGrid({
       // A Features block sourced from live Space data (ADR-585) cannot resolve its items on the client, so it
       // keeps its SERVER node (which awaited the resolver) — mirroring how DATA blocks keep theirs. An authored
       // Features / any other content block still repaints instantly from the store.
-      if (id === 'features' && isFeatureDataSource(props)) {
+      // Same reasoning for the CONTACT FORM: only the server render knows which Space the page is,
+      // so repainting it here from the store would swap the live, submittable form for the dead
+      // preview the moment an operator edited any block on the page.
+      if ((id === 'features' && isFeatureDataSource(props)) || id === 'contactForm') {
         node = nodes[id]
       } else {
         node = hasContent(id, props) ? <ContentBlockView id={id} props={props ?? {}} /> : nodes[id]

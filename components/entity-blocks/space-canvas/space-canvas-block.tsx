@@ -50,7 +50,7 @@ const DESIGN_IDS: ReadonlySet<string> = new Set(DESIGN_ENTITY_BLOCK_IDS)
 /** Structural content blocks that carry NO inline-authorable copy: they render a faithful READ-ONLY preview of
  *  the real published block (ContentBlockView) so the canvas matches the page, instead of a bare field stack.
  *  Their content is set in the rail (a link row, a pasted media URL, a picked Recording). */
-const STRUCTURAL_PREVIEW_IDS: ReadonlySet<string> = new Set(['links', 'embed', 'recording'])
+const STRUCTURAL_PREVIEW_IDS: ReadonlySet<string> = new Set(['links', 'embed', 'recording', 'contactForm'])
 
 // ── Canvas typography, matched to the published design components so the page style shows while editing. ──
 // `eyebrow` + `font-eyebrow` are copied from kit.tsx's Eyebrow ON PURPOSE, because this canvas exists to
