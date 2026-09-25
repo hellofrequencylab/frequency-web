@@ -47935,6 +47935,83 @@ deadlocked.
 two-dispatch reading. LIVE-476 is untouched by this: its stable desktop diff is not an environment
 difference, and the measurement that shows it is recorded on the row.
 
+## ADR-1526: A public Space page shows the Space, and an ISR render declares it has no viewer rather than being audited for one (LIVE-500)
+
+**Status:** Accepted · 2026-09-25 · backlog `LIVE-500` (closed here) · restores
+[ADR-1080](DECISIONS.md) on the Space share URL · leaves [ADR-1465](DECISIONS.md) and
+[ADR-1452](DECISIONS.md) intact on routing
+
+**Context.** On 2026-09-24 the owner opened `/spaces/royaltemple` in a signed-out window and saw a
+cover, a name, a tagline and a card reading "Want to know Royal Temple? Sign in free to follow this
+Space." None of that Space's fourteen blocks rendered. The same URL is in `app/sitemap.ts`, so that
+is also what Googlebot, which cannot sign in, had been indexing.
+
+Nothing ruled it. #2781 (`01dc5fe`, 2026-09-19, SCAN-644 / ADR-1465) moved the share URL out of
+`(main)` so that layout's `getMyProfileId` would stop voiding ISR on every sitemap-advertised Space.
+GitHub records the old body as RENAMED to `(profile)/full/page.tsx` at +4/−0 — the block grid was
+not deleted, it was moved behind a URL a signed-out visitor is never routed to
+(`lib/nav/member-space-rewrite.ts`, `if (!signedIn) return null`). What replaced it at the share URL
+was an 84-line stub whose only child was a `<SignInCta>`. ADR-1465's Decision and Consequences are
+about cookies, ISR and keeping PRIVATE Spaces at 404; neither it nor ADR-1452 argues that a public
+Space shows a stranger less. ADR-1080 had already ruled the other way, in words that cover this
+exactly: *a signed-out visitor following a shared Circle or event link sees the thing instead of a
+form.* The reduction was collateral, and it held for six days.
+
+**Why nothing caught it.** `lib/nav/public-detail-isr.test.ts` reads each public page's OWN source
+for `cookies()`, `getMyProfileId` and friends. It cannot see one level down, and it asserts nothing
+about the page rendering anything at all. A stub passes every question a stub can be asked. That is
+the `AGENTS.md` rule — *every fail-safe needs a gate that notices it fired* — with the roles
+reversed: the gate was watching the wrong property.
+
+**The real constraint.** The body could not simply be restored, because the page is ISR
+(`revalidate = 3600`). The Space profile render reaches about 256 server modules, and measured
+before this change THREE of them executed a viewer read the file-local gate could not see:
+`getSpaceCommunity` (`lib/spaces/content-data.ts`), the Circles block's own member check
+(`components/widgets/space-profile/circles.tsx`), and `getSpaceProgram` (`lib/spaces/enroll.ts`,
+reached when a Features block picks the `program` source). One `cookies()` read makes Next render
+the route per request, which is the entire cost SCAN-643 and SCAN-644 were opened to remove.
+
+**Decision.** The public body renders the Space, and states that it has no viewer.
+
+1. `app/(public)/spaces/[slug]/page.tsx` renders the same `<SpaceProfileModules>` the member body
+   renders, off the same `preferences.profileLayout` node, parsed by the same pure
+   `parseEntityLayout`. Not a public variant of the page — the page.
+2. The sign-in card is DEMOTED below the content, the shape `app/(public)/events/[slug]/page.tsx`
+   already uses (body in `interiorMain`, CTA in `interiorSide`). The card was never the problem;
+   standing in front of the content was.
+3. `markAnonymousRender()` (`lib/core/anonymous-render.ts`) is the first statement of the body and of
+   `generateMetadata`. `getCachedUser` honours it BEFORE constructing a Supabase client, which is
+   where `cookies()` is read. Every server-side identity read funnels through that one function
+   (ADR-1244, LIVE-178), so `getCallerProfile`, `getMyProfileId`, `isPlatformStaff` and
+   `isPaidViewer` all go anonymous — including in code written after this ADR.
+4. A reader that takes a cookie WITHOUT resolving a viewer is outside that seam and answers for
+   itself. There is one on this render, `viewerHidesDemo` (`lib/demo-preference.ts`), and it checks
+   the flag directly. The seam's own header names this boundary so the next one is looked for.
+5. Read-only is a consequence, not a feature: with no viewer every member and owner check resolves
+   false, so join, follow, RSVP and owner tools render as their signed-out selves rather than each
+   having to remember to hide.
+
+**Rejected.** *Threading a null viewer through the three call sites.* It fixes three and leaves the
+fourth to whoever adds the next block, silently, exactly as this defect arrived. *A transitive
+import-graph gate.* Measured: all seven sibling public pages REACH a viewer read while shipping ISR
+correctly, because reachability is not execution — a gate that red on seven green pages is the
+red-that-means-nothing of [ADR-970](DECISIONS.md). *Making the page dynamic.* That is SCAN-644
+undone. *Moving the share URL back into `(main)`.* Same. *Treating the flag as a privilege
+downgrade usable inside a member render.* A signed-in surface that wants a public view passes a null
+viewer id to the reader it calls, as every reader already accepts.
+
+**Consequences.** ADR-1465 stands: the page stays in `(public)`, stays `revalidate = 3600`,
+signed-in visitors still rewrite to `/full`, private Spaces still 404 for a null viewer. An ISR
+document is built once and served to everyone, so "this render has no viewer" is not a policy choice
+on such a page — it is the only true statement about it, and the flag makes the code say what the
+cache already assumes. `LIVE-500` carries a probe that fails if the page stops rendering blocks,
+stops declaring itself, puts the card back in front, or if the seam stops being honoured ahead of
+`createClient`; it and the unit gate were each watched go RED against those mutations before being
+trusted. Any new `app/(public)/` page that renders member-aware content calls
+`markAnonymousRender()` first.
+
+**Rows.** LIVE-500 (closed here). Untouched: SCAN-644, SCAN-643, LIVE-184 (the tab set the sitemap
+advertises is unchanged).
 ## ADR-1528: The Contact tab reads the contactForm block's own bag, and a reserved slug is reserved in both readers (LIVE-502)
 
 **Status:** Accepted · 2026-09-25 · backlog `LIVE-502` (closed here) · owner instruction 2026-09-24
@@ -47998,3 +48075,90 @@ it was written to catch. It now carries a positive control so it cannot go vacuo
 
 **Rows.** LIVE-502 (closed here). LIVE-082 keeps its status with a widened probe. Untouched: the
 Discussion tab and ADR-1469; the stored `#contact` hrefs; `headerCtaFunctionHref`.
+## ADR-1529: A surface whose height is not a function of its content is photographed first-screen-only, and that is a different defect from a stable diff inside a stable frame (LIVE-503, LIVE-504)
+
+**Status:** Accepted · 2026-09-25 · backlog `LIVE-503`, `LIVE-504` (both closed here) · overturns
+the 2026-09-10 refusal recorded in `test/e2e/surfaces.ts` · beside [ADR-1277](DECISIONS.md), which
+added the masks this decision depends on
+
+**Context.** `pr-compare`'s BLOCKING `@shell` tier failed on `/nearby` and `/admin/library` on every
+open pull request — #2894, #2895 and #2896, three disjoint diffs, none of which touches anything
+either page renders — and again on a re-run of #2894's identical commit. Reproducible, not flaky,
+and blocking four PRs at once.
+
+Both failures are about HEIGHT, which is the part of the picture a mask cannot reach.
+
+`/nearby` reported a SIZE mismatch: mobile 390x2791 → 390x2910 and narrow 320x2861 → 320x2980, both
++119px, with desktop passing. `toHaveScreenshot` fails size BEFORE it compares a pixel, so the five
+`data-visual-mask` sites never ran. +119px identical at two widths with desktop unaffected is one
+row entering a single-column list: a published Dispatch.
+
+`/admin/library` reported an 8px flip — 390x5634 and 390x5642 — and the two retries INSIDE ONE RUN
+reported it in both directions. Two heights for one commit in one run is a page that cannot be
+photographed whole: it is both heights, a baseline is one of them, and whichever is committed is red
+from the other side. Re-running never settles that, which is why "flake" was not the diagnosis.
+
+**The 2026-09-10 decision refused `viewportOnly` for `/nearby`** on the grounds that first-screen-only
+"keeps 100% of the drift and gives up 60% of the page". That was true of the tree it was written
+against: the drift was text moving inside boxes, and nothing was masked.
+
+**Decision.** `viewportOnly` on both surfaces, and both KEEP their blocking vote.
+
+1. The 2026-09-10 argument does not survive the evidence, and this is an overturn on changed
+   premises rather than a reversal on taste. [ADR-1277](DECISIONS.md) / LIVE-301 added five
+   `data-visual-mask` sites which already neutralise the drift that argument was about. What a mask
+   cannot neutralise is height — by the flag's own doc, *"a mask paints over a region and the element
+   keeps its box"*. So the two remedies are COMPLEMENTS: masks hold the above-fold text, the flag
+   holds the height. Neither replaces the other, and reaching for the flag first would still be wrong.
+2. The gate for reaching for it is the one `surfaces.ts` already wrote and this change honoured:
+   *"its remedy is the other one. Do not reach for it before the picture shows a dimension change."*
+   The picture showed one. That note also predicted this exact Dispatch case word for word.
+3. `/nearby` keeps its blocking vote. **`/admin/library` does not, and that is a correction made
+   inside this ADR rather than a second decision.** The flag was set on it here too, and it fixed
+   the half it was aimed at — the mobile flip, and every size mismatch on the surface. It then
+   carried a SECOND, INDEPENDENT failure straight through: desktop dawn-dark, 1029 differing pixels,
+   stable across all three attempts and identical again on a re-run ten minutes later on another
+   runner. That is [LIVE-476](BUILD-BACKLOG.json)'s fingerprint to the pixel (`/admin/qr` reads
+   1029 px dawn-dark on its own first screen), so it is shared admin chrome, not this page. The
+   surface moves to `ADVISORY_OPERATOR_SURFACES` under LIVE-504 and its full-page baselines are
+   restored, because on a surface that no longer votes a first-screen capture throws away ~4,800px
+   of the asset grid to buy a vote it does not cast.
+
+   The claim this replaces — "desktop was not among its failures, so the flag alone should settle
+   it" — was the one thing here not measured before it was written, and LIVE-492's entry in
+   `surfaces.ts` had already stated the general case one surface over: `viewportOnly` addresses a
+   height that is not a function of content, and "a stable difference inside a stable frame" is
+   not that.
+4. What is given up is stated rather than performed silently: everything below the first screen on
+   both pages. What stays photographed is the hero band, the two-column grammar, section headers and
+   quick links on one; the admin chrome, heading, stat cards and controls on the other.
+
+**Recapturing the baselines is not the forbidden act, and the difference matters.** `surfaces.ts`
+refuses an in-place recapture for `/nearby` by name — it *"resets a clock that drifts again within
+the hour"* — and that refusal stands. Setting the flag makes the committed whole-page pictures wrong
+BY DEFINITION, so replacing them is a consequence of the decision, not a way of making a red go away.
+`baseline-distinctness.test.ts` is what keeps that honest: it failed on exactly 10 PNGs until they
+were viewport-sized, and it is the in-repo guard that a surface cannot claim this flag while carrying
+whole-page pictures.
+
+**Consequences.**
+
+- Each row's probe asserts BOTH the flag AND the committed PNG heights, with a positive control that
+  reads a known whole-page baseline. A probe on the flag alone passes against stale full-page
+  baselines, which is precisely the gate that does not gate.
+- `pr-compare` on `6c7c049` proved the flag took effect before the recapture landed: the comparison
+  INVERTED, reporting *"Expected an image 390px by 2791px, received 390px by 844px"* — the actual
+  capture is now exactly the mobile viewport height, and 320x568 at narrow.
+- A future height regression on `/nearby` is invisible to this tier below the fold. That is the
+  price of the flag, and it is why `/nearby` keeps its vote rather than also being downgraded.
+- `/admin/library` stops voting entirely until LIVE-504 closes. It is still captured, still
+  compared and still reported; what it gives up is the ability to fail a pull request. The row is
+  the debt, and closing the LIVE-476 class would close all three of its instances at once.
+- **The live asset grid was ruled out by measurement, not by argument**, which is the only reason
+  a mask was not reached for: `library_assets` had no row created or updated between the capture
+  and either comparison, `library_collections` none since July, `platform_flags` none since
+  2026-09-05. The subject of the picture was frozen, so a `data-visual-mask` over the grid would
+  have covered the wrong region and looked like a fix.
+- `e2e.yml` has no `main` trigger, so `pr-compare` only ever runs on pull requests and the
+  "is it red on the base branch too?" control is unavailable for any PR in this repository. Recorded
+  as a separate finding.
