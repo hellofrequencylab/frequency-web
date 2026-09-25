@@ -17049,6 +17049,23 @@
       }
     },
     {
+      "id": "LIVE-511",
+      "title": "The Contact me button jumped to the Home facts card while a full Contact page with the operator's form sat one tab away",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/spaces/header-cta.ts",
+        "ref": "Owner instruction 2026-09-25: \"make the Contact me button go to the Contact page by default\""
+      },
+      "detail": "FILED AND CLOSED 2026-09-25 from the owner's instruction, and it is the SAME defect class LIVE-509 fixed for `join` one commit earlier: a header-CTA key whose href had outlived its own name.\n\n`contact` resolved to ${base}#contact, the Home section anchor. That anchor scrolls to the SpaceContact card, which is the published FACTS alone (address, hours, phone, email, website). The Contact TAB shipped with LIVE-502 and carries the operator's own contact form -- the one that writes a CRM lead and notifies the owner -- AND those same facts beneath it. So the one button a Space gets was landing on the smaller half of its own contact surface, and the half that cannot receive a message.\n\nSAFE FOR EVERY SPACE THAT STORES THE KEY, checked against the live table rather than assumed. Three Spaces store it: royaltemple, kenton-hoppas, david-steel. All three are type `business`, so the route's only redirect arm (root) cannot bite. Two have never placed a contactForm block, and for them the page renders the form with its DEFAULT wording plus their published facts, which is the failure LIVE-502 chose deliberately: the door still works and the operator copy, when they write it, lands in both places at once. None of the three can reach a 404.\n\nTHE #contact ANCHOR IS UNTOUCHED. The `contact` block still renders on Home, so the section id still exists and the stored \"Get in touch\" buttons across the Space page docs keep resolving. Only this one button moves.\n\n`offerings` deliberately stays an anchor, and the asymmetry is now asserted rather than left to be discovered: there is no /offerings page, so a later sweep that \"finished the job\" would 404 every Space storing that key. A test walks the offered list and pins the pairing between each key and its hint -- a key that opens a page says \"Opens\", the one that scrolls says \"Jumps to\" -- because the `join` defect was exactly a picker hint that outlived its href.\n\nMutation-tested: four on the resolver and the hints, four on the row's own probe, each caught.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\")\nconst fail=(m)=>{console.error(m);process.exit(1)}\nconst rd=(f)=>{try{return fs.readFileSync(f,\"utf8\")}catch(e){return null}}\nconst H=rd(\"lib/spaces/header-cta.ts\")\nif(H===null)fail(\"lib/spaces/header-cta.ts is gone\")\nconst body=H.slice(H.indexOf(\"export function headerCtaFunctionHref\"))\nif(body.length===0)fail(\"headerCtaFunctionHref is gone, so nothing resolves the header button\")\nconst arm=/case [\\x22\\x27]contact[\\x22\\x27]:[\\s\\S]{0,400}?return ([^\\n]+)/.exec(body)\nif(!arm)fail(\"headerCtaFunctionHref has no contact arm\")\nif(arm[1].includes(\"#\"))fail(\"the contact button jumps to the Home anchor again, which is the facts card alone and not the Space contact page\")\nif(!arm[1].includes(\"/contact\"))fail(\"the contact button no longer opens the contact page\")\nconst off=/case [\\x22\\x27]offerings[\\x22\\x27]:[\\s\\S]{0,300}?return ([^\\n]+)/.exec(body)\nif(!off)fail(\"headerCtaFunctionHref has no offerings arm\")\nif(!off[1].includes(\"#offerings\"))fail(\"offerings was pointed at a page, and there is no /offerings route for it to open\")\nconst R=rd(\"app/(main)/spaces/[slug]/(profile)/contact/page.tsx\")\nif(R===null)fail(\"the contact page the button now opens does not exist\")\nif(/notFound\\(\\)/.test(R)&&!/getVisibleSpaceBySlug/.test(R))fail(\"the contact page 404s without resolving a space, so the button would land on a dead end\")\nconst list=/HEADER_CTA_FUNCTIONS[\\s\\S]*?\\] as const/.exec(H)\nif(!list)fail(\"the offered header-CTA list is gone\")\nif(/hint: [\\x22\\x27]Jumps to your contact/.test(list[0]))fail(\"the contact hint still promises a jump to a section, so the picker describes a behavior the code no longer has\")\nconsole.log(\"ok\")'"
+      }
+    },
+    {
       "id": "LIVE-507",
       "title": "An event cover with a stored aspect collapsed to a square on phones, because neither axis was definite",
       "status": "done",

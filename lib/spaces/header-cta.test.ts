@@ -76,12 +76,35 @@ describe('readHeaderCtaPreference', () => {
 })
 
 describe('headerCtaFunctionHref', () => {
-  it('maps anchors to Home sections and the transactional keys to /book', () => {
-    expect(headerCtaFunctionHref('contact', BASE)).toBe(`${BASE}#contact`)
-    expect(headerCtaFunctionHref('offerings', BASE)).toBe(`${BASE}#offerings`)
+  it('keeps the transactional keys on /book', () => {
     expect(headerCtaFunctionHref('book', BASE)).toBe(`${BASE}/book`)
     expect(headerCtaFunctionHref('tickets', BASE)).toBe(`${BASE}/book`)
     expect(headerCtaFunctionHref('donate', BASE)).toBe(`${BASE}/book`)
+  })
+
+  // Owner instruction 2026-09-25: "make the Contact me button go to the Contact page by default."
+  // It jumped to the Home #contact anchor, which is the FACTS card alone, while the Contact tab
+  // (LIVE-502) carries the operator's own form AND those facts. The one button a Space gets was
+  // landing on the smaller half of its own contact surface.
+  it('opens the contact PAGE, not the Home anchor', () => {
+    expect(headerCtaFunctionHref('contact', BASE)).toBe(`${BASE}/contact`)
+  })
+
+  // `offerings` stays an anchor, and the asymmetry is asserted rather than left to be discovered:
+  // there is no /offerings page to open, so a sweep that "finished the job" by pointing it at one
+  // would produce a 404 for every Space that stores the key.
+  it('leaves offerings on the Home anchor, because no /offerings page exists', () => {
+    expect(headerCtaFunctionHref('offerings', BASE)).toBe(`${BASE}#offerings`)
+  })
+
+  // The hints are what the operator reads in the picker, and each one is a claim about where the
+  // button goes. A key that opens a page says "Opens"; the one that scrolls says "Jumps to". This
+  // pins the pairing, because the `join` defect was exactly a hint that outlived its href.
+  it('describes each key the way it actually behaves', () => {
+    for (const choice of HEADER_CTA_FUNCTIONS) {
+      const scrolls = headerCtaFunctionHref(choice.key, BASE).includes('#')
+      expect(choice.hint.startsWith(scrolls ? 'Jumps to' : 'Opens'), `${choice.key}: ${choice.hint}`).toBe(true)
+    }
   })
 
   // LIVE-509. `join` asserted `/book` here, and that was the defect written down as a contract:
@@ -116,7 +139,7 @@ describe('resolveHeaderCta', () => {
   it('resolves a function override with its default or custom label', () => {
     expect(resolveHeaderCta({ kind: 'function', function: 'contact' }, BASE, 'x')).toEqual({
       label: 'Contact me',
-      href: `${BASE}#contact`,
+      href: `${BASE}/contact`,
       external: false,
     })
     expect(resolveHeaderCta({ kind: 'function', function: 'book', label: 'Reserve' }, BASE, 'x')).toEqual({
