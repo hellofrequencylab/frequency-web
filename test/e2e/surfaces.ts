@@ -697,22 +697,42 @@ const OPERATOR_PATHS: readonly { readonly path: string; readonly why: string }[]
  * entry and the surface goes back to full-page in the same change.
  */
 //
-// ── 🔴 `/admin/library` JOINED 2026-09-25 (LIVE-504), ON THE SAME PATHOLOGY ──────────────────────
-// The identical camera-induced flip `/admin/qr` carries above and `/admin/content/practices`
-// carries in ADVISORY_OPERATOR_SURFACES below, measured on the blocking @shell step across three
-// unrelated pull requests (#2894, #2895, #2896 — disjoint diffs, none touching this page):
+// ── 🔴 `/admin/library` WAS ADDED HERE ON 2026-09-25 AND TAKEN BACK OUT THE SAME DAY ─────
+// It is in ADVISORY_OPERATOR_SURFACES below (LIVE-504) instead, and the round trip is recorded
+// rather than tidied away, because the file predicted the outcome one surface up and the note
+// that put it here argued past that prediction.
 //
-//     mobile 390x5634 <-> 390x5642, an 8px flip, and the two RETRIES INSIDE ONE RUN reported the
-//     pair in both directions (5634 -> 5642 and 5642 -> 5634).
+// The flag DID fix what it was set for: the mobile flip (390x5634 <-> 390x5642, reported in both
+// directions by two retries in one run) is gone, and so is every size mismatch on this surface.
+// What the flag carried straight through is a SECOND, INDEPENDENT failure on the first screen:
 //
-// Two heights from one commit in one run is the definition of a page that cannot be photographed
-// whole, and it is why a recapture is refused here for the reason it was refused on the other two:
-// the page is BOTH heights, a baseline is one of them, and whichever is committed is red from the
-// other side. Desktop was not among the failures, so unlike `/admin/qr` there is no second stable
-// diff on the first screen and the flag alone should settle it — which is why this surface stays in
-// the BLOCKING tier rather than joining the advisory list. If a stable first-screen diff appears
-// here later, that is a new finding and a new row, not a reason to downgrade quietly.
-const VIEWPORT_ONLY_OPERATOR_PATHS: readonly string[] = ['/admin/qr', '/admin/library']
+//     desktop dawn-dark, 1029 differing pixels, ratio 0.01, identical on the original attempt
+//     and both retries, and identical again on a full re-run ten minutes later on another runner.
+//     dawn-light passes. Both mobiles pass. Tolerance is 400, so this is 2.6x over, not noise.
+//
+// THAT IS LIVE-476's FINGERPRINT, TO THE PIXEL. `/admin/qr` reads 951 px dawn-light and 1029 px
+// dawn-dark on ITS first screen, stable across three attempts, mobile green; `/admin/content/
+// practices` (LIVE-492) reads 982 and 1008. Same class, same magnitude, third instance, and the
+// cause of all three is NOT KNOWN. A number that lands on another surface's to the pixel is
+// shared chrome, not this page's content.
+//
+// Ruled out by measurement rather than by argument, since this page is a live asset grid and the
+// grid is the obvious suspect: NOTHING IT RENDERS MOVED. `library_assets` has no row created or
+// updated since 2026-09-25 01:28 (the capture ran 04:33, the comparisons 04:55 and 05:08),
+// `library_collections` none since July, `platform_flags` none since 2026-09-05. The picture's
+// subject was frozen across all three captures, so a `data-visual-mask` over the grid would have
+// masked the wrong thing.
+//
+// So the remedy is the one LIVE-492 already establishes, in the words this file used for it:
+// "viewportOnly is the wrong trade here ... Advisory keeps the whole picture, still captures it,
+// still reports it, and gives up only the vote." Once the surface stops voting the mobile flip
+// costs nothing, and first-screen-only would throw away ~4,800px of the asset grid to buy a vote
+// the surface no longer casts. Full-page baselines are restored and the flag is dropped.
+//
+// The earlier note here said: "If a stable first-screen diff appears here later, that is a new
+// finding and a new row, not a reason to downgrade quietly." One appeared. This is that row, and
+// the downgrade is neither quiet nor a guess.
+const VIEWPORT_ONLY_OPERATOR_PATHS: readonly string[] = ['/admin/qr']
 
 export function operatorSurfaces(): readonly Surface[] {
   return OPERATOR_PATHS.map(({ path }) => ({
@@ -810,6 +830,25 @@ export const ADVISORY_OPERATOR_SURFACES: Readonly<Record<string, string>> = {
   // The row is the debt and it stays OPEN. Clear LIVE-492, delete this entry, and the surface
   // votes again.
   '/admin/content/practices': 'LIVE-492',
+  // LIVE-504, the THIRD instance of LIVE-476's unexplained first-screen diff, and the one that
+  // proves the class is shared chrome rather than any one page's content: 1029 px dawn-dark,
+  // which is /admin/qr's dawn-dark reading TO THE PIXEL.
+  //
+  // Measured 2026-09-25, twice, on separate runners ten minutes apart: desktop dawn-dark 1029 px
+  // (ratio 0.01), stable across the original attempt and both retries in each run. dawn-light and
+  // both mobiles pass. Tolerance is 400.
+  //
+  // This surface also had the camera-induced mobile flip (390x5634 <-> 390x5642, both directions
+  // across two retries in one run). `viewportOnly` fixed THAT half and carried this half straight
+  // through, exactly as LIVE-492's entry above predicted it would. Full-page baselines are
+  // therefore restored and the flag dropped: advisory keeps the whole picture and gives up only
+  // the vote, and a first-screen capture on a non-voting surface is a pure loss.
+  //
+  // Ruled out by measurement: the live asset grid. `library_assets` had no row created or updated
+  // between the capture and either comparison (newest 2026-09-25 01:28), `library_collections`
+  // none since July, `platform_flags` none since 2026-09-05. The subject was frozen, so a mask
+  // over the grid would have covered the wrong region.
+  '/admin/library': 'LIVE-504',
 }
 
 /** The advisory operator paths, as a list. `visual.spec.ts` filters both operator loops on this
