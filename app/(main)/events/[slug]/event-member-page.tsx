@@ -2130,7 +2130,17 @@ export default async function EventDetailPage({
             // into its base string, and a second `w-*` in `className` loses to it on Tailwind's
             // emission order (this exact collision shipped — see that prop's comment).
             className="-mx-4 sm:mx-0"
-            widthClass="w-auto sm:w-full"
+            // 🔴 DEFINITE, not `w-auto`, and the shaped path is why (LIVE-507). `w-auto` bleeds
+            // correctly on its own -- a block box with auto width fills the container, and the
+            // -mx-4 EXPANDS that used width by both gutters, which is what fixed the 2026-09-01
+            // stripe. But when the band is SHAPED it also has no height: `sizeClass` becomes
+            // `max-h-*` and an inline `aspect-ratio` is the only other block-axis input. CSS then
+            // has an indefinite size on BOTH axes, so clamping the height at `max-h` transfers
+            // back through the ratio and shrinks the WIDTH to `max-height x aspect` -- 221x221 for
+            // a square poster on a phone. `calc(100% + 2rem)` is the same geometry `w-auto` gave
+            // (content + both gutters) but DEFINITE, so the clamp stays in its own axis and the
+            // poster crops to the band instead of the band shrinking to the poster.
+            widthClass="w-[calc(100%+2rem)] sm:w-full"
             radiusClass="rounded-none sm:rounded-2xl"
           />
         ) : (
