@@ -48012,3 +48012,90 @@ trusted. Any new `app/(public)/` page that renders member-aware content calls
 
 **Rows.** LIVE-500 (closed here). Untouched: SCAN-644, SCAN-643, LIVE-184 (the tab set the sitemap
 advertises is unchanged).
+## ADR-1529: A surface whose height is not a function of its content is photographed first-screen-only, and that is a different defect from a stable diff inside a stable frame (LIVE-503, LIVE-504)
+
+**Status:** Accepted · 2026-09-25 · backlog `LIVE-503`, `LIVE-504` (both closed here) · overturns
+the 2026-09-10 refusal recorded in `test/e2e/surfaces.ts` · beside [ADR-1277](DECISIONS.md), which
+added the masks this decision depends on
+
+**Context.** `pr-compare`'s BLOCKING `@shell` tier failed on `/nearby` and `/admin/library` on every
+open pull request — #2894, #2895 and #2896, three disjoint diffs, none of which touches anything
+either page renders — and again on a re-run of #2894's identical commit. Reproducible, not flaky,
+and blocking four PRs at once.
+
+Both failures are about HEIGHT, which is the part of the picture a mask cannot reach.
+
+`/nearby` reported a SIZE mismatch: mobile 390x2791 → 390x2910 and narrow 320x2861 → 320x2980, both
++119px, with desktop passing. `toHaveScreenshot` fails size BEFORE it compares a pixel, so the five
+`data-visual-mask` sites never ran. +119px identical at two widths with desktop unaffected is one
+row entering a single-column list: a published Dispatch.
+
+`/admin/library` reported an 8px flip — 390x5634 and 390x5642 — and the two retries INSIDE ONE RUN
+reported it in both directions. Two heights for one commit in one run is a page that cannot be
+photographed whole: it is both heights, a baseline is one of them, and whichever is committed is red
+from the other side. Re-running never settles that, which is why "flake" was not the diagnosis.
+
+**The 2026-09-10 decision refused `viewportOnly` for `/nearby`** on the grounds that first-screen-only
+"keeps 100% of the drift and gives up 60% of the page". That was true of the tree it was written
+against: the drift was text moving inside boxes, and nothing was masked.
+
+**Decision.** `viewportOnly` on both surfaces, and both KEEP their blocking vote.
+
+1. The 2026-09-10 argument does not survive the evidence, and this is an overturn on changed
+   premises rather than a reversal on taste. [ADR-1277](DECISIONS.md) / LIVE-301 added five
+   `data-visual-mask` sites which already neutralise the drift that argument was about. What a mask
+   cannot neutralise is height — by the flag's own doc, *"a mask paints over a region and the element
+   keeps its box"*. So the two remedies are COMPLEMENTS: masks hold the above-fold text, the flag
+   holds the height. Neither replaces the other, and reaching for the flag first would still be wrong.
+2. The gate for reaching for it is the one `surfaces.ts` already wrote and this change honoured:
+   *"its remedy is the other one. Do not reach for it before the picture shows a dimension change."*
+   The picture showed one. That note also predicted this exact Dispatch case word for word.
+3. `/nearby` keeps its blocking vote. **`/admin/library` does not, and that is a correction made
+   inside this ADR rather than a second decision.** The flag was set on it here too, and it fixed
+   the half it was aimed at — the mobile flip, and every size mismatch on the surface. It then
+   carried a SECOND, INDEPENDENT failure straight through: desktop dawn-dark, 1029 differing pixels,
+   stable across all three attempts and identical again on a re-run ten minutes later on another
+   runner. That is [LIVE-476](BUILD-BACKLOG.json)'s fingerprint to the pixel (`/admin/qr` reads
+   1029 px dawn-dark on its own first screen), so it is shared admin chrome, not this page. The
+   surface moves to `ADVISORY_OPERATOR_SURFACES` under LIVE-504 and its full-page baselines are
+   restored, because on a surface that no longer votes a first-screen capture throws away ~4,800px
+   of the asset grid to buy a vote it does not cast.
+
+   The claim this replaces — "desktop was not among its failures, so the flag alone should settle
+   it" — was the one thing here not measured before it was written, and LIVE-492's entry in
+   `surfaces.ts` had already stated the general case one surface over: `viewportOnly` addresses a
+   height that is not a function of content, and "a stable difference inside a stable frame" is
+   not that.
+4. What is given up is stated rather than performed silently: everything below the first screen on
+   both pages. What stays photographed is the hero band, the two-column grammar, section headers and
+   quick links on one; the admin chrome, heading, stat cards and controls on the other.
+
+**Recapturing the baselines is not the forbidden act, and the difference matters.** `surfaces.ts`
+refuses an in-place recapture for `/nearby` by name — it *"resets a clock that drifts again within
+the hour"* — and that refusal stands. Setting the flag makes the committed whole-page pictures wrong
+BY DEFINITION, so replacing them is a consequence of the decision, not a way of making a red go away.
+`baseline-distinctness.test.ts` is what keeps that honest: it failed on exactly 10 PNGs until they
+were viewport-sized, and it is the in-repo guard that a surface cannot claim this flag while carrying
+whole-page pictures.
+
+**Consequences.**
+
+- Each row's probe asserts BOTH the flag AND the committed PNG heights, with a positive control that
+  reads a known whole-page baseline. A probe on the flag alone passes against stale full-page
+  baselines, which is precisely the gate that does not gate.
+- `pr-compare` on `6c7c049` proved the flag took effect before the recapture landed: the comparison
+  INVERTED, reporting *"Expected an image 390px by 2791px, received 390px by 844px"* — the actual
+  capture is now exactly the mobile viewport height, and 320x568 at narrow.
+- A future height regression on `/nearby` is invisible to this tier below the fold. That is the
+  price of the flag, and it is why `/nearby` keeps its vote rather than also being downgraded.
+- `/admin/library` stops voting entirely until LIVE-504 closes. It is still captured, still
+  compared and still reported; what it gives up is the ability to fail a pull request. The row is
+  the debt, and closing the LIVE-476 class would close all three of its instances at once.
+- **The live asset grid was ruled out by measurement, not by argument**, which is the only reason
+  a mask was not reached for: `library_assets` had no row created or updated between the capture
+  and either comparison, `library_collections` none since July, `platform_flags` none since
+  2026-09-05. The subject of the picture was frozen, so a `data-visual-mask` over the grid would
+  have covered the wrong region and looked like a fix.
+- `e2e.yml` has no `main` trigger, so `pr-compare` only ever runs on pull requests and the
+  "is it red on the base branch too?" control is unavailable for any PR in this repository. Recorded
+  as a separate finding.
