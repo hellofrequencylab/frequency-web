@@ -67,6 +67,8 @@ const store: {
   circles: PresenceRow[]
   reviews: PresenceRow[]
   collaborations: PresenceRow[]
+  /** `space_membership_tiers` rows for the Memberships tab gate (LIVE-509). */
+  membershipTiers: PresenceRow[]
 } = {
   spaces: [],
   counts: {},
@@ -78,6 +80,7 @@ const store: {
   circles: [],
   reviews: [],
   collaborations: [],
+  membershipTiers: [],
 }
 
 /** The stored SUBJECT for a row (preferences.profileData.subject), or null when unset — mirrors the
@@ -226,11 +229,18 @@ function presenceBuilder(rows: PresenceRow[]) {
       return api
     },
     or(filter: string) {
-      // The ONE `.or()` the tab reader issues: circles' axis-1 listed rule, where a NULL `unlisted`
-      // is a LISTED row. Spelled out rather than parsed, so the mock cannot quietly accept a
-      // different filter string than the one the reader sends.
+      // The TWO `.or()`s the tab reader issues, both the same nullable-boolean rule: circles' axis-1
+      // listed rule (a NULL `unlisted` is a LISTED row) and the membership tiers' active rule (a
+      // NULL `is_active` is an ACTIVE row, matching readTiers' own `is_active !== false`). Each is
+      // spelled out rather than parsed, so the mock cannot quietly accept a different filter string
+      // than the one the reader sends — a reader that regressed to a bare `.eq(col, true)` would
+      // reach `eq` above and correctly drop the NULL rows, and a reader that changed its OR string
+      // falls through to this no-op and over-advertises, which is the louder failure.
       if (filter === 'unlisted.is.null,unlisted.eq.false') {
         out = out.filter((r) => r.unlisted !== true)
+      }
+      if (filter === 'is_active.is.null,is_active.eq.true') {
+        out = out.filter((r) => r.is_active !== false)
       }
       return api
     },
@@ -266,6 +276,7 @@ vi.mock('@/lib/supabase/admin', () => ({
       if (table === 'circles') return presenceBuilder(store.circles)
       if (table === 'space_reviews') return presenceBuilder(store.reviews)
       if (table === 'space_collaborations') return presenceBuilder(store.collaborations)
+      if (table === 'space_membership_tiers') return presenceBuilder(store.membershipTiers)
       return spacesBuilder()
     },
   }),
@@ -299,6 +310,7 @@ beforeEach(() => {
   store.circles = []
   store.reviews = []
   store.collaborations = []
+  store.membershipTiers = []
   store.spaces = [
     // s1 is a PRE-MIGRATION row: kind stored on the LEGACY `category` key, plus a subject. s2 stores
     // the CANONICAL `kind` key + a subject. s3 has NEITHER (kind reads as 'business', no subject).
@@ -682,6 +694,30 @@ describe('listNetworkedSpaceProfileTabs (the sitemap tab gates)', () => {
     // An operator turning the function off must take the URL with it — the route 404s.
     store.spaces = store.spaces.map((r) => (r.id === 's2' ? { ...r, entitlements: { reviews: false } } : r))
     expect(await segmentsFor('sound-co')).not.toContain('reviews')
+  })
+
+  // MEMBERSHIPS (LIVE-509). The tab renders the same join surface `/book` does, but it is advertised
+  // only when there is a tier to join, and `is_active` is NULLABLE — a NULL row is an ACTIVE row,
+  // the same trap the circles gate spells out for `unlisted`. A bare `.eq('is_active', true)` would
+  // silently drop every Space whose tiers predate that column's default.
+  it('advertises memberships only for an ACTIVE tier, and a null `is_active` is active', async () => {
+    store.membershipTiers = [
+      { space_id: 's2', is_active: null }, // NULL means active
+      { space_id: 's3', is_active: true },
+      { space_id: 's1', is_active: false }, // retired: the tab would read empty
+    ]
+    expect(await segmentsFor('sound-co')).toContain('memberships')
+    expect(await segmentsFor('forest-org')).toContain('memberships')
+    expect(await segmentsFor('river-yoga')).not.toContain('memberships')
+  })
+
+  it('never advertises memberships when the function is switched off', async () => {
+    store.membershipTiers = [{ space_id: 's2', is_active: true }]
+    expect(await segmentsFor('sound-co')).toContain('memberships')
+    store.spaces = store.spaces.map((r) =>
+      r.id === 's2' ? { ...r, entitlements: { memberships: false } } : r,
+    )
+    expect(await segmentsFor('sound-co')).not.toContain('memberships')
   })
 
   it('advertises collaborators from EITHER side of an accepted collaboration', async () => {

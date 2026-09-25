@@ -39,6 +39,7 @@
 // lib/spaces/memberships-actions.ts (a server-action module must export only async functions, so the
 // pure helpers cannot live there). SERVER components import the read actions straight from here.
 
+import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
@@ -351,7 +352,7 @@ function mapTierRow(r: TierRow): MembershipTier {
 
 /** Read a Space's tiers (service-role; FAIL-SAFE to []), sorted by sort then name. `activeOnly`
  *  filters to live tiers (the member surface); the editor reads all. */
-async function readTiers(spaceId: string, activeOnly: boolean): Promise<MembershipTier[]> {
+const readTiers = cache(async (spaceId: string, activeOnly: boolean): Promise<MembershipTier[]> => {
   try {
     const { data, error } = await tiersTable()
       .select(TIER_COLS)
@@ -366,7 +367,7 @@ async function readTiers(spaceId: string, activeOnly: boolean): Promise<Membersh
   } catch {
     return []
   }
-}
+})
 
 /** Read a Space's OPEN memberships — active + waitlist (service-role; FAIL-SAFE to []). */
 async function readOpenMemberships(spaceId: string): Promise<MembershipRow[]> {
@@ -547,6 +548,17 @@ export async function listMembershipTiers(spaceId: string): Promise<MembershipTi
   } catch {
     return []
   }
+}
+
+/** Whether this Space publishes at least one ACTIVE tier — the honest-empty half of the Memberships
+ *  tab gate (lib/spaces/memberships-tab.ts) and of the sitemap's own rule.
+ *
+ *  It deliberately goes through the SAME `readTiers` the join surface renders from rather than
+ *  running its own `count(*)`, so the tab and the page can never disagree about whether there is
+ *  anything behind the door. `readTiers` is request-cached, so the nav gate and the page body that
+ *  follows it share one round trip. FAIL-SAFE to false. */
+export async function spaceHasActiveMembershipTiers(spaceId: string): Promise<boolean> {
+  return (await listMembershipTiers(spaceId)).length > 0
 }
 
 /** A Space's ALL tiers as the editor reads them back (service-role; FAIL-SAFE to []). Gated on

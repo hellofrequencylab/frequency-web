@@ -11,6 +11,8 @@ import { spaceHasCollaborators } from '@/lib/spaces/collaborations'
 import { viewerCanSeeSpaceMemberDirectory } from '@/lib/spaces/member-directory'
 import { canSeeSpaceDiscussionTab, getLiveSpaceCircle } from '@/lib/spaces/space-discussion'
 import { canSeeSpaceContactTab, readContactFormContent } from '@/lib/spaces/contact-tab'
+import { canSeeSpaceMembershipsTab } from '@/lib/spaces/memberships-tab'
+import { spaceHasActiveMembershipTiers } from '@/lib/spaces/memberships'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
 
@@ -50,7 +52,7 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   const brandName = space.brandName ?? space.name
   const base = `/spaces/${space.slug}`
 
-  const [presence, manage, hasCalendarEvents, hasCollaborators, showPeople, hub] = await Promise.all([
+  const [presence, manage, hasCalendarEvents, hasCollaborators, showPeople, hub, hasTiers] = await Promise.all([
     getSpaceSectionPresence(space.id, space.slug),
     resolveSpaceManageAccess(space, viewerProfileId, caller?.webRole ?? null),
     // Gate the Calendar tab on the SAME public/unlisted published set the calendar renders, not on the
@@ -63,6 +65,10 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
     // they cannot read. ROOT is refused inside the reader.
     viewerCanSeeSpaceMemberDirectory(space),
     space.type === 'root' ? Promise.resolve(null) : getLiveSpaceCircle(space.id),
+    // Memberships: at least one ACTIVE tier, read through the SAME request-cached reader the tab's
+    // own body renders from, so the menu and the page cannot disagree about whether there is
+    // anything behind the door. ROOT is skipped rather than read: the gate refuses it anyway.
+    space.type === 'root' ? Promise.resolve(false) : spaceHasActiveMembershipTiers(space.id),
   ])
 
   const pages = readProfilePages(space.preferences)
@@ -97,6 +103,11 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   // the SAME request-cached read the Home teaser block renders from, so the gate and the page can
   // never disagree about whether a visitor would find anything. ROOT never shows it: every personal
   // circle on the platform is stamped to the root tenant, and the tab notFound()s there.
+  // Memberships (LIVE-509): gated on the `memberships` function, which is a hard off for a manager
+  // too — a Space that switched memberships off in the Module Manager has said it does not sell
+  // them. A missing def keeps the tab (fail-safe to shown), like every sibling above.
+  const membershipsDef = spaceFunctionDef('memberships')
+  const membershipsEnabled = !membershipsDef || spaceFunctionEnabled(space, membershipsDef)
   const circlesDef = spaceFunctionDef('circles')
   const circlesEnabled = (!circlesDef || spaceFunctionEnabled(space, circlesDef)) && space.type !== 'root'
 
@@ -111,6 +122,19 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
     // Shown only when the Space has upcoming PUBLIC events (the exact set the grid renders), so the tab
     // never opens onto an empty calendar.
     ...(hasCalendarEvents ? [{ href: `${base}/calendar`, label: 'Calendar' }] : []),
+    // Memberships (LIVE-509): the Space's tiers, and the door that joins one. Sits high, right after
+    // Calendar, because it is the commercial answer to "what is this place" and it was previously
+    // reachable ONLY through the one operator-overridable header button. A visitor gets it once the
+    // Space publishes a tier they could join; a manager gets it at zero, because the empty state is
+    // where they set it up.
+    ...(canSeeSpaceMembershipsTab({
+      spaceType: space.type,
+      membershipsEnabled,
+      hasActiveTiers: hasTiers,
+      canManage: canSeeAsOwner,
+    })
+      ? [{ href: `${base}/memberships`, label: 'Memberships' }]
+      : []),
     // The Collaborators tab (ADR-799 B1): the businesses that operate together with this space. Shown
     // only when there is at least one accepted collaboration.
     ...(hasCollaborators ? [{ href: `${base}/collaborators`, label: 'Collaborators' }] : []),
