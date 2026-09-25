@@ -32,9 +32,14 @@ function trimmed(value: string | null | undefined): string | null {
 /**
  * The destination for one notification row. Always returns a real in-app path.
  *
- * Pure: no IO, no auth read. A destination whose page gates the viewer (the CRM consoles)
- * is still correct to emit — `requireAdmin` redirects a viewer who may not be there to
- * `/feed`, which is exactly where they used to land anyway.
+ * Pure: no IO, no auth read. That means the destination is chosen from the row alone, so a
+ * GATED destination is only correct when the row's WRITERS all address the gated audience.
+ * Check the writer, not the page: `/admin/crm/conversations` is right for `conversation`
+ * because that bell is aimed at the assigned support agent, and it was wrong for `contact`
+ * because both writers of that row aim at a Space OWNER, who is an ordinary member and gets
+ * bounced (LIVE-505). "They would have landed on /feed anyway" does not rescue such a link:
+ * the bell is the only notice that carries a destination, and one that reliably bounces is a
+ * notice the recipient cannot act on.
  */
 export function notificationHref(n: NotificationItem): string {
   const id = trimmed(n.reference_id)
@@ -87,9 +92,19 @@ export function notificationHref(n: NotificationItem): string {
     case 'conversation':
       return id ? `/admin/crm/conversations?id=${encodeURIComponent(id)}` : '/admin/crm/conversations'
 
-    // A CRM contact has no detail route; the roster is the surface that holds it.
+    // A contact-form lead (`crm_contact_form`) and an inbound CRM reply (`crm_inbound_reply`).
+    // BOTH writers set recipient_id to the SPACE OWNER (lib/crm/lead-notify, lib/crm/inbox), never
+    // to staff, so the staff roster at /admin/crm/contacts bounced every recipient this row has
+    // (LIVE-505). The lead-notify EMAIL about the very same event already links the owner to
+    // /spaces/<slug>/crm, so the bell and the email were sending one person two ways.
+    //
+    // The owner's own CRM is the thing this is about, but it is addressed by SPACE SLUG and the row
+    // carries only the contact UUID — no space column exists on `notifications` (see
+    // NotificationRpcRow). So this takes the rule this file already states and the `space` UUID arm
+    // already follows: the nearest surface that CONTAINS the thing. "Spaces you run" lists the
+    // owner's Spaces and each card opens that Space's console, which is where the CRM lives.
     case 'contact':
-      return '/admin/crm/contacts'
+      return '/spaces/operating'
 
     // Circle notices (a Circle milestone, a Circle membership's first-week notes) reference a
     // UUID while /circles/<slug> is slug-addressed, so they land on the Circles index.

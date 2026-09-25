@@ -106,9 +106,25 @@ describe('notificationHref', () => {
       .toBe('/admin/crm/conversations?id=a%20b%26c')
   })
 
-  it('sends a CRM inbound reply to the contacts roster', () => {
+  // LIVE-505. Both writers of a `contact` row (lib/crm/lead-notify, lib/crm/inbox) set
+  // recipient_id to the Space OWNER, an ordinary member, so the staff roster bounced every
+  // recipient this row has. Both writers get a case here, which is what this file's
+  // one-case-per-writer rule asks for and what was missing for the contact-form half.
+  it('sends both contact bells to the Spaces the owner runs, not the staff roster', () => {
     expect(notificationHref(notif({ type: 'crm_inbound_reply', reference_type: 'contact', reference_id: UUID })))
-      .toBe('/admin/crm/contacts')
+      .toBe('/spaces/operating')
+    expect(notificationHref(notif({ type: 'crm_contact_form', reference_type: 'contact', reference_id: UUID })))
+      .toBe('/spaces/operating')
+  })
+
+  // The consequence, stated as the thing that was actually broken: a Space owner must never be
+  // handed a destination under /admin, because requireAdmin bounces them off it. This fails if
+  // the arm is pointed back at any staff console, not just at the one path it used to use.
+  it('never lands an owner-addressed contact bell anywhere under /admin', () => {
+    for (const type of ['crm_contact_form', 'crm_inbound_reply']) {
+      const href = notificationHref(notif({ type, reference_type: 'contact', reference_id: UUID }))
+      expect(href.startsWith('/admin')).toBe(false)
+    }
   })
 
   it('sends Circle and membership notices to the Circles index (both reference a UUID)', () => {
