@@ -802,6 +802,9 @@ function spaceOffersContactTab(preferences: unknown): boolean {
  *   · `reviews`      — the `reviews` function ON and >= 1 VISIBLE review. The page itself renders an
  *                      empty wall rather than 404ing, so the >= 1 is the sitemap's own honest-empty
  *                      rule, not the route's.
+ *   · `memberships`  — the `memberships` function ON and >= 1 ACTIVE tier. The page itself renders
+ *                      an operator prompt rather than 404ing at zero tiers, so the >= 1 is the
+ *                      sitemap's own honest-empty rule (and the nav's), not the route's.
  *   · `shop`         — the storefront PUBLISHED, a console Space type, and the `shop` function ON.
  *                      All three are exactly what the route double-gates on before it 404s.
  *   · `<page>`       — each operator-declared custom page (`declaredPageSlugs`: the
@@ -833,7 +836,7 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
     // an event happening later TODAY still counts (a `> now` floor would hide it).
     const fromDayIso = `${new Date().toISOString().slice(0, 10)}T00:00:00Z`
 
-    const [withEvents, withCircles, withReviews, collabHost, collabPartner] = await Promise.all([
+    const [withEvents, withCircles, withReviews, withTiers, collabHost, collabPartner] = await Promise.all([
       presenceIds(
         (q) =>
           q
@@ -866,6 +869,15 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
         'space_id',
         (r) => (typeof r.space_id === 'string' ? r.space_id : null),
       ),
+      // MEMBERSHIPS (LIVE-509). `is_active` is nullable and a NULL row is an ACTIVE row — the same
+      // trap the circles read above spells out for `unlisted` — so this is `.or(is.null,eq.true)`
+      // rather than a bare `.eq('is_active', true)`. It mirrors readTiers' own `is_active !== false`.
+      presenceIds(
+        (q) => q.or('is_active.is.null,is_active.eq.true').in('space_id', ids),
+        'space_membership_tiers',
+        'space_id',
+        (r) => (typeof r.space_id === 'string' ? r.space_id : null),
+      ),
       presenceIds(
         (q) => q.eq('status', 'accepted').in('host_space_id', ids),
         'space_collaborations',
@@ -883,6 +895,7 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
     const shopDef = spaceFunctionDef('shop')
     const reviewsDef = spaceFunctionDef('reviews')
     const circlesDef = spaceFunctionDef('circles')
+    const membershipsDef = spaceFunctionDef('memberships')
 
     const out: SpaceProfileTabRoute[] = []
     for (const r of rows) {
@@ -908,6 +921,11 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
       if (enabled(circlesDef) && type !== 'root' && withCircles.has(r.id)) push('circles')
       if (collabHost.has(r.id) || collabPartner.has(r.id)) push('collaborators')
       if (enabled(reviewsDef) && withReviews.has(r.id)) push('reviews')
+      // MEMBERSHIPS (LIVE-509). Advertised on the SAME condition the tab renders on for a VISITOR:
+      // the function on and at least one active tier. The manager-at-zero arm is deliberately not
+      // mirrored, for the same reason it is not mirrored for `contact` — a crawler is not a manager,
+      // and an empty tab with a URL is the LIVE-184 defect itself.
+      if (type !== 'root' && enabled(membershipsDef) && withTiers.has(r.id)) push('memberships')
       // CONTACT (LIVE-502). Advertised on the SAME condition the tab renders on — the operator has
       // authored a contact form or published a way to reach them — so the sitemap never points at a
       // tab a visitor would not be offered. Read from preferences, which this query already selects,

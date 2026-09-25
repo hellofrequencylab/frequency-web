@@ -38,6 +38,11 @@ vi.mock('@/lib/spaces/member-directory', () => ({
   viewerCanSeeSpaceMemberDirectory: async () => showPeople,
 }))
 
+let hasTiers = false
+vi.mock('@/lib/spaces/memberships', () => ({
+  spaceHasActiveMembershipTiers: async () => hasTiers,
+}))
+
 const hub = { live: false }
 vi.mock('@/lib/spaces/space-discussion', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./space-discussion')>()),
@@ -89,6 +94,7 @@ beforeEach(() => {
   manage.staffViewing = false
   showPeople = false
   hub.live = false
+  hasTiers = false
 })
 
 describe('the Circles tab', () => {
@@ -303,5 +309,60 @@ describe('the Discussion tab', () => {
       space({ entitlements: { circles: false } as unknown as Space['entitlements'] }),
     )
     expect(labels(tabs)).not.toContain('Discussion')
+  })
+})
+
+// THE MEMBERSHIPS TAB (LIVE-509), and the reason it had to exist.
+//
+// `/spaces/<slug>/book` has rendered the real tier picker for every membership-Focus Space since
+// ENTITY-SPACES-SYSTEM 2.5, and exactly one link reached it: the profile's single header CTA. That
+// button is operator-overridable, so an operator who repointed it (at contact, at offerings, at
+// their own URL) orphaned their own paid memberships — live tiers, a working Stripe path, and
+// nothing on the Space that led to them. These tests pin the door, so the menu no longer depends on
+// what the header button happens to say.
+describe('the Memberships tab', () => {
+  it('HIDE AT ZERO: a visitor is never offered a tab over a Space with no tiers', async () => {
+    const { tabs } = await buildSpaceProfileNav(space())
+    expect(labels(tabs)).not.toContain('Memberships')
+  })
+
+  it('shows once the Space publishes a tier a visitor could join', async () => {
+    hasTiers = true
+    const { tabs } = await buildSpaceProfileNav(space())
+    expect(labels(tabs)).toContain('Memberships')
+  })
+
+  it('is a real PAGE, so it does not depend on the header CTA pointing anywhere', async () => {
+    hasTiers = true
+    const { tabs } = await buildSpaceProfileNav(space())
+    expect(hrefFor(tabs, 'Memberships')).toBe('/spaces/ojai/memberships')
+  })
+
+  it('a MANAGER keeps it at zero: the empty state is where the tiers get set up', async () => {
+    manage.canManage = true
+    const { tabs } = await buildSpaceProfileNav(space())
+    expect(labels(tabs)).toContain('Memberships')
+  })
+
+  it('the `memberships` FUNCTION switched off hides it from everyone, manager included', async () => {
+    hasTiers = true
+    manage.canManage = true
+    const { tabs } = await buildSpaceProfileNav(
+      space({ entitlements: { memberships: false } as unknown as Space['entitlements'] }),
+    )
+    expect(labels(tabs)).not.toContain('Memberships')
+  })
+
+  it('ROOT never offers it: the platform tenant sells its own plans at /pricing', async () => {
+    hasTiers = true
+    manage.canManage = true
+    const { tabs } = await buildSpaceProfileNav(space({ type: 'root' as Space['type'] }))
+    expect(labels(tabs)).not.toContain('Memberships')
+  })
+
+  it('appears exactly once, so it is never a second menu row beside itself', async () => {
+    hasTiers = true
+    const { tabs } = await buildSpaceProfileNav(space())
+    expect(labels(tabs).filter((l) => l === 'Memberships')).toHaveLength(1)
   })
 })

@@ -23,6 +23,7 @@ export type HeaderCtaFunction =
   | 'tickets'
   | 'donate'
   | 'join'
+  | 'memberships'
   | 'offerings'
 
 /** The closed set of in-house function keys (for the normalizer + the admin picker). */
@@ -32,6 +33,7 @@ const FUNCTION_KEYS: readonly HeaderCtaFunction[] = [
   'tickets',
   'donate',
   'join',
+  'memberships',
   'offerings',
 ] as const
 
@@ -53,6 +55,7 @@ export const HEADER_CTA_FUNCTIONS: readonly HeaderCtaFunctionChoice[] = [
   { key: 'tickets', label: 'Get tickets', hint: 'Opens your tickets page.' },
   { key: 'donate', label: 'Donate', hint: 'Opens your donation page.' },
   { key: 'join', label: 'Join', hint: 'Opens your membership page.' },
+  { key: 'memberships', label: 'See memberships', hint: 'Opens your memberships tab.' },
   { key: 'offerings', label: 'View offerings', hint: 'Jumps to what you offer.' },
 ] as const
 
@@ -134,10 +137,18 @@ export function headerCtaFunctionHref(fn: HeaderCtaFunction, base: string): stri
       return `${base}#contact`
     case 'offerings':
       return `${base}#offerings`
+    // `join` and `memberships` both open the MEMBERSHIPS tab, which is the page whose name they
+    // already carried. `join` pointed at `/book` while its own hint read "Opens your membership
+    // page", and that was true only for a Space whose Focus happened to resolve to the membership
+    // widget: on an appointments Focus the "Join" button opened a booking slot picker. The tab is
+    // the surface both labels describe, on every Space, whatever its Focus. No stored value is
+    // stranded: `/book` still renders and still takes the per-type default below.
+    case 'join':
+    case 'memberships':
+      return `${base}/memberships`
     case 'book':
     case 'tickets':
     case 'donate':
-    case 'join':
       return `${base}/book`
   }
 }

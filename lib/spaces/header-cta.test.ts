@@ -76,13 +76,32 @@ describe('readHeaderCtaPreference', () => {
 })
 
 describe('headerCtaFunctionHref', () => {
-  it('maps anchors to Home sections and the rest to /book', () => {
+  it('maps anchors to Home sections and the transactional keys to /book', () => {
     expect(headerCtaFunctionHref('contact', BASE)).toBe(`${BASE}#contact`)
     expect(headerCtaFunctionHref('offerings', BASE)).toBe(`${BASE}#offerings`)
     expect(headerCtaFunctionHref('book', BASE)).toBe(`${BASE}/book`)
     expect(headerCtaFunctionHref('tickets', BASE)).toBe(`${BASE}/book`)
     expect(headerCtaFunctionHref('donate', BASE)).toBe(`${BASE}/book`)
-    expect(headerCtaFunctionHref('join', BASE)).toBe(`${BASE}/book`)
+  })
+
+  // LIVE-509. `join` asserted `/book` here, and that was the defect written down as a contract:
+  // its own picker hint says "Opens your membership page", but `/book` renders the widget the
+  // Space's FOCUS resolves to, so on an appointments Focus a button labelled "Join" opened a
+  // booking slot picker. Both keys now open the tab whose name they carry, on every Space.
+  it('opens the memberships tab for both membership keys, whatever the Focus', () => {
+    expect(headerCtaFunctionHref('join', BASE)).toBe(`${BASE}/memberships`)
+    expect(headerCtaFunctionHref('memberships', BASE)).toBe(`${BASE}/memberships`)
+  })
+
+  // Every registered key resolves to a real, non-empty path off the base. A key added to the union
+  // without an arm is a TypeScript error, but a key added with a WRONG arm is not, so this walks
+  // the offered list rather than restating it.
+  it('resolves every offered function to a path under the base', () => {
+    for (const choice of HEADER_CTA_FUNCTIONS) {
+      const href = headerCtaFunctionHref(choice.key, BASE)
+      expect(href.startsWith(BASE)).toBe(true)
+      expect(href.length).toBeGreaterThan(BASE.length)
+    }
   })
 })
 
