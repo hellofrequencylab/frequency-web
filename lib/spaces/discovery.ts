@@ -34,6 +34,8 @@ import { SERIES_COLUMNS, countSeriesBy, type SeriesRow } from '@/lib/events/seri
 // so the sitemap can never disagree with what a visitor is actually offered.
 import { isConsoleSpaceType } from './types'
 import { readStorefrontConfig } from './storefront'
+import { canSeeSpaceContactTab, readContactFormContent } from './contact-tab'
+import { isReservedSlug } from './profile-pages'
 import { spaceFunctionDef, spaceFunctionEnabled } from './functions'
 // The circle statuses a public list may show, from the circles module's own definition rather than
 // retyped here — a second copy of ['forming','active'] is a drift waiting to happen.
@@ -675,6 +677,12 @@ function declaredPageSlugs(preferences: unknown): string[] {
     if (slug === PROFILE_HOME_SLUG) continue
     if (slug.length === 0 || slug.length > PAGE_SLUG_MAX) continue
     if (!PAGE_SLUG_RE.test(slug)) continue
+    // RESERVED SLUGS, which this local reimplementation never applied. `readProfilePages` drops a
+    // page whose slug collides with a static sibling, because the static route wins the routing and
+    // the custom page never renders — so advertising it here pointed the sitemap at a URL that
+    // shows something else entirely. It was latent for `people` and `discussion` already and would
+    // have been a third case with `contact` (LIVE-502). The canonical set is the one source.
+    if (isReservedSlug(slug)) continue
     if (seen.has(slug)) continue
     seen.add(slug)
     out.push(slug)
@@ -750,6 +758,19 @@ async function presenceIds(
     if (id) found.add(id)
   }
   return found
+}
+
+/** Whether a Space would offer the public Contact tab, from its preferences alone. Mirrors the nav
+ *  gate (lib/spaces/contact-tab.ts) minus the manager-at-zero arm, which is a viewer fact and means
+ *  nothing to a crawler. Pure, so the sitemap and the menu cannot disagree about what exists. */
+function spaceOffersContactTab(preferences: unknown): boolean {
+  const p = readProfileData(preferences)
+  return canSeeSpaceContactTab({
+    spaceType: 'business',
+    hasFormBlock: Object.keys(readContactFormContent(preferences)).length > 0,
+    hasContactFacts: !!(p.address || p.phone || p.email || p.hours || p.website),
+    canManage: false,
+  })
 }
 
 /**
@@ -877,6 +898,12 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
       if (enabled(circlesDef) && type !== 'root' && withCircles.has(r.id)) push('circles')
       if (collabHost.has(r.id) || collabPartner.has(r.id)) push('collaborators')
       if (enabled(reviewsDef) && withReviews.has(r.id)) push('reviews')
+      // CONTACT (LIVE-502). Advertised on the SAME condition the tab renders on — the operator has
+      // authored a contact form or published a way to reach them — so the sitemap never points at a
+      // tab a visitor would not be offered. Read from preferences, which this query already selects,
+      // so it costs no extra round trip. The manager-at-zero arm is deliberately NOT mirrored: a
+      // crawler is not a manager, and an empty tab with a URL is the LIVE-184 defect itself.
+      if (type !== 'root' && spaceOffersContactTab(r.preferences)) push('contact')
       if (readStorefrontConfig(r.preferences).published && isConsoleSpaceType(type) && enabled(shopDef)) {
         push('shop')
       }

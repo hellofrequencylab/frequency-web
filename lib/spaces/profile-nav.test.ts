@@ -157,6 +157,113 @@ describe('the People tab (LIVE-420)', () => {
   })
 })
 
+describe('the Contact tab', () => {
+  /** A Space whose operator has authored a contactForm block on the saved layout. */
+  const withForm = () =>
+    space({
+      preferences: {
+        pages: [{ slug: 'home', label: 'Home', doc: { content: [], root: {} } }],
+        profileLayout: {
+          rows: [{ id: 'r1', columns: 1, cells: [['contactForm']] }],
+          content: { contactForm: { title: 'Work with us' } },
+        },
+      },
+    } as unknown as Partial<Space>)
+
+  it('stays closed on a Space that has neither a form nor published facts', async () => {
+    const { tabs } = await buildSpaceProfileNav(space())
+    expect(labels(tabs)).not.toContain('Contact')
+  })
+
+  it('opens once the operator has authored a contact form', async () => {
+    const { tabs } = await buildSpaceProfileNav(withForm())
+    expect(labels(tabs)).toContain('Contact')
+    expect(hrefFor(tabs, 'Contact')).toBe('/spaces/ojai/contact')
+  })
+
+  it('opens on published contact facts alone', async () => {
+    const withFacts = space({
+      preferences: {
+        pages: [{ slug: 'home', label: 'Home', doc: { content: [], root: {} } }],
+        profileData: { phone: '760 555 0100' },
+      },
+    } as unknown as Partial<Space>)
+    expect(labels((await buildSpaceProfileNav(withFacts)).tabs)).toContain('Contact')
+  })
+
+  it('a manager keeps it at zero, because that is where they set it up', async () => {
+    manage.canManage = true
+    expect(labels((await buildSpaceProfileNav(space())).tabs)).toContain('Contact')
+  })
+
+  // 🔴 THE "TWO REVIEWS" BUG, THIRD EDITION. The Home page still renders a `#contact` SECTION (so
+  // the 16 stored "Get in touch" buttons keep resolving), but the menu must not list Contact twice
+  // — once as an anchor that scrolls and once as a tab that navigates.
+  it('never sits beside a #contact anchor in the menu', async () => {
+    // TWO THINGS HAD TO BE RIGHT BEFORE THIS TEST MEANT ANYTHING, and the first version of it had
+    // neither, so it passed against the mutant that deleted the suppression:
+    //   1. The doc must live on `preferences.pageDocs`, not `preferences.pages[].doc`.
+    //      `readProfilePages` strips the doc off a page entry, and `resolveSpacePageDoc` then falls
+    //      back to the SEEDED DEFAULT — so a doc written into `pages[]` is never read at all.
+    //   2. The block needs real props. `SpaceContact`'s presence arm reads its OWN fields (address /
+    //      hours / phone / email / linkHref), not the presence bag, so a bare `{ id }` renders
+    //      nothing and derives no anchor.
+    const withAnchor = space({
+      preferences: {
+        pageDocs: {
+          home: { content: [{ type: 'SpaceContact', props: { id: 'c', phone: '760 555 0100' } }], root: {} },
+        },
+        pages: [{ slug: 'home', label: 'Home' }],
+        profileData: { phone: '760 555 0100' },
+      },
+    } as unknown as Partial<Space>)
+    const { tabs } = await buildSpaceProfileNav(withAnchor)
+    // The CONTROL: with the same doc but the suppression removed, an anchor WOULD be derived. The
+    // `offerings` anchor beside it proves this doc really does produce section anchors, so a future
+    // change that stops deriving them cannot make this assertion vacuously true.
+    presence.events = true
+    const control = await buildSpaceProfileNav(
+      space({
+        preferences: {
+          pageDocs: {
+            home: { content: [{ type: 'SpaceEvents', props: { id: 'e' } }], root: {} },
+          },
+          pages: [{ slug: 'home', label: 'Home' }],
+        },
+      } as unknown as Partial<Space>),
+    )
+    presence.events = false
+    expect(control.tabs.map((t) => t.href)).toContain('/spaces/ojai#events')
+
+    expect(tabs.filter((t) => t.label === 'Contact')).toHaveLength(1)
+    expect(tabs.map((t) => t.href)).not.toContain('/spaces/ojai#contact')
+  })
+})
+
+describe('the #reviews anchor — the original "two Reviews" bug', () => {
+  // 🔴 ADDED 2026-09-25, AND IT WAS NOT COVERED BEFORE. `DEDICATED_TAB_ANCHORS` is named for this
+  // case in its own comment, and removing `'reviews'` from the set broke NOTHING in this file —
+  // measured by mutation while adding the Contact case. The suppression that the mechanism is
+  // named after was the one arm of it nobody had pinned.
+  it('never sits beside a /reviews tab in the menu', async () => {
+    presence.reviews = true
+    const withAnchor = space({
+      preferences: {
+        pageDocs: {
+          home: { content: [{ type: 'SpaceReviews', props: { id: 'r' } }], root: {} },
+        },
+        pages: [{ slug: 'home', label: 'Home' }],
+      },
+    } as unknown as Partial<Space>)
+    const { tabs } = await buildSpaceProfileNav(withAnchor)
+    presence.reviews = false
+
+    expect(tabs.filter((t) => t.label === 'Reviews')).toHaveLength(1)
+    expect(hrefFor(tabs, 'Reviews')).toBe('/spaces/ojai/reviews')
+    expect(tabs.map((t) => t.href)).not.toContain('/spaces/ojai#reviews')
+  })
+})
+
 describe('the Discussion tab', () => {
   it('hides from a visitor when the Space Circle is off', async () => {
     const { tabs } = await buildSpaceProfileNav(space())
