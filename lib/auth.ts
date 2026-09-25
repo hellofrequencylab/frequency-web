@@ -33,6 +33,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/lib/database.types'
 import { applyViewAs } from '@/lib/view-as'
+import { isAnonymousRender } from '@/lib/core/anonymous-render'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 import { BETA_OPEN_ACCESS, BETA_GRANTED_TIER } from '@/lib/core/beta'
 import { asWebRole, isStaff, type WebRole } from '@/lib/core/roles'
@@ -41,8 +42,23 @@ import { communityRoleToLevel, levelRank, type CommunityLevel } from '@/lib/core
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
 /** The authenticated auth user (or null), memoized per request. Server-verified
- *  (GET /auth/v1/user), never a cookie-trusted session; the ONE such call a render makes. */
+ *  (GET /auth/v1/user), never a cookie-trusted session; the ONE such call a render makes.
+ *
+ *  THE ANONYMOUS-RENDER SHORT CIRCUIT is the first thing it does, and it is load-bearing for every
+ *  `app/(public)/` share URL. Those pages are ISR: one document built once and served to everyone,
+ *  so a viewer read inside them both voids the cache (a dynamic API makes Next render per-request
+ *  — the exact cost ADR-1452 / ADR-1465 removed) and, if it did not, would bake one visitor's
+ *  identity into every other visitor's copy. A page states "I have no viewer" by calling
+ *  `markAnonymousRender()`; returning here BEFORE `createClient()` is what keeps that true, because
+ *  `createClient` is where `cookies()` is read.
+ *
+ *  It is honoured HERE rather than at each call site deliberately. Every server-side identity read
+ *  in the app funnels through this function (ADR-1244, LIVE-178), so one check covers
+ *  getCallerProfile / getMyProfileId / isPlatformStaff / isPaidViewer and — the reason it matters —
+ *  every block, reader and module added later that nobody thought to audit. See
+ *  lib/core/anonymous-render.ts for why the per-call-site alternative does not survive contact. */
 export const getCachedUser = cache(async (): Promise<User | null> => {
+  if (isAnonymousRender()) return null
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   return user

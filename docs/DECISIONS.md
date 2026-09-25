@@ -47935,6 +47935,83 @@ deadlocked.
 two-dispatch reading. LIVE-476 is untouched by this: its stable desktop diff is not an environment
 difference, and the measurement that shows it is recorded on the row.
 
+## ADR-1526: A public Space page shows the Space, and an ISR render declares it has no viewer rather than being audited for one (LIVE-500)
+
+**Status:** Accepted · 2026-09-25 · backlog `LIVE-500` (closed here) · restores
+[ADR-1080](DECISIONS.md) on the Space share URL · leaves [ADR-1465](DECISIONS.md) and
+[ADR-1452](DECISIONS.md) intact on routing
+
+**Context.** On 2026-09-24 the owner opened `/spaces/royaltemple` in a signed-out window and saw a
+cover, a name, a tagline and a card reading "Want to know Royal Temple? Sign in free to follow this
+Space." None of that Space's fourteen blocks rendered. The same URL is in `app/sitemap.ts`, so that
+is also what Googlebot, which cannot sign in, had been indexing.
+
+Nothing ruled it. #2781 (`01dc5fe`, 2026-09-19, SCAN-644 / ADR-1465) moved the share URL out of
+`(main)` so that layout's `getMyProfileId` would stop voiding ISR on every sitemap-advertised Space.
+GitHub records the old body as RENAMED to `(profile)/full/page.tsx` at +4/−0 — the block grid was
+not deleted, it was moved behind a URL a signed-out visitor is never routed to
+(`lib/nav/member-space-rewrite.ts`, `if (!signedIn) return null`). What replaced it at the share URL
+was an 84-line stub whose only child was a `<SignInCta>`. ADR-1465's Decision and Consequences are
+about cookies, ISR and keeping PRIVATE Spaces at 404; neither it nor ADR-1452 argues that a public
+Space shows a stranger less. ADR-1080 had already ruled the other way, in words that cover this
+exactly: *a signed-out visitor following a shared Circle or event link sees the thing instead of a
+form.* The reduction was collateral, and it held for six days.
+
+**Why nothing caught it.** `lib/nav/public-detail-isr.test.ts` reads each public page's OWN source
+for `cookies()`, `getMyProfileId` and friends. It cannot see one level down, and it asserts nothing
+about the page rendering anything at all. A stub passes every question a stub can be asked. That is
+the `AGENTS.md` rule — *every fail-safe needs a gate that notices it fired* — with the roles
+reversed: the gate was watching the wrong property.
+
+**The real constraint.** The body could not simply be restored, because the page is ISR
+(`revalidate = 3600`). The Space profile render reaches about 256 server modules, and measured
+before this change THREE of them executed a viewer read the file-local gate could not see:
+`getSpaceCommunity` (`lib/spaces/content-data.ts`), the Circles block's own member check
+(`components/widgets/space-profile/circles.tsx`), and `getSpaceProgram` (`lib/spaces/enroll.ts`,
+reached when a Features block picks the `program` source). One `cookies()` read makes Next render
+the route per request, which is the entire cost SCAN-643 and SCAN-644 were opened to remove.
+
+**Decision.** The public body renders the Space, and states that it has no viewer.
+
+1. `app/(public)/spaces/[slug]/page.tsx` renders the same `<SpaceProfileModules>` the member body
+   renders, off the same `preferences.profileLayout` node, parsed by the same pure
+   `parseEntityLayout`. Not a public variant of the page — the page.
+2. The sign-in card is DEMOTED below the content, the shape `app/(public)/events/[slug]/page.tsx`
+   already uses (body in `interiorMain`, CTA in `interiorSide`). The card was never the problem;
+   standing in front of the content was.
+3. `markAnonymousRender()` (`lib/core/anonymous-render.ts`) is the first statement of the body and of
+   `generateMetadata`. `getCachedUser` honours it BEFORE constructing a Supabase client, which is
+   where `cookies()` is read. Every server-side identity read funnels through that one function
+   (ADR-1244, LIVE-178), so `getCallerProfile`, `getMyProfileId`, `isPlatformStaff` and
+   `isPaidViewer` all go anonymous — including in code written after this ADR.
+4. A reader that takes a cookie WITHOUT resolving a viewer is outside that seam and answers for
+   itself. There is one on this render, `viewerHidesDemo` (`lib/demo-preference.ts`), and it checks
+   the flag directly. The seam's own header names this boundary so the next one is looked for.
+5. Read-only is a consequence, not a feature: with no viewer every member and owner check resolves
+   false, so join, follow, RSVP and owner tools render as their signed-out selves rather than each
+   having to remember to hide.
+
+**Rejected.** *Threading a null viewer through the three call sites.* It fixes three and leaves the
+fourth to whoever adds the next block, silently, exactly as this defect arrived. *A transitive
+import-graph gate.* Measured: all seven sibling public pages REACH a viewer read while shipping ISR
+correctly, because reachability is not execution — a gate that red on seven green pages is the
+red-that-means-nothing of [ADR-970](DECISIONS.md). *Making the page dynamic.* That is SCAN-644
+undone. *Moving the share URL back into `(main)`.* Same. *Treating the flag as a privilege
+downgrade usable inside a member render.* A signed-in surface that wants a public view passes a null
+viewer id to the reader it calls, as every reader already accepts.
+
+**Consequences.** ADR-1465 stands: the page stays in `(public)`, stays `revalidate = 3600`,
+signed-in visitors still rewrite to `/full`, private Spaces still 404 for a null viewer. An ISR
+document is built once and served to everyone, so "this render has no viewer" is not a policy choice
+on such a page — it is the only true statement about it, and the flag makes the code say what the
+cache already assumes. `LIVE-500` carries a probe that fails if the page stops rendering blocks,
+stops declaring itself, puts the card back in front, or if the seam stops being honoured ahead of
+`createClient`; it and the unit gate were each watched go RED against those mutations before being
+trusted. Any new `app/(public)/` page that renders member-aware content calls
+`markAnonymousRender()` first.
+
+**Rows.** LIVE-500 (closed here). Untouched: SCAN-644, SCAN-643, LIVE-184 (the tab set the sitemap
+advertises is unchanged).
 ## ADR-1529: A surface whose height is not a function of its content is photographed first-screen-only, and that is a different defect from a stable diff inside a stable frame (LIVE-503, LIVE-504)
 
 **Status:** Accepted · 2026-09-25 · backlog `LIVE-503`, `LIVE-504` (both closed here) · overturns
