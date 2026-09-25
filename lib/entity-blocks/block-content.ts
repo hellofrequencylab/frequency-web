@@ -732,6 +732,31 @@ export function blockDrawsOwnCard(id: string): boolean {
   return block.category === 'data' || SELF_CARDING_CONTENT_IDS.has(id)
 }
 
+/** THE BLOCKS WHOSE EVERY FIELD IS EDITED IN THE RAIL, because they have no inline slots on the canvas.
+ *
+ *  🔴 THIS SET IS ONE HALF OF A TWO-PART CONTRACT, AND IT IS HERE BECAUSE IT WAS PREVIOUSLY ONLY A HALF.
+ *  A Space page edits a block's TEXT on the page itself (inline slots) and its SETTINGS in the rail, and the
+ *  two lists are complements: `isStructuralField` in block-edit-panel.tsx drops text/textarea from the rail
+ *  precisely because the canvas is about to offer them as slots. A block listed here has no slots — the canvas
+ *  draws a faithful read-only preview of the published block instead (space-canvas-block's
+ *  STRUCTURAL_PREVIEW_IDS, which now reads this set) — so for these ids the rail must keep the text or nobody
+ *  can ever author it.
+ *
+ *  That is exactly what went wrong when `contactForm` joined the canvas side: the preview was correct (a form
+ *  is not inline-authorable), but nothing added the matching rail exemption, so SEVEN of its nine fields —
+ *  eyebrow, title, body, messageLabel, optInLabel, submitLabel, successMessage — were unreachable from every
+ *  Space surface. The block shipped looking finished; only the AI re-seed could write to it.
+ *
+ *  Both consumers import this module already, so keeping the one set HERE is what stops the two halves
+ *  drifting apart again. `rail-only-blocks.test.ts` pins the contract: no field of a member id may be
+ *  unreachable. */
+export const RAIL_ONLY_BLOCK_IDS: ReadonlySet<string> = new Set(['links', 'embed', 'recording', 'contactForm'])
+
+/** Whether every field of `id` is authored in the rail (it has no canvas slots). See RAIL_ONLY_BLOCK_IDS. */
+export function blockEditsAllFieldsInRail(id: string): boolean {
+  return RAIL_ONLY_BLOCK_IDS.has(id)
+}
+
 /** The editable fields for a block id: the content schema for a content block, the quick fields for a data
  *  block, or [] for an unknown id. */
 export function fieldsForBlock(id: string): readonly FieldDef[] {

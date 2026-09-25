@@ -165,9 +165,18 @@ export function blocksForKind(kind: EntityKind): EntityBlockDef[] {
  *  mess). A block NOT here is retired from the offer (existing placements still RENDER, fail-safe; they just
  *  cannot be re-added). Kept: the CONNECTED data sections that show live profile info (About, Offerings,
  *  Book, Events, Team, Reviews, Contact, Find-us-online) + the standard/custom content blocks (Heading,
- *  Text, Image) + the Music-and-video embed. Retired: highlights, practices, circles, faq, updates (no
- *  wired data) + gallery, quote, divider (rarely used), and the authored `links` block (Find-us-online
- *  covers links now). */
+ *  Text, Image) + the Music-and-video embed. Retired: highlights, practices, updates (no wired data) +
+ *  gallery, quote, divider (rarely used), and the authored `links` block (Find-us-online covers links now).
+ *
+ *  🔴 `circles` AND `faq` WERE ON THAT RETIRED LIST AND THE PREMISE HAD GONE STALE (ADR-1082: re-test a
+ *  row's premise before you work it). Both are wired, and were wired by work that never came back here:
+ *  `circles` reads `listCircles` and `faq` reads `listFaqs` (lib/entity-blocks/block-data-sources.ts), both
+ *  render live rows (components/widgets/space-profile/{circles,faq}.tsx), and BOTH are already emitted by
+ *  the fresh default layout (lib/spaces/profile-blocks.ts), so the offer contradicted the default: a Space
+ *  got the block on day one and could never put it back if it removed it. `faq` is the sharper case — it is
+ *  placed on 11 of the 18 Spaces in the layout corpus. Neither can render empty here, because both are
+ *  function-backed (FUNCTION_BACKED_BLOCK_TYPES) and `partitionSpaceBlocks` data-locks them out of the
+ *  palette until the Space actually has rows. */
 export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   // Connected data sections — each shows live profile info the operator entered in Identity & Branding /
   // Info & Connect, or a wired feature.
@@ -176,9 +185,11 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   'offerings',
   'booking',
   'events',
+  'circles', // The Space's live Circles, drawn as the shared CircleCard (ADR-1094 / ADR-1393).
   'journeys', // The journeys this space hosts (auto-pulled — ADR-542).
   'team',
   'reviews',
+  'faq', // The Space's own space_faqs rows.
   'contact',
   'business', // "Find us online" — the social + business links from Info & Connect (SPACE).
   // Member-only data sections (kept for the member profile).
