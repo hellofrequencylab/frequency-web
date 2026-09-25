@@ -109,6 +109,13 @@ const CONTENT_BLOCKS: readonly EntityBlockDef[] = [
   // deliberate "big title" and "body text" block distinct from the plain member Heading / Text content blocks.
   { id: 'displayHeading', label: 'Display heading', description: 'A large display title in your chosen style.', category: 'content', kinds: ['space', 'email'], order: 290 },
   { id: 'prose', label: 'Text Block', description: 'A styled paragraph of body text.', category: 'content', kinds: ['space', 'email'], order: 292 },
+  // THE CONTACT FORM (lead capture, door 6). The first block in the catalog that renders an INPUT:
+  // every other block is read-only. Space-only and web-only by necessity — a form has nowhere to post
+  // from inside an email, and a member Spotlight has no CRM to post into.
+  // It is `content` because the operator authors every word on it (the heading, the blurb, the button,
+  // the opt-in line, the thank-you); what it does with a submission is not authored and not
+  // configurable here, it is the lead-capture engine's.
+  { id: 'contactForm', label: 'Contact form', description: 'A form people fill in to reach you. Every message becomes a lead in your CRM.', category: 'content', kinds: ['space'], order: 294 },
 ]
 
 /** The reusable design-block ids in the unified entity-block vocabulary (registry ids, NOT the Puck
@@ -183,6 +190,7 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   'features',
   'embed', // Music and video — paste a YouTube / Spotify / SoundCloud / Vimeo / Insight Timer link.
   'recording', // Airwaves (ADR-608): embed one of the Space's Recordings with the real player.
+  'contactForm', // Lead capture (door 6): the one block that takes input and writes to the CRM.
   // SPACE design blocks (2026 → ADR-571): the reusable design sections, offered in the rail arranger.
   'photoHero',
   'editorial',

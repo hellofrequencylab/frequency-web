@@ -611,6 +611,25 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   prose: [
     { key: 'text', label: 'Paragraph', type: 'textarea', placeholder: 'Write a paragraph of body text' },
   ],
+  // CONTACT FORM (lead capture, door 6). The operator authors every WORD on the form; what happens to
+  // a submission is the engine's business and is deliberately not configurable here.
+  //
+  // 🔴 THERE IS NO "pre-tick the opt-in" FIELD, AND THERE MUST NOT BE. A pre-ticked consent box is not
+  // consent in most of the places this ships, and the whole reason the contact-form door is not
+  // consent-native (lib/crm/lead-capture.ts isMailableDoor) is that the sender's own tick is the only
+  // thing that makes them mailable. An operator-flipped default would route straight around that.
+  // `optInLabel` only changes the WORDS beside the box, never its starting state.
+  contactForm: [
+    { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the heading' },
+    { key: 'title', label: 'Heading', type: 'text', placeholder: 'Get in touch' },
+    { key: 'body', label: 'Intro', type: 'textarea', placeholder: 'A line about what to write, or when you reply' },
+    { key: 'showPhone', label: 'Ask for a phone number', type: 'toggle', default: false },
+    { key: 'showMessage', label: 'Ask for a message', type: 'toggle', default: true },
+    { key: 'messageLabel', label: 'Message label', type: 'text', placeholder: 'Your message' },
+    { key: 'optInLabel', label: 'Opt-in wording', type: 'text', placeholder: 'Email me about what is on' },
+    { key: 'submitLabel', label: 'Button label', type: 'text', placeholder: 'Send' },
+    { key: 'successMessage', label: 'Thank-you message', type: 'textarea', placeholder: 'Thanks. We will be in touch.' },
+  ],
 }
 
 /** The header fields every DATA block carries (ADR-542): an EYEBROW (the small pre-text kicker) and a

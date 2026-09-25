@@ -704,6 +704,8 @@ lib/crm/import/store.ts
 lib/crm/inbox.ts
 lib/crm/interactions.ts
 lib/crm/lead-capture.ts
+lib/crm/lead-deal.ts
+lib/crm/lead-notify.ts
 lib/crm/leader-crm-access.ts
 lib/crm/member-detail.ts
 lib/crm/member-network.ts

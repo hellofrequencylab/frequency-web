@@ -14,6 +14,7 @@ import { EntityGrid } from '@/components/entity-blocks/entity-grid'
 import { OwnerBlockFrame } from '@/components/entity-blocks/owner-block-frame'
 import { ContentBlockView, BlockStyleFrame, hasContent } from '@/components/entity-blocks/content-block-view'
 import { DesignBlockView, isDesignBlock } from '@/components/entity-blocks/design-block-view'
+import { ContactFormBlock } from '@/components/spaces/contact-form-block'
 
 import { AboutBlock } from './about'
 import { StoryBlock } from './story'
@@ -142,7 +143,29 @@ function renderSpaceBlock(
     // block has no live-data fallback, so an empty bag renders the component's own honest-empty state.
     inner = <DesignBlockView id={id} props={contentProps ?? {}} />
   } else if (block && block.category === 'content') {
-    if (id === 'features' && isFeatureDataSource(contentProps)) {
+    if (id === 'contactForm') {
+      // THE ONE BLOCK THAT NEEDS TO KNOW WHICH SPACE IT IS ON. ContentBlockView is shared by the
+      // member profile, the palette and the edit canvas, none of which have a Space, so it renders
+      // the form dead (slug null). This path does, so it is where the live, submittable form is
+      // mounted. The island posts the SLUG and the action re-resolves the Space server-side — a
+      // spaceId is never handed to the client and never accepted back from it.
+      const p = contentProps ?? {}
+      const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v : undefined)
+      inner = (
+        <ContactFormBlock
+          slug={space.slug}
+          eyebrow={str(p.eyebrow)}
+          title={str(p.title)}
+          body={str(p.body)}
+          showPhone={p.showPhone === true}
+          showMessage={p.showMessage !== false}
+          messageLabel={str(p.messageLabel)}
+          optInLabel={str(p.optInLabel)}
+          submitLabel={str(p.submitLabel)}
+          successMessage={str(p.successMessage)}
+        />
+      )
+    } else if (id === 'features' && isFeatureDataSource(contentProps)) {
       // The Features highlight engine (ADR-585) pulls its items from a Space DATA source (offerings / events /
       // memberships / tickets). Resolve them server-side and inject them as the block's `items` so the shared
       // ContentBlockView renders them exactly like authored items. Async so it can await the resolver; it sits

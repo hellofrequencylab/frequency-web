@@ -23,6 +23,7 @@ import {
 } from '@/lib/spotlight/embeds'
 import { BlockIcon } from './block-icon'
 import { RecordingBlockEmbed } from '@/components/airwaves/recording-block-embed'
+import { ContactFormBlock } from '@/components/spaces/contact-form-block'
 
 // PRESENTATIONAL renderers for the operator's inline-authored CONTENT blocks (ADR-528) + the per-block
 // STYLE frame. Server-safe (no hooks / no 'use client'), so the Server Component profile renderers drop
@@ -603,6 +604,27 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
     }
     case 'divider':
       return <hr className="border-border" />
+    // THE CONTACT FORM, WITH NO SPACE TO POST TO — i.e. the preview. The LIVE render is intercepted
+    // upstream in space-profile-modules.tsx, which is the only render path that knows which Space the
+    // page belongs to and can hand the island a slug. Reaching this case at all means the block is
+    // being drawn somewhere without that context (the edit canvas, the palette), so `slug={null}`
+    // renders the same markup with its controls disabled. One component, so the preview and the real
+    // form can never drift apart.
+    case 'contactForm':
+      return (
+        <ContactFormBlock
+          slug={null}
+          eyebrow={s(props, 'eyebrow')}
+          title={s(props, 'title')}
+          body={s(props, 'body')}
+          showPhone={props.showPhone === true}
+          showMessage={props.showMessage !== false}
+          messageLabel={s(props, 'messageLabel')}
+          optInLabel={s(props, 'optInLabel')}
+          submitLabel={s(props, 'submitLabel')}
+          successMessage={s(props, 'successMessage')}
+        />
+      )
     default:
       return null
   }
