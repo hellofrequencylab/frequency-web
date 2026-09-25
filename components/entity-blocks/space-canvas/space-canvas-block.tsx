@@ -7,6 +7,7 @@ import { headerFontStyle } from '@/lib/page-editor/fields'
 import {
   fieldsForBlock,
   fieldRendersInlineHtml,
+  RAIL_ONLY_BLOCK_IDS,
   decodeLegacyEntities,
   featureLayout,
   gridColumns,
@@ -49,8 +50,14 @@ const DESIGN_IDS: ReadonlySet<string> = new Set(DESIGN_ENTITY_BLOCK_IDS)
 
 /** Structural content blocks that carry NO inline-authorable copy: they render a faithful READ-ONLY preview of
  *  the real published block (ContentBlockView) so the canvas matches the page, instead of a bare field stack.
- *  Their content is set in the rail (a link row, a pasted media URL, a picked Recording). */
-const STRUCTURAL_PREVIEW_IDS: ReadonlySet<string> = new Set(['links', 'embed', 'recording', 'contactForm'])
+ *  Their content is set in the rail (a link row, a pasted media URL, a picked Recording).
+ *
+ *  🔴 AND THAT IS ONLY HALF THE CONTRACT — the other half lives in the rail, which by default DROPS a block's
+ *  text fields on a Space page because the canvas is expected to offer them as slots. A block here offers
+ *  none, so the rail has to keep them. Both halves now read ONE set (RAIL_ONLY_BLOCK_IDS,
+ *  lib/entity-blocks/block-content.ts) rather than two literals that can drift: when `contactForm` was added
+ *  to this list alone, seven of its nine fields became unreachable from every surface. */
+const STRUCTURAL_PREVIEW_IDS: ReadonlySet<string> = RAIL_ONLY_BLOCK_IDS
 
 // ── Canvas typography, matched to the published design components so the page style shows while editing. ──
 // `eyebrow` + `font-eyebrow` are copied from kit.tsx's Eyebrow ON PURPOSE, because this canvas exists to

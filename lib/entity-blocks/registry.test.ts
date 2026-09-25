@@ -82,14 +82,25 @@ describe('unified entity-block registry', () => {
 
   it('profilePaletteForKind narrows to the curated core (ADR-529 → ADR-536)', () => {
     const space = profilePaletteForKind('space').map((b) => b.id)
-    // Core kept (SPACE, ADR-542): the 9 connected data sections + the 4 free-form blocks (Callout, Gallery,
+    // Core kept (SPACE, ADR-542): the 11 connected data sections + the 4 free-form blocks (Callout, Gallery,
     // Journeys, Features). `business` (Find us online) covers links.
     for (const id of ['about', 'story', 'offerings', 'booking', 'events', 'team', 'reviews', 'contact', 'business', 'callout', 'gallery', 'journeys', 'features', 'embed']) {
       expect(space).toContain(id)
     }
+    // 🔴 `circles` and `faq` MOVED from the excluded list to here, because the reason they were excluded
+    // ("no wired data") stopped being true and nobody came back. Both read live rows through
+    // block-data-sources (listCircles / listFaqs) and both are already emitted by the FRESH DEFAULT layout,
+    // so while they sat below this line the offer contradicted the default: a Space was given the block and
+    // could never put it back after removing it. Asserted here so the offer and the default cannot diverge
+    // again. (`faq` is placed on 11 of the 18 Spaces in the layout corpus; `circles` on none, which is what
+    // the missing offer produced.)
+    for (const id of ['circles', 'faq']) {
+      expect(space).toContain(id)
+    }
     // Excluded from the SPACE palette (ADR-542): the legacy authored blocks (heading/text/links/image →
-    // covered by Callout + the connected sections) and the never-wired data blocks.
-    for (const id of ['highlights', 'stats', 'practices', 'circles', 'faq', 'updates', 'quote', 'divider', 'links', 'heading', 'text', 'image']) {
+    // covered by Callout + the connected sections) and the never-wired data blocks. Every id below must
+    // still have NO data source; if one gains a renderer with live rows, it belongs above, not here.
+    for (const id of ['highlights', 'stats', 'practices', 'updates', 'quote', 'divider', 'links', 'heading', 'text', 'image']) {
       expect(space).not.toContain(id)
     }
     // The member palette keeps topfriends + the authored links list + the content essentials; `business` is
