@@ -10,6 +10,8 @@ import { spaceHasPublicUpcomingEvents } from '@/lib/events/store'
 import { spaceHasCollaborators } from '@/lib/spaces/collaborations'
 import { viewerCanSeeSpaceMemberDirectory } from '@/lib/spaces/member-directory'
 import { canSeeSpaceDiscussionTab, getLiveSpaceCircle } from '@/lib/spaces/space-discussion'
+import { canSeeSpaceContactTab, readContactFormContent } from '@/lib/spaces/contact-tab'
+import { readProfileData } from '@/lib/spaces/profile-data'
 import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
 
 // THE ONE Space profile sub-nav model — the tab set + the operator's admin links — resolved from the
@@ -33,6 +35,14 @@ export interface SpaceProfileNav {
  * The admin links (Manage + CRM for console types) show ONLY to a manager / staff previewer. Reads the
  * caller internally (request-cached) so both the chrome layout and the owner shells can call it plainly.
  */
+/** Whether the Space published any way to reach it. Pure, and read from the SAME node the Contact
+ *  card renders from (readProfileData), so the tab and the card can never disagree about whether
+ *  there is anything to show. */
+function hasContactFacts(preferences: unknown): boolean {
+  const p = readProfileData(preferences)
+  return !!(p.address || p.phone || p.email || p.hours || p.website)
+}
+
 export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNav> {
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
@@ -63,7 +73,12 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   // `circles` joins it for the same reason (ADR-1094): Circles is a real tab now, so the Home
   // block's #circles anchor beside it is the "two Reviews" bug a second time, a stray menu link
   // scrolling to a section that may not even be in the saved layout.
-  const DEDICATED_TAB_ANCHORS = new Set(['reviews', 'circles'])
+  // `contact` joins them for the THIRD time this bug has been available: Contact is a real tab now
+  // (LIVE-502), so a `#contact` anchor beside it would be a second menu item with the same word on
+  // it, one scrolling and one navigating. The SECTION still renders on Home and the anchor still
+  // resolves — this only stops the menu listing it twice, which is what the stored "Get in touch"
+  // buttons depend on.
+  const DEDICATED_TAB_ANCHORS = new Set(['reviews', 'circles', 'contact'])
   const sections = deriveSectionNav(homeDoc, presence).filter((s) => !DEDICATED_TAB_ANCHORS.has(s.anchor))
   // The public Shop tab (ADR-596): shown only when the owner has published their storefront, with the
   // owner's chosen (renameable) label. The catalog is gated status='active' and the route double-gates on
@@ -116,6 +131,19 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
       canManage: canSeeAsOwner,
     })
       ? [{ href: `${base}/discussion`, label: 'Discussion' }]
+      : []),
+    // Contact (LIVE-502): the Space's own door for someone who wants to reach it — the operator's
+    // contact form, then the published facts. Shown once the Space has EITHER (so nobody wakes up
+    // with a public lead door they did not ask for); a manager sees it at zero because that is
+    // where they set it up. Sits beside Discussion rather than replacing it: the conversation door
+    // does not close until the Space home carries the feed, or a Space would briefly have neither.
+    ...(canSeeSpaceContactTab({
+      spaceType: space.type,
+      hasFormBlock: Object.keys(readContactFormContent(space.preferences)).length > 0,
+      hasContactFacts: hasContactFacts(space.preferences),
+      canManage: canSeeAsOwner,
+    })
+      ? [{ href: `${base}/contact`, label: 'Contact' }]
       : []),
     // Reviews on their own tab (owner decision): the member rating + review wall. Public read; a signed-in
     // member (not the owner) leaves one review they can revise. Gated on the `reviews` function (default ON).

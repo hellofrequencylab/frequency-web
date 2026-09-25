@@ -47934,3 +47934,67 @@ deadlocked.
 **Rows.** LIVE-487 (closed here). LIVE-213 stays open on `SUPPORT_CHAT` for Preview and its
 two-dispatch reading. LIVE-476 is untouched by this: its stable desktop diff is not an environment
 difference, and the measurement that shows it is recorded on the row.
+
+## ADR-1528: The Contact tab reads the contactForm block's own bag, and a reserved slug is reserved in both readers (LIVE-502)
+
+**Status:** Accepted · 2026-09-25 · backlog `LIVE-502` (closed here) · owner instruction 2026-09-24
+· applies the honest-empty rule of [ADR-1094](DECISIONS.md) and the anchor rule of
+[ADR-1471](DECISIONS.md) · widens the LIVE-082 probe
+
+**Context.** The contact form shipped as an entity block, so it existed only where an operator had
+placed it on a page. A Space's menu offered no door for someone who simply wants to reach the
+business. The owner asked for a Contact tab hosting the form, and was explicit that the block stays
+as well: *"I still want Contact to show up in the blocks. It will be both places."*
+
+**Decision.**
+
+1. **A `(profile)/contact` route**, body-only inside the profile chrome. It renders the operator's
+   contact form, then the published facts through the SAME `SpaceContactBlock` the Home section
+   uses, so one business cannot be described two ways.
+2. **The tab invents no storage.** The nine authored strings already live in the `contactForm`
+   block's content bag; `readContactFormContent` reads that bag. A `preferences.contactTab` node
+   would be a second home for the same keys, forcing a precedence rule into every render site and
+   letting one sentence be edited in two screens to two different answers. The block is the home.
+3. **The gate is operator-earned, and OFF by default.** The tab appears once the Space has authored
+   a form or published a way to reach it, with the manager-at-zero carve-out its siblings carry.
+   ROOT never offers it. Default-off is the point: this form writes a CRM lead and notifies the
+   owner, so opening a public lead door on every Space is a product decision, not a side effect of
+   adding a tab.
+4. **`contact` is a reserved page slug**, so a custom page cannot shadow the route. No Space in
+   production uses it (checked before reserving it), so nothing live changes.
+5. **The `#contact` anchor is untouched.** The contact block stays on Home, so the section and the
+   16 stored "Get in touch" buttons keep resolving. Only the MENU changes: `contact` joins
+   `DEDICATED_TAB_ANCHORS` so the row does not list Contact twice, once scrolling and once
+   navigating.
+6. **The sitemap advertises it** on the same condition the tab renders on, minus the manager arm —
+   a crawler is not a manager, and an empty tab with a URL is the [ADR-1224](DECISIONS.md) /
+   LIVE-184 defect itself.
+
+**Two pre-existing defects fixed here**, because this change would otherwise have inherited both.
+`declaredPageSlugs` (`lib/spaces/discovery.ts`) is a local reimplementation of `readProfilePages`
+that never applied the reserved-slug filter, so the sitemap would advertise a custom page named
+`people` or `discussion` that the static route shadows and that therefore never renders — latent for
+two segments already, and `contact` would have been a third. And the `reviews` arm of
+`DEDICATED_TAB_ANCHORS`, the original "two Reviews" bug the whole mechanism is named after, had **no
+test**: removing it from the set broke nothing. Both are now pinned.
+
+**Rejected.** *A `preferences.contactTab` node* (item 2). *Retiring the Discussion tab in the same
+change* — the conversation door does not close until the Space home carries the feed, or a Space
+would briefly have neither. *Migrating the stored `#contact` hrefs* — the anchor still works, and a
+document migration is its own change with its own risk. *Making the tab always-on for every non-root
+Space* — see item 3.
+
+**Consequences.** `LIVE-082`'s probe asserted the literal `new Set(['reviews', 'circles'])`, so a
+third anchor failed a row that had not regressed; it now measures the consequence (that `circles` is
+inside the set) and was watched go red by mutation after the widening, because a widened probe is
+how a gate quietly stops gating.
+
+Worth recording for whoever writes the next nav test: the contact-anchor case took **four attempts**
+to stop being vacuous, and both failure modes are invisible. A doc written to
+`preferences.pages[].doc` is never read — `readProfilePages` strips it and `resolveSpacePageDoc`
+falls back to the seeded default — and `SpaceContact`'s presence arm reads its OWN props rather than
+the presence bag. The first version therefore derived no anchor at all and passed against the mutant
+it was written to catch. It now carries a positive control so it cannot go vacuous again unnoticed.
+
+**Rows.** LIVE-502 (closed here). LIVE-082 keeps its status with a widened probe. Untouched: the
+Discussion tab and ADR-1469; the stored `#contact` hrefs; `headerCtaFunctionHref`.
