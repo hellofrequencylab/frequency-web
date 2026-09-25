@@ -238,9 +238,47 @@ describe('getSpaceCommunity', () => {
     ])
     const out = await getSpaceCommunity('space-1')
     expect(out).toEqual([
-      { id: 'c1', slug: 'a', name: 'Alpha', about: 'About A', memberCount: 5 },
-      { id: 'c3', slug: 'c', name: 'Gamma', about: null, memberCount: 0 },
+      {
+        id: 'c1', slug: 'a', name: 'Alpha', about: 'About A', memberCount: 5,
+        memberCap: 0, type: 'in-person', status: 'active', access: null,
+        imageUrl: null, neighborhood: null, isSpacePrimary: false,
+      },
+      {
+        id: 'c3', slug: 'c', name: 'Gamma', about: null, memberCount: 0,
+        memberCap: 0, type: 'in-person', status: 'active', access: null,
+        imageUrl: null, neighborhood: null, isSpacePrimary: false,
+      },
     ])
+  })
+
+  // THE POINT OF THE WIDENING (Circles block redesign). The reader's COLS always selected these;
+  // the projection dropped them, so the block could only draw a name, a blurb and a count while the
+  // Events block beside it drew a full card. Carried through, they ARE the card: cover, format,
+  // capacity meter, access-honest CTA, place line, and the Space Circle's lead position. Pinned
+  // field by field, because losing any one of them silently degrades a card rather than breaking it.
+  it('carries every field the shared CircleCard draws', async () => {
+    listPublicSpaceCircles.mockResolvedValue([
+      {
+        id: 'c1', slug: 'hearth', name: 'Hearth', about: 'Sundays', status: 'forming',
+        member_count: 12, member_cap: 40, type: 'online', access: 'closed',
+        image_url: 'https://example.test/c.jpg', neighborhood: 'Vista', is_space_primary: true,
+      },
+    ])
+    expect((await getSpaceCommunity('space-1'))[0]).toEqual({
+      id: 'c1', slug: 'hearth', name: 'Hearth', about: 'Sundays', memberCount: 12,
+      memberCap: 40, type: 'online', status: 'forming', access: 'closed',
+      imageUrl: 'https://example.test/c.jpg', neighborhood: 'Vista', isSpacePrimary: true,
+    })
+  })
+
+  // `type` is narrowed, not passed through: CircleCardData admits exactly 'in-person' | 'online',
+  // and the column is a free-text `text`. Anything that is not 'online' reads as in-person, which is
+  // what the card's own place-line fallback already assumes.
+  it('narrows an unexpected type to in-person rather than passing it through', async () => {
+    listPublicSpaceCircles.mockResolvedValue([
+      { id: 'c1', slug: 'a', name: 'Alpha', about: null, status: 'active', member_count: 1, type: 'hybrid' },
+    ])
+    expect((await getSpaceCommunity('space-1'))[0].type).toBe('in-person')
   })
 
   it('asks the PUBLIC reader, capped, with the viewer — never the raw by-space read (ADR-1094)', async () => {

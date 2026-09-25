@@ -683,7 +683,16 @@ const DATA_BLOCK_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   ],
   team: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Team to feature', type: 'picker', pickerBlock: 'team' }],
   journeys: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Journeys to feature', type: 'picker', pickerBlock: 'journeys' }],
-  circles: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Circles to feature', type: 'picker', pickerBlock: 'circles' }],
+  // CIRCLES (Circles block redesign): the header + picker, PLUS the same Columns control the Events
+  // cards view carries. The block now draws the shared CircleCard, so the column count is the only
+  // layout choice worth exposing — the card owns everything inside itself. Declared as the shared
+  // enum primitive, so the editor control and the sanitizer both come from this one line (ADR-569 C6)
+  // and cannot drift.
+  circles: [
+    ...DATA_HEADER_FIELDS,
+    { key: 'items', label: 'Circles to feature', type: 'picker', pickerBlock: 'circles' },
+    { key: 'columns', label: 'Columns', type: 'segmented', defaultValue: '3', options: COLUMN_OPTIONS },
+  ],
 }
 
 /** The block ids whose data-block schema carries a data-source picker (ADR-573, item 5). The seed getter
