@@ -4,7 +4,7 @@ description: Where people at a Space talk to each other, and how to join in.
 category: groups
 order: 6
 published: 2026-09-20
-updated: 2026-09-20
+updated: 2026-09-25
 audience: member
 featureKeys: [hubs, circles, posts]
 status: published
@@ -28,4 +28,5 @@ People who have not joined the Space do not get a tab over an empty room.
 
 - **Circles** still lists every group this Space runs.
 - **Your people** is still the staff roster.
+- **Contact** is a different door. Discussion is where people at a Space talk to each other; Contact is where you reach the Space itself, privately, through its own form. A message you send there goes to whoever runs the Space, not into the room. Contact shows up only on Spaces that have filled in a way to reach them, so you will not see it everywhere.
 - Posts on your home feed are still your wall. Discussion is only this Space.
