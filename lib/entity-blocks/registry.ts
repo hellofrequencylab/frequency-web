@@ -49,6 +49,10 @@ const DATA_BLOCKS: readonly EntityBlockDef[] = [
   { id: 'stats', label: 'Highlights', description: 'Headline counts and standout stats.', category: 'data', kinds: ['member', 'space'], order: 20 },
   { id: 'offerings', label: 'Offerings', description: 'The services or products to book or buy.', category: 'data', kinds: ['space'], order: 30 },
   { id: 'booking', label: 'Booking', description: 'Pick a time and book a session.', category: 'data', kinds: ['space'], requiresFunction: 'availability', order: 40 },
+  // Memberships (LIVE-510). Its data SOURCE has existed in block-data-sources.ts since ADR-573
+  // item 5, keyed by a synthetic block id whose own comment read "there is no registry block yet".
+  // This is that block: the source is unchanged, it simply has a palette entry and a view now.
+  { id: 'memberships', label: 'Memberships', description: 'A button that opens your membership plans.', category: 'data', kinds: ['space'], requiresFunction: 'memberships', order: 45 },
   { id: 'events', label: 'Events', description: 'Upcoming events to show up to.', category: 'data', kinds: ['space'], order: 50 },
   { id: 'practices', label: 'Practices and journeys', description: 'Practices and journeys to start here.', category: 'data', kinds: ['space'], order: 60 },
   { id: 'journeys', label: 'Journeys', description: 'The journeys you host here.', category: 'data', kinds: ['space'], order: 66 },
@@ -184,6 +188,7 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   'story',
   'offerings',
   'booking',
+  'memberships', // The Space's tiers, behind a button that opens them in a dialog (LIVE-510).
   'events',
   'circles', // The Space's live Circles, drawn as the shared CircleCard (ADR-1094 / ADR-1393).
   'journeys', // The journeys this space hosts (auto-pulled — ADR-542).

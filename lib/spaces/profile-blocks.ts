@@ -19,6 +19,7 @@ export type ProfileBlockId =
   | 'highlights'
   | 'offerings'
   | 'booking'
+  | 'memberships'
   | 'events'
   | 'practices'
   | 'circles'
@@ -49,6 +50,10 @@ export const PROFILE_BLOCKS: readonly ProfileBlockDef[] = [
   { id: 'highlights', label: 'Highlights', description: 'Live counts and standout stats.', requiresFunction: null, types: ['*'], order: 20 },
   { id: 'offerings', label: 'Offerings', description: 'The services or products members can book or buy.', requiresFunction: null, types: ['*'], order: 30 },
   { id: 'booking', label: 'Booking', description: 'Pick a time and book a session.', requiresFunction: 'availability', types: ['*'], order: 40 },
+  // Memberships (LIVE-510): the call to action for joining, and the plans behind it in a dialog.
+  // Gated on the `memberships` function, like Booking is on `availability`: a Space that switched
+  // memberships off has said it does not sell them, so the block never lands in a fresh default.
+  { id: 'memberships', label: 'Memberships', description: 'A button that opens your membership plans.', requiresFunction: 'memberships', types: ['*'], order: 45 },
   { id: 'events', label: 'Events', description: 'Upcoming events to show up to.', requiresFunction: null, types: ['*'], order: 50 },
   { id: 'practices', label: 'Practices and journeys', description: 'Practices and journeys to start here.', requiresFunction: null, types: ['*'], order: 60 },
   { id: 'circles', label: 'Circles', description: 'The community circles inside this space.', requiresFunction: null, types: ['*'], order: 70 },
