@@ -521,12 +521,42 @@ export function appSurfaces(
     // not been seen here (this account reads "0 recent Dispatches"), and its remedy is the other
     // one. Do not reach for it before the picture shows a dimension change.
     //
+    // ── 🔴 2026-09-25, LIVE-503: THE PICTURE SHOWED A DIMENSION CHANGE. THE PARAGRAPH ABOVE IS THE
+    //    PRECONDITION AND IT IS NOW MET, so `viewportOnly` is set. The measurement, from the
+    //    blocking @shell step on three unrelated pull requests (#2894, #2895, #2896 — disjoint
+    //    diffs, none touching anything this page renders):
+    //
+    //      mobile  390x2791 baseline -> 390x2910 actual   +119px
+    //      narrow  320x2861 baseline -> 320x2980 actual   +119px
+    //      desktop                                         PASSED
+    //
+    //    A SIZE mismatch, not a pixel diff — Playwright fails size before counting a pixel, so the
+    //    masks never ran. +119px identical at two widths, desktop unaffected: one row entering the
+    //    single-column list, which is precisely the Dispatch case predicted above. The account no
+    //    longer reads "0 recent Dispatches".
+    //
+    //    AND THE 2026-09-10 ARGUMENT AGAINST THIS FLAG NO LONGER APPLIES, which is why this is an
+    //    evidence change and not a reversal. That argument was "photographing the first screen alone
+    //    keeps 100% of the drift and gives up 60% of the page" — true when the drift was TEXT moving
+    //    inside boxes and nothing was masked. The five `data-visual-mask` sites LIVE-301 then added
+    //    already neutralise that drift. What they cannot neutralise is height, by the flag's own
+    //    doc ("a mask paints over a region and the element keeps its box"). So the two remedies are
+    //    complements, not alternatives: the masks hold the above-fold text, this flag holds the
+    //    height, and the surface keeps its BLOCKING vote instead of being downgraded to advisory.
+    //
+    //    WHAT IS GIVEN UP, stated rather than performed silently: everything below the first screen
+    //    — the Dispatch list's tail, the lower half of Coming up, and the new-Circles rail. Those
+    //    are live lists whose content this suite was never able to hold still anyway; what stays in
+    //    the picture is the hero band, the two-column grammar, the section headers and the quick
+    //    links. The alternative was a recapture, and this file already refuses it for this surface:
+    //    it "resets a clock that drifts again within the hour".
+    //
     // What holds that gap instead, so nobody reads this as uncovered: the jsdom test above asserts
     // the h1, the subtitle and the single control by content, and the @a11y shell run audits the
     // rendered band in a real browser (it is what caught the `aria-hidden` focus trap the first
     // version of this header shipped with). What is genuinely unmeasured is the band's APPEARANCE,
     // and an owner's eye on the Vercel preview is the check for it.
-    { path: '/nearby', slug: 'app-nearby', audience: 'member', masks: RAIL_COLUMN_MASK },
+    { path: '/nearby', slug: 'app-nearby', audience: 'member', masks: RAIL_COLUMN_MASK, viewportOnly: true },
   ]
   if (roomPath) {
     surfaces.push({ path: roomPath, slug: 'app-room', audience: 'member' })
@@ -666,7 +696,23 @@ const OPERATOR_PATHS: readonly { readonly path: string; readonly why: string }[]
  * rather than performed silently. The flip keeps its own row; when it is found, delete this
  * entry and the surface goes back to full-page in the same change.
  */
-const VIEWPORT_ONLY_OPERATOR_PATHS: readonly string[] = ['/admin/qr']
+//
+// ── 🔴 `/admin/library` JOINED 2026-09-25 (LIVE-504), ON THE SAME PATHOLOGY ──────────────────────
+// The identical camera-induced flip `/admin/qr` carries above and `/admin/content/practices`
+// carries in ADVISORY_OPERATOR_SURFACES below, measured on the blocking @shell step across three
+// unrelated pull requests (#2894, #2895, #2896 — disjoint diffs, none touching this page):
+//
+//     mobile 390x5634 <-> 390x5642, an 8px flip, and the two RETRIES INSIDE ONE RUN reported the
+//     pair in both directions (5634 -> 5642 and 5642 -> 5634).
+//
+// Two heights from one commit in one run is the definition of a page that cannot be photographed
+// whole, and it is why a recapture is refused here for the reason it was refused on the other two:
+// the page is BOTH heights, a baseline is one of them, and whichever is committed is red from the
+// other side. Desktop was not among the failures, so unlike `/admin/qr` there is no second stable
+// diff on the first screen and the flag alone should settle it — which is why this surface stays in
+// the BLOCKING tier rather than joining the advisory list. If a stable first-screen diff appears
+// here later, that is a new finding and a new row, not a reason to downgrade quietly.
+const VIEWPORT_ONLY_OPERATOR_PATHS: readonly string[] = ['/admin/qr', '/admin/library']
 
 export function operatorSurfaces(): readonly Surface[] {
   return OPERATOR_PATHS.map(({ path }) => ({
