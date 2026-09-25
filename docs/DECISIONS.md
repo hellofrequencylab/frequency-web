@@ -47934,3 +47934,349 @@ deadlocked.
 **Rows.** LIVE-487 (closed here). LIVE-213 stays open on `SUPPORT_CHAT` for Preview and its
 two-dispatch reading. LIVE-476 is untouched by this: its stable desktop diff is not an environment
 difference, and the measurement that shows it is recorded on the row.
+
+## ADR-1526: A public Space page shows the Space, and an ISR render declares it has no viewer rather than being audited for one (LIVE-500)
+
+**Status:** Accepted · 2026-09-25 · backlog `LIVE-500` (closed here) · restores
+[ADR-1080](DECISIONS.md) on the Space share URL · leaves [ADR-1465](DECISIONS.md) and
+[ADR-1452](DECISIONS.md) intact on routing
+
+**Context.** On 2026-09-24 the owner opened `/spaces/royaltemple` in a signed-out window and saw a
+cover, a name, a tagline and a card reading "Want to know Royal Temple? Sign in free to follow this
+Space." None of that Space's fourteen blocks rendered. The same URL is in `app/sitemap.ts`, so that
+is also what Googlebot, which cannot sign in, had been indexing.
+
+Nothing ruled it. #2781 (`01dc5fe`, 2026-09-19, SCAN-644 / ADR-1465) moved the share URL out of
+`(main)` so that layout's `getMyProfileId` would stop voiding ISR on every sitemap-advertised Space.
+GitHub records the old body as RENAMED to `(profile)/full/page.tsx` at +4/−0 — the block grid was
+not deleted, it was moved behind a URL a signed-out visitor is never routed to
+(`lib/nav/member-space-rewrite.ts`, `if (!signedIn) return null`). What replaced it at the share URL
+was an 84-line stub whose only child was a `<SignInCta>`. ADR-1465's Decision and Consequences are
+about cookies, ISR and keeping PRIVATE Spaces at 404; neither it nor ADR-1452 argues that a public
+Space shows a stranger less. ADR-1080 had already ruled the other way, in words that cover this
+exactly: *a signed-out visitor following a shared Circle or event link sees the thing instead of a
+form.* The reduction was collateral, and it held for six days.
+
+**Why nothing caught it.** `lib/nav/public-detail-isr.test.ts` reads each public page's OWN source
+for `cookies()`, `getMyProfileId` and friends. It cannot see one level down, and it asserts nothing
+about the page rendering anything at all. A stub passes every question a stub can be asked. That is
+the `AGENTS.md` rule — *every fail-safe needs a gate that notices it fired* — with the roles
+reversed: the gate was watching the wrong property.
+
+**The real constraint.** The body could not simply be restored, because the page is ISR
+(`revalidate = 3600`). The Space profile render reaches about 256 server modules, and measured
+before this change THREE of them executed a viewer read the file-local gate could not see:
+`getSpaceCommunity` (`lib/spaces/content-data.ts`), the Circles block's own member check
+(`components/widgets/space-profile/circles.tsx`), and `getSpaceProgram` (`lib/spaces/enroll.ts`,
+reached when a Features block picks the `program` source). One `cookies()` read makes Next render
+the route per request, which is the entire cost SCAN-643 and SCAN-644 were opened to remove.
+
+**Decision.** The public body renders the Space, and states that it has no viewer.
+
+1. `app/(public)/spaces/[slug]/page.tsx` renders the same `<SpaceProfileModules>` the member body
+   renders, off the same `preferences.profileLayout` node, parsed by the same pure
+   `parseEntityLayout`. Not a public variant of the page — the page.
+2. The sign-in card is DEMOTED below the content, the shape `app/(public)/events/[slug]/page.tsx`
+   already uses (body in `interiorMain`, CTA in `interiorSide`). The card was never the problem;
+   standing in front of the content was.
+3. `markAnonymousRender()` (`lib/core/anonymous-render.ts`) is the first statement of the body and of
+   `generateMetadata`. `getCachedUser` honours it BEFORE constructing a Supabase client, which is
+   where `cookies()` is read. Every server-side identity read funnels through that one function
+   (ADR-1244, LIVE-178), so `getCallerProfile`, `getMyProfileId`, `isPlatformStaff` and
+   `isPaidViewer` all go anonymous — including in code written after this ADR.
+4. A reader that takes a cookie WITHOUT resolving a viewer is outside that seam and answers for
+   itself. There is one on this render, `viewerHidesDemo` (`lib/demo-preference.ts`), and it checks
+   the flag directly. The seam's own header names this boundary so the next one is looked for.
+5. Read-only is a consequence, not a feature: with no viewer every member and owner check resolves
+   false, so join, follow, RSVP and owner tools render as their signed-out selves rather than each
+   having to remember to hide.
+
+**Rejected.** *Threading a null viewer through the three call sites.* It fixes three and leaves the
+fourth to whoever adds the next block, silently, exactly as this defect arrived. *A transitive
+import-graph gate.* Measured: all seven sibling public pages REACH a viewer read while shipping ISR
+correctly, because reachability is not execution — a gate that red on seven green pages is the
+red-that-means-nothing of [ADR-970](DECISIONS.md). *Making the page dynamic.* That is SCAN-644
+undone. *Moving the share URL back into `(main)`.* Same. *Treating the flag as a privilege
+downgrade usable inside a member render.* A signed-in surface that wants a public view passes a null
+viewer id to the reader it calls, as every reader already accepts.
+
+**Consequences.** ADR-1465 stands: the page stays in `(public)`, stays `revalidate = 3600`,
+signed-in visitors still rewrite to `/full`, private Spaces still 404 for a null viewer. An ISR
+document is built once and served to everyone, so "this render has no viewer" is not a policy choice
+on such a page — it is the only true statement about it, and the flag makes the code say what the
+cache already assumes. `LIVE-500` carries a probe that fails if the page stops rendering blocks,
+stops declaring itself, puts the card back in front, or if the seam stops being honoured ahead of
+`createClient`; it and the unit gate were each watched go RED against those mutations before being
+trusted. Any new `app/(public)/` page that renders member-aware content calls
+`markAnonymousRender()` first.
+
+**Rows.** LIVE-500 (closed here). Untouched: SCAN-644, SCAN-643, LIVE-184 (the tab set the sitemap
+advertises is unchanged).
+## ADR-1527: A block's declared field is reachable or it is not a field, and the two halves of Space authoring read one list (LIVE-501)
+
+**Status:** Accepted · 2026-09-25 · backlog `LIVE-501` (closed here) · amends the palette curation of
+[ADR-529](DECISIONS.md) / [ADR-536](DECISIONS.md) / [ADR-542](DECISIONS.md) on two ids · applies
+[ADR-1082](DECISIONS.md) (re-test a row's premise before you work it)
+
+**Context.** A Space page splits block authoring in two. TEXT is edited on the page through inline slots on
+the canvas; SETTINGS are edited in the rail. `isStructuralField` (`components/entity-blocks/block-edit-panel.tsx`)
+therefore drops `text` / `textarea` from the rail whenever the canvas is live — correct, and precisely wrong
+for a block the canvas renders as a READ-ONLY PREVIEW, because that block has no slots to move the text to.
+It then belongs to neither half.
+
+`contactForm` is that case. It was added to the canvas's `STRUCTURAL_PREVIEW_IDS` on a true premise (a form is
+not inline-authorable) and nothing added the matching rail exemption. Seven of its nine fields — eyebrow,
+title, body, messageLabel, optInLabel, submitLabel, successMessage — could not be set from any surface in the
+app. The schema was complete, the block rendered, every test passed, and the only writer left was the AI
+re-seed button.
+
+A second defect hid behind the first. `contactForm` is a CONTENT block, so `sanitizeBlockContent` runs its
+textareas through `sanitizeInlineHtml`, which escapes `'` and `"`; but its fields are not in
+`INLINE_HTML_FIELDS`, so both render sites draw them as plain React text. An apostrophe reached the page as
+`&#39;`. The design blocks already decode on read (`design-block-view.tsx`); the bespoke `contactForm` mount
+did not. It was invisible until the first defect was fixed and someone could type an apostrophe.
+
+Separately, `circles` and `faq` sat on the palette's retired list as "no wired data". Re-tested: false for
+both. Each has a data source (`listCircles` / `listFaqs`), each renders live rows, and each is ALREADY emitted
+by the fresh default layout — so the offer contradicted the default. A Space was handed the block on day one
+and could never put it back after removing it. `faq` is placed on 11 of the 18 Spaces in the layout corpus;
+`circles` on none, which is exactly what a missing offer produces.
+
+**Decision.**
+
+1. **One list, imported by both halves.** `RAIL_ONLY_BLOCK_IDS` and `blockEditsAllFieldsInRail` live in
+   `lib/entity-blocks/block-content.ts`, which both consumers already import. The canvas's
+   `STRUCTURAL_PREVIEW_IDS` now reads it, and the rail exempts its members from the structural filter. Two
+   hand-written literals were the defect; one shared set is the fix.
+2. **A rail-only block keeps all of its fields in the rail**, including `textOnCanvas` for item text, because
+   there are no slots for any of it to move to.
+3. **Both `contactForm` render sites decode on read** — the live mount in `space-profile-modules.tsx` and the
+   `slug={null}` preview in `content-block-view.tsx`. They must agree, so they decode identically.
+4. **`circles` and `faq` join the Space palette.** Neither can render empty: both are function-backed, and
+   `partitionSpaceBlocks` data-locks them out of the palette until the Space has rows.
+5. **The gate asserts the PROPERTY, not the membership.** `lib/entity-blocks/rail-only-blocks.test.ts` checks
+   that for every rail-only id, declared fields equal reachable fields. That keeps holding as blocks are added,
+   which a list of names would not.
+
+**Rejected.** *Moving the nine values into a `preferences.contactForm` node* (the `space_faqs` editor shape):
+the block content bag is already the correct per-block home, and a Space-global node would be a second source
+of truth for the same keys, forcing a precedence rule into two render sites and making two contactForm blocks
+on different pages share one label set. *Deleting `contactForm` from the canvas list instead*: it would fall
+to the generic field stack and lose the real form preview — the WYSIWYG regression that list exists to
+prevent. *Adding the fields to `INLINE_HTML_FIELDS`*: they render plain, and authoring them rich is what
+produced the entity artifacts in the first place. *Retiring `SpaceCommunity`* in the same change: it is a
+declared stored type in 19 documents and needs its own migration.
+
+**Consequences.** Saved layouts are untouched; `circles` and `faq` gain a palette and bench entry only. Any
+future block added to `RAIL_ONLY_BLOCK_IDS` gets the rail exemption for free, and the property test fails if
+one is added to the canvas list alone. Worth recording for the next author of a gate here: on the first
+attempt two of these assertions PASSED against the mutant they were written to catch — one regex matched the
+identifier inside its own explanatory comment, the other matched an import that survived the deleted call.
+Source-shape checks in this file strip comments and assert the CALL rather than the name, and no gate in this
+change was trusted until it was watched go red.
+
+**Rows.** LIVE-501 (closed here). Untouched: the `SpaceCommunity` Puck block and its 19 stored documents;
+the Space Circle / Discussion program.
+## ADR-1528: The Contact tab reads the contactForm block's own bag, and a reserved slug is reserved in both readers (LIVE-502)
+
+**Status:** Accepted · 2026-09-25 · backlog `LIVE-502` (closed here) · owner instruction 2026-09-24
+· applies the honest-empty rule of [ADR-1094](DECISIONS.md) and the anchor rule of
+[ADR-1471](DECISIONS.md) · widens the LIVE-082 probe
+
+**Context.** The contact form shipped as an entity block, so it existed only where an operator had
+placed it on a page. A Space's menu offered no door for someone who simply wants to reach the
+business. The owner asked for a Contact tab hosting the form, and was explicit that the block stays
+as well: *"I still want Contact to show up in the blocks. It will be both places."*
+
+**Decision.**
+
+1. **A `(profile)/contact` route**, body-only inside the profile chrome. It renders the operator's
+   contact form, then the published facts through the SAME `SpaceContactBlock` the Home section
+   uses, so one business cannot be described two ways.
+2. **The tab invents no storage.** The nine authored strings already live in the `contactForm`
+   block's content bag; `readContactFormContent` reads that bag. A `preferences.contactTab` node
+   would be a second home for the same keys, forcing a precedence rule into every render site and
+   letting one sentence be edited in two screens to two different answers. The block is the home.
+3. **The gate is operator-earned, and OFF by default.** The tab appears once the Space has authored
+   a form or published a way to reach it, with the manager-at-zero carve-out its siblings carry.
+   ROOT never offers it. Default-off is the point: this form writes a CRM lead and notifies the
+   owner, so opening a public lead door on every Space is a product decision, not a side effect of
+   adding a tab.
+4. **`contact` is a reserved page slug**, so a custom page cannot shadow the route. No Space in
+   production uses it (checked before reserving it), so nothing live changes.
+5. **The `#contact` anchor is untouched.** The contact block stays on Home, so the section and the
+   16 stored "Get in touch" buttons keep resolving. Only the MENU changes: `contact` joins
+   `DEDICATED_TAB_ANCHORS` so the row does not list Contact twice, once scrolling and once
+   navigating.
+6. **The sitemap advertises it** on the same condition the tab renders on, minus the manager arm —
+   a crawler is not a manager, and an empty tab with a URL is the [ADR-1224](DECISIONS.md) /
+   LIVE-184 defect itself.
+
+**Two pre-existing defects fixed here**, because this change would otherwise have inherited both.
+`declaredPageSlugs` (`lib/spaces/discovery.ts`) is a local reimplementation of `readProfilePages`
+that never applied the reserved-slug filter, so the sitemap would advertise a custom page named
+`people` or `discussion` that the static route shadows and that therefore never renders — latent for
+two segments already, and `contact` would have been a third. And the `reviews` arm of
+`DEDICATED_TAB_ANCHORS`, the original "two Reviews" bug the whole mechanism is named after, had **no
+test**: removing it from the set broke nothing. Both are now pinned.
+
+**Rejected.** *A `preferences.contactTab` node* (item 2). *Retiring the Discussion tab in the same
+change* — the conversation door does not close until the Space home carries the feed, or a Space
+would briefly have neither. *Migrating the stored `#contact` hrefs* — the anchor still works, and a
+document migration is its own change with its own risk. *Making the tab always-on for every non-root
+Space* — see item 3.
+
+**Consequences.** `LIVE-082`'s probe asserted the literal `new Set(['reviews', 'circles'])`, so a
+third anchor failed a row that had not regressed; it now measures the consequence (that `circles` is
+inside the set) and was watched go red by mutation after the widening, because a widened probe is
+how a gate quietly stops gating.
+
+Worth recording for whoever writes the next nav test: the contact-anchor case took **four attempts**
+to stop being vacuous, and both failure modes are invisible. A doc written to
+`preferences.pages[].doc` is never read — `readProfilePages` strips it and `resolveSpacePageDoc`
+falls back to the seeded default — and `SpaceContact`'s presence arm reads its OWN props rather than
+the presence bag. The first version therefore derived no anchor at all and passed against the mutant
+it was written to catch. It now carries a positive control so it cannot go vacuous again unnoticed.
+
+**Rows.** LIVE-502 (closed here). LIVE-082 keeps its status with a widened probe. Untouched: the
+Discussion tab and ADR-1469; the stored `#contact` hrefs; `headerCtaFunctionHref`.
+## ADR-1529: A surface whose height is not a function of its content is photographed first-screen-only, and that is a different defect from a stable diff inside a stable frame (LIVE-503, LIVE-504)
+
+**Status:** Accepted · 2026-09-25 · backlog `LIVE-503`, `LIVE-504` (both closed here) · overturns
+the 2026-09-10 refusal recorded in `test/e2e/surfaces.ts` · beside [ADR-1277](DECISIONS.md), which
+added the masks this decision depends on
+
+**Context.** `pr-compare`'s BLOCKING `@shell` tier failed on `/nearby` and `/admin/library` on every
+open pull request — #2894, #2895 and #2896, three disjoint diffs, none of which touches anything
+either page renders — and again on a re-run of #2894's identical commit. Reproducible, not flaky,
+and blocking four PRs at once.
+
+Both failures are about HEIGHT, which is the part of the picture a mask cannot reach.
+
+`/nearby` reported a SIZE mismatch: mobile 390x2791 → 390x2910 and narrow 320x2861 → 320x2980, both
++119px, with desktop passing. `toHaveScreenshot` fails size BEFORE it compares a pixel, so the five
+`data-visual-mask` sites never ran. +119px identical at two widths with desktop unaffected is one
+row entering a single-column list: a published Dispatch.
+
+`/admin/library` reported an 8px flip — 390x5634 and 390x5642 — and the two retries INSIDE ONE RUN
+reported it in both directions. Two heights for one commit in one run is a page that cannot be
+photographed whole: it is both heights, a baseline is one of them, and whichever is committed is red
+from the other side. Re-running never settles that, which is why "flake" was not the diagnosis.
+
+**The 2026-09-10 decision refused `viewportOnly` for `/nearby`** on the grounds that first-screen-only
+"keeps 100% of the drift and gives up 60% of the page". That was true of the tree it was written
+against: the drift was text moving inside boxes, and nothing was masked.
+
+**Decision.** `viewportOnly` on both surfaces, and both KEEP their blocking vote.
+
+1. The 2026-09-10 argument does not survive the evidence, and this is an overturn on changed
+   premises rather than a reversal on taste. [ADR-1277](DECISIONS.md) / LIVE-301 added five
+   `data-visual-mask` sites which already neutralise the drift that argument was about. What a mask
+   cannot neutralise is height — by the flag's own doc, *"a mask paints over a region and the element
+   keeps its box"*. So the two remedies are COMPLEMENTS: masks hold the above-fold text, the flag
+   holds the height. Neither replaces the other, and reaching for the flag first would still be wrong.
+2. The gate for reaching for it is the one `surfaces.ts` already wrote and this change honoured:
+   *"its remedy is the other one. Do not reach for it before the picture shows a dimension change."*
+   The picture showed one. That note also predicted this exact Dispatch case word for word.
+3. `/nearby` keeps its blocking vote. **`/admin/library` does not, and that is a correction made
+   inside this ADR rather than a second decision.** The flag was set on it here too, and it fixed
+   the half it was aimed at — the mobile flip, and every size mismatch on the surface. It then
+   carried a SECOND, INDEPENDENT failure straight through: desktop dawn-dark, 1029 differing pixels,
+   stable across all three attempts and identical again on a re-run ten minutes later on another
+   runner. That is [LIVE-476](BUILD-BACKLOG.json)'s fingerprint to the pixel (`/admin/qr` reads
+   1029 px dawn-dark on its own first screen), so it is shared admin chrome, not this page. The
+   surface moves to `ADVISORY_OPERATOR_SURFACES` under LIVE-504 and its full-page baselines are
+   restored, because on a surface that no longer votes a first-screen capture throws away ~4,800px
+   of the asset grid to buy a vote it does not cast.
+
+   The claim this replaces — "desktop was not among its failures, so the flag alone should settle
+   it" — was the one thing here not measured before it was written, and LIVE-492's entry in
+   `surfaces.ts` had already stated the general case one surface over: `viewportOnly` addresses a
+   height that is not a function of content, and "a stable difference inside a stable frame" is
+   not that.
+4. What is given up is stated rather than performed silently: everything below the first screen on
+   both pages. What stays photographed is the hero band, the two-column grammar, section headers and
+   quick links on one; the admin chrome, heading, stat cards and controls on the other.
+
+**Recapturing the baselines is not the forbidden act, and the difference matters.** `surfaces.ts`
+refuses an in-place recapture for `/nearby` by name — it *"resets a clock that drifts again within
+the hour"* — and that refusal stands. Setting the flag makes the committed whole-page pictures wrong
+BY DEFINITION, so replacing them is a consequence of the decision, not a way of making a red go away.
+`baseline-distinctness.test.ts` is what keeps that honest: it failed on exactly 10 PNGs until they
+were viewport-sized, and it is the in-repo guard that a surface cannot claim this flag while carrying
+whole-page pictures.
+
+**Consequences.**
+
+- Each row's probe asserts BOTH the flag AND the committed PNG heights, with a positive control that
+  reads a known whole-page baseline. A probe on the flag alone passes against stale full-page
+  baselines, which is precisely the gate that does not gate.
+- `pr-compare` on `6c7c049` proved the flag took effect before the recapture landed: the comparison
+  INVERTED, reporting *"Expected an image 390px by 2791px, received 390px by 844px"* — the actual
+  capture is now exactly the mobile viewport height, and 320x568 at narrow.
+- A future height regression on `/nearby` is invisible to this tier below the fold. That is the
+  price of the flag, and it is why `/nearby` keeps its vote rather than also being downgraded.
+- `/admin/library` stops voting entirely until LIVE-504 closes. It is still captured, still
+  compared and still reported; what it gives up is the ability to fail a pull request. The row is
+  the debt, and closing the LIVE-476 class would close all three of its instances at once.
+- **The live asset grid was ruled out by measurement, not by argument**, which is the only reason
+  a mask was not reached for: `library_assets` had no row created or updated between the capture
+  and either comparison, `library_collections` none since July, `platform_flags` none since
+  2026-09-05. The subject of the picture was frozen, so a `data-visual-mask` over the grid would
+  have covered the wrong region and looked like a fix.
+- `e2e.yml` has no `main` trigger, so `pr-compare` only ever runs on pull requests and the
+  "is it red on the base branch too?" control is unavailable for any PR in this repository. Recorded
+  as a separate finding.
+
+## ADR-1530: A Space's own cascade is established by a layout in every tree that renders it, not by the page (LIVE-506)
+
+**Status:** Accepted · 2026-09-25 · backlog `LIVE-506` (closed here) · applies
+[ADR-1192](DECISIONS.md)'s structural ruling to the `(public)` Space tree · beside
+[ADR-1526](DECISIONS.md), which put the blocks back on the share URL but not the cascade
+
+**Context.** [ADR-1526](DECISIONS.md) restored the Space's blocks to the signed-out share URL. The
+owner opened `frequencylocal.com/spaces/royaltemple` the next morning and the page still did not
+match: signed out, the headings read as **HEAVY CONDENSED ALL-CAPS**; signed in, the same headings
+read as sentence-case Fraunces.
+
+Both trees call the same `<SpaceProfileModules>` off the same stored `profileLayout`. That is why
+the public page's own header could truthfully say it performs "the same render" and still be wrong
+about the result: **the markup was the same and the cascade it rendered into was not.**
+
+The blocks carry plain class markup (`font-display … uppercase`), and every theme-aware rule in
+`app/globals.css` hangs off a `[data-space-theme]` ancestor. `AccentScope` is the only component in
+the repository that emits that attribute, and it was mounted in `app/(main)/spaces/[slug]/layout.tsx`
+and nowhere in `(public)`. Measured on `royaltemple` (theme `editorial`, brand accent `#9C5B3F`):
+
+- `--font-display` unset, so `.font-display` fell back to Anton with its base caps-tuned metrics, and
+  `[data-space-theme="editorial"] .font-display`'s `text-transform: none` never matched.
+- `[data-space-theme]` sets the body face, so body copy fell back to Nunito. A `classic` Space loses
+  PT Serif and an `accessible` Space loses Atkinson on the same URL.
+- `AccentScope`'s `vars` carry the `--color-primary*` family, so every `bg-primary` CTA painted the
+  **host's amber** instead of the Space's brand.
+
+This is the URL `app/sitemap.ts` advertises, and the one strangers and Googlebot actually see.
+
+**Decision.** The scope is established by a **layout** in every tree that renders a Space, and
+`app/(public)/spaces/[slug]/layout.tsx` is that layout for the share URL.
+
+1. A page-level wrapper was written first and **rejected**. It left the sitemap-listed
+   `podcasts/[showSlug]` route under the same segment unscoped, and per-page wrapping is the shape
+   ADR-1192 retired: *"the fix is structural, not per-page"*.
+2. `markAnonymousRender()` is called in the layout for the same reason the page calls it — this
+   subtree has no viewer, and declaring that beats auditing each new block for a viewer read.
+3. **ISR is untouched**, which is what [ADR-1465](DECISIONS.md) and ADR-1526 exist to protect. Every
+   read is pure or a plain DB read, never `cookies()` or `headers()`, and `getVisibleSpaceBySlug` is
+   request-cached transitively via `getSpaceBySlug`, so the page below re-reads the same Space free.
+
+**Consequences.**
+
+- A second unscoped public route, `app/(public)/spaces/[slug]/podcasts/[showSlug]/page.tsx`, was
+  found **by widening the guard rather than by reading**, and is fixed by the same layout.
+- `accent-scope-coverage.test.ts` now walks **both** Space roots. Its design was already right —
+  walk the real tree, because a list of subtrees rots — but it rooted that walk at its own directory,
+  so **the roots were the list**, and a Space has two route trees. Its find-the-tree assertion now
+  names the public page by path, so the root cannot quietly stop being reached.
+- The general rule this states, beyond Spaces: **"it renders the same component" is not the same
+  claim as "it renders the same"**. A component whose appearance comes from an ancestor attribute
+  carries none of that appearance in its own markup, and a second mount point inherits nothing.

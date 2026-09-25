@@ -52,6 +52,7 @@ export const RESERVED_PAGE_SLUGS: ReadonlySet<string> = new Set([
   'api',
   'people', // the member directory (LIVE-420). A custom page must not shadow it.
   'discussion', // the Space Circle conversation (LIVE-421). A custom page must not shadow it.
+  'contact', // the Contact tab (LIVE-502). A custom page must not shadow it.
 ])
 
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/

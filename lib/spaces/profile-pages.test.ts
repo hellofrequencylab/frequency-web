@@ -31,7 +31,7 @@ describe('slug validation', () => {
     expect(isValidPageSlug('has space')).toBe(false)
     expect(isValidPageSlug('trailing-')).toBe(false)
     // reserved: home + owner-route segments + the reserved /book action page
-    for (const r of ['home', 'manage', 'settings', 'crm', 'edit-page', 'book', 'people', 'discussion']) {
+    for (const r of ['home', 'manage', 'settings', 'crm', 'edit-page', 'book', 'people', 'discussion', 'contact']) {
       expect(isReservedSlug(r)).toBe(true)
       expect(isValidPageSlug(r)).toBe(false)
     }
