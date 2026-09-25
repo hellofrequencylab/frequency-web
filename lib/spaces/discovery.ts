@@ -27,6 +27,10 @@ import { careScore, standingScore, type StandingResult } from './standing'
 import { isSpaceKind, type SpaceKind } from './categories'
 import { isSubjectKey } from '@/lib/taxonomy/subjects'
 import { readHeaderCtaPreference, resolveHeaderCta } from './header-cta'
+// The logo-backdrop reader is PURE and dependency-light (it and its module import only the focal-point
+// math), so it is safe to pull into a module the sitemap reaches — same import lib/layout/cover-scrim.ts
+// already makes of its neighbour in this file.
+import { readLogoBackdrop, type LogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { defaultPrimaryCtaLabel } from './profile-config'
 import { foundingBadgesForSpaces } from '@/lib/founding/status'
 import { SERIES_COLUMNS, countSeriesBy, type SeriesRow } from '@/lib/events/series'
@@ -74,6 +78,11 @@ export interface NetworkedSpace {
   tagline: string | null
   /** Operator-supplied logo URL, or null. Rendered via a plain <img> (an arbitrary URL). */
   logoUrl: string | null
+  /** The operator's chosen backdrop for that logo (preferences.logoBackdrop, default 'plate'). The
+   *  directory card draws the SAME BrandAnchor chip the Space profile does, so a Space that asked for
+   *  a bare mark has to be asked here too — a card that answered 'plate' for everyone is how a
+   *  transparent logo ended up in a white square it had explicitly opted out of. */
+  logoBackdrop: LogoBackdrop
   /** Operator-supplied cover/banner image URL (spaces.cover_image_url), or null. Leads the card. */
   coverUrl: string | null
   /** The card's action button: the operator-configured header CTA resolved to a label + href off the
@@ -567,6 +576,7 @@ export const listNetworkedSpaces = cache(
           kindLabel: spaceKindPillLabel({ preferences: r.preferences }),
           tagline: r.tagline?.trim() || null, // Populated from the row (Wave B); the card omits it when null.
           logoUrl: r.brand_logo_url,
+          logoBackdrop: readLogoBackdrop(r.preferences),
           coverUrl: r.cover_image_url,
           updatedAt: r.updated_at ?? null,
           action: { label: resolved.label, href: resolved.href },

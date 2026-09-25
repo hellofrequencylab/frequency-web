@@ -30,17 +30,41 @@ import type { LogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/pref
 // --radius-card and --radius-cover to the same value. That was coincidence, not contract, and the
 // change that decoupled the cover from the theme would have silently desynchronised them.
 // A theme still shapes everything else around it (cards, buttons, tabs) via --radius-card/-control.
+//
+// SIZE is the only thing a call site may vary, and it varies ONE thing: the box. 'hero' is the chip on
+// the Space profile; 'card' is the same chip on a directory card, which used to be a hand-rolled copy in
+// space-card.tsx that fit EVERY image with object-contain on an always-on plate. That copy letterboxed a
+// photo avatar between white bars and drew a white square behind a transparent logo whose operator had
+// explicitly chosen 'none' — the two defects the rules above exist to prevent, on the surface where a
+// visitor meets a Space first. The fit rule, the halo, the backdrop and the radius are decided HERE, once,
+// so the card and the profile cannot disagree about the same logo again.
+
+/** The two boxes the chip is drawn at. Everything else about it — fit, halo, plate, radius — is the
+ *  same at both sizes on purpose; only the geometry scales. */
+export type BrandAnchorSize = 'hero' | 'card'
+
+const SIZES: Record<BrandAnchorSize, { box: string; initials: string }> = {
+  hero: { box: 'h-20 w-20 lg:h-28 lg:w-28', initials: 'text-page-title lg:text-3xl' },
+  // 48px matches the inset (left-3 / bottom-3) the directory card already uses for its kind pill, so the
+  // chip keeps the card's 12px edge rhythm — the same proportion the hero chip keeps against `p-6`.
+  card: { box: 'h-12 w-12', initials: 'text-body-sm' },
+}
+
 export function BrandAnchor({
   name,
   logoUrl,
   backdrop = 'plate',
+  size = 'hero',
 }: {
   name: string
   logoUrl: string | null
   /** 'plate' (default) keeps the plate + ring + shadow; 'none' puts the logo bare on the cover.
    *  Operator-chosen per Space (preferences.logoBackdrop) — see the note above. */
   backdrop?: LogoBackdrop
+  /** The box it is drawn at: 'hero' (the profile lockup, default) or 'card' (a directory card cover). */
+  size?: BrandAnchorSize
 }) {
+  const dims = SIZES[size]
   const bare = backdrop === 'none'
   // The plate, the ring and the shadow are ONE decision and travel together. Dropping only the
   // background would leave a 4px `border-surface` ring drawing a white square around a logo that
@@ -58,7 +82,8 @@ export function BrandAnchor({
         src={logoUrl}
         alt=""
         className={cn(
-          'h-20 w-20 shrink-0 rounded-[var(--radius-cover,1.5rem)] lg:h-28 lg:w-28',
+          'shrink-0 rounded-[var(--radius-cover,1.5rem)]',
+          dims.box,
           plate,
           isOpaquePhoto ? 'object-cover' : 'object-contain',
           (bare || !isOpaquePhoto) && halo,
@@ -72,7 +97,11 @@ export function BrandAnchor({
   // the illegibility the halo exists to prevent, with no image to hang a halo on.
   return (
     <span
-      className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[var(--radius-cover,1.5rem)] border-4 border-surface bg-surface-elevated text-page-title font-bold text-subtle lift-1 lg:h-28 lg:w-28 lg:text-3xl"
+      className={cn(
+        'flex shrink-0 items-center justify-center rounded-[var(--radius-cover,1.5rem)] border-4 border-surface bg-surface-elevated font-bold text-subtle lift-1',
+        dims.box,
+        dims.initials,
+      )}
       aria-hidden
     >
       {getInitials(name)}
