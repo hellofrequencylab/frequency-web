@@ -275,7 +275,9 @@ describe('the full bleed the owner asked for actually reaches both edges', () =>
     const cls = markup.match(/class="([^"]*)"/)?.[1] ?? ''
     const out: Record<string, string[]> = {}
     for (const token of cls.split(/\s+/)) {
-      const m = token.match(/^(?:([a-z]+):)?(w-[\w[\]/.%-]+)$/)
+      // The char class must admit `calc(100%+2rem)` -- a width it cannot tokenise is a width
+      // the one-per-breakpoint gate below cannot see, which would make that gate pass vacuously.
+      const m = token.match(/^(?:([a-z]+):)?(w-[\w[\]/.%+()-]+)$/)
       if (m) (out[m[1] ?? 'base'] ??= []).push(m[2])
     }
     return out
@@ -296,20 +298,64 @@ describe('the full bleed the owner asked for actually reaches both edges', () =>
     }
   })
 
-  it('gives the phone band w-auto so the negative margin can widen it, not just shift it', () => {
+  it('gives the phone band a width that the negative margin WIDENS, not just shifts', () => {
     const markup = renderToStaticMarkup(
       <PosterBand
         src="/x.png"
         heightClass={posterHeightClass('standard')}
         className="-mx-4 sm:mx-0"
-        widthClass="w-auto sm:w-full"
+        widthClass="w-[calc(100%+2rem)] sm:w-full"
       />,
     )
     const w = widthsByBreakpoint(markup)
-    // `w-auto` + negative margins = content width + both gutters. `w-full` + negative margins =
-    // content width, shifted. Only the first is a full bleed.
-    expect(w.base).toEqual(['w-auto'])
+    // Plain `w-full` + negative margins = content width, SHIFTED: that is the 34px stripe. The
+    // phone width has to come out to content + both gutters. `w-auto` also does that and was what
+    // shipped, but see the shaped-path test below for why it cannot stay.
+    expect(w.base).toEqual(['w-[calc(100%+2rem)]'])
     expect(w.sm).toEqual(['w-full'])
+  })
+
+  // ── 🔴 THE THIRD OWNER REPORT OFF THIS PAGE (2026-09-25, LIVE-507) ────────────────────────────
+  //
+  // The phone band rendered as a SQUARE about 57% of the viewport, left-aligned, with empty page
+  // beside it. Not a stripe this time -- a collapse.
+  //
+  // `w-auto` is not wrong by itself: a block box with auto width fills its container, and the
+  // -mx-4 expands that used width by both gutters, which is exactly what fixed the 2026-09-01
+  // stripe. It becomes wrong ONLY on the shaped path, where `sizeClass` is `max-h-*` rather than
+  // `h-*`, so the band has NO definite size on either axis -- just a ceiling and a ratio. CSS then
+  // resolves the clamp by transferring it through the ratio into the inline axis, and the width
+  // becomes `max-height x aspect`: 221 x 221 for a 1:1 poster at the Standard tier.
+  //
+  // So the invariant is not "w-auto" and never was. It is: ONE AXIS MUST BE DEFINITE. The shaped
+  // path gives up the block axis by design (ADR-1248 -- the band takes the poster's shape), which
+  // leaves the inline axis to carry it.
+  it('never pairs an indefinite width with the shaped path, or the ratio eats the width', () => {
+    // 🔴 READ THE WIDTH THE EVENT PAGE ACTUALLY PASSES. A hardcoded good value here would render a
+    // correct band forever and assert nothing about the page that broke -- the shape of gate this
+    // file keeps catching. Extracting it means reverting the call site turns THIS test red too.
+    const passed = eventPage.match(/widthClass="([^"]*)"/)?.[1]
+    expect(passed, 'the event page still passes a widthClass to PosterBand').toBeTruthy()
+    const markup = renderToStaticMarkup(
+      <PosterBand
+        src="/x.png"
+        heightClass={posterHeightClass('standard')}
+        maxHeightClass={posterMaxHeightClass('standard')}
+        aspect={1}
+        className="-mx-4 sm:mx-0"
+        widthClass={passed}
+      />,
+    )
+    const cls = markup.match(/class="([^"]*)"/)?.[1] ?? ''
+    // Shaped: ratio present, ceiling present, and NO fixed height (the band takes the poster).
+    expect(markup, 'the shaped path is what this test is about').toContain('aspect-ratio:1')
+    expect(cls).toContain(posterMaxHeightClass('standard').split(' ')[0])
+    const w = widthsByBreakpoint(markup)
+    expect(
+      w.base,
+      'an auto width + aspect-ratio + max-height has no definite axis, so the clamp transfers ' +
+        'back through the ratio and the band shrinks to max-height x aspect',
+    ).not.toContain('w-auto')
   })
 
   it('keeps w-full as the default, so the framed callers are untouched', () => {
@@ -323,7 +369,11 @@ describe('the full bleed the owner asked for actually reaches both edges', () =>
     // The regression is re-introduced by moving `w-auto` back into className, where it collides
     // again. Assert the call site's shape, not just the component's.
     const call = eventPage.slice(eventPage.indexOf('<PosterBand'), eventPage.indexOf('radiusClass="rounded-none sm:rounded-2xl"'))
-    expect(call).toContain('widthClass="w-auto sm:w-full"')
+    expect(call).toMatch(/widthClass="w-\[calc\(100%\+2rem\)\] sm:w-full"/)
+    expect(
+      call,
+      'w-auto here collapses the shaped band to max-height x aspect (LIVE-507)',
+    ).not.toContain('widthClass="w-auto')
     expect(call, 'a w-* back inside className is the exact collision that shipped').not.toMatch(
       /className="[^"]*\bw-/,
     )
