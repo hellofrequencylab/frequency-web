@@ -30,6 +30,7 @@ import { BookingBlock } from './booking'
 import { EventsBlock } from './events'
 import { PracticesBlock } from './practices'
 import { CirclesBlock } from './circles'
+import { MembershipsBlock } from './memberships'
 import { TeamBlock } from './team'
 import { ReviewsBlock } from './reviews'
 import { FaqBlock } from './faq'
@@ -76,6 +77,7 @@ export const SPACE_PROFILE_BLOCKS: Record<ProfileBlockId, BlockComponent> = {
   highlights: HighlightsBlock,
   offerings: OfferingsBlock,
   booking: BookingBlock,
+  memberships: MembershipsBlock,
   events: EventsBlock,
   practices: PracticesBlock,
   circles: CirclesBlock,
