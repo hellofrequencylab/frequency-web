@@ -681,6 +681,19 @@ const DATA_BLOCK_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     },
     { key: 'columns', label: 'Columns', type: 'segmented', defaultValue: '3', options: COLUMN_OPTIONS },
   ],
+  // MEMBERSHIPS (LIVE-510): the header PLUS the two strings the band actually renders — the pitch and
+  // the button's words. Declaring them here is what makes them PERSIST: sanitizeBlockContent builds
+  // the stored bag from `fieldsForBlock(id)` alone, so an undeclared key the block reads is stripped
+  // on every save and the block silently falls back to its default copy forever.
+  //
+  // NO PICKER, and no price anywhere on the band. The tiers live in the dialog this block opens, and
+  // a price on a page a visitor did not ask it of is the pitch arguing with itself before it has said
+  // what membership IS. The operator writes what belonging means here; the numbers answer the click.
+  memberships: [
+    ...DATA_HEADER_FIELDS,
+    { key: 'body', label: 'What membership means', type: 'textarea', placeholder: 'A few lines on what belonging here gets you' },
+    { key: 'ctaLabel', label: 'Button label', type: 'text', placeholder: 'See memberships' },
+  ],
   team: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Team to feature', type: 'picker', pickerBlock: 'team' }],
   journeys: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Journeys to feature', type: 'picker', pickerBlock: 'journeys' }],
   // CIRCLES (Circles block redesign): the header + picker, PLUS the same Columns control the Events
