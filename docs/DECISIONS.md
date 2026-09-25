@@ -48012,6 +48012,71 @@ trusted. Any new `app/(public)/` page that renders member-aware content calls
 
 **Rows.** LIVE-500 (closed here). Untouched: SCAN-644, SCAN-643, LIVE-184 (the tab set the sitemap
 advertises is unchanged).
+## ADR-1527: A block's declared field is reachable or it is not a field, and the two halves of Space authoring read one list (LIVE-501)
+
+**Status:** Accepted · 2026-09-25 · backlog `LIVE-501` (closed here) · amends the palette curation of
+[ADR-529](DECISIONS.md) / [ADR-536](DECISIONS.md) / [ADR-542](DECISIONS.md) on two ids · applies
+[ADR-1082](DECISIONS.md) (re-test a row's premise before you work it)
+
+**Context.** A Space page splits block authoring in two. TEXT is edited on the page through inline slots on
+the canvas; SETTINGS are edited in the rail. `isStructuralField` (`components/entity-blocks/block-edit-panel.tsx`)
+therefore drops `text` / `textarea` from the rail whenever the canvas is live — correct, and precisely wrong
+for a block the canvas renders as a READ-ONLY PREVIEW, because that block has no slots to move the text to.
+It then belongs to neither half.
+
+`contactForm` is that case. It was added to the canvas's `STRUCTURAL_PREVIEW_IDS` on a true premise (a form is
+not inline-authorable) and nothing added the matching rail exemption. Seven of its nine fields — eyebrow,
+title, body, messageLabel, optInLabel, submitLabel, successMessage — could not be set from any surface in the
+app. The schema was complete, the block rendered, every test passed, and the only writer left was the AI
+re-seed button.
+
+A second defect hid behind the first. `contactForm` is a CONTENT block, so `sanitizeBlockContent` runs its
+textareas through `sanitizeInlineHtml`, which escapes `'` and `"`; but its fields are not in
+`INLINE_HTML_FIELDS`, so both render sites draw them as plain React text. An apostrophe reached the page as
+`&#39;`. The design blocks already decode on read (`design-block-view.tsx`); the bespoke `contactForm` mount
+did not. It was invisible until the first defect was fixed and someone could type an apostrophe.
+
+Separately, `circles` and `faq` sat on the palette's retired list as "no wired data". Re-tested: false for
+both. Each has a data source (`listCircles` / `listFaqs`), each renders live rows, and each is ALREADY emitted
+by the fresh default layout — so the offer contradicted the default. A Space was handed the block on day one
+and could never put it back after removing it. `faq` is placed on 11 of the 18 Spaces in the layout corpus;
+`circles` on none, which is exactly what a missing offer produces.
+
+**Decision.**
+
+1. **One list, imported by both halves.** `RAIL_ONLY_BLOCK_IDS` and `blockEditsAllFieldsInRail` live in
+   `lib/entity-blocks/block-content.ts`, which both consumers already import. The canvas's
+   `STRUCTURAL_PREVIEW_IDS` now reads it, and the rail exempts its members from the structural filter. Two
+   hand-written literals were the defect; one shared set is the fix.
+2. **A rail-only block keeps all of its fields in the rail**, including `textOnCanvas` for item text, because
+   there are no slots for any of it to move to.
+3. **Both `contactForm` render sites decode on read** — the live mount in `space-profile-modules.tsx` and the
+   `slug={null}` preview in `content-block-view.tsx`. They must agree, so they decode identically.
+4. **`circles` and `faq` join the Space palette.** Neither can render empty: both are function-backed, and
+   `partitionSpaceBlocks` data-locks them out of the palette until the Space has rows.
+5. **The gate asserts the PROPERTY, not the membership.** `lib/entity-blocks/rail-only-blocks.test.ts` checks
+   that for every rail-only id, declared fields equal reachable fields. That keeps holding as blocks are added,
+   which a list of names would not.
+
+**Rejected.** *Moving the nine values into a `preferences.contactForm` node* (the `space_faqs` editor shape):
+the block content bag is already the correct per-block home, and a Space-global node would be a second source
+of truth for the same keys, forcing a precedence rule into two render sites and making two contactForm blocks
+on different pages share one label set. *Deleting `contactForm` from the canvas list instead*: it would fall
+to the generic field stack and lose the real form preview — the WYSIWYG regression that list exists to
+prevent. *Adding the fields to `INLINE_HTML_FIELDS`*: they render plain, and authoring them rich is what
+produced the entity artifacts in the first place. *Retiring `SpaceCommunity`* in the same change: it is a
+declared stored type in 19 documents and needs its own migration.
+
+**Consequences.** Saved layouts are untouched; `circles` and `faq` gain a palette and bench entry only. Any
+future block added to `RAIL_ONLY_BLOCK_IDS` gets the rail exemption for free, and the property test fails if
+one is added to the canvas list alone. Worth recording for the next author of a gate here: on the first
+attempt two of these assertions PASSED against the mutant they were written to catch — one regex matched the
+identifier inside its own explanatory comment, the other matched an import that survived the deleted call.
+Source-shape checks in this file strip comments and assert the CALL rather than the name, and no gate in this
+change was trusted until it was watched go red.
+
+**Rows.** LIVE-501 (closed here). Untouched: the `SpaceCommunity` Puck block and its 19 stored documents;
+the Space Circle / Discussion program.
 ## ADR-1528: The Contact tab reads the contactForm block's own bag, and a reserved slug is reserved in both readers (LIVE-502)
 
 **Status:** Accepted · 2026-09-25 · backlog `LIVE-502` (closed here) · owner instruction 2026-09-24

@@ -10,6 +10,7 @@ import { entityBlockById } from '@/lib/entity-blocks/registry'
 import {
   blockBearsText,
   blockDrawsOwnCard,
+  blockEditsAllFieldsInRail,
   blockSupportsAlign,
   blockSupportsBackground,
   blockTextRoles,
@@ -91,7 +92,12 @@ const labelCls = 'block text-2xs font-semibold uppercase tracking-wide text-mute
  *  copy (text / textarea, including a photo's alt) moves to the on-page inline slots, while everything else
  *  — single photos + their upload, the gallery, links, toggles, the enum primitives, the picker, the embed,
  *  and the Features / Cards item STRUCTURE — stays here. Defined locally (not imported) to avoid a client
- *  import cycle with space-canvas-block. */
+ *  import cycle with space-canvas-block.
+ *
+ *  🔴 IT IS ONLY SAFE TO DROP TEXT HERE WHEN THE CANVAS ACTUALLY OFFERS IT. This predicate says "the canvas
+ *  is about to show this as a slot", and for a RAIL-ONLY block (RAIL_ONLY_BLOCK_IDS) that is false: those
+ *  render a read-only preview with no slots at all, so dropping their text drops it from every surface. The
+ *  caller exempts them; see the note at the `fields` line below. */
 function isStructuralField(f: FieldDef): boolean {
   return f.type !== 'text' && f.type !== 'textarea'
 }
@@ -156,7 +162,13 @@ export function BlockEditPanel({
   const allFields = fieldsForBlock(id)
   // Live-page edit mode: keep only the STRUCTURAL settings here; the text + single-photo fields are edited on
   // the page (the isCoreField split). Off edit mode, every field shows inline here as before.
-  const fields = contentOnCanvas ? allFields.filter(isStructuralField) : allFields
+  //
+  // EXCEPT for a rail-only block, which has no slots on the page to move that text TO. `contactForm` is the
+  // case that exposed this: it renders a read-only form preview on the canvas (by design — a form is not
+  // inline-authorable), so filtering here left seven of its nine fields editable from nowhere at all. The
+  // exemption reads the SAME set the canvas preview reads, so the two cannot drift apart again.
+  const railOnly = blockEditsAllFieldsInRail(id)
+  const fields = contentOnCanvas && !railOnly ? allFields.filter(isStructuralField) : allFields
   const bearsText = blockBearsText(id)
   // Per-element text roles (item 4): a block with more than one text element (design blocks, Callout,
   // Features) styles each role independently; every other text-bearing block styles its text as one.
@@ -192,7 +204,8 @@ export function BlockEditPanel({
           value={content[field.key]}
           loomScope={loomScope}
           pickerData={pickerData}
-          textOnCanvas={contentOnCanvas}
+          // Same exemption: a rail-only block has no canvas slots, so its item text must stay editable here.
+          textOnCanvas={contentOnCanvas && !railOnly}
           onChange={(v) => setField(field.key, v)}
         />
       ))}

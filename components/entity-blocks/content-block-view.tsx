@@ -610,21 +610,29 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
     // being drawn somewhere without that context (the edit canvas, the palette), so `slug={null}`
     // renders the same markup with its controls disabled. One component, so the preview and the real
     // form can never drift apart.
-    case 'contactForm':
+    case 'contactForm': {
+      // DECODE ON READ, matching the live mount in space-profile-modules.tsx. `contactForm` is a CONTENT
+      // block, so the sanitizer runs its textareas through sanitizeInlineHtml (which escapes `'` and `"`),
+      // but its fields are NOT in INLINE_HTML_FIELDS, so they render as plain text — and a plain render of an
+      // escaped string shows `&#39;` verbatim. A no-op on values carrying real markup, so it is safe on all
+      // nine and heals anything written before this fix. The preview and the live form must agree, so the two
+      // call sites decode identically.
+      const t = (key: string) => decodeLegacyEntities(s(props, key))
       return (
         <ContactFormBlock
           slug={null}
-          eyebrow={s(props, 'eyebrow')}
-          title={s(props, 'title')}
-          body={s(props, 'body')}
+          eyebrow={t('eyebrow')}
+          title={t('title')}
+          body={t('body')}
           showPhone={props.showPhone === true}
           showMessage={props.showMessage !== false}
-          messageLabel={s(props, 'messageLabel')}
-          optInLabel={s(props, 'optInLabel')}
-          submitLabel={s(props, 'submitLabel')}
-          successMessage={s(props, 'successMessage')}
+          messageLabel={t('messageLabel')}
+          optInLabel={t('optInLabel')}
+          submitLabel={t('submitLabel')}
+          successMessage={t('successMessage')}
         />
       )
+    }
     default:
       return null
   }

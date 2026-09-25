@@ -7,7 +7,13 @@ import { loadSpaceAuthoredContent } from '@/lib/spaces/page-doc'
 import { type SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { effectiveProfileLayout } from '@/lib/spaces/profile-layout'
 import { resolveRows, type EntityLayout } from '@/lib/entity-blocks/layout'
-import { resolveDataHeader, pickerSelection, isFeatureDataSource, featureSource } from '@/lib/entity-blocks/block-content'
+import {
+  resolveDataHeader,
+  pickerSelection,
+  isFeatureDataSource,
+  featureSource,
+  decodeLegacyEntities,
+} from '@/lib/entity-blocks/block-content'
 import { resolveFeatureSourceItems } from '@/lib/entity-blocks/block-data-sources'
 import { blocksForKind, entityBlockById } from '@/lib/entity-blocks/registry'
 import { EntityGrid } from '@/components/entity-blocks/entity-grid'
@@ -150,7 +156,15 @@ function renderSpaceBlock(
       // mounted. The island posts the SLUG and the action re-resolves the Space server-side — a
       // spaceId is never handed to the client and never accepted back from it.
       const p = contentProps ?? {}
-      const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v : undefined)
+      // DECODE ON READ, the same line design-block-view.tsx carries for the same reason. `contactForm` is a
+      // CONTENT block, so the sanitizer runs its two textareas (`body`, `successMessage`) through
+      // sanitizeInlineHtml, which escapes `'` to `&#39;` and `"` to `&quot;`. Those fields are NOT in
+      // INLINE_HTML_FIELDS, so this block renders them as plain React text — and a plain render of an escaped
+      // string shows the entity verbatim. "We'd love to hear from you" reached the page as "We&#39;d love to
+      // hear from you". decodeLegacyEntities heals it and is a no-op on a value carrying real markup, so it is
+      // safe on every field and on values written before this fix.
+      const str = (v: unknown) =>
+        typeof v === 'string' && v.trim() ? decodeLegacyEntities(v) : undefined
       inner = (
         <ContactFormBlock
           slug={space.slug}
