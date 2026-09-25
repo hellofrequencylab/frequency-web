@@ -26,6 +26,22 @@ import { fileURLToPath } from 'node:url'
 const SPACE_ROOT = fileURLToPath(new URL('.', import.meta.url))
 const REPO_ROOT = fileURLToPath(new URL('../../../../', import.meta.url))
 
+// ── 🔴 THE WALK USED TO START HERE AND ONLY HERE, AND THAT WAS THE SECOND HOLE (LIVE-506) ─────────
+// A Space has TWO route trees, not one. `app/(public)/spaces/[slug]/` serves the signed-out share
+// URL that `app/sitemap.ts` advertises, and it is the page Googlebot and every first-time visitor
+// sees. Rooting the walk at this file's own directory meant the guard never looked at it, so when
+// that page was rebuilt to render the Space's blocks it mounted no AccentScope and nobody noticed:
+// `--font-display` unset, so headings fell back to Anton in the base ALL-CAPS treatment while the
+// member tree rendered the same markup in the Space's own face and sentence case, and every
+// `bg-primary` painted host amber instead of the Space's brand.
+//
+// The lesson is the one ADR-1192 already drew and this file already states -- a guard that is a list
+// rots, a guard that walks the tree does not -- applied one level up: the ROOTS were the list.
+const PUBLIC_SPACE_ROOT = join(REPO_ROOT, 'app/(public)/spaces/[slug]')
+
+/** Every Space route tree. A route under ANY of these must render inside an AccentScope. */
+const SPACE_ROOTS: readonly string[] = [SPACE_ROOT.replace(/\/$/, ''), PUBLIC_SPACE_ROOT]
+
 /** Files Next.js renders INSIDE the layout chain of their own folder. `loading.tsx` belongs here:
  *  a loading file is the Suspense fallback for its segment's children, so it renders inside the
  *  layout SHARING its folder — which is exactly why the pre-fix `[slug]/loading.tsx` sat outside the
@@ -52,7 +68,7 @@ function layoutChain(file: string): string[] {
   for (;;) {
     const layout = join(dir, 'layout.tsx')
     if (existsSync(layout)) chain.push(layout)
-    if (dir === SPACE_ROOT.replace(/\/$/, '')) break
+    if (SPACE_ROOTS.includes(dir)) break
     const parent = dirname(dir)
     if (parent === dir) break
     dir = parent
@@ -67,7 +83,7 @@ function mountsAccentScope(layout: string): boolean {
   return /<AccentScope[\s>]/.test(readFileSync(layout, 'utf8'))
 }
 
-const entries = routeEntries(SPACE_ROOT)
+const entries = SPACE_ROOTS.flatMap((root) => routeEntries(root))
 
 describe('Space accent scoping (LIVE-196, ADR-1192)', () => {
   it('finds the Space route tree (the walk itself is load-bearing)', () => {
@@ -78,6 +94,12 @@ describe('Space accent scoping (LIVE-196, ADR-1192)', () => {
     for (const subtree of ['manage', 'settings', 'crm', 'marketing', 'podcasts']) {
       expect(entries.some((f) => rel(f).includes(`/[slug]/${subtree}/`))).toBe(true)
     }
+    // And the PUBLIC tree specifically, by path: this is the root the walk used to miss, so if it
+    // ever stops being reached again the guard says so instead of passing on the member tree alone.
+    expect(
+      entries.map(rel),
+      'the signed-out Space share URL is in the walk',
+    ).toContain('app/(public)/spaces/[slug]/page.tsx')
   })
 
   it('renders EVERY route under /spaces/[slug] inside an AccentScope', () => {

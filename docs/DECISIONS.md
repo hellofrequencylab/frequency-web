@@ -48099,3 +48099,56 @@ whole-page pictures.
 - `e2e.yml` has no `main` trigger, so `pr-compare` only ever runs on pull requests and the
   "is it red on the base branch too?" control is unavailable for any PR in this repository. Recorded
   as a separate finding.
+
+## ADR-1530: A Space's own cascade is established by a layout in every tree that renders it, not by the page (LIVE-506)
+
+**Status:** Accepted · 2026-09-25 · backlog `LIVE-506` (closed here) · applies
+[ADR-1192](DECISIONS.md)'s structural ruling to the `(public)` Space tree · beside
+[ADR-1526](DECISIONS.md), which put the blocks back on the share URL but not the cascade
+
+**Context.** [ADR-1526](DECISIONS.md) restored the Space's blocks to the signed-out share URL. The
+owner opened `frequencylocal.com/spaces/royaltemple` the next morning and the page still did not
+match: signed out, the headings read as **HEAVY CONDENSED ALL-CAPS**; signed in, the same headings
+read as sentence-case Fraunces.
+
+Both trees call the same `<SpaceProfileModules>` off the same stored `profileLayout`. That is why
+the public page's own header could truthfully say it performs "the same render" and still be wrong
+about the result: **the markup was the same and the cascade it rendered into was not.**
+
+The blocks carry plain class markup (`font-display … uppercase`), and every theme-aware rule in
+`app/globals.css` hangs off a `[data-space-theme]` ancestor. `AccentScope` is the only component in
+the repository that emits that attribute, and it was mounted in `app/(main)/spaces/[slug]/layout.tsx`
+and nowhere in `(public)`. Measured on `royaltemple` (theme `editorial`, brand accent `#9C5B3F`):
+
+- `--font-display` unset, so `.font-display` fell back to Anton with its base caps-tuned metrics, and
+  `[data-space-theme="editorial"] .font-display`'s `text-transform: none` never matched.
+- `[data-space-theme]` sets the body face, so body copy fell back to Nunito. A `classic` Space loses
+  PT Serif and an `accessible` Space loses Atkinson on the same URL.
+- `AccentScope`'s `vars` carry the `--color-primary*` family, so every `bg-primary` CTA painted the
+  **host's amber** instead of the Space's brand.
+
+This is the URL `app/sitemap.ts` advertises, and the one strangers and Googlebot actually see.
+
+**Decision.** The scope is established by a **layout** in every tree that renders a Space, and
+`app/(public)/spaces/[slug]/layout.tsx` is that layout for the share URL.
+
+1. A page-level wrapper was written first and **rejected**. It left the sitemap-listed
+   `podcasts/[showSlug]` route under the same segment unscoped, and per-page wrapping is the shape
+   ADR-1192 retired: *"the fix is structural, not per-page"*.
+2. `markAnonymousRender()` is called in the layout for the same reason the page calls it — this
+   subtree has no viewer, and declaring that beats auditing each new block for a viewer read.
+3. **ISR is untouched**, which is what [ADR-1465](DECISIONS.md) and ADR-1526 exist to protect. Every
+   read is pure or a plain DB read, never `cookies()` or `headers()`, and `getVisibleSpaceBySlug` is
+   request-cached transitively via `getSpaceBySlug`, so the page below re-reads the same Space free.
+
+**Consequences.**
+
+- A second unscoped public route, `app/(public)/spaces/[slug]/podcasts/[showSlug]/page.tsx`, was
+  found **by widening the guard rather than by reading**, and is fixed by the same layout.
+- `accent-scope-coverage.test.ts` now walks **both** Space roots. Its design was already right —
+  walk the real tree, because a list of subtrees rots — but it rooted that walk at its own directory,
+  so **the roots were the list**, and a Space has two route trees. Its find-the-tree assertion now
+  names the public page by path, so the root cannot quietly stop being reached.
+- The general rule this states, beyond Spaces: **"it renders the same component" is not the same
+  claim as "it renders the same"**. A component whose appearance comes from an ancestor attribute
+  carries none of that appearance in its own markup, and a second mount point inherits nothing.
