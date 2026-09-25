@@ -11,9 +11,15 @@
 //
 // COPY NOTE (NAMING + CONTENT-VOICE §10): every label here is a plain verb phrase, sentence case, no em
 // dashes, no hype. Each function maps to a surface that ACTUALLY EXISTS (verified against the routes):
-// /spaces/<slug>/book (the type-branched transactional surface: booking / join / donate / tickets),
-// and the profile Home section anchors #offerings and #contact (the SpaceOfferings / SpaceContact
-// blocks render as `<section id="...">`, see lib/spaces/section-anchors.ts).
+// /spaces/<slug>/book (the type-branched transactional surface: booking / donate / tickets),
+// /spaces/<slug>/memberships (the tier picker, LIVE-509), /spaces/<slug>/contact (the Contact tab,
+// LIVE-502), and the profile Home section anchor #offerings (the SpaceOfferings block renders as
+// `<section id="...">`, see lib/spaces/section-anchors.ts).
+//
+// THE RULE, now that three of the six keys open a real page: a key opens the surface whose NAME it
+// carries. `join` pointed at /book while calling itself a membership page, and `contact` pointed at
+// a Home anchor while a full Contact page sat one tab away. Both are fixed; `offerings` stays an
+// anchor because no /offerings page exists, and its hint says "Jumps to" rather than "Opens".
 
 /** The in-house function keys the owner can point the header CTA at. Each resolves to a real surface
  *  relative to the Space's base path. A CUSTOM link uses `custom` + a stored url/label instead. */
@@ -51,7 +57,7 @@ export interface HeaderCtaFunctionChoice {
 /** The in-house functions, in the order the admin picker lists them. Labels + hints pass CONTENT-VOICE. */
 export const HEADER_CTA_FUNCTIONS: readonly HeaderCtaFunctionChoice[] = [
   { key: 'book', label: 'Book now', hint: 'Opens your booking page.' },
-  { key: 'contact', label: 'Contact me', hint: 'Jumps to your contact section.' },
+  { key: 'contact', label: 'Contact me', hint: 'Opens your contact page.' },
   { key: 'tickets', label: 'Get tickets', hint: 'Opens your tickets page.' },
   { key: 'donate', label: 'Donate', hint: 'Opens your donation page.' },
   { key: 'join', label: 'Join', hint: 'Opens your membership page.' },
@@ -133,8 +139,21 @@ export function readHeaderCtaPreference(raw: unknown): HeaderCtaPreference | nul
  *  the rest open the reserved `/book` transactional surface, which itself branches by Space type. PURE. */
 export function headerCtaFunctionHref(fn: HeaderCtaFunction, base: string): string {
   switch (fn) {
+    // CONTACT opens the Contact PAGE, not the Home anchor (owner instruction 2026-09-25). The tab
+    // shipped with LIVE-502 and carries the operator's own form plus the published facts; the
+    // anchor scrolls to the facts card alone, so the one button a Space gets was landing on the
+    // smaller half of its own contact surface. The route never 404s (it renders the form with
+    // default wording for a Space that never authored one) and only redirects on root, so this is
+    // safe for every Space that stores the key, including one whose nav does not offer the tab.
+    //
+    // THE #contact ANCHOR IS UNTOUCHED. The `contact` block still renders on Home, so
+    // `<section id="contact">` still exists and the stored "Get in touch" buttons across the Space
+    // page docs keep resolving. Only this button moves.
     case 'contact':
-      return `${base}#contact`
+      return `${base}/contact`
+    // OFFERINGS stays an anchor, and the asymmetry is the point rather than an oversight: there is
+    // no /offerings page to open. Its hint says "Jumps to", which is the honest word for what it
+    // does, and the three keys that now open a page say "Opens".
     case 'offerings':
       return `${base}#offerings`
     // `join` and `memberships` both open the MEMBERSHIPS tab, which is the page whose name they
