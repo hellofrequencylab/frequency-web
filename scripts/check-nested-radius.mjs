@@ -54,6 +54,7 @@
 
 import { readFileSync } from 'node:fs'
 import { execSync } from 'node:child_process'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 /** Backstop only — the container's closing tag normally ends the window first. */
 export const SUBTREE_WINDOW = 60
@@ -175,6 +176,6 @@ export function report(bad) {
   return 1
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (invokedDirectly(import.meta.url)) {
   process.exit(report(findNestedRadiusDefects(candidateFiles())))
 }

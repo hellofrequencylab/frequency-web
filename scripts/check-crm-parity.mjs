@@ -18,6 +18,7 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join, relative } from 'node:path'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 /** The tree every export measures by default. Every export also takes a `root` argument (scan2
  *  L8-03, 2026-09-05) so the test can point the SAME detector at a fixture tree with a planted
@@ -163,8 +164,11 @@ export function checkCrmParity(root = ROOT) {
 }
 
 // ── CLI ──
-const isMain = process.argv[1] && fileURLToPath(import.meta.url) === join(process.argv[1])
-if (isMain || process.argv[1]?.endsWith('check-crm-parity.mjs')) {
+// The `|| process.argv[1]?.endsWith('check-crm-parity.mjs')` arm that used to sit here was a workaround for a
+// BROKEN isMain, not a second way in: the old comparison never matched through a symlink, so the
+// basename check was the only thing that ever ran this block. invokedDirectly() compares realpaths
+// on both sides and matches, so the loose arm is gone with the bug it was covering for (HYG-125).
+if (invokedDirectly(import.meta.url)) {
   const { violations } = checkCrmParity()
   console.log('CRM / comms parity guard (ADR-817)\n')
 

@@ -34,6 +34,13 @@ export interface SectionPresence {
   faqs: boolean
   practices: boolean
   circles: boolean
+  /** ADDED FOR THE MODULE MENU (LIVE-517). The Puck derivation judges About / Team from the doc's
+   *  own props, so it never needed these; the module derivation has no doc to read and judges them
+   *  from the SAME live read every other flag comes from. Highlights has no authored form at all —
+   *  it is counts or nothing — so it is live-only by nature. */
+  about: boolean
+  team: boolean
+  highlights: boolean
 }
 
 /** Every flag false: the fail-safe presence for callers that cannot (or need not) read live data. */
@@ -44,6 +51,9 @@ export const NO_PRESENCE: SectionPresence = {
   faqs: false,
   practices: false,
   circles: false,
+  about: false,
+  team: false,
+  highlights: false,
 }
 
 /** The DOM anchor + short menu label per anchor-able block type. Blocks not listed here (layout

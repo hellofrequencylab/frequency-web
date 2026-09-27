@@ -21,8 +21,8 @@
 
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { actionExports, maskLiterals, hasUseServerDirective } from './check-authz-guards.mjs'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 export const ROOT = 'app/(main)/admin'
 export const BASELINE = join('scripts', 'parse-input-baseline.txt')
@@ -245,7 +245,7 @@ function main(argv = process.argv.slice(2)) {
   return result.code
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (invokedDirectly(import.meta.url)) {
   process.exit(main())
 }
 

@@ -30,7 +30,7 @@
 // output to a file. The parser only needs the `HH:MM:SS  text` lines, in order.
 // ─────────────────────────────────────────────────────────────────────────────
 import { readFileSync } from 'node:fs'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 // ── THE RECORDED READING, so a future one has something to be compared against ────────────────
 //
@@ -430,7 +430,7 @@ export function formatBaseline() {
   ].join('\n')
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+if (invokedDirectly(import.meta.url)) {
   main(process.argv.slice(2)).then((code) => {
     process.exitCode = code
   })

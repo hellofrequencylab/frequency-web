@@ -28,6 +28,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import path from 'node:path'
 import { workflowPaths, anyMatch, runCli } from './workflow-paths.mjs'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const DB_TESTS = path.join(process.cwd(), '.github', 'workflows', 'db-tests.yml')
 
@@ -41,7 +42,7 @@ export function touchesDb(files, globs = dbPaths()) {
   return anyMatch(files, globs)
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (invokedDirectly(import.meta.url)) {
   // Exit 0 = db-tests will run and post its own check. Exit 1 = it will not, so the fallback must.
   // Do not reintroduce a wrapper (xargs, a pipeline, a subshell) between this and the caller.
   runCli(process.argv.slice(2), dbPaths(), 'db-paths')
