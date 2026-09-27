@@ -31,10 +31,33 @@ describe('slug validation', () => {
     expect(isValidPageSlug('has space')).toBe(false)
     expect(isValidPageSlug('trailing-')).toBe(false)
     // reserved: home + owner-route segments + the reserved /book action page
-    for (const r of ['home', 'manage', 'settings', 'crm', 'edit-page', 'book', 'people', 'discussion', 'contact']) {
+    // `memberships` (LIVE-509) and `events` (LIVE-520) are real route segments too. `events` is the
+    // Calendar fold: `(profile)/events/page.tsx` forwards to `/calendar`, and a STATIC App Router
+    // segment wins over the sibling dynamic `[page]` — so without the reservation an operator could
+    // create, publish and see a page called Events in their own nav that no reader could ever open.
+    for (const r of [
+      'home',
+      'manage',
+      'settings',
+      'crm',
+      'edit-page',
+      'book',
+      'people',
+      'discussion',
+      'contact',
+      'memberships',
+      'events',
+    ]) {
       expect(isReservedSlug(r)).toBe(true)
       expect(isValidPageSlug(r)).toBe(false)
     }
+  })
+
+  it('refuses a page an operator would name "Events", by the label they would type', () => {
+    // The label path is the one an operator actually uses; `planAddPage` derives the slug and is
+    // what the create action reads, so the guardrail has to hold THERE and not only on a raw slug.
+    expect(planAddPage({}, 'Events')).toEqual({ ok: false, reason: 'reserved' })
+    expect(planAddPage({}, '  events  ')).toEqual({ ok: false, reason: 'reserved' })
   })
 
   it('slugifies a human label to a url-safe slug', () => {
