@@ -35,7 +35,22 @@ export function AdminRailDrawerColumn({ children }: { children: React.ReactNode 
     >
       {/* The live info rail — xl+ only, sticky so it rides the scroll. Covered by the drawer
           when it is open. justify-end keeps it pinned right while the column grows. */}
-      <aside className="hidden w-64 shrink-0 xl:block">
+      {/* 🔴 MASKED FOR THE VISUAL SUITE (`admin-rail`, ADR-1277 / VISUAL_MASK_SITES), and this is
+          the ADR-1522 "rail as one box" treatment applied to the operator side. Every number in
+          here is a live production reading taken on each render -- members, active this week,
+          upcoming events, and each attention queue's count (components/admin/admin-info-rail.tsx
+          railData). This aside is in the admin LAYOUT, so all four photographed operator surfaces
+          carry it, which is why one member joining reds out eight blocking checks at once with
+          three of them reporting byte-identical pixel counts.
+          Measured, not assumed: non-system `profiles` went 57 -> 59 between the last green
+          baseline and the run that failed, and /admin diffed by MORE than its three siblings
+          because its own header KPIs print the same count a second time (masked below).
+          One mask over the aside rather than per-number masks: a digit widening from 99 to 100
+          moves everything right of it inside the row, so masking the value spans alone would
+          leave a seam that comes back at the next order of magnitude. The box itself is stable --
+          fixed `w-64`, and the scroll container inside it is `max-h` + `overflow-y-auto`, so rail
+          content growing scrolls rather than reflowing the page. */}
+      <aside data-visual-mask="admin-rail" className="hidden w-64 shrink-0 xl:block">
         <div className="sticky top-[var(--app-header-h)] max-h-[calc(100dvh-var(--app-header-h)-1rem)] overflow-y-auto pb-6 pt-2.5">
           {children}
           {/* The rail's end. DockBar measures this to align the operator dock to THIS column and
