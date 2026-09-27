@@ -4,9 +4,10 @@
 // Weekly community digest cron — runs Sundays at 14:00 UTC (~7am PT,
 // matches when most members are actually awake on their day off).
 //
-// For each active profile (anyone with a circle membership), assemble a
-// per-person digest. Skip people with nothing to surface (no recent
-// dispatches AND no upcoming events) so we never send hollow emails.
+// For each active profile (anyone with an active Circle membership, an active Space
+// membership, or a Space they own — LIVE-521), assemble a per-person digest. Skip people
+// with nothing to surface (no recent dispatches AND no upcoming events) so we never send
+// hollow emails.
 // Each send gated by the unified send-gate for ('email', 'lifecycle') — preference + lifecycle
 // consent + suppression in one decision (ADR-169), not the bare preference read it used to be.
 //
