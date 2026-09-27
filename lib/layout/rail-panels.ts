@@ -16,6 +16,9 @@ import { verticalRailRules } from '@/lib/verticals'
 export type PanelKey =
   | 'dispatches' | 'events' | 'members' | 'leaderboard' | 'online' | 'circles'
   | 'newcircles' | 'activenow' | 'pulse' | 'community'
+  // SPACE-SCOPED keys (LIVE-518). Every one of these renders the Space the viewer is standing in
+  // and nothing else, so they are only ever selected by the /spaces rule below.
+  | 'spaceevents' | 'spacecircles' | 'spaceteam'
 
 /** True on The Quest surfaces (the `/crew` tree: hub, journey, leaderboard, streaks, store, …).
  *  These pages OWN the member's standing — the Quest hub's StandingHero/SeasonMap plus the
@@ -29,8 +32,61 @@ export function isQuestSurface(pathname: string): boolean {
   return pathname === '/crew' || pathname.startsWith('/crew/')
 }
 
+/** Reserved FIRST segments under /spaces that are NOT a Space: the in-app directory, the
+ *  provisioning wizard, the my-Spaces list, and the invite landing (whose path carries a TOKEN, not a
+ *  slug, so there is nothing to scope to). These keep the platform rail, which is the right rail for
+ *  them — a member browsing the directory is being pointed OUTWARD on purpose. */
+const SPACE_NON_SLUG_SEGMENTS = new Set(['directory', 'new', 'operating', 'invite'])
+
+/** Second segments that make a /spaces/<slug>/… route an OWNER CONSOLE rather than a member-facing
+ *  Space surface. These deliberately keep the platform rail:
+ *    • they are operator workspaces, not a membership experience — the rail beside them is the
+ *      operator's settings drawer (components/sidebar/right-sidebar.tsx), not the Space's own life;
+ *    • /crm already resolves to NO rail at all (DASHBOARD_NONE_PATTERNS in page-chrome.ts), so a
+ *      Space rule that claimed it would describe panels nobody renders; and
+ *    • none of them puts getSpaceContentData on the request, so scoping them would buy a cold
+ *      content round for a surface whose owner is not shopping for their own events. */
+const SPACE_OWNER_CONSOLE_SEGMENTS = new Set(['manage', 'settings', 'crm', 'edit-page', 'marketing', 'loom'])
+
+/** The Space slug a MEMBER-FACING /spaces route is standing in, or null for every other path.
+ *
+ *  This is the seam the Space rail turns on, and it is deliberately the SAME thing that drives
+ *  `pageRailPanels`: the pathname. The rail renders from the (main) layout, which is a PARENT of
+ *  `app/(main)/spaces/[slug]/layout.tsx` — so `getActiveSpace()` (lib/spaces/active-space.ts) is
+ *  still null when the rail runs, because the profile layout has not stamped it yet. The path is
+ *  the only Space identity the rail can read, and it is the one the route already resolves from.
+ *
+ *  Anchored on the /spaces/<slug> SHAPE (two segments, first exactly 'spaces'), not on a prefix, so
+ *  it can neither be swallowed by nor swallow a neighbouring rule. */
+export function spaceSlugFromPath(pathname: string): string | null {
+  const [first, slug, third] = pathname.split('/').filter(Boolean)
+  if (first !== 'spaces') return null
+  if (!slug || SPACE_NON_SLUG_SEGMENTS.has(slug)) return null
+  // A slug is lowercase-alphanumeric-dash; anything else is not a Space route we know.
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) return null
+  if (third && SPACE_OWNER_CONSOLE_SEGMENTS.has(third)) return null
+  return slug
+}
+
 // Ordered, longest-prefix-wins. The first matching rule supplies the page panels.
 const RULES: { test: (p: string) => boolean; panels: PanelKey[] }[] = [
+  // Spaces — a member standing INSIDE a Space gets that Space's own life (LIVE-518). Until this
+  // rule existed every /spaces route fell through to DEFAULT_PANELS, so the prime column beside
+  // Royal Temple spent all four of its panels on platform pulse, platform presence, OTHER
+  // communities' new circles and platform-wide events: 100% of a membership surface recruiting the
+  // member away from the membership. railFor() keeps the rail MOUNTED on /spaces (owner directive,
+  // 2026-06-20, page-chrome.ts SCOPED_PREFIXES) — so the fix is what the column SAYS, not whether
+  // it is there.
+  //
+  // FIRST in the array on purpose: it is the narrowest test here (an exact two-segment shape with
+  // its own exclusion lists, spaceSlugFromPath above), so nothing it matches can belong to a later
+  // rule, and putting it first means a future /spaces-prefixed rule cannot quietly shadow it.
+  //
+  // ALL THREE PANELS SELF-HIDE when the Space has no rows (honest empty). A brand-new Space with no
+  // events, no Circles and no team therefore shows NO page panels at all, and that is the intended
+  // reading: the rail still carries its standing panels, and silence about this Space beats four
+  // panels pointing at somebody else's.
+  { test: (p) => spaceSlugFromPath(p) !== null, panels: ['spaceevents', 'spacecircles', 'spaceteam'] },
   // Quest — the game board: who's climbing + who's around to play with.
   { test: isQuestSurface, panels: ['leaderboard', 'online'] },
   // Leadership — a volunteer leader stewarding their community: the standings, who's active,
