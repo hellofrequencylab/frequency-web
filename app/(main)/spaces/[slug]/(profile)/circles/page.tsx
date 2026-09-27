@@ -2,21 +2,27 @@ import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { isOpenToJoin, sortCircles, type Sort } from './sort'
 import Link from 'next/link'
-import { UsersRound, Users, DoorOpen, Settings2, MapPin, Globe } from 'lucide-react'
-import { getCallerProfile } from '@/lib/auth'
+import { UsersRound, Users, DoorOpen, Settings2, MapPin, Globe, MessagesSquare } from 'lucide-react'
+import { getCallerProfile, getMyProfileId } from '@/lib/auth'
+import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionDef, spaceFunctionEnabled } from '@/lib/spaces/functions'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
-import { listPublicSpaceCircles, myActiveCircleIds, type SpaceCircle } from '@/lib/circles/store'
+import { canSeeSpaceDiscussion, getLiveSpaceCircle } from '@/lib/spaces/space-discussion'
+import { listPublicSpaceCircles, myActiveCircleIds, loadCircleShell, type SpaceCircle } from '@/lib/circles/store'
+import { circleCapabilities } from '@/lib/circles/detail-access'
+import { setCircleContext } from '@/lib/circles/active-circle'
+import { CircleFeed } from '@/components/widgets/circles/circle-feed'
+import { CircleLocked } from '@/components/circles/circle-locked'
 import { CircleCard } from '@/components/circles/circle-card'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { JsonLd } from '@/components/json-ld'
 import { SITE_URL } from '@/lib/site'
-import { cn } from '@/lib/utils'
+import { cn, isoDaysAgo } from '@/lib/utils'
 
 // ── THE PUBLIC CIRCLES TAB (ADR-1094) ───────────────────────────────────────────────────────────
 //
@@ -108,18 +114,35 @@ export default async function SpaceCirclesProfilePage({
   const caps = viewerProfileId ? await getSpaceCapabilities(space, viewerProfileId) : null
   const canManage = caps?.canEditProfile === true
 
-  const [all, myIds] = await Promise.all([
+  const [everything, myIds, hub] = await Promise.all([
     listPublicSpaceCircles(space.id, { viewerProfileId, limit: CAP, includeHidden: canManage }),
     myActiveCircleIds(viewerProfileId),
+    getLiveSpaceCircle(space.id),
   ])
 
   const brandName = space.brandName ?? space.name
+
+  // ── THE SPACE CIRCLE LEADS ITS OWN COMMUNITY PAGE (LIVE-523) ────────────────────────────────
+  //
+  // The conversation used to be a SECOND MENU ROW beside this one: `/discussion`, gated on the same
+  // `circles` function, over the same community. One row scrolled a list of rooms, the row beside it
+  // opened the main room. That is the "two menu rows over one subject" bug in its FIFTH edition,
+  // after reviews, circles, contact and (in #2916) events.
+  //
+  // So the hub's feed leads this page and the index of the other circles sits under it. It leads
+  // EVEN WHEN THE VIEWER CANNOT READ IT, because `CircleLocked` is the sentence that sells the
+  // membership (LIVE-519) and burying it under a grid would be the empty room again with extra
+  // steps. What it must never do is appear TWICE, so the hub is filtered out of the index below:
+  // `listPublicSpaceCircles` returns it like any other circle, and a page that leads with a room
+  // and then lists it again reads like two different rooms.
+  const others = everything.filter((c) => c.id !== hub?.id)
+  const conversation = await loadConversation({ hub, space, brandName, canManage, viewerProfileId })
 
   // HONEST EMPTY, and the nav agrees: `spaceHasVisibleCircles` gates the menu item on the same
   // reader, so a visitor is never offered this tab over an empty page. A direct hit still resolves
   // (a shared link, a crawler) and says plainly that there is nothing yet, rather than 404ing on a
   // Space that genuinely exists.
-  if (all.length === 0) {
+  if (others.length === 0 && !conversation) {
     return (
       <div className="space-y-4">
         <SectionHead brandName={brandName} slug={space.slug} canManage={canManage} count={0} />
@@ -145,26 +168,28 @@ export default async function SpaceCirclesProfilePage({
 
   // Facets read the FULL visible set, never the filtered one, so switching format never changes the
   // counts above the grid.
-  const memberTotal = all.reduce((n, c) => n + (c.member_count ?? 0), 0)
-  const openTotal = all.filter(isOpenToJoin).length
+  const memberTotal = others.reduce((n, c) => n + (c.member_count ?? 0), 0)
+  const openTotal = others.filter(isOpenToJoin).length
 
   const type = rawType === 'in-person' || rawType === 'online' ? rawType : ''
   const sort: Sort = rawSort === 'active' || rawSort === 'open' ? rawSort : 'new'
-  const showFilters = all.length >= FILTER_THRESHOLD
+  const showFilters = others.length >= FILTER_THRESHOLD
 
-  let shown = showFilters && type ? all.filter((c) => c.type === type) : all
+  let shown = showFilters && type ? others.filter((c) => c.type === type) : others
   if (showFilters) shown = sortCircles(shown, sort)
 
   const base = `/spaces/${space.slug}/circles`
 
   return (
-    <div className="space-y-6">
-      <SectionHead brandName={brandName} slug={space.slug} canManage={canManage} count={all.length} />
+    <div className="space-y-8">
+      {conversation}
+
+      <SectionHead brandName={brandName} slug={space.slug} canManage={canManage} count={others.length} />
 
       {/* The signal row earns its place only over a real set. One circle needs no scoreboard. */}
-      {all.length > 1 && (
+      {others.length > 1 && (
         <div className="grid grid-cols-3 gap-3">
-          <StatCard bordered size="sm" icon={UsersRound} label="Circles" value={all.length} />
+          <StatCard bordered size="sm" icon={UsersRound} label="Circles" value={others.length} />
           <StatCard bordered size="sm" icon={Users} label="Members" value={memberTotal} />
           <StatCard bordered size="sm" icon={DoorOpen} label="Open to join" value={openTotal} />
         </div>
@@ -172,7 +197,24 @@ export default async function SpaceCirclesProfilePage({
 
       {showFilters && <FilterRow base={base} type={type} sort={sort} />}
 
-      {shown.length === 0 ? (
+      {others.length === 0 ? (
+        <EmptyState
+          icon={UsersRound}
+          title="No other circles yet"
+          description={
+            canManage
+              ? 'A circle is where your people meet each other, not just you. Start one and it shows up here, under the conversation.'
+              : `${brandName} has not opened another circle up yet.`
+          }
+          action={
+            canManage ? (
+              <Link href={`/spaces/${space.slug}/manage/circles`} className={buttonClasses('primary', 'sm')}>
+                Start a circle
+              </Link>
+            ) : undefined
+          }
+        />
+      ) : shown.length === 0 ? (
         <EmptyState
           icon={UsersRound}
           title="No circles match that"
@@ -201,7 +243,7 @@ export default async function SpaceCirclesProfilePage({
           '@context': 'https://schema.org',
           '@type': 'ItemList',
           name: `Circles at ${brandName}`,
-          itemListElement: all
+          itemListElement: others
             .filter((c) => c.unlisted !== true)
             .map((c, i) => ({
               '@type': 'ListItem',
@@ -212,6 +254,151 @@ export default async function SpaceCirclesProfilePage({
         }}
       />
     </div>
+  )
+}
+
+/** The conversation band: the Space Circle's feed, or the honest reason there is not one.
+ *
+ *  Named **Discussion** and anchored `#discussion` (NAMING.md, ADR-1469 as amended by ADR-1534).
+ *  Folding the tab into this page does NOT retire the word: `/spaces/<slug>/discussion` still
+ *  resolves and lands here, and the section keeps the name the canon locked. What changed is that
+ *  the Space's community is one page instead of two menu rows over one subject.
+ *
+ *  Returns null — no heading, no empty state — when the Space has no conversation to offer this
+ *  viewer. A heading over nothing is the thing `EmptyState` exists to prevent, and a visitor is
+ *  never shown a door onto a room that is not there.
+ */
+async function loadConversation({
+  hub,
+  space,
+  brandName,
+  canManage,
+  viewerProfileId,
+}: {
+  hub: { id: string; slug: string } | null
+  space: { id: string; slug: string; type: string }
+  brandName: string
+  canManage: boolean
+  viewerProfileId: string | null
+}): Promise<React.ReactNode> {
+  // The SAME gate the Discussion tab was built on, unchanged in substance: a live hub, or a manager
+  // who needs somewhere to turn one on. ROOT never offers it.
+  if (!canSeeSpaceDiscussion({ spaceType: space.type, hubLive: !!hub, canManage })) return null
+
+  // Manager, hub off. The prompt IS the reason this band renders for them at all.
+  if (!hub) {
+    return (
+      <Conversation brandName={brandName} blurb={`Talk with the people at ${brandName}.`}>
+        <EmptyState
+          icon={MessagesSquare}
+          title="Discussion is off"
+          description="Turn on this Space's Circle and people who belong here can talk in one place."
+          action={
+            <Link href={`/spaces/${space.slug}/manage/circles`} className={buttonClasses('primary', 'sm')}>
+              Open Circles
+            </Link>
+          }
+        />
+      </Conversation>
+    )
+  }
+
+  const shell = await loadCircleShell(hub.slug)
+
+  // AXIS 1, may not even SEE it. `loadCircleShell` fails closed to null.
+  if (!shell) {
+    return (
+      <Conversation brandName={brandName} blurb={`Talk with the people at ${brandName}.`}>
+        <EmptyState
+          variant="permission"
+          icon={MessagesSquare}
+          title="Join to talk here"
+          description={`This conversation is for people who belong at ${brandName}.`}
+          action={
+            <Link href={`/circles/${hub.slug}`} className={buttonClasses('primary', 'sm')}>
+              See how to join
+            </Link>
+          }
+        />
+      </Conversation>
+    )
+  }
+
+  const { circle, members, canEnter, entryReason } = shell
+
+  // AXIS 2, may see it and not ENTER it (LIVE-519). This band leads the page even here, on purpose:
+  // the locked door is the sentence that names what a membership buys, and burying it under the
+  // index would be the empty room the last row closed, with extra steps.
+  if (!canEnter) {
+    return (
+      <Conversation brandName={brandName} blurb={`Talk with the people at ${brandName}.`}>
+        <CircleLocked
+          reason={entryReason ?? 'closed'}
+          circleSlug={circle.slug}
+          spaceSlug={space.slug}
+          spaceName={brandName}
+        />
+      </Conversation>
+    )
+  }
+
+  const [myProfileId, caps, isCrew] = await Promise.all([
+    getMyProfileId(),
+    circleCapabilities(circle.id),
+    viewerProfileId ? isPaidViewer() : Promise.resolve(false),
+  ])
+  const isMember = !!myProfileId && members.some((m) => m.profile.id === myProfileId)
+  const weekAgo = isoDaysAgo(7)
+  const justJoined = isMember && members.some((m) => m.profile.id === myProfileId && m.joined_at >= weekAgo)
+
+  // The request-scoped seam <CircleFeed /> reads back. Stamped here rather than prop-drilled,
+  // exactly as the circle detail route does it. Only the circle widget modules read this holder,
+  // and the index below renders none of them, so nothing else on this page sees it.
+  setCircleContext({
+    circle,
+    members,
+    myProfileId,
+    isMember,
+    isHost: !!myProfileId && circle.host?.id === myProfileId,
+    isCrew,
+    justJoined,
+    canManage: caps.has('circle.editSettings'),
+    showsHealth: false,
+    insightLabel: null,
+    circleEarnedZaps: 0,
+    activeStreaks: 0,
+    newThisWeek: 0,
+    circlePractice: null,
+  })
+
+  return (
+    <Conversation
+      brandName={brandName}
+      blurb={`Talk with the people at ${brandName}. Comments sit under each post.`}
+    >
+      <CircleFeed />
+    </Conversation>
+  )
+}
+
+/** The band's frame. An <h2> like every other section head on this page — the Space's name in the
+ *  (profile) chrome upstairs is still the page's one <h1>. */
+function Conversation({
+  blurb,
+  children,
+}: {
+  brandName: string
+  blurb: string
+  children: React.ReactNode
+}) {
+  return (
+    <section id="discussion" className="scroll-mt-24 space-y-3">
+      <div>
+        <h2 className="font-section text-lead font-bold text-text">Discussion</h2>
+        <p className="text-body-sm text-muted">{blurb}</p>
+      </div>
+      {children}
+    </section>
   )
 }
 

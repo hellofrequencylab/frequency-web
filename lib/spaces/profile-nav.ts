@@ -11,7 +11,6 @@ import { getSpaceSectionPresence } from '@/lib/spaces/content-data'
 import { spaceHasPublicUpcomingEvents } from '@/lib/events/store'
 import { spaceHasCollaborators } from '@/lib/spaces/collaborations'
 import { viewerCanSeeSpaceMemberDirectory } from '@/lib/spaces/member-directory'
-import { canSeeSpaceDiscussionTab, getLiveSpaceCircle } from '@/lib/spaces/space-discussion'
 import { canSeeSpaceContactTab, readContactFormContent } from '@/lib/spaces/contact-tab'
 import { canSeeSpaceMembershipsTab } from '@/lib/spaces/memberships-tab'
 import { spaceHasActiveMembershipTiers } from '@/lib/spaces/memberships'
@@ -88,7 +87,7 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
 
   const base = `/spaces/${space.slug}`
 
-  const [presence, manage, hasCalendarEvents, hasCollaborators, showPeople, hub, hasTiers] = await Promise.all([
+  const [presence, manage, hasCalendarEvents, hasCollaborators, showPeople, hasTiers] = await Promise.all([
     getSpaceSectionPresence(space.id, space.slug),
     resolveSpaceManageAccess(space, viewerProfileId, viewer?.webRole ?? null),
     // Gate the Calendar tab on the SAME public/unlisted published set the calendar renders, not on the
@@ -104,7 +103,10 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
     // its ISR. A visitor never sees the People tab anyway -- the pure rule behind that reader
     // refuses a non-member -- so `false` here is the SAME answer, arrived at without a cookie.
     viewer === null ? Promise.resolve(false) : viewerCanSeeSpaceMemberDirectory(space),
-    space.type === 'root' ? Promise.resolve(null) : getLiveSpaceCircle(space.id),
+    // 🔻 ONE READ FEWER PER MENU BUILD (LIVE-523). The nav used to resolve the Space Circle here for
+    // the sole purpose of deciding the Discussion row. That row is gone — the conversation leads the
+    // Circles tab now — so the hub lookup went with it rather than being left as a result nobody
+    // reads. The Circles page does its own hub read, where the feed it gates is actually rendered.
     // Memberships: at least one ACTIVE tier, read through the SAME request-cached reader the tab's
     // own body renders from, so the menu and the page cannot disagree about whether there is
     // anything behind the door. ROOT is skipped rather than read: the gate refuses it anyway.
@@ -208,17 +210,12 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
     // People: the member directory of space_memberships, never the staff roster at settings/members.
     // Shown only to an active member or a manager (ADR-1471).
     ...(showPeople ? [{ href: `${base}/people`, label: 'People' }] : []),
-    // Discussion (LIVE-421): the Space Circle feed on the Space. Never named Community.
-    // A manager keeps it when the hub is off so they can turn it on. A visitor never sees
-    // a tab over a room that is not there.
-    ...(circlesEnabled &&
-    canSeeSpaceDiscussionTab({
-      spaceType: space.type,
-      hubLive: !!hub,
-      canManage: canSeeAsOwner,
-    })
-      ? [{ href: `${base}/discussion`, label: 'Discussion' }]
-      : []),
+    // NO DISCUSSION ROW (LIVE-523, ADR-1534 amending ADR-1469 §2). The Space Circle's feed now LEADS
+    // the Circles tab above, and the other circles are indexed beneath it, so the Space's community
+    // is one page. A dedicated Discussion row beside Circles was two menu rows over one subject —
+    // the same defect as the `#reviews`, `#circles`, `#contact` and (in #2916) `#events` anchors
+    // sitting beside their own tabs. `/spaces/<slug>/discussion` still resolves and forwards to
+    // `…/circles#discussion`, and the SECTION is still named Discussion, so the canon keeps its word.
     // Contact (LIVE-502): the Space's own door for someone who wants to reach it — the operator's
     // contact form, then the published facts. Shown once the Space has EITHER (so nobody wakes up
     // with a public lead door they did not ask for); a manager sees it at zero because that is
