@@ -5,6 +5,7 @@ import { eventDayKey } from '@/lib/events/calendar-grid'
 import type { CalendarEvent } from './item'
 import { listPublicUnavailableItems } from './entries-store'
 import { guestLiveItems } from './guest-live'
+import { UPCOMING_FEED_MAX, upcomingFeedRows, type UpcomingFeedRow } from './member-calendar'
 
 // THE PUBLIC SPACE CALENDAR, one window at a time (ADR-1385, LIVE-414). The public Calendar tab loads
 // its first month on the server and every other month through this, so browsing back or far forward is
@@ -51,4 +52,30 @@ export async function loadPublicSpaceWindow(spaceId: string, fromDay: string, to
     return !!key && key < toDay
   })
   return guestLiveItems([...(await spaceEventRowsToItems(inWindow)), ...unavailable])
+}
+
+/**
+ * THE UP NEXT BAND on the merged Calendar & Events page (LIVE-520): the next few live gatherings,
+ * soonest first, from `fromDay` forward with NO month ceiling — which is the point of it. The grid
+ * below shows the month you are on; the band answers "what is next" even when that month is empty,
+ * which is the question the owner's ask ("upcoming events should be featured in a feed") is asking.
+ *
+ * It composes the SAME gated reader `loadPublicSpaceWindow` composes and re-implements no gate:
+ * `listSpaceCalendarEvents` is tenancy + hosting + accepted shares, each re-gated on the event's own
+ * columns and then on its HOME space, with cancelled already dropped (no `paintCancelled` here — a
+ * called-off date is footer text on its square, never the thing that leads the page). So the band
+ * and the grid can never disagree about what a visitor may see.
+ *
+ * `fromDay` is the SPACE's own calendar day, never UTC's: `starts_at` holds the wall clock as UTC
+ * parts, so a UTC floor drops tonight's 7 PM gathering from 5 PM Pacific onward.
+ */
+export async function loadSpaceUpcomingFeed(
+  spaceId: string,
+  fromDay: string,
+  limit: number = UPCOMING_FEED_MAX,
+): Promise<UpcomingFeedRow[]> {
+  // Read a few more than the band shows: the store's three unioned queries each take this limit,
+  // and the selector below is what decides the final order and the cap.
+  const rows = await listSpaceCalendarEvents(spaceId, { fromDay, limit: Math.max(limit * 4, 20) })
+  return upcomingFeedRows(rows, fromDay, limit)
 }

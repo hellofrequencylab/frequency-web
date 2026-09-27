@@ -193,7 +193,15 @@ describe('CalendarWorkspace', () => {
     expect(el.textContent).not.toContain('—')
   })
 
-  it('keeps unsigned visitors on Guest with no view control', () => {
+  // 🔴 REWRITTEN BY LIVE-520, AND THE OLD VERSION IS THE BUG. This test used to be called "keeps
+  // unsigned visitors on Guest with no view control" and it asserted
+  // `[aria-label="How to see the calendar"]` was ABSENT for a visitor -- which is to say it pinned
+  // the dead end as the contract. `viewControls` was rendered only inside
+  // `{adminAllowed ? ... : null}`, so the owner saw Grid / List / Workflow because they were the
+  // owner and a member got the month grid and no way out of it. The marker
+  // `data-calendar-page-view-switch` was in the file the whole time, so the LIVE-478 host/control
+  // probe (which reads source) passed over markup that never rendered for a guest.
+  it('gives an unsigned visitor a REACHABLE view switch, and only the surfaces they have', () => {
     const el = mount(
       <CalendarWorkspace
         slug="lab"
@@ -216,12 +224,82 @@ describe('CalendarWorkspace', () => {
       />,
     )
     expect(el.querySelector('[data-calendar-view="guest"]')).not.toBeNull()
-    expect(el.querySelector('[aria-label="How to see the calendar"]')).toBeNull()
+    // The control EXISTS, it is in the markup a visitor is served, and it offers two ways of
+    // looking. Workflow is a board of the team's internal Plans and is deliberately not among them.
+    const box = el.querySelector('[aria-label="How to see the calendar"]')
+    expect(box).not.toBeNull()
+    const labels = [...box!.querySelectorAll('button')].map((n) => n.textContent)
+    expect(labels).toEqual(['Grid', 'List'])
+    expect(labels).not.toContain('Workflow')
+    // The marker the host/control contract checks is on markup that RENDERS for this audience.
+    expect(el.querySelector('[data-calendar-page-view-switch]')).not.toBeNull()
+
+    // And it WORKS: pressing List moves the guest grid to its agenda, in place, still on Guest.
+    expect(el.querySelector('[data-calendar-list]')).toBeNull()
+    act(() => {
+      ;[...box!.querySelectorAll('button')]
+        .find((b) => b.textContent === 'List')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(el.querySelector('[data-calendar-view="guest"]')).not.toBeNull()
+    expect(el.querySelector('[data-calendar-list]')).not.toBeNull()
+
+    // Everything that is operator-only stays operator-only.
+    expect(el.textContent).not.toContain('Guest preview')
     expect(el.querySelector('[data-vera-calendar-box]')).toBeNull()
     // The console is edit mode: a guest never sees its door or the F key.
     expect(el.querySelector('[data-calendar-console-open]')).toBeNull()
     act(() => keydown('f'))
     expect(document.querySelector('[data-calendar-console]')).toBeNull()
+  })
+
+  // THE MERGED PAGE (LIVE-520): Calendar and Events on one page, with what is next featured above
+  // the control bar. The band itself is server-rendered and slotted like `subscribe`, so what this
+  // pins is the SLOT and its honest-empty behaviour -- the selector behind it is measured in
+  // lib/calendar/member-calendar.test.ts.
+  it('features the Up next band above the control bar, and nothing at all when it is empty', () => {
+    const el = mount(
+      <CalendarWorkspace
+        {...operatorProps({
+          upcoming: <section data-space-upcoming-feed>Up next</section>,
+        })}
+      />,
+    )
+    const band = el.querySelector('[data-space-upcoming-feed]')
+    expect(band).not.toBeNull()
+    const bar = el.querySelector('[data-calendar-page-header]')
+    expect(bar).not.toBeNull()
+    // DOCUMENT_POSITION_FOLLOWING: the bar comes after the band, so the band leads the page and the
+    // bar still sits against the grid it steers.
+    expect(band!.compareDocumentPosition(bar!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    if (root) act(() => root!.unmount())
+    if (container) container.remove()
+    const bare = mount(<CalendarWorkspace {...operatorProps()} />)
+    expect(bare.querySelector('[data-space-upcoming-feed]')).toBeNull()
+    // Honest-empty: no band, and no wrapper pretending to be one.
+    expect(bare.textContent).not.toContain('Up next')
+  })
+
+  // The member filter is offered only when it would filter something. `memberLayerChoices` decides
+  // that (and is unit-tested); this pins that the workspace draws what it is handed, and nothing
+  // when it is handed nothing.
+  it('draws the member layer filter only when the Space has more than one layer', () => {
+    const one = mount(
+      <CalendarWorkspace {...operatorProps({ adminAllowed: false, canManage: false, memberLayers: [] })} />,
+    )
+    expect(one.querySelector('[data-calendar-page-layers]')).toBeNull()
+
+    if (root) act(() => root!.unmount())
+    if (container) container.remove()
+    const two = mount(
+      <CalendarWorkspace
+        {...operatorProps({ adminAllowed: false, canManage: false, memberLayers: ['events', 'unavailable'] })}
+      />,
+    )
+    const chips = two.querySelector('[data-calendar-page-layers]')
+    expect(chips).not.toBeNull()
+    expect([...chips!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Events', 'Unavailable'])
   })
 
   it('opens the shared Plan drawer from List and synchronizes its URL state', async () => {
@@ -482,7 +560,9 @@ describe('CalendarWorkspace', () => {
     // is the registry's, not a string copied here -- LIVE-468 rewrote this wording and a pinned
     // copy would have gone stale the moment it landed.
     const heading = el.querySelector('[data-calendar-workspace]')!.firstElementChild!
-    expect(heading.querySelector('h2')?.textContent).toBe('Calendar')
+    // ONE PAGE, AND IT SAYS SO (LIVE-520): Calendar and Events merged, so the heading names both.
+    // The menu row stays "Calendar" (lib/spaces/profile-nav.ts says why); this is the page.
+    expect(heading.querySelector('h2')?.textContent).toBe('Calendar & Events')
     expect(heading.querySelector('p')?.textContent).toBe(calendarViewBlurb('admin', 'Frequency Lab'))
     expect(heading.querySelector('[data-calendar-console-open]')).toBeNull()
     expect(heading.querySelector('[aria-label="How to see the calendar"]')).toBeNull()
@@ -510,18 +590,28 @@ describe('CalendarWorkspace', () => {
 
   // A VISITOR GETS THE BAR TOO. The grid runs with `hostChrome` on the page for everyone, so
   // without this a signed-out visitor would be looking at a month grid with no way to leave the
-  // month it opened on. What they do not get is the groups that would be empty for them.
-  it('gives a visitor the month and its paging, and none of the operator groups', () => {
+  // month it opened on.
+  //
+  // WHAT THEY GET GREW BY ONE GROUP (LIVE-520). This test used to assert HOW was absent for a
+  // visitor -- `expect(bar.querySelector('[aria-label="How to see the calendar"]')).toBeNull()` --
+  // which pinned the dead end as the contract: a member had a month grid and no way to read it any
+  // other way. They get the surface switch now, over their own two surfaces. What they still do not
+  // get is the groups that would be empty for them: no layer chips (this fixture passes no
+  // `memberLayers`, because this Space publishes one layer) and no console door.
+  it('gives a visitor the month, its paging AND a way to change view, and no operator groups', () => {
     const el = mount(<CalendarWorkspace {...operatorProps()} adminAllowed={false} canManage={false} />)
     const bar = el.querySelector<HTMLElement>('[data-calendar-page-header]')!
     expect(bar.querySelector('[data-calendar-page-month] button [aria-live="polite"]')?.textContent).toBe('September 2026')
     expect(bar.querySelector('[aria-label="Previous month"]')).not.toBeNull()
     expect(bar.querySelector('[aria-label="Next month"]')).not.toBeNull()
-    expect(bar.querySelector('[aria-label="How to see the calendar"]')).toBeNull()
+    const how = bar.querySelector('[aria-label="How to see the calendar"]')
+    expect(how).not.toBeNull()
+    expect([...how!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Grid', 'List'])
     expect(bar.querySelector('[aria-label="Show on the calendar"]')).toBeNull()
     expect(bar.querySelector('[data-calendar-console-open]')).toBeNull()
     // And the grid it steers draws none of them itself, so there is exactly one of each.
     expect(el.querySelectorAll('[aria-label="Previous month"]').length).toBe(1)
+    expect(el.querySelectorAll('[aria-label="How to see the calendar"]').length).toBe(1)
   })
 
   // 🔴 TEARING DOWN WITH THE CONSOLE OPEN (LIVE-481). The stage host is a plain div this component

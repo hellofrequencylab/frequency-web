@@ -54,6 +54,13 @@ export const RESERVED_PAGE_SLUGS: ReadonlySet<string> = new Set([
   'discussion', // the Space Circle conversation (LIVE-421). A custom page must not shadow it.
   'contact', // the Contact tab (LIVE-502). A custom page must not shadow it.
   'memberships', // the Memberships tab (LIVE-509). A custom page must not shadow it.
+  // `events` folded into the Calendar page (LIVE-520): `(profile)/events/page.tsx` forwards to
+  // `/calendar`, so this is a REAL owner route segment now. A static App Router segment wins over
+  // the sibling dynamic `[page]`, so without this line an operator could create, publish and see a
+  // custom page called Events in their own nav that no reader could ever open — every request to it
+  // would hit the forward instead. Reserved in the SAME change that added the route, because a
+  // reservation that lands a release later is a release of shadowed pages.
+  'events',
 ])
 
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/

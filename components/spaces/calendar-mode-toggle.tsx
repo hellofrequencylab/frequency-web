@@ -4,6 +4,7 @@ import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Button } from '@/components/ui/button'
 import {
   CALENDAR_SURFACE_DEFS,
+  CALENDAR_SURFACES,
   type CalendarSurface,
   type CalendarListScope,
 } from '@/lib/calendar/admin-views'
@@ -20,27 +21,37 @@ import {
 // Guest is NOT a segment. It is an audience preview, not a way of looking, so it stays the separate
 // button beside this box and no segment is selected while it is showing.
 
-const SEGMENTS = CALENDAR_SURFACE_DEFS.map((o) => ({ value: o.surface, label: o.label }))
-
+// A MEMBER GETS THIS CONTROL TOO (LIVE-520), over the surfaces a member actually has. `surfaces`
+// narrows the box rather than a second component drawing two of the same three segments: a visitor
+// is offered Grid and List and no Workflow, because Workflow is a board of the team's internal
+// Plans and a visitor is never handed one. Same control, same words, same order — one fewer
+// segment. See MEMBER_SURFACES in lib/calendar/member-calendar.ts for the full reasoning.
 export function CalendarModeToggle({
   surface,
   onSelect,
   scope,
   onScope,
+  surfaces = CALENDAR_SURFACES,
 }: {
   surface: CalendarSurface | null
   onSelect: (surface: CalendarSurface) => void
   /** Only rendered on the List surface, and only for the team: Guest has no all-time index. */
   scope?: CalendarListScope
   onScope?: (next: CalendarListScope) => void
+  /** Which surfaces this audience may pick from. Defaults to all three (the operator's box). */
+  surfaces?: readonly CalendarSurface[]
 }) {
+  const segments = CALENDAR_SURFACE_DEFS.filter((o) => surfaces.includes(o.surface)).map((o) => ({
+    value: o.surface,
+    label: o.label,
+  }))
   return (
     <span className="inline-flex items-center gap-2">
       <SegmentedControl
         label="How to see the calendar"
         value={surface ?? ''}
         onChange={(next) => onSelect(next as CalendarSurface)}
-        segments={SEGMENTS}
+        segments={segments}
       />
       {/* THE SCOPE RIDES THE SURFACE IT BELONGS TO, and appears nowhere else. This is the one thing
           that used to force a reader to know that two different controls both said "List": the
