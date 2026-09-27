@@ -153,6 +153,20 @@ export interface DispatchViewerContext {
   profileId: string | null
   circleIds: string[]
   regionId: string | null
+  /**
+   * The viewer's DISPATCH reach on the three tiers above a Circle, for
+   * `viewerInDispatchAudience` below. Derived: hubs from the viewer's circles,
+   * nexuses from those hubs, spaces from their active `space_members` rows plus
+   * the spaces they own (an owner holds no `space_members` row — ADR-858).
+   *
+   * These are REQUIRED rather than optional on purpose. A caller that forgets one
+   * shows the viewer FEWER dispatches, never someone else's: an absent list is an
+   * empty list, and an empty list matches nothing. Optional fields would have made
+   * `undefined` mean "unknown", and the only safe reading of unknown here is none.
+   */
+  hubIds: string[]
+  nexusIds: string[]
+  spaceIds: string[]
   /** Member home + "how local" radius, when set (the geo-bleed reach). */
   home: { lat: number; lng: number; radiusM: number } | null
   /**
@@ -227,4 +241,77 @@ export function viewerInEventDispatchArea(
   }
 
   return false
+}
+
+// ── THE DISPATCH AUDIENCE GATE (the one the feed card did not have) ──────────────────────────────
+//
+// 🔴 READ THIS BEFORE SIMPLIFYING IT AWAY. Until this predicate existed, the feed's lead-Dispatch
+// card applied NO audience check at all. `dispatchCandidates` in components/feed/feed-list.tsx
+// selected the newest published rows with only `status` + `hidden_at` filters, and `pickLeadDispatch`
+// returned the first non-event row to WHOEVER was looking:
+//
+//     if (row.dispatch_type !== 'event') { return toDispatchItem(row, null) }
+//
+// So a Space Dispatch — `audience_scope: 'space'`, written for that Space's paying members by
+// lib/spaces/dispatch.ts — would have rendered as the lead card in EVERY member's feed, labelled
+// with the Space's name. The same held for a circle / hub / nexus Dispatch. It never fired only
+// because `dispatches` has never held a row in production, which is luck, not a gate.
+//
+// The irony is that the file already knew the rule. The comment above `nearestPublicEvent`, three
+// lines from the leak, says it outright: "The admin client bypasses RLS, so this banner must
+// re-apply the public listing gate itself … Without these, a private / draft / circle-only /
+// standalone event would surface in every member's feed." That reasoning was applied to the EVENT
+// banner and to `dispatch_type === 'event'` rows, and never to the dispatch's own audience.
+//
+// lib/dispatches.ts:17 (`getRecentDispatchesForProfile`, the right-rail reader) has always filtered
+// correctly, by fanning one query per reach tier. This is the SAME rule as a pure predicate, so the
+// two surfaces cannot drift: the rail filters in SQL, the feed card filters in code over a bounded
+// candidate window, and both answer the same question the same way. If you change the reach rule,
+// change it in both places — `lib/events/dispatch-audience.test.ts` pins this half.
+//
+// FAIL-CLOSED on every axis: an unknown `audience_scope`, a scoped row with no `audience_id`, and a
+// signed-out viewer all resolve to `false`.
+
+/** The audience fields the gate reads off a candidate dispatch row. */
+export interface DispatchAudienceTarget {
+  audience_scope: string | null
+  audience_id: string | null
+  author_id?: string | null
+}
+
+/**
+ * May this viewer see this Dispatch at all?
+ *
+ * The reach rule, mirroring `getRecentDispatchesForProfile`:
+ *   • the AUTHOR always sees their own;
+ *   • `global`  reaches everyone (staff / janitor announcements);
+ *   • `circle`  reaches members of that circle;
+ *   • `hub`     reaches members of a circle in that hub;
+ *   • `nexus`   reaches members of a hub in that nexus;
+ *   • `space`   reaches a Space's active members and its owner.
+ *
+ * This is the AUDIENCE question only. An Event Dispatch has a second, narrower gate on top of it
+ * (`viewerInEventDispatchArea` — readability plus guest / hosting-Circle / resonant-area reach), and
+ * the caller applies both: audience first, because it is pure and free, then the event gate.
+ */
+export function viewerInDispatchAudience(
+  row: DispatchAudienceTarget,
+  viewer: DispatchViewerContext,
+): boolean {
+  if (viewer.profileId && row.author_id && row.author_id === viewer.profileId) return true
+
+  const scope = row.audience_scope ?? ''
+  if (scope === 'global') return true
+
+  // Every remaining scope is id-keyed, so a row without an id reaches nobody.
+  const id = row.audience_id
+  if (!id) return false
+
+  switch (scope) {
+    case 'circle': return viewer.circleIds.includes(id)
+    case 'hub': return viewer.hubIds.includes(id)
+    case 'nexus': return viewer.nexusIds.includes(id)
+    case 'space': return viewer.spaceIds.includes(id)
+    default: return false
+  }
 }
