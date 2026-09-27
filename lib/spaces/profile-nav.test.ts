@@ -31,7 +31,8 @@ vi.mock('@/lib/spaces/entitlements', async (importOriginal) => ({
   resolveSpaceManageAccess: async () => manage,
 }))
 vi.mock('@/lib/spaces/content-data', () => ({ getSpaceSectionPresence: async () => presence }))
-vi.mock('@/lib/events/store', () => ({ spaceHasPublicUpcomingEvents: async () => false }))
+let hasEvents = false
+vi.mock('@/lib/events/store', () => ({ spaceHasPublicUpcomingEvents: async () => hasEvents }))
 vi.mock('@/lib/spaces/collaborations', () => ({ spaceHasCollaborators: async () => false }))
 let showPeople = false
 vi.mock('@/lib/spaces/member-directory', () => ({
@@ -95,6 +96,7 @@ beforeEach(() => {
   showPeople = false
   hub.live = false
   hasTiers = false
+  hasEvents = false
 })
 
 describe('the Circles tab', () => {
@@ -289,11 +291,48 @@ describe('the menu is derived from the page that renders (LIVE-517)', () => {
   })
 
   it('a Space that never opened the builder still gets its starter sections', async () => {
-    presence.events = true
+    // WAS `events` UNTIL LIVE-520, and it had to move: `events` is a DEDICATED_TAB_ANCHORS entry now
+    // (Calendar and Events are one page), so it can never appear as an anchor and would make this
+    // test fail for the right reason while saying the wrong thing. `booking` is also in the kind
+    // starter (about / offerings / booking / events / team / reviews / contact) and is not
+    // suppressed, so it proves the same thing: the fall-through derives anchors.
+    presence.booking = true
     const { tabs } = await buildSpaceProfileNav(space())
-    presence.events = false
+    presence.booking = false
     // No saved layout: resolveRows falls to the kind starter, which the BODY renders too.
-    expect(tabs.map((t) => t.href)).toContain('/spaces/ojai#events')
+    expect(tabs.map((t) => t.href)).toContain('/spaces/ojai#booking')
+  })
+})
+
+describe('the #events anchor — Calendar and Events are one page (LIVE-520)', () => {
+  // 🔴 THE "TWO REVIEWS" BUG, FOURTH EDITION, and the most literal one yet: the Space menu carried
+  // an "Events" row that scrolled to a Home section AND a "Calendar" row that navigated to the
+  // month grid, for the same gatherings. The owner's ask was "Calendar & Events should be all one
+  // page", so the page merged and the anchor comes off. The SECTION still renders on Home and
+  // `#events` still resolves; what stops is the menu listing the same subject twice.
+  it('never sits beside the Calendar tab in the menu', async () => {
+    hasEvents = true
+    presence.events = true
+    presence.faqs = true
+    const withAnchor = space({
+      preferences: { profileLayout: { rows: [{ id: 'r1', columns: 1, cells: [['events', 'faq']] }] } },
+    } as unknown as Partial<Space>)
+    const { tabs } = await buildSpaceProfileNav(withAnchor)
+    hasEvents = false
+    presence.events = false
+    presence.faqs = false
+
+    // THE CONTROL, and `faq` for the same reason the Contact and Reviews cases use it: it is in this
+    // fixture's layout and NOT in the kind starter, so its anchor proves these rows were read at all.
+    // Measured: with the control in place, deleting 'events' from DEDICATED_TAB_ANCHORS fails this
+    // test by name.
+    expect(tabs.map((t) => t.href)).toContain('/spaces/ojai#faq')
+
+    expect(tabs.map((t) => t.href)).not.toContain('/spaces/ojai#events')
+    expect(tabs.filter((t) => t.label === 'Events')).toHaveLength(0)
+    // ONE row, and it is the merged page.
+    expect(tabs.filter((t) => t.label === 'Calendar')).toHaveLength(1)
+    expect(hrefFor(tabs, 'Calendar')).toBe('/spaces/ojai/calendar')
   })
 })
 

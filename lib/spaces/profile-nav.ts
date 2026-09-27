@@ -101,7 +101,14 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   // it, one scrolling and one navigating. The SECTION still renders on Home and the anchor still
   // resolves — this only stops the menu listing it twice, which is what the stored "Get in touch"
   // buttons depend on.
-  const DEDICATED_TAB_ANCHORS = new Set(['reviews', 'circles', 'contact'])
+  // `events` joins them for the FOURTH time (LIVE-520, owner ask: "Calendar & Events should be all
+  // one page"). Calendar and Events were two menu items over one subject — this `#events` anchor
+  // into Home beside the dedicated Calendar tab below — which is the same bug in its most literal
+  // form: two rows in one menu, one scrolling and one navigating, for the same gatherings. The
+  // Calendar tab is now the merged page (the Up next feed above the month), so the anchor comes
+  // off. The SECTION still renders on Home and `#events` still resolves; `/spaces/<slug>/events`
+  // forwards to the merged page so the word keeps an address.
+  const DEDICATED_TAB_ANCHORS = new Set(['reviews', 'circles', 'contact', 'events'])
   const sections = deriveModuleSectionNav(resolveRows(grid, 'space'), presence, grid.content).filter(
     (s) => !DEDICATED_TAB_ANCHORS.has(s.anchor),
   )
@@ -137,9 +144,13 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   const tabs: SpaceProfileTab[] = [
     { href: base, label: pages[0]?.label ?? 'Home' },
     ...sections.map((s) => ({ href: `${base}#${s.anchor}`, label: s.label })),
-    // The Calendar tab (Events EC2): a month grid of the Space's events + a subscribe-to-calendar feed.
-    // Shown only when the Space has upcoming PUBLIC events (the exact set the grid renders), so the tab
-    // never opens onto an empty calendar.
+    // The Calendar tab — THE MERGED CALENDAR AND EVENTS PAGE (LIVE-520). The Up next feed, the month
+    // grid, the agenda, and the subscribable feed, on one page and behind ONE menu row; the `#events`
+    // anchor that used to sit beside it is suppressed above. The label stays "Calendar" because the
+    // URL, the `.ics` feed, the page metadata and every operator deep link (`?view=`, `?console=1`)
+    // all say calendar, and a menu word that disagreed with all of them would be a second name for
+    // one thing. Shown only when the Space has upcoming PUBLIC events (the exact set the grid
+    // renders), so the tab never opens onto an empty calendar.
     ...(hasCalendarEvents ? [{ href: `${base}/calendar`, label: 'Calendar' }] : []),
     // Memberships (LIVE-509): the Space's tiers, and the door that joins one. Sits high, right after
     // Calendar, because it is the commercial answer to "what is this place" and it was previously

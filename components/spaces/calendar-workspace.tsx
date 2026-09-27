@@ -43,6 +43,7 @@ import {
   type CalendarSurface,
   type CalendarListScope,
 } from '@/lib/calendar/admin-views'
+import { MEMBER_SURFACES } from '@/lib/calendar/member-calendar'
 import { listIndexItems, selectListItem } from '@/lib/calendar/list-index'
 import { workflowBoard } from '@/lib/calendar/workflow-board'
 import type { CalendarEvent } from '@/lib/calendar/item'
@@ -132,6 +133,8 @@ export function CalendarWorkspace({
   plans,
   spaceTimeZone = null,
   subscribe,
+  upcoming = null,
+  memberLayers = [],
   loadGuestMonth,
 }: {
   slug: string
@@ -156,6 +159,14 @@ export function CalendarWorkspace({
    *  Space has never said, and only then does the viewer's browser zone decide. */
   spaceTimeZone?: string | null
   subscribe: ReactNode
+  /** THE UP NEXT BAND (LIVE-520), server-rendered and slotted in the way `subscribe` is: what is
+   *  next at this Space, above the control bar. Null (or a component that renders null) when the
+   *  Space has published nothing ahead — honest-empty, so no heading over nothing. */
+  upcoming?: ReactNode
+  /** The layers a MEMBER may filter by, already reduced to the ones that would filter something
+   *  (`memberLayerChoices`). Empty means no chips are drawn at all, because a one-option filter
+   *  cannot change what you see. */
+  memberLayers?: readonly CalendarLayerKey[]
   loadGuestMonth: (year: number, month1: number) => Promise<CalendarEvent[]>
 }) {
   const [view, setView] = useState<CalendarAdminView>(adminAllowed ? initialView : 'guest')
@@ -308,7 +319,23 @@ export function CalendarWorkspace({
 
   const applySurface = useCallback(
     (nextSurface: CalendarSurface, nextScope: CalendarListScope) => {
-      if (!adminAllowed) return
+      // 🔴 A MEMBER STEERS THIS TOO (LIVE-520). This used to be `if (!adminAllowed) return`, and
+      // together with the `adminAllowed` gate on the control row below that is how the visitor half
+      // of this page shipped with NO WAY TO CHANGE VIEW: the owner saw Grid / List / Workflow
+      // because they were the owner, and a member got the month grid and a dead end. Nothing could
+      // catch it — `data-calendar-page-view-switch` is in this file, so the LIVE-478 host/control
+      // probe read it and passed, while the markup carrying the marker never rendered for a guest.
+      //
+      // The mapping is the SAME `viewForSurface`, asked with the guest audience, so there is one
+      // definition of what a surface means. What a member does NOT get is a cookie or a URL write:
+      // `?view=` names the operator's PANEL (its `guest` value is the operator's audience preview),
+      // the grid/list choice has never been in the URL, and writing `?view=guest` onto a visitor's
+      // address would put an operator flag on a member's share link for no gain.
+      if (!adminAllowed) {
+        if (!MEMBER_SURFACES.includes(nextSurface)) return
+        setGridView(viewForSurface(nextSurface, nextScope, 'guest').gridView)
+        return
+      }
       const { view: nextView, gridView: nextGrid } = viewForSurface(nextSurface, nextScope, audience)
       setGridView(nextGrid)
       setView(nextView)
@@ -471,6 +498,12 @@ export function CalendarWorkspace({
         onMonthChange={setMonth}
         view={gridView}
         onViewChange={setGridView}
+        /* THE MEMBER'S FILTER REACHES THE GRID (LIVE-520). `hostChrome` means this mount draws no
+           chips of its own, so without these two the page's chips would toggle state nothing read.
+           The set offered is `memberLayers`, which is empty unless the Space actually publishes
+           more than one layer. */
+        hiddenLayers={hiddenLayers}
+        onHiddenLayersChange={setHiddenLayers}
         fill={consoleOpen}
         /* THE PAGE IS A HOST TOO NOW (LIVE-494), so this is unconditional rather than
            `consoleOpen`: whichever bar is showing -- the page's two rows or the console's one --
@@ -488,30 +521,38 @@ export function CalendarWorkspace({
     </div>
   )
 
-  // One definition of the view controls, rendered in the page heading and again in the console header.
-  // Gated on the viewer here, once, for both homes.
-  const viewControls = (
+  // One definition of the view controls, rendered in the page bar and again in the console header.
+  //
+  // TWO AUDIENCES, ONE CONTROL (LIVE-520). This used to render NOTHING at all unless
+  // `adminAllowed`, which is how a member ended up with a month grid and no way to change it. A
+  // member now gets the same segmented box over the surfaces a member has (MEMBER_SURFACES: Grid
+  // and List). What stays operator-only, and why, is written on MEMBER_SURFACES itself:
+  //   · Workflow      — a board of `space_plans`, the team's internal working records; a visitor is
+  //                     never handed `plans` or `adminEvents`, so the segment would steer an empty
+  //                     board, and "fixing" that later would be the leak.
+  //   · Guest preview — an audience, not a way of looking. A guest already is that audience.
+  //   · the List ALL scope — the all-time index panel is the event control console (stage pill,
+  //                     share links, stats), not a way of reading a month.
+  const viewControls = adminAllowed ? (
     <>
-      {adminAllowed && (
-        <>
-          <Button
-            type="button"
-            size="sm"
-            variant={view === 'guest' ? 'primary' : 'secondary'}
-            aria-pressed={view === 'guest'}
-            onClick={() => selectView('guest')}
-          >
-            Guest preview
-          </Button>
-          <CalendarModeToggle
-            surface={view === 'guest' ? null : surface}
-            onSelect={selectSurface}
-            scope={listScope}
-            onScope={selectListScope}
-          />
-        </>
-      )}
+      <Button
+        type="button"
+        size="sm"
+        variant={view === 'guest' ? 'primary' : 'secondary'}
+        aria-pressed={view === 'guest'}
+        onClick={() => selectView('guest')}
+      >
+        Guest preview
+      </Button>
+      <CalendarModeToggle
+        surface={view === 'guest' ? null : surface}
+        onSelect={selectSurface}
+        scope={listScope}
+        onScope={selectListScope}
+      />
     </>
+  ) : (
+    <CalendarModeToggle surface={surface} onSelect={selectSurface} surfaces={MEMBER_SURFACES} />
   )
 
   // TWO LINES, NOT FIVE (owner ask 2026-09-22). Line one is the name of the page with the blurb
@@ -521,7 +562,12 @@ export function CalendarWorkspace({
   // control and the row (and its localStorage dismissal) retired.
   const heading = (
     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-      <h2 className="text-lead font-bold text-text">Calendar</h2>
+      {/* ONE PAGE, AND IT SAYS SO (LIVE-520). Calendar and Events were two menu rows over one
+          subject; this is the page they folded into, so the page names both. The TAB stays
+          "Calendar" — see the comment on it in lib/spaces/profile-nav.ts — because the URL, the
+          `.ics` feed and every operator deep link say calendar, and a menu word that disagreed with
+          all of them would be a second name for one thing. */}
+      <h2 className="text-lead font-bold text-text">Calendar &amp; Events</h2>
       <p className="text-body-sm text-muted">{calendarViewBlurb(view, brandName)}</p>
     </div>
   )
@@ -584,10 +630,18 @@ export function CalendarWorkspace({
   // A VISITOR GETS THIS BAR TOO, and that is not a nicety. The grid runs with `hostChrome` on the
   // page now, so it draws no month, no paging and no jump for ANYONE; if the bar were gated on
   // `adminAllowed` a signed-out visitor would be left looking at a month grid with no way to leave
-  // the month it opened on. What a visitor does not get is the groups that have nothing in them
-  // for them: there is no surface to switch, no layer to hide and no console to open. A guest
-  // always has a month, because the only surface they can see is the grid.
-  const pageHasMonth = adminAllowed ? surfaceHasMonth(surface, listScope) : true
+  // the month it opened on.
+  //
+  // WHAT A VISITOR DOES NOT GET IS NOW A SHORTER LIST (LIVE-520): no console to open, no Guest
+  // preview (they are the guest), no Workflow segment, and no layer chips unless the Space
+  // publishes more than one layer. The surface switch is NOT on that list any more — it was, and
+  // that was the dead end this row closed.
+  //
+  // One expression for both audiences now, rather than `true` for a visitor: a member's List is the
+  // month's agenda, so `surfaceHasMonth` answers true for both of their surfaces anyway, and a
+  // hardcoded `true` would silently become a lie the day a member is offered a surface with no
+  // month (the all-time index, if it is ever opened up).
+  const pageHasMonth = surfaceHasMonth(surface, listScope)
 
   const pageBar = (
     <div data-calendar-page-header className="flex flex-col gap-1.5 rounded-card border border-border bg-surface px-3 py-2 sm:px-4">
@@ -618,17 +672,28 @@ export function CalendarWorkspace({
             </div>
           ) : null}
         </div>
-        {adminAllowed ? (
-          <div data-calendar-page-view-switch className="flex shrink-0 flex-wrap items-center gap-2">
-            {viewControls}
-          </div>
-        ) : null}
+        {/* UNCONDITIONAL (LIVE-520). The marker has to be on markup that actually renders for the
+            audience that needs the control, not merely present in this file: the LIVE-478 probe
+            reads the source, so an `adminAllowed` wrapper around it satisfied the gate while
+            shipping a member a grid with no way out of it. `viewControls` decides what each
+            audience is offered. */}
+        <div data-calendar-page-view-switch className="flex shrink-0 flex-wrap items-center gap-2">
+          {viewControls}
+        </div>
       </div>
 
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
         {adminAllowed && view === 'admin' ? (
           <div data-calendar-page-layers className="flex min-w-0 items-center">
             <CalendarLayerChips layers={STAFF_CALENDAR_LAYERS} hidden={hiddenLayers} onToggle={toggleLayer} density="micro" />
+          </div>
+        ) : memberLayers.length > 0 ? (
+          // THE MEMBER'S FILTER (LIVE-520): Events and Unavailable, and only when the Space actually
+          // publishes both — `memberLayerChoices` returns nothing below two layers, so a Space with
+          // only gatherings draws no chips rather than one chip that filters nothing. An operator on
+          // Guest preview lands here too, which is right: they are looking at the member's bar.
+          <div data-calendar-page-layers className="flex min-w-0 items-center">
+            <CalendarLayerChips layers={memberLayers} hidden={hiddenLayers} onToggle={toggleLayer} density="micro" />
           </div>
         ) : (
           <span />
@@ -689,6 +754,10 @@ export function CalendarWorkspace({
     return (
       <div className="space-y-4" data-calendar-workspace data-calendar-view="guest">
         {heading}
+        {/* ABOVE THE CONTROL BAR, NOT BELOW IT (LIVE-520). The band is CONTENT — what is next — and
+            the bar is chrome for the grid under it, so the bar stays touching the thing it steers
+            and the feed is the first thing read. It renders nothing when there is nothing ahead. */}
+        {upcoming}
         {pageBar}
         {guestBody}
       </div>
@@ -798,6 +867,9 @@ export function CalendarWorkspace({
           the panels. Before hydration each renders straight into its slot; after, each slot holds a
           portal host, which the layout effect above parks here or in the console. */}
       <div data-calendar-stage className={cn('space-y-4', consoleOpen && 'hidden')}>
+        {/* Inside the stage div, so the band goes away with the page when the console takes over:
+            the console is the operator's edit surface and the band is the member's read. */}
+        {upcoming}
         {pageBar}
         {vera ? <div ref={veraSlotRef}>{veraHost ? null : vera}</div> : null}
         <div ref={stageSlotRef}>{stageHost ? null : panels}</div>

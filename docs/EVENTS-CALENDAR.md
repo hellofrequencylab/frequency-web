@@ -157,6 +157,94 @@ zone; a subscribe button that downloads a dead snapshot; burying the grid behind
 - **Calendar surfaces compose the page framework** (`IndexTemplate` for the grid; the rail falls
   through to `'global'` — no `page-chrome` edit needed).
 
+## Calendar and Events are ONE page (LIVE-520)
+
+Owner ask, 2026-09-27: *"Calendar & Events should be all one page: Please design a page structure
+that has full calendar functions with different views and sorting. Upcoming events should be
+featured in a feed."*
+
+**What was wrong.** The Space menu carried **two rows over one subject**: the dedicated Calendar tab
+and a `#events` Home section anchor beside it (`deriveModuleSectionNav`, derived from the rendered
+grid, and `events` is in every kind's starter layout). One scrolled, one navigated, for the same
+gatherings — the "two Reviews" bug in its most literal form, and its fourth edition after reviews,
+circles and contact.
+
+**And the member half of that page was a dead end.** `viewControls` in
+`components/spaces/calendar-workspace.tsx` rendered only inside `{adminAllowed ? … : null}`, and
+`applySurface` opened with `if (!adminAllowed) return`. So the owner saw Grid / List / Workflow
+because they were the owner, and a member — signed in or not — got the month grid and **no way to
+change how they read it**. 🔴 Nothing could catch it: `data-calendar-page-view-switch` is in that
+file, so the LIVE-478 host/control probe (which reads SOURCE, by design) read the marker and passed
+over markup that never rendered for the audience needing it. **A marker on a guarded branch
+satisfies a source gate and ships an unreachable control.** `pageHasMonth` was hardcoded `true` for
+a visitor for the same reason.
+
+**The page, top to bottom.** Heading (**Calendar & Events**, so the fold is legible on the page) →
+the **Up next** band → the one control bar in its four LIVE-485 groups → the month grid, the month's
+agenda, or (team only) List and Workflow. Still **two** control rows: LIVE-494 is not undone, and
+the band is CONTENT above the bar rather than a fifth row of chrome.
+
+**The Up next band** (`components/spaces/space-upcoming-feed.tsx`) is a FEED, not a second grid: one
+gathering per full-width row, in reading order, **composing `UpcomingEventRows`** — the row list the
+Channel strip and the Circle module already render — rather than a fourth hand-rolled event row.
+Server-rendered and slotted into the client workspace the way `subscribe` already was, so the
+timezone lib stays off every phone. It reads through `loadSpaceUpcomingFeed`
+(`lib/calendar/public-month.ts`), which composes the SAME gated reader the grid composes
+(`listSpaceCalendarEvents`), so the band and the grid can never disagree about what a visitor may
+see: one gate, and the selector (`lib/calendar/member-calendar.ts`) is not it. It has **no month
+ceiling** on purpose — the grid shows the month you are on, the band answers what is next even when
+that month is empty. Its floor is the **Space's own day** (`dayInZone(now, space.timeZone)`), never
+UTC's: `starts_at` holds the wall clock as UTC parts, so a UTC floor drops tonight's 7 PM gathering
+from 5 PM Pacific onward (the family LIVE-514 and LIVE-516 both belong to). A cancelled gathering
+never leads the band; on the grid it stays muted footer text (LIVE-414). **Honest-empty:** no rows,
+no band, and no second empty state either — the grid already says the one true thing through
+`guestFirstUse`.
+
+**The views a member gets, and the ones they deliberately do not.** `MEMBER_SURFACES` is **Grid** and
+**List** (the month's agenda), and `viewForSurface(surface, scope, 'guest')` already mapped both onto
+the Guest panel — the control to pick between them was simply never drawn. Not offered, each for a
+stated reason:
+
+| Not offered to a member | Why |
+|---|---|
+| **Workflow** | `workflowBoard(plans, adminEvents)` over `PLAN_STAGE_TRANSITIONS`. Every card is a `space_plans` row — the team's internal notes, links, to-dos, people — and a visitor is never handed `plans` or `adminEvents`. The segment would steer an empty board, and the day someone "fixed" the empty board would be the leak. |
+| **the List `all` scope** | The all-time index panel is the event control console (stage pill, share links, stats, Go to event), not a way of reading a month. |
+| **Guest preview** | An audience, not a way of looking. A guest already is that audience. |
+
+A member also gets the layer **filter** — Events / Unavailable — and only when the Space publishes
+both: `memberLayerChoices` returns `[]` below two layers, because a one-option filter cannot change
+what you see (honest-empty applied to chrome rather than content). The chips reach the guest grid
+because that mount now takes `hiddenLayers` / `onHiddenLayersChange`; under `hostChrome` the grid
+draws no chips of its own, so without those two the chips would have toggled state nothing read.
+A member's choice is **not** written to the URL or a cookie: `?view=` names the operator's PANEL (its
+`guest` value is the operator's audience preview), the grid/list choice has never been in the URL,
+and writing `?view=guest` onto a visitor's address would put an operator flag on a member's share
+link for no gain.
+
+**The reservation and the anchor landed in the same commit, and that is the point.**
+`app/(main)/spaces/[slug]/(profile)/events/page.tsx` is a `permanentRedirect` to `/calendar`, so the
+word Events keeps an address after the menu stops listing it. That makes `events` a REAL owner route
+segment, and a **static App Router segment beats the sibling dynamic `[page]`** — so without `events`
+in `RESERVED_PAGE_SLUGS` (`lib/spaces/profile-pages.ts`) an operator could create, publish and see a
+custom page called Events in their own nav that no reader could ever open. A reservation that lands a
+release after the route is a release of shadowed pages. `events` joins `DEDICATED_TAB_ANCHORS`
+(`lib/spaces/profile-nav.ts`) in the same change so the menu lists the subject once; the SECTION
+still renders on Home and `#events` still resolves.
+
+**The tab label stays "Calendar".** The URL, the `.ics` feed, the page metadata and every operator
+deep link (`?view=`, `?item=`, `?plan=`, `?console=1`) all say calendar, and a menu word that
+disagreed with all of them would be a second name for one thing. The PAGE names both.
+
+**Two existing tests pinned the defects as contracts**, and both were rewritten rather than deleted:
+`calendar-workspace.render.test.tsx` asserted `[aria-label="How to see the calendar"]` was ABSENT for
+a visitor, in a test named *"keeps unsigned visitors on Guest with no view control"*; and
+`profile-nav.test.ts` used `#events` as the CONTROL anchor in its starter-layout test, which moved to
+`booking` (also in the starter, and not suppressed).
+
+**Still gated, deliberately:** the Calendar tab only appears when `spaceHasPublicUpcomingEvents` is
+true, so a Space whose only dates are Pencils gets no tab. Whether a manager should see that door at
+zero is a separate ruling.
+
 ## The private layer (ADR-1385)
 
 A Space calendar is **two layers that are never merged**. The rationale and the navigation research

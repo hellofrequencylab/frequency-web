@@ -28,6 +28,10 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **A Space's Calendar and its Events are one page now, not two menu rows.** Open **Calendar** on any Space. What is next is featured at the top under **Up next**, soonest first, and the month sits below it. **Events** in the menu used to scroll you to a strip on the Space's home page while **Calendar** took you to the month, for the same gatherings.
+
+- **Anyone can change how they read a Space calendar.** **Grid** and **List** switch the same month between the calendar grid and a plain list of dates. Only the people who run the Space could do that before, so everyone else got the grid and no way out of it. If the Space publishes times it is closed, chips let you show just events or just those.
+
 - **Hosting other businesses on your Space is no longer described as a Collective plan extra.** Business is the door. The plan ladder no longer says Collective hosts unlimited, or that you get three hosts and then a higher plan.
 
 - **Choosing Business on a Space now says you are on Business after you pay.** It used to name a leftover Collective plan. The confirmation matches the plan you just bought.
