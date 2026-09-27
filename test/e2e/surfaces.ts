@@ -1118,6 +1118,36 @@ export const VISUAL_MASK_SITES: readonly {
     kind: 'live',
     why: 'Zaps, Gems and streak at rest in the desktop dock.',
   },
+  // ── THE OPERATOR RAIL, AS ONE BOX (LIVE-513; the ADR-1522 treatment on the admin side) ──────
+  // These two are the blocking half of the 2026-09-27 pr-compare failure on #2906, and they are
+  // registered together because they are one datum printed in two places.
+  //
+  // MEASURED RATHER THAN ARGUED, which is what separates this from LIVE-476/492/504. Those three
+  // admin surfaces show a stable first-screen diff whose cause is NOT known, and LIVE-504 ruled
+  // the live-data theory out for /admin/library by proving its tables were frozen across the
+  // captures. This one is the opposite: non-system `profiles` went 57 -> 59 between the last
+  // green baseline (#2905, 2026-09-25) and the run that failed (2026-09-27 17:48Z), and the
+  // admin rail prints that count on every admin page.
+  //
+  // The picture the pixel counts paint, and the reason two sites rather than one:
+  //   /admin/marketing/nurture   1667 (light)  1761 (dark)
+  //   /admin/crew-tasks          1667          1761      <- byte-identical: the shared rail alone
+  //   /admin/circles             1667          1761
+  //   /admin                     1907          2007      <- the rail PLUS its own header KPIs
+  // Three surfaces differing by exactly the same amount is a shared component; the fourth
+  // differing by more is the same number rendered a second time.
+  {
+    value: 'admin-rail',
+    file: 'components/admin/admin-rail-drawer-column.tsx',
+    kind: 'live',
+    why: 'The operator info rail, in the admin LAYOUT so every admin surface carries it: members, active this week, upcoming events and every attention queue count are live reads on each render.',
+  },
+  {
+    value: 'admin-kpis',
+    file: 'app/(main)/admin/page.tsx',
+    kind: 'live',
+    why: 'The /admin header strip prints Members and Events from the same live sweep the rail reads, plus Active and Practices from a second one, so the dashboard carries the drift twice.',
+  },
   // `rail-panel` is carried by several files: WidgetCard stamps it on every rail panel, and
   // the rail's own sections, the demo notice and the streaming skeleton carry it directly.
   {
