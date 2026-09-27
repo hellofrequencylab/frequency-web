@@ -16,6 +16,8 @@ import { markAnonymousRender } from '@/lib/core/anonymous-render'
 import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { parseEntityLayout } from '@/lib/entity-blocks/layout'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
+import { SpaceProfileMenuView } from '@/components/spaces/space-profile-menu-view'
+import { buildPublicSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
 // Public share URL for a networked Space (SCAN-644 / ADR-1465). Auth during
@@ -123,6 +125,22 @@ export default async function PublicSpacePage({
       : null
   const grid = parseEntityLayout(rawLayout) ?? {}
 
+  // 🔴 THE VISITOR GETS THE MENU TOO (LIVE-522). Until now this page mounted the blocks and a
+  // sign-in card and NOTHING ELSE: no menu. So the canonical share URL -- the one every link,
+  // QR code and search result points at -- offered a visitor no way to reach this Space's
+  // Calendar, Memberships, Circles, Reviews or Shop. They could scroll Home or leave.
+  //
+  // The menu was never missing from the Space, only from this ROUTE. Every sub-page under
+  // app/(main)/spaces/[slug]/(profile) renders the member chrome with the full menu and has no
+  // auth gate, so a visitor who reached one by any other means DID get a menu, whose Home link
+  // then returned them to this page, where it vanished. It appeared and disappeared inside one
+  // Space.
+  //
+  // `buildPublicSpaceProfileNav` is the cookie-free entry point: reading a caller here would make
+  // this route dynamic and cost the share URL its ISR (ADR-1465 / ADR-1526). profile-nav.public
+  // .test.ts makes getCallerProfile throw and proves this call still resolves.
+  const { tabs } = await buildPublicSpaceProfileNav(space)
+
   return (
     <>
       <JsonLd
@@ -145,6 +163,16 @@ export default async function PublicSpacePage({
         title={brandName}
         subtitle={tagline ?? undefined}
         back={{ href: '/discover/spaces', label: 'Spaces' }}
+        // The HOOK-FREE view, not the client wrapper: `useSearchParams()` in a prerendered page
+        // bails the subtree out of the static HTML, and this is the page crawlers read. Measured --
+        // mounting the wrapper here failed the Vercel build outright on /spaces/encinitas-nexus with
+        // "useSearchParams() should be wrapped in a suspense boundary".
+        //
+        // `pathname` is the canonical Space URL, which is the only path this route serves, and
+        // `canManage` is false by construction rather than by choice: this tree has no viewer to be
+        // a manager. An operator who signs in is rewritten to the member body by
+        // lib/nav/member-space-rewrite.ts and never renders this page at all.
+        stickyNav={<SpaceProfileMenuView tabs={tabs} canManage={false} pathname={`/spaces/${space.slug}`} />}
       >
         <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
         <div className="mx-auto mt-14 max-w-xl">
