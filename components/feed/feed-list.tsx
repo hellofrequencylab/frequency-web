@@ -11,6 +11,7 @@ import { FeedPeopleStrip } from './feed-people-strip'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import {
   viewerInEventDispatchArea,
+  viewerInDispatchAudience,
   viewerActiveRsvpEventIds,
   type EventDispatchTarget,
   type DispatchViewerContext,
@@ -67,6 +68,9 @@ interface RawDispatchRow {
   title: string
   excerpt: string | null
   audience_scope: string
+  /** The scoped target (circle / hub / nexus / space id); null on a `global` row. */
+  audience_id: string | null
+  author_id: string | null
   dispatch_type: string | null
   published_at: string
   author: { display_name: string } | null
@@ -94,19 +98,46 @@ async function resolveDispatchViewer(
   // getMyOrbit runs on the authed client (auth.uid() = this viewer), so it returns
   // the VIEWER's resonance set. Empty when resonance is off or there are no
   // connections, which simply means no surrounding-area bleed surfaces for them.
-  const [membershipsR, profileR, orbit] = await Promise.all([
+  const [membershipsR, profileR, orbit, spaceMemberR, ownedSpaceR] = await Promise.all([
     admin.from('memberships').select('circle_id').eq('profile_id', profileId).eq('status', 'active'),
     admin.from('profiles').select('nexus_region_id').eq('id', profileId).maybeSingle(),
     getMyOrbit(200),
+    // Space reach for the Dispatch audience gate. Both arms are needed: a Space's OWNER holds no
+    // `space_members` row, so an owner-only read would hide their own Space's Dispatch from them
+    // (ADR-858 — lib/dispatches.ts:48 unions exactly these two for the same reason).
+    admin.from('space_members').select('space_id').eq('profile_id', profileId).eq('status', 'active'),
+    admin.from('spaces').select('id').eq('owner_profile_id', profileId),
   ])
   const circleIds = ((membershipsR.data ?? []) as { circle_id: string | null }[])
     .map((m) => m.circle_id)
     .filter((id): id is string => !!id)
   const regionId = (profileR.data as { nexus_region_id: string | null } | null)?.nexus_region_id ?? null
+
+  // Hub and nexus reach are DERIVED from the circles, so they chain after them: a Dispatch may
+  // target any tier above the circle a member actually joined. Two reads, each skipped when the tier
+  // below came back empty, so a member in no circles pays for neither.
+  let hubIds: string[] = []
+  let nexusIds: string[] = []
+  if (circleIds.length > 0) {
+    const { data } = await admin.from('circles').select('hub_id').in('id', circleIds)
+    hubIds = [...new Set(((data ?? []) as { hub_id: string | null }[]).map((c) => c.hub_id).filter((id): id is string => !!id))]
+  }
+  if (hubIds.length > 0) {
+    const { data } = await admin.from('hubs').select('nexus_id').in('id', hubIds)
+    nexusIds = [...new Set(((data ?? []) as { nexus_id: string | null }[]).map((h) => h.nexus_id).filter((id): id is string => !!id))]
+  }
+
+  const spaceIds = [
+    ...new Set([
+      ...((spaceMemberR.data ?? []) as { space_id: string | null }[]).map((r) => r.space_id),
+      ...((ownedSpaceR.data ?? []) as { id: string | null }[]).map((s) => s.id),
+    ].filter((id): id is string => !!id)),
+  ]
+
   // Resonance set: hosts the viewer has real co-presence with. The surrounding-area
   // bleed only surfaces an event whose host is in here ("close by who have resonance").
   const resonantHostIds = new Set(orbit.filter((m) => m.resonance > 0).map((m) => m.profileId))
-  return { profileId, circleIds, regionId, home: nearby, resonantHostIds }
+  return { profileId, circleIds, hubIds, nexusIds, spaceIds, regionId, home: nearby, resonantHostIds }
 }
 
 /**
@@ -127,9 +158,15 @@ async function pickLeadDispatch(
   candidates: RawDispatchRow[],
   viewer: DispatchViewerContext,
 ): Promise<DispatchItem | null> {
+  // Pass 0 (pure): drop every candidate this viewer is not in the audience for. FIRST, because it
+  // is the gate the card shipped without — see the note over `viewerInDispatchAudience`. It runs
+  // ahead of pass 1 as well as pass 2 so the guest-reach read never asks about an event whose
+  // Dispatch the viewer could not have seen either way.
+  const reachable = candidates.filter((row) => viewerInDispatchAudience(row, viewer))
+
   // Pass 1 (pure): which candidates need the RSVP question at all.
   const needsRsvp: string[] = []
-  for (const row of candidates) {
+  for (const row of reachable) {
     if (row.dispatch_type !== 'event') break
     const event = eventOf(row)
     if (!event || !event.slug) continue
@@ -141,7 +178,7 @@ async function pickLeadDispatch(
       : new Set<string>()
 
   // Pass 2: the same walk the serial version made, with the lookup already in hand.
-  for (const row of candidates) {
+  for (const row of reachable) {
     if (row.dispatch_type !== 'event') {
       return toDispatchItem(row, null)
     }
@@ -231,7 +268,7 @@ async function loadPosts(args: {
 // they can. The reverse relation gives the linked event's slug + the visibility/scope/geog
 // this code re-checks (the admin client bypasses RLS, so the event gate must run in code).
 const DISPATCH_SELECT = `
-      id, title, excerpt, audience_scope, dispatch_type, published_at,
+      id, title, excerpt, audience_scope, audience_id, author_id, dispatch_type, published_at,
       author:profiles!author_id ( display_name ),
       linked_task:crew_tasks!linked_task_id ( id, name ),
       event_dispatch:event_dispatches!dispatch_id (
@@ -239,12 +276,31 @@ const DISPATCH_SELECT = `
       )
     `
 
+// THE WINDOW IS WIDER THAN THE ONE CARD IT FEEDS, AND THAT IS WHAT MAKES THE AUDIENCE GATE SAFE.
+//
+// The audience filter (`viewerInDispatchAudience`) cannot run here: it needs the viewer's derived
+// hub / nexus / space reach, and this read starts in wave 1 alongside the viewer resolution rather
+// than after it (LIVE-179, ADR-1242 — components/feed/feed-waves.test.ts pins that shape, and
+// serialising the two to filter in SQL would undo it).
+//
+// So the gate runs in code, in `pickLeadDispatch`, over this window. Which makes the window's size a
+// CORRECTNESS property, not a performance knob: filtering after a `limit` can starve. At 8 rows, nine
+// consecutive dispatches aimed at other audiences would hide a tenth the viewer is genuinely in, and
+// they would see no Dispatch card at all. 40 is the bound at which that stops being a realistic
+// shape for one member's reach set while the read stays trivially cheap (one indexed
+// `published_at DESC` scan over a table that holds single-digit rows today).
+//
+// If this ever needs to be small again, the honest fix is to resolve the viewer's reach BEFORE wave 1
+// and filter in SQL with an `.or()` over the reach sets (the shape lib/events/store.ts:408 uses, with
+// the same UUID guard) — not to trim the window and hope.
+const DISPATCH_WINDOW = 40
+
 function dispatchCandidates(admin: AdminClient) {
   return admin.from('dispatches').select(DISPATCH_SELECT)
     .eq('status', 'published')
     .is('hidden_at', null)
     .order('published_at', { ascending: false })
-    .limit(8)
+    .limit(DISPATCH_WINDOW)
 }
 
 // The admin client bypasses RLS, so this banner must re-apply the public listing gate
