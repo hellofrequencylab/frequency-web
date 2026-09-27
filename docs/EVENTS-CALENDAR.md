@@ -176,6 +176,33 @@ when-line formatter and the `.ics` builders work on entries unchanged. Reserved 
 `recurrence_rule` (the ADR-1299 RRULE dialect), `source_kind` + `source_id` (set together, pointing at
 the record an entry came from) and `metadata`.
 
+**🔴 A WALL CLOCK AND AN INSTANT ARE THE SAME BYTES (LIVE-514).** The convention above is not a
+preference; writing the other value is a silent data defect. On 2026-09-25, twenty-five Royal Temple
+pencils were written as TRUE INSTANTS — what `'2026-10-23 18:30 America/Los_Angeles'::timestamptz`
+yields, rather than the literal `'2026-10-23T18:30:00Z'` — so a 6:30 PM fire circle drew at 1:30 AM the
+NEXT morning. Nothing caught it, because the two values share a type, a column and an ISO spelling:
+`expect(new Date(row.starts_at)).toEqual(...)` passes for both. **Pin the stored STRING, never a Date.**
+
+The confusion now has a name and a predicate in [`lib/calendar/wall-clock.ts`](../lib/calendar/wall-clock.ts):
+`wallClockOfInstant` is the exact inverse of `eventInstant`, `instantShapedSpan` is the narrow test for
+a row that holds the wrong one, and `instantShapedSeriesTell` is the only PROOF available — a
+wall-clock series holds one time-of-day for ever, while a series of instants shifts by an hour across
+the PDT/PST boundary. `wall-clock.test.ts` pins the before and after of all twenty-five production
+rows and refuses a migration that inserts a calendar time spelled any way but UTC parts.
+
+Two things that follow, and are easy to get wrong:
+
+- **`parseEntryInput` is the only writer.** Every app path composes `starts_at` there, from a
+  `YYYY-MM-DD` and an `HH:MM`, and never touches the timezone lib — the Vera pencil path,
+  `create_penciled_plan`, `shiftedWrite` on a move, and the repeating-series generator included. A new
+  write path does the same or it is wrong. The 2026-09-25 rows came from hand-run SQL, not from code.
+- **The predicate is a repair scope, never a constraint.** An instant-shaped 6:30 PM and a Space that
+  genuinely holds an all-night sit at 1:30 AM are indistinguishable, so no CHECK can refuse one
+  without refusing the other. The repair
+  ([`20270345008500`](../supabase/migrations/20270345008500_calendar_entries_stored_as_instants.sql))
+  is therefore scoped by shape AND bounded to rows written before the bug was diagnosed, so a fresh
+  replay never moves an honest late-night date.
+
 **Access.** RLS is the ADR-923 quad on `private.can_write_space_content(space_id)`, and the app reads
 and writes through the caller's own session (`lib/calendar/entries-store.ts`,
 `app/(main)/spaces/[slug]/settings/calendar/entry-actions.ts`), so the policies are the lock. The ONLY
