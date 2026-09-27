@@ -31,8 +31,8 @@
 import { execFileSync } from 'node:child_process'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { deflateSync, inflateSync } from 'node:zlib'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 export const DEFAULT_DIR = 'test/e2e/__screenshots__/visual.spec.ts'
 /** Playwright's default per-pixel colour `threshold`; playwright.config.ts leaves it unset. */
@@ -316,6 +316,6 @@ export function main(argv = process.argv.slice(2)) {
   return 0
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+if (invokedDirectly(import.meta.url)) {
   process.exitCode = main()
 }

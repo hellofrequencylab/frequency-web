@@ -30,9 +30,9 @@
 // It still refuses on a failed install or a major mismatch — those are not "never installed".
 
 import { existsSync, readFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 /**
  * Decide whether the ESLint that PATH is about to hand us is the repo's own.
@@ -168,11 +168,17 @@ function readVersionFrom(pkgPath) {
 // wrong for this job: it compares an ENCODED URL against a raw path, so a single space or
 // non-ASCII character anywhere above the repo makes it false — and a false here means prelint
 // exits 0 without checking anything, which is a fail-safe that never fires. Compare real paths.
-const invokedDirectly =
-  process.argv[1] !== undefined &&
-  resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1])
-
-if (invokedDirectly) {
+//
+// 🔴 AND THAT NOTE WAS ONLY HALF THE BUG (HYG-125). What stood here instead —
+// `resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1])` — fixed the encoding half and
+// still got the OTHER half wrong, because `resolve` is not `realpath`. `import.meta.url` is the path
+// Node RESOLVED the module through, with every symlink already followed; `process.argv[1]` is whatever
+// was typed, symlinks intact. So a checkout under a symlink (or anything run out of a macOS `mkdtemp`,
+// where `/var` is a link to `/private/var`) compares two spellings of the same file and says no. Same
+// silent exit 0, from the other direction. scripts/lib/invoked-directly.mjs realpaths BOTH sides and
+// is now the single answer for every script in here; this comment stays because it is the record of
+// how the question gets answered wrong twice.
+if (invokedDirectly(import.meta.url)) {
   const cwd = process.cwd()
   const declaredRange =
     JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf8')).devDependencies?.eslint ?? ''

@@ -44,6 +44,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SRC_DIR = join(ROOT, 'node_modules', 'maplibre-gl', 'dist')
@@ -103,7 +104,7 @@ export function copyMaplibreWorker({ srcDir = SRC_DIR, outDir = OUT_DIR, quiet =
 }
 
 // Run when invoked directly; importable for the test.
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+if (invokedDirectly(import.meta.url)) {
   try {
     copyMaplibreWorker()
   } catch (err) {

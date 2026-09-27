@@ -32,7 +32,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { invokedDirectly } from '../lib/invoked-directly.mjs'
 
 const BACKLOG = 'docs/BUILD-BACKLOG.json'
 const DECISIONS = 'docs/DECISIONS.md'
@@ -279,7 +279,7 @@ function main() {
 
 // Run only when INVOKED, never on import — the CI half imports the two pure `merge*` functions, and
 // an unguarded `main()` here would shell out to git and call process.exit() inside the test runner.
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (invokedDirectly(import.meta.url)) {
   try {
     process.exit(main())
   } catch (err) {

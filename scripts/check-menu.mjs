@@ -48,7 +48,7 @@
 import ts from 'typescript'
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const ROOTS = ['lib', 'app', 'components']
 const ANNOTATION = '// menu-ok:'
@@ -611,4 +611,4 @@ function main() {
   process.exit(1)
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main()
+if (invokedDirectly(import.meta.url)) main()
