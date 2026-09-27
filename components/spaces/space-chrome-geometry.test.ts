@@ -38,7 +38,12 @@ const read = (p: string) => readFileSync(new URL(p, import.meta.url), 'utf8')
 
 const LAYOUT = read('../../app/(main)/spaces/[slug]/(profile)/layout.tsx')
 const BUTTON = read('../ui/button.tsx')
-const MENU = read('./space-profile-menu.tsx')
+// The pill markup moved to the hook-free VIEW (LIVE-522): the client wrapper next door now only
+// reads the router and hands `pathname` / `panel` down, because `useSearchParams()` in a
+// prerendered page bails the subtree out of the static HTML and failed the build on the signed-out
+// Space page. The geometry these assertions defend went with the markup, so they follow it here
+// rather than being loosened. This file catching the move is the system working.
+const MENU = read('./space-profile-menu-view.tsx')
 const GLOBALS = read('../../app/globals.css')
 
 describe('the button primitive exposes geometry without palette', () => {
