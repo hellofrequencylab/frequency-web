@@ -312,14 +312,17 @@ export function canSeeCircle(f: CircleViewerFacts): boolean {
  * `invited` is passed explicitly by the caller that HOLDS the invite, so an un-invited path cannot
  * acquire the right by accident: the default is `false`.
  */
+export type CircleJoinReason =
+  | 'signed-out'
+  | 'invite-only'
+  | 'space-members-only'
+  | 'membership-only'
+  | 'paid'
+  | 'closed'
+
 export function canJoinCircle(
   f: CircleViewerFacts & { invited?: boolean },
-):
-  | { ok: true }
-  | {
-      ok: false
-      reason: 'signed-out' | 'invite-only' | 'space-members-only' | 'membership-only' | 'paid' | 'closed'
-    } {
+): { ok: true } | { ok: false; reason: CircleJoinReason } {
   if (f.viewerProfileId === null) return { ok: false, reason: 'signed-out' }
   if (f.access === 'open') return { ok: true }
   // Already inside, or authoritative over it: joining is a no-op, not a refusal.

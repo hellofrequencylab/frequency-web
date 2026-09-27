@@ -10,7 +10,9 @@ import { getSpendableBalance } from '@/lib/store/balance'
 import { resolveMemberDay } from '@/lib/member-day'
 import { frozenDaysFrom, streakDayRun } from '@/lib/practice-streak'
 import { DemoNotice } from '@/components/sidebar/demo-notice'
-import { pageRailPanels, isQuestSurface } from '@/lib/layout/rail-panels'
+import { pageRailPanels, isQuestSurface, spaceSlugFromPath } from '@/lib/layout/rail-panels'
+import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import type { Space } from '@/lib/spaces/types'
 import { ControlCenterPanel, PanelSkeleton } from '@/components/sidebar/rail-panels'
 import { RAIL_PANELS } from '@/components/sidebar/rail-registry'
 import { getMemberSignature } from '@/lib/frequency-signature-data'
@@ -272,7 +274,29 @@ async function PagePanels({ profileId, role, pathname }: RightSidebarProps & { p
     circleIds = (data ?? []).map((m: { circle_id: string }) => m.circle_id as string)
   }
 
-  const ctx = { profileId, circleIds, isCrew }
+  // The Space this route is INSIDE, resolved ONCE iff a selected panel declares it needs one — the
+  // same one-prefetch shape as circleIds above, and the registry owns the fact, so the rail never
+  // re-lists Space panel keys here.
+  //
+  // FROM THE PATHNAME, not from getActiveSpace() (lib/spaces/active-space.ts), and that is a
+  // measured constraint rather than a preference: this rail renders from app/(main)/layout.tsx,
+  // which is a PARENT of app/(main)/spaces/[slug]/layout.tsx, so the request-scoped active Space is
+  // still unset when the rail runs. The path is the same input pageRailPanels itself resolves from.
+  //
+  // VIEWER-GATED: getVisibleSpaceBySlug returns null for a private Space the viewer is neither the
+  // owner nor an active member of, so the panels cannot name a Space the page itself would 404 on.
+  // getSpaceBySlug is React-cached and the route has already resolved it, so this is not a new read.
+  let space: Space | null = null
+  const needsSpace = keys.some((key) => RAIL_PANELS[key]?.needsSpace)
+  if (needsSpace) {
+    const slug = spaceSlugFromPath(pathname)
+    if (slug) {
+      // Fail-safe to null: a resolve error means "no Space panels", never a broken rail.
+      space = await getVisibleSpaceBySlug(slug, profileId).catch(() => null)
+    }
+  }
+
+  const ctx = { profileId, circleIds, isCrew, space }
   // 🔴 NO PER-PANEL <Suspense> HERE, AND NO ROUTE IN A BOUNDARY KEY. This used to be
   // `<Suspense key={key} fallback={<PanelSkeleton />}>` around each panel, where `key` came from
   // `pageRailPanels(pathname)` — so a different route meant a different KEY SET, which means
