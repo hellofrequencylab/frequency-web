@@ -38,7 +38,7 @@
 // Usage: `node scripts/check-bridge.mjs`
 
 import { readFileSync, existsSync } from 'node:fs'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const GLOBALS = 'app/globals.css'
 const TAILWIND_THEME = 'node_modules/tailwindcss/theme.css'
@@ -144,4 +144,4 @@ function main() {
   process.exit(1)
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main()
+if (invokedDirectly(import.meta.url)) main()

@@ -44,6 +44,7 @@
 
 import { readFileSync } from 'node:fs'
 import { execSync } from 'node:child_process'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 /** A display class stated on the element itself. `flex-1`/`flex-col`/`flex-wrap` are NOT display. */
 export const DISPLAY =
@@ -90,6 +91,6 @@ export function report(links) {
   return 1
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (invokedDirectly(import.meta.url)) {
   process.exit(report(truncatingLinks(candidateFiles())))
 }

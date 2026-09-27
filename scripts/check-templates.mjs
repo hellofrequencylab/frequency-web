@@ -53,7 +53,7 @@
 
 import { readFileSync, readdirSync, existsSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const ROOT = 'app'
 
@@ -316,4 +316,4 @@ function main() {
   )
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main()
+if (invokedDirectly(import.meta.url)) main()

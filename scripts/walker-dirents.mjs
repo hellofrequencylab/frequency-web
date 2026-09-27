@@ -34,6 +34,7 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 export const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 export const ROOTS = ['scripts', 'lib']
@@ -134,7 +135,7 @@ export async function scanRepo({ fast = false } = {}) {
   return { scanned: files.length, findings }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (invokedDirectly(import.meta.url)) {
   const { scanned, findings } = await scanRepo({ fast: true })
   if (findings.length) {
     console.error(`✗ ${findings.length} function(s) readdir and then stat what they found:`)

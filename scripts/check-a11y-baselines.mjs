@@ -36,7 +36,7 @@
 
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 export const FILE = join('test', 'e2e', 'a11y-baselines.json')
 
@@ -295,6 +295,6 @@ function main() {
   return 0
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+if (invokedDirectly(import.meta.url)) {
   process.exit(main())
 }

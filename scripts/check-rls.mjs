@@ -32,7 +32,7 @@
 
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const DIR = 'supabase/migrations'
 
@@ -270,4 +270,4 @@ function main() {
 }
 
 // Run as a CLI only when executed directly (so the test can import the pure scanner).
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main()
+if (invokedDirectly(import.meta.url)) main()
