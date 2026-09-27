@@ -48280,3 +48280,27 @@ This is the URL `app/sitemap.ts` advertises, and the one strangers and Googlebot
 - The general rule this states, beyond Spaces: **"it renders the same component" is not the same
   claim as "it renders the same"**. A component whose appearance comes from an ancestor attribute
   carries none of that appearance in its own markup, and a second mount point inherits nothing.
+
+## ADR-1534: A Space's community is one page — the Space Circle's feed leads Circles, and Discussion is a section of it (LIVE-523)
+
+**Status:** Accepted · 2026-09-27 · backlog `LIVE-523` · **AMENDS [ADR-1469](DECISIONS.md) §2** and the Discussion clause of [`docs/NAMING.md`](NAMING.md) §Community structure · numbered **1534** because **1531-1533** are reserved by another open session · owner directive, 2026-09-27
+
+**Context.** ADR-1469 put the Space Circle's conversation on the Space profile as its own tab, named Discussion. That was right about the body and wrong about the address. The result was a menu carrying **Circles** and **Discussion** side by side, gated on the same `circles` function, over the same community: one row scrolled a list of rooms, the row beside it opened the main room.
+
+That is the same defect the repo has now fixed four times — the `#reviews`, `#circles` and `#contact` Home anchors sitting beside their own dedicated tabs, and `#events` beside Calendar in ADR-1094's line of work and #2916. This is its fifth edition, and the only one where both halves were full tabs rather than an anchor and a tab.
+
+The owner's directive of 2026-09-27 states it as product: the main community Circle is the primary feed, and the Circles page is that feed plus an index of the other circles.
+
+**Decision.**
+
+1. **One page.** `/spaces/<slug>/circles` leads with the Space Circle's feed and indexes the other circles beneath it. The hub is filtered out of that index, because a page that leads with a room and then lists it again reads like two rooms.
+2. **The word survives; the row does not.** The band is an `<h2>` named **Discussion** at the anchor `#discussion`. ADR-1469 §2's naming lock ("The Space tab is Discussion. Never Community") is amended only as to *tab*: the name is unchanged and "Community" is still never used.
+3. **`/spaces/<slug>/discussion` keeps resolving**, as a permanent forward to `…/circles#discussion`. It stays in `RESERVED_PAGE_SLUGS`, so no operator page can shadow a URL already sent out in notifications, and every `revalidatePath` naming it keeps working.
+4. **The feed leads even when the viewer cannot read it.** `CircleLocked` (LIVE-519) is the sentence that names what a membership buys; burying it under a grid would be the empty room that row closed, with extra steps.
+5. **The menu builder stops reading the hub.** `buildSpaceProfileNav` resolved the Space Circle for the sole purpose of deciding the Discussion row. One fewer read per menu build; the Circles page does its own, where the feed it gates is rendered.
+
+**Rejected.** Keeping both rows. Naming the merged page Community (NAMING.md forbids it, and this ADR does not touch that). Deleting the `/discussion` segment (a cached 404 on a reserved, already-distributed URL). Leading the page with the index and putting the conversation below it, which would restore the buried-room defect for exactly the viewers the locked door is written for.
+
+**Consequences.** ADR-1469's stated consequence — "the LIVE-421 probe fails if the Discussion route stops loading the Space Circle feed" — comes due here by design. LIVE-421 is **amended, not deleted, and stays `done`**: its substance (the Space Circle's feed is reachable on the Space, and is never named Community) is still true, so its probe now measures that consequence at the feed's new address. A future `posts.scope_space_id` remains a new decision, as ADR-1469 said.
+
+**Rows.** LIVE-523 (closed here). LIVE-421 keeps its status with an amended probe. Untouched: ADR-1469 §§1, 3, 4; the hub reader and its gate; the Contact tab.

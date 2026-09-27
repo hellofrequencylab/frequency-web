@@ -23,13 +23,18 @@ import type { RunEndState } from '@/lib/journeys/runs'
 import { startJourneyRunAction, endJourneyRunAction } from '@/app/(main)/journeys/run-actions'
 
 /** Every surface a change here shows up on. The console is the one being edited; the PUBLIC Circles
- *  tab lists the same circles to visitors; and the profile Home carries both the teaser block and
- *  the hero's "Circles" stat, so a create / move / archive that skipped it left a stale count on the
- *  page most people actually land on. */
+ *  tab lists the same circles to visitors AND, since LIVE-523, leads with the Space Circle's feed,
+ *  so turning the hub on or off has to reach it; and the profile Home carries both the teaser block
+ *  and the hero's "Circles" stat, so a create / move / archive that skipped it left a stale count on
+ *  the page most people actually land on.
+ *
+ *  The former `/spaces/<slug>/discussion` entry is gone with the row it served (LIVE-523,
+ *  ADR-1534). That segment is now a permanentRedirect, so revalidating it refreshed nothing: the
+ *  conversation renders on the Circles tab above, which this function was already reaching. Dead
+ *  rather than broken, and removed so the list keeps naming only surfaces that actually render. */
 function revalidateSpaceCircles(slug: string) {
   revalidatePath(`/spaces/${slug}/manage/circles`)
   revalidatePath(`/spaces/${slug}/circles`)
-  revalidatePath(`/spaces/${slug}/discussion`)
   revalidatePath(`/spaces/${slug}`)
 }
 
