@@ -115,5 +115,5 @@ function main() {
   if (diff.hasBlocking) process.exit(1)
 }
 
-import { pathToFileURL } from 'node:url'
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main()
+import { invokedDirectly } from '../lib/invoked-directly.mjs'
+if (invokedDirectly(import.meta.url)) main()

@@ -43,6 +43,7 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -327,8 +328,11 @@ export function checkVocab() {
 }
 
 // ── CLI ──
-const isMain = process.argv[1] && fileURLToPath(import.meta.url) === join(process.argv[1])
-if (isMain || process.argv[1]?.endsWith('check-vocab.mjs')) {
+// The `|| process.argv[1]?.endsWith('check-vocab.mjs')` arm that used to sit here was a workaround for a
+// BROKEN isMain, not a second way in: the old comparison never matched through a symlink, so the
+// basename check was the only thing that ever ran this block. invokedDirectly() compares realpaths
+// on both sides and matches, so the loose arm is gone with the bug it was covering for (HYG-125).
+if (invokedDirectly(import.meta.url)) {
   const { violations, vocabs, scanned, hubValues } = checkVocab()
   console.log('Vocabulary contract guard (ADR-879 / ADR-887)\n')
   if (scanned < MIN_SCANNED_FILES) {

@@ -82,8 +82,8 @@
 
 import { readdirSync, readFileSync, existsSync } from 'node:fs'
 import { join, dirname, resolve as resolvePath, relative } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import ts from 'typescript'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const ROOTS = ['app', 'components']
 
@@ -843,4 +843,4 @@ function main() {
   )
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main()
+if (invokedDirectly(import.meta.url)) main()

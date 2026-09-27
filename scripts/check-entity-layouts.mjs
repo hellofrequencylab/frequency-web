@@ -42,6 +42,7 @@
 // Model: scripts/check-stored-blocks.mjs, deliberately, down to the exit codes.
 
 import { readFileSync, existsSync } from 'node:fs'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 export const CORPUS_PATH = 'scripts/entity-layout-corpus.json'
 
@@ -250,7 +251,7 @@ export function report(corpus, { registry = null } = {}) {
   return { code: 0, lines }
 }
 
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+if (invokedDirectly(import.meta.url)) {
   let corpus
   try {
     corpus = loadCorpus()

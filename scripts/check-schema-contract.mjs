@@ -44,7 +44,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const require = createRequire(import.meta.url)
 const ts = require('typescript')
@@ -1269,4 +1270,4 @@ function main() {
   console.log(`  ${formatSkips(report)}.`)
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main()
+if (invokedDirectly(import.meta.url)) main()
