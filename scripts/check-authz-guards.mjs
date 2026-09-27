@@ -151,7 +151,7 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { join, dirname, normalize } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const APP_DIR = 'app'
 const LIB_DIR = 'lib'
@@ -1318,6 +1318,6 @@ function main() {
 }
 
 // Only run the CLI when invoked directly (not when imported by a test).
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+if (invokedDirectly(import.meta.url)) {
   main()
 }

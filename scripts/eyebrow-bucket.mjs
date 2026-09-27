@@ -41,6 +41,7 @@
 //   node scripts/eyebrow-bucket.mjs --tracking wide --expect 0
 
 import { loadCorpus, loadConfig, inScope } from './check-adoption.mjs'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 /** Chrome of the element's own: what separates a badge from a label. */
 const CHROME = /^(?:bg-|border|rounded-|px-|py-|p-\d|ring-|shadow-|divide-)/
@@ -108,7 +109,7 @@ const arg = (name) => {
   return i === -1 ? undefined : process.argv[i + 1]
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (invokedDirectly(import.meta.url)) {
   const config = loadConfig()
   const all = sites(loadCorpus(config), config)
   const tracking = arg('tracking')

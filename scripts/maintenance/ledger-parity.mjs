@@ -66,8 +66,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
-import { pathToFileURL } from 'node:url'
-
+import { invokedDirectly } from '../lib/invoked-directly.mjs'
 const DIR = join('supabase', 'migrations')
 
 /** The same shape `supabase db push` parses, and the same regex as check-migrations.mjs. */
@@ -342,7 +341,7 @@ function main() {
   if (!result.inParity) process.exit(1)
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+if (invokedDirectly(import.meta.url)) {
   try {
     main()
   } catch (e) {

@@ -44,7 +44,8 @@
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 /** The tree every export measures by default. Resolved from this file's own location, so the CLI
  *  and the vitest guard read the same repo whatever the cwd. Every export also takes a `root`
@@ -187,4 +188,4 @@ function main() {
   process.exit(1)
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main()
+if (invokedDirectly(import.meta.url)) main()

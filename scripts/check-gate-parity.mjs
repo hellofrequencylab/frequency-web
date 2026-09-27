@@ -26,6 +26,7 @@
 // four permanent false positives.
 
 import { readFileSync, existsSync } from 'node:fs'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const CATALOG = 'lib/nav/studio.ts'
 
@@ -268,7 +269,7 @@ export function evaluate(src, io = {}) {
   return { rows: rows.length, compared, fresh, drifted, healed, tabs: tabs.length, inertTabs, healedTabs }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (invokedDirectly(import.meta.url)) {
   const src = readFileSync(CATALOG, 'utf8')
   const { rows, compared, fresh, drifted, healed, tabs, inertTabs, healedTabs } = evaluate(src)
   let bad = false

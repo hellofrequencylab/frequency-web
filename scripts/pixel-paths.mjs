@@ -25,6 +25,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import path from 'node:path'
 import { workflowPaths, anyMatch, matches, runCli } from './workflow-paths.mjs'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 // ⚠️ THE PARSER AND THE MATCHER NOW LIVE IN scripts/workflow-paths.mjs, and this file is a thin
 // caller. When `db-tests` needed the same fallback (OWN-038), the choice was to copy this parser or
@@ -46,7 +47,7 @@ export function movesPixels(files, globs = pixelPaths()) {
 
 export { matches }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (invokedDirectly(import.meta.url)) {
   // Exit 0 = e2e will run and post pr-compare itself. Exit 1 = it will not, so the fallback must.
   runCli(process.argv.slice(2), pixelPaths(), 'pixel-paths')
 }

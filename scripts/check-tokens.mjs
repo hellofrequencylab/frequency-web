@@ -34,7 +34,7 @@
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const ROOTS = ['app', 'components', 'lib']
 // Escape hatch: `// token-ok: <reason>` (line comment) or a `/* token-ok … */` block comment — the
@@ -299,4 +299,4 @@ function main() {
   process.exit(1)
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main()
+if (invokedDirectly(import.meta.url)) main()

@@ -37,7 +37,7 @@
 
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const LEDGER = join('docs', 'DECISIONS.md')
 // `#{2,3}`, not `##`. Seven entries in the ledger use a ### heading -- ADR-052 through
@@ -325,4 +325,4 @@ function main() {
   process.exit(1)
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main()
+if (invokedDirectly(import.meta.url)) main()

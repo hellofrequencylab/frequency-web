@@ -47,9 +47,9 @@
 
 import { readFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
-import { pathToFileURL } from 'node:url'
 import { HEADING } from './check-adr.mjs'
 import { listPullRequestFiles } from './pr-size-gate.mjs'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 export const LEDGER = 'docs/DECISIONS.md'
 export const BACKLOG = 'docs/BUILD-BACKLOG.json'
@@ -428,7 +428,7 @@ async function compare({ env, repo, base, token, fetchImpl }) {
   else console.log(`✓ check:id-collisions — no id this PR introduces is introduced by any of ${others.length} other open PR(s) against ${base}.`)
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+if (invokedDirectly(import.meta.url)) {
   main().catch((err) => {
     console.log(couldNotRun(err))
     process.exit(1)

@@ -18,8 +18,8 @@
 
 import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { compare, parseLedger, repoRows } from './maintenance/ledger-parity.mjs'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const FILE = 'docs/BUILD-BACKLOG.json'
 const MIG_DIR = join('supabase', 'migrations')
@@ -369,7 +369,7 @@ function main() {
   printHuman(next, collisions, migrations)
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+if (invokedDirectly(import.meta.url)) {
   try {
     main()
   } catch (err) {
