@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, it, expect, vi } from 'vitest'
 import type { Space } from '@/lib/spaces/types'
 
@@ -99,5 +100,32 @@ describe('the signed-out share URL builds a menu without reading a cookie', () =
   it('gives a visitor no operator links', async () => {
     const { adminTabs } = await buildPublicSpaceProfileNav(space())
     expect(adminTabs).toEqual([])
+  })
+})
+
+describe('the menu the share URL mounts can survive a static prerender', () => {
+  // 🔴 THIS COST A BUILD. Mounting the client `SpaceProfileMenu` here failed the Vercel build on
+  // /spaces/encinitas-nexus with "useSearchParams() should be wrapped in a suspense boundary at page
+  // /spaces/[slug]". A <Suspense> wrapper is the documented remedy and the wrong one: a bailed-out
+  // subtree is not in the prerendered HTML, so the build would pass while the Space's own navigation
+  // vanished from the page crawlers read. The view is hook-free instead.
+  const view = readFileSync('components/spaces/space-profile-menu-view.tsx', 'utf8')
+  const page = readFileSync('app/(public)/spaces/[slug]/page.tsx', 'utf8')
+  const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+
+  it('the view reads no router hooks', () => {
+    for (const hook of ['useSearchParams', 'usePathname']) {
+      expect(code(view), hook).not.toContain(hook)
+    }
+  })
+
+  it('the view is not pinned to the client bundle', () => {
+    expect(view.trimStart().startsWith("'use client'")).toBe(false)
+  })
+
+  it('the prerendered page mounts the view, not the hook-reading wrapper', () => {
+    const pc = code(page)
+    expect(pc).toContain('SpaceProfileMenuView')
+    expect(pc).not.toMatch(/<SpaceProfileMenu[\s/>]/)
   })
 })

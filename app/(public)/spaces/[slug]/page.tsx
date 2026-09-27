@@ -16,7 +16,7 @@ import { markAnonymousRender } from '@/lib/core/anonymous-render'
 import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { parseEntityLayout } from '@/lib/entity-blocks/layout'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
-import { SpaceProfileMenu } from '@/components/spaces/space-profile-menu'
+import { SpaceProfileMenuView } from '@/components/spaces/space-profile-menu-view'
 import { buildPublicSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
@@ -163,10 +163,16 @@ export default async function PublicSpacePage({
         title={brandName}
         subtitle={tagline ?? undefined}
         back={{ href: '/discover/spaces', label: 'Spaces' }}
-        // `canManage` is false by construction, not by choice: this tree has no viewer to be a
-        // manager. An operator who signs in is rewritten to the member body by
+        // The HOOK-FREE view, not the client wrapper: `useSearchParams()` in a prerendered page
+        // bails the subtree out of the static HTML, and this is the page crawlers read. Measured --
+        // mounting the wrapper here failed the Vercel build outright on /spaces/encinitas-nexus with
+        // "useSearchParams() should be wrapped in a suspense boundary".
+        //
+        // `pathname` is the canonical Space URL, which is the only path this route serves, and
+        // `canManage` is false by construction rather than by choice: this tree has no viewer to be
+        // a manager. An operator who signs in is rewritten to the member body by
         // lib/nav/member-space-rewrite.ts and never renders this page at all.
-        stickyNav={<SpaceProfileMenu tabs={tabs} canManage={false} />}
+        stickyNav={<SpaceProfileMenuView tabs={tabs} canManage={false} pathname={`/spaces/${space.slug}`} />}
       >
         <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
         <div className="mx-auto mt-14 max-w-xl">
