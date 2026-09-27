@@ -1,4 +1,5 @@
 import { getCallerProfile } from '@/lib/auth'
+import type { WebRole } from '@/lib/core/roles'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { isConsoleSpaceType, spaceManageHref, type Space } from '@/lib/spaces/types'
 import { readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
@@ -51,15 +52,45 @@ function hasContactFacts(preferences: unknown): boolean {
   return !!(p.address || p.phone || p.email || p.hours || p.website)
 }
 
+/** Who the menu is being built FOR. `null` means NOBODY: the signed-out, ISR-rendered share URL,
+ *  where reading a cookie would make the route dynamic (ADR-1465 / ADR-1526). */
+export interface SpaceNavViewer {
+  profileId: string | null
+  webRole: WebRole | null
+}
+
+/**
+ * The menu for the SIGNED-IN member surfaces. Reads the caller itself, as it always has.
+ */
 export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNav> {
   const caller = await getCallerProfile()
-  const viewerProfileId = caller?.id ?? null
+  return buildNavFor(space, { profileId: caller?.id ?? null, webRole: caller?.webRole ?? null })
+}
+
+/**
+ * The menu for the SIGNED-OUT share URL (LIVE-522), and the reason this split exists.
+ *
+ * 🔴 IT MUST NOT READ A COOKIE. `app/(public)/spaces/[slug]` is the ISR body the canonical
+ * `/spaces/<slug>` serves to a visitor and to every crawler. One `cookies()` anywhere beneath it
+ * turns the route dynamic and the ISR contract (ADR-1465, ADR-1526) is gone — which is why this
+ * is a separate entry point rather than a `viewer` argument someone could forget to pass.
+ *
+ * Proven rather than promised: `profile-nav.public.test.ts` makes `getCallerProfile` THROW and
+ * asserts this function still resolves a menu. Any future reader of the caller on this path
+ * fails that test by name instead of quietly costing the share URL its cache.
+ */
+export async function buildPublicSpaceProfileNav(space: Space): Promise<SpaceProfileNav> {
+  return buildNavFor(space, null)
+}
+
+async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise<SpaceProfileNav> {
+  const viewerProfileId = viewer?.profileId ?? null
 
   const base = `/spaces/${space.slug}`
 
   const [presence, manage, hasCalendarEvents, hasCollaborators, showPeople, hub, hasTiers] = await Promise.all([
     getSpaceSectionPresence(space.id, space.slug),
-    resolveSpaceManageAccess(space, viewerProfileId, caller?.webRole ?? null),
+    resolveSpaceManageAccess(space, viewerProfileId, viewer?.webRole ?? null),
     // Gate the Calendar tab on the SAME public/unlisted published set the calendar renders, not on the
     // broader presence.events (which counts drafts/private/circle_only) — otherwise the tab would show
     // over an empty grid for a member-only-event space.
@@ -68,7 +99,11 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
     spaceHasCollaborators(space.id),
     // People (LIVE-420): fellow members and managers only. Visitors never get a tab over a roster
     // they cannot read. ROOT is refused inside the reader.
-    viewerCanSeeSpaceMemberDirectory(space),
+    // 🔴 THE ONE READER ON THIS LIST THAT READS THE CALLER ITSELF (getCallerProfile, inside
+    // member-directory.ts), so it cannot run on the anonymous path without costing the share URL
+    // its ISR. A visitor never sees the People tab anyway -- the pure rule behind that reader
+    // refuses a non-member -- so `false` here is the SAME answer, arrived at without a cookie.
+    viewer === null ? Promise.resolve(false) : viewerCanSeeSpaceMemberDirectory(space),
     space.type === 'root' ? Promise.resolve(null) : getLiveSpaceCircle(space.id),
     // Memberships: at least one ACTIVE tier, read through the SAME request-cached reader the tab's
     // own body renders from, so the menu and the page cannot disagree about whether there is
