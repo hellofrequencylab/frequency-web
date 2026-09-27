@@ -12,6 +12,7 @@ import { CircleCreateMenu } from '@/components/circles/circle-create-menu'
 import { CircleMemberMenu } from '@/components/circles/circle-member-menu'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { circleCapabilities } from '@/lib/circles/detail-access'
+import { CircleLocked } from '@/components/circles/circle-locked'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { DetailTemplate, PageHero } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
@@ -196,7 +197,13 @@ export default async function CircleDetailLayout({
   // calls the same loaders and gets memo hits, so the shell costs no extra reads.
   const [shell, myProfileId] = await Promise.all([loadCircleShell(slug), getMyProfileId()])
   if (!shell) notFound()
-  const { circle, members, theme } = shell
+  // 🔴 `canEnter` AND ITS REASON ARE READ HERE NOW (LIVE-519). Every consumer used to destructure
+  // around them, so a Circle this viewer may see but not enter rendered as a Circle with ZERO
+  // MEMBERS: the shell blanks the roster on purpose (public face keeps the COUNT, never the
+  // names), and with the verdict dropped there was nothing left to say why. The card that sent
+  // them here promises better in its own comment: a closed Circle gets "See what's inside"
+  // instead of Join because "the honest action is the circle's own page, which states the door".
+  const { circle, members, theme, canEnter, entryReason } = shell
 
   const isMember = !!myProfileId && members.some((m) => m.profile?.id === myProfileId)
   const isHost = !!myProfileId && circle.host?.id === myProfileId
@@ -506,7 +513,7 @@ export default async function CircleDetailLayout({
         }
         tabs={
           <div className="flex items-center justify-between gap-4">
-            {tabs.length > 0 ? (
+            {canEnter && tabs.length > 0 ? (
               <UnderlineTabs tabs={tabs} label="Circle sections" />
             ) : (
               // Holds the left edge so the share control stays right-aligned on a strip-less Circle.
@@ -523,7 +530,19 @@ export default async function CircleDetailLayout({
           </div>
         }
       >
-        {children}
+        {canEnter ? (
+          children
+        ) : (
+          // In place of `children`, and therefore covering EVERY tab beneath this shell, the same
+          // way the draft gate above does. A tab strip over bodies that all render nothing is
+          // just more places to find out you are outside.
+          <CircleLocked
+            reason={entryReason ?? 'closed'}
+            circleSlug={circle.slug}
+            spaceSlug={circle.space && circle.space.type !== 'root' ? circle.space.slug : null}
+            spaceName={circle.space?.brand_name || circle.space?.name || null}
+          />
+        )}
       </DetailTemplate>
     </div>
   )

@@ -16,6 +16,7 @@ import { circleCapabilities } from '@/lib/circles/detail-access'
 import { setCircleContext } from '@/lib/circles/active-circle'
 import { CircleFeed } from '@/components/widgets/circles/circle-feed'
 import { EmptyState } from '@/components/ui/empty-state'
+import { CircleLocked } from '@/components/circles/circle-locked'
 import { buttonClasses } from '@/components/ui/button'
 
 // SPACE DISCUSSION (LIVE-421 / ADR-1469).
@@ -111,7 +112,27 @@ export default async function SpaceDiscussionPage({
     )
   }
 
-  const { circle, members } = shell
+  // 🔴 THE SAME DEFECT, ONE ROUTE OVER (LIVE-519). This line read `{ circle, members }` and dropped
+  // the entry verdict, so a viewer who may SEE the Space Circle but not ENTER it fell straight
+  // through to <CircleFeed /> with the roster the shell had deliberately blanked: an empty
+  // conversation with no lock and no reason. The `!shell` branch above only covers the viewer who
+  // cannot see it at all (axis 1); this is axis 2, and it had no branch.
+  const { circle, members, canEnter, entryReason } = shell
+  if (!canEnter) {
+    return (
+      <div className="space-y-4">
+        <p className="text-body-sm leading-relaxed text-muted">Talk with the people at {brandName}.</p>
+        <CircleLocked
+          reason={entryReason ?? 'closed'}
+          circleSlug={circle.slug}
+          // No root check: this page redirects a root Space away at the top, so the type is
+          // already narrowed here and TS rejects the comparison outright.
+          spaceSlug={space.slug}
+          spaceName={brandName}
+        />
+      </div>
+    )
+  }
   const [myProfileId, caps, isCrew] = await Promise.all([
     getMyProfileId(),
     circleCapabilities(circle.id),
