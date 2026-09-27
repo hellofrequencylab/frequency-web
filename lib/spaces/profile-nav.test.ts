@@ -206,64 +206,114 @@ describe('the Contact tab', () => {
   // the 16 stored "Get in touch" buttons keep resolving), but the menu must not list Contact twice
   // — once as an anchor that scrolls and once as a tab that navigates.
   it('never sits beside a #contact anchor in the menu', async () => {
-    // TWO THINGS HAD TO BE RIGHT BEFORE THIS TEST MEANT ANYTHING, and the first version of it had
-    // neither, so it passed against the mutant that deleted the suppression:
-    //   1. The doc must live on `preferences.pageDocs`, not `preferences.pages[].doc`.
-    //      `readProfilePages` strips the doc off a page entry, and `resolveSpacePageDoc` then falls
-    //      back to the SEEDED DEFAULT — so a doc written into `pages[]` is never read at all.
-    //   2. The block needs real props. `SpaceContact`'s presence arm reads its OWN fields (address /
-    //      hours / phone / email / linkHref), not the presence bag, so a bare `{ id }` renders
-    //      nothing and derives no anchor.
+    // REWRITTEN FOR THE MODULE DERIVATION (LIVE-517). The previous version staged a Puck doc on
+    // `preferences.pageDocs`, and the menu no longer reads one — so after the cutover it passed
+    // whatever the suppression did, which is the failure its own comment warned about. The fixture
+    // is now the node the body renders from: `preferences.profileLayout`.
+    //
+    // TWO THINGS STILL HAVE TO BE RIGHT for this to mean anything:
+    //   1. The block must be in the LAYOUT rows, because that is what resolveRows walks.
+    //   2. `contact` is an AUTHORED block — it is judged by its own content bag, not the presence
+    //      flags — so the bag needs real keys or no anchor is derived and the test is vacuous.
     const withAnchor = space({
       preferences: {
-        pageDocs: {
-          home: { content: [{ type: 'SpaceContact', props: { id: 'c', phone: '760 555 0100' } }], root: {} },
+        profileLayout: {
+          rows: [{ id: 'r1', columns: 1, cells: [['contact', 'faq']] }],
+          // `title` / `eyebrow` are the keys the contact block's authored schema keeps. MEASURED:
+          // a bag of `{ phone }` is SANITIZED AWAY by parseEntityLayout, which silently made the
+          // first version of this fixture derive no anchor and pass no matter what.
+          content: { contact: { title: 'Reach us' } },
         },
-        pages: [{ slug: 'home', label: 'Home' }],
         profileData: { phone: '760 555 0100' },
       },
     } as unknown as Partial<Space>)
+    presence.faqs = true
     const { tabs } = await buildSpaceProfileNav(withAnchor)
-    // The CONTROL: with the same doc but the suppression removed, an anchor WOULD be derived. The
-    // `offerings` anchor beside it proves this doc really does produce section anchors, so a future
-    // change that stops deriving them cannot make this assertion vacuously true.
-    presence.events = true
-    const control = await buildSpaceProfileNav(
-      space({
-        preferences: {
-          pageDocs: {
-            home: { content: [{ type: 'SpaceEvents', props: { id: 'e' } }], root: {} },
-          },
-          pages: [{ slug: 'home', label: 'Home' }],
-        },
-      } as unknown as Partial<Space>),
-    )
-    presence.events = false
-    expect(control.tabs.map((t) => t.href)).toContain('/spaces/ojai#events')
+    presence.faqs = false
+
+    // THE CONTROL, and it is load-bearing TWICE OVER. `#faq` sits in the same layout row, so its
+    // presence proves anchors are derived at all — AND `faq` is NOT in the kind's starter layout
+    // (about / offerings / booking / events / team / reviews / contact), so it can ONLY have come
+    // from this fixture's own `profileLayout`. The first draft used `events` here, which the
+    // starter also carries, so it passed without the fixture being read at all. Measured: with
+    // `events` as the control, deleting 'contact' from DEDICATED_TAB_ANCHORS did NOT fail this
+    // test. With `faq` it does.
+    expect(tabs.map((t) => t.href)).toContain('/spaces/ojai#faq')
 
     expect(tabs.filter((t) => t.label === 'Contact')).toHaveLength(1)
     expect(tabs.map((t) => t.href)).not.toContain('/spaces/ojai#contact')
   })
 })
 
+describe('the menu is derived from the page that renders (LIVE-517)', () => {
+  // ADR-508 U3 moved the Home body to the module engine. These pin that the menu moved with it.
+  it('derives an anchor from a block in the saved layout', async () => {
+    presence.faqs = true
+    const { tabs } = await buildSpaceProfileNav(
+      space({
+        preferences: { profileLayout: { rows: [{ id: 'r1', columns: 1, cells: [['faq']] }] } },
+      } as unknown as Partial<Space>),
+    )
+    presence.faqs = false
+    // FAQ had NO entry in the Puck anchor map at all, so this link could not exist before.
+    expect(tabs.map((t) => t.href)).toContain('/spaces/ojai#faq')
+  })
+
+  it('links Book to #booking, the id the section actually mounts under', async () => {
+    presence.booking = true
+    const { tabs } = await buildSpaceProfileNav(
+      space({
+        preferences: { profileLayout: { rows: [{ id: 'r1', columns: 1, cells: [['booking']] }] } },
+      } as unknown as Partial<Space>),
+    )
+    presence.booking = false
+    expect(hrefFor(tabs, 'Book')).toBe('/spaces/ojai#booking')
+    // The old map said `#book`, which no block renders.
+    expect(tabs.map((t) => t.href)).not.toContain('/spaces/ojai#book')
+  })
+
+  it('a stored Puck doc no longer drives the menu, because nothing renders it', async () => {
+    presence.practices = true
+    const { tabs } = await buildSpaceProfileNav(
+      space({
+        preferences: {
+          // A doc claiming Practices, on a layout that holds none.
+          pageDocs: { home: { content: [{ type: 'SpacePractices', props: { id: 'p' } }], root: {} } },
+          pages: [{ slug: 'home', label: 'Home' }],
+          profileLayout: { rows: [{ id: 'r1', columns: 1, cells: [['events']] }] },
+        },
+      } as unknown as Partial<Space>),
+    )
+    presence.practices = false
+    expect(tabs.map((t) => t.href)).not.toContain('/spaces/ojai#practices')
+  })
+
+  it('a Space that never opened the builder still gets its starter sections', async () => {
+    presence.events = true
+    const { tabs } = await buildSpaceProfileNav(space())
+    presence.events = false
+    // No saved layout: resolveRows falls to the kind starter, which the BODY renders too.
+    expect(tabs.map((t) => t.href)).toContain('/spaces/ojai#events')
+  })
+})
+
 describe('the #reviews anchor — the original "two Reviews" bug', () => {
   // 🔴 ADDED 2026-09-25, AND IT WAS NOT COVERED BEFORE. `DEDICATED_TAB_ANCHORS` is named for this
   // case in its own comment, and removing `'reviews'` from the set broke NOTHING in this file —
-  // measured by mutation while adding the Contact case. The suppression that the mechanism is
-  // named after was the one arm of it nobody had pinned.
+  // measured by mutation while adding the Contact case. Re-staged on the layout for LIVE-517.
   it('never sits beside a /reviews tab in the menu', async () => {
     presence.reviews = true
+    presence.faqs = true
     const withAnchor = space({
-      preferences: {
-        pageDocs: {
-          home: { content: [{ type: 'SpaceReviews', props: { id: 'r' } }], root: {} },
-        },
-        pages: [{ slug: 'home', label: 'Home' }],
-      },
+      preferences: { profileLayout: { rows: [{ id: 'r1', columns: 1, cells: [['reviews', 'faq']] }] } },
     } as unknown as Partial<Space>)
     const { tabs } = await buildSpaceProfileNav(withAnchor)
     presence.reviews = false
+    presence.faqs = false
 
+    // Same control as above, and `faq` for the same reason: it is absent from the starter, so it
+    // proves THIS layout was read rather than the fallback.
+    expect(tabs.map((t) => t.href)).toContain('/spaces/ojai#faq')
     expect(tabs.filter((t) => t.label === 'Reviews')).toHaveLength(1)
     expect(hrefFor(tabs, 'Reviews')).toBe('/spaces/ojai/reviews')
     expect(tabs.map((t) => t.href)).not.toContain('/spaces/ojai#reviews')

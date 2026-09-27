@@ -519,6 +519,12 @@ export async function getSpaceSectionPresence(spaceId: string, slug: string | nu
     faqs: c.faqs.length > 0,
     practices: c.practices.practices.length + c.practices.journeys.length > 0,
     circles: c.community.length > 0,
+    // LIVE-517: the module menu needs these three, and they come off the SAME cached round above
+    // rather than a new query. `aboutShort` is the `spaces.about` column (ADR-535); the module
+    // About block prefers an authored body over it, which the derivation ORs in separately.
+    about: c.aboutShort.trim().length > 0,
+    team: c.team.length > 0,
+    highlights: c.highlights.length > 0,
   }
 }
 
