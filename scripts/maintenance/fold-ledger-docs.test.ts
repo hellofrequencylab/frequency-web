@@ -221,8 +221,11 @@ describe('the tool does not run itself on import', () => {
     // Without the guard, importing this module from the test runner shells out to git and calls
     // process.exit() mid-suite. The import at the top of this file is the live proof; the assertion
     // is what keeps the guard from being removed as "unused".
+    // HYG-125: the guard now asks scripts/lib/invoked-directly.mjs, which realpaths both sides. The
+    // spelling this used to pin (`fileURLToPath(import.meta.url) === path.resolve(argv[1])`) was false
+    // through a symlink, so the module's main() silently did not run where it should have.
     const src = readFileSync(path.join(ROOT, 'scripts/maintenance/fold-ledger-docs.mjs'), 'utf8')
-    expect(src).toContain('fileURLToPath(import.meta.url)')
-    expect(src.indexOf('process.exit(main())')).toBeGreaterThan(src.indexOf('fileURLToPath(import.meta.url)'))
+    expect(src).toContain('invokedDirectly(import.meta.url)')
+    expect(src.indexOf('process.exit(main())')).toBeGreaterThan(src.indexOf('invokedDirectly(import.meta.url)'))
   })
 })

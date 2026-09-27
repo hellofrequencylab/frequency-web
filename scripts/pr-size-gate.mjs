@@ -17,6 +17,8 @@
 // for: a list with 41 authored files must fail, and a recapture (20 authored + 64 generated) must
 // pass, both proven without a live PR.
 
+import { invokedDirectly } from './lib/invoked-directly.mjs'
+
 export const AUTHORED_LIMIT = 40
 export const GUIDANCE_LIMIT = 15
 
@@ -113,7 +115,7 @@ async function main() {
   process.exit(verdict.ok ? 0 : 1)
 }
 
-if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
+if (invokedDirectly(import.meta.url)) {
   main().catch((err) => {
     console.log(`::error title=PR size::the gate itself failed: ${err instanceof Error ? err.message : String(err)}`)
     process.exit(1)

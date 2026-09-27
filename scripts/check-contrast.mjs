@@ -39,7 +39,7 @@
 
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const CSS = join('app', 'globals.css')
 
@@ -796,4 +796,4 @@ function main() {
   process.exit(1)
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main()
+if (invokedDirectly(import.meta.url)) main()

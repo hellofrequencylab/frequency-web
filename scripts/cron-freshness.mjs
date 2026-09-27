@@ -62,7 +62,7 @@
 //   CRON_HEARTBEAT_URL_<SLUG>      per-job monitor URL (SLUG = job name upper-snake)
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 export const VERCEL_JSON = 'vercel.json'
 export const CRON_DIR = 'app/api/cron'
@@ -549,7 +549,7 @@ export function main(argv = process.argv.slice(2), io = {}) {
   return 0
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+if (invokedDirectly(import.meta.url)) {
   try {
     process.exitCode = main()
   } catch (e) {

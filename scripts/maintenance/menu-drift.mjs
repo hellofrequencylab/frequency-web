@@ -40,7 +40,7 @@
 //   pnpm maintenance:menu-drift <menu.json>                 # compare, report, exit 1 on drift
 
 import { readFileSync } from 'node:fs'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from '../lib/invoked-directly.mjs'
 import ts from 'typescript'
 import { compare } from '../../lib/menus/drift-core.mjs'
 
@@ -215,7 +215,7 @@ function main() {
   if (!result.ok) process.exit(1)
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+if (invokedDirectly(import.meta.url)) {
   try {
     main()
   } catch (e) {
