@@ -1,5 +1,5 @@
 -- TWENTY-FIVE ROYAL TEMPLE DATES DREW AT 1:30 AM. THE WALL CLOCK / INSTANT CONFUSION, REPAIRED
--- (LIVE-512, ADR-1385, docs/EVENTS-CALENDAR.md "The private layer").
+-- (LIVE-514, ADR-1385, docs/EVENTS-CALENDAR.md "The private layer").
 --
 -- WHY. `public.space_calendar_entries.starts_at` / `ends_at` hold the Space's WALL CLOCK as UTC
 -- PARTS, read in the row's own `time_zone` (20270345005200_private_calendar_layer.sql,
@@ -53,11 +53,22 @@
 -- local or preview database with none of these rows, it is a no-op. `wall-clock.test.ts` pins that
 -- fixed point for all twenty-five.
 --
--- NOT TOUCHED, ON PURPOSE. `public.events` carries one row with the same shape — "Heart on Fire,
--- Week 1: Hearing the Heart" (Space `frequency`, published and public, stored 2027-01-08 02:00–05:00,
--- meaning Thu 2027-01-07 6:00–9:00 PM). It is a DIFFERENT table with a published, guest-visible page,
--- subscribed .ics feeds and reminders already sent against it, so moving it is an owner's call and not
--- a side effect of this file. LIVE-513 carries it.
+-- NOT TOUCHED BY THIS FILE, ON PURPOSE, AND SINCE REPAIRED ELSEWHERE. `public.events` carried one row
+-- with the same shape — "Heart on Fire, Week 1: Hearing the Heart" (Space `frequency`, published and
+-- public, stored 2027-01-08 02:00–05:00, meaning Thu 2027-01-07 6:00–9:00 PM). It is a DIFFERENT table
+-- with a published, guest-visible page, subscribed .ics feeds and reminders already sent against it, so
+-- moving it was an owner's call and not a side effect of this file. The owner ruled on 2026-09-27
+-- ("We're in Pacific. Make sure all the data is live.") and it was repaired under LIVE-515 in its own
+-- pass, after confirming 0 RSVPs and 0 tickets. It now stores 2027-01-07 18:00–21:00 and keeps its
+-- published slug, because a slug is a live link. This file still writes only to the private layer.
+--
+-- ⚠️ MIDNIGHT IS A FALSE POSITIVE OF THE PREDICATE BELOW, and two `public.events` rows are one: "A
+-- Plant-Honoring Ceremony" and "Saffron Harvest & Cultural Festivals — Fall Journey", both genuine
+-- multi-day journeys stored 00:00 to 23:59. A timed span starting at 00:00 local in a zone BEHIND UTC
+-- reads as a 17:00 evening start, which satisfies every condition. THIS FILE cannot reach one:
+-- condition 1 excludes all-day rows, and every 00:00 row in `space_calendar_entries` is either all-day
+-- or `time_zone = 'UTC'`, where the offset is 0 and the value reads back as 00:00. Anyone reusing the
+-- predicate against another table has to rule midnight out for itself.
 --
 -- ROLLBACK (puts the same rows back where they were; the predicate no longer selects them, so the
 -- shift is named explicitly):
