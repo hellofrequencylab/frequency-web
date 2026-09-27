@@ -214,8 +214,16 @@ function HeaderKpis({
     { label: 'Practices', value: practices },
     { label: 'Events', value: events },
   ]
+  // 🔴 MASKED FOR THE VISUAL SUITE (`admin-kpis`, ADR-1277 / VISUAL_MASK_SITES). Members and
+  // Events come from the same live sweep the info rail reads, and Active + Practices resolve
+  // from a second live read, so all four digits move on their own between a committed baseline
+  // and the comparison against a fresh preview. This is the reason /admin diffed by ~240px MORE
+  // than /admin/circles, /admin/crew-tasks and /admin/marketing/nurture, which diffed by exactly
+  // the same amount as each other: they carry only the masked rail, /admin prints the count twice.
+  // The strip's box is stable (a fixed four-up flex row with `leading-none` numerals), so the
+  // mask covers the drift without moving anything under it.
   return (
-    <div className="flex gap-7 pr-2 sm:gap-9 sm:pr-8">
+    <div data-visual-mask="admin-kpis" className="flex gap-7 pr-2 sm:gap-9 sm:pr-8">
       {items.map((k) => (
         <div key={k.label}>
           <p className="whitespace-nowrap eyebrow text-muted">
