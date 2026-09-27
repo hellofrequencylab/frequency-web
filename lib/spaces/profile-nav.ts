@@ -1,10 +1,11 @@
 import { getCallerProfile } from '@/lib/auth'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { isConsoleSpaceType, spaceManageHref, type Space } from '@/lib/spaces/types'
-import { readProfilePages, resolveSpacePageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
+import { readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { readStorefrontConfig } from '@/lib/spaces/storefront'
 import { spaceFunctionDef, spaceFunctionEnabled } from '@/lib/spaces/functions'
-import { deriveSectionNav } from '@/lib/spaces/section-anchors'
+import { parseEntityLayout, resolveRows } from '@/lib/entity-blocks/layout'
+import { deriveModuleSectionNav } from '@/lib/spaces/module-section-nav'
 import { getSpaceSectionPresence } from '@/lib/spaces/content-data'
 import { spaceHasPublicUpcomingEvents } from '@/lib/events/store'
 import { spaceHasCollaborators } from '@/lib/spaces/collaborations'
@@ -40,6 +41,11 @@ export interface SpaceProfileNav {
 /** Whether the Space published any way to reach it. Pure, and read from the SAME node the Contact
  *  card renders from (readProfileData), so the tab and the card can never disagree about whether
  *  there is anything to show. */
+function readProfileLayoutNode(preferences: unknown): unknown {
+  if (!preferences || typeof preferences !== 'object' || Array.isArray(preferences)) return null
+  return (preferences as Record<string, unknown>).profileLayout ?? null
+}
+
 function hasContactFacts(preferences: unknown): boolean {
   const p = readProfileData(preferences)
   return !!(p.address || p.phone || p.email || p.hours || p.website)
@@ -49,7 +55,6 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
 
-  const brandName = space.brandName ?? space.name
   const base = `/spaces/${space.slug}`
 
   const [presence, manage, hasCalendarEvents, hasCollaborators, showPeople, hub, hasTiers] = await Promise.all([
@@ -72,7 +77,17 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   ])
 
   const pages = readProfilePages(space.preferences)
-  const homeDoc = resolveSpacePageDoc(space.preferences, brandName, HOME_SLUG)
+  // 🔴 DERIVED FROM THE GRID THE PAGE RENDERS, NOT FROM A PUCK DOC (LIVE-517). ADR-508 U3 cut the
+  // Home body over to the module engine: `(profile)/full/page.tsx` renders
+  // `resolveRows(parseEntityLayout(preferences.profileLayout) ?? {}, 'space')` and never reads the
+  // doc. These two lines are that same expression, so the menu and the body resolve the SAME rows
+  // — including the fall-through, where an absent / malformed node parses to null, `?? {}` keeps
+  // the grid truthy, and resolveRows returns the kind's starter layout for both of them.
+  //
+  // What this replaced: `resolveSpacePageDoc(...)`, which for a Space with no stored `pageDocs`
+  // (Royal Temple, and every Space seeded since the cutover) returned the SEEDED DEFAULT doc — so
+  // the menu described a template the operator never edited and the page never drew.
+  const grid = parseEntityLayout(readProfileLayoutNode(space.preferences)) ?? {}
   // Reviews is its OWN dedicated tab / page (added below), so an in-page section anchor for it is a
   // DUPLICATE nav link (the "two Reviews" bug: a stray #reviews anchor beside the real /reviews tab,
   // scrolling to nothing). Drop that anchor here so the dedicated tab is the only one.
@@ -85,7 +100,9 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   // resolves — this only stops the menu listing it twice, which is what the stored "Get in touch"
   // buttons depend on.
   const DEDICATED_TAB_ANCHORS = new Set(['reviews', 'circles', 'contact'])
-  const sections = deriveSectionNav(homeDoc, presence).filter((s) => !DEDICATED_TAB_ANCHORS.has(s.anchor))
+  const sections = deriveModuleSectionNav(resolveRows(grid, 'space'), presence, grid.content).filter(
+    (s) => !DEDICATED_TAB_ANCHORS.has(s.anchor),
+  )
   // The public Shop tab (ADR-596): shown only when the owner has published their storefront, with the
   // owner's chosen (renameable) label. The catalog is gated status='active' and the route double-gates on
   // `published`, so this surfaces only a real, opted-in storefront. Shop is now a gateable function, so the
