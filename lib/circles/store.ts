@@ -19,6 +19,8 @@ import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import {
   asCircleAccess,
   canEnterCircle,
+  canJoinCircle,
+  type CircleJoinReason,
   canSeeCircle,
   LISTABLE_CIRCLE_STATUS,
   type CircleAccess,
@@ -146,7 +148,7 @@ async function resolveCircleViewer(
   access: CircleAccess,
   spaceId: string | null,
   hostId: string | null,
-): Promise<{ canSee: boolean; canEnter: boolean }> {
+): Promise<{ canSee: boolean; canEnter: boolean; entryReason: CircleJoinReason | null }> {
   try {
     const viewerProfileId = await getMyProfileId()
 
@@ -217,9 +219,22 @@ async function resolveCircleViewer(
       isSpaceSteward,
       isPlatformStaff: staff,
     }
-    return { canSee: canSeeCircle(facts), canEnter: canEnterCircle(facts) }
+    const canEnter = canEnterCircle(facts)
+    // The REASON, from the same facts and with no extra read. `canJoinCircle` has always returned
+    // one and its own comment calls it "a reason the UI can act on"; until LIVE-519 nothing ever
+    // acted on it, because the verdict stopped here. `invited` is deliberately not passed: a
+    // caller HOLDING an invite has its own path, and guessing `true` here would tell an
+    // uninvited reader a door exists that will refuse them.
+    const join = canEnter ? { ok: true as const } : canJoinCircle(facts)
+    return {
+      canSee: canSeeCircle(facts),
+      canEnter,
+      entryReason: join.ok ? null : join.reason,
+    }
   } catch {
-    return { canSee: false, canEnter: false }
+    // Fail closed, and say why in the one way that is always true: this viewer has no way in
+    // from here. A null reason would render a locked Circle with no sentence at all.
+    return { canSee: false, canEnter: false, entryReason: 'closed' }
   }
 }
 
@@ -246,8 +261,19 @@ export interface CircleShell {
    * resolved, so the Circle exists and may be named, but every tab body, the roster and the posts
    * are shut. A surface that renders content MUST branch on this and offer the join / buy call to
    * action instead.
+   *
+   * That instruction went unimplemented from the day it was written until LIVE-519: every consumer
+   * destructured around it, so a Circle you may not enter rendered as a Circle with zero members.
+   * `app/(main)/circles/[slug]/(circle)/layout.tsx` is the surface that now branches, and it
+   * covers every tab beneath it the same way the draft gate does.
    */
   canEnter: boolean
+  /**
+   * WHY they cannot enter, when they cannot: the `canJoinCircle` refusal, resolved from the same
+   * facts as `canEnter` at no extra cost. Null exactly when `canEnter` is true. Feed it to
+   * `circleDoor()` (lib/circles/locked-door.ts) to get the sentence and the button.
+   */
+  entryReason: CircleJoinReason | null
 }
 
 /**
@@ -327,6 +353,7 @@ export const loadCircleShell = cache(async (slug: string): Promise<CircleShell |
     }
     const access = asCircleAccess(raw.access)
     let canEnter = true
+    let entryReason: CircleJoinReason | null = null
     if (access !== 'open') {
       const verdict = await resolveCircleViewer(
         raw.id,
@@ -337,6 +364,7 @@ export const loadCircleShell = cache(async (slug: string): Promise<CircleShell |
       )
       if (!verdict.canSee) return null
       canEnter = verdict.canEnter
+      entryReason = verdict.entryReason
     }
 
     const circle = rawCircle as unknown as CircleDetail
@@ -363,6 +391,7 @@ export const loadCircleShell = cache(async (slug: string): Promise<CircleShell |
       // The redaction. `member_count` on the circle row survives (public face); the names do not.
       members: canEnter ? members : [],
       canEnter,
+      entryReason,
     }
   } catch {
     return null
