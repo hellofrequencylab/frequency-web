@@ -5,12 +5,20 @@ import { createRoot, type Root } from 'react-dom/client'
 import { EventCalendar, type CalendarEvent } from './event-calendar'
 import { CALENDAR_PRESENTATIONS, NARROW_GRID_WIDTH } from '@/lib/calendar/registry'
 
-// COLOUR PLUS THE WORD, on the grid (LIVE-470).
+// COLOUR PLUS THE WORD, on the grid (LIVE-470) -- and, since the owner directive of 2026-09-27, COLOUR
+// PLUS THE MARK for the three stages an event on its way moves through (ADR-1531).
 //
 // 🔴 WHAT THIS PROVES that lib/calendar/registry-presentation.test.ts cannot. That test reads the
 // table. These mount the real calendar and read the DOM, because the defect was not a wrong table,
 // it was a grid that never printed the word the table already held, and three chips that resolved
 // to the same class string.
+//
+// ⚠️ TWO RULES NOW, AND THE SPLIT IS THE POINT. A stage prints ✏️ / 🎯 / 📣 at the HEAD of the chip
+// and NO word; everything else (a Private entry, a To-do, an Unavailable block) still prints its word
+// after the time and still abbreviates rather than vanishing at 360px. Neither appears on a
+// member-facing calendar. So the abbreviation cases below deliberately use a kind that keeps its
+// word: a marked chip has nothing to abbreviate, and pinning the rule on one would have quietly
+// retired it.
 
 let container: HTMLDivElement | null = null
 let root: Root | null = null
@@ -77,6 +85,26 @@ function chipKeys(el: HTMLElement): string[] {
   )
 }
 
+/** Every mark the grid printed, as key → what it draws and what it is called. */
+function chipMarks(el: HTMLElement): { key: string; emoji: string; label: string }[] {
+  return [...el.querySelectorAll('[data-calendar-chip-mark]')].map((n) => ({
+    key: n.getAttribute('data-calendar-chip-mark') ?? '',
+    emoji: n.textContent ?? '',
+    label: n.getAttribute('aria-label') ?? '',
+  }))
+}
+
+/** The key printed in the header, as key → the words beside the mark. */
+function ledger(el: HTMLElement): { key: string; text: string }[] {
+  return [...el.querySelectorAll('[data-calendar-ledger]')].map((n) => ({
+    key: n.getAttribute('data-calendar-ledger') ?? '',
+    text: n.textContent ?? '',
+  }))
+}
+
+/** A chip that keeps its word after the mark arrived: a private entry is one. */
+const WORD_KIND = { slug: 'entry-1', title: 'Staff sync', dayKey: '2026-09-10', layer: 'private' } as const
+
 /** The three kinds that used to paint the same `bg-info-bg text-info`. */
 const THREE_KINDS = [
   item({ slug: 'plng', title: 'Solstice', dayKey: '2026-09-10', layer: 'pencil', stage: 'planning' }),
@@ -95,12 +123,47 @@ function chipIdentities(el: HTMLElement): string[] {
 }
 
 describe('the grid chip prints the stage word (LIVE-470)', () => {
-  it('names the stage on every chip, not just its colour', () => {
+  it('names the stage on every chip, not just its colour: a mark for a stage, a word for the rest', () => {
     const el = mount(
       <EventCalendar audience="team" events={THREE_KINDS} initialYear={2026} initialMonth1={9} />,
     )
-    expect(chipKeys(el)).toEqual(['planning', 'private', 'todos'])
-    expect(chipWords(el)).toEqual(['Planning', 'Private', 'To-do'])
+    // The Planning date says itself with 🎯 and prints no word; the other two are unchanged.
+    expect(chipMarks(el)).toEqual([{ key: 'planning', emoji: '🎯', label: 'Planning' }])
+    expect(chipKeys(el)).toEqual(['private', 'todos'])
+    expect(chipWords(el)).toEqual(['Private', 'To-do'])
+    // 🔴 THE MARK IS NOT A SILENT COLOUR (WCAG 1.4.1). Its accessible name is the stage word, so the
+    // chip still reads "Planning, 7:00 PM, Solstice" to a screen reader.
+    expect(el.querySelector('[data-calendar-chip-mark]')?.getAttribute('title')).toBe('Planning')
+    expect(el.querySelector('[data-calendar-chip]')?.textContent).toContain('🎯')
+  })
+
+  it('draws the mark BEFORE the time stamp, which is where the owner put it', () => {
+    const el = mount(
+      <EventCalendar
+        audience="team"
+        events={[item({ slug: 'plng', title: 'Solstice', dayKey: '2026-09-10', layer: 'pencil', stage: 'pencil' })]}
+        initialYear={2026}
+        initialMonth1={9}
+      />,
+    )
+    const chip = el.querySelector<HTMLElement>('[data-calendar-chip]')!
+    expect(chipMarks(el)).toEqual([{ key: 'pencil', emoji: '✏️', label: 'Pencil' }])
+    const text = chip.textContent ?? ''
+    expect(text.indexOf('✏️')).toBeGreaterThanOrEqual(0)
+    expect(text.indexOf('✏️')).toBeLessThan(text.indexOf('7:00 PM'))
+  })
+
+  it('leaves a ledger in the header, and only where the marks are', () => {
+    const team = mount(<EventCalendar audience="team" events={THREE_KINDS} initialYear={2026} initialMonth1={9} />)
+    expect(ledger(team)).toEqual([
+      { key: 'pencil', text: '✏️Pencil' },
+      { key: 'planning', text: '🎯Planning' },
+      { key: 'production', text: '📣Production' },
+    ])
+    act(() => root!.unmount())
+    container!.remove()
+    const member = mount(<EventCalendar events={THREE_KINDS} initialYear={2026} initialMonth1={9} />)
+    expect(ledger(member)).toEqual([])
   })
 
   it('paints the three kinds that used to share bg-info-bg in three different colours', () => {
@@ -120,15 +183,15 @@ describe('the grid chip prints the stage word (LIVE-470)', () => {
     const el = mount(
       <EventCalendar
         audience="team"
-        events={[item({ slug: 'plng', title: 'Solstice', dayKey: '2026-09-10', layer: 'pencil', stage: 'planning' })]}
+        events={[item(WORD_KIND)]}
         initialYear={2026}
         initialMonth1={9}
       />,
     )
-    expect(chipWords(el)).toEqual([CALENDAR_PRESENTATIONS.planning.shortWord])
+    expect(chipWords(el)).toEqual([CALENDAR_PRESENTATIONS.private.shortWord])
     expect(chipWords(el)[0]).not.toBe('')
     // The title is still there; it is the thing that gave up the pixels.
-    expect(el.textContent).toContain('Solstice')
+    expect(el.textContent).toContain('Staff sync')
   })
 
   it('measures the width itself where there are no media queries', () => {
@@ -139,12 +202,12 @@ describe('the grid chip prints the stage word (LIVE-470)', () => {
       const el = mount(
         <EventCalendar
           audience="team"
-          events={[item({ slug: 'plng', title: 'Solstice', dayKey: '2026-09-10', layer: 'pencil', stage: 'planning' })]}
+          events={[item(WORD_KIND)]}
           initialYear={2026}
           initialMonth1={9}
         />,
       )
-      expect(chipWords(el)).toEqual([CALENDAR_PRESENTATIONS.planning.shortWord])
+      expect(chipWords(el)).toEqual([CALENDAR_PRESENTATIONS.private.shortWord])
     } finally {
       Object.defineProperty(window, 'innerWidth', { configurable: true, value: real })
     }
@@ -155,12 +218,26 @@ describe('the grid chip prints the stage word (LIVE-470)', () => {
     const el = mount(
       <EventCalendar
         audience="team"
+        events={[item(WORD_KIND)]}
+        initialYear={2026}
+        initialMonth1={9}
+      />,
+    )
+    expect(chipWords(el)).toEqual(['Private'])
+  })
+
+  it('never abbreviates a mark, because there is nothing to abbreviate', () => {
+    setViewport(NARROW_GRID_WIDTH)
+    const el = mount(
+      <EventCalendar
+        audience="team"
         events={[item({ slug: 'plng', title: 'Solstice', dayKey: '2026-09-10', layer: 'pencil', stage: 'planning' })]}
         initialYear={2026}
         initialMonth1={9}
       />,
     )
-    expect(chipWords(el)).toEqual(['Planning'])
+    expect(chipMarks(el)).toEqual([{ key: 'planning', emoji: '🎯', label: 'Planning' }])
+    expect(chipWords(el)).toEqual([])
   })
 
   // ── BOTH HALVES OF THE 2026-09-23 RULING ──────────────────────────────────────────────────
@@ -172,6 +249,9 @@ describe('the grid chip prints the stage word (LIVE-470)', () => {
     const el = mount(<EventCalendar events={THREE_KINDS} initialYear={2026} initialMonth1={9} />)
     expect(chipWords(el)).toEqual([])
     expect(el.querySelector('[data-calendar-chip-word]')).toBeNull()
+    // The MARK follows the word exactly: it carries the same fact, so it keeps the same rule.
+    expect(chipMarks(el)).toEqual([])
+    expect(el.textContent).not.toContain('🎯')
     // The chips are all there; it is only the word that is not.
     expect(chipIdentities(el)).toEqual(['planning', 'private', 'todos'])
     // The word is what separates KINDS. A public calendar shows one kind, so it separates nothing.
@@ -193,9 +273,10 @@ describe('the grid chip prints the stage word (LIVE-470)', () => {
     expect(chipClasses(events)[0]).not.toContain('bg-primary/10')
   })
 
-  it('still calls the same published date a Production for the team', () => {
+  it('still calls the same published date a Production for the team, now with its mark', () => {
     const team = mount(<EventCalendar audience="team" events={[item()]} initialYear={2026} initialMonth1={9} />)
-    expect(chipWords(team)).toEqual(['Production'])
+    expect(chipMarks(team)).toEqual([{ key: 'production', emoji: '📣', label: 'Production' }])
+    expect(chipWords(team)).toEqual([])
   })
 })
 
@@ -210,7 +291,8 @@ describe('the popup says the same word in the same tone (LIVE-470)', () => {
       />,
     )
     act(() => {
-      el.querySelector<HTMLButtonElement>('[data-calendar-chip-word]')!.closest('button')!.click()
+      // The handle is the chip's own identity: a stage chip prints a mark now, not a word.
+      el.querySelector<HTMLButtonElement>('[data-calendar-chip]')!.closest('button')!.click()
     })
     const pill = document.body.querySelector('[data-calendar-stage]')
     expect(pill?.getAttribute('data-calendar-stage')).toBe('production')

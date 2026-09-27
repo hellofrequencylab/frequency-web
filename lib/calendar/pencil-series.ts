@@ -1,4 +1,4 @@
-import { expandRepeat, formatRepeat, parseRepeat, type RepeatRule } from '@/lib/events/repeat-rule'
+import { expandRepeat, formatRepeat, monthlyWeekdayRule, parseRepeat, type RepeatRule } from '@/lib/events/repeat-rule'
 
 // REPEATING PENCILS WITH EXPLICIT EXCEPTIONS (PROG-CAL5, ADR-1386 phase 5). The pure generator: given
 // a master entry (its stored wall clock, its rule, its skipped dates) and a grid window, the dates the
@@ -158,7 +158,13 @@ export const PENCIL_REPEAT_CHOICES = [
   { value: 'none', label: 'Does not repeat', rule: null },
   { value: 'weekly', label: 'Every week', rule: 'FREQ=WEEKLY' },
   { value: 'biweekly', label: 'Every 2 weeks', rule: 'FREQ=WEEKLY;INTERVAL=2' },
-  { value: 'monthly', label: 'Every month', rule: 'FREQ=MONTHLY' },
+  { value: 'monthly', label: 'Every month on the same date', rule: 'FREQ=MONTHLY' },
+  // ⚠️ THE ANCHOR DECIDES THIS ONE, so its rule is null here and comes from `pencilRuleForChoice`.
+  // "The first Tuesday of every month" is the cadence hosts actually plan on (owner directive
+  // 2026-09-27: Craft Night first Tuesday, Circles third Tuesday, Ecstatic Dance second Sunday,
+  // House Concert fourth Sunday) and the menu could not say it: a BYSETPOS rule read as 'custom',
+  // which the drawer preserved but nobody could choose.
+  { value: 'monthly-nth', label: 'Every month on the same weekday', rule: null },
 ] as const
 
 export type PencilRepeatChoice = (typeof PENCIL_REPEAT_CHOICES)[number]['value']
@@ -168,10 +174,28 @@ export type PencilRepeatChoice = (typeof PENCIL_REPEAT_CHOICES)[number]['value']
 export function pencilRepeatChoice(rule: string | null | undefined): PencilRepeatChoice | 'custom' {
   const canonical = pencilRepeatRule(rule)
   if (!canonical) return 'none'
-  return PENCIL_REPEAT_CHOICES.find((c) => c.rule === canonical)?.value ?? 'custom'
+  const named = PENCIL_REPEAT_CHOICES.find((c) => c.rule && c.rule === canonical)?.value
+  if (named) return named
+  // A monthly rule that counts a weekday IS the anchor-derived choice, whichever ordinal it carries,
+  // so re-opening "the first Tuesday of every month" shows that cadence rather than 'Custom'.
+  const parsed = parseRepeat(canonical)
+  if (parsed?.freq === 'MONTHLY' && (parsed.interval ?? 1) === 1 && parsed.bySetPos !== undefined) {
+    return 'monthly-nth'
+  }
+  return 'custom'
 }
 
-/** The rule a choice stores. Unknown values store nothing. */
-export function pencilRuleForChoice(choice: string): string | null {
+/**
+ * The rule a choice stores. Unknown values store nothing.
+ *
+ * `anchor` is the entry's own first date (the drawer's start date, YYYY-MM-DD or an ISO instant):
+ * "every month on the same weekday" can only be spelled once a date says WHICH weekday and which of
+ * them, and with no anchor it stores nothing rather than guessing a Monday.
+ */
+export function pencilRuleForChoice(choice: string, anchor?: string | null): string | null {
+  if (choice === 'monthly-nth') {
+    const at = anchor ? new Date(anchor.length === 10 ? `${anchor}T00:00:00.000Z` : anchor) : null
+    return at && !Number.isNaN(at.getTime()) ? monthlyWeekdayRule(at) : null
+  }
   return PENCIL_REPEAT_CHOICES.find((c) => c.value === choice)?.rule ?? null
 }

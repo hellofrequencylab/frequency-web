@@ -106,6 +106,10 @@ export interface CalendarPresentation {
   tone: EntryStageTone
   /** Classes for the item's title written outside a chip. Empty unless the item was called off. */
   titleClass: string
+  /** THE MARK: one emoji, drawn at the head of a grid chip IN PLACE OF the word (owner directive
+   *  2026-09-27, the three stages an event on its way moves through). Absent for a presentation that
+   *  still prints its word, and the header's ledger is what says which mark means what. */
+  emoji?: string
 }
 
 /** 🔴 THE ONE STAGE PRESENTATION (LIVE-470). Add a colour here or nowhere. */
@@ -133,6 +137,7 @@ export const CALENDAR_PRESENTATIONS: Record<CalendarPresentationKey, CalendarPre
     shortWord: 'Penc',
     tone: 'neutral',
     titleClass: '',
+    emoji: '✏️',
   },
   planning: {
     key: 'planning',
@@ -141,6 +146,7 @@ export const CALENDAR_PRESENTATIONS: Record<CalendarPresentationKey, CalendarPre
     shortWord: 'Plng',
     tone: 'info',
     titleClass: '',
+    emoji: '🎯',
   },
   production: {
     key: 'production',
@@ -149,6 +155,7 @@ export const CALENDAR_PRESENTATIONS: Record<CalendarPresentationKey, CalendarPre
     shortWord: 'Prod',
     tone: 'success',
     titleClass: '',
+    emoji: '📣',
   },
   cancelled: {
     key: 'cancelled',
@@ -304,6 +311,16 @@ export const ENTRY_STAGES: readonly EntryStageDef[] = [
   stageDef('production', 'confirmed', 'Ready to run. Publish it as an event when you want people to see it.'),
   stageDef('cancelled', 'cancelled', 'Not happening. It stays on the team calendar, struck through.'),
 ] as const
+
+/** 🔴 THE LEDGER (owner directive 2026-09-27). The key the calendar header prints, derived from the
+ *  presentations themselves rather than retyped: a stage whose mark changes above changes here, and a
+ *  presentation with no mark is not in the key because it still prints its word on the chip. Order is
+ *  the order an event on its way moves through. */
+export const CALENDAR_MARK_LEDGER: readonly { key: CalendarPresentationKey; emoji: string; word: string }[] =
+  (['pencil', 'planning', 'production'] as const)
+    .map((key) => CALENDAR_PRESENTATIONS[key])
+    .filter((p): p is CalendarPresentation & { emoji: string } => Boolean(p.emoji))
+    .map((p) => ({ key: p.key, emoji: p.emoji, word: p.word }))
 
 export function entryStage(stage: string | null | undefined): EntryStageDef | null {
   return ENTRY_STAGES.find((d) => d.stage === stage) ?? null

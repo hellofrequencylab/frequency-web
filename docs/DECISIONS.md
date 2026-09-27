@@ -48280,3 +48280,213 @@ This is the URL `app/sitemap.ts` advertises, and the one strangers and Googlebot
 - The general rule this states, beyond Spaces: **"it renders the same component" is not the same
   claim as "it renders the same"**. A component whose appearance comes from an ancestor attribute
   carries none of that appearance in its own markup, and a second mount point inherits nothing.
+
+## ADR-1531: The sky is computed onto every calendar, and "the fourth Sunday" is not "the last Sunday" (owner directive 2026-09-27)
+
+**Status:** Accepted · 2026-09-27 · extends [ADR-1386](DECISIONS.md) (the private layer's Pencil) and
+[ADR-1299](DECISIONS.md) (the repeat dialect) · uses `lib/calendar/moon.ts`, which
+[PROG-CAL10](BUILD-BACKLOG.json) built for Vera's `lunar_dates` tool
+
+**Context.** Royal Temple plans its year on the sky: Temple Moon on a full moon, The Celestial Table
+on a sabbat, a season that opens on the Fall Equinox. The owner asked for two things in one message:
+that the four monthly rhythms be stated as rhythms ("Craft Night is the first Tuesday of every
+month"), and that "all New Moon, Full Moon, Equinox and Solstice" be marked with the appropriate
+emoji on each day of the year.
+
+Both asks ran into something the product could not say.
+
+1. **The Pencil drawer's Repeats menu had four choices and none of them was "the first Tuesday".**
+   `FREQ=MONTHLY` means the anchor's own day of the MONTH (the 6th), and the nth-weekday form the
+   repeat dialect has supported since ADR-1299 read as `Custom`: preserved on save, but unchoosable.
+   The cadence hosts actually plan on was the one cadence the menu could not express.
+2. **Nothing drew the sky.** Twenty-five days a year, every year, and the only representation was a
+   pencil someone had typed by hand for one date at a time.
+
+**Decision.**
+
+**1. The sky is computed, never typed in, and it is drawn by the shared grid.** `lib/calendar/sky.ts`
+is pure and answers one question: which days in a window carry which markers, read in a given zone.
+New and full moons come from the existing `lib/calendar/moon.ts` (Meeus ch. 49); the four solar
+quarters are Meeus ch. 27, table 27.B for the mean instant and table 27.C for the 24 periodic terms,
+which lands each within about a minute of the ephemeris and is pinned to published values for 2026
+and 2027 plus a window check across 1900 to 2100. `EventCalendar` computes one map per visible
+six-week grid, so every calendar the product draws gets the markers with no per-surface wiring: the
+Space's public Calendar tab, the operator's staff calendar, the shared collaborator calendar and the
+Frequency-wide `/events/calendar`.
+
+A marker rides **beside the day number**, one character, never a chip. A chip would take a row from a
+busy square and read as something happening at a time; the sky describes the day, exactly as the day
+pill does. A day that is both a new moon and an equinox draws both.
+
+**2. The day is local, and a visitor and the team must see the same day.** A full moon at 11:40 PM in
+Vista is 2:40 AM the next day in UTC, so every instant is resolved to a calendar day IN A ZONE. This
+is the one subtlety worth writing down: `spaceTimeZone` is withheld from a visitor on purpose (it is
+the operator's value, and it decides what a NEW date is written in, `LIVE-471`), so passing it to the
+grid would have marked the equinox on Sep 22 for the team and Sep 23 for everyone else, on the same
+Space's calendar. The grid therefore takes a separate `displayTimeZone`, passed to everyone. A
+calendar that mixes zones (`/events/calendar`) passes none and reads UTC, which is the honest answer
+there rather than a borrowed one.
+
+**3. The Pencil menu gains "Every month on the same weekday", derived from the anchor.** Its rule
+cannot be a constant, so `pencilRuleForChoice` takes the entry's own first date, and
+`pencilRepeatChoice` recognises any monthly BYSETPOS rule as that cadence, so re-opening one shows the
+cadence instead of `Custom`. The existing `FREQ=MONTHLY` choice is relabelled **Every month on the
+same date**, because two monthly choices that both read "Every month" is worse than none.
+
+**4. 🔴 "The fourth Sunday" and "the last Sunday" are different cadences, so they are different
+functions.** `components/events/repeat-picker.tsx` held a private `setPosOf` that answers `-1`
+whenever a date is the last of its weekday in the month. Sharing it looked like the obvious
+de-duplication and it is a trap: Sunday 25 October 2026 is both the fourth Sunday and the last one,
+so a rule derived from it would have become "the last Sunday", which is the 23rd in May 2027 by one
+reading and the 30th by the other. `lib/events/repeat-rule.ts` now exports **two** helpers, named for
+what they answer: `setPosOfMonth` (prefers "last", and stays the event picker's DEFAULT because that
+picker SHOWS the ordinal in a menu the host can correct) and `weekdayOrdinalOfMonth` (the literal
+ordinal, for the Pencil drawer's single item, which derives a rule with nothing on screen to correct).
+`monthlyWeekdayRule` uses the literal one. The test that separates them is the October 25 case.
+
+**5. Royal Temple's four rhythms are four repeating Pencils, and they are DATA, not a migration.**
+Craft Night `BYDAY=TU;BYSETPOS=1`, Women's & Men's Circles `BYDAY=TU;BYSETPOS=3` (replacing Circles
+Night, which the owner removed), Ecstatic Dance `BYDAY=SU;BYSETPOS=2`, House Concert
+`BYDAY=SU;BYSETPOS=4`, each one row where there were 10 to 24, each still stage `pencil` and
+visibility `team`. Two of the season's own dark dates fall on a fourth Sunday, so House Concert
+carries them as explicit `exception_dates` (2026-12-27 in the Christmas dark stretch, 2027-09-26 when
+the Fall Campout runs through the morning) rather than leaving them to be noticed later.
+
+No migration ships for this, and that is a decision rather than an omission.
+`20270345005300_royal_temple_pencils.sql` loaded 154 rows because the owner's plan predated the UI
+that can hold it; this change instead COLLAPSES rows, and three of the four masters carry content the
+team wrote in production (a title, a 1,080-character description, a Circle link and its pricing) that
+no migration creates. A migration claiming to reproduce this state on a fresh database would be
+asserting a parity that has never existed for Space content, which is precisely the shape of gate
+[ADR-970](DECISIONS.md) warns about. The season's transcript stays where it is as the historical
+record of what was planned in September 2026.
+
+**Consequence.** A repeating Pencil is open-ended: Craft Night now runs past the Fall Equinox 2027
+that bounds the rest of the season, which is what "every month" says. One row is also one thing to
+edit, and `keep_pencil_date`, the stage ladder and the publish seam all read a master exactly as they
+read a dated row.
+
+**What this change also found, filed rather than fixed here.** About 25 team-created Pencils on Royal
+Temple's calendar (Temple Moon, The Celestial Table) are stored as true UTC instants instead of the
+table's wall-clock-as-UTC-parts convention, so they draw at 1:00 to 2:30 AM on the day after the
+evening they mean. The 24 Craft Night rows had the same defect and are fixed by being folded into a
+correctly stored master. The write path and the remaining rows are `LIVE-514` (renumbered from
+LIVE-512 under ADR-1488 when two earlier PRs claimed that number).
+
+## ADR-1532: A stage says itself with a mark at the head of the chip, and the header keeps the ledger (owner directive 2026-09-27)
+
+**Status:** Accepted · 2026-09-27 · amends [ADR-1386](DECISIONS.md)'s stage presentation and the
+2026-09-22 abbreviation ruling recorded in `LIVE-470` · beside [ADR-1531](DECISIONS.md), the same
+session's calendar directives
+
+**Context.** A grid chip in a six-week month is about 46px wide on a phone. `LIVE-470` put the stage
+WORD on it, because colour alone is not a state (WCAG 1.4.1, whose own failure example is a
+colour-coded calendar), and the 2026-09-22 ruling had the word ABBREVIATE rather than disappear at
+that width: `Plng`, `Prod`, `Penc`. The owner's judgement on 2026-09-27 is that the abbreviations are
+not worth the pixels they cost the title, and named the replacement: **✏️ Pencil, 🎯 Planning, 📣
+Production**, at the top of the chip, before the time stamp.
+
+**Decision.**
+
+1. **The mark is declared where the stage's colour is declared, and nowhere else.**
+   `CALENDAR_PRESENTATIONS` (`lib/calendar/registry.ts`) already carries the chip class, the word, the
+   abbreviation and the tone under the banner *"Add a colour here or nowhere"*; `emoji` joins them.
+   The three stages carry one; every other presentation (Event, Draft, Cancelled, Private,
+   Unavailable, To-do) does not, and still prints its word.
+2. **A mark REPLACES the word on the chip rather than joining it.** Two copies of one fact is exactly
+   the pixel cost the directive removes. `ChipWord` returns null when a presentation has a mark, so the
+   rule lives in one branch.
+3. **🔴 The mark is not a silent colour.** Its accessible name and its `title` are the stage word, so a
+   screen reader still reads "Pencil, 6:00 PM, Craft Night" and a pointer still gets the word on hover.
+   A calendar that conveyed stage by hue alone is the WCAG failure LIVE-470 was opened against, and an
+   emoji with no name is that failure with a picture.
+4. **The ledger is derived, not retyped.** `CALENDAR_MARK_LEDGER` is built FROM the presentations, so a
+   mark that changes in the registry changes in the header, and a presentation with no mark is absent
+   from the key because its chip still says its own word. The grid prints it above the weekday row,
+   which puts the key beside the chips it explains on every surface that draws them.
+5. **Neither the mark nor the ledger appears on a member-facing calendar.** This is the 2026-09-23
+   ruling, unchanged: a public Space calendar holds one kind of thing, so the word separated nothing
+   there and a mark would not either, and a key would explain something nobody can see. The audience
+   test is the same `calendarPrintsWord`, because the mark carries the same fact.
+6. **The popup keeps the word.** `Badges` is a labelled pill in a panel with room for it, and the pill
+   is where someone confirms what a mark meant. The chip is the only surface with a pixel problem.
+
+**Consequence.** On a staff calendar every published date now reads 📣 rather than "Production", which
+is the same substitution the owner asked for and is worth stating because that mapping is not obvious
+from the directive's words. `event-calendar.stage.render.test.tsx` was re-pinned rather than deleted:
+the abbreviation rule still has to hold for the kinds that keep a word, so its narrow-width cases moved
+onto a Private entry, and a new case asserts that a marked chip has nothing to abbreviate. A test that
+had only pinned the new behaviour would have quietly retired a live rule, which is the failure mode
+that suite was written against.
+
+## ADR-1533: A value with no zone and a path with symlinks both read as correct while being wrong (HYG-123, HYG-124, owner ruling 2026-09-27)
+
+**Status:** Accepted · 2026-09-27 · closes `HYG-123` and `HYG-124`, opens `HYG-125` · beside
+[ADR-1531](DECISIONS.md) and the peer branch's wall-clock repair of `LIVE-514`
+
+**Context.** Three defects surfaced in one afternoon and they are the same shape: something was
+compared against its own normalised twin, the comparison quietly came out wrong, and the wrong answer
+looked exactly like the right one. The owner's ruling that settled all three was four words long:
+**"We're in Pacific."**
+
+**Decision.**
+
+**1. A date-only value prints the date it stores, in every zone.** `lib/crm/import/custom-fields.ts`
+parsed a stored birthday at UTC midnight and then formatted it with an `Intl.DateTimeFormat` carrying
+no `timeZone`, so the instant rendered in the viewer's zone and a stored `2026-07-16` printed as
+**"Jul 15, 2026"** on a CRM contact card for everyone west of UTC. Which is us. Both formatters pin
+`timeZone: 'UTC'`, the zone the value was parsed in, so the printed date equals the stored date
+everywhere.
+
+**2. A stored timestamp with no offset is UTC, never the machine's zone.** `entryDaySpan` did
+`new Date(row.starts_at)`, and ECMAScript parses a date-TIME string with no offset as LOCAL time while
+`isoDate` reads it back with `getUTC*`. An offset-less value therefore landed two hours later in
+Pacific and the day key came back as the NEXT DAY — one day of drift in which days a Space counts as
+busy and which dates `suggestDates` offers. `storedInstant()` now normalises: no offset reads as UTC, a
+value carrying its own offset is untouched.
+
+⚠️ **And the short offset is not optional to handle.** Postgres renders a zero offset as `+00`, which
+the Date Time String Format does not accept, so `new Date('…T19:00:00+00')` is an **Invalid Date** and
+`isoDate` would have printed `NaN-NaN-NaN`. `+00` and `+0000` are both widened to `±HH:mm`.
+
+**3. "Was I invoked directly" is a question about realpaths.** `scripts/check-shell-weight.mjs`
+compared `path.resolve(process.argv[1])` against `fileURLToPath(import.meta.url)`. The second is the
+path Node RESOLVED the module through — the realpath — and the first keeps every symlink in the
+invocation. On macOS `/var` is a symlink to `/private/var`, so a script run out of a `mkdtemp`
+directory compared two spellings of one file, `main()` never ran, and the script exited 0 printing
+nothing.
+
+🔴 **The gate was not disarmed; its PROOF was, and that is the more dangerous of the two.** The gate
+fires on Vercel and always has, because nothing in that path is a symlink. But every case in
+`check-shell-weight-warn-only.test.ts` is a MUTATION case that copies the script to a temp dir, so six
+of them were passing because nothing executed. The warn-only guarantee — a non-zero exit in
+`postbuild` kills a deploy — rests entirely on the paired cases asserting the same condition DOES fail
+without the flag, and those were the dead ones. This row was opened claiming a deploy-blocking gate
+could not fire; the measurement narrowed it, and the wrong first diagnosis is kept in the row because
+"the gate is disarmed" and "the gate's proof is disarmed" call for different fixes.
+
+⚠️ **Linux `mkdtemp` returns a real path, so CI was green with the broken comparison.** The fix
+therefore ships with an **explicit symlink case** in that test, negative-controlled by restoring the
+old line, so the guarantee is proven on the platform the deploy runs on. The class — 46 scripts, five
+spellings, two of them other postbuild gates — is `HYG-125`, with a probe that names every remaining
+offender so the sweep is visible.
+
+**4. The one published event stored as an instant is moved, because we're in Pacific and nobody had
+booked it.** `Heart on Fire, Week 1: Hearing the Heart` (Space `frequency`) held
+`2027-01-08 02:00–05:00` as wall clock, so the page advertised **2 AM**; read as an instant in Pacific
+it is Thursday 2027-01-07, 6–9 PM, which is the class it is. The peer session that repaired the 25
+private-layer rows deliberately left this one for an owner ruling, because a published event with a
+public page and a subscribable `.ics` is not a side effect to fix in passing. With the ruling given
+and **0 RSVPs and 0 tickets** confirmed first, it now stores `2027-01-07 18:00–21:00`.
+
+Its slug still ends `-2027-01-08` and was left alone: a slug is a URL, changing a published one breaks
+every link that exists for a cosmetic gain, and the date in it is not what any reader is told.
+`A Plant-Honoring Ceremony` matches the same detector and was NOT touched — `00:00` to `23:59` across
+three days is a genuine multi-day event, correctly stored, and a detector that cannot tell those apart
+is why this was checked row by row rather than swept.
+
+**Consequence.** The zone fixes are pinned by tests that force `process.env.TZ` rather than trusting
+the runner's, and one of them documents in the file that Intl caches a formatter's resolved zone at
+module load — so on CI only the source-shape case fails when the zone is unpinned. A test suite that
+is green in UTC and red in Pacific trains everyone to ignore a red suite, which is the quiet cost that
+made both zone defects survive this long.

@@ -13,6 +13,7 @@ import {
   formatRepeatDraft,
   parseRepeat,
   repeatUntilDate,
+  setPosOfMonth,
   type RepeatFreq,
   type RepeatRule,
   type RepeatWeekday,
@@ -105,14 +106,6 @@ const ORDINAL_LABELS: { value: string; label: string }[] = [
   { value: '4', label: 'fourth' },
   { value: '-1', label: 'last' },
 ]
-
-/** Which <weekday> of its month a date is, as a BYSETPOS: 1..4, or -1 when it is the last one. */
-function setPosOf(anchor: Date): number {
-  const day = anchor.getUTCDate()
-  const monthLength = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() + 1, 0)).getUTCDate()
-  const week = Math.floor((day - 1) / 7) + 1
-  return day + 7 > monthLength ? -1 : week
-}
 
 export function RepeatPicker({
   value,
@@ -349,7 +342,7 @@ export function RepeatPicker({
                       patch({
                         byMonthDay: undefined,
                         byDay: [REPEAT_WEEKDAYS[anchor.getUTCDay()]],
-                        bySetPos: setPosOf(anchor),
+                        bySetPos: setPosOfMonth(anchor),
                       })
                     }
                   />
@@ -357,7 +350,7 @@ export function RepeatPicker({
                     aria-label="Which week of the month"
                     wrapperClassName="inline-block w-max max-w-full"
                     className="text-body-sm"
-                    value={String(rule.bySetPos ?? setPosOf(anchor))}
+                    value={String(rule.bySetPos ?? setPosOfMonth(anchor))}
                     disabled={disabled || rule.byDay === undefined}
                     onChange={(e) =>
                       patch({
@@ -378,7 +371,7 @@ export function RepeatPicker({
                       patch({
                         byMonthDay: undefined,
                         byDay: [e.target.value as RepeatWeekday],
-                        bySetPos: rule.bySetPos ?? setPosOf(anchor),
+                        bySetPos: rule.bySetPos ?? setPosOfMonth(anchor),
                       })
                     }
                     options={REPEAT_WEEKDAYS.map((d) => ({ value: d, label: WEEKDAY_FULL[d] }))}

@@ -232,10 +232,33 @@ const pad2 = (n: number) => String(n).padStart(2, '0')
 const isoDate = (d: Date) => `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`
 const isoTime = (d: Date) => `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`
 
+// 🔴 A STORED TIMESTAMP WITH NO OFFSET IS UTC, NEVER THE MACHINE'S ZONE (HYG-123).
+// These columns hold the Space's wall clock AS UTC PARTS, and `isoDate` below reads them back with
+// getUTC*. But ECMAScript parses a date-TIME string with no offset as LOCAL time, so a value that
+// arrived without one ('2026-10-05T19:00:00', which is what a naive column or a fixture hands over)
+// landed two hours later in Pacific and `isoDate` then returned the NEXT DAY. That is one day of
+// drift in whatever the caller does with the key: which days a Space counts as busy, which dates
+// suggestDates offers. A value that carries an offset is untouched, so nothing about the normal
+// read path changes. Postgres' space-separated rendering is accepted too.
+// ⚠️ AND THE SHORT OFFSET IS NOT OPTIONAL TO HANDLE. Postgres renders a zero offset as `+00`, and
+// ECMAScript's Date Time String Format requires ±HH:mm, so `new Date('…T19:00:00+00')` is an INVALID
+// DATE rather than a shifted one — `isoDate` then prints NaN-NaN-NaN. Both short forms are widened to
+// ±HH:mm here so a value that carries its offset is honoured whichever way it was rendered.
+const ZONED_RE = /([zZ]|[+-]\d{2}(?::?\d{2})?)$/
+const SHORT_OFFSET_RE = /([+-]\d{2})$/
+const COMPACT_OFFSET_RE = /([+-]\d{2})(\d{2})$/
+
+export function storedInstant(value: string): Date {
+  const v = value.trim().replace(' ', 'T')
+  if (!ZONED_RE.test(v)) return new Date(`${v}Z`)
+  if (SHORT_OFFSET_RE.test(v)) return new Date(`${v}:00`)
+  return new Date(v.replace(COMPACT_OFFSET_RE, '$1:$2'))
+}
+
 /** The first and last (inclusive) calendar day an entry covers, from its stored wall clock. */
 export function entryDaySpan(row: Pick<EntryRow, 'starts_at' | 'ends_at' | 'all_day'>): { dayKey: string; endDayKey: string } {
-  const start = new Date(row.starts_at)
-  const end = new Date(row.ends_at)
+  const start = storedInstant(row.starts_at)
+  const end = storedInstant(row.ends_at)
   // An exclusive end at exactly 00:00 belongs to the day before (all-day entries always do).
   const lastMs = end.getTime() - (end.getUTCHours() === 0 && end.getUTCMinutes() === 0 ? DAY_MS : 0)
   const last = new Date(Math.max(start.getTime(), lastMs))
@@ -252,9 +275,9 @@ export function entryToInput(row: EntryRow): EntryInput {
     location: row.location,
     allDay: row.all_day,
     startDate: dayKey,
-    endDate: row.all_day ? endDayKey : isoDate(new Date(row.ends_at)),
-    startTime: row.all_day ? '09:00' : isoTime(new Date(row.starts_at)),
-    endTime: row.all_day ? '17:00' : isoTime(new Date(row.ends_at)),
+    endDate: row.all_day ? endDayKey : isoDate(storedInstant(row.ends_at)),
+    startTime: row.all_day ? '09:00' : isoTime(storedInstant(row.starts_at)),
+    endTime: row.all_day ? '17:00' : isoTime(storedInstant(row.ends_at)),
     timeZone: row.time_zone,
     status: row.status,
     stage: row.stage ?? (row.kind === 'pencil' ? 'pencil' : null),

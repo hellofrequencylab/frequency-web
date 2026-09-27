@@ -68,7 +68,7 @@
 //
 // Runs as `postbuild`, so it runs on Vercel's real build. CI never builds.
 // ─────────────────────────────────────────────────────────────────────────────
-import { readFileSync, existsSync, statSync, globSync } from 'node:fs'
+import { readFileSync, existsSync, statSync, globSync, realpathSync } from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
@@ -646,4 +646,26 @@ console.log(
 
 // Run the CLI only when invoked directly. The sibling test imports this module for its exported
 // constants and the pure `staticAdminImports` classifier, and must not trip the artifact arms.
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main()
+//
+// 🔴 COMPARE REALPATHS, NOT A RESOLVED PATH AGAINST A REALPATH (HYG-124). `import.meta.url` is the
+// path Node resolved the module through, which is the REALPATH; `path.resolve(process.argv[1])` keeps
+// every symlink in the invocation. On macOS `/var` IS a symlink to `/private/var`, so a script run out
+// of a temp directory compared `/var/folders/…/mutant.mjs` against `/private/var/folders/…/mutant.mjs`,
+// the two never matched, and `main()` SILENTLY DID NOT RUN: no output, exit 0, a gate that reads as a
+// pass. That is how this file's own mutation test — the one asserting the gate CAN fail, which is what
+// makes the warn-only guarantee mean anything — stopped proving it. On Vercel there is no symlink in
+// the path, so the deploy gate itself kept firing; the proof is what broke, and a proof that cannot
+// fail is the failure mode this whole file is organised against.
+function invokedDirectly() {
+  if (!process.argv[1]) return false
+  const real = (p) => {
+    try {
+      return realpathSync(p)
+    } catch {
+      return path.resolve(p)
+    }
+  }
+  return real(process.argv[1]) === real(fileURLToPath(import.meta.url))
+}
+
+if (invokedDirectly()) main()

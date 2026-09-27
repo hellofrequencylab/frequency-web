@@ -409,6 +409,8 @@ export function StaffCalendar({
         events={events}
         initialYear={initialYear}
         initialMonth1={initialMonth1}
+        /* The sky markers read their day in the Space's own zone, not the viewer's. */
+        timeZone={spaceTimeZone ?? undefined}
         loadMonth={loadMonth}
         wheelPaging={wheelPaging}
         swipePaging={wheelPaging}
@@ -624,7 +626,8 @@ export function StaffCalendar({
                   ]}
                   onChange={(e) => {
                     if (e.target.value === 'custom') return
-                    set('repeat', pencilRuleForChoice(e.target.value) ?? '')
+                    // The start date is what says WHICH weekday "every month on the same weekday" means.
+                    set('repeat', pencilRuleForChoice(e.target.value, input.startDate) ?? '')
                   }}
                   aria-describedby="entry-repeat-hint"
                 />

@@ -634,6 +634,42 @@ function sameDays(a: readonly RepeatWeekday[], b: readonly RepeatWeekday[]): boo
  * control, and surfaces render it beside this ("Weekly on Wednesday, until 30 December"). `count`
  * IS included, because it lives in the rule and nothing else would say it.
  */
+// ── TWO QUESTIONS ABOUT ONE DATE, AND THEY HAVE DIFFERENT ANSWERS ────────────────────────────────
+// Sunday 25 October 2026 is the FOURTH Sunday of its month and it is also the LAST one. "The fourth
+// Sunday" and "the last Sunday" are the same day in October and different days in May 2027 (the 23rd
+// and the 30th), so a helper that answers both is a helper that quietly changes a host's cadence.
+// Hence two, named for what they answer, and the caller picks by whether the ordinal is VISIBLE:
+//   • setPosOfMonth      -- the event picker's DEFAULT for its ordinal menu, which prefers "last"
+//                           because that is usually what someone means by the 25th-and-final Sunday,
+//                           and the menu shows the choice and lets them change it.
+//   • weekdayOrdinalOfMonth -- the LITERAL ordinal, for the Pencil drawer's single "every month on
+//                           the same weekday" item, which derives the rule with nothing on screen to
+//                           correct. The owner asked for "the 4th Sunday every month"; this is what
+//                           records that (owner directive 2026-09-27).
+
+/** Which <weekday> of its month a date is, as a BYSETPOS, PREFERRING -1: 1 to 4, or -1 whenever the
+ *  date is the last of its weekday in the month. The event picker's default; see the note above. */
+export function setPosOfMonth(anchor: Date): number {
+  const day = anchor.getUTCDate()
+  const monthLength = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() + 1, 0)).getUTCDate()
+  const week = Math.floor((day - 1) / 7) + 1
+  return day + 7 > monthLength ? -1 : week
+}
+
+/** Which <weekday> of its month a date is, LITERALLY: 1 to 4, or -1 for a fifth occurrence (most
+ *  months have no fifth, so "last" is the only reading that keeps a series monthly). */
+export function weekdayOrdinalOfMonth(anchor: Date): number {
+  const week = Math.floor((anchor.getUTCDate() - 1) / 7) + 1
+  return week > 4 ? -1 : week
+}
+
+/** The rule for "this weekday of every month", read off a date: `FREQ=MONTHLY;BYDAY=TU;BYSETPOS=1`.
+ *  Canonical, so it round-trips through parseRepeat and formatRepeat unchanged. Uses the LITERAL
+ *  ordinal: a fourth Sunday stays the fourth even in a month where it is also the last. */
+export function monthlyWeekdayRule(anchor: Date): string {
+  return `FREQ=MONTHLY;BYDAY=${REPEAT_WEEKDAYS[anchor.getUTCDay()]};BYSETPOS=${weekdayOrdinalOfMonth(anchor)}`
+}
+
 export function describeRepeat(
   rule: RepeatRule | null | undefined,
   startsAtIso?: string | null,
