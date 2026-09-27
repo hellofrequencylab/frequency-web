@@ -13,6 +13,9 @@ import {
   repeatFor,
   repeatFromLegacy,
   repeatUntilDate,
+  monthlyWeekdayRule,
+  setPosOfMonth,
+  weekdayOrdinalOfMonth,
   type RepeatRule,
 } from './repeat-rule'
 
@@ -382,5 +385,43 @@ describe('the engine stays importable by everything that needs it', () => {
     // every fixture above deterministic.
     expect(code).not.toMatch(/Date\.now\(\)/)
     expect(code).not.toMatch(/new Date\(\)/)
+  })
+})
+
+describe('the nth weekday of a month', () => {
+  const at = (day: string) => new Date(`${day}T00:00:00.000Z`)
+
+  it('reads the literal ordinal for a rule nobody can see and correct', () => {
+    expect(weekdayOrdinalOfMonth(at('2026-10-06'))).toBe(1)
+    expect(weekdayOrdinalOfMonth(at('2026-10-11'))).toBe(2)
+    expect(weekdayOrdinalOfMonth(at('2026-10-20'))).toBe(3)
+    // The case that separates the two helpers: the fourth Sunday of October 2026 is also its last.
+    expect(weekdayOrdinalOfMonth(at('2026-10-25'))).toBe(4)
+    expect(setPosOfMonth(at('2026-10-25'))).toBe(-1)
+    // A fifth occurrence has no ordinal that survives a short month, so both say "last".
+    expect(weekdayOrdinalOfMonth(at('2026-10-30'))).toBe(-1)
+    expect(setPosOfMonth(at('2026-10-30'))).toBe(-1)
+  })
+
+  it('spells a canonical monthly rule off any date', () => {
+    expect(monthlyWeekdayRule(at('2026-10-06'))).toBe('FREQ=MONTHLY;BYDAY=TU;BYSETPOS=1')
+    expect(monthlyWeekdayRule(at('2026-10-25'))).toBe('FREQ=MONTHLY;BYDAY=SU;BYSETPOS=4')
+    expect(monthlyWeekdayRule(at('2026-10-30'))).toBe('FREQ=MONTHLY;BYDAY=FR;BYSETPOS=-1')
+    // Canonical means it survives a round trip through the parser and the formatter.
+    for (const day of ['2026-10-06', '2026-10-11', '2026-10-20', '2026-10-25', '2026-10-30']) {
+      const rule = monthlyWeekdayRule(at(day))
+      expect(formatRepeat(parseRepeat(rule)!)).toBe(rule)
+    }
+  })
+
+  it('keeps a fourth Sunday off the fifth one, which is the whole reason for two helpers', () => {
+    // May 2027 has five Sundays: the fourth is the 23rd, the last is the 30th.
+    const rule = parseRepeat(monthlyWeekdayRule(at('2026-10-25')))!
+    const landings = expandRepeat('2026-10-25T19:00:00.000Z', rule, {
+      through: new Date('2027-06-01T00:00:00.000Z'),
+      includeAnchor: true,
+    }).map((d) => d.toISOString().slice(0, 10))
+    expect(landings).toContain('2027-05-23')
+    expect(landings).not.toContain('2027-05-30')
   })
 })

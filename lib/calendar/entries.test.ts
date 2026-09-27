@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
   blockingRange,
   entryDaySpan,
@@ -309,5 +309,56 @@ describe('stage presentation is the registry (calendar stage colours)', () => {
     expect(stage('production')!.chipClass).toContain('border-success')
     expect(stage('cancelled')!.chipClass).toContain('line-through')
     expect(new Set(ENTRY_STAGES.map((d) => d.chipClass)).size).toBe(4)
+  })
+})
+
+// ── A STORED TIMESTAMP WITH NO OFFSET IS UTC (HYG-123) ───────────────────────────────────────────
+// The columns hold wall clock as UTC PARTS and every reader here uses getUTC*, but ECMAScript parses
+// a date-TIME string with no offset as LOCAL time. So a value that arrived without one shifted, and
+// `isoDate` returned the next day for every reader west of UTC — one day of drift in which days a
+// Space counts as busy. These cases force the zone rather than trusting the runner's: the process TZ
+// is set to Pacific, which is where this product lives, so the guard fails in CI too when it breaks.
+describe('storedInstant', () => {
+  const realTz = process.env.TZ
+
+  beforeEach(() => {
+    process.env.TZ = 'America/Los_Angeles'
+  })
+  afterEach(() => {
+    if (realTz === undefined) delete process.env.TZ
+    else process.env.TZ = realTz
+  })
+
+  it('reads an offset-less timestamp as UTC even in Pacific', async () => {
+    const { storedInstant } = await import('./entries')
+    expect(storedInstant('2026-10-05T19:00:00').toISOString()).toBe('2026-10-05T19:00:00.000Z')
+    // Postgres' own space-separated rendering, same answer.
+    expect(storedInstant('2026-10-05 19:00:00').toISOString()).toBe('2026-10-05T19:00:00.000Z')
+    // Midnight is the case that moves a DAY, which is the whole defect.
+    expect(storedInstant('2026-10-05T00:00:00').toISOString().slice(0, 10)).toBe('2026-10-05')
+  })
+
+  it('leaves a value that carries its own offset exactly as it is', async () => {
+    const { storedInstant } = await import('./entries')
+    expect(storedInstant('2026-10-05T19:00:00Z').toISOString()).toBe('2026-10-05T19:00:00.000Z')
+    expect(storedInstant('2026-10-05T19:00:00+00:00').toISOString()).toBe('2026-10-05T19:00:00.000Z')
+    // Postgres renders a zero offset as `+00`, which new Date() alone calls an Invalid Date.
+    expect(storedInstant('2026-10-05T19:00:00+00').toISOString()).toBe('2026-10-05T19:00:00.000Z')
+    expect(storedInstant('2026-10-05T19:00:00+0000').toISOString()).toBe('2026-10-05T19:00:00.000Z')
+    expect(storedInstant('2026-10-05 12:00:00-07').toISOString()).toBe('2026-10-05T19:00:00.000Z')
+    expect(storedInstant('2026-10-05T12:00:00-07:00').toISOString()).toBe('2026-10-05T19:00:00.000Z')
+  })
+
+  it('gives entryDaySpan the same day in Pacific as in UTC', async () => {
+    const { entryDaySpan } = await import('./entries')
+    const span = entryDaySpan({ starts_at: '2026-10-05T19:00:00', ends_at: '2026-10-05T21:00:00', all_day: false })
+    expect(span).toEqual({ dayKey: '2026-10-05', endDayKey: '2026-10-05' })
+  })
+
+  it('leaves no bare new Date() on a stored column in this module', async () => {
+    const { readFileSync } = await import('node:fs')
+    const src = readFileSync('lib/calendar/entries.ts', 'utf8')
+    const bare = src.match(/new Date\((?:row|ev|input)\.[a-z_]*(?:starts_at|ends_at)\)/g) ?? []
+    expect(bare, 'a stored column parsed without the UTC fallback').toEqual([])
   })
 })

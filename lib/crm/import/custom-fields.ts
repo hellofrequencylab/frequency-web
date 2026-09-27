@@ -23,7 +23,13 @@ export interface CustomFieldDisplay {
   href?: string
 }
 
-const DATE_FMT = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+// 🔴 timeZone: 'UTC' IS LOAD-BEARING, on both formatters. A stored birthday is a DATE, not an
+// instant: `formatDate` parses it at UTC midnight, so formatting it in the AMBIENT zone printed the
+// day BEFORE for every viewer west of UTC — 2026-07-16 read as 'Jul 15, 2026' in Pacific, which is
+// where this product lives. Pinning the formatter to the zone the value was parsed in makes the
+// printed date equal the stored date everywhere (HYG-123).
+const DATE_FMT = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
+const MONTH_DAY_FMT = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 
 /** Format a stored date value for display. Accepts an ISO date (2026-07-16) or a partial vCard-style
  *  birthday (--07-16, no year). Returns the original string when it is not a date we can parse. */
@@ -33,7 +39,7 @@ function formatDate(value: string): string {
   const md = /^--(\d{2})-(\d{2})$/.exec(v)
   if (md) {
     const d = new Date(Date.UTC(2000, Number(md[1]) - 1, Number(md[2])))
-    return Number.isNaN(d.getTime()) ? v : new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(d)
+    return Number.isNaN(d.getTime()) ? v : MONTH_DAY_FMT.format(d)
   }
   const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(v)
   if (iso) {

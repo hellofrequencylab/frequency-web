@@ -98,6 +98,7 @@ export default async function SpaceCalendarPage({
         spaceId={space.id}
         brandName={brandName}
         adminAllowed={false}
+        displayTimeZone={space.timeZone}
         canManage={false}
         initialView="guest"
         initialListItem={null}
@@ -147,6 +148,7 @@ export default async function SpaceCalendarPage({
       dayNotes={admin.dayNotes}
       plans={admin.plans}
       spaceTimeZone={spaceTimeZone}
+      displayTimeZone={space.timeZone}
       subscribe={subscribe}
       loadGuestMonth={loadSpaceCalendarMonth.bind(null, slug)}
     />

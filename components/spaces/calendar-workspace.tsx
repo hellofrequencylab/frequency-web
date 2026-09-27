@@ -131,6 +131,7 @@ export function CalendarWorkspace({
   dayNotes,
   plans,
   spaceTimeZone = null,
+  displayTimeZone = null,
   subscribe,
   loadGuestMonth,
 }: {
@@ -155,6 +156,11 @@ export function CalendarWorkspace({
    *  console header, the staff drawer and Ask Vera cannot name three different zones. Null when the
    *  Space has never said, and only then does the viewer's browser zone decide. */
   spaceTimeZone?: string | null
+  /** The zone the GRID's days are read in, for the sky markers. Separate from `spaceTimeZone` on
+   *  purpose: that one is the operator's, it decides what a new date is WRITTEN in, and the page
+   *  withholds it from a visitor. A new moon is nobody's secret, and a visitor and the team must not
+   *  see it marked on two different days, so this is passed to everyone. */
+  displayTimeZone?: string | null
   subscribe: ReactNode
   loadGuestMonth: (year: number, month1: number) => Promise<CalendarEvent[]>
 }) {
@@ -466,6 +472,7 @@ export function CalendarWorkspace({
         events={guestEvents}
         initialYear={initialYear}
         initialMonth1={initialMonth1}
+        timeZone={displayTimeZone ?? spaceTimeZone ?? undefined}
         loadMonth={loadGuestMonth}
         month={month}
         onMonthChange={setMonth}

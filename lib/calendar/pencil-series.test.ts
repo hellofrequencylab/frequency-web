@@ -146,6 +146,29 @@ describe('what the row stores', () => {
     expect(pencilRepeatChoice('FREQ=WEEKLY;INTERVAL=2')).toBe('biweekly')
     expect(pencilRepeatChoice('FREQ=MONTHLY')).toBe('monthly')
     expect(pencilRepeatChoice(null)).toBe('none')
-    expect(pencilRepeatChoice('FREQ=MONTHLY;BYDAY=TH;BYSETPOS=3')).toBe('custom')
+    // A monthly rule that counts a weekday is the menu's own anchor-derived cadence now (owner
+    // directive 2026-09-27), not 'custom': the drawer offers it, so re-opening it must show it.
+    expect(pencilRepeatChoice('FREQ=MONTHLY;BYDAY=TH;BYSETPOS=3')).toBe('monthly-nth')
+    expect(pencilRepeatChoice('FREQ=MONTHLY;BYDAY=TU;BYSETPOS=1')).toBe('monthly-nth')
+    expect(pencilRepeatChoice('FREQ=MONTHLY;BYDAY=FR;BYSETPOS=-1')).toBe('monthly-nth')
+    // A rule outside the menu still reads as custom and is still preserved.
+    expect(pencilRepeatChoice('FREQ=MONTHLY;BYMONTHDAY=14')).toBe('custom')
+    expect(pencilRepeatChoice('FREQ=YEARLY')).toBe('custom')
+
+    // "Every month on the same weekday" is spelled off the anchor: the first Tuesday from a first
+    // Tuesday, the last Friday from a fifth Friday, and nothing at all without a date to read.
+    expect(pencilRuleForChoice('monthly-nth', '2026-10-06')).toBe('FREQ=MONTHLY;BYDAY=TU;BYSETPOS=1')
+    expect(pencilRuleForChoice('monthly-nth', '2026-10-20')).toBe('FREQ=MONTHLY;BYDAY=TU;BYSETPOS=3')
+    expect(pencilRuleForChoice('monthly-nth', '2026-10-11')).toBe('FREQ=MONTHLY;BYDAY=SU;BYSETPOS=2')
+    expect(pencilRuleForChoice('monthly-nth', '2026-10-25')).toBe('FREQ=MONTHLY;BYDAY=SU;BYSETPOS=4')
+    // Oct 30 2026 is the fifth Friday, which is also the last one: -1, so November keeps it.
+    expect(pencilRuleForChoice('monthly-nth', '2026-10-30')).toBe('FREQ=MONTHLY;BYDAY=FR;BYSETPOS=-1')
+    expect(pencilRuleForChoice('monthly-nth', '2026-10-06T18:00:00.000Z')).toBe('FREQ=MONTHLY;BYDAY=TU;BYSETPOS=1')
+    expect(pencilRuleForChoice('monthly-nth')).toBeNull()
+    expect(pencilRuleForChoice('monthly-nth', 'nonsense')).toBeNull()
+    // Every rule the menu can produce round-trips back to the choice that produced it.
+    for (const day of ['2026-10-06', '2026-10-20', '2026-10-11', '2026-10-25', '2026-10-30']) {
+      expect(pencilRepeatChoice(pencilRuleForChoice('monthly-nth', day))).toBe('monthly-nth')
+    }
   })
 })

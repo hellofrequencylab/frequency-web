@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { spawnSync } from 'node:child_process'
-import { readFileSync, writeFileSync, mkdtempSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -74,6 +74,38 @@ describe('check:shell-weight warn-only cannot fail a build', () => {
 
   it('still exits non-zero on that same crash WITHOUT --warn-only', () => {
     expect(run([], emptyArtifactDir(), forceCrash(SRC)).status).not.toBe(0)
+  })
+
+  // ── 🔴 THE GATE MUST RUN WHEN IT IS REACHED THROUGH A SYMLINK (HYG-124) ────────────────────────
+  // Every case above is a MUTATION case: it copies the script somewhere else and runs it. That only
+  // proves anything if the copy actually executes, and for a while it did not. The entry-point guard
+  // compared `path.resolve(process.argv[1])` against `fileURLToPath(import.meta.url)`, and the second
+  // is the path Node RESOLVED the module through, i.e. the realpath. On macOS `/var` is a symlink to
+  // `/private/var`, so every `mkdtemp` invocation compared two spellings of one file, `main()` silently
+  // did not run, and the script exited 0 printing NOTHING. Six cases in this file passed for that
+  // reason instead of their own.
+  //
+  // ⚠️ AND IT WOULD NOT HAVE BEEN CAUGHT HERE ON CI. Linux `mkdtemp` hands back a real path, so the
+  // cases above are green on CI with the broken guard. This case makes the symlink EXPLICIT, so the
+  // guarantee is proven on the platform the deploy actually runs on too.
+  it('runs, and can still fail, when it is invoked through a symlinked path', () => {
+    const real = mkdtempSync(join(tmpdir(), 'shell-weight-real-'))
+    writeFileSync(join(real, 'gate.mjs'), SRC)
+    const linkHome = mkdtempSync(join(tmpdir(), 'shell-weight-link-'))
+    symlinkSync(real, join(linkHome, 'via'), 'dir')
+    const viaLink = join(linkHome, 'via', 'gate.mjs')
+    const cwd = emptyArtifactDir()
+
+    const blocking = spawnSync(process.execPath, [viaLink], { cwd, encoding: 'utf8' })
+    expect(
+      `${blocking.stdout ?? ''}${blocking.stderr ?? ''}`.trim(),
+      'the gate said nothing at all, so main() never ran',
+    ).not.toBe('')
+    expect(blocking.status, 'the gate must still fail on an artifact with no manifests').toBe(1)
+
+    const warn = spawnSync(process.execPath, [viaLink, '--warn-only'], { cwd, encoding: 'utf8' })
+    expect(warn.status, 'warn-only must never fail a build').toBe(0)
+    expect(`${warn.stdout ?? ''}${warn.stderr ?? ''}`).toContain('warn-only')
   })
 
   it('routes every failure through bail(), so no arm can exit directly', () => {

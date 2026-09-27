@@ -32,6 +32,7 @@ import { IconButton } from '@/components/ui/icon-button'
 import { CalendarRepeatsStrip } from '@/components/events/calendar-repeats-strip'
 import type { CalendarRepeatSeries } from '@/lib/events/calendar-repeats'
 import {
+  CALENDAR_MARK_LEDGER,
   calendarPresentation,
   calendarPrintsWord,
   calendarWord,
@@ -43,6 +44,7 @@ import {
 import { StatusChip } from '@/components/admin/status'
 import { spanDayKeys } from '@/lib/calendar/entries'
 import { notesForDay, type DayNote } from '@/lib/calendar/day-notes'
+import { skyMarkersForRange, type SkyMarker } from '@/lib/calendar/sky'
 import { monthKey } from '@/lib/calendar/month-window'
 import { stackDay } from '@/lib/calendar/sunday-stack'
 import { shortDateLabel } from '@/lib/calendar/short-date'
@@ -162,6 +164,7 @@ export function EventCalendar({
   hostChrome = false,
   hostViewSwitch = false,
   audience = 'member',
+  timeZone,
 }: {
   events: CalendarEvent[]
   initialYear: number
@@ -189,6 +192,10 @@ export function EventCalendar({
   refreshKey?: number
   /** Quiet per-day labels ("Quiet hours", "Flex day"), ADR-1386. */
   dayNotes?: DayNote[]
+  /** The zone the grid's days are read in, for the sky markers (a new moon at 11:40 PM is the next
+   *  day in UTC). A Space calendar passes the Space's zone; absent reads as UTC, which is the honest
+   *  answer on a calendar that mixes zones. */
+  timeZone?: string
   /** Staff: keep this candidate date of a pencil and drop its siblings. */
   onPickDate?: (item: CalendarEvent) => void
   /** MOVING A DATE BY HAND (PROG-CAL15), the console's edit and nowhere else's. Passed, every chip
@@ -448,6 +455,14 @@ export function EventCalendar({
   }, [series])
 
   const weeks = useMemo(() => monthMatrix(year, month1), [year, month1])
+  // THE SKY, COMPUTED PER VISIBLE GRID (owner directive 2026-09-27). New moon, full moon, equinox
+  // and solstice, on every calendar, every year. One pass over the six-week window; the arithmetic
+  // is pure (lib/calendar/sky.ts) and the zone decides the day.
+  const skyByDay = useMemo(() => {
+    const days = weeks.flat()
+    if (!days.length) return new Map<string, SkyMarker[]>()
+    return skyMarkersForRange(days[0].date, days[days.length - 1].date, timeZone)
+  }, [weeks, timeZone])
   const byDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>()
     for (const ev of all) {
@@ -744,6 +759,24 @@ export function EventCalendar({
             activeKey={activeSeries}
             onToggle={(key) => setActiveSeries((cur) => (cur === key ? null : key))}
           />
+          {/* THE LEDGER (owner directive 2026-09-27). The key to the marks the chips carry, kept beside
+              the grid that draws them. It is derived from the presentation registry, so a mark that
+              changes there changes here, and it only prints where the marks do: a member-facing
+              calendar holds one kind of thing and marks none of it, so a key there would explain
+              something nobody can see. */}
+          {calendarPrintsWord(audience) && CALENDAR_MARK_LEDGER.length > 0 && (
+            <ul
+              aria-label="What the marks mean"
+              className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-2 py-1.5 text-2xs text-muted"
+            >
+              {CALENDAR_MARK_LEDGER.map((m) => (
+                <li key={m.key} data-calendar-ledger={m.key} className="inline-flex items-center gap-1">
+                  <span aria-hidden>{m.emoji}</span>
+                  {m.word}
+                </li>
+              ))}
+            </ul>
+          )}
           <div className="grid grid-cols-7 border-b border-border">
             {WEEKDAY_LABELS.map((label) => (
               <div key={label} className="px-2 py-2 text-center text-2xs font-semibold text-muted">
@@ -797,6 +830,7 @@ export function EventCalendar({
                   const isToday = cell.date === today
                   const dayNum = Number(cell.date.slice(8, 10))
                   const labels = dayNotes?.length ? notesForDay(dayNotes, cell.date) : []
+                  const sky = skyByDay.get(cell.date) ?? []
                   const isDropTarget = move.dropDay === cell.date
                   return (
                     <div
@@ -838,14 +872,29 @@ export function EventCalendar({
                         ) : (
                           <span />
                         )}
-                        <span
-                          aria-current={isToday ? 'date' : undefined}
-                          className={cn(
-                            'ml-auto inline-flex h-6 min-w-6 items-center justify-center rounded-pill px-1 text-meta font-medium',
-                            isToday ? 'bg-primary text-on-primary' : cell.inMonth ? 'text-text' : 'text-subtle',
+                        <span className="ml-auto inline-flex items-center gap-0.5">
+                          {/* THE SKY RIDES BESIDE THE NUMBER. One character per marker, never a chip:
+                              it describes the day the way the day pill does, it takes no row from a
+                              busy cell, and a day that is both a new moon and an equinox draws both. */}
+                          {sky.length > 0 && (
+                            <span
+                              role="img"
+                              aria-label={sky.map((m) => m.label).join(', ')}
+                              title={sky.map((m) => m.label).join(' · ')}
+                              className="text-meta leading-none"
+                            >
+                              {sky.map((m) => m.emoji).join('')}
+                            </span>
                           )}
-                        >
-                          {dayNum}
+                          <span
+                            aria-current={isToday ? 'date' : undefined}
+                            className={cn(
+                              'inline-flex h-6 min-w-6 items-center justify-center rounded-pill px-1 text-meta font-medium',
+                              isToday ? 'bg-primary text-on-primary' : cell.inMonth ? 'text-text' : 'text-subtle',
+                            )}
+                          >
+                            {dayNum}
+                          </span>
                         </span>
                       </div>
                       {/* 🔴 THE BAND RIDES THE TOP (LIVE-491, owner ask 2026-09-24: "full day events
@@ -897,6 +946,7 @@ export function EventCalendar({
                               >
                                 {startsHere || opensWeek ? (
                                   <>
+                                    <ChipMark item={ev} audience={audience} />
                                     <ChipWord item={ev} audience={audience} narrow={narrowGrid} />
                                     {ev.title}
                                   </>
@@ -961,6 +1011,7 @@ export function EventCalendar({
                                   {/* Below sm a cell is about 46px wide: the time alone would fill it and truncate the title to
                                       nothing, so the time stays for a screen reader and steps out of the visible chip
                                       until there is room for both (LIVE-469). */}
+                                  <ChipMark item={ev} audience={audience} />
                                   <span className="sr-only tabular-nums sm:not-sr-only">{ev.timeLabel} </span>
                                   <ChipWord item={ev} audience={audience} narrow={narrowGrid} />
                                   {ev.title}
@@ -994,6 +1045,7 @@ export function EventCalendar({
                                 {/* Below sm a cell is about 46px wide: the time alone would fill it and truncate the title to
                                       nothing, so the time stays for a screen reader and steps out of the visible chip
                                       until there is room for both (LIVE-469). */}
+                                  <ChipMark item={ev} audience={audience} />
                                   <span className="sr-only tabular-nums sm:not-sr-only">{ev.timeLabel} </span>
                                   <ChipWord item={ev} audience={audience} narrow={narrowGrid} />
                                   {ev.title}
@@ -1163,10 +1215,34 @@ function ChipWord({
 }) {
   if (!calendarPrintsWord(audience)) return null
   const look = calendarPresentation(item, audience)
+  // A STAGE SAYS ITSELF WITH ITS MARK (owner directive 2026-09-27). The three stages an event on its
+  // way moves through print an emoji at the HEAD of the chip instead of a word after the time, so the
+  // word would be a second copy of the same fact in a 46px cell. Everything else still prints its
+  // word: a Private entry, an Unavailable block or a To-do has no mark, and the colour alone is not a
+  // state (WCAG 1.4.1).
+  if (look.emoji) return null
   return (
     <>
       <span data-calendar-chip-word={look.key} className="text-3xs font-bold">
         {calendarWord(look, narrow)}
+      </span>{' '}
+    </>
+  )
+}
+
+/** THE MARK AT THE HEAD OF THE CHIP (owner directive 2026-09-27): ✏️ Pencil, 🎯 Planning, 📣
+ *  Production, before the time stamp. It carries the word as its accessible name, so a screen reader
+ *  reading the chip still hears "Pencil, 6:00 PM, Craft Night" and a pointer gets it on hover; the
+ *  header's ledger is what teaches the mark to the eye. Same audience rule as the word it replaces:
+ *  a member-facing calendar holds one kind of thing and marks none of it. */
+function ChipMark({ item, audience }: { item: CalendarEvent; audience: CalendarAudience }) {
+  if (!calendarPrintsWord(audience)) return null
+  const look = calendarPresentation(item, audience)
+  if (!look.emoji) return null
+  return (
+    <>
+      <span data-calendar-chip-mark={look.key} role="img" aria-label={look.word} title={look.word}>
+        {look.emoji}
       </span>{' '}
     </>
   )
