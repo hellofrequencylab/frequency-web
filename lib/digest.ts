@@ -217,18 +217,40 @@ export async function assembleDigestForProfile(profileId: string): Promise<Diges
   }
 }
 
-// Returns active profile IDs (anyone with at least one active membership).
+// Returns the digest's candidate profile IDs: anyone with at least one ACTIVE circle
+// membership, anyone with at least one ACTIVE Space membership, and every Space owner.
 // Drives the cron loop.
+//
+// 🔴 THIS ENUMERATED CIRCLE `memberships` ONLY (LIVE-521). The payload above has been
+// Space-aware since ADR-858 — it unions space_members with spaces.owner_profile_id to
+// decide which Dispatches reach a person — but the RECIPIENT set did not, so a member
+// whose only home is a Space was structurally unreachable by the one recurring email the
+// platform sends. No amount of Space activity could reach them. The two sets now agree:
+// whatever affiliation makes a Dispatch reach you also makes you a digest candidate.
+//
+// Owners are IN, deliberately. A Space owner holds no space_members row (ADR-858), so
+// membership alone would have left an owner-only profile exactly as unreachable as the
+// bug this fixes — while `assembleDigestForProfile` already treats their own Space's
+// Dispatches as reaching them. Matching that read is the whole safety property here.
+//
+// This is a CANDIDATE set, not a send list. Notification preference, lifecycle consent and
+// suppression are one decision downstream in the caller (`resolveSendGate` in
+// app/api/cron/weekly-digest/route.ts, ADR-169), and nothing here may grow a second copy of
+// it: every arm below feeds that one gate, so the new arms are filtered by construction.
 export async function listProfileIdsForDigest(): Promise<string[]> {
   const admin = createAdminClient()
-  const { data } = await admin
-    .from('memberships')
-    .select('profile_id')
-    .eq('status', 'active')
+  const [{ data: circleRows }, { data: spaceRows }, { data: ownerRows }] = await Promise.all([
+    admin.from('memberships').select('profile_id').eq('status', 'active'),
+    admin.from('space_members').select('profile_id').eq('status', 'active'),
+    admin.from('spaces').select('owner_profile_id'),
+  ])
 
+  // One Set: a person in both a Circle and a Space is one candidate, not two emails.
   const ids = new Set<string>()
-  for (const row of (data ?? []) as { profile_id: string }[]) {
-    ids.add(row.profile_id)
+  for (const row of (circleRows ?? []) as { profile_id: string }[]) ids.add(row.profile_id)
+  for (const row of (spaceRows ?? []) as { profile_id: string }[]) ids.add(row.profile_id)
+  for (const row of (ownerRows ?? []) as { owner_profile_id: string | null }[]) {
+    if (row.owner_profile_id) ids.add(row.owner_profile_id)
   }
   return Array.from(ids)
 }
