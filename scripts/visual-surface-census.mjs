@@ -36,8 +36,8 @@
 // below as an UPPER BOUND on what a screenshot of that route watches, never as a promise.
 import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { loadConfig, loadCorpus, countEntry } from './check-adoption.mjs'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const ROOT = process.cwd()
 const ADMIN_ROOT = path.join(ROOT, 'app', '(main)', 'admin')
@@ -278,4 +278,4 @@ function main() {
   console.log('')
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main()
+if (invokedDirectly(import.meta.url)) main()

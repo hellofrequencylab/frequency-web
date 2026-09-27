@@ -70,7 +70,7 @@
 
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 import {
   LEDGER_QUERY,
   compare,
@@ -475,7 +475,7 @@ async function main() {
   process.exit(1)
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+if (invokedDirectly(import.meta.url)) {
   main().catch((e) => {
     // An unexpected throw is a FAILED CHECK, never a quiet exit 0. Node would otherwise reject the
     // promise and, depending on flags, still leave a zero status behind — a green guard that never

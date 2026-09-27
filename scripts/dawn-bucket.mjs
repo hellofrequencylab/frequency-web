@@ -38,6 +38,7 @@
 //   node scripts/dawn-bucket.mjs --size sm --quiet     # count only
 
 import { loadCorpus, loadConfig } from './check-adoption.mjs'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 // Mirrors components/ui/button.tsx. Kept as data rather than parsed out of the primitive on
 // purpose: if someone edits VARIANT/SIZE there, this file should stop agreeing and be updated in
@@ -111,7 +112,7 @@ const arg = (name) => {
 }
 const has = (name) => process.argv.includes(`--${name}`)
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (invokedDirectly(import.meta.url)) {
   const corpus = loadCorpus(loadConfig())
   const variants = arg('variant') ? [arg('variant')] : Object.keys(VARIANT)
   const sizes = arg('size') ? [arg('size')] : Object.keys(SIZE)

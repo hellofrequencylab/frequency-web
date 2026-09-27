@@ -51,7 +51,7 @@
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join, dirname, resolve, relative } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const ROOT = join('app', '(main)')
 const ANNOTATION = /\/\/\s*header-ok:|\/\*\s*header-ok\b/
@@ -303,4 +303,4 @@ function main() {
   process.exit(1)
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main()
+if (invokedDirectly(import.meta.url)) main()
