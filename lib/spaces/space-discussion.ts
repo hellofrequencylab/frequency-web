@@ -8,8 +8,13 @@
 // GATES, in order:
 //   • ROOT never offers it. Same leak class the Circles tab closed.
 //   • A live hub is `is_space_primary` plus LISTABLE_CIRCLE_STATUS. Off is `inactive`.
-//   • A manager keeps the tab when the hub is off, because that empty state is where they
-//     turn it on. A visitor is never offered a tab over a room that is not there.
+//   • A manager keeps the conversation slot when the hub is off, because that empty state is
+//     where they turn it on. A visitor is never shown a door onto a room that is not there.
+//
+// AMENDED 2026-09-27 (LIVE-523, ADR-1534 amending ADR-1469 s2). The conversation is no longer a
+// DEDICATED TAB beside Circles: the Space's community is one page, and the Space Circle's feed
+// leads it. The gate below is unchanged in substance and renamed to match, because a function
+// called ...Tab that no longer decides a tab is the kind of name this repo keeps fixing.
 //
 // Reads use the admin client. The Circles tab already proved this shape. Fail-closed.
 
@@ -33,7 +38,7 @@ export function isLiveSpaceHub(
   return (LISTABLE_CIRCLE_STATUS as readonly string[]).includes(row.status ?? '')
 }
 
-export function canSeeSpaceDiscussionTab(args: {
+export function canSeeSpaceDiscussion(args: {
   spaceType: string
   hubLive: boolean
   canManage: boolean

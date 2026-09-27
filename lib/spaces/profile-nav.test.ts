@@ -320,45 +320,51 @@ describe('the #reviews anchor — the original "two Reviews" bug', () => {
   })
 })
 
-describe('the Discussion tab', () => {
-  it('hides from a visitor when the Space Circle is off', async () => {
-    const { tabs } = await buildSpaceProfileNav(space())
-    expect(labels(tabs)).not.toContain('Discussion')
-  })
-
-  it('shows once the Space Circle is on', async () => {
+// THE DISCUSSION ROW IS DELIBERATELY GONE (LIVE-523, ADR-1534 amending ADR-1469 §2).
+//
+// This block used to assert the opposite, case for case: that a live hub ADDS a `Discussion` tab
+// pointing at `/spaces/<slug>/discussion`, and that a manager keeps it at zero. Those cases pinned
+// the defect as a contract — two menu rows over one subject, the same shape as the `#reviews`,
+// `#circles`, `#contact` and `#events` anchors sitting beside their own tabs — so they are rewritten
+// here rather than deleted, which is how this repo records a reversal (#2916 did the same to the
+// two calendar tests it overturned).
+//
+// The conversation did not go away. It LEADS `/spaces/<slug>/circles`, under an <h2> still named
+// Discussion, at the anchor `#discussion`, and the old URL forwards there. What must never come
+// back is a second menu row for it.
+describe('the Space menu carries ONE row for the community', () => {
+  it('a live Space Circle adds no second row beside Circles', async () => {
     hub.live = true
     const { tabs } = await buildSpaceProfileNav(space())
-    expect(labels(tabs)).toContain('Discussion')
-    expect(hrefFor(tabs, 'Discussion')).toBe('/spaces/ojai/discussion')
+    expect(labels(tabs)).not.toContain('Discussion')
+    expect(tabs.map((t) => t.href)).not.toContain('/spaces/ojai/discussion')
   })
 
-  it('a manager keeps it when the hub is off, so they can turn it on', async () => {
+  it('a manager gets no second row either, live hub or not', async () => {
     manage.canManage = true
+    for (const live of [false, true]) {
+      hub.live = live
+      const { tabs } = await buildSpaceProfileNav(space())
+      expect(labels(tabs), `hub live: ${live}`).not.toContain('Discussion')
+    }
+  })
+
+  // The control, so the case above cannot pass because the menu is empty or the mock broke: the
+  // ONE community row is still built, and it is Circles.
+  it('still carries the Circles row, which is the page the conversation now leads', async () => {
+    hub.live = true
+    // `circles` presence is what puts the row there at all (ADR-1094); without it this control
+    // would pass for the wrong reason, by finding no menu rather than finding one row.
+    presence.circles = true
     const { tabs } = await buildSpaceProfileNav(space())
-    expect(labels(tabs)).toContain('Discussion')
+    expect(labels(tabs)).toContain('Circles')
+    expect(hrefFor(tabs, 'Circles')).toBe('/spaces/ojai/circles')
   })
 
   it('is never named Community', async () => {
     hub.live = true
     const { tabs } = await buildSpaceProfileNav(space())
     expect(labels(tabs)).not.toContain('Community')
-  })
-
-  it('ROOT never offers it', async () => {
-    hub.live = true
-    manage.canManage = true
-    const { tabs } = await buildSpaceProfileNav(space({ type: 'root' }))
-    expect(labels(tabs)).not.toContain('Discussion')
-  })
-
-  it('the `circles` FUNCTION being switched off hides it', async () => {
-    hub.live = true
-    manage.canManage = true
-    const { tabs } = await buildSpaceProfileNav(
-      space({ entitlements: { circles: false } as unknown as Space['entitlements'] }),
-    )
-    expect(labels(tabs)).not.toContain('Discussion')
   })
 })
 

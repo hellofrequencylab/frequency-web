@@ -33,7 +33,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 }))
 
 import {
-  canSeeSpaceDiscussionTab,
+  canSeeSpaceDiscussion,
   getLiveSpaceCircle,
   isLiveSpaceHub,
 } from './space-discussion'
@@ -54,28 +54,28 @@ describe('isLiveSpaceHub', () => {
   })
 })
 
-describe('canSeeSpaceDiscussionTab', () => {
+describe('canSeeSpaceDiscussion', () => {
   it('ROOT never offers it', () => {
     expect(
-      canSeeSpaceDiscussionTab({ spaceType: 'root', hubLive: true, canManage: true }),
+      canSeeSpaceDiscussion({ spaceType: 'root', hubLive: true, canManage: true }),
     ).toBe(false)
   })
 
   it('a live hub is offered to anyone who can already see the Space', () => {
     expect(
-      canSeeSpaceDiscussionTab({ spaceType: 'business', hubLive: true, canManage: false }),
+      canSeeSpaceDiscussion({ spaceType: 'business', hubLive: true, canManage: false }),
     ).toBe(true)
   })
 
   it('a manager keeps the tab when the hub is off', () => {
     expect(
-      canSeeSpaceDiscussionTab({ spaceType: 'business', hubLive: false, canManage: true }),
+      canSeeSpaceDiscussion({ spaceType: 'business', hubLive: false, canManage: true }),
     ).toBe(true)
   })
 
   it('a visitor is never offered a tab over a room that is not there', () => {
     expect(
-      canSeeSpaceDiscussionTab({ spaceType: 'business', hubLive: false, canManage: false }),
+      canSeeSpaceDiscussion({ spaceType: 'business', hubLive: false, canManage: false }),
     ).toBe(false)
   })
 })

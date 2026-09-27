@@ -263,9 +263,16 @@
   **Circles**. (Same collision ADR-868 already fixed once in the sidebar; "Community" stays
   reserved for the canon uses in this doc — the community structure tree, `community_role`,
   Community Resonance, and the brand's Community Collective.) The stored block TYPE KEY
-  `SpaceCommunity` is an internal identifier and is deliberately not renamed. The Space
-  profile tab for the Space Circle's conversation is **Discussion** ([ADR-1469](DECISIONS.md)).
-  It is that Circle's feed, on the Space. Never a second post scope.
+  `SpaceCommunity` is an internal identifier and is deliberately not renamed. The Space Circle's
+  conversation is named **Discussion** ([ADR-1469](DECISIONS.md), as amended by
+  [ADR-1534](DECISIONS.md)). It is that Circle's feed, on the Space. Never a second post scope.
+
+  ⚠️ **Discussion is a SECTION of the Circles page, not a tab beside it** (ADR-1534, LIVE-523,
+  owner directive 2026-09-27). A Space's community is ONE page: `/spaces/<slug>/circles` leads with
+  the Space Circle's feed under an `<h2>` named Discussion at the anchor `#discussion`, and indexes
+  the other circles beneath it. A dedicated Discussion row beside Circles was two menu rows over one
+  subject. The WORD is unchanged and still never "Community"; what changed is where it sits.
+  `/spaces/<slug>/discussion` stays a reserved slug and forwards to `…/circles#discussion`.
 - **Outpost** = the brick-and-mortar home base of a Nexus; one per Nexus; the seed
   toward a Lab. Circles meet in homes/public spaces, never Outposts.
 - **Frequency Lab** = standalone for-profit venue; when a Lab exists in a Nexus, the
