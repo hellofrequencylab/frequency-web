@@ -32,7 +32,7 @@ const presence = {
   booking: false,
   events: true,
   reviews: false,
-  faqs: false,
+  faqs: true,
   practices: false,
   circles: false,
   about: false,
@@ -65,7 +65,7 @@ const space = (over: Partial<Space> = {}): Space =>
     slug: 'royaltemple',
     name: 'Royal Temple',
     type: 'business',
-    preferences: { profileLayout: { rows: [{ id: 'r1', columns: 1, cells: [['events']] }] } },
+    preferences: { profileLayout: { rows: [{ id: 'r1', columns: 1, cells: [['faq']] }] } },
     ...over,
   }) as unknown as Space
 
@@ -82,7 +82,14 @@ describe('the signed-out share URL builds a menu without reading a cookie', () =
 
   it('still derives the section anchors of the page that renders', async () => {
     const { tabs } = await buildPublicSpaceProfileNav(space())
-    expect(tabs.map((t) => t.href)).toContain('/spaces/royaltemple#events')
+    // 🔴 `#faq`, NOT `#events`, and the swap is the point. LIVE-520 (#2916) added `events` to
+    // DEDICATED_TAB_ANCHORS, because Calendar is a real tab and an `#events` anchor beside it is
+    // the "two Reviews" bug again. A suppressed anchor can never appear here, so asserting it
+    // would fail for a reason that has nothing to do with the anonymous path this file guards.
+    // `faq` is not in any starter layout either, so it can ONLY have come from the fixture's own
+    // profileLayout above -- which is what makes this an anchor-derivation check at all. The
+    // sibling profile-nav.test.ts moved to `faq` for the same reason and records the measurement.
+    expect(tabs.map((t) => t.href)).toContain('/spaces/royaltemple#faq')
   })
 
   it('offers the visitor the doors a visitor can use', async () => {
