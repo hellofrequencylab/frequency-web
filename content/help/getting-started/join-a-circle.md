@@ -4,7 +4,7 @@ description: Find a local group around what you practice and start showing up.
 category: getting-started
 order: 2
 published: 2026-05-31
-updated: 2026-06-16
+updated: 2026-09-27
 audience: member
 featureKeys: [circles, memberships]
 status: published
@@ -35,6 +35,10 @@ A Circle with a small star is **Featured**: one the Frequency team picked as a g
 - **Circles stay small on purpose.** Small enough that you are missed when you do
   not show up. If a Circle is full, it will seed a new one nearby rather than add
   a waitlist.
+- **Not every Circle has a Join button.** Some are kept for the members of a Space,
+  some come with a membership, and some are ones the host adds people to. Open one
+  of those and the page says which it is and what opens it, instead of showing you
+  a door that would turn you away.
 - You can be in more than one Circle. Most people settle into one home Circle and
   visit others.
 
