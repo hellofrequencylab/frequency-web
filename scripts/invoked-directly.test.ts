@@ -118,8 +118,10 @@ describe('scripts/: nobody hand-rolls the "was I invoked directly?" comparison',
     // `file://` keeps mechanism 2.
     // Its own header QUOTES both broken spellings, so read the code and not the commentary.
     const helper = codeLines(FILES.find((f) => f.path === 'lib/invoked-directly.mjs')!.src).join('\n')
-    expect(helper).toContain('realpathSync')
-    expect(helper).toContain('fileURLToPath')
+    // `toContain('realpathSync')` is not enough: the import line alone satisfies it while the body
+    // resolve()s. Caught by mutation — the symlink cases below failed and this one did not.
+    expect(helper).toContain('return realpathSync(')
+    expect(helper).toContain('fileURLToPath(importMetaUrl)')
     expect(helper, 'building the URL by concatenation is mechanism 2').not.toContain('`file://')
     // The fallback is load-bearing: realpathSync throws on a path that does not exist, which happens
     // for real in fixtures and --root invocations.
@@ -171,6 +173,22 @@ function stageBehindSymlink(script: string, mutate?: (src: string) => string): s
   return tmp
 }
 
+/** Stage `script` under a directory whose name contains a SPACE, with no symlink in the path.
+ *
+ *  This is mechanism 2 on its own: `` `file://${process.argv[1]}` `` percent-encodes nothing, so the
+ *  concatenated url carries a raw space while `import.meta.url` carries `%20`, and the two can never
+ *  be equal. Same silent exit 0, from a checkout path rather than a link. */
+function stageUnderSpacePath(script: string, mutate?: (src: string) => string): string {
+  const tmp = mkdtempSync(join(tmpdir(), 'invoked-directly-'))
+  temps.push(tmp)
+  const dir = join(tmp, 'a dir with spaces')
+  mkdirSync(join(dir, 'empty'), { recursive: true })
+  symlinkSync(join(SCRIPTS, 'lib'), join(dir, 'lib'), 'dir')
+  const src = readFileSync(join(SCRIPTS, script), 'utf8')
+  writeFileSync(join(dir, script), mutate ? mutate(src) : src)
+  return dir
+}
+
 /** Restore the exact pre-HYG-125 guard, so the paired case runs the OLD code on the NEW harness. */
 function oldGuard(src: string): string {
   const out = src
@@ -185,6 +203,29 @@ function oldGuard(src: string): string {
   // The mutation has to actually bite, or the paired case proves nothing.
   if (out.includes('invokedDirectly')) throw new Error('oldGuard() did not replace the guard')
   return out
+}
+
+/** The other pre-HYG-125 spelling, the one seven scripts carried: a url built by concatenation. */
+function oldConcatGuard(src: string): string {
+  const out = src
+    .replace("import { invokedDirectly } from './lib/invoked-directly.mjs'\n", '')
+    .replace('invokedDirectly(import.meta.url)', 'import.meta.url === `file://${process.argv[1]}`')
+  if (out.includes('invokedDirectly')) throw new Error('oldConcatGuard() did not replace the guard')
+  return out
+}
+
+function runAt(dir: string, script: string): { code: number; out: string } {
+  try {
+    const out = execFileSync(process.execPath, [join(dir, script), '--root', join(dir, 'empty')], {
+      encoding: 'utf8',
+      stdio: 'pipe',
+      env: { ...process.env, VERCEL: '' },
+    })
+    return { code: 0, out }
+  } catch (e) {
+    const err = e as { status: number; stdout: string; stderr: string }
+    return { code: err.status, out: `${err.stdout ?? ''}${err.stderr ?? ''}` }
+  }
 }
 
 function runThroughLink(tmp: string, script: string): { code: number; out: string } {
@@ -238,5 +279,30 @@ describe.each(DEPLOY_GATES)('THE GATE MUST RUN WHEN IT IS REACHED THROUGH A SYML
     } catch (e) {
       expect((e as { status?: number }).status).toBe(1)
     }
+  })
+})
+
+describe.each(DEPLOY_GATES)('AND WHEN ITS PATH HAS A SPACE IN IT: $script', ({ script, says }) => {
+  it('runs and still fails', () => {
+    const { code, out } = runAt(stageUnderSpacePath(script), script)
+    expect(code, `${script} exited 0 under a path with a space — it never ran`).toBe(1)
+    expect(out).toContain(says)
+  })
+
+  it('with the `file://` + argv[1] spelling restored, the same run goes SILENTLY GREEN', () => {
+    // Mechanism 2, behaviourally rather than by reading: an ENCODED url compared against a raw path.
+    // Seven scripts carried exactly this line.
+    const { code, out } = runAt(stageUnderSpacePath(script, oldConcatGuard), script)
+    expect(code, 'the concatenated url suddenly matches; re-derive the mechanism').toBe(0)
+    expect(out.trim()).toBe('')
+  })
+
+  it('and that same spelling DOES fail from a path with no space, so the condition can fail', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'invoked-directly-plain-'))
+    temps.push(tmp)
+    mkdirSync(join(tmp, 'empty'), { recursive: true })
+    symlinkSync(join(SCRIPTS, 'lib'), join(tmp, 'lib'), 'dir')
+    writeFileSync(join(tmp, script), oldConcatGuard(readFileSync(join(SCRIPTS, script), 'utf8')))
+    expect(runAt(tmp, script).code).toBe(1)
   })
 })

@@ -31,7 +31,6 @@
 
 import { execFileSync } from 'node:child_process'
 import { existsSync, writeFileSync } from 'node:fs'
-import path from 'node:path'
 import { invokedDirectly } from '../lib/invoked-directly.mjs'
 
 const BACKLOG = 'docs/BUILD-BACKLOG.json'
