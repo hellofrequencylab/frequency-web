@@ -19,6 +19,7 @@ const eqCalls: Array<[string, unknown]> = []
 const inCalls: Array<[string, unknown]> = []
 const isCalls: Array<[string, unknown]> = []
 const gteCalls: Array<[string, unknown]> = []
+const ltCalls: Array<[string, unknown]> = []
 const orderCalls: Array<[string, unknown]> = []
 let gteCalled = false
 
@@ -44,6 +45,10 @@ function builder() {
     gte(col: string, val: unknown) {
       gteCalled = true
       gteCalls.push([col, val])
+      return api
+    },
+    lt(col: string, val: unknown) {
+      ltCalls.push([col, val])
       return api
     },
     order(col: string, opts: unknown) {
@@ -84,6 +89,7 @@ beforeEach(() => {
   inCalls.length = 0
   isCalls.length = 0
   gteCalls.length = 0
+  ltCalls.length = 0
   orderCalls.length = 0
   gteCalled = false
 })
@@ -133,6 +139,24 @@ describe('listEventsForSpace (by-space read)', () => {
     store.rows[SPACE_A] = [{ id: 'a1', space_id: SPACE_A, title: 'A only' }]
     await listEventsForSpace(SPACE_A, { fromDay: 'yesterday' })
     expect(gteCalled).toBe(false)
+  })
+
+  // ── THE TEAM CALENDAR'S CEILING (LIVE-480) ────────────────────────────────────────────────────
+  // A floor alone left the window open at the top, and newest-first inside an open-topped window
+  // is the FURTHEST-FUTURE 200: a Space scheduled past the cap lost next month. `toDay` closes it.
+  it('toDay adds an EXCLUSIVE starts_at ceiling written the way the column stores wall clock', async () => {
+    store.rows[SPACE_A] = [{ id: 'a1', space_id: SPACE_A, title: 'A only' }]
+    await listEventsForSpace(SPACE_A, { fromDay: '2025-08-01', toDay: '2027-12-01' })
+    expect(gteCalls).toContainEqual(['starts_at', '2025-08-01T00:00:00.000Z'])
+    expect(ltCalls).toContainEqual(['starts_at', '2027-12-01T00:00:00.000Z'])
+  })
+
+  it('a malformed toDay adds no ceiling rather than a bad one, and no toDay adds none', async () => {
+    store.rows[SPACE_A] = [{ id: 'a1', space_id: SPACE_A, title: 'A only' }]
+    await listEventsForSpace(SPACE_A, { toDay: 'next year' })
+    expect(ltCalls).toEqual([])
+    await listEventsForSpace(SPACE_A, { fromDay: '2025-08-01' })
+    expect(ltCalls).toEqual([])
   })
 
   it('newestFirst flips the order so the cap cuts the oldest rows; the default stays soonest first', async () => {

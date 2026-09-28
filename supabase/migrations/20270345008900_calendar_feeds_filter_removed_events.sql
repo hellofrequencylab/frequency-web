@@ -1,4 +1,4 @@
--- The two calendar feed RPCs stop serving a removed event (SCAN-645, ADR-1536).
+-- The two calendar feed RPCs stop serving a removed event (SCAN-645, ADR-1542).
 --
 -- 🔴 THE HOLE. `public.events.removed_at` has existed since 20260613130000 and is enforced reader by
 -- reader: eighteen SQL functions read `public.events`, and sixteen of them either filter the column
