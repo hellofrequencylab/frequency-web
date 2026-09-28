@@ -619,24 +619,25 @@ visual job on every open branch. The eight `/discover` captures still run full-p
 advisory visual tier (`@advisory`, not `@shell` — `@shell` is the authed-app reporter). A
 diff there is information. Recapture when the design moved, not when a Circle listed.
 
-**LIVE-476 (2026-09-23): `/admin/qr` rides the same tier, for a cause nobody has found.**
+**LIVE-476 (2026-09-23 to 2026-09-28): `/admin/qr` rode the same tier, and votes again.**
 It blocked four consecutive pull requests that touched nothing it renders: first a full-page
-height flip (14521 ↔ 14567), settled by the first-screen-only capture in
+height flip (14521 ↔ 14567 at 390), settled for five days by a first-screen-only capture in
 `VIEWPORT_ONLY_OPERATOR_PATHS`, and then, on the first screen, a small **stable** diff on
 DESKTOP only: 951 px dawn-light, 1029 px dawn-dark, identical across three attempts, mobile
-green. It is not live-tally drift: `qr_scans` has had no new row since 2026-09-18, so the four
-StatCards in the picture are frozen. The diff image has never been read. So the gate was
-downgraded, not fixed: the surface is dropped from the blocking operator loop by
-`ADVISORY_OPERATOR_PATHS` and photographed in its own `@advisory` describe, which runs every
-pull request and reports in the job summary.
+green. Both are fixed at their cause (ADR-1559). The flip was the shutter dropping Chromium's
+touch emulation after its first full-page capture (LIVE-492; `dropTouchBeforeFullPageCapture` in
+`surfaces.ts` carries the measurement), which `capture()` now does before it. The stable diff was the operator info rail, shared admin chrome at xl and
+above that prints live `profiles` counts and sits at the same position on every admin page;
+it is one `admin-rail` mask box since LIVE-513, and `/admin/library` read the same 1029 px
+dawn-dark to the pixel (LIVE-504). The surface is back in the blocking operator loop, its
+four baselines are full-page again, and the operator advisory describe is gone with its last
+passenger.
 
-Two things follow, and both are easy to get wrong. **The capture still happens**, advisory is
-not skipped, and `visual-tiers.test.ts` fails in-tree if the advisory describe disappears.
-**And the coverage banner knows**: the describe carries no `@shell` tag, so
-`ADVISORY_OPERATOR_SURFACES` in `surfaces.ts` tells `shell-coverage.ts` to report the surface as
-*photographed, advisory, LIVE-476* rather than as unphotographed, and `PW_REQUIRE_OPERATOR`
-cannot go red for it. **Do not recapture this surface to clear a diff.** Read the picture and
-put what you find on LIVE-476.
+What stays, so the next downgrade is not re-derived: `ADVISORY_OPERATOR_SURFACES` in
+`surfaces.ts` is still the roster (empty) and `shell-coverage.ts` still reports an entry as
+*photographed, advisory, ROW* rather than as unphotographed. An entry needs the describe and
+the blocking-loop filter back in `visual.spec.ts`, and `visual-tiers.test.ts` fails in-tree
+until both are there, and fails the other way if a describe is left looping an empty roster.
 
 ## A visual failure that has nothing to do with your diff
 
