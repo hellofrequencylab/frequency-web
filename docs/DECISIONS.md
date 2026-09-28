@@ -48330,9 +48330,9 @@ The owner's directive of 2026-09-27 states it as product: the main community Cir
 
 **Rows.** `DEF-MOBILE`, `DEF-ETSY`, `PROG-GD6` unparked. `HYG-123` ruled. `HYG-126`, `HYG-127`, `HYG-128` filed. `PROG-A1`, `PROG-A3`, `PROG-A4` stay parked with the ruling appended. `LIVE-234`, `LIVE-455` untouched.
 
-## ADR-1536: A visitor's first load is weighed too — the shell-weight gate holds the front door and the marketing layout to their own ceilings (LIVE-499)
+## ADR-1540: A visitor's first load is weighed too — the shell-weight gate holds the front door and the marketing layout to their own ceilings (LIVE-499)
 
-**Status:** Accepted · 2026-09-28 · backlog `LIVE-499` · extends [ADR-1066](DECISIONS.md) (the shell-weight gate) and [ADR-1082](DECISIONS.md) (re-test the premise) · beside [ADR-1211](DECISIONS.md) (build fan-out) · lane `perf-shell`
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-499` · numbered **1540** because 1536–1539 are claimed by open PRs #2937, #2940, #2938, #2939 and #2942 (the later-opened PR renumbers, ADR-1488 · ADR-1509) · extends [ADR-1066](DECISIONS.md) (the shell-weight gate) and [ADR-1082](DECISIONS.md) (re-test the premise) · beside [ADR-1211](DECISIONS.md) (build fan-out) · lane `perf-shell`
 
 **Context.** `check:shell-weight` (ADR-1066) weighs the bytes a MEMBER's phone parses: Arms A and B read `entryJSFiles['[project]/app/(main)/layout']` from the client-reference manifests, and Arm C walks four member hot routes at PR time. `/` and every `app/(marketing)` route sit outside that shell — the home page renders its own header and footer, and the marketing group has its own layout — so a VISITOR's first load, on the one route that decides whether there is a second visit, was measured by nothing. LIVE-498 was filed on 2026-09-24 as a fifty-fold Total Blocking Time regression on `/`; re-tested on 2026-09-28 it was one noisy Lighthouse attempt, and the same commit read 6ms eighteen minutes later. The finding that survived that re-test is LIVE-499: had the regression been real, no gate would have noticed it, and the Lighthouse job is advisory (WORKFLOW.md rule 4) and runs only on PRs that trigger e2e.
 

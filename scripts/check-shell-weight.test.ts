@@ -271,7 +271,7 @@ describe('Arm C · no heavy library reaches a member hot route as client code', 
 })
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-// ARM D · THE FRONT DOOR (LIVE-499, ADR-1536). The measurement is the artifact's (postbuild, on
+// ARM D · THE FRONT DOOR (LIVE-499, ADR-1540). The measurement is the artifact's (postbuild, on
 // Vercel); this is the PR-time half that keeps the artifact arm pointed at real routes and keeps the
 // front door inside Arm C's walk, so the two halves cannot drift apart between merges.
 // ─────────────────────────────────────────────────────────────────────────────────────────────

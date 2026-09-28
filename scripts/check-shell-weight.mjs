@@ -66,7 +66,7 @@
 // staticModuleEdges, declaresUseClient, heavyModulesIn. Both controls are asserted there too, so
 // "no leaks" can never mean "nothing was examined".
 //
-//   ARM D · THE FRONT DOOR (LIVE-499, ADR-1536). Arms A and B weigh the MEMBER shell, and Arm C
+//   ARM D · THE FRONT DOOR (LIVE-499, ADR-1540). Arms A and B weigh the MEMBER shell, and Arm C
 //           walks member routes. `/` and every `app/(marketing)` route sit OUTSIDE that shell —
 //           the home page renders its own header and footer, the marketing group has its own
 //           layout — so a visitor's first load was measured by nothing at all, on the one route
@@ -288,7 +288,7 @@ export const HOT_ROUTE_ENTRIES = [
   'app/(marketing)/pricing/page.tsx',
 ]
 
-// ── ARM D · THE FRONT DOOR (LIVE-499, ADR-1536) ─────────────────────────────────────────────
+// ── ARM D · THE FRONT DOOR (LIVE-499, ADR-1540) ─────────────────────────────────────────────
 // The manifest entries a VISITOR's first load is made of, each with its own byte ceiling. Read
 // from the same client-reference manifests Arm A reads, resolved the same way, so a chunk counted
 // here is a chunk the browser fetches and parses before the page responds.

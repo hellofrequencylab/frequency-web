@@ -287,7 +287,7 @@ chunks. That is not a new trick; it is how dc47b89 proved the bug was real, by f
 - **It has a PR-time half.** `scripts/check-shell-weight.test.ts` asserts the source property and the
   fingerprints' integrity in `test`, because rule 5 means the artifact arm's first chance to fire is
   *after* the merge.
-- **It weighs the front door too (Arm D, LIVE-499, [ADR-1536](DECISIONS.md)).** `/` renders
+- **It weighs the front door too (Arm D, LIVE-499, [ADR-1540](DECISIONS.md)).** `/` renders
   outside every layout group and `app/(marketing)` has its own layout, so until 2026-09-28 a
   visitor's first load was measured by nothing: Arms A and B only ever saw the member shell. Arm D
   reads the same manifests for `[project]/app/page` and `[project]/app/(marketing)/layout` and

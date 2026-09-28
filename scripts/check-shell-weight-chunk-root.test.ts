@@ -184,7 +184,7 @@ describe('the gate REJECTS the two things it exists to reject', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-// ARM D · THE FRONT DOOR (LIVE-499, ADR-1536), driven into its failing direction the same way.
+// ARM D · THE FRONT DOOR (LIVE-499, ADR-1540), driven into its failing direction the same way.
 //
 // `/` and the marketing group sit outside the member shell, so Arms A and B never weighed a
 // visitor's first load. This arm holds each front-door manifest entry to its own byte ceiling, and
