@@ -17,6 +17,19 @@ import {
 // CALLER'S OWN session, so the table's RLS quad (private.can_write_space_content) is the lock and no
 // admin client is involved. The one public read is the space_public_unavailable() projection, which
 // returns times and nothing else. Every reader fails safe to [].
+//
+// 🔴 DELETE IS A TOMBSTONE, AND THAT MAKES `removed_at is null` A READER'S JOB (LIVE-536).
+// On 2026-09-28 an operator deleted one occurrence of a repeating Pencil ("Craft Night") and lost the
+// whole series for good: a repeating entry is ONE ROW (PROG-CAL5), and the delete below was a hard
+// `.delete()` against a table with no tombstone column, so there was nothing left to recover from.
+// `deleteCalendarEntryRow` now STAMPS `removed_at` (migration 20270345008600), which moves the burden
+// onto every reader in this file: a removed row is still in the table, still inside the RLS quad, and
+// still returned by any query that does not say otherwise. A reader that forgets the filter shows an
+// operator a date they deleted, which is worse than the bug the tombstone fixes. So every select here
+// carries `.is('removed_at', null)`, and so does every write that must not resurrect or silently edit
+// a removed row. The SQL-side readers (space_public_unavailable, keep_pencil_date) filter in the
+// migration; the two admin-client readers outside this file are lib/spaces/booking.ts and
+// app/calendar/private/[token]/route.ts.
 
 /** The table is not in lib/database.types.ts until the migration applies and types regenerate
  *  (ADR-246), so it is reached through this narrow untyped seam. */
@@ -86,6 +99,7 @@ export async function listSpaceCalendarEntries(spaceId: string, fromDay: string,
         .from('space_calendar_entries')
         .select(ENTRY_COLS)
         .eq('space_id', spaceId)
+        .is('removed_at', null)
         .is('published_event_id', null)
         .lt('starts_at', `${toDay}T00:00:00Z`)
         .gt('ends_at', `${fromDay}T00:00:00Z`)
@@ -95,6 +109,7 @@ export async function listSpaceCalendarEntries(spaceId: string, fromDay: string,
         .from('space_calendar_entries')
         .select(ENTRY_COLS)
         .eq('space_id', spaceId)
+        .is('removed_at', null)
         .is('published_event_id', null)
         .not('recurrence_rule', 'is', null)
         .lt('starts_at', `${toDay}T00:00:00Z`)
@@ -158,6 +173,7 @@ export async function getCalendarEntryRow(spaceId: string, entryId: string): Pro
       .select(ENTRY_COLS)
       .eq('space_id', spaceId)
       .eq('id', entryId)
+      .is('removed_at', null)
       .limit(1)
     return error || !data?.length ? null : data[0]
   } catch {
@@ -173,6 +189,7 @@ export async function countOptionGroup(spaceId: string, group: string): Promise<
       .select('id')
       .eq('space_id', spaceId)
       .eq('option_group', group)
+      .is('removed_at', null)
       .limit(MAX_CANDIDATE_DATES + 1)
     return error || !data ? 0 : data.length
   } catch {
@@ -222,6 +239,9 @@ export async function updateCalendarEntryRow(
     .update(optionGroup ? { ...row, option_group: optionGroup } : row)
     .eq('space_id', spaceId)
     .eq('id', entryId)
+    // A removed date is not editable: an open drawer whose row was deleted elsewhere must fail with
+    // "could not be saved" rather than quietly write fields onto a tombstone (LIVE-536).
+    .is('removed_at', null)
     .select(ENTRY_COLS)
   if (error || !data?.length) return { error: 'The entry could not be saved.' }
   return { data: true }
@@ -251,6 +271,8 @@ export async function retirePencilToEvent(
     .eq('space_id', spaceId)
     .eq('id', entryId)
     .eq('kind', 'pencil')
+    // A removed Pencil cannot become a Production: it is not on the calendar (LIVE-536).
+    .is('removed_at', null)
     .select('id')
   if (error || !data?.length) return { error: 'That date could not be marked as published.' }
   return { data: true }
@@ -270,17 +292,38 @@ export async function setEntryExceptionDates(
     .update({ exception_dates: dates })
     .eq('space_id', spaceId)
     .eq('id', entryId)
+    .is('removed_at', null)
     .select('id')
   if (error || !data?.length) return { error: 'That date could not be skipped.' }
   return { data: true }
 }
 
-export async function deleteCalendarEntryRow(spaceId: string, entryId: string): Promise<{ data: true } | { error: string }> {
+/** THE DELETE IS A TOMBSTONE (LIVE-536, owner ruling 2026-09-28). This was a hard `.delete()`, and it
+ *  is what cost the owner a repeating Pencil ("Craft Night") permanently: a series is ONE ROW, so
+ *  deleting any occurrence destroyed every occurrence, and the table carried no tombstone column to
+ *  recover from. Now it stamps `removed_at` (+ `removed_by`, the actor the action already has) and the
+ *  row stays, so the date can be brought back with `set removed_at = null`.
+ *
+ *  What makes that honest rather than a hidden row is the FILTER on every reader in this file and in
+ *  the three readers outside it (lib/calendar/plans-store.ts, lib/spaces/booking.ts,
+ *  app/calendar/private/[token]/route.ts) plus the two SQL readers in the migration. The `removed_at
+ *  is null` guard here is what keeps a SECOND delete from overwriting the first removal's timestamp:
+ *  an already-removed date reports the same "could not be deleted" a hard delete of a missing row did,
+ *  and its original tombstone survives.
+ *
+ *  Runs on the CALLER'S session like every other write here, so the operator quad's UPDATE policy is
+ *  the lock. The table's DELETE policy is untouched and unused, kept for a future purge. */
+export async function deleteCalendarEntryRow(
+  spaceId: string,
+  entryId: string,
+  removedBy: string | null = null,
+): Promise<{ data: true } | { error: string }> {
   const { data, error } = await (await db())
     .from('space_calendar_entries')
-    .delete()
+    .update({ removed_at: new Date().toISOString(), removed_by: removedBy })
     .eq('space_id', spaceId)
     .eq('id', entryId)
+    .is('removed_at', null)
     .select('id')
   if (error || !data?.length) return { error: 'The entry could not be deleted.' }
   return { data: true }

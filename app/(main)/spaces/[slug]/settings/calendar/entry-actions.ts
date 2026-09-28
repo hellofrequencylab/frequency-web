@@ -168,7 +168,10 @@ export async function deleteCalendarEntry(slug: string, entryId: string): Promis
   const editor = await resolveEditor(slug)
   if (!editor) return fail('You do not have access to this calendar.')
   if (!UUID_RE.test(entryId)) return fail('That date no longer exists.')
-  const res = await deleteCalendarEntryRow(editor.spaceId, entryId)
+  // A tombstone, not a destruction (LIVE-536): the row keeps `removed_at` + `removed_by` and every
+  // reader filters it out, so a date deleted by mistake — including a whole repeating series, which
+  // is ONE row — can be brought back.
+  const res = await deleteCalendarEntryRow(editor.spaceId, entryId, editor.profileId)
   if ('error' in res) return fail(res.error)
   revalidate(slug)
   return ok()

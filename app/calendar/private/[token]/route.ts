@@ -30,11 +30,18 @@ export async function GET(
     return new NextResponse('Not found', { status: 404 })
   }
 
+  // 🔴 `removed_at is null` IS NOT OPTIONAL HERE (LIVE-536). This read is SERVICE ROLE, so no policy
+  // filters it, and the subscriber is a calendar app that caches what it is handed. Deleting an entry
+  // is a tombstone now rather than a `.delete()`, so without this filter a deleted date — including a
+  // whole repeating series, which is ONE row with its own RRULE — would keep drawing itself in the
+  // team's phone calendars indefinitely, which is the deleted-but-still-visible failure the tombstone
+  // exists to avoid.
   const { data: entries } = await admin
     .from('space_calendar_entries')
     .select('id, title, notes, location, starts_at, ends_at, time_zone, status, plan_id, recurrence_rule, exception_dates')
     .eq('space_id', row.space_id)
     .neq('status', 'cancelled')
+    .is('removed_at', null)
     .limit(400)
 
   const todos = await listTasks({ spaceId: row.space_id, limit: 200 })

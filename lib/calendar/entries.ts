@@ -21,7 +21,15 @@ import {
 // TIME CONVENTION (the events one, lib/time/zone.ts): starts_at / ends_at store the Space's wall
 // clock as UTC parts. All-day entries run 00:00 of the first day to 00:00 of the day AFTER the last.
 
-/** A row of public.space_calendar_entries as the app reads it. */
+/** A row of public.space_calendar_entries as the app reads it.
+ *
+ *  🔴 `removed_at` / `removed_by` ARE DELIBERATELY ABSENT (LIVE-536). The tombstone the delete stamps
+ *  is a filter, not a field: every reader in lib/calendar/entries-store.ts, lib/calendar/plans-store.ts,
+ *  lib/spaces/booking.ts and app/calendar/private/[token]/route.ts carries `removed_at is null`, so
+ *  every row that reaches this type is live and nothing downstream has to branch on it. Adding them
+ *  to ENTRY_COLS would put a column in `EntryWrite` (which is this type minus four keys) that the
+ *  staff form would then be expected to produce, and a form that can write a tombstone is a form that
+ *  can delete a date by saving it. */
 export interface EntryRow {
   id: string
   space_id: string

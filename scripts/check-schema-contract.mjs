@@ -109,6 +109,70 @@ export const ALLOWLIST = [
       'localized ADR-246 cast at the call site.',
     owner: 'PROG-D4',
   },
+  // ── LIVE-536: the calendar-entry tombstone ────────────────────────────────────────────────────
+  // `space_calendar_entries.removed_at` / `removed_by` ship in migration 20270345008600 and are
+  // applied by a human out of band (docs/WORKFLOW.md "Scaling to a team": one shared database, so an
+  // authoring session never runs `supabase db push`). Until that apply and the next
+  // lib/database.types.ts regeneration, the schema is AHEAD of the checked-in types rather than these
+  // references being wrong — the same situation as the two rpc entries above. Four files, two
+  // columns, one entry per pair; `kind` is omitted because each file uses the column as a filter AND,
+  // in the store's case, as a write key. All four retire in one pass on the next regeneration.
+  //
+  // 🔴 These are the sites that make a deleted date STAY deleted. If an entry here ever stops
+  // matching, do not delete the entry: find out whether the filter it waives went with it.
+  {
+    file: 'lib/calendar/entries-store.ts',
+    table: 'space_calendar_entries',
+    column: 'removed_at',
+    added: '2026-09-28',
+    reason:
+      'The tombstone the soft delete stamps, and the `removed_at is null` filter on all seven reads ' +
+      'and writes in this file. Ships in migration 20270345008600, applied by a human at merge.',
+    owner: 'LIVE-536',
+  },
+  {
+    file: 'lib/calendar/entries-store.ts',
+    table: 'space_calendar_entries',
+    column: 'removed_by',
+    added: '2026-09-28',
+    reason:
+      'Written beside removed_at by deleteCalendarEntryRow (the actor resolveEditor already has). ' +
+      'Ships in migration 20270345008600, applied by a human at merge.',
+    owner: 'LIVE-536',
+  },
+  {
+    file: 'lib/calendar/plans-store.ts',
+    table: 'space_calendar_entries',
+    column: 'removed_at',
+    added: '2026-09-28',
+    reason:
+      'The `removed_at is null` filter on the six Plan-side reads and on both statements of ' +
+      'archiveSpacePlanRows, so archiving a Plan cannot hard-delete a date the operator had already ' +
+      'removed. Ships in migration 20270345008600, applied by a human at merge.',
+    owner: 'LIVE-536',
+  },
+  {
+    file: 'lib/spaces/booking.ts',
+    table: 'space_calendar_entries',
+    column: 'removed_at',
+    added: '2026-09-28',
+    reason:
+      'readCalendarBlocks runs on the SERVICE ROLE, so no policy filters a removed row out: without ' +
+      'this filter a deleted entry keeps taking slots off every booking page. Ships in migration ' +
+      '20270345008600, applied by a human at merge.',
+    owner: 'LIVE-536',
+  },
+  {
+    file: 'app/calendar/private/[token]/route.ts',
+    table: 'space_calendar_entries',
+    column: 'removed_at',
+    added: '2026-09-28',
+    reason:
+      'The token-keyed team .ics feed is also service-role, and a calendar app caches what it is ' +
+      'handed: without this filter a deleted series keeps drawing itself in the team’s phones. Ships ' +
+      'in migration 20270345008600, applied by a human at merge.',
+    owner: 'LIVE-536',
+  },
   // The PROG-CAL2 and PROG-CAL3 calendar allowlists (2026-09-19 and 2026-09-21, 18 entries)
   // are GONE, retired by LIVE-453 rather than expired: lib/database.types.ts now carries the five
   // Plan tables and the four columns they waived, so this guard walks those call sites for real
