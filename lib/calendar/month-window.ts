@@ -49,8 +49,15 @@ export function operatorHorizonWindow(now: Date): { fromDay: string; toDay: stri
   }
 }
 
-/** How far back the team calendar's EVENTS read reaches, in whole months (LIVE-467). */
+/**
+ * How far back and how far forward the team calendar's EVENTS read reaches, in whole months
+ * (LIVE-467 the floor, LIVE-480 the ceiling). 🔴 READ THEM TOGETHER AND MOVE THEM TOGETHER: the
+ * window has two ends, and a read bounded on one side only is the defect both rows closed, once
+ * from each end. Neither may fall inside the operator entry horizon above, or the entries the List
+ * and Workflow load and the events the same surfaces draw would disagree about what is in range.
+ */
 export const ADMIN_EVENT_FLOOR_MONTHS = 13
+export const ADMIN_EVENT_CEILING_MONTHS = 15
 
 /**
  * The first day of the month ADMIN_EVENT_FLOOR_MONTHS back from `now`: the floor under the team
@@ -67,6 +74,27 @@ export const ADMIN_EVENT_FLOOR_MONTHS = 13
 export function adminEventFloorDay(now: Date): string {
   const back = adjacentMonth(now.getUTCFullYear(), now.getUTCMonth() + 1, -ADMIN_EVENT_FLOOR_MONTHS)
   return `${back.year}-${pad2(back.month1)}-01`
+}
+
+/**
+ * The first day of the month ADMIN_EVENT_CEILING_MONTHS forward from `now`, EXCLUSIVE: the roof
+ * over the same read (LIVE-480).
+ *
+ * 🔴 WHY THE READ NEEDS A ROOF TOO. The floor alone left the window open at the top, and inside an
+ * open-topped window the newest-first read that LIVE-467 chose keeps the 200 FURTHEST-FUTURE rows:
+ * a Space that had scheduled past the cap lost the dates it runs next month while dates two years
+ * out stayed on. The ceiling is the operator entry horizon (fifteen months, the season the List
+ * and Workflow already survey), so the events read and the entries read agree on the far edge,
+ * and the cap can only ever cut at an edge the surface has already named.
+ */
+export function adminEventCeilingDay(now: Date): string {
+  const forward = adjacentMonth(now.getUTCFullYear(), now.getUTCMonth() + 1, ADMIN_EVENT_CEILING_MONTHS)
+  return `${forward.year}-${pad2(forward.month1)}-01`
+}
+
+/** Both ends of the team calendar's events window, stated together: [floor, ceiling). */
+export function adminEventWindow(now: Date): { fromDay: string; toDay: string } {
+  return { fromDay: adminEventFloorDay(now), toDay: adminEventCeilingDay(now) }
 }
 
 /** The grid of a month spans up to 6 days either side of it, so load that whole visible range. */
