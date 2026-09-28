@@ -3,7 +3,10 @@ import {
   monthGridWindow,
   operatorHorizonWindow,
   adminEventFloorDay,
+  adminEventCeilingDay,
+  adminEventWindow,
   ADMIN_EVENT_FLOOR_MONTHS,
+  ADMIN_EVENT_CEILING_MONTHS,
   OPERATOR_HORIZON_BACK_MONTHS,
   OPERATOR_HORIZON_FORWARD_MONTHS,
 } from './month-window'
@@ -69,5 +72,34 @@ describe('adminEventFloorDay', () => {
 
   it('reaches further back than the operator entry horizon, so the two never disagree about recent', () => {
     expect(ADMIN_EVENT_FLOOR_MONTHS).toBeGreaterThanOrEqual(OPERATOR_HORIZON_BACK_MONTHS)
+  })
+})
+
+// LIVE-480, the other half of LIVE-467. A floor and no roof is a window open at the top, and the
+// newest-first read that closed LIVE-467 keeps the 200 FURTHEST-FUTURE rows inside it: a Space
+// that had scheduled past the cap lost the dates it runs next month. The roof closes the window.
+describe('adminEventCeilingDay', () => {
+  it('is the first of the month fifteen months forward, exclusive, so a season fits under it', () => {
+    expect(ADMIN_EVENT_CEILING_MONTHS).toBe(15)
+    expect(adminEventCeilingDay(new Date('2026-09-22T00:00:00Z'))).toBe('2027-12-01')
+    expect(adminEventCeilingDay(new Date('2026-11-15T00:00:00Z'))).toBe('2028-02-01')
+  })
+
+  it('reaches at least as far as the operator entry horizon, so events and entries agree on the far edge', () => {
+    expect(ADMIN_EVENT_CEILING_MONTHS).toBeGreaterThanOrEqual(OPERATOR_HORIZON_FORWARD_MONTHS)
+    const now = new Date('2026-09-22T00:00:00Z')
+    expect(adminEventCeilingDay(now) >= operatorHorizonWindow(now).toDay).toBe(true)
+  })
+
+  it('states both ends together, and every date of a seeded year survives the window', () => {
+    const now = new Date('2026-09-22T00:00:00Z')
+    const window = adminEventWindow(now)
+    expect(window).toEqual({ fromDay: adminEventFloorDay(now), toDay: adminEventCeilingDay(now) })
+    expect(window).toEqual({ fromDay: '2025-08-01', toDay: '2027-12-01' })
+    // Royal Temple's year, Fall Equinox 2026 to Fall Equinox 2027, from the September before it.
+    expect(covers(window, '2026-09-27')).toBe(true)
+    expect(covers(window, '2027-09-24')).toBe(true)
+    // The roof is a roof: the first instant of the ceiling month is out.
+    expect(covers(window, '2027-12-01')).toBe(false)
   })
 })
