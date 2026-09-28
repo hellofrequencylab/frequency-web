@@ -234,7 +234,7 @@ jobs:
       - name: Fetch base tip for check:id-collisions
         if: github.event_name == 'pull_request'
         run: git fetch --no-tags --depth=1 origin "+refs/heads/${GITHUB_BASE_REF}:refs/remotes/origin/${GITHUB_BASE_REF}"
-      # ARMS check:shipped-ids (HYG-124, ADR-1536). That gate reads the SUBJECT of every commit merged
+      # ARMS check:shipped-ids (HYG-124, ADR-1538). That gate reads the SUBJECT of every commit merged
       # to the base branch since the one list was seeded (2026-08-17, ADR-1043) and fails when a
       # subject names a backlog id that is not a row. A depth-1 checkout has one commit, so the base
       # branch is deepened here with COMMIT OBJECTS ONLY: `--filter=tree:0` leaves trees and blobs
@@ -342,7 +342,7 @@ jobs:
           # and backlog through the API and fails the later-opened PR when two introduce the same
           # ADR number or backlog id. In this array rather than a step of its own so its skip and
           # its failure read in the same log shape as every other guard.
-          # 2026-09-28: shipped-ids joined (HYG-124, ADR-1536). check:backlog proves every ROW against
+          # 2026-09-28: shipped-ids joined (HYG-124, ADR-1538). check:backlog proves every ROW against
           # the tree and check:id-collisions fails an id two open PRs claim; neither can see an id
           # that was never added, and two merged PRs (#2911 HYG-125, #2878 LIVE-475) shipped that way
           # with every gate green. This guard counts from the other end: every id a merged commit

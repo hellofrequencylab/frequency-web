@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Shipped-id gate (HYG-124, ADR-1536).
+// Shipped-id gate (HYG-124, ADR-1538).
 //
 // docs/BUILD-BACKLOG.json is the only record of what is done (ADR-1043). Every guard that proves
 // that claim iterates THE ROWS: `check:backlog` runs each row's probe against the tree, in both

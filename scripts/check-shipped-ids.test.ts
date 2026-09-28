@@ -1,4 +1,4 @@
-// Non-triviality tests for the shipped-id gate (HYG-124, ADR-1536).
+// Non-triviality tests for the shipped-id gate (HYG-124, ADR-1538).
 //
 // WHY THESE EXIST. A guard that only ever passes is this repo's named failure mode (ADR-1011), and
 // this guard's whole subject is a pass that meant nothing: two merged pull requests carried ids the
