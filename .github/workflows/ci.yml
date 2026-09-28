@@ -234,6 +234,17 @@ jobs:
       - name: Fetch base tip for check:id-collisions
         if: github.event_name == 'pull_request'
         run: git fetch --no-tags --depth=1 origin "+refs/heads/${GITHUB_BASE_REF}:refs/remotes/origin/${GITHUB_BASE_REF}"
+      # ARMS check:shipped-ids (HYG-124, ADR-1538). That gate reads the SUBJECT of every commit merged
+      # to the base branch since the one list was seeded (2026-08-17, ADR-1043) and fails when a
+      # subject names a backlog id that is not a row. A depth-1 checkout has one commit, so the base
+      # branch is deepened here with COMMIT OBJECTS ONLY: `--filter=tree:0` leaves trees and blobs
+      # behind and `--shallow-since` stops at the seed. Measured 2026-09-28 on a depth-1 clone: 725
+      # commits in 1.2 s. It runs on every event, not only pull_request, because the guard reads
+      # HEAD's own history on a push to main and HEAD there IS the base tip fetched below. AFTER the
+      # tip fetch above on purpose: the tip's tree is then already on disk for check:id-collisions,
+      # so `git show origin/<base>:<file>` never has to lazy-fetch through the promisor remote.
+      - name: Fetch base history for check:shipped-ids
+        run: git fetch --no-tags --filter=tree:0 --shallow-since=2026-08-16 origin "+refs/heads/${GITHUB_BASE_REF:-main}:refs/remotes/origin/${GITHUB_BASE_REF:-main}"
 
       - name: Contract guards (all run; every failure reported)
         if: ${{ !cancelled() }}
@@ -331,6 +342,13 @@ jobs:
           # and backlog through the API and fails the later-opened PR when two introduce the same
           # ADR number or backlog id. In this array rather than a step of its own so its skip and
           # its failure read in the same log shape as every other guard.
+          # 2026-09-28: shipped-ids joined (HYG-124, ADR-1538). check:backlog proves every ROW against
+          # the tree and check:id-collisions fails an id two open PRs claim; neither can see an id
+          # that was never added, and two merged PRs (#2911 HYG-125, #2878 LIVE-475) shipped that way
+          # with every gate green. This guard counts from the other end: every id a merged commit
+          # subject names since the one list was seeded must be a row, exceptions stated one reason
+          # each. SOURCE-only (git log plus the JSON, no network) once the history fetch step above
+          # has run, so this array is its home.
           # 2026-09-28: fk-indexes joined (HYG-128, ADR-1554). Three sweeps (SCAN-638, 20270345006400,
           # HYG-127) each took the unindexed-foreign-key count to zero and the next tables brought it
           # back, because the only reader was the Supabase performance advisor, which nobody consults
@@ -342,7 +360,7 @@ jobs:
           guards=(
             authz canon menu gate-parity workflows labels a11y-names help tokens phantom bridge contrast
             headers seo rls grants admin-client client-boundary migrations adr docs-links templates
-            backlog one-list schema-contract rls-recursion id-collisions rls-deny fk-indexes
+            backlog one-list schema-contract rls-recursion id-collisions rls-deny fk-indexes shipped-ids
           )
           # RUN IN PARALLEL, REPORT IN ORDER. The guards are independent node processes that only
           # read the tree, so nothing about them needed to be sequential — it just was. Run wall
