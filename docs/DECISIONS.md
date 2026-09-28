@@ -48098,6 +48098,26 @@ change was trusted until it was watched go red.
 
 **Rows.** LIVE-501 (closed here). Untouched: the `SpaceCommunity` Puck block and its 19 stored documents;
 the Space Circle / Discussion program.
+
+## ADR-1547: A pgTAP file that skips every assertion is a stated uncovered surface or a failed job, and the safeupdate file asserts the fix's shape without the hook (HYG-122)
+
+**Status:** Accepted · 2026-09-28 · backlog `HYG-122` (closed here) · extends [ADR-1207](DECISIONS.md) (the defect the file pins) and [ADR-1150](DECISIONS.md) (db-tests as the fresh-apply gate) · beside [ADR-1011](DECISIONS.md) (a guard nobody runs is a claim nobody checks) · numbered 1545 against the ledger and every open pull request's head on the day it was written, then 1547 once check:id-collisions read 1545 on the earlier-opened #2949 and 1546 taken by #2950 (ADR-1509: the later-opened pull request renumbers)
+
+**Context.** `supabase/tests/refresh_resonance_density_cells_safeupdate.test.sql` pins [ADR-1207](DECISIONS.md): the nightly density rollup's bare DELETE raised sqlstate 21000 under PostgREST's `safeupdate` planner hook on every cron run from 2026-08-22, and psql never saw it because psql never loads the hook. Seeing the defect needs the hook in the test session, so the file tries `load 'safeupdate'` in a DO block, and when that fails it prints the reason and SKIPS all three assertions rather than fail the suite for an unrelated cause. That is honest, and it was read by nobody: pg_prove prints the reason as a diag line and `ok` beneath it, the job goes green, and the coverage ledger counts the file. The row's open question was whether the hook had ever loaded in CI. Read on 2026-09-28 from db-tests run 36450365753, and it is every run: `SKIPPING: safeupdate could not be loaded in this database (42501: access to library "safeupdate" is not allowed)`. `LOAD` needs superuser or a library under `$libdir/plugins`; the role `supabase test db` connects as has neither. The one regression the file exists to pin has never been pinned in CI, and "All tests successful" said otherwise on every run.
+
+**Decision.**
+
+1. **The suite's own output is read, by a gate, for the skip it prints.** `scripts/check-pgtap-skips.mjs` (`pnpm check:pgtap-skips <log>`) runs in `db-tests.yml` on the TAP output the test step now keeps (`supabase test db 2>&1 | tee pgtap.log`, under `pipefail` so a failing suite still fails). It parses pg_prove's default output, one line per file with its diag lines between the file and its verdict, and treats a file as skipping when a diag line starts with `SKIP`.
+2. **An unstated permanent skip fails the job; a stated one is announced.** `scripts/pgtap-uncovered.txt` lists a skipping file with one reason each. A skipping file not on it fails; a listed one is printed as a `::warning` and a job-summary section that says COVERAGE ABSENT with the reason, so the person reading the green job is told what the green does not include. A listed entry whose file no longer skips fails too, and so does one for a file the suite does not contain: the list cannot outlive its reason, and the day the library loads the entry comes out. A log with fewer than 20 files is refused ([ADR-962](DECISIONS.md)).
+3. **The safeupdate file gains an assertion that never skips.** A fourth arm asks the function's own definition the question safeupdate asks at plan time: is there a DELETE with no WHERE clause. The 2026-08-22 bare delete fails it. It is weaker than running under the hook (a WHERE that is present but wrong passes), which is why the file stays listed with that reason rather than being called covered.
+4. **The library is not installed.** `LOAD` is refused by privilege, not absence, so "install it in the image" means a superuser test role, a wider change than this row and one whose effect on every other file's RLS assertions would need its own measurement first ([ADR-1082](DECISIONS.md)).
+
+**Rejected.** Failing the suite from inside the file when the hook cannot load (every db-tests run red for a reason no pull request can fix, [ADR-970](DECISIONS.md)). Deleting the hook-driven arms (they are the only assertions that would see the real defect on a database that can load the hook). Running pg_prove verbose to see pgTAP's own `# SKIP` lines (the file already prints a grep-able reason, and verbose output buries thirty files' worth of assertion lines in every log).
+
+**Consequences.** A pgTAP file cannot start skipping quietly. The suite's one absent surface is named in every db-tests summary until the local image lets the test role load the hook, at which point the gate fails once, the entry is removed, and the coverage becomes real. `scripts/check-pgtap-skips.test.ts` drives the parser against the run's exact lines and every verdict arm; `scripts/guard-wiring.test.ts` sees the script invoked from db-tests.yml.
+
+**Rows.** HYG-122 (closed here). Beside ADR-1207's LIVE row and HYG-100 (the deny matrix the same suite proves).
+
 ## ADR-1528: The Contact tab reads the contactForm block's own bag, and a reserved slug is reserved in both readers (LIVE-502)
 
 **Status:** Accepted · 2026-09-25 · backlog `LIVE-502` (closed here) · owner instruction 2026-09-24

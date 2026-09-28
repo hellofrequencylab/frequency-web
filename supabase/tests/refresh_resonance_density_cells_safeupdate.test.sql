@@ -22,7 +22,7 @@
 -- Runs via `supabase test db` (see supabase/tests/README.md), NOT under vitest.
 
 begin;
-select plan(3);
+select plan(4);
 
 -- ── 0. Try to load the hook, recording success or the exact reason it could not ─────────────────
 do $$
@@ -73,6 +73,20 @@ select case when current_setting('l7a.safeupdate_loaded', true) = 'true'
   )
   else skip('safeupdate could not be loaded: ' || current_setting('l7a.safeupdate_reason', true), 1)
 end;
+
+-- ── 4. The SHAPE of the fix, asserted whether or not the hook could load (HYG-122) ──────────────
+-- Arms 1 to 3 have skipped on every db-tests run since this file was written: `load 'safeupdate'`
+-- is refused (42501) for the role `supabase test db` connects as, and the skip read as coverage
+-- until scripts/check-pgtap-skips.mjs started reading the TAP output. This arm never skips. It
+-- asks the function's own definition the question safeupdate asks at plan time: is there a DELETE
+-- with no WHERE clause? It is weaker than running under the hook (a WHERE that is present but wrong
+-- passes here), which is why the file stays listed in scripts/pgtap-uncovered.txt with that
+-- reason; but the 2026-08-22 defect, `delete from public.resonance_density_cells;`, fails it.
+select doesnt_match(
+  lower(regexp_replace(pg_get_functiondef('public.refresh_resonance_density_cells()'::regprocedure), '\s+', ' ', 'g')),
+  'delete from [a-z_."]+ *;',
+  'refresh_resonance_density_cells() carries no DELETE without a WHERE clause (the bare delete of 20260822000000 raised 21000 under safeupdate)'
+);
 
 -- Best effort: switch the hook off again for pgTAP's own bookkeeping. Newer safeupdate builds expose
 -- this GUC; on older ones the SET lands on a placeholder and does nothing, which is fine, because
