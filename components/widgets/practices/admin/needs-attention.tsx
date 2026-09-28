@@ -40,7 +40,14 @@ export async function PracticeNeedsAttention() {
     <section className="space-y-3">
       <SectionHeader title="Needs attention" count={items.length} />
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-        <div className="divide-y divide-border/60">
+        {/* One mask over the rows, not one per value (LIVE-492, ADR-1543). The list is worst
+            quality first and the quality score carries a freshness term that decays with time, so
+            the ROWS REORDER between two honest captures a day apart: pr-compare on 2026-09-28 read
+            twelve 14px bands here against a 2026-09-27 baseline, each on a title that had moved
+            (Heart Coherence Breathing, Deep Listening, Morning Movement, Evening Reflection). A
+            reorder moves whole rows, so the box is the list. PANEL_LIMIT holds its height while the
+            library keeps at least that many gaps; the section header's count stays in the picture. */}
+        <div className="divide-y divide-border/60" data-visual-mask="practice-attention-list">
           {shown.map((it) => (
             <div key={it.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
               <div className="min-w-0 flex-1">
