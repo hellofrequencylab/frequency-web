@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
-import { FINGERPRINTS, CONTROL, SHELL_ENTRY } from './check-shell-weight.mjs'
+import { FINGERPRINTS, CONTROL, SHELL_ENTRY, BUDGET_KB } from './check-shell-weight.mjs'
 
 // THE SCAN ROOT IS NOT A CONSTANT, AND ASSUMING IT WAS COST A BUILD'S WORTH OF SIGNAL.
 //
@@ -29,7 +29,10 @@ const LAZY_FILE = 'lazy-def.js'
  *  the script resolves them against `process.cwd()` and checks each one exists and still contains its
  *  literal. Copying them keeps those two arms honest instead of stubbing them out — a fixture that
  *  faked the sources would pass even if a fingerprint had been edited away in the repo. */
-function artifact(root: string, opts: { shellExt?: string } = {}): string {
+function artifact(
+  root: string,
+  opts: { shellExt?: string; padKb?: number; leak?: boolean } = {},
+): string {
   const dir = mkdtempSync(join(tmpdir(), 'shell-root-'))
   const next = join(dir, '.next')
   const shellName = opts.shellExt ? `shell-abc${opts.shellExt}` : SHELL_FILE
@@ -41,13 +44,18 @@ function artifact(root: string, opts: { shellExt?: string } = {}): string {
     copyFileSync(join(process.cwd(), rel), join(dir, rel))
   }
 
-  // The shell chunk: carries the positive control, and none of the fingerprints.
-  writeFileSync(join(next, root, shellName), `console.log(${JSON.stringify(CONTROL.text)});\n`)
-  // A lazily-loaded chunk: carries every fingerprint. Present in the build, absent from the shell.
+  const fpLines = FINGERPRINTS.map(
+    (f: { text: string }) => `console.log(${JSON.stringify(f.text)});`,
+  ).join('\n')
+  // The shell chunk: carries the positive control, and none of the fingerprints — unless `leak` asks
+  // for the regression Arm B exists to catch, or `padKb` for the weight Arm A exists to catch.
+  const pad = opts.padKb ? `var pad = ${JSON.stringify('x'.repeat(opts.padKb * 1024))};\n` : ''
   writeFileSync(
-    join(next, root, LAZY_FILE),
-    FINGERPRINTS.map((f: { text: string }) => `console.log(${JSON.stringify(f.text)});`).join('\n'),
+    join(next, root, shellName),
+    `console.log(${JSON.stringify(CONTROL.text)});\n${opts.leak ? `${fpLines}\n` : ''}${pad}`,
   )
+  // A lazily-loaded chunk: carries every fingerprint. Present in the build, absent from the shell.
+  writeFileSync(join(next, root, LAZY_FILE), fpLines)
   // The manifest, in the shape the script reads: a JS file assigning self.__RSC_MANIFEST.
   writeFileSync(
     join(next, 'server', 'app', 'page_client-reference-manifest.js'),
@@ -101,5 +109,58 @@ describe('the build-wide scan follows the chunk root the build actually used', (
     expect(res.stderr).toContain('does not contain')
     expect(res.stderr).toContain('chunk directory moved')
     expect(res.stderr).not.toContain('appears in NO built chunk')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// THE TWO ARMS WITH TEETH, DRIVEN INTO THEIR FAILING DIRECTION.
+//
+// 🔴 EVERYTHING ABOVE PROVES THE SCAN IS HONEST. NONE OF IT PROVED THE GATE REJECTS ANYTHING.
+// A mutation sweep over the three check-shell-weight test files found that out the hard way: with
+// Arm A's `shellBytes > BUDGET_KB * 1024` replaced by `if (false)`, or Arm B's leak filter replaced
+// by `[]`, or `BUDGET_KB` multiplied by ten thousand, or the positive-control arm stubbed out — all
+// 39 cases stayed GREEN, one mutation at a time. The single thing this gate exists to do, refuse a
+// shell that got heavier and name an operator module that walked back into every member's first
+// load, had no case at all, in any of its files.
+//
+// The fixtures above already build a real synthetic `.next` in the layout Vercel writes, so both
+// arms were already reachable from them. They only had to be pointed at the failing side, with the
+// passing side kept as the paired control so a rejection cannot be about the fixture.
+//
+// 🔴 A RED HERE IS NEVER FIXED BY MOVING BUDGET_KB. The budget IS the consequence under test; a case
+// that moved it to go green would measure nothing, which is the state this block exists to end
+// (AGENTS.md: when a budget gate fires, fix the fan-out, do not raise the budget).
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+const budgetKb = BUDGET_KB as number
+
+describe('the gate REJECTS the two things it exists to reject', () => {
+  it('Arm A · refuses a shell over the byte budget, naming the budget and the worst chunks', () => {
+    const res = run(artifact('static/immutable/chunks', { padKb: budgetKb + 64 }))
+    expect(
+      res.status,
+      `a shell of ~${budgetKb + 64} KB was ACCEPTED against this gate's own ${budgetKb} KB budget, ` +
+        'so Arm A rejects nothing and the shell can grow without limit on every app/(main) route',
+    ).toBe(1)
+    expect(res.stderr).toContain(`over the ${budgetKb} KB budget`)
+    expect(res.stderr).toContain('Biggest chunks')
+  })
+
+  it('Arm A · accepts the same artifact under the budget, so the case above is about the BYTES', () => {
+    // The paired control. Without it, "rejected" could be about the fixture rather than its weight.
+    const res = run(artifact('static/immutable/chunks', { padKb: 16 }))
+    expect(res.status, res.stderr || res.stdout).toBe(0)
+    expect(res.stdout).toContain(`under the ${budgetKb} KB budget`)
+  })
+
+  it('Arm B · refuses an admin module body found in the shell chunk, and names the module', () => {
+    const res = run(artifact('static/immutable/chunks', { leak: true }))
+    expect(
+      res.status,
+      'an admin module body sitting in the shell’s EAGER first-load JS was accepted — the exact ' +
+        'regression dc47b89 fixed at a cost of 1.6 MB and ~1.3s of FCP (ADR-1066)',
+    ).toBe(1)
+    expect(res.stderr).toContain('EAGER first-load JS')
+    expect(res.stderr).toContain(FINGERPRINTS[0].source)
   })
 })
