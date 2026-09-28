@@ -208,7 +208,7 @@ stated reason:
 | Not offered to a member | Why |
 |---|---|
 | **Workflow** | `workflowBoard(plans, adminEvents)` over `PLAN_STAGE_TRANSITIONS`. Every card is a `space_plans` row — the team's internal notes, links, to-dos, people — and a visitor is never handed `plans` or `adminEvents`. The segment would steer an empty board, and the day someone "fixed" the empty board would be the leak. |
-| **the List `all` scope** | The all-time index panel is the event control console (stage pill, share links, stats, Go to event), not a way of reading a month. |
+| **the List `all` scope** | The all-time index panel is the event control console (cover hero when there is one, stage pill, share links, stats, Go to event), not a way of reading a month. |
 | **Guest preview** | An audience, not a way of looking. A guest already is that audience. |
 
 A member also gets the layer **filter** — Events / Unavailable — and only when the Space publishes
@@ -318,7 +318,7 @@ not reload the page.
 |---|---|
 | **Guest** | The existing public month (`guestLiveItems`). Live chips plus the C0 cancelled footer. Pencil and planning stay off. `?view=guest`. |
 | **Admin** (labelled **Calendar**) | The team's month (`StaffCalendar` over `loadAdminCalendar`). Drafts, Pencils, Private entries, unpublished and internal dates Guest does not see. The same sliding month as Guest: `CalendarWorkspace` owns `month` (PROG-CAL12) and hands it to both mounts, so the two panels, the console header and the console agenda can never disagree about which month is showing. The stage board is Workflow. Default URL. |
-| **List** | A condensed gathering index on the left. The right interior is the event control console: title with stage pill top-right, primary facts, share links, stats, Go to event. Not the Studio editor. `?view=list&item=`. |
+| **List** | A condensed gathering index on the left. The right interior is the event control console: the gathering's cover as a full-bleed hero above the card when it has one (LIVE-496, [ADR-1551](DECISIONS.md); cropped with the host's stored focal point through `eventCoverFocusStyle`, the same crop as the browse card and the detail hero; a Pencil or an event with no cover opens on the title, with no generated stand-in), title with stage pill top-right, primary facts, share links, stats, Go to event. Not the Studio editor. `?view=list&item=`. |
 | **Workflow** | Every Plan, grouped by its production stage (`workflowBoard` over `PLAN_STAGE_TRANSITIONS`). A Plan moves stage through `transitionPlanStage`; "Open Plan" opens the same drawer Calendar and List open. `?view=workflow`. |
 
 Operators load Guest and Admin data once so a view switch does not remount. Unsigned members always get Guest and never hit `loadAdminCalendar`. The Pencil, Planning and Production lane helpers live in `lib/calendar/pm-console.ts`, which the List index reads; the Calendar tab Admin view (labelled Calendar) is the team's month in the same grid chrome as Guest.

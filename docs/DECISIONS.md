@@ -48587,6 +48587,25 @@ evening they mean. The 24 Craft Night rows had the same defect and are fixed by 
 correctly stored master. The write path and the remaining rows are `LIVE-514` (renumbered from
 LIVE-512 under ADR-1488 when two earlier PRs claimed that number).
 
+## ADR-1551: The one List's card leads with the gathering's cover, cropped the way every other cover is (LIVE-496)
+
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-496` · extends [ADR-1464](DECISIONS.md) (the List view) and LIVE-490 (the one List) · numbered **1551** because 1541 to 1550 are claimed on main and by open PRs (#2946 to #2965)
+
+**Context.** The owner's ask of 2026-09-23, verbatim: "Consider that there are two different List views, consolidate that into one experience with a list on the left and card, with hero image and all stats on the right." LIVE-490 shipped the first half: Grid / List / Workflow is one surface control and the List carries its own This month / All scope, so the index on the left is one list reached one way. The right did not ship: `components/spaces/calendar-list-view.tsx` drew a `StatCard` row and a Go to event link and no image, while `ListIndexItem` already carried `coverUrl` and the grid popup already read it. Not a design question; the pane was not rendering data it had.
+
+**Decision.**
+
+1. **The cover leads the card.** When the selected item has a `coverUrl`, the viewer card opens on it: a full-bleed band above the header (`h-40`, `sm:h-52`), `object-cover`, decorative `alt=""` because the title below names the gathering, `loading="lazy"`. The card's padding moves to an inner wrapper so the band reaches the card's edges under its radius.
+2. **Cropped like every other cover.** `ListIndexItem` gains `coverFocus` from the calendar item, and the band applies `eventCoverFocusStyle` from `lib/events/cover-focus.ts`, the one render seam for cropped covers (the detail hero, the browse and Space cards, the two popups). A poster whose title sits at the top survives this crop as it survives the others.
+3. **No cover, no band, no stand-in.** A Pencil, or an event whose host uploaded no cover, opens on the title as it did. The browse card's generated date cover is a discovery device that keeps a grid of strangers' events reading rich; this is the operator's own list, where an absent cover is information the operator can act on.
+4. **A plain `img`, as the grid popup.** The URL is a public bucket URL the popup already renders with `img`, and the pane is a client component inside a portalled panel set; `next/image` adds nothing here and the eslint waiver names the match.
+
+**Rejected.** A generated fallback poster for items with no cover (point 3). Reading `coverFocus` off the calendar item at render instead of carrying it on `ListIndexItem` (the index item is the pane's whole contract; the console's agenda reads the same rows). Reviving the 2026-09-23 patch (it predates LIVE-490 and LIVE-494 and targets a pane that no longer exists in that shape).
+
+**Consequences.** The pane shows the gathering rather than a row of numbers, which is what the second half of the ask was. One optional field on `ListIndexItem`; no fixture changes, since every existing row has no cover. The LIVE-496 probe keeps its original arm and gains three: the hero marker in the pane, the focus seam, and the render test that asserts the band leads the card and is absent for a Pencil.
+
+**Rows.** LIVE-496 (closed here). LIVE-490, LIVE-468 unchanged.
+
 ## ADR-1532: A stage says itself with a mark at the head of the chip, and the header keeps the ledger (owner directive 2026-09-27)
 
 **Status:** Accepted · 2026-09-27 · amends [ADR-1386](DECISIONS.md)'s stage presentation and the
