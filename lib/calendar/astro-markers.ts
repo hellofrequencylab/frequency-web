@@ -219,3 +219,19 @@ export function astroMarkersByDay(markers: readonly AstroMarker[]): Map<string, 
   }
   return byDay
 }
+
+/** Widen a day range by whole months either side, for the server-side window a calendar hands to
+ *  its grid: the grid browses months on its own, so one generous window means a reader can page
+ *  either way and the sky is already there. Clamped to a sane span so a malformed call cannot ask
+ *  the ephemeris for centuries. Returns the input unchanged when it cannot be parsed. */
+export function widenDayRange(fromDay: string, toDay: string, months: number): [string, string] {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDay) || !/^\d{4}-\d{2}-\d{2}$/.test(toDay)) return [fromDay, toDay]
+  const span = Math.max(0, Math.min(Math.trunc(months), 24))
+  const shift = (day: string, by: number): string => {
+    const d = new Date(`${day}T12:00:00Z`)
+    if (Number.isNaN(d.getTime())) return day
+    d.setUTCMonth(d.getUTCMonth() + by)
+    return d.toISOString().slice(0, 10)
+  }
+  return [shift(fromDay, -span), shift(toDay, span)]
+}

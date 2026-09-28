@@ -10,6 +10,8 @@ import { guestFeedState } from '@/lib/calendar/guest-live'
 import { memberLayerChoices } from '@/lib/calendar/member-calendar'
 import { SpaceUpcomingFeed } from '@/components/spaces/space-upcoming-feed'
 import { dayInZone } from '@/lib/time/zone'
+import { astroMarkersInRange, widenDayRange } from '@/lib/calendar/astro-markers'
+import { readSkyMarkersEnabled } from '@/lib/spaces/sky-markers'
 import { monthGridWindow, operatorHorizonWindow } from '@/lib/calendar/month-window'
 import { loadSpaceCalendarMonth } from './actions'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
@@ -120,6 +122,27 @@ export default async function SpaceCalendarPage({
   // the page actually loaded, so the chips describe this Space rather than the model's full set.
   const memberLayers = memberLayerChoices(guestEvents)
 
+  // ── THE SKY (LIVE-526) ────────────────────────────────────────────────────────────────────────
+  //
+  // Computed on the SERVER over a window WIDER than the opening month, and handed down whole. Both
+  // halves of that are size decisions rather than style ones:
+  //
+  //   • On the server, because astronomy-engine is 116 KB minified in the browser build, while a
+  //     26-month window of markers is 9.3 KB of JSON. Computing them in the grid (which is
+  //     `'use client'`) would put the library on every phone that opens a Space calendar, straight
+  //     into the budgets AGENTS.md keeps.
+  //   • Wider than the month, because the grid browses months on its own through `loadGuestMonth`.
+  //     One generous window means a reader can page a year either way and the sky is already there,
+  //     with no change to `loadMonth`'s signature and no second round trip per month.
+  //
+  // OPT-IN, default off (owner decision): moon phases and zodiac ingresses suit some Spaces and
+  // would read as noise on a coworking or trades Space. Gated on the `events` function too, the way
+  // the public Shop tab is gated on BOTH `storefront.published` and the `shop` function.
+  const skyOn = readSkyMarkersEnabled(space.preferences)
+  const skyWindow = widenDayRange(grid.fromDay, grid.toDay, 13)
+  const skyMarkers = skyOn ? astroMarkersInRange(skyWindow[0], skyWindow[1], space.timeZone) : []
+
+
   if (!adminAllowed) {
     return (
       <CalendarWorkspace
@@ -141,6 +164,7 @@ export default async function SpaceCalendarPage({
         subscribe={subscribe}
         upcoming={upcoming}
         memberLayers={memberLayers}
+        skyMarkers={skyMarkers}
         loadGuestMonth={loadSpaceCalendarMonth.bind(null, slug)}
       />
     )
@@ -181,6 +205,7 @@ export default async function SpaceCalendarPage({
       subscribe={subscribe}
       upcoming={upcoming}
       memberLayers={memberLayers}
+      skyMarkers={skyMarkers}
       loadGuestMonth={loadSpaceCalendarMonth.bind(null, slug)}
     />
   )

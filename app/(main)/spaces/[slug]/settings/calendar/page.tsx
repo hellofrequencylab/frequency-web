@@ -17,6 +17,9 @@ import { loadAdminCalendar } from '@/lib/calendar/admin-calendar'
 import { formatEventWhen } from '@/lib/time/zone'
 import { DayNotesField } from './day-notes-field'
 import { SpaceTimeZoneField } from './space-time-zone-field'
+import { SkyMarkersField } from './sky-markers-field'
+import { readSkyMarkersEnabled } from '@/lib/spaces/sky-markers'
+import { astroMarkersInRange, widenDayRange } from '@/lib/calendar/astro-markers'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
 import { EventShareApprovals } from '@/components/events/event-share-approvals'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -72,6 +75,20 @@ export default async function SpaceCalendarConsolePage({
   // Null when the Space has never said, and only then does the viewer's browser zone decide. It
   // rides the Space row already loaded above, so this costs no query of its own.
   const spaceTimeZone = featureLocked ? null : space.timeZone
+
+  // The same sky the members see, so an operator setting this is looking at what they turned on
+  // rather than at a description of it. Computed server-side over a window wider than the opening
+  // month for the reason the public page gives: astronomy-engine is 116 KB minified in the browser
+  // build and these markers are 9.3 KB of JSON over 26 months.
+  const settingsSkyWindow = widenDayRange(
+    `${initialYear}-${String(initialMonth1).padStart(2, '0')}-01`,
+    `${initialYear}-${String(initialMonth1).padStart(2, '0')}-28`,
+    13,
+  )
+  const settingsSky =
+    !featureLocked && readSkyMarkersEnabled(space.preferences)
+      ? astroMarkersInRange(settingsSkyWindow[0], settingsSkyWindow[1], space.timeZone)
+      : []
 
   const plans = featureLocked || !canManage ? [] : await listSpacePlans(space.id)
   const playbooks = featureLocked || !canManage ? [] : await listPlaybooks(space.id)
@@ -157,10 +174,19 @@ export default async function SpaceCalendarConsolePage({
             canEdit={canManage}
             spaceTimeZone={spaceTimeZone}
             dayNotes={dayNotes}
+            skyMarkers={settingsSky}
             plans={plans}
           />
 
           <SpaceTimeZoneField slug={space.slug} timeZone={spaceTimeZone} canEdit={canManage} />
+
+          {/* Beside the zone on purpose: both decide how this Space's calendar READS rather than
+              what is on it, and the sky is dated in the zone above. */}
+          <SkyMarkersField
+            slug={space.slug}
+            enabled={readSkyMarkersEnabled(space.preferences)}
+            canEdit={canManage}
+          />
 
           <DayNotesField slug={space.slug} notes={dayNotes} canEdit={canManage} />
 

@@ -24,6 +24,9 @@ import {
 } from '@/lib/calendar/entries-store'
 import { monthGridWindow, safeMonth } from '@/lib/calendar/month-window'
 import { writeSpaceTimeZone } from '@/lib/spaces/store'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getSpaceById } from '@/lib/spaces/store'
+import { nextSkyMarkerPreferences } from '@/lib/spaces/sky-markers'
 import { isValidTimeZone } from '@/lib/time/zone'
 import { entryKind, entryStage } from '@/lib/calendar/registry'
 import type { CalendarEvent } from '@/lib/calendar/item'
@@ -70,6 +73,41 @@ export async function setSpaceTimeZone(slug: string, zone: string): Promise<Acti
   }
   const saved = await writeSpaceTimeZone(editor.spaceId, next || null)
   if (!saved) return fail('Could not save your time zone. Try again.')
+  revalidate(slug)
+  return ok()
+}
+
+/** Untyped scoped update of a Space's preferences jsonb (ADR-246), bound to a resolved id. The
+ *  same shape manage/modules/actions.ts uses; the column is deliberately absent from the generated
+ *  Supabase types, so the client is cast rather than typed. */
+async function writeSpacePreferences(spaceId: string, preferences: Record<string, unknown>): Promise<boolean> {
+  const db = createAdminClient() as unknown as {
+    from: (t: string) => {
+      update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> }
+    }
+  }
+  const { error } = await db.from('spaces').update({ preferences }).eq('id', spaceId)
+  return !error
+}
+
+/**
+ * Turn this Space's sky markers on or off (LIVE-526).
+ *
+ * Saves through the calendar's OWN gated action rather than a second form, exactly as
+ * `setSpaceTimeZone` above and as Day notes does: `resolveEditor` already requires
+ * `canEditProfile` AND the `events` function, which is the same door the rest of this page uses.
+ *
+ * The write is SPARSE (`nextSkyMarkerPreferences`): turning it off deletes the key rather than
+ * writing false, so a Space that never wanted this keeps a clean blob.
+ */
+export async function setSpaceSkyMarkers(slug: string, enabled: boolean): Promise<ActionResult<void>> {
+  const editor = await resolveEditor(slug)
+  if (!editor) return fail('You do not have access to this calendar.')
+  const space = await getSpaceById(editor.spaceId)
+  if (!space) return fail('Could not find this Space.')
+  const next = nextSkyMarkerPreferences(space.preferences, enabled === true)
+  const saved = await writeSpacePreferences(editor.spaceId, next)
+  if (!saved) return fail('Could not save that. Try again.')
   revalidate(slug)
   return ok()
 }
