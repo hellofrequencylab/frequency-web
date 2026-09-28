@@ -1667,17 +1667,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "commerce_products_journey_plan_id_fkey"
-            columns: ["journey_plan_id"]
-            isOneToOne: false
-            referencedRelation: "journey_plans"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "commerce_products_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commerce_products_journey_plan_id_fkey"
+            columns: ["journey_plan_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
             referencedColumns: ["id"]
           },
           {
@@ -5970,7 +5970,7 @@ export type Database = {
           {
             foreignKeyName: "hubs_space_id_fkey"
             columns: ["space_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
@@ -8598,7 +8598,7 @@ export type Database = {
           {
             foreignKeyName: "nexuses_space_id_fkey"
             columns: ["space_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
@@ -12828,6 +12828,8 @@ export type Database = {
           plan_id: string | null
           published_event_id: string | null
           recurrence_rule: string | null
+          removed_at: string | null
+          removed_by: string | null
           source_id: string | null
           source_kind: string | null
           space_id: string
@@ -12857,6 +12859,8 @@ export type Database = {
           plan_id?: string | null
           published_event_id?: string | null
           recurrence_rule?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
           source_id?: string | null
           source_kind?: string | null
           space_id: string
@@ -12886,6 +12890,8 @@ export type Database = {
           plan_id?: string | null
           published_event_id?: string | null
           recurrence_rule?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
           source_id?: string | null
           source_kind?: string | null
           space_id?: string
@@ -12917,6 +12923,13 @@ export type Database = {
             columns: ["published_event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_calendar_entries_removed_by_fkey"
+            columns: ["removed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -14980,20 +14993,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "spaces_brand_logo_asset_id_fkey"
-            columns: ["brand_logo_asset_id"]
-            isOneToOne: false
-            referencedRelation: "library_assets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "spaces_cover_image_asset_id_fkey"
-            columns: ["cover_image_asset_id"]
-            isOneToOne: false
-            referencedRelation: "library_assets"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "spaces_beta_price_granted_by_fkey"
             columns: ["beta_price_granted_by"]
             isOneToOne: false
@@ -15001,10 +15000,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "spaces_brand_logo_asset_id_fkey"
+            columns: ["brand_logo_asset_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "spaces_claimed_by_fkey"
             columns: ["claimed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spaces_cover_image_asset_id_fkey"
+            columns: ["cover_image_asset_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
             referencedColumns: ["id"]
           },
           {
@@ -16769,6 +16782,16 @@ export type Database = {
         }
         Returns: Json
       }
+      block_type_usage: {
+        Args: { p_block_type?: string }
+        Returns: {
+          block_type: string
+          documents: number
+          placements: number
+          store: string
+          tenants: number
+        }[]
+      }
       capture_guest_rsvp: {
         Args: {
           p_email: string
@@ -16830,8 +16853,8 @@ export type Database = {
           type: string
         }[]
       }
-      claim_guest_rsvps: { Args: { p_profile_id: string }; Returns: undefined }
       claim_guest_orders: { Args: never; Returns: string[] }
+      claim_guest_rsvps: { Args: { p_profile_id: string }; Returns: undefined }
       claim_guest_tickets: { Args: never; Returns: number }
       claim_outbox_jobs: {
         Args: { _limit?: number }
@@ -17018,6 +17041,10 @@ export type Database = {
           n: number
           value: string
         }[]
+      }
+      enrol_in_space_circle: {
+        Args: { p_profile_id: string; p_space_id: string }
+        Returns: boolean
       }
       ensure_calendar_token: { Args: never; Returns: string }
       ensure_space_circle: {
@@ -17272,6 +17299,18 @@ export type Database = {
       keep_pencil_date: {
         Args: { p_entry_id: string; p_space_id: string }
         Returns: number
+      }
+      library_asset_usage: {
+        Args: { p_asset_id: string }
+        Returns: {
+          doc_key: string
+          hits: number
+          live: boolean
+          space_id: string
+          space_slug: string
+          space_type: string
+          store: string
+        }[]
       }
       log_crew_completion_atomic: {
         Args: {
@@ -18525,13 +18564,17 @@ export type Database = {
       st_within: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       st_wkbtosql: { Args: { wkb: string }; Returns: unknown }
       st_wkttosql: { Args: { "": string }; Returns: unknown }
-      transition_space_plan_stage: {
-        Args: { p_plan_id: string; p_space_id: string; p_stage: string }
-        Returns: boolean
-      }
       st_wrapx: {
         Args: { geom: unknown; move: number; wrap: number }
         Returns: unknown
+      }
+      sync_space_circle_roster: {
+        Args: { p_space_id: string }
+        Returns: number
+      }
+      transition_space_plan_stage: {
+        Args: { p_plan_id: string; p_space_id: string; p_stage: string }
+        Returns: boolean
       }
       unlockrows: { Args: { "": string }; Returns: number }
       update_guest_seat: {

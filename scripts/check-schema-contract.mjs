@@ -32,10 +32,11 @@
 //
 // ALLOWLIST. A phantom the guard flags that cannot be fixed in the same change gets ONE named,
 // dated entry in ALLOWLIST below with the reason. An entry that no longer matches anything FAILS
-// the guard (exit 1) so the list can only shrink. It was empty as of 2026-09-05, and the one
-// production phantom that motivated this guard was fixed by ADR-1207. It now carries the ADR-1374
-// membership-cadence columns, whose migration applies at merge rather than ahead of it; every entry
-// there retires in one pass, by regenerating lib/database.types.ts.
+// the guard (exit 1) so the list can only shrink. The one production phantom that motivated this
+// guard was fixed by ADR-1207, and the list is EMPTY again as of 2026-09-28: every entry it has ever
+// held was waiting on a migration that had not reached the live project yet, and every one retired
+// in a single pass, by applying that migration and regenerating lib/database.types.ts from it. If
+// you are adding an entry, that regeneration is the fix you are deferring, not avoiding.
 //
 // Usage: `node scripts/check-schema-contract.mjs [--root <dir>] [--json]` (or `pnpm
 // check:schema-contract`). No network; reads only lib/database.types.ts and the source tree.
@@ -71,113 +72,32 @@ export const MIN_RPC_CALLS = 60
  *  `kind` is optional (matches any). An entry that matches nothing fails the guard. */
 /** @type {{ file: string, table: string, column?: string | null, kind?: string | null, added: string, reason: string, owner: string }[]} */
 export const ALLOWLIST = [
-  // Emptied again on 2026-09-16, when migrations 20270345005200 and 20270345005300 (ADR-1385/1386)
-  // were applied and lib/database.types.ts was regenerated from the live project with --schema public.
-  // That one regeneration retired eleven entries: four for the calendar layer (LIVE-378, PROG-CAL1),
-  // five for the yearly membership price (LIVE-360, merged in #2651) and one for record_ticket_seat
-  // (LIVE-372). A stale entry fails the guard, which is what keeps this list shrinking.
+  // EMPTY as of 2026-09-28, and empty is the resting state. Migration 20270345008600 (the
+  // calendar-entry tombstone, LIVE-536) was applied to the live project and lib/database.types.ts
+  // was regenerated from it with --schema public. That one regeneration retired all seven entries
+  // this list held: the five LIVE-536 tombstone waivers it was carrying for its own PR, plus two
+  // older rpc waivers that had been waiting for exactly this pass — `sync_space_circle_roster`
+  // (lib/circles/draft.ts, added 2026-09-17, LIVE-386) and `library_asset_usage`
+  // (lib/library/usage.ts, added 2026-09-21, PROG-D4). Both said in their own text that they retire
+  // on the next regeneration; this was it.
+  //
+  // Each of the seven was checked the way its own note demanded before it was removed: an entry
+  // stops matching either because the schema caught up or because the call site it waived went
+  // away, and only the first is a retirement. All fifteen `removed_at` references in
+  // lib/calendar/entries-store.ts, seven in lib/calendar/plans-store.ts, and the service-role
+  // filters in lib/spaces/booking.ts and app/calendar/private/[token]/route.ts are still there, and
+  // both rpc calls still fire; the generated types simply know them now, so this guard walks those
+  // sites for real instead of being told to look away.
+  //
+  // The two retired rpc entries each noted that the regeneration also frees the localized ADR-246
+  // cast at their call site. Those casts are inert, not wrong, and removing them would pull two
+  // files unrelated to the tombstone into this change, so they stay for whoever next edits them.
   //
   // When you need an entry here, keep this shape and say which artifact retires it:
   //   { file, kind: 'select' | 'update' | 'insert' | 'rpc', table, column, added, reason, owner }
-  {
-    file: 'lib/circles/draft.ts',
-    kind: 'rpc',
-    // For an rpc finding the FUNCTION name is the `table` field and `column` is null (see
-    // flattenViolations: `{ kind: 'rpc', table: u.fn, column: null }`).
-    table: 'sync_space_circle_roster',
-    column: null,
-    added: '2026-09-17',
-    reason:
-      'ADR-1395 auto-enrolment. The function ships in migration 20270345005800 and is APPLIED to ' +
-      'the live project (verified 2026-09-17: ledger 709 rows), so the schema is ahead of the ' +
-      'checked-in types rather than the reference being wrong. Regenerating lib/database.types.ts ' +
-      'in this PR would pull the whole generated file, and any unrelated drift in it, into a ' +
-      'change about Circle enrolment. Retires on the next regeneration pass, which is also what ' +
-      'lets the localized ADR-246 cast at the call site go.',
-    owner: 'LIVE-386',
-  },
-  {
-    file: 'lib/library/usage.ts',
-    kind: 'rpc',
-    table: 'library_asset_usage',
-    column: null,
-    added: '2026-09-21',
-    reason:
-      'PROG-D4 usage index (ADR-1502). The function ships in migration 20270345007500, which is in the ' +
-      'tree and applied by the coordinator at merge, not from the authoring session; the generated ' +
-      'types cannot know it until the next lib/database.types.ts regeneration, which also retires the ' +
-      'localized ADR-246 cast at the call site.',
-    owner: 'PROG-D4',
-  },
-  // ── LIVE-536: the calendar-entry tombstone ────────────────────────────────────────────────────
-  // `space_calendar_entries.removed_at` / `removed_by` ship in migration 20270345008600 and are
-  // applied by a human out of band (docs/WORKFLOW.md "Scaling to a team": one shared database, so an
-  // authoring session never runs `supabase db push`). Until that apply and the next
-  // lib/database.types.ts regeneration, the schema is AHEAD of the checked-in types rather than these
-  // references being wrong — the same situation as the two rpc entries above. Four files, two
-  // columns, one entry per pair; `kind` is omitted because each file uses the column as a filter AND,
-  // in the store's case, as a write key. All four retire in one pass on the next regeneration.
-  //
-  // 🔴 These are the sites that make a deleted date STAY deleted. If an entry here ever stops
-  // matching, do not delete the entry: find out whether the filter it waives went with it.
-  {
-    file: 'lib/calendar/entries-store.ts',
-    table: 'space_calendar_entries',
-    column: 'removed_at',
-    added: '2026-09-28',
-    reason:
-      'The tombstone the soft delete stamps, and the `removed_at is null` filter on all seven reads ' +
-      'and writes in this file. Ships in migration 20270345008600, applied by a human at merge.',
-    owner: 'LIVE-536',
-  },
-  {
-    file: 'lib/calendar/entries-store.ts',
-    table: 'space_calendar_entries',
-    column: 'removed_by',
-    added: '2026-09-28',
-    reason:
-      'Written beside removed_at by deleteCalendarEntryRow (the actor resolveEditor already has). ' +
-      'Ships in migration 20270345008600, applied by a human at merge.',
-    owner: 'LIVE-536',
-  },
-  {
-    file: 'lib/calendar/plans-store.ts',
-    table: 'space_calendar_entries',
-    column: 'removed_at',
-    added: '2026-09-28',
-    reason:
-      'The `removed_at is null` filter on the six Plan-side reads and on both statements of ' +
-      'archiveSpacePlanRows, so archiving a Plan cannot hard-delete a date the operator had already ' +
-      'removed. Ships in migration 20270345008600, applied by a human at merge.',
-    owner: 'LIVE-536',
-  },
-  {
-    file: 'lib/spaces/booking.ts',
-    table: 'space_calendar_entries',
-    column: 'removed_at',
-    added: '2026-09-28',
-    reason:
-      'readCalendarBlocks runs on the SERVICE ROLE, so no policy filters a removed row out: without ' +
-      'this filter a deleted entry keeps taking slots off every booking page. Ships in migration ' +
-      '20270345008600, applied by a human at merge.',
-    owner: 'LIVE-536',
-  },
-  {
-    file: 'app/calendar/private/[token]/route.ts',
-    table: 'space_calendar_entries',
-    column: 'removed_at',
-    added: '2026-09-28',
-    reason:
-      'The token-keyed team .ics feed is also service-role, and a calendar app caches what it is ' +
-      'handed: without this filter a deleted series keeps drawing itself in the team’s phones. Ships ' +
-      'in migration 20270345008600, applied by a human at merge.',
-    owner: 'LIVE-536',
-  },
-  // The PROG-CAL2 and PROG-CAL3 calendar allowlists (2026-09-19 and 2026-09-21, 18 entries)
-  // are GONE, retired by LIVE-453 rather than expired: lib/database.types.ts now carries the five
-  // Plan tables and the four columns they waived, so this guard walks those call sites for real
-  // instead of being told to look away. Both blocks said in their own text that they retire on
-  // the next regeneration; this is it.
+  // `kind` is optional (matches any). For an rpc finding the FUNCTION name goes in `table` and
+  // `column` is null (see flattenViolations). An entry that matches nothing FAILS the guard, which
+  // is the whole reason this list can only shrink.
 ]
 
 /** Walk `root` against `typesFile` and return the raw report. Pure: no exit, no console. */
