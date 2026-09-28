@@ -104,3 +104,14 @@ describe('SpaceTodosPanel', () => {
     expect(selected.className).not.toContain('bg-primary')
   })
 })
+
+// A to-do of a Plan another Space shared with this one says whose it is (LIVE-544).
+describe('SpaceTodosPanel: a shared Plan to-do names its host', () => {
+  it('marks the row with the host Space and leaves own rows unmarked', () => {
+    render([task(), task({ id: '22222222-2222-4222-8222-222222222222', title: 'Print the posters', planId: 'plan-9', sharedFrom: 'The Green Room' })])
+    const marks = [...document.querySelectorAll('[data-todo-shared-from]')]
+    expect(marks.length).toBe(1)
+    expect(marks[0].textContent).toContain('with The Green Room')
+    expect(document.body.textContent).toContain('Print the posters')
+  })
+})

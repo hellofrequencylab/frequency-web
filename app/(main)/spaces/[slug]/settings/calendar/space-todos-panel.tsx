@@ -144,6 +144,8 @@ export function SpaceTodosPanel({
                           {t.title}
                           {t.dueAt ? ` · ${t.dueAt.slice(0, 10)}` : ''}
                           {anchor ? <span className="text-muted">{` · ${anchor} the date`}</span> : null}
+                          {/* A to-do of a Plan another Space shared with this one says whose (LIVE-544). */}
+                          {t.sharedFrom ? <span className="text-muted" data-todo-shared-from>{` · with ${t.sharedFrom}`}</span> : null}
                           {late ? <span className="font-semibold text-danger"> · Overdue</span> : null}
                         </span>
                       }

@@ -193,3 +193,60 @@ describe('every door that changes a Plan writes the Plan record, on the session,
     expect(body(source, 'listPlanActivity')).toContain('const side = await planSide(slug, planId)')
   })
 })
+
+// HANDING A TO-DO ACROSS THE SHARE (PROG-CAL7 Together, LIVE-544). Source-level: the failure this
+// guards is a widened admin-client read or write that is not bound to plan ids the session proved,
+// or an assignee taken from the browser instead of the two teams' list.
+describe('a to-do on a shared Plan reaches the guest, and is handed over only inside the proven scope', () => {
+  const dir = 'app/(main)/spaces/[slug]/settings/calendar/'
+  const tasks = readFileSync(dir + 'task-actions.ts', 'utf8')
+  const body = (src: string, name: string) => {
+    const at = src.indexOf(`export async function ${name}(`)
+    expect(at, `${name} exists`).toBeGreaterThan(-1)
+    return src.slice(at, src.indexOf('\n}', at))
+  }
+
+  it('the inbox and the due-date layer read the same widened list, bound to the accepted shares', () => {
+    expect(body(tasks, 'listSpaceTasks')).toContain('listTasksWithShared(editor.spaceId)')
+    const page = readFileSync(dir + 'page.tsx', 'utf8')
+    expect(page).toContain('listTasksWithShared(space.id)')
+    const due = readFileSync('lib/calendar/due-dates-store.ts', 'utf8')
+    expect(due).toContain('listTasksWithShared(spaceId)')
+    const shared = readFileSync('lib/calendar/shared-tasks.ts', 'utf8')
+    expect(shared).toContain('const sharedIds = await listSharedPlanIds(spaceId)')
+    expect(shared).toContain('listTasksInPlans(sharedIds, 500)')
+    const crm = readFileSync('lib/crm/tasks.ts', 'utf8')
+    for (const name of ['listTasksInPlans', 'getTaskInPlans', 'updateTaskStatusInPlans']) {
+      const at = crm.indexOf(`export async function ${name}(`)
+      expect(at, name).toBeGreaterThan(-1)
+      expect(crm.slice(at, crm.indexOf('\n}', at))).toContain(".in('plan_id', ids)")
+    }
+  })
+
+  it('a guest ticks inside the shared Plans it proved, from the inbox and from the drawer', () => {
+    const tick = body(tasks, 'setSpaceTaskDone')
+    expect(tick).toContain('const shared = await listSharedPlanIds(editor.spaceId)')
+    expect(tick).toContain("updateTaskStatusInPlans(taskId, done ? 'done' : 'open', shared)")
+    const source = readFileSync(dir + 'plan-actions.ts', 'utf8')
+    const drawerTick = body(source, 'setPlanTodoDone')
+    expect(drawerTick).toContain('const own = await editorPlan(slug, planId)')
+    expect(drawerTick).toContain("'error' in own ? await planSide(slug, planId)")
+    expect(drawerTick).toContain("updateTaskStatusInPlans(todoId, done ? 'done' : 'open', [planId])")
+    expect(body(source, 'listPlanTodos')).toContain("if (side.side === 'guest') return listTasksInPlans([planId], 200)")
+  })
+
+  it('the assign door re-reads the to-do in scope, takes the assignee from the two-team list, binds the write to the Plan and records it', () => {
+    const assign = body(tasks, 'assignPlanTodo')
+    expect(assign).toContain('const task = await reachableTask(editor, taskId)')
+    expect(assign).toContain('const host = await reachablePlanHost(editor, task.planId)')
+    expect(assign).toContain('(await assigneeChoicesForPlan(task.planId, host)).find((c) => c.value === rawProfileId)')
+    expect(assign).toContain('assignTaskInPlan(taskId, assignee, task.planId)')
+    expect(assign).toContain("kind: 'todo_assigned'")
+    const crm = readFileSync('lib/crm/tasks.ts', 'utf8')
+    const at = crm.indexOf('export async function assignTaskInPlan(')
+    expect(crm.slice(at, crm.indexOf('\n}', at))).toContain(".eq('plan_id', plan)")
+    const drawer = readFileSync(dir + 'plan-drawer.tsx', 'utf8')
+    expect(drawer).toContain('data-plan-todo-assignee={t.id}')
+    expect(drawer).toContain('options={assignees}')
+  })
+})

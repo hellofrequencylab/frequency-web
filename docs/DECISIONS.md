@@ -48703,3 +48703,18 @@ The row was explicit about the trap, and it is the LIVE-533 shape: a "This date 
 
 **Consequences.** `LIVE-543` closes on its probe (the migration set creates the table with no update or delete policy, all four door files call the writer, the drawer reads it). `todo_assigned` waits for LIVE-544's assign door; LIVE-545 fans notifications out from these rows. The migration is applied after merge with `execute_sql` and a ledger insert at its own version.
 
+## ADR-1555: A to-do crosses the share by Plan id, and is handed to a person from the two teams' list, never from the browser (LIVE-544)
+
+**Status:** Accepted · 2026-09-28 · `LIVE-544` (child 4 of 6 of `PROG-CAL7`) · builds on [ADR-1552](DECISIONS.md) (the handshake) and [ADR-1554](DECISIONS.md) (the record) · numbered 1555 because 1545 to 1551 are claimed by pull requests opened before this lane's and 1552 to 1554 by #2964, #2968 and #2970, the children this one stands on (ADR-1509)
+
+**Context.** `crm_tasks` is a Space-scoped, service-role table: `listTasks` keys on `space_id`, `updateTaskStatusInScope` binds its write to the Space the action proved, and nothing in the calendar set `assignee_profile_id`. So a to-do on a Plan shared with a guest Space was invisible to the guest after the handshake, could not be ticked by them, and could be handed to nobody on either side. PROG-CAL7 promises "tasks assignable to members of either Space".
+
+**Decision.**
+
+1. **The guest reaches a to-do by Plan id, and only by ids its session proved.** `listSharedPlanIds` reads `space_plan_shares` on the session, where RLS returns the accepted shares addressed to the caller's own Space and nothing else. Every widened service-role helper (`listTasksInPlans`, `getTaskInPlans`, `updateTaskStatusInPlans`, `assignTaskInPlan`) binds itself to those ids with `in('plan_id', …)` or `eq('plan_id', …)`. A Space never shared a Plan gets an empty list and the behaviour it had. The authz delegation of the admin-client path is unchanged in shape: the action proves, the helper binds.
+2. **One list, marked.** `listTasksWithShared` returns the Space's own rows first and the shared ones after, each carrying `sharedFrom`, the host Space's name. The inbox, the calendar settings page and the due-date layer read that one list, so a to-do handed across shows up everywhere the team's own to-dos do.
+3. **Assignment is from the list, never from the browser.** `assigneeChoicesForPlan` is the host Space's owner and active members plus the same for every accepted guest Space the session can see; `assignPlanTodo` refuses any profile id not on it. A guest sees the host and itself; the host sees everyone. The write is bound to the proven Plan and the record gets `todo_assigned` with the words of the hand-over.
+4. **Both sides work the list in the drawer.** The to-do list renders for the guest's read-only drawer too, with the picker and the tick; adding and re-anchoring stay the host's, because a due date counted from the Production date is the host's date to move.
+
+**Consequences.** `LIVE-544` closes on its probe. `todo_assigned` rows now exist for LIVE-545 to notify from. Revoking a collaboration does not touch assignments (PROG-CAL7's open question): the share, not the collaboration, gates what the guest reads, and a revoked share leaves the assignee stamped and the row invisible to them, which is the safer default until the owner rules otherwise.
+
