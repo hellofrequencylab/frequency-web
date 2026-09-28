@@ -287,8 +287,17 @@ chunks. That is not a new trick; it is how dc47b89 proved the bug was real, by f
 - **It has a PR-time half.** `scripts/check-shell-weight.test.ts` asserts the source property and the
   fingerprints' integrity in `test`, because rule 5 means the artifact arm's first chance to fire is
   *after* the merge.
-- **What it does NOT cover:** it weighs the shell **layout** entry, not each route's own eager JS. A
-  single page shipping 2 MB of its own is invisible to it.
+- **It weighs the front door too (Arm D, LIVE-499, [ADR-1540](DECISIONS.md)).** `/` renders
+  outside every layout group and `app/(marketing)` has its own layout, so until 2026-09-28 a
+  visitor's first load was measured by nothing: Arms A and B only ever saw the member shell. Arm D
+  reads the same manifests for `[project]/app/page` and `[project]/app/(marketing)/layout` and
+  holds each to its own ceiling (450 KB and 700 KB, set 2.4x and 1.7x above the readings of 188 KB
+  and 405 KB; the numbers live in `FRONT_DOOR_ENTRIES`, quote them from there). Arm C walks
+  `app/page.tsx` and `/pricing` as well, so a named heavy library reaching the front door fails at
+  PR time, by name.
+- **What it does NOT cover:** it weighs the shell **layout** entry and the two front-door entries,
+  not each route's own eager JS. A single member page shipping 2 MB of its own is invisible to it,
+  and so is a single marketing page beyond what its layout already carries.
 
 ---
 
