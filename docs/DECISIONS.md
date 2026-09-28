@@ -48611,6 +48611,29 @@ module load — so on CI only the source-shape case fails when the zone is unpin
 is green in UTC and red in Pacific trains everyone to ignore a red suite, which is the quiet cost that
 made both zone defects survive this long.
 
+
+## ADR-1541: One occurrence of a repeating calendar entry is edited by splitting the series, in one database statement (LIVE-534)
+
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-534` · extends [ADR-1386](DECISIONS.md) phase 5 (repeating Pencils) and the LIVE-531 save question · numbered **1541** because 1536 is LIVE-480's and 1537 to 1540 are declared on pull requests open at the time of writing (#2938, #2939, #2942, #2943); 1531-1533 are owed a port (`HYG-126`)
+
+**Context.** A repeating private entry is one row in `space_calendar_entries`: `recurrence_rule` plus `exception_dates`, expanded at read time. An edit to any occurrence therefore rewrote every date. LIVE-531 made that visible after the owner lost a series to one press: Save on a repeating entry now asks, and the dialog said in words that a one-date edit was not possible yet and pointed at Skip this date. This entry is the missing write.
+
+The row was explicit about the trap, and it is the LIVE-533 shape: a "This date only" choice whose write reached the whole series would be worse than the honest refusal it replaced. The split is two writes (the master gains the day in `exception_dates`; a new one-off row carries the edited values) and a half-written pair is either a date that silently vanished or the same date drawn twice.
+
+**Decision.**
+
+1. **The split is one database function.** `public.split_calendar_series(space, entry, day, override)` (migration `20270345008800`) locks the master, refuses a removed row, a row that does not repeat, or a day already skipped, appends the day to `exception_dates` (unique, ascending), and inserts the override in the same transaction. Any failure rolls the whole thing back. SECURITY INVOKER, like `create_penciled_plan` and `keep_pencil_date`: the operator quad is still the lock, the refused UPDATE's row count is checked because RLS does not raise, and `created_by` is the caller's profile through `private.get_my_profile_id()`.
+2. **The override is read by name.** Only the EntryWrite columns reach the new row; identity, the series columns, the candidate group, the publish back-link and the tombstone are set by the function and never from the payload. The function pins its own zone to UTC so the anchor's day key and the whole-day shift are exact whatever the session zone, which is also why it never resolves a time through a named zone (`wall-clock.test.ts`).
+3. **What the override carries is decided once, in code.** `occurrenceWrite` (`lib/calendar/entries.ts`): the drawer's form is the master's, anchored on the series' first date, so a date field left alone means the occurrence's own day with the form's time and length, and a changed date means the person moved this one occurrence. `seriesLandsOn` refuses a day the series does not draw. The rule and the skips are stripped from the override in code and refused by name in SQL.
+4. **The dialog offers the choice only when there is a day to name.** `planEntrySave` carries `thisDate` from the occurrence the drawer was opened from, and `resolveSeriesSaveChoice('thisDate', plan)` resolves to `splitSeriesAt` or to `nothing`, never to the series write. The words say what the press reaches; the sentence about it not being possible is gone.
+5. **Readers hold the pair without new branches.** The override is an ordinary one-off row and the skip is an ordinary exception, so the grid, clash detection, booking blocks, the `.ics` feed (EXDATE plus a VEVENT), the Plan link and the publish seam all already do the right thing; `entries.test.ts` pins the grid drawing the day once. A Plan is not transitioned by one date changing stage. A date with candidate siblings is refused until one is kept, the way `saveCalendarEntry` refuses to move it on.
+
+**Rejected.** Two app-side writes (a stamped skip with no override on a network failure is the LIVE-531 loss again). Building the split into the drawer's `saveCalendarEntry` path (the whole-series write and the split must stay two verbs with two names). Explicit column parameters on the function (fourteen positional arguments that drift from EntryWrite; a whitelisted jsonb keeps one shape in one place). Re-anchoring the Plan's to-dos on a split (the series is the Plan's date; the override is one night of it).
+
+**Consequences.** One new RPC with a pgTAP file proving atomicity, the grants, and RLS on real rows (`supabase/tests/split_calendar_series.test.sql`). One new `Functions` entry in `lib/database.types.ts` and one verdict in `scripts/function-grants.txt`. After merge the migration is applied with `execute_sql` and stamped at the file's own version (docs/DATABASE.md). A drag of an occurrence still moves nothing (PROG-CAL15 refuses it and points at the drawer); with the split in place that refusal can later become the same write.
+
+**Rows.** LIVE-534 (closed here). LIVE-531, LIVE-533, LIVE-536 unchanged.
+
 ## ADR-1544: Vera reads what drew people as a tool the server computes on demand, handed in by the action, never as context on every ask (LIVE-539)
 
 **Status:** Accepted · 2026-09-28 · `LIVE-539` (child 1 of 2 of `PROG-CAL11` slice 4) · builds on [ADR-1386](DECISIONS.md) P6 (propose then accept; no other Space's data reaches a suggestion) and the PROG-CAL6 recap path · numbered 1544 because 1531-1536 and 1540-1542 are on main, 1537-1539 are on open pull requests, and 1543 was claimed by #2946 fourteen seconds before this pull request opened (the third renumbering of this entry in one afternoon, per ADR-1488)
