@@ -10,6 +10,11 @@ import { Input } from '@/components/ui/field'
 // and on success navigates away (the entity no longer exists). The server action is the
 // authority — it re-checks the manage capability; this is only the affordance.
 //
+// confirmLabel (optional): replaces "Yes, delete" on the destructive button. The one
+// caller that passes it is the event danger zone on the ANCHOR of a series (LIVE-535),
+// where the press takes dates the operator did not name, so the button has to say the
+// number instead of a bare verb. `entity` still names the first button.
+//
 // confirmText (optional): when set, the confirm step adds a text input and the
 // destructive button stays disabled until the typed value EXACTLY equals it
 // (case-sensitive) — e.g. typing DELETE. Omit it for the plain two-step confirm
@@ -21,6 +26,7 @@ export function DangerDelete({
   onDelete,
   redirectTo,
   confirmText,
+  confirmLabel,
   chromeless = false,
 }: {
   /** The member-facing noun, e.g. "circle". */
@@ -33,6 +39,9 @@ export function DangerDelete({
   redirectTo: string
   /** Require the user to type this exact string before delete enables (case-sensitive). */
   confirmText?: string
+  /** Replaces "Yes, delete" on the destructive button, for a press that reaches further than the
+   *  entity named above. */
+  confirmLabel?: string
   /** Drop the bordered danger box (for nesting inside a shared box). */
   chromeless?: boolean
 }) {
@@ -105,7 +114,7 @@ export function DangerDelete({
                 className="inline-flex items-center gap-1.5 rounded-lg bg-danger px-3 py-1.5 text-meta font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50"
               >
                 {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                Yes, delete
+                {confirmLabel ?? 'Yes, delete'}
               </button>
               <button
                 type="button"
