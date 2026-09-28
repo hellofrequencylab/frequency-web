@@ -553,8 +553,19 @@ row and writes through `parsePlanInput` or `saveCalendarEntry` so the product's 
 gate. The write itself is keyed by the MANIFEST's own path and laid down by an object spread onto a
 copy, never by an assignment through a computed index carrying a string the model sent: CodeQL called
 the first shape of that remote property injection, and "the vocabulary already refuses an undeclared
-path" is the sentence every prototype-pollution postmortem opens with. Not yet: undo, and reading
-attendance to pick dates.
+path" is the sentence every prototype-pollution postmortem opens with. Dates from what happened
+(`PROG-CAL11` slice 4, `LIVE-539`, [ADR-1544](DECISIONS.md)): when the ask is to pick a good day and
+names none, the model calls a fourth tool, `attendance_history`, and the server answers with the weekday
+and starting hour that drew the most people to THIS Space, folded by `attendanceHistory` in
+`lib/calendar/vera-attendance.ts` from its own published past events (the newest 50, `listEventsForSpace`
+keyed by the editor's Space, `toDay` at today) and the count the PROG-CAL6 recap path gives each one
+(`loadEventAttendanceCounts`, the per-event half of `loadPlanAttendance`, so the recap and the history
+cannot disagree). Weekday and hour are read off the stored wall clock, an unrecorded event is left out
+rather than counted as empty, and no record at all answers null in words rather than a weekday nobody
+came on. The read is handed to the loop as a reader and runs at most once per ask, only when the tool is
+called, so `lib/ai/vera-calendar.ts` imports no store and the per-event ledger read costs only the ask
+that needs it. Not yet: the reason on the proposal line (`LIVE-540`); until it lands the model says which
+weekday and hour it followed in its note. Undo shipped as slice 3 (the change log below).
 
 **Two gates, not one** (owner ask 2026-09-23: "I don't want Vera changing things without explicit
 permission"). Accept was the whole gate and every line arrived ticked, so the default action was

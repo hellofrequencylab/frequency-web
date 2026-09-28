@@ -32,7 +32,6 @@ tree as of this index: **ADR-1488**. 1488 is LIVE-439. 1481 is LIVE-432. 1477 is
 
 tree as of this index: **ADR-1491**. 1491 is the 2026-09-21 tail-order ruling (editor third to last, Etsy second to last, the app last). 1490 is LIVE-437. 1487 is LIVE-438. 1483 is LIVE-434. 1482 is LIVE-433. 1485 is LIVE-436. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1468 is Space Plans (PROG-CAL2-8). 1467 is the Calendar view slide shell. 1464 is the Admin Calendar five-view set. 1463 is LIVE-393. 1445 is the calendar C0-C5 ruling. 1325 is the plan this one amends.
 
-
 | Theme | Start here |
 |---|---|
 | **Names** | ADR-208 → [NAMING.md](NAMING.md) |
@@ -13907,7 +13906,6 @@ graduation hooks belong to other agents. `contacts` + `beta_*` stay untyped (unt
 
 **Consequences.** Additive and inert by default. The dedicated audit table's migration is WRITTEN but NOT applied (the lead applies centrally); it is registered in `scripts/rls-deny-all.txt` as service-role-only (RLS on, no policy), and the audit writer is best-effort with an `agent_actions` fallback so the send path works before the migration lands. Both gates are structurally unbypassable: the breaker cannot be skipped (it is the first call in the only graduated path), and the send-gate cannot be skipped (the enqueue is reachable only past both). `lib/database.types.ts` needs regenerating after the migration applies (the reader/writer cast untyped until then, ADR-246). Turning autonomy on for real is a deliberate, audited owner action, reversible instantly by the master kill or the breaker.
 
-
 ---
 
 ## ADR-627: One notification router/registry, and `practice.verified` verified-airtime instrumentation (WAM)
@@ -16159,7 +16157,6 @@ The durable rule: **a crawlable listing is public-only — `unlisted` is a link,
 **Consequences.** `page-hero.tsx`'s identity branch is shared, so the clipping fix also lands on `/circles/<slug>`, `/journeys/<slug>`, `/journeys/<slug>/learn` and `/channels/<id>` below 640px — the same bug, the same fix, and nothing at or above 640px. The height budget, re-derived at 17px root against the real `min-h-[15rem]` (255px, not the plan's assumed 240px): at 375px a five-chip friend viewer wraps to two rows for ~210px of used band, so the cover **does not grow**; a staff viewer's sixth chip takes a third row at ~252px, still inside it. At 320px the same clusters need three or four rows and the band grows to roughly 295px. That is the trade this pass accepts — a cover that is taller on the narrowest phones instead of one that hides controls. The plan's stricter "must not exceed 240px" was never reachable: `min-h-[15rem]` alone is 255px, and getting under it needs Tip and the staff Settings drawer off the cover entirely, which is a desktop change and out of bounds here. Desktop neutrality is proved twice: a render test strips `max-sm:` from the cluster and asserts the remainder is byte-identical to the shipped string, and the compiled stylesheet puts every `max-sm:` utility inside `@media not all and (min-width:40rem)` with `.sm:px-8` / `.sm:max-w-[16rem]` emitted later in the sheet than the relaxed base utilities they override. What is **not** proved is how it looks: there is no browser, no Playwright and no `@testing-library/react` here, so the 320 / 375 / 390px render has not been observed, only derived.
 
 The durable rule: **on this codebase "no horizontal scroll" proves nothing — the shell clips it — so the mobile test is "nothing is clipped"; and a phone-only fix is either `max-sm:`-prefixed or a base utility an existing `sm:` already overrides, never a new unprefixed declaration and never a backdrop behind header text.**
-
 
 ---
 
@@ -19775,7 +19772,6 @@ predicate used by ten callers should be named for the *question*, not the *answe
 "is this usable" check on stored user content deserves the question *"and what happens to the data
 when it says no?"*
 
-
 ---
 
 ## ADR-979 — Deleting a control nobody could have filled, and a nav row that is a gate decision (2026-08-10)
@@ -20508,7 +20504,6 @@ concurrent work was in flight… Move it into the ledger verbatim"* — inside t
 been moved into. The `docs/adr-drafts/` directory no longer exists, and `pnpm check:adr` confirms
 every cited number resolves, so the warning it carried about dangling citations is expired.
 
-
 **Context.** ADR-986 gave every creatable entity ONE declaration and one renderer, so a wizard is
 data now, not a hand-built screen. The AI half never got the same treatment. Five modules under
 `lib/ai/` each opened a guided draft, and each had typed out the same twelve-line preamble by hand:
@@ -20764,8 +20759,6 @@ surface each.
 concurrent work was in flight… Move it into the ledger verbatim"* — inside the ledger it had already
 been moved into. The `docs/adr-drafts/` directory no longer exists, and `pnpm check:adr` confirms
 every cited number resolves, so the warning it carried about dangling citations is expired.
-
-
 
 **Context.** Three capabilities were already paid for and already governed, and each reached one
 surface:
@@ -25994,7 +25987,6 @@ cutting it is a workflow change and not a config line. ⚠️ There is **no Verc
 the 1.50 GB ceiling** — the only cache control the platform exposes is turning the cache off for a
 deployment — so this is built under, never negotiated with.
 
-
 ⚠️ **NOT in `postbuild` yet (LIVE-035).** It ships as `pnpm check:cache-budget`. It has never run
 against a real completed production build — the 2026-08-17 attempt died collecting page data for
 `/discover/cities/[citySlug]`, which needs credentials the agent container does not hold. It also
@@ -26162,7 +26154,6 @@ a silent exception.
 `^import { MODULE_COMPONENTS }` in `settings-panel.tsx` is satisfied by a cosmetic edit worth **14.3
 KB** and left unsatisfied by the 413 KB that actually moved — a probe that measures its own title
 rather than the consequence, which [ADR-1043](#adr-1043) forbids. The consequence is measured here.
-
 
 ⚠️ **NOT in `postbuild` yet (LIVE-035), and that is the honest state.** Its own unit tests pass, but on
 the only artifact available it exited 1 naming `lib/pricing/feature-meters.ts` — and that artifact was
@@ -36972,7 +36963,6 @@ re-evaluated. The next commit authored by a person or an agent re-triggers CI no
 what this one does; do not read a post-recapture PR as green until a run exists on a commit the
 runner did not author.
 
-
 **Status.** Accepted. Replaces `LIVE-040`'s commit-date freshness arm with a content fingerprint; adds `test/e2e/template-fingerprints.json` + `test/e2e/template-fingerprints.test.ts` and a re-stamp step in `.github/workflows/e2e-manual.yml`.
 
 **Context.** `LIVE-040` carried a two-arm probe. The first arm asserts both marketing templates render a FAQ Accordion with question/answer pairs, and it is honest. The second asked whether the committed `@visual` PNGs still depict the page, by comparing the template file's last-commit date against its baselines' last-commit date. That arm has now failed twice in two different ways.
@@ -37349,7 +37339,6 @@ The premise was re-measured before any code was written, as ADR-1082 requires. E
 
 ⚠️ **The generalisable part.** A table built for a job it never got is a promise with no expiry, and this one sat for seven months with its purpose written into its index name. The reader shipped first because it was the cheaper half and made the gap visible, which is the right order; but "visible" is not "done", and a row that says "the recovery job is not built yet" in three docs is prose recording status, which ADR-1043 forbids for a reason. The fix is the same as always: the job, its probe, and the docs that said "not yet" all move in one change.
 **Status.** Accepted. Closes `LIVE-208`. The owner's ruling on the three options that row carried, plus the two things implementing it measured. Amends nothing in [ADR-1017](DECISIONS.md) — the closer stays exactly as it was — and adds the sixth gate to `postbuild` ([`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md), [ADR-1003](DECISIONS.md)).
-
 
 ---
 
@@ -47909,6 +47898,27 @@ half of O-3 in ADR-1325, O-5 and Profile O1 on the row's 2026-09-08 ruling.
 **Rows.** OWN-060 (closed 2026-09-22). Consequences land on PROG-E7, PROG-E10 and the profile
 hero work when each is picked up.
 
+## ADR-1544: Vera reads what drew people as a tool the server computes on demand, handed in by the action, never as context on every ask (LIVE-539)
+
+**Status:** Accepted · 2026-09-28 · `LIVE-539` (child 1 of 2 of `PROG-CAL11` slice 4) · builds on [ADR-1386](DECISIONS.md) P6 (propose then accept; no other Space's data reaches a suggestion) and the PROG-CAL6 recap path · numbered 1544 because 1531-1536 and 1540-1542 are on main, 1537-1539 are on open pull requests, and 1543 was claimed by #2946 fourteen seconds before this pull request opened (the third renumbering of this entry in one afternoon, per ADR-1488)
+
+**Context.** The owner asked on 2026-09-22 for Vera to "figure out" dates and said "we can make it more complex later". Slices 1 to 3 of that later (clarify, edit any field, undo) shipped in the week after; the fourth, dates from what actually happened, had a paragraph in `PROG-CAL11` and no code: the word attendance appeared in none of the three Vera files, and the only attendance read on the calendar folded a Plan's events into one number for the drawer recap. Asked "pick a good day", Vera proposed any free Saturday or any free Tuesday with nothing to prefer between them. Three ways to put the history in front of the model were on the table: rows in every ask's context, a read inside the model loop, or a tool the server answers on demand with a reader the calendar action hands in.
+
+**Decision.**
+
+1. **A fourth tool, `attendance_history`, beside `lunar_dates`.** The model calls it when the ask is to pick, suggest or find a good day or time and names none, and does not call it when a day or time was named. The server answers with the weekday and starting hour that drew the most people to THIS Space, the whole table by weekday and by hour, the count each rests on, and one sentence in the house voice. When nothing has a record the answer is null, in words, never a weekday nobody came on.
+2. **The read is handed in by the calendar action as a reader on the context, keyed by the Space the editor resolved.** `lib/ai/vera-calendar.ts` imports no store and no admin client; without a reader the tool is not offered and the loop is the old three tools. The reader runs at most once per ask and only when the tool is called, because the check-in ledger is read per event (fifty reads at the bound) and that cost belongs to the one ask that needs it, not to every ask.
+3. **The fold is pure and reads the stored wall clock.** `attendanceHistory` in `lib/calendar/vera-attendance.ts` takes one row per past event, its `starts_at` as stored and the count `attendanceCount` gives its record (host marks and verified self check-ins, one person once, null when empty). Weekday and hour are the digits as stored, the LIVE-377 / LIVE-512 convention, because "Saturday at 7" is what the team means and what a pencil change writes; no machine zone is consulted. An unrecorded event is left out of every bucket rather than counted as nobody. The best hour is the best hour of the best weekday, not the busiest hour of the week, so the answer is one slot and not two that contradict each other.
+4. **One count per event, folded by the recap's own rule.** `loadEventAttendanceCounts` in `lib/events/event-stats.ts` returns a count per id from the same three ledgers, and `loadPlanAttendance` now folds over it, so the drawer recap and Vera's history cannot disagree. The read passes `toDay` at today, the exclusive ceiling [ADR-1536](DECISIONS.md) gave `listEventsForSpace` the same hour (a `pastOnly` mirror of `upcomingOnly` was written first and dropped at the merge, because one way to bound the top is enough), since materialised series put many future rows on a Space and "newest fifty" without a ceiling could hold no past event at all.
+5. **`MAX_ROUNDS` is four.** A lunar lookup, an attendance lookup, a second lunar lookup and the proposal all fit; a clarification still ends the turn.
+
+**Rejected.** Attendance rows in every ask's context (every ask pays fifty ledger reads for a preference most asks never use, and the context is rebuilt on every continuation). A read inside the model loop (the loop would import a store, and the only thing keeping another Space's history out of the prompt would be a filter inside the AI module rather than the action's authorization). The busiest hour of the week as the best hour (it could name a Tuesday under a Saturday). Counting an unrecorded event as zero (a full room whose host never touched the roster would drag its weekday down).
+
+**Consequences.** Vera's date suggestions can prefer what drew people, and the model is told to say which weekday and hour it followed in its note until `LIVE-540` puts the reason on the proposal line in the server's words. The loop stays pure of tables and the tenancy wall stays where it was (the action, `resolveEditor`). `loadPlanAttendance` is unchanged in behaviour and now has one rule under it. The probe imports the real fold and runs it.
+
+**Rows.** `LIVE-539` closed. `LIVE-540` next, which closes `PROG-CAL11`.
+=======
+
 ## ADR-1525: A visual baseline carries the environment that photographed it, and the camera refuses to compare across two (LIVE-213, LIVE-487)
 
 **Status:** Accepted · 2026-09-23 · backlog `LIVE-487` (closed here), `LIVE-213` (open on its owner
@@ -48422,7 +48432,6 @@ The owner's directive of 2026-09-27 states it as product: the main community Cir
 
 **Rows.** `DEF-MOBILE`, `DEF-ETSY`, `PROG-GD6` unparked. `HYG-123` ruled. `HYG-126`, `HYG-127`, `HYG-128` filed. `PROG-A1`, `PROG-A3`, `PROG-A4` stay parked with the ruling appended. `LIVE-234`, `LIVE-455` untouched.
 
-
 ## ADR-1536: The team calendar's events window has two ends, and it is filled from today outward (LIVE-480)
 
 **Status:** Accepted · 2026-09-28 · backlog `LIVE-480` · extends [ADR-1385](DECISIONS.md) and the LIVE-467 floor · numbered **1536** because 1535 is the 2026-09-28 owner ruling and 1531-1533 are owed a port (`HYG-126`)
@@ -48703,7 +48712,6 @@ module load — so on CI only the source-shape case fails when the zone is unpin
 is green in UTC and red in Pacific trains everyone to ignore a red suite, which is the quiet cost that
 made both zone defects survive this long.
 
-
 ## ADR-1541: One occurrence of a repeating calendar entry is edited by splitting the series, in one database statement (LIVE-534)
 
 **Status:** Accepted · 2026-09-28 · backlog `LIVE-534` · extends [ADR-1386](DECISIONS.md) phase 5 (repeating Pencils) and the LIVE-531 save question · numbered **1541** because 1536 is LIVE-480's and 1537 to 1540 are declared on pull requests open at the time of writing (#2938, #2939, #2942, #2943); 1531-1533 are owed a port (`HYG-126`)
@@ -48786,4 +48794,3 @@ Premise re-tested before building ([ADR-1082](DECISIONS.md)): the row's own prob
 **Consequences.** A pull request that adds a foreign key with no covering index fails `checks`, naming `table.column` and the index to add, before the advisor can. The parser is a smoke alarm for one known shape: an exotic construction it misses passes silently, which is why the catalog controls are in the test and why the census is recorded here rather than assumed. `scripts/guard-wiring.test.ts` fails if the guard ever leaves the array.
 
 **Rows.** HYG-128 (closed here). HYG-127 (the sweep, closed by [ADR-1543](DECISIONS.md)). SCAN-638 untouched.
-
