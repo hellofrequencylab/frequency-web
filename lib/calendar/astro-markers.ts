@@ -1,6 +1,7 @@
-import { SearchMoonPhase, SearchSunLongitude, MakeTime } from 'astronomy-engine'
+import { SearchSunLongitude, MakeTime } from 'astronomy-engine'
+import { lunarPhaseInstants, dayInTimeZone } from '@/lib/calendar/moon'
 import { SIGN_INFO, type ZodiacSign } from '@/lib/astrology/signs'
-import { dayInZone } from '@/lib/time/zone'
+import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE SKY ON A SPACE'S CALENDAR (LIVE-526).
@@ -8,12 +9,22 @@ import { dayInZone } from '@/lib/time/zone'
 // New moons, full moons, and the moment the Sun enters each sign — which is the
 // same moment as the equinox or solstice four times a year.
 //
-// COMPUTED, NOT SEEDED (owner decision 2026-09-27). `astronomy-engine` is
-// already a dependency (lib/astrology/chart.ts uses it for natal charts), so
-// this costs no new package and no upkeep: it answers for any month a reader
-// browses to, forwards or back, instead of running out at the end of a seeded
-// table. It is server-side only — nothing here is imported by a client
-// component, so none of it reaches the phone bundle.
+// COMPUTED, NOT SEEDED (owner decision 2026-09-27), and COMPOSED, NOT REWRITTEN.
+//
+// THE MOONS ARE NOT COMPUTED HERE. `lib/calendar/moon.ts` (PROG-CAL10) already
+// solves them: pure Meeus chapter 49, no dependency, and already trusted enough
+// that `lib/ai/vera-calendar.ts` hands its dates to a model precisely so a
+// proposal is "built on arithmetic rather than recollection". A first draft of
+// this file computed them a second way, with astronomy-engine. Both agreed
+// exactly across 2026 — all 25 instants, in Pacific, including the fold below —
+// which is a good property for a cross-check and a bad reason to keep two
+// engines. The sibling test keeps that comparison; the module delegates.
+//
+// What IS new here is the SUN: sign ingresses, and with them the equinoxes and
+// solstices. `astronomy-engine` is already a dependency (lib/astrology/chart.ts
+// uses it for natal charts), so that costs no new package and answers for any
+// month a reader browses to, instead of running out at the end of a seeded
+// table. Server-side only, so none of it reaches the phone bundle.
 //
 // 🔴 THE FOUR CARDINAL INGRESSES ARE THE EQUINOXES AND SOLSTICES. Not "near",
 // not "usually": the same instant to the millisecond, because that is the
@@ -122,36 +133,32 @@ export function astroMarkersInRange(
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDay) || !/^\d{4}-\d{2}-\d{2}$/.test(toDay)) return []
   if (toDay < fromDay) return []
 
+  // ONE resolved zone for both halves, so the moons and the Sun can never fold on different days.
+  // `dayInZone` takes null and falls back to the home zone; `dayInTimeZone` wants a string and
+  // reads an unknown zone as UTC. Passing the same resolved value to both keeps them in step.
+  const zone = timezone?.trim() || HOME_TZ
+
   try {
     const searchFrom = new Date(`${shiftDay(fromDay, -ZONE_SLACK_DAYS)}T00:00:00Z`)
     const searchTo = new Date(`${shiftDay(toDay, ZONE_SLACK_DAYS)}T23:59:59Z`)
-    const spanDays = Math.ceil((searchTo.getTime() - searchFrom.getTime()) / 86_400_000) + 1
     const out: AstroMarker[] = []
 
-    // ── Moons. SearchMoonPhase finds the NEXT crossing of a phase angle after a start time, so
-    //    each phase is walked forward one lunation at a time (~29.5 days) until past the window.
-    for (const [kind, angle] of [
-      ['new-moon', 0],
-      ['full-moon', 180],
+    // ── Moons, delegated. `lunarPhaseInstants` already carries a lunation of slack either side
+    //    so a zone shift at the edges cannot lose a date, and `dayInTimeZone` is the same fold.
+    for (const [kind, phase] of [
+      ['new-moon', 'new'],
+      ['full-moon', 'full'],
     ] as const) {
-      let cursor = MakeTime(searchFrom)
-      for (let guard = 0; guard < 64; guard += 1) {
-        const hit = SearchMoonPhase(angle, cursor, spanDays + 40)
-        if (!hit) break
-        const at = hit.date
-        if (at > searchTo) break
-        const day = dayInZone(at, timezone)
-        if (inRange(day, fromDay, toDay)) {
-          out.push({
-            day,
-            kind,
-            at: at.toISOString(),
-            label: kind === 'new-moon' ? 'New moon' : 'Full moon',
-            symbol: MOON_SYMBOL[kind],
-          })
-        }
-        // Step past this hit so the next search cannot return the same moment forever.
-        cursor = MakeTime(new Date(at.getTime() + 86_400_000))
+      for (const at of lunarPhaseInstants(phase, fromDay, toDay)) {
+        const day = dayInTimeZone(at, zone)
+        if (!inRange(day, fromDay, toDay)) continue
+        out.push({
+          day,
+          kind,
+          at: at.toISOString(),
+          label: kind === 'new-moon' ? 'New moon' : 'Full moon',
+          symbol: MOON_SYMBOL[kind],
+        })
       }
     }
 
@@ -165,7 +172,7 @@ export function astroMarkersInRange(
         if (!hit) continue
         const at = hit.date
         if (at < searchFrom || at > searchTo) continue
-        const day = dayInZone(at, timezone)
+        const day = dayInZone(at, zone)
         if (!inRange(day, fromDay, toDay)) continue
         const season = SEASON_POINTS[lon]
         out.push({
