@@ -47720,6 +47720,35 @@ Premise re-tested 2026-09-21 against the migration history (ADR-1082), one findi
 
 **Rows.** LIVE-335 (open; `cmd` probe now asserts the migration defines the three policies and the helper, and the row's next half is the baseline convergence).
 
+## ADR-1539: The first sell attempt is the field where the price is typed, and a Spark that prices a Connect-paid thing renders the resolved prompt on its first screen (LIVE-537, LIVE-538)
+
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-537`, `LIVE-538` · program `PROG-R5` · extends [ADR-1357](DECISIONS.md) (the event form's price control) and LIVE-233's one-prompt rule · numbered **1539** because **1536-1538** were claimed on other open PRs when this was written (1531-1533 were then reserved, since ported by HYG-126)
+
+**Context.** LIVE-233 collapsed four hand-written payout panels into one prompt (`lib/billing/payout-prompt.ts`, pure; `payout-prompt-resolve.ts`, the two reads) and put it where each money path REFUSES: Offerings, the Shop's Storefront tab, the event page, the maker console. LIVE-339 (ADR-1357) then noticed that the event CREATE form, where a host first types a price, still linked to `/settings/billing`, and moved the door there. The rule those two rows established, and `lib/events/ticket-eligibility.ts` states at length, is that onboarding is offered on the surface where someone has just decided to charge.
+
+Re-walking PROG-R5's change 4.1 on 2026-09-28 against the tree, asking only "where is a price for something Connect pays out first TYPED, and does that surface reach the prompt?", found three surfaces that do not:
+
+- the **List a product Spark** (`/market/sell`, also mounted as the `@wizard/(.)market/sell` modal), which carried two prose sentences telling a maker to set up payouts before their first sale, no readiness read and no button;
+- the **Shop console's Catalog tab**, the console's default tab and the one `ItemForm` takes the price on, while the prompt sat on the Storefront tab only, a tab an operator opens to rename it;
+- the **New service Spark** (`settings/services/new`), where a bookable service gets its price, its price model and its deposit.
+
+On all three the BUYER is the one refused, at click, by `lib/commerce/checkout.ts`. The operator learns nothing unless they happen to open a different page. Every one of the three is a Studio Spark or a console tab, which is why the rule needed restating: the previous two rows closed forms and pages, and the Sparks were built after them without inheriting it.
+
+**Decision.**
+
+1. **"Where the price is typed" is the first sell attempt.** A Spark, a form or a console tab that takes a price for something Connect pays out counts, whether or not a buy button exists yet. A price field is the operator deciding to charge.
+2. **The Server page resolves; the Spark renders.** The page that already knows the caller (or the Space) calls `resolveProfilePayoutPrompt` / `resolveSpacePayoutPrompt` and hands the plain `PayoutPrompt | null` to the client Spark, which renders `PayoutPromptCard` as its `doors.aside`, on the first screen. No new component, no new sentence, no second read: the kernel already has the words.
+3. **The Studio kernel does not learn about payouts.** Readiness is IO and per-payee; the kernel is pure and entity-blind (`docs/STUDIO.md` §0), and a `price` field kind cannot know whether its money moves through Connect (housing rent and a listing's price note are `price`-shaped and pay nobody). The prompt is a surface prop, never a manifest field or a field-kind hint.
+4. **Static go-elsewhere sentences retire wherever the card lands.** A sentence that says "set up payouts before your first sale" beside a card that says the same with a button is two prompts; beside no card it is the dead end this whole line of work exists to remove.
+5. **The payee is who the resolver says.** A maker Spark resolves `self`; a Space Spark or console resolves the space OWNER ([ADR-819](DECISIONS.md)), so an editor reads who has to act and is never handed a button that onboards the wrong account.
+6. **Null when ready stays ([ADR-1158](DECISIONS.md)).** On a create surface the card is a nudge, so `whenReady` stays silent. A console tab that IS the payments UI keeps its `status` card, and a console-level card steps aside on that tab so a not-ready owner never reads two cards on one screen.
+
+**Rejected.** A readiness hint on the kernel's `price` field kind (breaks purity, and the kind cannot tell a Connect-paid price from an informational one). Reading readiness inside the client Spark (a second read per surface, and the admin client cannot cross the boundary). Any gate on the Create button ([ADR-914](DECISIONS.md): never gate the transaction). Leaving the prose sentences beside the card as reinforcement (two prompts).
+
+**Consequences.** PROG-R5's change 4.1 becomes literally true on the walk: every Connect-paid price field reaches the one prompt. `lib/billing/connect-prompt.test.tsx` pins each new seam by source shape, blanking comments first (`docs/CHECKOUT.md` §6: a header that describes the retired sentence must not read as the sentence). Tips remain outside the rule: they are a payout channel with no sell attempt, because nobody prices a tip. The next Spark that takes a Connect-paid price inherits this decision, and the test is where it is added.
+
+**Rows.** LIVE-537 (the maker Spark, closed with this ADR). LIVE-538 (the Shop console and the Service Spark) applies §§1-2 and §6 to a Space payee. PROG-R5 closes when both are done.
+
 ## ADR-1522: A baseline must not contain a list whose length changes, and a suite must not report an account fact as a failure (LIVE-457, LIVE-458, LIVE-459, OWN-081, HYG-115)
 
 **Status:** Accepted · 2026-09-22 · backlog `LIVE-457`, `LIVE-458`, `LIVE-459`, `OWN-081`, `HYG-115` · records work already merged in #2852 · numbered **1522** rather than the first free number, because 1511 is claimed on two open branches at once and 1520 and 1521 are claimed on two more, so this takes the first number above every claim in flight ([ADR-1488](DECISIONS.md)'s convention, now enforced by [ADR-1509](DECISIONS.md)) · extends [ADR-1277](DECISIONS.md) (the `data-visual-mask` hook), [ADR-1265](DECISIONS.md) (`viewportOnly` for a surface whose body is live data) and [ADR-1351](DECISIONS.md) (a capture that photographs an outage commits the outage) · beside [ADR-1082](DECISIONS.md) (re-test the premise before working the row) and [ADR-970](DECISIONS.md) (a red check nobody owns trains everyone to merge past it)
@@ -48022,6 +48051,27 @@ trusted. Any new `app/(public)/` page that renders member-aware content calls
 
 **Rows.** LIVE-500 (closed here). Untouched: SCAN-644, SCAN-643, LIVE-184 (the tab set the sitemap
 advertises is unchanged).
+
+## ADR-1546: A capture job looks at the checks behind its own push, and says in its own conclusion when nothing judged the baselines (HYG-115)
+
+**Status:** Accepted · 2026-09-28 · backlog `HYG-115` (closed here) · extends the GITHUB_TOKEN paragraph in the header of `.github/workflows/e2e-manual.yml` and [ADR-1351](DECISIONS.md) (the degraded-capture refusal on the same step) · the verdict is shaped like [ADR-1509](DECISIONS.md)'s cross-PR arm (pure, fixture-driven, loud skip when unarmed, failure when armed and unable to look) · numbered 1544 against the ledger and every open pull request's head on the day it was written, then 1546 once check:id-collisions read the same number on the earlier-opened #2947 and 1545 on #2949 (ADR-1509: the later-opened pull request renumbers)
+
+**Context.** The two capture jobs (update-baselines, update-a11y) commit what they photographed and push with GITHUB_TOKEN. What happens to the checks on that head has been measured in three states. A full `pull_request: synchronize` that judges the baselines (PR #2086, 2026-08-11). Nothing at all, because GitHub creates no workflow runs for a push made with that token (PR #2026, 2026-08-05; PR #2855, 2026-09-22, where the capture existed to unblock `pr-compare` and the check that needed the new baselines never fired, so the checklist showed a red compare against baselines that no longer existed). And runs created, then PARKED at `action_required` until a human account started them by hand (PR #2841, 2026-09-22: created 01:41:18Z, started 01:54:04Z; ci run 34176984759 on 2026-09-08 never started). In the second and third states the pull request's last judged SHA stays the commit before the capture, which reads exactly like "CI passed on the new baselines" when nothing evaluated them. The workflow header has carried that sentence as a warning to a human since August; the capture job itself walked away without looking, and a green capture job with a quiet checklist could not be told from "nothing needed to run". Premise re-tested ([ADR-1082](DECISIONS.md)): the row's own probe fails on `main` by construction, no module, no step.
+
+**Decision.**
+
+1. **The verdict is a pure function, `followUpVerdict({ headSha, runs })` in `scripts/check-capture-followup.mjs`.** It reads workflow runs in the REST shape, watches `ci` and `e2e`, and answers one of three things: `parked` (any watched run at `action_required`), `none` (no watched run for the head at all), or `judged` (a watched run is queued, running or concluded). A failed run is a judged run: the checklist shows it, which is the whole point. A run on another head, or of another workflow (Vercel's checks, e2e-manual itself), is not a judgement of the baselines and is not counted.
+2. **The capture job that pushed is the one that looks, right after it pushes.** Both committing steps gain `id: commit` and write `pushed=true` to their step output only after `git push`; a new step runs the gate only on that output, so a run that pushed nothing has nothing to judge. The gate lists the runs on the pushed head with the job's existing `actions: read`, waits a bounded 45 seconds for the third state's runs to be created, and fails THE CAPTURE JOB with `::error` annotations and a job-summary section that names the state and what to do (approve the parked runs, or push a commit of your own; never re-run the previous run, which replays the old SHA). Loud means the conclusion and the summary the dispatcher is already watching, not a log line.
+3. **It degrades loudly and fails honestly.** Without `GITHUB_TOKEN` and `GITHUB_REPOSITORY` it prints what was not proved and exits 0. Armed, a listing it cannot read is exit 1, never a skip, on the same reasoning as [ADR-1509](DECISIONS.md): a gate that could not look must not say clean.
+4. **The wait is short on purpose.** The fourth observation on the row named the canonical rule, a GITHUB_TOKEN push creates no runs, which fits every measurement without non-determinism. Absence is therefore the expected answer, not a race; the wait exists only for the parked state, whose runs are created within seconds, and the message says to push a commit rather than to wait.
+5. **The header paragraph that told a human to go and look now says the job looks**, and the two commit-step comments point at the step below them.
+
+**Rejected.** Pushing with a PAT so the runs fire (widens a token for every job in the file to buy one behaviour, and the header records the same token observed both ways, so it is a theory, not a measurement; measure first). A separate workflow triggered on the capture's push (it would not fire, for the same reason the checks do not). Re-running the previous run from the gate (replays the old SHA against the new baselines' tree). Making the gate advisory (a warning nobody reads is the silence with a different shape, [ADR-970](DECISIONS.md)).
+
+**Consequences.** A green capture job now means the checks behind the capture are running or judged; a red one names which of the three states the head is in, in the job summary. `scripts/check-capture-followup.test.ts` drives every verdict arm and the CLI's exit codes, summary text and bounded re-read with an injected fetch, so nothing here needs a network to prove. `pnpm check:capture-followup` is the local command; `scripts/guard-wiring.test.ts` sees the script invoked from e2e-manual.yml. The first real reading comes from the next committing dispatch, and it will be a red job or a green one, never a quiet checklist.
+
+**Rows.** HYG-115 (closed here). Untouched: LIVE-333's degraded-capture refusal on the same step, the turnstile, the protected-ref guard.
+
 ## ADR-1527: A block's declared field is reachable or it is not a field, and the two halves of Space authoring read one list (LIVE-501)
 
 **Status:** Accepted · 2026-09-25 · backlog `LIVE-501` (closed here) · amends the palette curation of
@@ -48087,6 +48137,26 @@ change was trusted until it was watched go red.
 
 **Rows.** LIVE-501 (closed here). Untouched: the `SpaceCommunity` Puck block and its 19 stored documents;
 the Space Circle / Discussion program.
+
+## ADR-1547: A pgTAP file that skips every assertion is a stated uncovered surface or a failed job, and the safeupdate file asserts the fix's shape without the hook (HYG-122)
+
+**Status:** Accepted · 2026-09-28 · backlog `HYG-122` (closed here) · extends [ADR-1207](DECISIONS.md) (the defect the file pins) and [ADR-1150](DECISIONS.md) (db-tests as the fresh-apply gate) · beside [ADR-1011](DECISIONS.md) (a guard nobody runs is a claim nobody checks) · numbered 1545 against the ledger and every open pull request's head on the day it was written, then 1547 once check:id-collisions read 1545 on the earlier-opened #2949 and 1546 taken by #2950 (ADR-1509: the later-opened pull request renumbers)
+
+**Context.** `supabase/tests/refresh_resonance_density_cells_safeupdate.test.sql` pins [ADR-1207](DECISIONS.md): the nightly density rollup's bare DELETE raised sqlstate 21000 under PostgREST's `safeupdate` planner hook on every cron run from 2026-08-22, and psql never saw it because psql never loads the hook. Seeing the defect needs the hook in the test session, so the file tries `load 'safeupdate'` in a DO block, and when that fails it prints the reason and SKIPS all three assertions rather than fail the suite for an unrelated cause. That is honest, and it was read by nobody: pg_prove prints the reason as a diag line and `ok` beneath it, the job goes green, and the coverage ledger counts the file. The row's open question was whether the hook had ever loaded in CI. Read on 2026-09-28 from db-tests run 36450365753, and it is every run: `SKIPPING: safeupdate could not be loaded in this database (42501: access to library "safeupdate" is not allowed)`. `LOAD` needs superuser or a library under `$libdir/plugins`; the role `supabase test db` connects as has neither. The one regression the file exists to pin has never been pinned in CI, and "All tests successful" said otherwise on every run.
+
+**Decision.**
+
+1. **The suite's own output is read, by a gate, for the skip it prints.** `scripts/check-pgtap-skips.mjs` (`pnpm check:pgtap-skips <log>`) runs in `db-tests.yml` on the TAP output the test step now keeps (`supabase test db 2>&1 | tee pgtap.log`, under `pipefail` so a failing suite still fails). It parses pg_prove's default output, one line per file with its diag lines between the file and its verdict, and treats a file as skipping when a diag line starts with `SKIP`.
+2. **An unstated permanent skip fails the job; a stated one is announced.** `scripts/pgtap-uncovered.txt` lists a skipping file with one reason each. A skipping file not on it fails; a listed one is printed as a `::warning` and a job-summary section that says COVERAGE ABSENT with the reason, so the person reading the green job is told what the green does not include. A listed entry whose file no longer skips fails too, and so does one for a file the suite does not contain: the list cannot outlive its reason, and the day the library loads the entry comes out. A log with fewer than 20 files is refused ([ADR-962](DECISIONS.md)).
+3. **The safeupdate file gains an assertion that never skips.** A fourth arm asks the function's own definition the question safeupdate asks at plan time: is there a DELETE with no WHERE clause. The 2026-08-22 bare delete fails it. It is weaker than running under the hook (a WHERE that is present but wrong passes), which is why the file stays listed with that reason rather than being called covered.
+4. **The library is not installed.** `LOAD` is refused by privilege, not absence, so "install it in the image" means a superuser test role, a wider change than this row and one whose effect on every other file's RLS assertions would need its own measurement first ([ADR-1082](DECISIONS.md)).
+
+**Rejected.** Failing the suite from inside the file when the hook cannot load (every db-tests run red for a reason no pull request can fix, [ADR-970](DECISIONS.md)). Deleting the hook-driven arms (they are the only assertions that would see the real defect on a database that can load the hook). Running pg_prove verbose to see pgTAP's own `# SKIP` lines (the file already prints a grep-able reason, and verbose output buries thirty files' worth of assertion lines in every log).
+
+**Consequences.** A pgTAP file cannot start skipping quietly. The suite's one absent surface is named in every db-tests summary until the local image lets the test role load the hook, at which point the gate fails once, the entry is removed, and the coverage becomes real. `scripts/check-pgtap-skips.test.ts` drives the parser against the run's exact lines and every verdict arm; `scripts/guard-wiring.test.ts` sees the script invoked from db-tests.yml.
+
+**Rows.** HYG-122 (closed here). Beside ADR-1207's LIVE row and HYG-100 (the deny matrix the same suite proves).
+
 ## ADR-1528: The Contact tab reads the contactForm block's own bag, and a reserved slug is reserved in both readers (LIVE-502)
 
 **Status:** Accepted · 2026-09-25 · backlog `LIVE-502` (closed here) · owner instruction 2026-09-24
@@ -48237,6 +48307,28 @@ whole-page pictures.
 - `e2e.yml` has no `main` trigger, so `pr-compare` only ever runs on pull requests and the
   "is it red on the base branch too?" control is unavailable for any PR in this repository. Recorded
   as a separate finding.
+
+## ADR-1549: The month grid scrolls through a band of months, and the anchor month keeps one meaning in both modes (LIVE-530)
+
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-530` · extends [ADR-1385](DECISIONS.md) (month gestures), PROG-CAL12 (the controlled month), PROG-CAL15 (moving a date) and the LIVE-528 keyed cache · numbered **1542** because 1536 to 1541 are on main or on pull requests open at the time of writing; 1531-1533 are owed a port (`HYG-126`) · owner ask 2026-09-27
+
+**Context.** The month grid flipped pages: one month in the tree, every step a replacement with a slide. The owner asked for the calendar to scroll continuously through its section instead, with the months clearly differentiated. LIVE-530 scoped the seam and its hazards before anyone built it, and LIVE-527 (the clipped fifth week, the borderless fill) and LIVE-528 (a keyed month cache with a failure SET) were its prerequisites. Both were on main.
+
+**Decision.**
+
+1. **One prop on the grid, default `page`.** `monthFlow?: 'page' | 'scroll'` on `EventCalendar`, threaded through `StaffCalendar`. The default leaves the four non-workspace mounts and their thirty-seven test mounts untouched; the two workspace mounts (the member calendar first, because it has no drag surface, then the operator calendar) pass `scroll`. A second component was rejected because it duplicates the cell renderer LIVE-485 stopped drifting; "always scroll, window of one" was rejected because it changes the DOM for every mount at once and breaks LIVE-474's `onAnimationEnd` contract.
+2. **`month` / `onMonthChange` mean the anchor month, in both modes.** Under the scroll the grid additionally scrolls to it and additionally reports it from the scroll position. That single rule is what keeps the console agenda, the List's `listFrom`, the Vera box, the month title, Prev/Today/Next and the jump working with no edits.
+3. **A band of months, pure.** `lib/calendar/month-band.ts` decides what the scroller holds: a fresh band is one month back and two forward of the anchor; it grows one month at a time at the end the reader is near; an anchor handed in from outside re-centres the band on it (explicit navigation is never clamped); automatic extension stops at the events window's two edges (`ADMIN_EVENT_FLOOR_MONTHS`, `ADMIN_EVENT_CEILING_MONTHS`, ADR-1536) and a terminal band names the edge. A prepend is compensated in a layout effect so the reader's place holds.
+4. **The anchor is read off the scroll through a banded observer, and reported once per landing.** A banded `IntersectionObserver` over the scroller (the `page-contents.tsx` idiom, `rootMargin -8% 0px -82% 0px`); of several intersecting bands the EARLIEST wins, which is monotone in scrollTop. The report waits 150ms of quiet, and that is a correctness requirement: the month label is `aria-live="polite"` and exactly one copy is mounted, so a twelve-month flick would otherwise queue twelve announcements. Two state values break the feedback loop without refs read during render: `landed` (the last anchor the scroll derived) and `anchorTarget` (set only when a control handed the month in). Never `scrollIntoView`: it walks every scrollable ancestor and on the member page would yank the document.
+5. **A padded day is a placeholder under the scroll.** `monthMatrix` pads each month to whole weeks, so a date at a month edge is a cell in two bands. Under the scroll only the owning band draws a date's items, note, sky, add button and drop target; the padded cell keeps its muted number. Each date has one cell and each chip one copy, and that is what makes §6 safe.
+6. **A move across a month boundary is an ordinary move.** `planEntryMove` is handed no shown month under the scroll (`useDateMove` takes `null`), so the "Open that month first" refusal, which would be false once October is three inches below September, never fires there; under `page` it fires exactly as PROG-CAL15 chose. The console's drag and Shift-and-arrow moves stay on.
+7. **The fill contract is untouched under `page` and inert under the scroll.** The week row keeps `fill && 'min-h-0 flex-1'` (LIVE-527's pins) and gains `flex-none` under the scroll, the cell keeps its clip and floor under `page`, and the month wrapper is named (`[data-calendar-month]`) rather than positional so the fill test measures the month it means in both modes. The failed-month line renders on its own band under the scroll, keeping the `${monthLabel} did not load.` sentence and `data-calendar-load-error`.
+
+**Rejected.** A second grid component (drift). Clamping Prev/Next/the jump at the bound (a lie, and the LIVE-475 dead end again). Drag off under the scroll as a permanent state (the row's interim shape; the placeholder rule in §5 made §6 cheap and keeps a shipped console edit alive). A ref written during render to mark "came from scrolling" (the compiler-era hooks rules forbid it; two state values do the same job).
+
+**Consequences.** The four non-workspace mounts render byte-for-byte as before. `components/events/event-calendar.scroll.render.test.tsx` pins the band, the per-band fetch, the per-band failure line, once-per-landing reporting with a fake observer and fake timers, re-centring, the one-cell-per-date rule, the cross-boundary move and the terminal band; `lib/calendar/month-band.test.ts` pins the pure decisions. The console's wheel scrolls months as a consequence of the scroller having room, so `wheelPaging={consoleOpen}` stays literal (PROG-CAL12).
+
+**Rows.** LIVE-530 (closed here). LIVE-527, LIVE-528, PROG-CAL15 unchanged.
 
 ## ADR-1530: A Space's own cascade is established by a layout in every tree that renders it, not by the page (LIVE-506)
 

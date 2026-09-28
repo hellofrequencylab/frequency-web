@@ -148,6 +148,7 @@ export function StaffCalendar({
   hostChrome = false,
   hostViewSwitch = false,
   moveByDrag = false,
+  monthFlow,
   moveNotice = null,
   onMoveResult,
 }: {
@@ -201,6 +202,9 @@ export function StaffCalendar({
   /** MOVE A DATE BY DRAGGING IT (PROG-CAL15), the console's edit. Off here and on the Space page,
    *  where the calendar stays click-to-open; the console turns it on. */
   moveByDrag?: boolean
+  /** Passed straight through to the grid (LIVE-530): `scroll` runs the months under one scroller,
+   *  `page` (the default) flips them. Dragging is refused under the scroll at the grid's own seam. */
+  monthFlow?: 'page' | 'scroll'
   /** The host's line about the last move, handed to the grid so it is announced where the move
    *  happened. The host shows the same sentence in its header. */
   moveNotice?: string | null
@@ -545,6 +549,7 @@ export function StaffCalendar({
         hiddenLayers={hiddenLayers}
         onHiddenLayersChange={onHiddenLayersChange}
         fill={fill}
+        monthFlow={monthFlow}
         hostChrome={hostChrome}
         hostViewSwitch={hostViewSwitch}
         layers={STAFF_CALENDAR_LAYERS}
