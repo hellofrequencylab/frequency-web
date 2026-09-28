@@ -1,4 +1,4 @@
--- The ADR-1316 snapshot table is dropped, on the owner's ruling (HYG-123, ADR-1547).
+-- The ADR-1316 snapshot table is dropped, on the owner's ruling (HYG-123, ADR-1556).
 --
 -- WHAT IT WAS. `public.page_settings_events_backup_20260910` held the 21 per-page /events layout
 -- rows that scripts/adr-1316-events-page-settings-cleanup.sql retired on 2026-09-10: the only way
