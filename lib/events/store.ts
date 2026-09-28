@@ -604,13 +604,23 @@ export async function stampEventSpaceId(spaceId?: string | null): Promise<string
  * in space A can never resolve for space B. When `upcomingOnly`, only events starting from now.
  * When `fromDay` (YYYY-MM-DD, the Space's own wall clock), only events starting on or after that
  * day: the team calendar's floor (LIVE-467), so the `limit` cuts a bounded window rather than
- * the oldest N of everything a Space ever ran. When `newestFirst`, the rows come latest-first so
- * the `limit` drops the OLDEST past events rather than the upcoming ones (callers re-sort).
+ * the oldest N of everything a Space ever ran. When `toDay` (same shape, EXCLUSIVE), only events
+ * starting before that day: the team calendar's ceiling (LIVE-480), so the window is closed at
+ * both ends and the `limit` can only cut at an edge the caller named. When `newestFirst`, the rows
+ * come latest-first so the `limit` drops the OLDEST rows in the window rather than the soonest
+ * ones (callers re-sort).
  * FAIL-SAFE: [] on any error / missing tenant.
  */
 export async function listEventsForSpace(
   spaceId?: string | null,
-  opts: { limit?: number; upcomingOnly?: boolean; includeUnpublished?: boolean; fromDay?: string; newestFirst?: boolean } = {},
+  opts: {
+    limit?: number
+    upcomingOnly?: boolean
+    includeUnpublished?: boolean
+    fromDay?: string
+    toDay?: string
+    newestFirst?: boolean
+  } = {},
 ): Promise<SpaceEvent[]> {
   const sid = spaceId ?? (await loadRootSpaceId())
   if (!sid) return []
@@ -641,6 +651,8 @@ export async function listEventsForSpace(
     // The floor is a day in the Space's own wall clock, written the way the column is (the same
     // shape upcomingEventFloor produces), so it compares against starts_at's UTC parts correctly.
     if (opts.fromDay && /^\d{4}-\d{2}-\d{2}$/.test(opts.fromDay)) q = q.gte('starts_at', seriesUpcomingFloor(opts.fromDay))
+    // The ceiling is written the same way and is exclusive: the first instant of `toDay` is out.
+    if (opts.toDay && /^\d{4}-\d{2}-\d{2}$/.test(opts.toDay)) q = q.lt('starts_at', seriesUpcomingFloor(opts.toDay))
     const { data, error } = await q.order('starts_at', { ascending: !opts.newestFirst }).limit(limit)
     if (error) return []
     // The typed rows carry starts_at as string|null and join_mode as plain string; SpaceEvent keeps
