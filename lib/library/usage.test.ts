@@ -188,7 +188,7 @@ describe('summarizeUsageRows', () => {
   })
 })
 
-// ── Global swap (LIVE-451, ADR-1559) ────────────────────────────────────────────────────────────
+// ── Global swap (LIVE-451, ADR-1560) ────────────────────────────────────────────────────────────
 //
 // The two properties the row named, in its words: a swap "rewrites every ref" from A to B across
 // the documents the index lists, and it "leaves a third asset untouched". Plus the refusals that

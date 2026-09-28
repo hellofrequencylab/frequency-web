@@ -200,7 +200,7 @@ export function applyAssetUrls(value: unknown, urlById: ReadonlyMap<string, stri
   return changed ? next : value
 }
 
-// ── Global swap (PROG-D4's remainder, LIVE-451, ADR-1559) ────────────────────
+// ── Global swap (PROG-D4's remainder, LIVE-451, ADR-1560) ────────────────────
 
 /** What a swap re-points a ref TO: the new asset's id and its CURRENT url, so the cache a
  *  rewritten ref carries is fresh on the day it is written (a stale one would render the old

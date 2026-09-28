@@ -256,7 +256,7 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   ts_rank` — no migration, and `rankLibraryMatches` is the one seam a `search_library_assets` RPC
   would replace if a Loom outgrew the candidate cap.
 - **Usage index** powers "used on N pages," archive-not-destroy, and global swap. The swap is
-  `swapLibraryAssetRefs` in `lib/library/usage.ts` ([ADR-1559](DECISIONS.md)): a walk over the index's
+  `swapLibraryAssetRefs` in `lib/library/usage.ts` ([ADR-1560](DECISIONS.md)): a walk over the index's
   rows, one write per stored row, that re-points every `{ assetId }` ref from one asset to another and
   leaves every other value as it was. "Swap everywhere" in the drawer's usage panel is the door.
 - **One picker at every upload point.** The universal control is `components/loom/loom-picker.tsx`

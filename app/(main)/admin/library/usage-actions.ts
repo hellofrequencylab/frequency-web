@@ -36,7 +36,7 @@ export async function getLibraryAssetUsage(assetId: string): Promise<AssetUsageR
 }
 
 /**
- * GLOBAL SWAP (LIVE-451, ADR-1559): every stored document that places `fromId` places `toId`
+ * GLOBAL SWAP (LIVE-451, ADR-1560): every stored document that places `fromId` places `toId`
  * instead, through the same walk the usage index reads. Same gate as the read above: an operator
  * who can see where an asset is used can move those places to another asset. Reversible by
  * swapping back. The pages the index named are revalidated so the swap shows on the next request.

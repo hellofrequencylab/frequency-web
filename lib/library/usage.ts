@@ -168,7 +168,7 @@ async function readUsageRows(assetId: string): Promise<{ ok: true; rows: AssetUs
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GLOBAL SWAP (the D4 remainder, LIVE-451, ADR-1559): "asset A becomes asset B everywhere."
+// GLOBAL SWAP (the D4 remainder, LIVE-451, ADR-1560): "asset A becomes asset B everywhere."
 //
 // The write half of the seam, and the last organisation item LIBRARY.md lists beside the usage
 // index. The index says WHERE (every stored document carrying a ref to A, one row per live/draft

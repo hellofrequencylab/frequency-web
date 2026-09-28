@@ -48856,9 +48856,9 @@ Premise re-tested before building ([ADR-1082](DECISIONS.md)): the row's own prob
 
 **Rows.** HYG-128 (closed here). HYG-127 (the sweep, closed by [ADR-1543](DECISIONS.md)). SCAN-638 untouched.
 
-## ADR-1559: Global swap is a walk over the usage index, one write per stored row, and the third asset is the test (LIVE-451)
+## ADR-1560: Global swap is a walk over the usage index, one write per stored row, and the third asset is the test (LIVE-451)
 
-**Status:** Accepted · 2026-09-28 · backlog `LIVE-451` (closed here) · the D4 remainder [ADR-1502](DECISIONS.md) split out · extends [ADR-1130](DECISIONS.md) (the AssetRef seam this rewrites) and [ADR-1502](DECISIONS.md) (the live scan this walks) · beside [ADR-979](DECISIONS.md) (a read that under-reports) and [ADR-1082](DECISIONS.md) (premise first) · numbered 1559 against the ledger and every open pull request's body on the day it was written
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-451` (closed here) · the D4 remainder [ADR-1502](DECISIONS.md) split out · extends [ADR-1130](DECISIONS.md) (the AssetRef seam this rewrites) and [ADR-1502](DECISIONS.md) (the live scan this walks) · beside [ADR-979](DECISIONS.md) (a read that under-reports) and [ADR-1082](DECISIONS.md) (premise first) · numbered 1560 against the ledger and every open pull request's body on the day it was written
 
 **Context.** ADR-1502 shipped the usage index as two live scans, the drawer count, safe delete and saved views, and named global swap as the one organisation item LIBRARY.md lists beside them that had not shipped. The row carried a premise: on 2026-09-21 production held ZERO refs, so a swap had no patient, and it was to be built when `library_asset_usage` returned a non-empty result for any asset, and not before. Re-tested on 2026-09-28 against production (azsqfeonabsbmemvddqd) with the same sweep ADR-1502 ran: the pickers have started writing refs. One Space entity layout (`royaltemple`, `preferences.profileLayout`) carries 14 refs across ten approved image assets, every cached url fresh, and `library_asset_usage` returns one row for each of the ten. `pages` (4 draft, 1 live), `pageDocs` (18) and `space_plans.files` (149) still read zero. The premise held, so the row built.
 

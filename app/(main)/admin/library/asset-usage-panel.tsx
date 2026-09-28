@@ -7,7 +7,7 @@
 // usage table died (ADR-979), and it is the difference between an operator deleting an asset
 // that is on nineteen Space profiles and an operator being told to try again.
 //
-// GLOBAL SWAP (LIVE-451, ADR-1559) sits under the list, and only when there is a list: "Swap
+// GLOBAL SWAP (LIVE-451, ADR-1560) sits under the list, and only when there is a list: "Swap
 // everywhere" opens the one Loom picker, and the chosen asset takes this one's place in every
 // document the index named. The count re-reads afterwards, so the panel shows what the index
 // says now, never what the swap claims.
