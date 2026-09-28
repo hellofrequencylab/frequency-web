@@ -43,6 +43,9 @@ import {
 import { StatusChip } from '@/components/admin/status'
 import { spanDayKeys } from '@/lib/calendar/entries'
 import { notesForDay, type DayNote } from '@/lib/calendar/day-notes'
+// TYPE ONLY, and that is load-bearing: astro-markers.ts pulls astronomy-engine, which is 116 KB
+// minified in the browser build. A type import is erased at build time, so nothing follows it here.
+import type { AstroMarker as SkyMarker } from '@/lib/calendar/astro-markers'
 import { monthKey } from '@/lib/calendar/month-window'
 import { stackDay } from '@/lib/calendar/sunday-stack'
 import { shortDateLabel } from '@/lib/calendar/short-date'
@@ -149,6 +152,7 @@ export function EventCalendar({
   onEditEntry,
   refreshKey = 0,
   dayNotes,
+  skyMarkers,
   onPickDate,
   onMoveEntry,
   moveNotice,
@@ -189,6 +193,13 @@ export function EventCalendar({
   refreshKey?: number
   /** Quiet per-day labels ("Quiet hours", "Flex day"), ADR-1386. */
   dayNotes?: DayNote[]
+  /** THE SKY (LIVE-526): new and full moons, and the day the Sun enters a sign. Computed on the
+   *  SERVER over a window wider than the opening month and handed down whole, which is why there is
+   *  no loader for them and why `loadMonth`'s signature is untouched. That is a size decision, not a
+   *  style one: astronomy-engine is 116 KB minified in the browser build, and a 26-month window of
+   *  markers is 9.3 KB of JSON, so computing them here would put the library on every phone that
+   *  opens a Space calendar. Empty or absent means the Space has not opted in. */
+  skyMarkers?: readonly SkyMarker[]
   /** Staff: keep this candidate date of a pencil and drop its siblings. */
   onPickDate?: (item: CalendarEvent) => void
   /** MOVING A DATE BY HAND (PROG-CAL15), the console's edit and nowhere else's. Passed, every chip
@@ -446,6 +457,19 @@ export function EventCalendar({
     }
     return map
   }, [series])
+
+  // THE SKY, grouped once per render rather than scanned per cell. Pure data handed down from the
+  // server (see the prop's comment): no computation happens here, which is what keeps
+  // astronomy-engine out of this bundle.
+  const skyByDay = useMemo(() => {
+    const byDay = new Map<string, SkyMarker[]>()
+    for (const m of skyMarkers ?? []) {
+      const list = byDay.get(m.day)
+      if (list) list.push(m)
+      else byDay.set(m.day, [m])
+    }
+    return byDay
+  }, [skyMarkers])
 
   const weeks = useMemo(() => monthMatrix(year, month1), [year, month1])
   const byDay = useMemo(() => {
@@ -821,6 +845,7 @@ export function EventCalendar({
                   const isToday = cell.date === today
                   const dayNum = Number(cell.date.slice(8, 10))
                   const labels = dayNotes?.length ? notesForDay(dayNotes, cell.date) : []
+                  const sky = skyByDay.get(cell.date)
                   const isDropTarget = move.dropDay === cell.date
                   return (
                     <div
@@ -868,6 +893,22 @@ export function EventCalendar({
                         ) : (
                           <span />
                         )}
+                        {/* THE SKY ON THIS DAY (LIVE-526). In the header row, where a printed
+                            calendar puts a moon, so a busy day cannot scroll it out of view and the
+                            LIVE-491 vertical order below (band, chips, cancelled footer, day note)
+                            is untouched. The glyph is decorative and the full sentence is the
+                            accessible name, so a screen reader hears "Full moon" rather than an
+                            emoji name, and the title gives it to a mouse. */}
+                        {sky?.length ? (
+                          <span
+                            data-sky-marker={sky[0].kind}
+                            className="inline-flex items-center gap-0.5 text-2xs leading-none"
+                            title={sky.map((m) => m.label).join(' · ')}
+                          >
+                            <span aria-hidden>{sky.map((m) => m.symbol).join('')}</span>
+                            <span className="sr-only">{sky.map((m) => m.label).join(', ')}</span>
+                          </span>
+                        ) : null}
                         <span
                           aria-current={isToday ? 'date' : undefined}
                           className={cn(

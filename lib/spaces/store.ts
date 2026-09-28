@@ -265,6 +265,48 @@ export async function resolveSpaceForHost(host: string | null): Promise<Space | 
   return getRootSpace()
 }
 
+/** Write a Space's `preferences` jsonb (LIVE-526). Returns false when the write failed.
+ *
+ *  THIS LIVES HERE for the same reason `writeSpaceTimeZone` below does, and the reason is worth
+ *  restating because the first draft of the sky-marker opt-in got it wrong: `spaces` carries a
+ *  SELECT policy and NO update policy, so a session-client update is denied by construction and
+ *  the write needs a service-role client. Putting that client in the calendar settings action file
+ *  would have added a NEW entry to scripts/admin-client-baseline.txt — a fresh, permanent RLS
+ *  bypass on a file whose own header promises "every write runs on the caller's own session" —
+ *  to save one import. `check:admin-client` caught it. The bypass belongs in the one module that
+ *  already justified it, beside the read it mirrors.
+ *
+ *  UNTYPED on purpose (ADR-246): `preferences` is deliberately absent from the generated Supabase
+ *  types, so the client is cast rather than typed, the same shape
+ *  app/(main)/spaces/[slug]/manage/modules/actions.ts uses.
+ *
+ *  Gating is the CALLER's: every caller resolves an editor for the Space first, and this takes an
+ *  already-resolved id, never a slug. It REPLACES the whole blob, so a caller must merge — the
+ *  `next*Preferences` helpers in this directory are the merge, and they are pure and tested. */
+export async function writeSpacePreferences(
+  spaceId: string,
+  preferences: Record<string, unknown>,
+): Promise<boolean> {
+  if (!spaceId) return false
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: { message: string } | null }> }
+      }
+    }
+    const { error } = await db.from('spaces').update({ preferences }).eq('id', spaceId)
+    if (error) {
+      // Loud, not silent (AGENTS.md: a swallowed error is an invisible regression).
+      log.warn('space_preferences_write_failed', { spaceId, message: error.message })
+      return false
+    }
+    return true
+  } catch (err) {
+    log.warn('space_preferences_write_threw', { spaceId, message: err instanceof Error ? err.message : 'unknown' })
+    return false
+  }
+}
+
 /** Write a Space's schedule zone (LIVE-471). `null` clears it back to "never said", where the
  *  calendar falls back to the viewer's browser zone. Returns false when the write failed.
  *

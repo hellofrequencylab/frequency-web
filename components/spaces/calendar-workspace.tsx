@@ -48,6 +48,8 @@ import { listIndexItems, selectListItem } from '@/lib/calendar/list-index'
 import { workflowBoard } from '@/lib/calendar/workflow-board'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import type { CalendarLayerKey } from '@/lib/calendar/registry'
+// Type only: astro-markers.ts pulls astronomy-engine (116 KB minified in the browser build).
+import type { AstroMarker as SkyMarker } from '@/lib/calendar/astro-markers'
 import type { DayNote } from '@/lib/calendar/day-notes'
 import { planStageLabel, type SpacePlan } from '@/lib/calendar/plans'
 import type { WorkflowStage } from '@/lib/calendar/workflow-board'
@@ -135,6 +137,7 @@ export function CalendarWorkspace({
   subscribe,
   upcoming = null,
   memberLayers = [],
+  skyMarkers,
   loadGuestMonth,
 }: {
   slug: string
@@ -167,6 +170,10 @@ export function CalendarWorkspace({
    *  (`memberLayerChoices`). Empty means no chips are drawn at all, because a one-option filter
    *  cannot change what you see. */
   memberLayers?: readonly CalendarLayerKey[]
+  /** THE SKY (LIVE-526), server-computed and handed straight through to BOTH grids. Passing it to
+   *  only one is the LIVE-478 failure shape: the marker would be in this file, satisfying a source
+   *  probe, while the audience that needed it saw nothing. */
+  skyMarkers?: readonly SkyMarker[]
   loadGuestMonth: (year: number, month1: number) => Promise<CalendarEvent[]>
 }) {
   const [view, setView] = useState<CalendarAdminView>(adminAllowed ? initialView : 'guest')
@@ -491,6 +498,10 @@ export function CalendarWorkspace({
     <div className={consoleOpen ? 'flex h-full min-h-0 flex-col gap-3' : 'space-y-4'}>
       <EventCalendar
         events={guestEvents}
+        /* THE SKY REACHES THE MEMBER GRID (LIVE-526). This mount is the one a member and a
+           signed-out visitor actually see, so if the markers only reached the staff grid below the
+           feature would be invisible to everyone it was asked for. */
+        skyMarkers={skyMarkers}
         initialYear={initialYear}
         initialMonth1={initialMonth1}
         loadMonth={loadGuestMonth}
@@ -839,6 +850,7 @@ export function CalendarWorkspace({
                     canEdit={canManage}
                     spaceTimeZone={spaceTimeZone}
                     dayNotes={dayNotes}
+                    skyMarkers={skyMarkers}
                     plans={currentPlans}
                     onOpenPlan={selectPlan}
                     externalRefreshKey={veraRefreshKey}

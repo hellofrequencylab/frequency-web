@@ -4,7 +4,7 @@ description: Find gatherings, RSVP, and add them to your calendar.
 category: groups
 order: 3
 published: 2026-06-03
-updated: 2026-09-20
+updated: 2026-09-28
 audience: member
 role: host
 featureKeys: [events]
@@ -48,6 +48,7 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 - **A series can follow more than a simple weekly rhythm.** Every other Thursday, the third Thursday of the month, weekdays only, the 15th of each month: whatever pattern the host set, each date still stands on its own with its own page and its own RSVP. The event page says the pattern in plain words, so "Every 2 weeks on Wednesday" tells you when the next one lands without you working it out.
 - **Browsing shows the next few dates, not all of them.** A weekly sit would otherwise fill the whole events library with itself. Open any date and look for **Upcoming dates**: the next five are listed there, each with its own page and its own RSVP.
 - Nothing is hidden. Your calendar, a Space's calendar, and the calendar file you subscribe to all still carry every date.
+- **Some Spaces mark the moon and the zodiac.** If a Space has switched it on, its calendar shows the new and full moons, and the day the Sun enters each sign. The equinoxes and solstices sit on the four days they fall on, named alongside the sign. It is off unless the Space turned it on, so you will not see it everywhere.
 - **Add to calendar in one tap.** Right where you RSVP, you can drop the event into Google Calendar or any app (it exports a standard calendar file). Putting it on your calendar is the single best way to actually make it.
 
 ## Finding events
