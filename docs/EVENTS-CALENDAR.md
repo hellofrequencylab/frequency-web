@@ -518,7 +518,7 @@ gate. The write itself is keyed by the MANIFEST's own path and laid down by an o
 copy, never by an assignment through a computed index carrying a string the model sent: CodeQL called
 the first shape of that remote property injection, and "the vocabulary already refuses an undeclared
 path" is the sentence every prototype-pollution postmortem opens with. Dates from what happened
-(`PROG-CAL11` slice 4, `LIVE-539`, [ADR-1543](DECISIONS.md)): when the ask is to pick a good day and
+(`PROG-CAL11` slice 4, `LIVE-539`, [ADR-1544](DECISIONS.md)): when the ask is to pick a good day and
 names none, the model calls a fourth tool, `attendance_history`, and the server answers with the weekday
 and starting hour that drew the most people to THIS Space, folded by `attendanceHistory` in
 `lib/calendar/vera-attendance.ts` from its own published past events (the newest 50, `listEventsForSpace`

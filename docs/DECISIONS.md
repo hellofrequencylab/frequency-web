@@ -48611,9 +48611,9 @@ module load — so on CI only the source-shape case fails when the zone is unpin
 is green in UTC and red in Pacific trains everyone to ignore a red suite, which is the quiet cost that
 made both zone defects survive this long.
 
-## ADR-1543: Vera reads what drew people as a tool the server computes on demand, handed in by the action, never as context on every ask (LIVE-539)
+## ADR-1544: Vera reads what drew people as a tool the server computes on demand, handed in by the action, never as context on every ask (LIVE-539)
 
-**Status:** Accepted · 2026-09-28 · `LIVE-539` (child 1 of 2 of `PROG-CAL11` slice 4) · builds on [ADR-1386](DECISIONS.md) P6 (propose then accept; no other Space's data reaches a suggestion) and the PROG-CAL6 recap path · numbered 1543 because 1531-1533 exist only on a branch that never merged (`HYG-126`, being ported), 1534-1536 and 1542 are taken, and 1537-1541 were claimed by open pull requests on the day (1540 twice, the second claim being this entry, renumbered per ADR-1488)
+**Status:** Accepted · 2026-09-28 · `LIVE-539` (child 1 of 2 of `PROG-CAL11` slice 4) · builds on [ADR-1386](DECISIONS.md) P6 (propose then accept; no other Space's data reaches a suggestion) and the PROG-CAL6 recap path · numbered 1544 because 1531-1536 and 1540-1542 are on main, 1537-1539 are on open pull requests, and 1543 was claimed by #2946 fourteen seconds before this pull request opened (the third renumbering of this entry in one afternoon, per ADR-1488)
 
 **Context.** The owner asked on 2026-09-22 for Vera to "figure out" dates and said "we can make it more complex later". Slices 1 to 3 of that later (clarify, edit any field, undo) shipped in the week after; the fourth, dates from what actually happened, had a paragraph in `PROG-CAL11` and no code: the word attendance appeared in none of the three Vera files, and the only attendance read on the calendar folded a Plan's events into one number for the drawer recap. Asked "pick a good day", Vera proposed any free Saturday or any free Tuesday with nothing to prefer between them. Three ways to put the history in front of the model were on the table: rows in every ask's context, a read inside the model loop, or a tool the server answers on demand with a reader the calendar action hands in.
 
