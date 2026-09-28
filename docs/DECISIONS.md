@@ -48634,6 +48634,24 @@ The row was explicit about the trap, and it is the LIVE-533 shape: a "This date 
 
 **Rows.** LIVE-534 (closed here). LIVE-531, LIVE-533, LIVE-536 unchanged.
 
+## ADR-1543: A foreign key from the calendar sprint gets its covering index in one sweep, and the guard that stops the fourth sweep is a separate row (HYG-127)
+
+**Status:** Accepted · 2026-09-28 · backlog `HYG-127` · owner ruling 2026-09-28 (one sweep row, one convention row) · extends [ADR-1459](DECISIONS.md) (the SCAN-638 sweep) · numbered **1543** because 1531-1533 are the HYG-126 port, 1534-1536 and 1542 are on main, and 1537-1541 are held by pull requests open when this one was written
+
+**Context.** The performance advisor reported nine unindexed foreign keys on 2026-09-28, up from zero on 2026-09-19, every one on a table the LIVE-508 to LIVE-536 calendar sprint created or extended. Re-derived from `pg_constraint` against `pg_index` before anything was written: each of the nine has a FK constraint and no index that leads with the column. Seven reference `profiles`, so an account deletion (a hard delete, `lib/account.ts`) scans four calendar tables in turn to check the constraint. This is the third time the count has gone to zero and come back: SCAN-638 (20270345006400) and the sweep before it each closed a set, and the next tables re-opened the class, because the only reader is an advisor nobody consults on a pull request.
+
+**Decision.**
+
+1. **One migration, nine `create index if not exists`, in the shape the last sweep set.** A nullable attribution column gets a partial index (`where <col> is not null`), because a NULL is never what a referential check or an attribution lookup asks for and the index stays small. The one NOT NULL column, `space_plan_shares.guest_space_id`, gets a full index. Additive and idempotent; safe to re-run.
+2. **The file proves itself against the catalog, not the statement list.** After the statements, a `do` block asks `pg_index` whether an index leads with each of the nine columns and raises if any is missing. Postgres would catch a misspelt column; an index on the wrong table, or one whose first key is another column, it would not.
+3. **The guard is HYG-128, not this row.** A fourth sweep on its own would be the same mistake with a later date. The convention half is a source-only guard in the `ci.yml` array that replays the migrations, collects every `references` clause and every `create index`, and fails a pull request that adds a FK with no index leading with it. It lands on a tree this sweep has already made green, so the guard's first run is a pass it can prove rather than a failure it cannot explain.
+
+**Rejected.** Folding the guard into this PR (one row per PR, and the guard is its own decision with its own exception list). Full indexes on the nullable columns (larger for no reader that wants the NULLs; 20270318000000 and 20270345006400 chose partial for the same columns' siblings). Composite indexes that happen to lead with the FK (nothing reads these columns with a second key today, and a composite invented for a reader that does not exist is the drift ADR-1082 names).
+
+**Consequences.** The advisor reads zero unindexed foreign keys again. The class stays open until HYG-128 lands, and this ADR says so rather than implying the sweep closed it. Applied to production by `execute_sql` plus an explicit ledger row at the file's own version, never `apply_migration` (docs/DATABASE.md).
+
+**Rows.** HYG-127 (closed here). HYG-128 untouched and still open.
+
 ## ADR-1550: The server's copy of the calendar is inert, and the live panel set is built once on first paint (LIVE-481)
 
 **Status:** Accepted · 2026-09-28 · backlog `LIVE-481` · extends [ADR-1467](DECISIONS.md) (the operator shell) and the LIVE-472 stage host · numbered **1550** because 1541 to 1549 are claimed on main and by open PRs (#2946 to #2964, #2961)
@@ -48655,3 +48673,23 @@ The row's own proposed fix was ruled out on 2026-09-24 and the reason is the con
 **Consequences.** One build of the panel set on first paint where there were two; the months fetched during hydration are the months the live grid has. The server's HTML for an operator's calendar is inert until the live set replaces it, which is what it already was in effect: the previous shape hydrated those nodes and threw them away one commit later. Two hydration tests now run a real server pass in jsdom, which is the shape any future "cannot be probed from a checkout" claim about hydration should be tested against first. The LIVE-472 probe's two-places rule still holds: the panels are written once inline for the server and a guest, and once through the portal.
 
 **Rows.** LIVE-481 (closed here). LIVE-472, LIVE-474, LIVE-495 unchanged.
+
+## ADR-1554: A foreign key without a covering index fails the pull request that adds it, and the migrations are replayed to ask (HYG-128)
+
+**Status:** Accepted · 2026-09-28 · backlog `HYG-128` (closed here) · the convention half of the owner ruling of 2026-09-28 whose sweep half is [ADR-1543](DECISIONS.md) (HYG-127) · extends [ADR-1459](DECISIONS.md) (the SCAN-638 sweep) · beside [ADR-1509](DECISIONS.md) (a guard in the `ci.yml` array that reads what no row can) and HYG-124's shipped-ids guard · numbered 1554 against the ledger and every open pull request's head on the day it was written
+
+**Context.** Three sweeps took the unindexed-foreign-key count to zero: the one before SCAN-638, SCAN-638 itself (20270345006400, [ADR-1459](DECISIONS.md)), and HYG-127 (20270345009000, [ADR-1543](DECISIONS.md)). Each time the next tables brought it back, nine in the calendar sprint alone, seven of them referencing `profiles`, so an account deletion scanned four calendar tables to check the constraint. The only reader was the Supabase performance advisor, which nobody consults on a pull request, and the advisor is a report about production, which is the wrong time to learn about a shape the pull request could have refused. The premise was re-tested against `pg_constraint` and `pg_index` on production before anything was written ([ADR-1082](DECISIONS.md)): exactly nine, all HYG-127's.
+
+**Decision.**
+
+1. **A source guard, `scripts/check-fk-indexes.mjs` (`pnpm check:fk-indexes`), in the `guards` array of `.github/workflows/ci.yml`.** It replays `supabase/migrations` in version order, statement by statement, into the state a fresh database ends up in: every foreign key and every index that could cover one, through drops, renames and the literal DDL inside `do $$ ... $$` blocks, and never a function body. Then it asks the advisor's question of the result: for each foreign key, does an index LEAD with its column. A composite whose first key is the column counts, as it does for Postgres; one whose first key is another column does not.
+2. **It is held to the catalog, not to itself.** The first draft read 28 unindexed keys where production held 9: `on t(col)` with no space before the key list, and DDL inside do-blocks, were invisible to it. The two readings that settled the parser are permanent cases in `scripts/check-fk-indexes.test.ts`: without 20270345009000 the tree reads exactly HYG-127's nine; with it, zero. The census (288 tables, 611 keys replayed; 289 and 609 live) differs by a `create table ... as` backup and PostGIS's `spatial_ref_sys` on production's side and one table dropped outside the migrations on the replay's, none carrying a key.
+3. **Exceptions are a stated map, one reason each, and they rot loudly.** It is empty on the day it lands. An entry whose key gains an index later fails the gate, so the list cannot outlive its reason.
+4. **It refuses to call a small read clean.** Under 100 tables or 200 keys is not this repository's migrations, whatever the directory was, and exits 1 ([ADR-962](DECISIONS.md)).
+5. **It lands on a tree the sweep already made green.** HYG-127 merged first, so the guard's first run is a pass it can prove rather than a failure it cannot explain, which is the order the owner ruled and the reason this row waited.
+
+**Rejected.** A pgTAP test in db-tests (it would say the same thing later, on a job that runs only when a migration changes, and could not run locally without Docker). Reading the advisor from CI (network, credentials, and a report about production rather than about the diff). Folding it into HYG-127's PR (one row per PR, and a guard is its own decision with its own exception list). Replaying function bodies (DDL inside a function runs when the function is called, not when the migration does; replaying it produced phantom tables).
+
+**Consequences.** A pull request that adds a foreign key with no covering index fails `checks`, naming `table.column` and the index to add, before the advisor can. The parser is a smoke alarm for one known shape: an exotic construction it misses passes silently, which is why the catalog controls are in the test and why the census is recorded here rather than assumed. `scripts/guard-wiring.test.ts` fails if the guard ever leaves the array.
+
+**Rows.** HYG-128 (closed here). HYG-127 (the sweep, closed by [ADR-1543](DECISIONS.md)). SCAN-638 untouched.

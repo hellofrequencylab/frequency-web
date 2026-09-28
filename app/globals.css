@@ -2010,18 +2010,27 @@
 /* ── Base ────────────────────────────────────────────────────────────────── */
 html {
   font-family: var(--font-nunito, 'Nunito', sans-serif);
-    /* SCROLLBAR GUTTER: HELD BACK ON PURPOSE (LIVE-477, split out 2026-09-23).
-     `scrollbar-gutter: stable` on `html` is the right fix for the reflow every dialog causes: the
-     scroll lock removes the document scrollbar, and because the DOCUMENT is what scrolls here, the
-     sticky header and the rail track shift by its width on every open and close. Six surfaces take
-     that lock with the same omission and one declaration fixes all six.
+  /* SCROLLBAR GUTTER: RESERVED (LIVE-479, shipped 2026-09-28; held back by LIVE-477 on 2026-09-23).
+     The DOCUMENT is what scrolls in the member shell (components/layout/app-shell.tsx), and the
+     sticky header and the rail track are laid out against its width. Six overlays take a body
+     scroll lock (`overflow: hidden` on body: the dialog primitive, the search overlay, Mindless,
+     the gallery lightbox, the page-editor bottom sheet, the shell's mobile drawer) and none of them
+     compensates for the scrollbar, so without a reserved gutter every open DELETED the root
+     scrollbar and every close put it back: the viewport widened by its width, the full-width sticky
+     header and the shrink-0 rail column rode that change, and the rail's `transition-[width]`
+     ANIMATED the shift. That was the blink "with the pop up and the top + right rail".
 
-     It is NOT here yet because reserving the gutter narrows the content area on every page, which
-     legitimately moves EVERY committed visual baseline: `/discover` came back 259,977 pixels
-     different on a PR that touches nothing it renders. That is a real, intended diff, not drift, so
-     the recapture is honest work rather than a cover-up, and it is a whole-repo recapture that
-     wants its own change and its own reading. LIVE-479 carries it. The other two causes of the
-     blink, which have no visual footprint, shipped without it. */
+     `stable` and not `both-edges`: `both-edges` would inset the page against nothing on the left in
+     an LTR layout. Scoped to `html` so inner scrollers keep their own behaviour. The gutter is
+     reserved whether or not the document overflows, which narrows the content area by the scrollbar
+     width on every page with a classic scrollbar; that is why it moved EVERY committed visual
+     baseline (`/discover` read 259,977 pixels different on the LIVE-477 branch) and why it shipped
+     as its own change with a whole-repo recapture, read rather than rubber-stamped, instead of
+     riding a blink fix. test/e2e/scroll-lock.spec.ts is the browser instrument: it asserts the
+     document width, the header width and the rail edge are unchanged across a real dialog open,
+     past the rail's 200ms transition. components/layout/chrome-reserves.test.tsx pins the
+     declaration itself, because jsdom has no scrollbar and can prove presence, never effect. */
+  scrollbar-gutter: stable;
   /* Site-wide "breathe + a touch larger": the rem-based Tailwind scale (font AND
      spacing) derives from this root size, so a single gentle bump softens type and
      opens up padding/gaps everywhere at once. ~16px → ~17px. Reversible one-liner.
