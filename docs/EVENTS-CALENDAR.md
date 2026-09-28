@@ -208,7 +208,7 @@ stated reason:
 | Not offered to a member | Why |
 |---|---|
 | **Workflow** | `workflowBoard(plans, adminEvents)` over `PLAN_STAGE_TRANSITIONS`. Every card is a `space_plans` row — the team's internal notes, links, to-dos, people — and a visitor is never handed `plans` or `adminEvents`. The segment would steer an empty board, and the day someone "fixed" the empty board would be the leak. |
-| **the List `all` scope** | The all-time index panel is the event control console (stage pill, share links, stats, Go to event), not a way of reading a month. |
+| **the List `all` scope** | The all-time index panel is the event control console (cover hero when there is one, stage pill, share links, stats, Go to event), not a way of reading a month. |
 | **Guest preview** | An audience, not a way of looking. A guest already is that audience. |
 
 A member also gets the layer **filter** — Events / Unavailable — and only when the Space publishes
@@ -318,7 +318,7 @@ not reload the page.
 |---|---|
 | **Guest** | The existing public month (`guestLiveItems`). Live chips plus the C0 cancelled footer. Pencil and planning stay off. `?view=guest`. |
 | **Admin** (labelled **Calendar**) | The team's month (`StaffCalendar` over `loadAdminCalendar`). Drafts, Pencils, Private entries, unpublished and internal dates Guest does not see. The same sliding month as Guest: `CalendarWorkspace` owns `month` (PROG-CAL12) and hands it to both mounts, so the two panels, the console header and the console agenda can never disagree about which month is showing. The stage board is Workflow. Default URL. |
-| **List** | A condensed gathering index on the left. The right interior is the event control console: title with stage pill top-right, primary facts, share links, stats, Go to event. Not the Studio editor. `?view=list&item=`. |
+| **List** | A condensed gathering index on the left. The right interior is the event control console: the gathering's cover as a full-bleed hero above the card when it has one (LIVE-496, [ADR-1551](DECISIONS.md); cropped with the host's stored focal point through `eventCoverFocusStyle`, the same crop as the browse card and the detail hero; a Pencil or an event with no cover opens on the title, with no generated stand-in), title with stage pill top-right, primary facts, share links, stats, Go to event. Not the Studio editor. `?view=list&item=`. |
 | **Workflow** | Every Plan, grouped by its production stage (`workflowBoard` over `PLAN_STAGE_TRANSITIONS`). A Plan moves stage through `transitionPlanStage`; "Open Plan" opens the same drawer Calendar and List open. `?view=workflow`. |
 
 Operators load Guest and Admin data once so a view switch does not remount. Unsigned members always get Guest and never hit `loadAdminCalendar`. The Pencil, Planning and Production lane helpers live in `lib/calendar/pm-console.ts`, which the List index reads; the Calendar tab Admin view (labelled Calendar) is the team's month in the same grid chrome as Guest.
@@ -489,7 +489,19 @@ plan drawer opens from any calendar item that belongs to a plan and is composed 
 Its footer's "Archive Plan" (`archiveSpacePlan`, HYG-120) sets `space_plans.archived_at`, deletes the
 Plan's penciled dates that never became an event, and unlinks the ones that did; reversible in SQL,
 not yet in the UI. The e2e suite tears its own Plans down through that same door.
-A co-host Space sees a plan only through an accepted share of that plan.
+A co-host Space sees a plan only through an accepted share of that plan, and a share is a HANDSHAKE
+(`PROG-CAL7` Together, `LIVE-541`): the drawer's "Share with a co-host Space" offers the Spaces this one
+has an accepted collaboration with, by name (`listAcceptedCollaborations`, ADR-799), never a field for an
+id; `sharePlanWithSpace` refuses any other Space and writes the share PENDING; the guest answers it from
+its own calendar settings ("Shared with you", `respondToPlanShare`, on its own session, keyed by its own
+Space and the pending state in one statement); the host sees where each share stands in the drawer and
+can take an active one back (`revokePlanShare`). A pending offer's Plan is not readable by the guest until
+the share is accepted (`private.plan_is_shared_with_me`), so the offer's title and host are resolved
+server-side for exactly the share rows the guest's session returned (`lib/calendar/plan-share-subjects.ts`,
+on the admin-client baseline with that reason). An accepted Plan is listed on the guest calendar with the
+Space that holds it and opens in the same drawer, read only: the host keeps every door until a later child
+of PROG-CAL7 hands some across (`listPlansSharedWith` reads them through the accepted share and nothing
+else). Pure vocabulary and words: `lib/calendar/plan-shares.ts`.
 
 **Production** (`PROG-CAL3`, shipped). "Make it a Production" opens the event Spark (`lib/studio/entities/event.ts`)
 prefilled by a pure mapping from the plan and the chosen Pencil onto the manifest's field keys. The event
@@ -553,8 +565,19 @@ row and writes through `parsePlanInput` or `saveCalendarEntry` so the product's 
 gate. The write itself is keyed by the MANIFEST's own path and laid down by an object spread onto a
 copy, never by an assignment through a computed index carrying a string the model sent: CodeQL called
 the first shape of that remote property injection, and "the vocabulary already refuses an undeclared
-path" is the sentence every prototype-pollution postmortem opens with. Not yet: undo, and reading
-attendance to pick dates.
+path" is the sentence every prototype-pollution postmortem opens with. Dates from what happened
+(`PROG-CAL11` slice 4, `LIVE-539`, [ADR-1544](DECISIONS.md)): when the ask is to pick a good day and
+names none, the model calls a fourth tool, `attendance_history`, and the server answers with the weekday
+and starting hour that drew the most people to THIS Space, folded by `attendanceHistory` in
+`lib/calendar/vera-attendance.ts` from its own published past events (the newest 50, `listEventsForSpace`
+keyed by the editor's Space, `toDay` at today) and the count the PROG-CAL6 recap path gives each one
+(`loadEventAttendanceCounts`, the per-event half of `loadPlanAttendance`, so the recap and the history
+cannot disagree). Weekday and hour are read off the stored wall clock, an unrecorded event is left out
+rather than counted as empty, and no record at all answers null in words rather than a weekday nobody
+came on. The read is handed to the loop as a reader and runs at most once per ask, only when the tool is
+called, so `lib/ai/vera-calendar.ts` imports no store and the per-event ledger read costs only the ask
+that needs it. Not yet: the reason on the proposal line (`LIVE-540`); until it lands the model says which
+weekday and hour it followed in its note. Undo shipped as slice 3 (the change log below).
 
 **Two gates, not one** (owner ask 2026-09-23: "I don't want Vera changing things without explicit
 permission"). Accept was the whole gate and every line arrived ticked, so the default action was

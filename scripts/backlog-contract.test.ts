@@ -53,15 +53,27 @@ function childCpuMs(): number | null {
   }
 }
 
-function run(guard: string, cwd: string): { code: number; out: string } {
+function run(guard: string, cwd: string, args: string[] = []): { code: number; out: string } {
   try {
-    const out = execFileSync('node', [guard], { cwd, encoding: 'utf8', stdio: 'pipe' })
+    const out = execFileSync('node', [guard, ...args], { cwd, encoding: 'utf8', stdio: 'pipe' })
     return { code: 0, out }
   } catch (err) {
     const e = err as { status?: number; stdout?: string; stderr?: string }
     return { code: e.status ?? 1, out: `${e.stdout ?? ''}${e.stderr ?? ''}` }
   }
 }
+
+/** ⚠️ EVERY FIXTURE THAT PROBES A `done` ROW MUST PASS THIS.
+ *
+ *  check:backlog now defaults to `--probes=open`, which runs a `done` row's probe only when the
+ *  row was closed inside the last 30 days. A fixture row carries no `closed` date, so under the
+ *  default it is SKIPPED — and a test asserting "this regressed row fails the build" would then
+ *  pass by never asking, which is precisely the vacuous-guard failure this whole file exists to
+ *  prevent. Dating the fixtures would be worse: they would silently go vacuous 30 days later.
+ *
+ *  So the done-row arms name the scope they are testing. The scoping itself has its own fixtures
+ *  further down, where the DEFAULT is the thing under test. */
+const SWEEP = ['--probes=all']
 
 /** Resolve a binary from PATH without shelling out. The first version ran `command -v` and then
  *  `ln -sf`, which builds shell commands out of absolute paths CodeQL is right to flag — and which
@@ -137,7 +149,7 @@ describe('check:backlog — the probe/status contract', () => {
         verify: { kind: 'grep-present', pattern: 'NEVER_APPEARS_ANYWHERE', paths: ['src/present.ts'] },
       },
     ])
-    const { code, out } = run(BACKLOG_GUARD, dir)
+    const { code, out } = run(BACKLOG_GUARD, dir, SWEEP)
     expect(code).toBe(1)
     expect(out).toContain('REGRESSED-1')
     expect(out).toContain('says DONE, tree says NOT DONE')
@@ -164,7 +176,7 @@ describe('check:backlog — the probe/status contract', () => {
         verify: { kind: 'grep-present', pattern: 'SENTINEL_TOKEN', paths: ['src/present.ts'] },
       },
     ])
-    expect(run(BACKLOG_GUARD, dir).code).toBe(0)
+    expect(run(BACKLOG_GUARD, dir, SWEEP).code).toBe(0)
   })
 
   it('FAILS on a duplicate id, because two rows sharing an id means one is unreachable', () => {
@@ -527,7 +539,7 @@ describe('a cmd probe that could not run is not a verdict', () => {
           verify: { kind: 'cmd', cmd },
         },
       ])
-      const r = run(BACKLOG_GUARD, dir)
+      const r = run(BACKLOG_GUARD, dir, SWEEP)
       expect(
         r.code,
         `An unaskable probe was converted into a verdict against a healthy row.\n${r.out}`,
@@ -552,7 +564,7 @@ describe('a cmd probe that could not run is not a verdict', () => {
         verify: { kind: 'cmd', cmd: `node -e "const{spawnSync}=require('child_process');const r=spawnSync('sh',['-c','kill -9 $$']);process.exit(r.signal!==null?79:0)"` },
       },
     ])
-    const r = run(BACKLOG_GUARD, dir)
+    const r = run(BACKLOG_GUARD, dir, SWEEP)
     expect(r.code, `exit 79 was treated as a verdict rather than a shrug.\n${r.out}`).toBe(0)
     expect(r.out).not.toContain('CMD-003')
   })
@@ -571,7 +583,7 @@ describe('a cmd probe that could not run is not a verdict', () => {
         verify: { kind: 'cmd', cmd: 'exit 1' },
       },
     ])
-    const r = run(BACKLOG_GUARD, dir)
+    const r = run(BACKLOG_GUARD, dir, SWEEP)
     expect(r.code).toBe(1)
     expect(r.out).toContain('CMD-002')
   })
@@ -613,7 +625,24 @@ describe('the probe engine does not depend on ambient tooling', () => {
   // is the CHEAP HALF: nothing about the metric changes, and both budgets still need re-reading as
   // n grows. Option (b) — every `node -e` probe reporting its own process.cpuUsage() on exit, so
   // attribution survives parallelism — is the real fix and is HYG-062.
-  it('gives identical results with and without ripgrep on PATH', { timeout: 150_000 }, () => {
+  // ── 2026-09-28: THE DOUBLE RUN IS GONE, AND WITH IT THE CLIFF ────────────────────────────────
+  //
+  // Everything above is the history of a budget that kept being raised because this case ran the
+  // WHOLE guard twice — 30s, then 60s, then 150s — to prove one claim about the SEARCH ENGINE.
+  // No `cmd` probe participates in that claim: a cmd probe is `node -e`, it never touches
+  // patternMatches(), and ripgrep leaving PATH cannot change its answer. 734 of the 812 probes
+  // were being spawned twice for nothing, which is where ~40s of the two runs lived.
+  //
+  // `--only-static` runs the search kinds and nothing else, so this case now asserts exactly its
+  // own property at 78 probes a pass and ~2.5s for both. `--probes=all` beside it so the parity
+  // claim covers EVERY search probe in the file, not just the in-scope ones. The timeout returns
+  // to the default 30s — not as a budget, but because there is no longer anything here that needs
+  // more, and a 150s cliff over 2.5s of work is a cliff nobody would ever see coming.
+  //
+  // The CPU budget the old timeout sat beside has NOT been deleted. It moved to `satisfies both
+  // contracts`, which performs a full `--probes=all` run anyway, so it is asserted against the
+  // whole probe fleet exactly as before and costs one run instead of three.
+  it('gives identical results with and without ripgrep on PATH', { timeout: 30_000 }, () => {
     const stub = mkdtempSync(path.join(tmpdir(), 'nopath-'))
     // Everything a probe legitimately needs (node, git, a shell) — but deliberately not `rg`.
     for (const bin of ['node', 'git', 'sh', 'bash', 'env']) {
@@ -621,15 +650,11 @@ describe('the probe engine does not depend on ambient tooling', () => {
       if (real) symlinkSync(real, path.join(stub, bin))
     }
 
-    const cpuBefore = childCpuMs()
-    const startedAt = Date.now()
-    const withRg = run(BACKLOG_GUARD, ROOT)
-    const guardWallMs = Date.now() - startedAt
-    const cpuAfter = childCpuMs()
-    const guardCpuMs = cpuBefore === null || cpuAfter === null ? null : cpuAfter - cpuBefore
+    const SEARCH_ONLY = ['--only-static', '--probes=all']
+    const withRg = run(BACKLOG_GUARD, ROOT, SEARCH_ONLY)
     const withoutRg = (() => {
       try {
-        const out = execFileSync('node', [BACKLOG_GUARD], {
+        const out = execFileSync('node', [BACKLOG_GUARD, ...SEARCH_ONLY], {
           cwd: ROOT,
           encoding: 'utf8',
           stdio: 'pipe',
@@ -655,6 +680,165 @@ describe('the probe engine does not depend on ambient tooling', () => {
     const counts = (s: string) => s.match(/\d+ open\/blocked · \d+ parked · \d+ done/)?.[0]
     expect(counts(withoutRg.out)).toBe(counts(withRg.out))
 
+    // 🔴 AND THE NON-VACUITY FLOOR FOR THIS CASE. Narrowing what a test runs is how a test quietly
+    // stops testing: if `--only-static` ever selected nothing, both runs would agree on a ✓ over
+    // zero probes and this case would pass forever while asserting nothing about the search engine
+    // it is named for. The backlog carries 78 search-kind probes today; the floor is set well under
+    // that so honest churn never trips it, and a collapse to a handful does.
+    const SEARCH_PROBE_FLOOR = 20
+    const ran = /probes: (\d+) run \(/.exec(withRg.out)
+    expect(
+      ran,
+      'check:backlog stopped printing its `probes: N run (…)` scope line, so this case can no longer\n' +
+        'tell a real parity run from one that searched nothing. Restore the line in\n' +
+        'scripts/check-backlog.mjs rather than deleting this assertion.',
+    ).not.toBeNull()
+    expect(
+      Number(ran![1]),
+      `--only-static selected only ${ran?.[1]} probe(s). This case proves the SEARCH engine gives the\n` +
+        'same answer with and without ripgrep on PATH; over a near-empty probe set it proves nothing\n' +
+        'and passes anyway. Either the grep-kind rows vanished from the backlog, or --only-static\n' +
+        'stopped selecting them.',
+    ).toBeGreaterThanOrEqual(SEARCH_PROBE_FLOOR)
+  })
+})
+
+describe('probe scope — which probes run on a pull request (2026-09-28)', () => {
+  // WHAT THIS PINS. The guard checks ~810 probes and ~68% of them belong to rows closed before
+  // this branch existed. Those probes moved to a weekly `--probes=all` sweep. The risk in that
+  // change is not subtle and it is this repo's named failure mode: a gate that stops asking
+  // questions looks identical, from the ✓, to a gate that asks them and gets good answers.
+  //
+  // So three things are asserted: the scoped-out row is genuinely still caught under `--probes=all`
+  // (the finding is deferred, never dropped), structural validation still covers EVERY row in the
+  // default mode (only probe execution is scoped), and the run SAYS what it skipped.
+  let dir: string
+  beforeAll(() => {
+    dir = mkdtempSync(path.join(tmpdir(), 'backlog-scope-'))
+    mkdirSync(path.join(dir, 'src'), { recursive: true })
+    writeFileSync(path.join(dir, 'src/present.ts'), 'export const SENTINEL_TOKEN = 1\n')
+  })
+  afterAll(() => rmSync(dir, { recursive: true, force: true }))
+
+  const iso = (daysAgo: number) => new Date(Date.now() - daysAgo * 86_400_000).toISOString().slice(0, 10)
+
+  /** A `done` row whose probe FAILS. Whether the guard notices is the whole subject here. */
+  const regressed = (id: string, closed?: string) => ({
+    id,
+    title: `a closed row that no longer holds (${id})`,
+    status: 'done',
+    lane: 'live',
+    size: 'S',
+    ...(closed ? { closed } : {}),
+    verify: { kind: 'grep-present', pattern: 'NEVER_APPEARS_ANYWHERE', paths: ['src/present.ts'] },
+  })
+
+  it('does not probe a row closed long ago, and says so rather than going quiet', () => {
+    writeBacklog(dir, [...ballast(), regressed('OLD-1', iso(400))])
+    const { code, out } = run(BACKLOG_GUARD, dir)
+    expect(code).toBe(0)
+    expect(out).not.toContain('OLD-1')
+    // The reduction has to be VISIBLE. A silent one reads as the guard getting weaker for no
+    // reason, and the next person to look cannot tell which it was.
+    expect(out).toContain('open mode')
+    expect(out).toMatch(/probes: \d+ run \(open mode\), [1-9]\d* skipped/)
+  })
+
+  it('a row closed with no date is out of scope too — an undated row is not a recent one', () => {
+    writeBacklog(dir, [...ballast(), regressed('UNDATED-1')])
+    expect(run(BACKLOG_GUARD, dir).code).toBe(0)
+  })
+
+  it('STILL catches that row under --probes=all — the finding is deferred, not dropped', () => {
+    writeBacklog(dir, [...ballast(), regressed('OLD-1', iso(400))])
+    const { code, out } = run(BACKLOG_GUARD, dir, ['--probes=all'])
+    expect(code).toBe(1)
+    expect(out).toContain('OLD-1')
+    expect(out).toContain('says DONE, tree says NOT DONE')
+  })
+
+  it('still probes a row closed inside the window, on the default run', () => {
+    // The recency window is the half of this change that keeps the per-PR gate useful: a row
+    // closed this sprint is one the current stack of branches was near, so its regression has
+    // an author here and must fail the build today, not next Monday.
+    writeBacklog(dir, [...ballast(), regressed('RECENT-1', iso(3))])
+    const { code, out } = run(BACKLOG_GUARD, dir)
+    expect(code).toBe(1)
+    expect(out).toContain('RECENT-1')
+  })
+
+  it('scopes probe EXECUTION only — structural validation still covers every row', () => {
+    // An out-of-scope row is not an unchecked row. This one is skipped by the probe scope and
+    // still fails the build, on its shape.
+    writeBacklog(dir, [
+      ...ballast(),
+      { ...regressed('OLD-2', iso(400)), lane: 'not-a-lane' },
+    ])
+    const { code, out } = run(BACKLOG_GUARD, dir)
+    expect(code).toBe(1)
+    expect(out).toContain('OLD-2')
+    expect(out).toContain('not one of')
+  })
+
+  it('--only-static skips cmd probes without inventing a verdict for them', () => {
+    // A skipped probe must not become a "not done": that is the ripgrep bug's shape. The row
+    // below would exit 1 if asked, and the run is green because it was never asked.
+    writeBacklog(dir, [
+      ...ballast(),
+      {
+        id: 'CMD-SKIPPED',
+        title: 'a done row whose cmd probe would fail if it ran',
+        status: 'done',
+        lane: 'hygiene',
+        size: 'S',
+        closed: iso(3),
+        verify: { kind: 'cmd', cmd: 'node -e "process.exit(1)"' },
+      },
+    ])
+    expect(run(BACKLOG_GUARD, dir, ['--probes=all']).code).toBe(1)
+    const { code, out } = run(BACKLOG_GUARD, dir, ['--only-static', '--probes=all'])
+    expect(code).toBe(0)
+    expect(out).toContain('--only-static')
+  })
+
+  it('refuses an unknown --probes value rather than silently picking one', () => {
+    writeBacklog(dir, [...ballast()])
+    const { code, out } = run(BACKLOG_GUARD, dir, ['--probes=everything'])
+    expect(code).toBe(2)
+    expect(out).toContain('--probes must be one of')
+  })
+})
+
+describe('the real tree', () => {
+  // ── THE WEEKLY SWEEP, AND THE ONLY PLACE THE COST BUDGET IS READ (2026-09-28, HYG-129) ──────
+  //
+  // `--probes=all` is what .github/workflows/maintenance.yml runs on a Monday: every non-parked
+  // row's probe, which is the behaviour `pnpm check:backlog` had on every pull request until this
+  // change. It is asserted here because nothing else in CI runs it, and a weekly gate that first
+  // discovers it is broken on a Monday morning is a gate nobody trusts by Monday afternoon.
+  //
+  // 🔴 AND IT CARRIES ADR-1107's COST ASSERTIONS, which used to live on the ripgrep-parity case
+  // above. That case runs `--only-static` now and no longer has a full run to measure, so the
+  // budget had to move here or be deleted — and deleting a budget because the test that hosted it
+  // got cheaper is exactly the guards-that-stop-guarding failure AGENTS.md names. Nothing about
+  // the metric or the constants changed: same guardCpuMs, same per-probe ceiling, same
+  // count-scaled total. It is read off the SWEEP rather than off the per-PR run on purpose — the
+  // per-probe ceiling is the signal this budget exists for (LIVE-034, nine rows converted), and
+  // over the scoped run it would only ever see the ~30% of probes a pull request asks about.
+  //
+  // ⏱️ 90s, INHERITED FROM THE CASE THIS REPLACES and still the right number: one full run,
+  // measured 19.5s wall / 64s CPU standalone on 2026-09-28 and 20.4s inside this suite. The
+  // history of why an explicit budget beats the 30s default is on the sibling case below.
+  it('the full --probes=all sweep is green, and stays inside its cost budget', { timeout: 90_000 }, () => {
+    const cpuBefore = childCpuMs()
+    const startedAt = Date.now()
+    const withRg = run(BACKLOG_GUARD, ROOT, ['--probes=all'])
+    const guardWallMs = Date.now() - startedAt
+    const cpuAfter = childCpuMs()
+    const guardCpuMs = cpuBefore === null || cpuAfter === null ? null : cpuAfter - cpuBefore
+
+    expect(withRg.code, `pnpm check:backlog --probes=all\n\n${withRg.out}`).toBe(0)
+
     // ⏱️ THE WALL-CLOCK CEILING (LIVE-034), and why it lives here rather than in a probe.
     //
     // The guard reached 23.9s because ten closed rows each proved their consequence by spawning a
@@ -664,8 +848,8 @@ describe('the probe engine does not depend on ambient tooling', () => {
     // doubled the cost of every invocation forever to report the cost of one.
     //
     // So the row probes the CAUSE in milliseconds — no `verify.cmd` may spawn a test runner — and the
-    // CONSEQUENCE is measured here, where the guard is already being run twice for an unrelated
-    // reason and the measurement is therefore free. A probe that starts costing seconds without
+    // CONSEQUENCE is measured here, on the one run this file already makes against the real tree,
+    // so the measurement costs nothing extra. A probe that starts costing seconds without
     // naming a test runner still shows up, as this assertion, instead of disappearing into the
     // 60s timeout as a slightly slower green.
     // 🔴 THE CLOCK IS CPU TIME, NOT ELAPSED TIME (LIVE-047), and the difference is the whole point.
@@ -824,23 +1008,37 @@ describe('the probe engine does not depend on ambient tooling', () => {
       ).toBeLessThan(budget)
     }
   })
-})
 
-describe('the real tree', () => {
   // ⏱️ AN EXPLICIT BUDGET, because the default 30s was never a decision — it was the default, and
   // this test outgrew it. Measured 2026-09-01: `check:backlog` 23.66s (224 probes, run serially)
   // plus `check:one-list` 0.11s = 23.8s of real work, i.e. **79% of the default** on an idle
   // machine. Under full-suite contention it exceeded 30s and failed the run, with a bare
   // "Test timed out in 30000ms" that names nothing and passes when re-run alone.
   //
-  // 🔴 RAISING THIS IS NOT THE FIX, it is what makes the failure legible while the fix is done.
-  // `HYG-042` carries the real one: 224 probes run SERIALLY in a `for` loop of `spawnSync`, and the
-  // sibling ripgrep-parity case below runs the whole set TWICE for the same reason. This is the
-  // SECOND test in this file to hit the wall; the first is documented on that case. A budget that
-  // is 3.8x the measured work leaves room for a loaded runner without becoming the place a real
-  // regression hides — the CPU budget printed by the guard (`guardCpuMs`) is what catches creep.
+  // 🔴 RAISING IT WAS NOT THE FIX, it was what made the failure legible while the fix was done.
+  // `HYG-042` carried the real one: every probe ran SERIALLY in a `for` loop of `spawnSync`, and
+  // the ripgrep-parity case ran the whole set TWICE for the same reason.
+  //
+  // ── 2026-09-28 (HYG-129): THIS CASE IS THE PER-PR INVOCATION, and it is no longer the
+  // expensive one. `pnpm check:backlog` with no flags now probes open work plus rows closed in
+  // the last 30 days — 256 probes, 8.2s inside this suite against the 90s above. It is kept
+  // SEPARATE from the sweep case rather than folded into it because these are two different
+  // claims: that case asserts the weekly `--probes=all` gate is green, this one asserts the exact
+  // command the `checks` job runs is green, including the scoping path that only the default
+  // takes. The sweep does imply this one today; it implies it through an argument, and the
+  // argument is one line of code away from stopping being true.
   it('satisfies both contracts', { timeout: 90_000 }, () => {
-    expect(run(BACKLOG_GUARD, ROOT).code, 'pnpm check:backlog').toBe(0)
+    const { code, out } = run(BACKLOG_GUARD, ROOT)
+    expect(code, `pnpm check:backlog\n\n${out}`).toBe(0)
+    // The per-PR run SAYS what it did not probe. Without this, the day the scope line stops
+    // printing is the day the reduction becomes invisible, and an invisible reduction on a
+    // build-blocking gate is indistinguishable from the gate quietly getting weaker.
+    expect(
+      out,
+      'check:backlog stopped announcing its probe scope on the real tree. The default run skips\n' +
+        'the probes of rows closed long ago; a run that does not say so reads as a guard that got\n' +
+        'weaker for no reason. Restore the line in scripts/check-backlog.mjs.',
+    ).toMatch(/probes: \d+ run \(open mode\), \d+ skipped/)
     expect(run(ONE_LIST_GUARD, ROOT).code, 'pnpm check:one-list').toBe(0)
   })
 

@@ -21,7 +21,14 @@ import {
   planHasPublishedEntry,
   updateSpacePlan,
   transitionSpacePlanRows,
+  answerPlanShareRow,
+  getPlanShareRow,
+  insertPlanShare,
+  listPlanShareRows,
+  revokePlanShareRow,
 } from '@/lib/calendar/plans-store'
+import { mapPlanShareRow, parseShareAnswer, shareOptions, type PlanShareView } from '@/lib/calendar/plan-shares'
+import { listAcceptedCollaborations } from '@/lib/spaces/collaborations'
 import { copyPlaybookToPlan, runItAgain } from '@/lib/calendar/playbooks'
 import {
   createTask,
@@ -512,24 +519,83 @@ export async function acceptVeraChecklist(slug: string, planId: string, titles: 
   return ok()
 }
 
+// ── SHARING A PLAN IS A HANDSHAKE (PROG-CAL7 Together, LIVE-541) ─────────────────────────────
+//
+// Three doors and one read. The HOST offers a Plan of its own to a Space it already has an ACCEPTED
+// collaboration with (lib/spaces/collaborations.ts, ADR-799), and the share lands PENDING: the
+// guest was never asked before, because this action wrote `accepted` with the host as responder and
+// three of the table's four states were unreachable. The GUEST answers a pending share addressed
+// to its own Space, accepted or declined, on its own session. The host may take an active share
+// back. Every door re-checks the side it serves before the write, and the store keys each write
+// by that side too, so a share id from the browser can never move a share the caller does not own.
+
+/** The picker and the list for the host drawer: who may still be offered this Plan, by name, and
+ *  every share it has made, in its state. */
+export async function listPlanShares(
+  slug: string,
+  planId: string,
+): Promise<ActionResult<{ options: { value: string; label: string }[]; shares: PlanShareView[] }>> {
+  const editor = await resolveEditor(slug)
+  if (!editor) return fail('You do not have access to this calendar.')
+  if (!UUID_RE.test(planId)) return fail('That Plan is not on this calendar.')
+  const plan = await getSpacePlan(editor.spaceId, planId)
+  if (!plan) return fail('That Plan is not on this calendar.')
+  const collaborators = await acceptedCollaborators(editor.spaceId)
+  const names = new Map(collaborators.map((c) => [c.id, c.name]))
+  const shares = (await listPlanShareRows(planId)).map((row) => mapPlanShareRow(row, names.get(row.guest_space_id) ?? null))
+  return ok({ options: shareOptions(collaborators, shares), shares })
+}
+
+/** The Spaces this one may offer a Plan to: its accepted collaborations, partner resolved. */
+async function acceptedCollaborators(spaceId: string): Promise<{ id: string; name: string }[]> {
+  return (await listAcceptedCollaborations(spaceId)).map((c) => ({ id: c.partner.id, name: c.partner.name }))
+}
+
 export async function sharePlanWithSpace(
   slug: string,
   planId: string,
   guestSpaceId: string,
-): Promise<ActionResult<void>> {
+): Promise<ActionResult<{ id: string }>> {
   const editor = await resolveEditor(slug)
   if (!editor) return fail('You do not have access to this calendar.')
   if (!UUID_RE.test(planId) || !UUID_RE.test(guestSpaceId)) return fail('Pick a Space to share with.')
-  const db = await createClient()
-  const { error } = await db.from('space_plan_shares').insert({
-    plan_id: planId,
-    guest_space_id: guestSpaceId,
-    status: 'accepted',
-    requested_by: editor.profileId,
-    responded_at: new Date().toISOString(),
-    responded_by: editor.profileId,
-  })
-  if (error) return fail('That Plan could not be shared.')
+  if (guestSpaceId === editor.spaceId) return fail('That is this Space. Pick one you collaborate with.')
+  const plan = await getSpacePlan(editor.spaceId, planId)
+  if (!plan) return fail('That Plan is not on this calendar.')
+  const collaborators = await acceptedCollaborators(editor.spaceId)
+  if (!collaborators.some((c) => c.id === guestSpaceId)) {
+    return fail('Pick a Space you already collaborate with. Collaborations are made on the Collaborators page.')
+  }
+  // PENDING, spelled here: the guest answers from their own calendar, never the host for them.
+  const inserted = await insertPlanShare({ planId, guestSpaceId, requestedBy: editor.profileId, status: 'pending' })
+  if ('error' in inserted) return fail(inserted.error)
+  revalidate(slug)
+  return ok({ id: inserted.id })
+}
+
+/** The guest's answer to a share addressed to its Space. `slug` is the GUEST Space. */
+export async function respondToPlanShare(slug: string, shareId: string, rawAnswer: unknown): Promise<ActionResult<void>> {
+  const editor = await resolveEditor(slug)
+  if (!editor) return fail('You do not have access to this calendar.')
+  const answer = parseShareAnswer(rawAnswer)
+  if (!answer || !UUID_RE.test(shareId)) return fail('Say yes or no to the share.')
+  const answered = await answerPlanShareRow(shareId, editor.spaceId, answer, editor.profileId)
+  if ('error' in answered) return fail(answered.error)
+  revalidate(slug)
+  return ok()
+}
+
+/** The host takes a share back. The Plan is proven to be this Space's before the write. */
+export async function revokePlanShare(slug: string, shareId: string): Promise<ActionResult<void>> {
+  const editor = await resolveEditor(slug)
+  if (!editor) return fail('You do not have access to this calendar.')
+  if (!UUID_RE.test(shareId)) return fail('That share is not active.')
+  const share = await getPlanShareRow(shareId)
+  if (!share) return fail('That share is not active.')
+  const plan = await getSpacePlan(editor.spaceId, share.plan_id)
+  if (!plan) return fail('That Plan is not on this calendar.')
+  const revoked = await revokePlanShareRow(shareId, plan.id, editor.profileId)
+  if ('error' in revoked) return fail(revoked.error)
   revalidate(slug)
   return ok()
 }
