@@ -46,6 +46,10 @@ type Untyped = {
       args: { p_space_id: string; p_from_day: string; p_to_day: string },
     ): Promise<{ data: Pick<EntryRow, 'starts_at' | 'ends_at' | 'all_day' | 'time_zone'>[] | null; error: unknown }>
     (fn: 'keep_pencil_date', args: { p_space_id: string; p_entry_id: string }): Promise<{ data: number | null; error: unknown }>
+    (
+      fn: 'split_calendar_series',
+      args: { p_space_id: string; p_entry_id: string; p_day: string; p_override: Record<string, unknown> },
+    ): Promise<{ data: string | null; error: unknown }>
   }
 }
 type EntryQuery = PromiseLike<{ data: EntryRow[] | null; error: { message: string } | null }> & {
@@ -296,6 +300,33 @@ export async function setEntryExceptionDates(
     .select('id')
   if (error || !data?.length) return { error: 'That date could not be skipped.' }
   return { data: true }
+}
+
+/** THE SPLIT (LIVE-534). One occurrence of a repeating entry becomes its own one-off row carrying the
+ *  edited values, and the series skips that day, in ONE statement (public.split_calendar_series,
+ *  SECURITY INVOKER, so RLS still decides). Two writes that land together or not at all: a stamped
+ *  skip with no override is a date that silently vanished, and an override with no skip is the same
+ *  date drawn twice. The rule and the skips are the SERIES', so they are stripped from the override
+ *  here and refused by name in the function; the override is a one-off by construction. */
+export async function splitCalendarSeriesRow(
+  spaceId: string,
+  entryId: string,
+  dayKey: string,
+  override: EntryWrite,
+): Promise<{ data: string } | { error: string }> {
+  const { recurrence_rule: _rule, exception_dates: _skips, ...oneOff } = override
+  try {
+    const { data, error } = await (await db()).rpc('split_calendar_series', {
+      p_space_id: spaceId,
+      p_entry_id: entryId,
+      p_day: dayKey,
+      p_override: oneOff,
+    })
+    if (error || !data) return { error: 'That date could not be changed on its own.' }
+    return { data }
+  } catch {
+    return { error: 'That date could not be changed on its own.' }
+  }
 }
 
 /** THE DELETE IS A TOMBSTONE (LIVE-536, owner ruling 2026-09-28). This was a hard `.delete()`, and it

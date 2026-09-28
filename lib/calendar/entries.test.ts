@@ -363,3 +363,86 @@ describe('storedInstant', () => {
     expect(bare, 'a stored column parsed without the UTC fallback').toEqual([])
   })
 })
+
+// ── ONE OCCURRENCE ON ITS OWN (LIVE-534) ─────────────────────────────────────────────────────────
+// The split leaves a PAIR: the master with the day in exception_dates, and a one-off override row on
+// that day. Every reader has to hold the pair, and the grid is the reader an operator meets first:
+// the day must be drawn ONCE, with the override's details, and every other landing as before.
+describe('the split pair: a master that skips the day plus an override row on it', () => {
+  const master = () =>
+    row({
+      ...base,
+      kind: 'pencil',
+      allDay: false,
+      startDate: '2026-10-05',
+      endDate: '2026-10-05',
+      startTime: '19:00',
+      endTime: '21:00',
+      repeat: 'FREQ=WEEKLY',
+      exceptionDates: ['2026-10-19'],
+    })
+
+  it('draws the day once, as the override, and the other landings as the series', async () => {
+    const { entryItemsInWindow } = await import('./entries')
+    const m = master()
+    const override = row(
+      { ...base, kind: 'pencil', title: 'Closed for the holiday (guest teacher)', allDay: false, startDate: '2026-10-19', endDate: '2026-10-19', startTime: '18:00', endTime: '20:00' },
+      '22222222-2222-4222-8222-222222222222',
+    )
+    expect(override.recurrence_rule).toBeNull()
+    const window = { fromDay: '2026-10-11', toDay: '2026-11-01' }
+    const items = [...entryItemsInWindow(m, fmt, { editable: true }, window), ...entryItemsInWindow(override, fmt, { editable: true }, window)]
+    const onTheDay = items.filter((i) => i.dayKey === '2026-10-19')
+    expect(onTheDay).toHaveLength(1)
+    expect(onTheDay[0].entryId).toBe(override.id)
+    expect(onTheDay[0].title).toBe('Closed for the holiday (guest teacher)')
+    expect(onTheDay[0].occurrenceDate).toBeUndefined()
+    expect(items.filter((i) => i.entryId === m.id).map((i) => i.dayKey)).toEqual(['2026-10-12', '2026-10-26'])
+  })
+
+  it('seriesLandsOn: only a day the series draws can be taken out of it', async () => {
+    const { seriesLandsOn } = await import('./entries')
+    const m = master()
+    expect(seriesLandsOn(m, '2026-10-12')).toBe(true)
+    expect(seriesLandsOn(m, '2026-10-05')).toBe(true) // the anchor is a landing too
+    expect(seriesLandsOn(m, '2026-10-13')).toBe(false) // a Tuesday
+    expect(seriesLandsOn(m, '2026-10-19')).toBe(false) // already skipped
+    expect(seriesLandsOn(m, 'someday')).toBe(false)
+    expect(seriesLandsOn(row(base), '2026-12-24')).toBe(true) // a one-off lands on its own day
+  })
+
+  it('occurrenceWrite: the form left on the anchor date lands the override on the occurrence day, keeping time and length', async () => {
+    const { occurrenceWrite } = await import('./entries')
+    const m = master()
+    const form = parseEntryInput({ ...base, kind: 'pencil', title: 'Guest teacher', allDay: false, startDate: '2026-10-05', endDate: '2026-10-05', startTime: '18:00', endTime: '20:30', repeat: 'FREQ=WEEKLY', exceptionDates: ['2026-10-19'] })
+    if ('error' in form) throw new Error(form.error)
+    const w = occurrenceWrite(m, '2026-10-12', form.data)
+    expect(w.starts_at).toBe('2026-10-12T18:00:00.000Z')
+    expect(w.ends_at).toBe('2026-10-12T20:30:00.000Z')
+    expect(w.title).toBe('Guest teacher')
+    // The rule and the skips are the series', never the override's.
+    expect(w.recurrence_rule).toBeNull()
+    expect(w.exception_dates).toEqual([])
+  })
+
+  it('occurrenceWrite: a changed date means the person moved THIS occurrence, so the form dates stand', async () => {
+    const { occurrenceWrite } = await import('./entries')
+    const m = master()
+    const form = parseEntryInput({ ...base, kind: 'pencil', allDay: false, startDate: '2026-10-14', endDate: '2026-10-14', startTime: '19:00', endTime: '21:00', repeat: 'FREQ=WEEKLY' })
+    if ('error' in form) throw new Error(form.error)
+    const w = occurrenceWrite(m, '2026-10-12', form.data)
+    expect(w.starts_at).toBe('2026-10-14T19:00:00.000Z')
+    expect(w.ends_at).toBe('2026-10-14T21:00:00.000Z')
+    expect(w.recurrence_rule).toBeNull()
+  })
+
+  it('occurrenceWrite: an all-day series shifts by whole days, exclusive end included', async () => {
+    const { occurrenceWrite } = await import('./entries')
+    const m = row({ ...base, kind: 'pencil', startDate: '2026-10-05', endDate: '2026-10-05', repeat: 'FREQ=WEEKLY' })
+    const form = parseEntryInput({ ...base, kind: 'pencil', startDate: '2026-10-05', endDate: '2026-10-05', repeat: 'FREQ=WEEKLY' })
+    if ('error' in form) throw new Error(form.error)
+    const w = occurrenceWrite(m, '2026-10-26', form.data)
+    expect(w.starts_at).toBe('2026-10-26T00:00:00.000Z')
+    expect(w.ends_at).toBe('2026-10-27T00:00:00.000Z')
+  })
+})
