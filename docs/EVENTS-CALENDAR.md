@@ -453,7 +453,19 @@ plan drawer opens from any calendar item that belongs to a plan and is composed 
 Its footer's "Archive Plan" (`archiveSpacePlan`, HYG-120) sets `space_plans.archived_at`, deletes the
 Plan's penciled dates that never became an event, and unlinks the ones that did; reversible in SQL,
 not yet in the UI. The e2e suite tears its own Plans down through that same door.
-A co-host Space sees a plan only through an accepted share of that plan.
+A co-host Space sees a plan only through an accepted share of that plan, and a share is a HANDSHAKE
+(`PROG-CAL7` Together, `LIVE-541`): the drawer's "Share with a co-host Space" offers the Spaces this one
+has an accepted collaboration with, by name (`listAcceptedCollaborations`, ADR-799), never a field for an
+id; `sharePlanWithSpace` refuses any other Space and writes the share PENDING; the guest answers it from
+its own calendar settings ("Shared with you", `respondToPlanShare`, on its own session, keyed by its own
+Space and the pending state in one statement); the host sees where each share stands in the drawer and
+can take an active one back (`revokePlanShare`). A pending offer's Plan is not readable by the guest until
+the share is accepted (`private.plan_is_shared_with_me`), so the offer's title and host are resolved
+server-side for exactly the share rows the guest's session returned (`lib/calendar/plan-share-subjects.ts`,
+on the admin-client baseline with that reason). An accepted Plan is listed on the guest calendar with the
+Space that holds it and opens in the same drawer, read only: the host keeps every door until a later child
+of PROG-CAL7 hands some across (`listPlansSharedWith` reads them through the accepted share and nothing
+else). Pure vocabulary and words: `lib/calendar/plan-shares.ts`.
 
 **Production** (`PROG-CAL3`, shipped). "Make it a Production" opens the event Spark (`lib/studio/entities/event.ts`)
 prefilled by a pure mapping from the plan and the chosen Pencil onto the manifest's field keys. The event
