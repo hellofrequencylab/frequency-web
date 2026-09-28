@@ -1,4 +1,4 @@
-# pgTAP files whose assertions SKIP on every db-tests run, with the reason (HYG-122, ADR-1545).
+# pgTAP files whose assertions SKIP on every db-tests run, with the reason (HYG-122, ADR-1547).
 #
 # Read by scripts/check-pgtap-skips.mjs from .github/workflows/db-tests.yml. A file that skips and
 # is NOT here fails the job; a file that is here and stops skipping fails the job too, so an entry

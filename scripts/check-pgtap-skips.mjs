@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// pgTAP permanent-skip gate (HYG-122, ADR-1545).
+// pgTAP permanent-skip gate (HYG-122, ADR-1547).
 //
 // A pgTAP file that cannot exercise its subject may SKIP its assertions rather than fail the
 // suite for a reason unrelated to the function under test. That is the right call for the file

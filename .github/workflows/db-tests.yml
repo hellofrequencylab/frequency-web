@@ -67,7 +67,7 @@ jobs:
         run: |
           set -o pipefail
           pnpm exec supabase test db 2>&1 | tee pgtap.log
-      # ── A SKIP NOBODY STATED IS COVERAGE NOBODY KNOWS IS MISSING (HYG-122, ADR-1545) ──────────
+      # ── A SKIP NOBODY STATED IS COVERAGE NOBODY KNOWS IS MISSING (HYG-122, ADR-1547) ──────────
       # refresh_resonance_density_cells_safeupdate.test.sql printed "SKIPPING: safeupdate could
       # not be loaded" on every run since it was written, under "All tests successful", because
       # `load 'safeupdate'` is refused (42501) for the test role in the local image. This gate
