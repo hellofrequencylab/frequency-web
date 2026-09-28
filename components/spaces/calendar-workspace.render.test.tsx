@@ -32,6 +32,7 @@ vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/plan-actions', () => ({
   listPlanShares: async () => ({ data: { options: [], shares: [] } }),
   sharePlanWithSpace: async () => ({ data: { id: 'share-1' } }),
   revokePlanShare: async () => ({ data: undefined }),
+  listPlanComments: async () => ({ data: [] }),
 }))
 
 // Ask Vera (PROG-CAL10). The box calls nothing on mount: both doors run only on Send and Accept,
