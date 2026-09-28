@@ -441,8 +441,9 @@ describe('dates from what happened', () => {
 
   it('offers attendance_history only when the action hands in a read', async () => {
     state.replies = [{ content: [proposal] }]
-    await proposeCalendarChanges({ ask: 'pick a good day for a sound bath', mode: 'pencil', context })
+    const plain = await proposeCalendarChanges({ ask: 'pick a good day for a sound bath', mode: 'pencil', context })
     expect((state.calls[0].tools as { name: string }[]).map((t) => t.name)).not.toContain(ATTENDANCE_TOOL_NAME)
+    expect('attendance' in plain ? plain.attendance : undefined).toBeUndefined()
 
     state.calls = []
     state.replies = [{ content: [proposal] }]
@@ -460,6 +461,8 @@ describe('dates from what happened', () => {
     ]
     const r = await proposeCalendarChanges({ ask: 'pick a good day for a sound bath this autumn', mode: 'pencil', context: { ...context, readAttendance: read } })
     expect(r).toMatchObject({ kind: 'proposal', changes: [{ kind: 'pencil', days: ['2026-10-03'] }] })
+    // The fold rides the proposal (LIVE-540) so the line can say why, in the server's words.
+    expect('attendance' in r && r.attendance).toEqual(history)
     expect(read).toHaveBeenCalledTimes(1)
     expect(state.calls).toHaveLength(3)
 
@@ -494,6 +497,8 @@ describe('dates from what happened', () => {
       },
     })
     expect(r).toMatchObject({ kind: 'proposal' })
+    // A read that failed left nothing to put on the line.
+    expect('attendance' in r ? r.attendance : undefined).toBeUndefined()
     const msgs = state.calls[1].messages as { role: string; content: unknown }[]
     const result = (msgs[2].content as { is_error?: boolean; content: string }[])[0]
     expect(result.is_error).toBe(true)

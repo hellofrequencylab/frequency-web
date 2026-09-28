@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2152,
+      "baseline": 2156,
       "frozen": {
-        "at": "2026-09-22",
-        "value": 2152,
-        "direction": "lowered",
+        "at": "2026-09-28",
+        "value": 2156,
+        "direction": "raised",
         "basis": "db695768f455",
-        "reason": "HYG-118 retired the unmounted Timeline, Projects and PM-console calendar views (components/spaces/calendar-projects-view.tsx, calendar-timeline-view.tsx, calendar-pm-console.tsx) with their lib helpers and tests; literal-radius 2154 -> 2152, every other class held",
-        "from": 2154
+        "reason": "A RAISE, banked as debt and not as a win: +4 literal rounded-* utilities merged after the 2026-09-22 freeze while this gate was advisory in ci.yml (ADR-1290, OWN-004). Two files, attributed by per-file count diff against 0458ce676: components/spaces/contact-form-block.tsx +2 (#2893, the new Space contact-form block) and app/(main)/spaces/[slug]/settings/program/page.tsx +2 (#2862, the Program door recording its Plan). Neither is a scope move and no pattern changed, so no credit is owed; the floor moves only so the scoreboard reads true on main again, and the class stays flagged until a radius-role sweep retires these four sites.",
+        "from": 2152
       },
       "history": [
         {
@@ -280,6 +280,13 @@
           "to": 2152,
           "direction": "lowered",
           "reason": "HYG-118 retired the unmounted Timeline, Projects and PM-console calendar views (components/spaces/calendar-projects-view.tsx, calendar-timeline-view.tsx, calendar-pm-console.tsx) with their lib helpers and tests; literal-radius 2154 -> 2152, every other class held"
+        },
+        {
+          "at": "2026-09-28",
+          "from": 2152,
+          "to": 2156,
+          "direction": "raised",
+          "reason": "A RAISE, banked as debt and not as a win: +4 literal rounded-* utilities merged after the 2026-09-22 freeze while this gate was advisory in ci.yml (ADR-1290, OWN-004). Two files, attributed by per-file count diff against 0458ce676: components/spaces/contact-form-block.tsx +2 (#2893, the new Space contact-form block) and app/(main)/spaces/[slug]/settings/program/page.tsx +2 (#2862, the Program door recording its Plan). Neither is a scope move and no pattern changed, so no credit is owed; the floor moves only so the scoreboard reads true on main again, and the class stays flagged until a radius-role sweep retires these four sites."
         }
       ]
     },
@@ -1498,7 +1505,7 @@
         "components/ui/field.tsx",
         "components/ui/checkbox.tsx"
       ],
-      "baseline": 87,
+      "baseline": 88,
       "history": [
         {
           "at": "2026-08-05",
@@ -1562,15 +1569,22 @@
           "to": 87,
           "direction": "rebased",
           "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 119 -> 87, an INSTRUMENT correction in both halves and no code retired. The lookahead excluded type=hidden and nothing else, so 37 file-picker triggers counted as un-adopted fields; every one is held behind hidden or sr-only and fired by a sibling button, so no text-field primitive can receive it, which is the same reasoning the type=hidden lookahead was written for. A second, order-independent lookahead now excludes type=file co-occurring with hidden or sr-only, and a VISIBLE file input still counts. The DAWN Phase 9 queue estimated ~18; a TypeScript-AST census of this entry's own scope says 37, 0 of them visible. The corpus fix is what makes this land: on the old corpus the new lookahead reached only 15 of the 37, because the accept glob had already blanked the className that proves concealment. 119 -> 124 (corpus) -> 87 (lookahead)."
+        },
+        {
+          "at": "2026-09-28",
+          "from": 87,
+          "to": 88,
+          "direction": "raised",
+          "reason": "A RAISE, banked as debt and not as a win: +1 raw <input> opening tag merged after the 2026-08-17 freeze while this gate was advisory in ci.yml (ADR-1290, OWN-004). Attributed by per-file count diff against 0458ce676 to components/spaces/contact-form-block.tsx (#2893), the new Space contact-form block. Moving it onto the field primitive (components/ui/field.tsx) is a refactor of a live lead-capture form, not a literal rename, so it is not done here. No pattern or scope moved, so no credit is owed; the class stays flagged until that site adopts the primitive."
         }
       ],
       "frozen": {
-        "at": "2026-08-17",
-        "value": 87,
-        "direction": "rebased",
+        "at": "2026-09-28",
+        "value": 88,
+        "direction": "raised",
         "basis": "a76a8556a0ed",
-        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 119 -> 87, an INSTRUMENT correction in both halves and no code retired. The lookahead excluded type=hidden and nothing else, so 37 file-picker triggers counted as un-adopted fields; every one is held behind hidden or sr-only and fired by a sibling button, so no text-field primitive can receive it, which is the same reasoning the type=hidden lookahead was written for. A second, order-independent lookahead now excludes type=file co-occurring with hidden or sr-only, and a VISIBLE file input still counts. The DAWN Phase 9 queue estimated ~18; a TypeScript-AST census of this entry's own scope says 37, 0 of them visible. The corpus fix is what makes this land: on the old corpus the new lookahead reached only 15 of the 37, because the accept glob had already blanked the className that proves concealment. 119 -> 124 (corpus) -> 87 (lookahead).",
-        "from": 119
+        "reason": "A RAISE, banked as debt and not as a win: +1 raw <input> opening tag merged after the 2026-08-17 freeze while this gate was advisory in ci.yml (ADR-1290, OWN-004). Attributed by per-file count diff against 0458ce676 to components/spaces/contact-form-block.tsx (#2893), the new Space contact-form block. Moving it onto the field primitive (components/ui/field.tsx) is a refactor of a live lead-capture form, not a literal rename, so it is not done here. No pattern or scope moved, so no credit is owed; the class stays flagged until that site adopts the primitive.",
+        "from": 87
       }
     },
     {

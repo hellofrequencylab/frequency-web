@@ -48383,6 +48383,28 @@ This is the URL `app/sitemap.ts` advertises, and the one strangers and Googlebot
   claim as "it renders the same"**. A component whose appearance comes from an ancestor attribute
   carries none of that appearance in its own markup, and a second mount point inherits nothing.
 
+## ADR-1550: The server's copy of the calendar is inert, and the live panel set is built once on first paint (LIVE-481)
+
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-481` · extends [ADR-1467](DECISIONS.md) (the operator shell) and the LIVE-472 stage host · numbered **1550** because 1541 to 1549 are claimed on main and by open PRs (#2946 to #2964, #2961)
+
+**Context.** `components/spaces/calendar-workspace.tsx` keeps the panel set at ONE React position and portals it into a host div that a layout effect parks on the page or in the console, which is what stopped the console toggle rebuilding the calendar (LIVE-472). The host is held back until after hydration so the server's HTML has the calendar in it and the first client render is one React accepts. As shaped, that hold meant the client rendered the panels INLINE for the hydration pass and through the portal one commit later: a change of React position, so both grids, the Vera box and every month they had fetched were unmounted and built again on the first paint of every Space calendar page an operator opens, and on a `?console=1` deep link built, rebuilt, then moved. Once, not a loop, and invisible as a blink; visible as a slow calendar.
+
+The row's own proposed fix was ruled out on 2026-09-24 and the reason is the constraint here: `createPortal` is load-bearing for React's event delegation. A rendered subtree physically re-parented under the console Dialog's portal container is out from under the root listener that serves it and never gets its keystrokes. So the portal stays. What the row left were two shapes it called not free: render only through the portal and lose the server's calendar, or have the server render into the portal container, which React cannot do. The row also said the double mount could not be probed from a checkout. It can: `react-dom/server` renders the workspace with no `window` and `hydrateRoot` takes that HTML, in jsdom, and the grid's mount effect counts the builds. On main that read 4 mounts for 2 grids.
+
+**Decision.**
+
+1. **The position change goes, not the portal and not the server's HTML.** On the client a slot that will hold a travelling host never renders the panels as React children. The server renders them inline as before; the client renders the same slot as a leaf, `dangerouslySetInnerHTML` with a frozen empty `__html` and `suppressHydrationWarning`, which is React's documented way to say that what the server put inside an element is content the client manages itself. React adopts the element, leaves the server's nodes alone and creates no fiber for them. After hydration the live set mounts once, through the portal.
+2. **The sweep is in the layout phase of the commit that parks the host.** The layout effect that moves the host removes every node in the page home that is not the host, then appends the host. Same phase, one paint: the reader sees the server's grid until the live one stands in its place. A `?console=1` deep link parks the host in the console and sweeps the hidden page slot the same way.
+3. **The inert markup object is frozen and module-level.** React writes `innerHTML` when the `dangerouslySetInnerHTML` prop object changes identity; one shared object means it never does, so React never wipes the slot, neither the server's copy before the live set is there nor the host after it is.
+4. **Guests keep the plain inline slot.** A guest never gets a host, so their position never changes and there is nothing to adopt; the hydration adopts their server grid in place, one build, and the test pins that too.
+5. **Measured, not inferred.** `calendar-workspace.render.test.tsx` renders the workspace with `renderToString` under a stubbed-out `window`, hydrates that HTML with `hydrateRoot`, and asserts: the server shipped the grid and the Vera box, no recoverable hydration error, the server's nodes are gone and one of each stands, grid mounts equal grids alive, and a keystroke's console open still reaches the live set through its portal. The row's probe reads the source for the leaf and the sweep, and the test file for that measurement.
+
+**Rejected.** Rendering only through the portal (an operator's cold page and a `?console=1` deep link paint an empty stage until the script arrives; the server's calendar was the other half of why the hold exists). A server portal (React has none). Moving the rendered subtree and rendering the console inside the root container instead of the body so delegation survives the move (changes the console Dialog's stacking and focus containment for a first-paint cost; the ruled-out attempt's lesson was to keep the portal, not to move the dialog). Hoisting the LIVE-528 month cache above the panels so the second build finds its months (hides the cost of a second build rather than removing the build). Dropping the hydration hold (a hydration mismatch, which React 19 answers by client-rendering the whole root).
+
+**Consequences.** One build of the panel set on first paint where there were two; the months fetched during hydration are the months the live grid has. The server's HTML for an operator's calendar is inert until the live set replaces it, which is what it already was in effect: the previous shape hydrated those nodes and threw them away one commit later. Two hydration tests now run a real server pass in jsdom, which is the shape any future "cannot be probed from a checkout" claim about hydration should be tested against first. The LIVE-472 probe's two-places rule still holds: the panels are written once inline for the server and a guest, and once through the portal.
+
+**Rows.** LIVE-481 (closed here). LIVE-472, LIVE-474, LIVE-495 unchanged.
+
 ## ADR-1534: A Space's community is one page — the Space Circle's feed leads Circles, and Discussion is a section of it (LIVE-523)
 
 **Status:** Accepted · 2026-09-27 · backlog `LIVE-523` · **AMENDS [ADR-1469](DECISIONS.md) §2** and the Discussion clause of [`docs/NAMING.md`](NAMING.md) §Community structure · numbered **1534** because **1531-1533** are reserved by another open session · owner directive, 2026-09-27
@@ -48608,6 +48630,25 @@ evening they mean. The 24 Craft Night rows had the same defect and are fixed by 
 correctly stored master. The write path and the remaining rows are `LIVE-514` (renumbered from
 LIVE-512 under ADR-1488 when two earlier PRs claimed that number).
 
+## ADR-1551: The one List's card leads with the gathering's cover, cropped the way every other cover is (LIVE-496)
+
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-496` · extends [ADR-1464](DECISIONS.md) (the List view) and LIVE-490 (the one List) · numbered **1551** because 1541 to 1550 are claimed on main and by open PRs (#2946 to #2965)
+
+**Context.** The owner's ask of 2026-09-23, verbatim: "Consider that there are two different List views, consolidate that into one experience with a list on the left and card, with hero image and all stats on the right." LIVE-490 shipped the first half: Grid / List / Workflow is one surface control and the List carries its own This month / All scope, so the index on the left is one list reached one way. The right did not ship: `components/spaces/calendar-list-view.tsx` drew a `StatCard` row and a Go to event link and no image, while `ListIndexItem` already carried `coverUrl` and the grid popup already read it. Not a design question; the pane was not rendering data it had.
+
+**Decision.**
+
+1. **The cover leads the card.** When the selected item has a `coverUrl`, the viewer card opens on it: a full-bleed band above the header (`h-40`, `sm:h-52`), `object-cover`, decorative `alt=""` because the title below names the gathering, `loading="lazy"`. The card's padding moves to an inner wrapper so the band reaches the card's edges under its radius.
+2. **Cropped like every other cover.** `ListIndexItem` gains `coverFocus` from the calendar item, and the band applies `eventCoverFocusStyle` from `lib/events/cover-focus.ts`, the one render seam for cropped covers (the detail hero, the browse and Space cards, the two popups). A poster whose title sits at the top survives this crop as it survives the others.
+3. **No cover, no band, no stand-in.** A Pencil, or an event whose host uploaded no cover, opens on the title as it did. The browse card's generated date cover is a discovery device that keeps a grid of strangers' events reading rich; this is the operator's own list, where an absent cover is information the operator can act on.
+4. **A plain `img`, as the grid popup.** The URL is a public bucket URL the popup already renders with `img`, and the pane is a client component inside a portalled panel set; `next/image` adds nothing here and the eslint waiver names the match.
+
+**Rejected.** A generated fallback poster for items with no cover (point 3). Reading `coverFocus` off the calendar item at render instead of carrying it on `ListIndexItem` (the index item is the pane's whole contract; the console's agenda reads the same rows). Reviving the 2026-09-23 patch (it predates LIVE-490 and LIVE-494 and targets a pane that no longer exists in that shape).
+
+**Consequences.** The pane shows the gathering rather than a row of numbers, which is what the second half of the ask was. One optional field on `ListIndexItem`; no fixture changes, since every existing row has no cover. The LIVE-496 probe keeps its original arm and gains three: the hero marker in the pane, the focus seam, and the render test that asserts the band leads the card and is absent for a Pencil.
+
+**Rows.** LIVE-496 (closed here). LIVE-490, LIVE-468 unchanged.
+
 ## ADR-1532: A stage says itself with a mark at the head of the chip, and the header keeps the ledger (owner directive 2026-09-27)
 
 **Status:** Accepted · 2026-09-27 · amends [ADR-1386](DECISIONS.md)'s stage presentation and the
@@ -48653,6 +48694,26 @@ the abbreviation rule still has to hold for the kinds that keep a word, so its n
 onto a Private entry, and a new case asserts that a marked chip has nothing to abbreviate. A test that
 had only pinned the new behaviour would have quietly retired a live rule, which is the failure mode
 that suite was written against.
+
+## ADR-1552: A Plan share is a handshake with an accepted collaborator, and a pending offer is read for the guest by a scoped resolver (LIVE-541)
+
+**Status:** Accepted · 2026-09-28 · `LIVE-541` (child 1 of 6 of `PROG-CAL7`) · builds on [ADR-1386](DECISIONS.md) (Pencil, Plan, Production; owner ruling 4 on collaboration) and [ADR-799](DECISIONS.md) §B (collaborator Spaces) · numbered 1552 because 1545 is claimed by #2949, 1546 by #2950 and #2951, 1547 by #2952 and #2956, 1548 by #2962, 1549 by #2961, 1550 by #2965 and 1551 by #2967, every one of them opened before this pull request (ADR-1509)
+
+**Context.** `space_plan_shares` (20270345006700) modelled four states (pending, accepted, declined, revoked) with a partial unique index over the two active ones, and the RLS on `space_plans` (20270345007300) admits a guest Space through `private.plan_is_shared_with_me`, which requires `accepted`. The one action that wrote the table inserted `accepted` with the host as responder, so the guest was never asked and three states were unreachable; the drawer took a raw Space id in a text field; `listSpacePlans` filtered on the caller's own Space, so even an accepted share put nothing on the guest calendar. PROG-CAL7's reopening on 2026-09-21 named all of this. Two questions had to be settled to fix it: who may be offered a Plan, and how a guest can read an offer it may not yet open.
+
+**Decision.**
+
+1. **A share is a handshake.** The host offers, the share lands `pending`, the guest answers `accepted` or `declined` on its own session, the host may take an active share back (`revoked`). `parseShareAnswer` admits the two answers and nothing else; revoke is never an answer. Each store write is keyed by the side it serves in one statement (the guest's answer by share id, guest Space and the pending state; the host's revoke by share id and the Plan it proved is its own), so a share id from the browser cannot move a share the caller does not own, and a second answer changes nothing and says so.
+2. **Only an accepted collaborator may be offered a Plan.** The picker lists the host's accepted collaborations (`listAcceptedCollaborations`, ADR-799) by name and nothing else, minus any Space that already holds an active share of that Plan; `sharePlanWithSpace` refuses any other id server-side. A text field for an id is gone. A Space with no collaborators reads why and where to make one.
+3. **A pending offer's subject is resolved for the guest by a scoped read.** RLS opens the Plan only after acceptance, so the guest's session sees an offer as a share id, a plan id and a date. `lib/calendar/plan-share-subjects.ts` resolves the title and the host Space's name through the service-role client for exactly the plan ids the guest's session returned as shares addressed to it, and nothing else; it is on the admin-client baseline with that reason. The alternative, a SECURITY DEFINER function, buys the same scoping at the cost of a migration and an apply for two words.
+4. **An accepted Plan is listed on the guest calendar and opens in the same drawer, read only.** `listPlansSharedWith` reads through the accepted share and nothing else. The drawer's `readOnly` mode shows the record with the fields disabled, names the host, offers Close alone, and makes none of the host's loads on the guest's session. Which doors a guest gets (comments, activity, tasks) is what children 2 to 4 of PROG-CAL7 decide; this child hands none across.
+
+**Rejected.** Keeping the direct `accepted` write with a picker in front of it (the guest still never asked). Widening `space_plans` RLS to a pending share (every column of the Plan for a Space that has not said yes). A definer function for the offer's subject (a migration to read a title). Opening a shared Plan in an editable drawer (every host action would then have to learn the guest side before any child of PROG-CAL7 says what a guest may do).
+
+**Consequences.** The four states are reachable and the unique index means what it says. The guest calendar gains a "Shared with you" strip with the two answers side by side; the host drawer says where each share stands. `check:admin-client` gains one importer with a stated reason. Children 2 to 6 of PROG-CAL7 can assume a co-host exists.
+
+**Rows.** `LIVE-541` closed. `LIVE-542` next.
+=======
 
 ## ADR-1533: A value with no zone and a path with symlinks both read as correct while being wrong (LIVE-516, LIVE-531, LIVE-532, owner ruling 2026-09-27)
 
