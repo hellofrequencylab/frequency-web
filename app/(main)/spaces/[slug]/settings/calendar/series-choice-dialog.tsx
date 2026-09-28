@@ -11,6 +11,7 @@ import {
   type SeriesDeleteChoice,
   type SeriesDeletePlan,
   type SeriesSaveChoice,
+  type SeriesSavePlan,
 } from '@/lib/calendar/series-choice'
 
 // THE QUESTION A REPEATING ENTRY IS OWED (LIVE-531). One row is the whole series, so a Delete on a
@@ -185,23 +186,27 @@ export function SeriesDeleteDialog({
 }
 
 /**
- * SAVING A REPEATING ENTRY. The warning half only (LIVE-531 scope): an edit applies to every date,
- * and the dialog says so before it lands. Editing ONE occurrence means splitting the series into
- * two rows, which is LIVE-532 and not half-built here, so the dialog names the gap and points at
- * the write that does exist.
+ * SAVING A REPEATING ENTRY. An edit applies to every date, and the dialog says so before it lands
+ * (LIVE-531). Since LIVE-534 it also offers the one-date write: "This date only" SPLITS the series
+ * through one database function (the master skips the day, a new one-off row carries the edit),
+ * so the words and the write agree. `plan.thisDate` absent (the drawer was not opened from one
+ * occurrence) drops that choice and keeps the other two.
  */
 export function SeriesSaveDialog({
   open,
   title,
+  plan,
   pending,
   onChoose,
 }: {
   open: boolean
   title: string
+  plan: SeriesSavePlan
   pending?: boolean
   onChoose: (choice: SeriesSaveChoice) => void
 }) {
   const keepRef = useSafeFocus(open)
+  const dateLabel = plan.thisDate ? shortDateLabel(plan.thisDate) : ''
   return (
     <Dialog
       open={open}
@@ -210,6 +215,16 @@ export function SeriesSaveDialog({
       className="max-w-md"
     >
       <Panel mark="save" titleId="series-save-title" heading={SERIES_SAVE_COPY.heading} lead={SERIES_SAVE_COPY.lead(title)}>
+        {plan.thisDate && (
+          <Choice
+            id="series-save-this"
+            label={`${SERIES_SAVE_COPY.thisDateLabel} (${dateLabel})`}
+            note={SERIES_SAVE_COPY.thisDateNote(dateLabel)}
+            variant="primary"
+            disabled={pending}
+            onPick={() => onChoose('thisDate')}
+          />
+        )}
         <Choice
           id="series-save-keep"
           label={SERIES_SAVE_COPY.keepLabel}
@@ -227,7 +242,6 @@ export function SeriesSaveDialog({
           disabled={pending}
           onPick={() => onChoose('series')}
         />
-        <p className="text-meta text-muted">{SERIES_SAVE_COPY.thisDateGap}</p>
       </Panel>
     </Dialog>
   )
