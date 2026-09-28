@@ -271,7 +271,7 @@ Baselines live in `test/e2e/__screenshots__/visual.spec.ts/` and are named
 Member-shell files are the `app-*` ones (`app-feed`, `app-room`, `app-settings`,
 `app-space-console`) and are captured only with `capture_shell` ticked.
 
-### What a full-page mobile baseline photographs (ADR-1543)
+### What a full-page mobile baseline photographs (ADR-1545)
 
 A full-page capture on a project with `hasTouch` (`mobile`, `narrow`) drops Chromium's
 touch emulation after its first shot and never gets it back, so `(pointer: coarse)` reads

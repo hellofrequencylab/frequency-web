@@ -12,7 +12,7 @@ export async function PracticeAdminStats() {
 
   return (
     // The five counts are database readings and curation moves them between any two captures:
-    // pr-compare on 2026-09-28 read a 14px band across this row's values (LIVE-492, ADR-1543).
+    // pr-compare on 2026-09-28 read a 14px band across this row's values (LIVE-492, ADR-1545).
     // One mask over the band rather than five over the digits, the operator-rail rule (LIVE-513):
     // a digit widening moves everything to its right inside the card, and the band's box is fixed.
     <div className="grid grid-cols-2 gap-3 @2xl:grid-cols-5" data-visual-mask="practice-stat-band">

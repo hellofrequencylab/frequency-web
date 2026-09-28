@@ -779,7 +779,7 @@ export const ADVISORY_OPERATOR_SURFACES: Readonly<Record<string, string>> = {
   '/admin/qr': 'LIVE-476',
   // /admin/content/practices STOOD HERE from 2026-09-24 to 2026-09-28 (LIVE-492) and votes
   // again. What put it here was read on the runner rather than guessed, and both halves are
-  // fixed at their cause (ADR-1543): the 4px mobile flip was the shutter dropping the touch
+  // fixed at their cause (ADR-1545): the 4px mobile flip was the shutter dropping the touch
   // emulation after its first shot, which `dropTouchBeforeFullPageCapture` now does before it;
   // the stable pixel diff was two live modules, the Needs-attention rows reordering and the
   // stat band's counts, each now one `data-visual-mask` box (VISUAL_MASK_SITES). The entry's

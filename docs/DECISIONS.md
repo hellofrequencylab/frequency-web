@@ -48611,9 +48611,9 @@ module load — so on CI only the source-shape case fails when the zone is unpin
 is green in UTC and red in Pacific trains everyone to ignore a red suite, which is the quiet cost that
 made both zone defects survive this long.
 
-## ADR-1543: A full-page capture drops the touch emulation after its first shot, so the suite drops it first, and a failed shutter names what moved (LIVE-492)
+## ADR-1545: A full-page capture drops the touch emulation after its first shot, so the suite drops it first, and a failed shutter names what moved (LIVE-492)
 
-**Status:** Accepted · 2026-09-28 · backlog `LIVE-492` · corroborated by `test/e2e/surfaces.ts` (`dropTouchBeforeFullPageCapture`, `boxSnapshot`, `diffBands`, `boxesInBands`), `test/e2e/visual.spec.ts` and `test/e2e/capture-diagnosis.test.ts` · numbered **1543** because 1535 to 1542 are taken on `main` or on open branches
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-492` · corroborated by `test/e2e/surfaces.ts` (`dropTouchBeforeFullPageCapture`, `boxSnapshot`, `diffBands`, `boxesInBands`), `test/e2e/visual.spec.ts` and `test/e2e/capture-diagnosis.test.ts` · numbered **1545** because 1535 to 1544 are taken on `main` or on open pull requests (1543 by #2946, opened first)
 
 **Context.** `/admin/content/practices` had been advisory since 2026-09-24 on two readings nobody could localise: a 4px height change between the first and second capture at 390 (7756 then 7752), and a stable pixel diff inside a stable frame at both widths (982/1008 px then, 5469 to 5714 px on 2026-09-28). The diff image sits on an artifact host the agents' egress denies, so it had never been read. The two-height message named the page's viewport-height boxes and told the reader to fix them; one pull request did (LIVE-493, a real defect) and the flip survived it. `/admin/qr` (LIVE-476) and `/admin/library` (LIVE-504) carried the same two shapes.
 
