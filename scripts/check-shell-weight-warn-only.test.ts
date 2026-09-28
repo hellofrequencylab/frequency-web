@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll } from 'vitest'
 import { spawnSync } from 'node:child_process'
-import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, rmSync, symlinkSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, realpathSync, rmSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -63,9 +63,16 @@ function emptyArtifactDir(): string {
  *  the default everywhere, so these cases cannot go quietly vacuous again.
  *
  *  `<tmp>/real/mutant.mjs`, with the repo's own `scripts/lib` linked beside it so the script's
- *  `./lib/invoked-directly.mjs` import resolves, and `<tmp>/link` linked at `<tmp>/real`. */
+ *  `./lib/invoked-directly.mjs` import resolves, and `<tmp>/link` linked at `<tmp>/real`.
+ *
+ *  ⚠️ `<tmp>` IS realpathSync'd, AND THE `real` HALF IS WHY. `mkdtemp` hands back a path under `/var`
+ *  on macOS, and `/var` is itself the symlink this whole file is about — so an unresolved root makes
+ *  `real` a symlinked path too, and the paired case that runs there to show the old guard CAN fail
+ *  gets the same silent exit 0 as the link case. That control then fails, and a control that cannot
+ *  fail is this file's own subject reappearing inside its proof (HYG-129). Resolving the root is what
+ *  makes `real` genuinely link-free and `link` differ from it by exactly one link. */
 function stage(src = SRC): { link: string; real: string } {
-  const tmp = mkdtempSync(join(tmpdir(), 'shell-weight-script-'))
+  const tmp = realpathSync(mkdtempSync(join(tmpdir(), 'shell-weight-script-')))
   temps.push(tmp)
   const real = join(tmp, 'real')
   mkdirSync(real, { recursive: true })
