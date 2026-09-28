@@ -11,12 +11,23 @@ import { StatCard } from '@/components/ui/stat-card'
 import { EventShareButton } from '@/components/events/event-share-button'
 import { AddToCalendar, buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { listGlanceStats, type ListIndexItem } from '@/lib/calendar/list-index'
+import { eventCoverFocusStyle } from '@/lib/events/cover-focus'
 import { itemSelectedClass, itemTitleClass } from '@/lib/calendar/registry'
 import { cn } from '@/lib/utils'
 
 // LIST VIEW (ADR-1464, ADR-1467). Condensed gathering index on the left. Right
-// interior is the event control console: header with stage pill, primary facts,
-// share links, and headline stats. Not the Studio editor.
+// interior is the event control console: the gathering's cover as a hero when it has one, header
+// with stage pill, primary facts, share links, and headline stats. Not the Studio editor.
+//
+// THE HERO (LIVE-496, ADR-1548). The owner asked for "a list on the left and card, with hero image and
+// all stats on the right". LIVE-490 made the two List views one; this pane drew stats and a link and
+// no image, though the item already carried `coverUrl`. The cover leads the card now, full-bleed
+// above the header, cropped the way every other cover surface crops it: `object-cover` with the
+// host's stored focal point through `eventCoverFocusStyle`, so the poster whose title sits at the
+// top is not sliced through the middle here either. A Pencil, or an event with no cover, gets no
+// band and no stand-in: the pane opens on the title, as it did, rather than on a generated poster
+// nobody chose (the browse card's date fallback is a discovery device; this is the operator's own
+// list, where an absent cover is information).
 //
 // How a stage looks comes from lib/calendar/registry.ts, never from here: the row's title class,
 // the selected row's fill, and the stage badge's tone are all the registry's. A cancelled row is
@@ -138,69 +149,82 @@ function CalendarListViewer({
       : null
 
   return (
-    <div data-calendar-list-viewer className="space-y-5 rounded-card border border-border bg-surface p-4 sm:p-5">
-      <header className="flex flex-row items-start justify-between gap-3">
-        <h3
-          id="calendar-list-viewer"
-          className={cn('min-w-0 text-page-title font-bold text-text', itemTitleClass(item.stage, item.isCancelled))}
-        >
-          {item.title}
-        </h3>
-        <StatusChip tone={item.stageTone}>{item.stageLabel}</StatusChip>
-      </header>
-
-      <div className="space-y-1.5">
-        <p className="text-body-sm text-muted">{item.whenLabel}</p>
-        {item.location && <p className="text-body-sm text-text">{item.location}</p>}
-        {item.description && <p className="text-body-sm text-text">{item.description}</p>}
-        {item.notes && (
-          <p className="text-body-sm text-muted">
-            <span className="font-semibold text-text">Team notes. </span>
-            {item.notes}
-          </p>
-        )}
-      </div>
-
-      {publicSlug && (
-        <section aria-labelledby="calendar-list-share" className="space-y-3">
-          <h4 id="calendar-list-share" className="text-body-sm font-bold text-text">
-            Share
-          </h4>
-          <p className="text-body-sm text-muted">Send the public page. Copy the link, scan the QR, or drop the date on a calendar.</p>
-          <div className="flex flex-wrap items-center gap-2">
-            <EventShareButton slug={publicSlug} title={item.title} sharerProfileId={null} />
-            {googleUrl && <AddToCalendar icsHref={`/events/${publicSlug}/event.ics`} googleUrl={googleUrl} />}
-          </div>
-        </section>
+    <div data-calendar-list-viewer className="overflow-hidden rounded-card border border-border bg-surface">
+      {item.coverUrl && (
+        // eslint-disable-next-line @next/next/no-img-element -- external public bucket URL, not a local asset (matches the grid popup)
+        <img
+          src={item.coverUrl}
+          alt=""
+          data-calendar-list-hero
+          className="h-40 w-full object-cover sm:h-52"
+          style={eventCoverFocusStyle(item.coverFocus)}
+          loading="lazy"
+        />
       )}
+      <div className="space-y-5 p-4 sm:p-5">
+        <header className="flex flex-row items-start justify-between gap-3">
+          <h3
+            id="calendar-list-viewer"
+            className={cn('min-w-0 text-page-title font-bold text-text', itemTitleClass(item.stage, item.isCancelled))}
+          >
+            {item.title}
+          </h3>
+          <StatusChip tone={item.stageTone}>{item.stageLabel}</StatusChip>
+        </header>
 
-      {glance.length > 0 && (
-        <section aria-labelledby="calendar-list-stats" className="space-y-3">
-          <h4 id="calendar-list-stats" className="text-body-sm font-bold text-text">
-            At a glance
-          </h4>
-          <div className="grid grid-cols-2 gap-1.5">
-            {glance.map((s) => (
-              <StatCard key={s.key} label={s.label} value={s.value} size="sm" bordered />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {(item.planId && onOpenPlan) || openHref ? (
-        <div className="flex flex-wrap gap-2">
-          {item.planId && onOpenPlan && (
-            <Button type="button" variant="primary" size="sm" onClick={() => onOpenPlan(item.planId!, item.entryId)}>
-              Open Plan
-            </Button>
-          )}
-          {openHref && (
-            <Button asChild variant={item.planId && onOpenPlan ? 'secondary' : 'primary'} size="sm">
-              <Link href={openHref}>Go to event</Link>
-            </Button>
+        <div className="space-y-1.5">
+          <p className="text-body-sm text-muted">{item.whenLabel}</p>
+          {item.location && <p className="text-body-sm text-text">{item.location}</p>}
+          {item.description && <p className="text-body-sm text-text">{item.description}</p>}
+          {item.notes && (
+            <p className="text-body-sm text-muted">
+              <span className="font-semibold text-text">Team notes. </span>
+              {item.notes}
+            </p>
           )}
         </div>
-      ) : null}
+
+        {publicSlug && (
+          <section aria-labelledby="calendar-list-share" className="space-y-3">
+            <h4 id="calendar-list-share" className="text-body-sm font-bold text-text">
+              Share
+            </h4>
+            <p className="text-body-sm text-muted">Send the public page. Copy the link, scan the QR, or drop the date on a calendar.</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <EventShareButton slug={publicSlug} title={item.title} sharerProfileId={null} />
+              {googleUrl && <AddToCalendar icsHref={`/events/${publicSlug}/event.ics`} googleUrl={googleUrl} />}
+            </div>
+          </section>
+        )}
+
+        {glance.length > 0 && (
+          <section aria-labelledby="calendar-list-stats" className="space-y-3">
+            <h4 id="calendar-list-stats" className="text-body-sm font-bold text-text">
+              At a glance
+            </h4>
+            <div className="grid grid-cols-2 gap-1.5">
+              {glance.map((s) => (
+                <StatCard key={s.key} label={s.label} value={s.value} size="sm" bordered />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {(item.planId && onOpenPlan) || openHref ? (
+          <div className="flex flex-wrap gap-2">
+            {item.planId && onOpenPlan && (
+              <Button type="button" variant="primary" size="sm" onClick={() => onOpenPlan(item.planId!, item.entryId)}>
+                Open Plan
+              </Button>
+            )}
+            {openHref && (
+              <Button asChild variant={item.planId && onOpenPlan ? 'secondary' : 'primary'} size="sm">
+                <Link href={openHref}>Go to event</Link>
+              </Button>
+            )}
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }
