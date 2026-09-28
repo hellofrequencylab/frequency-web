@@ -316,7 +316,7 @@ route tree by the copy cascade with the reserved site row `'*'` set from `/admin
 > `updated_at`). Note the `set_updated_at` trigger: the stamp itself moves `updated_at`.
 > `convert_signup_leads_for_me()` (migration `20270345003300`, authenticated only) is the second
 > conversion door, proved by the caller's confirmed `auth.users` address rather than by a claim
-> token; the auth callback calls it at every sign-in. Since `20270345008700` (ADR-1536, LIVE-450)
+> token; the auth callback calls it at every sign-in. Since `20270345008700` (ADR-1537, LIVE-450)
 > the call that stamps also spends the lead's `display_name` (else `first_name`) onto
 > `profiles.display_name`, but only while the profile is still the signup trigger's mint (the
 > `lib/onboarding/identity.ts` test, reconstructed in SQL); a chosen name or handle is never

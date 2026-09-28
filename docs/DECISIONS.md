@@ -48330,9 +48330,9 @@ The owner's directive of 2026-09-27 states it as product: the main community Cir
 
 **Rows.** `DEF-MOBILE`, `DEF-ETSY`, `PROG-GD6` unparked. `HYG-123` ruled. `HYG-126`, `HYG-127`, `HYG-128` filed. `PROG-A1`, `PROG-A3`, `PROG-A4` stay parked with the ruling appended. `LIVE-234`, `LIVE-455` untouched.
 
-## ADR-1536: The conversion door spends the lead's name onto a profile that is still the trigger's mint (LIVE-450)
+## ADR-1537: The conversion door spends the lead's name onto a profile that is still the trigger's mint (LIVE-450)
 
-**Status:** Accepted · 2026-09-28 · backlog `LIVE-450` · corroborated by `supabase/migrations/20270345008700_conversion_spends_the_lead_name.sql`, `supabase/tests/signup_lead_name_spend.test.sql` and the SQL-mirror pin in `lib/onboarding/identity.test.ts` · numbered **1536** because 1531 to 1535 are taken or reserved by other open sessions
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-450` · corroborated by `supabase/migrations/20270345008700_conversion_spends_the_lead_name.sql`, `supabase/tests/signup_lead_name_spend.test.sql` and the SQL-mirror pin in `lib/onboarding/identity.test.ts` · numbered **1537** because 1531 to 1535 are taken or reserved by other open sessions and #2937 took 1536 a minute before this PR opened
 
 **Context.** [ADR-1501](DECISIONS.md) measured that "progressive profiling spends the lead payload" was not true anywhere and filed LIVE-450 rather than folding it in. `convert_signup_leads_for_me()` (20270345003300) stamped `converted_at` and `converted_profile_id` on the lead held by the caller's confirmed address and stopped. Nothing read the lead's `display_name` or `first_name` back. So a guest who RSVP'd as "Sam Rivera", signed in, and was admitted appeared as `sam.rivera` with the handle `samrivera_<hex>` that `handle_new_auth_user` (20261013000000) mints, until the first-run checklist's identity step walked them to the profile editor. The name they had already typed was one join away, and the checklist's own mint detection (`identityIsChosen`, `lib/onboarding/identity.ts`) already knew how to tell a minted profile from a chosen one.
 
