@@ -1,0 +1,15 @@
+# A local merge driver for the two ledger docs that every parallel PR re-conflicts on.
+#
+# ⚠️ THIS HELPS LOCAL MERGES ONLY. GitHub's server-side merge does NOT run custom merge drivers,
+# and does not honour `merge=union` either, so a PR whose only conflict is one of these two paths
+# still shows CONFLICTING on github.com until someone merges main into the branch locally and
+# folds. This repo merges with `gh pr merge --auto --squash`, which is server-side. Do not read
+# this file as "conflicts are solved"; read it as "the local fix is one command".
+#
+# Set the driver up once per clone:
+#   git config merge.ledger.name "fold the ADR ledger and the backlog by key"
+#   git config merge.ledger.driver "node scripts/maintenance/fold-ledger-docs.mjs %O %A %B"
+#
+# Or just run `pnpm fold` after a conflicted `git merge origin/main`.
+docs/DECISIONS.md      merge=ledger
+docs/BUILD-BACKLOG.json merge=ledger
