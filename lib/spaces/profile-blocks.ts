@@ -59,6 +59,16 @@ export const PROFILE_BLOCKS: readonly ProfileBlockDef[] = [
   { id: 'circles', label: 'Circles', description: 'The community circles inside this space.', requiresFunction: null, types: ['*'], order: 70 },
   { id: 'team', label: 'Team', description: 'The people who run this space.', requiresFunction: 'members', types: ['*'], order: 80 },
   { id: 'reviews', label: 'Reviews', description: 'What members say.', requiresFunction: null, types: ['*'], order: 90 },
+  // FAQ (LIVE-525): the row this registry was missing while every OTHER registry already carried the block.
+  // `faq` has been in ProfileBlockId, in SPACE_PROFILE_BLOCKS (FaqBlock), in the unified entity catalog at
+  // order 100, in the offered palette (CORE_PROFILE_BLOCK_IDS), in MODULE_SECTION_ANCHORS (LIVE-517), and in
+  // block-data-sources (listFaqs over getSpaceFaqs) — but not HERE, the one list `defaultProfileLayout`
+  // filters and `cleanBlockIds` validates against. So a rendered FAQ section could never enter a fresh
+  // default, and the flat-list render dropped a saved `faq` id as unknown. Label + description mirror the
+  // entity catalog row so the offer and the render read the same. No function gate: FAQ has no SPACE_FUNCTION
+  // switch (block-data-sources gives it `functionKey: null`); the palette data-locks it until the Space has
+  // rows, which is what keeps it from being offered over nothing.
+  { id: 'faq', label: 'FAQ', description: 'Common questions, answered.', requiresFunction: null, types: ['*'], order: 100 },
   // 'updates' (order 110) was retired by OWNER RULING (LIVE-062 batch 6, 2026-08-20) with the
   // SpaceUpdates block; a saved layout naming it drops fail-safe in the merge (cleanBlockIds).
   { id: 'contact', label: 'Contact and hours', description: 'How and when to reach this space.', requiresFunction: null, types: ['*'], order: 120 },
