@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { spawnSync } from 'node:child_process'
-import { readFileSync, writeFileSync, mkdtempSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, symlinkSync, realpathSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 
 // WARN-ONLY MUST NEVER BE ABLE TO FAIL A PRODUCTION BUILD.
 //
@@ -37,11 +37,27 @@ function emptyArtifactDir(): string {
   return dir
 }
 
-function run(args: string[], cwd: string, src = SRC): { status: number; stdout: string } {
+/** Where the real `scripts/lib` lives, so a staged copy of the gate can resolve its own imports. */
+const SCRIPTS_LIB = resolve(import.meta.dirname, 'lib')
+
+/** Stage a copy of the gate in a fresh temp directory and return the path to run.
+ *
+ *  ⚠️ `lib` IS SYMLINKED IN, AND IT IS LOAD-BEARING. The gate imports `./lib/invoked-directly.mjs`
+ *  (HYG-124), so a bare copy of the source cannot resolve it and node exits 1 with
+ *  ERR_MODULE_NOT_FOUND before a line of the gate runs. That does not merely break the `--warn-only`
+ *  cases — it makes the paired "still exits 1 WITHOUT the flag" cases pass for the WRONG REASON, on a
+ *  module-resolution error rather than on the failure they claim to measure. Same vacuous proof this
+ *  file was rescued from, arriving from the other direction. */
+function stage(src: string): string {
   const dir = mkdtempSync(join(tmpdir(), 'shell-weight-script-'))
+  symlinkSync(SCRIPTS_LIB, join(dir, 'lib'), 'dir')
   const file = join(dir, 'mutant.mjs')
   writeFileSync(file, src)
-  const res = spawnSync(process.execPath, [file, ...args], { cwd, encoding: 'utf8' })
+  return file
+}
+
+function run(args: string[], cwd: string, src = SRC): { status: number; stdout: string } {
+  const res = spawnSync(process.execPath, [stage(src), ...args], { cwd, encoding: 'utf8' })
   return { status: res.status ?? -1, stdout: res.stdout ?? '' }
 }
 
@@ -74,6 +90,85 @@ describe('check:shell-weight warn-only cannot fail a build', () => {
 
   it('still exits non-zero on that same crash WITHOUT --warn-only', () => {
     expect(run([], emptyArtifactDir(), forceCrash(SRC)).status).not.toBe(0)
+  })
+
+  // ── 🔴 THE GATE MUST RUN WHEN IT IS REACHED THROUGH A SYMLINK (HYG-124) ────────────────────────
+  // EVERY case above is a MUTATION case: it stages the script somewhere else and runs it. That proves
+  // something only if the copy actually EXECUTES, and for a while it did not. The entry-point guard
+  // compared `path.resolve(process.argv[1])` against `fileURLToPath(import.meta.url)`, and the second
+  // is the path Node RESOLVED the module through — the realpath. On macOS `/var` is a symlink to
+  // `/private/var`, so every `mkdtemp` invocation compared two spellings of one file, `main()` did not
+  // run, and the script exited 0 printing NOTHING. Six cases in this file passed for that reason
+  // instead of their own, and they are the cases that make `--warn-only` safe in postbuild.
+  //
+  // ⚠️ IT WOULD NOT HAVE BEEN CAUGHT HERE ON CI. Linux `mkdtemp` hands back a real path, so the cases
+  // above were green on CI with the broken guard — the bug was invisible exactly where the deploy is
+  // built. This case makes the symlink EXPLICIT rather than relying on the macOS `/var` accident, so
+  // the guarantee is proven on the platform the deploy actually runs on too.
+  describe('reached through a symlink, it still runs', () => {
+    /** `<tmp>/real/gate.mjs`, invoked as `<tmp>/link/gate.mjs`, so argv[1] and the realpath differ by
+     *  one link on EVERY platform rather than only where /var happens to be a symlink.
+     *
+     *  ⚠️ THE ROOT IS REALPATH'D FIRST, and the control case below is why. On macOS `mkdtemp` returns
+     *  a path under `/var`, which is ITSELF a symlink to `/private/var` — so an unresolved `<tmp>` makes
+     *  `viaReal` a symlinked path too, the old guard goes silently green there as well, and the case
+     *  asserting "the condition CAN fail without a link" fails for a reason that has nothing to do
+     *  with what it measures. Resolving the root makes `viaReal` genuinely link-free and `viaLink`
+     *  differ from it by exactly the one link this describe block is about. */
+    function stageBehindSymlink(src = SRC): { viaLink: string; viaReal: string } {
+      const tmp = realpathSync(mkdtempSync(join(tmpdir(), 'shell-weight-link-')))
+      const real = join(tmp, 'real')
+      mkdirSync(real, { recursive: true })
+      symlinkSync(SCRIPTS_LIB, join(real, 'lib'), 'dir')
+      symlinkSync(real, join(tmp, 'link'), 'dir')
+      writeFileSync(join(real, 'gate.mjs'), src)
+      return { viaLink: join(tmp, 'link', 'gate.mjs'), viaReal: join(real, 'gate.mjs') }
+    }
+
+    /** Restore the exact pre-HYG-124 guard, so the paired case runs the OLD code on this harness. */
+    function oldGuard(src: string): string {
+      const out = src
+        .replace("import { invokedDirectly } from './lib/invoked-directly.mjs'", "import { fileURLToPath } from 'node:url'")
+        .replace(
+          'if (invokedDirectly(import.meta.url)) main()',
+          'if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main()',
+        )
+      // The mutation has to actually bite, or the paired case proves nothing.
+      if (out.includes('invokedDirectly')) throw new Error('oldGuard() did not replace the guard')
+      return out
+    }
+
+    const exec = (file: string, args: string[], cwd: string) => {
+      const res = spawnSync(process.execPath, [file, ...args], { cwd, encoding: 'utf8' })
+      return { status: res.status ?? -1, out: `${res.stdout ?? ''}${res.stderr ?? ''}` }
+    }
+
+    it('runs, and can still fail, when it is invoked through a symlinked path', () => {
+      const { viaLink } = stageBehindSymlink()
+      const blocking = exec(viaLink, [], emptyArtifactDir())
+      expect(blocking.out.trim(), 'the gate said nothing at all, so main() never ran').not.toBe('')
+      expect(blocking.status, 'the gate must still fail on an artifact with no manifests').toBe(1)
+
+      const warn = exec(viaLink, ['--warn-only'], emptyArtifactDir())
+      expect(warn.status, 'warn-only must never fail a build').toBe(0)
+      expect(warn.out).toContain('warn-only')
+    })
+
+    it('with the OLD guard restored, that same run goes SILENTLY GREEN', () => {
+      // The negative control, and the whole evidence for the row: same harness, same fixture, same
+      // failing condition, only the guard line differs. No output and exit 0 is what six cases in
+      // this file were getting, indistinguishable from a pass.
+      const { viaLink } = stageBehindSymlink(oldGuard(SRC))
+      const res = exec(viaLink, [], emptyArtifactDir())
+      expect(res.status, 'the old guard suddenly works through a symlink; re-derive the mechanism').toBe(0)
+      expect(res.out.trim()).toBe('')
+    })
+
+    it('and the OLD guard DOES fail with no symlink involved, so the condition can fail', () => {
+      // Otherwise the case above would pass merely because the fixture is not a failing one.
+      const { viaReal } = stageBehindSymlink(oldGuard(SRC))
+      expect(exec(viaReal, [], emptyArtifactDir()).status).toBe(1)
+    })
   })
 
   it('routes every failure through bail(), so no arm can exit directly', () => {

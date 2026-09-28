@@ -1,6 +1,15 @@
 import { describe, it, expect, afterAll } from 'vitest'
 import { execFileSync } from 'node:child_process'
-import { readFileSync, readdirSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import {
+  readFileSync,
+  readdirSync,
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { join, resolve, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
@@ -31,6 +40,15 @@ import { invokedDirectly } from './lib/invoked-directly.mjs'
 //
 // ⚠️ Linux `mkdtemp` returns a real path, so "run it out of a temp dir" reproduces nothing on CI —
 // that is a macOS accident (`/var` → `/private/var`). The link below is created explicitly.
+//
+// 🔴 AND EVERY STAGING ROOT IS realpathSync'd, WHICH IS THE SAME ACCIDENT BITING THE CONTROLS (HYG-124).
+// The three paired cases below assert that the old guard DOES fail when no symlink and no space is
+// involved — without them, the cases above would pass merely because the fixture is not a failing
+// one. On macOS `mkdtemp` hands back `/var/folders/…`, and `/var` IS a symlink, so "no symlink
+// involved" was never true here: the old guard went silently green in the control too, and all four
+// of those cases FAILED on every macOS machine while passing on CI. A negative control that cannot
+// fail is precisely the defect this whole file is about, so it had reappeared one level up, inside
+// the proof. Resolving the root makes the control genuinely link-free.
 // ─────────────────────────────────────────────────────────────────────────────────────────────────
 
 const ROOT = resolve(dirname(new URL(import.meta.url).pathname), '..')
@@ -52,17 +70,12 @@ const mjsFiles = (dir: string, prefix = ''): { path: string; src: string }[] =>
 
 const FILES = mjsFiles(SCRIPTS)
 
-/** The single script still allowed to compare by hand, and only in its ONE known spelling.
- *
- *  scripts/check-shell-weight.mjs is where this whole row was found, and its own fix (a local
- *  `invokedDirectly`) lands in the separate change that carries the HYG-125 backlog row. Editing it
- *  from here would collide with that tree line for line. The exception is therefore pinned to the
- *  exact pre-fix line: a THIRD spelling there fails this test, and once that change lands the file
- *  stops matching at all and this entry can be deleted. */
-const PINNED_EXCEPTION = {
-  path: 'check-shell-weight.mjs',
-  line: 'if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main()',
-}
+// ⚪ THERE IS NO LONGER AN EXCEPTION, and that is the point of HYG-124. scripts/check-shell-weight.mjs
+// is where this whole row was found, and it was pinned here as the one file still allowed to compare
+// by hand because its own fix was sitting on another branch. That branch was merged-and-closed under
+// the PR carrying the fix (#2908 / #2910), so the exception outlived the change it was waiting for.
+// The fix is ported now and the file calls invokedDirectly() like every other script, so the
+// exception is deleted along with the case that policed it. The scan below has no carve-outs.
 
 describe('scripts/: nobody hand-rolls the "was I invoked directly?" comparison', () => {
   it('reads a real corpus, so an empty scan cannot pass vacuously', () => {
@@ -77,7 +90,6 @@ describe('scripts/: nobody hand-rolls the "was I invoked directly?" comparison',
     for (const { path, src } of FILES) {
       for (const line of codeLines(src)) {
         if (!line.includes('process.argv[1]') || !line.includes('import.meta.url')) continue
-        if (path === PINNED_EXCEPTION.path && line.trim() === PINNED_EXCEPTION.line) continue
         offenders.push(`${path}: ${line.trim()}`)
       }
     }
@@ -92,24 +104,19 @@ describe('scripts/: nobody hand-rolls the "was I invoked directly?" comparison',
     ).toEqual([])
   })
 
-  it('the one pinned exception is still exactly the line it was pinned as', () => {
-    // If check-shell-weight.mjs has been fixed, it drops out of the scan and the exception is dead
-    // weight that should be deleted. If it has been changed to some OTHER hand-rolled spelling, the
-    // exception must not silently cover that.
-    const file = FILES.find((f) => f.path === PINNED_EXCEPTION.path)
-    expect(file, 'check-shell-weight.mjs is gone; delete PINNED_EXCEPTION with it').toBeDefined()
-    const hand = codeLines(file!.src).filter(
-      (l) => l.includes('process.argv[1]') && l.includes('import.meta.url'),
-    )
-    if (hand.length === 0) {
-      expect(
-        file!.src,
-        'check-shell-weight.mjs no longer compares by hand, so HYG-125 has landed there. Delete ' +
-          'PINNED_EXCEPTION and this case.',
-      ).toMatch(/invokedDirectly/)
-    } else {
-      expect(hand.map((l) => l.trim())).toEqual([PINNED_EXCEPTION.line])
-    }
+  it('check-shell-weight.mjs, the file this was found in, asks the helper like everything else', () => {
+    // Named rather than left to the sweep above, because this one file is the reason the row exists
+    // and it was carved out of that sweep for weeks (HYG-124). A regression here is the specific
+    // regression that disarmed six cases of its own mutation test, so it gets its own failure message.
+    const file = FILES.find((f) => f.path === 'check-shell-weight.mjs')
+    expect(file, 'check-shell-weight.mjs is gone; this case goes with it').toBeDefined()
+    expect(
+      codeLines(file!.src).join('\n'),
+      'check-shell-weight.mjs stopped calling invokedDirectly(). Its mutation test stages the script ' +
+        'in a temp directory and runs it, so a hand-rolled comparison makes every one of those cases ' +
+        'pass on a script that never executed — which is exactly how the proof that this deploy gate ' +
+        'CAN fail went dead, and that proof is the only thing making --warn-only safe in postbuild.',
+    ).toMatch(/invokedDirectly\(import\.meta\.url\)/)
   })
 
   it('the helper realpaths BOTH sides and decodes the URL rather than slicing it', () => {
@@ -161,7 +168,7 @@ afterAll(() => {
  *  gives argv[1] under `link/` and import.meta.url under `real/` — one symlink, both mechanisms of
  *  "the two spellings of one file" in play, and NOT dependent on any platform accident. */
 function stageBehindSymlink(script: string, mutate?: (src: string) => string): string {
-  const tmp = mkdtempSync(join(tmpdir(), 'invoked-directly-'))
+  const tmp = realpathSync(mkdtempSync(join(tmpdir(), 'invoked-directly-')))
   temps.push(tmp)
   const real = join(tmp, 'real')
   mkdirSync(real, { recursive: true })
@@ -179,7 +186,7 @@ function stageBehindSymlink(script: string, mutate?: (src: string) => string): s
  *  concatenated url carries a raw space while `import.meta.url` carries `%20`, and the two can never
  *  be equal. Same silent exit 0, from a checkout path rather than a link. */
 function stageUnderSpacePath(script: string, mutate?: (src: string) => string): string {
-  const tmp = mkdtempSync(join(tmpdir(), 'invoked-directly-'))
+  const tmp = realpathSync(mkdtempSync(join(tmpdir(), 'invoked-directly-')))
   temps.push(tmp)
   const dir = join(tmp, 'a dir with spaces')
   mkdirSync(join(dir, 'empty'), { recursive: true })
@@ -298,7 +305,7 @@ describe.each(DEPLOY_GATES)('AND WHEN ITS PATH HAS A SPACE IN IT: $script', ({ s
   })
 
   it('and that same spelling DOES fail from a path with no space, so the condition can fail', () => {
-    const tmp = mkdtempSync(join(tmpdir(), 'invoked-directly-plain-'))
+    const tmp = realpathSync(mkdtempSync(join(tmpdir(), 'invoked-directly-plain-')))
     temps.push(tmp)
     mkdirSync(join(tmp, 'empty'), { recursive: true })
     symlinkSync(join(SCRIPTS, 'lib'), join(tmp, 'lib'), 'dir')

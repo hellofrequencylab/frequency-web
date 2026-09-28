@@ -71,7 +71,7 @@
 import { readFileSync, existsSync, statSync, globSync } from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
-import { fileURLToPath } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 // ── WARN-ONLY: the stage between "never run on a real artifact" and "enforcing" ──────────────
 // This gate has ONE reading in its whole life, and that reading is unconfirmed in BOTH directions:
@@ -646,4 +646,19 @@ console.log(
 
 // Run the CLI only when invoked directly. The sibling test imports this module for its exported
 // constants and the pure `staticAdminImports` classifier, and must not trip the artifact arms.
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main()
+//
+// 🔴 ASK THE SHARED HELPER, DO NOT COMPARE BY HAND (HYG-124, the last instance of HYG-125). What
+// stood here was `path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)`, and those are
+// not the same KIND of path: `import.meta.url` is the path Node RESOLVED the module through, i.e.
+// the realpath, while `path.resolve(argv[1])` keeps every symlink in the invocation. On macOS `/var`
+// IS a symlink to `/private/var`, so a copy of this script run out of a `mkdtemp` directory compared
+// `/var/folders/…/mutant.mjs` against `/private/var/folders/…/mutant.mjs`, never matched, and
+// `main()` SILENTLY DID NOT RUN: no output, exit 0, a gate that reads as a pass.
+//
+// The deploy gate itself never stopped firing — nothing in Vercel's build path is a symlink. What
+// died was every MUTATION case in check-shell-weight-warn-only.test.ts, which copies this script to
+// a temp directory and runs it: six cases passed because nothing executed. Those cases are the only
+// proof that this gate CAN fail, and that proof is the entire reason `--warn-only` is safe to have
+// in `postbuild` (LIVE-035). A proof that cannot fail is the failure mode this file is organised
+// against, so it was disarmed in exactly the place it would be least visible.
+if (invokedDirectly(import.meta.url)) main()
