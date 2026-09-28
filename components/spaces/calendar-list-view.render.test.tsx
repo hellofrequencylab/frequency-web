@@ -104,6 +104,39 @@ describe('CalendarListView', () => {
     expect(el2.textContent).not.toContain('Going')
   })
 
+  // The owner's ask, 2026-09-23: "a list on the left and card, with hero image and all stats on the
+  // right". LIVE-490 made the index one list; the card still opened on the title with no image while
+  // the item already carried the cover. The cover leads the card now, cropped with the host's stored
+  // focal point the way every other cover surface crops it; a Pencil (no cover) opens on the title
+  // as before, with no generated stand-in (LIVE-496).
+  it('leads the viewer with the gathering\'s cover when it has one, and with the title when it has none (LIVE-496)', () => {
+    const withCover: ListIndexItem = { ...sit, coverUrl: 'https://cdn.example/covers/sit.jpg', coverFocus: '50% 20%' }
+    const el = mount(<CalendarListView items={[withCover]} selected={withCover} onSelect={() => {}} />)
+    const viewer = el.querySelector<HTMLElement>('[data-calendar-list-viewer]')!
+    const hero = viewer.querySelector<HTMLImageElement>('[data-calendar-list-hero]')
+    expect(hero).not.toBeNull()
+    expect(hero!.tagName).toBe('IMG')
+    expect(hero!.getAttribute('src')).toBe('https://cdn.example/covers/sit.jpg')
+    // Decorative: the title below names the gathering, so the image says nothing twice to a reader.
+    expect(hero!.getAttribute('alt')).toBe('')
+    // The host's focal point survives the crop here as it does on the card and the detail hero.
+    expect(hero!.style.objectPosition).toBe('50% 20%')
+    expect(hero!.className).toContain('object-cover')
+    // The hero is the first thing in the card, above the header; the stats are still on the card.
+    expect(viewer.firstElementChild).toBe(hero)
+    expect(viewer.querySelector('header')?.textContent).toContain('New moon sit')
+    expect(viewer.textContent).toContain('Going')
+    expect(viewer.textContent).toContain('Go to event')
+
+    act(() => root!.unmount())
+    root = null
+    const el2 = mount(<CalendarListView items={[sit]} selected={sit} onSelect={() => {}} />)
+    const viewer2 = el2.querySelector<HTMLElement>('[data-calendar-list-viewer]')!
+    expect(viewer2.querySelector('[data-calendar-list-hero]')).toBeNull()
+    expect(viewer2.querySelector('img')).toBeNull()
+    expect(viewer2.querySelector('header')?.textContent).toContain('New moon sit')
+  })
+
   it('uses the kit empty when there is nothing to run', () => {
     const el = mount(<CalendarListView items={[]} selected={null} onSelect={() => {}} />)
     expect(el.textContent).toContain('Nothing to run yet.')

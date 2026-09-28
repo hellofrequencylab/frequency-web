@@ -38,7 +38,10 @@ import { createPenciledPlanRows, getSpacePlan, listSpacePlans, transitionSpacePl
 import { planStageTransition } from '@/lib/calendar/workflow-board'
 import { monthGridWindow, safeMonth } from '@/lib/calendar/month-window'
 import { shortDateLabel } from '@/lib/calendar/short-date'
-import { dayInZone, resolveZone } from '@/lib/time/zone'
+import { dayInZone, HOME_TZ, resolveZone } from '@/lib/time/zone'
+import { attendanceHistory, MAX_HISTORY_EVENTS, type AttendanceHistory } from '@/lib/calendar/vera-attendance'
+import { listEventsForSpace } from '@/lib/events/store'
+import { loadEventAttendanceCounts } from '@/lib/events/event-stats'
 import { getVeraChangeRecord, listVeraChangeRecords, recordVeraChanges } from '@/lib/calendar/vera-log-store'
 import { recordPlanActivity } from '@/lib/calendar/plan-activity-store'
 import { saveCalendarEntry } from './entry-actions'
@@ -90,6 +93,16 @@ import { addPlanTodo, archiveSpacePlan, reanchorPlanTodos, transitionPlanStage }
 // and accepting it writes its own record pointing at the one it reversed. Nothing leaves the log,
 // and that is the database's rule rather than this file's: the table has no update or delete
 // policy, so an append is the only thing any caller here can do to it.
+//
+// DATES FROM WHAT HAPPENED (PROG-CAL11 slice 4, LIVE-539). Asked to pick a good day, Vera may call
+// an attendance_history tool, and what it answers is read HERE, not in the model loop:
+// `readAttendanceHistory` is handed to the loop as a reader keyed by the Space the editor resolved,
+// so lib/ai/vera-calendar.ts imports no store and no other Space's history can reach the prompt.
+// It is a reader rather than rows because the check-in ledger is read per event, and that cost
+// belongs to the one ask that calls the tool, not to every ask. Published past events only, the
+// newest MAX_HISTORY_EVENTS, each with the count the PROG-CAL6 recap path gives it, folded by
+// lib/calendar/vera-attendance.ts. The same two service-role reads plan-actions.ts already makes
+// for the drawer recap (listSpaceEventSpans, loadPlanAttendance), scoped the same way.
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const DAY_MS = 86_400_000
@@ -175,6 +188,7 @@ export async function veraCalendarCommand(slug: string, input: VeraCommandInput)
     plans: plans.map((p) => ({ id: p.id, title: p.title, stage: p.stage })),
     entries: rows.map((r) => ({ id: r.id, title: r.title, day: entryDaySpan(r).dayKey, stage: r.stage, planId: r.plan_id })),
     profileId: editor.profileId,
+    readAttendance: () => readAttendanceHistory(editor.spaceId),
   }
   const res = await proposeCalendarChanges({
     ask: typeof input.ask === 'string' ? input.ask : '',
@@ -192,6 +206,17 @@ export async function veraCalendarCommand(slug: string, input: VeraCommandInput)
   const entrySubjects: Record<string, VeraSubject> = {}
   for (const r of rows) entrySubjects[r.id] = { title: r.title, values: entryToInput(r) as unknown as Record<string, unknown> }
   return ok({ ...res, timeZone, context: buildVeraDescribeContext(res.changes, { plan: planSubjects, entry: entrySubjects }) })
+}
+
+/** What drew people to THIS Space, read on demand for the attendance_history tool (LIVE-539): its
+ *  own published past events, newest first and bounded, each with its attendance record. `toDay` is
+ *  the exclusive ceiling ADR-1536 gave the lister, at today in the house zone, the same floor
+ *  `upcomingOnly` reads from the other side; materialised series would otherwise fill the newest
+ *  fifty with the future. */
+async function readAttendanceHistory(spaceId: string): Promise<AttendanceHistory> {
+  const events = await listEventsForSpace(spaceId, { limit: MAX_HISTORY_EVENTS, toDay: dayInZone(new Date(), HOME_TZ), newestFirst: true })
+  const counts = await loadEventAttendanceCounts(events.map((e) => e.id))
+  return attendanceHistory(events.map((e) => ({ startsAt: e.starts_at, attendance: counts.get(e.id) ?? null })))
 }
 
 export interface VeraApplyResult {

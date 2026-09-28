@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Fold the two ledger docs that EVERY merge re-conflicts (HYG-032).
 //
-// WHY THIS EXISTS. Every open PR appends an ADR to the tail of docs/DECISIONS.md and adds rows to
+// WHY THIS EXISTS. Every open PR adds an ADR to docs/DECISIONS.md and rows to
 // docs/BUILD-BACKLOG.json. So every merge to main re-conflicts every other open branch on exactly
 // those two paths — and, measured across a whole queue with `git merge-tree --write-tree`, on
 // nothing else: zero code conflicts, those two files every time. Two sessions in a row have now
@@ -17,8 +17,10 @@
 // guessing, because guessing is how a status list starts lying.
 //
 // THE TWO RESOLUTIONS, which are always the same:
-//   DECISIONS.md      both sides append at the tail, so keep main's block first and the branch's
-//                     after (theirs-then-ours). `node scripts/check-adr.mjs` proves the result.
+//   DECISIONS.md      3-way merge BY ADR NUMBER, the same shape as the rows below: ours == base ->
+//                     take theirs; theirs == base -> take ours; both changed -> STOP. Main's order
+//                     first, this branch's new ADRs appended, preamble folded as its own unit.
+//                     `node scripts/check-adr.mjs` proves the result.
 //   BUILD-BACKLOG.json  3-way merge BY ROW ID: ours == base -> take theirs; theirs == base -> take
 //                     ours; both changed -> STOP. Emit in main's order, then append the ids only
 //                     this branch has, so the file stays reviewable as an append.
@@ -32,6 +34,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, writeFileSync } from 'node:fs'
 import { invokedDirectly } from '../lib/invoked-directly.mjs'
+import { HEADING } from '../check-adr.mjs'
 
 const BACKLOG = 'docs/BUILD-BACKLOG.json'
 const DECISIONS = 'docs/DECISIONS.md'
@@ -190,20 +193,113 @@ function foldSlate(ourSlate, theirSlate, mergedById) {
 
 // ── DECISIONS.md ──────────────────────────────────────────────────────────────────────────────
 //
-// Both sides append ADR entries at the tail. The fold is theirs-then-ours: main's block keeps its
-// position, this branch's block follows. The common prefix is whatever the two sides still share.
+// ⚠️ THIS USED TO ASSUME BOTH SIDES APPEND AT THE TAIL, AND THAT PREMISE IS FALSE.
+//
+// The old fold was `base + theirTail + ourTail`, guarded by `ours.startsWith(base) &&
+// theirs.startsWith(base)`. It is a correct fold for the shape it describes, and that shape stopped
+// being the shape of this file. Main does NOT only append: an ADR gets inserted next to its topical
+// neighbours, and the theme index near the top is edited in the same commit. Measured against the
+// seven PRs conflicting on this path on 2026-09-28, the startsWith guard refused 7 of 7 — so the
+// tool reported "needs a human" on every single case it exists to resolve, and two sessions went on
+// hand-resolving a 5.3 MB file believing no tool covered it.
+//
+// So the Markdown half now folds the way the JSON half always has: BY KEY, three ways, with main's
+// order as the spine. The key is the ADR number, taken from check-adr.mjs's own HEADING regex so
+// this tool and that gate can never disagree about what an ADR declaration is — the same reason
+// check-id-collisions.mjs imports it.
+//
+// The preamble (everything above the first ADR heading, which holds the theme index) is folded as
+// its own three-way unit. That is what makes an index edit on main compose with a new ADR on the
+// branch, instead of reading as "one side rewrote the body".
+//
+// 🔴 IT STILL MUST NOT SILENTLY PICK A WINNER. Both sides editing the SAME ADR is a real
+// disagreement, and it refuses and names the number, exactly as the row merge does.
+
+/** Split an ADR ledger into its preamble and its blocks, keyed by ADR number. A block runs from its
+ *  heading line to the line before the next heading, so concatenating preamble + every block in
+ *  order reproduces the input byte for byte. */
+export function splitAdrs(text) {
+  const lines = text.split('\n')
+  const starts = []
+  for (let i = 0; i < lines.length; i++) {
+    const m = HEADING.exec(lines[i])
+    if (m) starts.push({ i, id: m[1] })
+  }
+  if (!starts.length) return { preamble: text, blocks: [] }
+  const preamble = lines.slice(0, starts[0].i).join('\n')
+  const blocks = starts.map((s, n) => {
+    const end = n + 1 < starts.length ? starts[n + 1].i : lines.length
+    return { id: s.id, text: lines.slice(s.i, end).join('\n') }
+  })
+  return { preamble, blocks }
+}
+
+/** Reassemble what splitAdrs took apart. Inverse of splitAdrs by construction. */
+function joinAdrs(preamble, blocks) {
+  return blocks.length ? [preamble, ...blocks.map((b) => b.text)].join('\n') : preamble
+}
+
 export function mergeDecisions(base, ours, theirs) {
   if (!ours || !theirs || !base) return { skipped: 'not a 3-way conflict' }
 
-  // Each side = base + its own appended tail. Verify that shape before trusting the fold: if a side
-  // EDITED the shared body rather than appending, this is not an append-conflict and wants a human.
-  if (!ours.startsWith(base) || !theirs.startsWith(base)) {
-    return { needsHuman: 'one side edited the existing body rather than appending at the tail' }
+  const B = splitAdrs(base)
+  const O = splitAdrs(ours)
+  const T = splitAdrs(theirs)
+
+  // Duplicates on the way IN, for the same reason the row merge checks: a Map keyed by id keeps the
+  // last block silently, and losing an ADR is worse than the conflict being resolved.
+  const index = (side, which) => {
+    const seen = new Set()
+    const dupes = new Set()
+    for (const b of side.blocks) (seen.has(b.id) ? dupes : seen).add(b.id)
+    if (dupes.size) {
+      throw new Error(`${DECISIONS} (${which}) already declares ADR-${[...dupes].join(', ADR-')} more than once`)
+    }
+    return new Map(side.blocks.map((b) => [b.id, b]))
   }
-  const ourTail = ours.slice(base.length)
-  const theirTail = theirs.slice(base.length)
-  const text = base + theirTail + ourTail
-  return { text, ourTailBytes: ourTail.length, theirTailBytes: theirTail.length }
+  const [bi, oi, ti] = [index(B, 'base'), index(O, 'ours'), index(T, 'theirs')]
+
+  const bothChanged = []
+  const merged = []
+  const emitted = new Set()
+
+  // Main's order first, so the result reads the way reviewers already know the file.
+  for (const [id, theirBlock] of ti) {
+    const ourBlock = oi.get(id)
+    const baseBlock = bi.get(id)
+    if (!ourBlock) merged.push(theirBlock)
+    else if (ourBlock.text === theirBlock.text) merged.push(theirBlock)
+    else if (baseBlock && ourBlock.text === baseBlock.text) merged.push(theirBlock)
+    else if (baseBlock && theirBlock.text === baseBlock.text) merged.push(ourBlock)
+    else {
+      bothChanged.push(id)
+      merged.push(theirBlock)
+    }
+    emitted.add(id)
+  }
+  // Then the ADRs only this branch has, in its own order.
+  for (const [id, ourBlock] of oi) if (!emitted.has(id)) merged.push(ourBlock)
+
+  const ids = merged.map((b) => b.id)
+  const dupes = ids.filter((id, i) => ids.indexOf(id) !== i)
+  if (dupes.length) throw new Error(`duplicate ADR number(s) after fold: ${[...new Set(dupes)].join(', ')}`)
+
+  // The preamble, three ways, on the same rule as a block.
+  let preamble
+  if (O.preamble === T.preamble) preamble = T.preamble
+  else if (O.preamble === B.preamble) preamble = T.preamble
+  else if (T.preamble === B.preamble) preamble = O.preamble
+  else {
+    bothChanged.push('preamble')
+    preamble = T.preamble
+  }
+
+  return {
+    text: joinAdrs(preamble, merged),
+    bothChanged,
+    count: merged.length,
+    added: merged.length - ti.size,
+  }
 }
 
 // ── main ──────────────────────────────────────────────────────────────────────────────────────
@@ -254,12 +350,14 @@ function main() {
     const r = foldDecisions()
     if (r.skipped) {
       console.log(`fold-ledger-docs: ${DECISIONS} ${r.skipped}`)
-    } else if (r.needsHuman) {
-      console.error(`🔴 ${DECISIONS}: ${r.needsHuman}. Resolve by hand.`)
+    } else if (r.bothChanged.length) {
+      console.error(`🔴 ${DECISIONS}: both sides edited the same ADR — a human decides, not this tool:`)
+      for (const id of r.bothChanged) console.error(`     ${id === 'preamble' ? 'the preamble / theme index' : `ADR-${id}`}`)
+      console.error('   Resolve those by hand, then re-run.')
       failed = true
     } else {
       if (!checkOnly) writeFileSync(DECISIONS, r.text)
-      console.log(`✓ ${DECISIONS}: main's ${r.theirTailBytes}B tail kept first, this branch's ${r.ourTailBytes}B after${checkOnly ? ' [check only]' : ''}`)
+      console.log(`✓ ${DECISIONS}: ${r.count} ADRs (${r.added >= 0 ? '+' : ''}${r.added} vs main)${checkOnly ? ' [check only]' : ''}`)
     }
   }
 
