@@ -9,7 +9,7 @@
 -- Runs via `supabase test db` (see supabase/tests/README.md), NOT under vitest.
 
 begin;
-select plan(13);
+select plan(14);
 
 -- ── Fixture (seeded as postgres, which RLS does not bind) ───────────────────────────────────────
 insert into auth.users (id, email) values
@@ -98,7 +98,7 @@ select throws_ok($$
   select public.split_calendar_series(
     '00000000-0000-4000-c534-000000000001', '00000000-0000-4000-d534-000000000001', '2026-10-19',
     '{"title": ""}'::jsonb)
-$$, '23514', 'an override the table refuses raises');
+$$, '23514', NULL, 'an override the table refuses raises');
 
 select results_eq(
   $$ select exception_dates::text[] from space_calendar_entries where id = '00000000-0000-4000-d534-000000000001' $$,
@@ -117,13 +117,13 @@ select throws_ok($$
   select public.split_calendar_series(
     '00000000-0000-4000-c534-000000000001', '00000000-0000-4000-d534-000000000001', '2026-10-26',
     '{"title": "Twice"}'::jsonb)
-$$, 'P0001', 'a day the series already skips cannot be split again');
+$$, 'P0001', NULL, 'a day the series already skips cannot be split again');
 
 select throws_ok($$
   select public.split_calendar_series(
     '00000000-0000-4000-c534-000000000001', '00000000-0000-4000-d534-000000000002', '2026-11-01',
     '{"title": "Not a series"}'::jsonb)
-$$, 'P0001', 'a one-off entry has no series to split');
+$$, 'P0001', NULL, 'a one-off entry has no series to split');
 
 -- ── Seat 2: a signed-in stranger. RLS hides the row, so there is nothing to split. ─────────────
 select set_config('request.jwt.claims',
@@ -133,7 +133,7 @@ select throws_ok($$
   select public.split_calendar_series(
     '00000000-0000-4000-c534-000000000001', '00000000-0000-4000-d534-000000000001', '2026-11-02',
     '{"title": "Hijack"}'::jsonb)
-$$, 'P0001', 'a stranger cannot split a series they cannot see');
+$$, 'P0001', NULL, 'a stranger cannot split a series they cannot see');
 
 reset role;
 select results_eq(
