@@ -48734,3 +48734,17 @@ The row was explicit about the trap, and it is the LIVE-533 shape: a "This date 
 
 **Consequences.** `LIVE-545` closes on its probe. The email copy sits in `buildPlanShareEmail` beside the other category emails; the push copy in `lib/calendar/plan-notify-core.ts`, pure and tested, in the house voice. `PROG-CAL7` has one arm left, the private feed (LIVE-546).
 
+## ADR-1557: A co-host's private feed carries shared Plans only, with the host's name in front, and PROG-CAL7 closes on its six children (LIVE-546)
+
+**Status:** Accepted · 2026-09-28 · `LIVE-546` (child 6 of 6 of `PROG-CAL7`) and the program's close · builds on [ADR-1386](DECISIONS.md) (Pencil, Plan, Production; owner ruling 4), [ADR-1552](DECISIONS.md) to [ADR-1556](DECISIONS.md) (the five children before it) and the PROG-CAL13 feed shape · numbered 1557 because 1545 to 1551 are claimed by pull requests opened before this lane's and 1552 to 1556 by #2964, #2968, #2970, #2971 and #2972, the children this one stands on (ADR-1509)
+
+**Context.** The token feed served the feed Space's own entries and to-dos and read `space_plan_shares` nowhere, so a Plan shared with a Space put nothing on the guest team's phones. PROG-CAL7 left the question open: can a co-host see the host's whole private layer in the feed, or only items of shared Plans? Its own default said shared Plans only.
+
+**Decision.**
+
+1. **Shared Plans only, accepted only.** The route resolves the accepted shares whose guest is the feed Space and reads the host rows keyed by those plan ids and nothing wider: the same columns, `removed_at is null`, not cancelled, and the to-dos of those Plans. A pending offer the guest has not answered adds nothing, a declined or revoked share adds nothing, and the host's other dates are never read. A calendar app caches what it is handed, so the read is as narrow as the share.
+2. **The host's name in front.** Every shared summary reads `Host: title`, so a subscriber can tell whose date it is on a phone that shows one line. `withSharedPlanRows` (pure, tested) folds shared rows after the Space's own, never doubles, and drops a row whose host it cannot name rather than serve a date nobody can place.
+3. **Nothing else moves.** The VEVENT shape is the one PROG-CAL13 fixed (`entryFeedFields` is unchanged), the feed stays token-keyed and revocable, and the host's feed is untouched.
+
+**Consequences.** `LIVE-546` closes on its probe, and with it `PROG-CAL7` closes on all seven arms of its own: the handshake (ADR-1552), the thread (ADR-1553), the record (ADR-1554), shared to-dos (ADR-1555), the three notifications (ADR-1556) and this feed. The program's second open question, what revoking a collaboration does to tasks assigned across the two Spaces, was answered in ADR-1555 with the safer default: the share, not the collaboration, gates what a guest reads. Migrations 20270345009400 and 20270345009410 are applied after their pull requests merge, at their own versions.
+
