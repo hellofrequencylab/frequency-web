@@ -183,12 +183,24 @@ export async function archiveSpacePlanRows(
     .eq('space_id', spaceId)
     .eq('plan_id', planId)
     .is('published_event_id', null)
+    // 🔴 STILL A HARD DELETE, ON PURPOSE, AND ONLY OF LIVE DATES (LIVE-536). The Delete button on a
+    // date is now a tombstone; THIS path is not, because its own confirmation says in as many words
+    // that the dates are deleted and not hidden and that there is no restore control
+    // (lib/calendar/vera-command.ts, components/spaces/vera-calendar-box.tsx, both pinned by tests).
+    // Softening it silently would make that gate's words false, which is a separate change with its
+    // own copy. What the filter DOES fix is the hole the tombstone opened: a date the operator had
+    // already deleted is a recoverable row, and archiving its Plan must not be what finally destroys
+    // it. Removed dates are left exactly as they were removed.
+    .is('removed_at', null)
   if (dropped.error) return planIoFailed('archive_entries', 'The Plan could not be archived.', dropped.error)
   const unlinked = await client
     .from('space_calendar_entries')
     .update({ plan_id: null })
     .eq('space_id', spaceId)
     .eq('plan_id', planId)
+    // A tombstone is not edited by an archive: restoring a removed date must give back the row that
+    // was removed, Plan link included (LIVE-536).
+    .is('removed_at', null)
   if (unlinked.error) return planIoFailed('archive_unlink', 'The Plan could not be archived.', unlinked.error)
   const res = await updateSpacePlan(spaceId, planId, { archived_at: new Date().toISOString() })
   if ('error' in res) return res
@@ -250,6 +262,8 @@ export async function attachEntryToPlan(
     .update({ plan_id: planId })
     .eq('space_id', spaceId)
     .eq('id', entryId)
+    // A removed date cannot join a Plan: it is not on the calendar (LIVE-536).
+    .is('removed_at', null)
     .select('id')
   if (error || !data?.length) {
     return planIoFailed('attach_entry', 'That date could not join the Plan.', error)
@@ -273,6 +287,8 @@ export async function getPlanAnchorDayKey(spaceId: string, planId: string): Prom
       .select('starts_at, status, stage')
       .eq('space_id', spaceId)
       .eq('plan_id', planId)
+      // A deleted date is not a date to count down to (LIVE-536).
+      .is('removed_at', null)
       .limit(50) as unknown as PromiseLike<{
       data: AnchorCandidate[] | null
       error: { message: string } | null
@@ -303,6 +319,7 @@ export async function listPlanPencilEntryIds(spaceId: string): Promise<Record<st
       .select('id, plan_id, starts_at')
       .eq('space_id', spaceId)
       .eq('kind', 'pencil')
+      .is('removed_at', null)
       .is('published_event_id', null)
       .order('starts_at', { ascending: true })
       .limit(500)
@@ -335,6 +352,7 @@ export async function planHasPublishedEntry(spaceId: string, planId: string): Pr
       .select('id')
       .eq('space_id', spaceId)
       .eq('plan_id', planId)
+      .is('removed_at', null)
       .not('published_event_id', 'is', null)
       .limit(1)
     // A read failure here must not read as "no published event": that is the exact shape of the
@@ -362,6 +380,7 @@ export async function listPlanPublishedEventIds(spaceId: string, planId: string)
       .select('published_event_id')
       .eq('space_id', spaceId)
       .eq('plan_id', planId)
+      .is('removed_at', null)
       .not('published_event_id', 'is', null)
       .limit(50)
     if (error || !data) {

@@ -827,6 +827,7 @@ const BLOCK_COLS = 'id, starts_at, ends_at, time_zone, blocks_time, status, recu
 type BlockQuery = {
   select: (c: string) => BlockQuery
   eq: (c: string, v: unknown) => BlockQuery
+  is: (c: string, v: null) => BlockQuery
   gt: (c: string, v: string) => BlockQuery
   lt: (c: string, v: string) => BlockQuery
   not: (c: string, op: string, v: unknown) => BlockQuery
@@ -862,8 +863,18 @@ async function readCalendarBlocks(spaceId: string, fromISO: string): Promise<Arr
       toDay: new Date(fromMs + (BLOCK_HORIZON_DAYS + 1) * 86400000).toISOString().slice(0, 10),
     }
     const db = createAdminClient() as unknown as { from: (t: string) => BlockQuery }
+    // 🔴 `removed_at is null` IS NOT OPTIONAL HERE (LIVE-536). This read runs on the SERVICE ROLE, so
+    // no policy filters it: a deleted entry is a row this client can still see. Deleting an entry is
+    // now a tombstone rather than a `.delete()`, and without this filter a date the operator removed
+    // would go on taking slots off every booking page for ever — a Space silently unbookable on time
+    // it no longer holds.
     const blocking = () =>
-      db.from('space_calendar_entries').select(BLOCK_COLS).eq('space_id', spaceId).eq('blocks_time', true)
+      db
+        .from('space_calendar_entries')
+        .select(BLOCK_COLS)
+        .eq('space_id', spaceId)
+        .eq('blocks_time', true)
+        .is('removed_at', null)
     const [overlap, repeating] = await Promise.all([
       blocking().gt('ends_at', slack).limit(500),
       blocking().not('recurrence_rule', 'is', null).lt('starts_at', `${window.toDay}T00:00:00Z`).limit(500),
