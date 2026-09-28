@@ -218,7 +218,6 @@
             "PROG-GD6",
             "LIVE-263",
             "LIVE-456",
-            "PROG-R10",
             "LIVE-484",
             "LIVE-455"
           ]
@@ -270,7 +269,6 @@
             "PROG-DAWN3",
             "LIVE-447",
             "PROG-PRAC4",
-            "DEF-DOMAIN",
             "DEF-CODE",
             "DEF-RESON"
           ]
@@ -283,16 +281,12 @@
           ]
         },
         {
-          "name": "W11 · SECOND TO LAST — the Etsy-grade store (owner ruling, restated 2026-09-28).",
-          "ids": [
-            "DEF-ETSY"
-          ]
+          "name": "W11 · SECOND TO LAST — the Etsy-grade store (owner ruling, restated 2026-09-28). DEF-ETSY is PARKED rather than listed here, so nothing picks it up early; this wave is kept empty to keep the position on the record.",
+          "ids": []
         },
         {
-          "name": "WM · LAST — the mobile app build (owner ruling, restated 2026-09-28). Expo/RN on the shared contract, so the contract it rides on is settled by everything above.",
-          "ids": [
-            "DEF-MOBILE"
-          ]
+          "name": "WM · LAST — the mobile app build (owner ruling, restated 2026-09-28). DEF-MOBILE is PARKED rather than listed here, for the same reason as W11.",
+          "ids": []
         },
         {
           "name": "owner-timed · NOT IN THE BUILD ORDER — these need the owner, not an agent, and are listed so they are visible rather than sequenced.",
@@ -1992,7 +1986,7 @@
     {
       "id": "DEF-ETSY",
       "title": "Marketplace Etsy-Grade P3-P7",
-      "status": "open",
+      "status": "parked",
       "priority": "P2",
       "lane": "program",
       "size": "XL",
@@ -2000,7 +1994,7 @@
         "file": "docs/ETSY-GRADE-PLAN.md",
         "ref": "P3-P7 (HYG-104 absorb; was MASTER-TODO Marketplace future phases)"
       },
-      "detail": "Shipping and delivery; faceted discovery and ranking; cart + multi-seller checkout (one intent, N destination charges, each take rate preserved); orders, fulfillment and order-scoped messaging; promotions, payout reporting and tax posture. Deferred by owner 2026-07-11.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong. ── ⚠️ RE-STATUSED 2026-08-25 BY OWNER RULING: the only parked items are the mobile app (DEF-MOBILE), the full Etsy-grade marketplace build (DEF-ETSY) and white-labeled sites (PROG-W6). Everything else belongs on the active production list. Parked by owner ruling 2026-08-25: the full Etsy-grade marketplace build is deliberately out of the production runway.\n\n── OWNER RULING 2026-09-28 (ADR-1535). \"Make a list of everything else, organize them into phases.\" UNPARKED and SEQUENCED, not moved: W11 stays second to last, immediately before the App Platform, which is the position the 2026-08-24 ruling set for it. It is open so it is on the list and probed; it is late so nobody picks it before W4.",
+      "detail": "Shipping and delivery; faceted discovery and ranking; cart + multi-seller checkout (one intent, N destination charges, each take rate preserved); orders, fulfillment and order-scoped messaging; promotions, payout reporting and tax posture. Deferred by owner 2026-07-11.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong. ── ⚠️ RE-STATUSED 2026-08-25 BY OWNER RULING: the only parked items are the mobile app (DEF-MOBILE), the full Etsy-grade marketplace build (DEF-ETSY) and white-labeled sites (PROG-W6). Everything else belongs on the active production list. Parked by owner ruling 2026-08-25: the full Etsy-grade marketplace build is deliberately out of the production runway.\n\n── OWNER RULING 2026-09-28 (ADR-1535). \"Make a list of everything else, organize them into phases.\" UNPARKED and SEQUENCED, not moved: W11 stays second to last, immediately before the App Platform, which is the position the 2026-08-24 ruling set for it. It is open so it is on the list and probed; it is late so nobody picks it before W4.\n\n── PARKED 2026-09-28. SECOND TO LAST by owner ruling 2026-09-28, immediately before the mobile build. Parked for the same reason and on the same terms as DEF-MOBILE.",
       "verify": {
         "kind": "manual",
         "evidence": "Unparked 2026-09-28 by owner ruling (ADR-1535). Not started: no shipping/delivery model, no faceted discovery, no multi-seller cart. P3-P7 as scoped in docs/ETSY-GRADE-PLAN.md.",
@@ -2103,7 +2097,7 @@
     {
       "id": "DEF-MOBILE",
       "title": "Mobile: Expo/RN on the shared contract",
-      "status": "open",
+      "status": "parked",
       "priority": "P2",
       "lane": "program",
       "size": "XL",
@@ -2111,7 +2105,7 @@
         "file": "docs/BUILD-PHASES.md",
         "ref": "Mobile"
       },
-      "detail": "An Expo/RN app on the shared RPC contract and capability model, native camera/QR + NFC + geofencing + push, a Postgres sync-engine pilot on one surface, and a decision on the stack and contract transport.\n\n── PARKED 2026-08-20 (owner ruling): mobile application is deferred by name.\n\n── OWNER RULING 2026-09-28 (ADR-1535). \"App till last. Mobile build gets done alongside the site.\" UNPARKED into its own wave WM, placed after W2 foundation so it can run as its own lane beside the site work rather than after it. The stack decision (Expo/RN, contract transport) is the first packet of this row, not a precondition for opening it.",
+      "detail": "An Expo/RN app on the shared RPC contract and capability model, native camera/QR + NFC + geofencing + push, a Postgres sync-engine pilot on one surface, and a decision on the stack and contract transport.\n\n── PARKED 2026-08-20 (owner ruling): mobile application is deferred by name.\n\n── OWNER RULING 2026-09-28 (ADR-1535). \"App till last. Mobile build gets done alongside the site.\" UNPARKED into its own wave WM, placed after W2 foundation so it can run as its own lane beside the site work rather than after it. The stack decision (Expo/RN, contract transport) is the first packet of this row, not a precondition for opening it.\n\n── PARKED 2026-09-28. LAST by owner ruling 2026-09-28. Parked rather than open so it stops printing in the working queue and no packet picks it up: the ordering is the ruling, and a row nobody should start does not need to be probed every run. Unpark it when it is next.",
       "verify": {
         "kind": "manual",
         "evidence": "Unparked 2026-09-28 by owner ruling (ADR-1535). Not started: no Expo project in the tree, no shared-contract transport decision recorded. Closes when the stack decision is an ADR and one surface ships on the sync-engine pilot.",
@@ -2139,7 +2133,7 @@
     {
       "id": "DEF-DOMAIN",
       "title": "The domain feature backlog (~120 items across 15 areas)",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "program",
       "size": "XL",
@@ -2147,11 +2141,10 @@
         "file": "docs/BACKLOG.md",
         "ref": "§A-§V"
       },
-      "detail": "Items no current plan absorbed, kept as a body rather than 120 rows because none is individually scheduled: CRM follow-ups, the Network rework, circles/discovery, two-way inbox and @mentions, Quest/gamification depth, operator Growth Studio, Vera/AI (including the governance kernel and Proactive Vera), signup-lead recovery, the 12-item theme system, roles/personas long tails, IA, moderation and trust, and the 11 owner UI calls from the 2026-06-05 screenshot review. Promote an item to its own row when it is scheduled — that is the intended flow, not a workaround.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.\n\n── ITEMS ADDED 2026-09-06 (backlog audit), each verified present in its doc or comment: CRM doors 2-5 surfaces (\"engine hooks, surfaces TODO\", CRM-MASTER-BUILD-PLAN §doors, ADR-612); the marketing/transactional sending-subdomain split (GE6-5) and GE3-5 referral position / GE3-6 cohort gating (GROWTH-OS-BUILD-PLAN); real pagination on /network and /circles, which render a capped slice with a \"showing first N\" notice (BUILD-LIST P-SCALE); ADMIN-RAIL §6.4 — generalise the one-bundle rail provider to circle/event/hub/nexus/practice and give dispatches an adminScopeFor scope (re-test the rail-speed premise first; LIVE-181 is adjacent); the thumb-friendly Space console pass MOBILE-NAV-PLAN says is \"tracked separately\" and was not; the /drafts rail badge counting unfinished wizard drafts as well as proposals (HANDOFF-2026-08-12); the space-copilot deferred list — an eval harness, MCP/tool grounding over the Space's live content, RAG over its posts and offerings (lib/ai/space-copilot.ts:18-21); the six EVENTS-SERIES polish tags (SERIES-PD/RANK/PIN/MAIN/PICKER/EMBED; the two with a consequence are LIVE-198); the .text-text/10 watermark numerals in the dark skins, the contrast residue's second half (UX-MATURITY-PLAN §contrast); the Crew gamification week-over-week delta the Notion page defers to \"Phase 4\" for want of historical Zap snapshots; and the shared (team) contact visibility NETWORK-CRM says is \"modelled, not yet surfaced\". Promote one when it is scheduled.",
+      "detail": "Items no current plan absorbed, kept as a body rather than 120 rows because none is individually scheduled: CRM follow-ups, the Network rework, circles/discovery, two-way inbox and @mentions, Quest/gamification depth, operator Growth Studio, Vera/AI (including the governance kernel and Proactive Vera), signup-lead recovery, the 12-item theme system, roles/personas long tails, IA, moderation and trust, and the 11 owner UI calls from the 2026-06-05 screenshot review. Promote an item to its own row when it is scheduled — that is the intended flow, not a workaround.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.\n\n── ITEMS ADDED 2026-09-06 (backlog audit), each verified present in its doc or comment: CRM doors 2-5 surfaces (\"engine hooks, surfaces TODO\", CRM-MASTER-BUILD-PLAN §doors, ADR-612); the marketing/transactional sending-subdomain split (GE6-5) and GE3-5 referral position / GE3-6 cohort gating (GROWTH-OS-BUILD-PLAN); real pagination on /network and /circles, which render a capped slice with a \"showing first N\" notice (BUILD-LIST P-SCALE); ADMIN-RAIL §6.4 — generalise the one-bundle rail provider to circle/event/hub/nexus/practice and give dispatches an adminScopeFor scope (re-test the rail-speed premise first; LIVE-181 is adjacent); the thumb-friendly Space console pass MOBILE-NAV-PLAN says is \"tracked separately\" and was not; the /drafts rail badge counting unfinished wizard drafts as well as proposals (HANDOFF-2026-08-12); the space-copilot deferred list — an eval harness, MCP/tool grounding over the Space's live content, RAG over its posts and offerings (lib/ai/space-copilot.ts:18-21); the six EVENTS-SERIES polish tags (SERIES-PD/RANK/PIN/MAIN/PICKER/EMBED; the two with a consequence are LIVE-198); the .text-text/10 watermark numerals in the dark skins, the contrast residue's second half (UX-MATURITY-PLAN §contrast); the Crew gamification week-over-week delta the Notion page defers to \"Phase 4\" for want of historical Zap snapshots; and the shared (team) contact visibility NETWORK-CRM says is \"modelled, not yet surfaced\". Promote one when it is scheduled.\n\n── CLOSED 2026-09-28 by owner ruling: \"if there are things on there that are irrelevant or we don't need to build or are just simply old ideas, let's go ahead and clean those out. I want to keep this focused.\"\n\nThis row is the one on the board that could never go green. It is ~120 items across 15 areas, sourced from docs/BACKLOG.md, which itself carries a \"Stale, superseded (2026-06-15)\" banner. Its stated flow is \"promote an item to its own row when it is scheduled\" and its exit condition is \"worked down to their probes\" -- which its own manual probe cannot measure. A P2 XL that cannot be finished is not scope, it is a reminder wearing a row.\n\nNOTHING IS LOST. The full text lives in docs/TASK-INVENTORY-2026-08-17.md section 8, and the new probe fails if that file disappears or is gutted. Promote an item from the shelf to its own row when it is actually scheduled, which is what this row said it wanted all along.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Full text preserved in docs/TASK-INVENTORY-2026-08-17.md §8 and the source docs. 2026-09-06: eleven items folded in from the docs sweep.",
-        "checked": "2026-09-06"
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const f=(m)=>{console.error(m);process.exit(1)};const p=\"docs/TASK-INVENTORY-2026-08-17.md\";if(!fs.existsSync(p))f(\"DEF-DOMAIN was closed on the promise that its ~120 items survive in \"+p+\", and that file is gone, so the shelf it pointed at no longer exists\");const t=fs.readFileSync(p,\"utf8\");if(t.length<40000)f(\"the domain shelf at \"+p+\" has shrunk to \"+t.length+\" bytes, so the content DEF-DOMAIN was closed in favour of is being lost\");process.exit(0)'"
       }
     },
     {
@@ -10584,7 +10577,7 @@
     {
       "id": "PROG-R10",
       "title": "Rework phase 10: placement is earned",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "program",
       "size": "L",
@@ -10592,11 +10585,10 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "The most valuable exposure surface a business has - the Space directory - is sorted ALPHABETICALLY (lib/spaces/discovery.ts:135, applied :378-380). Meanwhile nothing on the platform can be bought into rank anywhere: no plan, tier, entitlement or Stripe field appears in any ORDER BY, score or inclusion filter. That is a real asset and it must stay true: earned exposure means EARNED, never sold.\n\n── SURVEY 2026-09-19. Do not re-file \"directory is A–Z\". LIVE-262 shipped DEFAULT_SPACE_SORT standing with name as tie-break. Remaining in this phase is the nightly rollup (LIVE-263) and keeping commercial tokens out of the score.\n\n── PREMISE RE-TESTED 2026-09-28 (ADR-1082, wave WR, lane rework): NO CODE CHILD LEFT FOR THIS LANE, and the row stays open on two rows that are not this lane's. Walked docs/CORE-MODEL.md section 5 phase 10 item by item against the tree. 8.1 the directory defaults to the earned standing score with name as the tie-break (LIVE-262, lib/spaces/discovery.ts, DEFAULT_SPACE_SORT). 8.2 the rollup is written and wired: lib/spaces/standing-rollup.ts scores the population into space_standing (migration 20270345002900, on the ledger per the 2026-09-28 zero-drift sweep in #2931) and app/api/cron/refresh-traits/route.ts calls it nightly and logs cron.refresh_space_standing; what remains on LIVE-263 is the owner's production read that the run reports a non-zero count, which this lane cannot take from the repo. 8.3 all four featured_at columns reach a default sort (LIVE-264). 8.4 the operator receipt exists at settings/reach (LIVE-265). The invariant holds: lib/spaces/standing.ts imports nothing and standing.test.ts fails on any commercial token. Also open in this phase: LIVE-456 (attendance as the seventh signal, P3, lane identity, timed to the field test). So there is nothing to decompose and nothing to close: the program is proven by LIVE-262, 264 and 265 and waits on LIVE-263 (owner config) and LIVE-456 (another lane). Re-filing any of the four items would mint rows that pass by existing.",
+      "detail": "The most valuable exposure surface a business has - the Space directory - is sorted ALPHABETICALLY (lib/spaces/discovery.ts:135, applied :378-380). Meanwhile nothing on the platform can be bought into rank anywhere: no plan, tier, entitlement or Stripe field appears in any ORDER BY, score or inclusion filter. That is a real asset and it must stay true: earned exposure means EARNED, never sold.\n\n── SURVEY 2026-09-19. Do not re-file \"directory is A–Z\". LIVE-262 shipped DEFAULT_SPACE_SORT standing with name as tie-break. Remaining in this phase is the nightly rollup (LIVE-263) and keeping commercial tokens out of the score.\n\n── PREMISE RE-TESTED 2026-09-28 (ADR-1082, wave WR, lane rework): NO CODE CHILD LEFT FOR THIS LANE, and the row stays open on two rows that are not this lane's. Walked docs/CORE-MODEL.md section 5 phase 10 item by item against the tree. 8.1 the directory defaults to the earned standing score with name as the tie-break (LIVE-262, lib/spaces/discovery.ts, DEFAULT_SPACE_SORT). 8.2 the rollup is written and wired: lib/spaces/standing-rollup.ts scores the population into space_standing (migration 20270345002900, on the ledger per the 2026-09-28 zero-drift sweep in #2931) and app/api/cron/refresh-traits/route.ts calls it nightly and logs cron.refresh_space_standing; what remains on LIVE-263 is the owner's production read that the run reports a non-zero count, which this lane cannot take from the repo. 8.3 all four featured_at columns reach a default sort (LIVE-264). 8.4 the operator receipt exists at settings/reach (LIVE-265). The invariant holds: lib/spaces/standing.ts imports nothing and standing.test.ts fails on any commercial token. Also open in this phase: LIVE-456 (attendance as the seventh signal, P3, lane identity, timed to the field test). So there is nothing to decompose and nothing to close: the program is proven by LIVE-262, 264 and 265 and waits on LIVE-263 (owner config) and LIVE-456 (another lane). Re-filing any of the four items would mint rows that pass by existing.\n\n── CLOSED 2026-09-28 by owner ruling, against its own evidence. This row's own note already read \"NO CODE CHILD LEFT FOR THIS LANE ... there is nothing to decompose and nothing to close\": its three deliverables LIVE-262, LIVE-264 and LIVE-265 are all done, and what it was still waiting on belongs to other lanes (LIVE-263, owner config; LIVE-456, P3). A tracking shell with nothing in it is not work, it is a row that makes the list look longer than the job is.\n\nThe probe is NOT deleted, it is repointed at the consequence that now matters: if any of the three children ever stops being done, this closure was wrong and the row goes red. LIVE-263 and LIVE-456 stand on their own and are unaffected.\n\n⚠️ The probe deliberately asserts ONE thing: that LIVE-262, LIVE-264 and LIVE-265 are all still done. A second assertion, that this row still records WHY it closed, was written and then REMOVED, because mutation-testing it showed it was circular: the closure note above quotes the phrase the probe searched for, so the probe was satisfied by its own text and stayed green when the original evidence was deleted. A probe that measures its own spelling is the vacuous pass this repo keeps re-learning; one assertion that measures a consequence is worth more than two where one cannot fail.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Program phase; proven by its child rows. 2026-09-28 re-test: LIVE-262 (8.1), LIVE-264 (8.3) and LIVE-265 (8.4) done; 8.2 code wired (standing-rollup.ts on the refresh-traits cron) with LIVE-263 open as the owner's production read; LIVE-456 (seventh signal) open in lane identity at P3. Closes when LIVE-263 and LIVE-456 close. No agent-workable child in this lane. Sequence in docs/CORE-MODEL.md section 5 phase 10.",
-        "checked": "2026-09-28"
+        "kind": "cmd",
+        "cmd": "node -e 'const d=require(\"./docs/BUILD-BACKLOG.json\");const f=(m)=>{console.error(m);process.exit(1)};const g=(i)=>(d.entries.find(e=>e.id===i)||{}).status;for(const i of [\"LIVE-262\",\"LIVE-264\",\"LIVE-265\"])if(g(i)!==\"done\")f(\"PROG-R10 was closed as a finished lane over its three shipped children, but \"+i+\" reads \"+g(i)+\" rather than done, so the lane is not finished and the closure was wrong\");process.exit(0)'"
       }
     },
     {
