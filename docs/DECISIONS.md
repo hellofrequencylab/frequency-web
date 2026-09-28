@@ -48330,6 +48330,27 @@ The owner's directive of 2026-09-27 states it as product: the main community Cir
 
 **Rows.** `DEF-MOBILE`, `DEF-ETSY`, `PROG-GD6` unparked. `HYG-123` ruled. `HYG-126`, `HYG-127`, `HYG-128` filed. `PROG-A1`, `PROG-A3`, `PROG-A4` stay parked with the ruling appended. `LIVE-234`, `LIVE-455` untouched.
 
+
+## ADR-1536: The team calendar's events window has two ends, and it is filled from today outward (LIVE-480)
+
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-480` · extends [ADR-1385](DECISIONS.md) and the LIVE-467 floor · numbered **1536** because 1535 is the 2026-09-28 owner ruling and 1531-1533 are owed a port (`HYG-126`)
+
+**Context.** `listEventsForSpace` caps at 200 rows and is the one read behind every team surface of a Space calendar: the Admin grid, the List, Workflow, the console's count and the Plan drawer's "Link an event" picker. LIVE-467 found the cap taking the OLDEST 200 events a Space ever ran and closed it with a floor thirteen months back and a newest-first read inside the floor. That fixed the direction and left the shape: a window open at the top, read from the top down, keeps the 200 FURTHEST-FUTURE rows. A Space that has scheduled past the cap therefore lost the dates it runs next month while dates two years out stayed on. No Space has crossed it yet; a daily class crosses it in seven months.
+
+Re-testing the row's premise before building (ADR-1082) found its proposed fix necessary and not sufficient. A ceiling alone, with the newest-first read kept, still cuts next month for any Space with more than 200 dates between today and the ceiling. Flipping the sort back to ascending re-opens LIVE-467 for any Space with more than 200 dates in the past year. Whichever single direction the read runs, the near end of the window is the end it cuts first.
+
+**Decision.**
+
+1. **Both ends are stated together.** `ADMIN_EVENT_CEILING_MONTHS` (15) sits beside `ADMIN_EVENT_FLOOR_MONTHS` (13) in `lib/calendar/month-window.ts`, with `adminEventCeilingDay` and `adminEventWindow` so a reader who sees one end sees the other. The ceiling is the operator entry horizon (`OPERATOR_HORIZON_FORWARD_MONTHS`), so the entries the List and Workflow load and the events the same surfaces draw agree on the far edge; a test pins that it never falls short of it. The ceiling is exclusive: the first instant of the ceiling month is out.
+2. **`listEventsForSpace` takes a `toDay`.** Same shape as `fromDay`, written the way the column stores wall clock, ignored when malformed. Nothing else about the read changes; the publication gate and its single opt-out (`space-events-gate.test.ts`) are untouched.
+3. **The window is filled from today outward, in two bounded reads.** `listOwnedEventRows` reads the upcoming half `[today, ceiling)` soonest first with the full cap, then the past half `[floor, today)` most recent first with whatever room is left, and skips the second read when there is none. The cap can only ever cut the far end of the season or the oldest context. The split is the community wall-clock today, the floor every "upcoming" read already uses (`lib/events/upcoming-floor.ts`), so tonight's date is upcoming until midnight.
+
+**Rejected.** A ceiling with the read left newest-first (still cuts next month once the future half alone exceeds the cap). Ascending inside the window (LIVE-467 again). Raising `OWNED_EVENT_LIMIT` (moves the day the cap is met; changes nothing about which end it cuts). An RPC that orders by distance from today (a migration for what two bounded reads do without one).
+
+**Consequences.** Two reads per team calendar load where there was one; the second is skipped for any Space whose next fifteen months fill the cap. LIVE-530's continuous scroll bounds its automatic extension against the same two constants and can now name both edges. The row's probe has three arms (`toDay` in the store, `toDay` in the loader, the ceiling constant) and each was mutation-tested alone at close.
+
+**Rows.** LIVE-480 (closed here). LIVE-467 unchanged.
+
 ## ADR-1537: The conversion door spends the lead's name onto a profile that is still the trigger's mint (LIVE-450)
 
 **Status:** Accepted · 2026-09-28 · backlog `LIVE-450` · corroborated by `supabase/migrations/20270345008700_conversion_spends_the_lead_name.sql`, `supabase/tests/signup_lead_name_spend.test.sql` and the SQL-mirror pin in `lib/onboarding/identity.test.ts` · numbered **1537** because 1531 to 1535 are taken or reserved by other open sessions and #2937 took 1536 a minute before this PR opened
