@@ -48687,9 +48687,9 @@ The row was explicit about the trap, and it is the LIVE-533 shape: a "This date 
 
 **Consequences.** `LIVE-542` closes on its probe (the migration set creates and gates the table with no update policy, a session-only store exists, the drawer renders the thread). The generated types gained the table and the function by hand in the generated shape. The migration is applied after merge with `execute_sql` and a ledger insert at its own version. Child 5 (LIVE-545) sends the notification a comment deserves; child 3 (LIVE-543) records who did what to the Plan itself, which is not a comment and does not live here.
 
-## ADR-1554: A Plan keeps its own record of who did what, written by the door that did it, readable by both sides and rewritten by nobody (LIVE-543)
+## ADR-1555: A Plan keeps its own record of who did what, written by the door that did it, readable by both sides and rewritten by nobody (LIVE-543)
 
-**Status:** Accepted · 2026-09-28 · `LIVE-543` (child 3 of 6 of `PROG-CAL7`) · builds on [ADR-1552](DECISIONS.md) (the handshake) and [ADR-1553](DECISIONS.md) (the thread) · numbered 1554 because 1545 to 1551 are claimed by pull requests opened before this lane's, 1552 by #2964 and 1553 by #2968, the two children this one stands on (ADR-1509)
+**Status:** Accepted · 2026-09-28 · `LIVE-543` (child 3 of 6 of `PROG-CAL7`) · builds on [ADR-1552](DECISIONS.md) (the handshake) and [ADR-1553](DECISIONS.md) (the thread) · numbered 1555 because 1545 to 1551 are claimed by pull requests opened before this lane's, 1552 by #2964 and 1553 by #2968, the two children this one stands on (ADR-1509)
 
 **Context.** Two Spaces working one Plan had no way to learn what the other did to it: who moved a date, who finished a to-do, who changed the stage. The Vera change log records what Vera applied, keyed by batch, and nothing a person did by hand. PROG-CAL7 names "an activity log (who moved a date, who finished a task)" and its notifications fan out from that log, so the record has to exist before child 5 can send anything.
 
@@ -48703,9 +48703,9 @@ The row was explicit about the trap, and it is the LIVE-533 shape: a "This date 
 
 **Consequences.** `LIVE-543` closes on its probe (the migration set creates the table with no update or delete policy, all four door files call the writer, the drawer reads it). `todo_assigned` waits for LIVE-544's assign door; LIVE-545 fans notifications out from these rows. The migration is applied after merge with `execute_sql` and a ledger insert at its own version.
 
-## ADR-1555: A to-do crosses the share by Plan id, and is handed to a person from the two teams' list, never from the browser (LIVE-544)
+## ADR-1556: A to-do crosses the share by Plan id, and is handed to a person from the two teams' list, never from the browser (LIVE-544)
 
-**Status:** Accepted · 2026-09-28 · `LIVE-544` (child 4 of 6 of `PROG-CAL7`) · builds on [ADR-1552](DECISIONS.md) (the handshake) and [ADR-1554](DECISIONS.md) (the record) · numbered 1555 because 1545 to 1551 are claimed by pull requests opened before this lane's and 1552 to 1554 by #2964, #2968 and #2970, the children this one stands on (ADR-1509)
+**Status:** Accepted · 2026-09-28 · `LIVE-544` (child 4 of 6 of `PROG-CAL7`) · builds on [ADR-1552](DECISIONS.md) (the handshake) and [ADR-1555](DECISIONS.md) (the record) · numbered 1556 because 1545 to 1551 are claimed by pull requests opened before this lane's and 1552 to 1554 by #2964, #2968 and #2970, the children this one stands on (ADR-1509)
 
 **Context.** `crm_tasks` is a Space-scoped, service-role table: `listTasks` keys on `space_id`, `updateTaskStatusInScope` binds its write to the Space the action proved, and nothing in the calendar set `assignee_profile_id`. So a to-do on a Plan shared with a guest Space was invisible to the guest after the handshake, could not be ticked by them, and could be handed to nobody on either side. PROG-CAL7 promises "tasks assignable to members of either Space".
 
@@ -48718,9 +48718,9 @@ The row was explicit about the trap, and it is the LIVE-533 shape: a "This date 
 
 **Consequences.** `LIVE-544` closes on its probe. `todo_assigned` rows now exist for LIVE-545 to notify from. Revoking a collaboration does not touch assignments (PROG-CAL7's open question): the share, not the collaboration, gates what the guest reads, and a revoked share leaves the assignee stamped and the row invisible to them, which is the safer default until the owner rules otherwise.
 
-## ADR-1556: The three moments on a shared Plan ride the categories the preference grid already wires, one send each, never to the person who acted (LIVE-545)
+## ADR-1557: The three moments on a shared Plan ride the categories the preference grid already wires, one send each, never to the person who acted (LIVE-545)
 
-**Status:** Accepted · 2026-09-28 · `LIVE-545` (child 5 of 6 of `PROG-CAL7`) · builds on [ADR-627](DECISIONS.md) (the registry), [ADR-1552](DECISIONS.md) (the handshake), [ADR-1553](DECISIONS.md) (the thread) and [ADR-1555](DECISIONS.md) (shared to-dos) · numbered 1556 because 1545 to 1551 are claimed by pull requests opened before this lane's and 1552 to 1555 by #2964, #2968, #2970 and #2971, the children this one stands on (ADR-1509)
+**Status:** Accepted · 2026-09-28 · `LIVE-545` (child 5 of 6 of `PROG-CAL7`) · builds on [ADR-627](DECISIONS.md) (the registry), [ADR-1552](DECISIONS.md) (the handshake), [ADR-1553](DECISIONS.md) (the thread) and [ADR-1556](DECISIONS.md) (shared to-dos) · numbered 1557 because 1545 to 1551 are claimed by pull requests opened before this lane's and 1552 to 1555 by #2964, #2968, #2970 and #2971, the children this one stands on (ADR-1509)
 
 **Context.** After four children a share could be offered and answered, a Plan commented on, and a to-do handed across, and the other team found out about each by looking. The registry routed four events and none was a Plan. PROG-CAL7 asks for "notifications through the existing notification preferences".
 
@@ -48734,9 +48734,9 @@ The row was explicit about the trap, and it is the LIVE-533 shape: a "This date 
 
 **Consequences.** `LIVE-545` closes on its probe. The email copy sits in `buildPlanShareEmail` beside the other category emails; the push copy in `lib/calendar/plan-notify-core.ts`, pure and tested, in the house voice. `PROG-CAL7` has one arm left, the private feed (LIVE-546).
 
-## ADR-1557: A co-host's private feed carries shared Plans only, with the host's name in front, and PROG-CAL7 closes on its six children (LIVE-546)
+## ADR-1558: A co-host's private feed carries shared Plans only, with the host's name in front, and PROG-CAL7 closes on its six children (LIVE-546)
 
-**Status:** Accepted · 2026-09-28 · `LIVE-546` (child 6 of 6 of `PROG-CAL7`) and the program's close · builds on [ADR-1386](DECISIONS.md) (Pencil, Plan, Production; owner ruling 4), [ADR-1552](DECISIONS.md) to [ADR-1556](DECISIONS.md) (the five children before it) and the PROG-CAL13 feed shape · numbered 1557 because 1545 to 1551 are claimed by pull requests opened before this lane's and 1552 to 1556 by #2964, #2968, #2970, #2971 and #2972, the children this one stands on (ADR-1509)
+**Status:** Accepted · 2026-09-28 · `LIVE-546` (child 6 of 6 of `PROG-CAL7`) and the program's close · builds on [ADR-1386](DECISIONS.md) (Pencil, Plan, Production; owner ruling 4), [ADR-1552](DECISIONS.md) to [ADR-1557](DECISIONS.md) (the five children before it) and the PROG-CAL13 feed shape · numbered 1558 because 1545 to 1551 are claimed by pull requests opened before this lane's and 1552 to 1556 by #2964, #2968, #2970, #2971 and #2972, the children this one stands on (ADR-1509)
 
 **Context.** The token feed served the feed Space's own entries and to-dos and read `space_plan_shares` nowhere, so a Plan shared with a Space put nothing on the guest team's phones. PROG-CAL7 left the question open: can a co-host see the host's whole private layer in the feed, or only items of shared Plans? Its own default said shared Plans only.
 
@@ -48746,5 +48746,5 @@ The row was explicit about the trap, and it is the LIVE-533 shape: a "This date 
 2. **The host's name in front.** Every shared summary reads `Host: title`, so a subscriber can tell whose date it is on a phone that shows one line. `withSharedPlanRows` (pure, tested) folds shared rows after the Space's own, never doubles, and drops a row whose host it cannot name rather than serve a date nobody can place.
 3. **Nothing else moves.** The VEVENT shape is the one PROG-CAL13 fixed (`entryFeedFields` is unchanged), the feed stays token-keyed and revocable, and the host's feed is untouched.
 
-**Consequences.** `LIVE-546` closes on its probe, and with it `PROG-CAL7` closes on all seven arms of its own: the handshake (ADR-1552), the thread (ADR-1553), the record (ADR-1554), shared to-dos (ADR-1555), the three notifications (ADR-1556) and this feed. The program's second open question, what revoking a collaboration does to tasks assigned across the two Spaces, was answered in ADR-1555 with the safer default: the share, not the collaboration, gates what a guest reads. Migrations 20270345009400 and 20270345009410 are applied after their pull requests merge, at their own versions.
+**Consequences.** `LIVE-546` closes on its probe, and with it `PROG-CAL7` closes on all seven arms of its own: the handshake (ADR-1552), the thread (ADR-1553), the record (ADR-1555), shared to-dos (ADR-1556), the three notifications (ADR-1557) and this feed. The program's second open question, what revoking a collaboration does to tasks assigned across the two Spaces, was answered in ADR-1556 with the safer default: the share, not the collaboration, gates what a guest reads. Migrations 20270345009400 and 20270345009410 are applied after their pull requests merge, at their own versions.
 
