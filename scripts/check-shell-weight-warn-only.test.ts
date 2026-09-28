@@ -69,7 +69,7 @@ function emptyArtifactDir(): string {
  *  on macOS, and `/var` is itself the symlink this whole file is about — so an unresolved root makes
  *  `real` a symlinked path too, and the paired case that runs there to show the old guard CAN fail
  *  gets the same silent exit 0 as the link case. That control then fails, and a control that cannot
- *  fail is this file's own subject reappearing inside its proof (HYG-129). Resolving the root is what
+ *  fail is this file's own subject reappearing inside its proof (HYG-130). Resolving the root is what
  *  makes `real` genuinely link-free and `link` differ from it by exactly one link. */
 function stage(src = SRC): { link: string; real: string } {
   const tmp = realpathSync(mkdtempSync(join(tmpdir(), 'shell-weight-script-')))

@@ -46,7 +46,7 @@ import { invokedDirectly } from './lib/invoked-directly.mjs'
 // that is a macOS accident (`/var` → `/private/var`). The link below is created explicitly.
 //
 // 🔴 AND EVERY STAGING ROOT IS realpathSync'd, WHICH IS THAT SAME ACCIDENT BITING THE CONTROLS
-// (HYG-129). Each hostile case here is paired with one that runs the OLD guard on a PLAIN path to
+// (HYG-130). Each hostile case here is paired with one that runs the OLD guard on a PLAIN path to
 // show the fixture is a failing one — without it, the hostile case would pass merely because nothing
 // could ever fail there. But the plain path was built by a bare `mkdtemp`, which on macOS is under
 // `/var`, which IS a symlink: the control was never plain, the old guard went silently green in it
