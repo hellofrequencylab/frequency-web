@@ -48611,9 +48611,9 @@ module load — so on CI only the source-shape case fails when the zone is unpin
 is green in UTC and red in Pacific trains everyone to ignore a red suite, which is the quiet cost that
 made both zone defects survive this long.
 
-## ADR-1546: The ADR-1316 snapshot table is dropped on the owner's ruling, guarded so a fresh database can replay it (HYG-123)
+## ADR-1547: The ADR-1316 snapshot table is dropped on the owner's ruling, guarded so a fresh database can replay it (HYG-123)
 
-**Status:** Accepted · 2026-09-28 · backlog `HYG-123` · owner ruling 2026-09-28 (ADR-1535 §6: "drop it") · closes the date [ADR-1316](DECISIONS.md)'s cleanup left open · numbered **1546** because 1543 to 1545 are held by pull requests open when this was written
+**Status:** Accepted · 2026-09-28 · backlog `HYG-123` · owner ruling 2026-09-28 (ADR-1535 §6: "drop it") · closes the date [ADR-1316](DECISIONS.md)'s cleanup left open · numbered **1547** because 1543 to 1546 are held by pull requests open when this was written
 
 **Context.** `public.page_settings_events_backup_20260910` held the 21 per-page /events layout rows the ADR-1316 cleanup retired on 2026-09-10: the only way back. 20270345003500 (HYG-086) put RLS on it with no policy and dated the drop for on or after 2026-10-10. Four rows then handed that date to one another and all four closed, so nothing open carried the day it came due; the advisor kept reporting `no_primary_key` on it, a signal operators had been told to expect. HYG-123 filed the gap as a decision for the owner, who ruled. Re-tested on production before writing: the table exists with 21 rows, RLS on, zero policies, zero constraints, zero dependent views, and still carries all seven default `anon` privileges, the single exception to 20270218000000's close of default grants on internal tables.
 
