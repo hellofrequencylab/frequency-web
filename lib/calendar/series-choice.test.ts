@@ -77,15 +77,28 @@ describe('resolveSeriesDeleteChoice: "this date only" can only ever be the skip'
   })
 })
 
-describe('planEntrySave: an edit of a repeating entry is an edit of every date', () => {
+describe('planEntrySave: an edit of a repeating entry is an edit of every date, unless it is split (LIVE-534)', () => {
   it('asks for a series and never for a one-off', () => {
-    expect(planEntrySave(repeating).ask).toBe(true)
-    expect(planEntrySave({ kind: 'pencil', repeat: '' }).ask).toBe(false)
+    expect(planEntrySave(repeating)).toEqual({ ask: true, thisDate: '2026-10-14' })
+    expect(planEntrySave({ kind: 'pencil', repeat: '' })).toEqual({ ask: false, thisDate: null })
   })
 
-  it('offers the whole series or the way out, and nothing else', () => {
-    expect(resolveSeriesSaveChoice('series')).toBe('saveSeries')
-    expect(resolveSeriesSaveChoice('keep')).toBe('nothing')
+  it('names the occurrence day only when the drawer stands on one, and refuses a day key that is not one', () => {
+    expect(planEntrySave({ ...repeating, occurrenceDate: null }).thisDate).toBeNull()
+    expect(planEntrySave({ ...repeating, occurrenceDate: 'tomorrow' }).thisDate).toBeNull()
+  })
+
+  it('maps the three choices to the three writes', () => {
+    const plan = planEntrySave(repeating)
+    expect(resolveSeriesSaveChoice('thisDate', plan)).toBe('splitSeriesAt')
+    expect(resolveSeriesSaveChoice('series', plan)).toBe('saveSeries')
+    expect(resolveSeriesSaveChoice('keep', plan)).toBe('nothing')
+  })
+
+  it('🔴 "this date only" NEVER falls through to the whole-series write when there is no day to split at', () => {
+    const plan = planEntrySave({ ...repeating, occurrenceDate: null })
+    expect(resolveSeriesSaveChoice('thisDate', plan)).toBe('nothing')
+    expect(resolveSeriesSaveChoice('thisDate', plan)).not.toBe('saveSeries')
   })
 })
 
@@ -107,9 +120,15 @@ describe('the words say what the press reaches', () => {
     expect(note).toContain('put it back')
   })
 
-  it('is honest that a one-date edit is not built yet rather than pretending it saved one date', () => {
-    expect(SERIES_SAVE_COPY.thisDateGap).toContain('not possible yet')
+  it('says what each save reaches: one date on its own, or every date', () => {
+    expect(SERIES_SAVE_COPY.thisDateLabel).toBe('This date only')
+    const note = SERIES_SAVE_COPY.thisDateNote('Wed, Oct 14')
+    expect(note).toContain('Changes Wed, Oct 14 on its own')
+    expect(note).toContain('every other date as it was')
+    expect(note).toContain('outside the series')
     expect(SERIES_SAVE_COPY.seriesNote).toContain('every date')
+    // The sentence that said it could not be done is gone, because it can.
+    expect(JSON.stringify(SERIES_SAVE_COPY)).not.toContain('not possible')
   })
 
   it('keeps no em dash in any sentence (docs/CONTENT-VOICE.md)', () => {
@@ -120,7 +139,8 @@ describe('the words say what the press reaches', () => {
       SERIES_DELETE_COPY.keepLabel,
       SERIES_SAVE_COPY.lead('Craft Night'),
       SERIES_SAVE_COPY.seriesNote,
-      SERIES_SAVE_COPY.thisDateGap,
+      SERIES_SAVE_COPY.thisDateNote('Wed, Oct 14'),
+      SERIES_SAVE_COPY.thisDateLabel,
     ]
     for (const w of words) expect(w).not.toContain('—')
   })

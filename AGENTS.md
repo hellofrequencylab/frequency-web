@@ -41,11 +41,12 @@ Orientation for a human: [`docs/START-HERE.md`](docs/START-HERE.md).
 
 **[`docs/BUILD-BACKLOG.json`](docs/BUILD-BACKLOG.json) is the only record of what is done** ([ADR-1043](docs/DECISIONS.md)). `pnpm backlog` is the working view. `pnpm packets` is the next agent-workable row per derived lane.
 
-- **Never open a new plan / TODO / roadmap / audit file.** `pnpm check:one-list` freezes that set. Findings become backlog rows.
+- **A new plan / TODO / roadmap / audit file is allowed; an undeclared one is not.** Add it to `scripts/planning-docs.txt` in the same PR — that is the whole cost, and the set is shrinking. `pnpm check:one-list` does not ban documents; it bans a second record of status. A finding that needs no spec is a backlog row, not a file.
 - **Never record status in prose.** Specs and ADRs explain the work. Every planning doc must point at the JSON in its first 25 lines, or carry a SUPERSEDED banner.
 - Every open row has `priority` (P0–P3) and a `verify` probe that measures a **consequence**. `pnpm check:backlog` fails both ways (stale `open`, regressed `done`).
 - Close a row by making its probe pass. Never delete the probe.
 - **Re-test a row's premise before you work it**, especially when it says it cannot be checked ([ADR-1082](docs/DECISIONS.md)).
+- **A conflict on `docs/DECISIONS.md` or `docs/BUILD-BACKLOG.json` is not hand-work.** `git merge origin/main`, then `pnpm fold`, then `pnpm check:adr && pnpm check:backlog`. It merges both by key (ADR number, row id), keeps main's order, and REFUSES naming the id when both sides changed the same one. Never hand-edit the JSON: doing so has already produced an invalid file and a duplicated row id.
 - After a ready PR, arm squash auto-merge. Stay off `cursor/cloud-agent-workspace-8978`. One row per PR. Never merge red.
 
 # Which plan is live

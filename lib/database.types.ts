@@ -17990,6 +17990,10 @@ export type Database = {
           time_zone: string
         }[]
       }
+      split_calendar_series: {
+        Args: { p_day: string; p_entry_id: string; p_override: Json; p_space_id: string }
+        Returns: string
+      }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: unknown

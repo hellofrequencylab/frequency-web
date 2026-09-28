@@ -208,7 +208,7 @@ stated reason:
 | Not offered to a member | Why |
 |---|---|
 | **Workflow** | `workflowBoard(plans, adminEvents)` over `PLAN_STAGE_TRANSITIONS`. Every card is a `space_plans` row — the team's internal notes, links, to-dos, people — and a visitor is never handed `plans` or `adminEvents`. The segment would steer an empty board, and the day someone "fixed" the empty board would be the leak. |
-| **the List `all` scope** | The all-time index panel is the event control console (stage pill, share links, stats, Go to event), not a way of reading a month. |
+| **the List `all` scope** | The all-time index panel is the event control console (cover hero when there is one, stage pill, share links, stats, Go to event), not a way of reading a month. |
 | **Guest preview** | An audience, not a way of looking. A guest already is that audience. |
 
 A member also gets the layer **filter** — Events / Unavailable — and only when the Space publishes
@@ -318,7 +318,7 @@ not reload the page.
 |---|---|
 | **Guest** | The existing public month (`guestLiveItems`). Live chips plus the C0 cancelled footer. Pencil and planning stay off. `?view=guest`. |
 | **Admin** (labelled **Calendar**) | The team's month (`StaffCalendar` over `loadAdminCalendar`). Drafts, Pencils, Private entries, unpublished and internal dates Guest does not see. The same sliding month as Guest: `CalendarWorkspace` owns `month` (PROG-CAL12) and hands it to both mounts, so the two panels, the console header and the console agenda can never disagree about which month is showing. The stage board is Workflow. Default URL. |
-| **List** | A condensed gathering index on the left. The right interior is the event control console: title with stage pill top-right, primary facts, share links, stats, Go to event. Not the Studio editor. `?view=list&item=`. |
+| **List** | A condensed gathering index on the left. The right interior is the event control console: the gathering's cover as a full-bleed hero above the card when it has one (LIVE-496, [ADR-1551](DECISIONS.md); cropped with the host's stored focal point through `eventCoverFocusStyle`, the same crop as the browse card and the detail hero; a Pencil or an event with no cover opens on the title, with no generated stand-in), title with stage pill top-right, primary facts, share links, stats, Go to event. Not the Studio editor. `?view=list&item=`. |
 | **Workflow** | Every Plan, grouped by its production stage (`workflowBoard` over `PLAN_STAGE_TRANSITIONS`). A Plan moves stage through `transitionPlanStage`; "Open Plan" opens the same drawer Calendar and List open. `?view=workflow`. |
 
 Operators load Guest and Admin data once so a view switch does not remount. Unsigned members always get Guest and never hit `loadAdminCalendar`. The Pencil, Planning and Production lane helpers live in `lib/calendar/pm-console.ts`, which the List index reads; the Calendar tab Admin view (labelled Calendar) is the team's month in the same grid chrome as Guest.
@@ -330,6 +330,25 @@ in `lib/calendar/month-window.ts`: `ADMIN_EVENT_FLOOR_MONTHS` (13) back and `ADM
 upcoming first, so the cap can only ever cut the far end of the season or the oldest context and never
 the dates the Space runs next. Browse past either edge and the month is event-free by design; the
 scroll (LIVE-530) names both edges rather than showing a silently empty month.
+
+**The months scroll** (`LIVE-530`, [ADR-1549](DECISIONS.md); owner ask 2026-09-27: "make it so the
+calendar infinitely scrolls through that section instead of flipping pages"). `EventCalendar` takes
+`monthFlow?: 'page' | 'scroll'`, default `page`, and `StaffCalendar` passes it through; the workspace
+sets `scroll` on both of its mounts and the four other mounts are untouched. Under `scroll` the grid
+holds a BAND of months (`lib/calendar/month-band.ts`, pure) under one scroller, each month headed by
+its name on a sticky band; the band grows one month at a time toward the reader and a prepend keeps
+the reader's place. `month` / `onMonthChange` keep ONE meaning in both modes, the anchor: under the
+scroll the grid additionally scrolls to it (scrollTop on the known node, never scrollIntoView) and
+additionally reports it from the scroll position through a banded IntersectionObserver, once the
+scroll has been quiet for 150ms, so the `aria-live` month label speaks once per landing and not once
+per month crossed. Explicit navigation is never clamped: a month handed in from outside the band
+re-centres the band on it. Automatic extension IS bounded, against the events window above, and a
+terminal band names the edge and points at the month jump. A failed month says so on its own band.
+A padded day is a placeholder under the scroll: only the band that owns a date draws its items, its
+note, its sky and its drop target, so each date has one cell and each chip one copy, which is what
+lets a drag or a Shift-and-arrow move cross a month boundary as an ordinary move (`planEntryMove` is
+handed no shown month there). The vertical wheel scrolls the months as a consequence of the scroller
+having room (`verticalScrollTaker`), with no new flag: `wheelPaging={consoleOpen}` stays literal.
 
 **The Calendar console** (PROG-CAL12, owner ask 2026-09-22; `components/spaces/calendar-console.tsx`). The full-screen edit mode of the Space calendar. It is the same `CalendarWorkspace` panel set and the same Plan drawer, shown inside a full-screen OVERLAY (`Dialog` `align="overlay"`) rather than inline on the page: a panel on the dimmed page, with a thin margin of that dimmed page showing all the way around (a hairline inset on a phone, ~2.5vmin from `sm` up, both floored by the safe area), taking the surface token, the card radius and a real elevation. Inside it: the shown month and the calendar's time zone as the title, then Prev / Today / Next, the layer chips, Guest preview, the one surface control, Pencil it in and the shortcuts sheet, with Close last behind its own divider, all on ONE line (LIVE-494; the paging cluster lost its bordered box and every group dropped to a `micro` density to get there); the month's agenda down the left, grouped by day under sticky headings, separated from the stage by one hairline divider, each row selecting the item the List view selects and carrying Open Plan; Ask Vera along the foot of that same column. Month, view, List selection and the open Plan live in the workspace, so all of it travels in and out unchanged. **The panel set travels as a live DOM move, never as a second render**: the workspace keeps it at one position in the React tree and portals it into a host div that a layout effect parks either in the page slot or in the console's `[data-calendar-console-stage]`. Ask Vera has a host of its own (`[data-calendar-console-vera]`), for the same reason and by the same mechanism: it belongs above the panels on the page and at the foot of the side bar in the console, and writing it into two places would be the bug this shape exists to prevent. That is the fix for the blink the owner reported on 2026-09-22: the two homes used to be two positions in the tree, so every open and every close unmounted both grids, the Vera box and any entry form that was open, and rebuilt them. It opens only from the "Fullscreen" control beside the view toggle or the F key (never a scroll, hover, double click, resize, rotation or remembered preference; the control's own title says so, which is why the first-visit hint row retired), and it exits on Esc (the drawer first when it is up, then the console), the Close control, or the browser's Back button: opening pushes a history entry carrying `?console=1` beside `view`, `item` and `plan` (`adminViewHref`, `parseConsoleFlag`), so a pasted link reopens it on the same view, List selection and drawer. NOT the month: `adminViewHref` writes `view`, `item`, `plan` and `console` and nothing else, and a pasted link lands on the month the page derives (today's, corrected once to the reader's own calendar day). Month-in-the-URL was declared in the extras type and never read by anything; LIVE-475 removed the three unwired layers rather than leaving a parameter that looked wired. On the page the staff grid pages by its buttons only (the month picker, Prev / Today / Next): no wheel, no swipe. Inside the console the vertical wheel and a sideways swipe page months too, and Up / Down, Left / Right, T, N and ? are the console's keys.
 
@@ -439,6 +458,23 @@ VEVENT (`lib/calendar/entry-feed.ts`): the anchor in the TZID local form, its `R
 master's wall clock in the entry's zone, so a subscriber's calendar draws the series itself and keeps
 the gap.
 
+**One occurrence on its own** (`LIVE-534`, [ADR-1541](DECISIONS.md)). Because a series is one row, an
+edit to any occurrence is an edit to every date, and Save on a repeating entry asks first (`LIVE-531`).
+"This date only" in that dialog SPLITS the series through ONE database function,
+`public.split_calendar_series` (migration `20270345008800`, SECURITY INVOKER, the operator quad is the
+lock): the master gains the day in `exception_dates` and a NEW one-off row carries the edited values
+for that day, together or not at all. The override lands on the occurrence's own day with the form's
+time and length when the date field was left on the series' first date, and on the form's date when
+the person moved it (`occurrenceWrite` in `lib/calendar/entries.ts`); the rule and the skips stay the
+series' and never reach the override. Every reader then holds the pair for free, because the override
+is an ordinary one-off row and the master's skip is an ordinary exception: the grid draws the day once
+(`entries.test.ts` pins it), clash checks and booking blocks expand the master minus the day and count
+the override on its own, the `.ics` feed emits the EXDATE and a second VEVENT, the Plan link travels
+with the override, and publishing the override retires that one date while the series carries on. The
+choice appears only when the drawer was opened from one occurrence; a Plan is not transitioned by one
+of its dates changing stage, and a date that is one of several candidate dates is refused until one is
+kept. The pair is proved atomic on real rows under real RLS by `supabase/tests/split_calendar_series.test.sql`.
+
 **Day notes** (`PROG-CAL1`). `public.space_calendar_day_notes` holds short labels that describe a day
 rather than occupy it: a `weekly` note sets `weekdays` (0 is Sunday) within optional `starts_on` /
 `ends_on` bounds; a `dated` note leaves `weekdays` null and covers `starts_on` through `ends_on`. Day notes
@@ -453,7 +489,19 @@ plan drawer opens from any calendar item that belongs to a plan and is composed 
 Its footer's "Archive Plan" (`archiveSpacePlan`, HYG-120) sets `space_plans.archived_at`, deletes the
 Plan's penciled dates that never became an event, and unlinks the ones that did; reversible in SQL,
 not yet in the UI. The e2e suite tears its own Plans down through that same door.
-A co-host Space sees a plan only through an accepted share of that plan.
+A co-host Space sees a plan only through an accepted share of that plan, and a share is a HANDSHAKE
+(`PROG-CAL7` Together, `LIVE-541`): the drawer's "Share with a co-host Space" offers the Spaces this one
+has an accepted collaboration with, by name (`listAcceptedCollaborations`, ADR-799), never a field for an
+id; `sharePlanWithSpace` refuses any other Space and writes the share PENDING; the guest answers it from
+its own calendar settings ("Shared with you", `respondToPlanShare`, on its own session, keyed by its own
+Space and the pending state in one statement); the host sees where each share stands in the drawer and
+can take an active one back (`revokePlanShare`). A pending offer's Plan is not readable by the guest until
+the share is accepted (`private.plan_is_shared_with_me`), so the offer's title and host are resolved
+server-side for exactly the share rows the guest's session returned (`lib/calendar/plan-share-subjects.ts`,
+on the admin-client baseline with that reason). An accepted Plan is listed on the guest calendar with the
+Space that holds it and opens in the same drawer, read only: the host keeps every door until a later child
+of PROG-CAL7 hands some across (`listPlansSharedWith` reads them through the accepted share and nothing
+else). Pure vocabulary and words: `lib/calendar/plan-shares.ts`.
 
 **Production** (`PROG-CAL3`, shipped). "Make it a Production" opens the event Spark (`lib/studio/entities/event.ts`)
 prefilled by a pure mapping from the plan and the chosen Pencil onto the manifest's field keys. The event
@@ -517,8 +565,19 @@ row and writes through `parsePlanInput` or `saveCalendarEntry` so the product's 
 gate. The write itself is keyed by the MANIFEST's own path and laid down by an object spread onto a
 copy, never by an assignment through a computed index carrying a string the model sent: CodeQL called
 the first shape of that remote property injection, and "the vocabulary already refuses an undeclared
-path" is the sentence every prototype-pollution postmortem opens with. Not yet: undo, and reading
-attendance to pick dates.
+path" is the sentence every prototype-pollution postmortem opens with. Dates from what happened
+(`PROG-CAL11` slice 4, `LIVE-539`, [ADR-1544](DECISIONS.md)): when the ask is to pick a good day and
+names none, the model calls a fourth tool, `attendance_history`, and the server answers with the weekday
+and starting hour that drew the most people to THIS Space, folded by `attendanceHistory` in
+`lib/calendar/vera-attendance.ts` from its own published past events (the newest 50, `listEventsForSpace`
+keyed by the editor's Space, `toDay` at today) and the count the PROG-CAL6 recap path gives each one
+(`loadEventAttendanceCounts`, the per-event half of `loadPlanAttendance`, so the recap and the history
+cannot disagree). Weekday and hour are read off the stored wall clock, an unrecorded event is left out
+rather than counted as empty, and no record at all answers null in words rather than a weekday nobody
+came on. The read is handed to the loop as a reader and runs at most once per ask, only when the tool is
+called, so `lib/ai/vera-calendar.ts` imports no store and the per-event ledger read costs only the ask
+that needs it. Not yet: the reason on the proposal line (`LIVE-540`); until it lands the model says which
+weekday and hour it followed in its note. Undo shipped as slice 3 (the change log below).
 
 **Two gates, not one** (owner ask 2026-09-23: "I don't want Vera changing things without explicit
 permission"). Accept was the whole gate and every line arrived ticked, so the default action was

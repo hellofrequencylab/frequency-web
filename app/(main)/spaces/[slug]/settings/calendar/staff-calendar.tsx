@@ -22,6 +22,7 @@ import {
   type SeriesDeleteChoice,
   type SeriesDeletePlan,
   type SeriesSaveChoice,
+  type SeriesSavePlan,
 } from '@/lib/calendar/series-choice'
 import { describeRepeat, parseRepeat } from '@/lib/events/repeat-rule'
 import { PUBLISH_STEP, productionDoorHref, stageTimeline } from '@/lib/calendar/stage-timeline'
@@ -33,7 +34,15 @@ import type { DayNote } from '@/lib/calendar/day-notes'
 import type { AstroMarker as SkyMarker } from '@/lib/calendar/astro-markers'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import { isError } from '@/lib/action-result'
-import { deleteCalendarEntry, findEntryClashes, loadStaffCalendarMonth, pickPencilDate, saveCalendarEntry, skipPencilDate } from './entry-actions'
+import {
+  deleteCalendarEntry,
+  findEntryClashes,
+  loadStaffCalendarMonth,
+  pickPencilDate,
+  saveCalendarEntry,
+  saveCalendarEntryOccurrence,
+  skipPencilDate,
+} from './entry-actions'
 import { createPenciledPlan, joinEntryToPlan, startPlanFromEntry } from './plan-actions'
 import { PlanDrawer } from './plan-drawer'
 import { SeriesDeleteDialog, SeriesSaveDialog } from './series-choice-dialog'
@@ -139,6 +148,7 @@ export function StaffCalendar({
   hostChrome = false,
   hostViewSwitch = false,
   moveByDrag = false,
+  monthFlow,
   moveNotice = null,
   onMoveResult,
 }: {
@@ -192,6 +202,9 @@ export function StaffCalendar({
   /** MOVE A DATE BY DRAGGING IT (PROG-CAL15), the console's edit. Off here and on the Space page,
    *  where the calendar stays click-to-open; the console turns it on. */
   moveByDrag?: boolean
+  /** Passed straight through to the grid (LIVE-530): `scroll` runs the months under one scroller,
+   *  `page` (the default) flips them. Dragging is refused under the scroll at the grid's own seam. */
+  monthFlow?: 'page' | 'scroll'
   /** The host's line about the last move, handed to the grid so it is announced where the move
    *  happened. The host shows the same sentence in its header. */
   moveNotice?: string | null
@@ -208,8 +221,10 @@ export function StaffCalendar({
    *  dialog offers exactly the choices this plan carries, and `resolveSeriesDeleteChoice` maps the
    *  press back through the same object. */
   const [askDelete, setAskDelete] = useState<SeriesDeletePlan | null>(null)
-  /** The save question (LIVE-531): an edit of a repeating entry changes every date it lands on. */
-  const [askSave, setAskSave] = useState(false)
+  /** The save question (LIVE-531, LIVE-534): an edit of a repeating entry changes every date it lands
+   *  on, or, when the drawer stands on one occurrence, that one date through the split. Held as the
+   *  PLAN for the same reason as `askDelete`: the dialog offers exactly what the plan carries. */
+  const [askSave, setAskSave] = useState<SeriesSavePlan | null>(null)
   const [pending, startTransition] = useTransition()
 
   const loadMonth = useCallback((y: number, m: number) => loadStaffCalendarMonth(slug, y, m), [slug])
@@ -260,8 +275,10 @@ export function StaffCalendar({
   /**
    * A REPEATING ENTRY IS ASKED ABOUT BEFORE IT IS SAVED (LIVE-531). One row is every date the rule
    * lands on, so a Save that looks like an edit to the October date rewrites the whole series. The
-   * dialog says that in words; the write itself is unchanged. Editing ONE occurrence would mean
-   * splitting the series into two rows, which is LIVE-532 and deliberately not half-built here.
+   * dialog says that in words, and since LIVE-534 it offers the other write: "This date only"
+   * SPLITS the series through one database function (the master skips the day, a new one-off row
+   * carries the edit), so an edit of one night is one night. That choice exists only when the
+   * drawer was opened from one occurrence, because that is the only time there is a day to name.
    *
    * A one-off entry, and a brand new entry (which has no series to change yet), save in one step
    * exactly as before.
@@ -270,11 +287,27 @@ export function StaffCalendar({
     e.preventDefault()
     if (!draft) return
     setError(null)
-    if (draft.id && planEntrySave(draft.input).ask) {
-      setAskSave(true)
-      return
+    if (draft.id) {
+      const plan = planEntrySave({ ...draft.input, occurrenceDate: draft.occurrenceDate })
+      if (plan.ask) {
+        setAskSave(plan)
+        return
+      }
     }
     runSave()
+  }
+
+  /** THE SPLIT (LIVE-534): one occurrence, on its own. One action, one database statement; the
+   *  drawer closes on the same `done()` a save does, because the row the form held is now two rows. */
+  const runSplit = (day: string) => {
+    if (!draft?.id) return
+    const id = draft.id
+    const input = draft.input
+    startTransition(async () => {
+      const res = await saveCalendarEntryOccurrence(slug, id, day, input)
+      if (isError(res)) setError(res.error)
+      else done()
+    })
   }
 
   const runSave = () => {
@@ -379,10 +412,15 @@ export function StaffCalendar({
     else if (action === 'deleteRow') deleteRow()
   }
 
-  /** One press in the save dialog. */
+  /** One press in the save dialog. The plan the dialog was OPENED with decides what each choice
+   *  means, so "this date only" can never resolve to the whole-series write. */
   const chooseSave = (choice: SeriesSaveChoice) => {
-    setAskSave(false)
-    if (resolveSeriesSaveChoice(choice) === 'saveSeries') runSave()
+    const plan = askSave
+    if (!plan) return
+    const action = resolveSeriesSaveChoice(choice, plan)
+    setAskSave(null)
+    if (action === 'saveSeries') runSave()
+    else if (action === 'splitSeriesAt' && plan.thisDate) runSplit(plan.thisDate)
   }
 
   const input = draft?.input
@@ -511,6 +549,7 @@ export function StaffCalendar({
         hiddenLayers={hiddenLayers}
         onHiddenLayersChange={onHiddenLayersChange}
         fill={fill}
+        monthFlow={monthFlow}
         hostChrome={hostChrome}
         hostViewSwitch={hostViewSwitch}
         layers={STAFF_CALENDAR_LAYERS}
@@ -983,7 +1022,13 @@ export function StaffCalendar({
         pending={pending}
         onChoose={chooseDelete}
       />
-      <SeriesSaveDialog open={askSave} title={input?.title ?? ''} pending={pending} onChoose={chooseSave} />
+      <SeriesSaveDialog
+        open={askSave !== null}
+        title={input?.title ?? ''}
+        plan={askSave ?? { ask: true, thisDate: null }}
+        pending={pending}
+        onChoose={chooseSave}
+      />
       {!onOpenPlan && (
         <PlanDrawer
           slug={slug}
