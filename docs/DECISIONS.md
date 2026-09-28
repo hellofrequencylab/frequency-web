@@ -48610,3 +48610,22 @@ the runner's, and one of them documents in the file that Intl caches a formatter
 module load — so on CI only the source-shape case fails when the zone is unpinned. A test suite that
 is green in UTC and red in Pacific trains everyone to ignore a red suite, which is the quiet cost that
 made both zone defects survive this long.
+
+## ADR-1546: The ADR-1316 snapshot table is dropped on the owner's ruling, guarded so a fresh database can replay it (HYG-123)
+
+**Status:** Accepted · 2026-09-28 · backlog `HYG-123` · owner ruling 2026-09-28 (ADR-1535 §6: "drop it") · closes the date [ADR-1316](DECISIONS.md)'s cleanup left open · numbered **1546** because 1543 to 1545 are held by pull requests open when this was written
+
+**Context.** `public.page_settings_events_backup_20260910` held the 21 per-page /events layout rows the ADR-1316 cleanup retired on 2026-09-10: the only way back. 20270345003500 (HYG-086) put RLS on it with no policy and dated the drop for on or after 2026-10-10. Four rows then handed that date to one another and all four closed, so nothing open carried the day it came due; the advisor kept reporting `no_primary_key` on it, a signal operators had been told to expect. HYG-123 filed the gap as a decision for the owner, who ruled. Re-tested on production before writing: the table exists with 21 rows, RLS on, zero policies, zero constraints, zero dependent views, and still carries all seven default `anon` privileges, the single exception to 20270218000000's close of default grants on internal tables.
+
+**Decision.**
+
+1. **One migration, `20270345009200`, drops the table with `if exists`.** The table was created by a script and is in no migration, so a fresh environment (db reset, a branch database, the fresh-apply suite) has no such relation and a bare `drop table` would abort the replay. The guard is the same reason 20270345003500 wrapped its ALTER in `to_regclass`.
+2. **No archive copy.** The rows are the way back and the owner chose not to keep it. Taking a copy anyway would be a second snapshot with a second undated drop, which is the shape this row exists to end.
+3. **The probe is amended at close, not loosened.** As filed it read the whole file, comments included, and accepted `to_regclass` anywhere as the guard; a header that merely explained the guard in words satisfied it with the DROP left bare. It now strips `--` comments and reads `if exists` off the DROP statement itself (or a `to_regclass` check outside comments). The proof block looks the relation up in `pg_class` for the same reason. Mutation-tested after the amendment: removing the DROP fails the first arm, removing `if exists` fails the second.
+4. **The proposal goes with it.** `docs/proposals/SCAN-640-backup-table-primary-key.sql` proposed a primary key for this table and is deleted in the same change; a primary key on a dropped table is a proposal for nothing. ADR-1461 keeps its record of why it was staged rather than applied.
+
+**Rejected.** Carrying a new drop date (the ruling was to drop, not to defer). Archiving the 21 rows to a `private` schema first (a copy nobody asked for, with the same undated drop). Regenerating `lib/database.types.ts` here to remove the table's type (no code reads it, and the generated file is regenerated as a whole by the next lane that needs it; a stale type for a dropped table blocks nothing).
+
+**Consequences.** The advisor's `no_primary_key` finding on this table ends with the table; so does the anon-grant exception. The /events page settings the cleanup retired are now unrecoverable by design, which ADR-1316 anticipated and the owner has now confirmed. Applied to production by `execute_sql` plus an explicit ledger row at the file's own version, never `apply_migration`.
+
+**Rows.** HYG-123 (closed here). Untouched: `scripts/adr-1316-events-page-settings-cleanup.sql` (history), `lib/database.types.ts`.
