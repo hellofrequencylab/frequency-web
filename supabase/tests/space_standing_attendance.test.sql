@@ -20,7 +20,7 @@ select col_not_null('public', 'space_standing', 'attendance',
 select col_default_is('public', 'space_standing', 'attendance', 0,
   'attendance defaults to 0');
 
-select unlike(
+select unalike(
   obj_description('public.space_standing'::regclass, 'pg_class'),
   '%deliberately absent%',
   'the table comment no longer says attendance is deliberately absent');
