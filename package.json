@@ -53,6 +53,7 @@
     "check:rls": "node scripts/check-rls.mjs",
     "check:rls-recursion": "node scripts/check-rls-recursion.mjs",
     "check:rls-deny": "node scripts/check-rls-deny.mjs",
+    "check:fk-indexes": "node scripts/check-fk-indexes.mjs",
     "check:grants": "node scripts/check-grants.mjs",
     "check:function-grants": "node scripts/check-function-grants.mjs",
     "check:admin-client": "node scripts/check-admin-client.mjs",
