@@ -38,3 +38,52 @@ describe('createPenciledPlan action contract', () => {
     expect(migration).toContain('security invoker')
   })
 })
+// THE SHARE HANDSHAKE (PROG-CAL7 Together, LIVE-541). Source-level, the house archetype above: the
+// failure this guards is a share that lands accepted with nobody asked, or a share moved by a Space
+// that does not own its side, and neither throws at runtime.
+describe('sharing a Plan is a handshake, and each door serves one side', () => {
+  const source = readFileSync('app/(main)/spaces/[slug]/settings/calendar/plan-actions.ts', 'utf8')
+  const body = (name: string) => {
+    const at = source.indexOf(`export async function ${name}(`)
+    expect(at, `${name} exists`).toBeGreaterThan(-1)
+    return source.slice(at, source.indexOf('\n}', at))
+  }
+
+  it('the host offers a Plan of its own to an accepted collaborator only, and it lands pending', () => {
+    const share = body('sharePlanWithSpace')
+    expect(share).toContain('const editor = await resolveEditor(slug)')
+    expect(share).toContain('getSpacePlan(editor.spaceId, planId)')
+    expect(share).toContain('acceptedCollaborators(editor.spaceId)')
+    expect(share).toContain("insertPlanShare({ planId, guestSpaceId, requestedBy: editor.profileId, status: 'pending' })")
+    expect(share).not.toContain("'accepted'")
+    expect(source).not.toMatch(/status:\s*'accepted'/)
+    const store = readFileSync('lib/calendar/plans-store.ts', 'utf8')
+    expect(store).toContain("requestedBy: string; status: 'pending' }")
+  })
+
+  it('the guest answers on its own session, keyed by its own Space and the pending state', () => {
+    const answer = body('respondToPlanShare')
+    expect(answer).toContain('parseShareAnswer(rawAnswer)')
+    expect(answer).toContain('answerPlanShareRow(shareId, editor.spaceId, answer, editor.profileId)')
+    const store = readFileSync('lib/calendar/plans-store.ts', 'utf8')
+    const at = store.indexOf('export async function answerPlanShareRow(')
+    const rowBody = store.slice(at, store.indexOf('\n}', at))
+    expect(rowBody).toContain(".eq('guest_space_id', guestSpaceId)")
+    expect(rowBody).toContain(".eq('status', 'pending')")
+  })
+
+  it('the host takes back only a share of a Plan proven to be its own', () => {
+    const revoke = body('revokePlanShare')
+    expect(revoke).toContain('getPlanShareRow(shareId)')
+    expect(revoke).toContain('getSpacePlan(editor.spaceId, share.plan_id)')
+    expect(revoke).toContain('revokePlanShareRow(shareId, plan.id, editor.profileId)')
+  })
+
+  it('the picker reads the accepted collaborations and nothing else, and the drawer has no id field', () => {
+    expect(source).toContain("import { listAcceptedCollaborations } from '@/lib/spaces/collaborations'")
+    const drawer = readFileSync('app/(main)/spaces/[slug]/settings/calendar/plan-drawer.tsx', 'utf8')
+    expect(drawer).not.toContain('placeholder="Space id"')
+    expect(drawer).toContain('id="plan-share"')
+    expect(drawer).toContain('options={shareChoices}')
+  })
+})

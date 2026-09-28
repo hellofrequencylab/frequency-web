@@ -48633,6 +48633,26 @@ onto a Private entry, and a new case asserts that a marked chip has nothing to a
 had only pinned the new behaviour would have quietly retired a live rule, which is the failure mode
 that suite was written against.
 
+## ADR-1552: A Plan share is a handshake with an accepted collaborator, and a pending offer is read for the guest by a scoped resolver (LIVE-541)
+
+**Status:** Accepted · 2026-09-28 · `LIVE-541` (child 1 of 6 of `PROG-CAL7`) · builds on [ADR-1386](DECISIONS.md) (Pencil, Plan, Production; owner ruling 4 on collaboration) and [ADR-799](DECISIONS.md) §B (collaborator Spaces) · numbered 1552 because 1545 is claimed by #2949, 1546 by #2950 and #2951, 1547 by #2952 and #2956, 1548 by #2962, 1549 by #2961, 1550 by #2965 and 1551 by #2967, every one of them opened before this pull request (ADR-1509)
+
+**Context.** `space_plan_shares` (20270345006700) modelled four states (pending, accepted, declined, revoked) with a partial unique index over the two active ones, and the RLS on `space_plans` (20270345007300) admits a guest Space through `private.plan_is_shared_with_me`, which requires `accepted`. The one action that wrote the table inserted `accepted` with the host as responder, so the guest was never asked and three states were unreachable; the drawer took a raw Space id in a text field; `listSpacePlans` filtered on the caller's own Space, so even an accepted share put nothing on the guest calendar. PROG-CAL7's reopening on 2026-09-21 named all of this. Two questions had to be settled to fix it: who may be offered a Plan, and how a guest can read an offer it may not yet open.
+
+**Decision.**
+
+1. **A share is a handshake.** The host offers, the share lands `pending`, the guest answers `accepted` or `declined` on its own session, the host may take an active share back (`revoked`). `parseShareAnswer` admits the two answers and nothing else; revoke is never an answer. Each store write is keyed by the side it serves in one statement (the guest's answer by share id, guest Space and the pending state; the host's revoke by share id and the Plan it proved is its own), so a share id from the browser cannot move a share the caller does not own, and a second answer changes nothing and says so.
+2. **Only an accepted collaborator may be offered a Plan.** The picker lists the host's accepted collaborations (`listAcceptedCollaborations`, ADR-799) by name and nothing else, minus any Space that already holds an active share of that Plan; `sharePlanWithSpace` refuses any other id server-side. A text field for an id is gone. A Space with no collaborators reads why and where to make one.
+3. **A pending offer's subject is resolved for the guest by a scoped read.** RLS opens the Plan only after acceptance, so the guest's session sees an offer as a share id, a plan id and a date. `lib/calendar/plan-share-subjects.ts` resolves the title and the host Space's name through the service-role client for exactly the plan ids the guest's session returned as shares addressed to it, and nothing else; it is on the admin-client baseline with that reason. The alternative, a SECURITY DEFINER function, buys the same scoping at the cost of a migration and an apply for two words.
+4. **An accepted Plan is listed on the guest calendar and opens in the same drawer, read only.** `listPlansSharedWith` reads through the accepted share and nothing else. The drawer's `readOnly` mode shows the record with the fields disabled, names the host, offers Close alone, and makes none of the host's loads on the guest's session. Which doors a guest gets (comments, activity, tasks) is what children 2 to 4 of PROG-CAL7 decide; this child hands none across.
+
+**Rejected.** Keeping the direct `accepted` write with a picker in front of it (the guest still never asked). Widening `space_plans` RLS to a pending share (every column of the Plan for a Space that has not said yes). A definer function for the offer's subject (a migration to read a title). Opening a shared Plan in an editable drawer (every host action would then have to learn the guest side before any child of PROG-CAL7 says what a guest may do).
+
+**Consequences.** The four states are reachable and the unique index means what it says. The guest calendar gains a "Shared with you" strip with the two answers side by side; the host drawer says where each share stands. `check:admin-client` gains one importer with a stated reason. Children 2 to 6 of PROG-CAL7 can assume a co-host exists.
+
+**Rows.** `LIVE-541` closed. `LIVE-542` next.
+=======
+
 ## ADR-1533: A value with no zone and a path with symlinks both read as correct while being wrong (LIVE-516, LIVE-531, LIVE-532, owner ruling 2026-09-27)
 
 **Status:** Accepted · 2026-09-27 · the birthday half of decision 1 is `LIVE-531`, the day-key half of
