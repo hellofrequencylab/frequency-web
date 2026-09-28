@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { availabilityWindow, busyDayKeysFor } from './availability'
 import { suggestDates } from './vera-plan'
 import type { DayNote } from './day-notes'
@@ -89,5 +89,39 @@ describe('availabilityWindow', () => {
   it('is [fromDay, fromDay + days) so it lines up with the entry store read', () => {
     expect(availabilityWindow('2026-10-01', 90)).toEqual({ fromDay: '2026-10-01', toDay: '2026-12-30' })
     expect(availabilityWindow('not-a-day')).toEqual({ fromDay: 'not-a-day', toDay: 'not-a-day' })
+  })
+})
+
+// ── THE BUSY DAYS DO NOT MOVE WITH THE MACHINE'S ZONE (LIVE-516) ────────────────────────
+// An `events` row arrives NAIVE ('2026-10-05T19:00:00', no offset) where an entry row carries one,
+// and ECMAScript reads a naive date-TIME as LOCAL. Every case above therefore used to answer one day
+// late on a Pacific machine and correctly in CI, which is the worst of both: green where nobody looks
+// and red where the work happens. This case FORCES the zone instead of inheriting the runner's, so
+// the guard holds in UTC too; the fix itself is `storedInstant` in ./entries.
+describe('busyDayKeysFor, zone-forced', () => {
+  const realTz = process.env.TZ
+
+  beforeEach(() => {
+    process.env.TZ = 'America/Los_Angeles'
+  })
+  afterEach(() => {
+    if (realTz === undefined) delete process.env.TZ
+    else process.env.TZ = realTz
+  })
+
+  it('reads a naive events.starts_at as the wall clock it stores, not as Pacific local', async () => {
+    const { busyDayKeysFor: busy } = await import('./availability')
+    const keys = busy({
+      ...WINDOW,
+      entries: [],
+      events: [
+        // 7 PM: read as local in Pacific this is 02:00Z the NEXT day, which is the whole defect.
+        { starts_at: '2026-10-05T19:00:00', ends_at: null, is_cancelled: false },
+        // Midnight, the other end of the same mistake.
+        { starts_at: '2026-10-09T00:00:00', ends_at: null, is_cancelled: false },
+      ],
+      dayNotes: [],
+    })
+    expect(keys).toEqual(['2026-10-05', '2026-10-09'])
   })
 })

@@ -23,7 +23,17 @@ export interface CustomFieldDisplay {
   href?: string
 }
 
-const DATE_FMT = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+// 🔴 timeZone: 'UTC' IS LOAD-BEARING, on BOTH formatters, and it is the whole of LIVE-531.
+// A stored custom-field date is a CALENDAR DATE, not an instant: it names a day. `formatDate` parses
+// it at UTC midnight, so a formatter left on the AMBIENT zone printed the day BEFORE anywhere west of
+// UTC — 2026-07-16 read as 'Jul 15, 2026' in America/Los_Angeles, where this product lives. Parse and
+// format must agree on ONE zone, and the parse says UTC, so the formatter is pinned to UTC too. This
+// is the house rule from LIVE-377: spell the zone in rather than leave it to the ambient default,
+// because an ambient zone that leaks in a test leaks on a runtime as well.
+// The month-day formatter is hoisted beside it on purpose: the two were far apart before, which is
+// how one of them came to carry the option and the other not.
+const DATE_FMT = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
+const MONTH_DAY_FMT = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 
 /** Format a stored date value for display. Accepts an ISO date (2026-07-16) or a partial vCard-style
  *  birthday (--07-16, no year). Returns the original string when it is not a date we can parse. */
@@ -33,7 +43,7 @@ function formatDate(value: string): string {
   const md = /^--(\d{2})-(\d{2})$/.exec(v)
   if (md) {
     const d = new Date(Date.UTC(2000, Number(md[1]) - 1, Number(md[2])))
-    return Number.isNaN(d.getTime()) ? v : new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(d)
+    return Number.isNaN(d.getTime()) ? v : MONTH_DAY_FMT.format(d)
   }
   const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(v)
   if (iso) {
