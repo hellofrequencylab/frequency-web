@@ -147,7 +147,7 @@
 # Do not re-run the PREVIOUS failed run: a re-run replays the same SHA, so it would judge the
 # new baselines' commit against the old commit's tree.
 #
-# ✅ AND SINCE 2026-09-28 THE JOB LOOKS FOR YOU (HYG-115, ADR-1544). A THIRD state was measured
+# ✅ AND SINCE 2026-09-28 THE JOB LOOKS FOR YOU (HYG-115, ADR-1546). A THIRD state was measured
 # on PR #2841: the runs fire and then PARK at `action_required` until a human starts them, which
 # from the outside looks exactly like "nothing fired". Each committing job now runs
 # scripts/check-capture-followup.mjs right after its push: it lists the runs on the pushed head
@@ -823,7 +823,7 @@ jobs:
             git push origin "HEAD:${GITHUB_REF_NAME}"
             echo "pushed=true" >> "$GITHUB_OUTPUT"
           fi
-      # ── THE GATE THAT NOTICES THE SILENCE (HYG-115, ADR-1544) ───────────────────────────────
+      # ── THE GATE THAT NOTICES THE SILENCE (HYG-115, ADR-1546) ───────────────────────────────
       # Runs only after a push actually happened (the commit step's own output; a "No baseline
       # changes" run pushed nothing and has nothing to judge). Lists the workflow runs on the
       # pushed head through the API this job already reads (`actions: read`) and fails THIS job,
@@ -1124,7 +1124,7 @@ jobs:
             git push origin "HEAD:${GITHUB_REF_NAME}"
             echo "pushed=true" >> "$GITHUB_OUTPUT"
           fi
-      # ── THE GATE THAT NOTICES THE SILENCE (HYG-115, ADR-1544): same as update-baselines ─────
+      # ── THE GATE THAT NOTICES THE SILENCE (HYG-115, ADR-1546): same as update-baselines ─────
       - name: Check the checks behind this capture
         if: ${{ !cancelled() && steps.commit.outputs.pushed == 'true' }}
         env:

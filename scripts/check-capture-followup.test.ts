@@ -10,7 +10,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { DEFAULT_WAIT_MS, WATCHED, fetchRunsForHead, followUpVerdict, main, readVerdict } from './check-capture-followup.mjs'
+import { DEFAULT_WAIT_MS, WATCHED, fetchRunsForHead, followUpVerdict, main, readVerdict, shapeRun } from './check-capture-followup.mjs'
 
 const HEAD = 'b5241b6ffffffffffffffffffffffffffffffffff'
 const run = (name: string, status: string, conclusion: string | null = null, head_sha = HEAD) => ({ name, status, conclusion, head_sha, html_url: `https://github.com/x/y/actions/runs/${name}` })
@@ -141,10 +141,18 @@ describe('main(): exit code and job summary', () => {
 })
 
 describe('fetchRunsForHead and readVerdict', () => {
-  it('maps the API shape and throws on a non-2xx page', async () => {
-    const f = fetchWith([{ workflow_runs: [{ name: 'ci', status: 'queued', conclusion: null, head_sha: HEAD, html_url: 'u', extra: 1 }] }])
+  it('maps the API shape from known vocabularies and a number, never response text, and throws on a non-2xx page', async () => {
+    const f = fetchWith([{ workflow_runs: [
+      { id: 7, name: 'ci', status: 'queued', conclusion: null, head_sha: HEAD, html_url: 'https://evil.example/<script>', extra: 1 },
+      { id: 'x', name: 'ci\n### injected', status: 'weird', conclusion: 'weirder', head_sha: 42, html_url: 'u' },
+    ] }])
     const runs = await fetchRunsForHead({ repo: 'x/y', headSha: HEAD, token: 't', fetchImpl: f.impl })
-    expect(runs).toEqual([{ name: 'ci', status: 'queued', conclusion: null, head_sha: HEAD, html_url: 'u' }])
+    expect(runs).toEqual([
+      { name: 'ci', status: 'queued', conclusion: null, head_sha: HEAD, html_url: 'https://github.com/x/y/actions/runs/7' },
+      { name: null, status: 'unknown', conclusion: null, head_sha: '?', html_url: null },
+    ])
+    expect(JSON.stringify(runs)).not.toContain('evil')
+    expect(shapeRun({ id: 3, name: 'e2e', status: 'completed', conclusion: 'action_required', head_sha: HEAD }, 'x/y').conclusion).toBe('action_required')
     const bad = (async () => ({ ok: false, status: 500, json: async () => ({}) }) as Response) as unknown as typeof fetch
     await expect(fetchRunsForHead({ repo: 'x/y', headSha: HEAD, token: 't', fetchImpl: bad })).rejects.toThrow('HTTP 500')
   })

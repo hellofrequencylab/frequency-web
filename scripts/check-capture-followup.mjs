@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Capture follow-up gate (HYG-115, ADR-1544).
+// Capture follow-up gate (HYG-115, ADR-1546).
 //
 // The two capture jobs in .github/workflows/e2e-manual.yml (update-baselines, update-a11y) commit
 // what they photographed and push with GITHUB_TOKEN. What happens to the checks on that new head
@@ -97,7 +97,26 @@ export async function fetchRunsForHead({ repo, headSha, token, fetchImpl = fetch
   const body = await res.json()
   const runs = Array.isArray(body?.workflow_runs) ? body.workflow_runs : null
   if (!runs) throw new Error('GET actions/runs: no workflow_runs array in the response')
-  return runs.map((r) => ({ name: r.name, status: r.status, conclusion: r.conclusion, head_sha: r.head_sha, html_url: r.html_url }))
+  return runs.map((r) => shapeRun(r, repo))
+}
+
+/** GitHub's own vocabularies for a run's status and conclusion. Anything else reads as unknown. */
+const STATUSES = ['queued', 'in_progress', 'completed', 'waiting', 'requested', 'pending', 'action_required']
+const CONCLUSIONS = ['success', 'failure', 'neutral', 'cancelled', 'skipped', 'timed_out', 'action_required', 'stale', 'startup_failure']
+
+/** A run as this gate reads it, with every field that can reach the job summary rebuilt from a
+ *  known vocabulary or a number rather than copied from the response: the name is one of WATCHED
+ *  or null, status and conclusion are GitHub's enumerations or unknown/null, and the link is
+ *  rebuilt from the run id and the repository this job runs in. `head_sha` is compared, never
+ *  printed. Network text is never written to the summary file. */
+export function shapeRun(r, repo) {
+  const name = WATCHED.find((w) => w === r?.name) ?? null
+  const status = STATUSES.find((s) => s === r?.status) ?? 'unknown'
+  const conclusion = CONCLUSIONS.find((c) => c === r?.conclusion) ?? null
+  const head_sha = typeof r?.head_sha === 'string' ? r.head_sha : r?.head_sha == null ? null : '?' // compared, never printed
+  const id = Number.isSafeInteger(Number(r?.id)) && Number(r?.id) > 0 ? Number(r.id) : null
+  const html_url = id !== null && repo ? `https://github.com/${repo}/actions/runs/${id}` : null
+  return { name, status, conclusion, head_sha, html_url }
 }
 
 /** Poll until the verdict stops being `none` or the budget is spent. A parked or judged answer is
@@ -132,8 +151,10 @@ function headFromGit() {
   }
 }
 
-/** Where the person who dispatched the capture is already looking. */
-/** @param {Record<string, string | undefined>} env */
+/** Where the person who dispatched the capture is already looking. Every line written here is
+ *  composed from this file's own strings, the head sha this job was given, and runs shaped by
+ *  `shapeRun` (vocabulary constants and a number), never from response text. */
+/** @param {Record<string, string | undefined>} env @param {string} title @param {string[]} lines */
 function summarise(env, title, lines) {
   if (!env.GITHUB_STEP_SUMMARY) return
   try {
@@ -172,7 +193,7 @@ export async function main(argv = process.argv.slice(2), env = process.env, fetc
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.log(`::error title=capture follow-up::could not list the runs on ${headSha.slice(0, 9)}: ${msg}. This is a failure and not a skip: the gate was armed and could not look.`)
-    summarise(env, 'Capture follow-up: could not look', [msg])
+    summarise(env, 'Capture follow-up: could not look', ['The runs on the pushed head could not be listed; the job log carries the HTTP status. The gate was armed and could not look, so this is a failure and not a skip.'])
     return 1
   }
   const title = verdict.ok ? `Capture follow-up: ${headSha.slice(0, 9)} is being judged` : `Capture follow-up: ${headSha.slice(0, 9)} has NOT been judged (${verdict.state})`
