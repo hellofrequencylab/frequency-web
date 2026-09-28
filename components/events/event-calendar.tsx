@@ -47,6 +47,14 @@ import { notesForDay, type DayNote } from '@/lib/calendar/day-notes'
 // minified in the browser build. A type import is erased at build time, so nothing follows it here.
 import type { AstroMarker as SkyMarker } from '@/lib/calendar/astro-markers'
 import { monthKey } from '@/lib/calendar/month-window'
+import {
+  EMPTY_MONTH_ITEMS,
+  EMPTY_MONTH_KEYS,
+  monthDidNotLoad,
+  monthFromKey,
+  withMonth,
+  withoutMonth,
+} from '@/lib/calendar/month-requests'
 import { stackDay } from '@/lib/calendar/sunday-stack'
 import { shortDateLabel } from '@/lib/calendar/short-date'
 import { useMonthGestures } from './use-month-gestures'
@@ -136,6 +144,32 @@ function useNarrowGrid(): boolean {
   return useSyncExternalStore(subscribeNarrowGrid, readNarrowGrid, serverNarrowGrid)
 }
 const itemKey = (ev: CalendarEvent) => `${ev.slug}|${ev.dayKey}`
+
+/**
+ * THE ONE PLACE THAT SAYS A MONTH DID NOT LOAD. Extracted so the sentence, the alert role and the
+ * retry exist once (LIVE-528): the continuous scroll this grid is heading for can have more than one
+ * month in the air, and a sentence written out per site is a sentence that drifts per site.
+ * `role="alert"` because it replaces content the reader asked for; the retry lives INSIDE the line,
+ * so the control that fixes the problem is the thing being announced.
+ */
+function MonthLoadError({
+  year,
+  month1,
+  onRetry,
+}: {
+  year: number
+  month1: number
+  onRetry: () => void
+}) {
+  return (
+    <p role="alert" data-calendar-load-error className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2 text-body-sm text-danger">
+      <span>{monthLabel(year, month1)} did not load.</span>
+      <button type="button" onClick={onRetry} className={buttonClasses('secondary', 'sm')}>
+        Try again
+      </button>
+    </p>
+  )
+}
 
 export function EventCalendar({
   events,
@@ -276,6 +310,8 @@ export function EventCalendar({
   // The slide follows the month actually shown, whoever changed it (the arrows here, a swipe, or a
   // controlling host), so a console key press eases in the same way a click on the grid's arrows does.
   const shownKey = monthKey(year, month1)
+  // The month the PAGE rendered on the server: the one month the requester never fetches.
+  const initialKey = monthKey(initialYear, initialMonth1)
   const [seenKey, setSeenKey] = useState(shownKey)
   if (seenKey !== shownKey) {
     setSlide(shownKey > seenKey ? 'next' : 'prev')
@@ -283,13 +319,19 @@ export function EventCalendar({
   }
 
   // Months fetched through loadMonth, keyed 'YYYY-MM'. The page's initial month is already on hand.
-  const [fetched, setFetched] = useState<ReadonlyMap<string, CalendarEvent[]>>(new Map())
-  const [loading, setLoading] = useState(false)
-  // The month whose fetch failed, if the shown one did. Its error line (with Try again) is the
-  // difference between "nothing this month" and "the month never arrived".
-  const [failedKey, setFailedKey] = useState<string | null>(null)
-  const [retryTick, setRetryTick] = useState(0)
+  const [fetched, setFetched] = useState<ReadonlyMap<string, CalendarEvent[]>>(EMPTY_MONTH_ITEMS)
+  // EVERY month in flight, and EVERY month whose fetch failed, each keyed 'YYYY-MM' (LIVE-528).
+  // Both used to be single values, which meant one month at a time: a second request overwrote the
+  // first one's answer. For `failed` that lost a real answer rather than a status -- see the header
+  // of lib/calendar/month-requests.ts -- and a failed month could never be retried once the reader
+  // paged past it. A failure line (with Try again) is the difference between "nothing this month"
+  // and "the month never arrived", so it has to survive the next month's success.
+  const [loadingKeys, setLoadingKeys] = useState<ReadonlySet<string>>(EMPTY_MONTH_KEYS)
+  const [failedKeys, setFailedKeys] = useState<ReadonlySet<string>>(EMPTY_MONTH_KEYS)
   const requested = useRef(new Set<string>())
+  // Whether this mount is still in the document. Every setter below is guarded by it, and NOTHING
+  // ELSE cancels a request: see the requester.
+  const alive = useRef(true)
   const rootRef = useRef<HTMLDivElement>(null)
   const monthButtonRef = useRef<HTMLButtonElement>(null)
   const popupTitleId = useId()
@@ -300,8 +342,13 @@ export function EventCalendar({
   const [cacheEpoch, setCacheEpoch] = useState(refreshKey)
   if (cacheEpoch !== refreshKey) {
     // A save changed what fetched months hold: drop them (render-time state reset, no effect cascade).
+    // The answers ABOUT those months go with them: a failure line for a month that is about to be
+    // refetched is stale, and so is a Loading for a request whose result is no longer wanted. The
+    // empties are the shared constants, so a second pass through this branch is a no-op.
     setCacheEpoch(refreshKey)
-    setFetched(new Map())
+    setFetched(EMPTY_MONTH_ITEMS)
+    setFailedKeys(EMPTY_MONTH_KEYS)
+    setLoadingKeys(EMPTY_MONTH_KEYS)
     if (heldMoves.size > 0) setHeldMoves(new Map())
   }
 
@@ -327,37 +374,65 @@ export function EventCalendar({
     return () => window.clearTimeout(timer)
   }, [initialYear, initialMonth1, onMonthChange])
 
+  // THE MOUNT IS WHAT ENDS A REQUEST, NOT THE MONTH (LIVE-528, a deliberate behaviour change).
+  // The loader used to live in an effect keyed on the shown month, so its cleanup ran on every step
+  // and forgot any request that had not arrived yet. With one month in flight that was tidy. With
+  // several it is wrong: a month that scrolled out of view scrolls back in, and forgetting it means
+  // refetching it on every wobble of the viewport. So nothing but UNMOUNT ends a request now.
+  // The FAILURE path still forgets its own key -- that is what Try again and coming back rely on.
   useEffect(() => {
-    if (!loadMonth) return
-    const key = monthKey(year, month1)
-    if (key === monthKey(initialYear, initialMonth1) && refreshKey === 0) return
-    const asked = requested.current
-    if (asked.has(key)) return
-    asked.add(key)
-    let live = true
-    let done = false
-    setLoading(true)
-    setFailedKey(null)
-    loadMonth(year, month1)
-      .then((items) => {
-        done = true
-        if (live) setFetched((cur) => new Map(cur).set(key, items))
-      })
-      .catch(() => {
-        // Forget the request so Try again (or coming back) fetches it, and say so: an empty grid
-        // that is really a failed fetch is the one thing this component promises never to show.
-        asked.delete(key)
-        if (live) setFailedKey(key)
-      })
-      .finally(() => {
-        if (live) setLoading(false)
-      })
+    alive.current = true
     return () => {
-      live = false
-      // Left the month before it arrived: forget the request so coming back fetches it again.
-      if (!done) asked.delete(key)
+      alive.current = false
     }
-  }, [loadMonth, year, month1, initialYear, initialMonth1, refreshKey, retryTick])
+  }, [])
+
+  /** Fetch one month unless it is already on hand, already asked for, or the month the page shipped.
+   *  Keyed by month, so calling it for several months starts several requests and each one's answer
+   *  lands under its own key. */
+  const ensureMonth = useCallback(
+    (key: string) => {
+      if (!loadMonth) return
+      // The page already rendered its opening month from `events`; only a refresh makes it a fetch.
+      if (key === initialKey && refreshKey === 0) return
+      const asked = requested.current
+      if (asked.has(key)) return
+      const parts = monthFromKey(key)
+      if (!parts) return
+      asked.add(key)
+      setLoadingKeys((cur) => withMonth(cur, key))
+      setFailedKeys((cur) => withoutMonth(cur, key))
+      loadMonth(parts.year, parts.month1)
+        .then((items) => {
+          if (alive.current) setFetched((cur) => new Map(cur).set(key, items))
+        })
+        .catch(() => {
+          // Forget THIS request so Try again (or coming back) fetches it, and say so: an empty grid
+          // that is really a failed fetch is the one thing this component promises never to show.
+          asked.delete(key)
+          if (alive.current) setFailedKeys((cur) => withMonth(cur, key))
+        })
+        .finally(() => {
+          if (alive.current) setLoadingKeys((cur) => withoutMonth(cur, key))
+        })
+    },
+    [loadMonth, initialKey, refreshKey],
+  )
+
+  // The months this mount wants on hand. ONE for now, the month on screen; the continuous scroll
+  // this requester was built for hands it several. Memoised on the joined string rather than the
+  // array, so the effect below fires when the LIST changes and not when its identity does.
+  const visibleSig = shownKey
+  const visibleKeys = useMemo(() => visibleSig.split(','), [visibleSig])
+
+  useEffect(() => {
+    // Fetching a month IS synchronising with an external system, and the Loading a reader hears has
+    // to be set in the same tick the request leaves. The effect it replaced set the same state the
+    // same way; what is new is only that the setters moved behind `ensureMonth`, which is what the
+    // rule can no longer see through.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    for (const key of visibleKeys) ensureMonth(key)
+  }, [visibleKeys, ensureMonth])
 
   const select = useCallback(
     (ev: CalendarEvent) => {
@@ -587,7 +662,7 @@ export function EventCalendar({
           thing left of this header. */}
       {!chrome.monthTitle && !chrome.paging && !chrome.viewSwitch && !chrome.monthJump ? (
         <span role="status" className="sr-only">
-          {loading ? 'Loading' : null}
+          {loadingKeys.size > 0 ? 'Loading' : null}
         </span>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
@@ -609,7 +684,7 @@ export function EventCalendar({
             {/* Always mounted: a live region announces changes to what it already holds, so it has
                 to be in the tree before Loading appears in it. */}
             <span role="status" className="text-meta text-muted">
-              {loading ? 'Loading' : null}
+              {loadingKeys.size > 0 ? 'Loading' : null}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -661,21 +736,10 @@ export function EventCalendar({
       )}
 
       {/* A FAILED MONTH says so. The grid below still paints, holding only what the page had on
-          hand, and this line is what keeps that from reading as an empty month. */}
-      {failedKey === shownKey && (
-        <p role="alert" data-calendar-load-error className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2 text-body-sm text-danger">
-          <span>{monthLabel(year, month1)} did not load.</span>
-          <button
-            type="button"
-            onClick={() => {
-              setFailedKey(null)
-              setRetryTick((n) => n + 1)
-            }}
-            className={buttonClasses('secondary', 'sm')}
-          >
-            Try again
-          </button>
-        </p>
+          hand, and this line is what keeps that from reading as an empty month. One line per shown
+          month, read off the failure SET, so October still says so after November loaded fine. */}
+      {monthDidNotLoad(failedKeys, shownKey) && (
+        <MonthLoadError year={year} month1={month1} onRetry={() => ensureMonth(shownKey)} />
       )}
 
       {/* THE LAYER CHIPS, where no host draws them. Inside the console they are in its header bar
