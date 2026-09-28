@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils'
 // interior is the event control console: the gathering's cover as a hero when it has one, header
 // with stage pill, primary facts, share links, and headline stats. Not the Studio editor.
 //
-// THE HERO (LIVE-496, ADR-1548). The owner asked for "a list on the left and card, with hero image and
+// THE HERO (LIVE-496, ADR-1551). The owner asked for "a list on the left and card, with hero image and
 // all stats on the right". LIVE-490 made the two List views one; this pane drew stats and a link and
 // no image, though the item already carried `coverUrl`. The cover leads the card now, full-bleed
 // above the header, cropped the way every other cover surface crops it: `object-cover` with the

@@ -48635,9 +48635,9 @@ The row was explicit about the trap, and it is the LIVE-533 shape: a "This date 
 **Rows.** LIVE-534 (closed here). LIVE-531, LIVE-533, LIVE-536 unchanged.
 
 
-## ADR-1548: The one List's card leads with the gathering's cover, cropped the way every other cover is (LIVE-496)
+## ADR-1551: The one List's card leads with the gathering's cover, cropped the way every other cover is (LIVE-496)
 
-**Status:** Accepted · 2026-09-28 · backlog `LIVE-496` · extends [ADR-1464](DECISIONS.md) (the List view) and LIVE-490 (the one List) · numbered **1548** because 1541 to 1547 are claimed on main and by #2941, #2947, #2949, #2961 and #2965
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-496` · extends [ADR-1464](DECISIONS.md) (the List view) and LIVE-490 (the one List) · numbered **1551** because 1541 to 1550 are claimed on main and by open PRs (#2946 to #2965)
 
 **Context.** The owner's ask of 2026-09-23, verbatim: "Consider that there are two different List views, consolidate that into one experience with a list on the left and card, with hero image and all stats on the right." LIVE-490 shipped the first half: Grid / List / Workflow is one surface control and the List carries its own This month / All scope, so the index on the left is one list reached one way. The right did not ship: `components/spaces/calendar-list-view.tsx` drew a `StatCard` row and a Go to event link and no image, while `ListIndexItem` already carried `coverUrl` and the grid popup already read it. Not a design question; the pane was not rendering data it had.
 
