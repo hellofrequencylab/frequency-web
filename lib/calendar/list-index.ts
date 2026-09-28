@@ -25,6 +25,8 @@ export type ListIndexItem = {
   notes: string | null
   goingCount: number
   coverUrl: string | null
+  /** The host-picked focal point for that cover, the same value every cropped cover applies. */
+  coverFocus?: string | null
   startInstantIso: string | null
   stage: EntryStage | null
   planId: string | null
@@ -66,6 +68,7 @@ export function listIndexItems(events: CalendarEvent[]): ListIndexItem[] {
         notes: ev.notes ?? null,
         goingCount: ev.goingCount,
         coverUrl: ev.coverUrl,
+        coverFocus: ev.coverFocus ?? null,
         startInstantIso: ev.startInstantIso,
         stage: ev.stage ?? null,
         planId: ev.planId ?? null,
