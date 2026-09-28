@@ -30,6 +30,8 @@ import { isValidTimeZone } from '@/lib/time/zone'
 import { entryKind, entryStage } from '@/lib/calendar/registry'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import { listDueDateItems } from '@/lib/calendar/due-dates-store'
+import { recordPlanActivity } from '@/lib/calendar/plan-activity-store'
+import { shortDateLabel } from '@/lib/calendar/short-date'
 import { reanchorPlanTodos, transitionPlanStage } from './plan-actions'
 import { log } from '@/lib/log'
 
@@ -147,7 +149,24 @@ export async function saveCalendarEntry(
     }
   }
   if ('error' in res) return fail(res.error)
+  // THE PLAN'S RECORD (LIVE-543): a date added to a Plan, or a Plan's date moved to another day.
+  if (!entryId && w.plan_id) {
+    await recordPlanActivity({
+      planId: w.plan_id,
+      actorProfileId: editor.profileId,
+      actorSpaceId: editor.spaceId,
+      kind: 'date_added',
+      summary: `Added "${w.title}" on ${shortDateLabel(w.starts_at.slice(0, 10))}.`,
+    })
+  }
   if (movedPlanId) {
+    await recordPlanActivity({
+      planId: movedPlanId,
+      actorProfileId: editor.profileId,
+      actorSpaceId: editor.spaceId,
+      kind: 'date_moved',
+      summary: `Moved "${w.title}" to ${shortDateLabel(w.starts_at.slice(0, 10))}.`,
+    })
     // The DATE moved, and it moved successfully. A checklist that failed to follow it is a real
     // regression, but it is not a reason to tell the owner their date did not save — so it is
     // reported to the log, where a gate can see it, rather than swallowed or thrown at the form.

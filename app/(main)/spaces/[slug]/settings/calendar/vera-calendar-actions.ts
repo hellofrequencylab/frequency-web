@@ -40,6 +40,7 @@ import { monthGridWindow, safeMonth } from '@/lib/calendar/month-window'
 import { shortDateLabel } from '@/lib/calendar/short-date'
 import { dayInZone, resolveZone } from '@/lib/time/zone'
 import { getVeraChangeRecord, listVeraChangeRecords, recordVeraChanges } from '@/lib/calendar/vera-log-store'
+import { recordPlanActivity } from '@/lib/calendar/plan-activity-store'
 import { saveCalendarEntry } from './entry-actions'
 import { addPlanTodo, archiveSpacePlan, reanchorPlanTodos, transitionPlanStage } from './plan-actions'
 
@@ -212,7 +213,9 @@ type Editor = { spaceId: string; profileId: string }
  * vocabulary; a null `before` is a change this vocabulary cannot reverse, and the record then keeps
  * `irreversibleReason` in its place rather than a hole.
  */
-type Applied = { message: string; before: VeraBefore | null }
+/** What one applied change reports: the sentence, what puts it back, and the Plan it touched (for
+ *  the Plan's own record, LIVE-543) when the door underneath did not already write that record. */
+type Applied = { message: string; before: VeraBefore | null; recordOn?: string | null }
 
 function pencilInput(change: Extract<VeraChange, { kind: 'pencil' }>, day: string, entryStage: string, planId: string | null): EntryInput {
   return {
@@ -277,7 +280,7 @@ async function applyPencil(slug: string, editor: Editor, change: Extract<VeraCha
   // A pencil that STARTED a Plan is reversed by taking that Plan back; dates added to a Plan that
   // was already there are not, because there is no verb here for removing one date from a Plan.
   return change.planId
-    ? { message: `Added ${total} date${total === 1 ? '' : 's'} of "${change.title}" to the Plan.`, before: null }
+    ? { message: `Added ${total} date${total === 1 ? '' : 's'} of "${change.title}" to the Plan.`, before: null, recordOn: change.planId }
     : {
         message: `Penciled "${change.title}" on ${total} date${total === 1 ? '' : 's'} as a new Plan at ${transition.label}.`,
         before: { kind: 'pencil', createdPlanId: planId! },
@@ -312,7 +315,7 @@ async function applyMove(slug: string, editor: Editor, change: Extract<VeraChang
     const anchored = await reanchorPlanTodos(slug, row.plan_id)
     if ('error' in anchored) return { error: `"${row.title}" moved to ${shortDateLabel(change.toDay)}, but its to-dos did not follow. Open the Plan and check them.` }
   }
-  return { message: `Moved "${row.title}" to ${shortDateLabel(change.toDay)}.`, before: { kind: 'move', day: fromDay } }
+  return { message: `Moved "${row.title}" to ${shortDateLabel(change.toDay)}.`, before: { kind: 'move', day: fromDay }, recordOn: row.plan_id }
 }
 
 /**
@@ -357,8 +360,8 @@ async function applyPlanField(editor: Editor, change: Extract<VeraChange, { kind
   const res = await updateSpacePlan(editor.spaceId, change.id, details)
   if ('error' in res) return { error: res.error }
   if (spec.row) return { message: `Added to ${spec.label} on "${plan.title}": ${fieldValueText(spec, change.value)}.`, before }
-  if (change.value === null) return { message: `Cleared ${spec.label} on "${plan.title}".`, before }
-  return { message: `Set ${spec.label} on "${plan.title}" to ${fieldValueText(spec, change.value)}.`, before }
+  if (change.value === null) return { message: `Cleared ${spec.label} on "${plan.title}".`, before, recordOn: plan.id }
+  return { message: `Set ${spec.label} on "${plan.title}" to ${fieldValueText(spec, change.value)}.`, before, recordOn: plan.id }
 }
 
 /**
@@ -380,8 +383,8 @@ async function applyEntryField(slug: string, editor: Editor, change: Extract<Ver
   if (!input) return { error: `${spec.label} is not a field Vera can set on a date.` }
   const res = await saveCalendarEntry(slug, change.id, input)
   if ('error' in res) return { error: res.error }
-  if (change.value === null) return { message: `Cleared ${spec.label} on "${row.title}".`, before }
-  return { message: `Set ${spec.label} on "${row.title}" to ${fieldValueText(spec, change.value)}.`, before }
+  if (change.value === null) return { message: `Cleared ${spec.label} on "${row.title}".`, before, recordOn: row.plan_id }
+  return { message: `Set ${spec.label} on "${row.title}" to ${fieldValueText(spec, change.value)}.`, before, recordOn: row.plan_id }
 }
 
 async function applyOne(slug: string, editor: Editor, change: VeraChange): Promise<Applied | { error: string }> {
@@ -411,7 +414,7 @@ async function applyOne(slug: string, editor: Editor, change: VeraChange): Promi
       if ('error' in parsed) return { error: parsed.error }
       const res = await updateSpacePlan(editor.spaceId, change.planId, { title: parsed.data.title })
       if ('error' in res) return { error: res.error }
-      return { message: `Renamed "${plan.title}" to "${parsed.data.title}".`, before: { kind: 'retitle', title: plan.title } }
+      return { message: `Renamed "${plan.title}" to "${parsed.data.title}".`, before: { kind: 'retitle', title: plan.title }, recordOn: change.planId }
     }
     case 'todo': {
       const plan = await getSpacePlan(editor.spaceId, change.planId)
@@ -490,6 +493,18 @@ export async function applyVeraChanges(
         continue
       }
       results.push({ index: i, ok: true, message: outcome.message })
+      // THE PLAN'S RECORD (LIVE-543): a change whose door did not already write the record (a
+      // date penciled or moved, a Plan field, a retitle) is recorded here with the sentence the
+      // action reported. Stage, to-do and archive changes go through doors that record themselves.
+      if (outcome.recordOn) {
+        await recordPlanActivity({
+          planId: outcome.recordOn,
+          actorProfileId: editor.profileId,
+          actorSpaceId: editor.spaceId,
+          kind: change.kind === 'pencil' ? 'date_added' : change.kind === 'move' ? 'date_moved' : 'field',
+          summary: `Through Vera: ${outcome.message}`,
+        })
+      }
       // The record is written from what the ACTION saw, never from what the browser sent: the
       // sentence it reported, and the change that puts it back, built from the value it read first.
       const reverse = reverseChange(change, outcome.before)

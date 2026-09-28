@@ -479,6 +479,15 @@ the guest's read-only drawer included, and folds each to-do's thread behind Note
 author when the session can read the profile and falls back to the Space, because profiles RLS is regional.
 Proof of the lock: `supabase/tests/space_plan_comments.test.sql`.
 
+THE RECORD (`LIVE-543`, ADR-1554). Every door that changes a Plan writes one row to `space_plan_activity`
+(`20270345009410`) after its change lands: who, from which Space, what kind (a closed set) and the sentence
+the door reported. The same two helpers gate select and insert for the host and an accepted guest; there is
+no update or delete policy, the way the Vera log has none. `recordPlanActivity` (`lib/calendar/plan-activity-store.ts`,
+session client, best effort and logged on failure) is the one writer, called from plan-actions, task-actions,
+entry-actions and vera-calendar-actions; a Vera line whose door records itself (stage, to-do, archive) is not
+written twice. `listPlanActivity` reads the latest twenty for either side, and the drawer shows them newest
+first under `[data-plan-activity]`. Proof of the lock: `supabase/tests/space_plan_activity.test.sql`.
+
 **Production** (`PROG-CAL3`, shipped). "Make it a Production" opens the event Spark (`lib/studio/entities/event.ts`)
 prefilled by a pure mapping from the plan and the chosen Pencil onto the manifest's field keys. The event
 carries `plan_id`, and the Pencil is retired in the same step so the calendar shows one card. The

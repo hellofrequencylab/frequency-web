@@ -37,7 +37,9 @@ import {
   sharePlanWithSpace,
   veraPlanProposal,
   listPlanComments,
+  listPlanActivity,
 } from './plan-actions'
+import { actorWords, type PlanActivityView } from '@/lib/calendar/plan-activity'
 import { PlanCommentThread } from './plan-comment-thread'
 import { countByTask, type PlanCommentView } from '@/lib/calendar/plan-comments'
 import { describeOffset, offsetFromForm } from '@/lib/calendar/relative-schedule'
@@ -103,6 +105,8 @@ export function PlanDrawer({
   // THE THREAD (LIVE-542): every comment of the Plan, and which to-do's thread is unfolded.
   const [comments, setComments] = useState<PlanCommentView[]>([])
   const [openThread, setOpenThread] = useState<string | null>(null)
+  // THE RECORD (LIVE-543): the latest things anyone did to the Plan, newest first.
+  const [activity, setActivity] = useState<PlanActivityView[]>([])
   const [linkableEvents, setLinkableEvents] = useState<
     { id: string; title: string; whenLabel: string; planId: string | null }[]
   >([])
@@ -128,6 +132,7 @@ export function PlanDrawer({
     setShares([])
     setComments([])
     setOpenThread(null)
+    setActivity([])
     setLinkableEvents([])
     setLinkEventId('')
   }
@@ -142,6 +147,13 @@ export function PlanDrawer({
       })
       .catch(() => {
         if (live) setComments([])
+      })
+    listPlanActivity(slug, plan.id)
+      .then((res) => {
+        if (live && !isError(res)) setActivity(res.data)
+      })
+      .catch(() => {
+        if (live) setActivity([])
       })
     return () => {
       live = false
@@ -712,6 +724,23 @@ export function PlanDrawer({
             placeholder={sharedFrom ? `A word for ${sharedFrom} and your team.` : 'A word for everyone working this Plan.'}
           />
         </div>
+
+        {/* THE RECORD (PROG-CAL7 Together, LIVE-543). What anyone on either side did to the Plan,
+            written by the door that did it, newest first. Read only by design: the record is a
+            fact about what happened, never a sentence to edit. */}
+        {activity.length > 0 && (
+          <div className="grid gap-1" data-plan-activity>
+            <p className={labelClasses}>Activity</p>
+            <ul className="space-y-1 text-body-sm text-text">
+              {activity.map((a) => (
+                <li key={a.id} data-plan-activity-row={a.kind}>
+                  <span className="text-muted">{`${actorWords(a)} · ${shortDateLabel(a.createdAt)} · `}</span>
+                  {a.summary}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {notice && (
           <p role="status" className="text-body-sm text-text" data-plan-notice>

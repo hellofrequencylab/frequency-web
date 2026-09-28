@@ -48646,3 +48646,19 @@ made both zone defects survive this long.
 
 **Consequences.** `LIVE-542` closes on its probe (the migration set creates and gates the table with no update policy, a session-only store exists, the drawer renders the thread). The generated types gained the table and the function by hand in the generated shape. The migration is applied after merge with `execute_sql` and a ledger insert at its own version. Child 5 (LIVE-545) sends the notification a comment deserves; child 3 (LIVE-543) records who did what to the Plan itself, which is not a comment and does not live here.
 
+## ADR-1554: A Plan keeps its own record of who did what, written by the door that did it, readable by both sides and rewritten by nobody (LIVE-543)
+
+**Status:** Accepted · 2026-09-28 · `LIVE-543` (child 3 of 6 of `PROG-CAL7`) · builds on [ADR-1552](DECISIONS.md) (the handshake) and [ADR-1553](DECISIONS.md) (the thread) · numbered 1554 because 1545 to 1551 are claimed by pull requests opened before this lane's, 1552 by #2964 and 1553 by #2968, the two children this one stands on (ADR-1509)
+
+**Context.** Two Spaces working one Plan had no way to learn what the other did to it: who moved a date, who finished a to-do, who changed the stage. The Vera change log records what Vera applied, keyed by batch, and nothing a person did by hand. PROG-CAL7 names "an activity log (who moved a date, who finished a task)" and its notifications fan out from that log, so the record has to exist before child 5 can send anything.
+
+**Decision.**
+
+1. **One table, one writer, written after the change lands.** `public.space_plan_activity` (20270345009410) carries the Plan, the actor, the Space the actor acted from, a kind from a closed set and the sentence the door reported. `recordPlanActivity` is the only writer, on the session client, and every door that changes a Plan calls it after its own write succeeded: plan-actions (save, stage, archive, to-dos, the Vera checklist, the three share doors, a comment), task-actions (an inbox tick on a Plan to-do), entry-actions (a date added or moved) and vera-calendar-actions (each accepted line, with the sentence the action reported, except where the door underneath already records). The record claims only what happened.
+2. **Best effort, never silent.** A record that fails to write does not fail the change it describes; the change already landed and a form that says "did not save" over a saved date is a lie. It logs one structured line first, so the failure is a log query away rather than invisible.
+3. **Append only, gated by the share.** Select and insert admit the host and an accepted guest through the 20270345007300 helpers; the actor is signed by the session. No update policy, no delete policy, no take-back: an activity row is a fact about what a door did, not a sentence a person wrote. pgTAP proves the lock from five seats and the catalog.
+4. **A declined share writes nothing.** The guest that passed may not write the Plan's record, by the same lock that keeps a pending Space out of it, and the host reads the state on its share list. A yes is recorded on the Plan the guest may now read.
+5. **Both sides read it, nobody edits it.** The drawer shows the latest twenty newest first for the host and for the guest's read-only drawer alike, the actor named where the session can read the profile and by Space otherwise, with no control on any row.
+
+**Consequences.** `LIVE-543` closes on its probe (the migration set creates the table with no update or delete policy, all four door files call the writer, the drawer reads it). `todo_assigned` waits for LIVE-544's assign door; LIVE-545 fans notifications out from these rows. The migration is applied after merge with `execute_sql` and a ledger insert at its own version.
+

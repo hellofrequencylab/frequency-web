@@ -14067,6 +14067,58 @@ export type Database = {
           },
         ]
       }
+      space_plan_activity: {
+        Row: {
+          actor_profile_id: string | null
+          actor_space_id: string
+          created_at: string
+          id: string
+          kind: string
+          plan_id: string
+          summary: string
+        }
+        Insert: {
+          actor_profile_id?: string | null
+          actor_space_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          plan_id: string
+          summary: string
+        }
+        Update: {
+          actor_profile_id?: string | null
+          actor_space_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          plan_id?: string
+          summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_plan_activity_actor_profile_id_fkey"
+            columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_plan_activity_actor_space_id_fkey"
+            columns: ["actor_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_plan_activity_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "space_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_plan_comments: {
         Row: {
           author_profile_id: string | null
