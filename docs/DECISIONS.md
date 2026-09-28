@@ -48611,9 +48611,9 @@ module load — so on CI only the source-shape case fails when the zone is unpin
 is green in UTC and red in Pacific trains everyone to ignore a red suite, which is the quiet cost that
 made both zone defects survive this long.
 
-## ADR-1545: The community board runs on the session client, and a definer feed function says exactly what the posts policy says (LIVE-335)
+## ADR-1546: The community board runs on the session client, and a definer feed function says exactly what the posts policy says (LIVE-335)
 
-**Status:** Accepted · 2026-09-28 · backlog `LIVE-335` (closed here; the convergence half) · extends [ADR-1514](DECISIONS.md) (the three policies) · numbered **1545** because 1543 and 1544 are held by pull requests open when this was written
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-335` (closed here; the convergence half) · extends [ADR-1514](DECISIONS.md) (the three policies) · numbered **1546** because 1543 to 1545 are held by pull requests open when this was written (#2946, #2947, #2949; it was 1545 for one CI run until #2949, opened earlier, took it)
 
 **Context.** ADR-1514 re-cut the three SELECT policies that had kept `lib/feed/community-board.ts` on the service role, with a pgTAP proof, and left the convergence for its own PR. Re-testing the premise (ADR-1082) on production as a real plain member inside a rolled-back transaction: the memberships, Space, Circle and event reads the board makes return the same rows under RLS as under the bypass. One read does not. The board names each post's author, and the `profiles` policy admits another member's row only in the reader's own region; 58 of 59 profiles carry no region, so a plain member reads exactly one profile under RLS, their own. Every author line on the platform therefore already comes through a SECURITY DEFINER function or the service role.
 
