@@ -467,11 +467,11 @@ export function CalendarConsole({
               <p className="px-4 py-4 text-body-sm text-muted">Nothing on the calendar in {label}. Pencil a date to start.</p>
             ) : (
               days.map((day) => (
-                <section key={day.dayKey} aria-label={day.label} className="pb-2">
-                  <h3 className="sticky top-0 z-10 border-b border-border bg-surface px-4 pb-1.5 pt-3 text-body-sm font-semibold text-text">
+                <section key={day.dayKey} aria-label={day.label} className="pb-3">
+                  <h3 className="sticky top-0 z-10 border-b border-border bg-surface px-4 pb-2 pt-4 text-body-sm font-semibold text-text">
                     {day.label}
                   </h3>
-                  <ul className="space-y-1 px-2 pt-1.5">
+                  <ul className="space-y-0.5 px-1 pt-2">
                     {day.items.map((item) => {
                       const current = selectedKey === item.key
                       const titleClass = itemTitleClass(item.stage, item.isCancelled)
@@ -481,11 +481,27 @@ export function CalendarConsole({
                             type="button"
                             onClick={() => onSelectItem(item.key)}
                             aria-pressed={current}
+                            // NO BOX (owner ask 2026-09-28: "remove the rounded border stroke from
+                            // the date cards in the left column"). Forty hairline rectangles stacked
+                            // down a narrow column read as a grid of their own and compete with the
+                            // month beside them. What replaces the box is a LEFT EDGE: two units of
+                            // border that are transparent at rest and take the brand when selected.
+                            //
+                            // 🔴 IT HAS TO BE AN EDGE, NOT JUST A FILL. `itemSelectedClass` returns
+                            // `border-primary bg-surface-elevated` for a CANCELLED row and says why
+                            // in its own doc: a cancelled row "shows selection by its edge alone", so
+                            // the brand never paints over the struck-through grey. Delete the border
+                            // outright and selecting a cancelled item becomes invisible.
+                            //
+                            // The two colours also never appear together -- `border-transparent`
+                            // lives in the RESTING branch, not the base -- because `cn` is a plain
+                            // joiner, not tailwind-merge (lib/utils.ts), so a base colour and a state
+                            // colour would both land and let stylesheet order pick the winner.
                             className={cn(
-                              'min-w-0 flex-1 rounded-card border px-2.5 py-1.5 text-left transition-colors motion-reduce:transition-none',
+                              'min-w-0 flex-1 border-l-2 px-3 py-2 text-left transition-colors motion-reduce:transition-none',
                               current
                                 ? itemSelectedClass(item.stage, item.isCancelled)
-                                : cn('border-border bg-surface hover:border-border-strong hover:bg-surface-elevated', titleClass),
+                                : cn('border-transparent hover:bg-surface-elevated', titleClass),
                             )}
                           >
                             <span className={cn('block truncate text-body-sm font-semibold', titleClass)}>
@@ -534,7 +550,7 @@ export function CalendarConsole({
             scrolls the stage. Nothing here scrolls sideways: `overflow-x-hidden` is stated at the
             stage boundary rather than left to whichever child happens to carry it, so a panel added
             later cannot quietly introduce a second axis. */}
-        <div ref={stageRef} data-calendar-console-stage className="flex min-h-0 flex-col overflow-x-hidden p-2 sm:p-3" />
+        <div ref={stageRef} data-calendar-console-stage className="flex min-h-0 flex-col overflow-x-hidden" />
       </div>
 
       <Dialog open={helpOpen} onClose={() => setHelpOpen(false)} ariaLabelledBy="calendar-console-keys" align="center" className="max-w-sm">
