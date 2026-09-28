@@ -132,9 +132,19 @@ export function DispatchTicker({ items }: { items: TickerItem[] }) {
         aria-live="polite"
         className="group flex min-w-0 flex-1 items-center gap-2 text-body-sm transition-colors"
       >
-        {current.linked
-          ? <Zap className="h-3.5 w-3.5 shrink-0 text-primary" />
-          : <Megaphone className="h-3.5 w-3.5 shrink-0 text-subtle" />}
+        {/* 🔴 TWO FIXED POSITIONS, ONE TYPE EACH (LIVE-483). This used to be a ternary that put
+            Zap OR Megaphone at one position. React reconciles children by type at a position, so
+            that was not an update, it was an unmount and a fresh mount: the icon's svg node was
+            REPLACED every time the rotation crossed between a linked headline and a plain one,
+            measured while proving LIVE-482 (bar, link and title were the same nodes on every tick;
+            the icon read new). Nothing was visible yet, because a 14px svg with no transition
+            paints the same either way, but it is the LIVE-472 / LIVE-477 shape, and the day this
+            icon gets an animation a remount replays it on every rotation. Each icon now owns its
+            own position forever, and a flip is a class change on two nodes that stay put. Lucide
+            exposes no public icon data, so one generic <Icon> switching paths is not on offer
+            without a deep import; two positions cost one hidden 14px svg and nothing else. */}
+        <Zap className={`h-3.5 w-3.5 shrink-0 text-primary${current.linked ? '' : ' hidden'}`} />
+        <Megaphone className={`h-3.5 w-3.5 shrink-0 text-subtle${current.linked ? ' hidden' : ''}`} />
         <span className="truncate font-medium text-text group-hover:text-primary-strong">
           {current.title}
         </span>

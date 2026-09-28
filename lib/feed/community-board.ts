@@ -17,7 +17,7 @@ import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 // moved to the right rail, where the game reads as "a side thing we all do together" rather than
 // the first thing home says.
 //
-// THE POLICIES ARE THE GATE (LIVE-335, ADR-1546). This module read on the service role from
+// THE POLICIES ARE THE GATE (LIVE-335, ADR-1555). This module read on the service role from
 // 2026-09-15 to 2026-09-28 because the live SELECT policies could not express the board for a plain
 // member: `events` admitted `circle_only` only at a retired rung, `spaces_read_active` hid an
 // owner's own Space behind status = 'active', and the one `posts` policy admitted a `cluster`

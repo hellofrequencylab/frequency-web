@@ -1,4 +1,4 @@
--- scoped_feed_for_viewer admits the cluster announcement the posts policy admits (LIVE-335, ADR-1546).
+-- scoped_feed_for_viewer admits the cluster announcement the posts policy admits (LIVE-335, ADR-1555).
 --
 -- 🔴 THE GAP, and it is between two readers that are supposed to agree. 20270345007700 (ADR-1514)
 -- gave the ONE `posts` SELECT policy a fourth disjunct on its `cluster` branch:
