@@ -130,32 +130,6 @@
 # column-backed image companions. library_assets is RLS deny-all (scripts/rls-deny-all.txt),
 # so a session client cannot refresh a cached url. Same posture as lib/library/resolve-refs.ts
 # (PROG-D2): fail-open to the cache, one query, no writes.
-# lib/feed/community-board.ts (added 2026-09-15, LIVE-248): the feed's first module, reading the
-# next gathering in the member's Circles and the newest posts in their Spaces. Same posture as the
-# four lib/feed/* readers and components/sidebar/rail-panels.tsx already in this list, and the
-# reason is MEASURED against the live SELECT policies (pg_policy, 2026-09-15) rather than assumed.
-# The session client would silently drop three of its reads:
-#   (1) `events`'s read policy grants `circle_only` only at role `crew` or above, so an ordinary
-#       member would see none of their own Circles' gatherings.
-#   (2) `spaces_read_active` requires status = 'active' AND (non-private OR is_space_member), and a
-#       Space's OWNER holds no space_members row, so the member's own private or draft Space
-#       disappears from their own board.
-#   (3) the ONE `posts` read policy admits a `cluster` announcement only to someone already in that
-#       Circle, its hub or its tuned channel, so a Space member who has not joined the Circle loses
-#       every announcement the Space published. Its `public` branch (role >= member) WOULD carry
-#       the rest.
-# The reads that WOULD converge (memberships and space_members, both profile_id =
-# get_my_profile_id(); the `circles` lookup through can_view_space_content) are not worth splitting
-# one module across two clients. Scope is the gate instead, in the query: a gathering must belong to
-# a Circle the member is ACTIVE in and carry an insider visibility (circleEventVisibilities(true) —
-# never `unlisted`, never `private`), and a post must sit in a non-draft, non-archived, non-unlisted
-# Circle OWNED by one of the member's Spaces and be `public` or `cluster` (never `group`, which is
-# circle-members-only and this reader cannot prove membership). READ-ONLY; it writes nothing.
-# NOTE for whoever converges this: an earlier draft of this entry said `posts` could not express the
-# activity half at all because the post was scoped to a SPACE. That was wrong about the DATA, not
-# the policy: `posts.scope_id` is always a CIRCLE id (there is no scope_type column and no writer
-# stamps a Space), so the read goes through circles.space_id and the policy question is the
-# `cluster` branch above.
 # lib/billing/ticket-sale-notify.ts (added 2026-09-15, LIVE-345): the HOST's side of a ticket sale,
 # the exact sibling of lib/billing/tips-notify.ts already in this list and under the identical
 # posture: the caller is STRIPE. It runs from recordTicketFromSession inside the webhook, so there
@@ -796,7 +770,6 @@ lib/events/ticket-tiers.ts
 lib/events/tier-prices.ts
 lib/events/waitlist-notify.test.ts
 lib/events/waitlist-notify.ts
-lib/feed/community-board.ts
 lib/feed/density.ts
 lib/feed/feed-people.ts
 lib/feed/post-origin.ts

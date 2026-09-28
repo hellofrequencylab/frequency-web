@@ -48610,3 +48610,24 @@ the runner's, and one of them documents in the file that Intl caches a formatter
 module load — so on CI only the source-shape case fails when the zone is unpinned. A test suite that
 is green in UTC and red in Pacific trains everyone to ignore a red suite, which is the quiet cost that
 made both zone defects survive this long.
+
+## ADR-1545: The community board runs on the session client, and a definer feed function says exactly what the posts policy says (LIVE-335)
+
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-335` (closed here; the convergence half) · extends [ADR-1514](DECISIONS.md) (the three policies) · numbered **1545** because 1543 and 1544 are held by pull requests open when this was written
+
+**Context.** ADR-1514 re-cut the three SELECT policies that had kept `lib/feed/community-board.ts` on the service role, with a pgTAP proof, and left the convergence for its own PR. Re-testing the premise (ADR-1082) on production as a real plain member inside a rolled-back transaction: the memberships, Space, Circle and event reads the board makes return the same rows under RLS as under the bypass. One read does not. The board names each post's author, and the `profiles` policy admits another member's row only in the reader's own region; 58 of 59 profiles carry no region, so a plain member reads exactly one profile under RLS, their own. Every author line on the platform therefore already comes through a SECURITY DEFINER function or the service role.
+
+The feed's own definer RPC, `scoped_feed_for_viewer`, returns `author` for explicit Circle ids and is the reader behind the Circle wall and the Channel page. But it admits a `cluster` post only to a member of the Circle, its hub or its tuned channel: the rule the posts policy had BEFORE ADR-1514. A definer function that says less than the policy is not a leak. It is a second, older copy of the rule, and the exact gap LIVE-335 was filed for was still open in it.
+
+**Decision.**
+
+1. **`scoped_feed_for_viewer` carries the policy's fourth disjunct.** Migration `20270345009100` adds `private.is_member_of_circle_space(p.scope_id)` to its `cluster` branch and changes nothing else: same signature, return type, ordering, cap, demo gate and discoverability gate. The verdict stays `authenticated` and is restated from zero. `feed_for_viewer`, the unscoped home stream, is untouched: what home says first is a product decision (ADR-1294), and this row is about a reader asked for explicit ids.
+2. **The board reads on the session client.** Memberships, Space membership, owned Spaces, the next gathering and its Circle, the Circles a Space owns and the Space names all go through `createClient()`. What the board may show a member is what the policies let that member read.
+3. **The posts half goes through the RPC**, newest first, asked wider than the three slots and narrowed to `public` and `cluster` in code, because the RPC also returns `group` posts for Circles the member joined and the board is about the Space, not the Circle's room. The author line comes from the RPC's `author`.
+4. **The baseline shrinks by one**, and the proof follows the rule: the pgTAP file asks the RPC the same three questions it asks the policy (staff reads the announcement and nothing else, the outsider reads nothing, anon cannot call it), and the board's source test asserts the service-role import is gone.
+
+**Rejected.** Reading `profiles` through the session client and letting the author line go blank (a silent regression for every member outside their own region, which is nearly all of them). A new definer function that returns any profile's display name by id (a wider door than the feed already opens, for one reader). Widening the `profiles` policy (a privacy decision, its own row). Keeping `posts` on the session client and only the author on the RPC (two reads for one list, and a second place where the visibility rule is spelled).
+
+**Consequences.** The Circle wall and the Channel page, which also read `scoped_feed_for_viewer`, now show a Space member the Space's `cluster` announcements in Circles they have not joined, which is what ADR-1514 decided for the policy and had not reached the RPC. Five baseline files remain for the feed stack (`density`, `feed-people`, `post-origin`, `viewer-resonance`, `rail-panels`); ADR-1514 says which of their reads the policies now cover. One legacy edge is named rather than hidden: a `circle_only` event whose `scope_type` is the pre-rename `group` value is not admitted by the events policy and will not appear on the board; production has no such upcoming row.
+
+**Rows.** LIVE-335 (closed here). Untouched: `feed_for_viewer`, the three policies, the five other baseline files.
