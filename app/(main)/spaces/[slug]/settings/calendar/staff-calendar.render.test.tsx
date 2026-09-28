@@ -17,6 +17,10 @@ const mocks = vi.hoisted(() => ({
   saveCalendarEntry: vi.fn(async (..._args: unknown[]): Promise<{ data: undefined } | { error: string }> => ({ data: undefined })),
   createPenciledPlan: vi.fn(async (..._args: unknown[]) => ({ data: { id: 'plan-1', entryId: 'entry-1' } })),
   startPlanFromEntry: vi.fn(async (..._args: unknown[]) => ({ data: { id: 'plan-1' } })),
+  // LIVE-531: the two writes a Delete on a repeating entry could reach. Tracked, because which of
+  // the two a press lands on is the whole row.
+  deleteCalendarEntry: vi.fn(async (..._args: unknown[]) => ({ data: undefined })),
+  skipPencilDate: vi.fn(async (..._args: unknown[]) => ({ data: undefined })),
 }))
 
 vi.mock('next/navigation', () => ({
@@ -24,11 +28,11 @@ vi.mock('next/navigation', () => ({
 }))
 vi.mock('./entry-actions', () => ({
   saveCalendarEntry: mocks.saveCalendarEntry,
-  deleteCalendarEntry: async () => ({ data: undefined }),
+  deleteCalendarEntry: mocks.deleteCalendarEntry,
   findEntryClashes: async () => [],
   loadStaffCalendarMonth: async () => [],
   pickPencilDate: async () => ({ data: undefined }),
-  skipPencilDate: async () => ({ data: undefined }),
+  skipPencilDate: mocks.skipPencilDate,
 }))
 vi.mock('./plan-actions', () => ({
   createPenciledPlan: mocks.createPenciledPlan,
@@ -44,6 +48,8 @@ beforeEach(() => {
   mocks.createPenciledPlan.mockClear()
   mocks.startPlanFromEntry.mockReset()
   mocks.startPlanFromEntry.mockResolvedValue({ data: { id: 'plan-1' } })
+  mocks.deleteCalendarEntry.mockClear()
+  mocks.skipPencilDate.mockClear()
 })
 
 afterEach(() => {
@@ -446,5 +452,133 @@ describe('StaffCalendar: a new date lands in the Space zone', () => {
     const text = document.body.textContent ?? ''
     expect(text).toContain('Times are in Pacific Time.')
     expect(text).not.toContain('America/Los_Angeles')
+  })
+})
+
+// ── 🔴 DELETING ONE DATE OF A REPEATING ENTRY (LIVE-531, owner data loss 2026-09-28) ─────────────
+// The owner opened the October occurrence of a repeating Pencil and pressed Delete, meaning that one
+// night. A repeating entry is ONE row carrying the rule plus its exception dates, and the delete is
+// a hard `.delete()` on a table with no tombstone, so every date went and none of it came back.
+// These tests pin the CONSEQUENCE: which of the two writes a press lands on, and that the sentence
+// about what cannot be undone is on screen before the destructive choice is reachable.
+
+/** The panel of the open series dialog, or null. Queries are scoped to it because the entry drawer
+ *  is still mounted behind it with controls of its own. */
+const seriesPanel = (mark: 'delete' | 'save') =>
+  document.querySelector<HTMLElement>(`[data-series-choice="${mark}"]`)
+
+const panelButton = (mark: 'delete' | 'save', name: string) =>
+  [...(seriesPanel(mark)?.querySelectorAll('button') ?? [])].find((b) => b.textContent?.trim() === name) as
+    | HTMLButtonElement
+    | undefined
+
+const repeatingItem = (over: Partial<CalendarEvent> = {}) =>
+  pencilItem({
+    entryInput: entryInput({ repeat: 'FREQ=WEEKLY' }),
+    occurrenceDate: '2026-09-20',
+    ...over,
+  })
+
+describe('StaffCalendar: Delete on a repeating entry asks which dates it means', () => {
+  it('writes NOTHING on the press, and says in words that the series delete cannot be undone', async () => {
+    await mount(calendar([repeatingItem()]))
+    await openEdit()
+    await act(async () => button('Delete')!.click())
+    expect(mocks.deleteCalendarEntry).not.toHaveBeenCalled()
+    expect(mocks.skipPencilDate).not.toHaveBeenCalled()
+    const panel = seriesPanel('delete')
+    expect(panel).not.toBeNull()
+    expect(panel!.textContent).toContain('This date repeats')
+    expect(panel!.textContent).toContain('This cannot be undone.')
+    expect(panel!.textContent).toContain('every date it lands on, past and future')
+    // All three ways out are on screen, and the destructive one is not the only choice.
+    expect(panelButton('delete', 'This date only (Sun, Sep 20)')).toBeDefined()
+    expect(panelButton('delete', 'Delete the whole series')).toBeDefined()
+    expect(panelButton('delete', 'Keep everything')).toBeDefined()
+  })
+
+  it('"This date only" writes the EXCEPTION DATE and never touches the row', async () => {
+    await mount(calendar([repeatingItem()]))
+    await openEdit()
+    await act(async () => button('Delete')!.click())
+    await act(async () => panelButton('delete', 'This date only (Sun, Sep 20)')!.click())
+    expect(mocks.skipPencilDate).toHaveBeenCalledTimes(1)
+    expect(mocks.skipPencilDate.mock.calls[0]).toEqual(['lab', 'entry-1', '2026-09-20'])
+    expect(mocks.deleteCalendarEntry).not.toHaveBeenCalled()
+  })
+
+  it('"Delete the whole series" is the only press that reaches the hard delete', async () => {
+    await mount(calendar([repeatingItem()]))
+    await openEdit()
+    await act(async () => button('Delete')!.click())
+    await act(async () => panelButton('delete', 'Delete the whole series')!.click())
+    expect(mocks.deleteCalendarEntry).toHaveBeenCalledTimes(1)
+    expect(mocks.deleteCalendarEntry.mock.calls[0]).toEqual(['lab', 'entry-1'])
+    expect(mocks.skipPencilDate).not.toHaveBeenCalled()
+  })
+
+  it('"Keep everything" writes nothing and leaves the drawer where it was', async () => {
+    await mount(calendar([repeatingItem()]))
+    await openEdit()
+    await act(async () => button('Delete')!.click())
+    await act(async () => panelButton('delete', 'Keep everything')!.click())
+    expect(mocks.deleteCalendarEntry).not.toHaveBeenCalled()
+    expect(mocks.skipPencilDate).not.toHaveBeenCalled()
+    expect(seriesPanel('delete')).toBeNull()
+    expect(document.querySelector('#calendar-entry-title')).not.toBeNull()
+  })
+
+  it('offers the series delete and the way out, but no skip, when the drawer is not on one occurrence', async () => {
+    await mount(calendar([repeatingItem({ occurrenceDate: null })]))
+    await openEdit()
+    await act(async () => button('Delete')!.click())
+    expect(seriesPanel('delete')!.textContent).toContain('This cannot be undone.')
+    expect(panelButton('delete', 'This date only')).toBeUndefined()
+    expect(panelButton('delete', 'Delete the whole series')).toBeDefined()
+  })
+
+  it('leaves a ONE-OFF entry its one-step Delete, so no dialog appears where there is no series', async () => {
+    await mount(calendar([pencilItem()]))
+    await openEdit()
+    await act(async () => button('Delete')!.click())
+    expect(seriesPanel('delete')).toBeNull()
+    expect(mocks.deleteCalendarEntry).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('StaffCalendar: Save on a repeating entry says it changes every date', () => {
+  it('holds the write until the person picks the whole series', async () => {
+    await mount(calendar([repeatingItem()]))
+    await openEdit()
+    await act(async () => {
+      document.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    expect(mocks.saveCalendarEntry).not.toHaveBeenCalled()
+    const panel = seriesPanel('save')
+    expect(panel!.textContent).toContain('every date it lands on, past and future')
+    expect(panel!.textContent).toContain('not possible yet')
+    await act(async () => panelButton('save', 'Save the whole series')!.click())
+    expect(mocks.saveCalendarEntry).toHaveBeenCalledTimes(1)
+  })
+
+  it('"Go back" saves nothing', async () => {
+    await mount(calendar([repeatingItem()]))
+    await openEdit()
+    await act(async () => {
+      document.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    await act(async () => panelButton('save', 'Go back')!.click())
+    expect(mocks.saveCalendarEntry).not.toHaveBeenCalled()
+    expect(seriesPanel('save')).toBeNull()
+  })
+
+  it('leaves a one-off entry saving in one step', async () => {
+    await mount(calendar([pencilItem()]))
+    await openEdit()
+    await act(async () => {
+      document.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    expect(seriesPanel('save')).toBeNull()
+    expect(mocks.saveCalendarEntry).toHaveBeenCalledTimes(1)
   })
 })
