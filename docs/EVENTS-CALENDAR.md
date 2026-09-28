@@ -527,8 +527,14 @@ cannot disagree). Weekday and hour are read off the stored wall clock, an unreco
 rather than counted as empty, and no record at all answers null in words rather than a weekday nobody
 came on. The read is handed to the loop as a reader and runs at most once per ask, only when the tool is
 called, so `lib/ai/vera-calendar.ts` imports no store and the per-event ledger read costs only the ask
-that needs it. Not yet: the reason on the proposal line (`LIVE-540`); until it lands the model says which
-weekday and hour it followed in its note. Undo shipped as slice 3 (the change log below).
+that needs it. The reason is on the line (`LIVE-540`): the fold rides the proposal as `attendance`, the
+propose door puts it on the describe context, and `describeChange` ends a pencil whose days all fall on that
+weekday (and, when timed, start at that hour) with the server's own sentence and the count it rests on,
+"Saturdays at 7 PM have drawn the most people here: 21 over 2 events." (`followsAttendance` /
+`attendanceReason` in `lib/calendar/vera-command.ts`). A pencil that does not follow the history says
+nothing more: a Tuesday never claims the Saturday sentence. The model's note is told the line carries the
+reason, so it never does. Undo shipped as slice 3 (the change log below). With that, `PROG-CAL11` is
+whole: clarify, edit any field, undo, and dates from what actually happened.
 
 **Two gates, not one** (owner ask 2026-09-23: "I don't want Vera changing things without explicit
 permission"). Accept was the whole gate and every line arrived ticked, so the default action was
@@ -546,9 +552,10 @@ the server's knowledge of the rows, so `veraCalendarCommand` now returns a `Vera
 from the rows it already read; that is also what stops a line reading "Archive that Plan.", since the
 browser holds only the month it is showing and the server knows every title it named. Still true and
 worth restating: one writer, reached from one Accept, on the caller's session with RLS as the lock, and
-every word a person reads on a proposal line is written by the server, never by the model. Not yet:
-any record of what Vera changed. After Accept a Vera edit is indistinguishable from a hand edit, which
-is the versioning half of the same owner ask and its own row.
+every word a person reads on a proposal line is written by the server, never by the model. The record
+of what Vera changed is the change log (`PROG-CAL11` slice 3, #2881): every accepted proposal writes one
+row to `space_vera_changes`, a table with a select and an insert policy and no update or delete policy,
+and Undo reads a batch back as an ordinary proposal, last change first, through the same two gates.
 
 **Production seams for the non-event targets** (`PROG-CAL8`, `PROG-CAL9`, shipped). Each target in `PLAN_TARGET_DEFS`
 (`lib/calendar/plans.ts`) declares the door "Make it a Production" opens, sending the identifier its destination

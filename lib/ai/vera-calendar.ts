@@ -15,7 +15,10 @@
 //                      handed in by the calendar action as a READER on the context, keyed by the
 //                      Space the editor resolved, and runs at most once per ask and only when the
 //                      tool is called; this module imports no store. The tool is offered only when
-//                      a reader is on the context, so a caller without one sees the old three.
+//                      a reader is on the context, so a caller without one sees the old three. The
+//                      fold travels back on the proposal as `attendance` (LIVE-540), so the line a
+//                      person ticks can say why a day was picked in the SERVER's words; the model's
+//                      note never carries the reason.
 //   ask_clarification  the model calls this INSTEAD of proposing when the ask is ambiguous in a
 //                      way that changes the outcome (PROG-CAL11 slice 1). The server does not loop
 //                      again: the question goes back to the box with the TRANSCRIPT so far, the
@@ -112,6 +115,10 @@ export type VeraCalendarReply =
       changes: VeraChange[]
       /** One plain line from Vera about what she proposed and what she was not sure of. */
       note: string
+      /** The history the server folded when the model asked for it (LIVE-540): the fold itself,
+       *  never the model's words, so the proposal line can say why a day was picked in the
+       *  server's voice. Absent when the tool was not called or the read failed. */
+      attendance?: AttendanceHistory
     }
   | {
       kind: 'clarification'
@@ -262,7 +269,7 @@ Rules that never bend:
 - A field change sets ONE attribute of ONE existing Plan or date from the context, by the attribute's path and a value of its type; a Plan's stage, a date's day and a Plan's title have their own kinds and are never field changes. Setting the same attribute twice is two changes; leave the second out.
 - If the request cannot be expressed with the seven kinds of change, propose what can be and say what could not in the note.
 - When the request is ambiguous in a way that changes the outcome (several Plans or dates in the context match what was named, a timed thing has no time, a day could fall in two years), call ${CLARIFY_TOOL_NAME} INSTEAD of ${PROPOSE_TOOL_NAME}: one plain question, ${MIN_CLARIFICATION_OPTIONS} to ${MAX_CLARIFICATION_OPTIONS} options drawn from the context, with the id as the value where one exists. Never ask when a sensible default exists; take the default and say so in the note. At most ${MAX_CLARIFICATIONS} questions per request; once they are spent, propose with the best reading.
-- When ${ATTENDANCE_TOOL_NAME} is offered and the request is to pick, suggest or find a good day or time without naming one, call it first and prefer the weekday and hour it returns; say in the note, in one short clause, which weekday and hour you followed. When a day or time was named, do not call it: availability is the whole question then. When it says nothing has been recorded, propose from availability and say so in the note.
+- When ${ATTENDANCE_TOOL_NAME} is offered and the request is to pick, suggest or find a good day or time without naming one, call it first and prefer the weekday and hour it returns; the proposal line says why in its own words, so the note need not repeat it. When a day or time was named, do not call it: availability is the whole question then. When it says nothing has been recorded, propose from availability and say so in the note.
 - The answer to a question comes back as that tool's result. Continue from it; do not ask the same thing again.
 - Always answer by calling ${PROPOSE_TOOL_NAME} or ${CLARIFY_TOOL_NAME}. Do not answer in prose.`
 
@@ -443,7 +450,9 @@ export async function proposeCalendarChanges(input: {
   // when it does: the per-event ledger read costs the ask that needs it, not every ask.
   const reader = ctx.readAttendance ?? null
   let historyOnce: Promise<AttendanceHistory> | null = null
-  const readAttendance = reader ? () => (historyOnce ??= reader()) : null
+  // Kept once it resolves, so the proposal can carry the fold to the line (LIVE-540).
+  let history: AttendanceHistory | null = null
+  const readAttendance = reader ? () => (historyOnce ??= reader().then((h) => (history = h))) : null
   const propose = proposeTool()
   const tools: Anthropic.Tool[] = [LUNAR_TOOL, ...(readAttendance ? [ATTENDANCE_TOOL] : []), ...(mayAsk ? [CLARIFY_TOOL] : []), propose]
 
@@ -468,7 +477,10 @@ export async function proposeCalendarChanges(input: {
       const proposal = toolUses.find((b) => b.name === PROPOSE_TOOL_NAME)
       if (proposal) {
         const parsed = parseVeraChanges(proposal.input)
-        outcome = 'error' in parsed ? { error: parsed.error } : { kind: 'proposal', changes: parsed.changes, note: cleanNote((proposal.input as { note?: unknown }).note) }
+        outcome =
+          'error' in parsed
+            ? { error: parsed.error }
+            : { kind: 'proposal', changes: parsed.changes, note: cleanNote((proposal.input as { note?: unknown }).note), ...(history ? { attendance: history } : {}) }
         break
       }
       const question = mayAsk ? toolUses.find((b) => b.name === CLARIFY_TOOL_NAME) : undefined
