@@ -235,6 +235,9 @@ type CalendarEntryRow = {
   blocks_time: boolean
   recurrence_rule: string | null
   exception_dates: string[]
+  /** LIVE-536: the tombstone. A removed entry is still a row the service-role client can see, so
+   *  the fake has to carry it or a test cannot tell a filtered read from an unfiltered one. */
+  removed_at?: string | null
 }
 type ScheduleRow = {
   id: string
@@ -252,7 +255,14 @@ const calendarDb: { entries: CalendarEntryRow[]; schedules: ScheduleRow[] } = { 
  *  recurrence_rule is null` + `lt starts_at`). Every filter is applied so the test proves a master that
  *  ENDED before the window is fetched only because it carries a rule. */
 function calendarEntriesBuilder() {
-  const filters: { space_id?: string; blocks_time?: boolean; gtEnds?: string; ltStarts?: string; ruleNotNull?: boolean } = {}
+  const filters: {
+    space_id?: string
+    blocks_time?: boolean
+    gtEnds?: string
+    ltStarts?: string
+    ruleNotNull?: boolean
+    liveOnly?: boolean
+  } = {}
   const api = {
     select() {
       return api
@@ -270,6 +280,10 @@ function calendarEntriesBuilder() {
       if (col === 'starts_at') filters.ltStarts = val
       return api
     },
+    is(col: string, val: unknown) {
+      if (col === 'removed_at' && val === null) filters.liveOnly = true
+      return api
+    },
     not(col: string, op: string, val: unknown) {
       if (col === 'recurrence_rule' && op === 'is' && val === null) filters.ruleNotNull = true
       return api
@@ -284,7 +298,8 @@ function calendarEntriesBuilder() {
           (filters.blocks_time === undefined || r.blocks_time === filters.blocks_time) &&
           (filters.gtEnds === undefined || r.ends_at > filters.gtEnds) &&
           (filters.ltStarts === undefined || r.starts_at < filters.ltStarts) &&
-          (!filters.ruleNotNull || r.recurrence_rule !== null),
+          (!filters.ruleNotNull || r.recurrence_rule !== null) &&
+          (!filters.liveOnly || (r.removed_at ?? null) === null),
       )
       return Promise.resolve(resolve({ data, error: null }))
     },
@@ -667,6 +682,32 @@ describe('readCalendarBlocks expands a repeating blocking entry (PROG-CAL13)', (
   })
   const offered = (slots: { startsAt: string }[], day: string, time: string) =>
     slots.some((s) => s.startsAt === `${day}T${time}:00.000Z`)
+
+  // 🔴 THE TOMBSTONE ACTUALLY FILTERS (LIVE-536), which is the whole claim of the change that added
+  // `removed_at is null` to readCalendarBlocks. That read runs on the SERVICE ROLE, so no policy
+  // filters it and a removed row is one this client can still see. Without the filter a date the
+  // operator deleted goes on taking slots off the booking page for ever -- a Space silently
+  // unbookable on time it no longer holds.
+  //
+  // This case is the pair to the one below: the SAME entry, blocking the same landings, differing
+  // only by the tombstone. Adding `is()` to the fake query builder without this case would have
+  // restored the old behaviour and proved nothing, since every other fixture leaves removed_at null.
+  it('stops blocking once the entry is removed, and blocks while it is live', async () => {
+    calendarDb.entries.push(entry({ removed_at: '2026-06-20T00:00:00.000Z' }))
+    const afterRemoval = await listOpenSlots('space-1')
+    for (const day of ['2026-06-23', '2026-07-07', '2026-08-04']) {
+      expect(offered(afterRemoval, day, '10:00'), `${day} 10:00 is removed, so it must be bookable`).toBe(true)
+      expect(offered(afterRemoval, day, '10:30'), `${day} 10:30 is removed, so it must be bookable`).toBe(true)
+    }
+    // The control: the identical entry, live, still blocks. So the difference above is the
+    // tombstone and not the fixture being wrong in some other way.
+    calendarDb.entries.length = 0
+    calendarDb.entries.push(entry())
+    const whileLive = await listOpenSlots('space-1')
+    for (const day of ['2026-06-23', '2026-07-07', '2026-08-04']) {
+      expect(offered(whileLive, day, '10:00'), `${day} 10:00 is live, so it must be blocked`).toBe(false)
+    }
+  })
 
   it('blocks EVERY landing of a biweekly entry except the deliberately skipped one', async () => {
     calendarDb.entries.push(entry({ exception_dates: ['2026-07-21'] }))
