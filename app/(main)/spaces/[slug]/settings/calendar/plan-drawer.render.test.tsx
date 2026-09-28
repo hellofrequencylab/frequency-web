@@ -29,7 +29,9 @@ const mocks = vi.hoisted(() => ({
   saveSpacePlan: vi.fn(async () => ({ data: { id: 'plan-1' } })),
   runPlanAgain: vi.fn(async () => ({ data: { id: 'plan-2', title: 'Open house (again)' } })),
   planReadiness: vi.fn(async () => ({ gaps: [] as string[], href: null as string | null })),
-  sharePlanWithSpace: vi.fn(async () => ({ data: undefined })),
+  sharePlanWithSpace: vi.fn(async () => ({ data: { id: 'share-1' } })),
+  listPlanShares: vi.fn(async () => ({ data: { options: [{ value: 'space-guest', label: 'The Green Room' }], shares: [] as unknown[] } })),
+  revokePlanShare: vi.fn(async () => ({ data: undefined })),
 }))
 
 vi.mock('./plan-actions', () => ({
@@ -38,6 +40,8 @@ vi.mock('./plan-actions', () => ({
   runPlanAgain: mocks.runPlanAgain,
   planReadiness: mocks.planReadiness,
   sharePlanWithSpace: mocks.sharePlanWithSpace,
+  listPlanShares: mocks.listPlanShares,
+  revokePlanShare: mocks.revokePlanShare,
   listPlanTodos: async () => [],
   listPlanLinkableEvents: async () => [],
   archiveSpacePlan: async () => ({ data: undefined }),
@@ -73,6 +77,8 @@ beforeEach(() => {
   mocks.saveSpacePlan.mockClear()
   mocks.runPlanAgain.mockClear()
   mocks.sharePlanWithSpace.mockClear()
+  mocks.listPlanShares.mockClear()
+  mocks.revokePlanShare.mockClear()
   mocks.planReadiness.mockReset()
   mocks.planReadiness.mockResolvedValue({ gaps: [], href: null })
 })
@@ -119,7 +125,8 @@ describe('PlanDrawer: Enter in a to-do input adds the to-do, never saves and clo
   it('Enter in the share field does nothing rather than saving the Plan', async () => {
     const onClose = vi.fn()
     await mount(<PlanDrawer slug="lab" plan={plan} open onClose={onClose} />)
-    const share = document.querySelector('#plan-share') as HTMLInputElement
+    await flush()
+    const share = document.querySelector('#plan-share') as HTMLSelectElement
     const ev = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
     await act(async () => {
       share.dispatchEvent(ev)
@@ -172,15 +179,72 @@ describe('PlanDrawer: Run it again and Share wait for their round trip and say w
     expect(button('Run it again').disabled).toBe(false)
   })
 
-  it('Share reports success and stays off until a Space id is typed', async () => {
+  it('Share offers the accepted collaborators by name, stays off until one is picked, and reports the offer', async () => {
     await mount(<PlanDrawer slug="lab" plan={plan} open onClose={() => {}} />)
+    await flush()
+    expect(mocks.listPlanShares).toHaveBeenCalledWith('lab', 'plan-1')
     expect(button('Share').disabled).toBe(true)
-    const share = document.querySelector('#plan-share') as HTMLInputElement
-    await act(async () => setInput(share, 'guest-space'))
+    const share = document.querySelector('#plan-share') as HTMLSelectElement
+    // A picker, never a text field: the only values it can send are the collaborators' ids.
+    expect(share.tagName).toBe('SELECT')
+    expect([...share.options].map((o) => o.textContent)).toEqual(['Pick a Space', 'The Green Room'])
+    await act(async () => {
+      share.value = 'space-guest'
+      share.dispatchEvent(new Event('change', { bubbles: true }))
+    })
     await act(async () => button('Share').click())
     await flush()
-    expect(mocks.sharePlanWithSpace).toHaveBeenCalledWith('lab', 'plan-1', 'guest-space')
-    expect(document.querySelector('[data-plan-notice]')?.textContent).toContain('Shared')
+    expect(mocks.sharePlanWithSpace).toHaveBeenCalledWith('lab', 'plan-1', 'space-guest')
+    expect(document.querySelector('[data-plan-notice]')?.textContent).toContain('say yes from their own calendar')
+  })
+
+  it('lists every share with its state, and Take back only on an active one', async () => {
+    mocks.listPlanShares.mockResolvedValue({
+      data: {
+        options: [],
+        shares: [
+          { id: 's1', planId: 'plan-1', guestSpaceId: 'space-guest', status: 'pending', guestName: 'The Green Room', createdAt: '2026-09-28T10:00:00Z', respondedAt: null },
+          { id: 's2', planId: 'plan-1', guestSpaceId: 'space-x', status: 'declined', guestName: 'Annex', createdAt: '2026-09-27T10:00:00Z', respondedAt: '2026-09-27T11:00:00Z' },
+        ],
+      },
+    } as never)
+    await mount(<PlanDrawer slug="lab" plan={plan} open onClose={() => {}} />)
+    await flush()
+    const rows = [...document.querySelectorAll('[data-plan-share]')]
+    expect(rows.map((r) => r.getAttribute('data-plan-share'))).toEqual(['pending', 'declined'])
+    expect(rows[0].textContent).toContain('The Green Room')
+    expect(rows[0].textContent).toContain('Waiting for their answer')
+    expect(rows[1].textContent).toContain('They passed')
+    expect(rows[0].querySelector('button')?.textContent).toBe('Take back')
+    expect(rows[1].querySelector('button')).toBeNull()
+    // No collaborator is left to offer it to, and the text says why rather than showing an empty picker.
+    expect(document.querySelector('#plan-share')).toBeNull()
+    expect(document.querySelector('[data-plan-shares]')?.textContent).toContain('already has this Plan')
+    await act(async () => rows[0].querySelector('button')!.click())
+    await flush()
+    expect(mocks.revokePlanShare).toHaveBeenCalledWith('lab', 's1')
+  })
+})
+
+// SHARED WITH YOU, read only (PROG-CAL7, LIVE-541). A guest opens the same drawer and sees the
+// record, and nothing in it writes: no Save, no Archive, no to-do composer, no share picker, and
+// none of the host's loads are made on the guest's session.
+describe('PlanDrawer: a Plan shared with this Space opens read only', () => {
+  it('shows the fields disabled, names the host, and offers Close alone', async () => {
+    await mount(<PlanDrawer slug="lab" plan={plan} open onClose={() => {}} readOnly sharedFrom="The Green Room" />)
+    await flush()
+    expect(document.querySelector('[data-plan-shared-from]')?.textContent).toContain('Shared with you by The Green Room')
+    expect(button('Save Plan')).toBeUndefined()
+    expect(button('Archive Plan')).toBeUndefined()
+    expect(button('Share')).toBeUndefined()
+    expect(document.querySelector('[aria-label="New to-do"]')).toBeNull()
+    expect(button('Run it again')).toBeUndefined()
+    expect(button('Close')).toBeDefined()
+    expect(document.querySelector('[data-plan-shares]')).toBeNull()
+    const title = document.querySelector('#plan-title') as HTMLInputElement | null
+    expect(title?.disabled).toBe(true)
+    expect(mocks.listPlanShares).not.toHaveBeenCalled()
+    expect(mocks.planReadiness).not.toHaveBeenCalled()
   })
 })
 
