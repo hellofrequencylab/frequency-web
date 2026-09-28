@@ -32,7 +32,6 @@ tree as of this index: **ADR-1488**. 1488 is LIVE-439. 1481 is LIVE-432. 1477 is
 
 tree as of this index: **ADR-1491**. 1491 is the 2026-09-21 tail-order ruling (editor third to last, Etsy second to last, the app last). 1490 is LIVE-437. 1487 is LIVE-438. 1483 is LIVE-434. 1482 is LIVE-433. 1485 is LIVE-436. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1468 is Space Plans (PROG-CAL2-8). 1467 is the Calendar view slide shell. 1464 is the Admin Calendar five-view set. 1463 is LIVE-393. 1445 is the calendar C0-C5 ruling. 1325 is the plan this one amends.
 
-
 | Theme | Start here |
 |---|---|
 | **Names** | ADR-208 → [NAMING.md](NAMING.md) |
@@ -13907,7 +13906,6 @@ graduation hooks belong to other agents. `contacts` + `beta_*` stay untyped (unt
 
 **Consequences.** Additive and inert by default. The dedicated audit table's migration is WRITTEN but NOT applied (the lead applies centrally); it is registered in `scripts/rls-deny-all.txt` as service-role-only (RLS on, no policy), and the audit writer is best-effort with an `agent_actions` fallback so the send path works before the migration lands. Both gates are structurally unbypassable: the breaker cannot be skipped (it is the first call in the only graduated path), and the send-gate cannot be skipped (the enqueue is reachable only past both). `lib/database.types.ts` needs regenerating after the migration applies (the reader/writer cast untyped until then, ADR-246). Turning autonomy on for real is a deliberate, audited owner action, reversible instantly by the master kill or the breaker.
 
-
 ---
 
 ## ADR-627: One notification router/registry, and `practice.verified` verified-airtime instrumentation (WAM)
@@ -16159,7 +16157,6 @@ The durable rule: **a crawlable listing is public-only — `unlisted` is a link,
 **Consequences.** `page-hero.tsx`'s identity branch is shared, so the clipping fix also lands on `/circles/<slug>`, `/journeys/<slug>`, `/journeys/<slug>/learn` and `/channels/<id>` below 640px — the same bug, the same fix, and nothing at or above 640px. The height budget, re-derived at 17px root against the real `min-h-[15rem]` (255px, not the plan's assumed 240px): at 375px a five-chip friend viewer wraps to two rows for ~210px of used band, so the cover **does not grow**; a staff viewer's sixth chip takes a third row at ~252px, still inside it. At 320px the same clusters need three or four rows and the band grows to roughly 295px. That is the trade this pass accepts — a cover that is taller on the narrowest phones instead of one that hides controls. The plan's stricter "must not exceed 240px" was never reachable: `min-h-[15rem]` alone is 255px, and getting under it needs Tip and the staff Settings drawer off the cover entirely, which is a desktop change and out of bounds here. Desktop neutrality is proved twice: a render test strips `max-sm:` from the cluster and asserts the remainder is byte-identical to the shipped string, and the compiled stylesheet puts every `max-sm:` utility inside `@media not all and (min-width:40rem)` with `.sm:px-8` / `.sm:max-w-[16rem]` emitted later in the sheet than the relaxed base utilities they override. What is **not** proved is how it looks: there is no browser, no Playwright and no `@testing-library/react` here, so the 320 / 375 / 390px render has not been observed, only derived.
 
 The durable rule: **on this codebase "no horizontal scroll" proves nothing — the shell clips it — so the mobile test is "nothing is clipped"; and a phone-only fix is either `max-sm:`-prefixed or a base utility an existing `sm:` already overrides, never a new unprefixed declaration and never a backdrop behind header text.**
-
 
 ---
 
@@ -19775,7 +19772,6 @@ predicate used by ten callers should be named for the *question*, not the *answe
 "is this usable" check on stored user content deserves the question *"and what happens to the data
 when it says no?"*
 
-
 ---
 
 ## ADR-979 — Deleting a control nobody could have filled, and a nav row that is a gate decision (2026-08-10)
@@ -20508,7 +20504,6 @@ concurrent work was in flight… Move it into the ledger verbatim"* — inside t
 been moved into. The `docs/adr-drafts/` directory no longer exists, and `pnpm check:adr` confirms
 every cited number resolves, so the warning it carried about dangling citations is expired.
 
-
 **Context.** ADR-986 gave every creatable entity ONE declaration and one renderer, so a wizard is
 data now, not a hand-built screen. The AI half never got the same treatment. Five modules under
 `lib/ai/` each opened a guided draft, and each had typed out the same twelve-line preamble by hand:
@@ -20764,8 +20759,6 @@ surface each.
 concurrent work was in flight… Move it into the ledger verbatim"* — inside the ledger it had already
 been moved into. The `docs/adr-drafts/` directory no longer exists, and `pnpm check:adr` confirms
 every cited number resolves, so the warning it carried about dangling citations is expired.
-
-
 
 **Context.** Three capabilities were already paid for and already governed, and each reached one
 surface:
@@ -25994,7 +25987,6 @@ cutting it is a workflow change and not a config line. ⚠️ There is **no Verc
 the 1.50 GB ceiling** — the only cache control the platform exposes is turning the cache off for a
 deployment — so this is built under, never negotiated with.
 
-
 ⚠️ **NOT in `postbuild` yet (LIVE-035).** It ships as `pnpm check:cache-budget`. It has never run
 against a real completed production build — the 2026-08-17 attempt died collecting page data for
 `/discover/cities/[citySlug]`, which needs credentials the agent container does not hold. It also
@@ -26162,7 +26154,6 @@ a silent exception.
 `^import { MODULE_COMPONENTS }` in `settings-panel.tsx` is satisfied by a cosmetic edit worth **14.3
 KB** and left unsatisfied by the 413 KB that actually moved — a probe that measures its own title
 rather than the consequence, which [ADR-1043](#adr-1043) forbids. The consequence is measured here.
-
 
 ⚠️ **NOT in `postbuild` yet (LIVE-035), and that is the honest state.** Its own unit tests pass, but on
 the only artifact available it exited 1 naming `lib/pricing/feature-meters.ts` — and that artifact was
@@ -36972,7 +36963,6 @@ re-evaluated. The next commit authored by a person or an agent re-triggers CI no
 what this one does; do not read a post-recapture PR as green until a run exists on a commit the
 runner did not author.
 
-
 **Status.** Accepted. Replaces `LIVE-040`'s commit-date freshness arm with a content fingerprint; adds `test/e2e/template-fingerprints.json` + `test/e2e/template-fingerprints.test.ts` and a re-stamp step in `.github/workflows/e2e-manual.yml`.
 
 **Context.** `LIVE-040` carried a two-arm probe. The first arm asserts both marketing templates render a FAQ Accordion with question/answer pairs, and it is honest. The second asked whether the committed `@visual` PNGs still depict the page, by comparing the template file's last-commit date against its baselines' last-commit date. That arm has now failed twice in two different ways.
@@ -37349,7 +37339,6 @@ The premise was re-measured before any code was written, as ADR-1082 requires. E
 
 ⚠️ **The generalisable part.** A table built for a job it never got is a promise with no expiry, and this one sat for seven months with its purpose written into its index name. The reader shipped first because it was the cheaper half and made the gap visible, which is the right order; but "visible" is not "done", and a row that says "the recovery job is not built yet" in three docs is prose recording status, which ADR-1043 forbids for a reason. The fix is the same as always: the job, its probe, and the docs that said "not yet" all move in one change.
 **Status.** Accepted. Closes `LIVE-208`. The owner's ruling on the three options that row carried, plus the two things implementing it measured. Amends nothing in [ADR-1017](DECISIONS.md) — the closer stays exactly as it was — and adds the sixth gate to `postbuild` ([`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md), [ADR-1003](DECISIONS.md)).
-
 
 ---
 
@@ -47880,6 +47869,27 @@ half of O-3 in ADR-1325, O-5 and Profile O1 on the row's 2026-09-08 ruling.
 **Rows.** OWN-060 (closed 2026-09-22). Consequences land on PROG-E7, PROG-E10 and the profile
 hero work when each is picked up.
 
+## ADR-1544: Vera reads what drew people as a tool the server computes on demand, handed in by the action, never as context on every ask (LIVE-539)
+
+**Status:** Accepted · 2026-09-28 · `LIVE-539` (child 1 of 2 of `PROG-CAL11` slice 4) · builds on [ADR-1386](DECISIONS.md) P6 (propose then accept; no other Space's data reaches a suggestion) and the PROG-CAL6 recap path · numbered 1544 because 1531-1536 and 1540-1542 are on main, 1537-1539 are on open pull requests, and 1543 was claimed by #2946 fourteen seconds before this pull request opened (the third renumbering of this entry in one afternoon, per ADR-1488)
+
+**Context.** The owner asked on 2026-09-22 for Vera to "figure out" dates and said "we can make it more complex later". Slices 1 to 3 of that later (clarify, edit any field, undo) shipped in the week after; the fourth, dates from what actually happened, had a paragraph in `PROG-CAL11` and no code: the word attendance appeared in none of the three Vera files, and the only attendance read on the calendar folded a Plan's events into one number for the drawer recap. Asked "pick a good day", Vera proposed any free Saturday or any free Tuesday with nothing to prefer between them. Three ways to put the history in front of the model were on the table: rows in every ask's context, a read inside the model loop, or a tool the server answers on demand with a reader the calendar action hands in.
+
+**Decision.**
+
+1. **A fourth tool, `attendance_history`, beside `lunar_dates`.** The model calls it when the ask is to pick, suggest or find a good day or time and names none, and does not call it when a day or time was named. The server answers with the weekday and starting hour that drew the most people to THIS Space, the whole table by weekday and by hour, the count each rests on, and one sentence in the house voice. When nothing has a record the answer is null, in words, never a weekday nobody came on.
+2. **The read is handed in by the calendar action as a reader on the context, keyed by the Space the editor resolved.** `lib/ai/vera-calendar.ts` imports no store and no admin client; without a reader the tool is not offered and the loop is the old three tools. The reader runs at most once per ask and only when the tool is called, because the check-in ledger is read per event (fifty reads at the bound) and that cost belongs to the one ask that needs it, not to every ask.
+3. **The fold is pure and reads the stored wall clock.** `attendanceHistory` in `lib/calendar/vera-attendance.ts` takes one row per past event, its `starts_at` as stored and the count `attendanceCount` gives its record (host marks and verified self check-ins, one person once, null when empty). Weekday and hour are the digits as stored, the LIVE-377 / LIVE-512 convention, because "Saturday at 7" is what the team means and what a pencil change writes; no machine zone is consulted. An unrecorded event is left out of every bucket rather than counted as nobody. The best hour is the best hour of the best weekday, not the busiest hour of the week, so the answer is one slot and not two that contradict each other.
+4. **One count per event, folded by the recap's own rule.** `loadEventAttendanceCounts` in `lib/events/event-stats.ts` returns a count per id from the same three ledgers, and `loadPlanAttendance` now folds over it, so the drawer recap and Vera's history cannot disagree. The read passes `toDay` at today, the exclusive ceiling [ADR-1536](DECISIONS.md) gave `listEventsForSpace` the same hour (a `pastOnly` mirror of `upcomingOnly` was written first and dropped at the merge, because one way to bound the top is enough), since materialised series put many future rows on a Space and "newest fifty" without a ceiling could hold no past event at all.
+5. **`MAX_ROUNDS` is four.** A lunar lookup, an attendance lookup, a second lunar lookup and the proposal all fit; a clarification still ends the turn.
+
+**Rejected.** Attendance rows in every ask's context (every ask pays fifty ledger reads for a preference most asks never use, and the context is rebuilt on every continuation). A read inside the model loop (the loop would import a store, and the only thing keeping another Space's history out of the prompt would be a filter inside the AI module rather than the action's authorization). The busiest hour of the week as the best hour (it could name a Tuesday under a Saturday). Counting an unrecorded event as zero (a full room whose host never touched the roster would drag its weekday down).
+
+**Consequences.** Vera's date suggestions can prefer what drew people, and the model is told to say which weekday and hour it followed in its note until `LIVE-540` puts the reason on the proposal line in the server's words. The loop stays pure of tables and the tenancy wall stays where it was (the action, `resolveEditor`). `loadPlanAttendance` is unchanged in behaviour and now has one rule under it. The probe imports the real fold and runs it.
+
+**Rows.** `LIVE-539` closed. `LIVE-540` next, which closes `PROG-CAL11`.
+=======
+
 ## ADR-1525: A visual baseline carries the environment that photographed it, and the camera refuses to compare across two (LIVE-213, LIVE-487)
 
 **Status:** Accepted · 2026-09-23 · backlog `LIVE-487` (closed here), `LIVE-213` (open on its owner
@@ -48330,7 +48340,6 @@ The owner's directive of 2026-09-27 states it as product: the main community Cir
 
 **Rows.** `DEF-MOBILE`, `DEF-ETSY`, `PROG-GD6` unparked. `HYG-123` ruled. `HYG-126`, `HYG-127`, `HYG-128` filed. `PROG-A1`, `PROG-A3`, `PROG-A4` stay parked with the ruling appended. `LIVE-234`, `LIVE-455` untouched.
 
-
 ## ADR-1536: The team calendar's events window has two ends, and it is filled from today outward (LIVE-480)
 
 **Status:** Accepted · 2026-09-28 · backlog `LIVE-480` · extends [ADR-1385](DECISIONS.md) and the LIVE-467 floor · numbered **1536** because 1535 is the 2026-09-28 owner ruling and 1531-1533 are owed a port (`HYG-126`)
@@ -48611,7 +48620,6 @@ module load — so on CI only the source-shape case fails when the zone is unpin
 is green in UTC and red in Pacific trains everyone to ignore a red suite, which is the quiet cost that
 made both zone defects survive this long.
 
-
 ## ADR-1541: One occurrence of a repeating calendar entry is edited by splitting the series, in one database statement (LIVE-534)
 
 **Status:** Accepted · 2026-09-28 · backlog `LIVE-534` · extends [ADR-1386](DECISIONS.md) phase 5 (repeating Pencils) and the LIVE-531 save question · numbered **1541** because 1536 is LIVE-480's and 1537 to 1540 are declared on pull requests open at the time of writing (#2938, #2939, #2942, #2943); 1531-1533 are owed a port (`HYG-126`)
@@ -48652,22 +48660,45 @@ The row was explicit about the trap, and it is the LIVE-533 shape: a "This date 
 
 **Rows.** HYG-127 (closed here). HYG-128 untouched and still open.
 
-## ADR-1544: Vera reads what drew people as a tool the server computes on demand, handed in by the action, never as context on every ask (LIVE-539)
+## ADR-1538: The one list is proved from the commit log too, so an id that shipped with no row fails the pull request that would let it stand (HYG-124)
 
-**Status:** Accepted · 2026-09-28 · `LIVE-539` (child 1 of 2 of `PROG-CAL11` slice 4) · builds on [ADR-1386](DECISIONS.md) P6 (propose then accept; no other Space's data reaches a suggestion) and the PROG-CAL6 recap path · numbered 1544 because 1531-1536 and 1540-1542 are on main, 1537-1539 are on open pull requests, and 1543 was claimed by #2946 fourteen seconds before this pull request opened (the third renumbering of this entry in one afternoon, per ADR-1488)
+**Status:** Accepted · 2026-09-28 · backlog `HYG-124` (closed here), `HYG-125` and `LIVE-475` (the two rows this found missing, added `done`) · numbered **1538** because 1536 and 1537 were claimed on #2937 and #2938, both opened minutes before this entry's PR, and `check:id-collisions` said so on its first run · extends [ADR-1043](DECISIONS.md) (the one list is the only record of what is done) and [ADR-1509](DECISIONS.md) (the cross-PR id gate, which counts the same problem from the other end) · beside [ADR-1011](DECISIONS.md) (a guard nobody runs is a claim nobody checks) · amended the same day, before merging: on a pull request the rows that answer for the base's commits are read AT the base ref and united with the checkout's, after #2957 merged six rows while three stacked PRs were in flight and the gate, reading each PR's tree alone, named two of them as missing
 
-**Context.** The owner asked on 2026-09-22 for Vera to "figure out" dates and said "we can make it more complex later". Slices 1 to 3 of that later (clarify, edit any field, undo) shipped in the week after; the fourth, dates from what actually happened, had a paragraph in `PROG-CAL11` and no code: the word attendance appeared in none of the three Vera files, and the only attendance read on the calendar folded a Plan's events into one number for the drawer recap. Asked "pick a good day", Vera proposed any free Saturday or any free Tuesday with nothing to prefer between them. Three ways to put the history in front of the model were on the table: rows in every ask's context, a read inside the model loop, or a tool the server answers on demand with a reader the calendar action hands in.
+**Context.** [ADR-1043](DECISIONS.md) made `docs/BUILD-BACKLOG.json` the only record of what is done, and every guard that holds it to that iterates THE ROWS: `check:backlog` runs each row's probe against the tree in both directions, `check:id-collisions` fails a row id two open pull requests claim at once, `check:one-list` freezes the set of planning files. None of them can see an id that was never added. On 2026-09-28 the scan pass read every id out of every merged `origin/main` commit subject and asked the one list about each. Two had shipped with no row at all: `HYG-125` (#2911, merged 2026-09-27, 51 scripts could silently skip their own `main()`) and `LIVE-475` (#2878, merged 2026-09-23, the visual suite stops photographing a page it never proved had settled). Both changes were in the tree, both ids were cited by name from live probes and source comments, and every gate was green. `HYG-125` also sat one above the HYG maximum the file carried, so the next hygiene row minted by hand would have collided with a merged commit.
+
+Premise re-tested before building ([ADR-1082](DECISIONS.md)): the row's own probe failed on exactly those two ids and on nothing else in the last 400 subjects, and a full read of all 4,737 subjects on `main` found no third case after the seed. It did find forty-six BEFORE the seed, every one an id from the five retired planning systems the one list absorbed (`BUG-4`, `SEC-9`, `PERF-3`, `ADMIN-04`, `BUILD-LIST`), which is what fixes where the window opens.
 
 **Decision.**
 
-1. **A fourth tool, `attendance_history`, beside `lunar_dates`.** The model calls it when the ask is to pick, suggest or find a good day or time and names none, and does not call it when a day or time was named. The server answers with the weekday and starting hour that drew the most people to THIS Space, the whole table by weekday and by hour, the count each rests on, and one sentence in the house voice. When nothing has a record the answer is null, in words, never a weekday nobody came on.
-2. **The read is handed in by the calendar action as a reader on the context, keyed by the Space the editor resolved.** `lib/ai/vera-calendar.ts` imports no store and no admin client; without a reader the tool is not offered and the loop is the old three tools. The reader runs at most once per ask and only when the tool is called, because the check-in ledger is read per event (fifty reads at the bound) and that cost belongs to the one ask that needs it, not to every ask.
-3. **The fold is pure and reads the stored wall clock.** `attendanceHistory` in `lib/calendar/vera-attendance.ts` takes one row per past event, its `starts_at` as stored and the count `attendanceCount` gives its record (host marks and verified self check-ins, one person once, null when empty). Weekday and hour are the digits as stored, the LIVE-377 / LIVE-512 convention, because "Saturday at 7" is what the team means and what a pencil change writes; no machine zone is consulted. An unrecorded event is left out of every bucket rather than counted as nobody. The best hour is the best hour of the best weekday, not the busiest hour of the week, so the answer is one slot and not two that contradict each other.
-4. **One count per event, folded by the recap's own rule.** `loadEventAttendanceCounts` in `lib/events/event-stats.ts` returns a count per id from the same three ledgers, and `loadPlanAttendance` now folds over it, so the drawer recap and Vera's history cannot disagree. The read passes `toDay` at today, the exclusive ceiling [ADR-1536](DECISIONS.md) gave `listEventsForSpace` the same hour (a `pastOnly` mirror of `upcomingOnly` was written first and dropped at the merge, because one way to bound the top is enough), since materialised series put many future rows on a Space and "newest fifty" without a ceiling could hold no past event at all.
-5. **`MAX_ROUNDS` is four.** A lunar lookup, an attendance lookup, a second lunar lookup and the proposal all fit; a clarification still ends the turn.
+1. **The two ids become rows, `done`, each with the consequence probe its shipped change already satisfies.** `HYG-125`'s probe stages a postbuild deploy gate behind a symlink and requires that it runs and fails naming the missing build, then freezes the set (no `scripts/**` `.mjs` compares `process.argv[1]` to `import.meta.url` by hand). `LIVE-475`'s probe imports the shipped `unsettledMessage` through `scripts/probe-ts.mjs`, drives it with a settled control, an oscillation and an expired wait, and reads `visual.spec.ts` for the gate-before-shutter ordering. Neither probe greps for the row's own words.
+2. **A source guard, `scripts/check-shipped-ids.mjs` (`pnpm check:shipped-ids`), in the `guards` array of `.github/workflows/ci.yml` beside `id-collisions`.** It reads the SUBJECT of every commit on the base branch since the commit that seeded the one list (`e74af47e5`, #2142, ADR-1043), pulls out every token whose prefix is one the rows themselves use (read from the JSON, never a second list), and fails when one is not a row in the checkout's `docs/BUILD-BACKLOG.json`. Subjects only: bodies discuss ids in prose. On a `pull_request` run it reads `origin/<base>`, what MERGED, never the pull request's own commits; on a push to `main` it reads `HEAD`, which is the base.
+3. **The window opens at the seed, not at a count.** A last-N-commits window either reaches back into the retired systems or stops short of what it should prove, depending on the day. The seed is the first commit whose subject can be held to the one list, because it is the commit that created it.
+4. **Exceptions are stated, one reason each, and rot loudly.** An id in a merged subject that deliberately has no row goes in `EXCEPTIONS` with the commit that explains it. Two exist: `LIVE-044` (#2154 is titled "Retract LIVE-044", the row was withdrawn the day it was minted and `LIVE-046` carries what survived) and `LIVE-113` (#2269 names it beside `PROG-P6`; no row ever existed under it, `HYG-047` found it sequenced in the slate with no entry and removed it). An exception whose id later gains a row FAILS the gate, so the list cannot outlive what it says.
+5. **The runner's checkout is deepened with commit objects only.** `actions/checkout` is depth-1, so a new workflow step runs `git fetch --filter=tree:0 --shallow-since=2026-08-16` on the base branch: trees and blobs stay behind, and the read is 725 commits in 1.2 s, measured on a depth-1 clone of this repository. It runs on every event, after the depth-1 tip fetch `check:id-collisions` uses, so the tip's tree is already on disk and nothing lazy-fetches through the promisor remote.
+6. **It degrades loudly and fails honestly.** When the seed commit is reachable the window is exact (`seed..ref`). When it is not, the gate reads what `--since` can reach and says PARTIAL; on GitHub Actions that is exit 1, because the fetch step that arms it is missing and a gate that could not look must not say clean. Locally a partial read is a loud note. A window under 20 commits or 10 ids is refused outright ([ADR-962](DECISIONS.md): a tick over nothing is the one thing a gate must never print). Pure node, one subprocess (`git log`), no network; the comparison is exported and mutation-tested in `scripts/check-shipped-ids.test.ts` against fixture repositories and the real tree.
 
-**Rejected.** Attendance rows in every ask's context (every ask pays fifty ledger reads for a preference most asks never use, and the context is rebuilt on every continuation). A read inside the model loop (the loop would import a store, and the only thing keeping another Space's history out of the prompt would be a filter inside the AI module rather than the action's authorization). The busiest hour of the week as the best hour (it could name a Tuesday under a Saturday). Counting an unrecorded event as zero (a full room whose host never touched the roster would drag its weekday down).
+**Rejected.** Patching the two rows by hand and stopping (the hole stays open; the row's own probe was written to refuse that). Reading ids out of commit BODIES (a body legitimately discusses a dozen ids it does not close). Reading the pull request's own commits on a `pull_request` run (a branch names the id it is about to add, so the guard would fail every PR that does the right thing in order). A hardcoded prefix list (`PERF` and `SEC` are row prefixes today with one row each; the JSON already knows). The commits API instead of `git log` (the row asked for a source-only guard, and `check:id-collisions` already spends the rate-limit budget this job has). A vitest home ([ADR-1011](DECISIONS.md)'s rule sends source-reading guards there, but this one needs the deepened history the workflow step provides, and `test` runs on a separate job with its own depth-1 checkout).
 
-**Consequences.** Vera's date suggestions can prefer what drew people, and the model is told to say which weekday and hour it followed in its note until `LIVE-540` puts the reason on the proposal line in the server's words. The loop stays pure of tables and the tenancy wall stays where it was (the action, `resolveEditor`). `loadPlanAttendance` is unchanged in behaviour and now has one rule under it. The probe imports the real fold and runs it.
+**Consequences.** Every CI run adds one ~1 s fetch and one `git log` over ~700 subjects. A pull request that merges under an id with no row cannot happen without first turning the NEXT pull request red, naming the commit, the date and the subject; the fix is the row. `HYG-125` and `LIVE-475` are on the list with probes that measure what they shipped. `scripts/guard-wiring.test.ts` fails if the guard ever leaves the array. The fetch step's `--shallow-since` date and the guard's `SEED_DATE` are the same fact in two files; the guard's test reads the workflow and asserts they agree.
 
-**Rows.** `LIVE-539` closed. `LIVE-540` next, which closes `PROG-CAL11`.
+**Rows.** HYG-124 (closed). HYG-125, LIVE-475 (added `done`). Beside HYG-111 (the cross-PR arm) and HYG-047 (the slate's own probe, which removed the phantom this gate now exempts).
+
+## ADR-1554: A foreign key without a covering index fails the pull request that adds it, and the migrations are replayed to ask (HYG-128)
+
+**Status:** Accepted · 2026-09-28 · backlog `HYG-128` (closed here) · the convention half of the owner ruling of 2026-09-28 whose sweep half is [ADR-1543](DECISIONS.md) (HYG-127) · extends [ADR-1459](DECISIONS.md) (the SCAN-638 sweep) · beside [ADR-1509](DECISIONS.md) (a guard in the `ci.yml` array that reads what no row can) and HYG-124's shipped-ids guard · numbered 1554 against the ledger and every open pull request's head on the day it was written
+
+**Context.** Three sweeps took the unindexed-foreign-key count to zero: the one before SCAN-638, SCAN-638 itself (20270345006400, [ADR-1459](DECISIONS.md)), and HYG-127 (20270345009000, [ADR-1543](DECISIONS.md)). Each time the next tables brought it back, nine in the calendar sprint alone, seven of them referencing `profiles`, so an account deletion scanned four calendar tables to check the constraint. The only reader was the Supabase performance advisor, which nobody consults on a pull request, and the advisor is a report about production, which is the wrong time to learn about a shape the pull request could have refused. The premise was re-tested against `pg_constraint` and `pg_index` on production before anything was written ([ADR-1082](DECISIONS.md)): exactly nine, all HYG-127's.
+
+**Decision.**
+
+1. **A source guard, `scripts/check-fk-indexes.mjs` (`pnpm check:fk-indexes`), in the `guards` array of `.github/workflows/ci.yml`.** It replays `supabase/migrations` in version order, statement by statement, into the state a fresh database ends up in: every foreign key and every index that could cover one, through drops, renames and the literal DDL inside `do $$ ... $$` blocks, and never a function body. Then it asks the advisor's question of the result: for each foreign key, does an index LEAD with its column. A composite whose first key is the column counts, as it does for Postgres; one whose first key is another column does not.
+2. **It is held to the catalog, not to itself.** The first draft read 28 unindexed keys where production held 9: `on t(col)` with no space before the key list, and DDL inside do-blocks, were invisible to it. The two readings that settled the parser are permanent cases in `scripts/check-fk-indexes.test.ts`: without 20270345009000 the tree reads exactly HYG-127's nine; with it, zero. The census (288 tables, 611 keys replayed; 289 and 609 live) differs by a `create table ... as` backup and PostGIS's `spatial_ref_sys` on production's side and one table dropped outside the migrations on the replay's, none carrying a key.
+3. **Exceptions are a stated map, one reason each, and they rot loudly.** It is empty on the day it lands. An entry whose key gains an index later fails the gate, so the list cannot outlive its reason.
+4. **It refuses to call a small read clean.** Under 100 tables or 200 keys is not this repository's migrations, whatever the directory was, and exits 1 ([ADR-962](DECISIONS.md)).
+5. **It lands on a tree the sweep already made green.** HYG-127 merged first, so the guard's first run is a pass it can prove rather than a failure it cannot explain, which is the order the owner ruled and the reason this row waited.
+
+**Rejected.** A pgTAP test in db-tests (it would say the same thing later, on a job that runs only when a migration changes, and could not run locally without Docker). Reading the advisor from CI (network, credentials, and a report about production rather than about the diff). Folding it into HYG-127's PR (one row per PR, and a guard is its own decision with its own exception list). Replaying function bodies (DDL inside a function runs when the function is called, not when the migration does; replaying it produced phantom tables).
+
+**Consequences.** A pull request that adds a foreign key with no covering index fails `checks`, naming `table.column` and the index to add, before the advisor can. The parser is a smoke alarm for one known shape: an exotic construction it misses passes silently, which is why the catalog controls are in the test and why the census is recorded here rather than assumed. `scripts/guard-wiring.test.ts` fails if the guard ever leaves the array.
+
+**Rows.** HYG-128 (closed here). HYG-127 (the sweep, closed by [ADR-1543](DECISIONS.md)). SCAN-638 untouched.
