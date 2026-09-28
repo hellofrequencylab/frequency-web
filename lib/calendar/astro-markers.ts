@@ -36,7 +36,7 @@ import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 // So a marker set that emitted "March Equinox" AND "Sun enters Aries" as two
 // rows on one day would be the two-rows-over-one-subject bug this repo has now
 // fixed five times (reviews, circles, contact, events, discussion). ONE marker
-// carries both facts: `seasonPoint` names the equinox, `sign` names the sign.
+// carries both facts: `solarPoint` names the equinox, `sign` names the sign.
 //
 // `Seasons()` is therefore NOT called here, and that is deliberate rather than an
 // oversight: the twelve ingress searches already produce those four instants, so
@@ -54,11 +54,11 @@ import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 // UTC.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** What kind of sky moment this is. `season` covers every sign ingress; four of the twelve also
- *  carry a `seasonPoint`, because those four are the equinoxes and solstices. */
-export type AstroMarkerKind = 'new-moon' | 'full-moon' | 'season'
+/** What kind of sky moment this is. `sign-ingress` covers all twelve; four of them also carry a
+ *  `solarPoint`, because those four ARE the equinoxes and solstices. */
+export type AstroMarkerKind = 'new-moon' | 'full-moon' | 'sign-ingress'
 
-export type SeasonPoint = 'march-equinox' | 'june-solstice' | 'september-equinox' | 'december-solstice'
+export type SolarPoint = 'march-equinox' | 'june-solstice' | 'september-equinox' | 'december-solstice'
 
 export interface AstroMarker {
   /** 'YYYY-MM-DD' in the SPACE's zone, which is the square this belongs on. */
@@ -66,14 +66,14 @@ export interface AstroMarker {
   kind: AstroMarkerKind
   /** The exact instant, ISO. Kept so a surface can show the time without recomputing. */
   at: string
-  /** Short, already title-cased: "Full moon", "Libra season", "September equinox". */
+  /** Short, already title-cased: "Full moon", "Sun enters Libra, September equinox". */
   label: string
   /** The glyph the existing SIGN_INFO carries (♈), or the moon's. Never invented here. */
   symbol: string
-  /** The sign the Sun enters. Only on a `season` marker. */
+  /** The sign the Sun enters. Only on a `sign-ingress` marker. */
   sign?: ZodiacSign
-  /** Only on the four cardinal ingresses. */
-  seasonPoint?: SeasonPoint
+  /** Only on the four cardinal ingresses, where the ingress IS the equinox or solstice. */
+  solarPoint?: SolarPoint
 }
 
 /** Ecliptic longitude of each sign's first degree, in calendar order from the March equinox. */
@@ -93,7 +93,7 @@ const SIGN_LONGITUDES: { sign: ZodiacSign; lon: number }[] = [
 ]
 
 /** The four cardinal ingresses, by the longitude that defines them. */
-const SEASON_POINTS: Record<number, { point: SeasonPoint; label: string }> = {
+const SOLAR_POINTS: Record<number, { point: SolarPoint; label: string }> = {
   0: { point: 'march-equinox', label: 'March equinox' },
   90: { point: 'june-solstice', label: 'June solstice' },
   180: { point: 'september-equinox', label: 'September equinox' },
@@ -174,17 +174,21 @@ export function astroMarkersInRange(
         if (at < searchFrom || at > searchTo) continue
         const day = dayInZone(at, zone)
         if (!inRange(day, fromDay, toDay)) continue
-        const season = SEASON_POINTS[lon]
+        const solar = SOLAR_POINTS[lon]
         out.push({
           day,
-          kind: 'season',
+          kind: 'sign-ingress',
           at: at.toISOString(),
           // The sign leads, because that is what the owner asked to start each astro season; the
           // equinox or solstice rides along on the four where it is the same moment.
-          label: season ? `${SIGN_INFO[sign].label} season, ${season.label}` : `${SIGN_INFO[sign].label} season`,
+          // 🔴 NOT "<sign> season". `season` is a LOCKED Quest word in docs/NAMING.md (a Quest IS
+          // a season; the four are Stretch, Shed, Sit, Sprout), and this is member-facing copy, so
+          // reusing it here would put a second meaning on a locked term. "Sun enters Libra" is the
+          // standard phrasing and needs no collision guard (owner ruling 2026-09-28).
+          label: solar ? `Sun enters ${SIGN_INFO[sign].label}, ${solar.label}` : `Sun enters ${SIGN_INFO[sign].label}`,
           symbol: SIGN_INFO[sign].symbol,
           sign,
-          ...(season ? { seasonPoint: season.point } : {}),
+          ...(solar ? { solarPoint: solar.point } : {}),
         })
       }
     }

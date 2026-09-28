@@ -38,19 +38,19 @@ describe('the sky on a Space calendar', () => {
       const onThatInstant = astroMarkersInRange(day, day, 'UTC').filter((m) => m.at === iso)
       expect(onThatInstant, `${point}`).toHaveLength(1)
       expect(onThatInstant[0].sign, point).toBe(sign)
-      expect(onThatInstant[0].seasonPoint, point).toBe(point)
+      expect(onThatInstant[0].solarPoint, point).toBe(point)
       // Both facts are in the one label, so nothing is lost by not splitting it.
       expect(onThatInstant[0].label.toLowerCase(), point).toContain(sign)
     }
   })
 
-  it('gives the eight non-cardinal ingresses a sign and no season point', () => {
+  it('gives the eight non-cardinal ingresses a sign and no solar point', () => {
     const year = astroMarkersInRange('2026-01-01', '2026-12-31', 'UTC')
-    const seasons = year.filter((m) => m.kind === 'season')
-    expect(seasons).toHaveLength(12)
-    expect(seasons.filter((m) => m.seasonPoint).length).toBe(4)
-    expect(new Set(seasons.map((m) => m.sign)).size).toBe(12)
-    for (const m of seasons) expect(m.sign, m.label).toBeTruthy()
+    const ingresses = year.filter((m) => m.kind === 'sign-ingress')
+    expect(ingresses).toHaveLength(12)
+    expect(ingresses.filter((m) => m.solarPoint).length).toBe(4)
+    expect(new Set(ingresses.map((m) => m.sign)).size).toBe(12)
+    for (const m of ingresses) expect(m.sign, m.label).toBeTruthy()
   })
 
   it('finds a full year of moons, each one once', () => {
@@ -97,7 +97,9 @@ describe('the sky on a Space calendar', () => {
   it('reuses the repo zodiac vocabulary rather than inventing labels', () => {
     const m = astroMarkersInRange('2026-10-23', '2026-10-23', 'UTC')
     const scorpio = m.find((x) => x.sign === 'scorpio')
-    expect(scorpio?.label).toBe('Scorpio season')
+    // NOT "Scorpio season": `season` is a locked Quest word in NAMING.md and this is member-facing
+    // copy (owner ruling 2026-09-28). This assertion is the guard against it coming back.
+    expect(scorpio?.label).toBe('Sun enters Scorpio')
     expect(scorpio?.symbol).toBe('♏')
   })
 
@@ -113,5 +115,29 @@ describe('the sky on a Space calendar', () => {
   it('answers a one-day window without bleeding the days either side', () => {
     expect(astroMarkersInRange('2026-10-25', '2026-10-25', PACIFIC).map((m) => m.kind)).toEqual(['full-moon'])
     expect(astroMarkersInRange('2026-10-26', '2026-10-26', PACIFIC)).toEqual([])
+  })
+})
+
+describe('the copy stays off locked vocabulary', () => {
+  // docs/NAMING.md locks "season" as a Quest word: a Quest IS a season, and the four are Stretch,
+  // Shed, Sit and Sprout. These markers are member-facing copy on a public calendar, so the word
+  // would carry a second meaning there. Owner ruling 2026-09-28: "Sun enters <sign>".
+  it('never says "season" in a label a member reads', () => {
+    const year = astroMarkersInRange('2026-01-01', '2026-12-31', 'UTC')
+    expect(year.length).toBeGreaterThan(30)
+    for (const m of year) expect(m.label.toLowerCase(), m.label).not.toContain('season')
+  })
+
+  it('leads with the sign and carries the solar point on the four cardinal days', () => {
+    const libra = astroMarkersInRange('2026-09-23', '2026-09-23', 'UTC').find((m) => m.sign === 'libra')
+    expect(libra?.label).toBe('Sun enters Libra, September equinox')
+    expect(libra?.solarPoint).toBe('september-equinox')
+  })
+
+  // docs/CONTENT-VOICE.md: no em dashes in member-facing copy.
+  it('carries no em dash', () => {
+    for (const m of astroMarkersInRange('2026-01-01', '2026-12-31', 'UTC')) {
+      expect(m.label, m.label).not.toContain('—')
+    }
   })
 })
