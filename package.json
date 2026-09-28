@@ -27,6 +27,7 @@
     "test:rls": "supabase test db",
     "check:authz": "node scripts/check-authz-guards.mjs",
     "check:canon": "node scripts/check-canon.mjs",
+    "check:capture-followup": "node scripts/check-capture-followup.mjs",
     "check:dawn-bundle": "node scripts/check-dawn-bundle.mjs",
     "check:headers": "node scripts/check-headers.mjs",
     "check:menu": "node scripts/check-menu.mjs",
