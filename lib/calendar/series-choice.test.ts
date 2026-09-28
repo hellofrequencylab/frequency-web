@@ -12,8 +12,10 @@ import {
 } from './series-choice'
 
 // LIVE-531. The owner deleted what they read as the October night of a repeating Pencil and lost
-// every date, because one row IS the series and the delete is a hard delete with no tombstone.
-// These are the consequences, not the shapes: what a press may reach, and what it may never reach.
+// every date, because one row IS the series. At the time the delete was also a hard delete with no
+// tombstone, which is why the loss was permanent; LIVE-536 has since made it a `removed_at`
+// tombstone, so an equivalent mistake is now recoverable. The REACH is unchanged and is what these
+// cases pin: what a press may reach, and what it may never reach.
 
 const repeating = { kind: 'pencil', repeat: 'FREQ=WEEKLY', occurrenceDate: '2026-10-14' }
 
