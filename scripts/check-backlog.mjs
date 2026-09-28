@@ -33,8 +33,39 @@
 // around it and then it reads as coverage. So a `manual` row carries `evidence` + `checked`, and
 // the WORST this script does is print it as stale past MANUAL_STALE_DAYS. Never an exit 1.
 //
+// ── WHICH PROBES RUN, AND WHY THAT IS NOT THE SAME QUESTION AS WHICH ROWS ARE CHECKED ────────
+//
+// STRUCTURE IS ALWAYS CHECKED OVER EVERY ROW. Shape, priority, ownerAction, slate/wave coverage,
+// id uniqueness, row-source paths, probe parseability — all of it, in both modes. Only the EXECUTION
+// of `verify` probes is scoped, and the scope is printed on every run.
+//
+// The default is `--probes=open`. Measured 2026-09-28: 812 probes ran per invocation and 556 of
+// them belonged to rows closed weeks ago, which is 20.2s wall / 66s CPU on a gate that bounds the
+// whole `checks` job while every other guard in that array finishes in under ~8s.
+//
+// A row that regressed after being closed is a REAL finding — the `done + NOT DONE` arm above is
+// half of why this file exists and it is not being retired. But that finding has no author on
+// today's pull request: nobody on the PR can act on it, and a blocking gate nobody can act on is
+// the advisory-forced-through-a-blocking-gate failure ADR-970 names. So it moves to the cadence
+// that fits it: `--probes=all` runs weekly in .github/workflows/maintenance.yml, beside the
+// design-debt ratchet, which is there for exactly this reason (HYG-070, ADR-1290).
+//
+// `open` scope = every open / blocked row, PLUS every `done` row closed within
+// RECENTLY_CLOSED_DAYS. The recency window is what keeps the per-PR gate honest about the work a
+// PR is actually near: a row closed this sprint is one someone in this stack of branches touched,
+// and its regression IS theirs. LIVE-034's probe stays exactly as written — it measures the cause
+// (no probe spawns a test runner) and is untouched by this; row-count growth was the other route
+// to the same consequence, and this is what answers that one.
+//
+// `--only-static` runs only the in-process search kinds (grep-present / grep-absent) and skips
+// every `cmd` probe. It exists for scripts/backlog-contract.test.ts, which runs this guard TWICE
+// to prove a property of the SEARCH ENGINE — a claim no `cmd` probe participates in, and which
+// was costing ~40s of doubled process spawning to assert.
+//
 // Usage:
-//   node scripts/check-backlog.mjs           # verify every probe; exit 1 on a contradiction
+//   node scripts/check-backlog.mjs                # probe open work + recently closed rows (default)
+//   node scripts/check-backlog.mjs --probes=all   # the full sweep: every non-parked row's probe
+//   node scripts/check-backlog.mjs --only-static  # search-kind probes only; no subprocess at all
 //   node scripts/check-backlog.mjs --report  # print the working view (open + owner rows), exit 0
 //   node scripts/check-backlog.mjs --lane owner   # filter the report to one lane
 
@@ -93,9 +124,34 @@ const PROBE_KINDS = ['grep-absent', 'grep-present', 'cmd', 'manual']
  *  broken, and a ✓ over nothing is the one thing a gate must never print (ADR-962). */
 const MIN_ENTRIES = 40
 
+/** How recently a `done` row must have been closed to keep being probed on every run. A row closed
+ *  inside this window is work the current stack of branches was near, so its regression still has
+ *  an author; past it, the finding belongs to the weekly sweep. Rows with no `closed` date are
+ *  outside the window by construction — `daysSince` returns Infinity for a date it cannot parse. */
+const RECENTLY_CLOSED_DAYS = 30
+
+const PROBE_SCOPES = ['open', 'all']
+
 const args = process.argv.slice(2)
 const REPORT = args.includes('--report')
 const LANE = args.includes('--lane') ? args[args.indexOf('--lane') + 1] : null
+
+/** `--flag value` and `--flag=value` both, because the first is what this file's own `--lane`
+ *  already accepts and the second is what survives `pnpm check:backlog --probes=all` unambiguously. */
+function flagValue(name, fallback) {
+  const joined = args.find((a) => a.startsWith(`${name}=`))
+  if (joined) return joined.slice(name.length + 1)
+  const i = args.indexOf(name)
+  if (i >= 0 && args[i + 1] && !args[i + 1].startsWith('-')) return args[i + 1]
+  return fallback
+}
+
+const PROBE_SCOPE = flagValue('--probes', 'open')
+const ONLY_STATIC = args.includes('--only-static')
+if (!PROBE_SCOPES.includes(PROBE_SCOPE)) {
+  console.error(`✗ --probes must be one of ${PROBE_SCOPES.join('|')} (got "${PROBE_SCOPE}")`)
+  process.exit(2)
+}
 
 const red = (s) => `\x1b[31m${s}\x1b[0m`
 const green = (s) => `\x1b[32m${s}\x1b[0m`
@@ -614,6 +670,19 @@ let unprovable = 0
 
 // Every probe first, in a pool, then the verdicts in entry order — so the output is stable however
 // the pool interleaves, and a contradiction is reported against the same row it always was.
+/** Is this row's probe in scope for THIS invocation? See the scope note in the header: `all` asks
+ *  everything; `open` asks the rows a pull request can answer for. Parked and manual rows are
+ *  filtered before this is reached, so `status` here is open | blocked | done. */
+function inProbeScope(e) {
+  if (PROBE_SCOPE === 'all') return true
+  if (e.status !== 'done') return true
+  return daysSince(e.closed) <= RECENTLY_CLOSED_DAYS
+}
+
+/** Probes NOT run, split by the reason — so the scope line can say which knob did it. */
+let skippedByScope = 0
+let skippedByStatic = 0
+
 const toProbe = []
 for (const e of entries) {
   // A parked row is a scheduling decision, not a claim about the tree. Probing it would report
@@ -624,6 +693,14 @@ for (const e of entries) {
   if (p.kind === 'manual') {
     const age = daysSince(p.checked)
     if (age > MANUAL_STALE_DAYS) staleManual.push({ e, age })
+    continue
+  }
+  if (ONLY_STATIC && p.kind === 'cmd') {
+    skippedByStatic++
+    continue
+  }
+  if (!inProbeScope(e)) {
+    skippedByScope++
     continue
   }
   toProbe.push(e)
@@ -687,6 +764,30 @@ for (const [i, e] of toProbe.entries()) {
 // guards. A cost summary over a handful of probes says nothing anyway: it is a statistic about the
 // fleet, and the fleet is 111.
 const COST_LINE_MIN_PROBES = 10
+/** 🔎 SAY WHICH PROBES RAN. A guard that quietly stops asking 556 of its questions looks exactly
+ *  like a guard that got weaker for no reason, and the next reader has no way to tell the two
+ *  apart from the ✓. Printed on the passing AND the failing path, for the same reason the cost
+ *  line is: the number that explains the run must be readable without breaking a build to see it. */
+function printScope() {
+  const mode = `${PROBE_SCOPE} mode${ONLY_STATIC ? ', --only-static' : ''}`
+  const skipped = skippedByScope + skippedByStatic
+  const tail =
+    PROBE_SCOPE === 'all' && !ONLY_STATIC
+      ? 'every non-parked row was asked'
+      : 'full sweep runs weekly (check:backlog --probes=all)'
+  console.log(`  probes: ${toProbe.length} run (${mode}), ${skipped} skipped — ${tail}`)
+  if (skippedByScope) {
+    console.log(
+      dim(
+        `    ${skippedByScope} done row(s) closed more than ${RECENTLY_CLOSED_DAYS} days ago, or with no closed date.` +
+          ' A regression there has no author on this pull request.',
+      ),
+    )
+  }
+  if (skippedByStatic) {
+    console.log(dim(`    ${skippedByStatic} cmd probe(s) skipped by --only-static (search kinds only).`))
+  }
+}
 function printCost() {
   if (probeCosts.length < COST_LINE_MIN_PROBES) return
   const sorted = [...probeCosts].sort((a, b) => b.cpuMs - a.cpuMs)
@@ -738,12 +839,14 @@ if (contradictions.length) {
   // budgets from this line, and suppressing it whenever the tree happens to disagree would mean
   // the budget silently loses its input exactly when someone is mid-change — which is when they
   // are most likely to be the one making a probe expensive.
+  printScope()
   printCost()
   process.exit(1)
 }
 
 console.log(green(`✓ backlog contract: ${entries.length} entries, ${probed} probe(s) agree with the tree.`))
 console.log(`  ${openCount} open/blocked · ${parkedCount} parked · ${doneCount} done${unprovable ? ` · ${unprovable} unprovable here` : ''}`)
+printScope()
 printCost()
 
 if (staleManual.length) {

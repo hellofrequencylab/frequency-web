@@ -516,6 +516,11 @@ export function CalendarWorkspace({
         hiddenLayers={hiddenLayers}
         onHiddenLayersChange={setHiddenLayers}
         fill={consoleOpen}
+        /* THE MONTHS SCROLL (LIVE-530, owner ask 2026-09-27: "infinitely scrolls through that
+           section instead of flipping pages"). The member calendar first: this mount has no drag
+           surface, so the scroll mechanics stand on their own here. `month` keeps its one meaning
+           (the anchor) and every control in the page bar and the console header works unchanged. */
+        monthFlow="scroll"
         /* THE PAGE IS A HOST TOO NOW (LIVE-494), so this is unconditional rather than
            `consoleOpen`: whichever bar is showing -- the page's two rows or the console's one --
            draws the month, the paging, the jump and the chips, and the grid draws none of them. */
@@ -867,6 +872,11 @@ export function CalendarWorkspace({
                        page was spending before this row. */
                     pencilButton={false}
                     fill={consoleOpen}
+                    /* The operator calendar scrolls too (LIVE-530). Drag-to-move is asked for
+                       in the console as before and REFUSED at the grid's seam under the scroll,
+                       because planEntryMove still refuses cross-month targets with a sentence
+                       that is false once October is three inches below September. */
+                    monthFlow="scroll"
                     hostChrome
                     hostViewSwitch
                     moveByDrag={consoleOpen}
