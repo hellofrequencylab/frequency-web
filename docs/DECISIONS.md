@@ -47731,6 +47731,35 @@ Premise re-tested 2026-09-21 against the migration history (ADR-1082), one findi
 
 **Rows.** LIVE-335 (open; `cmd` probe now asserts the migration defines the three policies and the helper, and the row's next half is the baseline convergence).
 
+## ADR-1539: The first sell attempt is the field where the price is typed, and a Spark that prices a Connect-paid thing renders the resolved prompt on its first screen (LIVE-537, LIVE-538)
+
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-537`, `LIVE-538` · program `PROG-R5` · extends [ADR-1357](DECISIONS.md) (the event form's price control) and LIVE-233's one-prompt rule · numbered **1539** because **1536-1538** were claimed on other open PRs when this was written (1531-1533 were then reserved, since ported by HYG-126)
+
+**Context.** LIVE-233 collapsed four hand-written payout panels into one prompt (`lib/billing/payout-prompt.ts`, pure; `payout-prompt-resolve.ts`, the two reads) and put it where each money path REFUSES: Offerings, the Shop's Storefront tab, the event page, the maker console. LIVE-339 (ADR-1357) then noticed that the event CREATE form, where a host first types a price, still linked to `/settings/billing`, and moved the door there. The rule those two rows established, and `lib/events/ticket-eligibility.ts` states at length, is that onboarding is offered on the surface where someone has just decided to charge.
+
+Re-walking PROG-R5's change 4.1 on 2026-09-28 against the tree, asking only "where is a price for something Connect pays out first TYPED, and does that surface reach the prompt?", found three surfaces that do not:
+
+- the **List a product Spark** (`/market/sell`, also mounted as the `@wizard/(.)market/sell` modal), which carried two prose sentences telling a maker to set up payouts before their first sale, no readiness read and no button;
+- the **Shop console's Catalog tab**, the console's default tab and the one `ItemForm` takes the price on, while the prompt sat on the Storefront tab only, a tab an operator opens to rename it;
+- the **New service Spark** (`settings/services/new`), where a bookable service gets its price, its price model and its deposit.
+
+On all three the BUYER is the one refused, at click, by `lib/commerce/checkout.ts`. The operator learns nothing unless they happen to open a different page. Every one of the three is a Studio Spark or a console tab, which is why the rule needed restating: the previous two rows closed forms and pages, and the Sparks were built after them without inheriting it.
+
+**Decision.**
+
+1. **"Where the price is typed" is the first sell attempt.** A Spark, a form or a console tab that takes a price for something Connect pays out counts, whether or not a buy button exists yet. A price field is the operator deciding to charge.
+2. **The Server page resolves; the Spark renders.** The page that already knows the caller (or the Space) calls `resolveProfilePayoutPrompt` / `resolveSpacePayoutPrompt` and hands the plain `PayoutPrompt | null` to the client Spark, which renders `PayoutPromptCard` as its `doors.aside`, on the first screen. No new component, no new sentence, no second read: the kernel already has the words.
+3. **The Studio kernel does not learn about payouts.** Readiness is IO and per-payee; the kernel is pure and entity-blind (`docs/STUDIO.md` §0), and a `price` field kind cannot know whether its money moves through Connect (housing rent and a listing's price note are `price`-shaped and pay nobody). The prompt is a surface prop, never a manifest field or a field-kind hint.
+4. **Static go-elsewhere sentences retire wherever the card lands.** A sentence that says "set up payouts before your first sale" beside a card that says the same with a button is two prompts; beside no card it is the dead end this whole line of work exists to remove.
+5. **The payee is who the resolver says.** A maker Spark resolves `self`; a Space Spark or console resolves the space OWNER ([ADR-819](DECISIONS.md)), so an editor reads who has to act and is never handed a button that onboards the wrong account.
+6. **Null when ready stays ([ADR-1158](DECISIONS.md)).** On a create surface the card is a nudge, so `whenReady` stays silent. A console tab that IS the payments UI keeps its `status` card, and a console-level card steps aside on that tab so a not-ready owner never reads two cards on one screen.
+
+**Rejected.** A readiness hint on the kernel's `price` field kind (breaks purity, and the kind cannot tell a Connect-paid price from an informational one). Reading readiness inside the client Spark (a second read per surface, and the admin client cannot cross the boundary). Any gate on the Create button ([ADR-914](DECISIONS.md): never gate the transaction). Leaving the prose sentences beside the card as reinforcement (two prompts).
+
+**Consequences.** PROG-R5's change 4.1 becomes literally true on the walk: every Connect-paid price field reaches the one prompt. `lib/billing/connect-prompt.test.tsx` pins each new seam by source shape, blanking comments first (`docs/CHECKOUT.md` §6: a header that describes the retired sentence must not read as the sentence). Tips remain outside the rule: they are a payout channel with no sell attempt, because nobody prices a tip. The next Spark that takes a Connect-paid price inherits this decision, and the test is where it is added.
+
+**Rows.** LIVE-537 (the maker Spark, closed with this ADR). LIVE-538 (the Shop console and the Service Spark) applies §§1-2 and §6 to a Space payee. PROG-R5 closes when both are done.
+
 ## ADR-1522: A baseline must not contain a list whose length changes, and a suite must not report an account fact as a failure (LIVE-457, LIVE-458, LIVE-459, OWN-081, HYG-115)
 
 **Status:** Accepted · 2026-09-22 · backlog `LIVE-457`, `LIVE-458`, `LIVE-459`, `OWN-081`, `HYG-115` · records work already merged in #2852 · numbered **1522** rather than the first free number, because 1511 is claimed on two open branches at once and 1520 and 1521 are claimed on two more, so this takes the first number above every claim in flight ([ADR-1488](DECISIONS.md)'s convention, now enforced by [ADR-1509](DECISIONS.md)) · extends [ADR-1277](DECISIONS.md) (the `data-visual-mask` hook), [ADR-1265](DECISIONS.md) (`viewportOnly` for a surface whose body is live data) and [ADR-1351](DECISIONS.md) (a capture that photographs an outage commits the outage) · beside [ADR-1082](DECISIONS.md) (re-test the premise before working the row) and [ADR-970](DECISIONS.md) (a red check nobody owns trains everyone to merge past it)
