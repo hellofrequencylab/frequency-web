@@ -43,8 +43,14 @@ export interface SeriesEntryShape {
   occurrenceDate?: string | null
 }
 
-/** The write a choice means. `deleteRow` is the hard delete: the whole series for a repeating
- *  entry, and the one date for a one-off, because the row is the same thing in both cases. */
+/** The write a choice means. `deleteRow` removes the ROW: the whole series for a repeating entry,
+ *  and the one date for a one-off, because the row is the same thing in both cases.
+ *
+ *  Since LIVE-536 that removal is a TOMBSTONE, not a hard delete: deleteCalendarEntryRow stamps
+ *  `removed_at` and every reader filters it, so a date deleted by mistake can be brought back with
+ *  `set removed_at = null`. That changes how bad the mistake is; it does NOT change the reach of
+ *  the press, and the reach is what this module exists to ask about. A repeating entry is still one
+ *  row, so `deleteRow` still means every date of it, and still has to be asked for by name. */
 export type SeriesDeleteAction = 'skipThisDate' | 'deleteRow' | 'nothing'
 
 /** What the person picked in the delete dialog. */

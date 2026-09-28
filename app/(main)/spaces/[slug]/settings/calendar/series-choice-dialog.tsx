@@ -13,10 +13,15 @@ import {
   type SeriesSaveChoice,
 } from '@/lib/calendar/series-choice'
 
-// THE QUESTION A REPEATING ENTRY IS OWED (LIVE-531). One row is the whole series, and the delete is
-// a hard delete with no tombstone, so the only safe Delete on a repeating entry is one that asks
-// which dates it means. The decision, and every sentence in here, live in
-// lib/calendar/series-choice.ts; this file is the surface.
+// THE QUESTION A REPEATING ENTRY IS OWED (LIVE-531). One row is the whole series, so a Delete on a
+// repeating entry reaches every date of it, and the only safe one is a Delete that asks which dates
+// it means. The decision, and every sentence in here, live in lib/calendar/series-choice.ts; this
+// file is the surface.
+//
+// The removal became a TOMBSTONE in LIVE-536 (`removed_at`, filtered by every reader), so a date
+// lost this way is now recoverable. That is a reason this dialog is no longer the last line of
+// defence, and NOT a reason to soften it: the operator still cannot see that the entry they are
+// standing on is the whole series, and recovering a date means someone noticing and running SQL.
 //
 // SHAPE. The shared `Dialog` primitive (chrome, ESC, backdrop, focus trap and restore, scroll lock)
 // with the DangerModal panel's look, because this IS that pattern wearing a third choice:

@@ -335,8 +335,9 @@ export function StaffCalendar({
     deleteRow()
   }
 
-  /** The hard delete. For a repeating entry this is the WHOLE SERIES, which is why nothing reaches
-   *  it any more without the question above. */
+  /** The row removal (a `removed_at` tombstone since LIVE-536, not a hard delete). For a repeating
+   *  entry this is the WHOLE SERIES, which is why nothing reaches it any more without the question
+   *  above: recoverable is not the same as harmless. */
   const deleteRow = () => {
     if (!draft?.id) return
     const id = draft.id
