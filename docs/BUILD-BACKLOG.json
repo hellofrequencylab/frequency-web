@@ -154,26 +154,48 @@
       },
       "waves": [
         {
-          "name": "W0 · P0 — costing something today: an incident, a wrong money/consent/permission answer, or a crawl-facing defect the submitted sitemap exposes. EMPTY IS THE GOAL. LIVE-234 is the money proof (one succeeded $44 ticket is not five loops). OWN-073 closed 2026-09-19 (owner emailed). PROG-R5 is no longer here — Connect is not the lie.",
-          "ids": []
-        },
-        {
-          "name": "W0b · P1 — product-first interior (ADR-1403) ready to work now, then CORE-MODEL walls that are still untrue. Pull from here.",
+          "name": "W0 · FIRST — THE PROOF. Nothing has ever been charged: commerce_orders 0, event_tickets 0, subscriptions 0, tips 0 (LIVE-234). Until one real transaction of each kind lands, every revenue number in this model is arithmetic, not evidence, and everything below is built on an assumption. OWN-074 is the nearest real one: a $55 ticket on 23 Oct that cannot be sold.",
           "ids": [
-            "LIVE-186",
-            "LIVE-213"
+            "LIVE-234",
+            "OWN-074"
           ]
         },
         {
-          "name": "W0c · P1/P2 — calendar C2–C5 (ADR-1445) first, then FOCUS remainder, gems, scan cheap-DB, Journey sales tail.",
+          "name": "W0b · LIVE HOLES — open right now, not scheduled. PROG-A3 is here rather than with the rest of the App Platform because parking it leaves a disabled module's data reachable by direct API, which is a permission answer that is currently wrong. HYG-100 proves the money/trust/Vera denies actually fail closed; LIVE-335 finishes the feed RLS converge.",
+          "ids": [
+            "PROG-A3",
+            "HYG-100",
+            "LIVE-335"
+          ]
+        },
+        {
+          "name": "W0d · THE INSTRUMENT — fix it before running more work through it. pr-compare is REQUIRED and captures ONE preview at a time repo-wide, so a baseline that flips height taxes every pull request behind it. This is the compounding cost on the board: it is paid again by every row in every wave below.",
+          "ids": [
+            "LIVE-492",
+            "LIVE-504",
+            "LIVE-476",
+            "LIVE-186",
+            "LIVE-213",
+            "HYG-115",
+            "HYG-122"
+          ]
+        },
+        {
+          "name": "WR · THE MONEY PATH — the doors a seller walks through. R5 is the Connect onboarding push; LIVE-537/538 are the two places a maker is told to set up payouts and offered no door. D8 is one checkout paying more than one seller. Ordered so the doors exist before the verticals that need them.",
+          "ids": [
+            "PROG-R5",
+            "LIVE-537",
+            "LIVE-538",
+            "PROG-D8",
+            "DEF-MONEY"
+          ]
+        },
+        {
+          "name": "W0c · FINISH THE CALENDAR. Thirteen of these are in flight right now. A half-built surface costs more than an unstarted one, and CAL7's six rows are a CHAIN (541 handshake, 542 comments, 543 activity, 544 tasks, 545 notify, 546 feed) that must land in that order.",
           "ids": [
             "PROG-CAL11",
             "LIVE-539",
             "LIVE-540",
-            "HYG-100",
-            "LIVE-413",
-            "HYG-075",
-            "LIVE-335",
             "PROG-CAL7",
             "LIVE-541",
             "LIVE-542",
@@ -181,144 +203,128 @@
             "LIVE-544",
             "LIVE-545",
             "LIVE-546",
-            "LIVE-496",
             "LIVE-530",
-            "HYG-123"
-          ]
-        },
-        {
-          "name": "W0d · P2/P3 — craft: shell split, hex, dev-environment correctness, parked niceties. 12 visitors / 18 pageviews in 31 days: the funnel, not the page speed, is the constraint.",
-          "ids": [
-            "LIVE-221",
-            "LIVE-273",
-            "LIVE-450",
-            "HYG-115",
             "LIVE-463",
-            "LIVE-476",
-            "LIVE-492",
-            "LIVE-504",
             "LIVE-481",
-            "LIVE-484",
-            "HYG-122"
+            "LIVE-496"
           ]
         },
         {
-          "name": "WR · the core-model rework (ADR-1294), phases 0-11 in order. Three lines, four nouns. Phases 1-3 are one pass over the same files: the feature gates are inert until the grace window ends on 2026-12-01, which makes this the safe window to move paywalls. Phase 5 is the commercial unlock and phase 11 is the only phase that can say whether any of it worked.",
+          "name": "W7 · THE FUNNEL, THE STANDING MODEL, AND LIVE MEMBER-FACING QUALITY — the constraint this board keeps naming. 12 visitors / 18 pageviews in 31 days: nobody is arriving, so polish below the fold is not what is missing. LIVE-455 is the six-week field test that turns the instrument into a reading, and it needs the owner to name a city and three businesses. LIVE-484 rides here because a timer waking every phone every 8 to 12 seconds to animate a display-none box is felt by whoever DOES arrive.",
           "ids": [
-            "PROG-R5",
-            "LIVE-537",
-            "LIVE-538",
-            "PROG-R10",
+            "LIVE-413",
+            "LIVE-450",
+            "LIVE-221",
+            "PROG-GD6",
             "LIVE-263",
-            "LIVE-456"
+            "LIVE-456",
+            "PROG-R10",
+            "LIVE-484",
+            "LIVE-455"
           ]
         },
         {
-          "name": "W1 · content pipeline (5c/5d must land before Editor E3)",
-          "ids": []
-        },
-        {
-          "name": "W2 · foundation first",
+          "name": "W2 · FOUNDATION + HYGIENE — the floor the big programs stand on. LIVE-273 is dated: the SUPABASE_ACCESS_TOKEN expires 2026-12-09 and its failure reads as a database problem.",
           "ids": [
             "DEF-HARDEN",
-            "SCAN-502"
+            "SCAN-502",
+            "HYG-075",
+            "HYG-123",
+            "LIVE-273",
+            "OWN-070"
           ]
         },
         {
-          "name": "WM · Mobile, ALONGSIDE the site (owner ruling 2026-09-28, ADR-1535). Expo/RN on the shared contract (DEF-MOBILE). Placed after W2 foundation so it runs as its own lane beside W5-W8 rather than after them; array order says it may start once W2 holds, not that W5 waits for it. If it should start later, move this wave in one line.",
-          "ids": [
-            "DEF-MOBILE"
-          ]
-        },
-        {
-          "name": "W3 · Loom foundation (the media layer the editor projects from)",
-          "ids": []
-        },
-        {
-          "name": "W5 · Loom at scale",
+          "name": "W3 · LOOM — the media layer the Editor projects from. E2 is literally 'Loom projection', so this wave is a hard prerequisite for W4 and not a preference.",
           "ids": [
             "PROG-D5",
             "PROG-D6",
             "PROG-D7",
             "LIVE-451",
-            "LIVE-454"
+            "HYG-109"
           ]
         },
         {
-          "name": "W6 · re-theme + the mechanical sweeps",
-          "ids": [
-            "PROG-DAWN3",
-            "LIVE-447"
-          ]
-        },
-        {
-          "name": "W7 · feature depth",
-          "ids": [
-            "PROG-PRAC4",
-            "DEF-DOMAIN",
-            "DEF-CODE",
-            "HYG-109",
-            "PROG-GD6"
-          ]
-        },
-        {
-          "name": "W8 · commerce + verticals (Resonance launch stays GO-gated)",
-          "ids": [
-            "DEF-MONEY",
-            "DEF-RESON",
-            "PROG-D8"
-          ]
-        },
-        {
-          "name": "W4 · THIRD TO LAST (owner ruling 2026-09-21, ADR-1491) — white label websites AND the editor, together. Order within the wave is unchanged from ADR-1325: E0 foundations, E1 the contract, E2 the usage index, E3 the axes, then E10 Sites v1, then E4-E9 depth, then W6 member sites + theme marketplace and P7 theming depth. It MOVED here from before W5: it used to run ahead of Loom-at-scale, re-theme, feature depth and commerce, and now runs after all four.",
+          "name": "W4 · EDITOR + SITES, in documented dependency order E0-E10. LIVE-454 sits after E0 because its own row says it is blocked on it. E10 absorbs White Label W1-W5; W6 and P7 are the theming depth on top, and LIVE-310 is the custom_domain key those sites bind against.",
           "ids": [
             "PROG-E0",
+            "LIVE-454",
             "PROG-E1",
             "PROG-E2",
             "PROG-E3",
-            "PROG-E10",
-            "LIVE-310",
             "PROG-E4",
             "PROG-E5",
             "PROG-E6",
             "PROG-E7",
             "PROG-E8",
             "PROG-E9",
+            "PROG-E10",
+            "LIVE-310",
             "PROG-W6",
             "PROG-P7"
           ]
         },
         {
-          "name": "W10 · (empty) kept so the wave numbers the docs cite do not shift. White label content lives in W4.",
-          "ids": []
+          "name": "W6 · RE-THEME AND DEPTH — breadth work that is safe to do late because nothing else waits on it.",
+          "ids": [
+            "PROG-DAWN3",
+            "LIVE-447",
+            "PROG-PRAC4",
+            "DEF-DOMAIN",
+            "DEF-CODE",
+            "DEF-RESON"
+          ]
         },
         {
-          "name": "W11 · SECOND TO LAST (owner rulings 2026-08-24, 2026-09-21, 2026-09-28 / ADR-1535) — the full Etsy-grade store (DEF-ETSY). Now OPEN so it is on the list and probed; still last but one, immediately before the App Platform.",
+          "name": "W9 · APP PLATFORM, the remainder. A3 was pulled forward to W0b as a live permission hole; what is left here is the module-boundary work and the packaged apps, which nothing else depends on.",
+          "ids": [
+            "PROG-A1",
+            "PROG-A4"
+          ]
+        },
+        {
+          "name": "W11 · SECOND TO LAST — the Etsy-grade store (owner ruling, restated 2026-09-28).",
           "ids": [
             "DEF-ETSY"
           ]
         },
         {
-          "name": "W9 · LAST (owner ruling 2026-09-28, ADR-1535: \"App till last\") — the App Platform (PROG-A1, PROG-A3, PROG-A4), the only program still deferred by name. Rows stay PARKED so no packet picks them up. See the ⚠️ on PROG-A3 in slate.ruled: parking it leaves a disabled module reachable by direct API.",
-          "ids": []
+          "name": "WM · LAST — the mobile app build (owner ruling, restated 2026-09-28). Expo/RN on the shared contract, so the contract it rides on is settled by everything above.",
+          "ids": [
+            "DEF-MOBILE"
+          ]
         },
         {
-          "name": "W12 · (empty) mobile moved to WM by owner ruling 2026-09-28 (ADR-1535: \"Mobile build gets done alongside the site\"). Kept so the wave numbers the docs cite do not shift.",
-          "ids": []
-        },
-        {
-          "name": "owner-timed",
+          "name": "owner-timed · NOT IN THE BUILD ORDER — these need the owner, not an agent, and are listed so they are visible rather than sequenced.",
           "ids": [
             "LIVE-060",
             "OWN-011",
             "OWN-062",
             "DEF-A2P",
-            "OWN-070",
-            "OWN-074",
             "OWN-077",
             "LIVE-464",
             "LIVE-465"
           ]
+        },
+        {
+          "name": "W1 · (empty) kept so the wave numbers the docs cite do not shift.",
+          "ids": []
+        },
+        {
+          "name": "W5 · (empty) Loom-at-scale merged into W3.",
+          "ids": []
+        },
+        {
+          "name": "W8 · (empty) commerce merged into WR.",
+          "ids": []
+        },
+        {
+          "name": "W10 · (empty) kept so the wave numbers the docs cite do not shift.",
+          "ids": []
+        },
+        {
+          "name": "W12 · (empty) mobile lives in WM.",
+          "ids": []
         }
       ],
       "deferredByName": [
@@ -1538,7 +1544,7 @@
     {
       "id": "PROG-A1",
       "title": "App Platform A1: feature modules with enforced boundaries",
-      "status": "parked",
+      "status": "open",
       "priority": "P2",
       "lane": "program",
       "size": "M",
@@ -1557,7 +1563,7 @@
     {
       "id": "PROG-A3",
       "title": "App Platform A3: enablement inside RLS",
-      "status": "parked",
+      "status": "open",
       "priority": "P1",
       "lane": "program",
       "size": "M",
@@ -1576,7 +1582,7 @@
     {
       "id": "PROG-A4",
       "title": "App Platform A4: flagship packaged apps",
-      "status": "parked",
+      "status": "open",
       "priority": "P2",
       "lane": "program",
       "size": "L",
@@ -10615,7 +10621,7 @@
     {
       "id": "LIVE-455",
       "title": "Phase 11, the six weeks: one city, three businesses, one gathering each per week, and the instrument read at the start and the end",
-      "status": "parked",
+      "status": "open",
       "priority": "P1",
       "lane": "owner",
       "size": "M",
@@ -11151,9 +11157,9 @@
     {
       "id": "LIVE-234",
       "title": "Prove each money loop once in production",
-      "status": "parked",
+      "status": "open",
       "priority": "P0",
-      "lane": "live",
+      "lane": "owner",
       "size": "M",
       "source": {
         "file": "docs/CORE-MODEL.md",
@@ -11165,7 +11171,7 @@
         "evidence": "PARKED 2026-09-21 on owner instruction ('remove this step for now, we'll test as we go'). Unchanged otherwise: five tables non-zero counting ONLY settled rows, event_tickets where status='succeeded'. As of 2026-09-21 one of five is proven (ticket). Re-open on the first settled row of any remaining loop.",
         "checked": "2026-09-21"
       },
-      "ownerAction": "account"
+      "ownerAction": "content"
     },
     {
       "id": "LIVE-235",
