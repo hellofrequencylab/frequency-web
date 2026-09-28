@@ -12,6 +12,7 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **A Space can show the moon and the zodiac on its calendar.** New and full moons, and the day the Sun enters each sign, with the equinox or solstice named alongside it on the four days they share. Switch it on under Space settings, Calendar. Off until you do.
 - **If a Space membership payment fails, you see it.** The Space still counts you as a member. Settings, Plan and billing, names the Space. The host sees Payment failed on that member.
 
 - **Spaces you belong to now live on Settings → Memberships.** Open one from there, or leave it. The Frequency plan stays under Plan and billing.
