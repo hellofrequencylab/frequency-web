@@ -18,6 +18,10 @@ vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/entry-actions', () => ({
   saveCalendarEntry: actions.saveCalendarEntry,
 }))
 
+vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/task-actions', () => ({
+  assignPlanTodo: async () => ({ data: undefined }),
+  listPlanAssignees: async () => ({ data: [] }),
+}))
 vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/plan-actions', () => ({
   listPlanTodos: async () => [],
   planReadiness: async () => ({ gaps: [], href: '/events/new?plan=plan-1' }),
@@ -28,6 +32,12 @@ vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/plan-actions', () => ({
   // events.plan_id can be re-attached in the app. Empty here; the render is what this pins.
   listPlanLinkableEvents: async () => [],
   attachEventToPlan: async () => ({ data: undefined }),
+  // The share handshake (LIVE-541): the drawer reads the picker and the share list on open.
+  listPlanShares: async () => ({ data: { options: [], shares: [] } }),
+  sharePlanWithSpace: async () => ({ data: { id: 'share-1' } }),
+  revokePlanShare: async () => ({ data: undefined }),
+  listPlanComments: async () => ({ data: [] }),
+  listPlanActivity: async () => ({ data: [] }),
 }))
 
 // Ask Vera (PROG-CAL10). The box calls nothing on mount: both doors run only on Send and Accept,
