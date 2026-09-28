@@ -349,10 +349,6 @@ jobs:
           # subject names since the one list was seeded must be a row, exceptions stated one reason
           # each. SOURCE-only (git log plus the JSON, no network) once the history fetch step above
           # has run, so this array is its home.
-          guards=(
-            authz canon menu gate-parity workflows labels a11y-names help tokens phantom bridge contrast
-            headers seo rls grants admin-client client-boundary migrations adr docs-links templates
-            backlog one-list schema-contract rls-recursion id-collisions rls-deny shipped-ids
           # 2026-09-28: fk-indexes joined (HYG-128, ADR-1554). Three sweeps (SCAN-638, 20270345006400,
           # HYG-127) each took the unindexed-foreign-key count to zero and the next tables brought it
           # back, because the only reader was the Supabase performance advisor, which nobody consults
@@ -361,7 +357,10 @@ jobs:
           # has no index LEADING with its column; its census matched pg_constraint against pg_index on
           # production the day it landed. SOURCE-only (reads supabase/migrations), so this array is
           # its home, beside rls-recursion and rls-deny which replay the same files.
-            backlog one-list schema-contract rls-recursion id-collisions rls-deny fk-indexes
+          guards=(
+            authz canon menu gate-parity workflows labels a11y-names help tokens phantom bridge contrast
+            headers seo rls grants admin-client client-boundary migrations adr docs-links templates
+            backlog one-list schema-contract rls-recursion id-collisions rls-deny fk-indexes shipped-ids
           )
           # RUN IN PARALLEL, REPORT IN ORDER. The guards are independent node processes that only
           # read the tree, so nothing about them needed to be sequential — it just was. Run wall
