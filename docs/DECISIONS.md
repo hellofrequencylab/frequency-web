@@ -32,7 +32,6 @@ tree as of this index: **ADR-1488**. 1488 is LIVE-439. 1481 is LIVE-432. 1477 is
 
 tree as of this index: **ADR-1491**. 1491 is the 2026-09-21 tail-order ruling (editor third to last, Etsy second to last, the app last). 1490 is LIVE-437. 1487 is LIVE-438. 1483 is LIVE-434. 1482 is LIVE-433. 1485 is LIVE-436. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1468 is Space Plans (PROG-CAL2-8). 1467 is the Calendar view slide shell. 1464 is the Admin Calendar five-view set. 1463 is LIVE-393. 1445 is the calendar C0-C5 ruling. 1325 is the plan this one amends.
 
-
 | Theme | Start here |
 |---|---|
 | **Names** | ADR-208 → [NAMING.md](NAMING.md) |
@@ -13907,7 +13906,6 @@ graduation hooks belong to other agents. `contacts` + `beta_*` stay untyped (unt
 
 **Consequences.** Additive and inert by default. The dedicated audit table's migration is WRITTEN but NOT applied (the lead applies centrally); it is registered in `scripts/rls-deny-all.txt` as service-role-only (RLS on, no policy), and the audit writer is best-effort with an `agent_actions` fallback so the send path works before the migration lands. Both gates are structurally unbypassable: the breaker cannot be skipped (it is the first call in the only graduated path), and the send-gate cannot be skipped (the enqueue is reachable only past both). `lib/database.types.ts` needs regenerating after the migration applies (the reader/writer cast untyped until then, ADR-246). Turning autonomy on for real is a deliberate, audited owner action, reversible instantly by the master kill or the breaker.
 
-
 ---
 
 ## ADR-627: One notification router/registry, and `practice.verified` verified-airtime instrumentation (WAM)
@@ -16159,7 +16157,6 @@ The durable rule: **a crawlable listing is public-only — `unlisted` is a link,
 **Consequences.** `page-hero.tsx`'s identity branch is shared, so the clipping fix also lands on `/circles/<slug>`, `/journeys/<slug>`, `/journeys/<slug>/learn` and `/channels/<id>` below 640px — the same bug, the same fix, and nothing at or above 640px. The height budget, re-derived at 17px root against the real `min-h-[15rem]` (255px, not the plan's assumed 240px): at 375px a five-chip friend viewer wraps to two rows for ~210px of used band, so the cover **does not grow**; a staff viewer's sixth chip takes a third row at ~252px, still inside it. At 320px the same clusters need three or four rows and the band grows to roughly 295px. That is the trade this pass accepts — a cover that is taller on the narrowest phones instead of one that hides controls. The plan's stricter "must not exceed 240px" was never reachable: `min-h-[15rem]` alone is 255px, and getting under it needs Tip and the staff Settings drawer off the cover entirely, which is a desktop change and out of bounds here. Desktop neutrality is proved twice: a render test strips `max-sm:` from the cluster and asserts the remainder is byte-identical to the shipped string, and the compiled stylesheet puts every `max-sm:` utility inside `@media not all and (min-width:40rem)` with `.sm:px-8` / `.sm:max-w-[16rem]` emitted later in the sheet than the relaxed base utilities they override. What is **not** proved is how it looks: there is no browser, no Playwright and no `@testing-library/react` here, so the 320 / 375 / 390px render has not been observed, only derived.
 
 The durable rule: **on this codebase "no horizontal scroll" proves nothing — the shell clips it — so the mobile test is "nothing is clipped"; and a phone-only fix is either `max-sm:`-prefixed or a base utility an existing `sm:` already overrides, never a new unprefixed declaration and never a backdrop behind header text.**
-
 
 ---
 
@@ -19775,7 +19772,6 @@ predicate used by ten callers should be named for the *question*, not the *answe
 "is this usable" check on stored user content deserves the question *"and what happens to the data
 when it says no?"*
 
-
 ---
 
 ## ADR-979 — Deleting a control nobody could have filled, and a nav row that is a gate decision (2026-08-10)
@@ -20508,7 +20504,6 @@ concurrent work was in flight… Move it into the ledger verbatim"* — inside t
 been moved into. The `docs/adr-drafts/` directory no longer exists, and `pnpm check:adr` confirms
 every cited number resolves, so the warning it carried about dangling citations is expired.
 
-
 **Context.** ADR-986 gave every creatable entity ONE declaration and one renderer, so a wizard is
 data now, not a hand-built screen. The AI half never got the same treatment. Five modules under
 `lib/ai/` each opened a guided draft, and each had typed out the same twelve-line preamble by hand:
@@ -20764,8 +20759,6 @@ surface each.
 concurrent work was in flight… Move it into the ledger verbatim"* — inside the ledger it had already
 been moved into. The `docs/adr-drafts/` directory no longer exists, and `pnpm check:adr` confirms
 every cited number resolves, so the warning it carried about dangling citations is expired.
-
-
 
 **Context.** Three capabilities were already paid for and already governed, and each reached one
 surface:
@@ -25994,7 +25987,6 @@ cutting it is a workflow change and not a config line. ⚠️ There is **no Verc
 the 1.50 GB ceiling** — the only cache control the platform exposes is turning the cache off for a
 deployment — so this is built under, never negotiated with.
 
-
 ⚠️ **NOT in `postbuild` yet (LIVE-035).** It ships as `pnpm check:cache-budget`. It has never run
 against a real completed production build — the 2026-08-17 attempt died collecting page data for
 `/discover/cities/[citySlug]`, which needs credentials the agent container does not hold. It also
@@ -26162,7 +26154,6 @@ a silent exception.
 `^import { MODULE_COMPONENTS }` in `settings-panel.tsx` is satisfied by a cosmetic edit worth **14.3
 KB** and left unsatisfied by the 413 KB that actually moved — a probe that measures its own title
 rather than the consequence, which [ADR-1043](#adr-1043) forbids. The consequence is measured here.
-
 
 ⚠️ **NOT in `postbuild` yet (LIVE-035), and that is the honest state.** Its own unit tests pass, but on
 the only artifact available it exited 1 naming `lib/pricing/feature-meters.ts` — and that artifact was
@@ -36972,7 +36963,6 @@ re-evaluated. The next commit authored by a person or an agent re-triggers CI no
 what this one does; do not read a post-recapture PR as green until a run exists on a commit the
 runner did not author.
 
-
 **Status.** Accepted. Replaces `LIVE-040`'s commit-date freshness arm with a content fingerprint; adds `test/e2e/template-fingerprints.json` + `test/e2e/template-fingerprints.test.ts` and a re-stamp step in `.github/workflows/e2e-manual.yml`.
 
 **Context.** `LIVE-040` carried a two-arm probe. The first arm asserts both marketing templates render a FAQ Accordion with question/answer pairs, and it is honest. The second asked whether the committed `@visual` PNGs still depict the page, by comparing the template file's last-commit date against its baselines' last-commit date. That arm has now failed twice in two different ways.
@@ -37349,7 +37339,6 @@ The premise was re-measured before any code was written, as ADR-1082 requires. E
 
 ⚠️ **The generalisable part.** A table built for a job it never got is a promise with no expiry, and this one sat for seven months with its purpose written into its index name. The reader shipped first because it was the cheaper half and made the gap visible, which is the right order; but "visible" is not "done", and a row that says "the recovery job is not built yet" in three docs is prose recording status, which ADR-1043 forbids for a reason. The fix is the same as always: the job, its probe, and the docs that said "not yet" all move in one change.
 **Status.** Accepted. Closes `LIVE-208`. The owner's ruling on the three options that row carried, plus the two things implementing it measured. Amends nothing in [ADR-1017](DECISIONS.md) — the closer stays exactly as it was — and adds the sixth gate to `postbuild` ([`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md), [ADR-1003](DECISIONS.md)).
-
 
 ---
 
@@ -47731,6 +47720,35 @@ Premise re-tested 2026-09-21 against the migration history (ADR-1082), one findi
 
 **Rows.** LIVE-335 (open; `cmd` probe now asserts the migration defines the three policies and the helper, and the row's next half is the baseline convergence).
 
+## ADR-1539: The first sell attempt is the field where the price is typed, and a Spark that prices a Connect-paid thing renders the resolved prompt on its first screen (LIVE-537, LIVE-538)
+
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-537`, `LIVE-538` · program `PROG-R5` · extends [ADR-1357](DECISIONS.md) (the event form's price control) and LIVE-233's one-prompt rule · numbered **1539** because **1536-1538** were claimed on other open PRs when this was written (1531-1533 were then reserved, since ported by HYG-126)
+
+**Context.** LIVE-233 collapsed four hand-written payout panels into one prompt (`lib/billing/payout-prompt.ts`, pure; `payout-prompt-resolve.ts`, the two reads) and put it where each money path REFUSES: Offerings, the Shop's Storefront tab, the event page, the maker console. LIVE-339 (ADR-1357) then noticed that the event CREATE form, where a host first types a price, still linked to `/settings/billing`, and moved the door there. The rule those two rows established, and `lib/events/ticket-eligibility.ts` states at length, is that onboarding is offered on the surface where someone has just decided to charge.
+
+Re-walking PROG-R5's change 4.1 on 2026-09-28 against the tree, asking only "where is a price for something Connect pays out first TYPED, and does that surface reach the prompt?", found three surfaces that do not:
+
+- the **List a product Spark** (`/market/sell`, also mounted as the `@wizard/(.)market/sell` modal), which carried two prose sentences telling a maker to set up payouts before their first sale, no readiness read and no button;
+- the **Shop console's Catalog tab**, the console's default tab and the one `ItemForm` takes the price on, while the prompt sat on the Storefront tab only, a tab an operator opens to rename it;
+- the **New service Spark** (`settings/services/new`), where a bookable service gets its price, its price model and its deposit.
+
+On all three the BUYER is the one refused, at click, by `lib/commerce/checkout.ts`. The operator learns nothing unless they happen to open a different page. Every one of the three is a Studio Spark or a console tab, which is why the rule needed restating: the previous two rows closed forms and pages, and the Sparks were built after them without inheriting it.
+
+**Decision.**
+
+1. **"Where the price is typed" is the first sell attempt.** A Spark, a form or a console tab that takes a price for something Connect pays out counts, whether or not a buy button exists yet. A price field is the operator deciding to charge.
+2. **The Server page resolves; the Spark renders.** The page that already knows the caller (or the Space) calls `resolveProfilePayoutPrompt` / `resolveSpacePayoutPrompt` and hands the plain `PayoutPrompt | null` to the client Spark, which renders `PayoutPromptCard` as its `doors.aside`, on the first screen. No new component, no new sentence, no second read: the kernel already has the words.
+3. **The Studio kernel does not learn about payouts.** Readiness is IO and per-payee; the kernel is pure and entity-blind (`docs/STUDIO.md` §0), and a `price` field kind cannot know whether its money moves through Connect (housing rent and a listing's price note are `price`-shaped and pay nobody). The prompt is a surface prop, never a manifest field or a field-kind hint.
+4. **Static go-elsewhere sentences retire wherever the card lands.** A sentence that says "set up payouts before your first sale" beside a card that says the same with a button is two prompts; beside no card it is the dead end this whole line of work exists to remove.
+5. **The payee is who the resolver says.** A maker Spark resolves `self`; a Space Spark or console resolves the space OWNER ([ADR-819](DECISIONS.md)), so an editor reads who has to act and is never handed a button that onboards the wrong account.
+6. **Null when ready stays ([ADR-1158](DECISIONS.md)).** On a create surface the card is a nudge, so `whenReady` stays silent. A console tab that IS the payments UI keeps its `status` card, and a console-level card steps aside on that tab so a not-ready owner never reads two cards on one screen.
+
+**Rejected.** A readiness hint on the kernel's `price` field kind (breaks purity, and the kind cannot tell a Connect-paid price from an informational one). Reading readiness inside the client Spark (a second read per surface, and the admin client cannot cross the boundary). Any gate on the Create button ([ADR-914](DECISIONS.md): never gate the transaction). Leaving the prose sentences beside the card as reinforcement (two prompts).
+
+**Consequences.** PROG-R5's change 4.1 becomes literally true on the walk: every Connect-paid price field reaches the one prompt. `lib/billing/connect-prompt.test.tsx` pins each new seam by source shape, blanking comments first (`docs/CHECKOUT.md` §6: a header that describes the retired sentence must not read as the sentence). Tips remain outside the rule: they are a payout channel with no sell attempt, because nobody prices a tip. The next Spark that takes a Connect-paid price inherits this decision, and the test is where it is added.
+
+**Rows.** LIVE-537 (the maker Spark, closed with this ADR). LIVE-538 (the Shop console and the Service Spark) applies §§1-2 and §6 to a Space payee. PROG-R5 closes when both are done.
+
 ## ADR-1522: A baseline must not contain a list whose length changes, and a suite must not report an account fact as a failure (LIVE-457, LIVE-458, LIVE-459, OWN-081, HYG-115)
 
 **Status:** Accepted · 2026-09-22 · backlog `LIVE-457`, `LIVE-458`, `LIVE-459`, `OWN-081`, `HYG-115` · records work already merged in #2852 · numbered **1522** rather than the first free number, because 1511 is claimed on two open branches at once and 1520 and 1521 are claimed on two more, so this takes the first number above every claim in flight ([ADR-1488](DECISIONS.md)'s convention, now enforced by [ADR-1509](DECISIONS.md)) · extends [ADR-1277](DECISIONS.md) (the `data-visual-mask` hook), [ADR-1265](DECISIONS.md) (`viewportOnly` for a surface whose body is live data) and [ADR-1351](DECISIONS.md) (a capture that photographs an outage commits the outage) · beside [ADR-1082](DECISIONS.md) (re-test the premise before working the row) and [ADR-970](DECISIONS.md) (a red check nobody owns trains everyone to merge past it)
@@ -47880,6 +47898,27 @@ half of O-3 in ADR-1325, O-5 and Profile O1 on the row's 2026-09-08 ruling.
 **Rows.** OWN-060 (closed 2026-09-22). Consequences land on PROG-E7, PROG-E10 and the profile
 hero work when each is picked up.
 
+## ADR-1544: Vera reads what drew people as a tool the server computes on demand, handed in by the action, never as context on every ask (LIVE-539)
+
+**Status:** Accepted · 2026-09-28 · `LIVE-539` (child 1 of 2 of `PROG-CAL11` slice 4) · builds on [ADR-1386](DECISIONS.md) P6 (propose then accept; no other Space's data reaches a suggestion) and the PROG-CAL6 recap path · numbered 1544 because 1531-1536 and 1540-1542 are on main, 1537-1539 are on open pull requests, and 1543 was claimed by #2946 fourteen seconds before this pull request opened (the third renumbering of this entry in one afternoon, per ADR-1488)
+
+**Context.** The owner asked on 2026-09-22 for Vera to "figure out" dates and said "we can make it more complex later". Slices 1 to 3 of that later (clarify, edit any field, undo) shipped in the week after; the fourth, dates from what actually happened, had a paragraph in `PROG-CAL11` and no code: the word attendance appeared in none of the three Vera files, and the only attendance read on the calendar folded a Plan's events into one number for the drawer recap. Asked "pick a good day", Vera proposed any free Saturday or any free Tuesday with nothing to prefer between them. Three ways to put the history in front of the model were on the table: rows in every ask's context, a read inside the model loop, or a tool the server answers on demand with a reader the calendar action hands in.
+
+**Decision.**
+
+1. **A fourth tool, `attendance_history`, beside `lunar_dates`.** The model calls it when the ask is to pick, suggest or find a good day or time and names none, and does not call it when a day or time was named. The server answers with the weekday and starting hour that drew the most people to THIS Space, the whole table by weekday and by hour, the count each rests on, and one sentence in the house voice. When nothing has a record the answer is null, in words, never a weekday nobody came on.
+2. **The read is handed in by the calendar action as a reader on the context, keyed by the Space the editor resolved.** `lib/ai/vera-calendar.ts` imports no store and no admin client; without a reader the tool is not offered and the loop is the old three tools. The reader runs at most once per ask and only when the tool is called, because the check-in ledger is read per event (fifty reads at the bound) and that cost belongs to the one ask that needs it, not to every ask.
+3. **The fold is pure and reads the stored wall clock.** `attendanceHistory` in `lib/calendar/vera-attendance.ts` takes one row per past event, its `starts_at` as stored and the count `attendanceCount` gives its record (host marks and verified self check-ins, one person once, null when empty). Weekday and hour are the digits as stored, the LIVE-377 / LIVE-512 convention, because "Saturday at 7" is what the team means and what a pencil change writes; no machine zone is consulted. An unrecorded event is left out of every bucket rather than counted as nobody. The best hour is the best hour of the best weekday, not the busiest hour of the week, so the answer is one slot and not two that contradict each other.
+4. **One count per event, folded by the recap's own rule.** `loadEventAttendanceCounts` in `lib/events/event-stats.ts` returns a count per id from the same three ledgers, and `loadPlanAttendance` now folds over it, so the drawer recap and Vera's history cannot disagree. The read passes `toDay` at today, the exclusive ceiling [ADR-1536](DECISIONS.md) gave `listEventsForSpace` the same hour (a `pastOnly` mirror of `upcomingOnly` was written first and dropped at the merge, because one way to bound the top is enough), since materialised series put many future rows on a Space and "newest fifty" without a ceiling could hold no past event at all.
+5. **`MAX_ROUNDS` is four.** A lunar lookup, an attendance lookup, a second lunar lookup and the proposal all fit; a clarification still ends the turn.
+
+**Rejected.** Attendance rows in every ask's context (every ask pays fifty ledger reads for a preference most asks never use, and the context is rebuilt on every continuation). A read inside the model loop (the loop would import a store, and the only thing keeping another Space's history out of the prompt would be a filter inside the AI module rather than the action's authorization). The busiest hour of the week as the best hour (it could name a Tuesday under a Saturday). Counting an unrecorded event as zero (a full room whose host never touched the roster would drag its weekday down).
+
+**Consequences.** Vera's date suggestions can prefer what drew people, and the model is told to say which weekday and hour it followed in its note until `LIVE-540` puts the reason on the proposal line in the server's words. The loop stays pure of tables and the tenancy wall stays where it was (the action, `resolveEditor`). `loadPlanAttendance` is unchanged in behaviour and now has one rule under it. The probe imports the real fold and runs it.
+
+**Rows.** `LIVE-539` closed. `LIVE-540` next, which closes `PROG-CAL11`.
+=======
+
 ## ADR-1525: A visual baseline carries the environment that photographed it, and the camera refuses to compare across two (LIVE-213, LIVE-487)
 
 **Status:** Accepted · 2026-09-23 · backlog `LIVE-487` (closed here), `LIVE-213` (open on its owner
@@ -48012,6 +48051,27 @@ trusted. Any new `app/(public)/` page that renders member-aware content calls
 
 **Rows.** LIVE-500 (closed here). Untouched: SCAN-644, SCAN-643, LIVE-184 (the tab set the sitemap
 advertises is unchanged).
+
+## ADR-1546: A capture job looks at the checks behind its own push, and says in its own conclusion when nothing judged the baselines (HYG-115)
+
+**Status:** Accepted · 2026-09-28 · backlog `HYG-115` (closed here) · extends the GITHUB_TOKEN paragraph in the header of `.github/workflows/e2e-manual.yml` and [ADR-1351](DECISIONS.md) (the degraded-capture refusal on the same step) · the verdict is shaped like [ADR-1509](DECISIONS.md)'s cross-PR arm (pure, fixture-driven, loud skip when unarmed, failure when armed and unable to look) · numbered 1544 against the ledger and every open pull request's head on the day it was written, then 1546 once check:id-collisions read the same number on the earlier-opened #2947 and 1545 on #2949 (ADR-1509: the later-opened pull request renumbers)
+
+**Context.** The two capture jobs (update-baselines, update-a11y) commit what they photographed and push with GITHUB_TOKEN. What happens to the checks on that head has been measured in three states. A full `pull_request: synchronize` that judges the baselines (PR #2086, 2026-08-11). Nothing at all, because GitHub creates no workflow runs for a push made with that token (PR #2026, 2026-08-05; PR #2855, 2026-09-22, where the capture existed to unblock `pr-compare` and the check that needed the new baselines never fired, so the checklist showed a red compare against baselines that no longer existed). And runs created, then PARKED at `action_required` until a human account started them by hand (PR #2841, 2026-09-22: created 01:41:18Z, started 01:54:04Z; ci run 34176984759 on 2026-09-08 never started). In the second and third states the pull request's last judged SHA stays the commit before the capture, which reads exactly like "CI passed on the new baselines" when nothing evaluated them. The workflow header has carried that sentence as a warning to a human since August; the capture job itself walked away without looking, and a green capture job with a quiet checklist could not be told from "nothing needed to run". Premise re-tested ([ADR-1082](DECISIONS.md)): the row's own probe fails on `main` by construction, no module, no step.
+
+**Decision.**
+
+1. **The verdict is a pure function, `followUpVerdict({ headSha, runs })` in `scripts/check-capture-followup.mjs`.** It reads workflow runs in the REST shape, watches `ci` and `e2e`, and answers one of three things: `parked` (any watched run at `action_required`), `none` (no watched run for the head at all), or `judged` (a watched run is queued, running or concluded). A failed run is a judged run: the checklist shows it, which is the whole point. A run on another head, or of another workflow (Vercel's checks, e2e-manual itself), is not a judgement of the baselines and is not counted.
+2. **The capture job that pushed is the one that looks, right after it pushes.** Both committing steps gain `id: commit` and write `pushed=true` to their step output only after `git push`; a new step runs the gate only on that output, so a run that pushed nothing has nothing to judge. The gate lists the runs on the pushed head with the job's existing `actions: read`, waits a bounded 45 seconds for the third state's runs to be created, and fails THE CAPTURE JOB with `::error` annotations and a job-summary section that names the state and what to do (approve the parked runs, or push a commit of your own; never re-run the previous run, which replays the old SHA). Loud means the conclusion and the summary the dispatcher is already watching, not a log line.
+3. **It degrades loudly and fails honestly.** Without `GITHUB_TOKEN` and `GITHUB_REPOSITORY` it prints what was not proved and exits 0. Armed, a listing it cannot read is exit 1, never a skip, on the same reasoning as [ADR-1509](DECISIONS.md): a gate that could not look must not say clean.
+4. **The wait is short on purpose.** The fourth observation on the row named the canonical rule, a GITHUB_TOKEN push creates no runs, which fits every measurement without non-determinism. Absence is therefore the expected answer, not a race; the wait exists only for the parked state, whose runs are created within seconds, and the message says to push a commit rather than to wait.
+5. **The header paragraph that told a human to go and look now says the job looks**, and the two commit-step comments point at the step below them.
+
+**Rejected.** Pushing with a PAT so the runs fire (widens a token for every job in the file to buy one behaviour, and the header records the same token observed both ways, so it is a theory, not a measurement; measure first). A separate workflow triggered on the capture's push (it would not fire, for the same reason the checks do not). Re-running the previous run from the gate (replays the old SHA against the new baselines' tree). Making the gate advisory (a warning nobody reads is the silence with a different shape, [ADR-970](DECISIONS.md)).
+
+**Consequences.** A green capture job now means the checks behind the capture are running or judged; a red one names which of the three states the head is in, in the job summary. `scripts/check-capture-followup.test.ts` drives every verdict arm and the CLI's exit codes, summary text and bounded re-read with an injected fetch, so nothing here needs a network to prove. `pnpm check:capture-followup` is the local command; `scripts/guard-wiring.test.ts` sees the script invoked from e2e-manual.yml. The first real reading comes from the next committing dispatch, and it will be a red job or a green one, never a quiet checklist.
+
+**Rows.** HYG-115 (closed here). Untouched: LIVE-333's degraded-capture refusal on the same step, the turnstile, the protected-ref guard.
+
 ## ADR-1527: A block's declared field is reachable or it is not a field, and the two halves of Space authoring read one list (LIVE-501)
 
 **Status:** Accepted · 2026-09-25 · backlog `LIVE-501` (closed here) · amends the palette curation of
@@ -48077,6 +48137,26 @@ change was trusted until it was watched go red.
 
 **Rows.** LIVE-501 (closed here). Untouched: the `SpaceCommunity` Puck block and its 19 stored documents;
 the Space Circle / Discussion program.
+
+## ADR-1547: A pgTAP file that skips every assertion is a stated uncovered surface or a failed job, and the safeupdate file asserts the fix's shape without the hook (HYG-122)
+
+**Status:** Accepted · 2026-09-28 · backlog `HYG-122` (closed here) · extends [ADR-1207](DECISIONS.md) (the defect the file pins) and [ADR-1150](DECISIONS.md) (db-tests as the fresh-apply gate) · beside [ADR-1011](DECISIONS.md) (a guard nobody runs is a claim nobody checks) · numbered 1545 against the ledger and every open pull request's head on the day it was written, then 1547 once check:id-collisions read 1545 on the earlier-opened #2949 and 1546 taken by #2950 (ADR-1509: the later-opened pull request renumbers)
+
+**Context.** `supabase/tests/refresh_resonance_density_cells_safeupdate.test.sql` pins [ADR-1207](DECISIONS.md): the nightly density rollup's bare DELETE raised sqlstate 21000 under PostgREST's `safeupdate` planner hook on every cron run from 2026-08-22, and psql never saw it because psql never loads the hook. Seeing the defect needs the hook in the test session, so the file tries `load 'safeupdate'` in a DO block, and when that fails it prints the reason and SKIPS all three assertions rather than fail the suite for an unrelated cause. That is honest, and it was read by nobody: pg_prove prints the reason as a diag line and `ok` beneath it, the job goes green, and the coverage ledger counts the file. The row's open question was whether the hook had ever loaded in CI. Read on 2026-09-28 from db-tests run 36450365753, and it is every run: `SKIPPING: safeupdate could not be loaded in this database (42501: access to library "safeupdate" is not allowed)`. `LOAD` needs superuser or a library under `$libdir/plugins`; the role `supabase test db` connects as has neither. The one regression the file exists to pin has never been pinned in CI, and "All tests successful" said otherwise on every run.
+
+**Decision.**
+
+1. **The suite's own output is read, by a gate, for the skip it prints.** `scripts/check-pgtap-skips.mjs` (`pnpm check:pgtap-skips <log>`) runs in `db-tests.yml` on the TAP output the test step now keeps (`supabase test db 2>&1 | tee pgtap.log`, under `pipefail` so a failing suite still fails). It parses pg_prove's default output, one line per file with its diag lines between the file and its verdict, and treats a file as skipping when a diag line starts with `SKIP`.
+2. **An unstated permanent skip fails the job; a stated one is announced.** `scripts/pgtap-uncovered.txt` lists a skipping file with one reason each. A skipping file not on it fails; a listed one is printed as a `::warning` and a job-summary section that says COVERAGE ABSENT with the reason, so the person reading the green job is told what the green does not include. A listed entry whose file no longer skips fails too, and so does one for a file the suite does not contain: the list cannot outlive its reason, and the day the library loads the entry comes out. A log with fewer than 20 files is refused ([ADR-962](DECISIONS.md)).
+3. **The safeupdate file gains an assertion that never skips.** A fourth arm asks the function's own definition the question safeupdate asks at plan time: is there a DELETE with no WHERE clause. The 2026-08-22 bare delete fails it. It is weaker than running under the hook (a WHERE that is present but wrong passes), which is why the file stays listed with that reason rather than being called covered.
+4. **The library is not installed.** `LOAD` is refused by privilege, not absence, so "install it in the image" means a superuser test role, a wider change than this row and one whose effect on every other file's RLS assertions would need its own measurement first ([ADR-1082](DECISIONS.md)).
+
+**Rejected.** Failing the suite from inside the file when the hook cannot load (every db-tests run red for a reason no pull request can fix, [ADR-970](DECISIONS.md)). Deleting the hook-driven arms (they are the only assertions that would see the real defect on a database that can load the hook). Running pg_prove verbose to see pgTAP's own `# SKIP` lines (the file already prints a grep-able reason, and verbose output buries thirty files' worth of assertion lines in every log).
+
+**Consequences.** A pgTAP file cannot start skipping quietly. The suite's one absent surface is named in every db-tests summary until the local image lets the test role load the hook, at which point the gate fails once, the entry is removed, and the coverage becomes real. `scripts/check-pgtap-skips.test.ts` drives the parser against the run's exact lines and every verdict arm; `scripts/guard-wiring.test.ts` sees the script invoked from db-tests.yml.
+
+**Rows.** HYG-122 (closed here). Beside ADR-1207's LIVE row and HYG-100 (the deny matrix the same suite proves).
+
 ## ADR-1528: The Contact tab reads the contactForm block's own bag, and a reserved slug is reserved in both readers (LIVE-502)
 
 **Status:** Accepted · 2026-09-25 · backlog `LIVE-502` (closed here) · owner instruction 2026-09-24
@@ -48228,6 +48308,28 @@ whole-page pictures.
   "is it red on the base branch too?" control is unavailable for any PR in this repository. Recorded
   as a separate finding.
 
+## ADR-1549: The month grid scrolls through a band of months, and the anchor month keeps one meaning in both modes (LIVE-530)
+
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-530` · extends [ADR-1385](DECISIONS.md) (month gestures), PROG-CAL12 (the controlled month), PROG-CAL15 (moving a date) and the LIVE-528 keyed cache · numbered **1542** because 1536 to 1541 are on main or on pull requests open at the time of writing; 1531-1533 are owed a port (`HYG-126`) · owner ask 2026-09-27
+
+**Context.** The month grid flipped pages: one month in the tree, every step a replacement with a slide. The owner asked for the calendar to scroll continuously through its section instead, with the months clearly differentiated. LIVE-530 scoped the seam and its hazards before anyone built it, and LIVE-527 (the clipped fifth week, the borderless fill) and LIVE-528 (a keyed month cache with a failure SET) were its prerequisites. Both were on main.
+
+**Decision.**
+
+1. **One prop on the grid, default `page`.** `monthFlow?: 'page' | 'scroll'` on `EventCalendar`, threaded through `StaffCalendar`. The default leaves the four non-workspace mounts and their thirty-seven test mounts untouched; the two workspace mounts (the member calendar first, because it has no drag surface, then the operator calendar) pass `scroll`. A second component was rejected because it duplicates the cell renderer LIVE-485 stopped drifting; "always scroll, window of one" was rejected because it changes the DOM for every mount at once and breaks LIVE-474's `onAnimationEnd` contract.
+2. **`month` / `onMonthChange` mean the anchor month, in both modes.** Under the scroll the grid additionally scrolls to it and additionally reports it from the scroll position. That single rule is what keeps the console agenda, the List's `listFrom`, the Vera box, the month title, Prev/Today/Next and the jump working with no edits.
+3. **A band of months, pure.** `lib/calendar/month-band.ts` decides what the scroller holds: a fresh band is one month back and two forward of the anchor; it grows one month at a time at the end the reader is near; an anchor handed in from outside re-centres the band on it (explicit navigation is never clamped); automatic extension stops at the events window's two edges (`ADMIN_EVENT_FLOOR_MONTHS`, `ADMIN_EVENT_CEILING_MONTHS`, ADR-1536) and a terminal band names the edge. A prepend is compensated in a layout effect so the reader's place holds.
+4. **The anchor is read off the scroll through a banded observer, and reported once per landing.** A banded `IntersectionObserver` over the scroller (the `page-contents.tsx` idiom, `rootMargin -8% 0px -82% 0px`); of several intersecting bands the EARLIEST wins, which is monotone in scrollTop. The report waits 150ms of quiet, and that is a correctness requirement: the month label is `aria-live="polite"` and exactly one copy is mounted, so a twelve-month flick would otherwise queue twelve announcements. Two state values break the feedback loop without refs read during render: `landed` (the last anchor the scroll derived) and `anchorTarget` (set only when a control handed the month in). Never `scrollIntoView`: it walks every scrollable ancestor and on the member page would yank the document.
+5. **A padded day is a placeholder under the scroll.** `monthMatrix` pads each month to whole weeks, so a date at a month edge is a cell in two bands. Under the scroll only the owning band draws a date's items, note, sky, add button and drop target; the padded cell keeps its muted number. Each date has one cell and each chip one copy, and that is what makes §6 safe.
+6. **A move across a month boundary is an ordinary move.** `planEntryMove` is handed no shown month under the scroll (`useDateMove` takes `null`), so the "Open that month first" refusal, which would be false once October is three inches below September, never fires there; under `page` it fires exactly as PROG-CAL15 chose. The console's drag and Shift-and-arrow moves stay on.
+7. **The fill contract is untouched under `page` and inert under the scroll.** The week row keeps `fill && 'min-h-0 flex-1'` (LIVE-527's pins) and gains `flex-none` under the scroll, the cell keeps its clip and floor under `page`, and the month wrapper is named (`[data-calendar-month]`) rather than positional so the fill test measures the month it means in both modes. The failed-month line renders on its own band under the scroll, keeping the `${monthLabel} did not load.` sentence and `data-calendar-load-error`.
+
+**Rejected.** A second grid component (drift). Clamping Prev/Next/the jump at the bound (a lie, and the LIVE-475 dead end again). Drag off under the scroll as a permanent state (the row's interim shape; the placeholder rule in §5 made §6 cheap and keeps a shipped console edit alive). A ref written during render to mark "came from scrolling" (the compiler-era hooks rules forbid it; two state values do the same job).
+
+**Consequences.** The four non-workspace mounts render byte-for-byte as before. `components/events/event-calendar.scroll.render.test.tsx` pins the band, the per-band fetch, the per-band failure line, once-per-landing reporting with a fake observer and fake timers, re-centring, the one-cell-per-date rule, the cross-boundary move and the terminal band; `lib/calendar/month-band.test.ts` pins the pure decisions. The console's wheel scrolls months as a consequence of the scroller having room, so `wheelPaging={consoleOpen}` stays literal (PROG-CAL12).
+
+**Rows.** LIVE-530 (closed here). LIVE-527, LIVE-528, PROG-CAL15 unchanged.
+
 ## ADR-1530: A Space's own cascade is established by a layout in every tree that renders it, not by the page (LIVE-506)
 
 **Status:** Accepted · 2026-09-25 · backlog `LIVE-506` (closed here) · applies
@@ -48329,3 +48431,366 @@ The owner's directive of 2026-09-27 states it as product: the main community Cir
 **Consequences.** The deferred set is one program. Three programs that were held now sit in the sequence with probes that fail, so `pnpm backlog` prints them and `check:backlog` measures them. `HYG-126` records that three owner-directive ADRs (1531-1533) shipped as code and never reached this ledger, because PR #2910 merged into a branch #2908 had already squashed; that is why this entry is 1535 and why a port, not a cherry-pick, is owed.
 
 **Rows.** `DEF-MOBILE`, `DEF-ETSY`, `PROG-GD6` unparked. `HYG-123` ruled. `HYG-126`, `HYG-127`, `HYG-128` filed. `PROG-A1`, `PROG-A3`, `PROG-A4` stay parked with the ruling appended. `LIVE-234`, `LIVE-455` untouched.
+
+## ADR-1536: The team calendar's events window has two ends, and it is filled from today outward (LIVE-480)
+
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-480` · extends [ADR-1385](DECISIONS.md) and the LIVE-467 floor · numbered **1536** because 1535 is the 2026-09-28 owner ruling and 1531-1533 are owed a port (`HYG-126`)
+
+**Context.** `listEventsForSpace` caps at 200 rows and is the one read behind every team surface of a Space calendar: the Admin grid, the List, Workflow, the console's count and the Plan drawer's "Link an event" picker. LIVE-467 found the cap taking the OLDEST 200 events a Space ever ran and closed it with a floor thirteen months back and a newest-first read inside the floor. That fixed the direction and left the shape: a window open at the top, read from the top down, keeps the 200 FURTHEST-FUTURE rows. A Space that has scheduled past the cap therefore lost the dates it runs next month while dates two years out stayed on. No Space has crossed it yet; a daily class crosses it in seven months.
+
+Re-testing the row's premise before building (ADR-1082) found its proposed fix necessary and not sufficient. A ceiling alone, with the newest-first read kept, still cuts next month for any Space with more than 200 dates between today and the ceiling. Flipping the sort back to ascending re-opens LIVE-467 for any Space with more than 200 dates in the past year. Whichever single direction the read runs, the near end of the window is the end it cuts first.
+
+**Decision.**
+
+1. **Both ends are stated together.** `ADMIN_EVENT_CEILING_MONTHS` (15) sits beside `ADMIN_EVENT_FLOOR_MONTHS` (13) in `lib/calendar/month-window.ts`, with `adminEventCeilingDay` and `adminEventWindow` so a reader who sees one end sees the other. The ceiling is the operator entry horizon (`OPERATOR_HORIZON_FORWARD_MONTHS`), so the entries the List and Workflow load and the events the same surfaces draw agree on the far edge; a test pins that it never falls short of it. The ceiling is exclusive: the first instant of the ceiling month is out.
+2. **`listEventsForSpace` takes a `toDay`.** Same shape as `fromDay`, written the way the column stores wall clock, ignored when malformed. Nothing else about the read changes; the publication gate and its single opt-out (`space-events-gate.test.ts`) are untouched.
+3. **The window is filled from today outward, in two bounded reads.** `listOwnedEventRows` reads the upcoming half `[today, ceiling)` soonest first with the full cap, then the past half `[floor, today)` most recent first with whatever room is left, and skips the second read when there is none. The cap can only ever cut the far end of the season or the oldest context. The split is the community wall-clock today, the floor every "upcoming" read already uses (`lib/events/upcoming-floor.ts`), so tonight's date is upcoming until midnight.
+
+**Rejected.** A ceiling with the read left newest-first (still cuts next month once the future half alone exceeds the cap). Ascending inside the window (LIVE-467 again). Raising `OWNED_EVENT_LIMIT` (moves the day the cap is met; changes nothing about which end it cuts). An RPC that orders by distance from today (a migration for what two bounded reads do without one).
+
+**Consequences.** Two reads per team calendar load where there was one; the second is skipped for any Space whose next fifteen months fill the cap. LIVE-530's continuous scroll bounds its automatic extension against the same two constants and can now name both edges. The row's probe has three arms (`toDay` in the store, `toDay` in the loader, the ceiling constant) and each was mutation-tested alone at close.
+
+**Rows.** LIVE-480 (closed here). LIVE-467 unchanged.
+
+## ADR-1540: A visitor's first load is weighed too — the shell-weight gate holds the front door and the marketing layout to their own ceilings (LIVE-499)
+
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-499` · numbered **1540** because 1536–1539 are claimed by open PRs #2937, #2940, #2938, #2939 and #2942 (the later-opened PR renumbers, ADR-1488 · ADR-1509) · extends [ADR-1066](DECISIONS.md) (the shell-weight gate) and [ADR-1082](DECISIONS.md) (re-test the premise) · beside [ADR-1211](DECISIONS.md) (build fan-out) · lane `perf-shell`
+
+**Context.** `check:shell-weight` (ADR-1066) weighs the bytes a MEMBER's phone parses: Arms A and B read `entryJSFiles['[project]/app/(main)/layout']` from the client-reference manifests, and Arm C walks four member hot routes at PR time. `/` and every `app/(marketing)` route sit outside that shell — the home page renders its own header and footer, and the marketing group has its own layout — so a VISITOR's first load, on the one route that decides whether there is a second visit, was measured by nothing. LIVE-498 was filed on 2026-09-24 as a fifty-fold Total Blocking Time regression on `/`; re-tested on 2026-09-28 it was one noisy Lighthouse attempt, and the same commit read 6ms eighteen minutes later. The finding that survived that re-test is LIVE-499: had the regression been real, no gate would have noticed it, and the Lighthouse job is advisory (WORKFLOW.md rule 4) and runs only on PRs that trigger e2e.
+
+**Measured first, on the local artifact of `0f1f218`** (the compile completed and wrote every manifest before page-data collection died on the missing Supabase URL, so the client chunks are the real ones and only their directory differs from Vercel's): `[project]/app/page` 188 KB across 7 chunks (the root layout chunk among them); `[project]/app/(marketing)/layout` 405 KB across 7 chunks, one of them 253 KB; the marketing page entries 455–461 KB on top of it, so the layout is ~90% of every marketing first load; `[project]/app/(main)/layout` 1016 KB across 21, which is Arm A's shell and matches its production readings.
+
+**Decision.**
+
+1. **Arm D, in the same gate.** `FRONT_DOOR_ENTRIES` names two manifest entries with their own byte ceilings: the front door's page entry at **450 KB** and the marketing layout entry at **700 KB**. They are read in the same manifest pass as the shell, resolved the same way (every named chunk must be on disk; an empty set is a failure, never a pass), asserted AFTER the shell verdict so a red door never hides the shell reading, and the reading is printed on every run so the trend lives in the build log.
+2. **The numbers, in Arm A's terms.** 2.4x and 1.7x the readings: enough headroom that a new block, a nav change or a provider does not send anyone to the constant, and still tight enough to fire on the class that actually happened elsewhere — the admin console walking into a first load (~1.6 MB, dc47b89), maplibre (~600 KB raw), the tiptap editor (~400 KB raw). react-markdown alone (~150 KB raw) fits under the front-door ceiling, and that is Arm C's job.
+3. **Arm C walks the front door.** `HOT_ROUTE_ENTRIES` gains `app/page.tsx` and `app/(marketing)/pricing/page.tsx`, so a NAMED heavy library statically imported below a `'use client'` boundary on either fails at PR time, by name, before any deploy measures it. `/pricing` stands in for the group because every marketing page renders through the same layout and the same BlockRender; the per-page difference is the published document, which is database state and not walkable.
+4. **Ratchet.** Either ceiling may fall. Raising one needs a measurement and a paragraph in the commit, the standard Arm A, `check:build-budget` and `check:og-trace` already hold. AGENTS.md: when a budget gate fires, fix the fan-out.
+5. **Proven on a real artifact in the same change** (DEPLOY-SAFETY rule 11's own rule for a new blocking arm): the fixture tests drive Arm D into its failing direction and its passing control, and the PR's Vercel preview build prints both door readings green before the merge.
+
+**Rejected.** A per-slug budget row for every marketing page (a list that rots, ADR-970; the layout is nine tenths of each and the rest is the document). A second script (the manifests are already open in this one, and a seventh postbuild gate is a seventh thing to keep in parity). Gating on the Lighthouse job instead (advisory, PR-only, and LIVE-498 is the record of what one attempt of it is worth). A source-only guard (a static import and a `dynamic()` are one keyword apart in review and hundreds of KB apart in the artifact; the same reason ADR-1066 reads `.next`).
+
+**Consequences.** A visitor's first load has a ceiling for the first time, printed on every build. The gate's non-vacuity rule now covers three entries instead of one, and a route rename that emptied a door fails the PR that moved it (the PR-time half checks each entry still names a file) rather than the next deploy. The 253 KB chunk inside the marketing layout is measured and named rather than fixed here; the ceiling is set from what is, so a row that shrinks it can only lower the number.
+
+**Rows.** `LIVE-499` closed. Nothing new filed: the 253 KB chunk is a reading, not yet a finding.
+
+## ADR-1542: A calendar feed is a reader with a subscriber, and every such reader filters `removed_at` (SCAN-645)
+
+**Status:** Accepted · 2026-09-28 · backlog `SCAN-645` · owner ruling ADR-1535 §6 ("SCAN-645 ships") · numbered **1542** because 1531-1533 are reserved for the port HYG-126 owes, 1534-1536 are on main, and 1537-1541 are claimed by pull requests open when this one was renumbered (#2938, #2939, #2942, #2943, #2944)
+
+**Context.** `public.events.removed_at` has been the staff-removal tombstone since 20260613130000, and it is enforced reader by reader: no SELECT policy on `events` mentions it, so every function and every list read carries the whole burden alone. Of the eighteen SQL functions that read `public.events`, sixteen filter the column or are pinned to one row. The two that did not are `public_calendar_feed()` (the site-wide public .ics) and `event_calendar_feed(_token)` (a member's personal feed of their own going RSVPs). Measured on production 2026-09-28: neither body mentioned the column.
+
+An .ics feed is subscribed, not fetched. A removed event's page 404s at once; the entry on a subscriber's phone stays until the feed stops sending it. Nothing had leaked yet only because production's two removed events each fail a different predicate by accident (one cancelled and past, one unlisted). The ordinary case, a standalone public event removed by staff while upcoming, passes every predicate the feed checks and the one it did not.
+
+**Decision.**
+
+1. **Both feeds filter `removed_at`.** One migration (`20270345008900`) re-creates each function with `and e.removed_at is null`, copying the shape `space_public_calendar_feed` has carried since 20270126000000. Return types are unchanged, so `create or replace` is enough and no drop-and-recreate is needed.
+2. **Grants are re-derived, never copied.** The file carries no grant statement. Both functions are `internal` in `scripts/function-grants.txt`, `create or replace` preserves existing grants, and copying the original grant lines forward is the exact hazard ADR-1153 recorded.
+3. **The migration proves itself on a fresh database, both ways.** A removed standalone public event must be absent from the public feed and present once restored; a removed event with an approved going RSVP must drop out of the member feed. The positive half of the public arm asks the feed's own Space predicate first, because `events_default_space_id` stamps a home Space on any insert that omits one and a fresh database's root Space may not be network+active. "There is nothing to see" is not "it is broken".
+4. **The backlog probe is the floor for these two readers.** SCAN-645's probe reads the LAST definition of each feed across the migration set and fails a pull request that re-types either body without the clause.
+
+**Rejected.** Adding `removed_at is null` to the two SELECT policies on `events`. That would be the real floor, and it is a wider change: the policies are what the ~50 TypeScript list reads sit on, and a Space owner editing their own removed row has to keep working. Sweeping those reads is the same argument. Both are a follow-up row once someone measures which of them face an outsider. Redacting instead of excluding, for the same reason ADR-1152 gave: a redacted entry still puts a reminder on a phone for a gathering that no longer exists.
+
+**Consequences.** The set of `public.events` readers with an outside subscriber that omit the tombstone is closed at zero. The class remains open at the policy layer, by name and on purpose. When a reader is added that returns event rows to someone outside the app, it filters `removed_at` or its own probe says so.
+
+**Rows.** SCAN-645 (closed here). Untouched: the two `events` SELECT policies, every TypeScript list read, `space_public_calendar_feed`.
+
+## ADR-1531: The sky is computed onto every calendar, and "the fourth Sunday" is not "the last Sunday" (owner directive 2026-09-27)
+
+**Status:** Accepted · 2026-09-27 · extends [ADR-1386](DECISIONS.md) (the private layer's Pencil) and
+[ADR-1299](DECISIONS.md) (the repeat dialect) · uses `lib/calendar/moon.ts`, which
+[PROG-CAL10](BUILD-BACKLOG.json) built for Vera's `lunar_dates` tool
+
+**Context.** Royal Temple plans its year on the sky: Temple Moon on a full moon, The Celestial Table
+on a sabbat, a season that opens on the Fall Equinox. The owner asked for two things in one message:
+that the four monthly rhythms be stated as rhythms ("Craft Night is the first Tuesday of every
+month"), and that "all New Moon, Full Moon, Equinox and Solstice" be marked with the appropriate
+emoji on each day of the year.
+
+Both asks ran into something the product could not say.
+
+1. **The Pencil drawer's Repeats menu had four choices and none of them was "the first Tuesday".**
+   `FREQ=MONTHLY` means the anchor's own day of the MONTH (the 6th), and the nth-weekday form the
+   repeat dialect has supported since ADR-1299 read as `Custom`: preserved on save, but unchoosable.
+   The cadence hosts actually plan on was the one cadence the menu could not express.
+2. **Nothing drew the sky.** Twenty-five days a year, every year, and the only representation was a
+   pencil someone had typed by hand for one date at a time.
+
+**Decision.**
+
+**1. The sky is computed, never typed in, and it is drawn by the shared grid.** `lib/calendar/sky.ts`
+is pure and answers one question: which days in a window carry which markers, read in a given zone.
+New and full moons come from the existing `lib/calendar/moon.ts` (Meeus ch. 49); the four solar
+quarters are Meeus ch. 27, table 27.B for the mean instant and table 27.C for the 24 periodic terms,
+which lands each within about a minute of the ephemeris and is pinned to published values for 2026
+and 2027 plus a window check across 1900 to 2100. `EventCalendar` computes one map per visible
+six-week grid, so every calendar the product draws gets the markers with no per-surface wiring: the
+Space's public Calendar tab, the operator's staff calendar, the shared collaborator calendar and the
+Frequency-wide `/events/calendar`.
+
+A marker rides **beside the day number**, one character, never a chip. A chip would take a row from a
+busy square and read as something happening at a time; the sky describes the day, exactly as the day
+pill does. A day that is both a new moon and an equinox draws both.
+
+**2. The day is local, and a visitor and the team must see the same day.** A full moon at 11:40 PM in
+Vista is 2:40 AM the next day in UTC, so every instant is resolved to a calendar day IN A ZONE. This
+is the one subtlety worth writing down: `spaceTimeZone` is withheld from a visitor on purpose (it is
+the operator's value, and it decides what a NEW date is written in, `LIVE-471`), so passing it to the
+grid would have marked the equinox on Sep 22 for the team and Sep 23 for everyone else, on the same
+Space's calendar. The grid therefore takes a separate `displayTimeZone`, passed to everyone. A
+calendar that mixes zones (`/events/calendar`) passes none and reads UTC, which is the honest answer
+there rather than a borrowed one.
+
+**3. The Pencil menu gains "Every month on the same weekday", derived from the anchor.** Its rule
+cannot be a constant, so `pencilRuleForChoice` takes the entry's own first date, and
+`pencilRepeatChoice` recognises any monthly BYSETPOS rule as that cadence, so re-opening one shows the
+cadence instead of `Custom`. The existing `FREQ=MONTHLY` choice is relabelled **Every month on the
+same date**, because two monthly choices that both read "Every month" is worse than none.
+
+**4. 🔴 "The fourth Sunday" and "the last Sunday" are different cadences, so they are different
+functions.** `components/events/repeat-picker.tsx` held a private `setPosOf` that answers `-1`
+whenever a date is the last of its weekday in the month. Sharing it looked like the obvious
+de-duplication and it is a trap: Sunday 25 October 2026 is both the fourth Sunday and the last one,
+so a rule derived from it would have become "the last Sunday", which is the 23rd in May 2027 by one
+reading and the 30th by the other. `lib/events/repeat-rule.ts` now exports **two** helpers, named for
+what they answer: `setPosOfMonth` (prefers "last", and stays the event picker's DEFAULT because that
+picker SHOWS the ordinal in a menu the host can correct) and `weekdayOrdinalOfMonth` (the literal
+ordinal, for the Pencil drawer's single item, which derives a rule with nothing on screen to correct).
+`monthlyWeekdayRule` uses the literal one. The test that separates them is the October 25 case.
+
+**5. Royal Temple's four rhythms are four repeating Pencils, and they are DATA, not a migration.**
+Craft Night `BYDAY=TU;BYSETPOS=1`, Women's & Men's Circles `BYDAY=TU;BYSETPOS=3` (replacing Circles
+Night, which the owner removed), Ecstatic Dance `BYDAY=SU;BYSETPOS=2`, House Concert
+`BYDAY=SU;BYSETPOS=4`, each one row where there were 10 to 24, each still stage `pencil` and
+visibility `team`. Two of the season's own dark dates fall on a fourth Sunday, so House Concert
+carries them as explicit `exception_dates` (2026-12-27 in the Christmas dark stretch, 2027-09-26 when
+the Fall Campout runs through the morning) rather than leaving them to be noticed later.
+
+No migration ships for this, and that is a decision rather than an omission.
+`20270345005300_royal_temple_pencils.sql` loaded 154 rows because the owner's plan predated the UI
+that can hold it; this change instead COLLAPSES rows, and three of the four masters carry content the
+team wrote in production (a title, a 1,080-character description, a Circle link and its pricing) that
+no migration creates. A migration claiming to reproduce this state on a fresh database would be
+asserting a parity that has never existed for Space content, which is precisely the shape of gate
+[ADR-970](DECISIONS.md) warns about. The season's transcript stays where it is as the historical
+record of what was planned in September 2026.
+
+**Consequence.** A repeating Pencil is open-ended: Craft Night now runs past the Fall Equinox 2027
+that bounds the rest of the season, which is what "every month" says. One row is also one thing to
+edit, and `keep_pencil_date`, the stage ladder and the publish seam all read a master exactly as they
+read a dated row.
+
+**What this change also found, filed rather than fixed here.** About 25 team-created Pencils on Royal
+Temple's calendar (Temple Moon, The Celestial Table) are stored as true UTC instants instead of the
+table's wall-clock-as-UTC-parts convention, so they draw at 1:00 to 2:30 AM on the day after the
+evening they mean. The 24 Craft Night rows had the same defect and are fixed by being folded into a
+correctly stored master. The write path and the remaining rows are `LIVE-514` (renumbered from
+LIVE-512 under ADR-1488 when two earlier PRs claimed that number).
+
+## ADR-1532: A stage says itself with a mark at the head of the chip, and the header keeps the ledger (owner directive 2026-09-27)
+
+**Status:** Accepted · 2026-09-27 · amends [ADR-1386](DECISIONS.md)'s stage presentation and the
+2026-09-22 abbreviation ruling recorded in `LIVE-470` · beside [ADR-1531](DECISIONS.md), the same
+session's calendar directives
+
+**Context.** A grid chip in a six-week month is about 46px wide on a phone. `LIVE-470` put the stage
+WORD on it, because colour alone is not a state (WCAG 1.4.1, whose own failure example is a
+colour-coded calendar), and the 2026-09-22 ruling had the word ABBREVIATE rather than disappear at
+that width: `Plng`, `Prod`, `Penc`. The owner's judgement on 2026-09-27 is that the abbreviations are
+not worth the pixels they cost the title, and named the replacement: **✏️ Pencil, 🎯 Planning, 📣
+Production**, at the top of the chip, before the time stamp.
+
+**Decision.**
+
+1. **The mark is declared where the stage's colour is declared, and nowhere else.**
+   `CALENDAR_PRESENTATIONS` (`lib/calendar/registry.ts`) already carries the chip class, the word, the
+   abbreviation and the tone under the banner *"Add a colour here or nowhere"*; `emoji` joins them.
+   The three stages carry one; every other presentation (Event, Draft, Cancelled, Private,
+   Unavailable, To-do) does not, and still prints its word.
+2. **A mark REPLACES the word on the chip rather than joining it.** Two copies of one fact is exactly
+   the pixel cost the directive removes. `ChipWord` returns null when a presentation has a mark, so the
+   rule lives in one branch.
+3. **🔴 The mark is not a silent colour.** Its accessible name and its `title` are the stage word, so a
+   screen reader still reads "Pencil, 6:00 PM, Craft Night" and a pointer still gets the word on hover.
+   A calendar that conveyed stage by hue alone is the WCAG failure LIVE-470 was opened against, and an
+   emoji with no name is that failure with a picture.
+4. **The ledger is derived, not retyped.** `CALENDAR_MARK_LEDGER` is built FROM the presentations, so a
+   mark that changes in the registry changes in the header, and a presentation with no mark is absent
+   from the key because its chip still says its own word. The grid prints it above the weekday row,
+   which puts the key beside the chips it explains on every surface that draws them.
+5. **Neither the mark nor the ledger appears on a member-facing calendar.** This is the 2026-09-23
+   ruling, unchanged: a public Space calendar holds one kind of thing, so the word separated nothing
+   there and a mark would not either, and a key would explain something nobody can see. The audience
+   test is the same `calendarPrintsWord`, because the mark carries the same fact.
+6. **The popup keeps the word.** `Badges` is a labelled pill in a panel with room for it, and the pill
+   is where someone confirms what a mark meant. The chip is the only surface with a pixel problem.
+
+**Consequence.** On a staff calendar every published date now reads 📣 rather than "Production", which
+is the same substitution the owner asked for and is worth stating because that mapping is not obvious
+from the directive's words. `event-calendar.stage.render.test.tsx` was re-pinned rather than deleted:
+the abbreviation rule still has to hold for the kinds that keep a word, so its narrow-width cases moved
+onto a Private entry, and a new case asserts that a marked chip has nothing to abbreviate. A test that
+had only pinned the new behaviour would have quietly retired a live rule, which is the failure mode
+that suite was written against.
+
+## ADR-1533: A value with no zone and a path with symlinks both read as correct while being wrong (LIVE-516, LIVE-531, LIVE-532, owner ruling 2026-09-27)
+
+**Status:** Accepted · 2026-09-27 · the birthday half of decision 1 is `LIVE-531`, the day-key half of
+decision 2 is `LIVE-516`, the symlink half of decision 3 is `LIVE-532`; opens `HYG-125` · beside
+[ADR-1531](DECISIONS.md) and the peer branch's wall-clock repair of `LIVE-514` · **ported to `main` on
+2026-09-28 under `HYG-126`** from `origin/calendar-sky-and-marks` (commit `a8cfcc46a`, the #2910 ledger
+commit that #2908's squash had already made unreachable). On that branch this heading and this line closed
+two hygiene rows the branch had minted itself, numbered 123 and 124 there; on `main` those two numbers name
+different rows (the snapshot-table drop and the shipped-ids guard), so every citation in this entry is
+reworded to the row the text means.
+
+**Context.** Three defects surfaced in one afternoon and they are the same shape: something was
+compared against its own normalised twin, the comparison quietly came out wrong, and the wrong answer
+looked exactly like the right one. The owner's ruling that settled all three was four words long:
+**"We're in Pacific."**
+
+**Decision.**
+
+**1. A date-only value prints the date it stores, in every zone.** `lib/crm/import/custom-fields.ts`
+parsed a stored birthday at UTC midnight and then formatted it with an `Intl.DateTimeFormat` carrying
+no `timeZone`, so the instant rendered in the viewer's zone and a stored `2026-07-16` printed as
+**"Jul 15, 2026"** on a CRM contact card for everyone west of UTC. Which is us. Both formatters pin
+`timeZone: 'UTC'`, the zone the value was parsed in, so the printed date equals the stored date
+everywhere.
+
+**2. A stored timestamp with no offset is UTC, never the machine's zone.** `entryDaySpan` did
+`new Date(row.starts_at)`, and ECMAScript parses a date-TIME string with no offset as LOCAL time while
+`isoDate` reads it back with `getUTC*`. An offset-less value therefore landed two hours later in
+Pacific and the day key came back as the NEXT DAY — one day of drift in which days a Space counts as
+busy and which dates `suggestDates` offers. `storedInstant()` now normalises: no offset reads as UTC, a
+value carrying its own offset is untouched.
+
+⚠️ **And the short offset is not optional to handle.** Postgres renders a zero offset as `+00`, which
+the Date Time String Format does not accept, so `new Date('…T19:00:00+00')` is an **Invalid Date** and
+`isoDate` would have printed `NaN-NaN-NaN`. `+00` and `+0000` are both widened to `±HH:mm`.
+
+**3. "Was I invoked directly" is a question about realpaths.** `scripts/check-shell-weight.mjs`
+compared `path.resolve(process.argv[1])` against `fileURLToPath(import.meta.url)`. The second is the
+path Node RESOLVED the module through — the realpath — and the first keeps every symlink in the
+invocation. On macOS `/var` is a symlink to `/private/var`, so a script run out of a `mkdtemp`
+directory compared two spellings of one file, `main()` never ran, and the script exited 0 printing
+nothing.
+
+🔴 **The gate was not disarmed; its PROOF was, and that is the more dangerous of the two.** The gate
+fires on Vercel and always has, because nothing in that path is a symlink. But every case in
+`check-shell-weight-warn-only.test.ts` is a MUTATION case that copies the script to a temp dir, so six
+of them were passing because nothing executed. The warn-only guarantee — a non-zero exit in
+`postbuild` kills a deploy — rests entirely on the paired cases asserting the same condition DOES fail
+without the flag, and those were the dead ones. The finding was first reported as a deploy-blocking gate
+that could not fire; the measurement narrowed it, and the wrong first diagnosis is kept in `LIVE-532`'s row
+because "the gate is disarmed" and "the gate's proof is disarmed" call for different fixes.
+
+⚠️ **Linux `mkdtemp` returns a real path, so CI was green with the broken comparison.** The fix
+therefore ships with an **explicit symlink case** in that test, negative-controlled by restoring the
+old line, so the guarantee is proven on the platform the deploy runs on. The class — 46 scripts, five
+spellings, two of them other postbuild gates — is `HYG-125`, with a probe that names every remaining
+offender so the sweep is visible (the sweep shipped as #2911 and measured 51; `HYG-125` became a row in
+#2939).
+
+**4. The one published event stored as an instant is moved, because we're in Pacific and nobody had
+booked it.** `Heart on Fire, Week 1: Hearing the Heart` (Space `frequency`) held
+`2027-01-08 02:00–05:00` as wall clock, so the page advertised **2 AM**; read as an instant in Pacific
+it is Thursday 2027-01-07, 6–9 PM, which is the class it is. The peer session that repaired the 25
+private-layer rows deliberately left this one for an owner ruling, because a published event with a
+public page and a subscribable `.ics` is not a side effect to fix in passing. With the ruling given
+and **0 RSVPs and 0 tickets** confirmed first, it now stores `2027-01-07 18:00–21:00`.
+
+Its slug still ends `-2027-01-08` and was left alone: a slug is a URL, changing a published one breaks
+every link that exists for a cosmetic gain, and the date in it is not what any reader is told.
+`A Plant-Honoring Ceremony` matches the same detector and was NOT touched — `00:00` to `23:59` across
+three days is a genuine multi-day event, correctly stored, and a detector that cannot tell those apart
+is why this was checked row by row rather than swept.
+
+**Consequence.** The zone fixes are pinned by tests that force `process.env.TZ` rather than trusting
+the runner's, and one of them documents in the file that Intl caches a formatter's resolved zone at
+module load — so on CI only the source-shape case fails when the zone is unpinned. A test suite that
+is green in UTC and red in Pacific trains everyone to ignore a red suite, which is the quiet cost that
+made both zone defects survive this long.
+
+## ADR-1541: One occurrence of a repeating calendar entry is edited by splitting the series, in one database statement (LIVE-534)
+
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-534` · extends [ADR-1386](DECISIONS.md) phase 5 (repeating Pencils) and the LIVE-531 save question · numbered **1541** because 1536 is LIVE-480's and 1537 to 1540 are declared on pull requests open at the time of writing (#2938, #2939, #2942, #2943); 1531-1533 are owed a port (`HYG-126`)
+
+**Context.** A repeating private entry is one row in `space_calendar_entries`: `recurrence_rule` plus `exception_dates`, expanded at read time. An edit to any occurrence therefore rewrote every date. LIVE-531 made that visible after the owner lost a series to one press: Save on a repeating entry now asks, and the dialog said in words that a one-date edit was not possible yet and pointed at Skip this date. This entry is the missing write.
+
+The row was explicit about the trap, and it is the LIVE-533 shape: a "This date only" choice whose write reached the whole series would be worse than the honest refusal it replaced. The split is two writes (the master gains the day in `exception_dates`; a new one-off row carries the edited values) and a half-written pair is either a date that silently vanished or the same date drawn twice.
+
+**Decision.**
+
+1. **The split is one database function.** `public.split_calendar_series(space, entry, day, override)` (migration `20270345008800`) locks the master, refuses a removed row, a row that does not repeat, or a day already skipped, appends the day to `exception_dates` (unique, ascending), and inserts the override in the same transaction. Any failure rolls the whole thing back. SECURITY INVOKER, like `create_penciled_plan` and `keep_pencil_date`: the operator quad is still the lock, the refused UPDATE's row count is checked because RLS does not raise, and `created_by` is the caller's profile through `private.get_my_profile_id()`.
+2. **The override is read by name.** Only the EntryWrite columns reach the new row; identity, the series columns, the candidate group, the publish back-link and the tombstone are set by the function and never from the payload. The function pins its own zone to UTC so the anchor's day key and the whole-day shift are exact whatever the session zone, which is also why it never resolves a time through a named zone (`wall-clock.test.ts`).
+3. **What the override carries is decided once, in code.** `occurrenceWrite` (`lib/calendar/entries.ts`): the drawer's form is the master's, anchored on the series' first date, so a date field left alone means the occurrence's own day with the form's time and length, and a changed date means the person moved this one occurrence. `seriesLandsOn` refuses a day the series does not draw. The rule and the skips are stripped from the override in code and refused by name in SQL.
+4. **The dialog offers the choice only when there is a day to name.** `planEntrySave` carries `thisDate` from the occurrence the drawer was opened from, and `resolveSeriesSaveChoice('thisDate', plan)` resolves to `splitSeriesAt` or to `nothing`, never to the series write. The words say what the press reaches; the sentence about it not being possible is gone.
+5. **Readers hold the pair without new branches.** The override is an ordinary one-off row and the skip is an ordinary exception, so the grid, clash detection, booking blocks, the `.ics` feed (EXDATE plus a VEVENT), the Plan link and the publish seam all already do the right thing; `entries.test.ts` pins the grid drawing the day once. A Plan is not transitioned by one date changing stage. A date with candidate siblings is refused until one is kept, the way `saveCalendarEntry` refuses to move it on.
+
+**Rejected.** Two app-side writes (a stamped skip with no override on a network failure is the LIVE-531 loss again). Building the split into the drawer's `saveCalendarEntry` path (the whole-series write and the split must stay two verbs with two names). Explicit column parameters on the function (fourteen positional arguments that drift from EntryWrite; a whitelisted jsonb keeps one shape in one place). Re-anchoring the Plan's to-dos on a split (the series is the Plan's date; the override is one night of it).
+
+**Consequences.** One new RPC with a pgTAP file proving atomicity, the grants, and RLS on real rows (`supabase/tests/split_calendar_series.test.sql`). One new `Functions` entry in `lib/database.types.ts` and one verdict in `scripts/function-grants.txt`. After merge the migration is applied with `execute_sql` and stamped at the file's own version (docs/DATABASE.md). A drag of an occurrence still moves nothing (PROG-CAL15 refuses it and points at the drawer); with the split in place that refusal can later become the same write.
+
+**Rows.** LIVE-534 (closed here). LIVE-531, LIVE-533, LIVE-536 unchanged.
+
+## ADR-1543: A foreign key from the calendar sprint gets its covering index in one sweep, and the guard that stops the fourth sweep is a separate row (HYG-127)
+
+**Status:** Accepted · 2026-09-28 · backlog `HYG-127` · owner ruling 2026-09-28 (one sweep row, one convention row) · extends [ADR-1459](DECISIONS.md) (the SCAN-638 sweep) · numbered **1543** because 1531-1533 are the HYG-126 port, 1534-1536 and 1542 are on main, and 1537-1541 are held by pull requests open when this one was written
+
+**Context.** The performance advisor reported nine unindexed foreign keys on 2026-09-28, up from zero on 2026-09-19, every one on a table the LIVE-508 to LIVE-536 calendar sprint created or extended. Re-derived from `pg_constraint` against `pg_index` before anything was written: each of the nine has a FK constraint and no index that leads with the column. Seven reference `profiles`, so an account deletion (a hard delete, `lib/account.ts`) scans four calendar tables in turn to check the constraint. This is the third time the count has gone to zero and come back: SCAN-638 (20270345006400) and the sweep before it each closed a set, and the next tables re-opened the class, because the only reader is an advisor nobody consults on a pull request.
+
+**Decision.**
+
+1. **One migration, nine `create index if not exists`, in the shape the last sweep set.** A nullable attribution column gets a partial index (`where <col> is not null`), because a NULL is never what a referential check or an attribution lookup asks for and the index stays small. The one NOT NULL column, `space_plan_shares.guest_space_id`, gets a full index. Additive and idempotent; safe to re-run.
+2. **The file proves itself against the catalog, not the statement list.** After the statements, a `do` block asks `pg_index` whether an index leads with each of the nine columns and raises if any is missing. Postgres would catch a misspelt column; an index on the wrong table, or one whose first key is another column, it would not.
+3. **The guard is HYG-128, not this row.** A fourth sweep on its own would be the same mistake with a later date. The convention half is a source-only guard in the `ci.yml` array that replays the migrations, collects every `references` clause and every `create index`, and fails a pull request that adds a FK with no index leading with it. It lands on a tree this sweep has already made green, so the guard's first run is a pass it can prove rather than a failure it cannot explain.
+
+**Rejected.** Folding the guard into this PR (one row per PR, and the guard is its own decision with its own exception list). Full indexes on the nullable columns (larger for no reader that wants the NULLs; 20270318000000 and 20270345006400 chose partial for the same columns' siblings). Composite indexes that happen to lead with the FK (nothing reads these columns with a second key today, and a composite invented for a reader that does not exist is the drift ADR-1082 names).
+
+**Consequences.** The advisor reads zero unindexed foreign keys again. The class stays open until HYG-128 lands, and this ADR says so rather than implying the sweep closed it. Applied to production by `execute_sql` plus an explicit ledger row at the file's own version, never `apply_migration` (docs/DATABASE.md).
+
+**Rows.** HYG-127 (closed here). HYG-128 untouched and still open.
+
+## ADR-1538: The one list is proved from the commit log too, so an id that shipped with no row fails the pull request that would let it stand (HYG-124)
+
+**Status:** Accepted · 2026-09-28 · backlog `HYG-124` (closed here), `HYG-125` and `LIVE-475` (the two rows this found missing, added `done`) · numbered **1538** because 1536 and 1537 were claimed on #2937 and #2938, both opened minutes before this entry's PR, and `check:id-collisions` said so on its first run · extends [ADR-1043](DECISIONS.md) (the one list is the only record of what is done) and [ADR-1509](DECISIONS.md) (the cross-PR id gate, which counts the same problem from the other end) · beside [ADR-1011](DECISIONS.md) (a guard nobody runs is a claim nobody checks) · amended the same day, before merging: on a pull request the rows that answer for the base's commits are read AT the base ref and united with the checkout's, after #2957 merged six rows while three stacked PRs were in flight and the gate, reading each PR's tree alone, named two of them as missing
+
+**Context.** [ADR-1043](DECISIONS.md) made `docs/BUILD-BACKLOG.json` the only record of what is done, and every guard that holds it to that iterates THE ROWS: `check:backlog` runs each row's probe against the tree in both directions, `check:id-collisions` fails a row id two open pull requests claim at once, `check:one-list` freezes the set of planning files. None of them can see an id that was never added. On 2026-09-28 the scan pass read every id out of every merged `origin/main` commit subject and asked the one list about each. Two had shipped with no row at all: `HYG-125` (#2911, merged 2026-09-27, 51 scripts could silently skip their own `main()`) and `LIVE-475` (#2878, merged 2026-09-23, the visual suite stops photographing a page it never proved had settled). Both changes were in the tree, both ids were cited by name from live probes and source comments, and every gate was green. `HYG-125` also sat one above the HYG maximum the file carried, so the next hygiene row minted by hand would have collided with a merged commit.
+
+Premise re-tested before building ([ADR-1082](DECISIONS.md)): the row's own probe failed on exactly those two ids and on nothing else in the last 400 subjects, and a full read of all 4,737 subjects on `main` found no third case after the seed. It did find forty-six BEFORE the seed, every one an id from the five retired planning systems the one list absorbed (`BUG-4`, `SEC-9`, `PERF-3`, `ADMIN-04`, `BUILD-LIST`), which is what fixes where the window opens.
+
+**Decision.**
+
+1. **The two ids become rows, `done`, each with the consequence probe its shipped change already satisfies.** `HYG-125`'s probe stages a postbuild deploy gate behind a symlink and requires that it runs and fails naming the missing build, then freezes the set (no `scripts/**` `.mjs` compares `process.argv[1]` to `import.meta.url` by hand). `LIVE-475`'s probe imports the shipped `unsettledMessage` through `scripts/probe-ts.mjs`, drives it with a settled control, an oscillation and an expired wait, and reads `visual.spec.ts` for the gate-before-shutter ordering. Neither probe greps for the row's own words.
+2. **A source guard, `scripts/check-shipped-ids.mjs` (`pnpm check:shipped-ids`), in the `guards` array of `.github/workflows/ci.yml` beside `id-collisions`.** It reads the SUBJECT of every commit on the base branch since the commit that seeded the one list (`e74af47e5`, #2142, ADR-1043), pulls out every token whose prefix is one the rows themselves use (read from the JSON, never a second list), and fails when one is not a row in the checkout's `docs/BUILD-BACKLOG.json`. Subjects only: bodies discuss ids in prose. On a `pull_request` run it reads `origin/<base>`, what MERGED, never the pull request's own commits; on a push to `main` it reads `HEAD`, which is the base.
+3. **The window opens at the seed, not at a count.** A last-N-commits window either reaches back into the retired systems or stops short of what it should prove, depending on the day. The seed is the first commit whose subject can be held to the one list, because it is the commit that created it.
+4. **Exceptions are stated, one reason each, and rot loudly.** An id in a merged subject that deliberately has no row goes in `EXCEPTIONS` with the commit that explains it. Two exist: `LIVE-044` (#2154 is titled "Retract LIVE-044", the row was withdrawn the day it was minted and `LIVE-046` carries what survived) and `LIVE-113` (#2269 names it beside `PROG-P6`; no row ever existed under it, `HYG-047` found it sequenced in the slate with no entry and removed it). An exception whose id later gains a row FAILS the gate, so the list cannot outlive what it says.
+5. **The runner's checkout is deepened with commit objects only.** `actions/checkout` is depth-1, so a new workflow step runs `git fetch --filter=tree:0 --shallow-since=2026-08-16` on the base branch: trees and blobs stay behind, and the read is 725 commits in 1.2 s, measured on a depth-1 clone of this repository. It runs on every event, after the depth-1 tip fetch `check:id-collisions` uses, so the tip's tree is already on disk and nothing lazy-fetches through the promisor remote.
+6. **It degrades loudly and fails honestly.** When the seed commit is reachable the window is exact (`seed..ref`). When it is not, the gate reads what `--since` can reach and says PARTIAL; on GitHub Actions that is exit 1, because the fetch step that arms it is missing and a gate that could not look must not say clean. Locally a partial read is a loud note. A window under 20 commits or 10 ids is refused outright ([ADR-962](DECISIONS.md): a tick over nothing is the one thing a gate must never print). Pure node, one subprocess (`git log`), no network; the comparison is exported and mutation-tested in `scripts/check-shipped-ids.test.ts` against fixture repositories and the real tree.
+
+**Rejected.** Patching the two rows by hand and stopping (the hole stays open; the row's own probe was written to refuse that). Reading ids out of commit BODIES (a body legitimately discusses a dozen ids it does not close). Reading the pull request's own commits on a `pull_request` run (a branch names the id it is about to add, so the guard would fail every PR that does the right thing in order). A hardcoded prefix list (`PERF` and `SEC` are row prefixes today with one row each; the JSON already knows). The commits API instead of `git log` (the row asked for a source-only guard, and `check:id-collisions` already spends the rate-limit budget this job has). A vitest home ([ADR-1011](DECISIONS.md)'s rule sends source-reading guards there, but this one needs the deepened history the workflow step provides, and `test` runs on a separate job with its own depth-1 checkout).
+
+**Consequences.** Every CI run adds one ~1 s fetch and one `git log` over ~700 subjects. A pull request that merges under an id with no row cannot happen without first turning the NEXT pull request red, naming the commit, the date and the subject; the fix is the row. `HYG-125` and `LIVE-475` are on the list with probes that measure what they shipped. `scripts/guard-wiring.test.ts` fails if the guard ever leaves the array. The fetch step's `--shallow-since` date and the guard's `SEED_DATE` are the same fact in two files; the guard's test reads the workflow and asserts they agree.
+
+**Rows.** HYG-124 (closed). HYG-125, LIVE-475 (added `done`). Beside HYG-111 (the cross-PR arm) and HYG-047 (the slate's own probe, which removed the phantom this gate now exempts).
+
+## ADR-1554: A foreign key without a covering index fails the pull request that adds it, and the migrations are replayed to ask (HYG-128)
+
+**Status:** Accepted · 2026-09-28 · backlog `HYG-128` (closed here) · the convention half of the owner ruling of 2026-09-28 whose sweep half is [ADR-1543](DECISIONS.md) (HYG-127) · extends [ADR-1459](DECISIONS.md) (the SCAN-638 sweep) · beside [ADR-1509](DECISIONS.md) (a guard in the `ci.yml` array that reads what no row can) and HYG-124's shipped-ids guard · numbered 1554 against the ledger and every open pull request's head on the day it was written
+
+**Context.** Three sweeps took the unindexed-foreign-key count to zero: the one before SCAN-638, SCAN-638 itself (20270345006400, [ADR-1459](DECISIONS.md)), and HYG-127 (20270345009000, [ADR-1543](DECISIONS.md)). Each time the next tables brought it back, nine in the calendar sprint alone, seven of them referencing `profiles`, so an account deletion scanned four calendar tables to check the constraint. The only reader was the Supabase performance advisor, which nobody consults on a pull request, and the advisor is a report about production, which is the wrong time to learn about a shape the pull request could have refused. The premise was re-tested against `pg_constraint` and `pg_index` on production before anything was written ([ADR-1082](DECISIONS.md)): exactly nine, all HYG-127's.
+
+**Decision.**
+
+1. **A source guard, `scripts/check-fk-indexes.mjs` (`pnpm check:fk-indexes`), in the `guards` array of `.github/workflows/ci.yml`.** It replays `supabase/migrations` in version order, statement by statement, into the state a fresh database ends up in: every foreign key and every index that could cover one, through drops, renames and the literal DDL inside `do $$ ... $$` blocks, and never a function body. Then it asks the advisor's question of the result: for each foreign key, does an index LEAD with its column. A composite whose first key is the column counts, as it does for Postgres; one whose first key is another column does not.
+2. **It is held to the catalog, not to itself.** The first draft read 28 unindexed keys where production held 9: `on t(col)` with no space before the key list, and DDL inside do-blocks, were invisible to it. The two readings that settled the parser are permanent cases in `scripts/check-fk-indexes.test.ts`: without 20270345009000 the tree reads exactly HYG-127's nine; with it, zero. The census (288 tables, 611 keys replayed; 289 and 609 live) differs by a `create table ... as` backup and PostGIS's `spatial_ref_sys` on production's side and one table dropped outside the migrations on the replay's, none carrying a key.
+3. **Exceptions are a stated map, one reason each, and they rot loudly.** It is empty on the day it lands. An entry whose key gains an index later fails the gate, so the list cannot outlive its reason.
+4. **It refuses to call a small read clean.** Under 100 tables or 200 keys is not this repository's migrations, whatever the directory was, and exits 1 ([ADR-962](DECISIONS.md)).
+5. **It lands on a tree the sweep already made green.** HYG-127 merged first, so the guard's first run is a pass it can prove rather than a failure it cannot explain, which is the order the owner ruled and the reason this row waited.
+
+**Rejected.** A pgTAP test in db-tests (it would say the same thing later, on a job that runs only when a migration changes, and could not run locally without Docker). Reading the advisor from CI (network, credentials, and a report about production rather than about the diff). Folding it into HYG-127's PR (one row per PR, and a guard is its own decision with its own exception list). Replaying function bodies (DDL inside a function runs when the function is called, not when the migration does; replaying it produced phantom tables).
+
+**Consequences.** A pull request that adds a foreign key with no covering index fails `checks`, naming `table.column` and the index to add, before the advisor can. The parser is a smoke alarm for one known shape: an exotic construction it misses passes silently, which is why the catalog controls are in the test and why the census is recorded here rather than assumed. `scripts/guard-wiring.test.ts` fails if the guard ever leaves the array.
+
+**Rows.** HYG-128 (closed here). HYG-127 (the sweep, closed by [ADR-1543](DECISIONS.md)). SCAN-638 untouched.

@@ -175,3 +175,51 @@ describe('the rotation, under a modal overlay', () => {
     expect(bar().innerHTML).not.toBe(frozen)
   })
 })
+
+describe('a headline flip updates the icon nodes and replaces none (LIVE-483)', () => {
+  // The items above alternate: a is plain, b is linked, c is plain. One 5s tick crosses the flip
+  // in each direction, and the assertion is the LIVE-477 set: the headline link's child nodes are
+  // the SAME nodes after the flip, and what changed is a class. Before this fix the icon position
+  // held a ternary between two component types, and the svg read as a new node on every crossing.
+  it('keeps every child node of the headline link across a linked → plain → linked rotation', async () => {
+    stubMatchMedia(false)
+    vi.useFakeTimers()
+    await mount(<Surface startOpen={false} />)
+
+    const link = () => bar().querySelector<HTMLAnchorElement>('a[aria-live="polite"]')!
+    const icons = () => [...link().querySelectorAll('svg')]
+    const visible = () => icons().filter((svg) => !svg.classList.contains('hidden'))
+
+    const linkNode = link()
+    const before = icons()
+    expect(before, 'two icon positions, one per kind').toHaveLength(2)
+    expect(visible(), 'exactly one icon is shown').toHaveLength(1)
+    const shownAtStart = visible()[0]
+
+    for (let tick = 1; tick <= items.length; tick++) {
+      await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
+      expect(link(), `link replaced at tick ${tick}`).toBe(linkNode)
+      const now = icons()
+      expect(now, `icon nodes replaced at tick ${tick}`).toHaveLength(2)
+      now.forEach((svg, i) => expect(svg, `icon ${i} replaced at tick ${tick}`).toBe(before[i]))
+      expect(visible(), `one icon shown at tick ${tick}`).toHaveLength(1)
+      // The CONTROL: the flip actually happens. a→b is plain→linked, so the shown icon changes.
+      if (tick === 1) expect(visible()[0]).not.toBe(shownAtStart)
+    }
+  })
+
+  it('shows Zap for a linked headline and Megaphone for a plain one, never both', async () => {
+    stubMatchMedia(false)
+    vi.useFakeTimers()
+    await mount(<Surface startOpen={false} />)
+    const link = () => bar().querySelector<HTMLAnchorElement>('a[aria-live="polite"]')!
+    const shown = () => [...link().querySelectorAll('svg')].filter((svg) => !svg.classList.contains('hidden'))
+    // Item a is plain: the subtle Megaphone shows, the primary Zap is hidden.
+    expect(shown()).toHaveLength(1)
+    expect(shown()[0].getAttribute('class')).toContain('text-subtle')
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
+    // Item b is linked: the primary Zap shows.
+    expect(shown()).toHaveLength(1)
+    expect(shown()[0].getAttribute('class')).toContain('text-primary')
+  })
+})
