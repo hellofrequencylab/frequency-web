@@ -66,6 +66,19 @@
 // staticModuleEdges, declaresUseClient, heavyModulesIn. Both controls are asserted there too, so
 // "no leaks" can never mean "nothing was examined".
 //
+//   ARM D · THE FRONT DOOR (LIVE-499, ADR-1540). Arms A and B weigh the MEMBER shell, and Arm C
+//           walks member routes. `/` and every `app/(marketing)` route sit OUTSIDE that shell —
+//           the home page renders its own header and footer, the marketing group has its own
+//           layout — so a visitor's first load was measured by nothing at all, on the one route
+//           that decides whether there is a second load. LIVE-498 was filed as a fifty-fold
+//           main-thread regression on `/` and turned out to be one noisy Lighthouse attempt; the
+//           finding that survived it is that NO gate would have noticed a real one. Arm D reads
+//           the same client-reference manifests as Arm A, for the front door's page entry and
+//           the marketing layout's entry, and holds each to its own byte ceiling. Same ratchet
+//           rules as Arm A: the number may fall, and raising it needs a measurement and a
+//           paragraph, never a reflex. Arm C also walks `app/page.tsx` and one marketing page now,
+//           so a NAMED heavy library reaching the front door fails at PR time, before the deploy.
+//
 // Runs as `postbuild`, so it runs on Vercel's real build. CI never builds.
 // ─────────────────────────────────────────────────────────────────────────────
 import { readFileSync, existsSync, statSync, globSync } from 'node:fs'
@@ -251,9 +264,17 @@ export function staticAdminImports(source) {
 }
 
 // ── ARM C · THE ROUTE CHUNK (SCAN-506) ───────────────────────────────────────────────────────
-// The member hot routes. Deliberately `page.tsx` and NOT the layout: the layout IS the shell, and
-// the shell is what Arms A and B already measure to the byte. What this arm adds is the delta a
-// route contributes ON TOP of the shell, which is the half nothing was watching.
+// The member hot routes, plus the front door. Deliberately `page.tsx` and NOT the layout: the
+// layout IS the shell, and the shell is what Arms A and B already measure to the byte. What this
+// arm adds is the delta a route contributes ON TOP of the shell, which is the half nothing was
+// watching.
+//
+// The last two are NOT member routes and were added by LIVE-499. `/` renders outside every layout
+// group with its own chrome, and `app/(marketing)` has its own layout; neither is under the shell,
+// so until 2026-09-28 a heavy library statically imported by either would have reached every
+// visitor with no gate in the way. `/pricing` stands in for the marketing group: every page in it
+// renders through the same BlockRender and the same layout, so one walk covers the shared graph
+// and the per-page difference is the published document, which is database state and not walkable.
 //
 // A missing entry is a FAILURE, not a skip. A route file that moved would silently reduce this arm
 // to "I looked at three routes and one empty string", which is the vacuous pass the whole file is
@@ -263,6 +284,47 @@ export const HOT_ROUTE_ENTRIES = [
   'app/(main)/events/page.tsx',
   'app/(main)/circles/page.tsx',
   'app/(main)/messages/page.tsx',
+  'app/page.tsx',
+  'app/(marketing)/pricing/page.tsx',
+]
+
+// ── ARM D · THE FRONT DOOR (LIVE-499, ADR-1540) ─────────────────────────────────────────────
+// The manifest entries a VISITOR's first load is made of, each with its own byte ceiling. Read
+// from the same client-reference manifests Arm A reads, resolved the same way, so a chunk counted
+// here is a chunk the browser fetches and parses before the page responds.
+//
+// MEASURED 2026-09-28, local artifact of 0f1f218 (Turbopack; the compile completed and wrote every
+// manifest before page-data collection died on the missing Supabase URL, so the client chunks are
+// the real ones and only their directory differs from Vercel's):
+//
+//     [project]/app/page                  7 chunks   188 KB   (the root layout chunk is among them)
+//     [project]/app/(marketing)/layout    7 chunks   405 KB   (a single 253 KB chunk carries most)
+//     [project]/app/(main)/layout        21 chunks  1016 KB   (Arm A's shell, for scale)
+//
+// WHY THESE TWO ENTRIES. The `page` entry for `/` already carries the root layout's chunk, so it IS
+// the front door's eager JS and nothing has to be unioned. The `(marketing)/layout` entry is what
+// every marketing route pays before its own page chunk; the page entries on top of it read 455-461
+// KB on the same artifact, i.e. the layout is ~90% of every marketing first load, so holding the
+// layout holds the group. Per-page marketing entries are deliberately not listed: a budget row per
+// slug is a list that rots (ADR-970), and the delta a page adds is the published document.
+//
+// WHY THESE NUMBERS, in the same terms Arm A states its own:
+//   front door 450 KB — 2.4x the reading. Survives ordinary front-door work (a new block, a nav
+//                       change, a provider) without anyone reaching for the constant. Still fires on
+//                       the class that actually happened elsewhere: the admin console walking in
+//                       (~1.6 MB, dc47b89), maplibre (~600 KB raw), the tiptap editor (~400 KB raw).
+//                       react-markdown alone (~150 KB raw) fits under it, and that is Arm C's job:
+//                       `app/page.tsx` is in HOT_ROUTE_ENTRIES, so the NAMED libraries fail at PR
+//                       time by name and the ceiling is the loose arm for the unnamed rest.
+//   marketing  700 KB — 1.7x the reading, for the same reasons. It sits at 405 KB today because of
+//                       one 253 KB chunk, which is worth a look on its own row; the budget is set
+//                       from what IS, so that row can only lower it.
+//
+// RATCHET, in Arm A's words: either number may FALL, and raising one is a decision that needs a
+// measurement and a paragraph in the commit. AGENTS.md: when a budget gate fires, fix the fan-out.
+export const FRONT_DOOR_ENTRIES = [
+  { label: 'the front door, /', entry: '[project]/app/page', budgetKb: 450 },
+  { label: 'the marketing layout, every app/(marketing) route', entry: '[project]/app/(marketing)/layout', budgetKb: 700 },
 ]
 
 /** The named heavy libraries. A prefix match, so `@tiptap/react` also catches `@tiptap/react/menus`.
@@ -469,6 +531,7 @@ if (manifests.length === 0) {
 const require_ = createRequire(import.meta.url)
 globalThis.self = globalThis // the manifests assign to `self`; give them one outside a browser
 const shellChunks = new Set()
+const doorChunks = new Map(FRONT_DOOR_ENTRIES.map((door) => [door.entry, new Set()]))
 let manifestsRead = 0
 for (const rel of manifests) {
   try {
@@ -479,6 +542,10 @@ for (const rel of manifests) {
   manifestsRead += 1
   for (const entry of Object.values(globalThis.__RSC_MANIFEST ?? {})) {
     for (const f of entry?.entryJSFiles?.[SHELL_ENTRY] ?? []) shellChunks.add(f)
+    // Arm D reads the same manifests in the same pass: one entry key per front-door surface.
+    for (const door of FRONT_DOOR_ENTRIES) {
+      for (const f of entry?.entryJSFiles?.[door.entry] ?? []) doorChunks.get(door.entry).add(f)
+    }
   }
 }
 
@@ -642,6 +709,54 @@ console.log(
   `   ${FINGERPRINTS.length} admin module bodies checked, all lazy; ` +
     `read ${manifestsRead} client-reference manifests; positive control present.`,
 )
+
+// ── ARM D · the front door ───────────────────────────────────────────────────────────────────
+// Runs AFTER the shell verdict so the shell reading is on the log whatever happens here. Each door
+// is resolved exactly the way the shell was: the manifest names the chunks, every named chunk must
+// be on disk, an empty set is a failure and never a pass, and the reading is printed on every run so
+// the trend is in the build log rather than in someone's memory (DEPLOY-SAFETY rule 1: watch the
+// trend the gates print).
+for (const door of FRONT_DOOR_ENTRIES) {
+  const chunks = doorChunks.get(door.entry)
+  if (chunks.size === 0) {
+    fail(
+      `read ${manifestsRead} manifests and found no eager JS for "${door.entry}" (${door.label}).\n` +
+        '   Either that route was renamed/moved (update FRONT_DOOR_ENTRIES in this file) or the\n' +
+        '   manifest shape changed. A front door that weighs nothing was not weighed.',
+    )
+  }
+  const paths = [...chunks].map((f) => path.join(NEXT_DIR, f))
+  const gone = paths.filter((p) => !existsSync(p))
+  if (gone.length > 0) {
+    fail(
+      `${gone.length} of ${paths.length} chunks the manifest names for ${door.label} are not on disk.\n` +
+        `   First: ${path.relative(ROOT, gone[0])}`,
+    )
+  }
+  const bytes = paths.reduce((s, p) => s + statSync(p).size, 0)
+  if (bytes > door.budgetKb * 1024) {
+    const worst = paths
+      .map((p) => [path.relative(NEXT_DIR, p), statSync(p).size])
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+    console.error(
+      `\n🔴 check:shell-weight — the front door is over budget: ${door.label} ships ${kb(bytes)} KB ` +
+        `of eager first-load JS across ${paths.length} chunks, over its ${door.budgetKb} KB budget.\n\n` +
+        '   This is what a VISITOR parses before the page responds, on the route that decides whether\n' +
+        '   there is a second visit. It sits outside the member shell, so Arms A and B never saw it\n' +
+        '   (LIVE-499). Raising the budget is not the first move: find what became statically\n' +
+        '   reachable from this route and put it behind `next/dynamic`, or keep it on the server.\n\n' +
+        '   Biggest chunks:\n',
+    )
+    for (const [f, size] of worst) console.error(`     ${kb(size).padStart(6)} KB  ${f}`)
+    console.error('')
+    bail(1)
+  }
+  console.log(
+    `✅ check:shell-weight — ${door.label}: ${kb(bytes)} KB of eager first-load JS across ` +
+      `${paths.length} chunks, under the ${door.budgetKb} KB budget.`,
+  )
+}
 }
 
 // Run the CLI only when invoked directly. The sibling test imports this module for its exported
