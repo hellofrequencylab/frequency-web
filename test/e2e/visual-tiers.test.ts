@@ -112,8 +112,8 @@ describe('the workflow wires the tiers the way the tiers are meant to behave', (
   // sees /discover and nothing else concludes the other capture did not run. The summary step
   // is the only place a human is shown an advisory diff, so every surface on the tier has to be
   // named there, with the row that owns it: /discover today, plus whatever the operator
-  // advisory roster carries (empty since 2026-09-28; it named /admin/qr and LIVE-476 while that
-  // surface rode the tier).
+  // advisory roster carries (empty once #2949 and #2955 have taken LIVE-492 and LIVE-504 out; it
+  // named /admin/qr and LIVE-476 while that surface rode the tier).
   it('the advisory summary names EVERY surface on the tier, with its row', () => {
     const idx = e2eYml.indexOf('- name: Report the advisory tier')
     expect(idx, 'the advisory report step moved or was renamed').toBeGreaterThan(-1)
@@ -185,7 +185,8 @@ describe('the positive control: @shell is genuinely shared, so the bare grep rea
   // /admin/content/practices (LIVE-492) and /admin/library (LIVE-504). Each was photographed in
   // a second operator describe, tagged @visual and @advisory and never @shell, and filtered out
   // of the blocking loop by the same list, so the two loops could not drift apart. All three
-  // vote again and the roster is empty, so the describe and the filter are gone with them.
+  // vote again: the first two leave the roster in #2949 and #2955, and the change that retired
+  // the describe and the filter merges after them, so the roster it leaves behind is empty.
   //
   // 🔴 THE HAZARD IS THE SAME IN BOTH DIRECTIONS. Advisory means photographed-and-not-voting. A
   // change that put a surface in the roster, dropped it from the blocking loop and forgot the

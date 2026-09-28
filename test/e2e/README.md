@@ -631,10 +631,11 @@ above that prints live `profiles` counts and sits at the same position on every 
 it is one `admin-rail` mask box since LIVE-513, and `/admin/library` read the same 1029 px
 dawn-dark to the pixel (LIVE-504). The surface is back in the blocking operator loop, its
 four baselines are full-page again, and the operator advisory describe is gone with its last
-passenger.
+passenger: LIVE-492 (#2949) and LIVE-504 (#2955) leave the roster first, and that change
+merges after them.
 
 What stays, so the next downgrade is not re-derived: `ADVISORY_OPERATOR_SURFACES` in
-`surfaces.ts` is still the roster (empty) and `shell-coverage.ts` still reports an entry as
+`surfaces.ts` is still the roster (empty once those two land) and `shell-coverage.ts` still reports an entry as
 *photographed, advisory, ROW* rather than as unphotographed. An entry needs the describe and
 the blocking-loop filter back in `visual.spec.ts`, and `visual-tiers.test.ts` fails in-tree
 until both are there, and fails the other way if a describe is left looping an empty roster.

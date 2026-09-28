@@ -394,9 +394,10 @@ test.describe('visual · operator console', { tag: ['@visual', '@shell'] }, () =
   // filtered out ADVISORY_OPERATOR_SURFACES (surfaces.ts) and a second describe, tagged
   // `@visual` and `@advisory` and never `@shell`, photographed those paths in the non-blocking
   // step: /admin/qr (LIVE-476), then /admin/content/practices (LIVE-492) and /admin/library
-  // (LIVE-504). All three are back here, each fixed at its cause (LIVE-492, ADR-1568), and the
-  // roster is empty, so the filter and the describe are gone rather than left looping nothing:
-  // an empty advisory describe reads as coverage. `visual-tiers.test.ts` holds the two in step:
+  // (LIVE-504). All three are back here, each fixed at its cause (LIVE-492, ADR-1568): the first
+  // two leave the roster in #2949 and #2955, and this change merges after them, so the roster
+  // is empty and the filter and the describe are gone rather than left looping nothing: an
+  // empty advisory describe reads as coverage. `visual-tiers.test.ts` holds the two in step:
   // the day an entry goes back into the roster, the filter and the describe come back with it,
   // same session, same skips, and the same `capture()`.
   for (const state of SHELL_RENDER_STATES) {

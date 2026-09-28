@@ -55,7 +55,8 @@ import {
  *  make this reporter call the authed app covered. Those surfaces reach the ledger through
  *  `ADVISORY_OPERATOR_SURFACES` below, which is how the banner could say "photographed,
  *  advisory, LIVE-476" instead of the false "unphotographed" while that roster had passengers
- *  (2026-09-23 to 2026-09-28). It is empty now and the wiring stays. */
+ *  (2026-09-23 to 2026-09-28). It empties once LIVE-492 (#2949) and LIVE-504 (#2955) are on
+ *  main, which the change that retired the describe merges after, and the wiring stays. */
 const SHELL_TAG = '@shell'
 
 /** Every authed surface path this reporter can attribute an observation to.

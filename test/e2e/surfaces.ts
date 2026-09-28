@@ -768,9 +768,10 @@ const VIEWPORT_ONLY_OPERATOR_PATHS: readonly string[] = []
  * The row is the debt. Clear the row, delete the entry, and the surface votes again.
  *
  * ── THE QR STUDIO STOOD HERE from 2026-09-23 to 2026-09-28 (LIVE-476) and votes again ──────
- * It was the first passenger, put here by owner ruling after four pull requests that touched
- * nothing it renders went red on it, and both of its readings are now fixed at their cause
- * (ADR-1568). The full-page height flip (14521 / 14567 at 390) was the shutter dropping the
+ * It was the first passenger and is the last to leave: LIVE-492 (#2949) and LIVE-504 (#2955)
+ * take theirs out first, this change merges after them, and the describe goes with the last
+ * entry. It was put here by owner ruling after four pull requests that touched nothing it
+ * renders went red on it, and both of its readings are now fixed at their cause (ADR-1568). The full-page height flip (14521 / 14567 at 390) was the shutter dropping the
  * touch emulation after its first capture, which `dropTouchBeforeFullPageCapture` now does
  * before it (LIVE-492, #2941); the first-screen note above has the arithmetic. The stable
  * first-screen desktop diff (951 px dawn-light, 1029 px dawn-dark, mobile green,
