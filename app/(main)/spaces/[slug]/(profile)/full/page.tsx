@@ -6,6 +6,9 @@ import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { parseEntityLayout } from '@/lib/entity-blocks/layout'
+import { getMyMembership, listMembershipTiers } from '@/lib/spaces/memberships'
+import { SpaceFrontDoor } from '@/components/spaces/space-front-door'
+import type { SpaceViewer } from '@/lib/spaces/front-door'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
 import { OwnerSpaceLayoutPreview } from '@/components/spaces/owner-space-layout-preview'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
@@ -73,7 +76,29 @@ async function SpaceProfileBody({ slug, panel, area }: { slug: string; panel?: s
 
   if (canSeeAsOwner) return <OwnerSpaceLayoutPreview slug={space.slug} />
 
-  return <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
+  // 🔴 THE MEMBER TREE IS THE ONLY ONE THAT CAN TELL A MEMBER FROM A STRANGER (LIVE-524), and until
+  // now it never asked. A signed-in non-member and a paying member got BYTE-IDENTICAL bodies here,
+  // because the only role axis either tree reads is owner/staff (the two branches above). The
+  // (public) tree cannot close that gap for us: it is ISR with no viewer at all (ADR-1526), so it
+  // can only ever say the anonymous thing.
+  //
+  // Owners never reach this line -- both branches above return -- so the door speaks to the three
+  // states that were previously indistinguishable.
+  const [membership, tiers] = await Promise.all([getMyMembership(space.id), listMembershipTiers(space.id)])
+  const viewer: SpaceViewer =
+    membership?.status === 'active' ? 'member' : membership?.status === 'waitlist' ? 'waitlist' : 'visitor'
+
+  return (
+    <>
+      <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
+      <SpaceFrontDoor
+        viewer={viewer}
+        brandName={space.brandName?.trim() || space.name}
+        spaceSlug={space.slug}
+        tierCount={tiers.length}
+      />
+    </>
+  )
 }
 
 export default async function SpaceLandingPage({
