@@ -48,6 +48,24 @@ describe('every sell path reaches the one Connect prompt (source shape)', () => 
     expect(src).toMatch(/channels:\s*\['orders'\]/)
   })
 
+  it('the Shop console mounts the Space prompt above every tab but Storefront, and the Service Spark renders it on screen one (LIVE-538)', () => {
+    // The price is typed on the Catalog tab and on the New service Spark; the Storefront tab was the
+    // only tab that carried the prompt. The console-level card names both channels a Shop sells
+    // through and steps aside on Storefront, which keeps its own status card (LIVE-290).
+    const shop = read('app/(main)/spaces/[slug]/settings/shop/page.tsx')
+    expect(shop).toContain(PROMPT_MODULE)
+    expect(shop).toMatch(/<SpacePayoutSetupPrompt\b/)
+    expect(shop).toMatch(/channels=\{\['orders', 'bookings'\]\}/)
+    expect(shop).toMatch(/activeTab !== 'storefront' &&/)
+    const page = read('app/(main)/spaces/[slug]/settings/services/new/page.tsx')
+    expect(page).toMatch(/resolveSpacePayoutPrompt\(/)
+    expect(page).toMatch(/channels:\s*\['bookings'\]/)
+    expect(page).toMatch(/payoutPrompt=\{payoutPrompt\}/)
+    const spark = read('app/(main)/spaces/[slug]/settings/services/new/service-spark.tsx')
+    expect(spark).toMatch(/<PayoutPromptCard prompt=\{payoutPrompt\}/)
+    expect(spark).not.toMatch(/href=["'`]\/settings\/billing/)
+  })
+
   it('Sell this Journey resolves the Space owner prompt and renders the shared card (LIVE-425)', () => {
     const data = read('app/(main)/journeys/admin-actions.ts')
     expect(data).toContain('resolveSpacePayoutPromptById')

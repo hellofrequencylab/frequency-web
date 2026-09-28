@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { Coins, Receipt, Wallet } from 'lucide-react'
 import { DashboardTemplate } from '@/components/templates'
+import { SpacePayoutSetupPrompt } from '@/components/billing/payout-setup-prompt'
 import { StatCard } from '@/components/ui/stat-card'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
@@ -76,6 +77,25 @@ export default async function SpaceShopConsolePage({
         </p>
       )}
       <ShopTabs consoleHref={consoleHref} active={activeTab} />
+
+      {/* THE ONE CONNECT PROMPT (LIVE-538), above whichever tab is open, because the PRICE is typed on the
+          Catalog tab (the default tab, through ItemForm) and the Service Spark returns here, while the
+          prompt used to live on the Storefront tab only, a tab an operator opens to rename it. The owner is
+          the payee (ADR-819): an admin who is not the owner is told who has to act, never handed a button
+          for the wrong account. Null once the owner is ready (ADR-1158), so it is a nudge, not a banner.
+          The Storefront tab keeps its own `whenReady="status"` card (LIVE-290), which is why this one
+          steps aside there: a ready owner still finds the dashboard link on that tab, and a not-ready
+          owner never reads two cards on one screen. */}
+      {activeTab !== 'storefront' && (
+        <Suspense fallback={null}>
+          <SpacePayoutSetupPrompt
+            space={space}
+            viewerProfileId={viewerProfileId}
+            channels={['orders', 'bookings']}
+            className="mt-4"
+          />
+        </Suspense>
+      )}
 
       <Suspense fallback={<TabSkeleton />}>
         {activeTab === 'catalog' && <CatalogTab slug={slug} spaceId={space.id} readOnly={readOnly} />}

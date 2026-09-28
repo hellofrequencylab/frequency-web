@@ -10,9 +10,16 @@
 //
 // The create call is the existing `createSpaceProductAction`, with the field names it already parses,
 // so the Space gate, the booking-calendar wiring, and the metadata.service shape are untouched.
+//
+// GETTING PAID is offered on the first screen (LIVE-538): the page resolves the one Connect prompt for
+// the Space owner and this Spark renders its card under the doors, so an operator pricing a session
+// with no payout account is offered the setup step where they are standing, not refused at a buyer's
+// click later.
 
 import { useRouter } from 'next/navigation'
 import { CommerceSpark, type SparkDraft } from '@/components/studio/commerce/commerce-spark'
+import { PayoutPromptCard } from '@/components/billing/payout-prompt-card'
+import type { PayoutPrompt } from '@/lib/billing/payout-prompt'
 import { SERVICE_MANIFEST } from '@/lib/studio/entities/service'
 import { createSpaceProductAction, draftListingCopyAction } from '../../shop/shop-actions'
 import type { ServicePriceModel } from '@/lib/commerce/types'
@@ -39,7 +46,18 @@ function asPriceModel(raw: string): ServicePriceModel {
   return raw === 'from' || raw === 'free' || raw === 'contact' ? raw : 'fixed'
 }
 
-export function ServiceSpark({ slug, spaceId, spaceName }: { slug: string; spaceId: string; spaceName: string }) {
+export function ServiceSpark({
+  slug,
+  spaceId,
+  spaceName,
+  payoutPrompt,
+}: {
+  slug: string
+  spaceId: string
+  spaceName: string
+  /** The Space owner's Connect prompt, resolved by the page. Null when there is nothing to say. */
+  payoutPrompt: PayoutPrompt | null
+}) {
   const router = useRouter()
 
   return (
@@ -55,6 +73,7 @@ export function ServiceSpark({ slug, spaceId, spaceName }: { slug: string; space
           'A session, a class, a job. It lands in your catalog, and you publish it when it is ready.',
         veraHint: 'Say roughly what the work is and Vera writes the name and the details for you to edit.',
         manualHint: 'Go straight to the form: photos, how you price it, and how long it runs.',
+        aside: <PayoutPromptCard prompt={payoutPrompt} />,
       }}
       details={{
         title: 'The details',

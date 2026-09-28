@@ -4,6 +4,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
+import { resolveSpacePayoutPrompt } from '@/lib/billing/payout-prompt-resolve'
 import { ServiceSpark } from './service-spark'
 
 // Add a bookable service to a Space (ADR-596 · docs/STUDIO.md §0, ADR-986). The guided way in to the
@@ -32,5 +33,18 @@ export default async function NewSpaceServicePage({ params }: { params: Promise<
   const caps = await getSpaceCapabilities(space, viewerProfileId)
   if (!spaceFunctionAccess(space, 'shop', caps.role)) notFound()
 
-  return <ServiceSpark slug={slug} spaceId={space.id} spaceName={space.brandName ?? space.name} />
+  // THE ONE CONNECT PROMPT (LIVE-538). A service gets its price, its price model and its deposit on
+  // this Spark, which makes it the first sell attempt for bookings; the Spark is a client island, so
+  // the two reads happen here and the resolved prompt is handed down. The space OWNER is the payee
+  // (ADR-819): an editor reads who has to act and gets no button. Null once the owner is ready.
+  const payoutPrompt = await resolveSpacePayoutPrompt({ space, viewerProfileId, channels: ['bookings'] })
+
+  return (
+    <ServiceSpark
+      slug={slug}
+      spaceId={space.id}
+      spaceName={space.brandName ?? space.name}
+      payoutPrompt={payoutPrompt}
+    />
+  )
 }
