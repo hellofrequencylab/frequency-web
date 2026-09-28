@@ -24,19 +24,17 @@ import { invokedDirectly } from './lib/invoked-directly.mjs'
 const FILE = 'docs/BUILD-BACKLOG.json'
 const MIG_DIR = join('supabase', 'migrations')
 
-/** Parked by name. Do not pick these up. */
+/** Parked by name. Do not pick these up.
+ *  2026-09-28 (ADR-1535): the App Platform is the ONLY program still deferred by name. Mobile
+ *  (DEF-MOBILE), Etsy (DEF-ETSY), Sites (PROG-E10), member sites (PROG-W6) and theming depth
+ *  (PROG-P7) are sequenced by wave, not parked; a program row is still not picked directly
+ *  (isWorkable skips lane `program`), agents pick its LIVE/HYG children. */
 export const PARKED_IDS = new Set([
   'LIVE-241', // 16→7 member rail; cancelled by ADR-1406
   'LIVE-412', // split app-shell; parked so packets do not spawn shell-split PRs
-  'DEF-MOBILE',
-  'DEF-ETSY',
-  'DEF-A2P',
   'PROG-A1',
   'PROG-A3',
   'PROG-A4',
-  'PROG-E10',
-  'PROG-W6',
-  'PROG-P7',
 ])
 
 /** Branches other agents already own. Stay off them and off their PRs. */
@@ -80,7 +78,7 @@ DO NOT.
 - Ask the owner to click Merge. That is a process bug. Arm GitHub auto-merge yourself.
 - Use \`gh pr create\`. Open or update the PR with ManagePullRequest. Base branch is main.
 - Absorb another agent's PR. Stay off ${OFF_LIMITS_BRANCHES.join(', ')} and its PRs.
-- Pick parked work: 16→7 nav (LIVE-241), mobile, white-label Sites, Etsy, App Platform.
+- Pick parked work: 16→7 nav (LIVE-241), the shell split (LIVE-412), the App Platform (PROG-A1/A3/A4, LAST by owner ruling 2026-09-28, ADR-1535).
 - Call apply_migration or supabase db push. Prod schema is execute_sql for the DDL, then an explicit insert into supabase_migrations.schema_migrations at the FILE's own 14-digit version (docs/DATABASE.md). Never stamp wall-clock versions.
 - Send Resend if this session has no key.
 - Touch SERIAL surfaces (app-shell, nav registry, postbuild gates) while another lane is in flight on them. \`pnpm packets\` names the collision files.
@@ -93,7 +91,7 @@ LOOP.
 5. If the PR added supabase/migrations/*.sql, apply with execute_sql then ledger insert; run pnpm check:migrations --require-ledger when credentials exist.
 6. Validate the row's probe on main. Close the row in BUILD-BACKLOG.json in the SAME PR that makes the probe pass, and prune it from meta.slate.waves.
 
-PRODUCT-FIRST (ADR-1403 / ADR-1445). Calendar section first: LIVE-414 then LIVE-415 then LIVE-416–419. LIVE-410 and LIVE-376 are closed. LIVE-234 is P0 money proof, owner-gated (account / OWN-078) — do not demote it and do not pick it. LIVE-408 needs an owner ruling. Journey sales (LIVE-392+) is claimed by ${FOREIGN_LANE_CLAIMS.journey}. Do not start Editor, Sites, Etsy, App Platform, or LIVE-242.
+PRODUCT-FIRST (ADR-1403 / ADR-1445). Calendar section first: LIVE-414 then LIVE-415 then LIVE-416–419. LIVE-410 and LIVE-376 are closed. LIVE-234 is P0 money proof, owner-gated (account / OWN-078) — do not demote it and do not pick it. LIVE-408 needs an owner ruling. Journey sales (LIVE-392+) is claimed by ${FOREIGN_LANE_CLAIMS.journey}. Do not start the App Platform. The editor (W4), Sites (W4), Etsy (W11) and mobile (WM) are sequenced by wave since ADR-1535; take them when their wave is the next open one, not before. LIVE-242 is closed.
 
 TWO-AGENT SPLIT (2026-09-19, meta.slate.metaScanCleanup). If you are the product agent: take derived lane \`events\`. Do not take lane \`scan\`. If you are the scan follow-through agent: \`pnpm packets --lane scan\`. SCAN-636 through SCAN-644 are done. Leave LIVE-414 through LIVE-419. Do not take LIVE-234. LIVE-412 is PARKED (shell split, P3). Do not pick it.
 `

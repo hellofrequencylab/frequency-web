@@ -71,6 +71,10 @@ unused indexes are cost, not orphans. `no_primary_key` on the snapshot table is 
 drop. Dependencies are current to a patch or two with one major each behind on `@sentry/nextjs` and
 `eslint`, both of which want their own row when somebody wants them.
 
+**A fourth finding, later the same day, while numbering the ruling's ADR.** ADR-1534 says 1531-1533 are "reserved by another open session". They exist, on `origin/calendar-sky-and-marks` only: three owner-directive decisions (the sky on every calendar, the stage mark, the zone/symlink lesson) plus a `docs/EVENTS-CALENDAR.md` delta. Their code shipped (#2908, #2919, #2924); the ledger commit is unreachable from `main` because PR #2910 merged into a branch #2908 had already squashed. No gate sees a decision that ships and vanishes this way. Row `HYG-126`, and the port must reword the branch's `HYG-123`/`HYG-124` citations, which mean different rows on main.
+
+**Owner ruling, same day (ADR-1535).** App Platform is the single final phase; mobile unparks and builds alongside the site; Etsy and the phone door unpark into their waves; `SCAN-645` ships, `HYG-123` drops, the nine FKs become `HYG-127` (sweep) + `HYG-128` (guard). The phases are re-cut into eleven in `meta.slate.phases.list`. Fan-out: one cloud session per `pnpm packets` lane.
+
 **One observation that is not a defect and should not become a row yet.**
 `space_calendar_entries` has **0** tombstoned rows in production: the LIVE-536 recovery path is
 code-correct, mutation-proven and **has never fired against a real row**. That is the shape AGENTS.md
