@@ -298,17 +298,35 @@ describe('the CLI on a fixture repository', () => {
   })
 })
 
+/** Is the seed commit in THIS clone? CI's `test` job checks out at depth 1 and never runs the
+ *  history fetch step (that step arms the `checks` job, where the guard runs), so there the answer is
+ *  no. The cases below say what they proved on each kind of clone rather than assuming history. */
+function seedReachable(): boolean {
+  try {
+    execFileSync('git', ['cat-file', '-e', `${SEED_COMMIT}^{commit}`], { cwd: ROOT, stdio: 'ignore' })
+    return true
+  } catch {
+    return false
+  }
+}
+
 describe('the CLI on THIS repository', () => {
-  it('reads an exact window from the seed and passes, so the gate is green the day it lands', () => {
-    // The seed may be absent on a shallow clone; the guard then reads PARTIAL and this case says
-    // so instead of asserting a window it cannot see (the harness's own rule: state what was and
-    // was not proved).
+  it('reads an exact window from the seed and passes, or on a shallow clone says PARTIAL and refuses the floors', () => {
+    // The first version of this case expected exit 0 unconditionally and went red on CI's depth-1
+    // `test` checkout: one commit reachable, zero ids, and the guard rightly refused to call that
+    // clean. That refusal IS the behaviour under test on a shallow clone, so it is asserted rather
+    // than worked around.
     const r = run(ROOT, [])
-    expect(r.code, r.out).toBe(0)
-    if (r.out.includes('PARTIAL')) {
-      expect(r.out).toContain('partial window')
-    } else {
+    if (seedReachable()) {
+      expect(r.code, r.out).toBe(0)
       expect(r.out).toContain(`since the one list was seeded (${SEED_COMMIT.slice(0, 9)})`)
+      expect(r.out).not.toContain('PARTIAL')
+    } else {
+      expect(r.out).toContain('PARTIAL')
+      // Under the floors it must refuse; above them (a deeper-than-seed shallow clone cannot exist,
+      // but a clone cut between the seed and today can) it passes with the partial note.
+      if (r.code !== 0) expect(r.out).toContain(`under the floors of ${MIN_COMMITS} and ${MIN_IDS}`)
+      else expect(r.out).toContain('partial window')
     }
   })
 
@@ -320,8 +338,8 @@ describe('the CLI on THIS repository', () => {
       const entries = real.entries.filter((e: { id: string }) => e.id !== victim)
       writeFileSync(path.join(dir, 'b.json'), JSON.stringify({ entries }))
       const r = run(ROOT, ['--backlog', path.join(dir, 'b.json')])
-      // On a clone too shallow to reach either commit the mutation cannot bite; say so rather than
-      // pass by accident.
+      // On a clone too shallow to reach either commit the mutation cannot bite; the case above has
+      // already asserted what such a clone proves, so this one only skips it, never passes it.
       const reachable = r.out.includes(victim)
       if (!reachable && r.out.includes('PARTIAL')) continue
       expect(r.code, `${victim} removed and the gate still passed:\n${r.out}`).toBe(1)
