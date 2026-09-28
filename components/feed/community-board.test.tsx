@@ -177,8 +177,17 @@ describe('the practice board leads the page, and the community board leads the r
   })
 })
 
-describe('the reader is the gate (it runs through the admin client)', () => {
+describe('the reader runs on the session client, and the policies are the gate (LIVE-335)', () => {
   const reader = code(READER)
+
+  it('never imports the service-role client, and reads through the session client', () => {
+    // The whole point of LIVE-335: what the board may show a member is what the policies let that
+    // member read. A bypass here is a regression whatever the query around it says.
+    expect(reader).not.toMatch(/createAdminClient/)
+    expect(reader).not.toMatch(/@\/lib\/supabase\/admin/)
+    expect(reader).toMatch(/from '@\/lib\/supabase\/server'/)
+    expect(reader).toMatch(/await createClient\(\)/)
+  })
 
   it('only ever reads ACTIVE memberships and insider-listable Circle events', () => {
     expect(reader).toMatch(/\.eq\('status', 'active'\)/)
@@ -199,7 +208,18 @@ describe('the reader is the gate (it runs through the admin client)', () => {
     expect(reader).not.toMatch(/\.in\('scope_id', spaceIds\)/)
     expect(reader).toMatch(/\.from\('circles'\)/)
     expect(reader).toMatch(/\.in\('space_id', spaceIds\)/)
-    expect(reader).toMatch(/\.in\('scope_id', \[\.\.\.spaceOfCircle\.keys\(\)\]\)/)
+    expect(reader).toMatch(/_scope_ids: \[\.\.\.spaceOfCircle\.keys\(\)\]/)
+  })
+
+  it('reads the posts through the definer feed RPC, for the author line the profiles policy cannot give', () => {
+    // A plain member reads one `profiles` row under RLS: their own. The feed RPC is where every
+    // author line already comes from, and 20270345009100 made it say what the posts policy says.
+    expect(reader).toMatch(/\.rpc\('scoped_feed_for_viewer'/)
+    expect(reader).toMatch(/readFeedRpc</)
+    expect(reader).toMatch(/_sort: 'newest'/)
+    // Never a bare `profiles` read for the author: it would return nobody but the reader.
+    expect(reader).not.toMatch(/profiles!author_id/)
+    expect(reader).not.toMatch(/\.from\('profiles'\)/)
   })
 
   it('never surfaces a circle-members-only post, and skips a Circle a Space has hidden', () => {
@@ -210,16 +230,20 @@ describe('the reader is the gate (it runs through the admin client)', () => {
       reader.indexOf('export const getCommunityBoard'),
     )
     expect(activity.length).toBeGreaterThan(200)
-    expect(activity).toMatch(/\.in\('visibility', \['public', 'cluster'\]\)/)
+    expect(reader).toMatch(/BOARD_POST_VISIBILITIES = \['public', 'cluster'\] as const/)
+    expect(activity).toMatch(/allowed\.has\(r\.visibility\)/)
     expect(activity).not.toMatch(/'group'/)
     expect(activity).toMatch(/\.not\('status', 'in', '\(draft,archived\)'\)/)
     expect(activity).toMatch(/\.eq\('unlisted', false\)/)
+    // The RPC may hand back `group` rows for Circles the member joined; the ask is wider than the
+    // slots so dropping them cannot starve the Space's announcements.
+    expect(reader).toMatch(/BOARD_ACTIVITY_ASK = 12/)
+    expect(activity).toMatch(/\.slice\(0, BOARD_ACTIVITY_SLOTS\)/)
   })
 
-  it('reads top-level, unhidden posts only, and the member’s own Space as well', () => {
-    expect(reader).toMatch(/\.is\('parent_id', null\)/)
-    expect(reader).toMatch(/\.is\('hidden_at', null\)/)
-    // The owner of a Space holds no space_members row, so their own Space is read too.
+  it('reads the member’s own Space as well', () => {
+    // The owner of a Space holds no space_members row, so their own Space is read too; under RLS
+    // the owner arm of spaces_read_active (ADR-1514) is what answers it.
     expect(reader).toMatch(/\.eq\('owner_profile_id', profileId\)/)
   })
 

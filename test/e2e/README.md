@@ -661,3 +661,38 @@ touching a single PNG.
 
 Rule of thumb: if the failing set is *bigger than your diff could explain* and lands on whole
 surfaces rather than specific regions, check the base before you check your code.
+
+## A save that reads slow: time it from the server, not from the test's clock (LIVE-463)
+
+`operator-calendar.spec.ts` waits for the *consequence* of a write (the "Open Plan" button after a
+pencil, an emptied row after an archive) under one ceiling, `SAVE_ROUND_TRIP_MS`. The first ceiling
+was 20 s and was sized from "the test title's `Date.now()` to the row's `created_at`": 7.6 s to
+10.9 s over six saves. That number was real and it was the wrong instrument. Two of the three tests
+mint the title *before* the page is opened, so it counted a page load; every test counted the
+dialog, two fills and a click on a runner that was also driving the visual suite. Re-measured from
+the database's side of the same saves on 2026-09-28, the action the host actually waits for is
+about 2 s.
+
+How to take that measurement without a browser, so the next latency row starts here:
+
+1. **The rows the suite left behind are the sample.** Every pencil title carries its own
+   `Date.now()`, so `select title, created_at from space_plans where title like 'Browser pencil %'`
+   gives the interval the row was filed on, per save, for as long as the rows exist. Group them by
+   which test minted them: the position in the run tells you whether a page load is inside.
+2. **Postgres says what the statement costs.** `pg_stat_statements` filtered on the RPC name
+   (`create_penciled_plan`: 26.7 ms mean, 72.5 ms max, 205 calls). If this is small, the database is
+   not the story, whatever the interval says.
+3. **The Supabase gateway log says what the *function* did and when.** `edge_logs` carries every
+   PostgREST and auth request with `request.sb.auth_user`, `request.path`, `response.origin_time`
+   and the caller's `cf_connecting_ip`. Filter to the e2e member and the calendar tables to see the
+   shape of one action (`/auth/v1/user` → `/profiles` → the service-role `/spaces` reads → the RPC →
+   the four parallel reads of the revalidated re-render), then filter to the IP that made the RPC
+   to read the same instance's timeline. First DB call to last re-render read is the
+   server-visible action; the RPC's own `origin_time` is the insert.
+4. **What is left is the harness.** Title to first DB call, minus what step 3 shows, is dialog,
+   fills, the click's actionability wait and the network. None of it moves when a server action is
+   tuned, and no `revalidatePath` change can bring it under a browser-side ceiling.
+
+`pencilDate()` now records click-to-proof as a `pencil-save-ms` annotation on every save, so a run
+that is allowed to pencil prints the number the ceiling is judged by. Read that before raising the
+ceiling; a reading over it is a new row with a server-side cause, not a bigger timeout.
