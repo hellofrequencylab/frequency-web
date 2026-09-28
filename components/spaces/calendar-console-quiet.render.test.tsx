@@ -47,6 +47,10 @@ vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/plan-actions', () => ({
   transitionPlanStage: async () => ({}),
   listPlanLinkableEvents: async () => [],
   attachEventToPlan: async () => ({ data: undefined }),
+  // The share handshake (LIVE-541): the drawer reads the picker and the share list on open.
+  listPlanShares: async () => ({ data: { options: [], shares: [] } }),
+  sharePlanWithSpace: async () => ({ data: { id: 'share-1' } }),
+  revokePlanShare: async () => ({ data: undefined }),
 }))
 vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/vera-calendar-actions', () => ({
   veraCalendarCommand: async () => ({ error: 'not in this test' }),
