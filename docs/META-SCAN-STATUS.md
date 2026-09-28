@@ -7,6 +7,100 @@
 > The durable record of the full-repo meta scan: what shipped, and what is still open with the
 > exact fix. Update it as items close. Newest pass first; earlier passes are kept below.
 
+## 2026-09-28 pass (scan five — the calendar sprint audited, and the soft-delete question asked twice)
+
+Run against `origin/main` at `9903a4eeb`, 40 commits after the 2026-09-19 evening pass, over the
+LIVE-508 → LIVE-536 calendar / events / Spaces sprint. Sequential reads, no parallel agents.
+
+**What every instrument that can look says.** `pnpm exec tsc --noEmit` exit 0. `pnpm test` 18,846
+passed / 1 skipped across 1,394 files, zero failures. All **28** contract guards from the ci.yml
+`guards` array exit 0 locally, plus `check:cron-freshness` (29 jobs, 29 wired to the heartbeat) and
+`check:module-reachability` (144 bound blocks, 30 route keys, every registered module mounted).
+`pnpm audit` reports no known vulnerabilities. **No open pull requests.**
+
+**Migration drift: zero, proven as a SET and not a count.** The repo holds 736 migrations; the
+production ledger holds 736 rows; `md5(string_agg(version, "," order by version))` is
+`4bbdb3341b44ebc8b108a531aaa8b563` on **both** sides. That is the comparison the 2026-08-12 incident
+asked for, answered: a count agreeing while one file was missing and one was unapplied is the exact
+shape that cost a day, and this is the same set, not the same size. Six branches carry a migration
+file that is not an ancestor of `main`; all four distinct files (`20270345008300`, `8400`, `8500`,
+`8600`) are byte-identical to `main` and applied, so those are squash-merge remnants and not stranded
+SQL. Nothing is unapplied and nothing is unreproducible.
+
+**The recent work holds up under an adversarial read.** Three claims were re-derived independently
+rather than taken from their rows:
+
+| Claim | How it was tested | Verdict |
+|---|---|---|
+| LIVE-536 filtered every reader of the new tombstone | every `space_calendar_entries` query site in the tree, then every SQL function and view that names the table | **Holds.** All 11 code sites carry `.is("removed_at", null)`; of the four SQL functions touching the table, three filter it and the fourth (`create_penciled_plan`) is insert-only |
+| LIVE-535 closed the cascade delete | every hard `.delete()` on `events` | **Holds.** The guarded path refuses before deleting; `retireStaleOccurrences` pins `.eq("parent_event_id", anchorId)`; the draft path pins status + owner; the demo paths pin `is_demo` |
+| LIVE-531 was the whole date-only timezone class | all 56 files that parse a date at UTC midnight, cross-checked against every formatter in them | **Holds.** Every one names an explicit `timeZone`. The three that read ambient are real instants, which is correct |
+
+**New findings that survived refute — three, and one is the same question asked of an older table.**
+
+| Finding | Measured | Row |
+|---|---|---|
+| `events.removed_at` is enforced reader by reader with **no floor**, and the two calendar-feed RPCs are the readers that forgot | `public_calendar_feed()` and `event_calendar_feed(_token)` (both SECURITY DEFINER) filter status / cancelled / visibility / window and **not** `removed_at`; the other 6 public `events` functions all do. **0 of 2** `SELECT` policies on `events` mention it, so there is no floor under the readers either. 50 TypeScript list reads omit it | `SCAN-645` P2 |
+| The dated drop of the `page_settings` snapshot is owed by two rows that both closed and point at each other | HYG-086: "the backlog row carries that date". SCAN-640: "the Oct 10 drop stays on HYG-086". HYG-086 is `done`. Four rows name the table or the date; **all four are done**. Due on or after **2026-10-10** | `HYG-123` P2 |
+| Two pull requests shipped under ids the one list does not carry | `HYG-125` (#2911, 2026-09-27) and `LIVE-475` (#2878, 2026-09-22) are cited by name in live probes and comments and are **not rows**, nor folded into one | `HYG-124` P3 |
+
+🔴 **Why SCAN-645 is a row and not a worry.** Production holds exactly two removed events and each
+escapes the public feed by failing a **different** predicate, by luck: one is cancelled and past, the
+other is `unlisted`. Change either accident and the feed serves it. The press that makes it happen is
+the one LIVE-535 just guarded — an operator deleting an upcoming public event — because a *standalone*
+public event removed the ordinary way is published, public, future and not cancelled: every predicate
+the feed checks, and the one it does not. An ICS feed is **subscribed**, not fetched, so a deleted
+gathering stays on a phone calendar until the feed stops sending it. `space_calendar_entries` got all
+eleven readers **and** a probe four days ago; `events` has carried the same column since
+20260613000000 and has neither.
+
+🔴 **Why HYG-124 needs a guard and not two insertions.** `check:backlog` iterates **the rows**, so an
+id that was never added is not a row and there is nothing to fail — it passes today with the file
+missing two shipped changes. `check:id-collisions` reads other open PRs for ids claimed *twice* and
+is silent about one claimed *zero* times. `check:one-list` freezes planning files and never reads a
+commit subject. So the one list can be missing production work with every gate green, which is the
+one claim AGENTS.md makes about this file. Note `HYG-125` sits one above the current HYG maximum, so
+the next hand-minted hygiene row collides with a merged commit.
+
+**Not findings, checked and dismissed.** `spatial_ref_sys` stays as the accepted PostGIS exception.
+The 85 `rls_enabled_no_policy` INFO rows are deny-by-default on purpose, and the sweep proves the
+discipline: of **88** RLS-on-with-no-policy tables, **86 carry zero `anon` grants** — the two that do
+not are `spatial_ref_sys` and the snapshot table HYG-123 now owns. `hubs` / `nexuses` survive
+LIVE-242 deliberately (Circles still attach through `circles.hub_id`) and are still read, so their
+unused indexes are cost, not orphans. `no_primary_key` on the snapshot table is expected until the
+drop. Dependencies are current to a patch or two with one major each behind on `@sentry/nextjs` and
+`eslint`, both of which want their own row when somebody wants them.
+
+**One observation that is not a defect and should not become a row yet.**
+`space_calendar_entries` has **0** tombstoned rows in production: the LIVE-536 recovery path is
+code-correct, mutation-proven and **has never fired against a real row**. That is the shape AGENTS.md
+warns about with the roles reversed — a fail-safe nobody has watched fire. One deliberate
+delete-and-restore round trip on a throwaway date would settle it, and it is an owner action rather
+than an agent one.
+
+**Advisors (Frequency Community, 2026-09-28).** Security: unchanged in kind. Performance: **9
+unindexed foreign keys**, up from zero on 2026-09-19, all on tables that landed with the calendar
+sprint (`space_calendar_entries.removed_by` from LIVE-536, `space_plan_shares` ×3,
+`space_plan_playbooks`, `space_calendar_private_feeds`). This is the third time this exact debt has
+re-accumulated on new tables (SCAN-638, then `20270345006400`), which is an argument for a covering
+index in the migration that adds the FK rather than a fourth sweep. Unused indexes 398. Zero
+`auth_rls_initplan`.
+
+**Scorecard, honest gap to 10.** Security **8** — gates green, grant discipline 86/88, but
+`events.removed_at` has no floor (SCAN-645) and HYG-100 is still unconfirmed against a live database.
+Wiring **9** — module reachability, menu, templates and creates all green; nothing unplugged found.
+Correctness **8** — the sprint survived three independent re-derivations, and SCAN-645 is one press
+away. DB⇄code **8** — zero drift proven as a set, FK debt re-accumulating. Bookkeeping **7** — the
+one list is missing two shipped ids and a dated action fell between four closed rows; both now have
+rows, neither has a guard yet. Speed **7** — LIVE-498 (TBT 453ms vs a 300ms budget) and LIVE-463
+(8–11s to pencil a date) are both open and both measured. Docs **9** — this file and the one list
+updated in the same pass as the finding.
+
+**Phased cleanup.** The three new rows are placed in the existing slate: `SCAN-645` and `HYG-123`
+into **W0c** (HYG-123 dated, and carrying `ownerAction: ruling` because dropping 21 rows of the only
+way back is the owner's call), `HYG-124` into **W0d**. Order inside W0c: `SCAN-645` first (it is one
+operator press from a subscriber-visible defect), then `HYG-123` before 2026-10-10.
+
 ## 2026-09-19 evening pass (re-test after four same-day merges)
 
 Run against `origin/main` at `ab1902846` after SCAN-636 (#2733), SCAN-637 (#2731), SCAN-639, LIVE-242 (#2734), and LIVE-306 (#2735). Sequential finders. No new planning markdown. Later the same day closed SCAN-638 (#2764), SCAN-640 (#2766), SCAN-641, and SCAN-642 (#2741).
