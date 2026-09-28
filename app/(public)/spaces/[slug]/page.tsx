@@ -18,6 +18,8 @@ import { parseEntityLayout } from '@/lib/entity-blocks/layout'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
 import { SpaceProfileMenuView } from '@/components/spaces/space-profile-menu-view'
 import { buildPublicSpaceProfileNav } from '@/lib/spaces/profile-nav'
+import { listMembershipTiers } from '@/lib/spaces/memberships'
+import { SpaceFrontDoor } from '@/components/spaces/space-front-door'
 import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
 // Public share URL for a networked Space (SCAN-644 / ADR-1465). Auth during
@@ -105,13 +107,20 @@ export default async function PublicSpacePage({
   // plain 16:6 crop this page shipped with ignored. The band then renders through the canonical
   // PageHero at the header element's height and overlay, so /admin/elements retunes it with the
   // rest. Service-role reads only, so ISR (`revalidate` above) is untouched.
-  const [tagline, hero] = await Promise.all([
+  const [tagline, hero, tiers] = await Promise.all([
     readTagline(space.id),
     resolveDetailHero(`/spaces/${space.slug}`, {
       entityImage: coverSrc,
       entityFocus: readCoverFocus(space.preferences),
     }),
+    // The Space's published tiers, for the front door at the foot of the page (LIVE-524). SPACE
+    // data, not VIEWER data, so it costs this route nothing: `listMembershipTiers` takes a spaceId
+    // and reads no caller, unlike `getMyMembership` which is why that one can never appear here.
+    // Request-cached through the same `readTiers` the Memberships tab renders from, so the door and
+    // the page behind it can never disagree about whether there is anything to sell.
+    listMembershipTiers(space.id),
   ])
+  const tierCount = tiers.length
 
   // The operator's saved arrangement, read and parsed EXACTLY as the member body reads it
   // ((profile)/full/page.tsx): `parseEntityLayout` is pure and takes no viewer, so the two renders
@@ -175,14 +184,35 @@ export default async function PublicSpacePage({
         stickyNav={<SpaceProfileMenuView tabs={tabs} canManage={false} pathname={`/spaces/${space.slug}`} />}
       >
         <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
-        <div className="mx-auto mt-14 max-w-xl">
-          <SignInCta
-            title={`Want to know ${brandName}?`}
-            body="Sign in free to follow this Space, see what's on, and be a face the host recognizes."
-            action={BETA_CTA_LABEL}
-            href={BETA_CTA_HREF}
+        {/* THE VISITOR'S FRONT DOOR (LIVE-524), and it sits BELOW the operator's blocks on purpose.
+            LIVE-500's probe fails if `<SpaceProfileModules` appears after `<SignInCta` in this
+            file, because a sign-in card in front of the content is the exact defect ADR-1526
+            closed. The Space's own page comes first; the door follows it.
+
+            `anonymous` is the only viewer this tree can pass, and that is a fact rather than a
+            choice: markAnonymousRender() above means every caller read resolves false, so this
+            render genuinely does not know whether the reader is already a member. The tiers are
+            Space data, not viewer data, so reading them costs the page nothing.
+
+            When the Space sells nothing the door returns null and the original sign-in card below
+            is what renders, unchanged. */}
+        {tierCount > 0 ? (
+          <SpaceFrontDoor
+            viewer="anonymous"
+            brandName={brandName}
+            spaceSlug={space.slug}
+            tierCount={tierCount}
           />
-        </div>
+        ) : (
+          <div className="mx-auto mt-14 max-w-xl">
+            <SignInCta
+              title={`Want to know ${brandName}?`}
+              body="Sign in free to follow this Space, see what's on, and be a face the host recognizes."
+              action={BETA_CTA_LABEL}
+              href={BETA_CTA_HREF}
+            />
+          </div>
+        )}
       </DetailTemplate>
     </>
   )
