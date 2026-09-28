@@ -57,7 +57,18 @@
     "  uses-responsive-images   0.5   (0 on /loneliness)",
     "They stay warns on purpose: they describe payload SHAPE, not a regression. They do not get",
     "worse PR to PR, they are simply always wrong, so an error assertion would fail every PR for",
-    "debt none of them created. Recorded as real work in ADR-934, not laundered into a budget."
+    "debt none of them created. Recorded as real work in ADR-934, not laundered into a budget.",
+    "",
+    "── A ONE-ATTEMPT BREACH IS RE-RUN BEFORE IT IS FILED (LIVE-498, 2026-09-28) ───────────────",
+    "",
+    "On 2026-09-24 attempt 1 of run 36042151790 read / at TBT 453ms and this job failed. Attempt 2,",
+    "the SAME commit against the SAME preview 18 minutes later, read 6ms, and the next nine jobs",
+    "read 0-2ms. The 453ms was filed as a fifty-fold regression, on a RUN id. A re-run replaces",
+    "what a run id shows (that run reads 6ms today and its failed-jobs listing names only",
+    "pr-compare), so cite the JOB id and the attempt, never the run. And re-run once before",
+    "filing: the desktop preset applies no CPU throttle, so a busy shared runner inflates TBT",
+    "directly, and numberOfRuns 3 medians one four-minute window on ONE runner, not three. This",
+    "job is not in the required set (WORKFLOW.md rule 4), so a one-attempt red blocks nothing."
   ],
   "ci": {
     "collect": {
