@@ -593,9 +593,16 @@ export function CalendarWorkspace({
   // so the two halves of the same calendar were arranged by where each control happened to be
   // implemented. They are the same four groups in the same order now, at two densities:
   //
-  //   page     row 1  WHEN (month, zone, Prev / Today / Next)   ...  HOW (surface + Guest)
-  //            row 2  WHAT (the layer chips)                    ...  ACTIONS
+  //   page     row 1  WHEN (month, zone, Prev / Today / Next)   ...  WHAT (the layer chips)
+  //            row 2  HOW (Guest preview + surface switch)       ...  ACTIONS (Pencil, Fullscreen)
   //   console  row 1  WHEN ... WHAT ... HOW ... ACTIONS, all on one line at `micro`
+  //
+  // ROW ONE IS WHAT YOU ARE LOOKING AT, ROW TWO IS WHAT YOU DO ABOUT IT (owner ask 2026-09-28).
+  // WHEN and HOW shared row one until now, which put the month title next to a surface switch that
+  // can take the month away entirely (Workflow and the all-time List have no month -- see
+  // `pageHasMonth`), and left WHAT stranded on a row of its own above the actions. The chips answer
+  // the same question the month title asks, so they sit with it; Guest preview, the surface switch
+  // and Pencil it in are the one cluster an operator reaches for, so they sit together.
   //
   // 🔴 IT IS ABOVE THE SLIDER, NOT INSIDE THE GRID CARD, and that is a correctness rule rather
   // than a layout taste. The page keeps all four panels mounted at once, so a bar drawn inside the
@@ -655,8 +662,8 @@ export function CalendarWorkspace({
   const pageHasMonth = surfaceHasMonth(surface, listScope)
 
   const pageBar = (
-    <div data-calendar-page-header className="flex flex-col gap-1.5 rounded-card border border-border bg-surface px-3 py-2 sm:px-4">
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+    <div data-calendar-page-header className="flex flex-col gap-2.5 rounded-card border border-border bg-surface px-4 py-3 sm:px-5">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <div data-calendar-page-month data-calendar-page-month-jump className="relative flex min-w-0 items-center gap-1.5">
           <CalendarMonthTitle
             label={monthLabel(month.year, month.month1)}
@@ -683,19 +690,13 @@ export function CalendarWorkspace({
             </div>
           ) : null}
         </div>
-        {/* UNCONDITIONAL (LIVE-520). The marker has to be on markup that actually renders for the
-            audience that needs the control, not merely present in this file: the LIVE-478 probe
-            reads the source, so an `adminAllowed` wrapper around it satisfied the gate while
-            shipping a member a grid with no way out of it. `viewControls` decides what each
-            audience is offered. */}
-        <div data-calendar-page-view-switch className="flex shrink-0 flex-wrap items-center gap-2">
-          {viewControls}
-        </div>
-      </div>
-
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+        {/* WHAT, beside WHEN (owner ask 2026-09-28). The filters describe the month the title
+            names, so they belong on the line that names it; the ways of LOOKING at it dropped to
+            row two. `shrink-0` keeps the chips whole and lets the month title be the thing that
+            truncates, since the title has the jump panel as its escape and a clipped chip has
+            none. */}
         {adminAllowed && view === 'admin' ? (
-          <div data-calendar-page-layers className="flex min-w-0 items-center">
+          <div data-calendar-page-layers className="flex shrink-0 items-center">
             <CalendarLayerChips layers={STAFF_CALENDAR_LAYERS} hidden={hiddenLayers} onToggle={toggleLayer} density="micro" />
           </div>
         ) : memberLayers.length > 0 ? (
@@ -703,12 +704,27 @@ export function CalendarWorkspace({
           // publishes both — `memberLayerChoices` returns nothing below two layers, so a Space with
           // only gatherings draws no chips rather than one chip that filters nothing. An operator on
           // Guest preview lands here too, which is right: they are looking at the member's bar.
-          <div data-calendar-page-layers className="flex min-w-0 items-center">
+          <div data-calendar-page-layers className="flex shrink-0 items-center">
             <CalendarLayerChips layers={memberLayers} hidden={hiddenLayers} onToggle={toggleLayer} density="micro" />
           </div>
         ) : (
           <span />
         )}
+      </div>
+
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        {/* UNCONDITIONAL (LIVE-520). The marker has to be on markup that actually renders for the
+            audience that needs the control, not merely present in this file: the LIVE-478 probe
+            reads the source, so an `adminAllowed` wrapper around it satisfied the gate while
+            shipping a member a grid with no way out of it. `viewControls` decides what each
+            audience is offered.
+
+            IT MOVED DOWN A ROW (owner ask 2026-09-28), so Guest preview, the surface switch and
+            Pencil it in read as the one cluster they always were -- they were split across two rows
+            only because the switch is a way of looking and Pencil is an action. */}
+        <div data-calendar-page-view-switch className="flex min-w-0 flex-wrap items-center gap-2">
+          {viewControls}
+        </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           {canManage && (
             <Button type="button" size="sm" variant="secondary" onClick={pencilIn}>

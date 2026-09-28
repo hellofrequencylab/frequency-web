@@ -179,13 +179,27 @@ describe('EventCalendar under a host that draws the chrome', () => {
   it('gives the week rows the host height and lets a busy cell scroll its own items', () => {
     const el = mount(<EventCalendar events={busy} initialYear={2026} initialMonth1={9} fill hostChrome />)
     expect(el.querySelector('[data-calendar-root]')!.className).toContain('flex-1')
-    for (const row of weekRows(el)) expect(row.className).toContain('flex-1')
+    // 🔴 BOTH HALVES, and `min-h-0` is the half that was missing (owner report 2026-09-27: "I am
+    // unable to see the fifth week on any month"). `flex-1` alone only lets a row GROW: a column
+    // flex item's automatic minimum size is its min-content height, so every week sat on the floor
+    // of its own content, the floors together overran the height the console gives the grid, and
+    // the gesture surface's `overflow-hidden` cut the bottom row off mid-square.
+    //
+    // jsdom has no layout engine, so this cannot assert the pixel outcome. It asserts the pair of
+    // classes that produce it, and the pair is the point -- either one alone is the bug.
+    for (const row of weekRows(el)) {
+      expect(row.className).toContain('flex-1')
+      expect(row.className).toContain('min-h-0')
+    }
     const cell = [...el.querySelectorAll<HTMLElement>('[data-calendar-root] .group')].find((c) =>
       c.textContent?.includes('Sitting 1'),
     )!
     // No floor under a cell that has to share a fixed height.
     expect(cell.className).toContain('min-h-0')
     expect(cell.className).not.toContain('min-h-20')
+    // Paired with the row's `min-h-0`: the square clips its own overflow rather than bleeding the
+    // header row and the day note (both outside the chip scroller) over the week hairline.
+    expect(cell.className).toContain('overflow-hidden')
     const items = cell.querySelector<HTMLElement>('.overflow-y-auto')!
     expect(items.className).toContain('overscroll-contain')
     // Everything the day holds is IN the cell, so nothing is hidden behind another view.

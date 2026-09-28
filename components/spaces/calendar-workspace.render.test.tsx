@@ -575,14 +575,21 @@ describe('CalendarWorkspace', () => {
     expect(bar.children.length).toBe(2)
     const [row1, row2] = [bar.children[0]!, bar.children[1]!]
 
-    // Row one is WHEN then HOW.
+    // Row one is WHEN then WHAT; row two is HOW then ACTIONS (owner ask 2026-09-28). This used to
+    // read WHEN/HOW then WHAT/ACTIONS, which sat the month title beside a surface switch that can
+    // take the month away entirely and stranded the layer chips on a row above the actions. The
+    // chips answer the question the month title asks, so they moved up beside it, and the surface
+    // switch dropped to sit with Pencil it in -- the cluster an operator actually reaches for.
     expect(row1.querySelector('[data-calendar-page-month]')).not.toBeNull()
     expect(row1.querySelector('[data-calendar-page-paging]')).not.toBeNull()
-    expect(row1.querySelector('[aria-label="How to see the calendar"]')).not.toBeNull()
-    // Row two is WHAT then ACTIONS.
-    expect(row2.querySelector('[aria-label="Show on the calendar"]')).not.toBeNull()
+    expect(row1.querySelector('[aria-label="Show on the calendar"]')).not.toBeNull()
+    // Row two is HOW then ACTIONS.
+    expect(row2.querySelector('[aria-label="How to see the calendar"]')).not.toBeNull()
     expect(row2.contains(control)).toBe(true)
     expect([...row2.querySelectorAll('button')].some((b) => b.textContent?.includes('Pencil it in'))).toBe(true)
+    // And the swap is a MOVE, not a copy: neither group is left behind on the row it came from.
+    expect(row1.querySelector('[aria-label="How to see the calendar"]')).toBeNull()
+    expect(row2.querySelector('[aria-label="Show on the calendar"]')).toBeNull()
 
     // Never auto-enter, and nothing about the header opens it.
     expect(document.querySelector('[data-calendar-console]')).toBeNull()

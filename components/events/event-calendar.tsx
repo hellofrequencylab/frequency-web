@@ -542,7 +542,21 @@ export function EventCalendar({
       tabIndex={0}
       aria-label="Calendar"
       className={cn(
-        '@container rounded-card border border-border bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+        '@container bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+        // A CARD ON THE PAGE, THE WHOLE SECTION IN THE CONSOLE (owner ask 2026-09-27: "remove the
+        // rounded border and make it classily fill the entire section").
+        //
+        // Filling meant deleting a border on the grid AND the padding that held it off the console
+        // panel (calendar-console.tsx's stage), because the two together drew a card inside a card:
+        // the console panel is itself `rounded-card border overflow-hidden`, so the grid was a
+        // second stroke a few units inside the first. With both gone the panel's own radius clips
+        // the grid's square corners, which is the one rounded edge the design wanted (LIVE-472: "a
+        // panel on a dimmed page, not edge to edge" -- that ruling is about the PANEL's margin and
+        // is untouched here).
+        //
+        // On the page the card stays: there the grid sits in an ordinary padded column with the
+        // control bar above it, and a borderless grid would bleed into the page.
+        !fill && 'rounded-card border border-border',
         fill && 'flex min-h-0 flex-1 flex-col',
       )}
       onKeyDown={onKeyDown}
@@ -799,7 +813,17 @@ export function EventCalendar({
             )}
           >
             {weeks.map((week) => (
-              <div key={week[0].date} className={cn('grid grid-cols-7 border-b border-border last:border-b-0', fill && 'flex-1')}>
+              // 🔴 `min-h-0` IS WHY THE LAST WEEK IS ON SCREEN (owner report 2026-09-27: "I am unable
+              // to see the fifth week on any month"). A column-flex item's automatic minimum size is
+              // `min-height: auto`, i.e. its MIN-CONTENT height -- so `flex-1` alone did not let a
+              // week row shrink, it only let one grow. Every row sat on the floor of its own content
+              // (the day pill row, plus any band, plus a day note), five or six of those floors
+              // exceeded the height the console hands the grid, and the overflow was CLIPPED by the
+              // `overflow-hidden` on the gesture surface above. The bottom row rendered with its day
+              // pills visible and its body cut off at the clip edge, on 5-row and 6-row months alike,
+              // which is why the report says "any month". `flex-1` stays (the fill test reads it off
+              // this className); `min-h-0` is what makes it mean share.
+              <div key={week[0].date} className={cn('grid grid-cols-7 border-b border-border last:border-b-0', fill && 'min-h-0 flex-1')}>
                 {week.map((cell) => {
                   const dayEvents = byDay.get(cell.date) ?? []
                   const cancelled = dayEvents.filter((ev) => ev.isCancelled)
@@ -836,6 +860,12 @@ export function EventCalendar({
                       onDrop={move.enabled ? (e) => move.dropOnDay(e, cell.date) : undefined}
                       className={cn(
                         'group flex flex-col border-r border-border p-1.5 last:border-r-0',
+                        // Paired with the row's `min-h-0` above: once a row may be shorter than its
+                        // content, the square owns its own overflow. Without this the header row and
+                        // the day note (both outside the chip scroller) would bleed over the week
+                        // hairline into the row below. The chips keep their own scrollbar, so what
+                        // this hides is only ever the tail of an already-scrollable stack.
+                        fill && 'overflow-hidden',
                         // A FILLING GRID HAS NO FLOOR (PROG-CAL13). Six rows share the height the host
                         // gives them, so a cell that insisted on 20/28 units of its own is what pushed
                         // the last week of the month off the bottom of the console. The decision is
