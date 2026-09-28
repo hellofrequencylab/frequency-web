@@ -14,6 +14,15 @@ import { StageTimeline } from '@/components/ui/stage-timeline'
 import { ENTRY_KINDS, ENTRY_STAGES, entryKind, entryStage, type CalendarLayerKey, type EntryKindDef } from '@/lib/calendar/registry'
 import { MAX_CANDIDATE_DATES, MAX_DESCRIPTION, type EntryInput } from '@/lib/calendar/entries'
 import { PENCIL_REPEAT_CHOICES, pencilRepeatChoice, pencilRuleForChoice, withoutExceptionDate } from '@/lib/calendar/pencil-series'
+import {
+  planEntryDelete,
+  planEntrySave,
+  resolveSeriesDeleteChoice,
+  resolveSeriesSaveChoice,
+  type SeriesDeleteChoice,
+  type SeriesDeletePlan,
+  type SeriesSaveChoice,
+} from '@/lib/calendar/series-choice'
 import { describeRepeat, parseRepeat } from '@/lib/events/repeat-rule'
 import { PUBLISH_STEP, productionDoorHref, stageTimeline } from '@/lib/calendar/stage-timeline'
 import { shortDateLabel } from '@/lib/calendar/short-date'
@@ -27,6 +36,7 @@ import { isError } from '@/lib/action-result'
 import { deleteCalendarEntry, findEntryClashes, loadStaffCalendarMonth, pickPencilDate, saveCalendarEntry, skipPencilDate } from './entry-actions'
 import { createPenciledPlan, joinEntryToPlan, startPlanFromEntry } from './plan-actions'
 import { PlanDrawer } from './plan-drawer'
+import { SeriesDeleteDialog, SeriesSaveDialog } from './series-choice-dialog'
 
 // THE STAFF CALENDAR (ADR-1385, ADR-1388). The Space's public events and its private layer on one grid,
 // with layer toggles, the vertical wheel paging months where the host asks for it (the Calendar console,
@@ -193,6 +203,13 @@ export function StaffCalendar({
   const [openPlan, setOpenPlan] = useState<SpacePlan | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  /** THE DELETE QUESTION A REPEATING ENTRY IS OWED (LIVE-531), or null when nothing is being asked.
+   *  Holding the PLAN rather than a boolean is what keeps the choice and the write in step: the
+   *  dialog offers exactly the choices this plan carries, and `resolveSeriesDeleteChoice` maps the
+   *  press back through the same object. */
+  const [askDelete, setAskDelete] = useState<SeriesDeletePlan | null>(null)
+  /** The save question (LIVE-531): an edit of a repeating entry changes every date it lands on. */
+  const [askSave, setAskSave] = useState(false)
   const [pending, startTransition] = useTransition()
 
   const loadMonth = useCallback((y: number, m: number) => loadStaffCalendarMonth(slug, y, m), [slug])
@@ -240,10 +257,28 @@ export function StaffCalendar({
     setRefreshKey((k) => k + 1)
   }
 
+  /**
+   * A REPEATING ENTRY IS ASKED ABOUT BEFORE IT IS SAVED (LIVE-531). One row is every date the rule
+   * lands on, so a Save that looks like an edit to the October date rewrites the whole series. The
+   * dialog says that in words; the write itself is unchanged. Editing ONE occurrence would mean
+   * splitting the series into two rows, which is LIVE-532 and deliberately not half-built here.
+   *
+   * A one-off entry, and a brand new entry (which has no series to change yet), save in one step
+   * exactly as before.
+   */
   const submit = (e: FormEvent) => {
     e.preventDefault()
     if (!draft) return
     setError(null)
+    if (draft.id && planEntrySave(draft.input).ask) {
+      setAskSave(true)
+      return
+    }
+    runSave()
+  }
+
+  const runSave = () => {
+    if (!draft) return
     startTransition(async () => {
       if (!draft.id && draft.input.kind !== 'pencil') {
         // Unavailable time and a Private entry are not events on their way, so they get no Plan
@@ -273,10 +308,38 @@ export function StaffCalendar({
     })
   }
 
+  /**
+   * 🔴 DELETE ON A REPEATING ENTRY ASKS FIRST (LIVE-531, owner data loss 2026-09-28).
+   *
+   * THE INCIDENT. The owner opened the October occurrence of a repeating Pencil and pressed Delete,
+   * meaning that one night. Every date went, and none of it came back.
+   *
+   * WHY. A repeating entry is ONE row carrying `recurrence_rule` plus `exception_dates`; the
+   * occurrences are generated from the rule at read time. `deleteCalendarEntryRow` is a hard
+   * `.delete()` on a table with no `removed_at` column, so the row was the series and there was no
+   * tombstone to restore from.
+   *
+   * The choice is now asked, and the honest one already existed: `skipPencilDate` writes the day
+   * into `exception_dates`, which is what "this date only" means. A one-off entry is untouched by
+   * this and still deletes in one step: a dialog where there is no series is the noise that teaches
+   * people to click through the dialog that matters.
+   */
   const remove = () => {
     if (!draft?.id) return
-    const id = draft.id
+    const plan = planEntryDelete({ ...draft.input, occurrenceDate: draft.occurrenceDate })
     setError(null)
+    if (plan.ask) {
+      setAskDelete(plan)
+      return
+    }
+    deleteRow()
+  }
+
+  /** The hard delete. For a repeating entry this is the WHOLE SERIES, which is why nothing reaches
+   *  it any more without the question above. */
+  const deleteRow = () => {
+    if (!draft?.id) return
+    const id = draft.id
     startTransition(async () => {
       const res = await deleteCalendarEntry(slug, id)
       if (isError(res)) setError(res.error)
@@ -287,16 +350,38 @@ export function StaffCalendar({
   // SKIP THIS DATE (PROG-CAL5). Its own action, like Delete, and it closes the drawer the same way:
   // the skip is on the row the moment it lands, and a Save from a form that still held the old list
   // would write the skip straight back out.
-  const skip = () => {
-    if (!draft?.id || !draft.occurrenceDate) return
+  const skipDate = (day: string) => {
+    if (!draft?.id) return
     const id = draft.id
-    const day = draft.occurrenceDate
-    setError(null)
     startTransition(async () => {
       const res = await skipPencilDate(slug, id, day)
       if (isError(res)) setError(res.error)
       else done()
     })
+  }
+
+  /** The button on the form, which skips the occurrence the drawer was opened from. */
+  const skip = () => {
+    if (!draft?.occurrenceDate) return
+    setError(null)
+    skipDate(draft.occurrenceDate)
+  }
+
+  /** One press in the delete dialog. The plan the dialog was OPENED with decides what each choice
+   *  means, so a choice can never resolve to a write the dialog did not offer. */
+  const chooseDelete = (choice: SeriesDeleteChoice) => {
+    const plan = askDelete
+    if (!plan) return
+    const action = resolveSeriesDeleteChoice(choice, plan)
+    setAskDelete(null)
+    if (action === 'skipThisDate' && plan.thisDate) skipDate(plan.thisDate)
+    else if (action === 'deleteRow') deleteRow()
+  }
+
+  /** One press in the save dialog. */
+  const chooseSave = (choice: SeriesSaveChoice) => {
+    setAskSave(false)
+    if (resolveSeriesSaveChoice(choice) === 'saveSeries') runSave()
   }
 
   const input = draft?.input
@@ -887,6 +972,17 @@ export function StaffCalendar({
           </form>
         )}
       </Dialog>
+      {/* THE TWO QUESTIONS A SERIES IS OWED (LIVE-531). Both stack ON TOP of the drawer, which stays
+          open behind them, so a "Keep everything" leaves the person exactly where they were with
+          every typed field intact. Only the topmost dialog takes ESC (lib/ui/modal-stack.ts). */}
+      <SeriesDeleteDialog
+        open={askDelete !== null}
+        title={input?.title ?? ''}
+        plan={askDelete ?? { ask: true, thisDate: null, immediate: 'nothing' }}
+        pending={pending}
+        onChoose={chooseDelete}
+      />
+      <SeriesSaveDialog open={askSave} title={input?.title ?? ''} pending={pending} onChoose={chooseSave} />
       {!onOpenPlan && (
         <PlanDrawer
           slug={slug}
