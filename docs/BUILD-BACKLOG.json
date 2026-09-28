@@ -17434,7 +17434,7 @@
       "notes": "MUTATION-TESTED 2026-09-28, six mutations of the shipped change, each reverted after. Probe red on five: (1) withoutMonth clearing the whole set instead of one key (also red in the suite); (2) monthDidNotLoad reading the set size instead of the shown month (also red in the suite); (3) a per-month cleanup put back on the driving effect, so an unarrived request is forgotten on every navigation (also red in the suite: three fetches for two months); (4) both Loading regions reading a derived boolean again (behaviour-identical, so the suite is correctly green); (5) the did-not-load sentence written out a second time beside the component (suite green). Suite red on the sixth: (6) the loading clear gated on the request still being remembered, so a FAILED month announces Loading forever. Control: probe and suite green on the shipped tree, probe red on the tree before it (the module it replays does not exist), and two of the three render tests red there (three fetches for two months; Loading stuck after the reader paged on).\n\nWHY THE PROBE DOES NOT RUN THE SUITE. LIVE-034 is a closed row whose probe fails the build if any verify.cmd spawns a test runner, and scripts/probe-ts.mjs cannot import a .tsx (type stripping does not do JSX). So the probe replays the pure decision the grid renders and fails if any of the three pins in components/events/event-calendar.month-cache.render.test.tsx is removed."
     },
     {
-      "id": "LIVE-531",
+      "id": "LIVE-532",
       "title": "check:shell-weight silently did nothing through a symlinked path, so the mutation cases that are its only proof it CAN fail were asserting over a script that never ran",
       "status": "done",
       "priority": "P1",
