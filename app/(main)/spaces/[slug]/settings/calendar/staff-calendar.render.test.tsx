@@ -21,6 +21,8 @@ const mocks = vi.hoisted(() => ({
   // the two a press lands on is the whole row.
   deleteCalendarEntry: vi.fn(async (..._args: unknown[]) => ({ data: undefined })),
   skipPencilDate: vi.fn(async (..._args: unknown[]) => ({ data: undefined })),
+  // LIVE-534: the split, the one write "This date only" on a SAVE may reach.
+  saveCalendarEntryOccurrence: vi.fn(async (..._args: unknown[]): Promise<{ data: undefined } | { error: string }> => ({ data: undefined })),
 }))
 
 vi.mock('next/navigation', () => ({
@@ -33,6 +35,7 @@ vi.mock('./entry-actions', () => ({
   loadStaffCalendarMonth: async () => [],
   pickPencilDate: async () => ({ data: undefined }),
   skipPencilDate: mocks.skipPencilDate,
+  saveCalendarEntryOccurrence: mocks.saveCalendarEntryOccurrence,
 }))
 vi.mock('./plan-actions', () => ({
   createPenciledPlan: mocks.createPenciledPlan,
@@ -50,6 +53,7 @@ beforeEach(() => {
   mocks.startPlanFromEntry.mockResolvedValue({ data: { id: 'plan-1' } })
   mocks.deleteCalendarEntry.mockClear()
   mocks.skipPencilDate.mockClear()
+  mocks.saveCalendarEntryOccurrence.mockClear()
 })
 
 afterEach(() => {
@@ -546,38 +550,67 @@ describe('StaffCalendar: Delete on a repeating entry asks which dates it means',
   })
 })
 
-describe('StaffCalendar: Save on a repeating entry says it changes every date', () => {
-  it('holds the write until the person picks the whole series', async () => {
-    await mount(calendar([repeatingItem()]))
-    await openEdit()
+describe('StaffCalendar: Save on a repeating entry asks which dates it means (LIVE-531, LIVE-534)', () => {
+  const submitForm = async () => {
     await act(async () => {
       document.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
     })
+  }
+
+  it('holds the write until the person picks, and offers this date, the way out, and the whole series', async () => {
+    await mount(calendar([repeatingItem()]))
+    await openEdit()
+    await submitForm()
     expect(mocks.saveCalendarEntry).not.toHaveBeenCalled()
+    expect(mocks.saveCalendarEntryOccurrence).not.toHaveBeenCalled()
     const panel = seriesPanel('save')
     expect(panel!.textContent).toContain('every date it lands on, past and future')
-    expect(panel!.textContent).toContain('not possible yet')
+    expect(panel!.textContent).not.toContain('not possible')
+    expect(panelButton('save', 'This date only (Sun, Sep 20)')).toBeDefined()
+    expect(panelButton('save', 'Save the whole series')).toBeDefined()
+    expect(panelButton('save', 'Go back')).toBeDefined()
     await act(async () => panelButton('save', 'Save the whole series')!.click())
     expect(mocks.saveCalendarEntry).toHaveBeenCalledTimes(1)
+    expect(mocks.saveCalendarEntryOccurrence).not.toHaveBeenCalled()
+  })
+
+  it('🔴 "This date only" writes the SPLIT for the occurrence day, and never the whole-series update', async () => {
+    await mount(calendar([repeatingItem()]))
+    await openEdit()
+    await act(async () => setInput(document.querySelector<HTMLInputElement>('#entry-title')!, 'Open house (guest host)'))
+    await submitForm()
+    await act(async () => panelButton('save', 'This date only (Sun, Sep 20)')!.click())
+    expect(mocks.saveCalendarEntryOccurrence).toHaveBeenCalledTimes(1)
+    const [slug, entryId, day, input] = mocks.saveCalendarEntryOccurrence.mock.calls[0] as [string, string, string, EntryInput]
+    expect([slug, entryId, day]).toEqual(['lab', 'entry-1', '2026-09-20'])
+    expect(input.title).toBe('Open house (guest host)')
+    expect(mocks.saveCalendarEntry).not.toHaveBeenCalled()
+    expect(seriesPanel('save')).toBeNull()
+  })
+
+  it('offers the whole series and the way out, but no one-date choice, when the drawer is not on one occurrence', async () => {
+    await mount(calendar([repeatingItem({ occurrenceDate: null })]))
+    await openEdit()
+    await submitForm()
+    expect(panelButton('save', 'This date only')).toBeUndefined()
+    expect(panelButton('save', 'Save the whole series')).toBeDefined()
+    expect(panelButton('save', 'Go back')).toBeDefined()
   })
 
   it('"Go back" saves nothing', async () => {
     await mount(calendar([repeatingItem()]))
     await openEdit()
-    await act(async () => {
-      document.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
-    })
+    await submitForm()
     await act(async () => panelButton('save', 'Go back')!.click())
     expect(mocks.saveCalendarEntry).not.toHaveBeenCalled()
+    expect(mocks.saveCalendarEntryOccurrence).not.toHaveBeenCalled()
     expect(seriesPanel('save')).toBeNull()
   })
 
   it('leaves a one-off entry saving in one step', async () => {
     await mount(calendar([pencilItem()]))
     await openEdit()
-    await act(async () => {
-      document.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
-    })
+    await submitForm()
     expect(seriesPanel('save')).toBeNull()
     expect(mocks.saveCalendarEntry).toHaveBeenCalledTimes(1)
   })

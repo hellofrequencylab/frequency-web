@@ -6,7 +6,15 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
-import { candidateWrites, entryDaySpan, MAX_CANDIDATE_DATES, parseEntryInput, type EntryInput } from '@/lib/calendar/entries'
+import {
+  candidateWrites,
+  entryDaySpan,
+  MAX_CANDIDATE_DATES,
+  occurrenceWrite,
+  parseEntryInput,
+  seriesLandsOn,
+  type EntryInput,
+} from '@/lib/calendar/entries'
 import { asDayKey, expandPencilSeries, seriesRule, withExceptionDate } from '@/lib/calendar/pencil-series'
 import { parseDayNoteInput, type DayNoteInput } from '@/lib/calendar/day-notes'
 import { deleteDayNote, insertDayNote, listDayNotes, updateDayNote } from '@/lib/calendar/day-notes-store'
@@ -20,6 +28,7 @@ import {
   listSpaceCalendarEntries,
   listStaffCalendarItems,
   setEntryExceptionDates,
+  splitCalendarSeriesRow,
   updateCalendarEntryRow,
 } from '@/lib/calendar/entries-store'
 import { monthGridWindow, safeMonth } from '@/lib/calendar/month-window'
@@ -210,6 +219,47 @@ export async function skipPencilDate(slug: string, entryId: string, dayKey: stri
   if (!current) return fail('That date no longer exists.')
   if (!seriesRule(current)) return fail('This date does not repeat, so there is nothing to skip. Delete it instead.')
   const res = await setEntryExceptionDates(editor.spaceId, entryId, withExceptionDate(current.exception_dates, day))
+  if ('error' in res) return fail(res.error)
+  revalidate(slug)
+  return ok()
+}
+
+/**
+ * ONE DATE OF A REPEATING ENTRY, CHANGED ON ITS OWN (LIVE-534). "This date only" in the save dialog.
+ *
+ * A repeating entry is one row, so the only way to change one date is to SPLIT the series: the master
+ * gains the day in `exception_dates` and a new one-off row carries the edited values for that day.
+ * That pair is written by ONE database function (public.split_calendar_series, through
+ * splitCalendarSeriesRow) so it lands together or not at all; nothing here writes either half alone.
+ *
+ * What the override carries is decided in lib/calendar/entries.ts (`occurrenceWrite`): the form's
+ * fields on the occurrence's own day, or on the day the person moved it to. The Plan link travels
+ * with it (a Plan-linked series' date is still that Plan's date), and its stage is its own: a Plan is
+ * NOT transitioned by one date changing stage, because the series is the Plan's date, not this one.
+ * A date that is one of several candidate dates is refused, the way saveCalendarEntry refuses to move
+ * it on: keep one date first.
+ */
+export async function saveCalendarEntryOccurrence(
+  slug: string,
+  entryId: string,
+  dayKey: string,
+  input: EntryInput,
+): Promise<ActionResult<void>> {
+  const editor = await resolveEditor(slug)
+  if (!editor) return fail('You do not have access to this calendar.')
+  if (!UUID_RE.test(entryId)) return fail('That date no longer exists.')
+  const day = asDayKey(dayKey)
+  if (!day) return fail('Pick a valid date to change.')
+  const parsed = parseEntryInput(input)
+  if ('error' in parsed) return fail(parsed.error)
+  const current = await getCalendarEntryRow(editor.spaceId, entryId)
+  if (!current) return fail('That date no longer exists.')
+  if (!seriesRule(current)) return fail('This date does not repeat, so there is no series to take it out of. Save it instead.')
+  if (current.option_group && (await countOptionGroup(editor.spaceId, current.option_group)) > 1) {
+    return fail('This is one of several possible dates. Keep one date before you change one of its dates.')
+  }
+  if (!seriesLandsOn(current, day)) return fail('That day is not one of the dates this series lands on.')
+  const res = await splitCalendarSeriesRow(editor.spaceId, entryId, day, occurrenceWrite(current, day, parsed.data))
   if ('error' in res) return fail(res.error)
   revalidate(slug)
   return ok()
