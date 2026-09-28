@@ -229,7 +229,6 @@
             "PROG-D5",
             "PROG-D6",
             "PROG-D7",
-            "LIVE-451",
             "LIVE-454"
           ]
         },
@@ -1670,7 +1669,7 @@
     {
       "id": "LIVE-451",
       "title": "Loom: global swap over the usage index (the D4 remainder)",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "live",
       "size": "M",
@@ -1678,11 +1677,12 @@
         "file": "docs/LIBRARY.md",
         "ref": "Build sequence D4"
       },
-      "detail": "Split out of PROG-D4 on 2026-09-21 (ADR-1502). D4 shipped the usage index as two live scans (library_asset_usage, block_type_usage), the drawer count, safe delete and saved views; it did NOT ship global swap, the last organisation item LIBRARY.md lists beside them. GLOBAL SWAP = rewrite every {assetId,url} ref from asset A to asset B across the documents library_asset_usage lists (pages live+draft, Space pageDocs, Space entity layouts), one write per document, preserving every other value byte-for-byte; the index says where, so the swap is a walk + write per store (applyAssetUrls in lib/library/asset-ref.ts is the walk shape). Its test must prove a third asset's refs are untouched. Premise to re-test first: production carried ZERO refs on 2026-09-21, so a swap has no patient until the pickers write refs into live documents; build this when library_asset_usage returns a non-empty result for any asset, and not before.",
+      "detail": "Split out of PROG-D4 on 2026-09-21 (ADR-1502). D4 shipped the usage index as two live scans (library_asset_usage, block_type_usage), the drawer count, safe delete and saved views; it did NOT ship global swap, the last organisation item LIBRARY.md lists beside them. GLOBAL SWAP = rewrite every {assetId,url} ref from asset A to asset B across the documents library_asset_usage lists (pages live+draft, Space pageDocs, Space entity layouts), one write per document, preserving every other value byte-for-byte; the index says where, so the swap is a walk + write per store (applyAssetUrls in lib/library/asset-ref.ts is the walk shape). Its test must prove a third asset's refs are untouched. Premise to re-test first: production carried ZERO refs on 2026-09-21, so a swap has no patient until the pickers write refs into live documents; build this when library_asset_usage returns a non-empty result for any asset, and not before.\n\nPREMISE RE-TESTED 2026-09-28 (ADR-1082) against production with the sweep ADR-1502 ran: the pickers have started writing refs. One Space entity layout (royaltemple, preferences.profileLayout) carries 14 refs across ten approved image assets, every cached url fresh, and library_asset_usage returns one row for each; pages (4 draft, 1 live), pageDocs (18) and space_plans.files (149) still read zero. The condition the row set (a non-empty index result for any asset) held, so it built.\n\nCLOSED 2026-09-28 (ADR-1559). `swapLibraryAssetRefs(fromId, toId)` in lib/library/usage.ts reads the same library_asset_usage rows the drawer reads (one shared readUsageRows), groups them into stored rows, and rewrites each through `swapAssetRefs` in lib/library/asset-ref.ts (the applyAssetUrls shape): every {assetId: A, url} becomes {assetId: B, url: B's current url}; every other value comes back byte-for-byte. One write per stored row: a page's live and draft copies in one update naming only the columns that changed; a Space's pageDocs, legacy puck (only when pageDocs.home is absent, readPageDoc's rule) and both entity layouts in one preferences update with every other key untouched; a Plan's files in one update, deduped to one row per asset. Refuses before the first write on a malformed or repeated id, a missing/archived/file-less target, a failed usage read, or a store the index lists that the module cannot write (named). No transaction: idempotent, so a failed write mid-way reports what was rewritten and a retry finishes. Surface: \"Swap everywhere\" under the drawer's usage list, the Loom picker scoped to the asset's kind, `swapLibraryAssetEverywhere` in usage-actions.ts behind the page's gate, revalidating every place named; the count re-reads after. Tests: lib/library/usage.test.ts seeds A, B, C across every store and pins that a swap rewrites every ref (nine, B's current url, alt kept) and leaves a third asset untouched (five refs to C, an unlisted page, the dead puck doc, theme, nav and grid rows byte-identical), plus the refusals and the mid-way retry; lib/library/asset-ref.test.ts pins the walk. No migration.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const u=fs.existsSync(\"lib/library/usage.ts\")?fs.readFileSync(\"lib/library/usage.ts\",\"utf8\"):\"\";const t=fs.existsSync(\"lib/library/usage.test.ts\")?fs.readFileSync(\"lib/library/usage.test.ts\",\"utf8\"):\"\";if(!/export async function swapLibraryAssetRefs\\(/.test(u)){console.error(\"no global swap: nothing rewrites every {assetId} ref from asset A to asset B across the stored documents library_asset_usage lists\");process.exit(1)}if(!/rewrites every ref/.test(t)||!/leaves a third asset untouched/.test(t)){console.error(\"nothing pins that a swap rewrites every ref AND leaves a third asset untouched\");process.exit(1)}process.exit(0)'"
-      }
+      },
+      "closed": "2026-09-28"
     },
     {
       "id": "LIVE-454",
