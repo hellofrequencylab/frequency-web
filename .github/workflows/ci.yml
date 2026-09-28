@@ -234,6 +234,17 @@ jobs:
       - name: Fetch base tip for check:id-collisions
         if: github.event_name == 'pull_request'
         run: git fetch --no-tags --depth=1 origin "+refs/heads/${GITHUB_BASE_REF}:refs/remotes/origin/${GITHUB_BASE_REF}"
+      # ARMS check:shipped-ids (HYG-124, ADR-1538). That gate reads the SUBJECT of every commit merged
+      # to the base branch since the one list was seeded (2026-08-17, ADR-1043) and fails when a
+      # subject names a backlog id that is not a row. A depth-1 checkout has one commit, so the base
+      # branch is deepened here with COMMIT OBJECTS ONLY: `--filter=tree:0` leaves trees and blobs
+      # behind and `--shallow-since` stops at the seed. Measured 2026-09-28 on a depth-1 clone: 725
+      # commits in 1.2 s. It runs on every event, not only pull_request, because the guard reads
+      # HEAD's own history on a push to main and HEAD there IS the base tip fetched below. AFTER the
+      # tip fetch above on purpose: the tip's tree is then already on disk for check:id-collisions,
+      # so `git show origin/<base>:<file>` never has to lazy-fetch through the promisor remote.
+      - name: Fetch base history for check:shipped-ids
+        run: git fetch --no-tags --filter=tree:0 --shallow-since=2026-08-16 origin "+refs/heads/${GITHUB_BASE_REF:-main}:refs/remotes/origin/${GITHUB_BASE_REF:-main}"
 
       - name: Contract guards (all run; every failure reported)
         if: ${{ !cancelled() }}
@@ -331,6 +342,13 @@ jobs:
           # and backlog through the API and fails the later-opened PR when two introduce the same
           # ADR number or backlog id. In this array rather than a step of its own so its skip and
           # its failure read in the same log shape as every other guard.
+          # 2026-09-28: shipped-ids joined (HYG-124, ADR-1538). check:backlog proves every ROW against
+          # the tree and check:id-collisions fails an id two open PRs claim; neither can see an id
+          # that was never added, and two merged PRs (#2911 HYG-125, #2878 LIVE-475) shipped that way
+          # with every gate green. This guard counts from the other end: every id a merged commit
+          # subject names since the one list was seeded must be a row, exceptions stated one reason
+          # each. SOURCE-only (git log plus the JSON, no network) once the history fetch step above
+          # has run, so this array is its home.
           # 2026-09-28: fk-indexes joined (HYG-128, ADR-1554). Three sweeps (SCAN-638, 20270345006400,
           # HYG-127) each took the unindexed-foreign-key count to zero and the next tables brought it
           # back, because the only reader was the Supabase performance advisor, which nobody consults
@@ -342,12 +360,24 @@ jobs:
           guards=(
             authz canon menu gate-parity workflows labels a11y-names help tokens phantom bridge contrast
             headers seo rls grants admin-client client-boundary migrations adr docs-links templates
-            backlog one-list schema-contract rls-recursion id-collisions rls-deny fk-indexes
+            backlog one-list schema-contract rls-recursion id-collisions rls-deny fk-indexes shipped-ids
           )
           # RUN IN PARALLEL, REPORT IN ORDER. The guards are independent node processes that only
           # read the tree, so nothing about them needed to be sequential — it just was. Run wall
           # clock was the SUM of 24 guards plus 24 pnpm startups; it is now bounded by the
-          # slowest single guard (check:tokens, ~2.5s locally).
+          # slowest single guard.
+          #
+          # ⚠️ AND THAT NAME MOVES, SO DO NOT TRUST A STALE ONE. This comment read "check:tokens,
+          # ~2.5s locally" until 2026-09-28, by which point it was 8x off and naming the wrong
+          # guard: check:tokens is ~3.1s and check:backlog was 20.2s, bounding the job by itself
+          # while re-probing 556 rows closed before the branch existed. Measured locally the day
+          # that was scoped (HYG-129), `pnpm check:<name>` wall clock, pnpm startup included:
+          #
+          #   backlog 11.6s · a11y-names 8.5s · schema-contract 6.8s · tokens 3.1s · menu 2.4s
+          #
+          # check:backlog still bounds the array, now by ~3s rather than ~12s. A number written
+          # into a comment is a claim with an expiry date; re-read it before repeating it, and if
+          # a guard here starts costing double the next one down, that is the thing to look at.
           #
           # Output still reads exactly as before. Each guard's stdout+stderr goes to its own file
           # and the groups are printed afterwards in the DECLARED order, so a parallel run never
@@ -400,11 +430,12 @@ jobs:
       # Same reasoning as check:cron-freshness above, applied to a different half of the problem.
       # cron-freshness is advisory because part of what it measures is DEPLOYMENT STATE, which no
       # pull request can change. check:adoption is advisory because of what it measures ABOUT THE
-      # SOURCE: it is a SCOREBOARD of 13 design-debt COUNTS (scripts/adoption-baselines.json), and
-      # a count ratchet fires on legitimate growth. `bespoke-cards: 0` means that adding any new
-      # `*-card.tsx` — a perfectly ordinary thing to do — fails a PR that has nothing to do with
-      # the design system. Three of its baselines are already flagged "not bought by a sweep",
-      # i.e. debt the ratchet stopped guarding.
+      # SOURCE: it is a SCOREBOARD of 18 design-debt COUNTS (scripts/adoption-baselines.json), and
+      # a count ratchet fires on legitimate growth. `bespoke-cards: 1` means the SECOND
+      # uncategorised `*-card.tsx` — a perfectly ordinary thing to add — fails a PR that has
+      # nothing to do with the design system. Seven of the 18 baselines are flagged "not bought
+      # by a sweep" (raised or rebased, on a non-zero floor), i.e. debt the ratchet stopped
+      # guarding — the gate prints all seven with their dates and reasons on every run.
       #
       # The other ratchets in the guards array above are SETS of paths (admin-client, templates,
       # rls, grants, creates' UNROUTED, headers, contrast's WAIVERS), so they only fire on the
