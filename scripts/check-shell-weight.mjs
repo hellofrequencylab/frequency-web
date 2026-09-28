@@ -71,7 +71,7 @@
 import { readFileSync, existsSync, statSync, globSync } from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
-import { fileURLToPath } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 // ── WARN-ONLY: the stage between "never run on a real artifact" and "enforcing" ──────────────
 // This gate has ONE reading in its whole life, and that reading is unconfirmed in BOTH directions:
@@ -646,4 +646,18 @@ console.log(
 
 // Run the CLI only when invoked directly. The sibling test imports this module for its exported
 // constants and the pure `staticAdminImports` classifier, and must not trip the artifact arms.
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main()
+//
+// 🔴 THIS LINE USED TO READ `path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)`, AND
+// THAT COMPARISON DISARMED THIS GATE'S OWN PROOF (HYG-125, closed here for the last script holding
+// the spelling). `import.meta.url` is the path Node RESOLVED the module through — realpath, symlinks
+// already followed. `process.argv[1]` is whatever was typed, symlinks intact. `path.resolve`
+// normalises but does NOT follow a link, so reached through a symlinked directory the two differ,
+// `main()` never runs, and the script prints nothing and exits 0 — which for a check script reads as
+// a PASS. scripts/check-shell-weight-warn-only.test.ts stages the script in an OS temp dir, and on
+// macOS `/var` is a symlink to `/private/var`, so six of its cases — the only evidence this gate CAN
+// fail, and therefore the only thing making its postbuild wiring safe — were green over a script
+// that never executed a line. The shared helper realpaths BOTH sides and falls back to
+// `path.resolve` when a path cannot be stat'd; scripts/invoked-directly.test.ts freezes the set so
+// no script can hand-roll the comparison again, and the symlink case in the warn-only test now
+// proves this file in particular runs when it is reached that way.
+if (invokedDirectly(import.meta.url)) main()

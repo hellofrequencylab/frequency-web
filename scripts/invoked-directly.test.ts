@@ -29,6 +29,10 @@ import { invokedDirectly } from './lib/invoked-directly.mjs'
 // paired case that restores the old guard and watches the same run go silently green, so neither can
 // pass for the wrong reason (ADR-970: a gate must not gain a way to pass without looking).
 //
+// The third postbuild gate this touches, check-shell-weight.mjs, takes its artifact from `cwd` rather
+// than the `--root` flag the two below share, so its behaviour half lives with its own fixtures in
+// scripts/check-shell-weight-warn-only.test.ts — same method, same paired negative control.
+//
 // ⚠️ Linux `mkdtemp` returns a real path, so "run it out of a temp dir" reproduces nothing on CI —
 // that is a macOS accident (`/var` → `/private/var`). The link below is created explicitly.
 // ─────────────────────────────────────────────────────────────────────────────────────────────────
@@ -52,18 +56,13 @@ const mjsFiles = (dir: string, prefix = ''): { path: string; src: string }[] =>
 
 const FILES = mjsFiles(SCRIPTS)
 
-/** The single script still allowed to compare by hand, and only in its ONE known spelling.
- *
- *  scripts/check-shell-weight.mjs is where this whole row was found, and its own fix (a local
- *  `invokedDirectly`) lands in the separate change that carries the HYG-125 backlog row. Editing it
- *  from here would collide with that tree line for line. The exception is therefore pinned to the
- *  exact pre-fix line: a THIRD spelling there fails this test, and once that change lands the file
- *  stops matching at all and this entry can be deleted. */
-const PINNED_EXCEPTION = {
-  path: 'check-shell-weight.mjs',
-  line: 'if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main()',
-}
-
+// ⚪ THERE IS NO LONGER A PINNED EXCEPTION, and that is the point of the change that removed it.
+// scripts/check-shell-weight.mjs — where this whole row was found — was held out of the scan below
+// on the exact pre-fix line, because its own fix was to land in a separate tree. That tree was lost
+// to a merge accident (PR #2910 merged into the branch PR #2908 had already squashed into `main`, 22
+// minutes after its own PR closed), so for a while the one script whose proof the defect had actually
+// disarmed was also the only one still carrying it. It now calls the helper like everything else, so
+// the scan covers all of scripts/ with nothing held back.
 describe('scripts/: nobody hand-rolls the "was I invoked directly?" comparison', () => {
   it('reads a real corpus, so an empty scan cannot pass vacuously', () => {
     // Non-triviality first. A moved directory or a broken walk must not read as a clean bill of
@@ -77,7 +76,6 @@ describe('scripts/: nobody hand-rolls the "was I invoked directly?" comparison',
     for (const { path, src } of FILES) {
       for (const line of codeLines(src)) {
         if (!line.includes('process.argv[1]') || !line.includes('import.meta.url')) continue
-        if (path === PINNED_EXCEPTION.path && line.trim() === PINNED_EXCEPTION.line) continue
         offenders.push(`${path}: ${line.trim()}`)
       }
     }
@@ -92,24 +90,14 @@ describe('scripts/: nobody hand-rolls the "was I invoked directly?" comparison',
     ).toEqual([])
   })
 
-  it('the one pinned exception is still exactly the line it was pinned as', () => {
-    // If check-shell-weight.mjs has been fixed, it drops out of the scan and the exception is dead
-    // weight that should be deleted. If it has been changed to some OTHER hand-rolled spelling, the
-    // exception must not silently cover that.
-    const file = FILES.find((f) => f.path === PINNED_EXCEPTION.path)
-    expect(file, 'check-shell-weight.mjs is gone; delete PINNED_EXCEPTION with it').toBeDefined()
-    const hand = codeLines(file!.src).filter(
-      (l) => l.includes('process.argv[1]') && l.includes('import.meta.url'),
-    )
-    if (hand.length === 0) {
-      expect(
-        file!.src,
-        'check-shell-weight.mjs no longer compares by hand, so HYG-125 has landed there. Delete ' +
-          'PINNED_EXCEPTION and this case.',
-      ).toMatch(/invokedDirectly/)
-    } else {
-      expect(hand.map((l) => l.trim())).toEqual([PINNED_EXCEPTION.line])
-    }
+  it('check-shell-weight.mjs, the script this row was found in, calls the helper like the rest', () => {
+    // It was the one pinned exception, and it is named here rather than merely left to the scan
+    // above, because it is the script whose OWN mutation test the defect disarmed: six cases in
+    // scripts/check-shell-weight-warn-only.test.ts asserting exit codes over a script that never
+    // executed a line. A silent regression here costs the proof, not just the spelling.
+    const file = FILES.find((f) => f.path === 'check-shell-weight.mjs')
+    expect(file, 'check-shell-weight.mjs is gone; retire this case with it').toBeDefined()
+    expect(codeLines(file!.src).join('\n')).toContain('invokedDirectly(import.meta.url)')
   })
 
   it('the helper realpaths BOTH sides and decodes the URL rather than slicing it', () => {
