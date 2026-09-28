@@ -1,10 +1,18 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Copy } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
 import { DangerDelete } from '@/components/admin/danger-delete'
-import { deleteEvent } from '@/app/(main)/events/admin-actions'
+import { deleteEvent, getEventDeletePlan } from '@/app/(main)/events/admin-actions'
+import {
+  UNKNOWN_DELETE_PLAN,
+  deleteReachesOtherDates,
+  deleteSeriesButtonLabel,
+  deleteWarning,
+  type EventDeletePlan,
+} from '@/lib/events/delete-plan'
 import { CancelEventButton } from './cancel-event-button'
 
 // THE EVENT DANGER ZONE, beside the rail (LIVE-237). Three controls that are not fields, so they
@@ -15,8 +23,16 @@ import { CancelEventButton } from './cancel-event-button'
 //                the edit capability on the source event.
 //   Cancel     → cancelEvent, from /events/[slug]/edit (host-gated; attendees keep their RSVP
 //                record, the event shows as cancelled). Hidden once the event is cancelled.
-//   Delete     → deleteEvent, from /events/[slug]/settings (the shared DangerDelete control;
-//                the warning text is that console's, unchanged).
+//   Delete     → deleteEvent, from /events/[slug]/settings (the shared DangerDelete control).
+//
+// 🔴 THE WARNING THIS FILE USED TO SHOW (LIVE-535). It read "If this event is part of a series, only
+// this date is deleted." That is true of a CHILD occurrence and the exact opposite of what happens to
+// the ANCHOR of one: `events.parent_event_id` is ON DELETE CASCADE, so deleting the first date takes
+// every other date, and the RSVPs and check-ins under each of them, with it. A host tidying up a
+// mistaken first Wednesday lost the whole Wednesday series having just read a sentence promising they
+// would not. The sentence is now computed from what the delete would actually reach
+// (lib/events/delete-plan.ts) and the action refuses the cascade unless it is asked for by name, so
+// this surface cannot drift back out of step with it.
 //
 // A client component because DangerDelete takes a server-action closure, which cannot cross the
 // RSC boundary from the page. Every action re-checks event.editSettings server-side; this render
@@ -32,6 +48,24 @@ export function EventDangerZone({
   title: string
   isCancelled: boolean
 }) {
+  // Starts UNKNOWN, never local: before the read lands this surface must not promise that the delete
+  // is confined to one date, which is the promise that cost a series. The server refuses on the same
+  // predicate, so a plan that never arrives costs a retry rather than a cascade.
+  const [plan, setPlan] = useState<EventDeletePlan>(UNKNOWN_DELETE_PLAN)
+  useEffect(() => {
+    let active = true
+    getEventDeletePlan(eventId)
+      .then((p) => {
+        if (active) setPlan(p)
+      })
+      .catch(() => {
+        /* stays UNKNOWN_DELETE_PLAN, which keeps the honest "we could not check" sentence */
+      })
+    return () => {
+      active = false
+    }
+  }, [eventId])
+
   return (
     <div className="mt-6 space-y-6">
       <div className="rounded-card border border-border bg-surface-elevated/40 p-4">
@@ -66,8 +100,11 @@ export function EventDangerZone({
         <div className="rounded-card border border-border bg-surface p-5 lift-1">
           <DangerDelete
             entity="event"
-            warning="Permanently removes this event. RSVPs and check-ins are cleared. If this event is part of a series, only this date is deleted. Once deleted it cannot be recovered."
-            onDelete={() => deleteEvent(eventId, slug)}
+            warning={deleteWarning(plan)}
+            onDelete={() =>
+              deleteEvent(eventId, slug, deleteReachesOtherDates(plan) ? 'series' : 'thisDate')
+            }
+            confirmLabel={plan.isAnchor ? deleteSeriesButtonLabel(plan) : undefined}
             redirectTo="/events"
           />
         </div>

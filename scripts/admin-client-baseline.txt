@@ -256,6 +256,17 @@
 # two flags is missing: a stranger is never told anything about the host's account state
 # (lib/events/ticket-eligibility.ts). getConnectReadyMap, which does the profiles half, is itself
 # already a service-role read in lib/billing/connect.ts.
+# lib/events/deletion.ts (added 2026-09-28, LIVE-535): the count behind the event delete warning.
+# Deleting the ANCHOR of a materialised event series cascades to every other date (events.parent_event_id
+# is ON DELETE CASCADE) and to the RSVPs, tickets and check-ins under each of them, so deleteEvent now
+# refuses that press unless it is asked for by name and the operator has been shown the number. This file
+# counts the dates. It runs on the service role for the SAME reason its sibling lib/events/cancellation.ts
+# (loadSeriesCancelPlan, directly below) does, and that reason is the whole point of the row: a warning
+# that UNDERCOUNTS is worse than no warning. A child date the caller cannot SEE is still a child date the
+# cascade DELETES, and the listing policies hide private, unlisted and draft occurrences, so a
+# policy-filtered count would quietly report a smaller number than the statement destroys. The caller is
+# authorized before this is ever reached (event.editSettings, re-resolved in the action), nothing here
+# writes, and nothing leaves it but integers.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -749,6 +760,7 @@ lib/events/cohosts.ts
 lib/events/connectors.ts
 lib/events/crm-access.ts
 lib/events/crm-roster.ts
+lib/events/deletion.ts
 lib/events/dispatch-audience.ts
 lib/events/dispatch.ts
 lib/events/embeddings.ts

@@ -16,6 +16,13 @@ import {
   cancelSeries,
   loadSeriesCancelPlan,
 } from '@/lib/events/cancellation'
+import { loadEventDeletePlan } from '@/lib/events/deletion'
+import {
+  UNKNOWN_DELETE_PLAN,
+  deleteRefusal,
+  deleteReachesOtherDates,
+  type EventDeletePlan,
+} from '@/lib/events/delete-plan'
 import { logAdminAction } from '@/lib/admin/audit'
 import { slugify } from '@/lib/utils'
 import { saveEventLocation, type EventAddress } from '@/lib/events/geocode'
@@ -1314,12 +1321,76 @@ export async function updateEventPermalink(
  * host action. FK cascades clear RSVPs + check-in engagement. Irreversible; the UI
  * requires a confirm and warns about a recurring series.
  */
-export async function deleteEvent(eventId: string, slug: string): Promise<{ error?: string }> {
+/** What the operator says they mean. `thisDate` is the DEFAULT and the safe one: it refuses to run
+ *  when the row turns out to be the anchor of a series, because then it is not this date at all. Only
+ *  a surface that has shown the person the count passes `series`. */
+export type EventDeleteScope = 'thisDate' | 'series'
+
+/**
+ * How far a delete on this event would reach, for the confirm that is about to be shown.
+ *
+ * Authorization-gated like getSeriesCancelPlan, and on refusal it returns the UNKNOWN plan rather
+ * than a local one: a surface must never be told "this is a safe one-date delete" on the strength of
+ * a read that did not happen.
+ */
+export async function getEventDeletePlan(eventId: string): Promise<EventDeletePlan> {
+  const caps = await getEventCapabilities(eventId)
+  if (!caps.has('event.editSettings')) return UNKNOWN_DELETE_PLAN
+  return loadEventDeletePlan(eventId)
+}
+
+/**
+ * Delete an event.
+ *
+ * 🔴 THE ANCHOR GUARD (LIVE-535). `events.parent_event_id` is `REFERENCES events(id) ON DELETE
+ * CASCADE`, so deleting the FIRST date of a materialised series deletes every other date of it, and
+ * the RSVPs, tickets and check-ins that cascade off each of those. Three surfaces call this action
+ * and one of them used to promise the operator, in the confirm itself, that "only this date is
+ * deleted". So the guard lives HERE, in the one place all three go through, and not in a warning
+ * string: a delete that reaches dates the caller did not name is REFUSED unless the caller passes
+ * `scope: 'series'`, which only a surface that has shown the count does.
+ *
+ * The refusal is a plain `{ error }` the operator can act on, never a throw and never "Unauthorized":
+ * they did not do anything wrong, and their next move depends on knowing what the press would have
+ * taken. An unreadable plan refuses too (see loadEventDeletePlan).
+ *
+ * Deleting a child occurrence, or a one-off, is unchanged and needs no scope.
+ */
+export async function deleteEvent(
+  eventId: string,
+  slug: string,
+  scope: EventDeleteScope = 'thisDate',
+): Promise<{ error?: string }> {
   const caps = await getEventCapabilities(eventId)
   if (!caps.has('event.editSettings')) throw new Error('Unauthorized')
 
   const admin = createAdminClient()
-  const { data: ev } = await admin.from('events').select('title').eq('id', eventId).maybeSingle()
+  // `parent_event_id` is read here, beside the title, because a CHILD row can never trigger the
+  // cascade below it and so never needs the count: the plan short-circuits on exactly this column.
+  const { data: ev } = await admin
+    .from('events')
+    .select('title, parent_event_id')
+    .eq('id', eventId)
+    .maybeSingle()
+
+  const plan = await loadEventDeletePlan(eventId)
+  if (scope !== 'series' && deleteReachesOtherDates(plan)) {
+    // THE GATE NOTICED IT FIRED (AGENTS.md). A refusal that leaves no trace is indistinguishable
+    // from a delete that silently did nothing, and this one is expected to be rare.
+    await logAdminAction({
+      actorId: await getMyProfileId().catch(() => null),
+      action: 'event.deleteRefused',
+      targetType: 'event',
+      targetId: eventId,
+      detail: {
+        slug,
+        reason: plan.unknown ? 'delete_plan_unreadable' : 'series_anchor',
+        otherDates: plan.otherDates,
+        truncated: plan.truncated,
+      },
+    })
+    return { error: deleteRefusal(plan) }
+  }
 
   const { error } = await admin.from('events').delete().eq('id', eventId)
   if (error) return { error: error.message }
@@ -1330,7 +1401,15 @@ export async function deleteEvent(eventId: string, slug: string): Promise<{ erro
     action: 'event.delete',
     targetType: 'event',
     targetId: eventId,
-    detail: { slug, title: (ev as { title?: string } | null)?.title ?? null },
+    detail: {
+      slug,
+      title: (ev as { title?: string } | null)?.title ?? null,
+      // What this press actually took with it, so the trail can answer "where did the series go"
+      // even when the answer is "an operator deleted the anchor on purpose".
+      scope,
+      cascadedDates: plan.isAnchor ? plan.otherDates : 0,
+      cascadedRsvps: plan.isAnchor ? plan.rsvpsAtRisk : 0,
+    },
   })
 
   revalidatePath('/events')

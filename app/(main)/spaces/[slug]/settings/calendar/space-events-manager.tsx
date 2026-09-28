@@ -30,16 +30,32 @@ type Confirm = { kind: 'cancel' | 'delete'; ev: ManagedEvent } | null
 export function SpaceEventsManager({ events }: { events: ManagedEvent[] }) {
   const [confirm, setConfirm] = useState<Confirm>(null)
   const [pendingId, setPendingId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
   const router = useRouter()
 
+  // 🔴 WHAT THE ACTION SAYS BACK (LIVE-535). This used to drop deleteEvent's return value on the
+  // floor, close the modal and refresh, so a delete the server REFUSED looked exactly like one that
+  // worked: the row was still there after the refresh and nothing said why. That matters now because
+  // the refusal is load-bearing. Deleting the anchor of a materialised series cascades to every other
+  // date (`events.parent_event_id` is ON DELETE CASCADE), and this list shows anchors and children
+  // side by side with nothing to tell them apart, so the action refuses here rather than showing a
+  // count this surface has no room for. The refusal names the count and points at Cancel, and it only
+  // helps if it is rendered.
   function run(c: NonNullable<Confirm>) {
     setPendingId(c.ev.id)
+    setError(null)
     start(async () => {
-      if (c.kind === 'cancel') await cancelEvent(c.ev.id)
-      else await deleteEvent(c.ev.id, c.ev.slug)
-      setConfirm(null)
+      const res = c.kind === 'cancel' ? await cancelEvent(c.ev.id) : await deleteEvent(c.ev.id, c.ev.slug)
+      const message = res && typeof res === 'object' && 'error' in res ? res.error : null
       setPendingId(null)
+      if (message) {
+        // The modal STAYS OPEN on a refusal, because closing it is what made the old behaviour read
+        // as success. Nothing was deleted, so there is nothing to refresh.
+        setError(message)
+        return
+      }
+      setConfirm(null)
       router.refresh()
     })
   }
@@ -120,12 +136,16 @@ export function SpaceEventsManager({ events }: { events: ManagedEvent[] }) {
 
       <DangerModal
         open={confirm?.kind === 'cancel'}
-        onClose={() => setConfirm(null)}
+        onClose={() => {
+          setConfirm(null)
+          setError(null)
+        }}
         title="Cancel event"
         body={
           <>
             This marks <span className="font-semibold text-text">{confirm?.ev.title}</span> as
             cancelled for everyone, and refunds any paid tickets. You can&apos;t undo this from here.
+            {error && <span className="mt-2 block font-medium text-danger">{error}</span>}
           </>
         }
         confirmLabel="Cancel event"
@@ -133,12 +153,18 @@ export function SpaceEventsManager({ events }: { events: ManagedEvent[] }) {
       />
       <DangerModal
         open={confirm?.kind === 'delete'}
-        onClose={() => setConfirm(null)}
+        onClose={() => {
+          setConfirm(null)
+          setError(null)
+        }}
         title="Delete event"
         body={
           <>
             This permanently deletes <span className="font-semibold text-text">{confirm?.ev.title}</span>{' '}
-            and removes it from every calendar and feed. This can&apos;t be undone.
+            and removes it from every calendar and feed, along with its RSVPs and check-ins. This
+            can&apos;t be undone. If it turns out to be the first date of a series, nothing is deleted
+            and we&apos;ll tell you how many dates it would have taken.
+            {error && <span className="mt-2 block font-medium text-danger">{error}</span>}
           </>
         }
         confirmLabel="Delete event"

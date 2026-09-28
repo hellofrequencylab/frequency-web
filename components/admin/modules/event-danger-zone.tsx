@@ -7,9 +7,17 @@ import {
   setEventCancelled,
   cancelEventSeries,
   getSeriesCancelPlan,
+  getEventDeletePlan,
   deleteEvent,
   type SeriesCancelSummary,
 } from '@/app/(main)/events/admin-actions'
+import {
+  UNKNOWN_DELETE_PLAN,
+  deleteReachesOtherDates,
+  deleteSeriesButtonLabel,
+  deleteWarning,
+  type EventDeletePlan,
+} from '@/lib/events/delete-plan'
 import { DangerDelete } from '@/components/admin/danger-delete'
 import { SERIES_CANCEL_ANCHOR_ID } from '@/components/admin/modules/event-kept-dates-notice'
 
@@ -58,6 +66,10 @@ export function EventDangerZone() {
   const [series, setSeries] = useState<SeriesPlan | null>(null)
   const [confirmingSeries, setConfirmingSeries] = useState(false)
   const [seriesOutcome, setSeriesOutcome] = useState<string[] | null>(null)
+  // WHAT DELETE REACHES (LIVE-535). Starts as the UNKNOWN plan, not as a local one: until the read
+  // lands, this surface must not render a sentence promising the delete is confined to one date. The
+  // server refuses on the same predicate, so a slow plan costs a retry and never a series.
+  const [deletePlan, setDeletePlan] = useState<EventDeletePlan>(UNKNOWN_DELETE_PLAN)
 
   useEffect(() => {
     if (!slug) return
@@ -75,6 +87,17 @@ export function EventDangerZone() {
           })
           .catch(() => {
             /* no plan → the series control simply does not render */
+          })
+        // The delete plan is its own round trip for the same reason, and its failure direction is the
+        // opposite one: a cancel control that does not render is a missing convenience, while a delete
+        // warning that does not render is the bug. On a throw the plan STAYS unknown, which keeps the
+        // "we could not check" sentence and leaves the server's refusal as the backstop.
+        getEventDeletePlan(d.id)
+          .then((p) => {
+            if (active) setDeletePlan(p)
+          })
+          .catch(() => {
+            /* stays UNKNOWN_DELETE_PLAN, which is the safe direction */
           })
       })
       .catch(() => {
@@ -230,8 +253,16 @@ export function EventDangerZone() {
       <div className="border-t border-danger/20 pt-4">
         <DangerDelete
           entity="event"
-          warning="Permanently removes the event and all its RSVPs and check-ins. To take it off the calendar without losing it, use Cancel instead."
-          onDelete={() => deleteEvent(data.id, data.slug)}
+          // The sentence is computed, not written here, so all three delete surfaces say the same
+          // true thing and none of them can drift from what the action will do.
+          warning={deleteWarning(deletePlan)}
+          // 🔴 `series` is passed ONLY on the branch that has just shown the operator the count and
+          // the button naming it. On every other branch the scope stays `thisDate`, and the server
+          // refuses if the row turns out to be an anchor after all.
+          onDelete={() =>
+            deleteEvent(data.id, data.slug, deleteReachesOtherDates(deletePlan) ? 'series' : 'thisDate')
+          }
+          confirmLabel={deletePlan.isAnchor ? deleteSeriesButtonLabel(deletePlan) : undefined}
           redirectTo="/events"
           confirmText="DELETE"
           chromeless
