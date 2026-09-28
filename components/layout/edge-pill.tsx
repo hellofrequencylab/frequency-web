@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 // The two edge TABS — Vera (right) and Next Steps (left) — share THIS one component
 // so they're identical in size + behaviour on web and mobile. Each is a tab tucked
@@ -47,10 +47,35 @@ export function EdgePill({
   const [wiggling, setWiggling] = useState(false)
   const onLeft = side === 'left'
 
-  // Occasional wiggle: while waiting (and not yet acknowledged), fire a brief shake on
-  // an interval (~8–12s, jittered) rather than a continuous animation. Respect
+  // 🔴 SHOWN IS A LAYOUT FACT, AND THE TIMER READS IT (LIVE-484). This tab is mounted on every
+  // member page: components/vera/vera-launcher.tsx renders it as the no-dock fallback inside
+  // `<span className="hidden md:block">`, so below md it is in the DOM and display:none. The
+  // wiggle below used to key off `waiting` alone, which meant every phone-width member page ran
+  // a self-rescheduling 8 to 12 second timer for the life of the session, calling setState to
+  // toggle a class on a box nobody could see, plus the 600ms timer to toggle it back. A React
+  // render every ten seconds, forever, on the surface where battery matters most, to animate
+  // nothing.
+  //
+  // The test is the tab's OWN rendered box, read the way the launcher reads the dock slot:
+  // `getClientRects().length`, NOT `offsetParent`, because this button is `position: fixed` and
+  // offsetParent is null for a fixed element on every desktop too. It is re-read on resize
+  // because crossing the md breakpoint changes display without a navigation or a prop, so a
+  // desktop window narrowed to a phone stops the timer and a phone rotated wide starts it.
+  // Gating the mount in the launcher instead would need a second copy of the breakpoint in
+  // JavaScript; reading the box keeps the CSS the only place `md` is spelled.
+  const ref = useRef<HTMLButtonElement>(null)
+  const [shown, setShown] = useState(false)
+  useEffect(() => {
+    const read = () => setShown(!!ref.current && ref.current.getClientRects().length > 0)
+    read()
+    window.addEventListener('resize', read)
+    return () => window.removeEventListener('resize', read)
+  }, [])
+
+  // Occasional wiggle: while waiting (and not yet acknowledged) AND actually on screen, fire a
+  // brief shake on an interval (~8–12s, jittered) rather than a continuous animation. Respect
   // prefers-reduced-motion — no wiggle at all when the user opts out.
-  const active = waiting && !dismissed
+  const active = waiting && !dismissed && shown
   useEffect(() => {
     if (!active) return
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
@@ -98,6 +123,7 @@ export function EdgePill({
 
   return (
     <button
+      ref={ref}
       type="button"
       onMouseEnter={() => setExpanded(true)}
       onMouseLeave={() => setExpanded(false)}

@@ -9,12 +9,20 @@
 // listing starts from, the seed handed to Vera, and the call to the EXISTING server action. Listing is
 // open on the free tier (ADR-914); the page and the action both ask only that you are signed in.
 //
+// GETTING PAID is offered here, not described (LIVE-537). The page resolves the one Connect prompt
+// (lib/billing/payout-prompt.ts) for the maker and this Spark renders its card on the first screen,
+// which starts Stripe hosted onboarding inline and is null once the maker is ready. The two go-elsewhere
+// sentences this file used to carry (telling a maker to set up payouts ahead of a sale, with nothing to
+// press) were the dead end LIVE-233 retired from every other money path.
+//
 // The Loom scope is deliberately left undefined: a member listing their own piece should see their own
 // Loom plus every Space they run, which is what the picker does with no scopeKey.
 
 import Link from 'next/link'
 import { ArrowUpRight, Store } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
+import { PayoutPromptCard } from '@/components/billing/payout-prompt-card'
+import type { PayoutPrompt } from '@/lib/billing/payout-prompt'
 import { CommerceSpark, type SparkDraft } from '@/components/studio/commerce/commerce-spark'
 import { PRODUCT_MANIFEST } from '@/lib/studio/entities/product'
 import { createMakerProductAction, draftMakerProductCopyAction } from '../../marketplace/commerce-actions'
@@ -25,18 +33,22 @@ function text(draft: SparkDraft, key: string): string {
   return typeof v === 'string' ? v : v === null || v === undefined ? '' : String(v)
 }
 
-export function ProductSpark() {
+export function ProductSpark({ payoutPrompt }: { payoutPrompt: PayoutPrompt | null }) {
   return (
     <CommerceSpark
       manifest={PRODUCT_MANIFEST}
       eyebrow="List a product"
       doors={{
         title: 'What are you selling?',
-        description:
-          'It shows up in the Market as soon as you list it. Set up payouts before your first sale.',
+        description: 'It shows up in the Market as soon as you list it.',
         veraHint: 'Tell Vera roughly what it is and she writes the name and the details for you to edit.',
         manualHint: 'Go straight to the form: photos, price, and your own words.',
-        aside: <FullShopUpsell />,
+        aside: (
+          <div className="space-y-4">
+            <PayoutPromptCard prompt={payoutPrompt} />
+            <FullShopUpsell />
+          </div>
+        ),
       }}
       details={{
         title: 'The details',
@@ -46,8 +58,7 @@ export function ProductSpark() {
         title: 'Have a look before it goes up',
         description: 'Change anything here, or step back to redo the photos and the price.',
         createLabel: 'List it',
-        note:
-          'Payouts run on Stripe Connect, so the money goes straight to you. Set up a payout account before your first sale; the platform fee stays low.',
+        note: 'Payouts run on Stripe Connect, so the money goes straight to you, and the platform fee stays low.',
       }}
       initialDraft={{
         title: '',

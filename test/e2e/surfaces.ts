@@ -2432,6 +2432,24 @@ export function capturedHeights(text: string): number[] {
  * It says WHY the wait was silent, because the first question anybody will ask of this message
  * is why `settle()` did not catch it, and the answer is the finding: at the normal viewport the
  * page really is still.
+ *
+ * 🔴 IT REPORTS WHAT WAS MEASURED AND NAMES NO CAUSE IT CANNOT ESTABLISH (LIVE-497). The first
+ * version of this sentence asserted a mechanism: "anything sized against the viewport HEIGHT
+ * re-resolves at the document height while the shutter is open", then listed the page's
+ * viewport-height boxes and said "fix the box, not the wait". Following it cost a whole pull
+ * request: LIVE-492 fixed every box it named (LIVE-493, a real defect on its own account) and
+ * the flip survived, 7752 / 7756 to the pixel. The mechanism had been shown false in this same
+ * file, and the arithmetic never fitted: a 4px spread against a `50dvh` drawer that would swing
+ * ~3,400px, with two of the five named boxes rendering at 0.
+ *
+ * What IS known, measured (see `dropTouchBeforeFullPageCapture`): on a project with `hasTouch`,
+ * a full-page capture drops Chromium's touch emulation after its first shot, so the first
+ * capture photographs the coarse-pointer layout and every later one the fine layout. That is a
+ * one-way change of a few px per tap floor, and `capture()` prevents it by dropping touch before
+ * the shutter. So the sentence says that, and only that, as the one mechanism this suite has
+ * measured. The viewport-height declarations are still listed, as data a reader may want, and
+ * labelled as such. The reading that names the box is the snapshot diff `explainCaptureFailure`
+ * appends after this sentence; this sentence must not pre-empt it.
  */
 export function captureFlipMessage(
   label: string,
@@ -2442,11 +2460,12 @@ export function captureFlipMessage(
   const named = boxes.map((b) => `${b.desc} { ${b.rule} } currently ${b.height}px at ${b.path}`)
   return [
     `${label} changed height DURING capture: ${andList([...heights])}, a ${spread}px difference.`,
-    'The height wait saw a still page and was right to: this flip is INDUCED BY THE CAMERA. A `fullPage` capture photographs past the viewport, so anything sized against the viewport HEIGHT re-resolves at the document height while the shutter is open and reverts once it closes.',
+    'The height wait saw a still page and was right to: at the normal viewport this page is still, and the change arrives with the camera. What is measured about that (LIVE-492, `dropTouchBeforeFullPageCapture`): on a project with `hasTouch`, a full-page capture drops Chromium\'s touch emulation after its first shot, so the first capture photographs the coarse-pointer layout and every later one the fine layout, a few px per tap floor, one way. capture() drops touch before the shutter on exactly those captures; if this is a touch project and a full-page capture, check that the drop ran.',
+    'No other mechanism is asserted here. An earlier version of this sentence blamed the boxes sized against the viewport height and told the reader to fix them; a pull request did, and the flip survived (LIVE-493, LIVE-497).',
     named.length > 0
-      ? `Boxes on this surface whose height is tied to the viewport, which is what changes: ${andList(named)}.`
-      : 'No viewport-height-dependent box was found in the stylesheets, so look instead for script that reads `innerHeight`, an `env()` safe-area value, or an IntersectionObserver that fires when the whole document is suddenly in view.',
-    'Fix the box, not the wait: no mask, no timeout and no retry can hold a height that is a function of the viewport. Playwright\'s own failure follows.',
+      ? `For the record, the declarations on this surface that mention the viewport height, listed as data and not as the cause: ${andList(named)}.`
+      : 'For the record, no declaration on this surface mentions the viewport height.',
+    'The measurement that names the box is the snapshot diff that follows: what measured differently after the failure than before the shutter, and what the viewport probe saw. Playwright\'s own failure follows that.',
   ].join(' ')
 }
 
