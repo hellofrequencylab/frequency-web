@@ -1,0 +1,15 @@
+# pgTAP files whose assertions SKIP on every db-tests run, with the reason (HYG-122, ADR-1547).
+#
+# Read by scripts/check-pgtap-skips.mjs from .github/workflows/db-tests.yml. A file that skips and
+# is NOT here fails the job; a file that is here and stops skipping fails the job too, so an entry
+# cannot outlive its reason. One `<file> <reason>` per line. Empty is the intended steady state.
+#
+# refresh_resonance_density_cells_safeupdate: the file pins ADR-1207 (the nightly density rollup's
+# bare DELETE raised 21000 under PostgREST's `safeupdate` planner hook on every cron run from
+# 2026-08-22). Seeing that defect needs the hook loaded in the test session, and `load 'safeupdate'`
+# is refused for the role `supabase test db` connects as (42501: access to library "safeupdate" is
+# not allowed; LOAD needs superuser or a library under $libdir/plugins). Measured on every run,
+# first read 2026-09-28 (run 36450365753). The file's fourth assertion, which never skips, pins the
+# shape of the fix instead (no DELETE without a WHERE clause in the function body); the hook-driven
+# arms stay uncovered until the local image lets the test role load the library.
+refresh_resonance_density_cells_safeupdate.test.sql `load 'safeupdate'` is refused (42501) for the test role in the local image, so the hook-driven arms cannot run; the structural arm in the same file covers the fix's shape
