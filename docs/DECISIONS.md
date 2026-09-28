@@ -48351,6 +48351,27 @@ Re-testing the row's premise before building (ADR-1082) found its proposed fix n
 
 **Rows.** LIVE-480 (closed here). LIVE-467 unchanged.
 
+## ADR-1542: A calendar feed is a reader with a subscriber, and every such reader filters `removed_at` (SCAN-645)
+
+**Status:** Accepted · 2026-09-28 · backlog `SCAN-645` · owner ruling ADR-1535 §6 ("SCAN-645 ships") · numbered **1542** because 1531-1533 are reserved for the port HYG-126 owes, 1534-1536 are on main, and 1537-1541 are claimed by pull requests open when this one was renumbered (#2938, #2939, #2942, #2943, #2944)
+
+**Context.** `public.events.removed_at` has been the staff-removal tombstone since 20260613130000, and it is enforced reader by reader: no SELECT policy on `events` mentions it, so every function and every list read carries the whole burden alone. Of the eighteen SQL functions that read `public.events`, sixteen filter the column or are pinned to one row. The two that did not are `public_calendar_feed()` (the site-wide public .ics) and `event_calendar_feed(_token)` (a member's personal feed of their own going RSVPs). Measured on production 2026-09-28: neither body mentioned the column.
+
+An .ics feed is subscribed, not fetched. A removed event's page 404s at once; the entry on a subscriber's phone stays until the feed stops sending it. Nothing had leaked yet only because production's two removed events each fail a different predicate by accident (one cancelled and past, one unlisted). The ordinary case, a standalone public event removed by staff while upcoming, passes every predicate the feed checks and the one it did not.
+
+**Decision.**
+
+1. **Both feeds filter `removed_at`.** One migration (`20270345008900`) re-creates each function with `and e.removed_at is null`, copying the shape `space_public_calendar_feed` has carried since 20270126000000. Return types are unchanged, so `create or replace` is enough and no drop-and-recreate is needed.
+2. **Grants are re-derived, never copied.** The file carries no grant statement. Both functions are `internal` in `scripts/function-grants.txt`, `create or replace` preserves existing grants, and copying the original grant lines forward is the exact hazard ADR-1153 recorded.
+3. **The migration proves itself on a fresh database, both ways.** A removed standalone public event must be absent from the public feed and present once restored; a removed event with an approved going RSVP must drop out of the member feed. The positive half of the public arm asks the feed's own Space predicate first, because `events_default_space_id` stamps a home Space on any insert that omits one and a fresh database's root Space may not be network+active. "There is nothing to see" is not "it is broken".
+4. **The backlog probe is the floor for these two readers.** SCAN-645's probe reads the LAST definition of each feed across the migration set and fails a pull request that re-types either body without the clause.
+
+**Rejected.** Adding `removed_at is null` to the two SELECT policies on `events`. That would be the real floor, and it is a wider change: the policies are what the ~50 TypeScript list reads sit on, and a Space owner editing their own removed row has to keep working. Sweeping those reads is the same argument. Both are a follow-up row once someone measures which of them face an outsider. Redacting instead of excluding, for the same reason ADR-1152 gave: a redacted entry still puts a reminder on a phone for a gathering that no longer exists.
+
+**Consequences.** The set of `public.events` readers with an outside subscriber that omit the tombstone is closed at zero. The class remains open at the policy layer, by name and on purpose. When a reader is added that returns event rows to someone outside the app, it filters `removed_at` or its own probe says so.
+
+**Rows.** SCAN-645 (closed here). Untouched: the two `events` SELECT policies, every TypeScript list read, `space_public_calendar_feed`.
+
 ## ADR-1539: The first sell attempt is the field where the price is typed, and a Spark that prices a Connect-paid thing renders the resolved prompt on its first screen (LIVE-537, LIVE-538)
 
 **Status:** Accepted · 2026-09-28 · backlog `LIVE-537`, `LIVE-538` · program `PROG-R5` · extends [ADR-1357](DECISIONS.md) (the event form's price control) and LIVE-233's one-prompt rule · numbered **1539** because **1531-1533** are reserved by another open session and **1536-1538** are claimed on other open PRs
