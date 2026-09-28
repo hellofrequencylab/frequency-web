@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { isError } from '@/lib/action-result'
-import { labelClasses } from '@/components/ui/field'
+import { Checkbox } from '@/components/ui/checkbox'
 import { setSpaceSkyMarkers } from './entry-actions'
 
 // THE SKY ON THIS SPACE'S CALENDAR, as a settings field (LIVE-526). One switch, on the Space
@@ -53,23 +53,17 @@ export function SkyMarkersField({
 
   return (
     <div className="space-y-2">
-      <label className="flex items-start gap-3">
-        <input
-          type="checkbox"
-          checked={on}
-          disabled={!canEdit || pending}
-          onChange={(e) => save(e.target.checked)}
-          className="mt-0.5 h-4 w-4 rounded-control accent-primary"
-        />
-        <span>
-          <span className={labelClasses}>Show the moon and the zodiac</span>
-          <span className="mt-1 block text-body-sm text-muted">
-            Marks new and full moons on your calendar, and the day the Sun enters each sign. The
-            equinoxes and solstices ride along on the four days they fall on. Everyone who can see
-            your calendar sees these.
-          </span>
-        </span>
-      </label>
+      {/* The Checkbox PRIMITIVE, not a hand-rolled input. check:adoption ratchets `raw-input` and a
+          first draft of this field raised it by one; the primitive also brings the implicit label
+          association, the disabled treatment and the global focus ring, all of which the raw
+          version would have had to re-implement and only half did. */}
+      <Checkbox
+        checked={on}
+        disabled={!canEdit || pending}
+        onChange={(e) => save(e.target.checked)}
+        label="Show the moon and the zodiac"
+        hint="Marks new and full moons on your calendar, and the day the Sun enters each sign. The equinoxes and solstices ride along on the four days they fall on. Everyone who can see your calendar sees these."
+      />
       {error ? <p className="text-body-sm text-danger">{error}</p> : null}
       {saved && !error ? <p className="text-body-sm text-muted">Saved.</p> : null}
     </div>

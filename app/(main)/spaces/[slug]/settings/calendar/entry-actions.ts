@@ -23,8 +23,7 @@ import {
   updateCalendarEntryRow,
 } from '@/lib/calendar/entries-store'
 import { monthGridWindow, safeMonth } from '@/lib/calendar/month-window'
-import { writeSpaceTimeZone } from '@/lib/spaces/store'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { writeSpacePreferences, writeSpaceTimeZone } from '@/lib/spaces/store'
 import { getSpaceById } from '@/lib/spaces/store'
 import { nextSkyMarkerPreferences } from '@/lib/spaces/sky-markers'
 import { isValidTimeZone } from '@/lib/time/zone'
@@ -75,19 +74,6 @@ export async function setSpaceTimeZone(slug: string, zone: string): Promise<Acti
   if (!saved) return fail('Could not save your time zone. Try again.')
   revalidate(slug)
   return ok()
-}
-
-/** Untyped scoped update of a Space's preferences jsonb (ADR-246), bound to a resolved id. The
- *  same shape manage/modules/actions.ts uses; the column is deliberately absent from the generated
- *  Supabase types, so the client is cast rather than typed. */
-async function writeSpacePreferences(spaceId: string, preferences: Record<string, unknown>): Promise<boolean> {
-  const db = createAdminClient() as unknown as {
-    from: (t: string) => {
-      update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> }
-    }
-  }
-  const { error } = await db.from('spaces').update({ preferences }).eq('id', spaceId)
-  return !error
 }
 
 /**
