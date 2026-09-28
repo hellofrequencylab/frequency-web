@@ -10,6 +10,7 @@ import { recordPlanActivity } from '@/lib/calendar/plan-activity-store'
 import { getSpacePlan, listPlansSharedWith, listSharedPlanIds } from '@/lib/calendar/plans-store'
 import { assigneeChoicesForPlan, listTasksWithShared } from '@/lib/calendar/shared-tasks'
 import { assignmentWords, type AssigneeChoice } from '@/lib/calendar/shared-tasks-core'
+import { notifyPlanMoment } from '@/lib/calendar/plan-notify'
 
 // THE SPACE TO-DO INBOX, server half (PROG-CAL4 "My tasks").
 //
@@ -146,6 +147,11 @@ export async function assignPlanTodo(slug: string, taskId: string, rawProfileId:
     kind: 'todo_assigned',
     summary: assignmentWords(task.title, label),
   })
+  // The person it went to hears about it through their own switches (LIVE-545).
+  if (assignee) {
+    const plan = (await getSpacePlan(host, task.planId)) ?? null
+    await notifyPlanMoment({ event: 'plan.assign', planId: task.planId, planTitle: plan?.title ?? 'a Plan', hostSpaceId: host, actorProfileId: editor.profileId, assigneeProfileId: assignee, todoTitle: task.title })
+  }
   revalidatePath(`/spaces/${slug}/settings/calendar`)
   revalidatePath(`/spaces/${slug}/calendar`)
   return ok()

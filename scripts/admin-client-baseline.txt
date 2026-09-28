@@ -652,6 +652,7 @@ lib/billing/tip-receipt.ts
 lib/billing/tips-notify.ts
 lib/billing/tips.ts
 lib/blocking.ts
+lib/calendar/plan-notify.ts
 lib/calendar/plan-share-subjects.ts
 lib/channels/programs.ts
 lib/circles/challenges.ts
