@@ -467,6 +467,18 @@ Space that holds it and opens in the same drawer, read only: the host keeps ever
 of PROG-CAL7 hands some across (`listPlansSharedWith` reads them through the accepted share and nothing
 else). Pure vocabulary and words: `lib/calendar/plan-shares.ts`.
 
+THE THREAD (`LIVE-542`, ADR-1553). Both sides of an accepted share talk about a Plan in `space_plan_comments`
+(`20270345009400`): a comment on the Plan (`task_id` null) or under one of its to-dos. RLS admits the host
+and an accepted guest through the same two helpers `20270345007300` cut the recursion with, and there is
+NO update or delete policy: a written comment is a record, and the author takes their own back through
+`remove_plan_comment()` (removed_at, removed_by), which the thread shows as a tombstone line. The store
+(`lib/calendar/plan-comments-store.ts`) is on the session client only; the doors (`listPlanComments`,
+`postPlanComment`, `removePlanComment`) sit behind `planSide`, which admits the host by `getSpacePlan` and a
+guest by `listSharedPlanIds`. The drawer renders the Plan thread under `[data-plan-comments]` for both sides,
+the guest's read-only drawer included, and folds each to-do's thread behind Notes (n). Who said it names the
+author when the session can read the profile and falls back to the Space, because profiles RLS is regional.
+Proof of the lock: `supabase/tests/space_plan_comments.test.sql`.
+
 **Production** (`PROG-CAL3`, shipped). "Make it a Production" opens the event Spark (`lib/studio/entities/event.ts`)
 prefilled by a pure mapping from the plan and the chosen Pencil onto the manifest's field keys. The event
 carries `plan_id`, and the Pencil is retired in the same step so the calendar shows one card. The
