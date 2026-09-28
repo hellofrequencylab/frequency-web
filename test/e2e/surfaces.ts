@@ -1823,6 +1823,394 @@ export function unsettledMessage(report: SettleReport, label: string): string | 
   ].join(' ')
 }
 
+/* ── WHAT MOVED, AND WHERE: the instruments a failed shutter gets (LIVE-492, 2026-09-28) ──────
+ *
+ * MEASURED against the pinned playwright-core and the Chromium build `playwright install
+ * chromium` gives the runner (141.0.7390.37), with the suite's exact project settings and a page
+ * that logs its own `resize` events. Two capture paths, two behaviours, both written down so the
+ * next reader does not re-derive either:
+ *
+ *  · `page.screenshot({ fullPage: true })`: the first capture on a fresh page changes nothing,
+ *    and EVERY capture after it lays the page out at a 1x1 viewport (4x4 under the mobile
+ *    project) for 2 to 14 ms, then restores it. In that window `innerWidth` and `innerHeight`
+ *    read 1, every `vh` length is 1px, every `(min-width)` media query is false, `resize` fires
+ *    on the way in and out, ResizeObservers fire on both, and the document is briefly thousands
+ *    of px tall as its text wraps into a one-pixel column.
+ *  · `expect(page).toHaveScreenshot(...)`, which is the path THIS SUITE uses: listeners see one
+ *    `resize` event per comparison AT THE PROJECT'S OWN SIZE and never a collapsed one. The
+ *    change and its restore land inside a single frame, so a listener keyed on the transient
+ *    size does not fire, and lazy images below the fold were not loaded by it either. What
+ *    still runs at the transient size is synchronous layout, and anything that reads its own
+ *    geometry during that layout can keep the reading.
+ *
+ * CSS has no memory: after the restore every style resolves exactly as before, so a surface
+ * that measures differently on the second capture holds STATE the first capture set. On
+ * /admin/content/practices the call log reads, in order: pristine 7756, then 7752 from the
+ * second capture on, then a stable capture; the committed PNG is 7752 because `--update-snapshots`
+ * also captures until two agree. It is one-way, it costs one retry, and the red on that surface
+ * is the pixel diff of the stable capture against the baseline, not the height.
+ *
+ * So the failure now names things instead of describing physics. `boxSnapshot()` records every
+ * in-flow box before the shutter; after a two-height failure the page is resting on the OTHER
+ * layout, so a second snapshot and `diffBoxes()` hand the movers to `smallestEnclosing()`.
+ * `armViewportProbe()` records the resize samples so the message states what the window saw,
+ * measured on that runner rather than asserted from here. And for a stable pixel diff,
+ * `diffBands()` decodes the expected and actual PNGs the matcher attached and `boxesInBands()`
+ * names the elements under each band of differing rows, which is what turns "1029 pixels" into
+ * a place on the page when the diff image itself sits on a host the reader cannot reach.
+ *
+ * Observation only, the same rule as `settle()`: reads of geometry and of two PNGs, one event
+ * listener, and no write to the page.
+ */
+
+/** One in-flow box as `boxSnapshot()` records it: its height, its top edge in DOCUMENT
+ *  coordinates (so a band of image rows can be laid over it), and a description a person can
+ *  find in the source. Keyed, in a `BoxSnapshot`, by the position path `MovedBox` uses. */
+export interface SnapshotBox {
+  h: number
+  top: number
+  d: string
+}
+
+export type BoxSnapshot = Record<string, SnapshotBox>
+
+/**
+ * Every in-flow box on the page, keyed by tree position. The same walk `settleHeight` runs
+ * between two plateaus, taken once from outside so it can be compared across a capture.
+ * Out-of-flow boxes (`fixed` / `absolute`) are not recorded because they cannot move the
+ * document's height, but the walk descends through them. Empty on a page with no body.
+ */
+export async function boxSnapshot(page: Page): Promise<BoxSnapshot> {
+  return await page.evaluate(
+    ({ nodeCap, textCap }) => {
+      const describe = (el: Element): string => {
+        const tag = el.tagName.toLowerCase()
+        const id = el.id ? `#${el.id}` : ''
+        const raw = typeof el.className === 'string' ? el.className : ''
+        const cls = raw
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((c) => `.${c}`)
+          .join('')
+        const text = (el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, textCap)
+        return `${tag}${id}${cls}${text ? ` "${text}"` : ''}`
+      }
+      const out: Record<string, { h: number; top: number; d: string }> = {}
+      if (!document.body) return out
+      const scrollTop = window.scrollY || 0
+      const stack: { el: Element; path: string }[] = [{ el: document.body, path: 'body' }]
+      let visited = 0
+      while (stack.length > 0 && visited < nodeCap) {
+        const node = stack.pop()
+        if (!node) break
+        const kids = node.el.children
+        for (let i = 0; i < kids.length; i += 1) {
+          const kid = kids[i]
+          if (!kid) continue
+          visited += 1
+          if (visited >= nodeCap) break
+          const path = `${node.path}>${kid.tagName.toLowerCase()}[${i}]`
+          const rect = kid.getBoundingClientRect()
+          const position = getComputedStyle(kid).position
+          if (rect.height > 0 && position !== 'fixed' && position !== 'absolute') {
+            out[path] = {
+              h: Math.round(rect.height * 100) / 100,
+              top: Math.round((rect.top + scrollTop) * 100) / 100,
+              d: describe(kid),
+            }
+          }
+          stack.push({ el: kid, path })
+        }
+      }
+      return out
+    },
+    { nodeCap: NODE_WALK_CAP, textCap: MOVER_TEXT_CAP },
+  )
+}
+
+/** Every box whose own height differs between two snapshots, ancestors included, in the shape
+ *  `smallestEnclosing()` reduces. `from: 0` / `to: 0` means the box was absent from that side.
+ *  Sub-half-pixel differences are rounding, not movement, and are dropped. Pure. */
+export function diffBoxes(
+  before: BoxSnapshot,
+  after: BoxSnapshot,
+  cap = RAW_MOVED_CAP,
+): MovedBox[] {
+  const moved: MovedBox[] = []
+  for (const path of new Set([...Object.keys(before), ...Object.keys(after)])) {
+    if (moved.length >= cap) break
+    const from = before[path]?.h ?? 0
+    const to = after[path]?.h ?? 0
+    if (Math.abs(to - from) < 0.5) continue
+    moved.push({ path, desc: (after[path] ?? before[path])!.d, from, to, delta: to - from })
+  }
+  return moved
+}
+
+/** One `resize` event as the probe saw it: what the window measured, and when. */
+export interface ViewportSample {
+  w: number
+  h: number
+  at: number
+}
+
+/** A viewport the probe calls collapsed: what the capture's own re-layout leaves the window
+ *  at. Anything this small is the shutter, never a project viewport. */
+export const COLLAPSED_VIEWPORT_MAX = 8
+
+const VIEWPORT_PROBE_KEY = '__fqViewportProbe'
+const VIEWPORT_SAMPLE_CAP = 64
+
+/**
+ * Start recording `resize` events. ONE listener, added to `window`, that pushes what the window
+ * measures into an array; it changes nothing the page renders. Idempotent, so a retried capture
+ * on the same page does not stack listeners.
+ */
+export async function armViewportProbe(page: Page): Promise<void> {
+  await page.evaluate(
+    ({ key, cap }) => {
+      const host = window as unknown as Record<string, unknown>
+      if (host[key]) return
+      const samples: { w: number; h: number; at: number }[] = []
+      const onResize = () => {
+        if (samples.length < cap) {
+          samples.push({ w: window.innerWidth, h: window.innerHeight, at: Math.round(performance.now()) })
+        }
+      }
+      window.addEventListener('resize', onResize)
+      host[key] = { samples, stop: () => window.removeEventListener('resize', onResize) }
+    },
+    { key: VIEWPORT_PROBE_KEY, cap: VIEWPORT_SAMPLE_CAP },
+  )
+}
+
+/** Stop the probe and return what it saw, in order. Empty when it was never armed. */
+export async function readViewportProbe(page: Page): Promise<ViewportSample[]> {
+  return await page.evaluate((key) => {
+    const host = window as unknown as Record<
+      string,
+      { samples: { w: number; h: number; at: number }[]; stop: () => void } | undefined
+    >
+    const probe = host[key]
+    if (!probe) return []
+    probe.stop()
+    delete host[key]
+    return probe.samples
+  }, VIEWPORT_PROBE_KEY)
+}
+
+/** The samples that are the shutter's own re-layout rather than a real viewport. Pure. */
+export function collapsedSamples(samples: readonly ViewportSample[]): ViewportSample[] {
+  return samples.filter((s) => s.w <= COLLAPSED_VIEWPORT_MAX || s.h <= COLLAPSED_VIEWPORT_MAX)
+}
+
+/**
+ * What the viewport did while the shutter was open, as a sentence. Pure. Says "nothing" when
+ * that is what was measured, because the absence is a finding too: a surface that changes height
+ * with no resize in the window moved for a different reason.
+ */
+export function viewportProbeMessage(samples: readonly ViewportSample[]): string {
+  if (samples.length === 0) {
+    return 'The viewport probe saw no resize event between the moment before the shutter and this failure.'
+  }
+  const collapsed = collapsedSamples(samples)
+  if (collapsed.length === 0) {
+    const sizes = [...new Set(samples.map((s) => `${s.w}x${s.h}`))]
+    return `The viewport probe saw ${samples.length} resize event${samples.length === 1 ? '' : 's'} (${andList(sizes)}) and no collapse: a resize event at the window's own size is a change applied and reverted inside one frame, which is how the shutter reads under toHaveScreenshot, so only what ran synchronously during that layout could have kept a reading from it.`
+  }
+  const first = collapsed[0]!
+  const restored = samples.find((s) => s.at > first.at && s.w > COLLAPSED_VIEWPORT_MAX && s.h > COLLAPSED_VIEWPORT_MAX)
+  const span = restored ? `${restored.at - first.at}ms` : 'the rest of the capture'
+  const back = restored ? ` before returning to ${restored.w}x${restored.h}` : ''
+  return [
+    `While the shutter was open the layout viewport read ${first.w}x${first.h} for ${span}${back} (${collapsed.length} of ${samples.length} resize events).`,
+    'Every `vh` length, `(min-width)` media query, resize listener and ResizeObserver on this page saw that layout, and whatever kept a reading from it is what the next capture photographs.',
+  ].join(' ')
+}
+
+/** The box that changed between the snapshot before the shutter and the page after the
+ *  failure, as a sentence. Pure. */
+export function moversMessage(
+  movers: readonly { desc: string; from: number; to: number }[],
+  after: BoxSnapshot | null,
+): string {
+  if (!after) return 'The box could not be named: the page could not be read after the failure.'
+  if (movers.length === 0) {
+    return 'Measured again after the failure, no in-flow box differs from the snapshot taken before the shutter: the page is resting on the layout it started on, so the other height was only ever seen inside the shutter. Re-run to catch it resting on the other one.'
+  }
+  const size = (px: number) => (px === 0 ? 'absent' : `${px}px`)
+  return `Measured before the shutter and again after the failure, the box that changed: ${andList(movers.map((m) => `${m.desc} ${size(m.from)} then ${size(m.to)}`))}.`
+}
+
+/** A run of consecutive image rows that each hold at least one differing pixel, from
+ *  `scripts/visual-diff-bands.mjs`. `from` / `to` are inclusive rows, CSS px at `scale: 'css'`. */
+export interface DiffBand {
+  from: number
+  to: number
+  rows: number
+  pixels: number
+}
+
+export interface BandReading {
+  width: number
+  height: number
+  differing: number
+  bands: DiffBand[]
+}
+
+/** How many bands the message names, and how many boxes under each. Caps on a payload a
+ *  person reads, not tuning knobs. */
+const BAND_CAP = 4
+const BOXES_PER_BAND = 3
+
+/**
+ * Where the differing pixels sit between the expected and the actual PNG, as row bands. The
+ * decoder and the YIQ delta are the repo's own (`scripts/visual-diff-bands.mjs`), at the
+ * suite's threshold, so a count here means what `toHaveScreenshot` means by it. Returns null
+ * on a dimension mismatch, which the two-height branch already explains, and rejects on a byte
+ * sequence that is not a PNG the decoder handles, which the caller treats as "no reading".
+ */
+export async function diffBands(expected: Buffer, actual: Buffer): Promise<BandReading | null> {
+  // A dynamic import, not a static one: Playwright loads this file through its CommonJS
+  // transform, and a static import of an `.mjs` becomes a `require()` that dies on the script's
+  // own `import.meta`. `import()` from CommonJS reaches an ES module the way Node intends.
+  const { decodePng, diffImages } = await import('../../scripts/visual-diff-bands.mjs')
+  const result = diffImages(decodePng(expected), decodePng(actual)) as
+    | { dimensionMismatch: true }
+    | { dimensionMismatch: false; width: number; height: number; differing: number; bands: DiffBand[] }
+  if (result.dimensionMismatch) return null
+  return { width: result.width, height: result.height, differing: result.differing, bands: result.bands }
+}
+
+/** The parts of an inline SVG. A band that lands on an icon names the icon's `<svg>`, never
+ *  its 3px `<path>`: the first run of this reader on the runner reported "path (3px tall),
+ *  path (6px tall), path (8px tall)" for thirteen bands and located nothing. */
+const SVG_INTERNAL_TAGS = new Set([
+  'path', 'g', 'circle', 'rect', 'line', 'polyline', 'polygon', 'ellipse', 'use', 'defs',
+  'clippath', 'mask', 'tspan', 'lineargradient', 'radialgradient', 'stop',
+])
+
+const tagOf = (desc: string): string => (desc.match(/^[a-z0-9-]+/i)?.[0] ?? '').toLowerCase()
+
+/**
+ * The boxes under a band of rows: the smallest in-flow boxes whose vertical extent overlaps it,
+ * so a table row wins over the table and the table over the shell, plus the smallest box under
+ * it that carries TEXT, so the reader gets words and not only a tag. SVG internals are skipped
+ * in favour of the `<svg>` they belong to. Pure.
+ */
+export function boxesInBands(
+  snapshot: BoxSnapshot,
+  bands: readonly DiffBand[],
+  perBand = BOXES_PER_BAND,
+): { band: DiffBand; boxes: (SnapshotBox & { path: string })[] }[] {
+  const all = Object.entries(snapshot)
+    .map(([path, box]) => ({ path, ...box }))
+    .filter((b) => !SVG_INTERNAL_TAGS.has(tagOf(b.d)))
+  return bands.map((band) => {
+    const overlapping = all
+      .filter((b) => b.top <= band.to && b.top + b.h >= band.from)
+      .sort((x, y) => x.h - y.h || y.path.split('>').length - x.path.split('>').length)
+    const boxes = overlapping.slice(0, Math.max(0, perBand - 1))
+    const worded = overlapping.find((b) => b.d.includes(' "') && !boxes.includes(b))
+    if (worded) boxes.push(worded)
+    else if (overlapping[perBand - 1] && perBand > boxes.length) boxes.push(overlapping[perBand - 1]!)
+    return { band, boxes }
+  })
+}
+
+/**
+ * THE TOUCH EMULATION IS DROPPED BY THE SHUTTER, so it is dropped BEFORE it (LIVE-492).
+ *
+ * MEASURED 2026-09-28, mobile project (iPhone 14, `hasTouch`), pinned playwright-core, Chromium
+ * 141.0.7390.37, a page with one `tap-target` select and a probe reading the window between
+ * captures:
+ *
+ *     before a full-page toHaveScreenshot   (pointer: coarse) true   maxTouchPoints 1   select 44px
+ *     after it                               (pointer: coarse) false  maxTouchPoints 0   select 33px
+ *
+ * One full-page capture (`Page.captureScreenshot` with `captureBeyondViewport`) leaves the
+ * page's touch emulation OFF and it does not come back: not after `page.emulateMedia`, not after
+ * a CDP `Emulation.setEmulatedMedia` pin, not on the next capture. A viewport-only capture does
+ * not do this (measured the same way: coarse before and after, 44px throughout).
+ *
+ * `toHaveScreenshot` captures until two agree, so on a touch project every full-page comparison
+ * runs like this: capture one photographs the coarse layout (44px floors), capture two the fine
+ * layout (32px floors), capture three matches two, and the committed baseline, made by the same
+ * loop, is the fine layout too. That is the "changed height DURING capture" reading on
+ * /admin/content/practices (7756 then 7752, three merge selects 44px then 34px), and every other
+ * one-way mobile flip this suite has recorded. The flip costs a retry and settles; what fails a
+ * case afterwards is a pixel diff, never the height.
+ *
+ * A baseline can hold ONE state, and with this loop the coarse state is not photographable on a
+ * full page: the second capture always drops it. So the suite drops it first, explicitly, and
+ * says so here: FULL-PAGE CAPTURES ON THE TOUCH PROJECTS PHOTOGRAPH THE FINE-POINTER LAYOUT.
+ * The first capture then agrees with the second, the retry is gone, and every committed
+ * full-page mobile and narrow baseline is unchanged, because that is the state they were
+ * already photographed in. First-screen (`viewportOnly`) captures are left alone: their camera
+ * keeps touch on, and their baselines are coarse renderings.
+ *
+ * What this costs, said rather than performed silently: the coarse-pointer tap floors (44px,
+ * app/globals.css) are not in any full-page mobile photograph. The a11y and overflow suites run
+ * with touch on and measure those floors as boxes, which is the instrument that fits a floor.
+ *
+ * Chromium only, which every project in playwright.config.ts is; a CDP session is opened for
+ * one command and detached.
+ */
+export async function dropTouchBeforeFullPageCapture(page: Page): Promise<void> {
+  const cdp = await page.context().newCDPSession(page)
+  try {
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false })
+  } finally {
+    await cdp.detach().catch(() => {})
+  }
+}
+
+/** The stable-diff reading as a sentence: how many pixels, in how many bands, and what sits
+ *  under the largest ones. Pure. */
+export function bandsMessage(
+  reading: BandReading,
+  named: readonly { band: DiffBand; boxes: readonly { d: string; top: number; h: number }[] }[],
+): string {
+  const shown = named.slice(0, BAND_CAP).map(({ band, boxes }) => {
+    const rows = band.from === band.to ? `row ${band.from}` : `rows ${band.from}-${band.to}`
+    const under =
+      boxes.length > 0
+        ? ` under ${andList(boxes.map((b) => `${b.d} (top ${Math.round(b.top)}, ${Math.round(b.h)}px tall)`))}`
+        : ' under no in-flow box the snapshot recorded'
+    return `${rows} (${band.pixels} px)${under}`
+  })
+  const more = reading.bands.length > BAND_CAP ? `, and ${reading.bands.length - BAND_CAP} smaller` : ''
+  return [
+    `The ${reading.differing} differing pixels sit in ${reading.bands.length} row band${reading.bands.length === 1 ? '' : 's'} of the ${reading.width}x${reading.height} picture, largest first: ${shown.join('; ')}${more}.`,
+    'Read the band, not the count: a band on a live value is data that moved, a band on chrome every surface shares is the shell.',
+  ].join(' ')
+}
+
+/** The matcher's `-expected` / `-actual` attachments for the failed capture, latest pair. */
+export function attachedImagePair(
+  attachments: readonly { name: string; path?: string }[] | undefined,
+): { expected: string; actual: string } | null {
+  if (!attachments) return null
+  let expected: string | undefined
+  let actual: string | undefined
+  for (const a of attachments) {
+    if (!a.path) continue
+    if (/-expected\.png$/.test(a.name)) expected = a.path
+    else if (/-actual\.png$/.test(a.name)) actual = a.path
+  }
+  return expected && actual ? { expected, actual } : null
+}
+
+/** What `capture()` hands the diagnosis besides the page: the snapshot it took before the
+ *  shutter and the attachments the matcher left behind. Both optional, so an older caller still
+ *  gets the two-height sentence it always got. */
+export interface CaptureContext {
+  before?: BoxSnapshot
+  attachments?: readonly { name: string; path?: string }[]
+}
+
 /* ── THE FLIP THE WAIT CANNOT SEE: a height that only moves WHILE THE SHUTTER IS OPEN ─────
  *
  * MEASURED on PR #2878 (2026-09-23), and it is the reason the section below exists.
@@ -2065,24 +2453,61 @@ export function captureFlipMessage(
 }
 
 /**
- * Turn a screenshot failure that carries the two-height signature into the diagnosis, and leave
- * every other screenshot failure exactly as it was.
+ * Turn a screenshot failure into the diagnosis, and keep the original underneath it.
+ *
+ * Two readings, and a failure can carry both. A call log with the two-height signature gets the
+ * flip sentence, the box that measured differently after the failure than before the shutter,
+ * and what the viewport probe saw. A failure whose matcher attached its expected and actual PNGs
+ * at the SAME size gets the row bands the differing pixels sit in and the elements under them.
+ * On /admin/content/practices both are true at once: the height settles on the third capture
+ * and the red is the pixel diff that remains, so a message that stopped at the flip pointed the
+ * reader at the wrong half. A failure that is neither, or a page that has gone, is returned
+ * exactly as it was.
  *
  * Returns the error to throw. It never swallows: the original is kept as `cause` and its text is
- * appended, so an ordinary pixel diff reads the way it always did.
+ * appended, so what Playwright said is still there to read.
  */
 export async function explainCaptureFailure(
   page: Page,
   error: unknown,
   label: string,
+  context: CaptureContext = {},
 ): Promise<unknown> {
   const text = error instanceof Error ? `${error.message}` : String(error)
   const heights = capturedHeights(text)
-  if (heights.length < 2) return error
-  // The diagnosis is best-effort by design: if the page has gone (closed, crashed, navigated)
+  const parts: string[] = []
+  // Every read below is best-effort by design: if the page has gone (closed, crashed, navigated)
   // we must still rethrow the real failure rather than replace it with our own stack.
-  const boxes = await viewportDependentBoxes(page).catch(() => [] as ViewportBox[])
-  return new Error(`${captureFlipMessage(label, heights, boxes)}\n\n${text}`, { cause: error })
+  const samples = await readViewportProbe(page).catch(() => [] as ViewportSample[])
+  if (heights.length >= 2) {
+    const boxes = await viewportDependentBoxes(page).catch(() => [] as ViewportBox[])
+    const after = context.before ? await boxSnapshot(page).catch(() => null) : null
+    const movers = context.before && after ? smallestEnclosing(diffBoxes(context.before, after)) : []
+    parts.push(captureFlipMessage(label, heights, boxes))
+    if (context.before) parts.push(moversMessage(movers, after))
+    parts.push(viewportProbeMessage(samples))
+    if (/captured a stable screenshot/.test(text)) {
+      parts.push(
+        'THEN THE HEIGHT SETTLED: the call log shows a stable capture after the two heights, so the flip cost a retry and is not what failed this case. What failed is the pixel diff of that stable capture against the baseline, read next.',
+      )
+    }
+  }
+  const pair = attachedImagePair(context.attachments)
+  if (pair) {
+    let reading: BandReading | null = null
+    try {
+      reading = await diffBands(readFileSync(pair.expected), readFileSync(pair.actual))
+    } catch {
+      reading = null
+    }
+    if (reading && reading.bands.length > 0) {
+      const snapshot = await boxSnapshot(page).catch(() => null)
+      const named = snapshot ? boxesInBands(snapshot, reading.bands.slice(0, BAND_CAP)) : []
+      parts.push(`${parts.length === 0 ? `${label}: ` : ''}${bandsMessage(reading, named)}`)
+    }
+  }
+  if (parts.length === 0) return error
+  return new Error(`${parts.join(' ')}\n\n${text}`, { cause: error })
 }
 
 /**
