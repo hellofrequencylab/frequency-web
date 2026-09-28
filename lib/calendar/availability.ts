@@ -13,6 +13,12 @@
 // in the row's own zone, the same way the month grid does (`entryDaySpan`, `eventDayKey`). No zone
 // conversion happens here on purpose: converting would move a 7 PM Lisbon event onto the wrong day
 // for a Space in Lisbon.
+//
+// 🔴 WHAT IS NOT OPTIONAL is reading the stored value under the convention it was written in.
+// An `events` row reaches here NAIVE ('2026-10-05T19:00:00'), and ECMAScript parses a date-TIME with
+// no offset as LOCAL, so a bare `new Date` put a 7 PM event on the next day for everyone west of UTC
+// (LIVE-516; the family is LIVE-377 and LIVE-514). `entryDaySpan` normalises at the parse
+// (`storedInstant`, ./entries), which is why nothing is spelled out again at the two call sites below.
 
 import { entryDaySpan, spanDayKeys, type EntryRow } from './entries'
 import { notesForDay, type DayNote } from './day-notes'
