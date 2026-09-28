@@ -36,7 +36,7 @@
       "ROADMAP.md"
     ],
     "slate": {
-      "ruled": "Owner ruling 2026-08-20 evening: \"Take all tasks out of deferred or parked programs and add them to the priority list. I want all those things built out. The things that we are deferring are white labeling, mobile application, texting.\" Supersedes the same-day \"hold white label and app at the end\" slate: the App Platform now builds; only the three named holds park.\n\n── OWNER RULING 2026-08-24: \"I want to save the etsy grade store for last. Second to last is the white label tenant sites with full WYSIWYG editor. I want everything else fully functional and clean before those.\" So DEF-ETSY moves out of W8 into its own final wave W10, and white label (PROG-E10 Sites, PROG-W6 member sites + theme marketplace, PROG-P7 per-Space theming depth) is UNPARKED into W9 immediately before it. deferredByName drops to mobile and texting only.\n\nINTERPRETATION, stated so it can be corrected in one line: the CORE editor phases E0-E9 stay in W4 and were NOT moved to the end. \"White label tenant sites with full WYSIWYG editor\" is read as the tenant-sites DELIVERABLE — PROG-E10 is literally titled 'Sites, absorbs White Label W1-W5' — not as the editor platform underneath it. E10 depends on E0-E9; W1's content retirements block E3; E2 projects onto the Loom built in W3. Moving E0-E9 to the end would invert those documented dependencies and would leave 'everything else' with no editor to be built on. If the intent was to move the whole editor program back, only the W4 block moves.\n\n── OWNER RULING 2026-08-25: DEF-A2P parks with the others, asked as a direct multiple choice against its real cost (EIN, carrier fee, 2-4 weeks of TCR review). The named holds are now FOUR: DEF-MOBILE, DEF-ETSY, PROG-W6, DEF-A2P. `deferredByName` was drifting in BOTH directions before this edit — it listed DEF-A2P (whose row read `open`) and omitted DEF-ETSY and PROG-W6 (whose rows both read `parked`). The list and the row statuses now agree, and that agreement is the thing to check when either changes.\n\n── OWNER RULING 2026-09-07, and it REVERSES the 2026-08-20 unpark of the App Platform. Asked as \"I want everything signed off except the editor, app platform and Etsy grade shop\", then answered on a follow-up as \"Keep white label and mobile app deferred. Prioritize everything else\", then CORRECTED in the owner's own words: \"I made a mistake. keep the following as deferred until the end. 1. app platform 2. White label platform 3. etsy build.\"\n\nSO THE DEFERRED SET IS FOUR PROGRAMS, in the order the owner listed them: (1) APP PLATFORM — PROG-A1, PROG-A3, PROG-A4; (2) WHITE LABEL — PROG-E10 (Sites), PROG-W6 (member sites + theme marketplace), PROG-P7 (per-Space theming depth); (3) ETSY — DEF-ETSY; (4) MOBILE — DEF-MOBILE, carried forward from the 2026-08-20 and 2026-08-25 rulings and NOT re-named in the correction, so it is held on the earlier ruling rather than this one. Everything else is on the prioritized list.\n\n🔴 THE EDITOR QUESTION WAS ASKED AND ANSWERED IN THE SAME BREATH. The owner asked: \"when you say editor, is that the full white label editor? if so, add that to the white label section.\" It is not. docs/EDITOR-ARCHITECTURE.md opens by stating what E0-E9 is for — \"Frequency should author a block ONCE and render it on a member's Spotlight, a Space's profile, a Space's external Site, and an email\" — so E0-E9 is Frequency's own block editor, the thing every member-facing surface composes from. Only E10 is the white-label deliverable, and it is literally titled \"Sites, absorbs White Label W1-W5\". E10 therefore moves to the white-label group and E0-E9 STAYS ACTIVE in W4. Moving E0-E9 back would leave \"everything else\" with no editor to be built on, which is the opposite of what the ruling asks for.\n\n⚠️ ONE COST TO STATE PLAINLY, because parking a program is not free. PROG-A3 (\"enablement inside RLS\") was the App Platform's only P1 and sat in W2, the foundation wave, beside DEF-HARDEN. Parking it means a disabled module's data stays reachable by direct API until the App Platform builds. Nothing else in the active list depends on it, so this is a stated consequence rather than a blocker — but it is the one place where \"defer the app platform\" costs a security posture rather than a feature.\n\n⚠️ AND DEF-A2P COMES OFF THE DEFERRED LIST, on the plain reading of \"everything on the list except white label and mobile app\". The correction re-added three programs and did not re-add texting. It is NOT agent-work — a Standard EIN-backed brand, a carrier fee, and 10-15 days of TCR review — so it moves to the OWNER lane as an open row with ownerAction \"account\" rather than back into a build wave. If the intent was to keep texting parked, one line moves it back.\n\n── OWNER CONFIRMED 2026-09-07, in reply to the reading above: \"go head and add E0-E9 into the backlog production list. keep mobile app deferred\". So the editor reading stands — E0-E9 is Frequency's own block editor and is on the production list in W4; only E10 sits with white label. Mobile stays in W12. Nothing moved on this confirmation: it ratifies the interpretation rather than changing it, which is the point of having stated it in one paragraph that could be corrected in one line.\n\n── OWNER RULING 2026-09-14 (ADR-1325, twelve multiple-choice answers after the build-completion audit): \"Stabilise, rework, then Editor E0; Sites wait for the block contract.\" White label is UNPARKED into the editor sequence: PROG-E10 (Sites) runs after PROG-E3 and before the E4 to E9 depth phases, and PROG-W6 + PROG-P7 close the runway after E9. Multiplayer (E0 task 18) is deferred to the depth phase behind render_path, so E0 is an L. The App Platform (W9) and the Etsy-grade store stay deferred; mobile stays held on the 2026-08-20 ruling. deferredByName drops White label.\n\n── OWNER RULING 2026-09-21 (ADR-1491), verbatim: \"I want to save building the app for the very end. The full Etsy capability, second to last, and white label websites and the editor. To do that, third to last. I want you to take care of everything else so we can completely clear the backlog.\"\n\nWHAT MOVED, and it is one thing: THE EDITOR. W4 ran at position 8, ahead of Loom-at-scale (W5), re-theme and the sweeps (W6), feature depth (W7) and commerce (W8). It now runs after all four, as the third-to-last wave, carrying white label with it exactly as ADR-1325 already grouped them. Etsy and the app were ALREADY deferred; this ruling does not defer them further, it fixes their ORDER relative to each other and to the editor.\n\nWHAT DID NOT MOVE. Loom (W3 foundation, W5 at scale) stays where it is and now runs BEFORE the editor rather than beside it, which is the direction its dependency already pointed: EDITOR-ARCHITECTURE has E2 projecting onto the Loom built in W3. Moving the editor later cannot break a dependency that points backwards. Nothing changed status: the editor rows stay `open`, they are simply later in the order.\n\nINTERPRETATION, stated so it can be corrected in one line. (1) \"The editor\" is read as the WHOLE program E0-E10, not just the white-label deliverable E10. This REVERSES the 2026-09-07 reading, which split E0-E9 (Frequency's own block editor, kept active) from E10 (Sites, deferred with white label) and was confirmed by the owner at the time with \"go head and add E0-E9 into the backlog production list\". The new ruling names \"white label websites and the editor\" as one group with one position, so the split does not survive it. If E0-E9 was meant to stay ahead of W5-W8, move the W4 wave back in one line. (2) \"The app\" is read as BOTH the App Platform (W9) and mobile (W12), since the ruling names three tail groups and the prior deferred set had four. If only mobile was meant, move W9 back in one line.\n\nTHE COST OF (1), stated plainly because deferring a program is not free: \"everything else\" now gets built on the CURRENT page-editor and block registry rather than on E0-E9's block contract. That is the same trade the 2026-09-07 reading refused, and it is the owner's to make. Nothing in W5-W8 declares a hard dependency on E0-E9, so this is a stated consequence rather than a blocker — but any W7 feature-depth work that would have composed the new block contract will compose the old one and be re-done by E1.",
+      "ruled": "Owner ruling 2026-08-20 evening: \"Take all tasks out of deferred or parked programs and add them to the priority list. I want all those things built out. The things that we are deferring are white labeling, mobile application, texting.\" Supersedes the same-day \"hold white label and app at the end\" slate: the App Platform now builds; only the three named holds park.\n\n── OWNER RULING 2026-08-24: \"I want to save the etsy grade store for last. Second to last is the white label tenant sites with full WYSIWYG editor. I want everything else fully functional and clean before those.\" So DEF-ETSY moves out of W8 into its own final wave W10, and white label (PROG-E10 Sites, PROG-W6 member sites + theme marketplace, PROG-P7 per-Space theming depth) is UNPARKED into W9 immediately before it. deferredByName drops to mobile and texting only.\n\nINTERPRETATION, stated so it can be corrected in one line: the CORE editor phases E0-E9 stay in W4 and were NOT moved to the end. \"White label tenant sites with full WYSIWYG editor\" is read as the tenant-sites DELIVERABLE — PROG-E10 is literally titled 'Sites, absorbs White Label W1-W5' — not as the editor platform underneath it. E10 depends on E0-E9; W1's content retirements block E3; E2 projects onto the Loom built in W3. Moving E0-E9 to the end would invert those documented dependencies and would leave 'everything else' with no editor to be built on. If the intent was to move the whole editor program back, only the W4 block moves.\n\n── OWNER RULING 2026-08-25: DEF-A2P parks with the others, asked as a direct multiple choice against its real cost (EIN, carrier fee, 2-4 weeks of TCR review). The named holds are now FOUR: DEF-MOBILE, DEF-ETSY, PROG-W6, DEF-A2P. `deferredByName` was drifting in BOTH directions before this edit — it listed DEF-A2P (whose row read `open`) and omitted DEF-ETSY and PROG-W6 (whose rows both read `parked`). The list and the row statuses now agree, and that agreement is the thing to check when either changes.\n\n── OWNER RULING 2026-09-07, and it REVERSES the 2026-08-20 unpark of the App Platform. Asked as \"I want everything signed off except the editor, app platform and Etsy grade shop\", then answered on a follow-up as \"Keep white label and mobile app deferred. Prioritize everything else\", then CORRECTED in the owner's own words: \"I made a mistake. keep the following as deferred until the end. 1. app platform 2. White label platform 3. etsy build.\"\n\nSO THE DEFERRED SET IS FOUR PROGRAMS, in the order the owner listed them: (1) APP PLATFORM — PROG-A1, PROG-A3, PROG-A4; (2) WHITE LABEL — PROG-E10 (Sites), PROG-W6 (member sites + theme marketplace), PROG-P7 (per-Space theming depth); (3) ETSY — DEF-ETSY; (4) MOBILE — DEF-MOBILE, carried forward from the 2026-08-20 and 2026-08-25 rulings and NOT re-named in the correction, so it is held on the earlier ruling rather than this one. Everything else is on the prioritized list.\n\n🔴 THE EDITOR QUESTION WAS ASKED AND ANSWERED IN THE SAME BREATH. The owner asked: \"when you say editor, is that the full white label editor? if so, add that to the white label section.\" It is not. docs/EDITOR-ARCHITECTURE.md opens by stating what E0-E9 is for — \"Frequency should author a block ONCE and render it on a member's Spotlight, a Space's profile, a Space's external Site, and an email\" — so E0-E9 is Frequency's own block editor, the thing every member-facing surface composes from. Only E10 is the white-label deliverable, and it is literally titled \"Sites, absorbs White Label W1-W5\". E10 therefore moves to the white-label group and E0-E9 STAYS ACTIVE in W4. Moving E0-E9 back would leave \"everything else\" with no editor to be built on, which is the opposite of what the ruling asks for.\n\n⚠️ ONE COST TO STATE PLAINLY, because parking a program is not free. PROG-A3 (\"enablement inside RLS\") was the App Platform's only P1 and sat in W2, the foundation wave, beside DEF-HARDEN. Parking it means a disabled module's data stays reachable by direct API until the App Platform builds. Nothing else in the active list depends on it, so this is a stated consequence rather than a blocker — but it is the one place where \"defer the app platform\" costs a security posture rather than a feature.\n\n⚠️ AND DEF-A2P COMES OFF THE DEFERRED LIST, on the plain reading of \"everything on the list except white label and mobile app\". The correction re-added three programs and did not re-add texting. It is NOT agent-work — a Standard EIN-backed brand, a carrier fee, and 10-15 days of TCR review — so it moves to the OWNER lane as an open row with ownerAction \"account\" rather than back into a build wave. If the intent was to keep texting parked, one line moves it back.\n\n── OWNER CONFIRMED 2026-09-07, in reply to the reading above: \"go head and add E0-E9 into the backlog production list. keep mobile app deferred\". So the editor reading stands — E0-E9 is Frequency's own block editor and is on the production list in W4; only E10 sits with white label. Mobile stays in W12. Nothing moved on this confirmation: it ratifies the interpretation rather than changing it, which is the point of having stated it in one paragraph that could be corrected in one line.\n\n── OWNER RULING 2026-09-14 (ADR-1325, twelve multiple-choice answers after the build-completion audit): \"Stabilise, rework, then Editor E0; Sites wait for the block contract.\" White label is UNPARKED into the editor sequence: PROG-E10 (Sites) runs after PROG-E3 and before the E4 to E9 depth phases, and PROG-W6 + PROG-P7 close the runway after E9. Multiplayer (E0 task 18) is deferred to the depth phase behind render_path, so E0 is an L. The App Platform (W9) and the Etsy-grade store stay deferred; mobile stays held on the 2026-08-20 ruling. deferredByName drops White label.\n\n── OWNER RULING 2026-09-21 (ADR-1491), verbatim: \"I want to save building the app for the very end. The full Etsy capability, second to last, and white label websites and the editor. To do that, third to last. I want you to take care of everything else so we can completely clear the backlog.\"\n\nWHAT MOVED, and it is one thing: THE EDITOR. W4 ran at position 8, ahead of Loom-at-scale (W5), re-theme and the sweeps (W6), feature depth (W7) and commerce (W8). It now runs after all four, as the third-to-last wave, carrying white label with it exactly as ADR-1325 already grouped them. Etsy and the app were ALREADY deferred; this ruling does not defer them further, it fixes their ORDER relative to each other and to the editor.\n\nWHAT DID NOT MOVE. Loom (W3 foundation, W5 at scale) stays where it is and now runs BEFORE the editor rather than beside it, which is the direction its dependency already pointed: EDITOR-ARCHITECTURE has E2 projecting onto the Loom built in W3. Moving the editor later cannot break a dependency that points backwards. Nothing changed status: the editor rows stay `open`, they are simply later in the order.\n\nINTERPRETATION, stated so it can be corrected in one line. (1) \"The editor\" is read as the WHOLE program E0-E10, not just the white-label deliverable E10. This REVERSES the 2026-09-07 reading, which split E0-E9 (Frequency's own block editor, kept active) from E10 (Sites, deferred with white label) and was confirmed by the owner at the time with \"go head and add E0-E9 into the backlog production list\". The new ruling names \"white label websites and the editor\" as one group with one position, so the split does not survive it. If E0-E9 was meant to stay ahead of W5-W8, move the W4 wave back in one line. (2) \"The app\" is read as BOTH the App Platform (W9) and mobile (W12), since the ruling names three tail groups and the prior deferred set had four. If only mobile was meant, move W9 back in one line.\n\nTHE COST OF (1), stated plainly because deferring a program is not free: \"everything else\" now gets built on the CURRENT page-editor and block registry rather than on E0-E9's block contract. That is the same trade the 2026-09-07 reading refused, and it is the owner's to make. Nothing in W5-W8 declares a hard dependency on E0-E9, so this is a stated consequence rather than a blocker — but any W7 feature-depth work that would have composed the new block contract will compose the old one and be re-done by E1.\n\n── OWNER RULING 2026-09-28 (ADR-1535), given in three parts within one hour and recorded in the order given. (1) \"Make sure everything is prioritized on the backlog. I want to fan out and finish it off as efficiently as possible. Defer the Mobile build to the end. Make a list of everything else, organize them into phases on the backlog.\" (2) On a multiple-choice check of what \"everything else\" reversed: \"Sorry, I meant app platform. I want that build out after everything else is done.\" (3) On where the other held programs sit: \"App till last. Mobile build gets done alongside the site.\"\n\nSO THE DEFERRED SET IS ONE PROGRAM: the App Platform (PROG-A1, PROG-A3, PROG-A4), W9, last, rows parked. MOBILE (DEF-MOBILE) UNPARKS into WM, placed after W2, as its own lane beside the site. WHITE LABEL (W4) and ETSY (W11) were not re-named and keep the positions the 2026-08-24 and 2026-09-21 rulings gave them; Etsy is now open rather than parked so the list is the list. The phone door (PROG-GD6) unparks into W7 gated on DEF-A2P. LIVE-234 (the real-money walk, parked 2026-09-21 \"remove this step for now\") and LIVE-455 (the six weeks, parkedUntil 2026-11-15) stay parked: each was parked by a specific dated instruction on a step that is not build order, and this ruling is about build order.\n\nThe same hour ruled the four scan items: SCAN-645 ships; HYG-123 drops; the nine unindexed FKs become a sweep row (HYG-127) and a convention row (HYG-128); OWN-074 is the owner’s own. Fan-out: one cloud session per `pnpm packets` derived lane, one row per PR, squash auto-merge on green.\n\nINTERPRETATION, stated so it can be corrected in one line. (a) WM sits after W2 rather than at the head of the queue because a mobile app on the shared contract needs the foundation wave to hold; if it should start sooner or later, move WM. (b) App Platform rows stay PARKED rather than open-at-the-end because a parked row is not agent-workable, and \"after everything else is done\" is a statement about who may pick it up, not about whether it is probed; if it should be open, flip the three rows. (c) The old W12 is left empty rather than deleted so the wave numbers cited in ADR-1491 and the docs do not shift.",
       "note": "The development order for the whole open queue, waves in sequence, ids in order within a wave. Array order IS the sequence — W0 first through W12 last, with `owner-timed` kept at the end because it is scheduled by the owner rather than by this order. Owner-lane rows are decisions, not sequenced dev. Status lives only in each row's probe.\n\n──── 2026-09-19 META-SCAN HANDOFF (supersedes the same-day SURVEY line). LIVE-254 and OWN-073 closed on owner confirm (#2699). HYG-033 and LIVE-409 are done. Two agents may pull this file. Split the lanes; do not both take LIVE-410.\n\nOWNER 2026-09-19 (calendar first; supersedes the same-day product-next order). Designer (Daniel): the calendar section is developed FIRST. Product next is LIVE-414 (C0) then LIVE-415 (C1) in W0b, then LIVE-416 through LIVE-419 (C2–C5) in W0c. Scan and hygiene leave those six ids. LIVE-234 stays P0 — it is owner-gated (account / OWN-078: prove each money loop with real charges) and is not demoted; it prints in the P0 band and is not agent-workable. Do not start Editor E0–E9, Sites (PROG-E10), Etsy, App Platform, or LIVE-242 (already closed). Do not pull PROG-CAL2–8 out of W7; that is the ADR-1386 depth program, not this C0–C5 paint. Do not mint June/July snapshot ideas as 2026-09 rows (HYG-104 / ADR-1447). One row per PR. No new plan file.\n\nCALENDAR THREAD (2026-09-19, owner): start LIVE-414 (C0) then LIVE-415 (C1) from W0b, then LIVE-416 through LIVE-419 from W0c. Guest and ordinary-member calendars show live events only. Cancelled is small muted text at the bottom of the date square, not a chip and not hidden. Admin is a mini production-management console (pencil / planning / production lanes), not a second guest month. Frame is ADR-1388 stages and ADR-1389 Admin vs ?view=guest. One row per PR. Do not write a planning file. Do not pick up cancelled LIVE-241. Scan agent leaves LIVE-414 and LIVE-415.\n\nPRODUCT AGENT (already on the backlog): stay on W0 / W0b. Next product code after LIVE-410 is LIVE-414 (calendar C0). LIVE-376 closed 2026-09-19 (sole-Space default, ADR-1413). LIVE-234 is P0 but owner-gated (OWN-078 must clear test tickets first). Do not pick up cancelled LIVE-241. Do not enable RLS on spatial_ref_sys. Do not start SCAN-636 while you are on product; ADR-1403 product wins the week.\n\nSCAN FOLLOW-THROUGH (this scan's cleanup): start SCAN-636. Do not take LIVE-410, LIVE-376, or LIVE-234.\n\nPhase 0 · Product first (W0 / W0b) — the product agent owns this. LIVE-234 (prove each money loop once; not a reservation) · LIVE-410 · LIVE-376 · then the rest of W0b (LIVE-186, LIVE-213).\n\nPhase 1 · Crawl truth (W0c). SCAN-636 THEN SCAN-637. The pattern is already in the tree: app/discover/layout.tsx SiteHeader authMode=client so revalidate is not voided. Product-preserving event fix is (a) on the SCAN-636 row: keep /events/<slug> as the share URL, make the anon path as cheap as discover. Do not reverse the canonical unless share/QR are re-pointed in the same PR. Then SCAN-637: drop force-dynamic on /market /store /housing /classifieds details; personalize behind client auth or Suspense. Skip ahead of LIVE-408 only if that row is not already in another agent's PR.\n\nPhase 2 · Cheap DB (W0c). SCAN-638. Draft one migration: covering indexes on the six FKs named in the row, and (select auth.uid()) on entitlement_grants read own and space_circle_optouts read own. Do NOT apply_migration or DDL execute_sql. Do not touch spatial_ref_sys.\n\nPhase 3 · Public chrome + kit (W0d), in this order: SCAN-641, SCAN-639, SCAN-640, then LIVE-412. SCAN-641 one public header (SiteHeader on (main) publicChrome). SCAN-639 wire FilterBar or delete it and the kit mention; do not leave two FilterBar names. SCAN-640 drop page_settings_events_backup_20260910 only after a production count (draft-and-approve). LIVE-412 split app-shell. SCAN-502 stays in W2 and needs an owner ruling before any export delete.\n\nPhase 4 · Do not start from this scan. Editor E0-E9 and Sites stay slate.phases / W4. App Platform, Etsy, and mobile stay deferredByName. Folding Hubs/Nexuses is LIVE-242.\n\nForbidden on this box: parallel subagents (hangs), pnpm build inside a subagent, a new plan/TODO markdown (one-list), deleting lib modules without SCAN-502's four-search protocol.\n\nRationale: docs/META-SCAN-STATUS.md 2026-09-19 pass. Gates are green; the finds are advertised-URL vs render-path.",
       "metaScanCleanup": {
         "dated": "2026-09-19",
@@ -178,7 +178,8 @@
             "LIVE-530",
             "LIVE-534",
             "SCAN-645",
-            "HYG-123"
+            "HYG-123",
+            "HYG-127"
           ]
         },
         {
@@ -200,7 +201,8 @@
             "LIVE-498",
             "LIVE-499",
             "HYG-122",
-            "HYG-124"
+            "HYG-124",
+            "HYG-126"
           ]
         },
         {
@@ -221,7 +223,14 @@
           "name": "W2 · foundation first",
           "ids": [
             "DEF-HARDEN",
-            "SCAN-502"
+            "SCAN-502",
+            "HYG-128"
+          ]
+        },
+        {
+          "name": "WM · Mobile, ALONGSIDE the site (owner ruling 2026-09-28, ADR-1535). Expo/RN on the shared contract (DEF-MOBILE). Placed after W2 foundation so it runs as its own lane beside W5-W8 rather than after them; array order says it may start once W2 holds, not that W5 waits for it. If it should start later, move this wave in one line.",
+          "ids": [
+            "DEF-MOBILE"
           ]
         },
         {
@@ -251,7 +260,8 @@
             "PROG-PRAC4",
             "DEF-DOMAIN",
             "DEF-CODE",
-            "HYG-109"
+            "HYG-109",
+            "PROG-GD6"
           ]
         },
         {
@@ -286,15 +296,17 @@
           "ids": []
         },
         {
-          "name": "W11 · SECOND TO LAST (owner ruling 2026-09-21, ADR-1491) — the full Etsy-grade store (DEF-ETSY). Was already deferred by the 2026-08-24 and 2026-09-07 rulings; this ruling keeps it deferred and fixes its position as second to last.",
+          "name": "W11 · SECOND TO LAST (owner rulings 2026-08-24, 2026-09-21, 2026-09-28 / ADR-1535) — the full Etsy-grade store (DEF-ETSY). Now OPEN so it is on the list and probed; still last but one, immediately before the App Platform.",
+          "ids": [
+            "DEF-ETSY"
+          ]
+        },
+        {
+          "name": "W9 · LAST (owner ruling 2026-09-28, ADR-1535: \"App till last\") — the App Platform (PROG-A1, PROG-A3, PROG-A4), the only program still deferred by name. Rows stay PARKED so no packet picks them up. See the ⚠️ on PROG-A3 in slate.ruled: parking it leaves a disabled module reachable by direct API.",
           "ids": []
         },
         {
-          "name": "W9 · LAST, with W12 (owner ruling 2026-09-21, ADR-1491) — the App Platform (PROG-A1, PROG-A3, PROG-A4). Modules with enforced boundaries. See the ⚠️ on PROG-A3 in slate.ruled: parking it leaves a disabled module reachable by direct API.",
-          "ids": []
-        },
-        {
-          "name": "W12 · LAST, with W9 (owner ruling 2026-09-21, ADR-1491) — mobile (Expo/RN on the shared contract). Held since 2026-08-20. \"Building the app\" is read as covering BOTH this and the App Platform; if only one was meant, move the other back in one line.",
+          "name": "W12 · (empty) mobile moved to WM by owner ruling 2026-09-28 (ADR-1535: \"Mobile build gets done alongside the site\"). Kept so the wave numbers the docs cite do not shift.",
           "ids": []
         },
         {
@@ -313,10 +325,7 @@
         }
       ],
       "deferredByName": [
-        "THIRD TO LAST — white label websites + the editor (W4: PROG-E0-E10, PROG-W6, PROG-P7, LIVE-310)",
-        "SECOND TO LAST — the Etsy-grade store (DEF-ETSY)",
-        "LAST — the app: App Platform (PROG-A1, PROG-A3, PROG-A4) and mobile (DEF-MOBILE)",
-        "Guest door phone door (PROG-GD6), parked with texting"
+        "LAST — the App Platform (PROG-A1, PROG-A3, PROG-A4), owner ruling 2026-09-28 (ADR-1535). Nothing else is deferred by name: white label (W4) and Etsy (W11) are SEQUENCED late, mobile (WM) is sequenced early, the phone door (PROG-GD6) is gated on DEF-A2P."
       ],
       "decisions": [
         "OWN-035",
@@ -335,7 +344,7 @@
         "OWN-041",
         "OWN-042"
       ],
-      "rationale": "Foundation before surface: hardening and module boundaries (A1/A3) pay compounding dividends across every later wave. Loom D1-D3 precede the Editor because E2 projects the editor’s asset model onto the Loom. Content retirements (W1) must precede E3, which replaces EDITABLE_PAGES in the opposite direction. Re-theme and the DAWN mechanical sweeps follow the editor so swept surfaces are not rebuilt. Flagship apps (A4) and the domain backlog ride after boundaries + editor exist. Commerce verticals close, with Resonance’s launch GO still the owner’s. White label (E10/W6/P7), mobile, and texting park by name. White-label sites and the Etsy-grade store now close the runway, in that order (owner ruling 2026-08-24): everything else is to be functional and clean before either starts.",
+      "rationale": "Foundation before surface: hardening and module boundaries (A1/A3) pay compounding dividends across every later wave. Loom D1-D3 precede the Editor because E2 projects the editor’s asset model onto the Loom. Content retirements (W1) must precede E3, which replaces EDITABLE_PAGES in the opposite direction. Re-theme and the DAWN mechanical sweeps follow the editor so swept surfaces are not rebuilt. Flagship apps (A4) and the domain backlog ride after boundaries + editor exist. Commerce verticals close, with Resonance’s launch GO still the owner’s. White label (E10/W6/P7), mobile, and texting park by name. White-label sites and the Etsy-grade store now close the runway, in that order (owner ruling 2026-08-24): everything else is to be functional and clean before either starts. ── 2026-09-28 (ADR-1535): the App Platform alone closes the runway; the Etsy-grade store is open and immediately before it; mobile builds alongside the site from W2 on.",
       "rule": "Every open or blocked row has a place here, and no finished row does; scripts/check-backlog.mjs proves both (HYG-047). PLACEMENT RULE, so the next person does not have to guess: lane \"owner\" goes to owner-timed whatever its id prefix, because nothing in the repo unblocks it. A live production incident or a repair ready to work goes to W0. Instrument and record debt goes to W2, the foundation wave, because a guard that cannot fire is the thing every later wave is measured by. Layout and theme work goes to W6, feature work to W7. A row that fits none of these is a sign the wave list needs a row, not that the row needs no wave. ⚠️ CLOSING A ROW MEANS PRUNING IT FROM ITS WAVE, in the same edit. The guard treats a finished row still sitting in the slate as drift, which is exactly what it is; that is how 39 of 77 ids came to be stale. Two edits per close is the price of the sequence staying true, and the guard will not let you forget the second one.",
       "priorities": {
         "note": "Two axes, deliberately separate. A WAVE is build order: what is built after what, because of a dependency. A PRIORITY is urgency: what a row is costing today. Programme phases are P2 by construction — they are sequenced, not urgent. P0 is reserved for a production incident, a money/consent/permission answer that is currently wrong, or a crawl-facing defect (the sitemap was submitted 2026-09-05, so a public URL is now a cost the day it is wrong). The report prints P0 across every lane first, then each lane sorted by priority. check:backlog fails an open row with no priority, for the same reason it fails an open owner row with no ownerAction.\n\n── FULL PASS 2026-09-07. Every open row was re-read against these definitions rather than only the ones an audit touched. The change that matters is what P1 means: it held ten rows, of which three were agent-workable and two of those waited on an owner-dispatched run, so the top tier could not be worked and was therefore not a queue. Five repairs and instruments came up from P2 and four housekeeping rows went down to P3. THE TEST TO APPLY WHEN THIS DRIFTS AGAIN: can somebody open the repo right now and finish the top row? If not, either the row is priced wrong or its blocker belongs in the owner section.",
@@ -348,98 +357,106 @@
         "set": "2026-09-19, after OWN-073 close: P0 is LIVE-234 only; PROG-R5 is P2; HYG-033 and LIVE-409 are done on main; FOCUS remainder P2; craft P3. Re-rank when a row changes lane or a premise is re-tested; do not let a P0 sit because its wave is later."
       },
       "phases": {
-        "note": "THE PHASED PRODUCTION PLAN (ADR-1325, 2026-09-14). Phases are the owner-facing shape of the same sequence the waves encode; a wave is the unit check:backlog proves, a phase is the unit that exits. A phase exits only on all five: every row done with its probe passing; CI green on main at the last merge; the production deploy READY with all six postbuild gates printed; visual baselines recaptured for every surface the phase moved; a round-report ADR naming every CI failure the phase saw and its mitigation. The loop that works each row (pick, branch, build to the probe, validate, push, arm auto-merge, repair on red, verify the deploy, record) is ADR-1325 §\"The loop\". Lanes: two by ruling 4, widened by owner instruction on 2026-09-14 (\"fan way out\") to as many worktree lanes as there are independent rows, one row per PR, merge one at a time when two touch the same surface.",
+        "note": "THE PHASED PRODUCTION PLAN. Re-cut 2026-09-28 by owner ruling (ADR-1535) into the eleven phases below, in build order; the earlier ADR-1325 cut (editor sub-phases 2-6) is superseded by this list, which is the shape the owner asked for: everything phased, the App Platform last. A wave is the unit check:backlog proves; a phase is the unit that exits. A phase exits only on all five: every row done with its probe passing; CI green on main at the last merge; the production deploy READY with all six postbuild gates printed; visual baselines recaptured for every surface the phase moved; a round-report ADR naming every CI failure the phase saw and its mitigation. The loop that works each row is ADR-1325 §\"The loop\". Lanes: one cloud session per `pnpm packets` derived lane (owner instruction 2026-09-28), one row per PR, merge one at a time when two touch the same surface.",
         "list": [
           {
             "phase": 0,
-            "name": "Stabilise",
+            "name": "Stabilise: the calendar sprint tail, the three scan findings, the P1 baseline flips that block every PR",
             "waves": [
+              "W0",
               "W0b",
               "W0c",
               "W0d"
             ],
-            "owner": [
-              "SENTRY_DSN in Production",
-              "SUPPORT_CHAT=1 on Preview",
-              "STRIPE_CONNECT_WEBHOOK_SECRET after #2560",
-              "the sites apex",
-              "OWN-072 ruling",
-              "OWN-074 messages"
-            ],
-            "exit": "P0 lane empty; LIVE-233 shipped and LIVE-234 walked by the owner; LIVE-315, LIVE-316, LIVE-317 and LIVE-322 closed before the first ticket sells; pr-compare public tier required; round-report ADR"
+            "exit": "W0 empty; SCAN-645 shipped; HYG-123 dropped; LIVE-492 and LIVE-504 no longer red on pr-compare; LIVE-534 and LIVE-530 shipped; round-report ADR"
           },
           {
             "phase": 1,
-            "name": "The rework in flight, plus the guest door's key and door",
+            "name": "The core-model rework in flight",
             "waves": [
               "WR"
             ],
-            "exit": "LIVE-237 and LIVE-246 probes pass; PROG-R6 and R7 close; PROG-GD2 and GD4 close; PROG-R11 can start because attendance has a record"
+            "exit": "PROG-R5, R9, R10 close; LIVE-263 nightly rollup runs; attendance is the seventh standing signal"
           },
           {
             "phase": 2,
-            "name": "Editor Foundation E0, gates first, multiplayer deferred; Loom D2 and D3 beside it as E2's prerequisite",
+            "name": "Foundation: hardening H1-H5, the dead-export trim, the FK guard",
             "waves": [
-              "W3",
-              "W4 head: PROG-E0"
+              "W2"
             ],
-            "exit": "check:doc-safety green on the real corpus; two text blocks coexist; publish, revert, publish round-trips; old and new markup equal per block"
+            "exit": "DEF-HARDEN closes; check:fk-indexes green in the guards array; SCAN-502 ruled and swept or closed"
           },
           {
             "phase": 3,
-            "name": "The contract and the axes: E1, E2 usage index, E3 and Site's four things",
+            "name": "Mobile, alongside the site (owner ruling 2026-09-28)",
             "waves": [
-              "W1",
-              "W4: PROG-E1, PROG-E2, PROG-E3"
+              "WM"
             ],
-            "exit": "block-systems ratchet falls; Spotlight, in-app profile, Space profile and Site render off one registry with zero visual diff"
+            "exit": "stack + transport decision is an ADR; one surface ships on the sync-engine pilot; runs as its own lane from here on, so phases 4-9 do not wait on it"
           },
           {
             "phase": 4,
-            "name": "Sites v1 (E10 part one): domains table, host router, renderer on the contract, per-tenant SEO, tag-based publish",
+            "name": "Loom at scale",
             "waves": [
-              "W4: PROG-E10, LIVE-310"
+              "W5"
             ],
-            "exit": "a paid Space serves at its subdomain with TLS and no auth cookie; the app domain byte-identical"
+            "exit": "D5, D6, D7 close; global swap over the usage index lands"
           },
           {
             "phase": 5,
-            "name": "The site editor (E10 part two, W3 scope) with E4's canvas essentials and the token-request path",
+            "name": "Re-theme + the mechanical sweeps",
             "waves": [
-              "W4: PROG-E10, PROG-E4"
+              "W6"
             ],
-            "exit": "template to three pages to publish to live within one revalidation; RSC and canvas parity"
+            "exit": "PROG-DAWN3 sweeps land; the two PageHero compositions ruled and moved"
           },
           {
             "phase": 6,
-            "name": "Custom domains, billing, hardening (E10 part three, W4 and W5 scope)",
+            "name": "Feature depth: Practice 4, the domain backlog, the code-comment follow-ups, the phone door once A2P clears",
             "waves": [
-              "W4: PROG-E10, LIVE-310"
+              "W7"
             ],
-            "exit": "a gated Space binds a real domain end to end without support; an ungated one cannot"
+            "exit": "PROG-PRAC4 closes; DEF-DOMAIN and DEF-CODE worked down to their probes; PROG-GD6 ships or is ruled out"
           },
           {
             "phase": 7,
-            "name": "Depth: the CRDT behind render_path, E5 to E9, W6 and P7, Loom at scale, the re-theme sweeps, feature depth, commerce verticals, the hardening remainder",
+            "name": "Commerce + verticals (Resonance launch stays GO-gated)",
             "waves": [
-              "W4: PROG-E5 to PROG-E9, PROG-W6, PROG-P7",
-              "W5",
-              "W6",
-              "W7",
-              "W8",
-              "W2: DEF-HARDEN"
+              "W8"
             ],
-            "exit": "the authoring path completes on a phone; a member takes a real payment through a placed block; one prompt builds a single-undo page"
+            "exit": "DEF-MONEY D1-D5 close; split payments ship; DEF-RESON at GO or held by the owner"
           },
           {
-            "phase": "deferred",
-            "name": "By owner ruling: the App Platform (W9), the Etsy-grade store (W11), mobile and the phone door (W12)",
+            "phase": 8,
+            "name": "The editor and white-label websites, together (ADR-1491 order within the wave)",
             "waves": [
-              "W9",
-              "W11",
-              "W12"
+              "W4"
             ],
-            "exit": "owner call"
+            "exit": "E0-E9 close; Sites v1 serves a paid Space at its subdomain; W6 member sites + theme marketplace; P7 theming depth"
+          },
+          {
+            "phase": 9,
+            "name": "The Etsy-grade store",
+            "waves": [
+              "W11"
+            ],
+            "exit": "DEF-ETSY P3-P7 close"
+          },
+          {
+            "phase": 10,
+            "name": "LAST: the App Platform",
+            "waves": [
+              "W9"
+            ],
+            "exit": "owner call to unpark PROG-A1, A3, A4; A3 first because parking it leaves a disabled module reachable by direct API"
+          },
+          {
+            "phase": "owner-timed",
+            "name": "Owner-scheduled rows: accounts, config, content, rulings",
+            "waves": [
+              "owner-timed"
+            ],
+            "exit": "each row on its own date"
           }
         ]
       }
@@ -1532,7 +1549,7 @@
         "file": "docs/BUILD-LIST.md",
         "ref": "A1"
       },
-      "detail": "modules/<app>/{components,server,db,index.ts} with an ESLint import-boundary rule (public API via barrel only); CRM, booking, email-design and QR first. Generalizes then retires check:crm-parity.\n\n── PARKED 2026-09-07 by owner ruling: the App Platform is deferred until the end (first of the four deferred programs). This REVERSES the 2026-08-20 unpark, which had read \"take all tasks out of deferred or parked programs\" as covering it. Nothing is deleted and nothing is re-scoped: the row keeps its size, its detail and its probe, so it resumes exactly where it stopped.",
+      "detail": "modules/<app>/{components,server,db,index.ts} with an ESLint import-boundary rule (public API via barrel only); CRM, booking, email-design and QR first. Generalizes then retires check:crm-parity.\n\n── PARKED 2026-09-07 by owner ruling: the App Platform is deferred until the end (first of the four deferred programs). This REVERSES the 2026-08-20 unpark, which had read \"take all tasks out of deferred or parked programs\" as covering it. Nothing is deleted and nothing is re-scoped: the row keeps its size, its detail and its probe, so it resumes exactly where it stopped.\n\n── OWNER RULING 2026-09-28 (ADR-1535). \"Sorry, I meant app platform. I want that build out after everything else is done.\" STAYS PARKED and is now the ONLY program deferred by name: W9 is the final wave, after Etsy (W11). Nothing else changed on this row.",
       "verify": {
         "kind": "manual",
         "evidence": "Owner-gated (OWN-016).",
@@ -1551,7 +1568,7 @@
         "file": "docs/BUILD-LIST.md",
         "ref": "A3"
       },
-      "detail": "Module-table policies also check the enablement key, so a disabled module's data is unreachable even via direct API.\n\n── PARKED 2026-09-07 by owner ruling: the App Platform is deferred until the end (first of the four deferred programs). This REVERSES the 2026-08-20 unpark, which had read \"take all tasks out of deferred or parked programs\" as covering it. Nothing is deleted and nothing is re-scoped: the row keeps its size, its detail and its probe, so it resumes exactly where it stopped.",
+      "detail": "Module-table policies also check the enablement key, so a disabled module's data is unreachable even via direct API.\n\n── PARKED 2026-09-07 by owner ruling: the App Platform is deferred until the end (first of the four deferred programs). This REVERSES the 2026-08-20 unpark, which had read \"take all tasks out of deferred or parked programs\" as covering it. Nothing is deleted and nothing is re-scoped: the row keeps its size, its detail and its probe, so it resumes exactly where it stopped.\n\n── OWNER RULING 2026-09-28 (ADR-1535). \"Sorry, I meant app platform. I want that build out after everything else is done.\" STAYS PARKED and is now the ONLY program deferred by name: W9 is the final wave, after Etsy (W11). Nothing else changed on this row.",
       "verify": {
         "kind": "manual",
         "evidence": "Owner-gated.",
@@ -1570,7 +1587,7 @@
         "file": "docs/BUILD-LIST.md",
         "ref": "A4"
       },
-      "detail": "CRM as ONE module on /admin/crm, /spaces/[slug]/crm and entity consoles, each reading only its tenant's rows. Then booking, then email design. pgTAP enablement tests per app.\n\n── PARKED 2026-09-07 by owner ruling: the App Platform is deferred until the end (first of the four deferred programs). This REVERSES the 2026-08-20 unpark, which had read \"take all tasks out of deferred or parked programs\" as covering it. Nothing is deleted and nothing is re-scoped: the row keeps its size, its detail and its probe, so it resumes exactly where it stopped.",
+      "detail": "CRM as ONE module on /admin/crm, /spaces/[slug]/crm and entity consoles, each reading only its tenant's rows. Then booking, then email design. pgTAP enablement tests per app.\n\n── PARKED 2026-09-07 by owner ruling: the App Platform is deferred until the end (first of the four deferred programs). This REVERSES the 2026-08-20 unpark, which had read \"take all tasks out of deferred or parked programs\" as covering it. Nothing is deleted and nothing is re-scoped: the row keeps its size, its detail and its probe, so it resumes exactly where it stopped.\n\n── OWNER RULING 2026-09-28 (ADR-1535). \"Sorry, I meant app platform. I want that build out after everything else is done.\" STAYS PARKED and is now the ONLY program deferred by name: W9 is the final wave, after Etsy (W11). Nothing else changed on this row.",
       "verify": {
         "kind": "manual",
         "evidence": "Owner-gated.",
@@ -1972,19 +1989,19 @@
     {
       "id": "DEF-ETSY",
       "title": "Marketplace Etsy-Grade P3-P7",
-      "status": "parked",
-      "priority": "P3",
+      "status": "open",
+      "priority": "P2",
       "lane": "program",
       "size": "XL",
       "source": {
         "file": "docs/ETSY-GRADE-PLAN.md",
         "ref": "P3-P7 (HYG-104 absorb; was MASTER-TODO Marketplace future phases)"
       },
-      "detail": "Shipping and delivery; faceted discovery and ranking; cart + multi-seller checkout (one intent, N destination charges, each take rate preserved); orders, fulfillment and order-scoped messaging; promotions, payout reporting and tax posture. Deferred by owner 2026-07-11.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong. ── ⚠️ RE-STATUSED 2026-08-25 BY OWNER RULING: the only parked items are the mobile app (DEF-MOBILE), the full Etsy-grade marketplace build (DEF-ETSY) and white-labeled sites (PROG-W6). Everything else belongs on the active production list. Parked by owner ruling 2026-08-25: the full Etsy-grade marketplace build is deliberately out of the production runway.",
+      "detail": "Shipping and delivery; faceted discovery and ranking; cart + multi-seller checkout (one intent, N destination charges, each take rate preserved); orders, fulfillment and order-scoped messaging; promotions, payout reporting and tax posture. Deferred by owner 2026-07-11.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong. ── ⚠️ RE-STATUSED 2026-08-25 BY OWNER RULING: the only parked items are the mobile app (DEF-MOBILE), the full Etsy-grade marketplace build (DEF-ETSY) and white-labeled sites (PROG-W6). Everything else belongs on the active production list. Parked by owner ruling 2026-08-25: the full Etsy-grade marketplace build is deliberately out of the production runway.\n\n── OWNER RULING 2026-09-28 (ADR-1535). \"Make a list of everything else, organize them into phases.\" UNPARKED and SEQUENCED, not moved: W11 stays second to last, immediately before the App Platform, which is the position the 2026-08-24 ruling set for it. It is open so it is on the list and probed; it is late so nobody picks it before W4.",
       "verify": {
         "kind": "manual",
-        "evidence": "Owner-deferred.",
-        "checked": "2026-08-17"
+        "evidence": "Unparked 2026-09-28 by owner ruling (ADR-1535). Not started: no shipping/delivery model, no faceted discovery, no multi-seller cart. P3-P7 as scoped in docs/ETSY-GRADE-PLAN.md.",
+        "checked": "2026-09-28"
       }
     },
     {
@@ -2083,19 +2100,19 @@
     {
       "id": "DEF-MOBILE",
       "title": "Mobile: Expo/RN on the shared contract",
-      "status": "parked",
-      "priority": "P3",
-      "lane": "deferred",
+      "status": "open",
+      "priority": "P2",
+      "lane": "program",
       "size": "XL",
       "source": {
         "file": "docs/BUILD-PHASES.md",
         "ref": "Mobile"
       },
-      "detail": "An Expo/RN app on the shared RPC contract and capability model, native camera/QR + NFC + geofencing + push, a Postgres sync-engine pilot on one surface, and a decision on the stack and contract transport.\n\n── PARKED 2026-08-20 (owner ruling): mobile application is deferred by name.",
+      "detail": "An Expo/RN app on the shared RPC contract and capability model, native camera/QR + NFC + geofencing + push, a Postgres sync-engine pilot on one surface, and a decision on the stack and contract transport.\n\n── PARKED 2026-08-20 (owner ruling): mobile application is deferred by name.\n\n── OWNER RULING 2026-09-28 (ADR-1535). \"App till last. Mobile build gets done alongside the site.\" UNPARKED into its own wave WM, placed after W2 foundation so it can run as its own lane beside the site work rather than after it. The stack decision (Expo/RN, contract transport) is the first packet of this row, not a precondition for opening it.",
       "verify": {
         "kind": "manual",
-        "evidence": "Owner-deferred.",
-        "checked": "2026-08-17"
+        "evidence": "Unparked 2026-09-28 by owner ruling (ADR-1535). Not started: no Expo project in the tree, no shared-contract transport decision recorded. Closes when the stack decision is an ADR and one surface ships on the sync-engine pilot.",
+        "checked": "2026-09-28"
       }
     },
     {
@@ -13045,20 +13062,21 @@
     {
       "id": "PROG-GD6",
       "title": "Guest door phase 6, the phone door: a phone number as a second identity on the same seat",
-      "status": "parked",
+      "status": "open",
       "priority": "P3",
-      "lane": "deferred",
+      "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/DECISIONS.md",
         "ref": "the guest-door handoff of 2026-09-14 (session 012voDkq), PRs #2552 and #2556"
       },
-      "detail": "FILED 2026-09-14 from the guest-door handoff, parked by its own recommendation. Right for a poster, wrong for a professional calendar, and it carries A2P registration (DEF-A2P), consent records and per-message cost. Worth a decision, not worth a default. If it ships it never replaces the email door.",
+      "detail": "FILED 2026-09-14 from the guest-door handoff, parked by its own recommendation. Right for a poster, wrong for a professional calendar, and it carries A2P registration (DEF-A2P), consent records and per-message cost. Worth a decision, not worth a default. If it ships it never replaces the email door.\n\n── OWNER RULING 2026-09-28 (ADR-1535). UNPARKED into W7 feature depth. It stays gated on DEF-A2P (the 10DLC registration is an owner account action with a 2-4 week carrier review), which is why it carries ownerAction account: the code is workable the day the campaign is approved, and not before.",
       "verify": {
         "kind": "manual",
-        "evidence": "Owner-deferred with texting (DEF-A2P).",
-        "checked": "2026-09-14"
-      }
+        "evidence": "Unparked 2026-09-28 by owner ruling (ADR-1535); gated on DEF-A2P. Not started.",
+        "checked": "2026-09-28"
+      },
+      "ownerAction": "account"
     },
     {
       "id": "LIVE-335",
@@ -17591,13 +17609,12 @@
         "file": "supabase/migrations/20270345003500_page_settings_events_backup_rls.sql",
         "ref": "found 2026-09-28 tracing the no_primary_key advisor back to the row that owns it"
       },
-      "detail": "FOUND 2026-09-28. `public.page_settings_events_backup_20260910` holds 21 rows of retired production `/events` page settings and is due to be dropped ON OR AFTER 2026-10-10, twelve days from this filing. NOTHING OPEN CARRIES THAT DATE.\n\nTHE ORPHAN, in the two rows' own words. HYG-086 shipped the RLS migration and says \"THE DROP IS NOT HERE ... the backlog row carries that date\". SCAN-640 re-tested the premise, correctly refused to drop from an agent session, staged `docs/proposals/SCAN-640-backup-table-primary-key.sql`, and says \"the Oct 10 drop stays on HYG-086\". HYG-086 is `done`. Four rows mention the table or the date -- LIVE-288, HYG-086, HYG-087, SCAN-640 -- and all four are `done`. Each handoff was individually right and the date fell through the gap between them.\n\nThis is the failure mode the one list exists to prevent, arriving by a route no guard watches: `check:backlog` proves every row against the tree and both of these rows are honestly done, because each DID what it said. What nothing checks is that a future action one row delegated to another was ever picked up. The advisor keeps reporting `no_primary_key` on the table and will until the drop, so the only live signal is one an operator has been told to expect and ignore.\n\nAND WHILE LOOKING, A SECOND THING WORTH ONE LINE OF THE SAME MIGRATION. Swept all 88 tables that are RLS-on-with-no-policy on prod: 86 carry ZERO grants to `anon`. The two that do not are `spatial_ref_sys` (the accepted PostGIS exception) and THIS TABLE, which still carries all seven default `anon` privileges. It fails closed today -- RLS on with no policy denies every non-owner -- so this is defence in depth and not an open read, and it is worth saying because the table is the single exception to a pattern `20270218000000_close_default_grants_on_internal_tables` otherwise holds perfectly. If the drop lands on schedule the grants go with it and this line costs nothing.\n\nDONE looks like: the 21 rows are archived off `public` or confirmed unwanted, one migration drops the table, and the advisor's `no_primary_key` finding goes with it. DRAFT AND APPROVE: this is 21 rows of the only way back from the ADR-1316 cleanup, so the owner confirms before an agent drops anything. If the owner wants the way back kept longer, this row's job is to carry the NEW date rather than to close.",
+      "detail": "FOUND 2026-09-28. `public.page_settings_events_backup_20260910` holds 21 rows of retired production `/events` page settings and is due to be dropped ON OR AFTER 2026-10-10, twelve days from this filing. NOTHING OPEN CARRIES THAT DATE.\n\nTHE ORPHAN, in the two rows' own words. HYG-086 shipped the RLS migration and says \"THE DROP IS NOT HERE ... the backlog row carries that date\". SCAN-640 re-tested the premise, correctly refused to drop from an agent session, staged `docs/proposals/SCAN-640-backup-table-primary-key.sql`, and says \"the Oct 10 drop stays on HYG-086\". HYG-086 is `done`. Four rows mention the table or the date -- LIVE-288, HYG-086, HYG-087, SCAN-640 -- and all four are `done`. Each handoff was individually right and the date fell through the gap between them.\n\nThis is the failure mode the one list exists to prevent, arriving by a route no guard watches: `check:backlog` proves every row against the tree and both of these rows are honestly done, because each DID what it said. What nothing checks is that a future action one row delegated to another was ever picked up. The advisor keeps reporting `no_primary_key` on the table and will until the drop, so the only live signal is one an operator has been told to expect and ignore.\n\nAND WHILE LOOKING, A SECOND THING WORTH ONE LINE OF THE SAME MIGRATION. Swept all 88 tables that are RLS-on-with-no-policy on prod: 86 carry ZERO grants to `anon`. The two that do not are `spatial_ref_sys` (the accepted PostGIS exception) and THIS TABLE, which still carries all seven default `anon` privileges. It fails closed today -- RLS on with no policy denies every non-owner -- so this is defence in depth and not an open read, and it is worth saying because the table is the single exception to a pattern `20270218000000_close_default_grants_on_internal_tables` otherwise holds perfectly. If the drop lands on schedule the grants go with it and this line costs nothing.\n\nDONE looks like: the 21 rows are archived off `public` or confirmed unwanted, one migration drops the table, and the advisor's `no_primary_key` finding goes with it. DRAFT AND APPROVE: this is 21 rows of the only way back from the ADR-1316 cleanup, so the owner confirms before an agent drops anything. If the owner wants the way back kept longer, this row's job is to carry the NEW date rather than to close.\n\n── OWNER RULING 2026-09-28 (ADR-1535). \"HYG-123: drop it.\" The ruling this row was waiting on is made. DONE now means: one guarded migration (DROP TABLE IF EXISTS, the to_regclass shape of 20270345003500) that retires public.page_settings_events_backup_20260910 and its seven default anon grants with it; applied to production through execute_sql then the ledger insert at the FILE version (docs/DATABASE.md), never apply_migration; docs/proposals/SCAN-640-backup-table-primary-key.sql deleted in the same PR because a primary key on a dropped table is a proposal for nothing. The 21 rows are the ADR-1316 way back and the owner has chosen not to keep it, so no archive copy is taken.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs = require(\"node:fs\")\nconst fail = (m) => { console.error(m); process.exit(1) }\nconst T = \"page_settings_events_backup_20260910\"\nconst dir = \"supabase/migrations\"\nlet files\ntry { files = fs.readdirSync(dir).filter((f) => f.endsWith(\".sql\")) } catch (e) {\n  console.error(\"probe could not look: \" + dir + \" is unreadable here\")\n  process.exit(79)\n}\n// THE CONSEQUENCE IS THE TABLE BEING GONE from the schema this tree can reproduce, not a row\n// existing that says somebody should drop it. An earlier draft of this probe passed as soon as an\n// open row mentioned the table and a date, which is the pass-by-existing failure the contract\n// names: it would have gone green the moment this row was filed and measured nothing.\nconst dropped = files.some((f) => {\n  let s\n  try { s = fs.readFileSync(dir + \"/\" + f, \"utf8\") } catch (e) { return false }\n  return new RegExp(\"drop\\\\s+table\\\\s+(?:if\\\\s+exists\\\\s+)?(?:public\\\\.)?\" + T, \"i\").test(s)\n})\nif (!dropped) {\n  fail(\"no migration drops \" + T + \", so 21 rows of retired production page settings are still a live table in the public schema. Its retirement was dated on or after 2026-10-10 and then delegated between four rows that are now all done (LIVE-288, HYG-086, HYG-087, SCAN-640), so nothing on the one list surfaces it on the day it comes due. It is also the only table in the database that is RLS-on-with-no-policy AND still carries the seven default anon grants; it fails closed today because RLS with no policy denies, and the drop takes the grants with it.\")\n}\n// A drop that a fresh environment cannot run is not a drop: the table was created by a script and\n// is in no migration, so a bare DROP TABLE aborts db reset and the fresh-apply suite. Same reason\n// 20270345003500 guards its ALTER with to_regclass.\nconst guarded = files.some((f) => {\n  let s\n  try { s = fs.readFileSync(dir + \"/\" + f, \"utf8\") } catch (e) { return false }\n  if (!new RegExp(\"drop\\\\s+table[^;]*\" + T, \"i\").test(s)) return false\n  return /if\\s+exists/i.test(s) || /to_regclass/i.test(s)\n})\nif (!guarded) {\n  fail(\"the drop of \" + T + \" is unguarded, and the table is in no migration, so a fresh environment (db reset, a branch database, the fresh-apply suite) has no such table and the statement aborts. Write it as DROP TABLE IF EXISTS, the way 20270345003500 guards its own ALTER with to_regclass.\")\n}\n'",
         "note": "Measures the consequence: the snapshot table is gone from the schema this tree can reproduce, and the drop is written so a fresh environment can run it. Fails today on the first arm, by design. Deliberately does NOT pass merely because an open row names the table and a date -- an earlier draft did, and a probe that goes green the moment its own row is filed measures nothing. Exits 79 if the migrations directory is unreadable. Mutation-test both arms when it closes by deleting the DROP statement, then by removing IF EXISTS from it."
-      },
-      "ownerAction": "ruling"
+      }
     },
     {
       "id": "HYG-124",
@@ -17615,6 +17632,60 @@
         "kind": "cmd",
         "cmd": "node -e 'const fs = require(\"node:fs\")\nconst { execFileSync } = require(\"node:child_process\")\nconst fail = (m) => { console.error(m); process.exit(1) }\nlet log\ntry {\n  log = execFileSync(\"git\", [\"log\", \"--format=%s\", \"-n\", \"400\"], { encoding: \"utf8\" })\n} catch (e) {\n  console.error(\"probe could not look: git log is unavailable here\")\n  process.exit(79)\n}\nlet bl\ntry { bl = JSON.parse(fs.readFileSync(\"docs/BUILD-BACKLOG.json\", \"utf8\")) } catch (e) {\n  console.error(\"probe could not look: the one list is unreadable here\")\n  process.exit(79)\n}\nconst ids = new Set(bl.entries.map((e) => e.id))\nconst seen = new Set()\nfor (const m of log.matchAll(/\\b(?:LIVE|PROG|HYG|OWN|DEF|SCAN)-[A-Z0-9]+\\b/g)) seen.add(m[0])\nif (seen.size === 0) {\n  console.error(\"probe could not look: no backlog id appears in the last 400 commit subjects\")\n  process.exit(79)\n}\nconst missing = [...seen].filter((i) => !ids.has(i)).sort()\nif (missing.length) {\n  fail(missing.length + \" id(s) shipped in a merged commit and sit on no row of the one list, so a change that reached production is recorded nowhere the list can prove: \" + missing.join(\", \") + \". check:backlog cannot see this because it iterates the ROWS, and an id that was never added is not a row.\")\n}\n// Patching the holes by hand leaves the hole. A guard nobody wired is the #2098 failure, so\n// closing this row means the check RUNS, not that two rows were inserted.\nlet ci\ntry { ci = fs.readFileSync(\".github/workflows/ci.yml\", \"utf8\") } catch (e) {\n  console.error(\"probe could not look: the CI workflow is unreadable here\")\n  process.exit(79)\n}\nif (!/shipped-ids|shipped_ids|commit-ids|check:shipped/.test(ci)) {\n  fail(\"the missing ids were added but no wired guard reads merged commit subjects for ids the one list lacks, so the next shipped-with-no-row change is invisible again.\")\n}\n'",
         "note": "Measures the consequence in both directions: no merged commit names an id the row set lacks, AND a wired guard keeps it that way, because patching two holes by hand leaves the hole. Reads the last 400 subjects of the current branch. Fails today on the first arm (HYG-125, LIVE-475). Exits 79 if git is unavailable. Mutation-test by deleting either added row."
+      }
+    },
+    {
+      "id": "HYG-126",
+      "title": "Three owner-directive ADRs and the calendar doc are stranded on the dead LIVE-512 branch: the code merged, the decisions did not",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "found 2026-09-28 checking why ADR-1534 says 1531-1533 are reserved by another session"
+      },
+      "detail": "FOUND 2026-09-28 while numbering ADR-1535. ADR-1534 (2026-09-27) says it is numbered 1534 because 1531-1533 are \"reserved by another open session\". They were written, and they exist ONLY on origin/calendar-sky-and-marks and origin/claude/calendar-wall-clock-live-512:\n\n· ADR-1531: The sky is computed onto every calendar, and \"the fourth Sunday\" is not \"the last Sunday\" (owner directive 2026-09-27)\n· ADR-1532: A stage says itself with a mark at the head of the chip, and the header keeps the ledger (owner directive 2026-09-27)\n· ADR-1533: A value with no zone and a path with symlinks both read as correct while being wrong\n\nplus a docs/EVENTS-CALENDAR.md change that main does not have. The CODE for all three shipped: #2908 (c88cd4bfc) squash-merged the branch, LIVE-516 was re-ported as #2924, and LIVE-526 landed the sky as #2919. The DECISIONS never followed, because PR #2910 merged INTO the already-squashed branch 22 minutes after #2908 closed it (LIVE-531 records the mechanism), so its ledger commit is unreachable from main. Three owner directives are therefore in production with no record, which is the ADR-1355 class exactly.\n\n🔴 WHY NO GATE SEES IT. check:adr fails a CITED number with no entry, and main cites none of the three (the citations are on the same dead branch). check:id-collisions reads OPEN PRs, and #2910 is merged-closed. So a decision can ship and vanish with every guard green whenever a second PR is aimed at a branch a first PR already squashed.\n\n⚠️ THE PORT IS NOT A CHERRY-PICK. The dead branch also minted its own HYG-123 and HYG-124 rows, and ADR-1533's heading cites them. On main those ids are DIFFERENT rows (the snapshot-table drop and the shipped-ids guard, filed 2026-09-28). Port the three ADR bodies and the EVENTS-CALENDAR.md delta by hand from `git show origin/calendar-sky-and-marks:docs/DECISIONS.md`, reword every HYG-123 / HYG-124 citation to what the text actually means (the timezone finding is LIVE-516/LIVE-531; the symlink finding is LIVE-532), and do NOT take the branch's BUILD-BACKLOG.json. Then delete the two dead branches so the next scan does not find them again.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs = require(\"node:fs\")\nconst fail = (m) => { console.error(m); process.exit(1) }\nlet s\ntry { s = fs.readFileSync(\"docs/DECISIONS.md\", \"utf8\") } catch (e) { console.error(\"probe could not look: docs/DECISIONS.md is unreadable\"); process.exit(79) }\nfor (const n of [\"1531\", \"1532\", \"1533\"]) {\n  const re = new RegExp(\"^#{2,3} ADR-\" + n + \"\\\\b\", \"m\")\n  if (!re.test(s)) fail(\"ADR-\" + n + \" is not in docs/DECISIONS.md. It was written on the LIVE-512 branch that PR #2910 merged into AFTER #2908 had already squashed that branch, so the decision shipped as code and never reached the ledger. Port it from origin/calendar-sky-and-marks by hand.\")\n}\nconst m = /^#{2,3} ADR-1533[^\\n]*/m.exec(s)\nif (m && /HYG-12[34]/.test(m[0])) fail(\"ADR-1533 was ported with its branch-local citations intact. HYG-123 and HYG-124 on main are different rows (the snapshot drop and the shipped-ids guard), so the heading points at the wrong work. Reword the citation to the ids the ported text means.\")\n'",
+        "note": "Measures the consequence: the three decisions exist in the ledger main can reproduce, and the one whose heading carried dead-branch ids was reworded rather than copied. Fails today on ADR-1531. Exits 79 if the ledger is unreadable. Mutation-test by porting 1533 with its original heading: arm 2 must fire."
+      }
+    },
+    {
+      "id": "HYG-127",
+      "title": "Nine foreign keys from the calendar sprint have no covering index, the third time this exact debt has re-accumulated on new tables",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270345008600_calendar_entry_tombstone.sql",
+        "ref": "Supabase performance advisor unindexed_foreign_keys, 2026-09-28"
+      },
+      "detail": "MEASURED 2026-09-28 on prod (azsqfeonabsbmemvddqd): the advisor reports NINE unindexed foreign keys, up from ZERO on 2026-09-19, every one on a table the calendar sprint added or extended: space_calendar_entries.removed_by, space_calendar_private_feeds.created_by, space_plan_playbooks.created_by, space_plan_shares.guest_space_id, space_plan_shares.requested_by, space_plan_shares.responded_by, space_plans.created_by, space_plans.owner_profile_id, space_plans.playbook_id. A FK without a covering index makes every DELETE or UPDATE on the referenced row scan the referencing table, and space_calendar_entries.removed_by (LIVE-536, four days old) references profiles, so a profile delete now scans the calendar table.\n\nTHIS IS THE THIRD RECURRENCE. SCAN-638 closed six of these on 2026-09-19; 20270345006400 swept another set; both times the count went to zero and both times new tables brought it back. That pattern is the argument for HYG-128 (a guard in the migration that adds the FK) rather than a fourth sweep on its own; this row is the sweep, filed because the nine are real today whatever the guard does tomorrow.\n\nOWNER RULING 2026-09-28: one sweep row (this) plus one convention row (HYG-128). DONE looks like one migration, `create index if not exists ... on <table> (<column>)` for each of the nine, applied through execute_sql then the ledger insert at the FILE version, and the advisor reading zero again.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs = require(\"node:fs\")\nconst fail = (m) => { console.error(m); process.exit(1) }\nconst dir = \"supabase/migrations\"\nlet files\ntry { files = fs.readdirSync(dir).filter((f) => f.endsWith(\".sql\")) } catch (e) { console.error(\"probe could not look: \" + dir + \" is unreadable\"); process.exit(79) }\nconst sql = files.map((f) => { try { return fs.readFileSync(dir + \"/\" + f, \"utf8\") } catch (e) { return \"\" } }).join(\"\\n\").replace(/--[^\\n]*/g, \" \")\nconst FK = [[\"space_calendar_entries\",\"removed_by\"],[\"space_calendar_private_feeds\",\"created_by\"],[\"space_plan_playbooks\",\"created_by\"],[\"space_plan_shares\",\"guest_space_id\"],[\"space_plan_shares\",\"requested_by\"],[\"space_plan_shares\",\"responded_by\"],[\"space_plans\",\"created_by\"],[\"space_plans\",\"owner_profile_id\"],[\"space_plans\",\"playbook_id\"]]\nconst missing = FK.filter(([t, c]) => !new RegExp(\"create\\\\s+index[^;]*\\\\bon\\\\s+(?:public\\\\.)?\" + t + \"\\\\b[^;(]*\\\\(\\\\s*\" + c + \"\\\\b\", \"i\").test(sql))\nif (missing.length) fail(missing.length + \" foreign key(s) from the calendar sprint still have no covering index in any migration, so a delete or update on the referenced row scans the referencing table: \" + missing.map(([t, c]) => t + \".\" + c).join(\", \") + \". Third recurrence of this class after SCAN-638 and 20270345006400.\")\n'",
+        "note": "Measures the consequence in the schema the tree reproduces: a covering index exists for each of the nine FK columns, allowing a composite index that leads with the column. Fails today on all nine. Mutation-test by deleting any one index statement."
+      }
+    },
+    {
+      "id": "HYG-128",
+      "title": "A migration can add a foreign key with no covering index and nothing fails the PR, which is why the same debt has come back three times",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "scripts/check-rls.mjs",
+        "ref": "the convention half of the 2026-09-28 FK ruling; model is check-rls-recursion, a SOURCE guard over supabase/migrations"
+      },
+      "detail": "FILED 2026-09-28 as the convention half of the owner ruling on HYG-127. Three sweeps (SCAN-638, 20270345006400, HYG-127) have each taken the unindexed-FK count to zero, and each time the next tables brought it back, because the only thing that notices is the Supabase advisor, which nobody reads on a pull request. The fix is a SOURCE-only guard in the ci.yml `guards` array beside rls-recursion: replay supabase/migrations, collect every `references` clause and every `create index`, and fail when a FK column has no index that leads with it. The advisor stops being the first reader.\n\nSHAPE. scripts/check-fk-indexes.mjs, `pnpm check:fk-indexes` in package.json, and the guard name in the ci.yml array. scripts/guard-wiring.test.ts already fails a check:* script wired nowhere, so the array entry is not optional. Allow an explicit, stated exception list for FKs that are deliberately unindexed (a tiny lookup table), because an unexplained exemption is the drift this repo names five times. Mutation-test with a migration that adds a FK and no index: the guard must fail, and pass again with the index.\n\nBASELINE. The guard must be green on the tree the day it lands, which means HYG-127 lands first or in the same PR. A guard that fails on merge is the 2026-08-11 incident with the roles reversed.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs = require(\"node:fs\")\nconst fail = (m) => { console.error(m); process.exit(1) }\nconst rd = (f) => { try { return fs.readFileSync(f, \"utf8\") } catch (e) { return null } }\nconst pkg = rd(\"package.json\"), ci = rd(\".github/workflows/ci.yml\"), guard = rd(\"scripts/check-fk-indexes.mjs\")\nif (pkg === null || ci === null) { console.error(\"probe could not look: package.json or ci.yml is unreadable\"); process.exit(79) }\nif (guard === null) fail(\"there is no scripts/check-fk-indexes.mjs, so a migration can add a foreign key with no covering index and nothing on a pull request notices; the Supabase advisor stays the first reader, and this debt has come back three times.\")\nif (!/references|foreign\\s+key/i.test(guard)) fail(\"scripts/check-fk-indexes.mjs exists but never reads a references clause, so it cannot be comparing foreign keys to indexes\")\nif (!/\"check:fk-indexes\"\\s*:/.test(pkg)) fail(\"the guard is not a package.json script, so nobody can run it locally and guard-wiring cannot see it\")\nif (!/(^|[\\s(])fk-indexes([\\s)]|$)/m.test(ci)) fail(\"check:fk-indexes is not in the ci.yml guards array, so it runs nowhere: the #2098 failure, a guard that exists and enforces nothing\")\n'",
+        "note": "Measures that the guard exists, reads FKs, is runnable, and is wired where it runs. Fails today on the first arm. Exits 79 if package.json or ci.yml is unreadable. Mutation-test by dropping the array entry: arm 4 must fire."
       }
     }
   ]
