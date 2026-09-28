@@ -48687,9 +48687,9 @@ The row was explicit about the trap, and it is the LIVE-533 shape: a "This date 
 
 **Consequences.** `LIVE-542` closes on its probe (the migration set creates and gates the table with no update policy, a session-only store exists, the drawer renders the thread). The generated types gained the table and the function by hand in the generated shape. The migration is applied after merge with `execute_sql` and a ledger insert at its own version. Child 5 (LIVE-545) sends the notification a comment deserves; child 3 (LIVE-543) records who did what to the Plan itself, which is not a comment and does not live here.
 
-## ADR-1554: A Plan keeps its own record of who did what, written by the door that did it, readable by both sides and rewritten by nobody (LIVE-543)
+## ADR-1555: A Plan keeps its own record of who did what, written by the door that did it, readable by both sides and rewritten by nobody (LIVE-543)
 
-**Status:** Accepted · 2026-09-28 · `LIVE-543` (child 3 of 6 of `PROG-CAL7`) · builds on [ADR-1552](DECISIONS.md) (the handshake) and [ADR-1553](DECISIONS.md) (the thread) · numbered 1554 because 1545 to 1551 are claimed by pull requests opened before this lane's, 1552 by #2964 and 1553 by #2968, the two children this one stands on (ADR-1509)
+**Status:** Accepted · 2026-09-28 · `LIVE-543` (child 3 of 6 of `PROG-CAL7`) · builds on [ADR-1552](DECISIONS.md) (the handshake) and [ADR-1553](DECISIONS.md) (the thread) · numbered 1555 because 1545 to 1551 are claimed by pull requests opened before this lane's, 1552 by #2964 and 1553 by #2968, the two children this one stands on (ADR-1509)
 
 **Context.** Two Spaces working one Plan had no way to learn what the other did to it: who moved a date, who finished a to-do, who changed the stage. The Vera change log records what Vera applied, keyed by batch, and nothing a person did by hand. PROG-CAL7 names "an activity log (who moved a date, who finished a task)" and its notifications fan out from that log, so the record has to exist before child 5 can send anything.
 
@@ -48703,9 +48703,9 @@ The row was explicit about the trap, and it is the LIVE-533 shape: a "This date 
 
 **Consequences.** `LIVE-543` closes on its probe (the migration set creates the table with no update or delete policy, all four door files call the writer, the drawer reads it). `todo_assigned` waits for LIVE-544's assign door; LIVE-545 fans notifications out from these rows. The migration is applied after merge with `execute_sql` and a ledger insert at its own version.
 
-## ADR-1555: A to-do crosses the share by Plan id, and is handed to a person from the two teams' list, never from the browser (LIVE-544)
+## ADR-1556: A to-do crosses the share by Plan id, and is handed to a person from the two teams' list, never from the browser (LIVE-544)
 
-**Status:** Accepted · 2026-09-28 · `LIVE-544` (child 4 of 6 of `PROG-CAL7`) · builds on [ADR-1552](DECISIONS.md) (the handshake) and [ADR-1554](DECISIONS.md) (the record) · numbered 1555 because 1545 to 1551 are claimed by pull requests opened before this lane's and 1552 to 1554 by #2964, #2968 and #2970, the children this one stands on (ADR-1509)
+**Status:** Accepted · 2026-09-28 · `LIVE-544` (child 4 of 6 of `PROG-CAL7`) · builds on [ADR-1552](DECISIONS.md) (the handshake) and [ADR-1555](DECISIONS.md) (the record) · numbered 1556 because 1545 to 1551 are claimed by pull requests opened before this lane's and 1552 to 1554 by #2964, #2968 and #2970, the children this one stands on (ADR-1509)
 
 **Context.** `crm_tasks` is a Space-scoped, service-role table: `listTasks` keys on `space_id`, `updateTaskStatusInScope` binds its write to the Space the action proved, and nothing in the calendar set `assignee_profile_id`. So a to-do on a Plan shared with a guest Space was invisible to the guest after the handshake, could not be ticked by them, and could be handed to nobody on either side. PROG-CAL7 promises "tasks assignable to members of either Space".
 
