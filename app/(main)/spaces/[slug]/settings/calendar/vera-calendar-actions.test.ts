@@ -60,3 +60,16 @@ describe('Vera reads what drew people through the action, never through the loop
     expect(loop).not.toMatch(/event-stats|entries-store|plans-store|@\/lib\/events\/store|supabase\/admin/)
   })
 })
+
+// THE REASON ON THE LINE (LIVE-540). The fold the loop read rides the describe context the propose
+// door returns, so the box can end a pencil line with the server's sentence; the model's note is
+// never the carrier, and the undo door (which reads no history) never carries one.
+describe('the propose door carries what drew people onto the describe context', () => {
+  it('moves attendance off the reply and onto the context, only when Vera read it', () => {
+    const at = actions.indexOf('export async function veraCalendarCommand(')
+    const body = actions.slice(at, actions.indexOf('\n}', at))
+    expect(body).toContain('const { attendance, ...reply } = res')
+    expect(body).toContain('if (attendance) describe.attendance = attendance')
+    expect(body).toContain('return ok({ ...reply, timeZone, context: describe })')
+  })
+})

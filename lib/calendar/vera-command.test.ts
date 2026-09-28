@@ -15,6 +15,8 @@ import {
   parseVeraClarification,
   irreversibleReason,
   parseVeraLogSteps,
+  attendanceReason,
+  followsAttendance,
   reverseChange,
   undoChanges,
   undoNote,
@@ -597,5 +599,45 @@ describe('undoChanges and the record', () => {
     expect(read[0].reverse).toBeNull()
     expect(read[0].reason).toBe(irreversibleReason({ kind: 'move', entryId: ENTRY, toDay: '2026-03-19' }))
     expect(undoChanges(read)).toEqual([])
+  })
+})
+
+// THE REASON ON THE LINE (PROG-CAL11 slice 4, LIVE-540). When Vera picked a day because that
+// weekday and hour drew people, the proposal carries the server's fold on the describe context and
+// the pencil line ends with the server's sentence and the count it rests on. A pencil that does not
+// follow the history reads exactly as it does without one: a Tuesday never claims the Saturday
+// sentence, and neither does a Saturday at the wrong hour or a list with one day off the weekday.
+describe('the reason on the line', () => {
+  const history = { best: { weekday: 6, hour: 19, people: 21, events: 2 }, recordedEvents: 3, byWeekday: [], byHour: [] }
+  const saturdays: VeraChange = { kind: 'pencil', title: 'Sound bath', days: ['2026-10-03', '2026-10-10'], startTime: '19:00', endTime: '21:00', timeZone: 'America/Los_Angeles', stage: 'pencil' }
+  const bare = { plans: {}, entries: {} }
+  const withHistory = { ...bare, attendance: history }
+
+  it('ends a pencil that follows the history with the server sentence and the count it rests on', () => {
+    const line = describeChange(saturdays, withHistory)
+    expect(line).toBe(
+      'Pencil "Sound bath" on 2 dates: Sat, Oct 3 and Sat, Oct 10, 2026, 7 PM to 9 PM as a new Plan at Pencil. Saturdays at 7 PM have drawn the most people here: 21 over 2 events.',
+    )
+    expect(line).not.toMatch(/[–—!]/)
+    expect(describeChange(saturdays, bare)).toBe('Pencil "Sound bath" on 2 dates: Sat, Oct 3 and Sat, Oct 10, 2026, 7 PM to 9 PM as a new Plan at Pencil.')
+  })
+
+  it('says nothing more when the pencil does not follow the history', () => {
+    const tuesday = { ...saturdays, days: ['2026-10-06'] }
+    expect(describeChange(tuesday, withHistory)).toBe(describeChange(tuesday, bare))
+    const wrongHour = { ...saturdays, startTime: '10:00', endTime: '11:00' }
+    expect(describeChange(wrongHour, withHistory)).toBe(describeChange(wrongHour, bare))
+    const oneOff = { ...saturdays, days: ['2026-10-03', '2026-10-06'] }
+    expect(describeChange(oneOff, withHistory)).toBe(describeChange(oneOff, bare))
+    expect(describeChange(saturdays, { ...bare, attendance: { ...history, best: null } })).toBe(describeChange(saturdays, bare))
+  })
+
+  it('an all-day pencil on the weekday follows it; other kinds never carry a reason', () => {
+    const allDay: VeraChange = { kind: 'pencil', title: 'Market', days: ['2026-10-03'], timeZone: 'UTC' }
+    expect(followsAttendance(allDay, history)).toBe(true)
+    expect(describeChange(allDay, withHistory)).toContain('Saturdays at 7 PM have drawn the most people here')
+    expect(followsAttendance({ kind: 'move', entryId: ENTRY, toDay: '2026-10-03' }, history)).toBe(false)
+    expect(attendanceReason({ kind: 'retitle', planId: PLAN, title: 'Saturday sits' }, history)).toBe('')
+    expect(followsAttendance({ ...allDay, days: [] }, history)).toBe(false)
   })
 })
