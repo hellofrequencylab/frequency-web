@@ -156,6 +156,9 @@ export function VeraCalendarBox({
       plans: { ...ctx.plans, ...(proposal?.context.plans ?? {}) },
       entries: { ...ctx.entries, ...(proposal?.context.entries ?? {}) },
       current: proposal?.context.current,
+      // Why a day was picked, when Vera read what drew people (LIVE-540): the server's fold, so
+      // describeChange can end the pencil line with the server's sentence.
+      attendance: proposal?.context.attendance ?? null,
     }),
     [ctx, proposal],
   )
