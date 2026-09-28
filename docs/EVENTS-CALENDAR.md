@@ -439,6 +439,23 @@ VEVENT (`lib/calendar/entry-feed.ts`): the anchor in the TZID local form, its `R
 master's wall clock in the entry's zone, so a subscriber's calendar draws the series itself and keeps
 the gap.
 
+**One occurrence on its own** (`LIVE-534`, [ADR-1541](DECISIONS.md)). Because a series is one row, an
+edit to any occurrence is an edit to every date, and Save on a repeating entry asks first (`LIVE-531`).
+"This date only" in that dialog SPLITS the series through ONE database function,
+`public.split_calendar_series` (migration `20270345008800`, SECURITY INVOKER, the operator quad is the
+lock): the master gains the day in `exception_dates` and a NEW one-off row carries the edited values
+for that day, together or not at all. The override lands on the occurrence's own day with the form's
+time and length when the date field was left on the series' first date, and on the form's date when
+the person moved it (`occurrenceWrite` in `lib/calendar/entries.ts`); the rule and the skips stay the
+series' and never reach the override. Every reader then holds the pair for free, because the override
+is an ordinary one-off row and the master's skip is an ordinary exception: the grid draws the day once
+(`entries.test.ts` pins it), clash checks and booking blocks expand the master minus the day and count
+the override on its own, the `.ics` feed emits the EXDATE and a second VEVENT, the Plan link travels
+with the override, and publishing the override retires that one date while the series carries on. The
+choice appears only when the drawer was opened from one occurrence; a Plan is not transitioned by one
+of its dates changing stage, and a date that is one of several candidate dates is refused until one is
+kept. The pair is proved atomic on real rows under real RLS by `supabase/tests/split_calendar_series.test.sql`.
+
 **Day notes** (`PROG-CAL1`). `public.space_calendar_day_notes` holds short labels that describe a day
 rather than occupy it: a `weekly` note sets `weekdays` (0 is Sunday) within optional `starts_on` /
 `ends_on` bounds; a `dated` note leaves `weekdays` null and covers `starts_on` through `ends_on`. Day notes
