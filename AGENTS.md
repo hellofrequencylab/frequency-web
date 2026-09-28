@@ -41,7 +41,7 @@ Orientation for a human: [`docs/START-HERE.md`](docs/START-HERE.md).
 
 **[`docs/BUILD-BACKLOG.json`](docs/BUILD-BACKLOG.json) is the only record of what is done** ([ADR-1043](docs/DECISIONS.md)). `pnpm backlog` is the working view. `pnpm packets` is the next agent-workable row per derived lane.
 
-- **Never open a new plan / TODO / roadmap / audit file.** `pnpm check:one-list` freezes that set. Findings become backlog rows.
+- **A new plan / TODO / roadmap / audit file is allowed; an undeclared one is not.** Add it to `scripts/planning-docs.txt` in the same PR — that is the whole cost, and the set is shrinking. `pnpm check:one-list` does not ban documents; it bans a second record of status. A finding that needs no spec is a backlog row, not a file.
 - **Never record status in prose.** Specs and ADRs explain the work. Every planning doc must point at the JSON in its first 25 lines, or carry a SUPERSEDED banner.
 - Every open row has `priority` (P0–P3) and a `verify` probe that measures a **consequence**. `pnpm check:backlog` fails both ways (stale `open`, regressed `done`).
 - Close a row by making its probe pass. Never delete the probe.
