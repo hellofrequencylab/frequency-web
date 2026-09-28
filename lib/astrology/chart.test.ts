@@ -101,9 +101,50 @@ describe('the ephemeris import seam', () => {
   }
   for (const root of ROOTS) walk(join(repo, root))
 
-  it("only lib/astrology/chart.ts imports 'astronomy-engine'", () => {
-    const importers = sources.filter((f) => /from\s+['"]astronomy-engine['"]/.test(readFileSync(f, 'utf8')))
-    expect(importers.map((f) => f.slice(repo.length + 1))).toEqual([join('lib', 'astrology', 'chart.ts')])
+  // TWO modules may reach the ephemeris, and the list is CLOSED on purpose. The seam exists for
+  // build-budget / DEPLOY-SAFETY reasons (see chart.ts's header): astronomy-engine is 1.8 MB
+  // installed and 116 KB minified in the browser build, so anything reachable from a shared module
+  // or the app shell multiplies it across every route beneath. Widening this list is a decision,
+  // never a convenience: each entry below is pinned to its own consumers by the tests that follow.
+  const EPHEMERIS_IMPORTERS = [join('lib', 'astrology', 'chart.ts'), join('lib', 'calendar', 'astro-markers.ts')]
+
+  it('only the two declared modules import the ephemeris', () => {
+    const importers = sources
+      .filter((f) => /from\s+['"]astronomy-engine['"]/.test(readFileSync(f, 'utf8')))
+      .map((f) => f.slice(repo.length + 1))
+      // TESTS are excluded, as they are in the chart.ts consumer assertion below: this seam is
+      // about what SHIPS, and a spec file is not in any bundle. astro-markers.test.ts imports the
+      // ephemeris deliberately, as an INDEPENDENT source to cross-check the moon dates that module
+      // delegates to lib/calendar/moon.ts -- which is the one job a second engine is good for.
+      .filter((f) => !/\.test\.(ts|tsx)$/.test(f))
+    expect(importers.sort()).toEqual([...EPHEMERIS_IMPORTERS].sort())
+  })
+
+  // The sky markers (LIVE-526) are the second entry. Their containment rule is the same shape as
+  // chart.ts's: a short list of SERVER route files may import them for real, and everything else may
+  // only import the TYPE, which is erased at build. A client component that imported the module for
+  // real would put the ephemeris on every phone opening a Space calendar.
+  it('lib/calendar/astro-markers.ts is imported for REAL only by server route files', () => {
+    const runtime: string[] = []
+    const typeOnly: string[] = []
+    for (const f of sources) {
+      const src = readFileSync(f, 'utf8')
+      if (!/from\s+['"](@\/lib\/calendar\/astro-markers|\.\/astro-markers)['"]/.test(src)) continue
+      const rel = f.slice(repo.length + 1)
+      if (/\.test\.(ts|tsx)$/.test(rel)) continue
+      const isTypeOnly = /import\s+type\s+\{[^}]*\}\s+from\s+['"](@\/lib\/calendar\/astro-markers|\.\/astro-markers)['"]/.test(src)
+      ;(isTypeOnly ? typeOnly : runtime).push(rel)
+    }
+    expect(runtime.sort()).toEqual(
+      [
+        join('app', '(main)', 'spaces', '[slug]', '(profile)', 'calendar', 'page.tsx'),
+        join('app', '(main)', 'spaces', '[slug]', 'settings', 'calendar', 'page.tsx'),
+      ].sort(),
+    )
+    // The client components must be on the type-only side, and there must BE some: an empty list
+    // would mean the grid stopped taking the markers at all.
+    expect(typeOnly.length).toBeGreaterThanOrEqual(3)
+    for (const f of typeOnly) expect(runtime, `${f} is on both sides`).not.toContain(f)
   })
 
   it('lib/astrology/chart.ts is imported only by the profile-save action (and tests)', () => {

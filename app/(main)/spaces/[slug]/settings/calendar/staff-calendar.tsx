@@ -21,6 +21,7 @@ import { newDateZone } from '@/lib/calendar/browser-zone'
 import type { EntryMove } from '@/lib/calendar/date-move'
 import { zoneWords } from '@/lib/time/zone-words'
 import type { DayNote } from '@/lib/calendar/day-notes'
+import type { AstroMarker as SkyMarker } from '@/lib/calendar/astro-markers'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import { isError } from '@/lib/action-result'
 import { deleteCalendarEntry, findEntryClashes, loadStaffCalendarMonth, pickPencilDate, saveCalendarEntry, skipPencilDate } from './entry-actions'
@@ -111,6 +112,7 @@ export function StaffCalendar({
   canEdit,
   spaceTimeZone = null,
   dayNotes,
+  skyMarkers,
   plans = [],
   onOpenPlan,
   externalRefreshKey = 0,
@@ -141,6 +143,9 @@ export function StaffCalendar({
    *  the Space has never said, and only then does the viewer's browser zone decide. */
   spaceTimeZone?: string | null
   dayNotes?: DayNote[]
+  /** THE SKY (LIVE-526), forwarded straight to the grid. Type only on the import so
+   *  astronomy-engine (116 KB minified in the browser build) never follows it into this bundle. */
+  skyMarkers?: readonly SkyMarker[]
   plans?: SpacePlan[]
   onOpenPlan?: (planId: string, entryId?: string | null) => void
   /** Bumped by a write that happened OUTSIDE this drawer (Vera's accepted proposal, PROG-CAL10),
@@ -407,6 +412,7 @@ export function StaffCalendar({
       )}
       <EventCalendar
         events={events}
+        skyMarkers={skyMarkers}
         initialYear={initialYear}
         initialMonth1={initialMonth1}
         loadMonth={loadMonth}
