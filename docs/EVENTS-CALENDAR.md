@@ -418,7 +418,8 @@ event description when the entry is published (PROG-CAL3); `notes` stay internal
 Team notes. Grid chips are styled by stage (`itemChipClass`).
 
 **Repeating Pencils with explicit exceptions** (`PROG-CAL5`). A Pencil may repeat: the drawer's Repeats
-control (Does not repeat, Every week, Every 2 weeks, Every month) writes `recurrence_rule` in the same
+control (Does not repeat, Every week, Every 2 weeks, Every month on the same date, Every month on the
+same weekday) writes `recurrence_rule` in the same
 bounded RFC 5545 dialect as `events.recurrence_rule` ([ADR-1299](DECISIONS.md)), and
 `lib/calendar/pencil-series.ts` expands it with the events engine's own `parseRepeat` and `expandRepeat`
 (one grammar, one stepping; a rule outside the subset is treated as absent). A series is one row anchored
@@ -575,5 +576,44 @@ Every surface that names a zone at a person reads `zoneWords()` (`lib/time/zone-
 `America/Los_Angeles` and never `PDT`, which would also read as two different zones across one year. A zone with
 no named words is called by its own city ("Kathmandu Time"); only a value that is not a zone at all reads
 "Local time".
+
+**The marks, and the ledger that explains them** ([ADR-1532](DECISIONS.md), owner directive 2026-09-27).
+The three stages an event on its way moves through print an EMOJI at the head of the grid chip, before
+the time stamp, instead of the stage word: **✏️ Pencil, 🎯 Planning, 📣 Production**. A 46px chip on a
+phone cannot afford both, and the abbreviations the word used to fall back to (`Plng`, `Prod`) were not
+worth the pixels they took from the title. The mark is declared in `CALENDAR_PRESENTATIONS` beside that
+stage's colour and word, under the same "add it here or nowhere" rule, and `CALENDAR_MARK_LEDGER` is
+DERIVED from those entries so the key the header prints cannot drift from the chips. Everything that is
+not one of those three stages (a Private entry, an Unavailable block, a To-do, a Draft) still prints its
+word and still abbreviates rather than vanishing. 🔴 The mark carries the stage word as its accessible
+name and its tooltip: a calendar that conveys state by appearance alone is the WCAG 1.4.1 failure
+`LIVE-470` was opened against, and a nameless emoji is that failure with a picture. Neither the mark nor
+the ledger appears on a member-facing calendar (the 2026-09-23 ruling, unchanged), and the popup keeps
+the full word because a labelled pill in a panel has room for it.
+
+## The sky (ADR-1531)
+
+Every **new moon, full moon, equinox and solstice** is marked on the day it falls on, on every calendar
+the product draws: the Space's public Calendar tab, the staff calendar, the shared collaborator calendar
+and the Frequency-wide `/events/calendar`. 🌑 🌕 🌱 ☀️ 🍂 ❄️, one character beside the day number.
+
+**Computed, never typed in.** Twenty-five days a year, every year: a hand-kept table would be wrong by
+the time anyone noticed and would only cover the years someone filled in. `lib/calendar/sky.ts` is pure
+and answers one question, "which days in this window carry which markers, read in this zone". The moons
+come from `lib/calendar/moon.ts` (Meeus ch. 49, built for Vera's `lunar_dates` tool in `PROG-CAL10`);
+the four solar quarters are Meeus ch. 27, whose instants are pinned to published values for 2026 and
+2027 and window-checked across 1900 to 2100.
+
+**The day is local, and everyone sees the same day.** A full moon at 11:40 PM in Vista is 2:40 AM the
+next day in UTC, so an instant only becomes a day once a zone is named. The grid takes a
+`displayTimeZone` that is passed to EVERYONE, deliberately separate from `spaceTimeZone`, which is the
+operator's value (it decides what a new date is WRITTEN in, `LIVE-471`) and is withheld from a visitor:
+sharing it would have marked the 2026 autumn equinox on Sep 22 for the team and Sep 23 for everybody
+else on the same Space's calendar. A calendar that mixes zones passes none and reads UTC, which is the
+honest answer there.
+
+**A marker is not a chip.** It rides beside the day number, because it describes the day rather than
+happening at a time, and because a chip would take one of the three rows a busy square has. A day that
+is both a new moon and an equinox draws both.
 
 Voice: all calendar copy follows `docs/CONTENT-VOICE.md` (no em/en dashes) + `docs/NAMING.md`.

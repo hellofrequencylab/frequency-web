@@ -12,6 +12,7 @@ import {
   HEAVY_CLIENT_MODULES,
   ROUTE_HEAVY_CONTROLS,
   CLIENT_GRAPH_FLOOR,
+  FRONT_DOOR_ENTRIES,
   walkRouteClientGraph,
   declaresUseClient,
   heavyModulesIn,
@@ -266,5 +267,42 @@ describe('Arm C · no heavy library reaches a member hot route as client code', 
     // Do NOT remove the row from HEAVY_CLIENT_MODULES.
     const shown = w.leaks.map((l) => `${l.heavy} imported by ${l.file}\n       via: ${l.chain.slice(-4).join(' -> ')}`)
     expect(shown, `${w.entry} — a static import below a 'use client' boundary is NOT code-split`).toEqual([])
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// ARM D · THE FRONT DOOR (LIVE-499, ADR-1540). The measurement is the artifact's (postbuild, on
+// Vercel); this is the PR-time half that keeps the artifact arm pointed at real routes and keeps the
+// front door inside Arm C's walk, so the two halves cannot drift apart between merges.
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+type Door = { label: string; entry: string; budgetKb: number }
+const doors = FRONT_DOOR_ENTRIES as Door[]
+
+describe('Arm D · the front door is weighed, and the routes it names are real', () => {
+  it('names the home page entry and the marketing layout entry, each with a budget', () => {
+    const entries = doors.map((d) => d.entry)
+    expect(entries).toContain('[project]/app/page')
+    expect(entries).toContain('[project]/app/(marketing)/layout')
+    expect(new Set(entries).size, 'two doors name one entry; the second would be measured twice').toBe(entries.length)
+    for (const d of doors) expect(d.budgetKb, `${d.label} has no numeric budget`).toBeGreaterThan(0)
+  })
+
+  it.each(doors)('$entry still resolves to a route file, so a rename fails HERE and not on the deploy', (d) => {
+    // `[project]/app/(marketing)/layout` is `app/(marketing)/layout.tsx`; a moved route would leave
+    // the artifact arm reading an empty set on the next deploy. Catch it on the PR that moves it.
+    const rel = d.entry.replace(/^\[project\]\//, '')
+    const candidates = ['.tsx', '.ts', '.jsx', '.js'].map((ext) => path.join(ROOT, rel + ext))
+    expect(
+      candidates.some((p) => existsSync(p)),
+      `${d.entry} names no file under app/ — update FRONT_DOOR_ENTRIES (Arm D) to the route’s new home`,
+    ).toBe(true)
+  })
+
+  it('the front door and one marketing page are in Arm C’s walk, so a NAMED heavy library fails at PR time', () => {
+    // The byte ceiling is the loose arm by design (react-markdown alone fits under it); the named
+    // libraries are caught here, by name, before a deploy ever measures them.
+    expect(hotRoutes).toContain('app/page.tsx')
+    expect(hotRoutes.some((r) => r.startsWith('app/(marketing)/') && r.endsWith('/page.tsx'))).toBe(true)
   })
 })
