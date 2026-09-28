@@ -395,11 +395,12 @@ describe('the sort param', () => {
     const [top] = await listNetworkedSpaces({ sort: 'standing' })
     expect(top.id).toBe('s1')
     expect(top.standing).toBeGreaterThan(0)
-    // The three signals a v0 read measures for EVERY Space, plus care off the row. The rollup's two
-    // are absent here (no space_standing rows are readable through this mock's fall-through).
+    // The three signals a v0 read measures for EVERY Space, plus care off the row. The rollup's
+    // three are absent here (no space_standing rows are readable through this mock's fall-through).
     expect(top.standingDetail.present).toEqual(['upcoming', 'audience', 'commons', 'care'])
     expect(top.standingDetail.signals.gatherings).toBeNull()
     expect(top.standingDetail.signals.rooms).toBeNull()
+    expect(top.standingDetail.signals.attendance).toBeNull()
   })
 
   it('🔴 no paid signal enters standing: a Founding Business is badged, never ranked', async () => {
@@ -414,24 +415,37 @@ describe('the sort param', () => {
     expect(s1.standing).toBeCloseTo(s2.standing, 12)
   })
 
-  it('picks up the nightly rollup\'s two extra signals when space_standing has rows (LIVE-263)', async () => {
+  it('picks up the nightly rollup\'s three extra signals when space_standing has rows (LIVE-263, LIVE-456)', async () => {
     store.standing = [
-      { space_id: 's3', gatherings_held: 9, rooms: 3 },
-      { space_id: 's1', gatherings_held: 0, rooms: 0 },
-      { space_id: 's2', gatherings_held: 0, rooms: 0 },
+      { space_id: 's3', gatherings_held: 9, rooms: 3, attendance: 24 },
+      { space_id: 's1', gatherings_held: 0, rooms: 0, attendance: 0 },
+      { space_id: 's2', gatherings_held: 0, rooms: 0, attendance: 0 },
     ]
     const spaces = await listNetworkedSpaces({ sort: 'standing' })
-    // s3 has no care at all and would otherwise be LAST; nine gatherings held and three open Circles
-    // put it first, which is the whole point of the v1 rollup.
+    // s3 has no care at all and would otherwise be LAST; nine gatherings held, three open Circles
+    // and twenty-four people marked present put it first, which is the whole point of the v1 rollup.
     expect(spaces[0].id).toBe('s3')
     expect(spaces[0].standingDetail.present).toEqual([
       'gatherings',
+      'attendance',
       'upcoming',
       'rooms',
       'audience',
       'commons',
       'care',
     ])
+    expect(spaces[0].standingDetail.signals.attendance).toBeGreaterThan(0)
+  })
+
+  it('reads a stored row that predates the attendance column as 0 marks, not as unmeasured', async () => {
+    // A row written before 20270345009300 has no `attendance` key at all. It is still the
+    // rollup's row, so the signal is MEASURED (the rollup ran) and reads 0, the value every Space
+    // held the day the column arrived.
+    store.standing = [{ space_id: 's3', gatherings_held: 2, rooms: 1 }]
+    const spaces = await listNetworkedSpaces({ sort: 'standing' })
+    const s3 = spaces.find((s) => s.id === 's3')!
+    expect(s3.standingDetail.signals.attendance).toBe(0)
+    expect(s3.standingDetail.present).toContain('attendance')
   })
 
   it('degrades to the live-count signals when space_standing is unreadable (pre-migration)', async () => {
@@ -441,6 +455,7 @@ describe('the sort param', () => {
     for (const s of spaces) {
       expect(s.standingDetail.signals.gatherings).toBeNull()
       expect(s.standingDetail.signals.rooms).toBeNull()
+      expect(s.standingDetail.signals.attendance).toBeNull()
     }
   })
 
