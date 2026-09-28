@@ -114,7 +114,7 @@ export function AssetUsagePanel({ assetId, kind }: { assetId: string; kind?: str
                   type="button"
                   disabled={swapping}
                   onClick={() => setPickerOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-pill border border-border px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated disabled:opacity-60"
                 >
                   {swapping ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ArrowLeftRight className="h-4 w-4" aria-hidden />}
                   {swapping ? 'Swapping…' : 'Swap everywhere'}
