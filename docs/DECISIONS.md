@@ -48329,3 +48329,45 @@ The owner's directive of 2026-09-27 states it as product: the main community Cir
 **Consequences.** The deferred set is one program. Three programs that were held now sit in the sequence with probes that fail, so `pnpm backlog` prints them and `check:backlog` measures them. `HYG-126` records that three owner-directive ADRs (1531-1533) shipped as code and never reached this ledger, because PR #2910 merged into a branch #2908 had already squashed; that is why this entry is 1535 and why a port, not a cherry-pick, is owed.
 
 **Rows.** `DEF-MOBILE`, `DEF-ETSY`, `PROG-GD6` unparked. `HYG-123` ruled. `HYG-126`, `HYG-127`, `HYG-128` filed. `PROG-A1`, `PROG-A3`, `PROG-A4` stay parked with the ruling appended. `LIVE-234`, `LIVE-455` untouched.
+
+
+## ADR-1536: The team calendar's events window has two ends, and it is filled from today outward (LIVE-480)
+
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-480` · extends [ADR-1385](DECISIONS.md) and the LIVE-467 floor · numbered **1536** because 1535 is the 2026-09-28 owner ruling and 1531-1533 are owed a port (`HYG-126`)
+
+**Context.** `listEventsForSpace` caps at 200 rows and is the one read behind every team surface of a Space calendar: the Admin grid, the List, Workflow, the console's count and the Plan drawer's "Link an event" picker. LIVE-467 found the cap taking the OLDEST 200 events a Space ever ran and closed it with a floor thirteen months back and a newest-first read inside the floor. That fixed the direction and left the shape: a window open at the top, read from the top down, keeps the 200 FURTHEST-FUTURE rows. A Space that has scheduled past the cap therefore lost the dates it runs next month while dates two years out stayed on. No Space has crossed it yet; a daily class crosses it in seven months.
+
+Re-testing the row's premise before building (ADR-1082) found its proposed fix necessary and not sufficient. A ceiling alone, with the newest-first read kept, still cuts next month for any Space with more than 200 dates between today and the ceiling. Flipping the sort back to ascending re-opens LIVE-467 for any Space with more than 200 dates in the past year. Whichever single direction the read runs, the near end of the window is the end it cuts first.
+
+**Decision.**
+
+1. **Both ends are stated together.** `ADMIN_EVENT_CEILING_MONTHS` (15) sits beside `ADMIN_EVENT_FLOOR_MONTHS` (13) in `lib/calendar/month-window.ts`, with `adminEventCeilingDay` and `adminEventWindow` so a reader who sees one end sees the other. The ceiling is the operator entry horizon (`OPERATOR_HORIZON_FORWARD_MONTHS`), so the entries the List and Workflow load and the events the same surfaces draw agree on the far edge; a test pins that it never falls short of it. The ceiling is exclusive: the first instant of the ceiling month is out.
+2. **`listEventsForSpace` takes a `toDay`.** Same shape as `fromDay`, written the way the column stores wall clock, ignored when malformed. Nothing else about the read changes; the publication gate and its single opt-out (`space-events-gate.test.ts`) are untouched.
+3. **The window is filled from today outward, in two bounded reads.** `listOwnedEventRows` reads the upcoming half `[today, ceiling)` soonest first with the full cap, then the past half `[floor, today)` most recent first with whatever room is left, and skips the second read when there is none. The cap can only ever cut the far end of the season or the oldest context. The split is the community wall-clock today, the floor every "upcoming" read already uses (`lib/events/upcoming-floor.ts`), so tonight's date is upcoming until midnight.
+
+**Rejected.** A ceiling with the read left newest-first (still cuts next month once the future half alone exceeds the cap). Ascending inside the window (LIVE-467 again). Raising `OWNED_EVENT_LIMIT` (moves the day the cap is met; changes nothing about which end it cuts). An RPC that orders by distance from today (a migration for what two bounded reads do without one).
+
+**Consequences.** Two reads per team calendar load where there was one; the second is skipped for any Space whose next fifteen months fill the cap. LIVE-530's continuous scroll bounds its automatic extension against the same two constants and can now name both edges. The row's probe has three arms (`toDay` in the store, `toDay` in the loader, the ceiling constant) and each was mutation-tested alone at close.
+
+**Rows.** LIVE-480 (closed here). LIVE-467 unchanged.
+
+## ADR-1542: A calendar feed is a reader with a subscriber, and every such reader filters `removed_at` (SCAN-645)
+
+**Status:** Accepted · 2026-09-28 · backlog `SCAN-645` · owner ruling ADR-1535 §6 ("SCAN-645 ships") · numbered **1542** because 1531-1533 are reserved for the port HYG-126 owes, 1534-1536 are on main, and 1537-1541 are claimed by pull requests open when this one was renumbered (#2938, #2939, #2942, #2943, #2944)
+
+**Context.** `public.events.removed_at` has been the staff-removal tombstone since 20260613130000, and it is enforced reader by reader: no SELECT policy on `events` mentions it, so every function and every list read carries the whole burden alone. Of the eighteen SQL functions that read `public.events`, sixteen filter the column or are pinned to one row. The two that did not are `public_calendar_feed()` (the site-wide public .ics) and `event_calendar_feed(_token)` (a member's personal feed of their own going RSVPs). Measured on production 2026-09-28: neither body mentioned the column.
+
+An .ics feed is subscribed, not fetched. A removed event's page 404s at once; the entry on a subscriber's phone stays until the feed stops sending it. Nothing had leaked yet only because production's two removed events each fail a different predicate by accident (one cancelled and past, one unlisted). The ordinary case, a standalone public event removed by staff while upcoming, passes every predicate the feed checks and the one it did not.
+
+**Decision.**
+
+1. **Both feeds filter `removed_at`.** One migration (`20270345008900`) re-creates each function with `and e.removed_at is null`, copying the shape `space_public_calendar_feed` has carried since 20270126000000. Return types are unchanged, so `create or replace` is enough and no drop-and-recreate is needed.
+2. **Grants are re-derived, never copied.** The file carries no grant statement. Both functions are `internal` in `scripts/function-grants.txt`, `create or replace` preserves existing grants, and copying the original grant lines forward is the exact hazard ADR-1153 recorded.
+3. **The migration proves itself on a fresh database, both ways.** A removed standalone public event must be absent from the public feed and present once restored; a removed event with an approved going RSVP must drop out of the member feed. The positive half of the public arm asks the feed's own Space predicate first, because `events_default_space_id` stamps a home Space on any insert that omits one and a fresh database's root Space may not be network+active. "There is nothing to see" is not "it is broken".
+4. **The backlog probe is the floor for these two readers.** SCAN-645's probe reads the LAST definition of each feed across the migration set and fails a pull request that re-types either body without the clause.
+
+**Rejected.** Adding `removed_at is null` to the two SELECT policies on `events`. That would be the real floor, and it is a wider change: the policies are what the ~50 TypeScript list reads sit on, and a Space owner editing their own removed row has to keep working. Sweeping those reads is the same argument. Both are a follow-up row once someone measures which of them face an outsider. Redacting instead of excluding, for the same reason ADR-1152 gave: a redacted entry still puts a reminder on a phone for a gathering that no longer exists.
+
+**Consequences.** The set of `public.events` readers with an outside subscriber that omit the tombstone is closed at zero. The class remains open at the policy layer, by name and on purpose. When a reader is added that returns event rows to someone outside the app, it filters `removed_at` or its own probe says so.
+
+**Rows.** SCAN-645 (closed here). Untouched: the two `events` SELECT policies, every TypeScript list read, `space_public_calendar_feed`.
