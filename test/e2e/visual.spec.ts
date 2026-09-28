@@ -65,6 +65,7 @@ import {
   assertNoServerErrors,
   assertNotProtectionWall,
   currentPathname,
+  dropTouchBeforeFullPageCapture,
   headerBandSurfaces,
   masksFor,
   operatorDenialReason,
@@ -123,6 +124,14 @@ async function capture(
   assertBaselineEnvironment()
   await applyRenderState(page, state)
   await page.goto(surface.path, { waitUntil: 'load' })
+  // A full-page capture on a touch project drops the touch emulation after its first shot and
+  // never gets it back, so the first capture and the second photograph two layouts (LIVE-492;
+  // the measurement is on `dropTouchBeforeFullPageCapture`). Dropped here, before anything is
+  // measured or photographed, so settle(), the box snapshot and every capture see one layout:
+  // the fine-pointer one the committed full-page baselines already hold.
+  if (!surface.viewportOnly && test.info().project.use.hasTouch) {
+    await dropTouchBeforeFullPageCapture(page)
+  }
   await assertNotProtectionWall(page)
   // An OPERATOR surface bounced to /feed is requireAdminFloor()'s denial: the e2e account is a
   // member and not staff. That is an owner-held account fact, not this PR's fault, so it skips

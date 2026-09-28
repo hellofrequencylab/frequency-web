@@ -2084,21 +2084,87 @@ export async function diffBands(expected: Buffer, actual: Buffer): Promise<BandR
   return { width: result.width, height: result.height, differing: result.differing, bands: result.bands }
 }
 
-/** The boxes under a band of rows: the smallest in-flow boxes whose vertical extent overlaps
- *  it, so a table row wins over the table and the table over the shell. Pure. */
+/** The parts of an inline SVG. A band that lands on an icon names the icon's `<svg>`, never
+ *  its 3px `<path>`: the first run of this reader on the runner reported "path (3px tall),
+ *  path (6px tall), path (8px tall)" for thirteen bands and located nothing. */
+const SVG_INTERNAL_TAGS = new Set([
+  'path', 'g', 'circle', 'rect', 'line', 'polyline', 'polygon', 'ellipse', 'use', 'defs',
+  'clippath', 'mask', 'tspan', 'lineargradient', 'radialgradient', 'stop',
+])
+
+const tagOf = (desc: string): string => (desc.match(/^[a-z0-9-]+/i)?.[0] ?? '').toLowerCase()
+
+/**
+ * The boxes under a band of rows: the smallest in-flow boxes whose vertical extent overlaps it,
+ * so a table row wins over the table and the table over the shell, plus the smallest box under
+ * it that carries TEXT, so the reader gets words and not only a tag. SVG internals are skipped
+ * in favour of the `<svg>` they belong to. Pure.
+ */
 export function boxesInBands(
   snapshot: BoxSnapshot,
   bands: readonly DiffBand[],
   perBand = BOXES_PER_BAND,
 ): { band: DiffBand; boxes: (SnapshotBox & { path: string })[] }[] {
-  const all = Object.entries(snapshot).map(([path, box]) => ({ path, ...box }))
+  const all = Object.entries(snapshot)
+    .map(([path, box]) => ({ path, ...box }))
+    .filter((b) => !SVG_INTERNAL_TAGS.has(tagOf(b.d)))
   return bands.map((band) => {
-    const boxes = all
+    const overlapping = all
       .filter((b) => b.top <= band.to && b.top + b.h >= band.from)
       .sort((x, y) => x.h - y.h || y.path.split('>').length - x.path.split('>').length)
-      .slice(0, perBand)
+    const boxes = overlapping.slice(0, Math.max(0, perBand - 1))
+    const worded = overlapping.find((b) => b.d.includes(' "') && !boxes.includes(b))
+    if (worded) boxes.push(worded)
+    else if (overlapping[perBand - 1] && perBand > boxes.length) boxes.push(overlapping[perBand - 1]!)
     return { band, boxes }
   })
+}
+
+/**
+ * THE TOUCH EMULATION IS DROPPED BY THE SHUTTER, so it is dropped BEFORE it (LIVE-492).
+ *
+ * MEASURED 2026-09-28, mobile project (iPhone 14, `hasTouch`), pinned playwright-core, Chromium
+ * 141.0.7390.37, a page with one `tap-target` select and a probe reading the window between
+ * captures:
+ *
+ *     before a full-page toHaveScreenshot   (pointer: coarse) true   maxTouchPoints 1   select 44px
+ *     after it                               (pointer: coarse) false  maxTouchPoints 0   select 33px
+ *
+ * One full-page capture (`Page.captureScreenshot` with `captureBeyondViewport`) leaves the
+ * page's touch emulation OFF and it does not come back: not after `page.emulateMedia`, not after
+ * a CDP `Emulation.setEmulatedMedia` pin, not on the next capture. A viewport-only capture does
+ * not do this (measured the same way: coarse before and after, 44px throughout).
+ *
+ * `toHaveScreenshot` captures until two agree, so on a touch project every full-page comparison
+ * runs like this: capture one photographs the coarse layout (44px floors), capture two the fine
+ * layout (32px floors), capture three matches two, and the committed baseline, made by the same
+ * loop, is the fine layout too. That is the "changed height DURING capture" reading on
+ * /admin/content/practices (7756 then 7752, three merge selects 44px then 34px), and every other
+ * one-way mobile flip this suite has recorded. The flip costs a retry and settles; what fails a
+ * case afterwards is a pixel diff, never the height.
+ *
+ * A baseline can hold ONE state, and with this loop the coarse state is not photographable on a
+ * full page: the second capture always drops it. So the suite drops it first, explicitly, and
+ * says so here: FULL-PAGE CAPTURES ON THE TOUCH PROJECTS PHOTOGRAPH THE FINE-POINTER LAYOUT.
+ * The first capture then agrees with the second, the retry is gone, and every committed
+ * full-page mobile and narrow baseline is unchanged, because that is the state they were
+ * already photographed in. First-screen (`viewportOnly`) captures are left alone: their camera
+ * keeps touch on, and their baselines are coarse renderings.
+ *
+ * What this costs, said rather than performed silently: the coarse-pointer tap floors (44px,
+ * app/globals.css) are not in any full-page mobile photograph. The a11y and overflow suites run
+ * with touch on and measure those floors as boxes, which is the instrument that fits a floor.
+ *
+ * Chromium only, which every project in playwright.config.ts is; a CDP session is opened for
+ * one command and detached.
+ */
+export async function dropTouchBeforeFullPageCapture(page: Page): Promise<void> {
+  const cdp = await page.context().newCDPSession(page)
+  try {
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false })
+  } finally {
+    await cdp.detach().catch(() => {})
+  }
 }
 
 /** The stable-diff reading as a sentence: how many pixels, in how many bands, and what sits

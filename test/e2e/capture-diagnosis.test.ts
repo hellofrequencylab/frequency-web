@@ -2,7 +2,7 @@
 // the failure than before it, and the row bands a stable pixel diff sits in with the elements
 // under them. Both are pure once the page has been read, so they are tested here with no
 // browser, against the shapes the real failures had.
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'
@@ -73,6 +73,20 @@ describe('moversMessage: the sentence a person acts on', () => {
   })
 })
 
+describe('the touch emulation is dropped before a full-page shutter, and only then (LIVE-492)', () => {
+  it('capture() drops it after goto and before settle, for full-page captures on touch projects', () => {
+    const src = readFileSync(join(process.cwd(), 'test/e2e/visual.spec.ts'), 'utf8')
+    const drop = src.indexOf('await dropTouchBeforeFullPageCapture(page)')
+    expect(drop).toBeGreaterThan(-1)
+    expect(src.indexOf("await page.goto(surface.path, { waitUntil: 'load' })")).toBeLessThan(drop)
+    expect(drop).toBeLessThan(src.indexOf('const settleReport = await settle(page)'))
+    expect(drop).toBeLessThan(src.indexOf('const before = await boxSnapshot(page)'))
+    // Gated on BOTH: a first-screen capture keeps touch (its camera does not drop it, and its
+    // baselines are coarse renderings), and a project without touch has nothing to drop.
+    expect(src.slice(drop - 120, drop)).toMatch(/!surface\.viewportOnly && test\.info\(\)\.project\.use\.hasTouch/)
+  })
+})
+
 describe('the viewport probe: what the shutter did to the window, measured', () => {
   const s = (w: number, h: number, at: number): ViewportSample => ({ w, h, at })
 
@@ -114,6 +128,39 @@ describe('boxesInBands: the elements under a band of differing rows', () => {
   it('a band straddling two rows names both before their table', () => {
     const [named] = boxesInBands(snapshot, [{ from: 1540, to: 1552, rows: 13, pixels: 90 }])
     expect(named!.boxes.map((b) => b.d)).toEqual(['tr "Breathwork basics"', 'tr "Cold plunge"', 'table.w-full'])
+  })
+
+  it('REGRESSION: a band on an icon names the <svg> and the words beside it, never a 3px <path>', () => {
+    // The first runner reading: "path (3px tall), path (6px tall), path (8px tall)" for
+    // thirteen bands on /admin/content/practices. The icon's parts are skipped, the icon stays,
+    // and the smallest box carrying text joins so the band can be found in the source.
+    const iconRow: BoxSnapshot = {
+      'body>div[0]': box(5410, 0, 'div#shell'),
+      'body>div[0]>div[3]': box(82, 2500, 'div.flex.flex-wrap "Breathwork basics Never logged Quality 61"'),
+      'body>div[0]>div[3]>a[0]': box(21, 2540, 'a.inline-flex "Breathwork basics"'),
+      'body>div[0]>div[3]>a[0]>svg[1]': box(12.75, 2543, 'svg.h-3.w-3'),
+      'body>div[0]>div[3]>a[0]>svg[1]>path[0]': box(3, 2544, 'path'),
+      'body>div[0]>div[3]>a[0]>svg[1]>path[1]': box(6, 2544, 'path'),
+      'body>div[0]>div[3]>a[0]>svg[1]>path[2]': box(8, 2546, 'path'),
+    }
+    const [named] = boxesInBands(iconRow, [{ from: 2543, to: 2556, rows: 14, pixels: 1081 }])
+    expect(named!.boxes.map((b) => b.d)).toEqual([
+      'svg.h-3.w-3',
+      'a.inline-flex "Breathwork basics"',
+      'div.flex.flex-wrap "Breathwork basics Never logged Quality 61"',
+    ])
+    expect(named!.boxes.some((b) => b.d === 'path')).toBe(false)
+  })
+
+  it('the words box is added even when the smallest boxes carry none', () => {
+    const wordless: BoxSnapshot = {
+      'body>section[0]': box(300, 0, 'section "Needs attention Breathwork basics"'),
+      'body>section[0]>div[1]': box(10, 20, 'div.h-2'),
+      'body>section[0]>div[2]': box(12, 20, 'div.h-3'),
+      'body>section[0]>div[3]': box(14, 20, 'div.h-4'),
+    }
+    const [named] = boxesInBands(wordless, [{ from: 22, to: 28, rows: 7, pixels: 40 }])
+    expect(named!.boxes.map((b) => b.d)).toEqual(['div.h-2', 'div.h-3', 'section "Needs attention Breathwork basics"'])
   })
 
   it('a band with nothing under it names nothing rather than the nearest thing', () => {
