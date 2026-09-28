@@ -46,6 +46,7 @@ Orientation for a human: [`docs/START-HERE.md`](docs/START-HERE.md).
 - Every open row has `priority` (P0–P3) and a `verify` probe that measures a **consequence**. `pnpm check:backlog` fails both ways (stale `open`, regressed `done`).
 - Close a row by making its probe pass. Never delete the probe.
 - **Re-test a row's premise before you work it**, especially when it says it cannot be checked ([ADR-1082](docs/DECISIONS.md)).
+- **A conflict on `docs/DECISIONS.md` or `docs/BUILD-BACKLOG.json` is not hand-work.** `git merge origin/main`, then `pnpm fold`, then `pnpm check:adr && pnpm check:backlog`. It merges both by key (ADR number, row id), keeps main's order, and REFUSES naming the id when both sides changed the same one. Never hand-edit the JSON: doing so has already produced an invalid file and a duplicated row id.
 - After a ready PR, arm squash auto-merge. Stay off `cursor/cloud-agent-workspace-8978`. One row per PR. Never merge red.
 
 # Which plan is live
