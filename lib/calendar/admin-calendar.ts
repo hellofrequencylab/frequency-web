@@ -1,11 +1,11 @@
 import 'server-only'
 import { listCalendarEngagement, listEventsForSpace, listSpaceCalendarEvents } from '@/lib/events/store'
-import { formatEventWhen, eventInstant } from '@/lib/time/zone'
+import { formatEventWhen, eventInstant, dayInZone, HOME_TZ } from '@/lib/time/zone'
 import { eventDayKey } from '@/lib/events/calendar-grid'
 import { listStaffCalendarItems } from './entries-store'
 import { listDayNotes } from './day-notes-store'
 import { listDueDateItems } from './due-dates-store'
-import { adminEventFloorDay, monthGridWindow } from './month-window'
+import { adminEventCeilingDay, adminEventFloorDay, monthGridWindow } from './month-window'
 import { listSpacePlans } from './plans-store'
 import type { DayNote } from './day-notes'
 import type { CalendarEvent } from './item'
@@ -29,21 +29,42 @@ const OWNED_EVENT_LIMIT = 200
  * THE SPACE'S OWN EVENTS FOR EVERY TEAM SURFACE. One read behind the Admin grid, the List, Workflow,
  * the console's count and the Plan drawer's "Link an event" picker, so the five never disagree.
  *
- * 🔴 BOUNDED BY DATE AND CUT FROM THE OLD END (LIVE-467). `listEventsForSpace` orders ascending and
- * caps at 200, and with no floor that was the OLDEST 200 events the Space ever ran: past 200, the
- * upcoming ones were the rows that fell off every one of those surfaces. The floor is thirteen
- * months back (lib/calendar/month-window.ts); inside it the rows are read newest-first so a Space
- * that fills the cap loses its oldest past events, never its next ones, and are handed back soonest
- * first because every consumer reads them that way.
+ * 🔴 BOUNDED AT BOTH ENDS, AND THE NEXT DATES ARE NEVER THE ONES CUT (LIVE-467, LIVE-480).
+ * `listEventsForSpace` caps at 200. With no floor that was the OLDEST 200 events the Space ever ran,
+ * so past 200 the upcoming ones fell off every one of those surfaces (LIVE-467). With a floor and no
+ * ceiling, read newest-first, it was the 200 FURTHEST-FUTURE events instead, so a Space that had
+ * scheduled past the cap lost next month while dates two years out stayed on (LIVE-480): the same
+ * cut from the other end.
+ *
+ * So the window is [floor, ceiling) from lib/calendar/month-window.ts, thirteen months back and
+ * fifteen forward, and it is filled from today outward: the upcoming half first, soonest first, so
+ * the cap can only ever cut the far end of the season; then the past half, most recent first, with
+ * whatever room is left, so the cap can only ever cut the oldest context. Two bounded reads instead
+ * of one is the price of a cap that never lands on next month, whichever half of the window is the
+ * heavy one. Handed back soonest first because every consumer reads them that way.
  */
 async function listOwnedEventRows(spaceId: string, now: Date): Promise<OwnedRow[]> {
-  const rows = await listEventsForSpace(spaceId, {
+  // The split is the start of today in the community's own wall clock, the same floor every
+  // "upcoming" read uses (lib/events/upcoming-floor.ts), so tonight's date is upcoming until midnight.
+  const today = dayInZone(now, HOME_TZ)
+  const upcoming = await listEventsForSpace(spaceId, {
     limit: OWNED_EVENT_LIMIT,
     includeUnpublished: true,
-    fromDay: adminEventFloorDay(now),
-    newestFirst: true,
+    fromDay: today,
+    toDay: adminEventCeilingDay(now),
   })
-  return rows.slice().sort((a, b) => (a.starts_at < b.starts_at ? -1 : a.starts_at > b.starts_at ? 1 : 0))
+  const room = OWNED_EVENT_LIMIT - upcoming.length
+  const past =
+    room > 0
+      ? await listEventsForSpace(spaceId, {
+          limit: room,
+          includeUnpublished: true,
+          fromDay: adminEventFloorDay(now),
+          toDay: today,
+          newestFirst: true,
+        })
+      : []
+  return [...past, ...upcoming].sort((a, b) => (a.starts_at < b.starts_at ? -1 : a.starts_at > b.starts_at ? 1 : 0))
 }
 
 export interface AdminCalendar {
