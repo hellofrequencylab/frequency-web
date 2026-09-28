@@ -679,7 +679,7 @@ export function operatorSurfaces(): readonly Surface[] {
  * place in the file that records why an entry ever stood here, because `viewportOnly` is a
  * coverage trade and a silent one reads as coverage.
  *
- * `/admin/qr` STOOD HERE from 2026-09-23 to 2026-09-28 (LIVE-476, ADR-1559) and is photographed
+ * `/admin/qr` STOOD HERE from 2026-09-23 to 2026-09-28 (LIVE-476, ADR-1568) and is photographed
  * whole again. What put it here: four consecutive PRs went red on four unrelated diffs (#2873,
  * #2874, #2875, #2878), every run the same pair of full-page heights at 390, 14521 and 14567,
  * never two consecutive stable frames, so no baseline could be right. The first-screen capture
@@ -770,7 +770,7 @@ const VIEWPORT_ONLY_OPERATOR_PATHS: readonly string[] = []
  * ── THE QR STUDIO STOOD HERE from 2026-09-23 to 2026-09-28 (LIVE-476) and votes again ──────
  * It was the first passenger, put here by owner ruling after four pull requests that touched
  * nothing it renders went red on it, and both of its readings are now fixed at their cause
- * (ADR-1559). The full-page height flip (14521 / 14567 at 390) was the shutter dropping the
+ * (ADR-1568). The full-page height flip (14521 / 14567 at 390) was the shutter dropping the
  * touch emulation after its first capture, which `dropTouchBeforeFullPageCapture` now does
  * before it (LIVE-492, #2941); the first-screen note above has the arithmetic. The stable
  * first-screen desktop diff (951 px dawn-light, 1029 px dawn-dark, mobile green,
@@ -1313,7 +1313,7 @@ export const VISUAL_MASK_SITES: readonly {
   // `settleHeight` report below is what will name the next one instead of guessing at it.
   // (It was not the whole of it. The 46px was the touch drop, LIVE-492; see LIVE-476.)
   //
-  // BOTH BRANCHES SINCE 2026-09-28 (LIVE-476, ADR-1559). The surface is photographed whole
+  // BOTH BRANCHES SINCE 2026-09-28 (LIVE-476, ADR-1568). The surface is photographed whole
   // again, so the empty state is in the picture, and it carries the same mask: the box holds
   // the height, the mask holds the paint. Read from `qr_scans` rather than predicted: rows on
   // 2026-08-28 (1), 2026-09-01 (3) and 2026-09-18 (1), so the window reads 4 today, 1 from

@@ -58,7 +58,7 @@ export function Analytics({ data }: { data: AnalyticsData }) {
           // a full-page baseline, so the fix is to make the section dimension-invariant rather
           // than to mask it. Keep the two boxes identical if you touch either one.
           //
-          // AND THE SAME MASK, since 2026-09-28 (LIVE-476, ADR-1559): the surface is photographed
+          // AND THE SAME MASK, since 2026-09-28 (LIVE-476, ADR-1568): the surface is photographed
           // whole again, so this branch is in the picture. The box holds the height; the mask
           // holds the paint. Without it the window emptying swaps a magenta box for a line of
           // text, thousands of pixels, on whichever pull request runs next. Read from the table

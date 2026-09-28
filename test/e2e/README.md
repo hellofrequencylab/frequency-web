@@ -624,7 +624,7 @@ It blocked four consecutive pull requests that touched nothing it renders: first
 height flip (14521 ↔ 14567 at 390), settled for five days by a first-screen-only capture in
 `VIEWPORT_ONLY_OPERATOR_PATHS`, and then, on the first screen, a small **stable** diff on
 DESKTOP only: 951 px dawn-light, 1029 px dawn-dark, identical across three attempts, mobile
-green. Both are fixed at their cause (ADR-1559). The flip was the shutter dropping Chromium's
+green. Both are fixed at their cause (ADR-1568). The flip was the shutter dropping Chromium's
 touch emulation after its first full-page capture (LIVE-492; `dropTouchBeforeFullPageCapture` in
 `surfaces.ts` carries the measurement), which `capture()` now does before it. The stable diff was the operator info rail, shared admin chrome at xl and
 above that prints live `profiles` counts and sits at the same position on every admin page;

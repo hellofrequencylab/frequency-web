@@ -48856,9 +48856,9 @@ Premise re-tested before building ([ADR-1082](DECISIONS.md)): the row's own prob
 
 **Rows.** HYG-128 (closed here). HYG-127 (the sweep, closed by [ADR-1543](DECISIONS.md)). SCAN-638 untouched.
 
-## ADR-1559: /admin/qr is photographed whole and votes again, and the operator advisory tier retires with its last passenger (LIVE-476)
+## ADR-1568: /admin/qr is photographed whole and votes again, and the operator advisory tier retires with its last passenger (LIVE-476)
 
-**Status:** Accepted · 2026-09-28 · backlog `LIVE-476` · corroborated by `test/e2e/surfaces.ts` (`VIEWPORT_ONLY_OPERATOR_PATHS`, `ADVISORY_OPERATOR_SURFACES`), `test/e2e/visual.spec.ts`, `test/e2e/visual-tiers.test.ts`, `app/(main)/admin/qr/analytics.tsx` · numbered **1559** because 1555 to 1558 are claimed by open pull requests
+**Status:** Accepted · 2026-09-28 · backlog `LIVE-476` · corroborated by `test/e2e/surfaces.ts` (`VIEWPORT_ONLY_OPERATOR_PATHS`, `ADVISORY_OPERATOR_SURFACES`), `test/e2e/visual.spec.ts`, `test/e2e/visual-tiers.test.ts`, `app/(main)/admin/qr/analytics.tsx` · numbered **1568** because 1555 to 1567 are claimed by open pull requests and program rows
 
 **Context.** `/admin/qr` was the first operator surface to leave the blocking visual tier. It blocked four consecutive pull requests that touched nothing it renders (#2873, #2874, #2875, #2878) on two readings nobody could localise, and the row carried both. Part one: a full-page height flip at 390, 14521 and 14567 on alternating captures, never two stable frames, settled on 2026-09-23 by photographing the first screen only (`VIEWPORT_ONLY_OPERATOR_PATHS`) at the cost of ~13,700px below the fold. Part two: with the first screen in force, a small stable diff on desktop only, 951 px dawn-light and 1029 px dawn-dark, identical across attempts, mobile green, reproduced on a commit that changed one line of a JSON docs file. The owner ruled the surface advisory the same day, under the rule written above the /discover describe: a gate that cannot fire truthfully stays advisory. The diff image was never read, because the artifact host is unreachable from the agents' egress.
 

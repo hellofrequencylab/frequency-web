@@ -544,7 +544,7 @@ jobs:
       #     set. Runs, reports, uploads, and does NOT block. A gate that cannot fire truthfully
       #     stays advisory; it does not get skipped. Three operator surfaces rode it between
       #     2026-09-23 and 2026-09-28 (LIVE-476, LIVE-492, LIVE-504) and all three block again,
-      #     each fixed at its cause (LIVE-492, ADR-1559).
+      #     each fixed at its cause (LIVE-492, ADR-1568).
       #
       # always() on every visual step so a smoke/a11y failure above does not hide a pixel
       # regression here.
