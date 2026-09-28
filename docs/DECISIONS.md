@@ -48432,7 +48432,6 @@ The owner's directive of 2026-09-27 states it as product: the main community Cir
 
 **Rows.** `DEF-MOBILE`, `DEF-ETSY`, `PROG-GD6` unparked. `HYG-123` ruled. `HYG-126`, `HYG-127`, `HYG-128` filed. `PROG-A1`, `PROG-A3`, `PROG-A4` stay parked with the ruling appended. `LIVE-234`, `LIVE-455` untouched.
 
-<<<<<<< HEAD
 ## ADR-1555: The community board runs on the session client, and a definer feed function says exactly what the posts policy says (LIVE-335)
 
 **Status:** Accepted · 2026-09-28 · backlog `LIVE-335` (closed here; the convergence half) · extends [ADR-1514](DECISIONS.md) (the three policies) · numbered **1555** because every number from 1543 to 1554 was held by a pull request open when this was written (renumbered twice under check:id-collisions, ADR-1509)
@@ -48454,8 +48453,6 @@ The feed's own definer RPC, `scoped_feed_for_viewer`, returns `author` for expli
 
 **Rows.** LIVE-335 (closed here). Untouched: `feed_for_viewer`, the three policies, the five other baseline files.
 
-=======
->>>>>>> origin/main
 ## ADR-1536: The team calendar's events window has two ends, and it is filled from today outward (LIVE-480)
 
 **Status:** Accepted · 2026-09-28 · backlog `LIVE-480` · extends [ADR-1385](DECISIONS.md) and the LIVE-467 floor · numbered **1536** because 1535 is the 2026-09-28 owner ruling and 1531-1533 are owed a port (`HYG-126`)
