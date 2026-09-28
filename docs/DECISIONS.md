@@ -48634,6 +48634,24 @@ The row was explicit about the trap, and it is the LIVE-533 shape: a "This date 
 
 **Rows.** LIVE-534 (closed here). LIVE-531, LIVE-533, LIVE-536 unchanged.
 
+## ADR-1543: A foreign key from the calendar sprint gets its covering index in one sweep, and the guard that stops the fourth sweep is a separate row (HYG-127)
+
+**Status:** Accepted · 2026-09-28 · backlog `HYG-127` · owner ruling 2026-09-28 (one sweep row, one convention row) · extends [ADR-1459](DECISIONS.md) (the SCAN-638 sweep) · numbered **1543** because 1531-1533 are the HYG-126 port, 1534-1536 and 1542 are on main, and 1537-1541 are held by pull requests open when this one was written
+
+**Context.** The performance advisor reported nine unindexed foreign keys on 2026-09-28, up from zero on 2026-09-19, every one on a table the LIVE-508 to LIVE-536 calendar sprint created or extended. Re-derived from `pg_constraint` against `pg_index` before anything was written: each of the nine has a FK constraint and no index that leads with the column. Seven reference `profiles`, so an account deletion (a hard delete, `lib/account.ts`) scans four calendar tables in turn to check the constraint. This is the third time the count has gone to zero and come back: SCAN-638 (20270345006400) and the sweep before it each closed a set, and the next tables re-opened the class, because the only reader is an advisor nobody consults on a pull request.
+
+**Decision.**
+
+1. **One migration, nine `create index if not exists`, in the shape the last sweep set.** A nullable attribution column gets a partial index (`where <col> is not null`), because a NULL is never what a referential check or an attribution lookup asks for and the index stays small. The one NOT NULL column, `space_plan_shares.guest_space_id`, gets a full index. Additive and idempotent; safe to re-run.
+2. **The file proves itself against the catalog, not the statement list.** After the statements, a `do` block asks `pg_index` whether an index leads with each of the nine columns and raises if any is missing. Postgres would catch a misspelt column; an index on the wrong table, or one whose first key is another column, it would not.
+3. **The guard is HYG-128, not this row.** A fourth sweep on its own would be the same mistake with a later date. The convention half is a source-only guard in the `ci.yml` array that replays the migrations, collects every `references` clause and every `create index`, and fails a pull request that adds a FK with no index leading with it. It lands on a tree this sweep has already made green, so the guard's first run is a pass it can prove rather than a failure it cannot explain.
+
+**Rejected.** Folding the guard into this PR (one row per PR, and the guard is its own decision with its own exception list). Full indexes on the nullable columns (larger for no reader that wants the NULLs; 20270318000000 and 20270345006400 chose partial for the same columns' siblings). Composite indexes that happen to lead with the FK (nothing reads these columns with a second key today, and a composite invented for a reader that does not exist is the drift ADR-1082 names).
+
+**Consequences.** The advisor reads zero unindexed foreign keys again. The class stays open until HYG-128 lands, and this ADR says so rather than implying the sweep closed it. Applied to production by `execute_sql` plus an explicit ledger row at the file's own version, never `apply_migration` (docs/DATABASE.md).
+
+**Rows.** HYG-127 (closed here). HYG-128 untouched and still open.
+
 ## ADR-1544: Vera reads what drew people as a tool the server computes on demand, handed in by the action, never as context on every ask (LIVE-539)
 
 **Status:** Accepted · 2026-09-28 · `LIVE-539` (child 1 of 2 of `PROG-CAL11` slice 4) · builds on [ADR-1386](DECISIONS.md) P6 (propose then accept; no other Space's data reaches a suggestion) and the PROG-CAL6 recap path · numbered 1544 because 1531-1536 and 1540-1542 are on main, 1537-1539 are on open pull requests, and 1543 was claimed by #2946 fourteen seconds before this pull request opened (the third renumbering of this entry in one afternoon, per ADR-1488)
