@@ -25,17 +25,8 @@ import {
   getPlanShareRow,
   insertPlanShare,
   listPlanShareRows,
-  listSharedPlanIds,
   revokePlanShareRow,
 } from '@/lib/calendar/plans-store'
-import {
-  insertPlanComment,
-  listPlanCommentRows,
-  removePlanCommentRow,
-  resolveCommentAuthors,
-  resolveCommentSpaces,
-} from '@/lib/calendar/plan-comments-store'
-import { mapPlanCommentRow, orderThread, parseCommentBody, type PlanCommentView } from '@/lib/calendar/plan-comments'
 import { mapPlanShareRow, parseShareAnswer, shareOptions, type PlanShareView } from '@/lib/calendar/plan-shares'
 import { listAcceptedCollaborations } from '@/lib/spaces/collaborations'
 import { copyPlaybookToPlan, runItAgain } from '@/lib/calendar/playbooks'
@@ -629,95 +620,4 @@ export async function rotatePrivateCalendarFeed(slug: string): Promise<ActionRes
   if (error) return fail('The private feed could not be created.')
   revalidate(slug)
   return ok({ token })
-}
-
-// ── THE THREAD (PROG-CAL7 Together, LIVE-542) ────────────────────────────────────────────────────
-//
-// Either side of an accepted share may read and write the comments under a Plan: the host, whose
-// Plan it is, or a guest whose Space an accepted share names. RLS on space_plan_comments decides
-// again on the session with the same two helpers; the gate here refuses early and says why.
-
-async function planSide(
-  slug: string,
-  planId: string,
-): Promise<{ spaceId: string; profileId: string; side: 'host' | 'guest' } | { error: string }> {
-  const editor = await resolveEditor(slug)
-  if (!editor) return { error: 'You do not have access to this calendar.' }
-  if (typeof planId !== 'string' || !UUID_RE.test(planId)) return { error: 'That Plan no longer exists.' }
-  if (await getSpacePlan(editor.spaceId, planId)) return { ...editor, side: 'host' }
-  const shared = await listSharedPlanIds(editor.spaceId)
-  if (shared.includes(planId)) return { ...editor, side: 'guest' }
-  return { error: 'That Plan no longer exists.' }
-}
-
-/** Every comment of the Plan the caller may read, oldest first, with names resolved as far as the
- *  session can see them and `mine` marked so the drawer offers Take back on the right ones. */
-export async function listPlanComments(slug: string, planId: string): Promise<ActionResult<PlanCommentView[]>> {
-  const side = await planSide(slug, planId)
-  if ('error' in side) return fail(side.error)
-  const rows = await listPlanCommentRows(planId)
-  const [authors, spaces] = await Promise.all([
-    resolveCommentAuthors(rows.map((r) => r.author_profile_id).filter((id): id is string => id !== null)),
-    resolveCommentSpaces(rows.map((r) => r.space_id)),
-  ])
-  return ok(
-    orderThread(
-      rows.map((r) =>
-        mapPlanCommentRow(
-          r,
-          {
-            authorName: r.author_profile_id ? (authors.get(r.author_profile_id) ?? null) : null,
-            spaceName: spaces.get(r.space_id) ?? null,
-          },
-          side.profileId,
-        ),
-      ),
-    ),
-  )
-}
-
-/**
- * Post a comment on the Plan (taskId null) or under one of its to-dos. A to-do thread hangs under
- * a to-do OF THIS PLAN, proven through the Plan-scoped task list of the caller's Space: for the
- * host that is the Plan's list; for a guest it is empty until LIVE-544 hands to-dos across, so a
- * guest talks on the Plan itself for now. The insert runs on the session, as the caller, from
- * the Space they work the Plan in.
- */
-export async function postPlanComment(
-  slug: string,
-  planId: string,
-  taskId: string | null,
-  rawBody: unknown,
-): Promise<ActionResult<{ id: string }>> {
-  const side = await planSide(slug, planId)
-  if ('error' in side) return fail(side.error)
-  const parsed = parseCommentBody(rawBody)
-  if ('error' in parsed) return fail(parsed.error)
-  let task: string | null = null
-  if (taskId !== null && taskId !== undefined) {
-    if (typeof taskId !== 'string' || !UUID_RE.test(taskId)) return fail('That to-do no longer exists.')
-    const todos = await listTasks({ spaceId: side.spaceId, planId, limit: 200 })
-    if (!todos.some((t) => t.id === taskId)) return fail('That to-do no longer exists.')
-    task = taskId
-  }
-  const res = await insertPlanComment({
-    planId,
-    taskId: task,
-    spaceId: side.spaceId,
-    authorProfileId: side.profileId,
-    body: parsed.body,
-  })
-  if ('error' in res) return fail(res.error)
-  return ok({ id: res.id })
-}
-
-/** The author takes back their own comment. The database marks the caller's own unremoved row and
- *  nothing else, so a stranger's id and a second press both come back as a refusal. */
-export async function removePlanComment(slug: string, planId: string, commentId: string): Promise<ActionResult<void>> {
-  const side = await planSide(slug, planId)
-  if ('error' in side) return fail(side.error)
-  if (typeof commentId !== 'string' || !UUID_RE.test(commentId)) return fail('That comment is already gone.')
-  const marked = await removePlanCommentRow(commentId)
-  if (!marked) return fail('Only the person who wrote a comment can take it back.')
-  return ok()
 }
