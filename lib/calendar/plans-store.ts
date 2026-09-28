@@ -453,3 +453,163 @@ export function seedPlanFromPlaybook(playbook: PlanPlaybook) {
 export function veraProposalForPlan(opts: Parameters<typeof buildVeraProposal>[0]) {
   return buildVeraProposal(opts)
 }
+
+// ── SHARES, THE HANDSHAKE (PROG-CAL7 Together, LIVE-541) ─────────────────────────────────────
+//
+// Caller session throughout, so the policies on space_plan_shares (20270345007300) are the lock:
+// the host of the Plan and the guest Space may both read a share; only the host may insert; both
+// may update, and the two update doors below narrow that to what each side may say. The guest
+// answers a PENDING share addressed to its own Space; the host takes back an ACTIVE share of its
+// own Plan. A Plan shared with a Space is readable by that Space only once the share is accepted
+// (`private.plan_is_shared_with_me`), which is why `listPlansSharedWith` reads by the accepted ids
+// and why a pending offer carries no Plan of its own here (lib/calendar/plan-share-subjects.ts
+// resolves its title and host for the guest, scoped to the rows the session returned).
+
+import { type PlanShareRow, type PlanShareStatus } from './plan-shares'
+
+const SHARE_COLS = 'id, plan_id, guest_space_id, status, requested_by, created_at, responded_at, responded_by'
+
+export async function listPlanShareRows(planId: string): Promise<PlanShareRow[]> {
+  try {
+    const { data, error } = await (await db()).from('space_plan_shares').select(SHARE_COLS).eq('plan_id', planId).order('created_at', { ascending: true }).limit(100)
+    if (error || !data) {
+      planReadFailed('shares_list', error)
+      return []
+    }
+    return data as PlanShareRow[]
+  } catch (err) {
+    planReadFailed('shares_list', err)
+    return []
+  }
+}
+
+export async function getPlanShareRow(shareId: string): Promise<PlanShareRow | null> {
+  try {
+    const { data, error } = await (await db()).from('space_plan_shares').select(SHARE_COLS).eq('id', shareId).limit(1)
+    if (error) {
+      planReadFailed('share_get', error)
+      return null
+    }
+    return (data?.[0] as PlanShareRow | undefined) ?? null
+  } catch (err) {
+    planReadFailed('share_get', err)
+    return null
+  }
+}
+
+/** Offer a Plan to a guest Space. The status is typed to `pending` and nothing else: the guest
+ *  answers, never the host for them, and the action spells the state it writes. */
+export async function insertPlanShare(share: { planId: string; guestSpaceId: string; requestedBy: string; status: 'pending' }): Promise<{ id: string } | { error: string; code?: string }> {
+  try {
+    const { data, error } = await (await db())
+      .from('space_plan_shares')
+      .insert({ plan_id: share.planId, guest_space_id: share.guestSpaceId, status: share.status, requested_by: share.requestedBy })
+      .select('id')
+      .single()
+    if (error || !data) {
+      // 23505 is the partial unique index: one pending-or-accepted share per Plan and guest.
+      const code = (error as { code?: string } | null)?.code
+      return code === '23505' ? { error: 'That Space already has this Plan.', code } : planIoFailed('share', 'That Plan could not be shared.', error)
+    }
+    return { id: data.id }
+  } catch (err) {
+    return planIoFailed('share', 'That Plan could not be shared.', err as { message?: string })
+  }
+}
+
+/**
+ * The guest's answer. Keyed by the share id AND the guest Space AND the pending state in one
+ * statement, so a share addressed to another Space, or one already answered, changes nothing
+ * and says so: the caller reads the count, never a thrown error.
+ */
+export async function answerPlanShareRow(
+  shareId: string,
+  guestSpaceId: string,
+  answer: Extract<PlanShareStatus, 'accepted' | 'declined'>,
+  responderId: string,
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const { data, error } = await (await db())
+      .from('space_plan_shares')
+      .update({ status: answer, responded_at: new Date().toISOString(), responded_by: responderId })
+      .eq('id', shareId)
+      .eq('guest_space_id', guestSpaceId)
+      .eq('status', 'pending')
+      .select('id')
+    if (error) return planIoFailed('share_answer', 'That share could not be answered.', error)
+    if (!data || data.length === 0) return { error: 'That share is not waiting for an answer.' }
+    return { ok: true }
+  } catch (err) {
+    return planIoFailed('share_answer', 'That share could not be answered.', err as { message?: string })
+  }
+}
+
+/** The host takes an active share back. Keyed by the Plan too, so the caller proves the Plan first. */
+export async function revokePlanShareRow(shareId: string, planId: string, responderId: string): Promise<{ ok: true } | { error: string }> {
+  try {
+    const { data, error } = await (await db())
+      .from('space_plan_shares')
+      .update({ status: 'revoked', responded_at: new Date().toISOString(), responded_by: responderId })
+      .eq('id', shareId)
+      .eq('plan_id', planId)
+      .in('status', ['pending', 'accepted'])
+      .select('id')
+    if (error) return planIoFailed('share_revoke', 'That share could not be taken back.', error)
+    if (!data || data.length === 0) return { error: 'That share is not active.' }
+    return { ok: true }
+  } catch (err) {
+    return planIoFailed('share_revoke', 'That share could not be taken back.', err as { message?: string })
+  }
+}
+
+/** Every offer and acceptance addressed to a guest Space, newest first. Declined and revoked
+ *  shares are history and stay out of the guest's view. */
+export async function listIncomingPlanShareRows(guestSpaceId: string): Promise<PlanShareRow[]> {
+  try {
+    const { data, error } = await (await db())
+      .from('space_plan_shares')
+      .select(SHARE_COLS)
+      .eq('guest_space_id', guestSpaceId)
+      .in('status', ['pending', 'accepted'])
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (error || !data) {
+      planReadFailed('shares_incoming', error)
+      return []
+    }
+    return data as PlanShareRow[]
+  } catch (err) {
+    planReadFailed('shares_incoming', err)
+    return []
+  }
+}
+
+/** The ids of the Plans a Space works through an ACCEPTED share. */
+export async function listSharedPlanIds(spaceId: string): Promise<string[]> {
+  const rows = await listIncomingPlanShareRows(spaceId)
+  return [...new Set(rows.filter((r) => r.status === 'accepted').map((r) => r.plan_id))]
+}
+
+/** The Plans shared with a Space, read on the session: RLS admits them through the accepted share
+ *  and nothing else, so an id that slipped in some other way comes back empty. */
+export async function listPlansSharedWith(spaceId: string): Promise<SpacePlan[]> {
+  const ids = await listSharedPlanIds(spaceId)
+  if (ids.length === 0) return []
+  try {
+    const { data, error } = await (await db())
+      .from('space_plans')
+      .select(PLAN_COLS)
+      .in('id', ids)
+      .is('archived_at', null)
+      .order('updated_at', { ascending: false })
+      .limit(100)
+    if (error || !data) {
+      planReadFailed('shared_list', error)
+      return []
+    }
+    return data.map(mapPlanRow)
+  } catch (err) {
+    planReadFailed('shared_list', err)
+    return []
+  }
+}

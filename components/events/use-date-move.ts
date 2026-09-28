@@ -49,7 +49,9 @@ export interface DateMoveHandlers {
 
 export function useDateMove(
   onMove: ((move: EntryMove) => void) | undefined,
-  shownMonth: { year: number; month1: number },
+  /** The month the grid shows, or NULL under the continuous scroll (LIVE-530), where every month on
+   *  the scroller is open and a move across a month boundary is an ordinary move. */
+  shownMonth: { year: number; month1: number } | null,
   /** The grid root, so a chip that moved can be found again and kept under focus. */
   rootRef: RefObject<HTMLElement | null>,
   /** Changes whenever the items on the grid do: when it changes, a moved chip is re-focused. */
@@ -66,7 +68,8 @@ export function useDateMove(
   // in another when the month comes back from the server, which would drop focus to the body in the
   // middle of a keyboard move (LIVE-469: focus never falls to the body). One re-focus per move.
   const movedId = useRef<string | null>(null)
-  const { year, month1 } = shownMonth
+  const year = shownMonth?.year
+  const month1 = shownMonth?.month1
 
   const reset = useCallback(() => {
     if (pressTimer.current !== null) window.clearTimeout(pressTimer.current)
@@ -79,7 +82,7 @@ export function useDateMove(
   }, [])
 
   const plan = useCallback((item: CalendarEvent, toDayKey: string) => {
-    const move = planEntryMove(item, toDayKey, { year, month1 })
+    const move = planEntryMove(item, toDayKey, year !== undefined && month1 !== undefined ? { year, month1 } : null)
     if (move.ok) movedId.current = move.entryId
     onMove?.(move)
   }, [onMove, year, month1])

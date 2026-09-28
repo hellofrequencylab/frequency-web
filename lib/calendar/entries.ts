@@ -2,7 +2,14 @@ import { ALL_DAY_LABEL } from './item'
 import type { CalendarEvent } from './item'
 import { shortDateLabel } from './short-date'
 import { repeatChipLabel } from '@/lib/events/repeat-rule'
-import { expandPencilSeries, normaliseExceptionDates, pencilRepeatRule, seriesRule, type SeriesWindow } from './pencil-series'
+import {
+  expandPencilSeries,
+  normaliseExceptionDates,
+  pencilRepeatRule,
+  seriesRule,
+  type SeriesMaster,
+  type SeriesWindow,
+} from './pencil-series'
 import {
   entryKind,
   entryStage,
@@ -411,6 +418,44 @@ export function entryItemsInWindow(
       occurrenceDate: o.dayKey,
     }
   })
+}
+
+/** Does the series land on `dayKey`, skips honoured? The day a "this date only" edit may take out
+ *  of the series has to be one the series actually draws: a day it never lands on, or already skips,
+ *  has no occurrence to override. */
+export function seriesLandsOn(master: SeriesMaster, dayKey: string): boolean {
+  const from = dateMs(dayKey)
+  if (from === null) return false
+  const toDay = isoDate(new Date(from + DAY_MS))
+  return expandPencilSeries(master, { fromDay: dayKey, toDay }).some((o) => o.dayKey === dayKey)
+}
+
+/**
+ * THE OVERRIDE'S OWN SPAN (LIVE-534). The drawer's form is the MASTER's, anchored on the series'
+ * first date (entryItemsInWindow hands every occurrence the same `entryInput`), so a person editing
+ * the October night sees September's date in the date field. Two honest readings of what they meant:
+ *
+ *   - they left the date alone: the override lands on the occurrence's own day, keeping the form's
+ *     time of day and length, which is the whole reason the choice exists;
+ *   - they changed the date: they moved THIS occurrence, and the form's dates are the override's.
+ *
+ * The rule is the form's start day compared with the master's anchor day, nothing more. The series
+ * keeps its rule and its skips whatever the form carried for them; they are not this date's to change.
+ */
+export function occurrenceWrite(master: Pick<EntryRow, 'starts_at' | 'ends_at' | 'all_day'>, dayKey: string, w: EntryWrite): EntryWrite {
+  const anchorDay = entryDaySpan(master).dayKey
+  const formDay = w.starts_at.slice(0, 10)
+  const oneOff: EntryWrite = { ...w, recurrence_rule: null, exception_dates: [] }
+  if (formDay !== anchorDay) return oneOff
+  const from = dateMs(anchorDay)
+  const to = dateMs(dayKey)
+  if (from === null || to === null) return oneOff
+  const delta = to - from
+  return {
+    ...oneOff,
+    starts_at: new Date(Date.parse(w.starts_at) + delta).toISOString(),
+    ends_at: new Date(Date.parse(w.ends_at) + delta).toISOString(),
+  }
 }
 
 /** A public "Unavailable" span (from public.space_public_unavailable): times only, never details. */

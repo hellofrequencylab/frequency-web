@@ -4,10 +4,18 @@
 // proposal to the box, a person ticks the lines, and only `applyVeraChanges` (on the caller's own
 // session) touches the calendar. Vera never publishes, sends or books on her own.
 //
-// Three tools, one bounded loop (at most MAX_ROUNDS model calls per ask):
+// Four tools, one bounded loop (at most MAX_ROUNDS model calls per ask):
 //   lunar_dates        the model MAY call this first. The server computes the days with
 //                      lib/calendar/moon.ts (Meeus) in the Space's zone and feeds them back, so
 //                      "every new moon" is arithmetic, never a recollection.
+//   attendance_history the model MAY call this when the ask is to pick a good day or time and
+//                      names none (PROG-CAL11 slice 4, LIVE-539). The server answers with the
+//                      weekday and starting hour that drew the most people to THIS Space, folded
+//                      by lib/calendar/vera-attendance.ts from its own past events. The read is
+//                      handed in by the calendar action as a READER on the context, keyed by the
+//                      Space the editor resolved, and runs at most once per ask and only when the
+//                      tool is called; this module imports no store. The tool is offered only when
+//                      a reader is on the context, so a caller without one sees the old three.
 //   ask_clarification  the model calls this INSTEAD of proposing when the ask is ambiguous in a
 //                      way that changes the outcome (PROG-CAL11 slice 1). The server does not loop
 //                      again: the question goes back to the box with the TRANSCRIPT so far, the
@@ -41,6 +49,8 @@ import { featureOverBudget, recordAiUsage } from './usage'
 import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 import { lunarPhaseDates, type LunarPhase } from '@/lib/calendar/moon'
+import { attendanceHistoryWords, hourWords, type AttendanceHistory } from '@/lib/calendar/vera-attendance'
+import { WEEKDAY_NAMES } from '@/lib/calendar/day-notes'
 import {
   MAX_CLARIFICATION_OPTIONS,
   MAX_PENCIL_DAYS,
@@ -58,8 +68,9 @@ import {
 } from '@/lib/calendar/vera-command'
 
 export const VERA_CALENDAR_FEATURE = 'vera-calendar'
-/** The most model calls one ask may spend: a lunar lookup, a second lookup, the proposal. */
-export const MAX_ROUNDS = 3
+/** The most model calls one ask may spend: a lunar lookup, an attendance lookup, a second lunar
+ *  lookup, the proposal. Grew from three with the attendance tool (LIVE-539). */
+export const MAX_ROUNDS = 4
 /** The most questions Vera may ask per request before she has to propose or say she cannot. */
 export const MAX_CLARIFICATIONS = 2
 /** The transcript a continuation may carry back: messages and bytes. Two questions, each with a
@@ -74,6 +85,7 @@ const MAX_LUNAR_SPAN_DAYS = 400
 export const LUNAR_TOOL_NAME = 'lunar_dates'
 export const CLARIFY_TOOL_NAME = 'ask_clarification'
 export const PROPOSE_TOOL_NAME = 'propose_changes'
+export const ATTENDANCE_TOOL_NAME = 'attendance_history'
 
 /** What the box sends and the action fills in. Every field is this Space's or the viewer's. */
 export interface VeraCalendarContext {
@@ -85,6 +97,9 @@ export interface VeraCalendarContext {
   entries: { id: string; title: string; day: string; stage: string | null; planId: string | null }[]
   plans: { id: string; title: string; stage: string }[]
   profileId?: string | null
+  /** This Space's attendance history, read on demand (LIVE-539). Handed in by the calendar action,
+   *  keyed by the editor's Space, so this module reads no table. Absent, the tool is not offered. */
+  readAttendance?: (() => Promise<AttendanceHistory>) | null
 }
 
 /** The conversation so far, in the API messages shape, with the first message carrying only the
@@ -146,6 +161,13 @@ const CLARIFY_TOOL: Anthropic.Tool = {
     },
     required: ['question', 'options'],
   },
+}
+
+const ATTENDANCE_TOOL: Anthropic.Tool = {
+  name: ATTENDANCE_TOOL_NAME,
+  description:
+    'Which weekday and starting hour have drawn the most people to this Space, read by the server from the attendance records of its own past events. Call this before proposing when the request is to pick, suggest or find a good day or time and names none. Do not call it when a day or time was named. Takes no input.',
+  input_schema: { type: 'object', properties: {} },
 }
 
 /** One line of the tool description per settable path: what it is called, what it takes. */
@@ -240,6 +262,7 @@ Rules that never bend:
 - A field change sets ONE attribute of ONE existing Plan or date from the context, by the attribute's path and a value of its type; a Plan's stage, a date's day and a Plan's title have their own kinds and are never field changes. Setting the same attribute twice is two changes; leave the second out.
 - If the request cannot be expressed with the seven kinds of change, propose what can be and say what could not in the note.
 - When the request is ambiguous in a way that changes the outcome (several Plans or dates in the context match what was named, a timed thing has no time, a day could fall in two years), call ${CLARIFY_TOOL_NAME} INSTEAD of ${PROPOSE_TOOL_NAME}: one plain question, ${MIN_CLARIFICATION_OPTIONS} to ${MAX_CLARIFICATION_OPTIONS} options drawn from the context, with the id as the value where one exists. Never ask when a sensible default exists; take the default and say so in the note. At most ${MAX_CLARIFICATIONS} questions per request; once they are spent, propose with the best reading.
+- When ${ATTENDANCE_TOOL_NAME} is offered and the request is to pick, suggest or find a good day or time without naming one, call it first and prefer the weekday and hour it returns; say in the note, in one short clause, which weekday and hour you followed. When a day or time was named, do not call it: availability is the whole question then. When it says nothing has been recorded, propose from availability and say so in the note.
 - The answer to a question comes back as that tool's result. Continue from it; do not ask the same thing again.
 - Always answer by calling ${PROPOSE_TOOL_NAME} or ${CLARIFY_TOOL_NAME}. Do not answer in prose.`
 
@@ -276,6 +299,30 @@ export function runLunarTool(input: Record<string, unknown>, timeZone: string): 
   if (!Number.isFinite(span) || span < 0) return { ok: false, error: 'toDay is before fromDay.' }
   if (span > MAX_LUNAR_SPAN_DAYS) return { ok: false, error: `Ask for at most ${MAX_LUNAR_SPAN_DAYS} days at a time.` }
   return { ok: true, days: lunarPhaseDates(phase, fromDay, toDay, timeZone) }
+}
+
+/** What the model reads from the attendance tool: the fold with weekdays and hours in words, and the
+ *  server's own sentence about it. Exported so a test can pin the exact shape the model is fed. */
+export function attendanceForModel(history: AttendanceHistory): Record<string, unknown> {
+  const b = history.best
+  return {
+    recordedEvents: history.recordedEvents,
+    best: b ? { weekday: WEEKDAY_NAMES[b.weekday], hour: hourWords(b.hour), people: b.people, events: b.events } : null,
+    byWeekday: history.byWeekday.map((w) => ({ weekday: WEEKDAY_NAMES[w.weekday], events: w.events, people: w.people })),
+    byHour: history.byHour.map((h) => ({ hour: hourWords(h.hour), events: h.events, people: h.people })),
+    note: attendanceHistoryWords(history),
+  }
+}
+
+/** Execute the attendance tool for the model: the server's fold in the server's words. A read that
+ *  fails is answered as an error result, so the model proposes from availability and never guesses
+ *  what drew people. */
+async function attendanceResult(id: string, read: () => Promise<AttendanceHistory>): Promise<Anthropic.ToolResultBlockParam> {
+  try {
+    return { type: 'tool_result', tool_use_id: id, content: JSON.stringify(attendanceForModel(await read())) }
+  } catch {
+    return { type: 'tool_result', tool_use_id: id, content: 'Attendance could not be read just now. Propose from availability and say so in the note.', is_error: true }
+  }
 }
 
 export type ProposeCalendarChangesResult = VeraCalendarReply | { error: string }
@@ -392,8 +439,13 @@ export async function proposeCalendarChanges(input: {
   const transcript: VeraTranscript = prior ? [{ role: 'user', content: ask }, ...prior.slice(1)] : [{ role: 'user', content: ask }]
   if (answerResult) transcript.push({ role: 'user', content: [answerResult] })
   const messages: CompleteMessage[] = transcript.map((m, i) => (i === 0 ? { role: 'user', content: opening } : m))
+  // The history is read at most once per ask, however many times the model asks for it, and only
+  // when it does: the per-event ledger read costs the ask that needs it, not every ask.
+  const reader = ctx.readAttendance ?? null
+  let historyOnce: Promise<AttendanceHistory> | null = null
+  const readAttendance = reader ? () => (historyOnce ??= reader()) : null
   const propose = proposeTool()
-  const tools = mayAsk ? [LUNAR_TOOL, CLARIFY_TOOL, propose] : [LUNAR_TOOL, propose]
+  const tools: Anthropic.Tool[] = [LUNAR_TOOL, ...(readAttendance ? [ATTENDANCE_TOOL] : []), ...(mayAsk ? [CLARIFY_TOOL] : []), propose]
 
   let usage: TokenUsage = { inputTokens: 0, outputTokens: 0 }
   let outcome: ProposeCalendarChangesResult = mayAsk
@@ -432,14 +484,21 @@ export async function proposeCalendarChanges(input: {
         }
         break
       }
-      const lookups = toolUses.filter((b) => b.name === LUNAR_TOOL_NAME)
+      const lookups = toolUses.filter((b) => b.name === LUNAR_TOOL_NAME || (readAttendance && b.name === ATTENDANCE_TOOL_NAME))
       if (lookups.length === 0) break
-      const results: Anthropic.ToolResultBlockParam[] = lookups.map((call) => {
+      const results: Anthropic.ToolResultBlockParam[] = []
+      for (const call of lookups) {
+        if (call.name === ATTENDANCE_TOOL_NAME && readAttendance) {
+          results.push(await attendanceResult(call.id, readAttendance))
+          continue
+        }
         const r = runLunarTool((call.input ?? {}) as Record<string, unknown>, ctx.timeZone)
-        return r.ok
-          ? { type: 'tool_result', tool_use_id: call.id, content: JSON.stringify({ phase: (call.input as { phase?: string }).phase, timeZone: ctx.timeZone, days: r.days }) }
-          : { type: 'tool_result', tool_use_id: call.id, content: r.error, is_error: true }
-      })
+        results.push(
+          r.ok
+            ? { type: 'tool_result', tool_use_id: call.id, content: JSON.stringify({ phase: (call.input as { phase?: string }).phase, timeZone: ctx.timeZone, days: r.days }) }
+            : { type: 'tool_result', tool_use_id: call.id, content: r.error, is_error: true },
+        )
+      }
       const lookupTurn: CompleteMessage = { role: 'assistant', content: lookups.map((b) => ({ type: 'tool_use' as const, id: b.id, name: b.name, input: b.input })) }
       const resultTurn: CompleteMessage = { role: 'user', content: results }
       messages.push(lookupTurn, resultTurn)

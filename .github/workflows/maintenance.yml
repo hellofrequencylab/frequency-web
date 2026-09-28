@@ -12,6 +12,10 @@
 #     reader in ci.yml diffs a branch against a frozen baseline and so cannot tell "this PR did
 #     it" from "main already had it" (ADR-1290, HYG-070); this is the reading on a fixed
 #     reference, on a schedule, with the tracking issue as its owner. Advisory, never fails.
+#   - the FULL backlog sweep: pnpm check:backlog --probes=all. The per-PR gate probes open work
+#     plus rows closed in the last 30 days; the remaining ~68% of the probes are rows closed
+#     before the branch existed, whose regressions are real findings with no author on that PR
+#     (HYG-129). Same argument, same home, same tracking issue. Advisory, never fails the sweep.
 # What runs WHEN the owner adds SUPABASE_ACCESS_TOKEN (arms the DB-credentialed checks):
 #   - fetch Supabase security + performance advisors, diff against the accepted-risk allowlist
 #     (scripts/maintenance/accepted-advisories.json), report only new findings.
@@ -445,6 +449,35 @@ jobs:
           if [ "$CODE" != "0" ]; then printf '```\n%s\n```\n' "$REPORT" > adoption.txt; fi
           echo "code=$CODE" >> "$GITHUB_OUTPUT"
 
+      # ── The full backlog sweep (HYG-129) ──────────────────────────────────────────────────
+      #
+      # WHY HERE, and it is the same argument as the design-debt ratchet directly above. Until
+      # 2026-09-28 `pnpm check:backlog` re-ran the verify probe for EVERY row on every pull
+      # request: 812 probes, 556 of them belonging to rows closed before the branch existed, and
+      # 20.2s wall / 66s CPU on a guard that bounded the whole parallel `checks` job by itself.
+      #
+      # A row that regressed after being closed is a REAL finding and the `done + NOT DONE` arm is
+      # half of why that guard exists — but the finding has no author on today's PR. Nobody on the
+      # PR can act on it, and a blocking gate nobody can act on is the one ADR-970 says people
+      # learn to route around. So the per-PR gate keeps the rows a PR can answer for (open /
+      # blocked, plus anything closed in the last 30 days) and the FULL sweep runs here, weekly,
+      # with the tracking issue as its owner.
+      #
+      # ⚠️ IT MUST NOT GO QUIET. This is now the only thing that reads ~68% of the probes, so a
+      # non-zero code — a regressed row, or the guard failing to run at all — goes into the issue,
+      # exactly like the ratchet. `set +e` so the sweep never fails the sweep.
+      - name: Backlog full sweep (every probe)
+        id: backlogsweep
+        run: |
+          set +e
+          REPORT=$(pnpm check:backlog --probes=all 2>&1)
+          CODE=$?
+          echo "$REPORT"
+          { echo "## Backlog full sweep (--probes=all)"; echo '```'; echo "$REPORT"; echo '```'; echo ""; } >> "$GITHUB_STEP_SUMMARY"
+          # A clean sweep is not news. A row whose probe no longer agrees with the tree is.
+          if [ "$CODE" != "0" ]; then printf '```\n%s\n```\n' "$REPORT" > backlogsweep.txt; fi
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+
       # ── AI triage (Phase 4) — optional, uses the existing ANTHROPIC_API_KEY. Advises only;
       #    never edits code. Non-fatal, so the deterministic report always ships.
       #
@@ -466,7 +499,7 @@ jobs:
       #    `steps.adoption.outputs.code != '0'` for the same reason: 1 is a class above its
       #    baseline on main, anything else is the ratchet itself failing to read.
       - name: Report to a tracking issue on delta
-        if: steps.audit.outputs.code != '0' || steps.advisors.outputs.code == '1' || steps.ledger.outputs.code == '1' || steps.menudrift.outputs.code == '1' || steps.cron.outputs.code != '0' || steps.collective.outputs.code != '0' || steps.adoption.outputs.code != '0' || steps.dbusage.outputs.code != '0' || steps.proveit.outputs.code != '0'
+        if: steps.audit.outputs.code != '0' || steps.advisors.outputs.code == '1' || steps.ledger.outputs.code == '1' || steps.menudrift.outputs.code == '1' || steps.cron.outputs.code != '0' || steps.collective.outputs.code != '0' || steps.adoption.outputs.code != '0' || steps.backlogsweep.outputs.code != '0' || steps.dbusage.outputs.code != '0' || steps.proveit.outputs.code != '0'
         uses: actions/github-script@v9
         with:
           script: |
@@ -483,6 +516,7 @@ jobs:
               read('cron.txt') && ('### Cron heartbeat coverage\n' + read('cron.txt')),
               read('collective.txt') && ('### Community Collective phase gate\n' + read('collective.txt')),
               read('adoption.txt') && ('### Design-debt ratchet (main)\n' + read('adoption.txt')),
+              read('backlogsweep.txt') && ('### Backlog full sweep (--probes=all)\n' + read('backlogsweep.txt')),
               read('dbusage.txt') && ('### Database account usage\n' + read('dbusage.txt')),
               read('proveit.txt') && ('### Phase 11 reading\n' + read('proveit.txt')),
             ].filter(Boolean).join('\n')

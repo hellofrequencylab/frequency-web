@@ -24,7 +24,10 @@ import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-me
 import { EventShareApprovals } from '@/components/events/event-share-approvals'
 import { SectionHeader } from '@/components/ui/section-header'
 import { SpaceEventsManager, type ManagedEvent } from './space-events-manager'
-import { listSpacePlans, listPlaybooks, listPlanPencilEntryIds } from '@/lib/calendar/plans-store'
+import { listSpacePlans, listPlaybooks, listPlanPencilEntryIds, listIncomingPlanShareRows, listPlansSharedWith } from '@/lib/calendar/plans-store'
+import { resolveShareSubjects } from '@/lib/calendar/plan-share-subjects'
+import { incomingFromRow, type ShareSubject, type SharedPlanView } from '@/lib/calendar/plan-shares'
+import { SharedPlansPanel } from './shared-plans-panel'
 import { CalendarPlansPanel } from './calendar-plans-panel'
 import { SpaceTodosPanel } from './space-todos-panel'
 import { listTasks } from '@/lib/crm/tasks'
@@ -96,6 +99,17 @@ export default async function SpaceCalendarConsolePage({
   // the month the calendar happens to be showing: a Plan's date is usually in another month, and
   // without it "Make it a Production" opened the Spark with a title and nothing else.
   const pencilByPlan = plans.length === 0 ? {} : await listPlanPencilEntryIds(space.id)
+
+  // SHARED WITH YOU (PROG-CAL7, LIVE-541). The offers and acceptances addressed to THIS Space, read
+  // on the session so RLS decides which shares it may see, then the title and host of each resolved
+  // for exactly those plan ids (a pending offer's Plan is not readable until it is accepted). The
+  // accepted Plans themselves come back through the session read that the accepted share admits.
+  const shareRows = featureLocked || !canManage ? [] : await listIncomingPlanShareRows(space.id)
+  const subjects: Map<string, ShareSubject> = shareRows.length ? await resolveShareSubjects(shareRows.map((r) => r.plan_id)) : new Map()
+  const incomingShares = shareRows.filter((r) => r.status === 'pending').map((r) => incomingFromRow(r, subjects.get(r.plan_id)))
+  const sharedPlans: SharedPlanView[] = shareRows.some((r) => r.status === 'accepted')
+    ? (await listPlansSharedWith(space.id)).map((plan) => ({ plan, hostName: subjects.get(plan.id)?.hostName ?? null }))
+    : []
 
   // THE TEAM'S TO-DOS (PROG-CAL4 "My tasks"). One list for Plan to-dos and CRM follow-ups
   // alike: both are crm_tasks rows (ADR-1386 owner ruling 3). Read here, behind the same
@@ -193,6 +207,8 @@ export default async function SpaceCalendarConsolePage({
           {canManage && (
             <SpaceTodosPanel slug={space.slug} tasks={todos} viewerId={viewerProfileId} />
           )}
+
+          {canManage && <SharedPlansPanel slug={space.slug} incoming={incomingShares} sharedPlans={sharedPlans} />}
 
           {canManage && (
             <CalendarPlansPanel
