@@ -66,7 +66,11 @@ function item(over: Partial<CalendarEvent> & Pick<CalendarEvent, 'slug' | 'title
 
 const busy = Array.from({ length: 6 }, (_, i) => item({ slug: `s${i}`, title: `Sitting ${i + 1}` }))
 
-const monthWrapper = (el: HTMLElement) => el.querySelector('.touch-pan-y')!.firstElementChild as HTMLElement
+// THE MONTH WRAPPER IS NAMED, NOT POSITIONAL (LIVE-530). Reading `.touch-pan-y`'s first element
+// child silently resolved to the earliest BAND once the grid could hold several months, and kept
+// passing while measuring the wrong one. `[data-calendar-month]` is the node whose children are all
+// week rows in both modes, which is the invariant every case below reads.
+const monthWrapper = (el: HTMLElement) => el.querySelector('[data-calendar-month]') as HTMLElement
 const weekRows = (el: HTMLElement) => [...monthWrapper(el).children] as HTMLElement[]
 
 describe('EventCalendar under a host that draws the chrome', () => {

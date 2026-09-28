@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -25,7 +26,16 @@ import {
 import { Dialog } from '@/components/ui/dialog'
 import { buttonClasses } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { monthMatrix, monthLabel, addMonth, calendarChrome, cellFloorClass, WEEKDAY_LABELS, SHORT_MONTH_LABELS } from '@/lib/events/calendar-grid'
+import {
+  monthMatrix,
+  monthLabel,
+  addMonth,
+  calendarChrome,
+  cellFloorClass,
+  WEEKDAY_LABELS,
+  SHORT_MONTH_LABELS,
+  type DayCell,
+} from '@/lib/events/calendar-grid'
 import { CalendarLayerChips, CalendarViewSwitch, MonthJumpPanel, countByMonthKey, monthCount } from '@/components/events/calendar-chrome'
 import { eventCoverFocusStyle } from '@/lib/events/cover-focus'
 import { IconButton } from '@/components/ui/icon-button'
@@ -56,6 +66,15 @@ import {
   withoutMonth,
 } from '@/lib/calendar/month-requests'
 import { stackDay } from '@/lib/calendar/sunday-stack'
+import {
+  bandAround,
+  bandContains,
+  bandKeys,
+  extendBand,
+  scrollBounds,
+  topmostBand,
+  type MonthBand,
+} from '@/lib/calendar/month-band'
 import { shortDateLabel } from '@/lib/calendar/short-date'
 import { useMonthGestures } from './use-month-gestures'
 import { DAY_CELL_ATTR, useDateMove } from './use-date-move'
@@ -171,6 +190,12 @@ function MonthLoadError({
   )
 }
 
+/** How close to either end of the scroller the reader has to be before the band grows there, in
+ *  px. Two of these is comfortably less than one month band, so growth stays a month ahead. */
+const EXTEND_PX = 400
+/** How long the scroll has to be quiet before the anchor it landed on is reported. */
+const SCROLL_QUIET_MS = 150
+
 export function EventCalendar({
   events,
   initialYear,
@@ -197,6 +222,7 @@ export function EventCalendar({
   hiddenLayers: hiddenLayersProp,
   onHiddenLayersChange,
   fill = false,
+  monthFlow = 'page',
   hostChrome = false,
   hostViewSwitch = false,
   audience = 'member',
@@ -261,6 +287,18 @@ export function EventCalendar({
    *  full-viewport mount (the console) is a wall of days rather than a card with a gap under it.
    *  A day with more items than its share can show scrolls inside its own cell. */
   fill?: boolean
+  /** HOW THE MONTHS FLOW (LIVE-530, owner ask 2026-09-27: "make it so the calendar infinitely
+   *  scrolls through that section instead of flipping pages"). `page`, the default, is one month
+   *  at a time: every step, jump and Today replaces the month, with the slide. `scroll` draws a
+   *  BAND of months under one scroller, clearly headed, grows the band one month at a time toward
+   *  the reader, and reads the anchor month back off the scroll position.
+   *
+   *  🔴 `month` / `onMonthChange` KEEP EXACTLY ONE MEANING IN BOTH MODES: the anchor month. Under
+   *  `scroll` the grid additionally scrolls to it and additionally reports it from the scroll
+   *  position, which is what lets a host's month title, agenda, paging and jump work unchanged.
+   *  Applies to the grid view only; the List is already a continuous chronological scroll. The
+   *  default leaves every mount that does not ask for it exactly as it was. */
+  monthFlow?: 'page' | 'scroll'
   /** THE HOST DRAWS THE MONTH (PROG-CAL13, corrected by LIVE-475). The month label and the Prev /
    *  Today / Next cluster come off, because the host's own header already carries both: inside the
    *  Calendar console the page was paying for each of them twice and the month itself was cut off
@@ -313,10 +351,29 @@ export function EventCalendar({
   // The month the PAGE rendered on the server: the one month the requester never fetches.
   const initialKey = monthKey(initialYear, initialMonth1)
   const [seenKey, setSeenKey] = useState(shownKey)
+  // ── THE CONTINUOUS MONTH SCROLL (LIVE-530) ──────────────────────────────────────────────────
+  // Under `scroll` the grid holds a BAND of months (lib/calendar/month-band.ts) on one scroller.
+  // `landed` is the last anchor the SCROLL POSITION itself derived, so the anchor-to-scroll path
+  // below can tell a month the reader scrolled to (already in view: do nothing) from one a control
+  // handed in (Prev, Next, Today, the jump, a key: scroll there). That pair of skips is what breaks
+  // the feedback loop between the two directions; neither path ever calls the other.
+  const scroll = monthFlow === 'scroll'
+  const [landed, setLanded] = useState<string | null>(null)
+  const [anchorTarget, setAnchorTarget] = useState<{ key: string; n: number } | null>(() =>
+    scroll ? { key: shownKey, n: 0 } : null,
+  )
+  const [band, setBand] = useState<MonthBand>(() => bandAround(shownKey))
   if (seenKey !== shownKey) {
-    setSlide(shownKey > seenKey ? 'next' : 'prev')
+    // No slide under the scroll: the months are all in the tree and the scroller moves instead.
+    setSlide(scroll ? null : shownKey > seenKey ? 'next' : 'prev')
     setSeenKey(shownKey)
+    if (scroll && shownKey !== landed) setAnchorTarget((cur) => ({ key: shownKey, n: (cur?.n ?? 0) + 1 }))
   }
+  // Explicit navigation is never clamped: an anchor outside the band re-centres the band on it.
+  if (scroll && !bandContains(band, shownKey)) setBand(bandAround(shownKey))
+  const bandList = useMemo(() => bandKeys(band), [band])
+  // Where automatic extension stops: the events window's two edges (ADR-1536), from today.
+  const bounds = useMemo(() => scrollBounds(localToday()), [])
 
   // Months fetched through loadMonth, keyed 'YYYY-MM'. The page's initial month is already on hand.
   const [fetched, setFetched] = useState<ReadonlyMap<string, CalendarEvent[]>>(EMPTY_MONTH_ITEMS)
@@ -419,10 +476,10 @@ export function EventCalendar({
     [loadMonth, initialKey, refreshKey],
   )
 
-  // The months this mount wants on hand. ONE for now, the month on screen; the continuous scroll
-  // this requester was built for hands it several. Memoised on the joined string rather than the
-  // array, so the effect below fires when the LIST changes and not when its identity does.
-  const visibleSig = shownKey
+  // The months this mount wants on hand: the month on screen, or under the scroll every month of
+  // the band. Memoised on the joined string rather than the array, so the effect below fires when
+  // the LIST changes and not when its identity does.
+  const visibleSig = scroll ? bandList.join(',') : shownKey
   const visibleKeys = useMemo(() => visibleSig.split(','), [visibleSig])
 
   useEffect(() => {
@@ -465,6 +522,121 @@ export function EventCalendar({
 
   const gridRef = useRef<HTMLDivElement>(null)
   useMonthGestures(gridRef, step, { vertical: wheelPaging, horizontal: swipePaging, remountKey: view })
+
+  // ── THE SCROLLER'S THREE JOBS (LIVE-530): growing the band, anchor → scroll, scroll → anchor. ──
+  // A prepend in flight, with the scroller's height and position from before it, so the reader's
+  // place can be kept once the new band is on top.
+  const extending = useRef<{ before: number; top: number } | null>(null)
+  const extend = useCallback(
+    (end: 'back' | 'forward') => {
+      const next = extendBand(band, end, bounds)
+      if (next === band) return // at the events window's edge: the terminal band says so
+      if (end === 'back') {
+        if (extending.current) return
+        const s = gridRef.current
+        extending.current = s ? { before: s.scrollHeight, top: s.scrollTop } : null
+      }
+      setBand(next)
+    },
+    [band, bounds],
+  )
+  const onScroll = useCallback(() => {
+    const s = gridRef.current
+    // A scroller with no layout (jsdom, a hidden panel) has nothing to measure and asks for nothing.
+    if (!s || s.clientHeight === 0) return
+    if (s.scrollTop < EXTEND_PX) extend('back')
+    else if (s.scrollHeight - s.clientHeight - s.scrollTop < EXTEND_PX) extend('forward')
+  }, [extend])
+
+  // ANCHOR → SCROLL. After a commit that set a target (a month a control handed in, or the mount),
+  // the anchor's band goes to the top of the scroller. scrollTop on the known node, never
+  // scrollIntoView (see the scroller's own note). A month the scroll position itself derived sets
+  // no target, so scrolling never scrolls.
+  useLayoutEffect(() => {
+    if (!scroll || !anchorTarget) return
+    const s = gridRef.current
+    const block = s?.querySelector<HTMLElement>(`[data-calendar-month-band="${anchorTarget.key}"]`)
+    if (!s || !block) return
+    s.scrollTop = block.offsetTop
+  }, [scroll, anchorTarget])
+
+  // A PREPEND KEEPS THE READER'S PLACE. The band that appeared above pushed everything down by its
+  // own height, so the scroller moves by exactly that much in the same frame, before paint.
+  useLayoutEffect(() => {
+    const pending = extending.current
+    const s = gridRef.current
+    if (!pending || !s) return
+    extending.current = null
+    s.scrollTop = pending.top + (s.scrollHeight - pending.before)
+  }, [band])
+
+  // A SCROLLER SHORTER THAN ITS VIEWPORT CANNOT SCROLL, so it could never ask for more: grow it
+  // forward until it can, bounded like every other extension.
+  useEffect(() => {
+    if (!scroll) return
+    const s = gridRef.current
+    if (!s || s.clientHeight === 0) return
+    if (s.scrollHeight - s.clientHeight < EXTEND_PX) extend('forward')
+  }, [scroll, band, extend])
+
+  // SCROLL → ANCHOR. A banded IntersectionObserver over the scroller (the page-contents idiom): the
+  // band crossing the line 8% to 18% down the viewport is the anchor, the EARLIEST of several wins
+  // (monotone in scrollTop, lib/calendar/month-band.ts), and it is reported once the scroll has been
+  // quiet for SCROLL_QUIET_MS.
+  //
+  // 🔴 THE QUIET IS A CORRECTNESS REQUIREMENT, NOT POLISH. The month label carries aria-live="polite"
+  // (components/events/calendar-chrome.tsx, and exactly one copy is mounted). Under `page` the
+  // anchor changes once per deliberate act; under a scroll it would change once per month CROSSED,
+  // and a twelve-month flick would queue twelve announcements. One landing, one sentence.
+  const settle = useRef((_key: string) => {})
+  useEffect(() => {
+    settle.current = (key: string) => {
+      if (key === shownKey) return
+      const parts = monthFromKey(key)
+      if (!parts) return
+      setLanded(key)
+      goTo(parts)
+    }
+  })
+  useEffect(() => {
+    if (!scroll || typeof IntersectionObserver === 'undefined') return
+    const s = gridRef.current
+    if (!s) return
+    const onLine = new Set<string>()
+    let timer: number | null = null
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          const key = (e.target as HTMLElement).dataset.calendarMonthBand
+          if (!key) continue
+          if (e.isIntersecting) onLine.add(key)
+          else onLine.delete(key)
+        }
+        const top = topmostBand(onLine)
+        if (!top) return
+        if (timer !== null) window.clearTimeout(timer)
+        timer = window.setTimeout(() => {
+          timer = null
+          settle.current(top)
+        }, SCROLL_QUIET_MS)
+      },
+      { root: s, rootMargin: '-8% 0px -82% 0px', threshold: 0 },
+    )
+    for (const el of s.querySelectorAll<HTMLElement>('[data-calendar-month-band]')) io.observe(el)
+    return () => {
+      io.disconnect()
+      if (timer !== null) window.clearTimeout(timer)
+    }
+  }, [scroll, bandList, view])
+
+  /** The honest terminal band: what the scroll loads on its own, and how to go further. */
+  const edgeLine = (end: 'floor' | 'ceiling') => {
+    const parts = monthFromKey(end === 'floor' ? bounds.floorKey : bounds.ceilingKey)
+    const name = parts ? monthLabel(parts.year, parts.month1) : ''
+    return end === 'floor'
+      ? `The calendar loads back to ${name} here. To look further back, jump to a month.`
+      : `The calendar loads ahead to ${name} here. To plan further out, jump to a month.`
+  }
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement
@@ -518,7 +690,14 @@ export function EventCalendar({
     },
     [onMoveEntry],
   )
-  const move = useDateMove(onMoveEntry ? handleMove : undefined, { year, month1 }, rootRef, all)
+  // 🔴 UNDER THE SCROLL THERE IS NO "OTHER MONTH" (LIVE-530). planEntryMove refuses a target outside
+  // the shown month with "Open that month first"; under a scroll October IS open, three inches below
+  // September, so that sentence would be false and the most obvious drag in the new grid refused.
+  // The planner is handed no shown month there, and a move across a band boundary is an ordinary
+  // move. What makes that safe is that a padded day is a PLACEHOLDER under the scroll (see the
+  // cell): each date has exactly one owning cell and one copy of each chip, so the drop ring paints
+  // in one place and post-move focus finds one chip.
+  const move = useDateMove(onMoveEntry ? handleMove : undefined, scroll ? null : { year, month1 }, rootRef, all)
 
   const series = useMemo(() => repeats ?? [], [repeats])
   const pendingByDay = useMemo(() => {
@@ -610,273 +789,9 @@ export function EventCalendar({
   // draws the very same control now and two copies of it would drift (LIVE-485).
   const viewSwitch = <CalendarViewSwitch view={view} onView={setView} />
 
-  return (
-    <div
-      ref={rootRef}
-      data-calendar-root
-      tabIndex={0}
-      aria-label="Calendar"
-      className={cn(
-        '@container bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-        // A CARD ON THE PAGE, THE WHOLE SECTION IN THE CONSOLE (owner ask 2026-09-27: "remove the
-        // rounded border and make it classily fill the entire section").
-        //
-        // Filling meant deleting a border on the grid AND the padding that held it off the console
-        // panel (calendar-console.tsx's stage), because the two together drew a card inside a card:
-        // the console panel is itself `rounded-card border overflow-hidden`, so the grid was a
-        // second stroke a few units inside the first. With both gone the panel's own radius clips
-        // the grid's square corners, which is the one rounded edge the design wanted (LIVE-472: "a
-        // panel on a dimmed page, not edge to edge" -- that ruling is about the PANEL's margin and
-        // is untouched here).
-        //
-        // On the page the card stays: there the grid sits in an ordinary padded column with the
-        // control bar above it, and a borderless grid would bleed into the page.
-        !fill && 'rounded-card border border-border',
-        fill && 'flex min-h-0 flex-1 flex-col',
-      )}
-      onKeyDown={onKeyDown}
-    >
-      {/* THE MOVE IS SPOKEN HERE (PROG-CAL15). Always mounted, empty until a date is moved: a live
-          region only announces changes to what it already holds, so it has to be in the tree before
-          the first sentence arrives. It is the same sentence the console header shows, said once. */}
-      <p data-calendar-move-live aria-live="polite" className="sr-only">
-        {moveNotice ?? ''}
-      </p>
-      {/* THE HEADER IS THE HOST'S WHEN THERE IS ONE (PROG-CAL13, widened by LIVE-485). Inside the
-          Calendar console every one of these controls is drawn once, in the console's own header
-          bar: the month label, the Prev / Today / Next cluster, the month-and-year jump, the grid /
-          list switcher and the layer chips. So the grid draws none of them and the month gets back
-          the four bands of furniture they were costing it.
-
-          🔴 A HOST MAY ONLY TAKE A CONTROL IT DRAWS (LIVE-475). The first cut of `hostChrome`
-          dropped this whole header, and the switcher and the jump went with it although NOTHING
-          outside this component drew either one. That shipped a reachable dead end: switch the page
-          grid to List, press Fullscreen, and you were in list mode inside a full-screen console
-          with no way back to the month and no way to move more than one month at a time, with
-          closing the console the only exit. The console header genuinely carries both now, which is
-          what lets them come off here, and `HOST_DRAWN_CONTROL_MARKS` in lib/events/calendar-grid.ts
-          is the gate that keeps that true rather than a promise in a comment.
-
-          The Loading live region is NOT chrome: a month that has not arrived has to be announced
-          wherever the grid is mounted, so it stays either way, and under a host it is the only
-          thing left of this header. */}
-      {!chrome.monthTitle && !chrome.paging && !chrome.viewSwitch && !chrome.monthJump ? (
-        <span role="status" className="sr-only">
-          {loadingKeys.size > 0 ? 'Loading' : null}
-        </span>
-      ) : (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
-          <div className="relative flex items-center gap-1">
-            <button
-              ref={monthButtonRef}
-              type="button"
-              onClick={() => {
-                setJumpYear(year)
-                setJumpOpen((o) => !o)
-              }}
-              aria-expanded={jumpOpen}
-              aria-haspopup="dialog"
-              className="inline-flex items-center gap-1 rounded-control px-1.5 py-1 text-body-lg font-semibold text-text transition-colors hover:bg-surface-elevated"
-            >
-              <span aria-live="polite">{monthLabel(year, month1)}</span>
-              <ChevronDown className={cn('h-4 w-4 text-muted transition-transform', jumpOpen && 'rotate-180')} aria-hidden />
-            </button>
-            {/* Always mounted: a live region announces changes to what it already holds, so it has
-                to be in the tree before Loading appears in it. */}
-            <span role="status" className="text-meta text-muted">
-              {loadingKeys.size > 0 ? 'Loading' : null}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              <IconButton label="Previous month" onClick={() => step(-1)}>
-                <ChevronLeft className="h-4 w-4" aria-hidden />
-              </IconButton>
-              {/* Stays mounted on the current month (disabled), so it never vanishes from under the
-                  focus that just pressed it; that focus moves to the month title, which reads the
-                  month it landed on. */}
-              <button
-                type="button"
-                disabled={onCurrentMonth}
-                onClick={() => {
-                  goTo({ year: todayYear, month1: todayMonth1 })
-                  focusMonthAnchor()
-                }}
-                className="tap-target rounded-control px-2.5 py-1 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-muted"
-              >
-                Today
-              </button>
-              <IconButton label="Next month" onClick={() => step(1)}>
-                <ChevronRight className="h-4 w-4" aria-hidden />
-              </IconButton>
-            </div>
-            {chrome.viewSwitch && viewSwitch}
-          </div>
-        </div>
-      )}
-
-      {/* MONTH + YEAR JUMP: twelve months of a year, each marked when it holds anything on hand.
-          The panel itself is components/events/calendar-chrome.tsx, shared with the console header's
-          own jump so the two mark the same months and carry the same names. */}
-      {jumpOpen && chrome.monthJump && (
-        <MonthJumpPanel
-          shownYear={year}
-          shownMonth1={month1}
-          jumpYear={jumpYear}
-          onJumpYear={setJumpYear}
-          countFor={(y, m1) => monthCount(countByMonth, y, m1)}
-          onPick={(next) => {
-            goTo(next)
-            setJumpOpen(false)
-            // The panel unmounts with this button in it: focus goes to the month title.
-            focusMonthAnchor()
-          }}
-          className="border-b border-border px-4 py-3"
-        />
-      )}
-
-      {/* A FAILED MONTH says so. The grid below still paints, holding only what the page had on
-          hand, and this line is what keeps that from reading as an empty month. One line per shown
-          month, read off the failure SET, so October still says so after November loaded fine. */}
-      {monthDidNotLoad(failedKeys, shownKey) && (
-        <MonthLoadError year={year} month1={month1} onRetry={() => ensureMonth(shownKey)} />
-      )}
-
-      {/* THE LAYER CHIPS, where no host draws them. Inside the console they are in its header bar
-          (LIVE-485), which is what took this band off the top of the month. */}
-      {showLayerToggles && chrome.layerFilters && (
-        <CalendarLayerChips
-          layers={layers!}
-          hidden={hiddenLayers}
-          onToggle={toggleLayer}
-          className="border-b border-border px-4 py-2"
-        />
-      )}
-
-      {view === 'list' && (
-        <div data-calendar-list className="@2xl:grid @2xl:grid-cols-5">
-          <div className="divide-y divide-border @2xl:col-span-2 @2xl:max-h-[70vh] @2xl:overflow-y-auto @2xl:border-r @2xl:border-border">
-            {groups.length === 0 ? (
-              <p className="px-4 py-6 text-center text-body-sm text-muted">
-                Nothing on the calendar from {monthLabel(year, month1)} on.
-              </p>
-            ) : (
-              groups.map((g) => (
-                <section key={g.key} aria-label={g.label}>
-                  <h3 className="sticky top-0 z-10 border-b border-border bg-surface-elevated px-4 py-1.5 text-meta font-semibold text-muted">
-                    {g.label}
-                  </h3>
-                  <ul className="divide-y divide-border">
-                    {g.items
-                      .filter((ev) => !ev.isCancelled)
-                      .map((ev) => {
-                      const isCurrent = preview !== null && itemKey(ev) === itemKey(preview)
-                      const dayNum = Number(ev.dayKey.slice(8, 10))
-                      const mon = SHORT_MONTHS[Number(ev.dayKey.slice(5, 7)) - 1]
-                      return (
-                        <li key={itemKey(ev)}>
-                          <button
-                            type="button"
-                            onClick={(e) => openFromList(ev, e.currentTarget)}
-                            aria-current={isCurrent ? 'true' : undefined}
-                            className={cn(
-                              'flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-elevated',
-                              isCurrent && '@2xl:bg-surface-elevated',
-                            )}
-                          >
-                            <span
-                              className={cn(
-                                'flex w-11 shrink-0 flex-col items-center rounded-control py-1',
-                                calendarPresentation(ev, audience).chipClass,
-                              )}
-                              aria-hidden
-                            >
-                              <span className="text-2xs font-semibold">{mon}</span>
-                              <span className="text-body-lg font-bold leading-none tabular-nums">{dayNum}</span>
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate font-semibold text-text">
-                                {ev.title}
-                              </span>
-                              <span className="mt-0.5 block text-meta text-muted">{ev.whenLabel}</span>
-                              {ev.location && <span className="mt-0.5 block truncate text-meta text-muted">{ev.location}</span>}
-                              <Badges ev={ev} audience={audience} />
-                            </span>
-                            {ev.goingCount > 0 && (
-                              <span className="mt-0.5 shrink-0 text-meta text-muted tabular-nums">{ev.goingCount} going</span>
-                            )}
-                          </button>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                  {g.items.some((ev) => ev.isCancelled) &&
-                    cancelledCellFooter(
-                      g.items.filter((ev) => ev.isCancelled),
-                      select,
-                    )}
-                </section>
-              ))
-            )}
-          </div>
-          <div data-calendar-pane className="hidden @2xl:col-span-3 @2xl:block" aria-live="polite">
-            {preview ? (
-              <div className="sticky top-0">
-                <CalendarPreview
-                  item={preview}
-                  audience={audience}
-                  inViewerTz={inViewerTz}
-                  onToggleTz={() => setInViewerTz((v) => !v)}
-                  onOpenHost={onSelectEvent}
-                  onEditEntry={onEditEntry}
-                  onPickDate={onPickDate}
-                />
-              </div>
-            ) : (
-              <p className="px-6 py-10 text-center text-body-sm text-muted">Pick something on the list to see it here.</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {view === 'grid' && (
-        <>
-          <CalendarRepeatsStrip
-            series={series}
-            activeKey={activeSeries}
-            onToggle={(key) => setActiveSeries((cur) => (cur === key ? null : key))}
-          />
-          <div className="grid grid-cols-7 border-b border-border">
-            {WEEKDAY_LABELS.map((label) => (
-              <div key={label} className="px-2 py-2 text-center text-2xs font-semibold text-muted">
-                <span className="hidden sm:inline">{label}</span>
-                <span className="sm:hidden">{label[0]}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* The gesture surface stays mounted across months (its listeners live on it); the inner
-              wrapper re-keys per month so the slide replays. */}
-          <div ref={gridRef} className={cn('touch-pan-y overflow-hidden', fill && 'flex min-h-0 flex-1 flex-col')}>
-          <div
-            key={monthKey(year, month1)}
-            // 🔴 THE CLASS MUST NOT OUTLIVE THE ANIMATION (PROG-CAL13). `slide` used to be set on a
-            // month change and never cleared, so this wrapper carried its animation class forever.
-            // The console's whole point is that its panel set is MOVED between two DOM homes, and
-            // taking an element out of the document cancels its animations while putting it back
-            // starts them again from zero: every open and every close replayed the month slide under
-            // the dialog's own entrance. That is the flicker left after LIVE-472. Clearing it here
-            // means the class is present only while it is actually animating.
-            onAnimationEnd={(e) => {
-              if (e.target === e.currentTarget) setSlide(null)
-            }}
-            className={cn(
-              slide === 'next' && 'motion-safe:animate-[calendarSlideNext_180ms_ease-out]',
-              slide === 'prev' && 'motion-safe:animate-[calendarSlidePrev_180ms_ease-out]',
-              fill && 'flex min-h-0 flex-1 flex-col',
-            )}
-          >
-            {weeks.map((week) => (
+  /** The week rows of one month. One month under `page`; every month of the band under `scroll`. */
+  const renderWeeks = (rows: DayCell[][]) =>
+    rows.map((week) => (
               // 🔴 `min-h-0` IS WHY THE LAST WEEK IS ON SCREEN (owner report 2026-09-27: "I am unable
               // to see the fifth week on any month"). A column-flex item's automatic minimum size is
               // `min-height: auto`, i.e. its MIN-CONTENT height -- so `flex-1` alone did not let a
@@ -887,9 +802,17 @@ export function EventCalendar({
               // pills visible and its body cut off at the clip edge, on 5-row and 6-row months alike,
               // which is why the report says "any month". `flex-1` stays (the fill test reads it off
               // this className); `min-h-0` is what makes it mean share.
-              <div key={week[0].date} className={cn('grid grid-cols-7 border-b border-border last:border-b-0', fill && 'min-h-0 flex-1')}>
+              <div key={week[0].date} className={cn('grid grid-cols-7 border-b border-border last:border-b-0', fill && 'min-h-0 flex-1', scroll && 'flex-none')}>
                 {week.map((cell) => {
-                  const dayEvents = byDay.get(cell.date) ?? []
+                  // A PADDED DAY IS A PLACEHOLDER UNDER THE SCROLL (LIVE-530). monthMatrix pads each
+                  // month to whole weeks, so 2026-09-30 is a cell in BOTH the September and the
+                  // October band. Drawn twice, a chip is two buttons with one name, a drop ring
+                  // paints in two places and post-move focus can land on the copy a month away. So
+                  // under the scroll only the band that OWNS a day draws its items, its note, its
+                  // sky, its add button and its drop target; the padded cell keeps the muted day
+                  // number and nothing else. Under `page` the padded days draw as they always did.
+                  const owned = !scroll || cell.inMonth
+                  const dayEvents = owned ? byDay.get(cell.date) ?? [] : []
                   const cancelled = dayEvents.filter((ev) => ev.isCancelled)
                   const liveEvents = dayEvents.filter((ev) => !ev.isCancelled)
                   const cards = liveEvents.filter((ev) => !ev.isLaterDate)
@@ -905,23 +828,23 @@ export function EventCalendar({
                   // became invisible. Bands always draw.
                   const shown = fill ? timed : timed.slice(0, 3)
                   const dots = liveEvents.filter((ev) => ev.isLaterDate)
-                  const pending = pendingByDay.get(cell.date) ?? []
+                  const pending = owned ? pendingByDay.get(cell.date) ?? [] : []
                   const isToday = cell.date === today
                   const dayNum = Number(cell.date.slice(8, 10))
-                  const labels = dayNotes?.length ? notesForDay(dayNotes, cell.date) : []
-                  const sky = skyByDay.get(cell.date)
-                  const isDropTarget = move.dropDay === cell.date
+                  const labels = owned && dayNotes?.length ? notesForDay(dayNotes, cell.date) : []
+                  const sky = owned ? skyByDay.get(cell.date) : undefined
+                  const isDropTarget = owned && move.dropDay === cell.date
                   return (
                     <div
                       key={cell.date}
                       // THE DAY IS THE TARGET (PROG-CAL15). The cell takes the drop, and says so
                       // while something is over it: a ring drawn INSIDE its own border, so the
                       // highlight never nudges a neighbour or reflows the week.
-                      {...{ [DAY_CELL_ATTR]: cell.date }}
+                      {...(owned ? { [DAY_CELL_ATTR]: cell.date } : {})}
                       data-drop-target={isDropTarget || undefined}
-                      onDragOver={move.enabled ? (e) => move.overDay(e, cell.date) : undefined}
-                      onDragLeave={move.enabled ? (e) => move.leaveDay(e, cell.date) : undefined}
-                      onDrop={move.enabled ? (e) => move.dropOnDay(e, cell.date) : undefined}
+                      onDragOver={move.enabled && owned ? (e) => move.overDay(e, cell.date) : undefined}
+                      onDragLeave={move.enabled && owned ? (e) => move.leaveDay(e, cell.date) : undefined}
+                      onDrop={move.enabled && owned ? (e) => move.dropOnDay(e, cell.date) : undefined}
                       className={cn(
                         'group flex flex-col border-r border-border p-1.5 last:border-r-0',
                         // Paired with the row's `min-h-0` above: once a row may be shorter than its
@@ -930,11 +853,13 @@ export function EventCalendar({
                         // hairline into the row below. The chips keep their own scrollbar, so what
                         // this hides is only ever the tail of an already-scrollable stack.
                         fill && 'overflow-hidden',
+                        // Under the scroll a row is as tall as its content, so nothing is clipped.
+                        scroll && 'overflow-visible',
                         // A FILLING GRID HAS NO FLOOR (PROG-CAL13). Six rows share the height the host
                         // gives them, so a cell that insisted on 20/28 units of its own is what pushed
                         // the last week of the month off the bottom of the console. The decision is
                         // pure and lives in lib/events/calendar-grid.ts, where a probe can run it.
-                        cellFloorClass(fill),
+                        cellFloorClass(fill && !scroll),
                         !cell.inMonth && 'bg-surface-elevated/40',
                         isDropTarget && 'bg-primary/10 ring-2 ring-inset ring-primary',
                       )}
@@ -944,7 +869,7 @@ export function EventCalendar({
                             cell, so the per-day + steps aside: "Pencil it in" above the grid (or
                             in the console header) is the phone's door, and the day pill keeps its
                             right edge on its own. */}
-                        {onCreateAt ? (
+                        {onCreateAt && owned ? (
                           <span className="hidden sm:contents">
                             <IconButton
                               label={`Add a date on ${shortDateLabel(cell.date)}`}
@@ -1046,7 +971,7 @@ export function EventCalendar({
                       {/* THE OVERFLOW LIVES IN THE CELL. Filling, the day's items scroll here rather
                           than sending the reader to another view, and the wheel that scrolls them is
                           the one gesture that does not page the month (use-month-gestures). */}
-                      <div className={cn('flex flex-col gap-1', fill && 'min-h-0 flex-1 overflow-y-auto overscroll-contain')}>
+                      <div className={cn('flex flex-col gap-1', fill && !scroll && 'min-h-0 flex-1 overflow-y-auto overscroll-contain')}>
                         {/* A SEGMENT PER ITEM (LIVE-467). Back-to-back items stack into one block, and
                             every item in it keeps its own button, so the second gathering on a busy
                             Sunday opens from the grid like the first. Items that only share the day
@@ -1216,8 +1141,327 @@ export function EventCalendar({
                   )
                 })}
               </div>
+            ))
+
+  return (
+    <div
+      ref={rootRef}
+      data-calendar-root
+      tabIndex={0}
+      aria-label="Calendar"
+      className={cn(
+        '@container bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+        // A CARD ON THE PAGE, THE WHOLE SECTION IN THE CONSOLE (owner ask 2026-09-27: "remove the
+        // rounded border and make it classily fill the entire section").
+        //
+        // Filling meant deleting a border on the grid AND the padding that held it off the console
+        // panel (calendar-console.tsx's stage), because the two together drew a card inside a card:
+        // the console panel is itself `rounded-card border overflow-hidden`, so the grid was a
+        // second stroke a few units inside the first. With both gone the panel's own radius clips
+        // the grid's square corners, which is the one rounded edge the design wanted (LIVE-472: "a
+        // panel on a dimmed page, not edge to edge" -- that ruling is about the PANEL's margin and
+        // is untouched here).
+        //
+        // On the page the card stays: there the grid sits in an ordinary padded column with the
+        // control bar above it, and a borderless grid would bleed into the page.
+        !fill && 'rounded-card border border-border',
+        fill && 'flex min-h-0 flex-1 flex-col',
+      )}
+      onKeyDown={onKeyDown}
+    >
+      {/* THE MOVE IS SPOKEN HERE (PROG-CAL15). Always mounted, empty until a date is moved: a live
+          region only announces changes to what it already holds, so it has to be in the tree before
+          the first sentence arrives. It is the same sentence the console header shows, said once. */}
+      <p data-calendar-move-live aria-live="polite" className="sr-only">
+        {moveNotice ?? ''}
+      </p>
+      {/* THE HEADER IS THE HOST'S WHEN THERE IS ONE (PROG-CAL13, widened by LIVE-485). Inside the
+          Calendar console every one of these controls is drawn once, in the console's own header
+          bar: the month label, the Prev / Today / Next cluster, the month-and-year jump, the grid /
+          list switcher and the layer chips. So the grid draws none of them and the month gets back
+          the four bands of furniture they were costing it.
+
+          🔴 A HOST MAY ONLY TAKE A CONTROL IT DRAWS (LIVE-475). The first cut of `hostChrome`
+          dropped this whole header, and the switcher and the jump went with it although NOTHING
+          outside this component drew either one. That shipped a reachable dead end: switch the page
+          grid to List, press Fullscreen, and you were in list mode inside a full-screen console
+          with no way back to the month and no way to move more than one month at a time, with
+          closing the console the only exit. The console header genuinely carries both now, which is
+          what lets them come off here, and `HOST_DRAWN_CONTROL_MARKS` in lib/events/calendar-grid.ts
+          is the gate that keeps that true rather than a promise in a comment.
+
+          The Loading live region is NOT chrome: a month that has not arrived has to be announced
+          wherever the grid is mounted, so it stays either way, and under a host it is the only
+          thing left of this header. */}
+      {!chrome.monthTitle && !chrome.paging && !chrome.viewSwitch && !chrome.monthJump ? (
+        <span role="status" className="sr-only">
+          {loadingKeys.size > 0 ? 'Loading' : null}
+        </span>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <div className="relative flex items-center gap-1">
+            <button
+              ref={monthButtonRef}
+              type="button"
+              onClick={() => {
+                setJumpYear(year)
+                setJumpOpen((o) => !o)
+              }}
+              aria-expanded={jumpOpen}
+              aria-haspopup="dialog"
+              className="inline-flex items-center gap-1 rounded-control px-1.5 py-1 text-body-lg font-semibold text-text transition-colors hover:bg-surface-elevated"
+            >
+              <span aria-live="polite">{monthLabel(year, month1)}</span>
+              <ChevronDown className={cn('h-4 w-4 text-muted transition-transform', jumpOpen && 'rotate-180')} aria-hidden />
+            </button>
+            {/* Always mounted: a live region announces changes to what it already holds, so it has
+                to be in the tree before Loading appears in it. */}
+            <span role="status" className="text-meta text-muted">
+              {loadingKeys.size > 0 ? 'Loading' : null}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <IconButton label="Previous month" onClick={() => step(-1)}>
+                <ChevronLeft className="h-4 w-4" aria-hidden />
+              </IconButton>
+              {/* Stays mounted on the current month (disabled), so it never vanishes from under the
+                  focus that just pressed it; that focus moves to the month title, which reads the
+                  month it landed on. */}
+              <button
+                type="button"
+                disabled={onCurrentMonth}
+                onClick={() => {
+                  goTo({ year: todayYear, month1: todayMonth1 })
+                  focusMonthAnchor()
+                }}
+                className="tap-target rounded-control px-2.5 py-1 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-muted"
+              >
+                Today
+              </button>
+              <IconButton label="Next month" onClick={() => step(1)}>
+                <ChevronRight className="h-4 w-4" aria-hidden />
+              </IconButton>
+            </div>
+            {chrome.viewSwitch && viewSwitch}
+          </div>
+        </div>
+      )}
+
+      {/* MONTH + YEAR JUMP: twelve months of a year, each marked when it holds anything on hand.
+          The panel itself is components/events/calendar-chrome.tsx, shared with the console header's
+          own jump so the two mark the same months and carry the same names. */}
+      {jumpOpen && chrome.monthJump && (
+        <MonthJumpPanel
+          shownYear={year}
+          shownMonth1={month1}
+          jumpYear={jumpYear}
+          onJumpYear={setJumpYear}
+          countFor={(y, m1) => monthCount(countByMonth, y, m1)}
+          onPick={(next) => {
+            goTo(next)
+            setJumpOpen(false)
+            // The panel unmounts with this button in it: focus goes to the month title.
+            focusMonthAnchor()
+          }}
+          className="border-b border-border px-4 py-3"
+        />
+      )}
+
+      {/* A FAILED MONTH says so. The grid below still paints, holding only what the page had on
+          hand, and this line is what keeps that from reading as an empty month. One line per shown
+          month, read off the failure SET, so October still says so after November loaded fine. */}
+      {!scroll && monthDidNotLoad(failedKeys, shownKey) && (
+        <MonthLoadError year={year} month1={month1} onRetry={() => ensureMonth(shownKey)} />
+      )}
+
+      {/* THE LAYER CHIPS, where no host draws them. Inside the console they are in its header bar
+          (LIVE-485), which is what took this band off the top of the month. */}
+      {showLayerToggles && chrome.layerFilters && (
+        <CalendarLayerChips
+          layers={layers!}
+          hidden={hiddenLayers}
+          onToggle={toggleLayer}
+          className="border-b border-border px-4 py-2"
+        />
+      )}
+
+      {view === 'list' && (
+        <div data-calendar-list className="@2xl:grid @2xl:grid-cols-5">
+          <div className="divide-y divide-border @2xl:col-span-2 @2xl:max-h-[70vh] @2xl:overflow-y-auto @2xl:border-r @2xl:border-border">
+            {groups.length === 0 ? (
+              <p className="px-4 py-6 text-center text-body-sm text-muted">
+                Nothing on the calendar from {monthLabel(year, month1)} on.
+              </p>
+            ) : (
+              groups.map((g) => (
+                <section key={g.key} aria-label={g.label}>
+                  <h3 className="sticky top-0 z-10 border-b border-border bg-surface-elevated px-4 py-1.5 text-meta font-semibold text-muted">
+                    {g.label}
+                  </h3>
+                  <ul className="divide-y divide-border">
+                    {g.items
+                      .filter((ev) => !ev.isCancelled)
+                      .map((ev) => {
+                      const isCurrent = preview !== null && itemKey(ev) === itemKey(preview)
+                      const dayNum = Number(ev.dayKey.slice(8, 10))
+                      const mon = SHORT_MONTHS[Number(ev.dayKey.slice(5, 7)) - 1]
+                      return (
+                        <li key={itemKey(ev)}>
+                          <button
+                            type="button"
+                            onClick={(e) => openFromList(ev, e.currentTarget)}
+                            aria-current={isCurrent ? 'true' : undefined}
+                            className={cn(
+                              'flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-elevated',
+                              isCurrent && '@2xl:bg-surface-elevated',
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                'flex w-11 shrink-0 flex-col items-center rounded-control py-1',
+                                calendarPresentation(ev, audience).chipClass,
+                              )}
+                              aria-hidden
+                            >
+                              <span className="text-2xs font-semibold">{mon}</span>
+                              <span className="text-body-lg font-bold leading-none tabular-nums">{dayNum}</span>
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate font-semibold text-text">
+                                {ev.title}
+                              </span>
+                              <span className="mt-0.5 block text-meta text-muted">{ev.whenLabel}</span>
+                              {ev.location && <span className="mt-0.5 block truncate text-meta text-muted">{ev.location}</span>}
+                              <Badges ev={ev} audience={audience} />
+                            </span>
+                            {ev.goingCount > 0 && (
+                              <span className="mt-0.5 shrink-0 text-meta text-muted tabular-nums">{ev.goingCount} going</span>
+                            )}
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                  {g.items.some((ev) => ev.isCancelled) &&
+                    cancelledCellFooter(
+                      g.items.filter((ev) => ev.isCancelled),
+                      select,
+                    )}
+                </section>
+              ))
+            )}
+          </div>
+          <div data-calendar-pane className="hidden @2xl:col-span-3 @2xl:block" aria-live="polite">
+            {preview ? (
+              <div className="sticky top-0">
+                <CalendarPreview
+                  item={preview}
+                  audience={audience}
+                  inViewerTz={inViewerTz}
+                  onToggleTz={() => setInViewerTz((v) => !v)}
+                  onOpenHost={onSelectEvent}
+                  onEditEntry={onEditEntry}
+                  onPickDate={onPickDate}
+                />
+              </div>
+            ) : (
+              <p className="px-6 py-10 text-center text-body-sm text-muted">Pick something on the list to see it here.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {view === 'grid' && (
+        <>
+          <CalendarRepeatsStrip
+            series={series}
+            activeKey={activeSeries}
+            onToggle={(key) => setActiveSeries((cur) => (cur === key ? null : key))}
+          />
+          <div className="grid grid-cols-7 border-b border-border">
+            {WEEKDAY_LABELS.map((label) => (
+              <div key={label} className="px-2 py-2 text-center text-2xs font-semibold text-muted">
+                <span className="hidden sm:inline">{label}</span>
+                <span className="sm:hidden">{label[0]}</span>
+              </div>
             ))}
           </div>
+
+          {/* The gesture surface stays mounted across months (its listeners live on it); the inner
+              wrapper re-keys per month so the slide replays. */}
+          <div
+            ref={gridRef}
+            onScroll={scroll ? onScroll : undefined}
+            className={cn(
+              'touch-pan-y',
+              // THE SCROLLER (LIVE-530). Under the scroll this is the one element that scrolls, and
+              // it is `relative` so a band's offsetTop is measured from it and can be assigned
+              // straight to scrollTop. NEVER scrollIntoView here: it walks every scrollable
+              // ancestor and on the member page would yank the whole document.
+              scroll ? 'relative overflow-y-auto overflow-x-hidden overscroll-contain' : 'overflow-hidden',
+              fill && 'flex min-h-0 flex-1 flex-col',
+              // On the page the scroller needs a height of its own; in the console the host gives it one.
+              scroll && !fill && 'max-h-[70vh]',
+            )}
+          >
+          {scroll ? (
+            <>
+              {band.from <= bounds.floorKey && (
+                <p data-calendar-edge="floor" className="border-b border-border px-4 py-3 text-center text-meta text-muted">
+                  {edgeLine('floor')}
+                </p>
+              )}
+              {bandList.map((key) => {
+                const parts = monthFromKey(key)
+                if (!parts) return null
+                const label = monthLabel(parts.year, parts.month1)
+                return (
+                  <section key={key} data-calendar-month-band={key} aria-label={label} className="flex-none">
+                    {/* EVERY MONTH IS CLEARLY MARKED (owner ask 2026-09-27): its name rides the top
+                        of its band and stays put while the band scrolls under it. */}
+                    <h3 className="sticky top-0 z-10 border-b border-border bg-surface-elevated px-4 py-1.5 text-meta font-semibold text-muted">
+                      {label}
+                    </h3>
+                    {/* A failed month says so ON ITS OWN BAND and retries there, so October still
+                        says so after November loaded fine and the line is next to the empty grid
+                        it explains. */}
+                    {monthDidNotLoad(failedKeys, key) && (
+                      <MonthLoadError year={parts.year} month1={parts.month1} onRetry={() => ensureMonth(key)} />
+                    )}
+                    <div data-calendar-month={key}>{renderWeeks(monthMatrix(parts.year, parts.month1))}</div>
+                  </section>
+                )
+              })}
+              {band.to >= bounds.ceilingKey && (
+                <p data-calendar-edge="ceiling" className="border-t border-border px-4 py-3 text-center text-meta text-muted">
+                  {edgeLine('ceiling')}
+                </p>
+              )}
+            </>
+          ) : (
+          <div
+            key={monthKey(year, month1)}
+            data-calendar-month={shownKey}
+            // 🔴 THE CLASS MUST NOT OUTLIVE THE ANIMATION (PROG-CAL13). `slide` used to be set on a
+            // month change and never cleared, so this wrapper carried its animation class forever.
+            // The console's whole point is that its panel set is MOVED between two DOM homes, and
+            // taking an element out of the document cancels its animations while putting it back
+            // starts them again from zero: every open and every close replayed the month slide under
+            // the dialog's own entrance. That is the flicker left after LIVE-472. Clearing it here
+            // means the class is present only while it is actually animating.
+            onAnimationEnd={(e) => {
+              if (e.target === e.currentTarget) setSlide(null)
+            }}
+            className={cn(
+              slide === 'next' && 'motion-safe:animate-[calendarSlideNext_180ms_ease-out]',
+              slide === 'prev' && 'motion-safe:animate-[calendarSlidePrev_180ms_ease-out]',
+              fill && 'flex min-h-0 flex-1 flex-col',
+            )}
+          >
+            {renderWeeks(weeks)}
+          </div>
+          )}
           </div>
         </>
       )}
