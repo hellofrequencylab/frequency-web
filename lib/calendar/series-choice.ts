@@ -56,8 +56,14 @@ export type SeriesDeleteAction = 'skipThisDate' | 'deleteRow' | 'nothing'
 /** What the person picked in the delete dialog. */
 export type SeriesDeleteChoice = 'thisDate' | 'series' | 'keep'
 
-/** What the person picked in the save dialog. `series` is the only write it offers today. */
-export type SeriesSaveChoice = 'series' | 'keep'
+/** What the person picked in the save dialog. */
+export type SeriesSaveChoice = 'thisDate' | 'series' | 'keep'
+
+/** The write a save choice means (LIVE-534). `saveSeries` is the ordinary update of the one row,
+ *  which is every date; `splitSeriesAt` is public.split_calendar_series, ONE statement in which the
+ *  master gains the day in `exception_dates` and a new one-off row carries the edited values for
+ *  that day, together or not at all. */
+export type SeriesSaveAction = 'saveSeries' | 'splitSeriesAt' | 'nothing'
 
 export interface SeriesDeletePlan {
   /** Ask before writing anything. True exactly when the entry repeats. */
@@ -73,6 +79,9 @@ export interface SeriesDeletePlan {
 export interface SeriesSavePlan {
   /** Ask before writing. True exactly when the entry repeats, because the row is every date. */
   ask: boolean
+  /** The day a "this date only" choice would take out of the series, or null when the drawer is not
+   *  standing on one occurrence. Null drops the choice; it never turns it into the series write. */
+  thisDate: string | null
 }
 
 /** The entry's rule, honouring the same condition the WRITE honours: `parseEntryInput` stores
@@ -98,7 +107,8 @@ export function planEntryDelete(entry: SeriesEntryShape): SeriesDeletePlan {
 
 /** What a Save on this saved entry must do. */
 export function planEntrySave(entry: SeriesEntryShape): SeriesSavePlan {
-  return { ask: entryRepeats(entry) }
+  if (!entryRepeats(entry)) return { ask: false, thisDate: null }
+  return { ask: true, thisDate: asDayKey(entry.occurrenceDate ?? null) }
 }
 
 /** The write a delete choice means, against the plan it was offered with.
@@ -112,9 +122,15 @@ export function resolveSeriesDeleteChoice(choice: SeriesDeleteChoice, plan: Seri
   return 'nothing'
 }
 
-/** The write a save choice means. */
-export function resolveSeriesSaveChoice(choice: SeriesSaveChoice): 'saveSeries' | 'nothing' {
-  return choice === 'series' ? 'saveSeries' : 'nothing'
+/** The write a save choice means, against the plan it was offered with.
+ *
+ *  🔴 `thisDate` NEVER RESOLVES TO `saveSeries`. A "this date only" press that fell through to the
+ *  whole-series update would be a control whose words and whose write disagree, which is the exact
+ *  shape of the LIVE-533 incident. With no occurrence day to split at it resolves to `nothing`. */
+export function resolveSeriesSaveChoice(choice: SeriesSaveChoice, plan: SeriesSavePlan): SeriesSaveAction {
+  if (choice === 'series') return 'saveSeries'
+  if (choice === 'thisDate') return plan.thisDate ? 'splitSeriesAt' : 'nothing'
+  return 'nothing'
 }
 
 // ── THE WORDS ───────────────────────────────────────────────────────────────────────────────────
@@ -150,9 +166,12 @@ export const SERIES_SAVE_COPY = {
   heading: SERIES_CHOICE_HEADING,
   lead: (title: string) =>
     `${title.trim() || 'This date'} lands on more than one day, and this entry is the whole series.`,
+  /** Same label as the delete dialog's one-date choice, for the same reason: one accessible name for
+   *  one idea, and the verb stays in the sentence under the button. */
+  thisDateLabel: 'This date only',
+  thisDateNote: (dateLabel: string) =>
+    `Changes ${dateLabel} on its own and leaves every other date as it was. From now on ${dateLabel} is its own date, outside the series.`,
   seriesLabel: 'Save the whole series',
   seriesNote: 'Changes every date it lands on, past and future.',
-  /** Honest about the gap rather than hiding it: one-date edits are LIVE-532, not shipped. */
-  thisDateGap: 'Changing one date on its own is not possible yet. To take one day out of the series, use Skip this date on the form.',
   keepLabel: 'Go back',
 } as const
