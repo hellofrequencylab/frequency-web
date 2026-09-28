@@ -146,6 +146,14 @@
 # the base branch in is the useful one, since it fires `synchronize` AND brings you up to date.
 # Do not re-run the PREVIOUS failed run: a re-run replays the same SHA, so it would judge the
 # new baselines' commit against the old commit's tree.
+#
+# ✅ AND SINCE 2026-09-28 THE JOB LOOKS FOR YOU (HYG-115, ADR-1544). A THIRD state was measured
+# on PR #2841: the runs fire and then PARK at `action_required` until a human starts them, which
+# from the outside looks exactly like "nothing fired". Each committing job now runs
+# scripts/check-capture-followup.mjs right after its push: it lists the runs on the pushed head
+# and turns the capture job RED, with the reason in the job summary, when there is no ci or e2e
+# run at all or one is parked. A green capture job therefore means "the checks behind this
+# capture are running or judged", and a red one names which of the three states you are in.
 name: e2e (manual)
 
 on:
@@ -743,6 +751,7 @@ jobs:
       - name: Re-stamp the template fingerprints
         run: pnpm gen:visual-fingerprints
       - name: Commit baselines to the branch
+        id: commit
         # The runner commits the captures directly: artifact downloads redirect to a
         # storage host the agent sandbox's network policy blocks, so an artifact-only
         # hand-off dead-ends. always(): a single flaky surface must not discard the
@@ -766,6 +775,7 @@ jobs:
         # commit BEFORE the capture. That reads exactly like "CI passed on the new
         # baselines" when nothing evaluated them. Push any commit of your own afterwards
         # (or re-run the PR's checks) to get the branch judged on what it now contains.
+        # The step after this one LOOKS (HYG-115): `pushed=true` below is what arms it.
         if: always()
         run: |
           # ── JOB-NEVER-STARTED STAND-DOWN (HYG-094, ADR-1423) ────────────────────────────────
@@ -811,7 +821,19 @@ jobs:
             # THIS run's capture, which is the newer photograph and the one that should win.
             git pull --rebase -X theirs origin "${GITHUB_REF_NAME}"
             git push origin "HEAD:${GITHUB_REF_NAME}"
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
           fi
+      # ── THE GATE THAT NOTICES THE SILENCE (HYG-115, ADR-1544) ───────────────────────────────
+      # Runs only after a push actually happened (the commit step's own output; a "No baseline
+      # changes" run pushed nothing and has nothing to judge). Lists the workflow runs on the
+      # pushed head through the API this job already reads (`actions: read`) and fails THIS job,
+      # with the reason in the job summary, when no ci or e2e run exists for it or one is parked
+      # at action_required. The verdict is pure and fixture-tested; see the script's header.
+      - name: Check the checks behind this capture
+        if: ${{ !cancelled() && steps.commit.outputs.pushed == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/check-capture-followup.mjs
       - name: Upload baselines (debug copy)
         if: always()
         uses: actions/upload-artifact@v7
@@ -1079,6 +1101,7 @@ jobs:
       - name: Merge into the ratchet
         run: pnpm a11y:baselines
       - name: Commit baselines to the branch
+        id: commit
         # 🔴 NO `always()` HERE, AND IT MUST STAY THAT WAY (LIVE-333, ADR-1351). GitHub prepends
         # an implicit `success()` to a step with no `if:`, so a capture that refused a surface —
         # a degraded deployment, an a11y regression, anything — stops this step and the numbers
@@ -1087,7 +1110,8 @@ jobs:
         # Adding `always()` here would silently reopen the same hole.
         #
         # Same GITHUB_TOKEN caveat as update-baselines above: this push does NOT re-trigger
-        # CI, so the branch carries new baselines that nothing has been judged against.
+        # CI, so the branch carries new baselines that nothing has been judged against. The
+        # step after this one LOOKS (HYG-115): `pushed=true` below is what arms it.
         run: |
           git config user.email noreply@anthropic.com
           git config user.name Claude
@@ -1098,7 +1122,14 @@ jobs:
             git commit -m "a11y baselines: capture against ${{ inputs.base_url }} (runner-committed)"
             git pull --rebase origin "${GITHUB_REF_NAME}"
             git push origin "HEAD:${GITHUB_REF_NAME}"
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
           fi
+      # ── THE GATE THAT NOTICES THE SILENCE (HYG-115, ADR-1544): same as update-baselines ─────
+      - name: Check the checks behind this capture
+        if: ${{ !cancelled() && steps.commit.outputs.pushed == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/check-capture-followup.mjs
       - name: Upload capture + report
         if: always()
         uses: actions/upload-artifact@v7
