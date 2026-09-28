@@ -32,11 +32,14 @@ import {
   runPlanAgain,
   saveSpacePlan,
   setPlanTodoDone,
+  listPlanShares,
+  revokePlanShare,
   sharePlanWithSpace,
   veraPlanProposal,
 } from './plan-actions'
 import { describeOffset, offsetFromForm } from '@/lib/calendar/relative-schedule'
 import { shortDateLabel } from '@/lib/calendar/short-date'
+import { isActiveShare, shareStateWords, type PlanShareView } from '@/lib/calendar/plan-shares'
 import type { VeraPlanProposal } from '@/lib/calendar/vera-plan'
 
 export function PlanDrawer({
@@ -48,6 +51,8 @@ export function PlanDrawer({
   onSaved,
   onArchived,
   deepSettingsHref,
+  readOnly = false,
+  sharedFrom = null,
 }: {
   slug: string
   plan: SpacePlan | null
@@ -58,6 +63,11 @@ export function PlanDrawer({
   /** The Plan was put away (HYG-120): drop it, and its tentative dates, from every view. */
   onArchived?: (planId: string) => void
   deepSettingsHref?: string
+  /** A Plan shared with this Space (PROG-CAL7, LIVE-541): the record shows, nothing here writes.
+   *  The host keeps every door; the guest reads until a later child says otherwise. */
+  readOnly?: boolean
+  /** The host Space's name, when the Plan is one shared with this Space. */
+  sharedFrom?: string | null
 }) {
   const [pending, start] = useTransition()
   // The manifest fields' values, keyed by manifest path, and the one repeat's rows. Both are built
@@ -84,6 +94,9 @@ export function PlanDrawer({
   const [notice, setNotice] = useState<string | null>(null)
   const [proposal, setProposal] = useState<VeraPlanProposal | null>(null)
   const [guestSpaceId, setGuestSpaceId] = useState('')
+  // THE HANDSHAKE (LIVE-541): who may still be offered this Plan, and every share it has made.
+  const [shareChoices, setShareChoices] = useState<{ value: string; label: string }[]>([])
+  const [shares, setShares] = useState<PlanShareView[]>([])
   const [linkableEvents, setLinkableEvents] = useState<
     { id: string; title: string; whenLabel: string; planId: string | null }[]
   >([])
@@ -105,13 +118,24 @@ export function PlanDrawer({
     setError(null)
     setNotice(null)
     setGuestSpaceId('')
+    setShareChoices([])
+    setShares([])
     setLinkableEvents([])
     setLinkEventId('')
   }
 
   useEffect(() => {
-    if (!open || !plan) return
+    if (!open || !plan || readOnly) return
     let live = true
+    listPlanShares(slug, plan.id)
+      .then((res) => {
+        if (!live || isError(res)) return
+        setShareChoices(res.data.options)
+        setShares(res.data.shares)
+      })
+      .catch(() => {
+        if (live) setShareChoices([])
+      })
     listPlanTodos(slug, plan.id)
       .then((next) => {
         if (live) setTodos(next)
@@ -141,7 +165,7 @@ export function PlanDrawer({
     return () => {
       live = false
     }
-  }, [open, plan, slug, entryId])
+  }, [open, plan, slug, entryId, readOnly])
 
   if (!plan) return null
 
@@ -162,6 +186,12 @@ export function PlanDrawer({
   const refresh = async (planId: string) => {
     setTodos(await listPlanTodos(slug, planId))
     await refreshReadiness(planId)
+  }
+  const refreshShares = async (planId: string) => {
+    const res = await listPlanShares(slug, planId)
+    if (isError(res)) return
+    setShareChoices(res.data.options)
+    setShares(res.data.shares)
   }
 
   // ADD A TO-DO (LIVE-467). One function for the Add button and for Enter in the to-do inputs. Those
@@ -186,11 +216,13 @@ export function PlanDrawer({
     addTodo()
   }
   /** Enter in a text field that is not the Plan itself never saves and closes the drawer. */
-  const enterDoesNothing = (e: KeyboardEvent<HTMLInputElement>) => {
+  const enterDoesNothing = (e: KeyboardEvent<HTMLInputElement | HTMLSelectElement>) => {
     if (e.key === 'Enter') e.preventDefault()
   }
 
-  const readinessLabel = readinessFailed
+  const readinessLabel = readOnly
+    ? 'Held by the host Space'
+    : readinessFailed
     ? 'Could not be checked'
     : gaps === null
       ? 'Checking'
@@ -211,6 +243,7 @@ export function PlanDrawer({
 
   const save = (e: FormEvent) => {
     e.preventDefault()
+    if (readOnly) return
     setError(null)
     start(async () => {
       const stage = (values.stage || plan.stage) as SpacePlan['stage']
@@ -261,12 +294,17 @@ export function PlanDrawer({
             <p className="text-meta font-semibold uppercase tracking-wide text-muted">{SPACE_PLAN_MANIFEST.label}</p>
             <h2 id="plan-drawer-title" className="text-lead font-bold text-text">{plan.title}</h2>
             <p className="text-meta text-muted">{planTargetDef(plan.targetKind).label} production record</p>
+            {readOnly && (
+              <p className="text-meta text-muted" data-plan-shared-from>
+                {sharedFrom ? `Shared with you by ${sharedFrom}. ` : 'Shared with you. '}The host keeps the controls; ask them for a change.
+              </p>
+            )}
           </div>
           <dl className="grid grid-cols-2 gap-3 rounded-control border border-border bg-surface-elevated p-3 text-body-sm">
             <div><dt className="text-meta text-muted">Stage</dt><dd className="font-semibold text-text">{planStageLabel(values.stage || plan.stage)}</dd></div>
             <div><dt className="text-meta text-muted">Owner</dt><dd className="font-semibold text-text">{plan.ownerProfileId ? 'Assigned teammate' : 'Unassigned'}</dd></div>
             <div className="col-span-2"><dt className="text-meta text-muted">Readiness</dt><dd className="font-semibold text-text" data-plan-readiness={readinessFailed ? 'failed' : gaps === null ? 'checking' : 'known'}>{readinessLabel}</dd></div>
-            <div className="col-span-2"><dt className="text-meta text-muted">Next action</dt><dd className="font-semibold text-text">{href ? 'Open the production Studio' : gaps?.[0] ?? 'Keep the Plan current'}</dd></div>
+            <div className="col-span-2"><dt className="text-meta text-muted">Next action</dt><dd className="font-semibold text-text">{readOnly ? 'Talk to the host' : href ? 'Open the production Studio' : gaps?.[0] ?? 'Keep the Plan current'}</dd></div>
           </dl>
           {readinessFailed && (
             <p className="text-body-sm text-muted">Readiness could not be checked. Close the Plan and open it again.</p>
@@ -294,7 +332,7 @@ export function PlanDrawer({
               fields={PLAN_RAIL.fields}
               values={values}
               onChange={(path, next) => setValues((v) => ({ ...v, [path]: next }))}
-              disabled={pending}
+              disabled={pending || readOnly}
             />
           </div>
         )}
@@ -310,12 +348,13 @@ export function PlanDrawer({
               rows={rows[def.arrayPath] ?? []}
               onChange={(next) => setRows((cur) => ({ ...cur, [def.arrayPath]: next }))}
               max={REPEAT_CAP[def.arrayPath]}
-              disabled={pending}
+              disabled={pending || readOnly}
             />
             {REPEAT_NOTE[def.arrayPath] && <p className="text-meta text-muted">{REPEAT_NOTE[def.arrayPath]}</p>}
           </div>
         ))}
 
+        {!readOnly && (<>
         <div className="space-y-2">
           <p className={labelClasses}>To-dos</p>
           <ul className="space-y-1 text-body-sm text-text">
@@ -519,40 +558,89 @@ export function PlanDrawer({
           </div>
         )}
 
-        <div className="grid gap-1">
+        {/* THE HANDSHAKE (PROG-CAL7, LIVE-541). The picker is the host's accepted collaborators by
+            name, never a text field for an id; a share lands pending and the guest answers it from
+            their own calendar. The list below says where each share stands, and an active one can
+            be taken back. */}
+        <div className="grid gap-1" data-plan-shares>
           <label htmlFor="plan-share" className={labelClasses}>
             Share with a co-host Space
           </label>
-          <div className="flex gap-2">
-            <Input
-              id="plan-share"
-              value={guestSpaceId}
-              onChange={(e) => setGuestSpaceId(e.target.value)}
-              onKeyDown={enterDoesNothing}
-              placeholder="Space id"
-            />
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              disabled={pending || !guestSpaceId.trim()}
-              onClick={() => {
-                setError(null)
-                setNotice(null)
-                start(async () => {
-                  const res = await sharePlanWithSpace(slug, plan.id, guestSpaceId)
-                  if (isError(res)) setError(res.error)
-                  else {
-                    setGuestSpaceId('')
-                    setNotice('Shared. That Space can open this Plan now.')
-                  }
-                })
-              }}
-            >
-              Share
-            </Button>
-          </div>
+          {shareChoices.length === 0 ? (
+            <p className="text-meta text-muted">
+              {shares.some((s) => isActiveShare(s.status))
+                ? 'Every Space you collaborate with already has this Plan.'
+                : 'No Spaces to pick from yet. Collaborations are made on the Collaborators page; once one is accepted, that Space shows up here.'}
+            </p>
+          ) : (
+            <div className="flex gap-2">
+              <Select
+                id="plan-share"
+                value={guestSpaceId}
+                emptyLabel="Pick a Space"
+                options={shareChoices}
+                onChange={(e) => setGuestSpaceId(e.target.value)}
+                onKeyDown={enterDoesNothing}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                disabled={pending || !guestSpaceId}
+                onClick={() => {
+                  setError(null)
+                  setNotice(null)
+                  start(async () => {
+                    const res = await sharePlanWithSpace(slug, plan.id, guestSpaceId)
+                    if (isError(res)) setError(res.error)
+                    else {
+                      setGuestSpaceId('')
+                      setNotice('Shared. That Space can say yes from their own calendar.')
+                      await refreshShares(plan.id)
+                    }
+                  })
+                }}
+              >
+                Share
+              </Button>
+            </div>
+          )}
+          {shares.length > 0 && (
+            <ul className="space-y-1 text-body-sm text-text" data-plan-share-list>
+              {shares.map((share) => (
+                <li key={share.id} className="flex items-center justify-between gap-2" data-plan-share={share.status}>
+                  <span>
+                    {share.guestName ?? 'A Space you no longer collaborate with'}
+                    <span className="text-muted"> {`· ${shareStateWords(share.status)}`}</span>
+                  </span>
+                  {isActiveShare(share.status) && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      disabled={pending}
+                      onClick={() => {
+                        setError(null)
+                        setNotice(null)
+                        start(async () => {
+                          const res = await revokePlanShare(slug, share.id)
+                          if (isError(res)) setError(res.error)
+                          else {
+                            setNotice('Taken back. That Space no longer sees this Plan.')
+                            await refreshShares(plan.id)
+                          }
+                        })
+                      }}
+                    >
+                      Take back
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
+        </>)}
 
         {notice && (
           <p role="status" className="text-body-sm text-text" data-plan-notice>
@@ -567,16 +655,20 @@ export function PlanDrawer({
         <div className="flex flex-wrap items-center justify-between gap-2">
           {/* The way out for a Plan started by mistake (HYG-120). Reversible in SQL, not yet in the
               UI, and the confirm says so rather than promising a restore button that does not exist. */}
-          <Button type="button" variant="dangerOutline" size="sm" disabled={pending} onClick={archive}>
-            Archive Plan
-          </Button>
+          {!readOnly && (
+            <Button type="button" variant="dangerOutline" size="sm" disabled={pending} onClick={archive}>
+              Archive Plan
+            </Button>
+          )}
           <div className="flex gap-2">
             <Button type="button" variant="secondary" size="sm" onClick={onClose} disabled={pending}>
               Close
             </Button>
-            <Button type="submit" size="sm" disabled={pending}>
-              {pending ? 'Saving' : 'Save Plan'}
-            </Button>
+            {!readOnly && (
+              <Button type="submit" size="sm" disabled={pending}>
+                {pending ? 'Saving' : 'Save Plan'}
+              </Button>
+            )}
           </div>
         </div>
       </form>
