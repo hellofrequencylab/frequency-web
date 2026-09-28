@@ -264,3 +264,4 @@ visible_room_member_profiles         authenticated
 vitals_p75                           internal
 welcome_targets                      authenticated
 your_impact                          authenticated
+split_calendar_series        authenticated
