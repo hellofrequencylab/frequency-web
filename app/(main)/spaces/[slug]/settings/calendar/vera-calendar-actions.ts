@@ -205,7 +205,12 @@ export async function veraCalendarCommand(slug: string, input: VeraCommandInput)
   for (const p of plans) planSubjects[p.id] = { title: p.title, values: p as unknown as Record<string, unknown> }
   const entrySubjects: Record<string, VeraSubject> = {}
   for (const r of rows) entrySubjects[r.id] = { title: r.title, values: entryToInput(r) as unknown as Record<string, unknown> }
-  return ok({ ...res, timeZone, context: buildVeraDescribeContext(res.changes, { plan: planSubjects, entry: entrySubjects }) })
+  // The fold Vera read, when she read it, rides the describe context so the pencil line can say why
+  // a day was picked (LIVE-540). It is the server's own summary; the model never touched it.
+  const { attendance, ...reply } = res
+  const describe = buildVeraDescribeContext(res.changes, { plan: planSubjects, entry: entrySubjects })
+  if (attendance) describe.attendance = attendance
+  return ok({ ...reply, timeZone, context: describe })
 }
 
 /** What drew people to THIS Space, read on demand for the attendance_history tool (LIVE-539): its
