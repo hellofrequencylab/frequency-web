@@ -208,7 +208,6 @@
             "PROG-R5",
             "LIVE-537",
             "LIVE-538",
-            "PROG-R9",
             "PROG-R10",
             "LIVE-263",
             "LIVE-456"
@@ -10561,7 +10560,7 @@
     {
       "id": "PROG-R9",
       "title": "Rework phase 9: first run teaches the model",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "program",
       "size": "M",
@@ -10569,12 +10568,13 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "Whatever the menus say, the first ten minutes are what a new member learns the product to be. Depends on phase 6 picking ONE onboarding engine first - today three exist (Next Steps, Walkthroughs, TourProvider) and all three are dark.",
+      "detail": "Whatever the menus say, the first ten minutes are what a new member learns the product to be. Depends on phase 6 picking ONE onboarding engine first - today three exist (Next Steps, Walkthroughs, TourProvider) and all three are dark.\n\n── PREMISE RE-TESTED 2026-09-28 (ADR-1082, wave WR, lane rework) AND IT HAD EXPIRED, so this row CLOSES with no children. The detail above was written on 2026-09-08 and never re-read: it says three onboarding engines exist and all three are dark, and that the phase waits on phase 6 picking one. Phase 6 picked one on 2026-09-09 (LIVE-240, PROG-R6 done: the coach overlay and the tour provider are off disk, Walkthroughs survives and renders as a feed card). Every change in docs/CORE-MODEL.md section 5 phase 9 has shipped and closed on its own row: 7.1 the Vera deck runs home, Circle, Event, Practice, Space, Vera with the Zaps slide gone (LIVE-258); 7.2 the checklist is identity, photo, Circle, Event, host (LIVE-259, amended by LIVE-349); 7.3 was RULED rather than done as written, the owner deleting the two inert platform_flags rows and leaving the walkthrough inactive because the code default checklist is the model (LIVE-260, ADR-1513, migration 20270345007600); 7.4 a new Space owner lands on the Circles manager, not the CRM console (LIVE-261); 7.5 the Practitioner reel no longer promises a worldwide marketplace (LIVE-258); 7.6 the directory empty states and hero copy describe a Space as a host with its Circles and Events, the title staying Business Spaces because NAMING.md wins (LIVE-261). LIVE-311 added the instrument the phase lacked, a nightly count of accounts stuck behind the admission gate.\n\nWHAT THIS CLOSE CHANGES: the manual verify becomes a cmd probe with eight arms that measure the CONSEQUENCE of each change in the tree (the deck has a Space slide and no Zaps slide, the checklist order, the flag-deleting migration, the two dead engines off disk with the survivor present, the provision redirect, the personas line with comments blanked, the directory copy, the throughput cron route), so a regression on any of them fails this row rather than only its child. Every arm was mutation-fired. Nothing was filed: a row whose every item is done gets closed, not decomposed into rows that would pass by existing.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Program phase; proven by its child rows. Sequence in docs/CORE-MODEL.md §5 phase 9.",
-        "checked": "2026-09-08"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const bad=[];const R=(p)=>fs.existsSync(p)?fs.readFileSync(p,\"utf8\"):null;const blank=(s)=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\"\").replace(/^\\s*\\/\\/.*$/gm,\"\");const deck=R(\"lib/onboarding/vera-welcome.ts\");if(!deck)bad.push(\"7.1 the Vera deck module is gone\");else{const b=blank(deck);if(!/art:\\s*\\x27spaces\\x27/.test(b))bad.push(\"7.1 the welcome deck has no Space slide, so a new member is never told who hosts\");if(/art:\\s*\\x27zaps\\x27/.test(b))bad.push(\"7.1 the welcome deck teaches Zaps on a slide of its own again\")}const steps=R(\"lib/onboarding/steps.ts\");if(!steps)bad.push(\"7.2 the checklist module is gone\");else{const m=/DEFAULT_ONBOARDING_ORDER[^=]*=\\s*\\[([^\\]]*)\\]/.exec(steps);const got=m?m[1].split(\",\").map(x=>x.trim().replace(/\\x27/g,\"\")).filter(Boolean).join(\",\"):\"\";if(got!==\"identity,avatar,circle,event,host\")bad.push(\"7.2 the first-run checklist is not identity then the four nouns: \"+got)}const mig=R(\"supabase/migrations/20270345007600_delete_the_two_inert_onboarding_flags.sql\");if(!mig)bad.push(\"7.3 the migration that deletes the two inert onboarding flags is gone\");else{const s=mig.replace(/^\\s*--.*$/gm,\"\");if(!/delete\\s+from\\s+public\\.platform_flags/i.test(s)||!/auto_popups_enabled/.test(s)||!/next_steps_enabled/.test(s))bad.push(\"7.3 the flag migration no longer deletes both inert keys\")}const dead=[\"components/onboarding/tour-provider.tsx\",\"components/onboarding/chores-overlay.tsx\",\"lib/onboarding/tips.ts\",\"lib/onboarding/profile-chores.ts\",\"lib/onboarding/flags.ts\"].filter(p=>fs.existsSync(p));if(dead.length)bad.push(\"engine: a deleted onboarding engine is back on disk: \"+dead.join(\", \"));if(!fs.existsSync(\"components/walkthroughs/feed-walkthrough.tsx\"))bad.push(\"engine: the surviving engine (the feed walkthrough card) is gone\");const prov=R(\"lib/spaces/provision.ts\");if(!prov)bad.push(\"7.4 provision.ts is gone\");else{const b=blank(prov);const i=b.indexOf(\"redirect(\\x60/spaces/\");const seg=i<0?\"\":b.slice(i,b.indexOf(\")\",i));if(!/\\/manage\\/circles/.test(seg))bad.push(\"7.4 a new Space owner lands somewhere other than hosting: \"+(seg||\"no redirect\"))}const per=R(\"lib/onboarding/personas.ts\");if(!per)bad.push(\"7.5 personas.ts is gone\");else if(/worldwide marketplace|past your zip code/i.test(blank(per)))bad.push(\"7.5 the Practitioner reel promises a worldwide marketplace again\");const dir=R(\"components/spaces/directory-view.tsx\");if(!dir)bad.push(\"7.6 directory-view.tsx is gone\");else if(!/Hosting is free/.test(dir))bad.push(\"7.6 the directory first-use empty state no longer says hosting is free\");const page=R(\"app/(main)/spaces/directory/page.tsx\");if(!page)bad.push(\"7.6 the directory page is gone\");else if(!/Circles and Events/.test(page))bad.push(\"7.6 the directory hero no longer describes a Space by the Circles and Events it hosts\");if(!fs.existsSync(\"app/api/cron/onboarding-throughput/route.ts\"))bad.push(\"instrument: the onboarding-throughput cron route is gone, so nothing counts accounts stuck behind the gate\");if(bad.length){console.error(\"PROG-R9 regressed: \"+bad.join(\" | \"));process.exit(1)}console.log(\"PROG-R9 ok: the first run teaches the four nouns on every surface phase 9 named\")'",
+        "note": "Closed 2026-09-28 on the ADR-1082 re-test: every phase 9 change had shipped on its own row. Eight arms measure the consequences in the tree; a regression on any fails this row."
+      },
+      "closed": "2026-09-28"
     },
     {
       "id": "PROG-R10",
