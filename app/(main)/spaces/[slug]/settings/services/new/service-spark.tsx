@@ -10,8 +10,15 @@
 //
 // The create call is the existing `createSpaceProductAction`, with the field names it already parses,
 // so the Space gate, the booking-calendar wiring, and the metadata.service shape are untouched.
+//
+// GETTING PAID is offered on the first screen (LIVE-538, ADR-1539). The page resolves the one Connect
+// prompt (lib/billing/payout-prompt.ts) for the Space owner and this Spark renders its card as the
+// doors aside: Stripe hosted onboarding starts inline, an editor who is not the owner reads who has
+// to act, and the card is null once the owner is ready. The kernel learns nothing about payouts.
 
 import { useRouter } from 'next/navigation'
+import { PayoutPromptCard } from '@/components/billing/payout-prompt-card'
+import type { PayoutPrompt } from '@/lib/billing/payout-prompt'
 import { CommerceSpark, type SparkDraft } from '@/components/studio/commerce/commerce-spark'
 import { SERVICE_MANIFEST } from '@/lib/studio/entities/service'
 import { createSpaceProductAction, draftListingCopyAction } from '../../shop/shop-actions'
@@ -39,7 +46,17 @@ function asPriceModel(raw: string): ServicePriceModel {
   return raw === 'from' || raw === 'free' || raw === 'contact' ? raw : 'fixed'
 }
 
-export function ServiceSpark({ slug, spaceId, spaceName }: { slug: string; spaceId: string; spaceName: string }) {
+export function ServiceSpark({
+  slug,
+  spaceId,
+  spaceName,
+  payoutPrompt,
+}: {
+  slug: string
+  spaceId: string
+  spaceName: string
+  payoutPrompt: PayoutPrompt | null
+}) {
   const router = useRouter()
 
   return (
@@ -55,6 +72,7 @@ export function ServiceSpark({ slug, spaceId, spaceName }: { slug: string; space
           'A session, a class, a job. It lands in your catalog, and you publish it when it is ready.',
         veraHint: 'Say roughly what the work is and Vera writes the name and the details for you to edit.',
         manualHint: 'Go straight to the form: photos, how you price it, and how long it runs.',
+        aside: <PayoutPromptCard prompt={payoutPrompt} />,
       }}
       details={{
         title: 'The details',
