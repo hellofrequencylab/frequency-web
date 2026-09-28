@@ -33,17 +33,40 @@ const storageState = process.env.PW_STORAGE_STATE
 const hasSession = !!storageState && existsSync(storageState)
 const calendarPath = spaceSlug ? `/spaces/${spaceSlug}/calendar` : '/spaces/missing/calendar'
 
+/**
+ * Desktop only, and that is the measurement rather than a convenience: a mobile browser draws an
+ * overlay scrollbar that occupies no layout width, so there is nothing for the lock to remove and
+ * the case cannot reproduce there. The defect lives where the scrollbar has a box.
+ */
+function desktopOnly(testInfo: { project: { name: string } }) {
+  test.skip(testInfo.project.name !== 'desktop', 'A classic scrollbar with layout width is a desktop condition.')
+}
+
+/** The three numbers that used to move: viewport width, header width, rail column right edge. */
+function widthOf(page: import('@playwright/test').Page) {
+  return page.evaluate(() => ({
+    doc: document.documentElement.clientWidth,
+    header: Math.round(document.querySelector('header')?.getBoundingClientRect().width ?? -1),
+    rail: Math.round(document.querySelector('[data-rail-column]')?.getBoundingClientRect().right ?? -1),
+  }))
+}
+
+/** The page must actually be scrollable, or there is no scrollbar to delete and the assertion would pass on a page that proves nothing. This is the control. */
+async function expectRootScrollbar(page: import('@playwright/test').Page, path: string) {
+  const scrollable = await page.evaluate(
+    () => document.documentElement.scrollHeight > document.documentElement.clientHeight,
+  )
+  expect(scrollable, `${path} overflows the viewport, so the root scrollbar is present`).toBe(true)
+}
+
 test.describe('a scroll lock never resizes the document', { tag: ['@smoke', '@shell'] }, () => {
   test.use({ storageState })
   test.skip(!baseURL, 'PW_BASE_URL is required to measure a real viewport.')
-  test.skip(!spaceSlug, 'PW_SPACE_SLUG must name a Space the e2e member can manage.')
   test.skip(!hasSession, 'PW_STORAGE_STATE must point to a saved member session.')
 
   test('opening and closing a dialog leaves the viewport width unchanged', async ({ page }, testInfo) => {
-    // Desktop only, and that is the measurement rather than a convenience: a mobile browser draws
-    // an overlay scrollbar that occupies no layout width, so there is nothing for the lock to
-    // remove and the case cannot reproduce there. The defect lives where the scrollbar has a box.
-    test.skip(testInfo.project.name !== 'desktop', 'A classic scrollbar with layout width is a desktop condition.')
+    desktopOnly(testInfo)
+    test.skip(!spaceSlug, 'PW_SPACE_SLUG must name a Space the e2e member can manage.')
 
     const response = await page.goto(calendarPath)
     expect(response, `navigation to ${calendarPath} returned a response`).toBeTruthy()
@@ -59,21 +82,9 @@ test.describe('a scroll lock never resizes the document', { tag: ['@smoke', '@sh
     await page.getByRole('button', { name: 'Calendar', exact: true }).click()
     await expect(page.locator('[data-calendar-admin-grid]')).toBeVisible()
 
-    // The page must actually be scrollable, or there is no scrollbar to delete and the assertion
-    // below would pass on a page that proves nothing. This is the control.
-    const scrollable = await page.evaluate(
-      () => document.documentElement.scrollHeight > document.documentElement.clientHeight,
-    )
-    expect(scrollable, 'the calendar page overflows the viewport, so the root scrollbar is present').toBe(true)
+    await expectRootScrollbar(page, calendarPath)
 
-    const widthOf = () =>
-      page.evaluate(() => ({
-        doc: document.documentElement.clientWidth,
-        header: Math.round(document.querySelector('header')?.getBoundingClientRect().width ?? -1),
-        rail: Math.round(document.querySelector('[data-rail-column]')?.getBoundingClientRect().right ?? -1),
-      }))
-
-    const before = await widthOf()
+    const before = await widthOf(page)
 
     // A real dialog through a real control — components/ui/dialog.tsx is the lock site, and this is
     // the one this member can reach without writing anything.
@@ -85,7 +96,7 @@ test.describe('a scroll lock never resizes the document', { tag: ['@smoke', '@sh
     // waited for is a CSS duration, not a state change anything announces.
     await page.waitForTimeout(400)
 
-    const during = await widthOf()
+    const during = await widthOf(page)
     expect(during.doc, 'the document width is unchanged while the dialog is open').toBe(before.doc)
     expect(during.header, 'the sticky header has not moved while the dialog is open').toBe(before.header)
     expect(during.rail, 'the right-rail column has not moved while the dialog is open').toBe(before.rail)
@@ -94,8 +105,49 @@ test.describe('a scroll lock never resizes the document', { tag: ['@smoke', '@sh
     await expect(dialog).toHaveCount(0)
     await page.waitForTimeout(400)
 
-    const after = await widthOf()
+    const after = await widthOf(page)
     expect(after.doc, 'the document width is unchanged after the dialog closes').toBe(before.doc)
+    expect(after.header, 'the sticky header is back where it started').toBe(before.header)
+    expect(after.rail, 'the right-rail column is back where it started').toBe(before.rail)
+  })
+  // THE CASE THAT RUNS ON EVERY PULL REQUEST. The dialog case above needs a Space the e2e member
+  // can manage, and on 2026-09-28 the smoke run skipped it for the same account reason the
+  // operator-calendar suite skips (run 36449866466), so on its own it would prove the fix on no
+  // pull request at all. The search overlay takes the SAME lock through the same omission
+  // (components/search/search-overlay.tsx sets `document.body.style.overflow = 'hidden'` and
+  // compensates for nothing), it is one header button away on every member page, and /settings
+  // scrolls. Two lock sites, one gutter, and this is the one nothing on the account can skip.
+  test('opening and closing the search overlay leaves the viewport width unchanged', async ({ page }, testInfo) => {
+    desktopOnly(testInfo)
+
+    const settingsPath = '/settings'
+    const response = await page.goto(settingsPath)
+    expect(response, `navigation to ${settingsPath} returned a response`).toBeTruthy()
+    expect(response!.ok(), `expected 2xx for ${settingsPath}, got ${response!.status()}`).toBe(true)
+    await expect(page.locator('[data-rail-column]')).toBeVisible()
+    await expectRootScrollbar(page, settingsPath)
+
+    const before = await widthOf(page)
+    expect(before.rail, 'the rail column is measured, not missing').toBeGreaterThan(0)
+
+    // The desktop search pill is a button whose visible text is split across a span and a kbd, so its
+    // title is the stable handle; the mobile icon button is display-none at this width.
+    await page.getByTitle('Search (⌘K)').click()
+    const overlay = page.getByRole('dialog', { name: 'Search' })
+    await expect(overlay).toBeVisible()
+    await page.waitForTimeout(400)
+
+    const during = await widthOf(page)
+    expect(during.doc, 'the document width is unchanged while the search overlay is open').toBe(before.doc)
+    expect(during.header, 'the sticky header has not moved while the search overlay is open').toBe(before.header)
+    expect(during.rail, 'the right-rail column has not moved while the search overlay is open').toBe(before.rail)
+
+    await page.keyboard.press('Escape')
+    await expect(overlay).toHaveCount(0)
+    await page.waitForTimeout(400)
+
+    const after = await widthOf(page)
+    expect(after.doc, 'the document width is unchanged after the search overlay closes').toBe(before.doc)
     expect(after.header, 'the sticky header is back where it started').toBe(before.header)
     expect(after.rail, 'the right-rail column is back where it started').toBe(before.rail)
   })
