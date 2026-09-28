@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
-import { FINGERPRINTS, CONTROL, SHELL_ENTRY, BUDGET_KB } from './check-shell-weight.mjs'
+import { FINGERPRINTS, CONTROL, SHELL_ENTRY, BUDGET_KB, FRONT_DOOR_ENTRIES } from './check-shell-weight.mjs'
 
 // THE SCAN ROOT IS NOT A CONSTANT, AND ASSUMING IT WAS COST A BUILD'S WORTH OF SIGNAL.
 //
@@ -22,16 +22,25 @@ import { FINGERPRINTS, CONTROL, SHELL_ENTRY, BUDGET_KB } from './check-shell-wei
 
 const SHELL_FILE = 'shell-abc.js'
 const LAZY_FILE = 'lazy-def.js'
+const DOOR_FILE = 'door-ghi.js'
+
+type Door = { label: string; entry: string; budgetKb: number }
+const doors = FRONT_DOOR_ENTRIES as Door[]
 
 /** Build a fake `.next` whose client chunks live under `root`, and return the directory to run in.
  *
  *  The fixture also carries the REAL fingerprint source files at their real relative paths, because
  *  the script resolves them against `process.cwd()` and checks each one exists and still contains its
  *  literal. Copying them keeps those two arms honest instead of stubbing them out — a fixture that
- *  faked the sources would pass even if a fingerprint had been edited away in the repo. */
+ *  faked the sources would pass even if a fingerprint had been edited away in the repo.
+ *
+ *  It also names every FRONT_DOOR_ENTRIES entry (Arm D, LIVE-499), because the gate refuses an
+ *  artifact in which a front door weighs nothing — the same non-vacuity rule the shell entry has —
+ *  and a fixture that left them out would fail every case here on that arm instead of the arm under
+ *  test. `doorPadKb` pushes the FIRST door over its budget; `omitDoor` leaves one out on purpose. */
 function artifact(
   root: string,
-  opts: { shellExt?: string; padKb?: number; leak?: boolean } = {},
+  opts: { shellExt?: string; padKb?: number; leak?: boolean; doorPadKb?: number; omitDoor?: string } = {},
 ): string {
   const dir = mkdtempSync(join(tmpdir(), 'shell-root-'))
   const next = join(dir, '.next')
@@ -56,11 +65,20 @@ function artifact(
   )
   // A lazily-loaded chunk: carries every fingerprint. Present in the build, absent from the shell.
   writeFileSync(join(next, root, LAZY_FILE), fpLines)
+  // The front-door chunks (Arm D): one small chunk per door, the first optionally padded over budget.
+  const doorFiles: Record<string, string[]> = {}
+  doors.forEach((door, i) => {
+    if (door.entry === opts.omitDoor) return
+    const name = `${i}-${DOOR_FILE}`
+    const pad = i === 0 && opts.doorPadKb ? `var pad = ${JSON.stringify('y'.repeat(opts.doorPadKb * 1024))};\n` : ''
+    writeFileSync(join(next, root, name), `console.log("door ${i}");\n${pad}`)
+    doorFiles[door.entry] = [`${root}/${name}`]
+  })
   // The manifest, in the shape the script reads: a JS file assigning self.__RSC_MANIFEST.
   writeFileSync(
     join(next, 'server', 'app', 'page_client-reference-manifest.js'),
     `self.__RSC_MANIFEST = ${JSON.stringify({
-      '/page': { entryJSFiles: { [SHELL_ENTRY]: [`${root}/${shellName}`] } },
+      '/page': { entryJSFiles: { [SHELL_ENTRY]: [`${root}/${shellName}`], ...doorFiles } },
     })};\n`,
   )
   return dir
@@ -162,5 +180,62 @@ describe('the gate REJECTS the two things it exists to reject', () => {
     ).toBe(1)
     expect(res.stderr).toContain('EAGER first-load JS')
     expect(res.stderr).toContain(FINGERPRINTS[0].source)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// ARM D · THE FRONT DOOR (LIVE-499, ADR-1536), driven into its failing direction the same way.
+//
+// `/` and the marketing group sit outside the member shell, so Arms A and B never weighed a
+// visitor's first load. This arm holds each front-door manifest entry to its own byte ceiling, and
+// these cases are the only proof it rejects anything: the same mutation sweep that found Arms A and
+// B without a failing case would find this one the same way. Paired with the passing control above
+// (every green case in this file now carries both doors under budget), so a red here is about the
+// BYTES and never about the fixture.
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+describe('Arm D · the gate REJECTS a front door over its budget', () => {
+  const door = doors[0]
+
+  it('names every door it will weigh, and each carries a real budget', () => {
+    expect(doors.length).toBeGreaterThanOrEqual(2)
+    for (const d of doors) {
+      expect(d.entry).toMatch(/^\[project\]\/app\//)
+      expect(d.budgetKb).toBeGreaterThan(0)
+    }
+  })
+
+  it('refuses a front door over its byte budget, naming the door, the budget and the worst chunks', () => {
+    const res = run(artifact('static/immutable/chunks', { doorPadKb: door.budgetKb + 64 }))
+    expect(
+      res.status,
+      `${door.label} at ~${door.budgetKb + 64} KB was ACCEPTED against its own ${door.budgetKb} KB budget, ` +
+        'so Arm D rejects nothing and a visitor’s first load can grow without limit (LIVE-499)',
+    ).toBe(1)
+    expect(res.stderr).toContain('the front door is over budget')
+    expect(res.stderr).toContain(door.label)
+    expect(res.stderr).toContain(`over its ${door.budgetKb} KB budget`)
+    expect(res.stderr).toContain('Biggest chunks')
+    // The shell verdict is already on the log when the door fails: the arms are ordered so a red
+    // door never hides the shell reading.
+    expect(res.stdout).toContain(`under the ${budgetKb} KB budget`)
+  })
+
+  it('accepts the same artifact with the door under budget, and prints the reading', () => {
+    const res = run(artifact('static/immutable/chunks', { doorPadKb: 8 }))
+    expect(res.status, res.stderr || res.stdout).toBe(0)
+    for (const d of doors) {
+      expect(res.stdout).toContain(`${d.label}:`)
+      expect(res.stdout).toContain(`under the ${d.budgetKb} KB budget`)
+    }
+  })
+
+  it('refuses an artifact in which a front door weighs nothing, rather than passing on an empty set', () => {
+    // The non-vacuity arm. A route rename that emptied a door’s manifest entry must be a named
+    // failure, not a 0 KB pass — the same rule the shell entry is held to.
+    const res = run(artifact('static/immutable/chunks', { omitDoor: door.entry }))
+    expect(res.status).toBe(1)
+    expect(res.stderr).toContain(`found no eager JS for "${door.entry}"`)
+    expect(res.stderr).toContain('FRONT_DOOR_ENTRIES')
   })
 })
