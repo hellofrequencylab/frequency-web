@@ -26,7 +26,7 @@
 -- default grants; the POLICIES are what this file tests, not the grant baseline).
 
 begin;
-select plan(34);
+select plan(37);
 
 -- ── Fixture (seeded as postgres, which RLS does not bind) ────────────────────────────────────────
 
@@ -201,6 +201,16 @@ select is_empty(
      ('00000000-0000-4000-c300-00000000000b', '00000000-0000-4000-c300-00000000000c') $$,
   'and none of the owner''s private Spaces (the owner arm is the owner''s alone)');
 
+-- LIVE-335 convergence (20270345009100): the feed RPC the board reads through says what the policy
+-- says. Asked over both Circles, newest first, it hands the staff seat exactly the announcement:
+-- not the group post beside it, not the foreign Space's announcement.
+select results_eq(
+  $$ select id from public.scoped_feed_for_viewer(
+       array['00000000-0000-4000-e300-000000000001', '00000000-0000-4000-e300-000000000002']::uuid[],
+       'newest', 10) $$,
+  $$ values ('00000000-0000-4000-f300-000000000001'::uuid) $$,
+  'scoped_feed_for_viewer hands Space staff the same one row the posts policy admits (20270345009100)');
+
 -- ── Seat 2: an ordinary Circle member, community_role member ────────────────────────────────────
 reset role;
 set local role authenticated;
@@ -280,6 +290,12 @@ select results_eq(
   $$ values (1) $$,
   'while the active non-private Space stays readable to everyone (unchanged arm)');
 
+select is_empty(
+  $$ select id from public.scoped_feed_for_viewer(
+       array['00000000-0000-4000-e300-000000000001', '00000000-0000-4000-e300-000000000002']::uuid[],
+       'newest', 10) $$,
+  'and scoped_feed_for_viewer hands the outsider nothing, as the policy does');
+
 -- ── Seat 5: anon ────────────────────────────────────────────────────────────────────────────────
 reset role;
 set local role anon;
@@ -303,6 +319,12 @@ select results_eq(
 select is_empty(
   $$ select id from events where id = '00000000-0000-4000-d300-000000000001' $$,
   'anon reads no circle_only event');
+
+select throws_like(
+  $$ select * from public.scoped_feed_for_viewer(
+       array['00000000-0000-4000-e300-000000000001']::uuid[], 'newest', 10) $$,
+  '%permission denied%',
+  'anon cannot call scoped_feed_for_viewer at all (the verdict is authenticated)');
 
 select * from finish();
 rollback;
