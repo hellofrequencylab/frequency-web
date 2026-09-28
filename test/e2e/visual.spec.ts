@@ -58,7 +58,10 @@ import {
   STORAGE_STATE,
   appSurfaces,
   applyRenderState,
+  armViewportProbe,
   assertMemberSession,
+  boxSnapshot,
+  collapsedSamples,
   assertNoServerErrors,
   assertNotProtectionWall,
   currentPathname,
@@ -69,6 +72,7 @@ import {
   operatorSurfaces,
   publicSurfaces,
   explainCaptureFailure,
+  readViewportProbe,
   settle,
   unsettledMessage,
   type RenderState,
@@ -217,13 +221,39 @@ async function capture(
   // boxes on this surface whose height is a function of the viewport height (a CSSOM read \u2014
   // nothing is resized, nothing is mutated). Anything that is NOT that signature is re-thrown
   // untouched, so an ordinary pixel diff still reads exactly as it did.
+  //
+  // AND WHAT MOVED, MEASURED RATHER THAN INFERRED (LIVE-492). The two-height failure used to
+  // name the page's viewport-height boxes and stop; on /admin/content/practices that list was
+  // followed for a whole pull request and the flip survived it. So the page's in-flow boxes are
+  // recorded HERE, at the last still moment before the shutter, and a one-listener probe starts
+  // recording `resize` events. On a failure `explainCaptureFailure` measures the boxes again
+  // (the page is then resting on the other layout), names the ones that changed, and states
+  // what the viewport read while the shutter was open. A stable pixel diff gets the row bands
+  // its pixels sit in and the elements under them, from the PNGs the matcher attached, so the
+  // reading no longer depends on an artifact host this repo's agents cannot reach. Both are
+  // reads: nothing here scrolls, resizes or writes to the page (see the 🔴 note in `settle()`).
+  const before = await boxSnapshot(page)
+  await armViewportProbe(page)
   try {
     await expect(page).toHaveScreenshot(`${surface.slug}--${state.id}.png`, {
       fullPage: !surface.viewportOnly,
       mask: masksFor(page, surface),
     })
   } catch (error) {
-    throw await explainCaptureFailure(page, error, label)
+    throw await explainCaptureFailure(page, error, label, {
+      before,
+      attachments: test.info().attachments,
+    })
+  }
+  // A green capture still records what the window saw while the shutter was open, so the
+  // report carries the measurement for every surface and not only for the ones that failed.
+  const samples = await readViewportProbe(page).catch(() => [])
+  if (samples.length > 0) {
+    const collapsed = collapsedSamples(samples)
+    test.info().annotations.push({
+      type: 'viewport-probe',
+      description: `${label}: ${samples.length} resize event${samples.length === 1 ? '' : 's'} while the shutter was open (${[...new Set(samples.map((s) => `${s.w}x${s.h}`))].join(', ')})${collapsed.length > 0 ? `, ${collapsed.length} of them at a collapsed size` : ''}; the picture was stable.`,
+    })
   }
 }
 
