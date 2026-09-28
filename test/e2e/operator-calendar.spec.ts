@@ -9,6 +9,31 @@ const hasSession = !!storageState && existsSync(storageState)
 const calendarPath = spaceSlug ? `/spaces/${spaceSlug}/calendar` : '/spaces/missing/calendar'
 
 /**
+ * How long a write that ends in `revalidate(slug)` may take to show its consequence on the page.
+ *
+ * 🔴 SIZED FROM THE SERVER, NOT FROM THE TEST'S OWN CLOCK (LIVE-463). The first ceiling here was
+ * 20 s, taken from "the title's Date.now() to the row's created_at": 7.6 s to 10.9 s. That interval
+ * was the wrong instrument. Two of the three tests mint the title BEFORE `openOperatorCalendar`, so
+ * it counted a page load; all three count the dialog, two fills and a click that waits for
+ * actionability on a runner that is also driving the visual suite. Re-measured on 2026-09-28 from
+ * the database's side of the same saves (Supabase gateway log, filtered to the e2e member and the
+ * function instance that made the RPC; Postgres pg_stat_statements for the RPC itself):
+ *
+ *   create_penciled_plan in Postgres      26.7 ms mean, 72.5 ms max, 205 calls
+ *   the same RPC at the gateway           140 ms to 330 ms
+ *   resolveEditor before it               auth → profile → space → caps, under 0.8 s
+ *   the revalidate re-render after it     four parallel reads, 100 ms to 450 ms each
+ *   the whole server-visible action       about 2 s, first DB call to last re-render read
+ *
+ * So the save the host waits for is about 2 s of server, and the rest of the old number was the
+ * harness. This ceiling is five times the server-visible action and half the old one. It is a
+ * ceiling, not a claim: `pencilDate()` records the real click-to-consequence time as a
+ * `pencil-save-ms` annotation on every save, so the next run that is allowed to pencil prints the
+ * number instead of a bare timeout. Do not raise this to absorb a slow run; read the annotation.
+ */
+const SAVE_ROUND_TRIP_MS = 10_000
+
+/**
  * Every Plan a test pencils in, so `afterEach` can put it away. The harness Space is the owner's
  * REAL Space (owner ruling 2026-09-22: no throwaway Space; `frequency` is the root and never the
  * target), and before HYG-120 each run left its Plans and dates behind: 27 stacked on one day in a
@@ -71,20 +96,22 @@ async function openOperatorCalendar(page: Page) {
  *
  * 🔴 WHY THE TIMEOUT IS SIZED AND NOT DEFAULT. Saving a pencil is a server action that inserts two
  * rows and then revalidates both calendar routes, which re-renders the viewed page in the same
- * round trip. Measured on the pr-compare preview on 2026-09-22 (run 35754107782, six saves): the
- * title's Date.now() to the row's created_at was 7.6 s to 10.9 s, and the client only sees success
- * after the re-render that follows the insert. playwright.config.ts sets `timeout: 60_000` and no
- * `expect.timeout`, so a bare `expect(...).toBeVisible()` here gives up at 5 s while a `click()` on
- * the same page waits out the full minute — which is exactly why one test's click survived the
- * same save that failed the assertion in the test beside it. (LIVE-462 removed a second, redundant
- * client render from that path; LIVE-463 carries what is left of the latency.)
+ * round trip. playwright.config.ts sets `timeout: 60_000` and no `expect.timeout`, so a bare
+ * `expect(...).toBeVisible()` here gives up at 5 s while a `click()` on the same page waits out the
+ * full minute — which is exactly why one test's click survived the same save that failed the
+ * assertion in the test beside it. (LIVE-462 removed a second, redundant client render from that
+ * path; LIVE-463 measured what was left, and the ceiling is `SAVE_ROUND_TRIP_MS`, sized there.)
  *
  * "Open Plan" is the proof the save landed: it renders only for a saved entry that carries a Plan
- * id, which is what the action returns. Waiting on it asserts the consequence, not a delay.
+ * id, which is what the action returns. Waiting on it asserts the consequence, not a delay. The
+ * time from the click to that proof is written to the report as `pencil-save-ms`, so the ceiling
+ * above is judged against the click and never again against the title's clock.
  */
 async function pencilDate(page: Page) {
+  const clickedAt = Date.now()
   await page.getByRole('button', { name: 'Pencil date', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Open Plan', exact: true })).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByRole('button', { name: 'Open Plan', exact: true })).toBeVisible({ timeout: SAVE_ROUND_TRIP_MS })
+  test.info().annotations.push({ type: 'pencil-save-ms', description: String(Date.now() - clickedAt) })
 }
 
 test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () => {
@@ -115,9 +142,9 @@ test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () 
       await expect(drawer.locator('#plan-title')).toHaveValue(title)
       page.once('dialog', (dialog) => dialog.accept())
       await drawer.getByRole('button', { name: 'Archive Plan' }).click()
-      // The same measured save-and-refetch latency pencilDate() documents (LIVE-463).
-      await expect(drawer).toHaveCount(0, { timeout: 20_000 })
-      await expect(row).toHaveCount(0, { timeout: 20_000 })
+      // Archive is the same shape of write as the pencil (gate, rows, revalidate), so the same ceiling.
+      await expect(drawer).toHaveCount(0, { timeout: SAVE_ROUND_TRIP_MS })
+      await expect(row).toHaveCount(0, { timeout: SAVE_ROUND_TRIP_MS })
     }
   })
 
@@ -152,8 +179,8 @@ test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () 
     // run this assertion ever took (pr-compare run 35757524209) hit a day carrying 27 leaked test
     // pencils, so it was stacked to the hilt. Every chip and every stacked button carries the title
     // in its `title` attribute (joined with ', ' when stacked), and a substring match reaches both.
-    // The 20 s is the same measured save-and-refetch latency pencilDate() documents (LIVE-463).
-    await expect(calendarPanel.getByTitle(title).first()).toBeVisible({ timeout: 20_000 })
+    // The grid re-fetches its month on `refreshKey` after the save: one more server round trip, same ceiling.
+    await expect(calendarPanel.getByTitle(title).first()).toBeVisible({ timeout: SAVE_ROUND_TRIP_MS })
 
     await page.getByRole('button', { name: 'List', exact: true }).click()
     const listPanel = page.locator('[data-calendar-panel="list"]')
