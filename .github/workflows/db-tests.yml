@@ -60,6 +60,19 @@ jobs:
       # supabase/migrations file in order. A migration that can't apply fails the job here.
       - name: Start local Supabase (applies all migrations)
         run: pnpm exec supabase db start
-      # Runs every supabase/tests/*.test.sql through pgTAP against the freshly-migrated DB.
+      # Runs every supabase/tests/*.test.sql through pgTAP against the freshly-migrated DB. The
+      # output is kept: the step below reads it, because pg_prove prints a file's SKIP reason as
+      # a diag line and then `ok`, so a file that skipped every assertion is green here.
       - name: Run pgTAP RLS/RPC tests
-        run: pnpm exec supabase test db
+        run: |
+          set -o pipefail
+          pnpm exec supabase test db 2>&1 | tee pgtap.log
+      # ── A SKIP NOBODY STATED IS COVERAGE NOBODY KNOWS IS MISSING (HYG-122, ADR-1547) ──────────
+      # refresh_resonance_density_cells_safeupdate.test.sql printed "SKIPPING: safeupdate could
+      # not be loaded" on every run since it was written, under "All tests successful", because
+      # `load 'safeupdate'` is refused (42501) for the test role in the local image. This gate
+      # fails the job on a skipping file that scripts/pgtap-uncovered.txt does not state, warns
+      # (annotation + job summary, "COVERAGE ABSENT") on one it does, and fails on a stated entry
+      # whose file no longer skips, so the list cannot outlive its reason.
+      - name: Refuse an unstated permanent skip in the TAP output
+        run: node scripts/check-pgtap-skips.mjs pgtap.log

@@ -90,8 +90,23 @@ export async function loadEventCoreStats(eventId: string): Promise<EventCoreStat
  * empty), never a throw, because a recap is a proposal and not a gate.
  */
 export async function loadPlanAttendance(eventIds: readonly string[]): Promise<number | null> {
+  const counts = await loadEventAttendanceCounts(eventIds)
+  return counts.size === 0 ? null : sumAttendance([...counts.values()])
+}
+
+/**
+ * ONE COUNT PER EVENT (LIVE-539): the same three ledgers and the same fold as the Plan recap above,
+ * keyed by event id, so a reader that needs the SHAPE of the history (which weekday and hour drew
+ * people, lib/calendar/vera-attendance.ts) reads it here rather than restating the rule.
+ * `loadPlanAttendance` folds over this, so the drawer recap and Vera's history cannot disagree.
+ *
+ * Scoped to the ids it is given, at most 50, and fail-safe to an empty map rather than a throw:
+ * a history is a proposal's input, not a gate. Null against an id means that event has no record.
+ */
+export async function loadEventAttendanceCounts(eventIds: readonly string[]): Promise<Map<string, number | null>> {
   const ids = [...new Set(eventIds.filter(Boolean))].slice(0, 50)
-  if (ids.length === 0) return null
+  const counts = new Map<string, number | null>()
+  if (ids.length === 0) return counts
   try {
     const admin = createAdminClient()
     // The check-in ledger keys on `event_checkin:<event>:<profile>`, a prefix per event, so it is
@@ -116,8 +131,9 @@ export async function loadPlanAttendance(eventIds: readonly string[]): Promise<n
     ])
     const rsvps = (rsvpRes.data ?? []) as (AttendedRsvpRow & { event_id: string })[]
     const tickets = (ticketRes.data ?? []) as (AttendedTicketRow & { event_id: string })[]
-    return sumAttendance(
-      ids.map((eventId, i) =>
+    ids.forEach((eventId, i) => {
+      counts.set(
+        eventId,
         attendanceCount({
           rsvps: rsvps.filter((r) => r.event_id === eventId),
           tickets: tickets.filter((t) => t.event_id === eventId),
@@ -125,9 +141,10 @@ export async function loadPlanAttendance(eventIds: readonly string[]): Promise<n
             .map((r) => r.actor_profile_id)
             .filter((v): v is string => !!v),
         }),
-      ),
-    )
+      )
+    })
+    return counts
   } catch {
-    return null
+    return new Map()
   }
 }
