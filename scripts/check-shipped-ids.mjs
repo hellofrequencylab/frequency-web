@@ -30,7 +30,14 @@
 //
 // ── HOW IT READS HISTORY, and how it degrades ─────────────────────────────────────────────────
 // SOURCE-only: `git log` plus the JSON, no network. On a pull_request run the ref is
-// `origin/<GITHUB_BASE_REF>` (merged commits, not this PR's own); otherwise HEAD. The runner's
+// `origin/<GITHUB_BASE_REF>` (merged commits, not this PR's own); otherwise HEAD. The rows that
+// answer for those commits are the rows AT THAT REF (`git show <ref>:docs/BUILD-BACKLOG.json`)
+// united with the checkout's own: a merged subject is the base's claim, so the base's list must
+// carry the row, and a pull request that is a few commits behind main is not blamed for a row
+// main added after it branched (measured 2026-09-28: #2957 merged six rows while three stacked
+// PRs were in flight, and a gate reading only each PR's tree named two of them as missing). The
+// checkout's rows are added so a PR that ADDS the row for an already-shipped id passes on its own
+// tree. Locally with HEAD the two sets are the same file. The runner's
 // checkout is depth-1, so `.github/workflows/ci.yml` deepens the base branch with
 // `--filter=tree:0 --shallow-since=<the seed>` (commit objects only: 725 commits in ~1s). When the
 // seed commit is reachable the window is exact (`<seed>..<ref>`). When it is not, the gate reads
@@ -191,6 +198,12 @@ export function chooseRef(env = process.env, cwd = process.cwd()) {
   return { ref: 'HEAD', why: 'HEAD (no GITHUB_BASE_REF, so this checkout is the branch being judged)' }
 }
 
+/** The row ids in the one list AS COMMITTED at `ref` (`git show <ref>:<path>`), the rows that
+ *  answer for the commits merged there. Throws when the file is not at that ref. */
+export function rowsAtRef({ ref, backlogPath = BACKLOG, cwd = process.cwd() }) {
+  return rowIds(git(['show', `${ref}:${backlogPath}`], cwd))
+}
+
 // ── CLI ───────────────────────────────────────────────────────────────────────────────────────
 
 const red = (s) => `\x1b[31m${s}\x1b[0m`
@@ -242,11 +255,24 @@ export function main(argv = process.argv.slice(2), env = process.env, cwd = proc
     return 1
   }
 
+  // The rows at the ref whose commits are being read, united with the checkout's. See the header.
+  let atRef = 0
+  if (ref !== 'HEAD') {
+    let refRows
+    try {
+      refRows = rowsAtRef({ ref, backlogPath, cwd })
+    } catch (err) {
+      console.error(red(`✗ check:shipped-ids — could not read ${backlogPath} at ${ref}: ${String(err.stderr ?? err.message).trim()}. The rows that answer for ${ref}'s commits live there.`))
+      return 1
+    }
+    for (const id of refRows) if (!rows.has(id)) { rows.add(id); atRef += 1 }
+  }
+
   const { missing, staleExceptions, commitCount, idCount } = findUnlisted({ commits: read.commits, rows })
   const window = read.partial
     ? `${commitCount} commit(s) reachable from ${ref} since ${args.since ?? SEED_DATE} (PARTIAL: the seed commit ${(args.seed ?? SEED_COMMIT).slice(0, 9)} is not in this clone, so the window may be short)`
     : `${commitCount} commit(s) on ${ref} since the one list was seeded (${(args.seed ?? SEED_COMMIT).slice(0, 9)})`
-  console.log(`check:shipped-ids — reading ${why}: ${window}; ${idCount} distinct id(s) named in subjects, ${rows.size} rows.`)
+  console.log(`check:shipped-ids — reading ${why}: ${window}; ${idCount} distinct id(s) named in subjects, ${rows.size} rows${atRef ? ` (${atRef} of them only at ${ref}, added after this checkout branched)` : ''}.`)
 
   const problems = []
   if (read.partial && inCi) {

@@ -276,6 +276,34 @@ describe('the CLI on a fixture repository', () => {
     expect(asPr.out).toContain('origin/main')
   })
 
+  it('on a pull_request run, a row main added AFTER the branch point answers for main\'s commit (the checkout is behind, not wrong)', () => {
+    const { dir, seed } = repo(['merged (LIVE-100)'], LISTED)
+    // The PR branches here, from a main that has no LIVE-777.
+    const mainBranch = git(dir, 'rev-parse', '--abbrev-ref', 'HEAD').trim()
+    git(dir, 'branch', 'pr')
+    // main moves on: a commit ships LIVE-777 AND adds its row, in the same commit, as a PR does.
+    const withRow = JSON.parse(readFileSync(path.join(dir, 'docs/BUILD-BACKLOG.json'), 'utf8'))
+    withRow.entries.push({ id: 'LIVE-777', title: 'x', status: 'done', verify: { kind: 'manual', evidence: 'x', checked: '2026-09-28' } })
+    writeFileSync(path.join(dir, 'docs/BUILD-BACKLOG.json'), JSON.stringify(withRow, null, 2))
+    git(dir, 'commit', '-q', '-am', 'main shipped it with its row (LIVE-777)')
+    git(dir, 'update-ref', 'refs/remotes/origin/main', 'HEAD')
+    // Back on the PR: its tree has no LIVE-777 row, and it must NOT be blamed for main's commit.
+    git(dir, 'checkout', '-q', 'pr')
+    const asPr = run(dir, ['--seed', seed], { GITHUB_BASE_REF: 'main' })
+    expect(asPr.code, asPr.out).toBe(0)
+    expect(asPr.out).toContain('1 of them only at origin/main')
+    // MUTATION: main ships an id with NO row anywhere, and the PR run still fails naming it.
+    git(dir, 'checkout', '-q', mainBranch)
+    writeFileSync(path.join(dir, 'f'), 'z')
+    git(dir, 'commit', '-q', '-am', 'main shipped this one with no row (HYG-888)')
+    git(dir, 'update-ref', 'refs/remotes/origin/main', 'HEAD')
+    git(dir, 'checkout', '-q', 'pr')
+    const failing = run(dir, ['--seed', seed], { GITHUB_BASE_REF: 'main' })
+    expect(failing.code).toBe(1)
+    expect(failing.out).toContain('HYG-888')
+    expect(failing.out).not.toContain('LIVE-777')
+  })
+
   it('exits 1 when the base ref a pull request names was not fetched', () => {
     const { dir, seed } = repo(['x (LIVE-100)'], LISTED)
     const r = run(dir, ['--seed', seed], { GITHUB_BASE_REF: 'never-fetched' })
