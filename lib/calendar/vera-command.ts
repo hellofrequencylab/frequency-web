@@ -56,6 +56,15 @@
 // leaving a gap. Undo is then `undoChanges`: the reverses, in reverse order, handed back as an
 // ordinary proposal that goes through the same two gates and lands through the same actions.
 //
+// THE REASON ON THE LINE (PROG-CAL11 slice 4, LIVE-540). When Vera picked a day because that
+// weekday and hour drew people (the attendance_history tool, LIVE-539), the proposal carries the
+// SERVER's fold on the describe context, and a pencil line whose days all fall on that weekday
+// (and, when timed, start at that hour) ends with the server's sentence and the count it rests
+// on: "Saturdays at 7 PM have drawn the most people here: 21 over 2 events." A pencil that does
+// not follow the history says nothing more, because a missing reason is honest and a borrowed one
+// is not: a Tuesday never claims the Saturday sentence. The words come from
+// lib/calendar/vera-attendance.ts through `voiceLine`, never from the model.
+//
 // There is no manifest for a calendar date yet (lib/studio/entities has none), so the date side is
 // an explicit allowlist declared in the manifest's own field shape, derived from `EntryInput`
 // (lib/calendar/entries.ts), and checked by the same kernel call. The day a date manifest lands,
@@ -64,6 +73,7 @@
 import { PLAN_STAGE_TRANSITIONS, type WorkflowStage } from './workflow-board'
 import { PLAN_WRITES, type PlanStage } from './plans'
 import { shortDateLabel } from './short-date'
+import { attendanceHistoryWords, type AttendanceHistory } from './vera-attendance'
 import { SPACE_PLAN_MANIFEST } from '@/lib/studio/entities/space-plan'
 import { railForm } from '@/lib/studio/kernel/edit-plan'
 import { checkFieldValue, checkRepeatRow, type RepeatRowValue, type ScalarFieldValue } from '@/lib/studio/kernel/field-value'
@@ -585,6 +595,35 @@ export interface VeraDescribeContext {
   entries: Record<string, string>
   /** Keyed by `veraFieldKey`: what the targeted field holds right now, when it holds anything. */
   current?: Record<string, VeraCurrentValue>
+  /** What drew people to this Space, when Vera read it for this proposal (LIVE-540). The server's
+   *  fold, so a pencil line that follows it can say why in the server's words. */
+  attendance?: AttendanceHistory | null
+}
+
+/** The weekday (0 is Sunday) a YYYY-MM-DD names, read as digits so no machine zone is consulted. */
+function weekdayOf(day: string): number | null {
+  const [y, m, d] = day.split('-').map(Number)
+  if (!y || !m || !d) return null
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay()
+}
+
+/**
+ * Whether a pencil follows the history: every day falls on the weekday that drew the most people
+ * and, when the pencil is timed, it starts at that weekday's best hour. An all-day pencil on the
+ * right weekday follows it too; a timed one at another hour does not, and neither does a list with
+ * one day off the weekday, because the line would then say something about a date it is not true of.
+ */
+export function followsAttendance(change: VeraChange, history: AttendanceHistory | null | undefined): boolean {
+  const best = history?.best
+  if (!best || change.kind !== 'pencil' || change.days.length === 0) return false
+  if (!change.days.every((day) => weekdayOf(day) === best.weekday)) return false
+  if (change.startTime && Number(change.startTime.slice(0, 2)) !== best.hour) return false
+  return true
+}
+
+/** The reason a pencil line ends with when it follows the history, else nothing. Server words only. */
+export function attendanceReason(change: VeraChange, history: AttendanceHistory | null | undefined): string {
+  return followsAttendance(change, history) && history ? attendanceHistoryWords(history) : ''
 }
 
 /** What a `field` change would overwrite: how much text is there, and the text itself when it is
@@ -706,7 +745,10 @@ export function describeChange(change: VeraChange, ctx: VeraDescribeContext): st
         ? ` on the Plan ${quoted(ctx.plans[change.planId], 'you named')}`
         : ` as a new Plan at ${stageLabel(change.stage ?? 'pencil')}`
       const dates = count === 1 ? `on ${listDays(change.days)}` : `on ${count} dates: ${listDays(change.days)}`
-      return `Pencil "${change.title}" ${dates}${when}${where}.`
+      // The reason, when the days follow what drew people (LIVE-540): the server's sentence, after
+      // the line, with the count it rests on. Nothing when they do not.
+      const why = attendanceReason(change, ctx.attendance)
+      return `Pencil "${change.title}" ${dates}${when}${where}.${why ? ` ${why}` : ''}`
     }
     case 'move':
       return `Move ${quoted(ctx.entries[change.entryId], 'that date')} to ${shortDateLabel(change.toDay)}, ${change.toDay.slice(0, 4)}. Its anchored to-dos move with it.`

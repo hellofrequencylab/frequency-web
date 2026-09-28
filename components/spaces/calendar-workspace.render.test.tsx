@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act } from 'react'
-import { createRoot, type Root } from 'react-dom/client'
+import { act, useEffect } from 'react'
+import { createRoot, hydrateRoot, type Root } from 'react-dom/client'
+import { renderToString } from 'react-dom/server'
 import { CalendarWorkspace } from './calendar-workspace'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import type { SpacePlan } from '@/lib/calendar/plans'
@@ -52,6 +53,21 @@ vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/vera-calendar-actions', ()
 vi.mock('@/components/events/event-share-button', () => ({
   EventShareButton: ({ title }: { title: string }) => <button type="button">Share {title}</button>,
 }))
+
+// Every grid in the workspace, counted at its MOUNT effect: the real component, wrapped so the first
+// paint test below can say how many times the calendar was built rather than infer it (LIVE-481).
+// StaffCalendar imports the same module, so its grid is counted too.
+const grid = vi.hoisted(() => ({ mounts: 0 }))
+vi.mock('@/components/events/event-calendar', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@/components/events/event-calendar')>()
+  function CountedEventCalendar(props: Parameters<typeof mod.EventCalendar>[0]) {
+    useEffect(() => {
+      grid.mounts += 1
+    }, [])
+    return <mod.EventCalendar {...props} />
+  }
+  return { ...mod, EventCalendar: CountedEventCalendar }
+})
 
 let container: HTMLDivElement | null = null
 let root: Root | null = null
@@ -651,6 +667,82 @@ describe('CalendarWorkspace', () => {
       act(() => root!.unmount())
       root = null
     }).not.toThrow()
+  })
+
+  // 🔴 THE FIRST PAINT BUILDS THE CALENDAR ONCE (LIVE-481). The server renders the panel set into
+  // the page slot; the client used to render it there again for the hydration pass and then, one
+  // commit later, through the portal -- a change of React position, so every grid mounted twice and
+  // refetched what it had. The row said this could not be probed from a checkout because it needs a
+  // real SSR pass followed by hydration. It can: react-dom/server renders the workspace here with no
+  // `window`, exactly as it does on the way out, and `hydrateRoot` takes that HTML. The measure is
+  // the grid's own mount effect: one mount per grid alive, the server's grid replaced by the live
+  // one, and no recoverable hydration error (React's own word for a server tree it had to throw away).
+  it('builds the panel set once across the server render and hydration, and the server copy is replaced in place', async () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    const props = operatorProps()
+    vi.stubGlobal('window', undefined)
+    let html: string
+    try {
+      html = renderToString(<CalendarWorkspace {...props} />)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+    // The server still ships the calendar, panel set and Vera box both: nothing here costs the
+    // reader the grid before the script arrives.
+    expect(html).toContain('data-calendar-root')
+    expect(html).toContain('data-vera-calendar-box')
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    container.innerHTML = html
+    const serverGrid = container.querySelector('[data-calendar-root]')!
+    const serverVera = container.querySelector('[data-vera-calendar-box]')!
+    const recoverable: unknown[] = []
+    grid.mounts = 0
+    await act(async () => {
+      root = hydrateRoot(container!, <CalendarWorkspace {...props} />, { onRecoverableError: (e) => recoverable.push(e) })
+    })
+    expect(recoverable).toEqual([])
+    const live = [...container.querySelectorAll('[data-calendar-root]')]
+    expect(live.length).toBeGreaterThan(0)
+    // The server's copy is gone and the live set stands where it stood, one of each.
+    expect(live).not.toContain(serverGrid)
+    expect(container.contains(serverGrid)).toBe(false)
+    expect(container.contains(serverVera)).toBe(false)
+    expect(container.querySelectorAll('[data-vera-calendar-box]').length).toBe(1)
+    expect(container.querySelectorAll('[data-calendar-panel]').length).toBe(4)
+    // One build: as many grid mounts as there are grids on the page, not twice that.
+    expect(grid.mounts).toBe(live.length)
+    // And it is the live set: a keystroke still reaches it through the portal it mounted in.
+    const control = container.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!
+    act(() => control.click())
+    expect(document.querySelector('[data-calendar-console] [data-calendar-root]')).toBe(live[0])
+  })
+
+  // A guest never gets a host, so a guest's slot is the plain inline home on the server and the
+  // client alike: no leaf, no copy to sweep, and the same one build.
+  it('hydrates a visitor\'s inline grid in place, with no portal and one build', async () => {
+    window.history.replaceState(null, '', '/spaces/lab/calendar')
+    const props = operatorProps({ adminAllowed: false, canManage: false })
+    vi.stubGlobal('window', undefined)
+    let html: string
+    try {
+      html = renderToString(<CalendarWorkspace {...props} />)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    container.innerHTML = html
+    const serverGrid = container.querySelector('[data-calendar-root]')!
+    const recoverable: unknown[] = []
+    grid.mounts = 0
+    await act(async () => {
+      root = hydrateRoot(container!, <CalendarWorkspace {...props} />, { onRecoverableError: (e) => recoverable.push(e) })
+    })
+    expect(recoverable).toEqual([])
+    // Hydration adopted the server's node: the same element, now live.
+    expect(container.querySelector('[data-calendar-root]')).toBe(serverGrid)
+    expect(grid.mounts).toBe(1)
   })
 
   // 🔴 THE BLINK (owner report 2026-09-22). Opening and closing the console used to move the panel
