@@ -973,13 +973,19 @@ describe('capture-induced height flip: reading it out of Playwright own failure'
     expect(message).toContain('div.mx-auto.flex { min-height: calc(100vh - 3.5rem) } currently 14415.5px')
     // 🔴 It must explain the SILENCE, because "why did settle() not catch this" is the first
     // question anybody reading it will ask, and the answer is the finding itself.
-    expect(message).toContain('INDUCED BY THE CAMERA')
+    expect(message).toContain('the change arrives with the camera')
+    // LIVE-497: the boxes are DATA, never the cause. The first wording said "fix the box, not
+    // the wait" and cost LIVE-492 a pull request; the only mechanism named is the measured one.
+    expect(message).toContain('listed as data and not as the cause')
+    expect(message).toContain('drops Chromium\'s touch emulation after its first shot')
+    expect(message).not.toMatch(/re-resolves at the document height|Fix the box, not the wait/)
   })
 
-  it('says what to look at instead when no such box is in the stylesheets', () => {
+  it('says so when no such declaration is in the stylesheets, and points at the snapshot diff', () => {
     const message = captureFlipMessage('/admin/qr', [14521, 14567], [])
-    expect(message).toContain('innerHeight')
-    expect(message).not.toContain('Boxes on this surface')
+    expect(message).toContain('no declaration on this surface mentions the viewport height')
+    expect(message).toContain('snapshot diff that follows')
+    expect(message).not.toContain('For the record, the declarations')
   })
 
   it('is wired around the shutter, and leaves other failures alone', () => {
