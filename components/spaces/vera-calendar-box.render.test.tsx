@@ -541,3 +541,27 @@ describe('VeraCalendarBox: what zone a proposal is read in', () => {
     expect(payload.timeZone).toBe('Europe/Lisbon')
   })
 })
+
+// THE REASON ON THE LINE (PROG-CAL11 slice 4, LIVE-540). When the proposal came back with what drew
+// people, the pencil line that follows it ends with the server's sentence. The box adds nothing of
+// its own: the words are describeChange's, from the context the server returned.
+describe('VeraCalendarBox, the reason on the line', () => {
+  it('ends a pencil that follows the history with why, in the server words', async () => {
+    mocks.command.mockResolvedValue({
+      data: {
+        kind: 'proposal',
+        changes: [{ kind: 'pencil', title: 'Sound bath', days: ['2026-10-03'], startTime: '19:00', endTime: '21:00', timeZone: 'America/Los_Angeles', stage: 'pencil' }],
+        note: 'One Saturday evening.',
+        timeZone: 'America/Los_Angeles',
+        context: { plans: {}, entries: {}, attendance: { best: { weekday: 6, hour: 19, people: 21, events: 2 }, recordedEvents: 3, byWeekday: [], byHour: [] } },
+      },
+    })
+    const el = mount()
+    openAndAsk(el, 'pick a good evening for a sound bath')
+    await settle(() => {
+      el.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    const proposal = el.querySelector('[data-vera-proposal]')!
+    expect(proposal.textContent).toContain('Pencil "Sound bath" on Sat, Oct 3, 2026, 7 PM to 9 PM as a new Plan at Pencil. Saturdays at 7 PM have drawn the most people here: 21 over 2 events.')
+  })
+})

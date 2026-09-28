@@ -365,7 +365,19 @@ jobs:
           # RUN IN PARALLEL, REPORT IN ORDER. The guards are independent node processes that only
           # read the tree, so nothing about them needed to be sequential — it just was. Run wall
           # clock was the SUM of 24 guards plus 24 pnpm startups; it is now bounded by the
-          # slowest single guard (check:tokens, ~2.5s locally).
+          # slowest single guard.
+          #
+          # ⚠️ AND THAT NAME MOVES, SO DO NOT TRUST A STALE ONE. This comment read "check:tokens,
+          # ~2.5s locally" until 2026-09-28, by which point it was 8x off and naming the wrong
+          # guard: check:tokens is ~3.1s and check:backlog was 20.2s, bounding the job by itself
+          # while re-probing 556 rows closed before the branch existed. Measured locally the day
+          # that was scoped (HYG-129), `pnpm check:<name>` wall clock, pnpm startup included:
+          #
+          #   backlog 11.6s · a11y-names 8.5s · schema-contract 6.8s · tokens 3.1s · menu 2.4s
+          #
+          # check:backlog still bounds the array, now by ~3s rather than ~12s. A number written
+          # into a comment is a claim with an expiry date; re-read it before repeating it, and if
+          # a guard here starts costing double the next one down, that is the thing to look at.
           #
           # Output still reads exactly as before. Each guard's stdout+stderr goes to its own file
           # and the groups are printed afterwards in the DECLARED order, so a parallel run never
@@ -418,11 +430,12 @@ jobs:
       # Same reasoning as check:cron-freshness above, applied to a different half of the problem.
       # cron-freshness is advisory because part of what it measures is DEPLOYMENT STATE, which no
       # pull request can change. check:adoption is advisory because of what it measures ABOUT THE
-      # SOURCE: it is a SCOREBOARD of 13 design-debt COUNTS (scripts/adoption-baselines.json), and
-      # a count ratchet fires on legitimate growth. `bespoke-cards: 0` means that adding any new
-      # `*-card.tsx` — a perfectly ordinary thing to do — fails a PR that has nothing to do with
-      # the design system. Three of its baselines are already flagged "not bought by a sweep",
-      # i.e. debt the ratchet stopped guarding.
+      # SOURCE: it is a SCOREBOARD of 18 design-debt COUNTS (scripts/adoption-baselines.json), and
+      # a count ratchet fires on legitimate growth. `bespoke-cards: 1` means the SECOND
+      # uncategorised `*-card.tsx` — a perfectly ordinary thing to add — fails a PR that has
+      # nothing to do with the design system. Seven of the 18 baselines are flagged "not bought
+      # by a sweep" (raised or rebased, on a non-zero floor), i.e. debt the ratchet stopped
+      # guarding — the gate prints all seven with their dates and reasons on every run.
       #
       # The other ratchets in the guards array above are SETS of paths (admin-client, templates,
       # rls, grants, creates' UNROUTED, headers, contrast's WAIVERS), so they only fire on the

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { mergeBacklog, mergeDecisions } from './fold-ledger-docs.mjs'
+import { mergeBacklog, mergeDecisions, splitAdrs } from './fold-ledger-docs.mjs'
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 // THE CI HALF OF THE LEDGER FOLD (HYG-032).
@@ -198,21 +198,83 @@ describe('meta.slate is folded beside the entries, then reconciled against them'
   })
 })
 
-describe('the Markdown half appends, and knows when it is not an append', () => {
-  it('keeps main’s block first and this branch’s after', () => {
-    const base = '# ADRs\n\n## ADR-1\n'
-    const r = mergeDecisions(base, base + '## ADR-BRANCH\n', base + '## ADR-MAIN\n') as { text: string }
-    expect(r.text).toBe(base + '## ADR-MAIN\n## ADR-BRANCH\n')
+describe('the Markdown half merges by ADR number', () => {
+  // ⚠️ THIS BLOCK USED TO PIN AN APPEND-ONLY FOLD, and that premise was false. The old
+  // implementation required `ours.startsWith(base) && theirs.startsWith(base)` and refused anything
+  // else. Measured against the seven PRs conflicting on this path on 2026-09-28 it refused 7 of 7,
+  // because main does not only append: it inserts an ADR beside its topical neighbours and edits the
+  // theme index in the same commit. A tool that refuses every real case is not a safety net, so the
+  // case the old test called "not an append" is now a case this merge RESOLVES, and the cases below
+  // pin the shape that replaced it.
+  const base = '# ADRs\n\n## ADR-1\nbody one\n\n## ADR-2\nbody two\n'
+
+  it('keeps main’s order, with this branch’s new ADR appended', () => {
+    const r = mergeDecisions(base, base + '\n## ADR-9\nbranch\n', base + '\n## ADR-8\nmain\n') as {
+      text: string
+    }
+    expect(r.text.indexOf('ADR-8')).toBeLessThan(r.text.indexOf('ADR-9'))
+    expect(r.text).toContain('## ADR-9\nbranch')
+    expect(r.text).toContain('## ADR-8\nmain')
   })
 
-  it('🔴 hands back a side that EDITED the shared body rather than appending', () => {
-    // Theirs-then-ours is only sound while both sides are pure appends. A side that rewrote an
-    // existing ADR would have that rewrite silently dropped, which is worse than a conflict marker.
-    const base = '# ADRs\n\n## ADR-1: original\n'
-    const r = mergeDecisions(base, '# ADRs\n\n## ADR-1: rewritten\n', base + '## ADR-MAIN\n') as {
-      needsHuman?: string
-    }
-    expect(r.needsHuman).toMatch(/edited the existing body/)
+  it('🔴 takes an INSERTION main made in the middle, which the old append-only fold refused', () => {
+    // This is the case that broke every real merge: main put ADR-5 between 1 and 2 rather than at
+    // the tail, so neither side was a prefix of the other.
+    const mainSide = '# ADRs\n\n## ADR-1\nbody one\n\n## ADR-5\ninserted\n\n## ADR-2\nbody two\n'
+    const r = mergeDecisions(base, base + '\n## ADR-9\nbranch\n', mainSide) as { text: string }
+    expect(r.text).toContain('## ADR-5\ninserted')
+    expect(r.text).toContain('## ADR-9\nbranch')
+    expect(r.text.indexOf('ADR-5')).toBeLessThan(r.text.indexOf('ADR-2'))
+  })
+
+  it('lets whichever side actually edited an ADR win, on either side', () => {
+    const ours = base.replace('body one', 'body one, revised by the branch')
+    const theirs = base.replace('body two', 'body two, revised by main')
+    const r = mergeDecisions(base, ours, theirs) as { text: string }
+    expect(r.text).toContain('revised by the branch')
+    expect(r.text).toContain('revised by main')
+  })
+
+  it('🔴 REFUSES, naming the number, when both sides edited the SAME ADR', () => {
+    const ours = base.replace('body one', 'the branch says this')
+    const theirs = base.replace('body one', 'main says that')
+    const r = mergeDecisions(base, ours, theirs) as { bothChanged: string[] }
+    expect(r.bothChanged).toEqual(['1'])
+  })
+
+  it('🔴 REFUSES when both sides edited the preamble, which carries the theme index', () => {
+    const ours = base.replace('# ADRs', '# ADRs\nbranch index line')
+    const theirs = base.replace('# ADRs', '# ADRs\nmain index line')
+    const r = mergeDecisions(base, ours, theirs) as { bothChanged: string[] }
+    expect(r.bothChanged).toContain('preamble')
+  })
+
+  it('folds a preamble edit on ONE side with a new ADR on the other', () => {
+    // The theme-index-plus-new-ADR commit, which is what main actually does.
+    const theirs = base.replace('# ADRs', '# ADRs\nmain index line') + '\n## ADR-8\nmain\n'
+    const r = mergeDecisions(base, base + '\n## ADR-9\nbranch\n', theirs) as { text: string }
+    expect(r.text).toContain('main index line')
+    expect(r.text).toContain('## ADR-9\nbranch')
+  })
+
+  it('🔴 refuses a side that ALREADY declares an ADR number twice, instead of silently dropping one', () => {
+    const dupe = base + '\n## ADR-1\na second ADR-1\n'
+    expect(() => mergeDecisions(base, dupe, base)).toThrow(/more than once/)
+  })
+
+  it('🔴 splitAdrs is lossless on the real docs/DECISIONS.md', () => {
+    // The one unrecoverable failure for this tool is losing a block. Round-tripping the real file is
+    // the only assertion that proves it cannot.
+    const real = readFileSync(path.join(ROOT, 'docs/DECISIONS.md'), 'utf8')
+    const { preamble, blocks } = splitAdrs(real)
+    expect(blocks.length).toBeGreaterThan(1000)
+    const rebuilt = blocks.length ? [preamble, ...blocks.map((b) => b.text)].join('\n') : preamble
+    expect(rebuilt).toBe(real)
+  })
+
+  it('uses check-adr.mjs’s own HEADING regex, so the tool and the gate cannot disagree', () => {
+    const src = readFileSync(path.join(ROOT, 'scripts/maintenance/fold-ledger-docs.mjs'), 'utf8')
+    expect(src).toMatch(/import \{ HEADING \} from '\.\.\/check-adr\.mjs'/)
   })
 })
 

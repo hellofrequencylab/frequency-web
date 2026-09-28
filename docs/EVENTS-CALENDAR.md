@@ -208,7 +208,7 @@ stated reason:
 | Not offered to a member | Why |
 |---|---|
 | **Workflow** | `workflowBoard(plans, adminEvents)` over `PLAN_STAGE_TRANSITIONS`. Every card is a `space_plans` row — the team's internal notes, links, to-dos, people — and a visitor is never handed `plans` or `adminEvents`. The segment would steer an empty board, and the day someone "fixed" the empty board would be the leak. |
-| **the List `all` scope** | The all-time index panel is the event control console (stage pill, share links, stats, Go to event), not a way of reading a month. |
+| **the List `all` scope** | The all-time index panel is the event control console (cover hero when there is one, stage pill, share links, stats, Go to event), not a way of reading a month. |
 | **Guest preview** | An audience, not a way of looking. A guest already is that audience. |
 
 A member also gets the layer **filter** — Events / Unavailable — and only when the Space publishes
@@ -318,7 +318,7 @@ not reload the page.
 |---|---|
 | **Guest** | The existing public month (`guestLiveItems`). Live chips plus the C0 cancelled footer. Pencil and planning stay off. `?view=guest`. |
 | **Admin** (labelled **Calendar**) | The team's month (`StaffCalendar` over `loadAdminCalendar`). Drafts, Pencils, Private entries, unpublished and internal dates Guest does not see. The same sliding month as Guest: `CalendarWorkspace` owns `month` (PROG-CAL12) and hands it to both mounts, so the two panels, the console header and the console agenda can never disagree about which month is showing. The stage board is Workflow. Default URL. |
-| **List** | A condensed gathering index on the left. The right interior is the event control console: title with stage pill top-right, primary facts, share links, stats, Go to event. Not the Studio editor. `?view=list&item=`. |
+| **List** | A condensed gathering index on the left. The right interior is the event control console: the gathering's cover as a full-bleed hero above the card when it has one (LIVE-496, [ADR-1551](DECISIONS.md); cropped with the host's stored focal point through `eventCoverFocusStyle`, the same crop as the browse card and the detail hero; a Pencil or an event with no cover opens on the title, with no generated stand-in), title with stage pill top-right, primary facts, share links, stats, Go to event. Not the Studio editor. `?view=list&item=`. |
 | **Workflow** | Every Plan, grouped by its production stage (`workflowBoard` over `PLAN_STAGE_TRANSITIONS`). A Plan moves stage through `transitionPlanStage`; "Open Plan" opens the same drawer Calendar and List open. `?view=workflow`. |
 
 Operators load Guest and Admin data once so a view switch does not remount. Unsigned members always get Guest and never hit `loadAdminCalendar`. The Pencil, Planning and Production lane helpers live in `lib/calendar/pm-console.ts`, which the List index reads; the Calendar tab Admin view (labelled Calendar) is the team's month in the same grid chrome as Guest.
@@ -360,7 +360,7 @@ having room (`verticalScrollTaker`), with no new flag: `wheelPaging={consoleOpen
 
 **The mouse-move half was compositing, not React** (LIVE-495). Nothing in the console changes state on a mouse move: the only pointer handler in the console or the grid is `onDragOver` on a day cell, which fires during an HTML5 drag and not otherwise, and the long-press handler in `use-date-move.ts` is gated on `pointerType === 'touch'`. The cause was `backdrop-blur-sm` on the **shared** base class string in `components/ui/dialog.tsx`, which every align got — including `align="overlay"`, `fixed inset-0`, whose only caller is this console. A `backdrop-filter` re-rasterises everything behind it whenever anything behind it repaints, and a hover anywhere in the app shell is a repaint; the shell carries a *second* `backdrop-blur-sm` on its sticky header, so the two stacked across the full viewport. The filter is off at `align="overlay"` and kept at the smaller aligns, where a centred card covers little and the separation is worth more. **The dim stays** — LIVE-472's ruling was "a panel on a dimmed page, not edge to edge", and `bg-ink/60` is that dimming; the blur was painting a few millimetres of edge.
 
-**The first-load half is LIVE-481 and is NOT fixed, and its own proposed fix is ruled out.** The panels change React position at hydration — rendered inline in the page slot before it, portaled into the host div after — so every grid unmounts and mounts a second time on the first paint of every Space calendar page, and worse on a `?console=1` deep link, which mounts inline, remounts into the portal, then gets moved into the console. The row proposed keeping the panels at one position and moving only the container. That was built and reverted: 🔴 **`createPortal` is load-bearing for React's event delegation, not only for reconciliation.** React attaches delegated listeners at a root container, and the portal is what tells React that a subtree's events belong to the React tree rather than to wherever its DOM node happens to sit. Re-parenting a *rendered* subtree into the console's DOM — which lives under the Dialog's own portal container — moves it out from under the listener that serves it, and the synthetic event is never dispatched. The test that caught it is `carries Shift and an arrow to the entry seam`: `saveCalendarEntry` called zero times while the chip still rendered `draggable="true"`, because a drag attribute is markup and a keystroke is delegation. So the portal stays. `calendar-workspace.render.test.tsx` keeps the test the attempt produced — the workspace is unmounted with the console open and asserted not to throw — because that hazard is real under any shape and nothing covered it before.
+**The first-load half was LIVE-481, and the server's copy is inert now** ([ADR-1550](DECISIONS.md)). The panels used to change React position at hydration — rendered inline in the page slot for the hydration pass, portaled into the host div one commit later — so every grid unmounted and mounted a second time on the first paint of every Space calendar page an operator opened, and worse on a `?console=1` deep link, which mounted inline, remounted into the portal, then got moved into the console. The row's proposed fix (keep the panels at one position and move only the container) was built and reverted: 🔴 **`createPortal` is load-bearing for React's event delegation, not only for reconciliation.** React attaches delegated listeners at a root container, and the portal is what tells React that a subtree's events belong to the React tree rather than to wherever its DOM node happens to sit. Re-parenting a *rendered* subtree into the console's DOM — which lives under the Dialog's own portal container — moves it out from under the listener that serves it, and the synthetic event is never dispatched (`carries Shift and an arrow to the entry seam` caught it: `saveCalendarEntry` called zero times while the chip still rendered `draggable="true"`). So the portal stays, and the position change went instead: on the client a slot that will hold a travelling host is a leaf from its first render (`dangerouslySetInnerHTML` with a frozen empty `__html`, `suppressHydrationWarning`), so React adopts the element and leaves the server's grid inside it alone, the live set mounts once through the portal, and the layout effect that parks the host sweeps the server's copy out in the same layout phase: one paint, the server's grid until the live one stands in its place. A guest keeps the plain inline slot, hydrated in place. `calendar-workspace.render.test.tsx` measures it with a real `renderToString` and a real `hydrateRoot` in jsdom, the grid's own mount effect as the count (4 for 2 grids before, 2 after), no recoverable hydration error, and keeps the teardown test the reverted attempt produced.
 
 **On a phone, and on a keyboard** (LIVE-469). Three rules the calendar surfaces keep. A cell at 360px is about 46px wide, so a chip prints its title and the time goes `sr-only` until `sm`, where both fit; the per-day `+` steps aside below `sm` because a 44px target plus the day pill does not fit that cell, and "Pencil it in" above the grid is the phone's door. `--tap-min` rises to 44px under `@media (pointer: coarse)` (`app/globals.css`, "The touch floor"), which is the rule the IconButton, Checkbox and Select comments had been promising and nothing had ever set; with a mouse the floor is unchanged. Focus never drops to the body: Today stays mounted and goes disabled on the current month rather than vanishing under the focus that pressed it, a month picked in the jump panel and Escape on that panel both land on the month title, a Workflow stage change lands back on the card that moved, Vera's Accept hands focus to the result lines, and on a stacked phone layout the List console takes focus and scrolls itself in so a tap is never silent. What changes is announced: `Loading` and Vera's `Working` sit in live regions that are mounted before they have anything to say, the result lines are `aria-live`, each grid popup is named by its own entry title rather than "Details", and a month whose fetch failed says so above the grid with a Try again, because a failed fetch drawn as an empty month is the one thing this component promises never to show. The four view panels sit in one flex row with `items-start`, and a panel that is not showing is `h-0 overflow-hidden`, so a long List index no longer leaves the Calendar scrolling into blank space.
 
@@ -489,7 +489,19 @@ plan drawer opens from any calendar item that belongs to a plan and is composed 
 Its footer's "Archive Plan" (`archiveSpacePlan`, HYG-120) sets `space_plans.archived_at`, deletes the
 Plan's penciled dates that never became an event, and unlinks the ones that did; reversible in SQL,
 not yet in the UI. The e2e suite tears its own Plans down through that same door.
-A co-host Space sees a plan only through an accepted share of that plan.
+A co-host Space sees a plan only through an accepted share of that plan, and a share is a HANDSHAKE
+(`PROG-CAL7` Together, `LIVE-541`): the drawer's "Share with a co-host Space" offers the Spaces this one
+has an accepted collaboration with, by name (`listAcceptedCollaborations`, ADR-799), never a field for an
+id; `sharePlanWithSpace` refuses any other Space and writes the share PENDING; the guest answers it from
+its own calendar settings ("Shared with you", `respondToPlanShare`, on its own session, keyed by its own
+Space and the pending state in one statement); the host sees where each share stands in the drawer and
+can take an active one back (`revokePlanShare`). A pending offer's Plan is not readable by the guest until
+the share is accepted (`private.plan_is_shared_with_me`), so the offer's title and host are resolved
+server-side for exactly the share rows the guest's session returned (`lib/calendar/plan-share-subjects.ts`,
+on the admin-client baseline with that reason). An accepted Plan is listed on the guest calendar with the
+Space that holds it and opens in the same drawer, read only: the host keeps every door until a later child
+of PROG-CAL7 hands some across (`listPlansSharedWith` reads them through the accepted share and nothing
+else). Pure vocabulary and words: `lib/calendar/plan-shares.ts`.
 
 **Production** (`PROG-CAL3`, shipped). "Make it a Production" opens the event Spark (`lib/studio/entities/event.ts`)
 prefilled by a pure mapping from the plan and the chosen Pencil onto the manifest's field keys. The event
@@ -564,8 +576,14 @@ cannot disagree). Weekday and hour are read off the stored wall clock, an unreco
 rather than counted as empty, and no record at all answers null in words rather than a weekday nobody
 came on. The read is handed to the loop as a reader and runs at most once per ask, only when the tool is
 called, so `lib/ai/vera-calendar.ts` imports no store and the per-event ledger read costs only the ask
-that needs it. Not yet: the reason on the proposal line (`LIVE-540`); until it lands the model says which
-weekday and hour it followed in its note. Undo shipped as slice 3 (the change log below).
+that needs it. The reason is on the line (`LIVE-540`): the fold rides the proposal as `attendance`, the
+propose door puts it on the describe context, and `describeChange` ends a pencil whose days all fall on that
+weekday (and, when timed, start at that hour) with the server's own sentence and the count it rests on,
+"Saturdays at 7 PM have drawn the most people here: 21 over 2 events." (`followsAttendance` /
+`attendanceReason` in `lib/calendar/vera-command.ts`). A pencil that does not follow the history says
+nothing more: a Tuesday never claims the Saturday sentence. The model's note is told the line carries the
+reason, so it never does. Undo shipped as slice 3 (the change log below). With that, `PROG-CAL11` is
+whole: clarify, edit any field, undo, and dates from what actually happened.
 
 **Two gates, not one** (owner ask 2026-09-23: "I don't want Vera changing things without explicit
 permission"). Accept was the whole gate and every line arrived ticked, so the default action was
@@ -583,9 +601,10 @@ the server's knowledge of the rows, so `veraCalendarCommand` now returns a `Vera
 from the rows it already read; that is also what stops a line reading "Archive that Plan.", since the
 browser holds only the month it is showing and the server knows every title it named. Still true and
 worth restating: one writer, reached from one Accept, on the caller's session with RLS as the lock, and
-every word a person reads on a proposal line is written by the server, never by the model. Not yet:
-any record of what Vera changed. After Accept a Vera edit is indistinguishable from a hand edit, which
-is the versioning half of the same owner ask and its own row.
+every word a person reads on a proposal line is written by the server, never by the model. The record
+of what Vera changed is the change log (`PROG-CAL11` slice 3, #2881): every accepted proposal writes one
+row to `space_vera_changes`, a table with a select and an insert policy and no update or delete policy,
+and Undo reads a batch back as an ordinary proposal, last change first, through the same two gates.
 
 **Production seams for the non-event targets** (`PROG-CAL8`, `PROG-CAL9`, shipped). Each target in `PLAN_TARGET_DEFS`
 (`lib/calendar/plans.ts`) declares the door "Make it a Production" opens, sending the identifier its destination
