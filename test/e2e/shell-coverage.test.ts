@@ -984,12 +984,19 @@ describe('capture-induced height flip: reading it out of Playwright own failure'
 
   it('is wired around the shutter, and leaves other failures alone', () => {
     const src = readFileSync(join(process.cwd(), 'test/e2e/visual.spec.ts'), 'utf8')
-    expect(src).toContain('await explainCaptureFailure(page, error, label)')
+    expect(src).toContain('await explainCaptureFailure(page, error, label, {')
     // The try must WRAP toHaveScreenshot, or the failure never reaches the diagnosis.
     expect(src.indexOf('try {')).toBeLessThan(src.indexOf('await expect(page).toHaveScreenshot('))
     expect(src.indexOf('await expect(page).toHaveScreenshot(')).toBeLessThan(
-      src.indexOf('await explainCaptureFailure(page, error, label)'),
+      src.indexOf('await explainCaptureFailure(page, error, label, {'),
     )
+    // LIVE-492: the snapshot is taken BEFORE the shutter and handed to the diagnosis, so a
+    // two-height failure can name the box that changed rather than only the page's viewport
+    // boxes; and the matcher's attachments go with it so a stable diff can be located.
+    expect(src.indexOf('const before = await boxSnapshot(page)')).toBeLessThan(
+      src.indexOf('await expect(page).toHaveScreenshot('),
+    )
+    expect(src).toMatch(/explainCaptureFailure\(page, error, label, \{\s*before,\s*attachments: test\.info\(\)\.attachments,/)
   })
 
   it('the CSSOM scan is observation only, like the height wait', () => {
