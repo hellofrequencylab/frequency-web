@@ -85,7 +85,26 @@ import { cn } from '@/lib/utils'
 // parent never changes, so nothing unmounts, and because the move happens in the layout phase of
 // the same commit the browser paints once. The host is held back until after hydration (the
 // `isClient` shape components/ui/dialog.tsx already uses) so the server still ships the calendar
-// inside its page slot and the first client render matches that HTML exactly.
+// inside its page slot and the first client render is one React accepts against that HTML.
+//
+// 🔴 THE SERVER'S COPY IS INERT, AND THE LIVE SET IS BUILT ONCE (LIVE-481). The hold above used to
+// mean the client rendered the panels INLINE for the hydration pass and then, one commit later,
+// through the portal: a change of React position, so both grids, the Vera box and every month they
+// had fetched were unmounted and built a second time on the first paint of every Space calendar
+// page. The row's first fix (render the host and move the rendered subtree) was built and reverted:
+// `createPortal` is load-bearing for React's event delegation, and a rendered subtree re-parented
+// under the console Dialog's own portal container never gets its keystrokes. So the portal stays,
+// and the position change goes instead: on the client the page slot never holds the panels as React
+// children. The server renders them into the slot as before, and the client's hydration pass renders
+// the same slot as a LEAF (`dangerouslySetInnerHTML` with `suppressHydrationWarning`), which is the
+// documented way to tell React that what the server put inside an element is content the client
+// will manage itself. React adopts the element, leaves its children alone, and creates no fiber for
+// them. After hydration the live set mounts once, through the portal, and the layout effect that
+// parks the host sweeps the server's copy out of the slot in the same layout phase, so the reader
+// sees the server's grid until the live one replaces it in one paint. `calendar-workspace.render.
+// test.tsx` measures it end to end: a real `renderToString`, a real `hydrateRoot`, one grid mount per
+// grid alive, no recoverable hydration error. Guests keep the plain inline slot: they never get a
+// host, so their position never changes and there is nothing to adopt.
 //
 // TWO HOSTS, NOT ONE (PROG-CAL13). Ask Vera used to ride inside the stage, which put it in a
 // full-width band above the grid in both homes. The owner asked for it at the FOOT OF THE SIDE BAR,
@@ -100,6 +119,12 @@ const CONSOLE_STATE = '__frequencyCalendarConsole'
 const emptySubscribe = () => () => {}
 const onTheClient = () => true
 const duringHydration = () => false
+
+/** What the client renders INTO a slot whose live content comes through a portal: nothing of its own.
+ *  One frozen object, so React never sees a changed prop and never writes the slot's innerHTML
+ *  (which would wipe the server's copy before the live set is there, or the host after it is). See
+ *  🔴 THE SERVER'S COPY IS INERT above. */
+const INERT_MARKUP = Object.freeze({ __html: '' })
 
 // The layout phase on the client, a plain effect on the server, where react-dom/server warns about
 // useLayoutEffect and the move below has no DOM to make anyway. The idiom dock-bar.tsx and the
@@ -224,11 +249,20 @@ export function CalendarWorkspace({
   const isClient = useSyncExternalStore(emptySubscribe, onTheClient, duringHydration)
   const [stageHostEl] = useState(makeStageHost)
   const [veraHostEl] = useState(makeStageHost)
-  // Held back until after hydration so the server's HTML (the panels rendered straight into their
-  // page slot) is exactly what the first client render produces. Guests never get one: they have no
-  // console to move a stage into, and a viewer who cannot edit gets no Vera host.
+  // Held back until after hydration, so nothing is portalled while React is still adopting the
+  // server's HTML. Guests never get one: they have no console to move a stage into, and a viewer who
+  // cannot edit gets no Vera host.
   const stageHost = isClient && adminAllowed ? stageHostEl : null
   const veraHost = isClient && adminAllowed && canManage ? veraHostEl : null
+  // Whether a slot is the page's home for a travelling host (its live content arrives through the
+  // portal) or the plain inline home the server and a guest render into. The server pass renders the
+  // panels inline either way, so the HTML it ships has the calendar in it; on the client a slot that
+  // will hold a host is a leaf from its very first render, the server's copy inside it left alone
+  // (🔴 THE SERVER'S COPY IS INERT). Read per render, not at module load, so the server pass is the
+  // one without a window rather than the one that imported first.
+  const serverPass = typeof window === 'undefined'
+  const stageIsHome = adminAllowed && !serverPass
+  const veraIsHome = stageIsHome && canManage
   const stageSlotRef = useRef<HTMLDivElement>(null)
   const veraSlotRef = useRef<HTMLDivElement>(null)
   const consoleStageRef = useRef<HTMLDivElement>(null)
@@ -481,6 +515,10 @@ export function CalendarWorkspace({
     ]
     for (const [host, consoleHome, pageHome] of moves) {
       if (!host) continue
+      // The server's copy leaves the page home the moment the live set has a host to arrive in, in
+      // this same layout phase, so one paint swaps the inert grid for the live one. The slot has no
+      // React children on the client, so everything in it that is not the host is that copy.
+      if (pageHome) for (const node of Array.from(pageHome.childNodes)) if (node !== host) node.remove()
       const target = (consoleOpen ? consoleHome : pageHome) ?? pageHome
       if (target && host.parentNode !== target) target.appendChild(host)
     }
@@ -892,15 +930,27 @@ export function CalendarWorkspace({
     <div className="space-y-4" data-calendar-workspace data-calendar-view={view} data-calendar-console-open={consoleOpen || undefined}>
       {heading}
       {/* The page's homes for the two travelling hosts, in the order the page reads: Ask Vera above
-          the panels. Before hydration each renders straight into its slot; after, each slot holds a
-          portal host, which the layout effect above parks here or in the console. */}
+          the panels. The server renders each straight into its slot; on the client a slot that is a
+          host's home is a leaf holding the server's copy until the layout effect above parks the host
+          here or in the console and sweeps that copy out (🔴 THE SERVER'S COPY IS INERT). A guest's
+          slot is the plain inline home on both sides. */}
       <div data-calendar-stage className={cn('space-y-4', consoleOpen && 'hidden')}>
         {/* Inside the stage div, so the band goes away with the page when the console takes over:
             the console is the operator's edit surface and the band is the member's read. */}
         {upcoming}
         {pageBar}
-        {vera ? <div ref={veraSlotRef}>{veraHost ? null : vera}</div> : null}
-        <div ref={stageSlotRef}>{stageHost ? null : panels}</div>
+        {vera ? (
+          veraIsHome ? (
+            <div ref={veraSlotRef} suppressHydrationWarning dangerouslySetInnerHTML={INERT_MARKUP} />
+          ) : (
+            <div ref={veraSlotRef}>{vera}</div>
+          )
+        ) : null}
+        {stageIsHome ? (
+          <div ref={stageSlotRef} suppressHydrationWarning dangerouslySetInnerHTML={INERT_MARKUP} />
+        ) : (
+          <div ref={stageSlotRef}>{panels}</div>
+        )}
       </div>
       {veraHost ? createPortal(vera, veraHost) : null}
       {stageHost ? createPortal(panels, stageHost) : null}
