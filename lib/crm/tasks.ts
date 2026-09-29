@@ -228,6 +228,24 @@ export async function reanchorTaskDuesInScope(
 }
 
 /** Filters for a task read. A Studio read scopes by `spaceId`; a per-contact read adds `contactId`. */
+/**
+ * One task, by id, INSIDE a Space: the read behind a Plan-record write (LIVE-543), so an inbox tick
+ * can name the to-do and its Plan. Scoped by space_id like every other read here; a task id from
+ * another Space matches no row. FAIL-SAFE (null on any error).
+ */
+export async function getTaskInScope(taskId: string, spaceId: string): Promise<CrmTask | null> {
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { select: (c: string) => TaskQuery }
+    }
+    const { data, error } = await db.from('crm_tasks').select(ROW_COLS).eq('id', taskId).eq('space_id', spaceId).limit(1)
+    if (error || !data?.[0]) return null
+    return mapTaskRow(data[0])
+  } catch {
+    return null
+  }
+}
+
 export interface ListTasksFilter {
   spaceId?: string | null
   contactId?: string | null

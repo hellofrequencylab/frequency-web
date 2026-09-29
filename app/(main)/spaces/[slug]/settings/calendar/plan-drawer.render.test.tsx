@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { PlanDrawer } from './plan-drawer'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import type { PlanCommentView } from '@/lib/calendar/plan-comments'
+import type { PlanActivityView } from '@/lib/calendar/plan-activity'
 import type { CrmTask } from '@/lib/crm/tasks'
 
 // LIVE-467, findings 5, 6 and 7, in the drawer:
@@ -36,6 +37,7 @@ const mocks = vi.hoisted(() => ({
   revokePlanShare: vi.fn(async () => ({ data: undefined })),
   listPlanTodos: vi.fn(async () => [] as unknown[]),
   listPlanComments: vi.fn(async () => ({ data: [] as unknown[] })),
+  listPlanActivity: vi.fn(async () => ({ data: [] as unknown[] })),
   postPlanComment: vi.fn(async () => ({ data: { id: 'c-new' } })),
   removePlanComment: vi.fn(async () => ({ data: undefined })),
 }))
@@ -50,6 +52,7 @@ vi.mock('./plan-actions', () => ({
   revokePlanShare: mocks.revokePlanShare,
   listPlanTodos: mocks.listPlanTodos,
   listPlanComments: mocks.listPlanComments,
+  listPlanActivity: mocks.listPlanActivity,
   postPlanComment: mocks.postPlanComment,
   removePlanComment: mocks.removePlanComment,
   listPlanLinkableEvents: async () => [],
@@ -92,6 +95,8 @@ beforeEach(() => {
   mocks.listPlanTodos.mockResolvedValue([])
   mocks.listPlanComments.mockReset()
   mocks.listPlanComments.mockResolvedValue({ data: [] })
+  mocks.listPlanActivity.mockReset()
+  mocks.listPlanActivity.mockResolvedValue({ data: [] })
   mocks.postPlanComment.mockClear()
   mocks.removePlanComment.mockClear()
   mocks.planReadiness.mockReset()
@@ -402,5 +407,41 @@ describe('PlanDrawer: the thread under the Plan and under a to-do', () => {
     const box = thread.querySelector('textarea[aria-label="Write a comment"]') as HTMLTextAreaElement
     expect(box.placeholder).toContain('The Green Room')
     expect(document.querySelector('[data-plan-todo-notes]')).toBeNull()
+  })
+})
+
+// THE RECORD (PROG-CAL7 Together, LIVE-543). The drawer shows what anyone did to the Plan, newest
+// first, under [data-plan-activity], for both sides, and nothing when there is nothing yet.
+describe('PlanDrawer: the activity record', () => {
+  const act1: PlanActivityView = {
+    id: 'a-1',
+    planId: 'plan-1',
+    kind: 'stage',
+    summary: 'Moved the Plan to Production.',
+    createdAt: '2026-09-28T10:00:00Z',
+    actorProfileId: 'profile-2',
+    actorName: null,
+    spaceName: 'The Green Room',
+    mine: false,
+  }
+
+  it('renders the record with who did it, read only, for the guest too', async () => {
+    mocks.listPlanActivity.mockResolvedValue({ data: [act1, { ...act1, id: 'a-2', kind: 'comment', summary: 'Commented on the Plan.', mine: true }] })
+    await mount(<PlanDrawer slug="lab" plan={plan} open onClose={() => {}} readOnly sharedFrom="The Green Room" />)
+    await flush()
+    const record = document.querySelector('[data-plan-activity]')!
+    expect(record).not.toBeNull()
+    expect(record.querySelectorAll('[data-plan-activity-row]').length).toBe(2)
+    expect(record.textContent).toContain('Someone at The Green Room')
+    expect(record.textContent).toContain('Moved the Plan to Production.')
+    expect(record.textContent).toContain('You')
+    expect(record.querySelector('button, textarea, input')).toBeNull()
+  })
+
+  it('shows no record section while nothing has happened', async () => {
+    await mount(<PlanDrawer slug="lab" plan={plan} open onClose={() => {}} />)
+    await flush()
+    expect(mocks.listPlanActivity).toHaveBeenCalledWith('lab', 'plan-1')
+    expect(document.querySelector('[data-plan-activity]')).toBeNull()
   })
 })
