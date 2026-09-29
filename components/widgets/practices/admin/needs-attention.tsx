@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
-import { needsAttention, type AttentionReason } from '@/lib/practices/clean'
+import { needsAttention, PRACTICE_TAG_FLOOR, type AttentionReason } from '@/lib/practices/clean'
 import { suggestPlacements } from '@/lib/practices/suggest'
 import { PracticePlacementAccept } from '@/app/(main)/admin/content/practices/practice-placement'
+import { CurateWithVera } from './curate-with-vera'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 
@@ -20,6 +21,8 @@ const REASON: Record<AttentionReason, string> = {
   imageless: 'No image',
   never_logged: 'Never logged',
   stale: 'Going stale',
+  hookless: 'No card hook',
+  undertagged: `Under ${PRACTICE_TAG_FLOOR} tags`,
 }
 
 /** Quality score → a calm tone (a low score is a nudge, never an alarm). */
@@ -75,6 +78,12 @@ export async function PracticeNeedsAttention() {
                     <PracticePlacementAccept id={it.id} suggestion={placements.get(it.id)!} />
                   </div>
                 )}
+                {/* Vera offers to fill what the row left empty (LIVE-644). */}
+                <CurateWithVera
+                  practiceId={it.id}
+                  title={it.title || 'Untitled practice'}
+                  gaps={{ hook: it.reasons.includes('hookless'), tags: it.reasons.includes('undertagged') }}
+                />
               </div>
               <div
                 className="flex shrink-0 flex-col items-end"

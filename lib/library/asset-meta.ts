@@ -8,9 +8,10 @@ import type { Database } from '@/lib/database.types'
 //   · the Space Loom Studio (lib/loom/picker-actions.ts updateSpaceLoomImageMeta), gated by the
 //     Space's `loom` function (canManageSpaceLoom), which may touch only that Space's rows.
 // `normalizeAssetMeta` is the validation both call, so a title that is refused in one is refused in
-// the other. PURE: the Space door's write is `updateSpaceLibraryAssetMeta` in lib/library/store.ts,
-// bound to space_id in the query itself (the deleteSpaceLibraryAsset shape), so an id from another
-// Space matches no row and updates nothing, whatever the caller authorized.
+// the other. PURE: the Space door's write is `updateSpaceLoomAssetMeta` in lib/library/space-loom-store.ts,
+// on the caller's session (LIVE-571) and bound to space_id in the query itself, so an id from another
+// Space matches no row and updates nothing, whatever the caller authorized, and the update policy
+// refuses a caller the Space does not let write.
 
 type AssetUpdate = Database['public']['Tables']['library_assets']['Update']
 

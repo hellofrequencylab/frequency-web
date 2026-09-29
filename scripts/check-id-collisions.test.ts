@@ -29,6 +29,7 @@ import {
   retryDelayMs,
   retryingFetch,
 } from './check-id-collisions.mjs'
+import { loadBacklog, loadDecisions } from './lib/ledger.mjs'
 
 const ledger = (...ids: string[]) => ids.map((id) => `## ADR-${id}: a decision (ROW-1)\n\n**Status.** Accepted.\n`).join('\n')
 const backlog = (...ids: string[]) =>
@@ -347,6 +348,24 @@ describe('a PR is read only for the watched files its own diff names', () => {
     expect(none.reads).toHaveLength(0)
     expect(zero).toMatchObject({ touched: false })
   })
+
+  it('reads a fragment PR’s ids from its file names, downloading nothing (HYG-145)', async () => {
+    const none = reader({})
+    const ids = await fetchNewIdsForPull({
+      pr: pull,
+      files: ['docs/ledger/rows/HYG-150.json', 'docs/ledger/rows/LIVE-440.json', 'docs/ledger/adr/ADR-1300.md', 'app/page.tsx'],
+      baseSets: base,
+      token: 't',
+      fetchImpl: none.impl,
+    })
+    expect(none.reads).toHaveLength(0)
+    // LIVE-440 is on the base tip, so its fragment is an edit and introduces nothing.
+    expect([...ids.rows]).toEqual(['HYG-150'])
+    expect([...ids.adrs]).toEqual(['1300'])
+    expect(ids.touched).toBe(true)
+    const clash = findCollisions({ adrs: new Set(['1300']), rows: new Set() }, [{ number: 9, title: 'x', createdAt: '2026-09-29T00:00:00Z', ...ids }])
+    expect(clash.map((c) => c.id)).toEqual(['ADR-1300'])
+  })
 })
 
 describe('main under a rate limit: retries, then fails loudly rather than answering clean', () => {
@@ -436,11 +455,14 @@ describe('main under a rate limit: retries, then fails loudly rather than answer
   })
 
   it('a PR that introduces no ids does not spend the pulls listing', async () => {
-    // The base tip is served as this checkout's own files, so the PR introduces nothing against it.
+    // The base tip is served as this checkout's MERGED view (its files plus its docs/ledger
+    // fragments, HYG-145), so the PR introduces nothing against it.
     const calls: string[] = []
+    const mergedBacklog = JSON.stringify(loadBacklog())
+    const mergedLedger = loadDecisions()
     const mirror = (async (url: string) => {
       calls.push(String(url))
-      const text = readFileSync(String(url).includes(`/contents/${BACKLOG}`) ? BACKLOG : LEDGER, 'utf8')
+      const text = String(url).includes(`/contents/${BACKLOG}`) ? mergedBacklog : mergedLedger
       return { ok: true, status: 200, headers: { get: () => null }, json: async () => [], text: async () => text }
     }) as unknown as typeof fetch
     await main(env, mirror, { sleep: async () => {}, now: () => 0 })
