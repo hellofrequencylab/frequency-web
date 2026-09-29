@@ -9,14 +9,18 @@
 //
 // Every read + write RE-RESOLVES + RE-GATES server-side (the client is never trusted): a space scope
 // requires the caller to manage that Space (canEditProfile, the same authority uploadToLoom uses);
-// 'mine' requires only a signed-in caller. Uploads run through the service-role admin client, so they
-// never depend on a live browser Storage session token — the fragile path that returned "new row
-// violates row-level security policy". FAIL-SAFE throughout.
+// 'mine' requires only a signed-in caller. The ONE exception is the Studio-only deleteSpaceLoomImage,
+// which decides on the Space's `loom` function (canManageSpaceLoom, LIVE-566): the Studio is the
+// management door and the picker is the editing door, so switching the Studio off never stops an edit.
+// Uploads run through the service-role admin client, so they never depend on a live browser Storage
+// session token — the fragile path that returned "new row violates row-level security policy".
+// FAIL-SAFE throughout.
 
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getSpaceById, getSpaceBySlug, loadRootSpaceId } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { canManageSpaceLoom } from '@/lib/library/space-loom-access'
 import { listOperatedSpaces } from '@/lib/spaces/operated'
 import {
   listLoomScopeImages,
@@ -27,6 +31,7 @@ import {
   type LoomPickAsset,
 } from '@/lib/library/store'
 import { ingestImageBytes } from '@/lib/library/ingest'
+import { loomQuotaFor, loomStorageUsed, loomBudgetVerdict, loomMeter, type LoomMeter } from '@/lib/library/quota'
 import { readImageDescriptor } from '@/lib/library/image-describe'
 import { classifyLoomUpload, effectiveMime, fallbackExtFor, fallbackMimeFor } from '@/lib/library/upload-kinds'
 import { resolveElement } from '@/lib/elements/store'
@@ -193,6 +198,20 @@ export async function loomImages(
   return { assets, tags }
 }
 
+/** The Space Loom Studio's storage meter (LIVE-567): what this Space's Loom stores against its cap,
+ *  in words. Gated like the Studio's other actions (the caller must manage the Space; the personal
+ *  'mine' scope has no meter). A failed read is `read: false`, never a throw, so the meter can never
+ *  block the page. Null when the caller cannot manage the Space. */
+export async function loomQuotaMeter(spaceKey: string): Promise<LoomMeter | null> {
+  const caller = await getCallerProfile()
+  if (!caller) return null
+  const scope = await resolveScope(caller.id, spaceKey)
+  if (!scope || !('spaceId' in scope)) return null
+  const space = await getSpaceById(scope.spaceId).catch(() => null)
+  if (!space) return null
+  return loomMeter(loomQuotaFor(space), await loomStorageUsed(scope.spaceId))
+}
+
 /** Upload an image into a Loom scope (service-role, so it never hits the browser-session RLS trap) and
  *  return its public URL + id. A space scope attaches the asset to that Space (space_id); a personal
  *  upload attaches to the root library but is stamped created_by the caller, so it always surfaces
@@ -238,6 +257,19 @@ export async function uploadLoomImage(
   const existing = await findLibraryAssetBySha256(spaceId, ingested.sha256)
   if (existing?.url) return { url: existing.url, id: existing.id }
 
+  // BUDGET (LIVE-567, ADR-1585): one bucket serves every Space, so a Space's Loom has a cap. Read
+  // the owning Space's cap and what it already stores BEFORE storage; refuse past the cap. A failed
+  // Space read or a failed sum refuses too: a quota that fails open is not a quota. The root Space
+  // (and so a personal upload) is uncapped and skips the sum. A dedupe hit above stores nothing, so
+  // it is answered before the budget is asked.
+  const owner = await getSpaceById(spaceId).catch(() => null)
+  if (!owner) return { error: 'Could not check how much room this library has left, so the upload is paused. Try again in a moment.' }
+  const quota = loomQuotaFor(owner)
+  if (quota.capped) {
+    const verdict = loomBudgetVerdict(quota, await loomStorageUsed(spaceId), ingested.bytes.byteLength)
+    if (!verdict.ok) return { error: verdict.error }
+  }
+
   const { error: upErr } = await admin.storage
     .from(target.bucket)
     .upload(path, ingested.bytes, { contentType: mime || fallbackMimeFor(target.kind), upsert: false })
@@ -278,10 +310,12 @@ export async function uploadLoomImage(
   return { url: pub.publicUrl, id }
 }
 
-/** Delete an image from a SPACE's Loom (the Loom Studio's remove control). Gated: the caller must MANAGE
- *  that space (the same `canEditProfile` gate `resolveScope` applies to a space id). Only space scopes are
- *  deletable here — the personal 'mine' scope resolves without a `spaceId`, so it is rejected (a person's
- *  cross-space uploads are managed where they live). Best-effort removes the stored object too. FAIL-SAFE. */
+/** Delete an image from a SPACE's Loom (the Loom Studio's remove control). Gated on the Space's `loom`
+ *  FUNCTION through canManageSpaceLoom (LIVE-566, ADR-1578): the switch and the min-role bar the Space set,
+ *  NOT the picker's `canEditProfile` scope, because this is the Studio's management door and the picker is
+ *  the editing door (ADR-1559 §4). Only a Space (by id or slug) is deletable here: the personal 'mine' scope
+ *  is not a Space, so it is rejected (a person's cross-space uploads are managed where they live).
+ *  Best-effort removes the stored object too. FAIL-SAFE: any error resolving the Space reads as no access. */
 export async function deleteSpaceLoomImage(
   spaceKey: string,
   assetId: string,
@@ -289,9 +323,18 @@ export async function deleteSpaceLoomImage(
   const caller = await getCallerProfile()
   if (!caller) return { error: 'Sign in to manage this library.' }
   if (!assetId) return { error: 'Nothing to remove.' }
-  const scope = await resolveScope(caller.id, spaceKey)
-  if (!scope || !('spaceId' in scope)) return { error: 'You cannot manage that library.' }
-  const removed = await deleteSpaceLibraryAsset(scope.spaceId, assetId)
+  let spaceId: string | null = null
+  try {
+    const space = spaceKey === 'mine' ? null : await spaceForScopeKey(spaceKey)
+    if (space) {
+      const caps = await getSpaceCapabilities(space, caller.id)
+      if (canManageSpaceLoom(space, caps.role)) spaceId = space.id
+    }
+  } catch {
+    spaceId = null
+  }
+  if (!spaceId) return { error: 'You cannot manage that library.' }
+  const removed = await deleteSpaceLibraryAsset(spaceId, assetId)
   if (!removed) return { error: 'That image could not be removed. Try again.' }
   if (removed.bucket && removed.path) {
     try {

@@ -268,6 +268,13 @@ own rows, any signed-in caller reads `visibility = 'public'` assets, writes go t
     and the Space Loom Studio run `useDescribeOnView` (`lib/library/describe-on-view.ts`), which after
     paint takes up to six rows on the page whose `blurhash` is null and sends each, one at a time,
     through that same shared path. A row nobody has ever opened stays without; a cron never can.
+  - **Vera names what nobody named** ([ADR-1589](DECISIONS.md), `LIVE-587`). An upload lands with
+    alt null and no tags, so it is findable only by its filename. `describeLibraryImage`
+    (`lib/ai/library-tag.ts`, Haiku vision, `library-tag` cap) proposes up to eight tags, one sentence
+    of alt text and a category from the ones the Space already uses; `fillLibraryAssetDescription`
+    writes each only where it is still empty and marks a written tag set with the `vera` tag. The
+    nightly `tag-library` cron (03:05 UTC, before `embed-library`) sweeps 40 unnamed images a run;
+    Describe with Vera in the Studio drawer fills the empty fields for one image and Save writes them.
 
 - **Search is ranked over two indexes** ([ADR-1121](DECISIONS.md)). A query runs BOTH arms the schema
   already carries and merges them: full text (`search_tsv @@ websearch_to_tsquery`, stemmed and
@@ -293,7 +300,16 @@ own rows, any signed-in caller reads `visibility = 'public'` assets, writes go t
 - `space_id = <entity>` → that **entity's own** Loom.
 - Effective view for a space = its rows ∪ root's, badged "Frequency" vs "Yours". Using a shared
   asset **references** it; editing **forks** a private copy (`parent_id` → master). No space→space
-  sharing in v1; per-plan storage quota via entitlements.
+  sharing in v1.
+- **Storage budget** ([ADR-1585](DECISIONS.md)). A Space's Loom has a cap: `lib/library/quota.ts`
+  `loomQuotaFor` reads it from `LOOM_STORAGE_CAP_BYTES` by plan tier (a larger-library entitlement is
+  deferred to the owner). `loomStorageUsed` sums `bytes` over the Space's
+  file-backed rows; a NULL size is reported as unknown, never as zero. `uploadLoomImage` refuses past
+  the cap, and refuses when the sum cannot be read. The root Space (and so a personal upload) is
+  uncapped, as are the Loom Studio and email studio doors, which write to it. The Space Loom Studio
+  shows the meter. Two other doors write into a Space and do not read the budget yet: the page
+  editor's field upload (`lib/page-editor/loom-field-actions.ts`) and the AI cover
+  (`lib/loom/cover-actions.ts`); the importer and event copies store no size.
 
 ## Build sequence (D1–D7)
 
@@ -318,7 +334,7 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
    EXIF strip, optional watermark) — decomposed into LIVE-576 to LIVE-580 ([ADR-1562](DECISIONS.md)).
    LIVE-576 shipped: the hooks reach the product and an expired licence leaves every picker.
 7. **D7 — Semantic + AI** (pgvector search, AI auto-tag/color, background removal/upscale).
-   Background removal and upscale (LIVE-589) are shipped; the rest is decomposed into LIVE-586 to LIVE-588 ([ADR-1563](DECISIONS.md)).
+   Background removal and upscale (LIVE-589), describe on view (LIVE-588) and auto-tag (LIVE-587) are shipped; the hybrid rank (LIVE-586) is the one child left ([ADR-1563](DECISIONS.md)).
 
 ## Non-goals (v1)
 
