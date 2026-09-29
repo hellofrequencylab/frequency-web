@@ -25,6 +25,8 @@ export type AudienceSignal =
   | 'space_member' // an active member of the Space
   | 'crm_contact' // already in the Space's CRM
   | 'personal_contact' // in the seller's OWN contact list (a Crew host with no Space)
+  | 'friend' // a PROFILE seller's accepted friend: the profile's own followers (ADR-1584)
+  | 'owned_space_member' // an active member of any Space a PROFILE seller owns (ADR-1584)
   | 'prior_purchase' // has bought from this seller before
 
 export interface AudienceVerdict {
@@ -64,7 +66,8 @@ async function found(run: () => PromiseLike<{ data: unknown; error: unknown }>):
  * `sellerSpaceId` is the hosting Space when there is one; `sellerProfileId` is the person who receives
  * the money (for a Space sale that is the Space owner). BOTH are consulted, because a Crew host with
  * no Space still has an audience — their own contact list — and a Space sale should also honour a
- * relationship the owner holds personally.
+ * relationship the owner holds personally. With no Space on the sale (a PROFILE seller) the audience
+ * also takes in the profile's friends and the members of every Space the seller owns (ADR-1584).
  *
  * Checks run cheapest-exact-match first and short-circuit, so the common case (a follower) costs one
  * indexed lookup.
@@ -142,6 +145,42 @@ export async function buyerIsSellersAudience(input: {
     })
   }
 
+  // ── A PROFILE SELLER'S OWN AUDIENCE IS THE PROFILE PLUS EVERY SPACE THEY OWN (ADR-1584) ──
+  //
+  // Owner ruling 2026-09-29 (LIVE-221, "Profile plus Spaces they own"). Before it, a profile sale
+  // (no Space on the checkout) was measured against the seller's contact list and prior purchases
+  // only, so the same buyer of the same thing classified `network` from a person and 0% from a
+  // Space. Now a profile seller also owns:
+  //   - their profile's followers. A profile is not followable (only a Space is), so the profile's
+  //     follow graph is its accepted friendships: a person who asked for, or accepted, a connection
+  //     with the seller. Pending is not a relationship yet.
+  //   - the active members of any Space they own (`spaces.owner_profile_id`), read the way the
+  //     Space path reads `space_members`, so "member" means one thing on both paths.
+  // Gated on `!space` ON PURPOSE: a Space sale is measured against THAT Space, as before. The
+  // owner's other Spaces do not widen a Space's audience; that was not ruled.
+  if (seller && !space) {
+    // Canonical pair order (user_a_id < user_b_id, the table's CHECK), the same spelling
+    // lib/blocking.ts uses, so no id is interpolated into a filter string.
+    const [a, b] = seller < buyer ? [seller, buyer] : [buyer, seller]
+    checks.push({
+      signal: 'friend',
+      run: () =>
+        found(() =>
+          db()
+            .from('friendships')
+            .select('id')
+            .eq('user_a_id', a)
+            .eq('user_b_id', b)
+            .eq('status', 'accepted')
+            .limit(1),
+        ),
+    })
+    checks.push({
+      signal: 'owned_space_member',
+      run: () => isMemberOfOwnedSpace({ seller, buyer }),
+    })
+  }
+
   // Bought before = unambiguously theirs, whatever the CRM says. Last because it is the widest read.
   checks.push({
     signal: 'prior_purchase',
@@ -174,6 +213,40 @@ export async function buyerIsSellersAudience(input: {
   // A read failed and nothing else matched: we cannot honestly say Frequency introduced them.
   if (sawFailure) return DEGRADED
   return NOT_OWN
+}
+
+/**
+ * Is this buyer an active member of any Space the seller owns? (ADR-1584)
+ *
+ * Two steps, the seller's Space ids first and then one bounded `space_members` lookup, for the same
+ * reason `hasPriorSettledPurchase` avoids an embedded join: a wrong relationship name answers [],
+ * and [] here means "charge them". Deliberately NOT `getSpaceMembership` from
+ * lib/spaces/membership.ts: that store maps a read error to null, which reads as "not a member" and
+ * would charge on a database hiccup. Here an error is a NON-answer (null), so the fail-safe holds.
+ */
+async function isMemberOfOwnedSpace(args: { seller: string; buyer: string }): Promise<boolean | null> {
+  try {
+    const { data: owned, error: ownedErr } = await db()
+      .from('spaces')
+      .select('id')
+      .eq('owner_profile_id', args.seller)
+      .limit(200)
+    if (ownedErr) return null
+    const ids = ((owned as { id: string }[] | null) ?? []).map((s) => s.id)
+    if (ids.length === 0) return false
+
+    return await found(() =>
+      db()
+        .from('space_members')
+        .select('id')
+        .in('space_id', ids)
+        .eq('profile_id', args.buyer)
+        .eq('status', 'active')
+        .limit(1),
+    )
+  } catch {
+    return null
+  }
 }
 
 /**

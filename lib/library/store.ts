@@ -586,6 +586,10 @@ export type LoomPickAsset = {
   /** The protection flag (LIVE-576), carried so a picker can render a proof instead of the master
    *  once LIVE-580 lands. An expired asset never reaches this type: the readers filter it out. */
   isProtected: boolean
+  /** The stored placeholder, carried so the Space Loom Studio can describe on view a row filed with
+   *  none (LIVE-588: importer seeds, event-photo copies). NULL = known missing; absent = not read
+   *  (a row an uploader just added locally, which posted its own descriptor). */
+  blurhash?: string | null
 }
 
 /** Shape a raw library_assets row into a LoomPickAsset. AI-generated ("Element") is derived from the
@@ -604,6 +608,7 @@ function toPickAsset(r: Record<string, unknown>): LoomPickAsset {
     tags,
     category: (r.category as string | null) ?? null,
     isProtected: r.is_protected === true,
+    blurhash: typeof r.blurhash === 'string' && r.blurhash.length > 0 ? r.blurhash : null,
   }
 }
 
@@ -632,7 +637,7 @@ export async function listLoomScopeImages(
     const kinds = opts.kinds && opts.kinds.length ? opts.kinds : ['image']
     let query = db()
       .from('library_assets')
-      .select('id, title, url, alt, kind, tags, config, category, is_protected, expires_at')
+      .select('id, title, url, alt, kind, tags, config, category, is_protected, expires_at, blurhash')
       .in('kind', kinds)
       .neq('status', 'archived')
       // A licensed asset whose expires_at has passed is not offered for placement, in any scope

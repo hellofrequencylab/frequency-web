@@ -9,12 +9,13 @@ import { buttonClasses } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
 import { getMyProfileId } from '@/lib/auth'
 import { listMyMakerProducts } from '@/lib/commerce/products'
-import { listOrdersForSeller } from '@/lib/commerce/orders'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { payoutPrompt } from '@/lib/billing/payout-prompt'
 import { PayoutPromptCard } from '@/components/billing/payout-setup-prompt'
 import type { CommerceProduct } from '@/lib/commerce/types'
-import { setMyProductStatusAction, deleteMyProductAction } from '../../marketplace/commerce-actions'
+import { OrderFulfilmentControl } from '@/components/marketplace/order-fulfilment-control'
+import { listOrdersForSeller, type CommerceOrder } from '@/lib/commerce/orders'
+import { setMyProductStatusAction, deleteMyProductAction, setMyOrderFulfillmentAction } from '../../marketplace/commerce-actions'
 
 // Seller storefront manager — a maker's own products + payout readiness + recent sales.
 // Listing is free; getting paid needs a payout account (Stripe Connect) at /settings/billing.
@@ -28,6 +29,33 @@ function usd(cents: number, currency = 'usd') {
 
 const STATUS_LABEL: Record<string, string> = {
   draft: 'Draft', active: 'Live', sold_out: 'Sold out', archived: 'Archived',
+}
+
+const ORDER_STATUS_LABEL: Record<string, string> = {
+  paid: 'Paid', fulfilled: 'Fulfilled', refunded: 'Refunded', cancelled: 'Cancelled', failed: 'Failed',
+}
+
+// One sale, with the seller's fulfilment door under it (LIVE-606). Before this the console summed the
+// sales into a count and a gross and listed none of them, so a maker who sold a mug had nowhere to
+// say it left.
+function SaleRow({ o }: { o: CommerceOrder }) {
+  const when = new Date(o.paidAt ?? o.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return (
+    <div className="rounded-card border border-border bg-surface p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-body-sm font-medium text-text">
+            {o.items.map((it) => `${it.title}${it.qty > 1 ? ` x${it.qty}` : ''}`).join(', ') || 'Order'}
+          </p>
+          <p className="text-meta text-muted">
+            {when} · {ORDER_STATUS_LABEL[o.status] ?? o.status}
+          </p>
+        </div>
+        <p className="shrink-0 text-body-sm font-semibold text-text">{usd(o.amountCents, o.currency)}</p>
+      </div>
+      <OrderFulfilmentControl order={o} action={setMyOrderFulfillmentAction.bind(null, o.id)} />
+    </div>
+  )
 }
 
 // A compact icon-only SUBMIT control (the storefront row-actions read as a tight icon
@@ -122,10 +150,17 @@ export default async function MakerManagePage() {
       <PayoutPromptCard prompt={payoutPromptForMaker} className="mb-6" />
 
       {sales.length > 0 && (
-        <p className="mb-6 text-body-sm text-muted">
-          <span className="font-semibold text-text">{sales.length}</span> {sales.length === 1 ? 'sale' : 'sales'} ·{' '}
-          <span className="font-semibold text-text">{usd(salesTotal)}</span> gross
-        </p>
+        <section className="mb-8" aria-labelledby="maker-sales">
+          <p id="maker-sales" className="mb-3 text-body-sm text-muted">
+            <span className="font-semibold text-text">{sales.length}</span> {sales.length === 1 ? 'sale' : 'sales'} ·{' '}
+            <span className="font-semibold text-text">{usd(salesTotal)}</span> gross
+          </p>
+          <div className="space-y-3">
+            {sales.map((o) => (
+              <SaleRow key={o.id} o={o} />
+            ))}
+          </div>
+        </section>
       )}
 
       {products.length === 0 ? (
