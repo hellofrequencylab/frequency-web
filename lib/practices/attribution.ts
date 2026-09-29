@@ -125,26 +125,46 @@ function db() {
   return createAdminClient()
 }
 
-const EMPTY: PillarZapTotals = { byPillar: {}, unattributed: 0, total: 0 }
+/** The member read adds `complete`: false when a read errored (zeros, below) or the page
+ *  ceiling was hit (the figures cover part of the member's logs), LIVE-642. */
+type MemberPillarZaps = PillarZapTotals & { complete: boolean }
+
+const EMPTY: MemberPillarZaps = { byPillar: {}, unattributed: 0, total: 0, complete: false }
+
+/** PostgREST caps a select at `max_rows` (1000): page by id, with a ceiling (LIVE-642). */
+const LOG_PAGE = 1000
+const LOG_MAX_PAGES = 100
 
 /** A member's earned Zaps attributed per Pillar, from the frozen log-time ledger (with the
  *  current-split fallback for pre-freeze rows). Fail-safe: any read error returns zeros, the
  *  earned.ts convention — a progress panel must never break a page. */
-export async function getMemberPillarZaps(profileId: string): Promise<PillarZapTotals> {
+export async function getMemberPillarZaps(profileId: string): Promise<MemberPillarZaps> {
   try {
-    const { data, error } = await db()
-      .from('practice_logs')
-      .select('practice_id, zaps_awarded, pillar_id, secondary_pillar_id, primary_pct')
-      .eq('profile_id', profileId)
-      .gt('zaps_awarded', 0)
-    if (error) return EMPTY
-    const raw = (data ?? []) as {
+    const raw: {
       practice_id: string | null
       zaps_awarded: number | null
       pillar_id: string | null
       secondary_pillar_id: string | null
       primary_pct: number | null
-    }[]
+    }[] = []
+    let complete = true
+    for (let page = 0; ; page += 1) {
+      if (page >= LOG_MAX_PAGES) {
+        complete = false
+        break
+      }
+      const { data, error } = await db()
+        .from('practice_logs')
+        .select('practice_id, zaps_awarded, pillar_id, secondary_pillar_id, primary_pct')
+        .eq('profile_id', profileId)
+        .gt('zaps_awarded', 0)
+        .order('id', { ascending: true })
+        .range(page * LOG_PAGE, page * LOG_PAGE + LOG_PAGE - 1)
+      if (error) return EMPTY
+      const batch = (data ?? []) as typeof raw
+      raw.push(...batch)
+      if (batch.length < LOG_PAGE) break
+    }
     const rows: AttributedLogRow[] = raw.map((r) => ({
       practiceId: r.practice_id,
       zaps: r.zaps_awarded,
@@ -174,7 +194,7 @@ export async function getMemberPillarZaps(profileId: string): Promise<PillarZapT
         })
       }
     }
-    return attributeLogs(rows, fallback)
+    return { ...attributeLogs(rows, fallback), complete }
   } catch {
     return EMPTY
   }

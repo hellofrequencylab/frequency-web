@@ -10,6 +10,9 @@
 //   • PURE functions (this file's top half) — bucketing, coverage gaps, the adoption funnel,
 //     review-SLA aging, the contributor roll-up. Total + deterministic, unit-tested in
 //     health.test.ts with a `now` injected for the time math.
+//   • The "where Zaps land" roll-up (§7, LIVE-642) aggregates paid logs through the SAME
+//     `attributeLogs` math the member ledger uses (lib/practices/attribution.ts), so the
+//     conservation invariant (Σ Pillars + no Pillar === total) holds by construction.
 //   • getLibraryHealth() (bottom) — the choreography: it reads through the admin handle with
 //     the SAME curator guard the rest of the practices admin uses (authz-delegated: the
 //     curator gate lives at the calling page, app/(main)/admin/content/practices/health), then
@@ -19,6 +22,7 @@
 // lib/practices/clean.ts (LIVE-647).
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { attributeLogs, type AttributedLogRow, type PillarSplit } from '@/lib/practices/attribution'
 
 const DAY_MS = 86_400_000
 const WEEK_MS = 7 * DAY_MS
@@ -420,6 +424,77 @@ export function computeContributors(
 }
 
 // ============================================================================
+// 7. Where Zaps land (LIVE-642, ADR-1605)
+// ============================================================================
+
+/** A paid practice log as the Zap roll-up reads it (the frozen log-time split columns). */
+export interface ZapLogRow {
+  practice_id: string | null
+  zaps_awarded: number | null
+  pillar_id: string | null
+  secondary_pillar_id: string | null
+  primary_pct: number | null
+}
+
+/** One Pillar's share of the Zaps members earned from practice logs in the window. */
+interface PillarZapLanding {
+  id: string
+  name: string
+  zaps: number
+  /** zaps / total, 0..1 (0 when nothing was earned). */
+  share: number
+}
+
+/** The "where Zaps land" panel. Conservation: Σ pillars[].zaps + unattributed === total. */
+interface ZapLandingMetrics {
+  pillars: PillarZapLanding[]
+  /** Zaps from logs with no resolvable active Pillar (no Pillar, a deleted practice with no
+   *  snapshot, or a Pillar that is no longer active). */
+  unattributed: number
+  total: number
+  /** False when the log read errored or hit the page cap: the figures cover part of the window. */
+  complete: boolean
+}
+
+/** A log row → the attribution input: the frozen snapshot when the log carries one, else null
+ *  so `attributeLogs` falls back to the practice's current split (the ledger's own rule). */
+function toAttributedRow(r: ZapLogRow): AttributedLogRow {
+  return {
+    practiceId: r.practice_id,
+    zaps: r.zaps_awarded,
+    snapshot: r.pillar_id
+      ? { pillarId: r.pillar_id, secondaryPillarId: r.secondary_pillar_id, primaryPct: r.primary_pct }
+      : null,
+  }
+}
+
+/**
+ * Roll paid logs up into per-Pillar Zap totals, in Pillar order, through `attributeLogs` (the
+ * member ledger's math), so a log splits here exactly as it does on the member's own balance.
+ * Zaps credited to a Pillar that is not in `pillars` (inactive) fold into `unattributed`, so
+ * the panel still sums to the total. Pure.
+ */
+export function computeZapLanding(
+  logs: readonly ZapLogRow[],
+  fallbackByPractice: ReadonlyMap<string, PillarSplit>,
+  pillars: PillarRow[],
+  complete = true,
+): ZapLandingMetrics {
+  const ledger = attributeLogs(logs.map(toAttributedRow), fallbackByPractice)
+  const rows = pillars.map<PillarZapLanding>((p) => {
+    const zaps = ledger.byPillar[p.id] ?? 0
+    return { id: p.id, name: p.name, zaps, share: ratio(zaps, ledger.total) }
+  })
+  const shown = rows.reduce((sum, r) => sum + r.zaps, 0)
+  return { pillars: rows, unattributed: ledger.total - shown, total: ledger.total, complete }
+}
+
+/** Page size for the log read (PostgREST caps a select at `max_rows` = 1000) and the page cap
+ *  that keeps the dashboard bounded; hitting the cap marks the panel incomplete. */
+const LOG_PAGE = 1000
+const LOG_MAX_PAGES = 100
+
+// ============================================================================
 // The assembled dashboard payload + the guarded read
 // ============================================================================
 
@@ -431,6 +506,7 @@ interface LibraryHealth {
   performers: PerformerMetrics
   reviewSla: ReviewSlaMetrics
   contributors: ContributorRow[]
+  zapLanding: ZapLandingMetrics
   /** How many trailing weeks the growth chart covers (for its caption). */
   weeks: number
 }
@@ -462,7 +538,7 @@ export async function getLibraryHealth(opts: { weeks?: number } = {}): Promise<L
       client
         .from('practices_ranked')
         .select(
-          'id, title, status, is_public, domain_id, subcategory_id, created_at, created_by, adopters, logs_30d, logs_total',
+          'id, title, status, is_public, domain_id, subcategory_id, created_at, created_by, adopters, logs_30d, logs_total, secondary_domain_id, primary_pct',
         )
         .limit(5000),
       client.from('pillars').select('id, name, slug').eq('is_active', true).order('display_order'),
@@ -475,14 +551,16 @@ export async function getLibraryHealth(opts: { weeks?: number } = {}): Promise<L
         .limit(1000),
     ])
 
-  const allRows =
+  const rankedRows =
     ((practiceRows as
       | {
           id: string; title: string | null; status: string | null; is_public: boolean
           domain_id: string | null; subcategory_id: string | null; created_at: string | null
           created_by: string | null; adopters: number | null; logs_30d: number | null; logs_total: number | null
+          secondary_domain_id: string | null; primary_pct: number | null
         }[]
-      | null) ?? []).map<HealthPracticeRow>((r) => ({
+      | null) ?? [])
+  const allRows = rankedRows.map<HealthPracticeRow>((r) => ({
       id: r.id,
       title: r.title,
       status: r.status,
@@ -521,6 +599,37 @@ export async function getLibraryHealth(opts: { weeks?: number } = {}): Promise<L
     : { data: [] as ContributorProfile[] }
   const profiles = (profileRows as ContributorProfile[] | null) ?? []
 
+  // Where Zaps land: every paid log in the window, paged past the 1000-row cap. Pre-freeze logs
+  // (no snapshot) fall back to the practice's CURRENT split, read from the ranked rows above
+  // (the view covers every practice, public or not), exactly as the member ledger does.
+  const since = new Date(now - weeks * WEEK_MS).toISOString().slice(0, 10)
+  const logs: ZapLogRow[] = []
+  let logsComplete = true
+  for (let page = 0; ; page += 1) {
+    if (page >= LOG_MAX_PAGES) {
+      logsComplete = false
+      break
+    }
+    const { data, error } = await client
+      .from('practice_logs')
+      .select('practice_id, zaps_awarded, pillar_id, secondary_pillar_id, primary_pct')
+      .gt('zaps_awarded', 0)
+      .gte('logged_for', since)
+      .order('id', { ascending: true })
+      .range(page * LOG_PAGE, page * LOG_PAGE + LOG_PAGE - 1)
+    if (error) {
+      logsComplete = false
+      break
+    }
+    const batch = (data ?? []) as ZapLogRow[]
+    logs.push(...batch)
+    if (batch.length < LOG_PAGE) break
+  }
+  const fallback = new Map<string, PillarSplit>()
+  for (const r of rankedRows) {
+    fallback.set(r.id, { pillarId: r.domain_id, secondaryPillarId: r.secondary_domain_id, primaryPct: r.primary_pct })
+  }
+
   return {
     growth: computeGrowth(published, weeks, now),
     coverage: computeCoverage(published, pillars, subcategories),
@@ -528,6 +637,7 @@ export async function getLibraryHealth(opts: { weeks?: number } = {}): Promise<L
     performers: computePerformers(published, 5),
     reviewSla: computeReviewSla(pending, now),
     contributors: computeContributors(published, profiles, 10),
+    zapLanding: computeZapLanding(logs, fallback, pillars, logsComplete),
     weeks,
   }
 }
