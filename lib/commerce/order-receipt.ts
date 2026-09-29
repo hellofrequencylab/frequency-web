@@ -21,7 +21,8 @@
 //
 // A SPLIT order (owner_kind 'split', LIVE-621) names no single seller either, so today only the buyer
 // half runs and the receipt names Frequency, the merchant of record. Each seller's own notice for
-// their share is LIVE-624's surface, once LIVE-622 has paid it.
+// their share is not sent yet: LIVE-624 shows each seller their share on their Orders screens
+// (ADR-1616) and left the notice as a follow-up.
 
 import 'server-only'
 
