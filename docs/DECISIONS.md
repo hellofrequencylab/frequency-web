@@ -49056,7 +49056,7 @@ Re-tested against the tree and against production on 2026-09-28, most of it had 
 
 ## ADR-1557: The three moments on a shared Plan ride the categories the preference grid already wires, one send each, never to the person who acted (LIVE-545)
 
-**Status:** Accepted · 2026-09-28 · `LIVE-545` (child 5 of 6 of `PROG-CAL7`) · builds on [ADR-627](DECISIONS.md) (the registry), [ADR-1552](DECISIONS.md) (the handshake), [ADR-1553](DECISIONS.md) (the thread) and [ADR-1556](DECISIONS.md) (shared to-dos) · numbered 1557 because 1545 to 1551 are claimed by pull requests opened before this lane's and 1552 to 1555 by #2964, #2968, #2970 and #2971, the children this one stands on (ADR-1509)
+**Status:** Accepted · 2026-09-28 · `LIVE-545` (child 5 of 6 of `PROG-CAL7`) · builds on [ADR-627](DECISIONS.md) (the registry), [ADR-1552](DECISIONS.md) (the handshake), [ADR-1553](DECISIONS.md) (the thread) and [ADR-1567](DECISIONS.md) (shared to-dos) · numbered 1557 because 1545 to 1551 are claimed by pull requests opened before this lane's and 1552, 1553, 1566 and 1567 by #2964, #2968, #2970 and #2971 (the last two renumbered around #2951 and #2956), the children this one stands on (ADR-1509)
 
 **Context.** After four children a share could be offered and answered, a Plan commented on, and a to-do handed across, and the other team found out about each by looking. The registry routed four events and none was a Plan. PROG-CAL7 asks for "notifications through the existing notification preferences".
 
