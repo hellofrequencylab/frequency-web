@@ -27,12 +27,19 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 vi.mock('@/lib/auth', () => ({ getCallerProfile: async () => ({ id: 'caller-1' }) }))
-vi.mock('@/lib/spaces/store', () => ({ getVisibleSpaceBySlug: async () => space }))
+// The storage budget (LIVE-629, ADR-1602) runs for real through lib/library/quota.ts `loomAdmits`:
+// these stand in for the owning Space it reads and the sum pages it reads. The default is a free
+// Space whose Loom is empty, so the upload tests above the budget block are under the cap.
+let owner: { id: string; type: string; plan: string } | null = { id: SPACE_A, type: 'business', plan: 'free' }
+let bytePages: ({ bytes: number | null }[] | null)[] = []
+const bytesPageMock = vi.fn(async () => (bytePages.length ? (bytePages.shift() as { bytes: number | null }[] | null) : []))
+vi.mock('@/lib/spaces/store', () => ({ getVisibleSpaceBySlug: async () => space, getSpaceById: async () => owner }))
 vi.mock('@/lib/spaces/entitlements', () => ({ getSpaceCapabilities: async () => caps }))
 vi.mock('@/lib/library/store', () => ({
   insertSpaceLibraryImage: (...args: unknown[]) => insertMock(...(args as [])),
   // Checksum dedupe (PROG-D1): null = "these bytes are new here", the path every test below wants.
   findLibraryAssetBySha256: (...args: unknown[]) => dedupeMock(...(args as [])),
+  listLibraryAssetBytesPage: () => bytesPageMock(),
 }))
 
 import { uploadToLoom } from './loom-field-actions'
@@ -51,6 +58,9 @@ beforeEach(() => {
   removeMock.mockClear()
   dedupeMock.mockReset()
   dedupeMock.mockResolvedValue(null)
+  owner = { id: SPACE_A, type: 'business', plan: 'free' }
+  bytePages = []
+  bytesPageMock.mockClear()
 })
 
 describe('gate: only a per-space editor may upload', () => {
@@ -116,5 +126,62 @@ describe('an authorized editor: upload files into the space', () => {
     const res = await uploadToLoom('willow-studio', imageFormData())
     expect('error' in res).toBe(true)
     expect(removeMock).toHaveBeenCalled()
+  })
+})
+
+describe('the storage budget (LIVE-629, ADR-1602): the same gate as the picker, before storage', () => {
+  const GB = 1024 * 1024 * 1024
+
+  it('a Loom past its cap refuses with a returned error and stores nothing', async () => {
+    caps = { canEditProfile: true }
+    bytePages = [[{ bytes: GB }]] // exactly at the free cap; the 3 incoming bytes tip it over
+    const res = await uploadToLoom('willow-studio', imageFormData())
+    expect('error' in res && res.error).toMatch(/This library is full/)
+    expect(uploadMock).not.toHaveBeenCalled()
+    expect(insertMock).not.toHaveBeenCalled()
+  })
+
+  it('a failed sum refuses (a quota that fails open is not a quota)', async () => {
+    caps = { canEditProfile: true }
+    bytePages = [null]
+    const res = await uploadToLoom('willow-studio', imageFormData())
+    expect('error' in res && res.error).toMatch(/Could not check/)
+    expect(uploadMock).not.toHaveBeenCalled()
+  })
+
+  it('a Space that cannot be read refuses too', async () => {
+    caps = { canEditProfile: true }
+    owner = null
+    expect('error' in (await uploadToLoom('willow-studio', imageFormData()))).toBe(true)
+    expect(uploadMock).not.toHaveBeenCalled()
+  })
+
+  it('under the cap the upload goes through, measured with the incoming bytes', async () => {
+    caps = { canEditProfile: true }
+    bytePages = [[{ bytes: GB - 3 }]] // exactly at the cap after these 3 bytes: allowed
+    const res = await uploadToLoom('willow-studio', imageFormData())
+    expect('url' in res).toBe(true)
+    expect(uploadMock).toHaveBeenCalledTimes(1)
+    expect(bytesPageMock).toHaveBeenCalled()
+  })
+
+  it('the root Space is uncapped and never reads the sum', async () => {
+    caps = { canEditProfile: true }
+    owner = { id: SPACE_A, type: 'root', plan: 'free' }
+    bytePages = [null] // would refuse if it were read
+    const res = await uploadToLoom('willow-studio', imageFormData())
+    expect('url' in res).toBe(true)
+    expect(bytesPageMock).not.toHaveBeenCalled()
+  })
+
+  it('a duplicate is answered before the budget is asked (it stores nothing)', async () => {
+    caps = { canEditProfile: true }
+    bytePages = [null]
+    dedupeMock.mockResolvedValueOnce({ id: 'existing-asset', url: 'https://cdn/already-there.png', title: 'Logo' })
+    expect(await uploadToLoom('willow-studio', imageFormData())).toEqual({
+      url: 'https://cdn/already-there.png',
+      id: 'existing-asset',
+    })
+    expect(bytesPageMock).not.toHaveBeenCalled()
   })
 })
