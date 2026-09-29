@@ -25,6 +25,7 @@ vi.mock('./plan-actions', () => ({
   listPlanShares: async () => ({ data: { options: [], shares: [] } }),
   revokePlanShare: async () => ({ data: undefined }),
   listPlanComments: async () => ({ data: [] }),
+  listPlanActivity: async () => ({ data: [] }),
   postPlanComment: async () => ({ data: { id: 'c' } }),
   removePlanComment: async () => ({ data: undefined }),
   listPlanTodos: async () => [],
