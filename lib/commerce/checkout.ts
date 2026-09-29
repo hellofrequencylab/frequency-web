@@ -1,10 +1,13 @@
 // Commerce checkout — the one new caller of the existing billing rails. Mirrors
 // lib/billing/tickets.ts (destination charge + application fee, pending row keyed
 // by checkout session, idempotent settle, financial_transactions recording,
-// destination-charge refund). Three owner kinds:
+// destination-charge refund). Three seller kinds and two funds flows, decided in ONE place by
+// ./funds-flow.ts (LIVE-621, ADR-1576):
 //   platform → plain charge on the platform account (no transfer; keep 100%)
 //   profile  → destination charge to the maker's connected account (maker rake)
 //   space    → destination charge to the Space owner's connected account (plan rake)
+//   split    → two or more sellers in one cart: a plain charge on the platform carrying
+//              `transfer_group`, one transfer per seller to follow (LIVE-622's ledger)
 // Server-only. Flag-gated by payoutsLive() like every other billing path.
 
 import type Stripe from 'stripe'
@@ -27,11 +30,12 @@ import { computeBookingRefundCents } from './cancellation'
 import { canTakePayments } from './selling'
 import { getVariantsByIds } from './variants'
 import { effectiveVariantPriceCents, effectiveVariantStock } from './types'
+import { planFundsFlow, splitTotals, type SellerSplit } from './funds-flow'
 import { receiptEmailFor } from '@/lib/billing/receipt-address'
 import { commercePaymentMethodParams } from './payment-methods'
 import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
 import { sendOrderReceipts } from './order-receipt'
-import type { CheckoutInput, CommerceVariant, ServiceConfig } from './types'
+import type { CheckoutInput, CommerceVariant, OrderOwnerKind, ServiceConfig } from './types'
 import { SHIP_TO_COUNTRIES, cartNeedsShipping, shippingDetailsFromSession } from './shipping'
 
 function db(): SupabaseClient {
@@ -222,31 +226,6 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
       ) ?? null)
     : null
 
-  const ownerKey = (p: ProductRow) => `${p.owner_kind}:${p.owner_profile_id ?? ''}:${p.owner_space_id ?? ''}`
-  if (new Set(products.map(ownerKey)).size > 1) {
-    return { error: 'Please check out items from one seller at a time.' }
-  }
-  const seller = products[0]
-
-  // ONE CURRENCY PER CART (HYG-107, ADR-1500). The line items, the order row and the application fee
-  // must all be denominated in the same currency, because `application_fee_amount` is an absolute
-  // integer that Stripe reads in the PaymentIntent's currency -- which under Adaptive Pricing stays
-  // the currency these line items carry, not the one the buyer is shown. The fee is computed from
-  // `gross`, and a gross summed across two currencies is a number in no currency at all. Stripe would
-  // refuse the mixed session anyway; refusing here means no pending order is written for it and no
-  // fee is ever computed on nonsense. `cartCurrency` is the single value every consumer below reads.
-  const cartCurrency = (seller.currency || 'usd').toLowerCase()
-  if (products.some((p) => (p.currency || 'usd').toLowerCase() !== cartCurrency)) {
-    return { error: 'Please check out items in one currency at a time.' }
-  }
-
-  // R2 (Phase 0): only a Business Space Shop or the Frequency Store may take in-app payments. An
-  // individual maker ('profile') listing is connect-only — never open a Stripe session for it; the
-  // buyer contacts the seller instead. Single source of truth: canTakePayments.
-  if (!canTakePayments(seller.owner_kind)) {
-    return { error: 'This seller takes contact only. Message them to arrange the sale.' }
-  }
-
   // Resolve any selected variants (Etsy-Grade Phase 2): each must belong to its product AND be active;
   // its effective price (variant override, else the product price) drives the line + gross, and its
   // effective stock is soft-checked here (the paid-order RPC still enforces it atomically). A plain
@@ -279,23 +258,89 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
   const gross = lines.reduce((sum, l) => sum + l.unitCents * l.qty, 0)
   if (gross <= 0) return { error: 'Nothing to charge.' }
 
-  // Classify the order's source ONCE (ADR-811 §A): self = the operator's own booking (0% fee), network =
-  // the collective sourced the customer. Default-safe to self on any ambiguity.
-  const { source, attributionRef } = await classifyOrderSource({
-    entryPoint: input.entryPoint ?? null,
-    buyerProfileId: input.buyerProfileId,
-    sellerProfileId: seller.owner_profile_id,
-    // A Space shop: the relationship check (ADR-913) asks the SPACE's followers / members / CRM too,
-    // not just the owner profile. Null for a profile or platform seller, and that is NOT a narrower
-    // audience: with no Space the check measures the profile plus every Space the seller owns
-    // (friends, and active members of their Spaces), per ADR-1584 (LIVE-221, owner ruling 2026-09-29).
-    sellerSpaceId: seller.owner_kind === 'space' ? seller.owner_space_id ?? null : null,
-  })
-  const charge = await resolveCharge(seller, gross, source)
-  if ('error' in charge) return charge
-  if (charge.sellerStripeAccountId && !(await payoutsLive())) {
+  // ── THE FUNDS FLOW (LIVE-621, ADR-1576) ───────────────────────────────────────────────────────
+  // ONE seam decides how the money moves, from the priced lines: one seller is a DESTINATION charge
+  // (today's session, exactly); two or more are SEPARATE charges and transfers (the payment lands on
+  // the platform carrying `transfer_group`, no `transfer_data`, and LIVE-622's ledger pays each
+  // seller after). This door used to refuse a second seller with "one seller at a time"; the refusal
+  // is gone because the flow that made it honest is no longer the only one. The seam also owns ONE
+  // CURRENCY PER CART (HYG-107, ADR-1500: `application_fee_amount` is an integer in the
+  // PaymentIntent's currency, and a gross summed across two currencies is a number in none; refusing
+  // here means no pending order is written for it and no fee is computed on nonsense) and keeps the
+  // Frequency Store out of a separate plan (the platform is where the charge lands, never a transfer
+  // destination). `cartCurrency` is the single value every consumer below reads.
+  const plan = planFundsFlow(
+    lines.map((l) => ({ seller: l.product, currency: l.product.currency || 'usd', qty: l.qty, unitCents: l.unitCents })),
+  )
+  if ('refused' in plan) {
+    if (plan.refused === 'mixed_currency') return { error: 'Please check out items in one currency at a time.' }
+    if (plan.refused === 'store_with_others') {
+      return { error: 'Frequency Store items check out on their own. Please buy them separately.' }
+    }
+    return { error: 'Your cart is empty.' }
+  }
+  const cartCurrency = plan.currency
+  // Each seller's own product row (the first line it sold), which carries what the seam does not read:
+  // the ledger entity, and the fields resolveCharge prices from. One group on a destination plan.
+  const sellerGroups = plan.groups.map((g) => ({ seller: lines[g.firstLine].product, grossCents: g.grossCents }))
+
+  // R2 (Phase 0): only a seller `canTakePayments` admits may take in-app money; a connect-only listing
+  // never opens a Stripe session, the buyer contacts the seller instead. Checked per seller, because a
+  // split cart is refused if ANY of its sellers cannot be paid. Single source of truth: canTakePayments.
+  if (sellerGroups.some((g) => !canTakePayments(g.seller.owner_kind))) {
+    return { error: 'This seller takes contact only. Message them to arrange the sale.' }
+  }
+
+  // Price EACH seller through the same rungs a single seller gets: classify the source per seller
+  // (ADR-811 §A: self = the operator's own booking at 0%, network = the collective sourced the
+  // customer; default-safe to self on any ambiguity), then resolveCharge at that seller's plan or tier
+  // rung. A destination plan prices one seller, which is exactly the path this door always took.
+  const priced: {
+    seller: ProductRow
+    grossCents: number
+    charge: Exclude<ResolvedCharge, { error: string }>
+    attributionRef: string | null
+  }[] = []
+  for (const g of sellerGroups) {
+    const { source, attributionRef } = await classifyOrderSource({
+      entryPoint: input.entryPoint ?? null,
+      buyerProfileId: input.buyerProfileId,
+      sellerProfileId: g.seller.owner_profile_id,
+      // A Space shop: the relationship check (ADR-913) asks the SPACE's followers / members / CRM too,
+      // not just the owner profile. Null for a profile or platform seller, and that is NOT a narrower
+      // audience: with no Space the check measures the profile plus every Space the seller owns
+      // (friends, and active members of their Spaces), per ADR-1584 (LIVE-221, owner ruling 2026-09-29).
+      sellerSpaceId: g.seller.owner_kind === 'space' ? g.seller.owner_space_id ?? null : null,
+    })
+    const charge = await resolveCharge(g.seller, g.grossCents, source)
+    if ('error' in charge) return charge
+    priced.push({ seller: g.seller, grossCents: g.grossCents, charge, attributionRef: attributionRef ?? null })
+  }
+  if (priced.some((p) => p.charge.sellerStripeAccountId) && !(await payoutsLive())) {
     return { error: 'Payments aren’t turned on yet.' }
   }
+
+  // The one seller of a destination order, or null for a split order, which names none.
+  const head = plan.mode === 'destination' ? priced[0] : null
+  // A separate plan's shares, one per seller, as priced at this checkout. Every one has a connected
+  // account: the seam keeps the platform out of a separate plan and resolveCharge refuses a seller
+  // with no account, so a share with none here is a bug, refused before an order is written.
+  if (!head && priced.some((p) => !p.charge.sellerStripeAccountId)) {
+    console.error('[commerce] split share with no destination account', { sellers: priced.length })
+    return { error: CHECKOUT_START_FAILED }
+  }
+  const splits: SellerSplit[] = head
+    ? []
+    : priced.map((p) => ({
+        seller: p.seller,
+        grossCents: p.grossCents,
+        platformFeeCents: p.charge.platformFeeCents,
+        stripeAccountId: p.charge.sellerStripeAccountId as string,
+      }))
+  const splitFee = splitTotals(splits)
+  // A split order is network-sourced when ANY share was billed at a network rung: that is the reason
+  // its fee is non-zero. Its provenance tag is the first such share's.
+  const networkShare = priced.find((p) => p.charge.source === 'network') ?? null
 
   // L6-03 (2026-09-05): the ORDER is written BEFORE the Stripe session, and every write is checked.
   // The previous order was session → order insert (error discarded) → items insert (error discarded)
@@ -316,20 +361,53 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
       // Exactly one of the pair is non-null at insert; claim_guest_orders() may later set the buyer
       // beside a surviving address, which is the record of how the order was bought.
       guest_email: guestEmail,
-      owner_kind: seller.owner_kind,
-      owner_profile_id: seller.owner_profile_id,
-      owner_space_id: seller.owner_space_id,
-      entity_id: seller.entity_id,
+      // A destination order names its one seller. A split order is 'split' with NO owner ids: it has
+      // no single seller, and the schema refuses a split row that names one (20270345009700).
+      owner_kind: head ? head.seller.owner_kind : 'split',
+      owner_profile_id: head ? head.seller.owner_profile_id : null,
+      owner_space_id: head ? head.seller.owner_space_id : null,
+      // The ledger entity every commerce product is created under (ENTITY_ID.labs); a split order
+      // takes the first line's, which on a destination order is the one seller's.
+      entity_id: head ? head.seller.entity_id : lines[0].product.entity_id,
       amount_cents: gross,
-      platform_fee_cents: charge.platformFeeCents,
+      // A destination order's fee is its one seller's. A split order's is the SUM of the per-seller
+      // fees, each at its own rung, never one rate on the total; the platform keeps it by transferring
+      // less (LIVE-622).
+      platform_fee_cents: head ? head.charge.platformFeeCents : splitFee.platformFeeCents,
       // Persist the EFFECTIVE source the fee was billed at (a disconnected space collapses to self, ADR-811
       // §3), and drop the provenance tag when it collapsed — a self order carries no network attribution.
-      source: charge.source,
-      attribution_ref: charge.source === 'network' ? attributionRef : null,
+      source: head ? head.charge.source : networkShare ? 'network' : 'self',
+      attribution_ref: head
+        ? head.charge.source === 'network'
+          ? head.attributionRef
+          : null
+        : networkShare?.attributionRef ?? null,
       currency: cartCurrency,
       status: 'pending',
       shipping: input.shipping ?? {},
-      seller_stripe_account_id: charge.sellerStripeAccountId,
+      // One destination account on a destination order; none on a split order, whose sellers are paid
+      // by transfer against the charge.
+      seller_stripe_account_id: head ? head.charge.sellerStripeAccountId : null,
+      // WHICH FUNDS FLOW THIS ORDER TOOK (LIVE-621), so a refund knows whether to reverse one transfer
+      // or the transfers (LIVE-623). The schema ties it to owner_kind both ways.
+      funds_flow: plan.mode,
+      // A split order records each seller's share AS PRICED AT THIS CHECKOUT. The rung a Space or a
+      // person sat on that day is not derivable later from the items, and LIVE-622 plans one transfer
+      // per entry. A destination order writes nothing here: its one share is the row itself.
+      ...(head
+        ? {}
+        : {
+            metadata: {
+              split: splits.map((s) => ({
+                owner_kind: s.seller.owner_kind,
+                owner_profile_id: s.seller.owner_profile_id,
+                owner_space_id: s.seller.owner_space_id,
+                stripe_account_id: s.stripeAccountId,
+                gross_cents: s.grossCents,
+                platform_fee_cents: s.platformFeeCents,
+              })),
+            },
+          }),
     })
     .select('id')
     .maybeSingle()
@@ -396,18 +474,25 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
       ...(needsShipping
         ? { shipping_address_collection: { allowed_countries: [...SHIP_TO_COUNTRIES] } }
         : {}),
-      // payment_intent_data is now UNCONDITIONAL, because `receipt_email` belongs on it and a
-      // PLATFORM (first-party Frequency Store) order has no connected account to carry it. The
-      // Connect fields stay conditional exactly as before: a platform charge sets no application
-      // fee, no transfer and no on_behalf_of.
+      // payment_intent_data is UNCONDITIONAL, because `receipt_email` belongs on it and a PLATFORM
+      // (first-party Frequency Store) order has no connected account to carry it. The Connect fields
+      // follow the FUNDS FLOW (LIVE-621):
+      //   destination  application fee + transfer_data + on_behalf_of on the one seller's account; a
+      //                platform charge sets none of the three, exactly as before.
+      //   separate     `transfer_group` = the order id, and NOTHING else. No transfer_data (the money
+      //                lands on the platform), no on_behalf_of, no application_fee_amount (the platform
+      //                keeps its fee by transferring less). LIVE-622 creates one transfer per seller
+      //                under this group, so each is tied to the charge that funds it.
       payment_intent_data: {
-        ...(charge.sellerStripeAccountId
-          ? {
-              application_fee_amount: charge.platformFeeCents,
-              transfer_data: { destination: charge.sellerStripeAccountId },
-              on_behalf_of: charge.sellerStripeAccountId,
-            }
-          : {}),
+        ...(head
+          ? head.charge.sellerStripeAccountId
+            ? {
+                application_fee_amount: head.charge.platformFeeCents,
+                transfer_data: { destination: head.charge.sellerStripeAccountId },
+                on_behalf_of: head.charge.sellerStripeAccountId,
+              }
+            : {}
+          : { transfer_group: orderId }),
         ...(receiptEmail ? { receipt_email: receiptEmail } : {}),
         metadata: {
           kind: 'commerce_order',
@@ -445,8 +530,8 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
           : `${appUrl()}/orders?ok=1&session_id=${CHECKOUT_SESSION_PLACEHOLDER}`,
         // Cancel back to the surface the buyer was purchasing from, never the free peer board
         // (`/marketplace` redirects to Classifieds). Frequency Store → /store; Market + Space
-        // shops both browse under the Market umbrella.
-        cancelUrl: `${appUrl()}${seller.owner_kind === 'platform' ? '/store' : '/market'}`,
+        // shops both browse under the Market umbrella, and so does a split cart (never the Store).
+        cancelUrl: `${appUrl()}${head?.seller.owner_kind === 'platform' ? '/store' : '/market'}`,
       }),
     })
   } catch (err) {
@@ -535,7 +620,7 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     .select('id, owner_kind, owner_profile_id, owner_space_id, entity_id, amount_cents, platform_fee_cents, buyer_profile_id, currency')
   const rows = (updated ?? []) as {
     id: string
-    owner_kind: 'platform' | 'profile' | 'space'
+    owner_kind: OrderOwnerKind
     owner_profile_id: string | null
     owner_space_id: string | null
     entity_id: string
@@ -705,13 +790,14 @@ export async function refundCommerceOrder(orderId: string): Promise<{ ok?: true;
   if (!stripe) return { error: 'Payments aren’t turned on yet.' }
   const { data } = await db()
     .from('commerce_orders')
-    .select('id, owner_kind, status, amount_cents, stripe_payment_intent_id, refunded_at')
+    .select('id, owner_kind, funds_flow, status, amount_cents, stripe_payment_intent_id, refunded_at')
     .eq('id', orderId)
     .maybeSingle()
   const order = data as
     | {
         id: string
         owner_kind: string
+        funds_flow: string | null
         status: string
         amount_cents: number
         stripe_payment_intent_id: string | null
@@ -735,7 +821,15 @@ export async function refundCommerceOrder(orderId: string): Promise<{ ok?: true;
     await stripe.refunds.create({
       payment_intent: order.stripe_payment_intent_id,
       ...(partialAmount != null ? { amount: partialAmount } : {}),
-      ...(order.owner_kind === 'platform' ? {} : { reverse_transfer: true, refund_application_fee: true }),
+      // The unwind follows the FUNDS FLOW (LIVE-621). A destination charge reverses its one transfer
+      // and its application fee. A platform charge has neither. A SEPARATE order has neither ON THE
+      // CHARGE either: its money landed on the platform and its transfers are separate objects, so
+      // `reverse_transfer` here would be refused by Stripe and dead-end the refund. Until LIVE-622
+      // creates those transfers the plain refund IS the whole unwind; LIVE-623 adds one reversal per
+      // created transfer, pro rata, beside it.
+      ...(order.owner_kind === 'platform' || order.funds_flow === 'separate'
+        ? {}
+        : { reverse_transfer: true, refund_application_fee: true }),
       metadata: { kind: 'commerce_order', order_id: order.id },
     })
   } catch (err) {
@@ -764,7 +858,7 @@ export interface CommerceRefundOptions {
 
 interface RefundedOrderRow {
   id: string
-  owner_kind: 'platform' | 'profile' | 'space'
+  owner_kind: OrderOwnerKind
   entity_id: string
   amount_cents: number
   platform_fee_cents: number
