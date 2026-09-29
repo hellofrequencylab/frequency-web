@@ -36,7 +36,12 @@ import {
   revokePlanShare,
   sharePlanWithSpace,
   veraPlanProposal,
+  listPlanComments,
+  listPlanActivity,
 } from './plan-actions'
+import { actorWords, type PlanActivityView } from '@/lib/calendar/plan-activity'
+import { PlanCommentThread } from './plan-comment-thread'
+import { countByTask, type PlanCommentView } from '@/lib/calendar/plan-comments'
 import { describeOffset, offsetFromForm } from '@/lib/calendar/relative-schedule'
 import { shortDateLabel } from '@/lib/calendar/short-date'
 import { isActiveShare, shareStateWords, type PlanShareView } from '@/lib/calendar/plan-shares'
@@ -97,6 +102,11 @@ export function PlanDrawer({
   // THE HANDSHAKE (LIVE-541): who may still be offered this Plan, and every share it has made.
   const [shareChoices, setShareChoices] = useState<{ value: string; label: string }[]>([])
   const [shares, setShares] = useState<PlanShareView[]>([])
+  // THE THREAD (LIVE-542): every comment of the Plan, and which to-do's thread is unfolded.
+  const [comments, setComments] = useState<PlanCommentView[]>([])
+  const [openThread, setOpenThread] = useState<string | null>(null)
+  // THE RECORD (LIVE-543): the latest things anyone did to the Plan, newest first.
+  const [activity, setActivity] = useState<PlanActivityView[]>([])
   const [linkableEvents, setLinkableEvents] = useState<
     { id: string; title: string; whenLabel: string; planId: string | null }[]
   >([])
@@ -120,9 +130,35 @@ export function PlanDrawer({
     setGuestSpaceId('')
     setShareChoices([])
     setShares([])
+    setComments([])
+    setOpenThread(null)
+    setActivity([])
     setLinkableEvents([])
     setLinkEventId('')
   }
+
+  // The thread loads for BOTH sides: a guest reading the Plan read only still talks on it.
+  useEffect(() => {
+    if (!open || !plan) return
+    let live = true
+    listPlanComments(slug, plan.id)
+      .then((res) => {
+        if (live && !isError(res)) setComments(res.data)
+      })
+      .catch(() => {
+        if (live) setComments([])
+      })
+    listPlanActivity(slug, plan.id)
+      .then((res) => {
+        if (live && !isError(res)) setActivity(res.data)
+      })
+      .catch(() => {
+        if (live) setActivity([])
+      })
+    return () => {
+      live = false
+    }
+  }, [open, plan, slug])
 
   useEffect(() => {
     if (!open || !plan || readOnly) return
@@ -187,6 +223,11 @@ export function PlanDrawer({
     setTodos(await listPlanTodos(slug, planId))
     await refreshReadiness(planId)
   }
+  const refreshComments = async (planId: string) => {
+    const res = await listPlanComments(slug, planId)
+    if (!isError(res)) setComments(res.data)
+  }
+  const noteCounts = countByTask(comments)
   const refreshShares = async (planId: string) => {
     const res = await listPlanShares(slug, planId)
     if (isError(res)) return
@@ -362,20 +403,46 @@ export function PlanDrawer({
               // An anchored to-do says so. Without this the list shows a bare date and the person
               // has no way to tell which rows will follow the event when it moves.
               const anchor = describeOffset(t.dueOffsetDays)
+              const notes = noteCounts.get(t.id) ?? 0
               return (
-                <li key={t.id}>
-                  <Checkbox
-                    checked={t.status === 'done'}
-                    disabled={pending}
-                    onChange={(e) => toggleTodo(t.id, e.target.checked)}
-                    label={
-                      <span className={t.status === 'done' ? 'text-muted line-through' : undefined}>
-                        {t.title}
-                        {t.dueAt ? ` · ${shortDateLabel(t.dueAt)}` : ''}
-                        {anchor ? <span className="text-muted"> {`· ${anchor} the date`}</span> : null}
-                      </span>
-                    }
-                  />
+                <li key={t.id} className="space-y-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <Checkbox
+                      checked={t.status === 'done'}
+                      disabled={pending}
+                      onChange={(e) => toggleTodo(t.id, e.target.checked)}
+                      label={
+                        <span className={t.status === 'done' ? 'text-muted line-through' : undefined}>
+                          {t.title}
+                          {t.dueAt ? ` · ${shortDateLabel(t.dueAt)}` : ''}
+                          {anchor ? <span className="text-muted"> {`· ${anchor} the date`}</span> : null}
+                        </span>
+                      }
+                    />
+                    {/* Each to-do has its own thread (LIVE-542), folded until asked for. */}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      aria-expanded={openThread === t.id}
+                      data-plan-todo-notes={t.id}
+                      onClick={() => setOpenThread((cur) => (cur === t.id ? null : t.id))}
+                    >
+                      {notes > 0 ? `Notes (${notes})` : 'Notes'}
+                    </Button>
+                  </div>
+                  {openThread === t.id && (
+                    <div className="pl-6" data-plan-todo-comments={t.id}>
+                      <PlanCommentThread
+                        slug={slug}
+                        planId={plan.id}
+                        taskId={t.id}
+                        comments={comments}
+                        onChanged={() => refreshComments(plan.id)}
+                        placeholder="A note on this to-do, for both teams."
+                      />
+                    </div>
+                  )}
                 </li>
               )
             })}
@@ -641,6 +708,39 @@ export function PlanDrawer({
           )}
         </div>
         </>)}
+
+        {/* THE THREAD (PROG-CAL7 Together, LIVE-542). Both teams talk about the Plan here, and the
+            guest reads and writes it from the read-only drawer too: it is the one door a guest has
+            from the day the share is accepted. A written comment is a record (no update policy);
+            the author may take their own back and the thread says so in place. */}
+        <div className="grid gap-1" data-plan-comments>
+          <p className={labelClasses}>Comments</p>
+          <PlanCommentThread
+            slug={slug}
+            planId={plan.id}
+            taskId={null}
+            comments={comments}
+            onChanged={() => refreshComments(plan.id)}
+            placeholder={sharedFrom ? `A word for ${sharedFrom} and your team.` : 'A word for everyone working this Plan.'}
+          />
+        </div>
+
+        {/* THE RECORD (PROG-CAL7 Together, LIVE-543). What anyone on either side did to the Plan,
+            written by the door that did it, newest first. Read only by design: the record is a
+            fact about what happened, never a sentence to edit. */}
+        {activity.length > 0 && (
+          <div className="grid gap-1" data-plan-activity>
+            <p className={labelClasses}>Activity</p>
+            <ul className="space-y-1 text-body-sm text-text">
+              {activity.map((a) => (
+                <li key={a.id} data-plan-activity-row={a.kind}>
+                  <span className="text-muted">{`${actorWords(a)} · ${shortDateLabel(a.createdAt)} · `}</span>
+                  {a.summary}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {notice && (
           <p role="status" className="text-body-sm text-text" data-plan-notice>

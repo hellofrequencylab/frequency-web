@@ -4,6 +4,9 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { PlanDrawer } from './plan-drawer'
 import type { SpacePlan } from '@/lib/calendar/plans'
+import type { PlanCommentView } from '@/lib/calendar/plan-comments'
+import type { PlanActivityView } from '@/lib/calendar/plan-activity'
+import type { CrmTask } from '@/lib/crm/tasks'
 
 // LIVE-467, findings 5, 6 and 7, in the drawer:
 //   5. the to-do inputs sat inside the Save Plan form, so Enter saved the Plan and closed the
@@ -32,6 +35,11 @@ const mocks = vi.hoisted(() => ({
   sharePlanWithSpace: vi.fn(async () => ({ data: { id: 'share-1' } })),
   listPlanShares: vi.fn(async () => ({ data: { options: [{ value: 'space-guest', label: 'The Green Room' }], shares: [] as unknown[] } })),
   revokePlanShare: vi.fn(async () => ({ data: undefined })),
+  listPlanTodos: vi.fn(async () => [] as unknown[]),
+  listPlanComments: vi.fn(async () => ({ data: [] as unknown[] })),
+  listPlanActivity: vi.fn(async () => ({ data: [] as unknown[] })),
+  postPlanComment: vi.fn(async () => ({ data: { id: 'c-new' } })),
+  removePlanComment: vi.fn(async () => ({ data: undefined })),
 }))
 
 vi.mock('./plan-actions', () => ({
@@ -42,7 +50,11 @@ vi.mock('./plan-actions', () => ({
   sharePlanWithSpace: mocks.sharePlanWithSpace,
   listPlanShares: mocks.listPlanShares,
   revokePlanShare: mocks.revokePlanShare,
-  listPlanTodos: async () => [],
+  listPlanTodos: mocks.listPlanTodos,
+  listPlanComments: mocks.listPlanComments,
+  listPlanActivity: mocks.listPlanActivity,
+  postPlanComment: mocks.postPlanComment,
+  removePlanComment: mocks.removePlanComment,
   listPlanLinkableEvents: async () => [],
   archiveSpacePlan: async () => ({ data: undefined }),
   attachEventToPlan: async () => ({ data: undefined }),
@@ -79,6 +91,14 @@ beforeEach(() => {
   mocks.sharePlanWithSpace.mockClear()
   mocks.listPlanShares.mockClear()
   mocks.revokePlanShare.mockClear()
+  mocks.listPlanTodos.mockReset()
+  mocks.listPlanTodos.mockResolvedValue([])
+  mocks.listPlanComments.mockReset()
+  mocks.listPlanComments.mockResolvedValue({ data: [] })
+  mocks.listPlanActivity.mockReset()
+  mocks.listPlanActivity.mockResolvedValue({ data: [] })
+  mocks.postPlanComment.mockClear()
+  mocks.removePlanComment.mockClear()
   mocks.planReadiness.mockReset()
   mocks.planReadiness.mockResolvedValue({ gaps: [], href: null })
 })
@@ -286,5 +306,142 @@ describe('PlanDrawer: the Images group comes from the manifest, through the Loom
       'plan-1',
       expect.objectContaining({ links: [{ url: 'https://example.com/venue', label: 'Venue' }], files: [IMAGE] }),
     )
+  })
+})
+
+// THE THREAD (PROG-CAL7 Together, LIVE-542). The Plan thread renders under [data-plan-comments]
+// for both sides, names who said it with the Space as the fallback, offers Take back on the
+// caller's own comments only, and posts with a null task id; a to-do's thread is folded behind
+// Notes (n) and posts with the to-do's id.
+
+function setTextarea(el: HTMLTextAreaElement, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!
+  setter.call(el, value)
+  el.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+const comment = (over: Partial<PlanCommentView> = {}): PlanCommentView => ({
+  id: 'c-1',
+  planId: 'plan-1',
+  taskId: null,
+  spaceId: 'space-guest',
+  authorProfileId: 'profile-2',
+  authorName: null,
+  spaceName: 'The Green Room',
+  body: 'Seven works for us.',
+  createdAt: '2026-09-28T10:00:00Z',
+  removed: false,
+  mine: false,
+  ...over,
+})
+
+const task: CrmTask = {
+  id: '11111111-2222-4333-8444-555555555555',
+  spaceId: 'space-host',
+  contactId: null,
+  assigneeProfileId: null,
+  title: 'Book the hall',
+  notes: null,
+  dueAt: null,
+  status: 'open',
+  createdBy: null,
+  createdAt: '2026-09-28T00:00:00Z',
+  updatedAt: '2026-09-28T00:00:00Z',
+  planId: 'plan-1',
+  dueOffsetDays: null,
+}
+
+describe('PlanDrawer: the thread under the Plan and under a to-do', () => {
+  it('renders the Plan thread with who said it, Take back on mine only, and posts with no task id', async () => {
+    mocks.listPlanComments.mockResolvedValue({
+      data: [
+        comment(),
+        comment({ id: 'c-2', authorProfileId: 'profile-1', authorName: 'Mara', spaceName: 'Lab', mine: true, body: 'Doors at seven?' }),
+        comment({ id: 'c-3', authorProfileId: 'profile-1', mine: true, removed: true, body: 'never mind' }),
+      ],
+    })
+    await mount(<PlanDrawer slug="lab" plan={plan} open onClose={() => {}} />)
+    await flush()
+    const thread = document.querySelector('[data-plan-comments]')!
+    expect(thread).not.toBeNull()
+    expect(thread.querySelectorAll('[data-plan-comment]').length).toBe(3)
+    expect(thread.textContent).toContain('Someone at The Green Room')
+    expect(thread.textContent).toContain('You')
+    expect(thread.textContent).toContain('Taken back by the person who wrote it.')
+    expect(thread.textContent).not.toContain('never mind')
+    expect([...thread.querySelectorAll('button')].filter((b) => b.textContent?.trim() === 'Take back').length).toBe(1)
+    const box = thread.querySelector('textarea[aria-label="Write a comment"]') as HTMLTextAreaElement
+    await act(async () => setTextarea(box, 'Can we push the doors to 7?'))
+    await act(async () => button('Post').click())
+    await flush()
+    expect(mocks.postPlanComment).toHaveBeenCalledWith('lab', 'plan-1', null, 'Can we push the doors to 7?')
+    expect(mocks.listPlanComments).toHaveBeenCalledTimes(2)
+  })
+
+  it('folds a to-do thread behind Notes (n), and a post from there carries the to-do id', async () => {
+    mocks.listPlanTodos.mockResolvedValue([task])
+    mocks.listPlanComments.mockResolvedValue({ data: [comment({ id: 'c-t', taskId: task.id, body: 'Deposit by Friday.' })] })
+    await mount(<PlanDrawer slug="lab" plan={plan} open onClose={() => {}} />)
+    await flush()
+    const notes = document.querySelector(`[data-plan-todo-notes="${task.id}"]`) as HTMLButtonElement
+    expect(notes.textContent?.trim()).toBe('Notes (1)')
+    expect(document.querySelector('[data-plan-todo-comments]')).toBeNull()
+    expect(document.querySelector('[data-plan-comments]')!.textContent).not.toContain('Deposit by Friday.')
+    await act(async () => notes.click())
+    const fold = document.querySelector(`[data-plan-todo-comments="${task.id}"]`)!
+    expect(fold.textContent).toContain('Deposit by Friday.')
+    const box = fold.querySelector('textarea[aria-label="Write a note on this to-do"]') as HTMLTextAreaElement
+    await act(async () => setTextarea(box, 'Paid it.'))
+    await act(async () => [...fold.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Post')!.click())
+    await flush()
+    expect(mocks.postPlanComment).toHaveBeenCalledWith('lab', 'plan-1', task.id, 'Paid it.')
+  })
+
+  it('read only, the guest still reads the thread and can write on it', async () => {
+    mocks.listPlanComments.mockResolvedValue({ data: [comment()] })
+    await mount(<PlanDrawer slug="lab" plan={plan} open onClose={() => {}} readOnly sharedFrom="The Green Room" />)
+    await flush()
+    const thread = document.querySelector('[data-plan-comments]')!
+    expect(thread).not.toBeNull()
+    expect(thread.textContent).toContain('Seven works for us.')
+    const box = thread.querySelector('textarea[aria-label="Write a comment"]') as HTMLTextAreaElement
+    expect(box.placeholder).toContain('The Green Room')
+    expect(document.querySelector('[data-plan-todo-notes]')).toBeNull()
+  })
+})
+
+// THE RECORD (PROG-CAL7 Together, LIVE-543). The drawer shows what anyone did to the Plan, newest
+// first, under [data-plan-activity], for both sides, and nothing when there is nothing yet.
+describe('PlanDrawer: the activity record', () => {
+  const act1: PlanActivityView = {
+    id: 'a-1',
+    planId: 'plan-1',
+    kind: 'stage',
+    summary: 'Moved the Plan to Production.',
+    createdAt: '2026-09-28T10:00:00Z',
+    actorProfileId: 'profile-2',
+    actorName: null,
+    spaceName: 'The Green Room',
+    mine: false,
+  }
+
+  it('renders the record with who did it, read only, for the guest too', async () => {
+    mocks.listPlanActivity.mockResolvedValue({ data: [act1, { ...act1, id: 'a-2', kind: 'comment', summary: 'Commented on the Plan.', mine: true }] })
+    await mount(<PlanDrawer slug="lab" plan={plan} open onClose={() => {}} readOnly sharedFrom="The Green Room" />)
+    await flush()
+    const record = document.querySelector('[data-plan-activity]')!
+    expect(record).not.toBeNull()
+    expect(record.querySelectorAll('[data-plan-activity-row]').length).toBe(2)
+    expect(record.textContent).toContain('Someone at The Green Room')
+    expect(record.textContent).toContain('Moved the Plan to Production.')
+    expect(record.textContent).toContain('You')
+    expect(record.querySelector('button, textarea, input')).toBeNull()
+  })
+
+  it('shows no record section while nothing has happened', async () => {
+    await mount(<PlanDrawer slug="lab" plan={plan} open onClose={() => {}} />)
+    await flush()
+    expect(mocks.listPlanActivity).toHaveBeenCalledWith('lab', 'plan-1')
+    expect(document.querySelector('[data-plan-activity]')).toBeNull()
   })
 })

@@ -703,9 +703,15 @@ export function operatorSurfaces(): readonly Surface[] {
  */
 //
 // ── 🔴 `/admin/library` WAS ADDED HERE ON 2026-09-25 AND TAKEN BACK OUT THE SAME DAY ─────
-// It is in ADVISORY_OPERATOR_SURFACES below (LIVE-504) instead, and the round trip is recorded
-// rather than tidied away, because the file predicted the outcome one surface up and the note
-// that put it here argued past that prediction.
+// It then sat in ADVISORY_OPERATOR_SURFACES until 2026-09-28 (LIVE-504, closed) and votes again
+// in the blocking tier; the round trip is recorded rather than tidied away, because the file
+// predicted the outcome one surface up and the note that put it here argued past that prediction.
+//
+// RESOLVED 2026-09-28, both halves, and neither was this page: the mobile flip was the shutter
+// dropping the touch emulation after its first capture (LIVE-492; `dropTouchBeforeFullPageCapture` now drops it before), and
+// the 1029 px desktop diff was the operator info rail's live count, xl-and-above chrome shared
+// with /admin/qr, masked as one box since LIVE-513. The paragraphs below are the reading as it
+// stood on 2026-09-25, kept because the arithmetic in them is still right about the page.
 //
 // The flag DID fix what it was set for: the mobile flip (390x5634 <-> 390x5642, reported in both
 // directions by two retries in one run) is gone, and so is every size mismatch on this surface.
@@ -718,8 +724,8 @@ export function operatorSurfaces(): readonly Surface[] {
 // THAT IS LIVE-476's FINGERPRINT, TO THE PIXEL. `/admin/qr` reads 951 px dawn-light and 1029 px
 // dawn-dark on ITS first screen, stable across three attempts, mobile green; `/admin/content/
 // practices` (LIVE-492) reads 982 and 1008. Same class, same magnitude, third instance, and the
-// cause of all three is NOT KNOWN. A number that lands on another surface's to the pixel is
-// shared chrome, not this page's content.
+// cause of all three was not known when this was written. A number that lands on another
+// surface's to the pixel is shared chrome, not this page's content (and it was: the rail).
 //
 // Ruled out by measurement rather than by argument, since this page is a live asset grid and the
 // grid is the obvious suspect: NOTHING IT RENDERS MOVED. `library_assets` has no row created or
@@ -838,25 +844,14 @@ export const ADVISORY_OPERATOR_SURFACES: Readonly<Record<string, string>> = {
   // The row is the debt and it stays OPEN. Clear LIVE-492, delete this entry, and the surface
   // votes again.
   '/admin/content/practices': 'LIVE-492',
-  // LIVE-504, the THIRD instance of LIVE-476's unexplained first-screen diff, and the one that
-  // proves the class is shared chrome rather than any one page's content: 1029 px dawn-dark,
-  // which is /admin/qr's dawn-dark reading TO THE PIXEL.
-  //
-  // Measured 2026-09-25, twice, on separate runners ten minutes apart: desktop dawn-dark 1029 px
-  // (ratio 0.01), stable across the original attempt and both retries in each run. dawn-light and
-  // both mobiles pass. Tolerance is 400.
-  //
-  // This surface also had the camera-induced mobile flip (390x5634 <-> 390x5642, both directions
-  // across two retries in one run). `viewportOnly` fixed THAT half and carried this half straight
-  // through, exactly as LIVE-492's entry above predicted it would. Full-page baselines are
-  // therefore restored and the flag dropped: advisory keeps the whole picture and gives up only
-  // the vote, and a first-screen capture on a non-voting surface is a pure loss.
-  //
-  // Ruled out by measurement: the live asset grid. `library_assets` had no row created or updated
-  // between the capture and either comparison (newest 2026-09-25 01:28), `library_collections`
-  // none since July, `platform_flags` none since 2026-09-05. The subject was frozen, so a mask
-  // over the grid would have covered the wrong region.
-  '/admin/library': 'LIVE-504',
+  // /admin/library STOOD HERE from 2026-09-25 to 2026-09-28 (LIVE-504) and votes again. Its two
+  // readings were the two halves of the class `dropTouchBeforeFullPageCapture` measures (LIVE-492): the mobile flip (390x5634 <->
+  // 390x5642) was the shutter dropping the touch emulation after its first shot, which capture()
+  // now does before it; the desktop dawn-dark 1029 px, /admin/qr's dawn-dark reading to the pixel,
+  // was the operator info rail, the one piece of shared admin chrome that renders at xl and above
+  // only and prints live counts, masked as one box since LIVE-513 (2026-09-27). Since that
+  // recapture the surface has passed all four looks in every pr-compare run. The row holds the
+  // full account, including what its own ruling-out did and did not cover.
 }
 
 /* ── The narrow phone, and the header band (HYG-057, ADR-1270) ──────────────── */
@@ -1126,10 +1121,13 @@ export const VISUAL_MASK_SITES: readonly {
   // These two are the blocking half of the 2026-09-27 pr-compare failure on #2906, and they are
   // registered together because they are one datum printed in two places.
   //
-  // MEASURED RATHER THAN ARGUED, which is what separates this from LIVE-476/492/504. Those three
-  // admin surfaces show a stable first-screen diff whose cause is NOT known, and LIVE-504 ruled
-  // the live-data theory out for /admin/library by proving its tables were frozen across the
-  // captures. This one is the opposite: non-system `profiles` went 57 -> 59 between the last
+  // MEASURED RATHER THAN ARGUED, which is what separated this from LIVE-476/492/504 at the time.
+  // Those three admin surfaces showed a stable first-screen diff whose cause was not known, and
+  // LIVE-504 ruled the live-data theory out for /admin/library by proving ITS tables were frozen
+  // across the captures. The table it did not freeze was this one: `profiles`, read by the rail on
+  // every admin page, which is why /admin/qr and /admin/library read the same 1029 px dawn-dark
+  // and both went green once this mask landed (LIVE-504, closed 2026-09-28). Non-system
+  // `profiles` went 57 -> 59 between the last
   // green baseline (#2905, 2026-09-25) and the run that failed (2026-09-27 17:48Z), and the
   // admin rail prints that count on every admin page.
   //

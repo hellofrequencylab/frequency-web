@@ -14067,6 +14067,130 @@ export type Database = {
           },
         ]
       }
+      space_plan_activity: {
+        Row: {
+          actor_profile_id: string | null
+          actor_space_id: string
+          created_at: string
+          id: string
+          kind: string
+          plan_id: string
+          summary: string
+        }
+        Insert: {
+          actor_profile_id?: string | null
+          actor_space_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          plan_id: string
+          summary: string
+        }
+        Update: {
+          actor_profile_id?: string | null
+          actor_space_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          plan_id?: string
+          summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_plan_activity_actor_profile_id_fkey"
+            columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_plan_activity_actor_space_id_fkey"
+            columns: ["actor_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_plan_activity_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "space_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_plan_comments: {
+        Row: {
+          author_profile_id: string | null
+          body: string
+          created_at: string
+          id: string
+          plan_id: string
+          removed_at: string | null
+          removed_by: string | null
+          space_id: string
+          task_id: string | null
+        }
+        Insert: {
+          author_profile_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          plan_id: string
+          removed_at?: string | null
+          removed_by?: string | null
+          space_id: string
+          task_id?: string | null
+        }
+        Update: {
+          author_profile_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          plan_id?: string
+          removed_at?: string | null
+          removed_by?: string | null
+          space_id?: string
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_plan_comments_author_profile_id_fkey"
+            columns: ["author_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_plan_comments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "space_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_plan_comments_removed_by_fkey"
+            columns: ["removed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_plan_comments_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_plan_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "crm_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_plan_shares: {
         Row: {
           created_at: string
@@ -14420,6 +14544,7 @@ export type Database = {
       }
       space_standing: {
         Row: {
+          attendance: number
           audience: number
           care: number
           commons: number
@@ -14431,6 +14556,7 @@ export type Database = {
           upcoming_gatherings: number
         }
         Insert: {
+          attendance?: number
           audience?: number
           care?: number
           commons?: number
@@ -14442,6 +14568,7 @@ export type Database = {
           upcoming_gatherings?: number
         }
         Update: {
+          attendance?: number
           audience?: number
           care?: number
           commons?: number
@@ -17893,6 +18020,10 @@ export type Database = {
           room_id: string
           unread_count: number
         }[]
+      }
+      remove_plan_comment: {
+        Args: { p_comment_id: string }
+        Returns: boolean
       }
       scoped_feed_for_viewer: {
         Args: { _limit?: number; _scope_ids: string[]; _sort?: string }
