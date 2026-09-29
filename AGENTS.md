@@ -17,6 +17,7 @@ Orientation for a human: [`docs/START-HERE.md`](docs/START-HERE.md).
 | If you are about to… | Read this, then stop restating it |
 |---|---|
 | Merge, debug a deploy, touch a `postbuild` gate, or add a route | [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAFETY.md) |
+| Respond to an incident (a cron, the queue, a webhook, the database, AI, a bad deploy) | [`docs/RUNBOOKS.md`](docs/RUNBOOKS.md) |
 | Pick up work, file a finding, or close a row | [`docs/BUILD-BACKLOG.json`](docs/BUILD-BACKLOG.json) · `pnpm backlog` · `pnpm packets` |
 | Name something a human will read | [`docs/NAMING.md`](docs/NAMING.md) then [`docs/CONTENT-VOICE.md`](docs/CONTENT-VOICE.md) |
 | Change a page layout | [`docs/PAGE-FRAMEWORK.md`](docs/PAGE-FRAMEWORK.md) |

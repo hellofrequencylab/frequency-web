@@ -1,9 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // The nightly `space_standing` rollup (LIVE-263). What is locked here, network-free:
-//   1. It writes ONE row per ACTIVE, non-root Space, with all six signals and the resolved score.
+//   1. It writes ONE row per ACTIVE, non-root Space, with all seven signals and the resolved score.
 //   2. Gatherings HELD counts occurrences; gatherings AHEAD folds a recurring series to one. The
 //      two questions are different, and the rollup must not answer them the same way.
+//   2b. ATTENDANCE (LIVE-456) is the host mark on the two seat tables, counted only on gatherings
+//      inside the held window, a ticket only while succeeded and unrefunded, and NEVER read from
+//      the engagement ledger. Unmeasured when the held read or either seat read fails.
 //   3. A sub-read that FAILS leaves its signal unmeasured rather than writing a false zero.
 //   4. A failure is RETURNED, never swallowed (the lesson of lib/resonance/density.ts, finding R2:
 //      a rollup that wrote nothing and a rollup that failed were the same return value, and a real
@@ -18,6 +21,8 @@ const store: {
   circles: Row[]
   follows: Row[]
   members: Row[]
+  rsvps: Row[]
+  tickets: Row[]
   /** Tables whose read should fail, to exercise the unmeasured path. */
   broken: Set<string>
   written: Row[] | null
@@ -28,6 +33,8 @@ const store: {
   circles: [],
   follows: [],
   members: [],
+  rsvps: [],
+  tickets: [],
   broken: new Set(),
   written: null,
   writeFails: false,
@@ -48,6 +55,14 @@ function builder(name: string, rows: Row[]) {
     },
     in(col: string, vals: readonly unknown[]) {
       out = out.filter((r) => vals.includes(r[col]))
+      return api
+    },
+    is(col: string, val: null) {
+      out = out.filter((r) => r[col] === val || r[col] === undefined)
+      return api
+    },
+    not(col: string, _op: 'is', _val: null) {
+      out = out.filter((r) => r[col] !== null && r[col] !== undefined)
       return api
     },
     or(filter: string) {
@@ -90,6 +105,11 @@ vi.mock('@/lib/supabase/admin', () => ({
       if (t === 'circles') return builder(t, store.circles)
       if (t === 'space_follows') return builder(t, store.follows)
       if (t === 'space_members') return builder(t, store.members)
+      if (t === 'event_rsvps') return builder(t, store.rsvps)
+      if (t === 'event_tickets') return builder(t, store.tickets)
+      // The engagement ledger is deliberately NOT routed: a read of it would come back empty here,
+      // and the ledger-never-read test below asserts the table is never asked for at all.
+      if (t === 'engagement_events') throw new Error('the standing rollup must never read the engagement ledger')
       return builder(t, [])
     },
   }),
@@ -112,6 +132,8 @@ beforeEach(() => {
   store.circles = []
   store.follows = []
   store.members = []
+  store.rsvps = []
+  store.tickets = []
   store.spaces = [
     {
       id: 'a',
@@ -138,7 +160,7 @@ beforeEach(() => {
 })
 
 describe('refreshSpaceStanding', () => {
-  it('writes one row per ACTIVE, non-root Space, with all six signals and a score', async () => {
+  it('writes one row per ACTIVE, non-root Space, with all seven signals and a score', async () => {
     store.events = [
       { space_id: 'a', id: 'e1', starts_at: RECENT_PAST, status: 'published', is_cancelled: false, parent_event_id: null, recurrence_type: 'none', recurrence_until: null },
       { space_id: 'a', id: 'e2', starts_at: FUTURE, status: 'published', is_cancelled: false, parent_event_id: null, recurrence_type: 'none', recurrence_until: null },
@@ -146,6 +168,7 @@ describe('refreshSpaceStanding', () => {
     store.circles = [{ space_id: 'a', status: 'active', unlisted: null }]
     store.follows = [{ space_id: 'a' }, { space_id: 'a' }, { space_id: 'b' }]
     store.members = [{ space_id: 'a', status: 'active' }, { space_id: 'a', status: 'pending' }]
+    store.rsvps = [{ event_id: 'e1', attended_at: '2026-09-20T00:00:00.000Z' }, { event_id: 'e1', attended_at: null }]
 
     const result = await refreshSpaceStanding()
     expect(result.error).toBeUndefined()
@@ -154,6 +177,7 @@ describe('refreshSpaceStanding', () => {
 
     const a = rowFor('a')!
     expect(a.gatherings_held).toBe(1)
+    expect(a.attendance).toBe(1) // the unmarked seat does not count
     expect(a.upcoming_gatherings).toBe(1)
     expect(a.rooms).toBe(1)
     expect(a.audience).toBe(2)
@@ -236,10 +260,80 @@ describe('refreshSpaceStanding', () => {
     expect(result.error).toContain('write refused')
   })
 
-  it('🔴 writes no commercial column: the row is six earned signals, a score, and a timestamp', async () => {
+  it('counts the host mark on BOTH seat tables, only inside the held window, a ticket only while it stands (LIVE-456)', async () => {
+    const MARK = '2026-09-20T00:00:00.000Z'
+    store.events = [
+      { space_id: 'a', id: 'held', starts_at: RECENT_PAST, status: 'published', is_cancelled: false, parent_event_id: null, recurrence_type: 'none', recurrence_until: null },
+      { space_id: 'a', id: 'ahead', starts_at: FUTURE, status: 'published', is_cancelled: false, parent_event_id: null, recurrence_type: 'none', recurrence_until: null },
+      { space_id: 'a', id: 'old', starts_at: PAST, status: 'published', is_cancelled: false, parent_event_id: null, recurrence_type: 'none', recurrence_until: null },
+      { space_id: 'a', id: 'axed', starts_at: RECENT_PAST, status: 'published', is_cancelled: true, parent_event_id: null, recurrence_type: 'none', recurrence_until: null },
+      { space_id: 'b', id: 'b-held', starts_at: RECENT_PAST, status: 'published', is_cancelled: false, parent_event_id: null, recurrence_type: 'none', recurrence_until: null },
+    ]
+    store.rsvps = [
+      { event_id: 'held', attended_at: MARK }, // a member, marked
+      { event_id: 'held', attended_at: MARK }, // a guest RSVP, marked
+      { event_id: 'held', attended_at: null }, // came to nothing
+      { event_id: 'ahead', attended_at: MARK }, // a mark on a gathering not yet held: outside the window
+      { event_id: 'old', attended_at: MARK }, // outside the trailing window
+      { event_id: 'axed', attended_at: MARK }, // a cancelled gathering is not a gathering held
+      { event_id: 'b-held', attended_at: MARK },
+    ]
+    store.tickets = [
+      { event_id: 'held', attended_at: MARK, status: 'succeeded', refunded_at: null }, // counts
+      { event_id: 'held', attended_at: MARK, status: 'succeeded', refunded_at: MARK }, // refunded: not a person any more
+      { event_id: 'held', attended_at: MARK, status: 'pending', refunded_at: null }, // never paid
+      { event_id: 'held', attended_at: null, status: 'succeeded', refunded_at: null }, // paid, not marked
+    ]
+    await refreshSpaceStanding()
+    const a = rowFor('a')!
+    expect(a.gatherings_held).toBe(1)
+    expect(a.attendance).toBe(3) // two RSVP marks + one standing ticket mark, all on `held`
+    expect(rowFor('b')!.attendance).toBe(1)
+    // The stored score moved for it: a room with people in it outranks the same room empty.
+    store.written = null
+    store.rsvps = []
+    store.tickets = []
+    await refreshSpaceStanding()
+    expect(Number(rowFor('a')!.attendance)).toBe(0)
+    expect(Number(a.standing_score)).toBeGreaterThan(Number(rowFor('a')!.standing_score))
+  })
+
+  it('leaves attendance UNMEASURED when a seat read fails, even though the held read succeeded', async () => {
+    store.events = [
+      { space_id: 'a', id: 'held', starts_at: RECENT_PAST, status: 'published', is_cancelled: false, parent_event_id: null, recurrence_type: 'none', recurrence_until: null },
+    ]
+    store.rsvps = [{ event_id: 'held', attended_at: '2026-09-20T00:00:00.000Z' }]
+    const full = await refreshSpaceStanding()
+    expect(full.error).toBeUndefined()
+    const measured = Number(rowFor('a')!.standing_score)
+
+    store.written = null
+    store.broken = new Set(['event_tickets'])
+    const half = await refreshSpaceStanding()
+    expect(half.error).toBeUndefined()
+    // The column falls back to 0 (not nullable); the SCORE renormalised without attendance rather
+    // than scoring a half-read as an empty room.
+    expect(rowFor('a')!.attendance).toBe(0)
+    expect(Number(rowFor('a')!.standing_score)).not.toBeCloseTo(measured, 6)
+  })
+
+  it('🔴 never reads the engagement ledger for attendance: the host mark is the whole record', async () => {
+    // The mock THROWS on `engagement_events`, so a rollup that consulted the ledger would return an
+    // error here instead of a row. This is the property that makes standing immune to any decision
+    // about the game (ADR-1332): the mark pays nobody and is read from nowhere else.
+    store.events = [
+      { space_id: 'a', id: 'held', starts_at: RECENT_PAST, status: 'published', is_cancelled: false, parent_event_id: null, recurrence_type: 'none', recurrence_until: null },
+    ]
+    const result = await refreshSpaceStanding()
+    expect(result.error).toBeUndefined()
+    expect(result.spaces).toBe(2)
+  })
+
+  it('🔴 writes no commercial column: the row is seven earned signals, a score, and a timestamp', async () => {
     await refreshSpaceStanding()
     expect(Object.keys(rowFor('a')!).sort()).toEqual(
       [
+        'attendance',
         'audience',
         'care',
         'commons',

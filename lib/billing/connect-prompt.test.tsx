@@ -66,6 +66,36 @@ describe('every sell path reaches the one Connect prompt (source shape)', () => 
     expect(spark).not.toMatch(/href=["'`]\/settings\/billing/)
   })
 
+  it('the Shop console mounts the Space prompt above its tabs, for orders and bookings, except on Storefront (LIVE-538)', () => {
+    // The Catalog tab is the console's default and the one ItemForm takes a price on, so the page that
+    // already holds the space and the viewer mounts the prompt once, above the tab body. Storefront
+    // keeps its own whenReady status card, so the console-level card steps aside there (ADR-1539 §6).
+    const page = read('app/(main)/spaces/[slug]/settings/shop/page.tsx').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+    expect(page).toContain(PROMPT_MODULE)
+    expect(page).toMatch(/<SpacePayoutSetupPrompt\b/)
+    expect(page).toMatch(/channels=\{\['orders',\s*'bookings'\]\}/)
+    expect(page).toMatch(/activeTab !== 'storefront' &&/)
+    expect(page).not.toMatch(/href=["'`]\/settings\/billing/)
+    // The placement itself (before the tab body, absent on Storefront) is pinned by running the page
+    // in app/(main)/spaces/[slug]/settings/shop/payout-prompt-placement.test.tsx.
+  })
+
+  it('the New service Spark resolves the Space prompt for bookings on its page and renders the card on screen one (LIVE-538)', () => {
+    // A bookable service gets its price, its price model and its deposit here, so this is the Space's
+    // first sell attempt for bookings. The SPACE resolver, not the profile one: the owner is the payee
+    // (ADR-819), so an editor reads who has to act rather than a button for the wrong account.
+    const page = read('app/(main)/spaces/[slug]/settings/services/new/page.tsx')
+    expect(page).toContain("from '@/lib/billing/payout-prompt-resolve'")
+    expect(page).toMatch(/resolveSpacePayoutPrompt\(/)
+    expect(page).toMatch(/channels:\s*\['bookings'\]/)
+    expect(page).toMatch(/payoutPrompt=\{payoutPrompt\}/)
+    const spark = read('app/(main)/spaces/[slug]/settings/services/new/service-spark.tsx').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+    expect(spark).toContain('PayoutPromptCard')
+    expect(spark).toMatch(/aside:\s*<PayoutPromptCard prompt=\{payoutPrompt\}/)
+    expect(spark).not.toMatch(/href=["'`]\/settings\/billing/)
+    expect(spark, 'a go-elsewhere sentence has grown beside the card').not.toMatch(/set up payouts|payout account/i)
+  })
+
   it('Sell this Journey resolves the Space owner prompt and renders the shared card (LIVE-425)', () => {
     const data = read('app/(main)/journeys/admin-actions.ts')
     expect(data).toContain('resolveSpacePayoutPromptById')

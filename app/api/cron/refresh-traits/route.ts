@@ -68,7 +68,7 @@ async function handler(req: NextRequest) {
   // than the alphabet. BEST-EFFORT + FAIL-SAFE, and NOT SILENT: any error comes back as a message,
   // is logged at ERROR level under its own `.failed` event, and carries `ok: false` for the step.
   // The response stays 200 because the steps above did complete, and the directory degrades on its
-  // own (an unreadable or empty rollup just means two of the six signals were not measured, and the
+  // own (an unreadable or empty rollup just means three of the seven signals were not measured, and the
   // score renormalises over the four the live read still has).
   //
   // 🔴 Nothing in this step reads a plan, a tier, or a payment. Exposure is earned, never sold.
