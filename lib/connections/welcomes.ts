@@ -5,6 +5,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { awardGems } from '@/lib/gems'
+import { processGamificationEvent } from '@/lib/achievements'
 import { getConnectionSettings } from '@/lib/connections/connection-settings'
 
 // Welcomes (ADR-186, P3b): greeting a newcomer in your circles earns reward_welcome
@@ -121,6 +122,9 @@ export async function recordWelcome(newcomerId: string): Promise<WelcomeResult> 
     reason: 'welcome',
     newcomer: newcomerId,
   })
+  // The Welcomer badge (welcome_member) counts newcomers you were first to welcome, so check it now
+  // that a welcome landed (LIVE-653). Awaited like the gem; a failed check never undoes the welcome.
+  await processGamificationEvent({ type: 'welcome_member', profileId: me.id }).catch(() => {})
   revalidatePath('/network/friends')
   revalidatePath('/network')
   return { awarded: r.awarded, gems: r.amount, error: null }
