@@ -303,6 +303,11 @@ morning, so its fresh-by window is 2 h.
   under its SLO *and* the re-captured §2c plan shows the structural fix (no new Seq Scan,
   no per-row RLS subquery). Beating the SLO without fixing the plan is a regression
   waiting to happen at the next data-size doubling.
+- **The runbook:** when a row pages, [`RUNBOOKS.md`](RUNBOOKS.md) is the page to open. One
+  section per failure mode (cron failure, queue backlog, webhook failure, database degradation, AI
+  outage, deploy rollback), each naming the row it serves, the signal that exists today, what to
+  open first, the repair and who does each step. It records no status; the incident's lesson goes
+  into an ADR or a row (HYG-131, [ADR-1561](DECISIONS.md)).
 
 ---
 
@@ -361,7 +366,7 @@ figures are non-sensitive dollar amounts you copy from each vendor's billing con
 | **Per H3 change** | Re-capture the affected path's row in §2b + its §2c plan; confirm it beats the §4 SLO. |
 | **Monthly** | Re-run `cost-baseline.mjs`, append a dated §3 snapshot; watch the per-1k trend. |
 | **Per deploy / CI** | `pnpm check:cron-freshness --strict` confirms no cron is paging-blind (every §4a job has a heartbeat monitor) before shipping. |
-| **Per incident** | If an SLO pages, the runbook (H4-7) references the relevant §4 row. |
+| **Per incident** | If an SLO pages, open [`RUNBOOKS.md`](RUNBOOKS.md); each section names the §4 row it serves. |
 
 ---
 
