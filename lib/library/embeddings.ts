@@ -2,20 +2,18 @@ import 'server-only'
 import { createHash } from 'node:crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { embedText, EMBED_DIM } from '@/lib/ai/embed'
-import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 import { fetchLibraryItemsByIds, type LibraryGalleryItem } from './store'
 
 // The Loom — semantic search Phase 1 (docs/RESEARCH-ASSET-GEN.md). Reuses the gte-small `embed`
 // edge function (384-d, key-free) + the match_room_messages pattern. A cron backfills embeddings
-// (content-hash gated, so unchanged assets are skipped); search degrades to the normal keyword
-// path when AI is off, over budget, or nothing is embedded yet. Service-role only.
-
-const FEATURE = 'library-search'
+// (content-hash gated, so unchanged assets are skipped). "Most relevant" ranks through
+// lib/library/hybrid-search.ts, which fuses this embedding with the word arms in one RPC
+// (LIVE-586); "Find similar" stays here. Service-role only.
 
 const db = () => createAdminClient()
 
 /** pgvector wants a bracketed literal for a vector parameter over PostgREST. */
-function toVectorLiteral(v: number[]): string {
+export function toVectorLiteral(v: number[]): string {
   return `[${v.join(',')}]`
 }
 
@@ -71,36 +69,6 @@ export async function reindexLibraryEmbeddings(batch = 500): Promise<{ embedded:
     }
   }
   return { embedded, scanned: rows.length }
-}
-
-/** Semantic search within a space. Returns [] when AI is off/over-budget or nothing matches, so
- *  the caller can fall back to the keyword path. */
-export async function matchLibraryAssets(
-  spaceId: string,
-  query: string,
-  opts: { kind?: string; limit?: number; profileId?: string | null } = {},
-): Promise<LibraryGalleryItem[]> {
-  const q = (query || '').trim().slice(0, 300)
-  if (!q) return []
-  if (!(await aiAvailable()) || (await featureOverBudget(FEATURE))) return []
-
-  try {
-    const embedding = await embedText(q)
-    const { data, error } = await db().rpc('match_library_assets', {
-      query_embedding: toVectorLiteral(embedding),
-      p_space_id: spaceId,
-      match_count: opts.limit ?? 48,
-      // Omitted rather than null: the SQL default IS null (migration 20260921000000), and the
-      // generated Args type has no null arm for an optional argument.
-      p_kind: opts.kind ?? undefined,
-    })
-    if (error) throw new Error(error.message)
-    void recordAiUsage({ feature: FEATURE, model: 'gte-small', usage: { inputTokens: 0, outputTokens: 0 }, costUsd: 0, profileId: opts.profileId ?? null })
-    const ids = ((data as Array<{ id: string }> | null) ?? []).map((r) => r.id)
-    return fetchLibraryItemsByIds(spaceId, ids)
-  } catch {
-    return []
-  }
 }
 
 /** Assets most similar to a given one (visual/semantic neighbours by embedding). */

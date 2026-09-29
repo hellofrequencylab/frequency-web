@@ -18,15 +18,14 @@
 // thin IO sweep. Every send is idempotent per member per local day.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { memberDay } from '@/lib/member-day'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { sendPushToProfile } from '@/lib/push'
 import { getPreferences } from '@/lib/notification-preferences'
 
-// Untyped handle (ADR-246): the term columns (source/ends_on/retired_*) are newer than the
-// generated types; regenerate lib/database.types.ts after the migration applies, then drop.
-function db(): SupabaseClient {
+// The typed admin handle: the term columns (source/ends_on/retired_*) are in the generated
+// types, so a misspelt one fails tsc (LIVE-647).
+function db() {
   return createAdminClient()
 }
 
