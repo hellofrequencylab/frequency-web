@@ -27,6 +27,7 @@ import {
   type LoomPickAsset,
 } from '@/lib/library/store'
 import { ingestImageBytes } from '@/lib/library/ingest'
+import { loomQuotaFor, loomStorageUsed, loomBudgetVerdict, loomMeter, type LoomMeter } from '@/lib/library/quota'
 import { readImageDescriptor } from '@/lib/library/image-describe'
 import { classifyLoomUpload, effectiveMime, fallbackExtFor, fallbackMimeFor } from '@/lib/library/upload-kinds'
 import { resolveElement } from '@/lib/elements/store'
@@ -238,6 +239,19 @@ export async function uploadLoomImage(
   const existing = await findLibraryAssetBySha256(spaceId, ingested.sha256)
   if (existing?.url) return { url: existing.url, id: existing.id }
 
+  // BUDGET (LIVE-567, ADR-1585): one bucket serves every Space, so a Space's Loom has a cap. Read
+  // the owning Space's cap and what it already stores BEFORE storage; refuse past the cap. A failed
+  // Space read or a failed sum refuses too: a quota that fails open is not a quota. The root Space
+  // (and so a personal upload) is uncapped and skips the sum. A dedupe hit above stores nothing, so
+  // it is answered before the budget is asked.
+  const owner = await getSpaceById(spaceId).catch(() => null)
+  if (!owner) return { error: 'Could not check how much room this library has left, so the upload is paused. Try again in a moment.' }
+  const quota = loomQuotaFor(owner)
+  if (quota.capped) {
+    const verdict = loomBudgetVerdict(quota, await loomStorageUsed(spaceId), ingested.bytes.byteLength)
+    if (!verdict.ok) return { error: verdict.error }
+  }
+
   const { error: upErr } = await admin.storage
     .from(target.bucket)
     .upload(path, ingested.bytes, { contentType: mime || fallbackMimeFor(target.kind), upsert: false })
@@ -276,6 +290,20 @@ export async function uploadLoomImage(
     return { error: 'Could not save the image to your Loom. Try again.' }
   }
   return { url: pub.publicUrl, id }
+}
+
+/** The Space Loom Studio's storage meter (LIVE-567): what this Space's Loom stores against its cap,
+ *  in words. Gated like the Studio's other actions (the caller must manage the Space; the personal
+ *  'mine' scope has no meter). A failed read is `read: false`, never a throw, so the meter can never
+ *  block the page. Null when the caller cannot manage the Space. */
+export async function loomQuotaMeter(spaceKey: string): Promise<LoomMeter | null> {
+  const caller = await getCallerProfile()
+  if (!caller) return null
+  const scope = await resolveScope(caller.id, spaceKey)
+  if (!scope || !('spaceId' in scope)) return null
+  const space = await getSpaceById(scope.spaceId).catch(() => null)
+  if (!space) return null
+  return loomMeter(loomQuotaFor(space), await loomStorageUsed(scope.spaceId))
 }
 
 /** Delete an image from a SPACE's Loom (the Loom Studio's remove control). Gated: the caller must MANAGE

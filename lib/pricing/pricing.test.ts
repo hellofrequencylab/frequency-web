@@ -77,6 +77,7 @@ describe('space tiers (Community Collective ladder · ADR-811)', () => {
       'multi_pipeline',
       'team',
       'program',
+      'loom.storage.large',
     ]
     expect([...planEntitlementKeys('business')].sort()).toEqual([...businessDepth].sort())
     expect([...planEntitlementKeys('nonprofit')].sort()).toEqual([...businessDepth].sort())

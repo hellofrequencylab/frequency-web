@@ -329,6 +329,7 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
       ['multi_pipeline', 'multi_pipeline'],
       ['team', 'team'],
       ['program', 'program'],
+      ['loom.storage.large', 'loom.storage.large'],
     ]
     for (const [rowKey, entitlementKey] of entitlementRows) {
       const cells = cellsByColumn(grid, rowKey)

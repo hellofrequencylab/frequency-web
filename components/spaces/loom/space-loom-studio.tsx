@@ -12,24 +12,30 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { Upload, Loader2, Search, Trash2, ImageIcon, X } from 'lucide-react'
-import { loomImages, uploadLoomImage, deleteSpaceLoomImage } from '@/lib/loom/picker-actions'
+import { loomImages, uploadLoomImage, deleteSpaceLoomImage, loomQuotaMeter } from '@/lib/loom/picker-actions'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import { appendImageDescriptor, describeImage } from '@/lib/library/image-describe'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
 import { describeGeneratedAsset } from '@/lib/library/describe-generated'
 import { useDescribeOnView } from '@/lib/library/describe-on-view'
 import type { LoomPickAsset } from '@/lib/library/store'
+import type { LoomMeter } from '@/lib/library/quota'
 import { Input } from '@/components/ui/field'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 export function SpaceLoomStudio({
   spaceId,
   initialAssets,
   initialTags,
+  initialMeter,
 }: {
   spaceId: string
   initialAssets: LoomPickAsset[]
   initialTags: string[]
+  /** The storage meter (LIVE-567), read on the server; refreshed after an upload or a remove. */
+  initialMeter: LoomMeter
 }) {
+  const [meter, setMeter] = useState<LoomMeter>(initialMeter)
   const [assets, setAssets] = useState<LoomPickAsset[]>(initialAssets)
   const [tags, setTags] = useState<string[]>(initialTags)
   const [query, setQuery] = useState('')
@@ -46,6 +52,17 @@ export function SpaceLoomStudio({
   // the first few such rows are decoded from the image already on screen and posted through the one
   // generated-asset path, whose write only ever fills a hole. `blurhash` absent = not read, skipped.
   useDescribeOnView(assets, describeGeneratedAsset)
+
+  // Re-read the meter after the library changes. Best-effort: a failed or refused read keeps the
+  // last reading on screen rather than blanking it.
+  const refreshMeter = useCallback(async () => {
+    try {
+      const next = await loomQuotaMeter(spaceId)
+      if (next) setMeter(next)
+    } catch {
+      /* keep the last reading */
+    }
+  }, [spaceId])
 
   const refresh = useCallback(
     (opts: { q: string; tag: string | null }) => {
@@ -109,6 +126,7 @@ export function SpaceLoomStudio({
         }
       } finally {
         setUploading(false)
+        void refreshMeter()
       }
       if (skipped > 0) {
         setError(`${skipped} image${skipped === 1 ? ' is' : 's are'} too large to upload (over 4 MB and could not be resized here). Save a smaller version and try again.`)
@@ -116,7 +134,7 @@ export function SpaceLoomStudio({
         setError('That upload did not go through. Try again in a moment.')
       }
     },
-    [spaceId],
+    [spaceId, refreshMeter],
   )
 
   const remove = useCallback(
@@ -127,12 +145,15 @@ export function SpaceLoomStudio({
       setPendingDelete(null)
       if ('error' in res) { setError(res.error); return }
       setAssets((prev) => prev.filter((a) => a.id !== id))
+      void refreshMeter()
     },
-    [spaceId],
+    [spaceId, refreshMeter],
   )
 
   return (
     <div className="space-y-4">
+      <LoomQuotaMeter meter={meter} />
+
       {/* Upload box (click-multi + drag & drop) */}
       <div
         onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
@@ -221,6 +242,32 @@ export function SpaceLoomStudio({
             </li>
           ))}
         </ul>
+      )}
+    </div>
+  )
+}
+
+/** The storage meter (LIVE-567): what this Loom holds against its cap. Words first, so a failed read
+ *  still says something useful and never blocks the page. Same tone ladder as components/ui/meter. */
+function LoomQuotaMeter({ meter }: { meter: LoomMeter }) {
+  const reading = !meter.read
+    ? `Could not read how much this library holds right now.${meter.cap ? ` The limit is ${meter.cap}.` : ''}`
+    : meter.cap
+      ? `${meter.used} of ${meter.cap} used`
+      : `${meter.used} stored. This library has no storage limit.`
+  const pct = meter.percent
+  const tone = pct === null ? 'primary' : pct >= 100 ? 'danger' : pct >= 80 ? 'warning' : 'success'
+  return (
+    <div data-loom-quota className="space-y-1.5">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-meta font-medium text-muted">Library storage</span>
+        <span className="text-2xs font-semibold tabular-nums text-text">{reading}</span>
+      </div>
+      {pct !== null && <ProgressTrack value={pct} max={100} minVisible={2} label={`Library storage: ${reading}`} tone={tone} />}
+      {meter.read && meter.unknown > 0 && (
+        <p className="text-2xs text-subtle">
+          {meter.unknown} older {meter.unknown === 1 ? 'image has' : 'images have'} no recorded size, so {meter.unknown === 1 ? 'it is' : 'they are'} not counted here.
+        </p>
       )}
     </div>
   )

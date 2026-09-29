@@ -680,6 +680,12 @@ const SPACE_GROUPS: GroupDef[] = [
         detail: 'More than one page: your own site, run from your Space.',
         source: { from: 'entitlement', key: 'space_full_website' },
       },
+      {
+        key: 'loom.storage.large',
+        label: 'Larger image library',
+        detail: 'More room in your Loom for the photos and images your Space uses.',
+        source: { from: 'entitlement', key: 'loom.storage.large' },
+      },
       // A `whitelabel` row sat here, and it went with the tier (owner ruling 2026-09-08, LIVE-227).
       // `whitelabel` is granted by the Independent depth set alone, so with Independent off the
       // advertised ladder the row resolved to "Not included" in every single column: not a comparison,

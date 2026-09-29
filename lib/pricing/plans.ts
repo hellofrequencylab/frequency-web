@@ -108,6 +108,9 @@ export const BUSINESS_DEPTH_ENTITLEMENT_KEYS: readonly string[] = [
   // While billing is OFF the seam stays permissive (the ADR-370 invariant); the
   // one-Program-per-Space unique index caps creation in the meantime.
   'program',
+  // The larger Loom (LIVE-567, ADR-1585): lib/library/quota.ts raises a Space's storage cap to
+  // LOOM_STORAGE_LARGE_BYTES when this key is granted. A hand-grant on a free Space works too.
+  'loom.storage.large',
 ]
 
 /** Former Collective depth. LIVE-228 folded it into Business; Non Profit still grants this same set.
