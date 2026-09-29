@@ -864,7 +864,7 @@ export function EntityPageBuilder({
                   placeholder={`Row ${index + 1}`}
                   aria-label={`Title for row ${index + 1}`}
                   onChange={(e) => onRowTitle(row.id, e.target.value)}
-                  className="min-w-0 flex-1 truncate rounded border border-transparent px-1 py-0.5 text-2xs text-text hover:border-border focus:border-primary"
+                  className="min-w-0 flex-1 truncate rounded border border-transparent px-1 py-0.5 text-2xs text-text hover:border-border focus:border-border-strong"
                 />
                 <button
                   type="button"
