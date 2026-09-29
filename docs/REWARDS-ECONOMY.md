@@ -138,9 +138,16 @@ Small, **daily-capped** so they can't be farmed.
 | Share | **2** | 5 / day |
 | Post | **3** | 5 / day |
 | Daily presence | **2** | 1 / day |
-| Welcome a newcomer | **8** | 3 / day |
+| Welcome a newcomer | **5** | once per newcomer |
 | RSVP to an event | **5** | per event |
 | Join a circle | **5** | per circle |
+
+**Welcome a newcomer (owner ruling 2026-09-29, "5 gems, fix the docs"; [ADR-1631](DECISIONS.md)).**
+The welcome is paid by `recordWelcome` in `lib/connections/welcomes.ts` ([ADR-186](DECISIONS.md)):
+`connection_settings.reward_welcome` (5) once per (welcomer, newcomer), guarded by the unique
+`welcomes` row, with no daily cap. The `gem_config` row `welcome_member` (8, 3 / day) is **not**
+what pays it: nothing awards that action. The Welcomer badge (first to welcome 5 newcomers) is
+checked on each landed welcome.
 
 ### Creation token (first publish only)
 
