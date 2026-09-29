@@ -47,6 +47,15 @@ function initialValues(data: PracticeData): Record<string, string> {
 /** Ghost text is the surface's, not the manifest's (see FieldControlProps.placeholder). */
 const PLACEHOLDERS: Record<string, string> = { duration_min: 'Optional' }
 
+/** The split's standing guidance (LIVE-641), which names the primary Pillar the row already holds. */
+function splitHints(mainPillar: string | null): Record<string, string> {
+  if (!mainPillar) return { secondary_domain_id: 'Pick a Pillar in the full editor first.' }
+  return {
+    secondary_domain_id: `Zaps count toward ${mainPillar}. Pick a second Pillar to share them.`,
+    primary_pct: `${mainPillar} keeps 50 to 100. The rest counts toward the second Pillar.`,
+  }
+}
+
 const [COVER] = PRACTICE_RAIL.cover.fields
 const [PERMALINK] = PRACTICE_RAIL.permalink.fields
 
@@ -142,6 +151,8 @@ export function PracticeSettingsModule() {
           values={values}
           onChange={(path, next) => setValues((v) => ({ ...v, [path]: next }))}
           placeholders={PLACEHOLDERS}
+          hints={splitHints(data.mainPillar)}
+          loaded={{ pillars: data.splitPillars }}
         />
       </RailAutosaveForm>
 

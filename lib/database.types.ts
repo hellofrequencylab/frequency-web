@@ -18056,6 +18056,22 @@ export type Database = {
           id: string
         }[]
       }
+      search_library_assets: {
+        Args: {
+          match_count?: number
+          p_embedding?: string
+          p_kind?: string
+          p_query: string
+          p_space_id: string
+        }
+        Returns: {
+          fts_rank: number
+          id: string
+          rrf_score: number
+          trgm_rank: number
+          vec_rank: number
+        }[]
+      }
       set_event_geog: {
         Args: { _event_id: string; _lat: number; _long: number }
         Returns: undefined
