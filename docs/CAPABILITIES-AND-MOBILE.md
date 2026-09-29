@@ -195,7 +195,10 @@ Mobile is a prime first beneficiary when you pilot a sync engine on one surface
 
 1. **Mobile stack**: React Native (max reuse: shared TS contract types + design
    tokens) vs native Swift/Kotlin (best UX, more duplication). Determines how much
-   contract code is *literally* shared.
+   contract code is *literally* shared. **Decided 2026-09-29: Expo / React Native**
+   (owner ruling, [ADR-1637](DECISIONS.md)). The app build itself stays parked; the
+   contract, auth, push, capture and store-readiness work it plugs into is active in
+   `docs/BUILD-BACKLOG.json` (wave WM).
 2. **Authorization-convergence pace**: how aggressively to migrate from
    admin-client/app-authz to RLS + RPC. Real cost; do it surface-by-surface
    (public/discover already started).
