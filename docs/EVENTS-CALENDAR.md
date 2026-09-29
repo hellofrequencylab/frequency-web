@@ -515,7 +515,7 @@ the guest's read-only drawer included, and folds each to-do's thread behind Note
 author when the session can read the profile and falls back to the Space, because profiles RLS is regional.
 Proof of the lock: `supabase/tests/space_plan_comments.test.sql`.
 
-THE RECORD (`LIVE-543`, ADR-1555). Every door that changes a Plan writes one row to `space_plan_activity`
+THE RECORD (`LIVE-543`, ADR-1566). Every door that changes a Plan writes one row to `space_plan_activity`
 (`20270345009410`) after its change lands: who, from which Space, what kind (a closed set) and the sentence
 the door reported. The same two helpers gate select and insert for the host and an accepted guest; there is
 no update or delete policy, the way the Vera log has none. `recordPlanActivity` (`lib/calendar/plan-activity-store.ts`,
