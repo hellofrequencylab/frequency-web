@@ -44,6 +44,11 @@ export function isLibraryAssetExpired(expiresAt: string | null | undefined, now:
   return Number.isFinite(t) && t <= now.getTime()
 }
 
+/** The tag every tag set Vera wrote carries (LIVE-587, ADR-1589), so a person can filter the Loom
+ *  for what a machine named and check it. Here, dependency-free, because the write (store.ts), the
+ *  model call (lib/ai/library-tag.ts) and the Studio drawer all need the one spelling. */
+export const VERA_TAG = 'vera'
+
 /** Derived-file roles off one master. `custom` = an editor-produced crop/transform. */
 export const LIBRARY_RENDITION_KINDS = ['thumb', 'grid', 'hero', 'og', 'source', 'custom'] as const
 export type LibraryRenditionKind = (typeof LIBRARY_RENDITION_KINDS)[number]
