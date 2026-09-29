@@ -100,7 +100,7 @@ DO NOT.
 - Ask the owner to click Merge. That is a process bug. Arm GitHub auto-merge yourself.
 - Use \`gh pr create\`. Open or update the PR with ManagePullRequest. Base branch is main.
 - Absorb another agent's PR. Stay off ${OFF_LIMITS_BRANCHES.join(', ')} and its PRs.
-- Pick parked work: 16→7 nav (LIVE-241), the shell split (LIVE-412), the App Platform (PROG-A1/A3/A4, LAST by owner ruling 2026-09-28, ADR-1535), or anything whose notes carry a parkedUntil date that has not arrived (the editor and Sites group, Etsy, mobile, the domain register, the phone door and A2P, the load harness: ADR-1573, 2027-01-05).
+- Pick parked work: 16→7 nav (LIVE-241), the shell split (LIVE-412), the App Platform (PROG-A1/A3/A4, LAST by owner ruling 2026-09-28, ADR-1535), or anything whose notes carry a parkedUntil date that has not arrived (the editor and Sites group, Etsy, mobile, the domain register, the phone door and A2P: ADR-1573, 2027-01-05).
 - Call apply_migration or supabase db push. Prod schema is execute_sql for the DDL, then an explicit insert into supabase_migrations.schema_migrations at the FILE's own 14-digit version (docs/DATABASE.md). Never stamp wall-clock versions.
 - Send Resend if this session has no key.
 - Touch SERIAL surfaces (app-shell, nav registry, postbuild gates) while another lane is in flight on them. \`pnpm packets\` names the collision files.

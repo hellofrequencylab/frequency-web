@@ -183,10 +183,10 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
   // as a selected Focus so the editor shows it (and re-saving fills focus_details).
   //
   // The stored primary goes FIRST. focus_details is jsonb, which keeps no key order (Postgres sorts
-  // object keys), so the map arrives in id order and its first key need not be the primary. The
-  // primary is read as the first key below and every Focus save re-derives domain_id from it, so
-  // without this an edit to any Focus could silently move the primary, and with a Pillar split
-  // (LIVE-641) clear the split whenever the second Pillar's id sorted first.
+  // object keys), so the map arrives in id order and its first key need not be the primary. This
+  // editor shows its first key as the primary; the server keeps the stored domain_id while it is
+  // still a Focus and takes the first key of the map sent only once the primary is removed
+  // (LIVE-650, ADR-1618), so seeding it first keeps what the editor shows and what is saved one.
   const [focusDetails, setFocusDetails] = useState<Record<string, FocusDetail>>(() =>
     props.domainId
       ? { [props.domainId]: { instructions: '', timing: '' }, ...props.focusDetails }
@@ -225,19 +225,21 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
     )
 
   // The selected Focuses are the keys of focus_details (presence = selected). The
-  // PRIMARY Focus (first key) drives domain_id + scopes the Sub Focus list (back-compat).
+  // PRIMARY Focus is the first key of THIS in-memory map (seeded with the stored primary above,
+  // never a map straight from the row) and scopes the Sub Focus list.
   const focusIds = Object.keys(focusDetails)
   const domainId = focusIds[0] ?? ''
 
-  // Persist the new Focus set: write focus_details (the server mirrors domain_id to the
-  // first key). Single source of truth — the toggle + per-Focus edits both route here.
+  // Persist the new Focus set: write focus_details (the server keeps domain_id while it is still a
+  // Focus). Single source of truth — the toggle + per-Focus edits both route here.
   const saveFocus = (next: Record<string, FocusDetail>) => {
     setFocusDetails(next)
     queueSave({ focus_details: next })
   }
 
   // Toggle a Focus on/off: adding seeds an empty instructions/timing block; removing
-  // drops it (and its details). domain_id follows the first remaining key, server-side.
+  // drops it (and its details). Removing the primary moves domain_id to the first remaining key
+  // of the map sent, server-side, which is the Focus this editor then shows as primary.
   const toggleFocus = (pillarId: string) => {
     const next = { ...focusDetails }
     if (next[pillarId]) delete next[pillarId]

@@ -23,7 +23,7 @@ export {
   LIVE_PERSONA_STATES, CONNECT_WIRED, PERSONA_STATE_META, canStaffTransition,
 } from './personas-core'
 import type { PersonaState } from './personas-core'
-import { PARTNER_PERSONAS, LIVE_PERSONA_STATES, isMoneyPersona, CONNECT_WIRED } from './personas-core'
+import { PARTNER_PERSONAS, LIVE_PERSONA_STATES, isMoneyPersona, awaitingConnect } from './personas-core'
 
 function isPersona(v: string): v is PartnerPersona {
   return (PARTNER_PERSONAS as readonly string[]).includes(v)
@@ -141,8 +141,7 @@ export function connectBindingState(row: {
 }): ConnectBindingState {
   if (!isMoneyPersona(row.persona)) return 'dormant'
   if (row.stripeAccountId) return 'bound'
-  if (!CONNECT_WIRED) return row.state === 'verified' || row.state === 'active' ? 'pending' : 'dormant'
-  return 'dormant'
+  return awaitingConnect(row.state) ? 'pending' : 'dormant'
 }
 
 export const CONNECT_BINDING_META: Record<

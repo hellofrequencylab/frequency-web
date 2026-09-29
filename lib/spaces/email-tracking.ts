@@ -77,8 +77,10 @@ function signClickUrl(token: string, url: string): string {
   return hmac.digest('hex').slice(0, 16)
 }
 
-/** Verify a click destination against its token's signature (constant-time). Any bad shape/mismatch = false. */
-export function verifyClickUrl(token: string, url: string, sig: string | null | undefined): boolean {
+/** Verify a click destination against its token's signature (constant-time). Any bad shape/mismatch = false,
+ *  including no destination at all, so a caller can run it first on every request. */
+export function verifyClickUrl(token: string, url: string | null, sig: string | null | undefined): boolean {
+  if (typeof url !== 'string' || !url) return false
   if (typeof sig !== 'string' || !/^[0-9a-f]{16}$/.test(sig)) return false
   try {
     return timingSafeEqual(Buffer.from(signClickUrl(token, url), 'hex'), Buffer.from(sig, 'hex'))

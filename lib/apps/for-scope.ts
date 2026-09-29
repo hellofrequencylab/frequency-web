@@ -24,7 +24,7 @@ import { moduleScopeChain } from '@/lib/widgets/modules'
 import type { ScopeKind } from '@/lib/admin/modules/registry'
 import { tierForApp } from '@/lib/admin/modules/spine'
 import { isAdvancedModuleId } from '@/lib/admin/modules/space-modules'
-import { loadAppOverrides, mergeAppOverrides, effectiveMinRole, scopeKeyFor } from './overrides'
+import { loadAppOverrides, mergeAppOverrides, effectiveMinRole, resolveScopeAppOverrides, scopeKeyFor } from './overrides'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
 
 // A scope kind → its URL section, so a scope can address the page-app route sets keyed under
@@ -253,7 +253,8 @@ export async function resolveAppsForScope(
   role?: CommunityRole | null,
 ): Promise<App[]> {
   if (!scope || !viewer) return []
-  const overrides = await loadAppOverrides(scopeKeyFor(scope))
+  // The scope's own rows plus the global disables (LIVE-686): an App off for everyone is off here.
+  const overrides = await resolveScopeAppOverrides(scopeKeyFor(scope), loadAppOverrides)
   const merged = mergeAppOverrides(appsForScope(scope, viewer, 'editor'), overrides)
   return merged.filter((a) => {
     const floor = effectiveMinRole(a.id, overrides)

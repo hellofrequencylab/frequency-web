@@ -98,7 +98,7 @@ describe('the read door cannot write (migration shape)', () => {
     expect(migration).toMatch(/revoke execute on function public\.mint_guest_seat_token\(uuid\) from public, anon, authenticated;/)
     expect(migration).toMatch(/grant\s+execute on function public\.mint_guest_seat_token\(uuid\) to service_role;/)
     for (const sig of ['read_guest_seat(uuid)', 'update_guest_seat(uuid, integer, jsonb)', 'release_guest_seat(uuid)']) {
-      expect(migration).toMatch(new RegExp(`grant\\s+execute on function public\\.${sig.replace(/[()]/g, '\\$&')} to anon, authenticated, service_role;`))
+      expect(migration).toMatch(new RegExp(`grant\\s+execute on function public\\.${sig.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} to anon, authenticated, service_role;`))
     }
   })
 })
