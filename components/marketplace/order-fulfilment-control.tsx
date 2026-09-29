@@ -3,7 +3,7 @@ import { buttonClasses } from '@/components/ui/button'
 import { fieldClasses } from '@/components/ui/field'
 import type { CommerceOrder } from '@/lib/commerce/orders'
 import type { FulfillmentStatus } from '@/lib/commerce/types'
-import { FULFILLMENT_LABEL, FULFILLMENT_STEP_LABEL, nextFulfillmentStep } from '@/lib/commerce/fulfilment'
+import { FULFILLMENT_LABEL, FULFILLMENT_STEP_LABEL, nextFulfillmentStep } from '@/lib/commerce/fulfilment-state'
 
 // THE SELLER'S DOOR (LIVE-606, ADR-1575). One control, rendered on every surface that lists an order
 // for its seller (the Space Shop Orders tab, the maker console, the operator's Orders page): where
@@ -33,7 +33,7 @@ export function OrderFulfilmentControl({
   const next = action && !readOnly ? nextFulfillmentStep(order.fulfillmentStatus, { ships: order.ships }) : null
 
   return (
-    <div data-order-fulfilment className="mt-3 border-t border-border pt-3">
+    <div data-order-fulfilment-control className="mt-3 border-t border-border pt-3">
       <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm">
         <Truck className="h-4 w-4 shrink-0 text-muted" aria-hidden />
         <span className="font-medium text-text">{FULFILLMENT_LABEL[order.fulfillmentStatus]}</span>

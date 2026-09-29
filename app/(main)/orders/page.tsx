@@ -9,7 +9,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { listOrdersForBuyer, type CommerceOrder } from '@/lib/commerce/orders'
 import { disputesForOrders, type CommerceDispute } from '@/lib/commerce/disputes'
 import { DisputeButton } from '@/components/marketplace/dispute-button'
-import { FULFILLMENT_LABEL } from '@/lib/commerce/fulfilment'
+import { FULFILLMENT_LABEL } from '@/lib/commerce/fulfilment-state'
 
 // My Orders — a member's purchase history across Makers + Shop. Checkout's success_url
 // lands here. Connect-only verticals (General / Housing) never create orders. An order that needs

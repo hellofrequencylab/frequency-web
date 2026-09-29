@@ -137,7 +137,7 @@ describe('the ladder', () => {
 
 describe('setOrderFulfillment', () => {
   it('marks a paid order shipped, stamps carrier and tracking beside the address, and tells the buyer once', async () => {
-    const notify = vi.fn(async () => undefined)
+    const notify = vi.fn<(input: unknown) => Promise<void>>(async () => undefined)
     const res = await setOrderFulfillment(
       'order-1',
       { status: 'shipped', carrier: ' USPS ', tracking: '9400 1000' },
@@ -179,7 +179,7 @@ describe('setOrderFulfillment', () => {
 
   it('delivered closes a paid order as fulfilled; completed on a fulfilled order leaves status alone', async () => {
     m.orders[0].fulfillment_status = 'shipped'
-    const notify = vi.fn(async () => undefined)
+    const notify = vi.fn<(input: unknown) => Promise<void>>(async () => undefined)
     const delivered = await setOrderFulfillment('order-1', { status: 'delivered' }, { kind: 'space', spaceId: 'space-1' }, { notifyShipped: notify })
     expect(delivered).toMatchObject({ ok: true, order: { status: 'fulfilled', fulfillmentStatus: 'delivered' } })
     expect(m.orders[0].status).toBe('fulfilled')

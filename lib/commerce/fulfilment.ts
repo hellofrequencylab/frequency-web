@@ -37,148 +37,19 @@ import {
   type ReceiptContent,
 } from '@/lib/billing/receipt-email'
 import type { FulfillmentStatus, OwnerKind } from './types'
+import {
+  FULFILLMENT_LADDER,
+  fulfillmentTransition,
+  fulfilmentFromShipping,
+  trackingUrlFor,
+  trimmedText,
+  type OrderFulfilment,
+} from './fulfilment-state'
+
+// The pure half is re-exported so a caller that already holds the writer has one import.
+export * from './fulfilment-state'
 
 const LOG = '[commerce fulfilment]'
-
-/** The ladder, in the order the schema names it. Index = how far along the order is. */
-export const FULFILLMENT_LADDER: readonly FulfillmentStatus[] = ['none', 'pending', 'shipped', 'delivered', 'completed']
-
-/** Kinds that leave a warehouse or an inbox: the ones a seller has to act on after the settle. A
- *  service is booked, a ticket is a seat, a Journey opens itself (journey-fulfilment.ts). An unknown
- *  or missing kind (a product deleted after the sale) defaults to something that needs sending. */
-const FULFILLABLE_KINDS = new Set(['physical', 'digital'])
-
-/** True when at least one line of the order is something the seller sends. PURE. */
-export function orderNeedsFulfilment(kinds: Array<string | null | undefined>): boolean {
-  if (kinds.length === 0) return false
-  return kinds.some((k) => !k || FULFILLABLE_KINDS.has(k))
-}
-
-/** True when a line physically ships (a carrier and a tracking number make sense). A digital-only
- *  order is delivered, never shipped. PURE. */
-export function orderShips(kinds: Array<string | null | undefined>): boolean {
-  return kinds.some((k) => !k || k === 'physical')
-}
-
-/** The member-facing word for each step. Plain, present tense, no processor names. */
-export const FULFILLMENT_LABEL: Record<FulfillmentStatus, string> = {
-  none: 'Not sent yet',
-  pending: 'Getting ready',
-  shipped: 'Shipped',
-  delivered: 'Delivered',
-  completed: 'Complete',
-}
-
-/** The button label for moving TO a step. */
-export const FULFILLMENT_STEP_LABEL: Record<Exclude<FulfillmentStatus, 'none'>, string> = {
-  pending: 'Start preparing',
-  shipped: 'Mark shipped',
-  delivered: 'Mark delivered',
-  completed: 'Mark complete',
-}
-
-/**
- * The next step a seller's door offers, or null when the ladder is walked. `pending` is reachable
- * by the writer but the door skips it: a seller's first act on a paid order is sending it, and a
- * separate "I am packing" click is a step nobody asked for. A digital order is never shipped; its
- * first step is delivered. PURE.
- */
-export function nextFulfillmentStep(current: FulfillmentStatus, opts: { ships: boolean }): FulfillmentStatus | null {
-  switch (current) {
-    case 'none':
-    case 'pending':
-      return opts.ships ? 'shipped' : 'delivered'
-    case 'shipped':
-      return 'delivered'
-    case 'delivered':
-      return 'completed'
-    case 'completed':
-      return null
-  }
-}
-
-/** Forward only. Refuses the same step and any earlier one with a sentence a seller can read. PURE. */
-export function fulfillmentTransition(
-  from: FulfillmentStatus,
-  to: FulfillmentStatus,
-): { ok: true } | { ok: false; error: string } {
-  const fromIdx = FULFILLMENT_LADDER.indexOf(from)
-  const toIdx = FULFILLMENT_LADDER.indexOf(to)
-  if (toIdx < 0) return { ok: false, error: 'That is not a step an order can take.' }
-  if (fromIdx < 0) return { ok: true }
-  if (toIdx === fromIdx) return { ok: false, error: `This order is already marked ${FULFILLMENT_LABEL[to].toLowerCase()}.` }
-  if (toIdx < fromIdx) {
-    return {
-      ok: false,
-      error: `An order only moves forward. It is ${FULFILLMENT_LABEL[from].toLowerCase()}, so it cannot go back to ${FULFILLMENT_LABEL[to].toLowerCase()}.`,
-    }
-  }
-  return { ok: true }
-}
-
-/** A tracking page for the carriers most sellers here use, or null when the carrier is not one we
- *  know: an unknown carrier still gets its number printed, just not a link. PURE. */
-export function trackingUrlFor(carrier: string | null | undefined, tracking: string | null | undefined): string | null {
-  const code = (tracking ?? '').trim()
-  if (!code) return null
-  const c = (carrier ?? '').trim().toLowerCase().replace(/[^a-z]/g, '')
-  const enc = encodeURIComponent(code)
-  if (c === 'usps') return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${enc}`
-  if (c === 'ups') return `https://www.ups.com/track?tracknum=${enc}`
-  if (c === 'fedex') return `https://www.fedex.com/fedextrack/?trknbr=${enc}`
-  if (c === 'dhl') return `https://www.dhl.com/en/express/tracking.html?AWB=${enc}`
-  if (c === 'canadapost') return `https://www.canadapost-postescanada.ca/track-reperage/en#/search?searchFor=${enc}`
-  if (c === 'royalmail') return `https://www.royalmail.com/track-your-item#/tracking-results/${enc}`
-  if (c === 'auspost' || c === 'australiapost') return `https://auspost.com.au/mypost/track/#/details/${enc}`
-  return null
-}
-
-/** What the seller has said about sending the order, read back from `shipping.fulfilment`. */
-export interface OrderFulfilment {
-  carrier: string | null
-  tracking: string | null
-  trackingUrl: string | null
-  note: string | null
-  shippedAt: string | null
-  deliveredAt: string | null
-  completedAt: string | null
-}
-
-const EMPTY_FULFILMENT: OrderFulfilment = {
-  carrier: null,
-  tracking: null,
-  trackingUrl: null,
-  note: null,
-  shippedAt: null,
-  deliveredAt: null,
-  completedAt: null,
-}
-
-function str(v: unknown, max: number): string | null {
-  if (typeof v !== 'string') return null
-  const t = v.trim().slice(0, max)
-  return t || null
-}
-
-/** The fulfilment record inside the `shipping` jsonb, or the empty record. Never throws: the jsonb
- *  is Stripe's address snapshot first and ours second, and either half may be missing. PURE. */
-export function fulfilmentFromShipping(shipping: unknown): OrderFulfilment {
-  if (!shipping || typeof shipping !== 'object' || Array.isArray(shipping)) return EMPTY_FULFILMENT
-  const f = (shipping as { fulfilment?: unknown }).fulfilment
-  if (!f || typeof f !== 'object' || Array.isArray(f)) return EMPTY_FULFILMENT
-  const r = f as Record<string, unknown>
-  const carrier = str(r.carrier, 60)
-  const tracking = str(r.tracking, 120)
-  return {
-    carrier,
-    tracking,
-    trackingUrl: str(r.trackingUrl, 500) ?? trackingUrlFor(carrier, tracking),
-    note: str(r.note, 500),
-    shippedAt: str(r.shippedAt, 40),
-    deliveredAt: str(r.deliveredAt, 40),
-    completedAt: str(r.completedAt, 40),
-  }
-}
 
 // ── The writer ─────────────────────────────────────────────────────────────────────────────────
 
@@ -227,11 +98,12 @@ interface OrderRow {
 const ORDER_COLS =
   'id, status, fulfillment_status, shipping, buyer_profile_id, guest_email, owner_kind, owner_profile_id, owner_space_id'
 
-/** The scope filter, applied to the read AND the write. */
-function scoped<T extends { eq: (col: string, v: string) => T }>(q: T, seller: FulfilmentSeller): T {
-  if (seller.kind === 'space') return q.eq('owner_space_id', seller.spaceId)
-  if (seller.kind === 'profile') return q.eq('owner_profile_id', seller.profileId)
-  return q.eq('owner_kind', 'platform')
+/** The scope filter, applied to the read AND the write: the owner column of the verified seller and
+ *  the value it must hold. PURE. */
+export function sellerScope(seller: FulfilmentSeller): [column: string, value: string] {
+  if (seller.kind === 'space') return ['owner_space_id', seller.spaceId]
+  if (seller.kind === 'profile') return ['owner_profile_id', seller.profileId]
+  return ['owner_kind', 'platform']
 }
 
 /**
@@ -253,7 +125,13 @@ export async function setOrderFulfillment(
   if (seller.kind === 'space' && !seller.spaceId) return { ok: false, error: 'That order is not one of yours.' }
   if (seller.kind === 'profile' && !seller.profileId) return { ok: false, error: 'That order is not one of yours.' }
 
-  const { data, error } = await scoped(db.from('commerce_orders').select(ORDER_COLS).eq('id', orderId), seller).maybeSingle()
+  const [scopeColumn, scopeValue] = sellerScope(seller)
+  const { data, error } = await db
+    .from('commerce_orders')
+    .select(ORDER_COLS)
+    .eq('id', orderId)
+    .eq(scopeColumn, scopeValue)
+    .maybeSingle()
   if (error) {
     console.error(`${LOG} order read failed`, { orderId, error: error.message })
     return { ok: false, error: 'Could not read that order. Try again in a moment.' }
@@ -274,13 +152,13 @@ export async function setOrderFulfillment(
   if (!move.ok) return move
 
   const prev = fulfilmentFromShipping(order.shipping)
-  const carrier = str(input.carrier, 60) ?? prev.carrier
-  const tracking = str(input.tracking, 120) ?? prev.tracking
+  const carrier = trimmedText(input.carrier, 60) ?? prev.carrier
+  const tracking = trimmedText(input.tracking, 120) ?? prev.tracking
   const next: OrderFulfilment = {
     carrier,
     tracking,
     trackingUrl: trackingUrlFor(carrier, tracking),
-    note: str(input.note, 500) ?? prev.note,
+    note: trimmedText(input.note, 500) ?? prev.note,
     shippedAt: input.status === 'shipped' ? now : prev.shippedAt,
     deliveredAt: input.status === 'delivered' ? now : prev.deliveredAt,
     completedAt: input.status === 'completed' ? now : prev.completedAt,
@@ -295,16 +173,15 @@ export async function setOrderFulfillment(
   // says so, in the state the schema allows and spaceEarningsSummary already counts as settled.
   const closesOrder = (input.status === 'delivered' || input.status === 'completed') && order.status === 'paid'
 
-  const { data: updated, error: writeError } = await scoped(
-    db
-      .from('commerce_orders')
-      .update({ fulfillment_status: input.status, shipping, ...(closesOrder ? { status: 'fulfilled' } : {}) })
-      .eq('id', orderId)
-      // The step the seller saw is the step they are moving from. Two people on the same order
-      // cannot both win; the second reloads and sees where it stands.
-      .eq('fulfillment_status', order.fulfillment_status),
-    seller,
-  ).select('id')
+  const { data: updated, error: writeError } = await db
+    .from('commerce_orders')
+    .update({ fulfillment_status: input.status, shipping, ...(closesOrder ? { status: 'fulfilled' } : {}) })
+    .eq('id', orderId)
+    .eq(scopeColumn, scopeValue)
+    // The step the seller saw is the step they are moving from. Two people on the same order
+    // cannot both win; the second reloads and sees where it stands.
+    .eq('fulfillment_status', order.fulfillment_status)
+    .select('id')
   if (writeError) {
     console.error(`${LOG} order write failed`, { orderId, status: input.status, error: writeError.message })
     return { ok: false, error: 'Could not save that. Try again in a moment.' }

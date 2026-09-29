@@ -5,7 +5,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OrderStatus, OwnerKind, FulfillmentStatus } from './types'
-import { fulfilmentFromShipping, orderNeedsFulfilment, orderShips, type OrderFulfilment } from './fulfilment'
+import { fulfilmentFromShipping, orderNeedsFulfilment, orderShips, type OrderFulfilment } from './fulfilment-state'
 
 function db(): SupabaseClient {
   return createAdminClient()

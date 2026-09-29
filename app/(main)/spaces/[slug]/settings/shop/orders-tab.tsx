@@ -56,7 +56,7 @@ export async function OrdersTab({ spaceId, slug, readOnly = false }: { spaceId: 
 
       <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
         {orders.map((o) => (
-          <li key={o.id} className="p-4">
+          <li key={o.id} className="p-4" data-order-fulfilment={o.needsFulfilment ? o.fulfillmentStatus : undefined}>
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="truncate text-body-sm font-medium text-text">
