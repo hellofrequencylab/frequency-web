@@ -49038,3 +49038,23 @@ Re-tested against the tree and against production on 2026-09-28, most of it had 
 **Consequences.** `pnpm packets --lane live` can hand out LIVE-576 and LIVE-579 today; 577 waits on 576, and 578 and 580 on 577. The LIVE ids skip from 571 to 576 on purpose: PROG-D5 took 20 above `main`'s highest, this program 30 above, PROG-D7 40 above, so the DEF-HARDEN and DEF-MONEY decomposers working the same hour cannot collide with this lane, and `check:id-collisions` reads the other open pull requests on every run.
 
 **Rows.** `PROG-D6` decomposed. `LIVE-576` to `LIVE-580` filed. `PROG-D5` children untouched (LIVE-571's session reads are where a per-Space storage read policy would hang).
+
+## ADR-1570: The Foundation rail is dropped from the plan: no give door, no second Stripe account, no grants program (LIVE-608 ruled out)
+
+**Status:** Accepted · 2026-09-29 · backlog `LIVE-608` (closed, ruled out) · answers the `ownerAction: account` gate [ADR-1564](DECISIONS.md) §2 placed on that row · beside [ADR-029](DECISIONS.md), [ADR-037](DECISIONS.md) and [ADR-038](DECISIONS.md) (the entity partition and the bridge) and [ADR-1569](DECISIONS.md) (the same afternoon's ruling on the affiliate vertical) · numbered **1570** because 1559 to 1569 and 1571 to 1572 are held by open or merged pull requests of the same two days
+
+**Context.** `LIVE-608`, child 3 of `DEF-MONEY`, carried the money program's gate: a 501(c)(3) that legally exists and a Stripe account in its name. Once the account existed it would have shipped a second Stripe client (`STRIPE_FOUNDATION_SECRET_KEY`), the ninth checkout creator on the seam (`createFoundationGiftCheckout`), the `/give` door on the marketing shell, a `foundation_grants` table with an admin section, and `donation` rows on the ledger under `ENTITY_ID.foundation`; the ADR-038 bridge was named as the first row to file after it. Re-tested on 2026-09-29 the tree still held none of it: one Stripe secret, no give route, `revenueType: 'donation'` written nowhere, no grants table.
+
+**Decision.** On 2026-09-29 at about 02:00Z the owner answered the multiple choice: **"Drop the Foundation rail."** It leaves the plan.
+
+1. **No give door, no second Stripe account, no grants program.** None of the five deliverables on the row is built or re-filed, and the ADR-038 bridge, which needs a rail to bridge, is not filed either.
+2. **The Foundation entity stays as it is in the tree.** `ENTITY_ID.foundation` remains the entity that member `dues` record under (`lib/billing/checkout.ts`) and one side of the ledger's hard partition (ADR-029, ADR-037). This ruling is about taking gifts, not about the partition.
+3. **Space donations are not this rail and do not change.** A gift to a Space is the Space's money on the platform account, recorded as Labs `commerce` (`lib/billing/space-donation-checkout.ts`, `DEF-MONEY` D4).
+4. **The row's probe guards the ruling** instead of asking for the build: it fails if a `give` or `donate` route, a `STRIPE_FOUNDATION` client, a Foundation gift checkout, a `revenueType: 'donation'` writer or a `foundation_grants` migration appears in the tree.
+5. **Refile only if the entity exists.** A 501(c)(3) with a Stripe account in its name reopens the question as a new row with `LIVE-608`'s detail as its spec, behind an ADR that supersedes this one.
+
+**Rejected.** Keeping the row open as a parked `ownerAction: account` (the owner has said the rail is not wanted, so a row waiting for the account would be a status the list knows to be false). Removing `ENTITY_ID.foundation` or the `donation` revenue type from the schema (the partition and the constraint are cheap, already applied, and the dues path uses the entity today).
+
+**Consequences.** `LIVE-608` closes as ruled out and leaves W8; the money program's gate is gone with it, so `DEF-MONEY` now waits only on `LIVE-606` (fulfilment), and its third probe arm (a donation recorded under the Foundation) is unsatisfiable by design and is re-pointed when the program row is next touched. `DEVELOPMENT-MAP §Stage D`'s "gated on PMF and a legal entity" no longer describes any open row.
+
+**Rows.** `LIVE-608` (closed here). Untouched: `DEF-MONEY`, `LIVE-606`, `PROG-D8`.
