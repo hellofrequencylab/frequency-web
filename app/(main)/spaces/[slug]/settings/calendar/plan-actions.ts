@@ -44,7 +44,9 @@ import { copyPlaybookToPlan, runItAgain } from '@/lib/calendar/playbooks'
 import {
   createTask,
   listTasks,
+  listTasksInPlans,
   reanchorTaskDuesInScope,
+  updateTaskStatusInPlans,
   updateTaskStatusInScope,
   type CrmTask,
 } from '@/lib/crm/tasks'
@@ -323,6 +325,13 @@ export async function reanchorPlanTodos(
 export async function listPlanTodos(slug: string, planId?: string): Promise<CrmTask[]> {
   const editor = await resolveEditor(slug)
   if (!editor) return []
+  // A guest reading a Plan shared with it sees that Plan's to-dos too (LIVE-544): the read is
+  // bound to the one plan id the session proved through the accepted share.
+  if (planId && UUID_RE.test(planId)) {
+    const side = await planSide(slug, planId)
+    if ('error' in side) return []
+    if (side.side === 'guest') return listTasksInPlans([planId], 200)
+  }
   const all = await listTasks({ spaceId: editor.spaceId, planId: planId ?? null, limit: 200 })
   return all
 }
@@ -339,13 +348,17 @@ export async function setPlanTodoDone(
   todoId: string,
   done: boolean,
 ): Promise<ActionResult<void>> {
-  const editor = await editorPlan(slug, planId)
+  // The host is proven the way every Plan write is; a guest is proven through its accepted share
+  // (LIVE-544), and ticks inside the one shared Plan it proved. Either way an id from elsewhere
+  // matches no row.
+  const own = await editorPlan(slug, planId)
+  const editor = 'error' in own ? await planSide(slug, planId) : { ...own, side: 'host' as const }
   if ('error' in editor) return fail(editor.error)
   if (typeof todoId !== 'string' || !UUID_RE.test(todoId)) return fail('That to-do no longer exists.')
-  const moved = await updateTaskStatusInScope(todoId, done ? 'done' : 'open', {
-    spaceId: editor.spaceId,
-    planId,
-  })
+  const moved =
+    editor.side === 'host'
+      ? await updateTaskStatusInScope(todoId, done ? 'done' : 'open', { spaceId: editor.spaceId, planId })
+      : await updateTaskStatusInPlans(todoId, done ? 'done' : 'open', [planId])
   if (!moved) return fail('That to-do could not be updated.')
   await recordPlanActivity({
     planId,

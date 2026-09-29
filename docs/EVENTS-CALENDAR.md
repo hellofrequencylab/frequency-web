@@ -524,6 +524,16 @@ entry-actions and vera-calendar-actions; a Vera line whose door records itself (
 written twice. `listPlanActivity` reads the latest twenty for either side, and the drawer shows them newest
 first under `[data-plan-activity]`. Proof of the lock: `supabase/tests/space_plan_activity.test.sql`.
 
+SHARED TO-DOS (`LIVE-544`, ADR-1567). A to-do belongs to its Plan's host Space (`crm_tasks.space_id`),
+and a guest holding an accepted share reaches it by PLAN id: `listTasksWithShared` (`lib/calendar/shared-tasks.ts`)
+is one list, the Space's own rows then the to-dos of every Plan shared with it marked `sharedFrom` the host, read
+by the inbox (`listSpaceTasks`), the calendar settings page and the due-date layer alike. Every widened
+service-role read or write is bound to plan ids the session proved first through `listSharedPlanIds`.
+`assignPlanTodo` hands a to-do to a person on either team (the host's owner and active members, and each
+accepted guest's), taken from `assigneeChoicesForPlan` and never from the browser, binds the write to the
+proven Plan and records `todo_assigned`. The drawer's to-do list renders for both sides with a picker per row;
+the guest ticks and hands over, the host alone adds and re-anchors.
+
 **Production** (`PROG-CAL3`, shipped). "Make it a Production" opens the event Spark (`lib/studio/entities/event.ts`)
 prefilled by a pure mapping from the plan and the chosen Pencil onto the manifest's field keys. The event
 carries `plan_id`, and the Pencil is retired in the same step so the calendar shows one card. The
