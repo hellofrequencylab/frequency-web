@@ -139,6 +139,11 @@ function from(table: string) {
       preds.push((r) => (r[c] ?? null) === v)
       return api
     },
+    not: (c: string, op: string, v: unknown) => {
+      if (op !== 'is') throw new Error(`fake .not only supports is, got ${op}`)
+      preds.push((r) => (r[c] ?? null) !== v)
+      return api
+    },
     or: (clause: string) => {
       preds.push(parseOr(clause))
       return api
@@ -312,6 +317,19 @@ describe('countAdminPractices', () => {
     const publicOnly = await countAdminPractices({ includeHidden: false })
     const expectedPublic = store.practices_ranked.filter((r) => r.is_public).length
     expect(publicOnly).toBe(expectedPublic)
+  })
+})
+
+describe('countAdminPractices: the Featured filter (LIVE-646)', () => {
+  it('counts only featured, or only unfeatured, practices, the rows the table shows', async () => {
+    seedVaried(60)
+    const featured = store.practices_ranked.filter((r) => r.featured_at != null).length
+    expect(featured).toBeGreaterThan(0)
+    expect(await countAdminPractices({ includeHidden: true, featured: true })).toBe(featured)
+    expect(await countAdminPractices({ includeHidden: true, featured: false })).toBe(60 - featured)
+    // Stacked with another filter, the count is still the rows the view resolves.
+    const opts = { includeHidden: true, featured: false, status: 'pending' }
+    expect(await countAdminPractices(opts)).toBe(await viewTotal(opts))
   })
 })
 

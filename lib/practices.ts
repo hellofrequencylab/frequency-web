@@ -553,9 +553,9 @@ async function applyAdminFilters<Q extends {
   if (opts.hideDemo) q = q.eq('is_demo', false)
   if (opts.isPublic !== undefined) q = q.eq('is_public', opts.isPublic)
   if (opts.isTemplate !== undefined) q = q.eq('is_template', opts.isTemplate)
-  // NB: `featured` is NOT filtered here — featured_at is a timestamp the practices_ranked
-  // view does not expose, so it can't be a column predicate. searchAdminPractices applies
-  // it post-query against the enriched featured_at; countAdminPractices documents the gap.
+  // NB: `featured` is NOT filtered here (it is a timestamp, not a bool). searchAdminPractices
+  // applies it post-query against the enriched featured_at; countAdminPractices applies it as a
+  // null check on the view's featured_at.
   if (opts.pillarId) q = q.eq('domain_id', opts.pillarId)
   if (opts.subId) q = q.eq('subcategory_id', opts.subId)
   if (opts.status) q = q.eq('status', opts.status)
@@ -700,11 +700,11 @@ export async function countAdminPractices(opts: AdminPracticeSearchOpts = {}): P
     .select('id', { count: 'exact', head: true }) as unknown as AdminFilterBuilder
   const filtered = await applyAdminFilters(q, opts)
   if (filtered === null) return 0
-  const { count } = (await (filtered.q as unknown as Promise<{ count: number | null }>)) ?? { count: 0 }
-  // The `featured` filter is enriched post-query (timestamp, not a column bool); when it is
-  // the ONLY thing narrowing the count we can't express it in SQL here, so the count is the
-  // pre-featured total. Callers that need an exact featured count read the facet rail's
-  // 'featured' flag count instead (practice_admin_facets), which counts featured_at directly.
+  // `featured` is a timestamp, so the row read applies it after the query; the view exposes
+  // featured_at, so the count applies the same test as a null check (LIVE-646, ADR-1609).
+  const f = filtered.q as unknown as AdminFilterBuilder & { not: (c: string, op: string, v: null) => AdminFilterBuilder }
+  const scoped = opts.featured === undefined ? f : opts.featured ? f.not('featured_at', 'is', null) : f.is('featured_at', null)
+  const { count } = (await (scoped as unknown as Promise<{ count: number | null }>)) ?? { count: 0 }
   return count ?? 0
 }
 
