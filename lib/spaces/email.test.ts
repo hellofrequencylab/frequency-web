@@ -28,6 +28,7 @@ let resolvedSpace:
       ownerProfileId?: string | null
       entitlements?: unknown
       featureRoles?: unknown
+      status?: string
     }
   | null = {
   id: 'space-A',
@@ -38,6 +39,7 @@ let resolvedSpace:
   // Email is PLAN-GATED: the Space's plan must grant the `email` entitlement for the per-space-roles
   // Phase 2 gate (spaceFunctionAccess) to allow the email action. Seat it so the email action passes.
   entitlements: { email: true },
+  status: 'active',
 }
 vi.mock('./store', () => ({
   getSpaceById: async (id: string) => (resolvedSpace && resolvedSpace.id === id ? resolvedSpace : null),
@@ -188,6 +190,10 @@ const db = {
     created_at: string
   }[],
   spaceUpdates: [] as { id: string; email_enabled: boolean }[],
+  // space_id -> spaces.status as the DRAIN reads it (LIVE-727). Absent reads as 'active'.
+  status: new Map<string, string>(),
+  // When true, the drain's spaces.status read returns an error (models a DB blip).
+  statusReadError: false,
 }
 
 function spacesBuilder() {
@@ -215,7 +221,10 @@ function spacesBuilder() {
     maybeSingle() {
       const id = (api as { _id?: string })._id
       const enabled = id ? db.enabled.get(id) ?? false : false
-      return Promise.resolve({ data: { email_enabled: enabled } })
+      if (db.statusReadError) return Promise.resolve({ data: null, error: new Error('db blip') })
+      const exists = id === 'space-A' || id === 'space-B' || (!!id && db.status.has(id))
+      if (!exists) return Promise.resolve({ data: null, error: null })
+      return Promise.resolve({ data: { email_enabled: enabled, status: db.status.get(id!) ?? 'active' }, error: null })
     },
   }
   return api
@@ -225,7 +234,7 @@ function outreachBuilder() {
   // Supports: insert([rows])
   //           select('id', {count:'exact',head:true}).eq('space_id',x).neq('status',y).gte('created_at',z)
   //           update(patch).eq('id', x).eq('status', y)   ← the drain half's ledger move
-  const filters: { space_id?: string; neqStatus?: string } = {}
+  const filters: { space_id?: string; neqStatus?: string; id?: string } = {}
   let pendingUpdate: Record<string, unknown> | null = null
   let updateId: string | null = null
   const api: Record<string, unknown> = {
@@ -273,7 +282,13 @@ function outreachBuilder() {
         }
       }
       if (col === 'space_id') filters.space_id = val
+      if (col === 'id') filters.id = val
       return api
+    },
+    maybeSingle() {
+      // The drain's ledger lookup for a job queued before LIVE-727 (no spaceId in its payload).
+      const row = db.outreach.find((r) => r.id === filters.id)
+      return Promise.resolve({ data: row ? { space_id: row.space_id } : null, error: null })
     },
     neq(col: string, val: string) {
       if (col === 'status') filters.neqStatus = val
@@ -312,6 +327,8 @@ import {
   runSpaceCampaignEmail,
   SPACE_CAMPAIGN_EMAIL_KIND,
   DAILY_SEND_CAP,
+  spaceEmailHold,
+  SPACE_NOT_ACTIVE_EMAIL_ERROR,
 } from './email'
 
 beforeEach(() => {
@@ -323,6 +340,7 @@ beforeEach(() => {
     brandName: 'River Studio',
     ownerProfileId: 'owner-0000-4000-a000-0000000ownr',
     entitlements: { email: true },
+    status: 'active',
   }
   canEdit = true
   sends.length = 0
@@ -336,6 +354,8 @@ beforeEach(() => {
   db.enabled.clear()
   db.outreach.length = 0
   db.spaceUpdates.length = 0
+  db.status.clear()
+  db.statusReadError = false
   interactionCalls.length = 0
   // Space A starts ENABLED for the happy-path send tests; specific tests toggle it off.
   db.enabled.set('space-A', true)
@@ -565,6 +585,7 @@ describe('sendSpaceCampaign: CRM timeline write (ADR-378, owner-scoped + idempot
       brandName: 'River Studio',
       ownerProfileId: null,
       entitlements: { email: true },
+      status: 'active',
     }
     const r = await sendSpaceCampaign('space-A', {
       campaignId: 'camp-9',
@@ -969,3 +990,98 @@ function seedQueuedRow(id: string) {
     created_at: new Date().toISOString(),
   }
 }
+
+// ── LIVE-727: a suspended or archived Space sends nothing, and its queued jobs are cancelled ────────
+// The finding: /admin/spaces suspend flipped spaces.status and no send path read it, so a suspended
+// Space's broadcasts, scheduled campaigns and drips kept sending. The delivery core now refuses a Space
+// that is not active (nothing queued, nothing ledgered), and the drain re-checks right before the
+// provider call, so a job queued before the suspension is cancelled with a visible ledger note.
+
+describe('spaceEmailHold (pure, fail-closed)', () => {
+  it('lets only an ACTIVE Space send', () => {
+    expect(spaceEmailHold('active')).toBeNull()
+    expect(spaceEmailHold('suspended')).toBe('space_suspended')
+    expect(spaceEmailHold('archived')).toBe('space_not_active')
+    expect(spaceEmailHold(null)).toBe('space_not_active')
+    expect(spaceEmailHold(undefined)).toBe('space_not_active')
+    expect(spaceEmailHold('ACTIVE ')).toBe('space_not_active')
+  })
+})
+
+describe('deliverSpaceCampaign: a Space that is not active sends nothing (LIVE-727)', () => {
+  for (const status of ['suspended', 'archived']) {
+    it(`the owner composer refuses a Space that is ${status}: nothing queued, nothing ledgered`, async () => {
+      resolvedSpace = { ...resolvedSpace!, status }
+      const r = await sendSpaceCampaign('space-A', { subject: 'Hi', html: '<p>x</p>', recipients: recips('a@b.com', 'c@d.com') })
+      expect(r).toEqual({ error: SPACE_NOT_ACTIVE_EMAIL_ERROR })
+      expect(sends).toHaveLength(0)
+      expect(db.outreach).toHaveLength(0)
+    })
+
+    it(`the system entry (cron, drips, event broadcast) refuses a Space that is ${status}`, async () => {
+      resolvedSpace = { ...resolvedSpace!, status }
+      const r = await sendSpaceCampaignSystem('space-A', { subject: 'Hi', html: '<p>x</p>', recipients: recips('a@b.com') })
+      expect(r).toEqual({ error: SPACE_NOT_ACTIVE_EMAIL_ERROR })
+      expect(sends).toHaveLength(0)
+      expect(db.outreach).toHaveLength(0)
+    })
+  }
+
+  it('an active Space still sends, and each job carries its spaceId for the drain re-check', async () => {
+    const r = await sendSpaceCampaignSystem('space-A', { subject: 'Hi', html: '<p>x</p>', recipients: recips('a@b.com') })
+    expect('error' in r).toBe(false)
+    expect(sends).toHaveLength(1)
+    expect((sends[0] as Record<string, unknown>).spaceId).toBe('space-A')
+  })
+})
+
+describe('runSpaceCampaignEmail: the drain cancels a queued job whose Space was suspended (LIVE-727)', () => {
+  it('a job queued while active, drained after the suspension, never reaches the provider', async () => {
+    await sendSpaceCampaign('space-A', { subject: 'Hi', html: '<p>x</p>', recipients: recips('a@b.com') })
+    expect(sends).toHaveLength(1)
+    db.status.set('space-A', 'suspended') // staff suspend the Space while the bulk job waits in the outbox
+    await runSpaceCampaignEmail(sends[0] as unknown as Record<string, unknown>)
+    expect(rawSends).toHaveLength(0)
+    const row = db.outreach.find((o) => o.id === sends[0].outreachSendId)
+    expect(row?.status).toBe('failed')
+    expect(row?.error).toMatch(/suspended/)
+  })
+
+  it('a job queued BEFORE this change (no spaceId) resolves its Space through its ledger row', async () => {
+    db.outreach.push(seedQueuedRow('legacy-1'))
+    db.status.set('space-A', 'archived')
+    await runSpaceCampaignEmail({ to: 'a@b.com', subject: 'Hi', html: '<p>x</p>', outreachSendId: 'legacy-1' })
+    expect(rawSends).toHaveLength(0)
+    expect(db.outreach.find((o) => o.id === 'legacy-1')?.status).toBe('failed')
+  })
+
+  it('reads the status of the job\'s OWN Space (another Space being suspended does not stop it)', async () => {
+    db.outreach.push(seedQueuedRow('own-1'))
+    db.status.set('space-B', 'suspended')
+    await runSpaceCampaignEmail({ to: 'a@b.com', subject: 'Hi', html: '<p>x</p>', outreachSendId: 'own-1', spaceId: 'space-A' })
+    expect(rawSends).toHaveLength(1)
+    expect(db.outreach.find((o) => o.id === 'own-1')?.status).toBe('sent')
+  })
+
+  it('a status read error THROWS (the outbox retries) and sends nothing, leaving the row queued', async () => {
+    db.outreach.push(seedQueuedRow('blip-1'))
+    db.statusReadError = true
+    await expect(
+      runSpaceCampaignEmail({ to: 'a@b.com', subject: 'Hi', html: '<p>x</p>', outreachSendId: 'blip-1', spaceId: 'space-A' }),
+    ).rejects.toThrow(/space status/)
+    expect(rawSends).toHaveLength(0)
+    expect(db.outreach.find((o) => o.id === 'blip-1')?.status).toBe('queued')
+  })
+
+  it('a job whose Space cannot be identified at all is not sent (fail-closed)', async () => {
+    await runSpaceCampaignEmail({ to: 'a@b.com', subject: 'Hi', html: '<p>x</p>', outreachSendId: 'no-such-row' })
+    expect(rawSends).toHaveLength(0)
+  })
+
+  it('a deleted Space (no spaces row) is not sent either', async () => {
+    db.outreach.push({ ...seedQueuedRow('gone-1'), space_id: 'space-gone' })
+    await runSpaceCampaignEmail({ to: 'a@b.com', subject: 'Hi', html: '<p>x</p>', outreachSendId: 'gone-1' })
+    expect(rawSends).toHaveLength(0)
+    expect(db.outreach.find((o) => o.id === 'gone-1')?.status).toBe('failed')
+  })
+})
