@@ -9,14 +9,18 @@
 //
 // Every read + write RE-RESOLVES + RE-GATES server-side (the client is never trusted): a space scope
 // requires the caller to manage that Space (canEditProfile, the same authority uploadToLoom uses);
-// 'mine' requires only a signed-in caller. Uploads run through the service-role admin client, so they
-// never depend on a live browser Storage session token — the fragile path that returned "new row
-// violates row-level security policy". FAIL-SAFE throughout.
+// 'mine' requires only a signed-in caller. The ONE exception is the Studio-only deleteSpaceLoomImage,
+// which decides on the Space's `loom` function (canManageSpaceLoom, LIVE-566): the Studio is the
+// management door and the picker is the editing door, so switching the Studio off never stops an edit.
+// Uploads run through the service-role admin client, so they never depend on a live browser Storage
+// session token — the fragile path that returned "new row violates row-level security policy".
+// FAIL-SAFE throughout.
 
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getSpaceById, getSpaceBySlug, loadRootSpaceId } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { canManageSpaceLoom } from '@/lib/library/space-loom-access'
 import { listOperatedSpaces } from '@/lib/spaces/operated'
 import {
   listLoomScopeImages,
@@ -278,10 +282,12 @@ export async function uploadLoomImage(
   return { url: pub.publicUrl, id }
 }
 
-/** Delete an image from a SPACE's Loom (the Loom Studio's remove control). Gated: the caller must MANAGE
- *  that space (the same `canEditProfile` gate `resolveScope` applies to a space id). Only space scopes are
- *  deletable here — the personal 'mine' scope resolves without a `spaceId`, so it is rejected (a person's
- *  cross-space uploads are managed where they live). Best-effort removes the stored object too. FAIL-SAFE. */
+/** Delete an image from a SPACE's Loom (the Loom Studio's remove control). Gated on the Space's `loom`
+ *  FUNCTION through canManageSpaceLoom (LIVE-566, ADR-1578): the switch and the min-role bar the Space set,
+ *  NOT the picker's `canEditProfile` scope, because this is the Studio's management door and the picker is
+ *  the editing door (ADR-1559 §4). Only a Space (by id or slug) is deletable here: the personal 'mine' scope
+ *  is not a Space, so it is rejected (a person's cross-space uploads are managed where they live).
+ *  Best-effort removes the stored object too. FAIL-SAFE: any error resolving the Space reads as no access. */
 export async function deleteSpaceLoomImage(
   spaceKey: string,
   assetId: string,
@@ -289,9 +295,18 @@ export async function deleteSpaceLoomImage(
   const caller = await getCallerProfile()
   if (!caller) return { error: 'Sign in to manage this library.' }
   if (!assetId) return { error: 'Nothing to remove.' }
-  const scope = await resolveScope(caller.id, spaceKey)
-  if (!scope || !('spaceId' in scope)) return { error: 'You cannot manage that library.' }
-  const removed = await deleteSpaceLibraryAsset(scope.spaceId, assetId)
+  let spaceId: string | null = null
+  try {
+    const space = spaceKey === 'mine' ? null : await spaceForScopeKey(spaceKey)
+    if (space) {
+      const caps = await getSpaceCapabilities(space, caller.id)
+      if (canManageSpaceLoom(space, caps.role)) spaceId = space.id
+    }
+  } catch {
+    spaceId = null
+  }
+  if (!spaceId) return { error: 'You cannot manage that library.' }
+  const removed = await deleteSpaceLibraryAsset(spaceId, assetId)
   if (!removed) return { error: 'That image could not be removed. Try again.' }
   if (removed.bucket && removed.path) {
     try {
