@@ -49907,6 +49907,25 @@ The cull landed last on purpose. Between the audit and this PR, thirty-odd PRs m
 
 **Rows.** DEF-RESON (closed, moved). HYG-005 (probe re-pointed, stays done). SCAN-502 and HYG-075 untouched here.
 
+## ADR-1608: Remix on a practice offers three directions Vera picks for that practice, generated on open and never stored, and a picked one is applied to the copy through the practice-edit path (LIVE-645)
+
+**Status:** Accepted · 2026-09-29 · backlog `LIVE-645` (child 5 of `PROG-PRAC4`, [ADR-1593](DECISIONS.md)) · extends [ADR-447](DECISIONS.md) (the remix engine), [ADR-990](DECISIONS.md) (one spark runner) and [ADR-358](DECISIONS.md) (the practice-edit path) · beside the Starter Circle's **Remix it** field (`remixOptions`, `lib/circles/templates.ts`; docs/NAMING.md, Starter Circles) · re-tested first per [ADR-1082](DECISIONS.md) · numbered **1608** as assigned by the overnight orchestrator
+
+**Context.** Re-tested on `main` at 441bb8646 from the repo (no database access overnight; how often members remix was not measured overnight). The Remix dialog (`components/practice/remix-practice-button.tsx`) confirmed and called `forkPracticeAction`, which copies the practice word for word, adopts the copy and opens the editor. Its "Ways to make it yours" panel was three fixed lines, the same for every practice. A Starter Circle carries its own list of ways to remix it; a practice had none, and no module under `lib/ai/` knew the word remix.
+
+**Decision.**
+
+1. **Directions come from a declared spark, `PRACTICE_REMIX` in `lib/ai/practice-remix.ts`,** on Haiku under its own budget key `practice-remix` ($1 a day in `lib/ai/budget.ts`), through `runSpark`, so the kill switch, the daily cap, the per-member window, the voice primer and the degrade-to-null are the shared ones. The system prompt carries `withPracticeShape`. Three directions, each 2 to 6 words, each changing a different thing (length, intensity, setting, company). The coercer applies `voiceLine` (no dashes, no exclamation), drops a line longer than a chip and case-insensitive repeats, and answers null below two.
+2. **Generated when the dialog first opens, never stored.** `remixDirectionsAction` sends only a practice the member can already read (public, or their own) and answers an empty list whenever the model is unavailable. No column, no migration. A practice's directions are cheap to redraw and a stored list would go stale the day the original is edited.
+3. **The choice is the fork plus the existing edit, not a new editor.** The panel lists the directions as radio chips beside a plain **Just copy it**, which is the default, and the confirm still reads **Remix it**. `forkPracticeAction(practiceId, direction?)` forks exactly as before (lineage untouched), then hands `remixRequest(direction)` to `applyVeraPracticeChangeAction` on the copy, which is the builder's own Vera edit (`lib/ai/practice-edit.ts`, its own Opus cap and window). If that edit is refused or fails, the member still lands on their copy, which is today's remix.
+4. **AI off is today's dialog.** An empty list keeps the three fixed lines and a plain copy.
+
+**Rejected.** Storing directions on the practice (a `remix_options` column like a Starter Circle's): a Starter Circle's list is staff-authored content, a practice's is a model draft, and storing it needs a migration and a staleness rule for nothing a member would notice. Writing the direction inside the fork (a second copy-and-rewrite path beside `planPracticeEdits`). Running the directions on Sonnet or Opus (three short lines per open). Putting the spark in `lib/ai/practice-spark.ts` (siblings `LIVE-643` and `LIVE-644` edit it next; a module of its own keeps the diffs apart).
+
+**Consequences.** ✅ `lib/ai/practice-remix.test.ts` pins the key, the tier, both primers, the coercer and the null paths. ✅ The rate-limit ratchet covers the new door through `runSpark`. ⚠️ A picked direction costs one Haiku call on open and one Opus edit on confirm; both are capped. ⚠️ The chips are the model's words: the coercer bounds their shape, not their taste.
+
+**Rows.** `LIVE-645` closed here.
+
 ## ADR-1622: On launch day the Beta switches go off together: the nine induction mockups leave the tree, /onboarding stops forwarding into /join, and members stop being Crew by default (LIVE-464)
 
 **Status:** Accepted · 2026-09-29 · `LIVE-464` (closed here, with the `LIVE-465` arms it absorbed under [ADR-1573](DECISIONS.md)) · answers OWN-059 (owner ruling 2026-09-08: launch is the Winter Equinox, 21 December 2026, and the Beta is a phase with an end) and the owner ruling of 2026-09-29 ~18:05Z ("Build, hold merge") · builds on [ADR-068](DECISIONS.md) and [ADR-1090](DECISIONS.md) (the induction and the Funnels that replaced its teardown), [ADR-047](DECISIONS.md) (the steady-state onboarding) and [ADR-1371](DECISIONS.md) (the member shell admits an account holder) · numbered 1622 by the orchestrator's assignment, against main and every open pull request
