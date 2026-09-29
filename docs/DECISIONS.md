@@ -49785,3 +49785,20 @@ The cull landed last on purpose. Between the audit and this PR, thirty-odd PRs m
 **Consequences.** A misspelt practice, practice_log or lineage column in these seven modules now fails `tsc` instead of a request at run time. The ADR-246 comments are gone from the practice server layer. The row's probe reads all seven handles plus the fork and by-space casts, and failed on `main` on each.
 
 **Rows.** `LIVE-647` closed here. `PROG-PRAC4` (proven by its children) untouched.
+
+## ADR-1612: A blank practice icon saves as the default icon, so the builder's Use default no longer fails the whole practice save (LIVE-648)
+
+**Status:** Accepted · 2026-09-29 · backlog `LIVE-648` (filed and closed here) · found by `LIVE-647` ([ADR-1610](DECISIONS.md) §4) · re-tested first per [ADR-1082](DECISIONS.md) · numbered 1612 by the orchestrator's assignment · no migration
+
+**Context.** `practices.icon` is `text NOT NULL DEFAULT 'sparkles'` (migration `20260605000000`, unchanged since). `updatePractice` wrote `STR(patch.icon, 40)`, which is null for a blank or whitespace icon, so Postgres rejected the update and the whole save returned no row. The member-facing path is real: the practice builder's "Use default" button saves `{ icon: '', header_image: null }`, so pressing it answered "Could not save", the icon did not reset and the header image did not clear. Re-tested on `main` at `8d2011089` from the repo (no DB access overnight; how often it fired in production is not measured overnight). tsc never saw it because `LIVE-647` kept the old behaviour behind `as string` on that one write, deliberately, and named it.
+
+**Decision.**
+
+1. **A blank icon writes the column default, `'sparkles'`.** Not "skip the field". The UI already means the default: the builder labels the action "Use default" and draws `Sparkles` for a blank icon, the Studio manifest reads a blank icon as `'sparkles'`, and `createPractice` never sends an icon so a new practice lands on the same default. Skipping the field would leave the old icon in place while the button says it reset, which is the wrong answer to the click.
+2. **The `as string` cast on the `updatePractice` icon write is gone.** The expression is `STR(patch.icon, 40) ?? DEFAULT_PRACTICE_ICON`, which is a `string` on its own, so `TablesUpdate<'practices'>` now checks it. The `forkPractice` icon cast stays: it copies a row the column already guarantees non-null.
+
+**Rejected.** Making the column nullable (every reader and the manifest already assume an icon, and the default is the product's answer). Rejecting a blank icon with an error (the builder sends it on purpose).
+
+**Consequences.** "Use default" resets a practice's icon to sparkles and clears its header image in one save. A future edit that reintroduces a null icon fails `tsc` rather than the save. The row's probe reads the icon clause out of `updatePractice`, evaluates it for a blank, a whitespace and a null icon, and fails on `main`; `lib/practices-blank-icon.test.ts` drives the real `updatePractice` against a mocked NOT NULL column.
+
+**Rows.** `LIVE-648` filed and closed here.

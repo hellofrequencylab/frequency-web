@@ -1577,6 +1577,9 @@ function cleanFocusDetails(
 export const WEIGHT_CLASSES = ['light', 'standard', 'heavy'] as const
 export type WeightClass = (typeof WEIGHT_CLASSES)[number]
 
+/** The `practices.icon` column default: what a practice with no chosen icon wears. */
+const DEFAULT_PRACTICE_ICON = 'sparkles'
+
 const STR = (v: string | null | undefined, max: number): string | null => {
   const t = (v ?? '').trim()
   return t ? t.slice(0, max) : null
@@ -1686,10 +1689,10 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
         ? patch.breath_pattern
         : null
   if (patch.category !== undefined) update.category = STR(patch.category, 40)
-  // `icon` is NOT NULL (default 'sparkles'), so a blank icon's null fails this update at the
-  // database. That is the behaviour before the typed handle (LIVE-647 changes typing only);
-  // the cast keeps it until the blank-icon case is decided on its own row.
-  if (patch.icon !== undefined) update.icon = STR(patch.icon, 40) as string
+  // `icon` is NOT NULL (default 'sparkles'). A blank icon is the builder's "Use default", and the
+  // editor already shows a blank icon as sparkles, so it writes the default rather than a null the
+  // column rejects (which failed the whole save) (LIVE-648, ADR-1612).
+  if (patch.icon !== undefined) update.icon = STR(patch.icon, 40) ?? DEFAULT_PRACTICE_ICON
   if (patch.header_image !== undefined) update.header_image = STR(patch.header_image, 500)
   if (patch.domain_id !== undefined) update.domain_id = patch.domain_id || null
   // Multi-Focus: write the per-Focus map and keep domain_id as the FIRST selected
