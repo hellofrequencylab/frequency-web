@@ -5,7 +5,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceManageHref } from '@/lib/spaces/types'
 import { canManageSpaceLoom } from '@/lib/library/space-loom-access'
-import { listLoomScopeImages, listLoomScopeTags } from '@/lib/library/store'
+import { listSpaceLoomImages, listSpaceLoomTags } from '@/lib/library/space-loom-store'
 import { loomMeter, loomQuotaFor, loomStorageUsed } from '@/lib/library/quota'
 import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
@@ -18,6 +18,8 @@ import { SpaceLoomStudio } from '@/components/spaces/loom/space-loom-studio'
 // answer the /manage console uses to show or hide the tile. A Space that switched Loom Studio off, or raised
 // its bar to admin, 404s an editor here the way it always 404d a member: no existence leak. The popup picker
 // is a different door (it stays on canEditProfile), so an editor barred from the Studio still edits pages.
+// The grid and the tag facet read on the viewer's own session (LIVE-571, ADR-1613), so the per-Space
+// policies (ADR-1594) decide what this Studio can list, and the gate above is the second wall.
 
 export const metadata: Metadata = { title: 'Loom Studio' }
 export const dynamic = 'force-dynamic'
@@ -38,8 +40,8 @@ export default async function SpaceLoomStudioPage({ params }: { params: Promise<
   // The storage meter (LIVE-567): what this Loom stores against its cap. loomStorageUsed never
   // throws, so a failed read renders as words in the Studio and never holds the page.
   const [initialAssets, initialTags, usage] = await Promise.all([
-    listLoomScopeImages({ spaceId: space.id }, { kinds: ['image'] }),
-    listLoomScopeTags({ spaceId: space.id }, ['image']),
+    listSpaceLoomImages(space.id, { kinds: ['image'] }),
+    listSpaceLoomTags(space.id, ['image']),
     loomStorageUsed(space.id),
   ])
   const initialMeter = loomMeter(loomQuotaFor(space), usage)

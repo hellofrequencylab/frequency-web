@@ -1,7 +1,7 @@
 // The one image control's preview (CodeQL js/xss-through-dom on PR #2098). The value is an
 // operator-stored string that lands in `<img src>`, and this control used to guard it with a private
 // copy of the allowlist that returned a relative path verbatim. It now goes through the shared
-// lib/safe-image-src.ts, which parses instead.
+// lib/safe-image-src.ts, which returns the string only after an anchored regexp accepts it.
 //
 // Both halves are tested here, because the second one is the one that bites: a value this guard
 // refuses renders the "Choose a photo" empty state, so refusing a legitimate photo reads to an
@@ -40,10 +40,11 @@ describe('the Loom image field paints only a guarded src', () => {
     expect(html).toContain('src="https://cdn.test/loom/a.jpg?width=400"')
   })
 
-  it('paints the parsed path, not the operator string it was given', () => {
+  it('falls back to the empty state for a path that is not a clean same-origin asset', () => {
     const html = renderToStaticMarkup(<LoomImageField label="Photo" value="/loom/../loom/a b.jpg" onChange={noop} />)
-    expect(html).toContain('src="/loom/a%20b.jpg"')
+    expect(html).not.toContain('<img')
     expect(html).not.toContain('/loom/../')
+    expect(html).toContain('Choose a photo')
   })
 
   it('falls back to the empty state, with no src, for a value that cannot be trusted', () => {
