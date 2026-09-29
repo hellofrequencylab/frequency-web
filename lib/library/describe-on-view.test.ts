@@ -66,6 +66,7 @@ describe('both Loom grids describe on view through the one generated-asset path'
   })
 
   it('the picker reader carries blurhash, so the Space Loom Studio can tell a hole from a described row', () => {
-    expect(store).toMatch(/\.select\('id, title, url, alt, kind, tags, config, category, is_protected, expires_at, blurhash'\)/)
+    // LIVE-569 appends space_id and visibility (the shared shelf's second wall); blurhash stays read.
+    expect(store).toMatch(/\.select\('id, title, url, alt, kind, tags, config, category, is_protected, expires_at, blurhash[^']*'\)/)
   })
 })

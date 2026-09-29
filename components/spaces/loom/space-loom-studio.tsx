@@ -16,6 +16,7 @@ import { Upload, Loader2, Search, Trash2, ImageIcon, X } from 'lucide-react'
 import { loomImages, uploadLoomImage, deleteSpaceLoomImage } from '@/lib/loom/picker-actions'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import { appendImageDescriptor, describeImage } from '@/lib/library/image-describe'
+import { SpaceLoomShared } from './space-loom-shared'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
 import { describeGeneratedAsset } from '@/lib/library/describe-generated'
 import { useDescribeOnView } from '@/lib/library/describe-on-view'
@@ -193,6 +194,15 @@ export function SpaceLoomStudio({
           ))}
         </div>
       )}
+
+      {/* The Frequency shared library (LIVE-569), badged apart; Make it yours drops the copy into the grid below. */}
+      <section data-loom-shared aria-label="Frequency library">
+        <SpaceLoomShared
+          spaceId={spaceId}
+          query={query}
+          onForked={(copy) => setAssets((prev) => [copy, ...prev.filter((a) => a.id !== copy.id)])}
+        />
+      </section>
 
       {error && <p className="text-2xs text-danger">{error}</p>}
 

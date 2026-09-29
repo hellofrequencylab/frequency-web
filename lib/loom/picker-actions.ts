@@ -28,7 +28,9 @@ import {
   insertSpaceLibraryImage,
   findLibraryAssetBySha256,
   deleteSpaceLibraryAsset,
+  forkLibraryAsset,
   type LoomPickAsset,
+  type LoomSharedMode,
 } from '@/lib/library/store'
 import { ingestImageBytes } from '@/lib/library/ingest'
 import { readImageDescriptor } from '@/lib/library/image-describe'
@@ -177,11 +179,41 @@ async function resolveScope(
   }
 }
 
+/** MAKE IT YOURS (LIVE-569, ADR-1587): copy one Frequency shared image into a Space's own Loom, so the
+ *  Space can rename, caption, retag or remove its copy without touching the master. The Space-side door
+ *  to forkLibraryAsset, gated like the Studio's other doors on the Space's `loom` function
+ *  (canManageSpaceLoom, LIVE-566), because making a copy is managing the library, not placing an image.
+ *  The store re-reads the master and refuses one that is not the root Space's AND public, whatever id
+ *  arrived. Returns the copy's id and URL (an earlier copy of the same master is the answer, not a
+ *  second one). FAIL-SAFE: every miss is a sentence. */
+export async function forkSharedLoomImage(
+  spaceKey: string,
+  assetId: string,
+): Promise<{ id: string; url: string; reused: boolean } | { error: string }> {
+  const caller = await getCallerProfile()
+  if (!caller) return { error: 'Sign in to manage this library.' }
+  if (!assetId) return { error: 'Nothing to copy.' }
+  let spaceId: string | null = null
+  try {
+    const space = spaceKey === 'mine' ? null : await spaceForScopeKey(spaceKey)
+    if (space) {
+      const caps = await getSpaceCapabilities(space, caller.id)
+      if (canManageSpaceLoom(space, caps.role)) spaceId = space.id
+    }
+  } catch {
+    spaceId = null
+  }
+  if (!spaceId) return { error: 'You cannot manage that library.' }
+  return forkLibraryAsset(spaceId, assetId, caller.id)
+}
+
 /** The images in one scope for the picker grid, plus that scope's tag facets. `view='elements'` keeps
- *  only AI-generated images. Gated + FAIL-SAFE. */
+ *  only AI-generated images. `shared` widens a SPACE scope to the Frequency shared library (LIVE-569):
+ *  'with' for the picker (its own rows and the root's public ones, badged apart by `ownedByViewer`),
+ *  'only' for the Studio's Frequency shelf; the personal scope ignores it. Gated + FAIL-SAFE. */
 export async function loomImages(
   scopeKey: string,
-  opts: { q?: string; tag?: string; kinds?: string[]; generatedOnly?: boolean } = {},
+  opts: { q?: string; tag?: string; kinds?: string[]; generatedOnly?: boolean; shared?: LoomSharedMode } = {},
 ): Promise<{ assets: LoomPickAsset[]; tags: string[] }> {
   const caller = await getCallerProfile()
   if (!caller) return { assets: [], tags: [] }
@@ -191,8 +223,8 @@ export async function loomImages(
   // ['icon'] for the Icons view, ['image','element'] + generatedOnly for Elements, etc.
   const kinds = opts.kinds && opts.kinds.length ? opts.kinds : ['image']
   const [assets, tags] = await Promise.all([
-    listLoomScopeImages(scope, { q: opts.q, tag: opts.tag, kinds, generatedOnly: opts.generatedOnly }),
-    listLoomScopeTags(scope, kinds),
+    listLoomScopeImages(scope, { q: opts.q, tag: opts.tag, kinds, generatedOnly: opts.generatedOnly, shared: opts.shared }),
+    opts.shared === 'only' ? Promise.resolve([] as string[]) : listLoomScopeTags(scope, kinds),
   ])
   return { assets, tags }
 }

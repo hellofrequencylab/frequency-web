@@ -289,6 +289,12 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
 - Effective view for a space = its rows ∪ root's, badged "Frequency" vs "Yours". Using a shared
   asset **references** it; editing **forks** a private copy (`parent_id` → master). No space→space
   sharing in v1; per-plan storage quota via entitlements.
+- Built ([ADR-1587](DECISIONS.md), LIVE-569): the shared set is the root **by id** and public, never
+  any Space's public row. The picker's space scope shows its own images first, then the Frequency
+  ones (badged). The Space Loom Studio has a Frequency library shelf with **Make it yours**
+  (`forkSharedLoomImage` → `forkLibraryAsset`), which copies the stored object to the Space's own
+  path and inserts with `parent_id` = the master; a Space edit of a shared image forks first
+  (`forkIfShared`). A fork is a copy of the file, never a second row on the master's path.
 
 ## Build sequence (D1–D7)
 
