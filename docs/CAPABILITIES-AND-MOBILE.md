@@ -201,4 +201,7 @@ Mobile is a prime first beneficiary when you pilot a sync engine on one surface
    (public/discover already started).
 3. **Contract transport**: PostgREST + RLS consumed directly by both clients
    (least duplication) vs a dedicated BFF (tRPC/GraphQL/REST) for more control
-   over complex composition. Likely hybrid.
+   over complex composition. Likely hybrid. **Decided 2026-09-29: hybrid, as a
+   versioned `/api/v1` of thin route handlers** over the same `lib/` functions the web's
+   actions call, plus the reads RLS already allows, with a Supabase bearer token
+   ([ADR-1643](DECISIONS.md), [APP-CONTRACT.md](APP-CONTRACT.md)). No separate BFF service.
