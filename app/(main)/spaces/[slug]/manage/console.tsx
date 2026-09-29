@@ -203,13 +203,20 @@ function SectionRow({
       <Link
         href={href}
         title={module.desc}
-        className={`group flex items-center gap-2.5 rounded-lg border border-border lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none ${nested ? 'bg-surface/60 px-2 py-1.5' : 'bg-surface px-2.5 py-2'}`}
+        data-console-row
+        className={`group flex tap-target items-center gap-2.5 rounded-lg border border-border lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none ${nested ? 'bg-surface/60 px-2 py-1.5' : 'bg-surface px-2.5 py-2'}`}
       >
         <span className={`flex shrink-0 items-center justify-center rounded-md bg-primary-bg text-primary-strong ${nested ? 'h-6 w-6' : 'h-7 w-7'}`}>
           <Icon className={nested ? 'h-3 w-3' : 'h-3.5 w-3.5'} aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
           <span className={`block truncate font-medium text-text ${nested ? 'text-meta' : 'text-body-sm'}`}>{module.label}</span>
+          {/* The description, where there is no hover to reveal the title tooltip (LIVE-704). A pointer
+              reads it from `title` and keeps the dense one-line row; a thumb gets it as a quiet second
+              line, since a tooltip that needs a hover is not there at all on a phone. */}
+          <span data-console-row-desc className="hidden truncate text-2xs text-muted pointer-coarse:block">
+            {module.desc}
+          </span>
         </span>
         {suggested && (
           <span
@@ -292,7 +299,7 @@ function HubNav({
             scroll={false}
             aria-current={on ? 'page' : undefined}
             className={
-              'rounded-pill px-3 py-1.5 text-body-sm font-medium transition-colors ' +
+              'inline-flex tap-target items-center justify-center rounded-pill px-3 py-1.5 text-body-sm font-medium transition-colors ' +
               (on
                 ? 'bg-primary text-on-primary'
                 : 'border border-border text-muted hover:bg-surface-elevated hover:text-text')
