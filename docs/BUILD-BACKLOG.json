@@ -155,26 +155,34 @@
       },
       "waves": [
         {
-          "name": "W0 · P0 — costing something today: an incident, a wrong money/consent/permission answer, or a crawl-facing defect the submitted sitemap exposes. EMPTY IS THE GOAL. LIVE-234 is the money proof (one succeeded $44 ticket is not five loops). OWN-073 closed 2026-09-19 (owner emailed). PROG-R5 is no longer here — Connect is not the lie.",
-          "ids": []
+          "name": "W0 · P0 — costing something today: an incident, a wrong money/consent/permission answer, or a crawl-facing defect the submitted sitemap exposes. EMPTY IS THE GOAL. LIVE-234 is the money proof (one succeeded $44 ticket is not five loops). OWN-073 closed 2026-09-19 (owner emailed). PROG-R5 is no longer here — Connect is not the lie. ── 2026-09-29 (ADR-1624): LIVE-234 is back on this wave, unparked by \"Unpark all but launch\"; still owner-gated (ownerAction account), so no agent works it.",
+          "ids": [
+            "LIVE-234"
+          ]
         },
         {
           "name": "W0b · P1 — product-first interior (ADR-1403) ready to work now, then CORE-MODEL walls that are still untrue. Pull from here.",
           "ids": [
-            "LIVE-213"
+            "LIVE-213",
+            "LIVE-651"
           ]
         },
         {
           "name": "W0c · P1/P2 — calendar C2–C5 (ADR-1445) first, then FOCUS remainder, gems, scan cheap-DB, Journey sales tail.",
           "ids": [
             "LIVE-413",
-            "HYG-075"
+            "HYG-075",
+            "LIVE-652",
+            "LIVE-653",
+            "LIVE-654"
           ]
         },
         {
           "name": "W0d · P2/P3 — craft: shell split, hex, dev-environment correctness, parked niceties. 12 visitors / 18 pageviews in 31 days: the funnel, not the page speed, is the constraint.",
           "ids": [
-            "LIVE-273"
+            "LIVE-273",
+            "LIVE-655",
+            "HYG-141"
           ]
         },
         {
@@ -189,12 +197,21 @@
           "name": "W2 · foundation first",
           "ids": [
             "DEF-HARDEN",
-            "OWN-082"
+            "OWN-082",
+            "HYG-139",
+            "HYG-140",
+            "HYG-142",
+            "HYG-143"
           ]
         },
         {
-          "name": "WM · Mobile, ALONGSIDE the site (owner ruling 2026-09-28, ADR-1535). Expo/RN on the shared contract (DEF-MOBILE). Placed after W2 foundation so it runs as its own lane beside W5-W8 rather than after them; array order says it may start once W2 holds, not that W5 waits for it. If it should start later, move this wave in one line. ── PARKED 2026-09-29 to 2027-01-05 (ADR-1573): DEF-MOBILE parks for the quarter (owner cull-scope ruling 2026-09-29, newer than ADR-1535 §2). The wave keeps its place in the array.",
-          "ids": []
+          "name": "WM · the MOBILE SITE, phone-first web, ACTIVE (owner replan 2026-09-29 ~18:45Z, ADR-1624: \"I want the mobile site to be active but iOS dev to remain parked\"). Push asked on a tap (LIVE-701), an offline fallback (LIVE-702), install guidance (LIVE-703, a ruling), the thumb-friendly Space console (LIVE-704). The native iOS/Android app is DEF-MOBILE, which stays parked to 2027-01-05 and is not on this wave. Placed after W2 foundation so it runs as its own lane beside W5-W8; array order says it may start once W2 holds, not that W5 waits for it.",
+          "ids": [
+            "LIVE-701",
+            "LIVE-702",
+            "LIVE-703",
+            "LIVE-704"
+          ]
         },
         {
           "name": "W3 · Loom foundation (the media layer the editor projects from)",
@@ -208,19 +225,61 @@
             "PROG-D6",
             "LIVE-577",
             "LIVE-578",
-            "LIVE-580"
+            "LIVE-580",
+            "LIVE-656"
           ]
         },
         {
           "name": "W6 · re-theme + the mechanical sweeps",
-          "ids": []
+          "ids": [
+            "LIVE-657",
+            "LIVE-658",
+            "LIVE-659",
+            "LIVE-660"
+          ]
         },
         {
           "name": "W7 · feature depth",
           "ids": [
             "PROG-PRAC4",
             "LIVE-644",
-            "HYG-109"
+            "HYG-109",
+            "LIVE-661",
+            "LIVE-662",
+            "LIVE-663",
+            "LIVE-664",
+            "LIVE-665",
+            "LIVE-666",
+            "LIVE-667",
+            "LIVE-668",
+            "LIVE-669",
+            "LIVE-670",
+            "LIVE-671",
+            "LIVE-672",
+            "LIVE-673",
+            "LIVE-674",
+            "LIVE-675",
+            "LIVE-676",
+            "LIVE-677",
+            "LIVE-678",
+            "LIVE-679",
+            "LIVE-680",
+            "LIVE-681",
+            "LIVE-682",
+            "LIVE-683",
+            "LIVE-684",
+            "LIVE-685",
+            "LIVE-686",
+            "LIVE-687",
+            "LIVE-688",
+            "LIVE-689",
+            "LIVE-690",
+            "LIVE-691",
+            "LIVE-692",
+            "LIVE-693",
+            "LIVE-694",
+            "LIVE-695",
+            "PROG-GD6"
           ]
         },
         {
@@ -229,11 +288,15 @@
             "PROG-D8",
             "LIVE-622",
             "LIVE-623",
-            "LIVE-624"
+            "LIVE-624",
+            "LIVE-696",
+            "LIVE-697",
+            "LIVE-705",
+            "LIVE-706"
           ]
         },
         {
-          "name": "W4 · THIRD TO LAST (owner ruling 2026-09-21, ADR-1491) — white label websites AND the editor, together. Order within the wave is unchanged from ADR-1325: E0 foundations, E1 the contract, E2 the usage index, E3 the axes, then E10 Sites v1, then E4-E9 depth, then W6 member sites + theme marketplace and P7 theming depth. It MOVED here from before W5: it used to run ahead of Loom-at-scale, re-theme, feature depth and commerce, and now runs after all four. ── PARKED 2026-09-29 to 2027-01-05 (ADR-1573): the editor and Sites group parks together and is decomposed in an owner session, not from a scan. The wave keeps its position; its ids are on the rows, status parked.",
+          "name": "W4 · THIRD TO LAST (owner ruling 2026-09-21, ADR-1491) — white label websites AND the editor, together. Order within the wave is unchanged from ADR-1325: E0 foundations, E1 the contract, E2 the usage index, E3 the axes, then E10 Sites v1, then E4-E9 depth, then W6 member sites + theme marketplace and P7 theming depth. It MOVED here from before W5: it used to run ahead of Loom-at-scale, re-theme, feature depth and commerce, and now runs after all four. ── PARKED 2026-09-29 to 2027-01-05 (ADR-1573): the editor and Sites group parks together and is decomposed in an owner session, not from a scan. The wave keeps its position; its ids are on the rows, status parked. ── STILL DEFERRED (ADR-1624): one of the three waves the owner keeps deferred (\"The only things I want deferred are W4, W9, and W11\"). DEF-DOMAIN's editor, Sites and white-label items (LIVE-698, LIVE-699, LIVE-700) park with this group.",
           "ids": []
         },
         {
@@ -241,11 +304,11 @@
           "ids": []
         },
         {
-          "name": "W11 · SECOND TO LAST (owner rulings 2026-08-24, 2026-09-21, 2026-09-28 / ADR-1535) — the full Etsy-grade store (DEF-ETSY). Now OPEN so it is on the list and probed; still last but one, immediately before the App Platform. ── PARKED 2026-09-29 to 2027-01-05 (ADR-1573): DEF-ETSY parks for the quarter (owner cull-scope ruling 2026-09-29). The wave keeps its position.",
+          "name": "W11 · SECOND TO LAST (owner rulings 2026-08-24, 2026-09-21, 2026-09-28 / ADR-1535) — the full Etsy-grade store (DEF-ETSY). Now OPEN so it is on the list and probed; still last but one, immediately before the App Platform. ── PARKED 2026-09-29 to 2027-01-05 (ADR-1573): DEF-ETSY parks for the quarter (owner cull-scope ruling 2026-09-29). The wave keeps its position. ── STILL DEFERRED (ADR-1624): one of the three waves the owner keeps deferred (\"The only things I want deferred are W4, W9, and W11\").",
           "ids": []
         },
         {
-          "name": "W9 · LAST (owner ruling 2026-09-28, ADR-1535: \"App till last\") — the App Platform (PROG-A1, PROG-A3, PROG-A4), the only program still deferred by name. Rows stay PARKED so no packet picks them up. See the ⚠️ on PROG-A3 in slate.ruled: parking it leaves a disabled module reachable by direct API.",
+          "name": "W9 · LAST (owner ruling 2026-09-28, ADR-1535: \"App till last\") — the App Platform (PROG-A1, PROG-A3, PROG-A4), the only program still deferred by name. Rows stay PARKED so no packet picks them up. See the ⚠️ on PROG-A3 in slate.ruled: parking it leaves a disabled module reachable by direct API. ── STILL DEFERRED (ADR-1624): one of the three waves the owner keeps deferred (\"The only things I want deferred are W4, W9, and W11\").",
           "ids": []
         },
         {
@@ -260,13 +323,18 @@
             "OWN-062",
             "OWN-070",
             "OWN-074",
-            "OWN-077"
+            "OWN-077",
+            "OWN-085",
+            "OWN-086",
+            "OWN-087",
+            "DEF-A2P",
+            "LIVE-455"
           ]
         }
       ],
       "deferredByName": [
-        "LAST — the App Platform (PROG-A1, PROG-A3, PROG-A4), owner ruling 2026-09-28 (ADR-1535). Nothing else is deferred by name: white label (W4) and Etsy (W11) are SEQUENCED late, mobile (WM) is sequenced early, the phone door (PROG-GD6) is gated on DEF-A2P.",
-        "PARKED WITH A DATE, not deferred by name (ADR-1573, 2026-09-29): the editor and Sites group (W4: PROG-E0 to E10, PROG-W6, LIVE-310), DEF-ETSY (W11), DEF-MOBILE (WM), DEF-DOMAIN, PROG-GD6 with DEF-A2P, LIVE-551 (all parkedUntil 2027-01-05) and LIVE-464 (2026-12-14). The App Platform stays the only program deferred by name and gains parkedUntil 2027-03-31. A parked row is pruned from its wave and is not probed; the wave keeps its position."
+        "DEFERRED, and only these (owner replan 2026-09-29 ~18:45Z, ADR-1624: \"The only things I want deferred are W4, W9, and W11\"): W4, the editor with Sites and white label (PROG-E0 to E10, PROG-W6, LIVE-310, LIVE-698 to LIVE-700, parkedUntil 2027-01-05); W11, the Etsy-grade store (DEF-ETSY, 2027-01-05); W9, the App Platform (PROG-A1, PROG-A3, PROG-A4, 2027-03-31). Their rows are parked with a date and sit on no wave.",
+        "HELD, not deferred: DEF-MOBILE is the NATIVE app, parked to 2027-01-05 (\"iOS dev to remain parked\"); the mobile SITE is the active WM wave. LIVE-464 is the launch-day pass, parked to 2026-12-14 for launch on 2026-12-21 (\"Unpark all but launch\"). Everything the 2026-09-29 cull parked outside those (DEF-DOMAIN, DEF-A2P, PROG-GD6, LIVE-455, LIVE-234) is decomposed or open again (ADR-1624). LIVE-551 is still parked on this tree: the replan's text did not name it; its own row carries its gate."
       ],
       "decisions": [
         "OWN-035",
@@ -329,11 +397,11 @@
           },
           {
             "phase": 3,
-            "name": "Mobile, alongside the site (owner ruling 2026-09-28)",
+            "name": "The mobile site, phone-first web, alongside the site (owner replan 2026-09-29, ADR-1624); the native app stays parked",
             "waves": [
               "WM"
             ],
-            "exit": "stack + transport decision is an ADR; one surface ships on the sync-engine pilot; runs as its own lane from here on, so phases 4-9 do not wait on it"
+            "exit": "push asks on a tap; an offline fallback serves; the Space console works one-handed at 390px; install guidance ruled; runs as its own lane from here on, so phases 4-9 do not wait on it"
           },
           {
             "phase": 4,
@@ -353,11 +421,11 @@
           },
           {
             "phase": 6,
-            "name": "Feature depth: Practice 4, the domain backlog, the code-comment follow-ups, the phone door once A2P clears",
+            "name": "Feature depth: Practice 4, the domain register as rows (ADR-1624), the phone door once A2P clears",
             "waves": [
               "W7"
             ],
-            "exit": "PROG-PRAC4 closes; DEF-DOMAIN and DEF-CODE worked down to their probes; PROG-GD6 ships or is ruled out"
+            "exit": "PROG-PRAC4 closes; the W7 rows DEF-DOMAIN was decomposed into (ADR-1624) close by their probes or rulings; PROG-GD6 ships or is ruled out"
           },
           {
             "phase": 7,
@@ -2528,7 +2596,7 @@
     {
       "id": "DEF-A2P",
       "title": "A2P 10DLC brand + campaign registration",
-      "status": "parked",
+      "status": "open",
       "priority": "P3",
       "lane": "owner",
       "size": "M",
@@ -2536,18 +2604,17 @@
         "file": "docs/A2P-REGISTRATION.md",
         "ref": "TL;DR"
       },
-      "detail": "14 filing steps, not started, and CARRIER REVIEW RUNS 10-15 DAYS — so the clock should start well before the SMS features need it. Blocks the SMS card-scan nudge and 1:1 SMS. Needs a Standard EIN-backed brand with the IRS record matched exactly, a Mixed use-case campaign, sample messages, STOP/HELP on the Messaging Service, and both SIDs recorded to env.\n\n── RE-MEASURED 2026-08-19 in a premise sweep (ADR-1082). THE 🔴 ENGINEERING BLOCKER ON THE FILING PACKET IS DONE, so the 10-15 day carrier clock can start today. docs/A2P-REGISTRATION.md §6 still carries as its worst-first row: \"Terms of service URL is live. ONLY /privacy EXISTS TODAY (app/privacy/page.tsx). A terms page must ship before the campaign is filed (carrier requirement as of 2026-06-30).\" It shipped. app/terms/page.tsx is 181 lines, landed in dc47b89 (#2124), and production serves https://frequencylocal.com/terms with 200, x-matched-path /terms, robots index,follow and a self-canonical.\n\nIts §7 \"SMS and messaging consent\" already carries every clause the campaign form asks for: opt-in only, \"Message and data rates may apply\", \"message frequency varies\", \"Reply STOP ... Reply HELP\", \"Opting in to texts is never a condition of using Frequency or of any purchase\", and a link to /privacy. The §1 TL;DR table's step 2 (Eng, 🔴 blocker) is therefore satisfied; steps 1 and 3-6 are operator-only.\n\n⚠️ One thing to know rather than a blocker: the page opens \"Draft pending legal review.\" Nothing here says whether a carrier cares, but the owner should see that line before filing. The engineering half of this row is now zero.\n\n── PARKED 2026-08-20 (owner ruling): texting is deferred by name; the filing packet stays ready in docs/A2P-REGISTRATION.md, and the 10-15 day carrier clock starts whenever texting un-defers. ── ⚠️ RE-STATUSED 2026-08-25 BY OWNER RULING: the only parked items are the mobile app (DEF-MOBILE), the full Etsy-grade marketplace build (DEF-ETSY) and white-labeled sites (PROG-W6). Everything else belongs on the active production list. Un-parked: A2P 10DLC registration gates SMS, which the event and Dispatch surfaces already reference.\n\n── ⏸️ PARKED 2026-08-25 BY OWNER RULING, asked as a direct multiple choice and answered \"Park it with the other three\". The 2026-08-25 slate ruling named mobile, the Etsy-grade store and white-label sites as the only holds, which un-parked this row by implication; put to the owner explicitly with its real cost (an EIN, a carrier fee, and 2-4 weeks of TCR review before a single message can send), the answer was to hold it. The named holds are now FOUR, and the slate says so rather than leaving the row and the slate disagreeing — which they already did before this edit: deferredByName listed DEF-A2P while the row read `open`, and listed neither DEF-ETSY nor PROG-W6 while both rows read `parked`. Un-park it by acting on it. Nothing in the repo is blocked: the Twilio rail and sms_consent are built and gated, so registration is the only thing between here and sending.\n\n── UNPARKED 2026-09-07. The owner's deferral list names the App Platform, white label and Etsy; it does not name texting, and the instruction around it was \"everything on the list except white label and mobile app\". So this comes off the deferred list.\n\nIT MOVES TO THE OWNER LANE RATHER THAN A BUILD WAVE, because none of it is repo work: a Standard EIN-backed brand with the IRS record matched exactly, a carrier registration fee, and 10-15 days of TCR review that no amount of code shortens. Priority stays P3 — nothing in the active list is blocked on SMS, and the reason to start it early is the review clock, not urgency. THE ASK: file the 10DLC brand and campaign so the review clock starts before the SMS features need it.\n\n── PARKED 2026-09-29 (ADR-1573, backlog cull) until 2027-01-05. Ruled parked; the carrier clock starts in January. Owner ruling 2026-09-29 03:45Z: \"Not this quarter, park it.\" The carrier clock starts in January with the SMS rows that depend on it (PROG-GD6 is the only open dependent row; the card-scan nudge and 1:1 SMS have no rows of their own). Amends ADR-1535 §4. Audit evidence: manual probe; ownerAction account; owner ruling 2026-09-29: not this quarter, park to 2027-01 with the SMS rows that depend on it (PROG-GD6 is the only open dependent row; the card-scan nudge and 1:1 SMS have no rows of their own).",
+      "detail": "14 filing steps, not started, and CARRIER REVIEW RUNS 10-15 DAYS — so the clock should start well before the SMS features need it. Blocks the SMS card-scan nudge and 1:1 SMS. Needs a Standard EIN-backed brand with the IRS record matched exactly, a Mixed use-case campaign, sample messages, STOP/HELP on the Messaging Service, and both SIDs recorded to env.\n\n── RE-MEASURED 2026-08-19 in a premise sweep (ADR-1082). THE 🔴 ENGINEERING BLOCKER ON THE FILING PACKET IS DONE, so the 10-15 day carrier clock can start today. docs/A2P-REGISTRATION.md §6 still carries as its worst-first row: \"Terms of service URL is live. ONLY /privacy EXISTS TODAY (app/privacy/page.tsx). A terms page must ship before the campaign is filed (carrier requirement as of 2026-06-30).\" It shipped. app/terms/page.tsx is 181 lines, landed in dc47b89 (#2124), and production serves https://frequencylocal.com/terms with 200, x-matched-path /terms, robots index,follow and a self-canonical.\n\nIts §7 \"SMS and messaging consent\" already carries every clause the campaign form asks for: opt-in only, \"Message and data rates may apply\", \"message frequency varies\", \"Reply STOP ... Reply HELP\", \"Opting in to texts is never a condition of using Frequency or of any purchase\", and a link to /privacy. The §1 TL;DR table's step 2 (Eng, 🔴 blocker) is therefore satisfied; steps 1 and 3-6 are operator-only.\n\n⚠️ One thing to know rather than a blocker: the page opens \"Draft pending legal review.\" Nothing here says whether a carrier cares, but the owner should see that line before filing. The engineering half of this row is now zero.\n\n── PARKED 2026-08-20 (owner ruling): texting is deferred by name; the filing packet stays ready in docs/A2P-REGISTRATION.md, and the 10-15 day carrier clock starts whenever texting un-defers. ── ⚠️ RE-STATUSED 2026-08-25 BY OWNER RULING: the only parked items are the mobile app (DEF-MOBILE), the full Etsy-grade marketplace build (DEF-ETSY) and white-labeled sites (PROG-W6). Everything else belongs on the active production list. Un-parked: A2P 10DLC registration gates SMS, which the event and Dispatch surfaces already reference.\n\n── ⏸️ PARKED 2026-08-25 BY OWNER RULING, asked as a direct multiple choice and answered \"Park it with the other three\". The 2026-08-25 slate ruling named mobile, the Etsy-grade store and white-label sites as the only holds, which un-parked this row by implication; put to the owner explicitly with its real cost (an EIN, a carrier fee, and 2-4 weeks of TCR review before a single message can send), the answer was to hold it. The named holds are now FOUR, and the slate says so rather than leaving the row and the slate disagreeing — which they already did before this edit: deferredByName listed DEF-A2P while the row read `open`, and listed neither DEF-ETSY nor PROG-W6 while both rows read `parked`. Un-park it by acting on it. Nothing in the repo is blocked: the Twilio rail and sms_consent are built and gated, so registration is the only thing between here and sending.\n\n── UNPARKED 2026-09-07. The owner's deferral list names the App Platform, white label and Etsy; it does not name texting, and the instruction around it was \"everything on the list except white label and mobile app\". So this comes off the deferred list.\n\nIT MOVES TO THE OWNER LANE RATHER THAN A BUILD WAVE, because none of it is repo work: a Standard EIN-backed brand with the IRS record matched exactly, a carrier registration fee, and 10-15 days of TCR review that no amount of code shortens. Priority stays P3 — nothing in the active list is blocked on SMS, and the reason to start it early is the review clock, not urgency. THE ASK: file the 10DLC brand and campaign so the review clock starts before the SMS features need it.\n\n── PARKED 2026-09-29 (ADR-1573, backlog cull) until 2027-01-05. Ruled parked; the carrier clock starts in January. Owner ruling 2026-09-29 03:45Z: \"Not this quarter, park it.\" The carrier clock starts in January with the SMS rows that depend on it (PROG-GD6 is the only open dependent row; the card-scan nudge and 1:1 SMS have no rows of their own). Amends ADR-1535 §4. Audit evidence: manual probe; ownerAction account; owner ruling 2026-09-29: not this quarter, park to 2027-01 with the SMS rows that depend on it (PROG-GD6 is the only open dependent row; the card-scan nudge and 1:1 SMS have no rows of their own).\n\n── UNPARKED 2026-09-29 (ADR-1624). Owner replan 2026-09-29 ~18:45Z: \"The only things I want deferred are W4, W9, and W11.\" On the owner rows the ruling was \"Unpark all but launch\", so this row is open again on owner-timed: the 10-15 day carrier clock starts when the owner files the brand and campaign; PROG-GD6 and LIVE-693 (the automation SMS action) wait on it. The parkedUntil note is removed.",
       "verify": {
         "kind": "manual",
-        "evidence": "Parked by owner ruling 2026-08-25 (multiple choice, \"Park it with the other three\"). The code half is complete and gated — the Twilio rail plus the sms_consent table — so nothing sends until a registered campaign exists, which is the correct fail-closed shape for a parked row.",
-        "checked": "2026-08-25"
+        "evidence": "Parked by owner ruling 2026-08-25 (multiple choice, \"Park it with the other three\"). The code half is complete and gated — the Twilio rail plus the sms_consent table — so nothing sends until a registered campaign exists, which is the correct fail-closed shape for a parked row. 2026-09-29: unparked by the owner replan (ADR-1624); state otherwise unchanged, not re-measured.",
+        "checked": "2026-09-29"
       },
-      "ownerAction": "account",
-      "notes": "parkedUntil: 2027-01-05. Parked by the 2026-09-29 cull (ADR-1573)."
+      "ownerAction": "account"
     },
     {
       "id": "DEF-MOBILE",
-      "title": "Mobile: Expo/RN on the shared contract",
+      "title": "The native app (iOS and Android): Expo/RN on the shared contract, parked; the mobile SITE is active in WM",
       "status": "parked",
       "priority": "P2",
       "lane": "program",
@@ -2556,7 +2623,7 @@
         "file": "docs/BUILD-PHASES.md",
         "ref": "Mobile"
       },
-      "detail": "An Expo/RN app on the shared RPC contract and capability model, native camera/QR + NFC + geofencing + push, a Postgres sync-engine pilot on one surface, and a decision on the stack and contract transport.\n\n── PARKED 2026-08-20 (owner ruling): mobile application is deferred by name.\n\n── OWNER RULING 2026-09-28 (ADR-1535). \"App till last. Mobile build gets done alongside the site.\" UNPARKED into its own wave WM, placed after W2 foundation so it can run as its own lane beside the site work rather than after it. The stack decision (Expo/RN, contract transport) is the first packet of this row, not a precondition for opening it.\n\n── PARKED 2026-09-29 (ADR-1573, backlog cull) until 2027-01-05. Not this quarter by the newer ruling; the cull ADR must say it amends ADR-1535 §2, and the first packet on un-park is the stack decision as a LIVE child. Owner cull-scope ruling 2026-09-29 03:45Z names mobile among the rows to park; it is newer than ADR-1535 §2, which unparked this row into WM one day earlier, and ADR-1573 records that amendment. WM keeps its place in the array. The first packet on un-park is the stack and transport decision as a LIVE child, as the row already says. Audit evidence: manual probe; manual XL; ADR-1535 §2 unparked it into WM one day ago; owner cull-scope ruling 2026-09-29 names mobile among rows to park.",
+      "detail": "An Expo/RN app on the shared RPC contract and capability model, native camera/QR + NFC + geofencing + push, a Postgres sync-engine pilot on one surface, and a decision on the stack and contract transport.\n\n── PARKED 2026-08-20 (owner ruling): mobile application is deferred by name.\n\n── OWNER RULING 2026-09-28 (ADR-1535). \"App till last. Mobile build gets done alongside the site.\" UNPARKED into its own wave WM, placed after W2 foundation so it can run as its own lane beside the site work rather than after it. The stack decision (Expo/RN, contract transport) is the first packet of this row, not a precondition for opening it.\n\n── PARKED 2026-09-29 (ADR-1573, backlog cull) until 2027-01-05. Not this quarter by the newer ruling; the cull ADR must say it amends ADR-1535 §2, and the first packet on un-park is the stack decision as a LIVE child. Owner cull-scope ruling 2026-09-29 03:45Z names mobile among the rows to park; it is newer than ADR-1535 §2, which unparked this row into WM one day earlier, and ADR-1573 records that amendment. WM keeps its place in the array. The first packet on un-park is the stack and transport decision as a LIVE child, as the row already says. Audit evidence: manual probe; manual XL; ADR-1535 §2 unparked it into WM one day ago; owner cull-scope ruling 2026-09-29 names mobile among rows to park.\n\n── 2026-09-29 ~18:45Z owner replan (ADR-1624): \"I want the mobile site to be active but iOS dev to remain parked.\" This row is the NATIVE app only (Expo/RN, native camera, NFC, geofencing, native push, the sync-engine pilot) and STAYS PARKED to 2027-01-05. The phone-first WEB work is not this row: it is the WM wave, now active (LIVE-701 push on a tap, LIVE-702 offline fallback, LIVE-703 install guidance, LIVE-704 the thumb-friendly Space console). On un-park the first packet is still the stack and transport decision.",
       "verify": {
         "kind": "manual",
         "evidence": "Unparked 2026-09-28 by owner ruling (ADR-1535). Not started: no Expo project in the tree, no shared-contract transport decision recorded. Closes when the stack decision is an ADR and one surface ships on the sync-engine pilot.",
@@ -2585,7 +2652,7 @@
     {
       "id": "DEF-DOMAIN",
       "title": "The domain feature backlog (~120 items across 15 areas)",
-      "status": "parked",
+      "status": "done",
       "priority": "P2",
       "lane": "program",
       "size": "XL",
@@ -2593,13 +2660,13 @@
         "file": "docs/BACKLOG.md",
         "ref": "§A-§V"
       },
-      "detail": "Items no current plan absorbed, kept as a body rather than 120 rows because none is individually scheduled: CRM follow-ups, the Network rework, circles/discovery, two-way inbox and @mentions, Quest/gamification depth, operator Growth Studio, Vera/AI (including the governance kernel and Proactive Vera), signup-lead recovery, the 12-item theme system, roles/personas long tails, IA, moderation and trust, and the 11 owner UI calls from the 2026-06-05 screenshot review. Promote an item to its own row when it is scheduled — that is the intended flow, not a workaround.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.\n\n── ITEMS ADDED 2026-09-06 (backlog audit), each verified present in its doc or comment: CRM doors 2-5 surfaces (\"engine hooks, surfaces TODO\", CRM-MASTER-BUILD-PLAN §doors, ADR-612); the marketing/transactional sending-subdomain split (GE6-5) and GE3-5 referral position / GE3-6 cohort gating (GROWTH-OS-BUILD-PLAN); real pagination on /network and /circles, which render a capped slice with a \"showing first N\" notice (BUILD-LIST P-SCALE); ADMIN-RAIL §6.4 — generalise the one-bundle rail provider to circle/event/hub/nexus/practice and give dispatches an adminScopeFor scope (re-test the rail-speed premise first; LIVE-181 is adjacent); the thumb-friendly Space console pass MOBILE-NAV-PLAN says is \"tracked separately\" and was not; the /drafts rail badge counting unfinished wizard drafts as well as proposals (HANDOFF-2026-08-12); the space-copilot deferred list — an eval harness, MCP/tool grounding over the Space's live content, RAG over its posts and offerings (lib/ai/space-copilot.ts:18-21); the six EVENTS-SERIES polish tags (SERIES-PD/RANK/PIN/MAIN/PICKER/EMBED; the two with a consequence are LIVE-198); the .text-text/10 watermark numerals in the dark skins, the contrast residue's second half (UX-MATURITY-PLAN §contrast); the Crew gamification week-over-week delta the Notion page defers to \"Phase 4\" for want of historical Zap snapshots; and the shared (team) contact visibility NETWORK-CRM says is \"modelled, not yet surfaced\". Promote one when it is scheduled.\n\n── PARKED 2026-09-29 (ADR-1573, backlog cull) until 2027-01-05. A register is promoted from, not built; park it so it stops printing as XL of runway, and promote an item to its own row when scheduled. A register is promoted from, not built. Parked so ~130 unscheduled items stop printing as an XL of runway; promote an item to its own row when it is scheduled, which was always the flow. DEF-CODE is absorbed into this row (see the ABSORBS paragraph below). Audit evidence: manual probe; manual XL register of ~130 unscheduled items, absorbs DEF-CODE; not agent-workable by design; spot check: /network still renders the capped slice (app/(main)/network/page.tsx:155).\n\n── ABSORBS 2026-09-29 (ADR-1573, backlog cull): DEF-CODE (the fourteen follow-ups promised in code comments, plus three migration-comment follow-ups) is merged into this register; its detail stays in the ledger as the list, and an item is promoted from here when scheduled.",
+      "detail": "Items no current plan absorbed, kept as a body rather than 120 rows because none is individually scheduled: CRM follow-ups, the Network rework, circles/discovery, two-way inbox and @mentions, Quest/gamification depth, operator Growth Studio, Vera/AI (including the governance kernel and Proactive Vera), signup-lead recovery, the 12-item theme system, roles/personas long tails, IA, moderation and trust, and the 11 owner UI calls from the 2026-06-05 screenshot review. Promote an item to its own row when it is scheduled — that is the intended flow, not a workaround.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.\n\n── ITEMS ADDED 2026-09-06 (backlog audit), each verified present in its doc or comment: CRM doors 2-5 surfaces (\"engine hooks, surfaces TODO\", CRM-MASTER-BUILD-PLAN §doors, ADR-612); the marketing/transactional sending-subdomain split (GE6-5) and GE3-5 referral position / GE3-6 cohort gating (GROWTH-OS-BUILD-PLAN); real pagination on /network and /circles, which render a capped slice with a \"showing first N\" notice (BUILD-LIST P-SCALE); ADMIN-RAIL §6.4 — generalise the one-bundle rail provider to circle/event/hub/nexus/practice and give dispatches an adminScopeFor scope (re-test the rail-speed premise first; LIVE-181 is adjacent); the thumb-friendly Space console pass MOBILE-NAV-PLAN says is \"tracked separately\" and was not; the /drafts rail badge counting unfinished wizard drafts as well as proposals (HANDOFF-2026-08-12); the space-copilot deferred list — an eval harness, MCP/tool grounding over the Space's live content, RAG over its posts and offerings (lib/ai/space-copilot.ts:18-21); the six EVENTS-SERIES polish tags (SERIES-PD/RANK/PIN/MAIN/PICKER/EMBED; the two with a consequence are LIVE-198); the .text-text/10 watermark numerals in the dark skins, the contrast residue's second half (UX-MATURITY-PLAN §contrast); the Crew gamification week-over-week delta the Notion page defers to \"Phase 4\" for want of historical Zap snapshots; and the shared (team) contact visibility NETWORK-CRM says is \"modelled, not yet surfaced\". Promote one when it is scheduled.\n\n── PARKED 2026-09-29 (ADR-1573, backlog cull) until 2027-01-05. A register is promoted from, not built; park it so it stops printing as XL of runway, and promote an item to its own row when scheduled. A register is promoted from, not built. Parked so ~130 unscheduled items stop printing as an XL of runway; promote an item to its own row when it is scheduled, which was always the flow. DEF-CODE is absorbed into this row (see the ABSORBS paragraph below). Audit evidence: manual probe; manual XL register of ~130 unscheduled items, absorbs DEF-CODE; not agent-workable by design; spot check: /network still renders the capped slice (app/(main)/network/page.tsx:155).\n\n── ABSORBS 2026-09-29 (ADR-1573, backlog cull): DEF-CODE (the fourteen follow-ups promised in code comments, plus three migration-comment follow-ups) is merged into this register; its detail stays in the ledger as the list, and an item is promoted from here when scheduled.\n\n── CLOSED 2026-09-29 (ADR-1624): DECOMPOSED. Owner replan 2026-09-29 ~18:45Z: \"The only things I want deferred are W4, W9, and W11.\" On this register the owner chose \"Split into rows\". Every item in the register (TASK-INVENTORY §8a to §8q, the 2026-09-06 additions, and DEF-CODE's fourteen comments and three migration follow-ups) was re-tested against main at 923adf97f (ADR-1082). 55 rows were filed: LIVE-651, LIVE-652, LIVE-653, LIVE-654, LIVE-655, LIVE-656, LIVE-657, LIVE-658, LIVE-659, LIVE-660, LIVE-661, LIVE-662, LIVE-663, LIVE-664, LIVE-665, LIVE-666, LIVE-667, LIVE-668, LIVE-669, LIVE-670, LIVE-671, LIVE-672, LIVE-673, LIVE-674, LIVE-675, LIVE-676, LIVE-677, LIVE-678, LIVE-679, LIVE-680, LIVE-681, LIVE-682, LIVE-683, LIVE-684, LIVE-685, LIVE-686, LIVE-687, LIVE-688, LIVE-689, LIVE-690, LIVE-691, LIVE-692, LIVE-693, LIVE-694, LIVE-695, LIVE-696, LIVE-697, LIVE-698, LIVE-699, LIVE-700, OWN-085, OWN-086, OWN-087, HYG-139, LIVE-704. The editor, Sites and white-label items (LIVE-698, LIVE-699, LIVE-700) are filed PARKED with the W4 group; nothing in the register was Etsy-grade store (W11) or App Platform (W9) scope.\n\nDONE IN PASSING, found built on the re-test and so not filed: CRM front doors 2 to 5 and the reciprocal handshake (app/(capture)/exchange, checkin, unlock and the Space CRM doors all call their capture hooks; the TODO comment at lib/crm/lead-capture.ts:1028 is stale), the duplicate contact surfaces (no ContactsList remains), promotion to contacts and shared (team) visibility, upgrade-trigger events (lib/crm/upgrade-signal.ts); the density read-model (/admin/keystone/density); the two-way inbox (the inbound-email webhook and /admin/crm/conversations); @mention parsing and fan-out (post_mentions and mention notifications in app/(main)/feed/actions.ts); PD6 depth streak; the threshold chime; community-library review and promote-to-official (setPlanOfficial); the seasonal authoring surface and the season countdown; the operator growth set (link generator, A/B variants, scheduled publish, segment builder, Kanban pipeline, cohort and acquisition analytics, engagement_score, the weekly digest, the notification router, push actions in automations); the live operator and Proactive Vera (lib/ai/vera autonomy latches, default off); live-loop suggestion chips, draft_intro, the Vera launcher, journal framing; the AI governance kernel (model registry, prompt caching per ADR-1287, pgvector help RAG, usage ledger, budget caps, the autonomy kill switch); signup-lead recovery (the signup-lead-recovery cron, the finish-setting-up email, lib/crm/graduation.ts); the member generation switch, spaces.generation and structureFor; scoped stewardship, the permission grid and the capability resolver; entitlement sources beyond membership_tier; the admin suites, the data-driven menu admin and the focal-point picker; content-type-agnostic reports and reviews and disputes; the .text-text/10 watermark numerals (no longer in the tree); the broadcast token (S3), S2, S5, S7, S1b; the sending-subdomain split (EMAIL_BROADCAST_FROM); the topic NOT NULL migration comment (done in 20260604010000); the mobile-orphan closeout in MOBILE-NAV-PLAN §3.\n\nRULED OR SUPERSEDED, not filed: the /drafts badge counting wizard drafts (owner ruling 2026-08-12 keeps it to create proposals, lib/nav/my-frequency.ts); GE3-5 and GE3-6 (the waitlist engine was deleted with the beta program, ADR-1006); Beta Activation surfaces (ADR-1006); affiliate kickbacks (LIVE-607, \"No affiliate money\"); \"Fold Outreach content into the admin Overview\" (the Outreach entry was replaced by /admin/crm/conversations); S10 previews hanging (previews build and are photographed on every PR); page_revisions rollback (PROG-E0 page_versions, W4); roles 1.3 unified-site refactor (names no consequence to re-test; refile with one if it has one); IDEA-003 (stays with ADR-442, per PRACTICE-DEPTH-BUILD); ADMIN-RAIL §6.4 dispatch coverage (no /broadcast/[id] route remains).",
       "verify": {
-        "kind": "manual",
-        "evidence": "Full text preserved in docs/TASK-INVENTORY-2026-08-17.md §8 and the source docs. 2026-09-06: eleven items folded in from the docs sweep.",
-        "checked": "2026-09-06"
+        "kind": "cmd",
+        "cmd": "node -e 'const d=require(\"./docs/BUILD-BACKLOG.json\");const have=new Set(d.entries.map((e)=>e.id));const kids=[\"LIVE-651\",\"LIVE-652\",\"LIVE-653\",\"LIVE-654\",\"LIVE-655\",\"LIVE-656\",\"LIVE-657\",\"LIVE-658\",\"LIVE-659\",\"LIVE-660\",\"LIVE-661\",\"LIVE-662\",\"LIVE-663\",\"LIVE-664\",\"LIVE-665\",\"LIVE-666\",\"LIVE-667\",\"LIVE-668\",\"LIVE-669\",\"LIVE-670\",\"LIVE-671\",\"LIVE-672\",\"LIVE-673\",\"LIVE-674\",\"LIVE-675\",\"LIVE-676\",\"LIVE-677\",\"LIVE-678\",\"LIVE-679\",\"LIVE-680\",\"LIVE-681\",\"LIVE-682\",\"LIVE-683\",\"LIVE-684\",\"LIVE-685\",\"LIVE-686\",\"LIVE-687\",\"LIVE-688\",\"LIVE-689\",\"LIVE-690\",\"LIVE-691\",\"LIVE-692\",\"LIVE-693\",\"LIVE-694\",\"LIVE-695\",\"LIVE-696\",\"LIVE-697\",\"LIVE-698\",\"LIVE-699\",\"LIVE-700\",\"OWN-085\",\"OWN-086\",\"OWN-087\",\"HYG-139\",\"LIVE-704\"];const miss=kids.filter((k)=>!have.has(k));if(miss.length){console.error(\"DEF-DOMAIN was decomposed into rows that are gone from the ledger: \"+miss.join(\", \"));process.exit(1)}console.log(\"ok\")'",
+        "note": "Every row DEF-DOMAIN was decomposed into (55, ADR-1624) exists in the ledger, whatever its status: a child closes by its own probe, and deleting one loses an item the owner asked to be built. Fails on main at 923adf97f (none exist)."
       },
-      "notes": "parkedUntil: 2027-01-05. Parked by the 2026-09-29 cull (ADR-1573)."
+      "closed": "2026-09-29"
     },
     {
       "id": "HYG-001",
@@ -11194,7 +11261,7 @@
     {
       "id": "LIVE-455",
       "title": "Phase 11, the six weeks: one city, three businesses, one gathering each per week, and the instrument read at the start and the end",
-      "status": "parked",
+      "status": "open",
       "priority": "P1",
       "lane": "owner",
       "size": "M",
@@ -11203,13 +11270,12 @@
         "ref": "§5 phase 11; ADR-1510"
       },
       "ownerAction": "ruling",
-      "detail": "FILED 2026-09-21 when PROG-R11 closed as the instrument (ADR-1510). This row is the field test itself, which needs no engineer and cannot be closed by code: the owner names the city, the three businesses (each a Space) and the start date; each hosts one real gathering a week for six weeks and brings ten of their own people; hosts mark who was in the room from the roster (the host mark, attended_at, is the only thing the instrument counts as attendance, so a host who does not mark reads as zero).\n\nTHE START READING is already taken. Production 2026-09-21 19:57Z, from scripts/maintenance/prove-it.mjs: 26 active non-root Spaces, 4 circles a Space started (0.15 per Space), 13 gatherings held in the trailing 42 days, 0 of them with anyone marked present, 0 people marked present. The weekly maintenance sweep prints the same three numbers every week under \"Phase 11 reading\", so the series exists whether or not anyone runs the query by hand.\n\nCLOSES WHEN the end reading (six weeks after the named start date) is recorded in this detail beside the start reading, taken the same way. What the numbers say is then a ruling, not a row: CORE-MODEL §6 says phase 11 is the only phase that can tell whether the model is right.\n\n── PARKED 2026-09-21 by owner ruling: the six weeks do not start now. The instrument stays live (PROG-R11 probe) and the weekly maintenance sweep keeps printing the three numbers under \"Phase 11 reading\", so the series accumulates while this row waits; the start reading above stands as the baseline. Unpark at launch prep (parkedUntil 2026-11-15) by naming the city, the three Spaces and the start date, and put the row back in the owner-timed wave.",
+      "detail": "FILED 2026-09-21 when PROG-R11 closed as the instrument (ADR-1510). This row is the field test itself, which needs no engineer and cannot be closed by code: the owner names the city, the three businesses (each a Space) and the start date; each hosts one real gathering a week for six weeks and brings ten of their own people; hosts mark who was in the room from the roster (the host mark, attended_at, is the only thing the instrument counts as attendance, so a host who does not mark reads as zero).\n\nTHE START READING is already taken. Production 2026-09-21 19:57Z, from scripts/maintenance/prove-it.mjs: 26 active non-root Spaces, 4 circles a Space started (0.15 per Space), 13 gatherings held in the trailing 42 days, 0 of them with anyone marked present, 0 people marked present. The weekly maintenance sweep prints the same three numbers every week under \"Phase 11 reading\", so the series exists whether or not anyone runs the query by hand.\n\nCLOSES WHEN the end reading (six weeks after the named start date) is recorded in this detail beside the start reading, taken the same way. What the numbers say is then a ruling, not a row: CORE-MODEL §6 says phase 11 is the only phase that can tell whether the model is right.\n\n── PARKED 2026-09-21 by owner ruling: the six weeks do not start now. The instrument stays live (PROG-R11 probe) and the weekly maintenance sweep keeps printing the three numbers under \"Phase 11 reading\", so the series accumulates while this row waits; the start reading above stands as the baseline. Unpark at launch prep (parkedUntil 2026-11-15) by naming the city, the three Spaces and the start date, and put the row back in the owner-timed wave.\n\n── UNPARKED 2026-09-29 (ADR-1624). Owner replan 2026-09-29 ~18:45Z: \"The only things I want deferred are W4, W9, and W11.\" On the owner rows the ruling was \"Unpark all but launch\", so this row is open again on owner-timed: the six weeks start when the owner names the city, the three Spaces and the start date; the weekly sweep keeps printing the series meanwhile. The parkedUntil note is removed.",
       "verify": {
         "kind": "manual",
-        "evidence": "Not started: no city, no three Spaces and no start date named. Start reading 2026-09-21 (above). End reading not taken. The instrument works: the query ran on production on 2026-09-21 and the sweep step is wired (PROG-R11 probe).",
-        "checked": "2026-09-21"
-      },
-      "notes": "parkedUntil: 2026-11-15. Parked until launch prep; the weekly sweep keeps printing the series."
+        "evidence": "Not started: no city, no three Spaces and no start date named. Start reading 2026-09-21 (above). End reading not taken. The instrument works: the query ran on production on 2026-09-21 and the sweep step is wired (PROG-R11 probe). 2026-09-29: unparked by the owner replan (ADR-1624); state otherwise unchanged, not re-measured.",
+        "checked": "2026-09-29"
+      }
     },
     {
       "id": "LIVE-456",
@@ -11730,7 +11796,7 @@
     {
       "id": "LIVE-234",
       "title": "Prove each money loop once in production",
-      "status": "parked",
+      "status": "open",
       "priority": "P0",
       "lane": "live",
       "size": "M",
@@ -11738,11 +11804,11 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "Nothing has ever been charged. Production 2026-09-08: commerce_orders 0, event_tickets 0, space_subscription_items 0, financial_transactions 0, tips 0, creator_tips 0, store_redemptions 0, supporter_contributions 0. stripe_webhook_events holds exactly 1 row.\n\nFive non-zero row counts is the whole probe: a membership reaching active, a booking with a deposit, one order, one donation, one Space subscription. Until then every revenue number in this model is arithmetic, not evidence.  OWNER ASK MADE VISIBLE 2026-09-15 (ADR-1356). This row sat in the `live` lane with a `manual` probe, so check:backlog never demanded an `ownerAction` -- the guard only requires one on a row whose LANE is `owner`. The consequence is the exact failure AGENTS.md names: the ask was hiding in a live row's detail instead of being printed beside the OWNER section, and it read as an agent-workable P0 in every scan of the board. No agent can move it: the probe is five non-zero row counts produced by five REAL Stripe charges, which needs a human with a payment method. `account` is the nearest of the five keys (account|config|content|ruling|waiting) and it is an imperfect fit -- none of them names \"perform a real end-to-end transaction\", which is worth a glance at the taxonomy rather than a sixth key added on one row's evidence. The CODE half of this is PROG-R5, which is genuinely agent-workable and whose own detail says surfacing Connect onboarding at the first sell attempt unblocks all five loops with one push.\n\n── PROBE CORRECTED 2026-09-15 after it was nearly satisfied by nothing. The owner opened a real cs_live_ checkout for a $44 ticket to Toni Hypnotic Sound, did not complete it, and the session expired 30 minutes later on schedule. That left event_tickets holding exactly one row — pending, unpaid, worth nothing — and the row evidence as written (five tables NON-ZERO) would have read that as the ticket loop closing. It also incidentally proved two things worth keeping: reserve_ticket_atomic writes the pending row correctly with the right 3% fee, and the webhook received, signature-verified and recorded a SECOND event type (checkout.session.expired, stripe_webhook_events 1 to 2). The loop is real up to the Pay button; nothing has been charged.\n\n── SURVEY 2026-09-19. One House of Fates $44 ticket DID succeed. Count succeeded only. Pending/unpaid test reservations still sit in event_tickets and must not close a loop; delete them is OWN-078 (owner SQL). Remaining loops (membership, booking deposit, order, donation, Space subscription) still need a settled row each. Cloud agents cannot complete real charges.\n\n── PRODUCTION READ 2026-09-21 (direct SQL, this session). Settled rows: event_tickets status='succeeded' 1 · financial_transactions 1 · store_redemptions 4 · commerce_orders 0 · tips 0 · creator_tips 0 · supporter_contributions 0 · space_subscription_items 0 · journey_runs 0. stripe_webhook_events is now 26, up from the 2 this row last recorded, and it breaks down as 24 checkout.session.expired, 1 checkout.session.completed, 1 account.updated. The pending test rows OWN-078 was filed to delete are GONE (event_tickets is exactly one succeeded row), so OWN-078 closed on the same read.\n\nSo the count stands at ONE of five loops proven: the ticket. Membership, booking deposit, order and donation are all still zero. TWO THINGS WORTH READING OUT OF THE WEBHOOK SPLIT: the pipeline is healthy (it is receiving, signature-verifying and recording three distinct event types), and 24 expired against 1 completed is the abandonment signal — noted on LIVE-396, which owns the product cause.\n\n── PARKED 2026-09-21 by the owner, verbatim: \"Remove this step for now. We'll test as we go.\"\n\nWHY PARKED AND NOT DEMOTED: this row is pinned at P0 by check-backlog itself (there is an explicit guard: 'LIVE-234 must stay P0 — owner-gated money proof; do not demote it to raise calendar'). Dropping its priority would have edited around that guard and quietly changed what the board says a stranded money loop costs. Parking says the true thing instead: the cost is unchanged, the owner has chosen not to pay it yet, and parked rows are not probed because 'you could do this now' is true of everything parked.\n\nWHAT 'TEST AS WE GO' MEANS FOR THE BOARD: the five loops get proven incidentally, by real buyers, as the surfaces that sell them land — rather than by a scheduled session of five deliberate purchases. LIVE-396's guest door is the first of those surfaces.\n\n🔴 WHAT DOES NOT CHANGE, and must not be read as settled by this parking: nothing has been charged on four of the five loops, so every revenue number in this model is still arithmetic rather than evidence. OWN-074 (two hosts with priced events and no Connect account) is NOT parked and is not part of this deferral — it is the thing that makes a real sale possible at all, and the events-pricing work of 2026-09-21 exists because of it.\n\nUN-PARK WHEN: a real settled row appears on any of the four unproven loops, or the owner asks for the deliberate pass.",
+      "detail": "Nothing has ever been charged. Production 2026-09-08: commerce_orders 0, event_tickets 0, space_subscription_items 0, financial_transactions 0, tips 0, creator_tips 0, store_redemptions 0, supporter_contributions 0. stripe_webhook_events holds exactly 1 row.\n\nFive non-zero row counts is the whole probe: a membership reaching active, a booking with a deposit, one order, one donation, one Space subscription. Until then every revenue number in this model is arithmetic, not evidence.  OWNER ASK MADE VISIBLE 2026-09-15 (ADR-1356). This row sat in the `live` lane with a `manual` probe, so check:backlog never demanded an `ownerAction` -- the guard only requires one on a row whose LANE is `owner`. The consequence is the exact failure AGENTS.md names: the ask was hiding in a live row's detail instead of being printed beside the OWNER section, and it read as an agent-workable P0 in every scan of the board. No agent can move it: the probe is five non-zero row counts produced by five REAL Stripe charges, which needs a human with a payment method. `account` is the nearest of the five keys (account|config|content|ruling|waiting) and it is an imperfect fit -- none of them names \"perform a real end-to-end transaction\", which is worth a glance at the taxonomy rather than a sixth key added on one row's evidence. The CODE half of this is PROG-R5, which is genuinely agent-workable and whose own detail says surfacing Connect onboarding at the first sell attempt unblocks all five loops with one push.\n\n── PROBE CORRECTED 2026-09-15 after it was nearly satisfied by nothing. The owner opened a real cs_live_ checkout for a $44 ticket to Toni Hypnotic Sound, did not complete it, and the session expired 30 minutes later on schedule. That left event_tickets holding exactly one row — pending, unpaid, worth nothing — and the row evidence as written (five tables NON-ZERO) would have read that as the ticket loop closing. It also incidentally proved two things worth keeping: reserve_ticket_atomic writes the pending row correctly with the right 3% fee, and the webhook received, signature-verified and recorded a SECOND event type (checkout.session.expired, stripe_webhook_events 1 to 2). The loop is real up to the Pay button; nothing has been charged.\n\n── SURVEY 2026-09-19. One House of Fates $44 ticket DID succeed. Count succeeded only. Pending/unpaid test reservations still sit in event_tickets and must not close a loop; delete them is OWN-078 (owner SQL). Remaining loops (membership, booking deposit, order, donation, Space subscription) still need a settled row each. Cloud agents cannot complete real charges.\n\n── PRODUCTION READ 2026-09-21 (direct SQL, this session). Settled rows: event_tickets status='succeeded' 1 · financial_transactions 1 · store_redemptions 4 · commerce_orders 0 · tips 0 · creator_tips 0 · supporter_contributions 0 · space_subscription_items 0 · journey_runs 0. stripe_webhook_events is now 26, up from the 2 this row last recorded, and it breaks down as 24 checkout.session.expired, 1 checkout.session.completed, 1 account.updated. The pending test rows OWN-078 was filed to delete are GONE (event_tickets is exactly one succeeded row), so OWN-078 closed on the same read.\n\nSo the count stands at ONE of five loops proven: the ticket. Membership, booking deposit, order and donation are all still zero. TWO THINGS WORTH READING OUT OF THE WEBHOOK SPLIT: the pipeline is healthy (it is receiving, signature-verifying and recording three distinct event types), and 24 expired against 1 completed is the abandonment signal — noted on LIVE-396, which owns the product cause.\n\n── PARKED 2026-09-21 by the owner, verbatim: \"Remove this step for now. We'll test as we go.\"\n\nWHY PARKED AND NOT DEMOTED: this row is pinned at P0 by check-backlog itself (there is an explicit guard: 'LIVE-234 must stay P0 — owner-gated money proof; do not demote it to raise calendar'). Dropping its priority would have edited around that guard and quietly changed what the board says a stranded money loop costs. Parking says the true thing instead: the cost is unchanged, the owner has chosen not to pay it yet, and parked rows are not probed because 'you could do this now' is true of everything parked.\n\nWHAT 'TEST AS WE GO' MEANS FOR THE BOARD: the five loops get proven incidentally, by real buyers, as the surfaces that sell them land — rather than by a scheduled session of five deliberate purchases. LIVE-396's guest door is the first of those surfaces.\n\n🔴 WHAT DOES NOT CHANGE, and must not be read as settled by this parking: nothing has been charged on four of the five loops, so every revenue number in this model is still arithmetic rather than evidence. OWN-074 (two hosts with priced events and no Connect account) is NOT parked and is not part of this deferral — it is the thing that makes a real sale possible at all, and the events-pricing work of 2026-09-21 exists because of it.\n\nUN-PARK WHEN: a real settled row appears on any of the four unproven loops, or the owner asks for the deliberate pass.\n\n── UNPARKED 2026-09-29 (ADR-1624). Owner replan 2026-09-29 ~18:45Z: \"The only things I want deferred are W4, W9, and W11.\" On the owner rows the ruling was \"Unpark all but launch\", so this row is open again on W0, still P0 and still owner-gated (ownerAction account): the five loops are proven by real settled rows, which no agent can produce. The parkedUntil note is removed.",
       "verify": {
         "kind": "manual",
-        "evidence": "PARKED 2026-09-21 on owner instruction ('remove this step for now, we'll test as we go'). Unchanged otherwise: five tables non-zero counting ONLY settled rows, event_tickets where status='succeeded'. As of 2026-09-21 one of five is proven (ticket). Re-open on the first settled row of any remaining loop.",
-        "checked": "2026-09-21"
+        "evidence": "PARKED 2026-09-21 on owner instruction ('remove this step for now, we'll test as we go'). Unchanged otherwise: five tables non-zero counting ONLY settled rows, event_tickets where status='succeeded'. As of 2026-09-21 one of five is proven (ticket). Re-open on the first settled row of any remaining loop. 2026-09-29: unparked by the owner replan (ADR-1624); state otherwise unchanged, not re-measured.",
+        "checked": "2026-09-29"
       },
       "ownerAction": "account"
     },
@@ -13640,7 +13706,7 @@
     {
       "id": "PROG-GD6",
       "title": "Guest door phase 6, the phone door: a phone number as a second identity on the same seat",
-      "status": "parked",
+      "status": "open",
       "priority": "P3",
       "lane": "program",
       "size": "L",
@@ -13648,14 +13714,13 @@
         "file": "docs/DECISIONS.md",
         "ref": "the guest-door handoff of 2026-09-14 (session 012voDkq), PRs #2552 and #2556"
       },
-      "detail": "FILED 2026-09-14 from the guest-door handoff, parked by its own recommendation. Right for a poster, wrong for a professional calendar, and it carries A2P registration (DEF-A2P), consent records and per-message cost. Worth a decision, not worth a default. If it ships it never replaces the email door.\n\n── OWNER RULING 2026-09-28 (ADR-1535). UNPARKED into W7 feature depth. It stays gated on DEF-A2P (the 10DLC registration is an owner account action with a 2-4 week carrier review), which is why it carries ownerAction account: the code is workable the day the campaign is approved, and not before.\n\n── PARKED 2026-09-29 (ADR-1573, backlog cull) until 2027-01-05. Cannot start before its gate; parks with DEF-A2P (amends ADR-1535 §4 in the cull ADR). Cannot start before its gate: parks with DEF-A2P by the owner ruling of 2026-09-29 03:45Z (amends ADR-1535 §4). ownerAction account stays so the gate is stated on the row. Audit evidence: manual probe; ownerAction account, gated on DEF-A2P (ADR-1535 §4); owner ruling 2026-09-29 parks A2P with its dependents.",
+      "detail": "FILED 2026-09-14 from the guest-door handoff, parked by its own recommendation. Right for a poster, wrong for a professional calendar, and it carries A2P registration (DEF-A2P), consent records and per-message cost. Worth a decision, not worth a default. If it ships it never replaces the email door.\n\n── OWNER RULING 2026-09-28 (ADR-1535). UNPARKED into W7 feature depth. It stays gated on DEF-A2P (the 10DLC registration is an owner account action with a 2-4 week carrier review), which is why it carries ownerAction account: the code is workable the day the campaign is approved, and not before.\n\n── PARKED 2026-09-29 (ADR-1573, backlog cull) until 2027-01-05. Cannot start before its gate; parks with DEF-A2P (amends ADR-1535 §4 in the cull ADR). Cannot start before its gate: parks with DEF-A2P by the owner ruling of 2026-09-29 03:45Z (amends ADR-1535 §4). ownerAction account stays so the gate is stated on the row. Audit evidence: manual probe; ownerAction account, gated on DEF-A2P (ADR-1535 §4); owner ruling 2026-09-29 parks A2P with its dependents.\n\n── UNPARKED 2026-09-29 (ADR-1624). Owner replan 2026-09-29 ~18:45Z: \"The only things I want deferred are W4, W9, and W11.\" On the owner rows the ruling was \"Unpark all but launch\", so this row is open again on W7, still gated on DEF-A2P (ownerAction account): the code is workable the day the 10DLC campaign is approved, and not before. The parkedUntil note is removed.",
       "verify": {
         "kind": "manual",
-        "evidence": "Unparked 2026-09-28 by owner ruling (ADR-1535); gated on DEF-A2P. Not started.",
-        "checked": "2026-09-28"
+        "evidence": "Unparked 2026-09-28 by owner ruling (ADR-1535); gated on DEF-A2P. Not started. 2026-09-29: unparked by the owner replan (ADR-1624); state otherwise unchanged, not re-measured.",
+        "checked": "2026-09-29"
       },
-      "ownerAction": "account",
-      "notes": "parkedUntil: 2027-01-05. Parked by the 2026-09-29 cull (ADR-1573)."
+      "ownerAction": "account"
     },
     {
       "id": "LIVE-335",
@@ -17011,7 +17076,7 @@
         "file": "components/onboarding/renders/frame.tsx",
         "ref": "the launch marker; OWN-059 items 1-2 ruled 2026-09-08 (launch is 21 December 2026)"
       },
-      "detail": "FILED 2026-09-22 out of OWN-059 (owner ruling 2026-09-08: launch is the Winter Equinox, 21 December 2026, and beta is a phase with an end, not the steady state). THE CONSEQUENCE AN OWNER MEETS: on launch day a new member who opens /onboarding lands in the steady-state onboarding (ADR-047) rather than the Funnels induction, and the nine disposable mockups the induction rendered are gone from the tree and from every bundle that imported them.\n\nTHE PASS, so it can be run without re-deriving it: delete components/onboarding/renders/ (eight *-render.tsx plus frame.tsx, the shared browser-window chrome that carried the launch marker; 23,267 bytes); fix the two importers, app/join/(induction)/induction.tsx:30-37 (all eight) and lib/library/element-registry.tsx:26-28 (three); flip FUNNEL_INDUCTION_ACTIVE to false in lib/onboarding/funnel-script.ts:11 (while true it redirects /onboarding into /join, so it is the switch that actually retires the induction the renders belong to). The six catalog rows tagged temporary (three each in lib/apps/catalog.ts and lib/library/element-catalog.ts) index these renders and are LIVE-465's, with the beta switch; the two rows land in one PR because element-registry imports what the catalog rows index.\n\nTRIGGER: 21 December 2026, not before. The induction is the live front door until then, and the probe below is meant to fail until that day. Do not flip FUNNEL_INDUCTION_ACTIVE without deleting the renders, or the induction is off while its mockups still ship through element-registry. The word TEMPORARY left these files on 2026-09-22; each comment now names the date and this row instead of a label with no trigger.\n\n── PARKED 2026-09-29 (ADR-1573, backlog cull) until 2026-12-14. A dated launch-day pass; park until the week before launch so no packet picks it early. A dated launch-day pass (21 December 2026). Parked until the week before launch so no packet picks it early; the probe fails by design until that day. LIVE-465 is absorbed into this row and its three arms are now in this probe. Audit evidence: probe exit 1; probe FAIL by design until 2026-12-21 (renders dir and FUNNEL_INDUCTION_ACTIVE=true still in tree); absorbs LIVE-465.\n\n── ABSORBS 2026-09-29 (ADR-1573, backlog cull): LIVE-465 (flip BETA_OPEN_ACCESS and BETA_MEMBERS_GET_CREW off and delete the six temporary catalog rows) is merged into this row: both said \"lands in the same PR\", and one row per PR is the canon. The pass now also flips BETA_OPEN_ACCESS to false in lib/core/beta.ts, BETA_MEMBERS_GET_CREW to false in lib/onboarding/funnel-script.ts, deletes the six catalog rows tagged temporary (lib/apps/catalog.ts and lib/library/element-catalog.ts, three each) and works docs/BETA-NOTICES.md's flip checklist; read that doc first (the grace window bites 2026-12-01, three weeks earlier). Do NOT confuse lib/core/beta.ts with lib/pricing/beta.ts. The probe carries LIVE-465's three arms.",
+      "detail": "FILED 2026-09-22 out of OWN-059 (owner ruling 2026-09-08: launch is the Winter Equinox, 21 December 2026, and beta is a phase with an end, not the steady state). THE CONSEQUENCE AN OWNER MEETS: on launch day a new member who opens /onboarding lands in the steady-state onboarding (ADR-047) rather than the Funnels induction, and the nine disposable mockups the induction rendered are gone from the tree and from every bundle that imported them.\n\nTHE PASS, so it can be run without re-deriving it: delete components/onboarding/renders/ (eight *-render.tsx plus frame.tsx, the shared browser-window chrome that carried the launch marker; 23,267 bytes); fix the two importers, app/join/(induction)/induction.tsx:30-37 (all eight) and lib/library/element-registry.tsx:26-28 (three); flip FUNNEL_INDUCTION_ACTIVE to false in lib/onboarding/funnel-script.ts:11 (while true it redirects /onboarding into /join, so it is the switch that actually retires the induction the renders belong to). The six catalog rows tagged temporary (three each in lib/apps/catalog.ts and lib/library/element-catalog.ts) index these renders and are LIVE-465's, with the beta switch; the two rows land in one PR because element-registry imports what the catalog rows index.\n\nTRIGGER: 21 December 2026, not before. The induction is the live front door until then, and the probe below is meant to fail until that day. Do not flip FUNNEL_INDUCTION_ACTIVE without deleting the renders, or the induction is off while its mockups still ship through element-registry. The word TEMPORARY left these files on 2026-09-22; each comment now names the date and this row instead of a label with no trigger.\n\n── PARKED 2026-09-29 (ADR-1573, backlog cull) until 2026-12-14. A dated launch-day pass; park until the week before launch so no packet picks it early. A dated launch-day pass (21 December 2026). Parked until the week before launch so no packet picks it early; the probe fails by design until that day. LIVE-465 is absorbed into this row and its three arms are now in this probe. Audit evidence: probe exit 1; probe FAIL by design until 2026-12-21 (renders dir and FUNNEL_INDUCTION_ACTIVE=true still in tree); absorbs LIVE-465.\n\n── ABSORBS 2026-09-29 (ADR-1573, backlog cull): LIVE-465 (flip BETA_OPEN_ACCESS and BETA_MEMBERS_GET_CREW off and delete the six temporary catalog rows) is merged into this row: both said \"lands in the same PR\", and one row per PR is the canon. The pass now also flips BETA_OPEN_ACCESS to false in lib/core/beta.ts, BETA_MEMBERS_GET_CREW to false in lib/onboarding/funnel-script.ts, deletes the six catalog rows tagged temporary (lib/apps/catalog.ts and lib/library/element-catalog.ts, three each) and works docs/BETA-NOTICES.md's flip checklist; read that doc first (the grace window bites 2026-12-01, three weeks earlier). Do NOT confuse lib/core/beta.ts with lib/pricing/beta.ts. The probe carries LIVE-465's three arms.\n\n── 2026-09-29 ~18:45Z (ADR-1624): stays parked. The owner's \"Unpark all but launch\" names this row as the launch hold: it runs the week of 21 December 2026.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const D=\"components/onboarding/renders/\";if(fs.existsSync(D+\"frame.tsx\"))fail(\"the induction render chrome (frame.tsx) is still in the tree, so the nine launch-dated mockups still ship\");const f=fs.readFileSync(\"lib/onboarding/funnel-script.ts\",\"utf8\");if(/FUNNEL_INDUCTION_ACTIVE\\s*=\\s*true/.test(f))fail(\"FUNNEL_INDUCTION_ACTIVE is still true, so /onboarding still redirects into the induction\");for(const p of [\"app/join/(induction)/induction.tsx\",\"lib/library/element-registry.tsx\"]){if(fs.existsSync(p)&&/onboarding\\/renders\\//.test(fs.readFileSync(p,\"utf8\")))fail(p+\" still imports a launch-dated render\")};const bt=fs.readFileSync(\"lib/core/beta.ts\",\"utf8\");if(/BETA_OPEN_ACCESS\\s*=\\s*true/.test(bt))fail(\"BETA_OPEN_ACCESS is still true, so every signed-in member is still treated as Crew (LIVE-465 arm)\");if(/BETA_MEMBERS_GET_CREW\\s*=\\s*true/.test(f))fail(\"BETA_MEMBERS_GET_CREW is still true, so new members still default to Crew (LIVE-465 arm)\");for(const p of [\"lib/apps/catalog.ts\",\"lib/library/element-catalog.ts\"]){if(/registry:\\s*\\x27render\\x27/.test(fs.readFileSync(p,\"utf8\")))fail(p+\" still catalogues the launch-dated render screens (LIVE-465 arm)\")}'",
@@ -18805,6 +18870,1194 @@
         "kind": "cmd",
         "cmd": "node -e 'import(\"./scripts/maintenance/fold-ledger-docs.mjs\").then((m) => { const fail = (why) => {console.error(why); process.exit(1)}; const row = (id, status) => ({id, title: id, status, lane: \"live\"}); const doc = (rows, waves) => JSON.stringify({entries: rows, meta: {slate: {waves}}}, null, 2); const base = doc([row(\"A\", \"open\"), row(\"P\", \"open\")], [{name: \"W4 · old\", ids: [\"A\", \"P\"]}]); const ours = base; const theirs = doc([row(\"A\", \"open\"), row(\"P\", \"parked\")], [{name: \"W4 · old ── PARKED 2026-09-29\", ids: [\"A\"]}]); const r = m.mergeBacklog(base, ours, theirs); const waves = JSON.parse(r.text).meta.slate.waves; const w4 = waves.filter((w) => w.name.split(\" · \")[0].trim() === \"W4\"); if (w4.length !== 1) fail(\"a wave main renamed folds into \" + w4.length + \" W4 waves: the fold keys waves by their prose name, so a pre-cull branch appends its old copy (2026-09-29, #3024)\"); if (w4[0].name !== \"W4 · old ── PARKED 2026-09-29\") fail(\"the folded W4 did not keep main name: \" + w4[0].name); if (waves.some((w) => w.ids.includes(\"P\"))) fail(\"a parked id the branch still slates came back onto a wave\"); if (!(r.slate.parked || []).includes(\"P\")) fail(\"the dropped parked id is not reported\"); const src = require(\"fs\").readFileSync(\"scripts/check-backlog.mjs\", \"utf8\"); if (!/const structural = \\[[^\\]]*validateSlateWaves\\(doc\\)/.test(src)) fail(\"check:backlog no longer runs validateSlateWaves over the real slate\"); process.exit(0)}).catch((e) => {console.error(String(e)); process.exit(1)})'",
         "note": "Measures the consequence in process: folding a branch that has \"W4 · old\" with P slated against a main that renamed W4 and parked P yields exactly one W4 wave carrying main's name, P on no wave and reported as parked, and check:backlog still runs validateSlateWaves in its structural pass. Fails on main at 2cb345cd2 (two W4 waves)."
+      }
+    },
+    {
+      "id": "LIVE-651",
+      "title": "Any member can join a circle, hub, nexus, outpost or channel room they do not belong to: joinRoom refuses only private rooms",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/messages/rooms/actions.ts",
+        "ref": "joinRoom; SEC-5 of the Idea Inbox audit (§8q of the DEF-DOMAIN register)"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8q, \"SEC-5 joinRoom per-scope membership check\". Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. joinRoom (app/(main)/messages/rooms/actions.ts:112) selects `id, visibility` on the room, refuses `private`, and upserts a room_members row through the admin client for everything else. The rooms_visibility_check constraint (20260604210000) allows public, private, circle, hub, nexus, outpost and channel, and each room carries a scope_id. So a member who is not in the Circle can join its Circle room by calling the action with the room id; the admin client means RLS does not stand in the way. The compose UI only creates public and private rooms today, so the exposure is the scoped rooms that already exist (not measured overnight; no production read).\n\nWHAT SHIPS. joinRoom reads scope_id with visibility and, for a scoped room, checks the caller belongs to that scope (circle membership, the hub/nexus/outpost roster, channel tune-in) before the upsert, with a plain refusal line otherwise. A test per visibility. No migration.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const F=\"app/(main)/messages/rooms/actions.ts\";if(!fs.existsSync(F))process.exit(79);const s=fs.readFileSync(F,\"utf8\");const i=s.indexOf(\"export async function joinRoom\");if(i<0)process.exit(79);const j=s.indexOf(\"\\nexport \",i+10);const body=s.slice(i,j<0?undefined:j);\nif(!/scope_id/.test(body)){console.error(\"joinRoom reads only the room id and visibility, so a member joins a circle, hub, nexus, outpost or channel room without belonging to its scope (SEC-5)\");process.exit(1)}\nif(!/circle|hub|nexus|outpost|channel|scope/i.test(body.replace(/scope_id/g,\"\"))){console.error(\"joinRoom reads scope_id but never compares it to the caller membership\");process.exit(1)}\nconsole.log(\"ok\")'",
+        "note": "Reads joinRoom in app/(main)/messages/rooms/actions.ts: fails while the function never reads the room scope_id, or reads it and never compares it to a scope. Fails on main at 923adf97f (the body selects id and visibility only)."
+      }
+    },
+    {
+      "id": "LIVE-652",
+      "title": "A report can name a post, member or event that does not exist, because the report is stored without reading its target",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/feed/report-actions.ts",
+        "ref": "SEC-4 of the Idea Inbox audit (§8q)"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8q, \"SEC-4 report-target existence check\". Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. The report action validates the target TYPE against VALID_TARGETS and that an id was sent (the SEC-4 comment at :68), then checks for a duplicate and inserts. It never reads the target row, so a report can carry any id and lands in the moderation queue as something a moderator cannot open or act on. SEC-3 (the moderation action acts on the report's own target) is already done at :40.\n\nWHAT SHIPS. Before the insert, one keyed read of the target table per target type (post, reply, profile, event, and the rest VALID_TARGETS lists); a missing target returns the same refusal line as a bad type. Tests per type.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const F=\"app/(main)/feed/report-actions.ts\";if(!fs.existsSync(F))process.exit(79);const s=fs.readFileSync(F,\"utf8\");const a=s.indexOf(\"Missing report target\");const b=s.search(/from\\(\\x27reports\\x27\\)\\.insert/);if(a<0||b<0)process.exit(79);const mid=s.slice(a,b);\nconst reads=[...mid.matchAll(/\\.from\\(\\x27(\\w+)\\x27\\)/g)].map((m)=>m[1]).filter((t)=>t!==\"reports\");\nif(!reads.length&&!/targetExists|reportTargetExists|resolveReportTarget/.test(mid)){console.error(\"a report is stored without reading its target, so a report can name a post, member or event that does not exist (SEC-4)\");process.exit(1)}\nconsole.log(\"ok\")'",
+        "note": "Reads the report action between the missing-target guard and the reports insert: fails while it reads no table other than reports and calls no target-exists helper. Fails on main at 923adf97f."
+      }
+    },
+    {
+      "id": "LIVE-653",
+      "title": "The \"welcomed a newcomer\" achievement can never unlock: its criterion evaluates to false for every member",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/achievements.ts",
+        "ref": "evaluateCriterion, case welcome_member (§8e)"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8e, \"the welcome_member achievement is unobtainable\". Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. lib/achievements.ts:249 marks a post_create event as relevant to welcome_member, and the evaluator at :417 returns false for it unconditionally. lib/gems.ts and lib/economy/ledger.ts:154 still name the reward (\"Welcomed a newcomer\"), so the catalogue offers a badge no member can earn.\n\nWHAT SHIPS. A real criterion: a member welcomes a newcomer when they reply to, or react to, a first post by a member who joined in the last 14 days (or the rule the Crew catalogue already documents, if one is written down; read it first). Stats gain the count; a test proves it unlocks. If the owner would rather drop the achievement, delete it from the catalogue instead; either closes the probe.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const F=\"lib/achievements.ts\";if(!fs.existsSync(F))process.exit(79);const s=fs.readFileSync(F,\"utf8\");\nif(/case \\x27welcome_member\\x27:\\s*\\n\\s*return false/.test(s)){console.error(\"the welcome_member criterion evaluates to false for every member, so the achievement can never unlock\");process.exit(1)}\nif(!/welcome_member/.test(s))process.exit(79);console.log(\"ok\")'",
+        "note": "Fails while the welcome_member case in lib/achievements.ts returns false unconditionally. Fails on main at 923adf97f."
+      }
+    },
+    {
+      "id": "LIVE-654",
+      "title": "A repeatable capture node credits a member once ever: every capture is keyed on node and member alone, so the second scan is collapsed as a retry",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/engagement/capture.ts",
+        "ref": "captureNode idempotency key (§8e)"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8e, \"repeatable-node idempotency keying for captures\". Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. captureNode (lib/engagement/capture.ts) records the ledger row with idempotencyKey `node:<nodeId>:<actorProfileId>`, and its own header says \"repeatable nodes need a request-scoped key appended ... pass it through attempt when that lands\". It has not landed, so a node meant to be scanned daily (a partner plaque, a class check-in) awards once and then silently no-ops.\n\nWHAT SHIPS. CaptureAttempt carries a request-scoped key (the scan nonce, or the member day for a once-a-day node) and a repeatable node appends it; once-per-user and once-global nodes keep today's key. A test proves two scans on two days credit twice and a double tap credits once.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const F=\"lib/engagement/capture.ts\";if(!fs.existsSync(F))process.exit(79);const s=fs.readFileSync(F,\"utf8\");\nif(/idempotencyKey:\\s*\\x60node:\\$\\{attempt\\.nodeId\\}:\\$\\{attempt\\.actorProfileId\\}\\x60/.test(s)){console.error(\"every capture keys its ledger row on node and actor alone, so a repeatable node credits a member once ever and every later scan is collapsed as a retry\");process.exit(1)}\nconsole.log(\"ok\")'",
+        "note": "Fails while captureNode keys every capture on node:<nodeId>:<actorProfileId> alone. Fails on main at 923adf97f."
+      }
+    },
+    {
+      "id": "LIVE-655",
+      "title": "Every rail module on a circle, event, hub, nexus or practice page fetches for itself, because only Spaces have the one-bundle rail provider",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/ADMIN-RAIL.md",
+        "ref": "§6.4 Deferred, \"Speed\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/ADMIN-RAIL.md §6.4 (added to DEF-DOMAIN 2026-09-06). Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. components/admin/modules/space-rail-data.tsx (ADR-550) is the only rail bundle provider; no circle, event, hub, nexus or practice equivalent exists, so each of their ~6 modules self-fetches. §6.4's second half (dispatches as an adminScopeFor scope, via broadcast/[id]) no longer applies: there is no /broadcast/[id] route on main.\n\nWHAT SHIPS. Generalise the provider to the core entities so a rail resolves its modules from one server read per page. P3 by the priority rules (traffic is not the constraint); measure before and after on one entity.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: space-rail-data.tsx is the only bundle provider under components/admin/modules. Closes when circle, event, hub, nexus and practice rails read one bundle, with a before/after reading on one entity.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-656",
+      "title": "The Loom picker still offers \"generate new Elements\" as coming soon, a control that does nothing, after the semantic and AI phase closed",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/loom/loom-picker.tsx",
+        "ref": "the \"coming soon\" line (~:454); DEF-CODE item \"likely PROG-D7\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: DEF-CODE (absorbed into DEF-DOMAIN by ADR-1573): \"Loom picker generate new Elements (coming soon)\". Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. The line is still in components/loom/loom-picker.tsx and PROG-D7 (Loom D7: semantic + AI) is done. So either D7 shipped generation somewhere the picker does not link to, or generation is not built.\n\nWHAT SHIPS. Read PROG-D7's close first. If generation exists, the picker opens it; if it does not, the dead promise comes out of the picker. Either closes the probe.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const F=\"components/loom/loom-picker.tsx\";if(!fs.existsSync(F))process.exit(79);\nif(/coming soon/i.test(fs.readFileSync(F,\"utf8\"))){console.error(\"the Loom picker still offers generate new Elements as coming soon, a control that does nothing, after PROG-D7 closed\");process.exit(1)}\nconsole.log(\"ok\")'",
+        "note": "Fails while components/loom/loom-picker.tsx carries \"coming soon\". Fails on main at 923adf97f."
+      }
+    },
+    {
+      "id": "LIVE-657",
+      "title": "Fourteen files still focus a field with the brand orange, which the owner ruled out site-wide in the June screenshot review",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/BACKLOG.md",
+        "ref": "§S, S8 \"No orange highlight on input focus, site-wide\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8p, S8 (owner UI call, 2026-06-05 screenshot review). Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. The canonical field already uses the calm halo (components/ui/field.tsx, and field.test.tsx asserts it never carries focus:ring-primary), so the rule holds wherever a control uses fieldClasses. Fourteen non-test files under app/ and components/ still hand-roll `focus:border-primary` or `focus:ring-primary` (the rsvp form, the Airwaves show manager, image-upload, market-search, places-finder, the admin bar, the Space CRM composer, space-form, the email style editor, the marketing workspace, the canvas editor, the profile page builder, adopt-practice-button, the tag governance panel).\n\nWHAT SHIPS. Each moves to fieldClasses or the neutral halo. One sweep PR.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const hits=[];\nconst walk=(d)=>{for(const n of fs.readdirSync(d,{withFileTypes:true})){if(n.name===\"node_modules\"||n.name.startsWith(\".\"))continue;const p=path.join(d,n.name);if(n.isDirectory())walk(p);else if(/\\.tsx?$/.test(n.name)&&!/\\.test\\./.test(n.name)&&/focus:(border|ring)-primary\\b/.test(fs.readFileSync(p,\"utf8\")))hits.push(p)}};\nfor(const r of [\"app\",\"components\"])if(fs.existsSync(r))walk(r);\nif(hits.length){console.error(hits.length+\" files still focus a control with the brand orange (S8): \"+hits.slice(0,6).join(\", \"));process.exit(1)}\nconsole.log(\"ok\")'",
+        "note": "Walks app/ and components/ (tests excluded) and fails while any file carries focus:border-primary or focus:ring-primary. Fails on main at 923adf97f with 14 files."
+      }
+    },
+    {
+      "id": "LIVE-658",
+      "title": "An operator cannot change a theme generation in Theme Studio, and the presets have no tuned dark variants for contrast and saturation",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/BACKLOG.md",
+        "ref": "§V theme system (12 items); app/globals.css per-preset tuning comment"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8i and DEF-CODE (\"per-preset contrast/saturation tuning with .dark variants\", app/globals.css). Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. Already built, so not filed: the member generation switch and cookie writer (serializeThemeCookie is used by app/(main)/settings/appearance/actions.ts), spaces.generation (20260707000000) with the resolver reading it, and structureFor wired from app/(main)/layout.tsx. Still open: no file under app/(main)/admin/appearance mentions generation, so the generation is not editable data in Theme Studio; and the per-preset contrast/saturation comment in app/globals.css still describes tuning that has not been done.\n\nWHAT SHIPS. Theme Studio edits a preset's generation, and each preset gets its .dark contrast/saturation values, checked by check:contrast.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: grep of app/(main)/admin/appearance for \"generation\" finds nothing; the app/globals.css per-preset tuning note is present. Closes when Theme Studio saves a generation and every preset has tuned .dark values under check:contrast.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-659",
+      "title": "Theme guardrails assert that CSS and the registry pair up, never that a theme renders, and the tokens cannot be exported in the W3C format",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/THEME.md",
+        "ref": "§10 and §15; BACKLOG §V"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8i (\"cross-axis visual-regression suite\"; \"W3C Design Tokens export + native generation\"). Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. No design-tokens export exists (lib/tokens/README.md mentions the format only). The theme tests pair CSS with the registry; nothing renders the skin x generation x mode axes and compares them.\n\nWHAT SHIPS. (1) A render suite across the theme axes on a small set of surfaces (the visual harness already drives three viewports). (2) A W3C Design Tokens JSON export generated from the token source, which is also what a native client would read later.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no tokens export script or file; no cross-axis render spec under test/e2e. Closes when both exist and run in CI or maintenance.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-660",
+      "title": "The member-facing CRM screens have never had the NAMING and CONTENT-VOICE pass the rest of the product got",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/REMAINING-WORK.md",
+        "ref": "#10-16 (CRM), \"a member copy pass through NAMING + CONTENT-VOICE\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8a. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. The rest of §8a is built or gone and is not filed: the reciprocal handshake has its surface (app/(capture)/exchange calls captureShareBack), the duplicate contact surfaces are reconciled (no ContactsList remains), promotion to contacts and shared (team) visibility exist (components/connections/promote-to-contacts.tsx, lib/connections/visibility.ts), and upgrade-trigger events are instrumented (lib/crm/upgrade-signal.ts). The copy pass has no record of having run.\n\nWHAT SHIPS. One pass over /network/contacts, /connections and the capture doors against docs/NAMING.md and docs/CONTENT-VOICE.md; check:canon and check:vocab stay green.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29: no ADR or row records a copy pass over the member CRM surfaces. Closes on the PR that does it, with the surfaces listed in its ADR.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-661",
+      "title": "A member past the directory cap cannot be found on /network: the page reads one capped slice of profiles and filters it on the client",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "app/(main)/network/page.tsx",
+        "ref": "DIRECTORY_FETCH_LIMIT (~:155); BUILD-LIST P-SCALE"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: BUILD-LIST P-SCALE \"real pagination on /network and /circles\" (added to DEF-DOMAIN 2026-09-06). Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. app/(main)/network/page.tsx bounds the profiles read with .limit(DIRECTORY_FETCH_LIMIT) and filters over that set on the client; its own comment calls pagination \"the follow-up when the community outgrows the cap\". /circles/page.tsx no longer shows a cap on main, so this row is /network (re-test /circles when working it).\n\nWHAT SHIPS. Server-side filters and keyset or range pagination on the directory, with the filters in the URL so shared links survive.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const F=\"app/(main)/network/page.tsx\";if(!fs.existsSync(F))process.exit(79);const s=fs.readFileSync(F,\"utf8\");\nif(/DIRECTORY_FETCH_LIMIT/.test(s)&&!/\\.range\\(/.test(s)){console.error(\"the /network directory reads one capped slice of profiles and filters it on the client, so a member past the cap cannot be found or reached\");process.exit(1)}\nconsole.log(\"ok\")'",
+        "note": "Fails while app/(main)/network/page.tsx reads DIRECTORY_FETCH_LIMIT with no .range( paging. Fails on main at 923adf97f."
+      }
+    },
+    {
+      "id": "LIVE-662",
+      "title": "An operator cannot add fields per segment or track anything but a contact: custom field templates and custom objects do not exist",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "docs/REMAINING-WORK.md",
+        "ref": "#10-16 (CRM): per-segment custom field templates, custom objects"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8a. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. Custom fields exist only as import mapping (lib/crm/import); no per-segment template and no custom-object table or code. OWNER RULING NEEDED: this is HubSpot-grade scope (a schema per tenant) and should be sized against what an operator actually asks for before it is built. The ruling is whether to build both, one, or neither.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no custom_object code; custom fields appear only in lib/crm/import. Closes on the owner ruling and, if built, the PR that ships it.",
+        "checked": "2026-09-29"
+      },
+      "ownerAction": "ruling"
+    },
+    {
+      "id": "LIVE-663",
+      "title": "The reach-out nudge lives only inside the CRM, so a member who never opens it is never prompted to reconnect with anyone",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/REMAINING-WORK.md",
+        "ref": "#10-16 (CRM): \"reach-out home pulse\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8a. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. Reach-out prompts render on /network/contacts, /connections and the admin CRM intelligence page; nothing on the feed or home reads them. WHAT SHIPS: one small home module (or feed card) that surfaces the top reach-out suggestion, behind the same data the contacts page reads.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: reach-out code under app/(main)/network/contacts and app/(main)/connections only; nothing under app/(main)/feed or lib/feed. Closes when the feed or home shows it.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-664",
+      "title": "Circles can only be browsed as a list: there is no map of where they meet",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/TASK-INVENTORY-2026-08-17.md",
+        "ref": "§8c \"Circle-discovery visual map layer\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8c. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. app/(main)/circles/page.tsx has no map; the events index and QR Studio already carry map components to reuse. WHAT SHIPS: a map view of forming and active Circles on /circles, respecting each Circle's location privacy.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no map in app/(main)/circles/page.tsx. Closes when /circles offers a map view.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-665",
+      "title": "A full Circle turns people away instead of seeding a new one: there is no lineage and no \"nearly full\" prompt",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/TASK-INVENTORY-2026-08-17.md",
+        "ref": "§8c \"circle lineage + the nearly full, seed a new circle flywheel\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8c. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. No parent/lineage column or code on circles, and \"nearly full\" appears only in lib/pricing meters. WHAT SHIPS: a Circle records the Circle it was seeded from, and a Circle near its cap offers its host (and waiting members) a one-tap \"start a sister Circle\" that remixes it (lib/circles/remix.ts already exists).",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no lineage column, no nearly-full prompt. Closes when both ship.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-666",
+      "title": "A Circle can declare only one topic, so a Circle that is about two things is found under one",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/TASK-INVENTORY-2026-08-17.md",
+        "ref": "§8c \"multi-topic circles (one topical_channel_id today)\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8c. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. circles.topical_channel_id is a single nullable column (lib/database.types.ts). OWNER RULING NEEDED: whether a Circle may carry more than one Channel. NAMING.md locks Channel and \"tune in\" and says do not reopen Interests vs Topics; this row is only the cardinality question.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: circles has one topical_channel_id. Closes on the ruling and, if yes, the join table and its surfaces.",
+        "checked": "2026-09-29"
+      },
+      "ownerAction": "ruling"
+    },
+    {
+      "id": "LIVE-667",
+      "title": "An event can be placed on a Circle or a region, but not on a Hub or a Nexus, so a Hub-wide gathering has nowhere to live",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/TASK-INVENTORY-2026-08-17.md",
+        "ref": "§8c \"hub/nexus-scoped events\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8c. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. app/(main)/events/placement-actions.ts writes circle placements (the bare scope pair plus the typed column) and region placements; no hub or nexus scope. Dispatch audiences already resolve hub and nexus (lib/events/dispatch-audience), so the audience half exists. WHAT SHIPS: hub and nexus placement with the same visibility gates, and the events index and the Hub page list them.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: placement-actions.ts handles circle and region only. Closes when a Hub or Nexus event can be placed and is listed.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-668",
+      "title": "Role and milestone unlocks are scattered through the code, so nobody can read which feature wakes up when",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/TASK-INVENTORY-2026-08-17.md",
+        "ref": "§8c \"milestone wake-up gating map (declarative role+milestone unlocks)\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8c. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. No declarative unlock map exists; unlocks sit inline (lib/journeys/rewards.ts, lib/pricing/tease-gate.ts, stage checks on the feed). WHAT SHIPS: one declarative map (feature, role floor, milestone) that the existing gates read, and a page or doc generated from it.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no unlock map module. Closes when the gates read one map.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-669",
+      "title": "Stage-driven disclosure stops at the feed: the dashboard, profile and rails show a newcomer everything at once",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-146 (stage-driven disclosure); §8e"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8e. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. stageIndex is read only by app/(main)/feed/page.tsx, lib/member-progress.ts and the progress components. WHAT SHIPS: the dashboard, the profile and the rail modules read the member stage and hold back what ADR-146 says a stage should not see yet.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: stageIndex readers are the feed and progress only. Closes when the three surfaces read it.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-670",
+      "title": "A logged practice is always self-reported: no host, peer or device can confirm it happened",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "docs/TASK-INVENTORY-2026-08-17.md",
+        "ref": "§8e \"practice.verified host/peer verification + device attestation / P2P mutual-confirm\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8e. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. No verification column, action or attestation code for practice logs. OWNER RULING NEEDED: which of host confirmation, peer mutual-confirm and device attestation (if any) the product wants, and whether a verified log is worth more Zaps (an economy call, ADR-438).",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no practice verification code. Closes on the ruling and the build it names.",
+        "checked": "2026-09-29"
+      },
+      "ownerAction": "ruling"
+    },
+    {
+      "id": "LIVE-671",
+      "title": "A reward earned on the phone shows on the laptop only after a reload: reward feedback is not pushed across devices",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/TASK-INVENTORY-2026-08-17.md",
+        "ref": "§8e \"realtime reward feedback via Supabase Broadcast (cross-device)\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8e. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. No reward channel: Broadcast hits on main are dispatch surfaces, not rewards. WHAT SHIPS: a private per-member Broadcast channel the reward writers publish to, and the shell listens for (Realtime authorization is required first; EDITOR §8.1 item 5 names it for E0, so do the member-channel policy here).",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no reward Broadcast channel. Closes when a reward on one device shows on another without a reload.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-672",
+      "title": "Doomscroll mode, the named release valve for a member who wants to scroll, does not exist outside marketing copy",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-155; §8e"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8e. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. \"Doomscroll\" appears only in app/(marketing)/loneliness, app/llms.txt and a page-editor template. WHAT SHIPS: the mode ADR-155 describes, read ADR-155 first for its limits.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no member-facing doomscroll code. Closes when the mode ships.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-673",
+      "title": "Quests cannot carry a sponsor or a real reward, and captures stop at their first kinds: the Quest pipeline is unbuilt",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-155, ADR-156a; §8e and §8g (\"Capture Phases 2-4\")"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8e and §8g. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. \"sponsor\" appears only on events; no Quest pipeline or sponsor-reward code. The seasonal authoring surface and the season countdown ARE built (app/(main)/admin/content/seasons, components/quest/season-countdown.tsx) and are not filed. OWNER RULING NEEDED: sponsor-backed rewards involve partners and possibly money or goods; which reward kinds are in scope, and whether Capture Phases 2-4 (the richer capture kinds) ride this row.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no sponsor or Quest pipeline code. Closes on the ruling and the build it names.",
+        "checked": "2026-09-29"
+      },
+      "ownerAction": "ruling"
+    },
+    {
+      "id": "LIVE-674",
+      "title": "Practice depth has three loose ends: no per-mode live walkthrough on a preview, no auto-continue for timed Movement, and a Vera dispatch fallback that can name the wrong activity",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/PRACTICE-DEPTH-BUILD.md",
+        "ref": "PD7 (:100); §8e"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8e. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. Already built and not filed: PD6 depth streak (lib/practices/depth-streak.ts), the threshold chime (session.tsx and movement-session.tsx call chime at the target). Still open: PD7 is recorded as ⏳ \"Per-mode live-session walkthrough still to do in preview\"; auto-continue past the target is wired in the Mindless session only (components/on-air/session.tsx), re-test Movement; the Vera dispatch AI fallback naming the right activity (lib/vera-dispatch.ts) is unverified. Each arm is re-tested before it is built.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: PD7 ⏳ in docs/PRACTICE-DEPTH-BUILD.md:100. Closes when the walkthrough is recorded and the two code arms are fixed or proved already right.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-675",
+      "title": "Sentinel stops at layer 1: nothing sweeps the product on a schedule and opens a finding by itself",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "docs/AI-STRATEGY.md",
+        "ref": "Sentinel Layer 2; BACKLOG §E; §8g"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8g. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. No Sentinel code under lib, scripts or .github. Layer 2 is scheduled sweeps through the Agent SDK with a scoped GitHub App. OWNER ACTION: the GitHub App has to be created and installed by the owner (an account step); the sweep code is agent-workable once it exists.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no Sentinel code. Closes when a scheduled sweep opens its first finding through the scoped app.",
+        "checked": "2026-09-29"
+      },
+      "ownerAction": "account"
+    },
+    {
+      "id": "LIVE-676",
+      "title": "The Space copilot drafts from the brand fields alone: it has no eval harness and no grounding in the Space's own posts and offerings",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/ai/space-copilot.ts",
+        "ref": "the \"Later (deferred)\" note (~:18-21)"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: lib/ai/space-copilot.ts deferred list (added to DEF-DOMAIN 2026-09-06). Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. The note is still there: an eval harness for the drafts, tool grounding over the Space's live content, and RAG over its posts and offerings. WHAT SHIPS: the eval harness first (a fixed set of Spaces and a scored rubric), then grounding, so the second change is measured by the first.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: the deferred note is present at lib/ai/space-copilot.ts. Closes when the harness runs and the copilot reads the Space content.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-677",
+      "title": "Feed ranking cannot tell what a post is about: post-content embeddings were promised to \"land later\" and have not",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/feed/blend-rank.ts",
+        "ref": "the \"land later\" note (~:8)"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: DEF-CODE: \"Feed post-content embeddings, land later\". Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. The note is present; embed crons exist for practices, library, help and room messages but not posts. WHAT SHIPS: an embed-posts cron on the same pattern and a similarity term in blend-rank, measured against the current ranking.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no app/api/cron/embed-posts; the blend-rank note is present. Closes when posts are embedded and ranked on it.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-678",
+      "title": "A member cannot volunteer for a Crew task from the Circle page: crew_tasks is a catalogue only operators see",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/BACKLOG.md",
+        "ref": "§M \"Crew task-volunteering UI inline on circle pages\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8m. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. crew_tasks is read by admin pages only; nothing under app/(main)/circles/[slug] mentions it. The rest of §8m is built and not filed: content-type-agnostic reports (reports.target_type widened, latest 20270345002600) and ratings, reviews and disputes (lib/commerce/reviews.ts, lib/commerce/disputes.ts). WHAT SHIPS: a Circle rail or page module listing open tasks with a one-tap volunteer.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no crew_tasks under app/(main)/circles/[slug]. Closes when a member can volunteer from a Circle.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-679",
+      "title": "Trust scores are computed and read by nobody a member can see: there is no explainable read, and marketplace, moderation and verification emit no signals",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/trust/store.ts",
+        "ref": "header \"the member-consented, explainable read RPC is a follow-up\"; §8m trust score wiring"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8m and DEF-CODE (\"Trust ledger\"). Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. The ledger and projection exist (lib/trust/store.ts, compute.ts, weights.ts); the store header still names the read RPC as a follow-up; lib/practices/clean.ts orders the review queue on submitter trust, which reads empty for members with no signals. Signals are emitted by lib/engagement/capture.ts and the personas admin only. WHAT SHIPS: emitters from marketplace (a settled order, a dispute), moderation (an upheld report) and verification, the SECURITY DEFINER explainable read, and a recompute job.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: two emitters; the read RPC is a named follow-up. Closes when the three emitters and the read exist.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-680",
+      "title": "The teaser gate is built and switched off, mounted only on the Circle feed, and the pages it was meant for do not use it",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/BACKLOG.md",
+        "ref": "§N teaser gate / access tiers"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8n. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. lib/teaser.ts has TEASER_GATE_ENABLED = false; components/teaser-gate.tsx is mounted by components/widgets/circles/circle-feed.tsx only; event, interest and best-practice pages do not use it. The capability-resolver tier input and \"Website Membership tiers\" horizontal are not built. OWNER RULING NEEDED: the core-model rework (ADR-1294, WR) moved paywalls and its gates stay inert until 2026-12-01; whether the teaser gate still has a job after that, on which pages, and when it turns on.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: flag false, one mount. Closes on the ruling and what it names.",
+        "checked": "2026-09-29"
+      },
+      "ownerAction": "ruling"
+    },
+    {
+      "id": "LIVE-681",
+      "title": "Practices and the Library are two front doors to overlapping things, and the planned merge was never decided",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/BUILD-LIST.md",
+        "ref": "P7 Nav/IA \"Practices+Library merge\"; §8l"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8l. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. /practices and /library both render on main. The rest of §8l is built and not filed: the admin suites (Insights and the Studio nav), the data-driven menu admin (/admin/menu, MENU-CONTRACT), the focal-point picker (components/ui/image-focal-picker.tsx); page_revisions rollback belongs to the editor (PROG-E0 page_versions, W4). OWNER RULING NEEDED: merge, keep both, or re-scope.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: both routes exist. Closes on the ruling and, if merged, the redirect.",
+        "checked": "2026-09-29"
+      },
+      "ownerAction": "ruling"
+    },
+    {
+      "id": "LIVE-682",
+      "title": "The composer offers every member the same two options: no Poll, no Ask, and no Dispatch scoped to the tier a leader runs",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "docs/BACKLOG.md",
+        "ref": "§S S6 \"Tiered post options in the composer\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8p, S6 (owner UI call). Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. components/feed/composer.tsx offers Post and Dispatch; no poll or ask kinds. S6 specifies: everyone gets Post, Poll, Ask and a Practice/Journey share; a host gets Dispatch to Circle, Set Circle Practice, Event to Circle and Pin; Guide, Mentor and Staff get Dispatch to Hub, Nexus and Global. WHAT SHIPS: the base kinds, then a Dispatch scope picker limited to the tiers the member leads. Other §8p calls are done and not filed: S2, S5 (the composer reads Dispatch), S3 (the broadcast token), S7 (the right rail on every member page, AGENTS.md), S1b (the quest_* tables are gone from lib/database.types.ts). S10 (previews hanging in Initializing) is not filed: previews build and are photographed on every PR (LIVE-213).",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: composer.tsx has Post and Dispatch only. Closes when the base kinds and the scoped Dispatch ship.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-683",
+      "title": "Demo content still reads flat and seeded, and the demo notice is a toggle rather than the action links with points the owner asked for",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/BACKLOG.md",
+        "ref": "§S S4 and S9; §8g \"warm demo content\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8p (S4, S9) and §8g. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. Demo mode still renders a DemoToggle (components/layout/app-shell.tsx:880) and the seed palette is unchanged. OWNER RULING NEEDED: the beta program closed (ADR-1006) but demo mode did not; whether demo content stays at all, and if so S4 (action links with the point value) and S9 (warmer seeds) are the build.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: demo toggle present. Closes on the ruling and what it names.",
+        "checked": "2026-09-29"
+      },
+      "ownerAction": "ruling"
+    },
+    {
+      "id": "LIVE-684",
+      "title": "Six named events-series follow-ups are still open: series-aware limits and ranking, the map pin, the MAIN-safe rail, the operator picker and anchor re-embed",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/EVENTS-SERIES-BUILD-PLAN.md",
+        "ref": "§11.1 Named follow-ups (SERIES-PD, RANK, PIN, MAIN, PICKER, EMBED)"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: EVENTS-SERIES §11.1 (added to DEF-DOMAIN 2026-09-06; SERIES-COUNT and SERIES-CANCEL were LIVE-198, done). Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nEach tag is one small PR, re-tested first: SERIES-PD (DISTINCT ON push-down so a LIMIT counts series), SERIES-RANK (a series ranked by its best occurrence), SERIES-PIN (\"and N more dates\" in the map popup), SERIES-MAIN (a MAIN-safe date rail), SERIES-PICKER (a grouped picker for /admin/qr and the circle attachable list), SERIES-EMBED (re-embed an anchor that aged out). The doc says why each was deferred; read it before building.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29: the six tags are still listed as follow-ups in docs/EVENTS-SERIES-BUILD-PLAN.md §11.1 and none has a row. Closes when each is shipped or ruled out in the doc.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-685",
+      "title": "Crew stats cannot say whether a member did more this week than last: there are no weekly snapshots to compare",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/TASK-INVENTORY-2026-08-17.md",
+        "ref": "the Crew gamification week-over-week delta the Notion page defers to \"Phase 4\" (added to DEF-DOMAIN 2026-09-06)"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: DEF-DOMAIN 2026-09-06 addition. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. No week-over-week code under app/(main)/crew, components/crew or lib/crew. WHAT SHIPS: a weekly snapshot (a cron row per member) and the delta on the Crew stats.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no snapshot or delta. Closes when the Crew page shows the delta.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-686",
+      "title": "A personal app an operator disabled for everyone still shows on circle, event and Space pages",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/layout/settings-panel.tsx",
+        "ref": "~:395-401, \"a globally-disabled personal app also hides there is a follow-up\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: DEF-CODE: \"Globally-disabled personal apps still show on entity-scope pages\". Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. The panel applies the global overrides only when its scope is global, and its comment names threading them onto entity-scope pages as a follow-up. WHAT SHIPS: entity-scope pages apply the global disable (not the other global overrides), with a test.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: the follow-up comment is present and personalApps is overridden only when scope.kind is global. Closes when an entity page hides a globally disabled app.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-687",
+      "title": "The outcomes report has no per-Journey completion: its Journeys section is always empty",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/analytics/outcomes.ts",
+        "ref": "header (~:5-12), \"quests kept on the report shape (always empty)\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: DEF-CODE: \"Per-Journey completion analytics\". Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. The header still says per-Journey completion \"will land on this surface in a follow-up\". WHAT SHIPS: completion per journey_plan (qualifying weeks at or above target) derived from practice_logs, on the admin outcomes surface.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: the always-empty note is present. Closes when the section shows completion per Journey.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-688",
+      "title": "A check-in QR is an unsigned id, so a copied or forged code checks a member in as if they scanned it",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "app/(main)/admin/qr/actions.ts",
+        "ref": "~:12, \"signed payloads remain a follow-up\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: DEF-CODE: \"QR signed payloads (the one with an integrity consequence for check-in)\". Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. The follow-up line is present. The capture verifier checks validity, rule and proximity (lib/engagement/capture.ts verifyCapture) but a node code carries no signature. WHAT SHIPS: codes carry an HMAC over (node, issued-at) with lib/signing-secret.ts, the verifier refuses an unsigned or tampered code, and existing printed codes get a grace window stated in the ADR.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: the follow-up line is present at app/(main)/admin/qr/actions.ts. Closes when the verifier refuses a code with a bad signature (a test proves it).",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-689",
+      "title": "A Journey's non-practice blocks cannot be reordered or interleaved with its practices",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/journey-plans.ts",
+        "ref": "~:720, \"reordering/interleaving with practices is a follow-up\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: DEF-CODE: \"Journey non-practice block reorder/interleave\". Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. reorderItems (:776) orders practices only; the follow-up note is at :720. WHAT SHIPS: one ordering over practices and blocks, with the editor drag and a test.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: the note is present and reorderItems takes practice ids only. Closes when blocks and practices share one order.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-690",
+      "title": "Operators read the leader training curriculum as copy they cannot edit, and a trainee's progress is not recorded per step",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "app/(main)/admin/content/training/page.tsx",
+        "ref": "~:18 and :72; roles 1.8 \"role-advancement training Journeys\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8j (1.8) and DEF-CODE (\"Training curriculum in-place editing\"). Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. The training library exists (/lead/training-library); the admin page still shows the curriculum as copy. The rest of §8j is built and not filed: scoped stewardship (lib/stewardships.ts edges role x scope), the permission grid (/admin/roles), the capability resolver (lib/core/load-capabilities). 1.3 \"unified-site refactor\" names no consequence to re-test and is not filed. WHAT SHIPS: in-place editing of the curriculum and per-step completion.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: the admin training page renders copy. Closes when an operator edits a step and a trainee completion is stored per step.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-691",
+      "title": "App overrides apply to a whole scope kind: one Space cannot hide or reorder an app for itself",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/apps/overrides.ts",
+        "ref": "~:78, \"Phase 2 (migration TODO)\"; migration 20261011000000:29,72"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: DEF-CODE: \"Per-space app_overrides layer, Phase 2\". Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. The Phase 2 marker is present in lib/apps/overrides.ts. WHAT SHIPS: a per-Space override row (NULL means the scope-kind default), the resolver layering it, and the Space settings door. Needs a migration; the orchestrator applies it.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: the Phase 2 marker is present. Closes when a Space-scoped override applies.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-692",
+      "title": "The Library cannot hold a font or a document: there is no storage bucket for their files",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20260925000100_library_lanes_expansion.sql",
+        "ref": ":19, \"add a library-files storage bucket\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: DEF-CODE: \"library-files storage bucket for font/document payloads\". Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. No migration or code names a library-files bucket. WHAT SHIPS: the bucket with its policies (private by default, served signed), and the library lanes for fonts and documents upload into it. Needs a migration; read the Loom private-bucket work (LIVE-577) first so both buckets follow one pattern.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no library-files bucket anywhere. Closes when a font uploads into it.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-693",
+      "title": "An automation can email or push but never text, so an SMS step has to be sent by hand",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/automations.ts",
+        "ref": "AUTOMATION_ACTION_TYPES; P4.9 \"Automations: add SMS/push actions + a segment builder\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8f. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. Push and email actions exist (lib/automations.ts, email_actor and push_actor) and the segment builder exists (/admin/segments), so only the SMS action is left. GATED ON DEF-A2P: no SMS can send until the 10DLC campaign is registered, which is an owner account step. The rest of §8f is built and not filed: the link generator, A/B variants, scheduled publish (cron publish-scheduled), the Kanban pipeline, cohort and acquisition analytics, engagement_score, the weekly digest, the notification router, the live operator (Vera agent-claude with the autonomy latches).",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no sms action type. Closes when an automation can send SMS through the consent gate, after DEF-A2P.",
+        "checked": "2026-09-29"
+      },
+      "ownerAction": "account"
+    },
+    {
+      "id": "LIVE-694",
+      "title": "Operators cannot design a flyer for an entry point: the flyer designer was deferred with flyers switched off",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/BACKLOG.md",
+        "ref": "\"Entry-point flyer designer (deferred, flyers OFF for now)\"; §8f"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8f. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. Flyer code exists only in the event seeder (intake from flyers), not a designer. OWNER RULING NEEDED: flyers were switched off; whether they come back, and if so the designer is the build.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no flyer designer. Closes on the ruling.",
+        "checked": "2026-09-29"
+      },
+      "ownerAction": "ruling"
+    },
+    {
+      "id": "LIVE-695",
+      "title": "Email bodies are built by hand in string templates, so every new email re-derives the layout and dark-mode rules",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/GROWTH-OS-BUILD-PLAN.md",
+        "ref": "GE6-5 React-Email templates"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8f and GROWTH-OS GE6-5. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. @react-email is not a dependency. The sending-subdomain half of GE6-5 is built (EMAIL_BROADCAST_FROM beside EMAIL_FROM) and is not filed; GE3-5 and GE3-6 (waitlist position, cohort gating) are not filed because the waitlist engine was deleted with the beta program (ADR-1006). WHAT SHIPS: a React-Email base template and the receipt family moved onto it first, with golden-string tests so nothing a member receives changes by accident.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no @react-email in package.json. Closes when the receipt family renders from the templates.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-696",
+      "title": "A persona goes active without a payout account: the per-persona Stripe Connect binding is still a stub",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/personas.ts",
+        "ref": "header (~:5), \"Connect / money binding ... is stubbed until Connect lands\"; roles 2.7; SITE-AUDIT BUG-7"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8k (2.7) and §8q (BUG-7). Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. lib/personas.ts:5 and lib/personas-core.ts:80 still say the binding is stubbed; the CONNECT_WIRED gate (SITE-AUDIT BUG-7) blocks the active step rather than binding an account. Connect itself has landed for Spaces and members (lib/billing/connect.ts). WHAT SHIPS: activating a selling persona binds (or starts) the member's Connect account on the same path Journeys and Spaces use (LIVE-425), and the stub comments go.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: both stub comments present. Closes when persona activation reads a real Connect account.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-697",
+      "title": "Anyone signed in can review a product they never bought: the purchase check only labels a review, it does not gate it",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/marketplace/review-actions.ts",
+        "ref": "TODO(payments-on) (~:15); lib/commerce/reviews.ts hasPurchasedProduct"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: DEF-CODE: \"Product reviews gated on purchase once payments are on\". Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. OWN-046 (the sale gates) is done, so orders can settle. review-actions.ts computes verifiedPurchase from hasPurchasedProduct and passes it through as a label; its TODO says to gate creation on it once payouts are live. WHAT SHIPS: a review is refused without a settled order for the product (or its Journey siblings), with a plain line saying why; the verified label stays for existing rows.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const F=\"app/(main)/marketplace/review-actions.ts\";if(!fs.existsSync(F))process.exit(79);const s=fs.readFileSync(F,\"utf8\");const a=s.indexOf(\"await hasPurchasedProduct(\");const b=s.indexOf(\"upsertProductReview(\",a);if(a<0||b<0)process.exit(79);\nif(!/!\\s*verifiedPurchase/.test(s.slice(a,b))){console.error(\"any signed-in member can review a product they never bought: the purchase check only labels the review, it does not gate it\");process.exit(1)}\nconsole.log(\"ok\")'",
+        "note": "Reads review-actions.ts between the hasPurchasedProduct call and upsertProductReview: fails while nothing refuses on !verifiedPurchase. Fails on main at 923adf97f."
+      }
+    },
+    {
+      "id": "LIVE-698",
+      "title": "A Nexus cannot have its own subdomain (encinitas.frequencylocal.com)",
+      "status": "parked",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/TASK-INVENTORY-2026-08-17.md",
+        "ref": "§8c \"per-Nexus subdomains, overlaps W2/E10\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8c. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nSites territory: tenant subdomains are PROG-E10 (W4). PARKED with the W4 group to 2027-01-05 by the same ruling (\"The only things I want deferred are W4, W9, and W11\"); decomposed with the editor group in an owner session (ADR-1573).",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Filed parked 2026-09-29 (ADR-1624). Not probed while parked.",
+        "checked": "2026-09-29"
+      },
+      "notes": "parkedUntil: 2027-01-05. Parked with the W4 editor and Sites group (ADR-1573, ADR-1624)."
+    },
+    {
+      "id": "LIVE-699",
+      "title": "Theme depth for Sites: a theme per page template, the Space visual brand in the header, and per-Space membership identity",
+      "status": "parked",
+      "priority": "P3",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "docs/THEME.md",
+        "ref": "BACKLOG §V; components/admin/spaces/space-brand-editor.tsx (~:24)"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8i and DEF-CODE (\"Space visual brand in the header, check PROG-P7\"). Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nPROG-P7 (per-Space theming depth) was folded into PROG-E10 by ADR-1573, so these ride W4: template-per-page theming, the Space logo and name in the header (space-brand-editor.tsx says it is \"wired in a follow-up\"), per-Space membership and multi-Space identity, occasion authoring polish. PARKED with the W4 group to 2027-01-05.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Filed parked 2026-09-29 (ADR-1624). Not probed while parked.",
+        "checked": "2026-09-29"
+      },
+      "notes": "parkedUntil: 2027-01-05. Parked with the W4 editor and Sites group (ADR-1573, ADR-1624)."
+    },
+    {
+      "id": "LIVE-700",
+      "title": "Organizations and Businesses cannot run their own sub-community or website: Hook federation and the business site builder are unbuilt",
+      "status": "parked",
+      "priority": "P3",
+      "lane": "live",
+      "size": "XL",
+      "source": {
+        "file": "docs/TASK-INVENTORY-2026-08-17.md",
+        "ref": "§8k 3.4 Business (website builder) and 3.5 Organization + Hook federation"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8k. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nWhite-label sub-communities, identity link and Hook membership rollover, a capped points rollup, community federation and isolated tenant admin (3.5), and the Business website builder (3.4) are the white-label and Sites deliverable (W4). PARKED with the W4 group to 2027-01-05. The non-site halves of 3.4 (loyalty, listing) are in OWN-086's ruling.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Filed parked 2026-09-29 (ADR-1624). Not probed while parked.",
+        "checked": "2026-09-29"
+      },
+      "notes": "parkedUntil: 2027-01-05. Parked with the W4 editor and Sites group (ADR-1573, ADR-1624)."
+    },
+    {
+      "id": "OWN-085",
+      "title": "Space email has no acceptable-use policy a lawyer has read, and the enable card says so",
+      "status": "open",
+      "priority": "P3",
+      "lane": "owner",
+      "size": "S",
+      "source": {
+        "file": "components/spaces/email/email-enable-card.tsx",
+        "ref": "~:13, the counsel-gated AUP"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: DEF-CODE: \"Counsel-gated AUP for Space email, an owner item when Space email opens\". Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. The counsel note is present. THE ASK: decide when Space email opens and have the AUP reviewed; the enable card then links the reviewed policy. No code blocks it.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: the counsel note is present. Closes when a reviewed AUP is linked from the card.",
+        "checked": "2026-09-29"
+      },
+      "ownerAction": "ruling"
+    },
+    {
+      "id": "OWN-086",
+      "title": "Four persona long-tail items wait on a product call: the Collaborator directory, the Practitioner re-scope, Business loyalty, and the Lab bridge",
+      "status": "open",
+      "priority": "P3",
+      "lane": "owner",
+      "size": "M",
+      "source": {
+        "file": "docs/TASK-INVENTORY-2026-08-17.md",
+        "ref": "§8k (3.2, 3.3, 3.4, 2.8)"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8k. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. 3.2 Collaborator: a featured Practices/Journeys directory and an Earnings view; its \"influencer/affiliate kickbacks\" half is already ruled out (LIVE-607, \"No affiliate money\"). 3.3 Practitioner: its \"Paywalled Programs\" names a retired feature (Programs were dropped by 20261114000000) and needs a re-scope. 3.4 Business: listing, loyalty and CRM integration (its website builder is LIVE-700, parked). 2.8: the inter-entity Lab bridge is mostly legal (ADR-038). Built and not filed: 2.6 entitlement sources beyond membership_tier (entitlement_grants, lib/billing/crew-grants.ts). THE ASK: for each, build (and what), re-scope, or drop.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Filed 2026-09-29. Closes when each of the four has a ruling and any build it names is its own row.",
+        "checked": "2026-09-29"
+      },
+      "ownerAction": "ruling"
+    },
+    {
+      "id": "OWN-087",
+      "title": "Two built loops have never carried a real row: no Circle has run a Journey as a cohort, and no business or practitioner persona is verified",
+      "status": "open",
+      "priority": "P3",
+      "lane": "owner",
+      "size": "S",
+      "source": {
+        "file": "docs/TASK-INVENTORY-2026-08-17.md",
+        "ref": "§8o \"Empty seams, built, 0 rows in prod\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: docs/TASK-INVENTORY-2026-08-17.md §8o. Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nThe other §8o seams are covered elsewhere and not filed: financial_transactions lights up from real purchases (LIVE-234), trust signals (LIVE-679), app_instances (PROG-E0, W4). THE ASK: seed a curriculum and launch one Circle cohort on a Journey so journey_runs and journey_enrollments carry a real row, and onboard the first verified business or practitioner so profile_personas does. Production counts are not re-measured here (not measured overnight); the 2026-08-17 reading was zero for each.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-08-17 reading: journey_runs, journey_enrollments and profile_personas at zero. Not re-read 2026-09-29. Closes on a real row in each, read on production.",
+        "checked": "2026-09-29"
+      },
+      "ownerAction": "content"
+    },
+    {
+      "id": "HYG-139",
+      "title": "Two schema follow-ups promised in migration comments never shipped: the hard one-to-one rule on conversations and the co-steward read policy",
+      "status": "open",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20260604220000_group_dms_to_private_rooms.sql",
+        "ref": ":94; and 20260614100000_stewardships.sql:68"
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: DEF-CODE: three migration-comment follow-ups, \"re-test before filing\". Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nRE-TESTED. (1) 20260604220000:94 promises \"a FOLLOW-UP migration adds the hard 1:1 invariant on conversations once this backfill is verified in prod\"; no later migration adds it. (2) 20260614100000:68 leaves \"scope-leader read of co-stewards\" as a follow-up; later stewardships migrations are grants and lockdowns, not that policy. (3) 20240201000000:69 (circles.topical_channel_id NOT NULL) is done in 20260604010000 and is not filed. WHAT SHIPS: one migration with the invariant (after a production count of any conversation that breaks it, read by the orchestrator) and the co-steward read policy, with pgTAP. The orchestrator applies it.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no migration after 20260604220000 adds a one-to-one constraint on conversations, and no co-steward read policy exists. Closes when both are in a migration with pgTAP.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-701",
+      "title": "Push permission is asked the moment a page loads, with no tap: iPhone Safari refuses a prompt without a gesture and Chrome quiets it, so web push reaches almost no phone",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/push/registration.tsx",
+        "ref": "the setup effect (~:43-75)"
+      },
+      "detail": "FILED 2026-09-29 by the owner replan (ADR-1624): \"I want the mobile site to be active but iOS dev to remain parked.\" Mobile-site survey of main at 923adf97f.\n\nRE-TESTED. PushRegistration runs on every (main) mount, registers /sw.js and, when permission is \"default\", calls Notification.requestPermission() from the effect. Safari on iPhone grants web push only to a site added to the Home Screen and only from a user gesture; Chrome shows a quiet prompt for requests with no gesture. So the ask a member most needs to see is the one the phone suppresses.\n\nWHAT SHIPS. The effect keeps registering the worker and re-syncing an existing subscription, but never asks. The ask moves behind a \"Turn on notifications\" tap (settings/notifications, and a one-time card after a member first RSVPs or joins a Circle). On iPhone Safari outside the Home Screen the card says to add Frequency to the Home Screen first instead of offering a button that cannot work.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const F=\"components/push/registration.tsx\";if(!fs.existsSync(F))process.exit(79);const s=fs.readFileSync(F,\"utf8\");const i=s.indexOf(\"useEffect(\");if(i<0){console.log(\"ok\");process.exit(0)}const j=s.indexOf(\"}, [\",i);const effect=s.slice(i,j<0?undefined:j);\nif(/requestPermission/.test(effect)){console.error(\"push permission is requested from an effect on page load, with no tap: iPhone Safari refuses a prompt outside a user gesture and Chrome quiets it, so web push reaches almost no phone\");process.exit(1)}\nconsole.log(\"ok\")'",
+        "note": "Fails while requestPermission is called inside the useEffect in components/push/registration.tsx. Fails on main at 923adf97f."
+      }
+    },
+    {
+      "id": "LIVE-702",
+      "title": "Opened with no signal, the installed Frequency app shows the browser's error page: the service worker caches nothing",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "public/sw.js",
+        "ref": "header, \"Minimal v1 ... No offline caching yet\""
+      },
+      "detail": "FILED 2026-09-29 by the owner replan (ADR-1624). Mobile-site survey of main at 923adf97f.\n\nRE-TESTED. public/manifest.json declares display standalone with a start_url and a Mindless shortcut, so a member can install the site; public/sw.js handles push and notificationclick only and says \"No offline caching yet\". WHAT SHIPS: a navigation fetch handler that serves one precached offline page (on-brand, \"You are offline; your practice timer still works\" if the timer route is cached, otherwise just the message) when the network fails. No data caching, no stale member pages: the sw header's caution about caching member data stands.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const F=\"public/sw.js\";if(!fs.existsSync(F))process.exit(79);const s=fs.readFileSync(F,\"utf8\");\nif(!/addEventListener\\(\\s*[\"\\x27]fetch[\"\\x27]/.test(s)){console.error(\"the service worker has no fetch handler, so the installed app opened offline shows the browser error page\");process.exit(1)}\nconst m=s.match(/[\"\\x27](\\/offline[\\w./-]*)[\"\\x27]/);if(!m){console.error(\"the fetch handler names no offline page to serve\");process.exit(1)}\nconst p=m[1];const ok=fs.existsSync(\"public\"+p)||fs.existsSync(\"app\"+p+\"/page.tsx\")||fs.existsSync(\"app/(public)\"+p+\"/page.tsx\");if(!ok){console.error(\"the offline page \"+p+\" the worker serves does not exist\");process.exit(1)}\nconsole.log(\"ok\")'",
+        "note": "Fails while public/sw.js has no fetch listener, names no /offline page, or names one that does not exist in public/ or app/. Fails on main at 923adf97f."
+      }
+    },
+    {
+      "id": "LIVE-703",
+      "title": "Nothing tells a phone visitor they can install Frequency, and on iPhone the only way is a Share-menu step nobody finds",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "public/manifest.json",
+        "ref": "no beforeinstallprompt handling anywhere; \"screenshots\": []"
+      },
+      "detail": "FILED 2026-09-29 by the owner replan (ADR-1624). Mobile-site survey of main at 923adf97f.\n\nRE-TESTED. No code handles beforeinstallprompt and the manifest ships \"screenshots\": [] (Chrome's richer install sheet needs them). Installing also matters for LIVE-701: iPhone web push works only from the Home Screen. OWNER RULING NEEDED: whether to ask members to install at all, and where (after a first RSVP, on /settings, never on a first visit). If yes: an install card that uses the browser prompt on Android and shows the Share, Add to Home Screen steps on iPhone, plus two manifest screenshots.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: no beforeinstallprompt handler; manifest screenshots empty. Closes on the ruling and, if yes, the card.",
+        "checked": "2026-09-29"
+      },
+      "ownerAction": "ruling"
+    },
+    {
+      "id": "LIVE-704",
+      "title": "A Space operator on a phone gets consoles tuned for a desk: /manage and /settings were left out of the mobile navigation pass",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/MOBILE-NAV-PLAN.md",
+        "ref": "§3 \"a thumb-friendly console pass is a larger follow-up, tracked separately\""
+      },
+      "detail": "FILED 2026-09-29 out of DEF-DOMAIN by the owner replan (ADR-1624, \"Split into rows\"). Source: MOBILE-NAV-PLAN §3 (added to DEF-DOMAIN 2026-09-06: \"tracked separately\" and was not). Premise re-tested against main at 923adf97f before filing (ADR-1082).\n\nPlaced in WM, the mobile site lane. RE-TESTED. The rest of MOBILE-NAV-PLAN is built and not filed: the five-tab bar (HYG-033), the context switcher and legal links in the app shell, the upgrade nudge; the overflow suite drives 320, 360 and 390 (test/e2e/overflow.spec.ts, HYG-057) and the in-browser QR scanner falls back to jsQR where BarcodeDetector is missing (components/scan/scanner.tsx). The operator consoles are reachable on a phone and fit (HYG-037, LIVE-529) but are built for a pointer: dense tables, hover actions, small targets.\n\nWHAT SHIPS. One pass over the Space /manage and /settings/* consoles at 390px: the common operator actions (approve a member, post a Dispatch, check in, mark an order sent) reachable with a thumb, targets at 44px, tables collapsing to cards. Visual baselines recaptured for the consoles it moves.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Re-tested 2026-09-29 on main at 923adf97f: MOBILE-NAV-PLAN §3 still defers the console pass and no row owned it. Closes when the console pass lands with 390px baselines and the a11y target-size rule (wcag22aa, already in test/e2e/a11y.spec.ts) clean on the consoles.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "LIVE-705",
+      "title": "No seller can mark a split order shipped: setOrderFulfillment finds an order through owner columns a split order leaves empty",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/commerce/fulfilment.ts",
+        "ref": "sellerScope / setOrderFulfillment; follow-up named in LIVE-624's ADR-1616 \"Not here\""
+      },
+      "detail": "FILED 2026-09-29 by HYG-138 (ADR-1624), a follow-up LIVE-624 named (ADR-1616, \"Not here\": \"a fulfilment door for a split order, whose single fulfilment status no one seller can move today\").\n\nRE-TESTED on main at 923adf97f. setOrderFulfillment reads the order with `.eq(scopeColumn, scopeValue)` where sellerScope maps a Space seller to owner_space_id, a member to owner_profile_id and the platform to owner_kind platform. A split order (owner_kind split, LIVE-621) has null owner ids, so every seller reads \"That order is not one of yours.\" and a paid split order of physical goods can never be marked sent, delivered or completed. One fulfilment status per order is also wrong for a split order: each seller ships their own lines.\n\nWHAT SHIPS. After LIVE-622 to LIVE-624 land (commerce_order_transfers is the only record of which sellers a split order pays): a seller finds a split order through their transfer row, and fulfilment is recorded per seller share (on the transfer row or a per-share shipping entry), with the order reading shipped when every share is. The buyer's shipped notice names the seller that shipped.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const F=\"lib/commerce/fulfilment.ts\";if(!fs.existsSync(F))process.exit(79);\nif(!/commerce_order_transfers/.test(fs.readFileSync(F,\"utf8\"))){console.error(\"setOrderFulfillment finds an order only through owner_space_id, owner_profile_id or owner_kind platform, which a split order leaves empty, so no seller can mark a split order shipped\");process.exit(1)}\nconsole.log(\"ok\")'",
+        "note": "Fails while lib/commerce/fulfilment.ts never reads commerce_order_transfers, the only link from a split order to its sellers. Fails on main at 923adf97f."
+      }
+    },
+    {
+      "id": "LIVE-706",
+      "title": "A paid split order tells no seller they made a sale, and the buyer's receipt names Frequency as the seller who will send it on",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/commerce/order-receipt.ts",
+        "ref": "resolveSeller and the split-order note; follow-up named in ADR-1616 \"Not here\""
+      },
+      "detail": "FILED 2026-09-29 by HYG-138 (ADR-1624), a follow-up LIVE-624 named (ADR-1616: \"the seller's sale notice and the buyer's receipt email for a split order ... are follow-ups\").\n\nRE-TESTED on main at 923adf97f. sendOrderReceipts runs for a split order from the checkout settle. resolveSeller returns null for owner_kind split, so the buyer half runs with sellerName \"Frequency\" (\"Frequency can see the order now and will send it on\", which is not true: each seller ships their own lines), and the seller half logs \"no seller to notify for a paid order\" and returns. So the orchestrator's note that no buyer receipt is sent is corrected here: the buyer gets one, naming the wrong seller.\n\nWHAT SHIPS. After LIVE-622 to LIVE-624: for a split order, each seller with a transfer row gets the sale notice for their share (their lines, their net) through notifyEarner, and the buyer receipt lists the lines by seller. Idempotent on the same settle flip as today.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const F=\"lib/commerce/order-receipt.ts\";if(!fs.existsSync(F))process.exit(79);\nif(!/commerce_order_transfers/.test(fs.readFileSync(F,\"utf8\"))){console.error(\"a paid split order sends no seller a sale notice and the buyer receipt names Frequency as the seller who will send it on\");process.exit(1)}\nconsole.log(\"ok\")'",
+        "note": "Fails while lib/commerce/order-receipt.ts never reads commerce_order_transfers. Fails on main at 923adf97f."
+      }
+    },
+    {
+      "id": "HYG-140",
+      "title": "The compiler cache grows on every warm build, so the cache-budget trim now fires on most production builds and each trim costs the next build a cold compile",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "M",
+      "source": {
+        "file": "scripts/check-cache-budget.mjs",
+        "ref": "ADR-1619 Consequences (HYG-136, in flight): \"the remedy for trims that fire often is the compiler cache's growth, not the estimate\""
+      },
+      "detail": "FILED 2026-09-29 by HYG-138 (ADR-1624), the follow-up ADR-1619 names (HYG-136, branch claude/hyg-136-cache-ratio, not yet on main).\n\nMEASURED (HYG-136, from Vercel build logs of the twelve production deployments of 2026-09-29, read only): node_modules held at 959 MiB on all twelve, while the turbopack cache under .next/cache carried the growth; the packed archive sat at 1.36 to 1.42 GB against the 1.40 GB trim point, and one build trimmed. With the honest two-ratio estimate the trim fires on more builds, and each trim throws the compiler cache away. The budget is not the problem (DEPLOY-SAFETY rule 2: fix the fan-out, do not raise the budget).\n\nWHAT THIS ROW IS. Find what grows in the turbopack cache between warm builds (the composition line check:cache-budget prints names each part by size), and stop it growing: prune stale entries by age before the upload, or keep only the current build's entries, measured over several builds. Watch the trend the gate prints.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Filed 2026-09-29 from HYG-136's readings (ADR-1619). Closes when several consecutive production builds upload under the trim point without trimming, read from the gate's printed composition line.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "HYG-141",
+      "title": "The perf baseline times /people, which only redirects to /network, so the People directory reading measures a redirect and not the directory query",
+      "status": "open",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "scripts/perf-baseline.mjs",
+        "ref": "the people-directory entry (~:68-74); ADR-172"
+      },
+      "detail": "FILED 2026-09-29 by HYG-138 (ADR-1624).\n\nRE-TESTED on main at 923adf97f. scripts/perf-baseline.mjs lists `people-directory` at route /people. app/(main)/people/page.tsx is a redirect to /network (ADR-172 moved the directory into the Network hub), so the timed request is a redirect. WHAT SHIPS: the entry points at /network and names the directory read in app/(main)/network/page.tsx; any stored baseline for it is re-taken.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const F=\"scripts/perf-baseline.mjs\";if(!fs.existsSync(F))process.exit(79);\nif(/route:\\s*[\"\\x27]\\/people[\"\\x27]/.test(fs.readFileSync(F,\"utf8\"))){console.error(\"perf-baseline times /people, which is a redirect to /network (ADR-172), so the People directory reading measures a 307 and not the directory query\");process.exit(1)}\nconsole.log(\"ok\")'",
+        "note": "Fails while scripts/perf-baseline.mjs lists route /people. Fails on main at 923adf97f."
+      }
+    },
+    {
+      "id": "HYG-142",
+      "title": "safeImageSrc still ends in a parse and a scheme check, so a crafted blob: or data: value reaches an <img src> verbatim and CodeQL keeps flagging the image picker",
+      "status": "open",
+      "priority": "P1",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "lib/safe-image-src.ts",
+        "ref": "safeImageSrc; CodeQL js/xss-through-dom at components/ui/image-focal-picker.tsx:225 via components/ui/image-upload.tsx:271"
+      },
+      "detail": "FILED 2026-09-29 by HYG-138 (ADR-1624) on the orchestrator's instruction: the CodeQL follow-up to HYG-137 (ADR-1620, in flight on claude/hyg-137-upload-preview-src), which fixed safeUploadPreviewSrc only.\n\nRE-TESTED on main at 923adf97f. A URL pasted into the image-upload field (components/ui/image-upload.tsx:271) reaches the focal picker's <img> (components/ui/image-focal-picker.tsx:225) through safeImageSrc. The helper parses and checks the scheme: a same-origin path is re-serialised, data: passes on a prefix test (/^data:image\\/[a-z0-9.+-]+[,;]/), http(s) returns the parser's string, and a blob: URL returns u.toString(), whose opaque path the URL parser does not escape. So safeImageSrc('blob:https://app.local/\"><img src=x onerror=alert(1)>') and a data:image value carrying a quote come back verbatim, and CodeQL models no scheme check as a sanitizer. As with HYG-137, no script runs in an <img>; the fix is the class, not an active exploit.\n\nWHAT SHIPS. safeImageSrc returns only from inside `if (RE.test(safe)) return safe` for fully anchored, wildcard-free patterns: a same-origin path, data:image/<png|jpeg|gif|webp|avif>;base64 with a base64 body, http(s) with explicit path and query characters (no credentials, quotes, angle brackets, backticks, spaces or backslashes), and blob:http(s)://host/<uuid>. Everything else is null. The tests in lib/safe-image-src.test.ts extend to the hostile set below. Fix, never dismiss (ADR-1620 §3).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node --experimental-strip-types --no-warnings -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const F=\"lib/safe-image-src.ts\";if(!fs.existsSync(F))process.exit(79);\nimport(\"./\"+F).then((m)=>{const f=m.safeImageSrc;if(typeof f!==\"function\")process.exit(79);\nconst Q=String.fromCharCode(34),A=String.fromCharCode(39);\nconst good=[\"/images/hero.png\",\"/api/og?title=x\",\"data:image/png;base64,iVBORw0KGgo=\",\"https://abc.supabase.co/storage/v1/object/public/avatars/a.jpg\",\"blob:https://app.local/550e8400-e29b-41d4-a716-446655440000\"];\nfor(const g of good)if(f(g)!==g)fail(\"safeImageSrc refuses a real image source: \"+g);\nconst bad=[\"blob:https://app.local/\"+Q+\"><img src=x onerror=alert(1)>\",\"blob:https://app.local/x\"+A+\" onerror=\"+A+\"alert(1)\",\"data:image/png;base64,AAAA\"+Q+\"><img src=x onerror=alert(1)>\",\"data:image/svg+xml,<svg onload=alert(1)>\",\"javascript:alert(1)\",\"data:text/html,<script>alert(1)</script>\",\"vbscript:msgbox(1)\",\"//evil.test/a.jpg\"];\nfor(const b of bad){const out=f(b);if(out!==null)fail(\"safeImageSrc hands \"+JSON.stringify(out)+\" to an <img src>: a blob path and a data: body are opaque to the URL parser, so a scheme check lets quotes and angle brackets through\")}\nconst src=fs.readFileSync(F,\"utf8\");const at=src.indexOf(\"export function safeImageSrc\");if(at<0)process.exit(79);const body=src.slice(at,src.indexOf(\"\\n}\",at));\nconst guards=[...body.matchAll(/if \\((\\w+)\\.test\\((\\w+)\\)\\) return \\2\\b/g)].map((x)=>x[1]);\nif(!guards.length)fail(\"safeImageSrc does not end in a regexp test on the value it returns, the only sanitizer shape CodeQL js/xss-through-dom models (ADR-1620)\");\nconst rest=body.replace(/if \\(\\w+\\.test\\((\\w+)\\)\\) return \\1\\b/g,\"\");\nfor(const r of rest.matchAll(/return ([^\\n]+)/g))if(r[1].trim()!==\"null\")fail(\"safeImageSrc returns a value past its allowlist: return \"+r[1]);\nfor(const g of guards){const d=new RegExp(\"const \"+g+\" =\\\\s*/(.+)/[a-z]*\\\\n\").exec(src);if(!d)fail(\"guard \"+g+\" is not a regexp literal in \"+F);const re=d[1];\nif(!re.startsWith(\"^\")||!re.endsWith(\"$\"))fail(g+\" is not anchored at both ends\");\nif(/\\[\\^|\\\\[SWD]/.test(re))fail(g+\" has a negated class, which CodeQL reads as a wildcard\");\nlet inCls=false;for(let i=0;i<re.length;i++){const c=re[i];if(c===\"\\\\\"){i++;continue}if(c===\"[\")inCls=true;else if(c===\"]\")inCls=false;else if(c===\".\"&&!inCls)fail(g+\" has a bare dot, which CodeQL reads as a wildcard\")}}\nconsole.log(\"ok\")}).catch((e)=>{console.error(String(e));process.exit(79)})'",
+        "note": "Imports lib/safe-image-src.ts under type stripping: five real sources (a public path, an og path with a query, a base64 PNG, a Supabase URL, a blob uuid) pass unchanged and eight hostile values (a blob id with \"><img onerror>, one with an apostrophe, a base64 data:image with a quote, an inline SVG with onload, javascript:, data:text/html, vbscript:, //host) return null. Then reads the body: every non-null return is `if (RE.test(v)) return v`, each RE anchored at both ends with no bare dot, negated class or \\S/\\W/\\D (the structural check HYG-137 uses). Fails on main at 923adf97f on the first hostile value. Mutation-fired: dropping the blob pattern's end anchor fails it on the apostrophe case."
+      }
+    },
+    {
+      "id": "HYG-143",
+      "title": "Thirty-six CodeQL alerts are open on the repository and nothing on the ledger tracks them as a set, so each one waits for someone to trip over it",
+      "status": "open",
+      "priority": "P1",
+      "lane": "hygiene",
+      "size": "M",
+      "source": {
+        "file": ".github/workflows/codeql.yml",
+        "ref": "GitHub Security, Code scanning (CodeQL): 36 open alerts per the owner screenshot of 2026-09-29 ~19:00Z; HYG-137's ADR \"fix these alerts, never dismiss them\""
+      },
+      "detail": "FILED 2026-09-29 by HYG-138 (ADR-1624) on the orchestrator's instruction, from the owner's screenshot of GitHub Security, Code scanning at about 19:00Z: 36 OPEN CodeQL alerts on hellofrequencylab/frequency-web.\n\nWHAT IS ALREADY OWNED. HYG-137 (in flight, claude/hyg-137-upload-preview-src) fixes the four js/xss-through-dom alerts on the upload previews; HYG-142 covers the image-focal-picker alert that reaches an <img> through safeImageSrc. Every other open alert has no row. Dependabot is a separate count and reads 0 open (owner screenshot); HYG-075 is closed by its own PR and is not this row.\n\nWHAT THIS ROW IS. Triage the open alerts as one set: list each (rule, file:line, the first commit that raised it), then fix it in code, grouped by rule so one PR clears a class. The rule from HYG-137's decision holds: fix, never dismiss. An alert that is a true false positive is recorded with its reason in the ADR that closes this row and is left open or closed only as that ADR states, so the remainder is named rather than silent. The count must reach 0 or a named, justified remainder.\n\nNO TOOL IN THIS SESSION READS CODE-SCANNING ALERTS, which is why the probe is manual: the evidence is the alert list read from GitHub (gh api repos/:owner/:repo/code-scanning/alerts?state=open, or the Security tab) on the day the row closes.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-29 ~19:00Z owner screenshot: 36 open CodeQL alerts. Not read by an agent (no code-scanning access in this session). Closes when a dated read of the open alerts shows 0, or only a remainder each named and justified in the closing ADR.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "HYG-138",
+      "title": "The ledger carries the 2026-09-29 replan: only W4, W9 and W11 are deferred, the domain register is rows, the mobile site is an active lane, and the owner rows are open",
+      "status": "done",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "M",
+      "closed": "2026-09-29",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1624; owner replan 2026-09-29 ~18:45Z"
+      },
+      "detail": "FILED AND CLOSED 2026-09-29 (ADR-1624). Owner replan 2026-09-29 ~18:45Z: \"The only things I want deferred are W4, W9, and W11.\" Then, by multiple choice: mobile \"I want the mobile site to be active but iOS dev to remain parked\"; DEF-DOMAIN \"Split into rows\"; the owner rows \"Unpark all but launch\".\n\nWHAT CHANGED. (1) DEF-DOMAIN closed as decomposed into 55 rows after a re-test of every item (the built ones are listed in its close). (2) LIVE-234 (W0, P0), DEF-A2P and LIVE-455 (owner-timed) and PROG-GD6 (W7) are open again, parkedUntil notes removed, ownerAction kept. LIVE-464 stays parked for launch day. (3) DEF-MOBILE is retitled as the native app and stays parked; WM is the active mobile-site lane with four rows (LIVE-701 to LIVE-704). (4) Six follow-ups found today: LIVE-705 and LIVE-706 (split orders cannot be fulfilled, and send no seller notice), HYG-140 (compiler cache growth), HYG-141 (perf-baseline times a redirect), HYG-142 (safeImageSrc, the CodeQL follow-up to HYG-137), HYG-143 (the 36 open CodeQL alerts as a set). The two QUEUE follow-ups (LIVE-550 export paging, LIVE-221 member check) were already filed and done as LIVE-626 and LIVE-627, so nothing was filed for them. (5) The wave names say that only W4, W9 and W11 are deferred.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const d=require(\"./docs/BUILD-BACKLOG.json\");const by=new Map(d.entries.map((e)=>[e.id,e]));const fail=(m)=>{console.error(m);process.exit(1)};const waves=d.meta.slate.waves;const on=(id)=>waves.some((w)=>(w.ids||[]).includes(id));const tok=(w)=>w.name.split(\" · \")[0].trim();const filed=[\"LIVE-651\",\"LIVE-652\",\"LIVE-653\",\"LIVE-654\",\"LIVE-655\",\"LIVE-656\",\"LIVE-657\",\"LIVE-658\",\"LIVE-659\",\"LIVE-660\",\"LIVE-661\",\"LIVE-662\",\"LIVE-663\",\"LIVE-664\",\"LIVE-665\",\"LIVE-666\",\"LIVE-667\",\"LIVE-668\",\"LIVE-669\",\"LIVE-670\",\"LIVE-671\",\"LIVE-672\",\"LIVE-673\",\"LIVE-674\",\"LIVE-675\",\"LIVE-676\",\"LIVE-677\",\"LIVE-678\",\"LIVE-679\",\"LIVE-680\",\"LIVE-681\",\"LIVE-682\",\"LIVE-683\",\"LIVE-684\",\"LIVE-685\",\"LIVE-686\",\"LIVE-687\",\"LIVE-688\",\"LIVE-689\",\"LIVE-690\",\"LIVE-691\",\"LIVE-692\",\"LIVE-693\",\"LIVE-694\",\"LIVE-695\",\"LIVE-696\",\"LIVE-697\",\"LIVE-698\",\"LIVE-699\",\"LIVE-700\",\"OWN-085\",\"OWN-086\",\"OWN-087\",\"HYG-139\",\"LIVE-701\",\"LIVE-702\",\"LIVE-703\",\"LIVE-704\",\"LIVE-705\",\"LIVE-706\",\"HYG-140\",\"HYG-141\",\"HYG-142\",\"HYG-143\"];const miss=filed.filter((k)=>!by.has(k));if(miss.length)fail(\"rows the replan filed are gone: \"+miss.join(\", \"));const dd=by.get(\"DEF-DOMAIN\");if(!dd||dd.status!==\"done\")fail(\"DEF-DOMAIN is not closed as decomposed\");for(const id of [\"LIVE-234\",\"DEF-A2P\",\"PROG-GD6\",\"LIVE-455\"]){const e=by.get(id);if(!e)fail(id+\" is missing\");if(e.status===\"parked\")fail(id+\" is parked again, against the owner ruling Unpark all but launch\");if(e.status===\"open\"&&!on(id))fail(id+\" is open but sits on no wave\");if(/parkedUntil/.test(e.notes||\"\"))fail(id+\" still carries a parkedUntil note\")}if(by.get(\"DEF-MOBILE\").status!==\"parked\")fail(\"DEF-MOBILE (the native app) is no longer parked; the owner kept iOS dev parked\");const wm=waves.find((w)=>tok(w)===\"WM\");if(!wm)fail(\"no WM wave\");const mob=[\"LIVE-701\",\"LIVE-702\",\"LIVE-703\",\"LIVE-704\"];for(const id of mob){const e=by.get(id);if(e&&e.status===\"open\"&&!wm.ids.includes(id))fail(id+\" is an open mobile-site row off the WM wave\")}if(/PARKED/.test(wm.name))fail(\"the WM wave still reads as parked; it is the active mobile-site lane\");for(const t of [\"W4\",\"W9\",\"W11\"]){const w=waves.find((x)=>tok(x)===t);if(!w||!/PARKED|parked|deferred/i.test(w.name))fail(t+\" no longer reads as deferred\")}console.log(\"ok\")'",
+        "note": "Every row the replan filed still exists; DEF-DOMAIN is done; LIVE-234, DEF-A2P, PROG-GD6 and LIVE-455 are not parked, carry no parkedUntil and, when open, sit on a wave; DEF-MOBILE (native) is still parked; the open mobile-site rows sit on WM and WM does not read as parked; W4, W9 and W11 still read as deferred. Fails on main at 923adf97f (no filed rows). Mutation-fired: re-parking LIVE-234, dropping LIVE-701 from WM, or writing PARKED into the WM name each fail it."
       }
     }
   ]
