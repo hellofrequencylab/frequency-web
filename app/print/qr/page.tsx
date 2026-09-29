@@ -3,7 +3,8 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { parseStyle, withMemberAvatar } from '@/lib/qr/style'
-import { shortLinkUrl, nodeUrl } from '@/lib/qr/links'
+import { shortLinkUrl } from '@/lib/qr/links'
+import { signedNodeUrl } from '@/lib/qr/node-code'
 import { PrintToolbar } from './print-toolbar'
 
 export const dynamic = 'force-dynamic'
@@ -55,9 +56,9 @@ export default async function QrPrintPage({
       style = withMemberAvatar(style, owner?.avatar_url ?? null)
     }
   } else if (node) {
-    const { data } = await db.from('nodes').select('label, type, style, secret').eq('id', node).maybeSingle()
+    const { data } = await db.from('nodes').select('label, type, style').eq('id', node).maybeSingle()
     if (!data) notFound()
-    url = nodeUrl(node, data.secret)
+    url = signedNodeUrl(node)
     title = data.label || 'Check-in code'
     style = parseStyle(data.style)
   } else {

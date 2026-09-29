@@ -9,9 +9,14 @@
 // Location-aware earning (ADR-106): a code can carry a geofence (lat/lng + radius).
 // The PostGIS point is written via the `set_node_geo` RPC (PostgREST can't build a
 // geography from lat/lng), and the `/n` claim flow forwards the device location so
-// verifyCapture enforces proximity. Signed payloads remain a follow-up.
+// verifyCapture enforces proximity.
+//
+// Signed codes (LIVE-688, ADR-1654): every code this studio renders, downloads or prints carries an
+// HMAC over (node, issued-at) from lib/qr/node-code.ts, and verifyCapture refuses a forged or
+// tampered one. Signing is not a per-code option, so nothing here mints a secret. A code's old
+// random `secret` (from the retired "Require a signed code" toggle) is left untouched so codes
+// printed with it keep claiming until the grace window in lib/qr/node-code.ts ends.
 
-import { randomBytes } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -40,16 +45,8 @@ export interface NodeInput {
   proximityM: number | null
   /** Total verified-claim cap ("first N win"); null = unlimited. */
   maxClaims: number | null
-  /** Require a signed payload — the code carries a server-issued secret (`?s=`)
-   *  that verifyCapture must match, so a forged /n/<id> URL can't claim. */
-  requireSignature: boolean
   /** Visual QR design; sanitized by parseStyle before persisting. */
   style: QrStyle
-}
-
-/** A URL-safe, unguessable signing token for a node payload. */
-function newSecret(): string {
-  return randomBytes(18).toString('base64url')
 }
 
 /** Validate a geofence, or null when none/invalid (which CLEARS the requirement). */
@@ -96,8 +93,7 @@ export async function createNode(input: NodeInput): Promise<ActionResult<{ id: s
   if (!row) return fail('Give the code a label and valid settings.')
 
   const db = createAdminClient()
-  const insertRow = input.requireSignature ? { ...row, secret: newSecret() } : row
-  const { data, error } = await db.from('nodes').insert(insertRow).select('id').single()
+  const { data, error } = await db.from('nodes').insert(row).select('id').single()
   if (error || !data) return fail('Could not create the code.')
 
   const geo = cleanGeo(input)
@@ -124,15 +120,7 @@ export async function updateNode(id: string, input: NodeInput): Promise<ActionRe
   if (!row) return fail('Give the code a label and valid settings.')
 
   const db = createAdminClient()
-  // Signed payload: mint a secret when first required, keep it while it stays on,
-  // clear it when turned off. (Re-minting each save would invalidate printed codes.)
-  const { data: existing } = await db.from('nodes').select('secret').eq('id', id).maybeSingle()
-  const secretPatch: { secret?: string | null } = input.requireSignature
-    ? existing?.secret
-      ? {}
-      : { secret: newSecret() }
-    : { secret: null }
-  const { error } = await db.from('nodes').update({ ...row, ...secretPatch }).eq('id', id)
+  const { error } = await db.from('nodes').update(row).eq('id', id)
   if (error) return fail('Could not save changes.')
 
   // Set or clear the geofence (null lat/lng clears the proximity requirement — the
